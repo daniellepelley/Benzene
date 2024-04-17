@@ -1,0 +1,73 @@
+﻿using System.IO;
+using System.Reflection;
+using Amazon;
+// using Amazon.Extensions.NETCore.Setup;
+using Amazon.SQS;
+using FluentValidation;
+using Benzene.Core.DI;
+using Benzene.Elements.Core.Logging;
+using Benzene.Http;
+using Benzene.Microsoft.Dependencies;
+using Benzene.Test.Examples;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Benzene.Test.Elements.Examples
+{
+    public static class DependenciesBuilder
+    {
+        public static IConfiguration GetConfiguration()
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                // .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables()
+                .Build();
+        }
+
+        public static void Register(IServiceCollection services, IConfiguration configuration)
+        {
+            var region = configuration.GetValue<string>("AWS_DEFAULT_REGION");
+            var serviceUrl = configuration.GetValue<string>("AWS_SERVICE_URL");
+            // var awsOptions = new AWSOptions
+            // {
+            //     Region = string.IsNullOrWhiteSpace(region)
+            //         ? RegionEndpoint.EUWest2
+            //         : RegionEndpoint.GetBySystemName(region),
+            // };
+
+//             if (!string.IsNullOrEmpty(serviceUrl))
+//             {
+//                 awsOptions.DefaultClientConfig.ServiceURL = serviceUrl;
+//             }
+// #if DEBUG
+//             awsOptions.Profile = "developer@darwindevelopment";
+// #endif
+
+            services.AddSingleton(configuration);
+            services.AddStructuredLogging(configuration);
+            // services.AddTransient(_ => configuration.GetAWSOptions());
+            // services.AddSingleton(awsOptions.CreateServiceClient<IAmazonSQS>());
+
+            var assembly = Assembly.GetExecutingAssembly();
+            services.UsingBenzene(x => x
+                // .AddMessageHandlers(assembly)
+                .AddHttpMessageHandlers()
+                .AddBenzene()
+                // .AddDirectMessage()
+                // .AddApiGateway()
+                // .AddMicrosoftLogger()
+                // .AddServiceResolver()
+                // .AddCorrelationId()
+                // .AddPermissions()
+                // .AddEventBus()
+                // .AddDiagnostics()
+                // .AddScoped<IHttpHeaderMappings, ElementsHttpHeaderMappings>()
+                // .TryAddScoped<IRequestMapper<DirectMessageContext>, MultiSerializerOptionsRequestMapper<DirectMessageContext, PatchJsonSerializer>>()
+                // .AddScoped<IMiddlewareWrapper, TimerMiddlewareWrapper>()
+                .AddScoped<IExampleService, StubbedExampleService>()
+                // .AddScoped(_ => (JsonSerializer)new PatchJsonSerializer())
+            );
+        }
+    }
+}

@@ -1,0 +1,14 @@
+﻿resource "aws_sns_topic_subscription" "platform_pedal_ifm_func_platform_eventbus_client_topic_subscription" {
+  topic_arn = data.terraform_remote_state.sns.outputs.platform-eventbus_client_topic
+  protocol = "lambda"
+  endpoint = aws_lambda_function.platform_pedal_ifm_func.arn
+  endpoint_auto_confirms = true
+  filter_policy = jsonencode({"topic" = ["client:created","client:updated","client:deleted"]})
+}
+resource "aws_sns_topic_subscription" "platform_pedal_ifm_func_platform_eventbus_tenant_topic_subscription" {
+  topic_arn = data.terraform_remote_state.sns.outputs.platform_eventbus_tenant_topic
+  protocol = "lambda"
+  endpoint = aws_lambda_function.platform_pedal_ifm_func.arn
+  endpoint_auto_confirms = true
+  filter_policy = jsonencode({"topic" = ["tenant:updated","tenant:deleted"]})
+}

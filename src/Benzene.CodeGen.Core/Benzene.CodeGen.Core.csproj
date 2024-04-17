@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.CodeGen.Core</AssemblyName>
+    <RootNamespace>Benzene.CodeGen.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
+  </ItemGroup>
+
+</Project>

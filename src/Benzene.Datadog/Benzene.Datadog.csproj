@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.Datadog</AssemblyName>
+    <RootNamespace>Benzene.Datadog</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Datadog.Trace" Version="2.48.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+  </ItemGroup>
+
+</Project>

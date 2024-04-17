@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PackageVersion>0.0.1</PackageVersion>
+        <AssemblyName>Benzene.Clients.HealthChecks</AssemblyName>
+        <RootNamespace>Benzene.Clients.HealthChecks</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
+      <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
+      <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+    </ItemGroup>
+
+</Project>

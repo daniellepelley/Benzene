@@ -1,0 +1,51 @@
+﻿using System.Threading.Tasks;
+using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Middleware;
+
+namespace Benzene.Core.Middleware;
+
+public interface IEntryPointMiddlewareApplication {}
+
+public interface IEntryPointMiddlewareApplication<in TEvent> : IEntryPointMiddlewareApplication
+{
+    Task HandleAsync(TEvent @event);
+}
+public interface IEntryPointMiddlewareApplication<in TEvent, TResult> : IEntryPointMiddlewareApplication
+{
+    Task<TResult> HandleAsync(TEvent @event);
+}
+
+public class EntryPointMiddlewareApplication<TEvent> : IEntryPointMiddlewareApplication<TEvent>
+{
+    private readonly IMiddlewareApplication<TEvent> _middlewareApplication;
+    private readonly IServiceResolverFactory _serviceResolverFactory;
+
+    public EntryPointMiddlewareApplication(IMiddlewareApplication<TEvent> middlewareApplication, IServiceResolverFactory serviceResolverFactory)
+    {
+        _serviceResolverFactory = serviceResolverFactory;
+        _middlewareApplication = middlewareApplication;
+    }
+
+    public Task HandleAsync(TEvent @event)
+    {
+        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory.CreateScope());
+    }
+}
+
+public class EntryPointMiddlewareApplication<TEvent, TResult> : IEntryPointMiddlewareApplication<TEvent, TResult>
+{
+    private readonly IMiddlewareApplication<TEvent,TResult> _middlewareApplication;
+    private readonly IServiceResolverFactory _serviceResolverFactory;
+
+    public EntryPointMiddlewareApplication(IMiddlewareApplication<TEvent, TResult> middlewareApplication,
+        IServiceResolverFactory serviceResolverFactory)
+    {
+        _serviceResolverFactory = serviceResolverFactory;
+        _middlewareApplication = middlewareApplication;
+    }
+
+    public Task<TResult> HandleAsync(TEvent @event)
+    {
+        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory.CreateScope());
+    }
+}

@@ -1,0 +1,48 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Benzene.Clients;
+using Benzene.Clients.HealthChecks;
+using Benzene.HealthChecks.Core;
+using Benzene.Results;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Platform.Service.Clients.User
+{
+    [ExcludeFromCodeCoverage]
+    public class UserServiceClient : IUserServiceClient
+    {
+        private readonly IBenzeneMessageClientFactory _clientFactory;
+
+        public UserServiceClient(IBenzeneMessageClientFactory clientFactory)
+        {
+            _clientFactory = clientFactory;
+        }
+
+        public string HashCode => "2b8ce408c286c3e00fd2145dc81c3c71751896baf49b0c3f3d07fffeaf07ae07";
+
+        public Task<IClientResult<UserDtoMessageWrapper>> GetUserAsync(GetUserMessage message)
+        {
+            return GetUserAsync(message, null);
+        }
+
+        public async Task<IClientResult<UserDtoMessageWrapper>> GetUserAsync(GetUserMessage message, IDictionary<string, string> headers)
+        {
+            using (var client = _clientFactory.Create("User", "user:get"))
+            {
+                return await client.SendMessageAsync<GetUserMessage, UserDtoMessageWrapper>("user:get", message, headers);
+            }
+        }
+
+        public async Task<IClientResult<HealthCheckResponse>> HealthCheckAsync()
+        {
+            using (var client = _clientFactory.Create("User", "healthcheck"))
+            {
+                var result = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
+                return result.Status != ClientResultStatus.Ok
+                    ? result
+                    : ClientResult.Ok(ClientHealthCheckProcessor.Process(result.Payload, HashCode) as HealthCheckResponse);
+            }
+        }
+    }
+}

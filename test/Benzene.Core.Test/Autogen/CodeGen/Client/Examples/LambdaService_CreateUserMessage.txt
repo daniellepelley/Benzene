@@ -1,0 +1,14 @@
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Platform.Service.Clients.User
+{
+    [ExcludeFromCodeCoverage]
+    public class CreateUserMessage
+    {
+        public string Name { get; set; }
+        public string[] Tenants { get; set; }
+        public DateTime? Date { get; set; }
+        public Guid? Ref { get; set; }
+    }
+}

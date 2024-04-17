@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.Schema.OpenApi</AssemblyName>
+    <RootNamespace>Benzene.Schema.OpenApi</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AsyncAPI.NET" Version="4.1.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.6.10" />
+    <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
+    <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+  </ItemGroup>
+
+</Project>

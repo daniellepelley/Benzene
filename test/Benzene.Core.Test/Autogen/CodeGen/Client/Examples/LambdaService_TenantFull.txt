@@ -1,0 +1,61 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Benzene.Clients;
+using Benzene.Clients.HealthChecks;
+using Benzene.HealthChecks.Core;
+using Benzene.Results;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Platform.Service.Clients.Tenant
+{
+    [ExcludeFromCodeCoverage]
+    public class TenantServiceClient : ITenantServiceClient
+    {
+        private readonly IBenzeneMessageClientFactory _clientFactory;
+
+        public TenantServiceClient(IBenzeneMessageClientFactory clientFactory)
+        {
+            _clientFactory = clientFactory;
+        }
+
+        public string HashCode => "f7666334812315507767d314287501a0eb240dd2ebb58e6dc3731c9906eca6dd";
+
+        public Task<IClientResult<TenantDto>> GetTenantAsync(GetTenantMessage message)
+        {
+            return GetTenantAsync(message, null);
+        }
+
+        public async Task<IClientResult<TenantDto>> GetTenantAsync(GetTenantMessage message, IDictionary<string, string> headers)
+        {
+            using (var client = _clientFactory.Create("Tenant", "tenant:get"))
+            {
+                return await client.SendMessageAsync<GetTenantMessage, TenantDto>("tenant:get", message, headers);
+            }
+        }
+
+        public Task<IClientResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message)
+        {
+            return CreateTenantAsync(message, null);
+        }
+
+        public async Task<IClientResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message, IDictionary<string, string> headers)
+        {
+            using (var client = _clientFactory.Create("Tenant", "tenant:create"))
+            {
+                return await client.SendMessageAsync<CreateTenantMessage, TenantDto>("tenant:create", message, headers);
+            }
+        }
+
+        public async Task<IClientResult<HealthCheckResponse>> HealthCheckAsync()
+        {
+            using (var client = _clientFactory.Create("Tenant", "healthcheck"))
+            {
+                var result = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
+                return result.Status != ClientResultStatus.Ok
+                    ? result
+                    : ClientResult.Ok(ClientHealthCheckProcessor.Process(result.Payload, HashCode) as HealthCheckResponse);
+            }
+        }
+    }
+}

@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Benzene.Clients;
+using Benzene.Clients.HealthChecks;
+using Benzene.Results;
+
+namespace Platform.Service.Clients.Tenant
+{
+    public interface ITenantServiceClient : IHasHealthCheck
+    {
+        Task<IClientResult<TenantDto>> GetTenantAsync(GetTenantMessage message);
+        Task<IClientResult<TenantDto>> GetTenantAsync(GetTenantMessage message, IDictionary<string, string> headers);
+        Task<IClientResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message);
+        Task<IClientResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message, IDictionary<string, string> headers);
+    }
+}

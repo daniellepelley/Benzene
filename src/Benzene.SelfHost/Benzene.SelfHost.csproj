@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.SelfHost</AssemblyName>
+    <RootNamespace>Benzene.SelfHost</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+    <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
+    <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+  </ItemGroup>
+
+</Project>

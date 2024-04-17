@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.CodeGen.Cli.Core</AssemblyName>
+    <RootNamespace>Benzene.CodeGen.Cli.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.33" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
+    <ProjectReference Include="..\Benzene.CodeGen.ApiGateway\Benzene.CodeGen.ApiGateway.csproj" />
+    <ProjectReference Include="..\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj" />
+    <ProjectReference Include="..\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\platform-tenant-core-func.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

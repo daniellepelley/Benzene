@@ -1,0 +1,18 @@
+﻿using Benzene.Abstractions.MessageHandling;
+using Benzene.Results;
+
+namespace Platform.Service.Clients.User;
+
+[Message("user:get")]
+public class UserGetMessageHandler : IMessageHandler<GetUserMessage, UserDto>
+{
+    public UserGetMessageHandler()
+    {
+        //inject any dependencies here
+    }
+
+    public async Task<IServiceResult<UserDto>> HandleAsync(GetUserMessage message)
+    {
+        return await Task.FromResult(ServiceResult.NotImplemented<UserDto>());
+    }
+}

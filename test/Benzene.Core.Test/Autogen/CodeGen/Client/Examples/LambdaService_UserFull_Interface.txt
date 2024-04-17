@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Benzene.Clients;
+using Benzene.Clients.HealthChecks;
+using Benzene.Results;
+
+namespace Platform.Service.Clients.User
+{
+    public interface IUserServiceClient : IHasHealthCheck
+    {
+        Task<IClientResult<UserDto>> GetUserAsync(GetUserMessage message);
+        Task<IClientResult<UserDto>> GetUserAsync(GetUserMessage message, IDictionary<string, string> headers);
+        Task<IClientResult<string>> CreateUserAsync(CreateUserMessage message);
+        Task<IClientResult<string>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers);
+    }
+}

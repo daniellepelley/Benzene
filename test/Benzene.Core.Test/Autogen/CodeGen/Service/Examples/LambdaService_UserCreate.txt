@@ -1,0 +1,18 @@
+﻿using Benzene.Abstractions.MessageHandling;
+using Benzene.Results;
+
+namespace Platform.Service.Clients.User;
+
+[Message("user:create")]
+public class UserCreateMessageHandler : IMessageHandler<CreateUserMessage, string>
+{
+    public UserCreateMessageHandler()
+    {
+        //inject any dependencies here
+    }
+
+    public async Task<IServiceResult<string>> HandleAsync(CreateUserMessage message)
+    {
+        return await Task.FromResult(ServiceResult.NotImplemented<string>());
+    }
+}

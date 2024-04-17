@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.Aws.Kafka</AssemblyName>
+    <RootNamespace>Benzene.Aws.Kafka</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
+		<PackageReference Include="Amazon.Lambda.KafkaEvents" Version="1.0.1" />
+		<PackageReference Include="AWSSDK.SQS" Version="3.7.100.74" />
+		<PackageReference Include="AWSXRayRecorder.Handlers.AwsSdk" Version="2.11.0" />
+		<PackageReference Include="System.Text.Encodings.Web" Version="6.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
+	  <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+	  <ProjectReference Include="..\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+	  <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
+	  <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
+	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+	</ItemGroup>
+
+</Project>

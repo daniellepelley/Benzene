@@ -1,0 +1,243 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Aws\Framework\**" />
+    <Compile Remove="Benzene.Helpers\**" />
+    <EmbeddedResource Remove="Aws\Framework\**" />
+    <EmbeddedResource Remove="Benzene.Helpers\**" />
+    <None Remove="Aws\Framework\**" />
+    <None Remove="Benzene.Helpers\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AsyncAPI.NET.Readers" Version="4.1.0" />
+    <PackageReference Include="coverlet.msbuild" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Amazon.Lambda.TestUtilities" Version="2.0.0" />
+    <PackageReference Include="FluentValidation" Version="11.8.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="Moq" Version="4.18.4" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="7.0.0" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Core\Benzene.Azure.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Cache.Core\Benzene.Cache.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Cache.Redis\Benzene.Cache.Redis.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.HealthChecks\Benzene.Clients.HealthChecks.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.ApiGateway\Benzene.CodeGen.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.Cli.Core\Benzene.CodeGen.Cli.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.Core\Benzene.CodeGen.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.MockLambdaTool\Benzene.CodeGen.MockLambdaTool.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Elements.Core\Benzene.Elements.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Log4Net\Benzene.Log4Net.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.NewtonsoftJson\Benzene.NewtonsoftJson.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.SelfHost\Benzene.SelfHost.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>..\..\..\.nuget\packages\microsoft.extensions.logging.abstractions\2.2.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Elements\EventBusMapping\EventBusMapTests.cs">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Autogen\CodeGen\ApiGateway\Examples\GetUser.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\ApiGateway\Examples\RbacTest.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_CreateUserMessage.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_GetUserMessage.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_GetUserMessageMessageWrapper.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_HasDictionaryMessageWrapper.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_InternalDto.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_TenantFull.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_TenantFull_Interface.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UpdateUserMessage.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserCreate.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserDto.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserFull.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserFull_Interface.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserGet.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\AllFieldTypesMessage.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\CreateClientMessage.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\UserDto.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\CreateUserMessage.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\CreateTenantMessage.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1-expected1.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1-expected2.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1-expected3.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1-new-content1.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1-new-content2.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1-new-content3.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Core\Examples\document1.tf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Markdown\Examples\GetTenantMessage.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Markdown\Examples\TenantDto.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Markdown\Examples\Tenant_Full.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Markdown\Examples\Tenant_Get.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Markdown\Examples\User_Get.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Markdown\Examples\User_GetAll.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_CreateUserMessage.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_GetUserMessage.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_GetUserMessageMessageWrapper.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_HasDictionaryMessageWrapper.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_InternalDto.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_UpdateUserMessage.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_UserCreate.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_UserDto.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Service\Examples\LambdaService_UserGet.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\EventBusMap.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\aws_lambda_permission.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\iam_roles.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\aws_sns_topic_subscription.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\lambda.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\PedalCore\iam_roles.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Autogen\CodeGen\Terraform\Examples\PedalCore\lambda.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Elements\EventBusMapping\EventBusMap.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

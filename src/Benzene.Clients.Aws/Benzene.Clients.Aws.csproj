@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <PackageVersion>0.0.1</PackageVersion>
+        <AssemblyName>Benzene.Clients.Aws</AssemblyName>
+        <RootNamespace>Benzene.Clients.Aws</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.Core" Version="3.7.300.6" />
+        <PackageReference Include="AWSSDK.Lambda" Version="3.7.303.2" />
+        <PackageReference Include="AWSSDK.SQS" Version="3.7.2.63" />
+        <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.301.4" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Benzene.HealthChecks.Core\Benzene.HealthChecks.Core.csproj" />
+        <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
+        <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+    </ItemGroup>
+</Project>

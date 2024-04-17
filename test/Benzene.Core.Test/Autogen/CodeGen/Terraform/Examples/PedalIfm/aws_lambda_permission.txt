@@ -1,0 +1,14 @@
+﻿resource "aws_lambda_permission" "platform_eventbus_client_topic_invoke_platform_pedal_ifm_func" {
+  action = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.platform_pedal_ifm_func.function_name
+  principal = "sns.amazonaws.com"
+  statement_id = "AllowSubscriptionToSNSResponse"
+  source_arn = data.terraform_remote_state.sns.outputs.platform-eventbus_client_topic
+}
+resource "aws_lambda_permission" "platform_eventbus_tenant_topic_invoke_platform_pedal_ifm_func" {
+  action = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.platform_pedal_ifm_func.function_name
+  principal = "sns.amazonaws.com"
+  statement_id = "AllowSubscriptionToSNSResponse"
+  source_arn = data.terraform_remote_state.sns.outputs.platform_eventbus_tenant_topic
+}

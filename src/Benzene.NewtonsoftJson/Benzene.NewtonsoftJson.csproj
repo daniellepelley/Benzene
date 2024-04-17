@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.NewtonsoftJson</AssemblyName>
+    <RootNamespace>Benzene.NewtonsoftJson</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

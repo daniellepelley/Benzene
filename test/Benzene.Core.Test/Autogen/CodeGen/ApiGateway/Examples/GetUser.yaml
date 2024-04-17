@@ -1,0 +1,251 @@
+﻿# AUTOGEN START PLATFORM_MARKETPLACE_CORE_FUNC_URI
+
+  /rbac/user/{id}:
+    options:
+      tags:
+        - Rbac User
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/corsResponse"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Cache-Control: "'no-store, no-cache'"
+              method.response.header.X-Frame-Options: "'deny'"
+              method.response.header.X-XSS-Protection: "'1; mode=block'"
+              method.response.header.Strict-Transport-Security: "'max-age=31536000'"
+              method.response.header.Content-Security-Policy: "'default-src \\'none\\';'"
+              method.response.header.X-Content-Type-Options: "'nosniff'"
+              method.response.header.Referrer-Policy: "'no-referrer'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'"
+            responseTemplates:
+              application/json: |
+                #set($domainWhitelist = [#cors_allowed_origins#])
+
+                #if (#cors_localhost#)
+                  #set($context.responseOverride.header.Access-Control-Allow-Origin = $input.params("Origin"))
+                #elseif ($domainWhitelist.contains($input.params("Origin")))
+                  #set($context.responseOverride.header.Access-Control-Allow-Origin = $input.params("Origin"))
+                #else
+                  #set($context.responseOverride.status = 405)
+                #end
+        passthroughBehavior: when_no_match
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        type: mock
+    get:
+      summary: "user:get"
+      tags:
+        - Rbac User
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/200OkEmpty"
+        "201":
+          $ref: "#/components/responses/201Created"
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorised"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "422":
+          $ref: "#/components/responses/422UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OktaElementsCustomAuthoriser: []
+        - api_key: []
+      x-amazon-apigateway-integration:
+        type: "AWS"
+        httpMethod: POST
+        uri: "#platform_marketplace_core_func_uri#"
+        passthroughBehavior: "never"
+        requestTemplates:
+          application/json: |
+            {
+              "httpMethod": "GET",
+              "resource": "/rbac/user/",
+              "path": "/rbac/user/{id}",
+              "queryStringParameters": {
+                #foreach($param in $input.params().querystring.keySet())
+                "$param": "$util.escapeJavaScript($input.params().querystring.get($param))" #if($foreach.hasNext),#end
+
+                #end
+              },
+              "pathParameters": {
+                #foreach($param in $input.params().path.keySet())
+                "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
+
+                #end
+              },
+              "headers": {
+                "Content-Type": "application/json",
+                "CorrelationId": "$context.requestId",
+                "SourceIP": "$context.identity.sourceIp",
+                "UserAgent": "$context.identity.userAgent",
+                "x-tenant-id":"$context.authorizer.tenantid",
+                "PlatformTenantId":"$context.authorizer.tenantid",
+                "x-user-id":"$context.authorizer.userid",
+                "x-permissions":"$context.authorizer.permissions",
+                "x-licenses":"$context.authorizer.licenses",
+                "x-subscriptions":"$context.authorizer.subscriptions"
+              },
+              "requestContext": {
+                "domainName": "$context.domainName"
+              },
+              "body": "$util.escapeJavaScript($input.json('$'))"
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'"
+              method.response.header.Cache-Control: "'no-store, no-cache'"
+              method.response.header.Content-Security-Policy: "'default-src \\'none\\';'"
+              method.response.header.Referrer-Policy: "'no-referrer'"
+              method.response.header.Strict-Transport-Security: "'max-age=31536000'"
+              method.response.header.X-Content-Type-Options: "'nosniff'"
+              method.response.header.X-Frame-Options: "'deny'"
+              method.response.header.X-XSS-Protection: "'1; mode=block'"
+            responseTemplates:
+              application/json: |
+                #set($context.responseOverride.status = $input.path('$.statusCode'))
+                $input.path('$.body')
+
+                #set($domainWhitelist = [#cors_allowed_origins#])
+
+                #if (#cors_localhost#)
+                  #set($context.responseOverride.header.Access-Control-Allow-Origin = $input.params("Origin"))
+                #elseif ($domainWhitelist.contains($input.params("Origin")))
+                  #set($context.responseOverride.header.Access-Control-Allow-Origin = $input.params("Origin"))
+                #else
+                  #set($context.responseOverride.status = 405)
+                #end
+
+    put:
+      summary: "user:update"
+      tags:
+        - Rbac User
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/200OkEmpty"
+        "201":
+          $ref: "#/components/responses/201Created"
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorised"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "422":
+          $ref: "#/components/responses/422UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OktaElementsCustomAuthoriser: []
+        - api_key: []
+      x-amazon-apigateway-integration:
+        type: "AWS"
+        httpMethod: POST
+        uri: "#platform_marketplace_core_func_uri#"
+        passthroughBehavior: "never"
+        requestTemplates:
+          application/json: |
+            {
+              "httpMethod": "PUT",
+              "resource": "/rbac/user/",
+              "path": "/rbac/user/{id}",
+              "queryStringParameters": {
+                #foreach($param in $input.params().querystring.keySet())
+                "$param": "$util.escapeJavaScript($input.params().querystring.get($param))" #if($foreach.hasNext),#end
+
+                #end
+              },
+              "pathParameters": {
+                #foreach($param in $input.params().path.keySet())
+                "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
+
+                #end
+              },
+              "headers": {
+                "Content-Type": "application/json",
+                "CorrelationId": "$context.requestId",
+                "SourceIP": "$context.identity.sourceIp",
+                "UserAgent": "$context.identity.userAgent",
+                "x-tenant-id":"$context.authorizer.tenantid",
+                "PlatformTenantId":"$context.authorizer.tenantid",
+                "x-user-id":"$context.authorizer.userid",
+                "x-permissions":"$context.authorizer.permissions",
+                "x-licenses":"$context.authorizer.licenses",
+                "x-subscriptions":"$context.authorizer.subscriptions"
+              },
+              "requestContext": {
+                "domainName": "$context.domainName"
+              },
+              "body": "$util.escapeJavaScript($input.json('$'))"
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'"
+              method.response.header.Cache-Control: "'no-store, no-cache'"
+              method.response.header.Content-Security-Policy: "'default-src \\'none\\';'"
+              method.response.header.Referrer-Policy: "'no-referrer'"
+              method.response.header.Strict-Transport-Security: "'max-age=31536000'"
+              method.response.header.X-Content-Type-Options: "'nosniff'"
+              method.response.header.X-Frame-Options: "'deny'"
+              method.response.header.X-XSS-Protection: "'1; mode=block'"
+            responseTemplates:
+              application/json: |
+                #set($context.responseOverride.status = $input.path('$.statusCode'))
+                $input.path('$.body')
+
+                #set($domainWhitelist = [#cors_allowed_origins#])
+
+                #if (#cors_localhost#)
+                  #set($context.responseOverride.header.Access-Control-Allow-Origin = $input.params("Origin"))
+                #elseif ($domainWhitelist.contains($input.params("Origin")))
+                  #set($context.responseOverride.header.Access-Control-Allow-Origin = $input.params("Origin"))
+                #else
+                  #set($context.responseOverride.status = 405)
+                #end
+
+
+# AUTOGEN END
+

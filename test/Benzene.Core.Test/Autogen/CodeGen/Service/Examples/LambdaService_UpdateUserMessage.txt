@@ -1,0 +1,34 @@
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using Benzene.Elements.LambdaClients.Core;
+
+namespace Platform.Service.Clients.User
+{
+    public class UpdateUserMessage : UpdateMessage
+    {
+        private string _name;
+        public string Name
+        {
+            get => _name;
+            set { AddUpdateField("name"); _name = value; }
+        }
+        private string[] _tenants;
+        public string[] Tenants
+        {
+            get => _tenants;
+            set { AddUpdateField("tenants"); _tenants = value; }
+        }
+        private DateTime? _date;
+        public DateTime? Date
+        {
+            get => _date;
+            set { AddUpdateField("date"); _date = value; }
+        }
+        private Guid? _ref;
+        public Guid? Ref
+        {
+            get => _ref;
+            set { AddUpdateField("ref"); _ref = value; }
+        }
+    }
+}

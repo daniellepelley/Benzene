@@ -1,0 +1,13 @@
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Platform.Service.Clients.User
+{
+    [ExcludeFromCodeCoverage]
+    public class UserDto
+    {
+        public string Id { get; set; }
+        public string[] TenantIds { get; set; }
+        public InternalDto Internal { get; set; }
+    }
+}
