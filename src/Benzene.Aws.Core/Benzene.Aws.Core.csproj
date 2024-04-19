@@ -15,8 +15,6 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
-	  <ProjectReference Include="..\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
-	  <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
 	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 	</ItemGroup>
 

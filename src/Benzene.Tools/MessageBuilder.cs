@@ -1,6 +1,6 @@
 ﻿namespace Benzene.Tools;
 
-public class MessageBuilder
+public class MessageBuilder : IMessageBuilder
 {
     public IDictionary<string, string> Headers { get; }
     public string Topic { get; }

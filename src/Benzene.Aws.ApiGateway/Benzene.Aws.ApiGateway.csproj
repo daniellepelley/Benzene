@@ -24,7 +24,6 @@
 	  <ProjectReference Include="..\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
 	  <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
 	  <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
-	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -38,6 +38,7 @@ public static class TestAwsLambdaExtensions
     {
         return source.SendSqsAsync(messageBuilder.AsSqs());
     }
+    
     public static Task<APIGatewayProxyResponse> SendApiGatewayAsync(this TestAwsLambdaHost source, APIGatewayProxyRequest apiGatewayProxyRequest, ILambdaContext? lambdaContext = null)
     {
         return source.SendEventAsync<APIGatewayProxyResponse>(apiGatewayProxyRequest, lambdaContext);

@@ -1,12 +1,11 @@
 ﻿using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using Benzene.Abstractions.MiddlewareBuilder;
-using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.XRay;
 
 public static class Extensions
 {
-    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseXRayTracing(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, bool isEnabled)
+    public static IMiddlewarePipelineBuilder<TContext> UseXRayTracing<TContext>(this IMiddlewarePipelineBuilder<TContext> app, bool isEnabled)
     {
         if (isEnabled)
         {
@@ -15,6 +14,4 @@ public static class Extensions
 
         return app;
     }
-
-
 }
