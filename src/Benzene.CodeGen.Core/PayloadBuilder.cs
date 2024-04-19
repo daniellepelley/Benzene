@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
+﻿using Microsoft.OpenApi.Models;
 
 namespace Benzene.CodeGen.Core;
 

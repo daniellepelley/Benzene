@@ -13,7 +13,7 @@ public static class Extensions
         app.Register(x => x.AddHttp());
         var middlewarePipelineBuilder = app.Create<HttpContext>();
         action(middlewarePipelineBuilder);
-        var pipeline = middlewarePipelineBuilder.AsPipeline();
+        var pipeline = middlewarePipelineBuilder.Build();
         return app.Use(resolver => new HttpLambdaHandler(pipeline, resolver));
     }
 

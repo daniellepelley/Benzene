@@ -1,8 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Benzene.Abstractions.Response;
 using Benzene.Core.MiddlewareBuilder;
-using Benzene.Core.Response;
 using Benzene.DataAnnotations;
 using Benzene.HealthChecks.Core;
 using Benzene.Results;
@@ -11,7 +9,6 @@ using Benzene.SelfHost.Http;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Benzene.Xml;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;

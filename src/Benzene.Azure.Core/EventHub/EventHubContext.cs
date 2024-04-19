@@ -1,5 +1,4 @@
 ﻿using Azure.Messaging.EventHubs;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.Core.EventHub;
 

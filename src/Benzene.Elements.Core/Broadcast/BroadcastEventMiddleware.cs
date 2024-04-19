@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Results;
 using Benzene.Results;
 using Microsoft.Extensions.Logging;
 

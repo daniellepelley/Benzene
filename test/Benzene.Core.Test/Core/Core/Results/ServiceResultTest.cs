@@ -1,5 +1,4 @@
-﻿using Benzene.Core.Results;
-using Benzene.Results;
+﻿using Benzene.Results;
 using Xunit;
 
 namespace Benzene.Test.Core.Core.Results;

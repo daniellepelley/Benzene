@@ -1,28 +1,16 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Benzene.Abstractions.Response;
 using Benzene.Azure.Core;
 using Benzene.Azure.Core.AspNet;
-using Benzene.Core.DI;
-using Benzene.Core.MessageHandling;
 using Benzene.Core.MiddlewareBuilder;
-using Benzene.Core.Response;
 using Benzene.Core.Serialization;
 using Benzene.DataAnnotations;
-using Benzene.Http;
-using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
-using Benzene.SelfHost;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Benzene.Xml;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
-using HttpRequest = Microsoft.AspNetCore.Http.HttpRequest;
-using Utils = Benzene.Tools.Utils;
 
 namespace Benzene.Test.Azure;
 

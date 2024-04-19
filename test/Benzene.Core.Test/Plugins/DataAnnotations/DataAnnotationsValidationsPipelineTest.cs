@@ -28,7 +28,7 @@ public class DataAnnotationsValidationsPipelineTest
             .UseProcessResponse()
             .UseMessageRouter(x => x.UseDataAnnotationsValidation());
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {

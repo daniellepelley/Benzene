@@ -1,10 +1,8 @@
-﻿using System.Reflection;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Benzene.Core.DI;
 using Benzene.Core.DirectMessage;
 using Benzene.Core.Filters;
 using Benzene.Core.MiddlewareBuilder;
-using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
@@ -30,7 +28,7 @@ public class FiltersPipelineTest
             .UseProcessResponse()
             .UseMessageRouter(x => x.UseFilters());
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {

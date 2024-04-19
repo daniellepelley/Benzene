@@ -18,58 +18,46 @@ namespace Benzene.Core.MiddlewareBuilder;
 
 public static class Extensions
 {
-    public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> source, Func<IServiceResolver, IMiddleware<TContext>> func)
-    {
-        source.Add(func);
-        return source;
-    }
-    
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         IMiddleware<TContext> middleware)
     {
-        app.Add(_ => middleware);
-        return app;
+        return app.Use(_ => middleware);
     }
     
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Func<TContext, Func<Task>, Task> func)
     {
-        app.Use(new FuncWrapperMiddleware<TContext>(func));
-        return app;
+        return app.Use(new FuncWrapperMiddleware<TContext>(func));
     }
 
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         string name, Func<TContext, Func<Task>, Task> func)
     {
-        app.Use(new FuncWrapperMiddleware<TContext>(name, func));
-        return app;
+        return app.Use(new FuncWrapperMiddleware<TContext>(name, func));
     }
     
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Func<IServiceResolver, Func<TContext, Func<Task>, Task>> func)
     {
-        app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(func(serviceResolver)));
-        return app;
+        return app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(func(serviceResolver)));
     }
 
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         string name, Func<IServiceResolver, Func<TContext, Func<Task>, Task>> func)
     {
-        app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(name, func(serviceResolver)));
-        return app;
+        return app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(name, func(serviceResolver)));
     }
+    
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Func<IServiceResolver, TContext, Func<Task>, Task> func)
     {
-        app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>((context, next) => func(serviceResolver, context, next)));
-        return app;
+        return app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>((context, next) => func(serviceResolver, context, next)));
     }
 
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         string name, Func<IServiceResolver, TContext, Func<Task>, Task> func)
     {
-        app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(name, (context, next) => func(serviceResolver, context, next)));
-        return app;
+        return app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(name, (context, next) => func(serviceResolver, context, next)));
     }
 
     // public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
@@ -224,18 +212,18 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> Split<TContext>(this IMiddlewarePipelineBuilder<TContext> source,
+    public static IMiddlewarePipelineBuilder<TContext> Split<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Func<TContext, bool> check, Action<IMiddlewarePipelineBuilder<TContext>> builder)
         where TContext : IHasMessageResult
     {
-        var app = source.Create<TContext>();
+        var newApp = app.Create<TContext>();
         builder(app);
 
-        return source.Use(resolver => new FuncWrapperMiddleware<TContext>("Split", async (context, next) =>
+        return app.Use(resolver => new FuncWrapperMiddleware<TContext>("Split", async (context, next) =>
         {
             if (check(context))
             {
-                await app.AsPipeline().HandleAsync(context, resolver);
+                await newApp.Build().HandleAsync(context, resolver);
             }
             else
             {

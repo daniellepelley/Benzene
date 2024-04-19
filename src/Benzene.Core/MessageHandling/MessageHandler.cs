@@ -11,7 +11,7 @@ namespace Benzene.Core.MessageHandling;
 public class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequest : class
 {
     private readonly IMessageHandler<TRequest, TResponse> _inner;
-    private IBenzeneLogger _logger;
+    private readonly IBenzeneLogger _logger;
 
     public MessageHandler(IMessageHandler<TRequest, TResponse> inner, IBenzeneLogger logger)
     {

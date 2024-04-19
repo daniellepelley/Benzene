@@ -1,5 +1,4 @@
-﻿using System;
-using Benzene.Diagnostics.Timers;
+﻿using Benzene.Diagnostics.Timers;
 
 namespace Benzene.Aws.XRay;
 

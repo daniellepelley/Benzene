@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Benzene.CodeGen.Core;
 using Benzene.CodeGen.LambdaTestTool;
 using Benzene.CodeGen.Markdown;

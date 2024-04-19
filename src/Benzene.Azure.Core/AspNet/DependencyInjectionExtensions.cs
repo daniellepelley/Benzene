@@ -3,7 +3,6 @@ using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Response;
 using Benzene.Http;
 
@@ -16,7 +15,7 @@ public static class DependencyInjectionExtensions
         app.Register(x => x.AddAspNet());
         var pipeline = app.Create<AspNetContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new AspNetApplication(pipeline.AsPipeline(), serviceResolverFactory));
+        app.Add(serviceResolverFactory => new AspNetApplication(pipeline.Build(), serviceResolverFactory));
         return app;
     }
     

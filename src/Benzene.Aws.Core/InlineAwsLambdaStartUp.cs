@@ -1,7 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,6 +32,6 @@ public class InlineAwsLambdaStartUp
         _servicesAction(services);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
-        return new AwsLambdaEntryPoint(app.AsPipeline(), serviceResolverFactory);
+        return new AwsLambdaEntryPoint(app.Build(), serviceResolverFactory);
     }
 }

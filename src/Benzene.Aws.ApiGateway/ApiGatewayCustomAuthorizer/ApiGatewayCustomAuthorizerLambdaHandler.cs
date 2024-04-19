@@ -4,7 +4,6 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Results;
 
 namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 

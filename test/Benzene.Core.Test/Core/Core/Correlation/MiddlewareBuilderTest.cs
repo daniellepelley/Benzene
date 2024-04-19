@@ -21,8 +21,8 @@ public class CorrelationMiddlewareTest
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        var items = middlewarePipelineBuilder
-            .UseCorrelationId("foo")
+        var items = ((MiddlewarePipelineBuilder<DirectMessageContext>)middlewarePipelineBuilder
+            .UseCorrelationId("foo"))
             .GetItems();
 
         Assert.Single(items);
@@ -31,7 +31,7 @@ public class CorrelationMiddlewareTest
         using var serviceResolver = factory.CreateScope();
 
         var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
-        await middlewarePipelineBuilder.AsPipeline().HandleAsync(context, serviceResolver);
+        await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         var correlationId = serviceResolver.GetService<ICorrelationId>();
 
@@ -48,8 +48,8 @@ public class CorrelationMiddlewareTest
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        var items = middlewarePipelineBuilder
-            .UseCorrelationId("foo")
+        var items = ((MiddlewarePipelineBuilder<DirectMessageContext>)middlewarePipelineBuilder
+            .UseCorrelationId("foo"))
             .GetItems();
 
         Assert.Single(items);
@@ -64,7 +64,7 @@ public class CorrelationMiddlewareTest
                 {"foo", correlationId }
             }
         });
-        await middlewarePipelineBuilder.AsPipeline().HandleAsync(context, serviceResolver);
+        await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         Assert.Equal(correlationId, serviceResolver.GetService<ICorrelationId>().Get());
     }

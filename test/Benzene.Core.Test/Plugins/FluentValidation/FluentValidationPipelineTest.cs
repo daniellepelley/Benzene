@@ -28,7 +28,7 @@ public class FluentValidationPipelineTest
             .UseProcessResponse()
             .UseMessageRouter(x => x.UseFluentValidation());
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {

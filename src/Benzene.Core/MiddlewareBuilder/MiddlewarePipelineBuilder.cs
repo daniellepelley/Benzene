@@ -4,6 +4,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Core.DI;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Core.MiddlewareBuilder;
 
@@ -18,9 +19,10 @@ public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TC
         _benzeneServiceContainer.AddBenzene();
     }
 
-    public void Add(Func<IServiceResolver, IMiddleware<TContext>> func)
+    public IMiddlewarePipelineBuilder<TContext> Use(Func<IServiceResolver, IMiddleware<TContext>> func)
     {
         _items.Add(func);
+        return this;
     }
 
     public void Register(Action<IBenzeneServiceContainer> action)
@@ -33,5 +35,10 @@ public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TC
     public IMiddlewarePipelineBuilder<TNewContext> Create<TNewContext>()
     {
         return new MiddlewarePipelineBuilder<TNewContext>(_benzeneServiceContainer);
+    }
+
+    public IMiddlewarePipeline<TContext> Build()
+    {
+        return new MiddlewarePipeline<TContext>(GetItems());
     }
 }

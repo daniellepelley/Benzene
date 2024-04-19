@@ -35,7 +35,7 @@ public class EntryPointMiddleApplicationBuilder<TEvent, TContext, TResult>
         _appAction(app);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
-        return new EntryPointMiddlewareApplication<TEvent, TResult>(func(app.AsPipeline()), serviceResolverFactory);
+        return new EntryPointMiddlewareApplication<TEvent, TResult>(func(app.Build()), serviceResolverFactory);
     }
 }
 
@@ -66,7 +66,7 @@ public class EntryPointMiddleApplicationBuilder<TEvent, TContext>
         _appAction(app);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
-        return new EntryPointMiddlewareApplication<TEvent>(func(app.AsPipeline()), serviceResolverFactory);
+        return new EntryPointMiddlewareApplication<TEvent>(func(app.Build()), serviceResolverFactory);
     }
 }
 

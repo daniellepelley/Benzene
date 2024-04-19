@@ -67,7 +67,7 @@ public class HealthCheckTests
         
         var context = DirectMessageContext.CreateInstance(new DirectMessageRequest { Topic = "healthcheck" });
 
-        await middlewarePipelineBuilder.AsPipeline().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
+        await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
         Assert.NotNull(context.DirectMessageResponse);
 
@@ -95,7 +95,7 @@ public class HealthCheckTests
         
         var context = DirectMessageContext.CreateInstance(new DirectMessageRequest { Topic = "healthcheck" });
 
-        await middlewarePipelineBuilder.AsPipeline().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
+        await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
         Assert.NotNull(context.DirectMessageResponse);
 

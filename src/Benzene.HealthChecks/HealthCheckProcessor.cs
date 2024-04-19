@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.Results;
-using Benzene.Core.MessageHandling;
+﻿using Benzene.Core.MessageHandling;
 using Benzene.Core.Results;
 using Benzene.HealthChecks.Core;
 using Benzene.Results;

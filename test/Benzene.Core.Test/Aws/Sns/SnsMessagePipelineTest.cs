@@ -83,7 +83,7 @@ public class SnsMessagePipelineTest
             })
             .UseMessageRouter();
 
-        var aws = new SnsApplication(pipeline.AsPipeline());
+        var aws = new SnsApplication(pipeline.Build());
 
         var request = CreateRequest();
 
@@ -104,7 +104,7 @@ public class SnsMessagePipelineTest
             return next();
         });
 
-        var aws = new SnsApplication(pipeline.AsPipeline());
+        var aws = new SnsApplication(pipeline.Build());
 
         var request = new SNSEvent
         {
@@ -157,7 +157,7 @@ public class SnsMessagePipelineTest
             }
         };
 
-        await app.AsPipeline().HandleAsync(AwsEventStreamContextBuilder.Build(request), new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
 
         Assert.Equal(Defaults.Message, snsRecordContext.SnsRecord.Sns.Message);
     }

@@ -33,6 +33,6 @@ public class InlineSelfHostedStartUp
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
-        return new SelfHostMiddlewareApplication(app.AsPipeline(), serviceResolverFactory);
+        return new SelfHostMiddlewareApplication(app.Build(), serviceResolverFactory);
     }
 }

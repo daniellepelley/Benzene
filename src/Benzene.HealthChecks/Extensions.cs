@@ -2,7 +2,6 @@
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.HealthChecks;

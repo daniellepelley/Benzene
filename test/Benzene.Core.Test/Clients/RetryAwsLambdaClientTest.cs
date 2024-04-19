@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Clients;
-using Benzene.Elements.Core.Results;
 using Benzene.Results;
 using Benzene.Test.Clients.Samples;
 using Moq;

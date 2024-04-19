@@ -7,7 +7,6 @@ using Benzene.Core.DI;
 using Benzene.Core.DirectMessage;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
-using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Response;
@@ -44,7 +43,7 @@ public class DirectMessagePipelineTest
         var pipeline = PipelineMother.BasicDirectMessagePipeline(new MicrosoftBenzeneServiceContainer(services));
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = RequestMother.CreateExampleEvent().AsDirectMessage();
 
@@ -75,7 +74,7 @@ public class DirectMessagePipelineTest
             .UseMessageRouter();
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = RequestMother
             .CreateExampleEvent()
@@ -113,7 +112,7 @@ public class DirectMessagePipelineTest
             .UseProcessResponse()
             .UseMessageRouter();
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {
@@ -152,7 +151,7 @@ public class DirectMessagePipelineTest
             return next();
         });
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = RequestMother.CreateExampleEvent().AsDirectMessage();
 
@@ -182,7 +181,7 @@ public class DirectMessagePipelineTest
             return next();
         });
 
-        var aws = new MiddlewareMultiApplication<DirectMessageRequest, DirectMessageContext>("foo", pipeline.AsPipeline(), x => new[]
+        var aws = new MiddlewareMultiApplication<DirectMessageRequest, DirectMessageContext>("foo", pipeline.Build(), x => new[]
         {
             DirectMessageContext.CreateInstance(x)
         });
@@ -217,7 +216,7 @@ public class DirectMessagePipelineTest
             return next();
         }));
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {

@@ -1,0 +1,39 @@
+name: Deploy Asp Function Example
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+defaults:
+  run:
+    working-directory: ./Examples/Asp/Benzene.Example.Asp
+jobs:
+  build:
+    environment: test
+    runs-on: ubuntu-latest
+    env: 
+      working-directory: ./Examples/Asp/Benzene.Example.Asp
+
+    steps:
+    - name: Checkout code  
+      uses: actions/checkout@v2
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+        
+    - name: Build
+      run: dotnet build Benzene.Example.Asp.csproj --configuration Release
+    
+    - name: Publish
+      run: dotnet publish --no-restore Benzene.Example.Asp.csproj --configuration Release -o ./myApp
+    
+    - name: 'Run Azure Functions action'
+      uses: Azure/functions-action@v1
+      with:
+        app-name: benzene-example
+        package: ./Examples/Asp/Benzene.Example.Asp/myApp
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }} 

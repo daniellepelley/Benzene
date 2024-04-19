@@ -64,7 +64,7 @@ public class SqsConsumerMessagePipelineTest
     //     pipeline
     //         .UseMessageRouter();
     //
-    //     var application = new SqsConsumerApplication(pipeline.AsPipeline());
+    //     var application = new SqsConsumerApplication(pipeline.Build());
     //
     //     var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
     //     {
@@ -144,7 +144,7 @@ public class SqsConsumerMessagePipelineTest
         pipeline
             .UseMessageRouter();
 
-        var application = new SqsConsumerApplication(pipeline.AsPipeline());
+        var application = new SqsConsumerApplication(pipeline.Build());
 
         var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
         {

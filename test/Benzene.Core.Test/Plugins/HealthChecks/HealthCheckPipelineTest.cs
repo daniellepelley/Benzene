@@ -4,13 +4,11 @@ using Benzene.Core.DI;
 using Benzene.Core.DirectMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Response;
-using Benzene.Core.Results;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
-using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
@@ -45,7 +43,7 @@ public class HealthCheckPipelineTest
             .UseHealthCheck(Defaults.HealthCheckTopic, x => x.AddHealthCheck(mockHealthCheck.Object))
             .UseMessageRouter();
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {
@@ -95,7 +93,7 @@ public class HealthCheckPipelineTest
             )
             .UseMessageRouter();
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = new DirectMessageRequest
         {

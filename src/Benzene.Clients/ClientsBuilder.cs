@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 
 namespace Benzene.Clients;
 

@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Middleware;
 

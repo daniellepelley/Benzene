@@ -22,7 +22,7 @@ public abstract class SelfHostedStartUp : IStartUp<IServiceCollection, IMiddlewa
 
         // ReSharper disable once VirtualMemberCallInConstructor
         Configure(app, configuration);
-        var pipeline = app.AsPipeline();
+        var pipeline = app.Build();
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 

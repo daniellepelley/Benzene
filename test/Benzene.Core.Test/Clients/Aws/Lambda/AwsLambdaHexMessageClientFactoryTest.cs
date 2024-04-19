@@ -2,7 +2,6 @@
 using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Test.Examples;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 

@@ -5,7 +5,6 @@ using Benzene.CodeGen.Core;
 using Benzene.Schema.OpenApi;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 using Xunit;
 
 namespace Benzene.Test.Autogen.CodeGen.Core;

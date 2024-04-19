@@ -4,7 +4,6 @@ using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Core.DI;
 using Benzene.Core.Info;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Serialization;
 
 namespace Benzene.Azure.Core.Kafka;
@@ -28,10 +27,9 @@ public static class DependencyInjectionExtensions
         app.Register(x => x.AddAzureKafka());
         var pipeline = app.Create<KafkaContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new KafkaApplication(pipeline.AsPipeline(), serviceResolverFactory));
+        app.Add(serviceResolverFactory => new KafkaApplication(pipeline.Build(), serviceResolverFactory));
         return app;
     }
-
 }
 
 

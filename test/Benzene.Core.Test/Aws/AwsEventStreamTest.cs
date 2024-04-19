@@ -31,7 +31,7 @@ public class AwsEventStreamTest
             });
         var awsEventStreamContext = new AwsEventStreamContext(StringToStream(message), Mock.Of<ILambdaContext>());
 
-        await aws.AsPipeline().HandleAsync(awsEventStreamContext, ServiceResolverMother.CreateServiceResolver());
+        await aws.Build().HandleAsync(awsEventStreamContext, ServiceResolverMother.CreateServiceResolver());
 
         var response = StreamToString(awsEventStreamContext.Response);
 

@@ -116,7 +116,7 @@ public class SqsMessagePipelineTest
             })
             .UseMessageRouter();
 
-        var aws = new SqsApplication(pipeline.AsPipeline());
+        var aws = new SqsApplication(pipeline.Build());
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqs();
 
@@ -138,7 +138,7 @@ public class SqsMessagePipelineTest
             return next();
         });
 
-        var aws = new SqsApplication(pipeline.AsPipeline());
+        var aws = new SqsApplication(pipeline.Build());
 
         var request = MessageBuilder.Create("some-topic", Defaults.MessageAsObject).AsSqs();
 
@@ -164,7 +164,7 @@ public class SqsMessagePipelineTest
 
         var request = MessageBuilder.Create(null, Defaults.MessageAsObject).AsSqs();
 
-        await app.AsPipeline().HandleAsync(AwsEventStreamContextBuilder.Build(request), new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
 
         Assert.Equal(Defaults.Message, sqsMessageContext.SqsMessage.Body);
     }
@@ -217,7 +217,7 @@ public class SqsMessagePipelineTest
         pipeline
             .UseMessageRouter();
 
-        var aws = new SqsApplication(pipeline.AsPipeline());
+        var aws = new SqsApplication(pipeline.Build());
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqs(5);
 

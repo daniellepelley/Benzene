@@ -1,7 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 
 namespace Benzene.Aws.Sqs;
 
@@ -12,7 +11,7 @@ public static class Extensions
         app.Register(x => x.AddSqs());
         var middlewarePipelineBuilder = app.Create<SqsMessageContext>();
         action(middlewarePipelineBuilder);
-        var pipeline = middlewarePipelineBuilder.AsPipeline();
+        var pipeline = middlewarePipelineBuilder.Build();
         return app.Use(resolver => new SqsLambdaHandler(new SqsApplication(pipeline), resolver));
     }
 }

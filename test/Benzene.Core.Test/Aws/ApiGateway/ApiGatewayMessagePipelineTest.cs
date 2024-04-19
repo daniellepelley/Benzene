@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.Core;
 using Benzene.Abstractions.Request;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
@@ -104,7 +103,7 @@ public class ApiGatewayMessagePipelineTest
 
         var request = CreateRequest();
 
-        await app.AsPipeline().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
 
         Assert.Equal(Defaults.Message, apiGatewayContext.ApiGatewayProxyResponse.Body);
         Assert.Equal(200, apiGatewayContext.ApiGatewayProxyResponse.StatusCode);

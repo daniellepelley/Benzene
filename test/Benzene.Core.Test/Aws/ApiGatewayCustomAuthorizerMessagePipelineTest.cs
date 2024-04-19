@@ -39,7 +39,7 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
             return next();
         });
 
-        var aws = new ApiGatewayCustomAuthorizerApplication(pipeline.AsPipeline());
+        var aws = new ApiGatewayCustomAuthorizerApplication(pipeline.Build());
 
         var request = CreateRequest();
 
@@ -73,7 +73,7 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
 
         var request = CreateRequest();
 
-        await app.AsPipeline().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
 
         Assert.Equal("some-version", apiGatewayCustomAuthorizerContext.ApiGatewayCustomAuthorizerResponse.PolicyDocument.Version);
         Assert.Equal("some-id", apiGatewayCustomAuthorizerContext.ApiGatewayCustomAuthorizerResponse.PrincipalID);

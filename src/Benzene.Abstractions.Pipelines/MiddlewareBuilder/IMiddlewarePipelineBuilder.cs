@@ -5,7 +5,7 @@ namespace Benzene.Abstractions.MiddlewareBuilder;
 
 public interface IMiddlewarePipelineBuilder<TContext> : IRegisterDependency
 {
-    void Add(Func<IServiceResolver, IMiddleware<TContext>> func);
-    Func<IServiceResolver, IMiddleware<TContext>>[] GetItems();
+    IMiddlewarePipelineBuilder<TContext> Use(Func<IServiceResolver, IMiddleware<TContext>> func);
     IMiddlewarePipelineBuilder<TNewContext> Create<TNewContext>();
+    IMiddlewarePipeline<TContext> Build();
 }

@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.MessageHandling;
-using Benzene.Core.Results;
 using Benzene.Results;
 
 namespace Benzene.Test.Examples;

@@ -37,6 +37,6 @@ public class InlineStartUp<TContext>
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
-        return builder(app.AsPipeline(), serviceResolverFactory);
+        return builder(app.Build(), serviceResolverFactory);
     }
 }

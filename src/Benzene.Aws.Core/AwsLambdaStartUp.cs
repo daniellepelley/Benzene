@@ -26,7 +26,7 @@ public abstract class AwsLambdaStartUp : IStartUp<IServiceCollection, IMiddlewar
         
         // ReSharper disable once VirtualMemberCallInConstructor
         Configure(app, configuration);
-        var pipeline = app.AsPipeline();
+        var pipeline = app.Build();
         
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
         _awsLambdaEntryPoint = new AwsLambdaEntryPoint(pipeline, serviceResolverFactory);

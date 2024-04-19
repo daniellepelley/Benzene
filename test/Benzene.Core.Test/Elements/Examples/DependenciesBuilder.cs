@@ -1,9 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
-using Amazon;
 // using Amazon.Extensions.NETCore.Setup;
-using Amazon.SQS;
-using FluentValidation;
 using Benzene.Core.DI;
 using Benzene.Elements.Core.Logging;
 using Benzene.Http;

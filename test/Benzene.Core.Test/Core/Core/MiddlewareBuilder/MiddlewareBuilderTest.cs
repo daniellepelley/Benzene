@@ -18,12 +18,12 @@ public class MiddlewareBuilderTest
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        var items = middlewarePipelineBuilder
+        var items = ((MiddlewarePipelineBuilder<DirectMessageContext>)middlewarePipelineBuilder
                 .OnResponse("Foo", x =>
                 {
                     x.DirectMessageResponse = new DirectMessageResponse();
                     x.DirectMessageResponse.Message = "foo";
-                })
+                }))
             .GetItems();
 
         Assert.Single(items);
@@ -32,7 +32,7 @@ public class MiddlewareBuilderTest
         using var serviceResolver = factory.CreateScope();
 
         var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
-        await middlewarePipelineBuilder.AsPipeline().HandleAsync(context, serviceResolver);
+        await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         Assert.Equal("foo", context.DirectMessageResponse.Message);
     }
@@ -45,7 +45,7 @@ public class MiddlewareBuilderTest
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        var items = middlewarePipelineBuilder
+        var items = ((MiddlewarePipelineBuilder<DirectMessageContext>)middlewarePipelineBuilder
                 .Use(async (_, next) => await next())
                 .Use(string.Empty, async (_, next) => await next())
                 .Use(async (_, _, next) => await next())
@@ -60,7 +60,7 @@ public class MiddlewareBuilderTest
                 .OnResponse(null, (_,context) => {
                     context.DirectMessageResponse = new DirectMessageResponse();
                     context.DirectMessageResponse.Message = "foo";
-                })
+                }))
             .GetItems();
 
         Assert.Equal(12, items.Length);
@@ -74,7 +74,7 @@ public class MiddlewareBuilderTest
         }
         
         var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
-        await middlewarePipelineBuilder.AsPipeline().HandleAsync(context, serviceResolver);
+        await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         Assert.Equal("foo", context.DirectMessageResponse.Message);
     }

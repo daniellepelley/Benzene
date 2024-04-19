@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Amazon.Lambda.Core;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;

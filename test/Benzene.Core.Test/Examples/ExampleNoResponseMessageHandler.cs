@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandling;
-using Benzene.Core.Results;
 using Benzene.Http;
 using Benzene.Results;
 

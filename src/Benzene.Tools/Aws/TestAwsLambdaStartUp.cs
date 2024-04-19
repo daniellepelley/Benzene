@@ -56,7 +56,7 @@ public class TestAwsLambdaStartUp<TStartUp> where TStartUp : IStartUp<IServiceCo
         startup.Configure(app, configuration);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
-        return new AwsLambdaEntryPoint(app.AsPipeline(), serviceResolverFactory);
+        return new AwsLambdaEntryPoint(app.Build(), serviceResolverFactory);
     }
     
     private static void SetEnvironmentVariables(IDictionary<string, string> dictionary)

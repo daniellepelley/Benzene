@@ -1,7 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 
 namespace Benzene.Aws.Sns;
 
@@ -12,7 +11,7 @@ public static class Extensions
         app.Register(x => x.AddSns());
         var middlewarePipelineBuilder = app.Create<SnsRecordContext>();
         action(middlewarePipelineBuilder);
-        var pipeline = middlewarePipelineBuilder.AsPipeline();
+        var pipeline = middlewarePipelineBuilder.Build();
         return app.Use(resolver => new SnsLambdaHandler(new SnsApplication(pipeline), resolver));
     }
 }

@@ -1,11 +1,9 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.Core;
 using Benzene.Aws.ApiGateway;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;
 using Benzene.Test.Examples;
 using Benzene.Tools;
-using Moq;
 using Xunit;
 
 namespace Benzene.Test.Aws.ApiGateway;

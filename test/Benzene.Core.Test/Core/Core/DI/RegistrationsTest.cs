@@ -1,13 +1,11 @@
 ﻿using System;
 using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.Core;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Validation;
 using Benzene.Aws.ApiGateway;
 using Benzene.Core.DI;
 using Benzene.Core.DirectMessage;
 using Benzene.Core.MessageHandling;
-using Moq;
 using Xunit;
 
 namespace Benzene.Test.Core.Core.DI;

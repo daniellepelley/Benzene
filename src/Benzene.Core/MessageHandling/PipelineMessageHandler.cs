@@ -2,7 +2,6 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 using Benzene.Core.Message;
 using Benzene.Results;
 

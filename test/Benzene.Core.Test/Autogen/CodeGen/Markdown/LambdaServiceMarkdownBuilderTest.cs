@@ -5,9 +5,7 @@ using System.Reflection;
 using Benzene.CodeGen.Markdown;
 using Benzene.FluentValidation.Schema;
 using Benzene.Schema.OpenApi;
-using Benzene.Test.Autogen.CodeGen.Client;
 using Benzene.Test.Autogen.CodeGen.Helpers;
-using Benzene.Test.Autogen.CodeGen.Markdown.Validation;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Xunit;
 

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Amazon.Lambda.Serialization.SystemTextJson;
+﻿using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.Middleware;

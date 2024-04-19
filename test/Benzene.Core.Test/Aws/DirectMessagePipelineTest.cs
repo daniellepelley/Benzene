@@ -30,7 +30,7 @@ public class DirectMessagePipelineTest
             return next();
         });
 
-        var aws = new DirectMessageApplication(pipeline.AsPipeline());
+        var aws = new DirectMessageApplication(pipeline.Build());
 
         var request = RequestMother.CreateExampleEvent().AsDirectMessage();
 
@@ -63,7 +63,7 @@ public class DirectMessagePipelineTest
 
         var request = RequestMother.CreateExampleEvent().AsDirectMessage();
 
-        await app.AsPipeline().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
 
         Assert.Equal(Defaults.ResponseMessage, DirectMessageContext.DirectMessageResponse.Message);
         Assert.Equal("200", DirectMessageContext.DirectMessageResponse.StatusCode);

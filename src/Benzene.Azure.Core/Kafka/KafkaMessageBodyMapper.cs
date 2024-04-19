@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Benzene.Abstractions.Mappers;
+﻿using Benzene.Abstractions.Mappers;
 
 namespace Benzene.Azure.Core.Kafka;
 

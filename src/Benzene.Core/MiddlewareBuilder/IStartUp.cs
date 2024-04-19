@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace Benzene.Core.MiddlewareBuilder;
 

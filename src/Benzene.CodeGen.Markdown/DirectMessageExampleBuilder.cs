@@ -1,7 +1,4 @@
 ﻿using Benzene.CodeGen.Core;
-using Benzene.CodeGen.Core.Writers;
-using Benzene.Core.DirectMessage;
-using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 
 namespace Benzene.CodeGen.Markdown;

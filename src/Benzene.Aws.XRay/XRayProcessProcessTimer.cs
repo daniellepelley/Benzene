@@ -1,5 +1,4 @@
-﻿using System;
-using Amazon.XRay.Recorder.Core;
+﻿using Amazon.XRay.Recorder.Core;
 using Benzene.Diagnostics.Timers;
 
 namespace Benzene.Aws.XRay;

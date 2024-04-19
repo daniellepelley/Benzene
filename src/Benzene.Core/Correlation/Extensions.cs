@@ -20,7 +20,7 @@ namespace Benzene.Core.Correlation
         {
             app.Register(x => x.AddCorrelationId());
 
-            app.Add(resolver => new FuncWrapperMiddleware<TContext>("CorrelationId", async (context, next) =>
+            app.Use(resolver => new FuncWrapperMiddleware<TContext>("CorrelationId", async (context, next) =>
             {
                 var setCorrelationId = resolver.GetService<ICorrelationId>();
                 var messageMapper = resolver.GetService<IMessageMapper<TContext>>();

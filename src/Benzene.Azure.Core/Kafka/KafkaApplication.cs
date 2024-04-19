@@ -1,7 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Kafka;
 
 namespace Benzene.Azure.Core.Kafka;

@@ -32,7 +32,7 @@ public class LambdaEntryPointTest
         mockServiceResolverFactory.Setup(x => x.CreateScope())
             .Returns(ServiceResolverMother.CreateServiceResolver());
 
-        var lambdaEntryPoint = new AwsLambdaEntryPoint(app.AsPipeline(), mockServiceResolverFactory.Object);
+        var lambdaEntryPoint = new AwsLambdaEntryPoint(app.Build(), mockServiceResolverFactory.Object);
 
         var request = new DirectMessageRequest();
 

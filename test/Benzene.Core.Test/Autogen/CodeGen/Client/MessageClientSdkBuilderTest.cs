@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using Benzene.CodeGen.Client;
-using Benzene.CodeGen.Core;
 using Benzene.Test.Autogen.CodeGen.Helpers;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Xunit;
