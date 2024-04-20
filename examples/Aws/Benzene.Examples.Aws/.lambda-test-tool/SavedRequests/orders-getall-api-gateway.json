@@ -1,0 +1,24 @@
+{
+    "body": "{}",
+    "path": "/orders",
+    "httpMethod": "GET",
+    "queryStringParameters": {
+        "foo": "bar"
+    },
+    "multiValueQueryStringParameters": {
+        "foo": [
+            "bar"
+        ]
+    },
+    "pathParameters": {
+        "proxy": "/path/to/resource"
+    },
+    "stageVariables": {
+        "baz": "qux"
+    },
+    "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, sdch",
+        "Cache-Control": "max-age=0"
+    }
+}

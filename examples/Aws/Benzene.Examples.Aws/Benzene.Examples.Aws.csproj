@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <RootNamespace>Benzene.Examples.Aws</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="6.5.0" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.4" />
+    <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.101.29" />
+    <PackageReference Include="Benzene.Autofac" Version="0.0.2.1-alpha" />
+    <PackageReference Include="Benzene.Aws.Core" Version="0.0.2.1-alpha" />
+    <PackageReference Include="Benzene.FluentValidation" Version="0.0.2.3-alpha" />
+    <PackageReference Include="Benzene.Microsoft.Logging" Version="0.0.2.1-alpha" />
+    <PackageReference Include="Benzene.Xml" Version="0.0.2.1-alpha" />
+    <PackageReference Include="coverlet.collector" Version="3.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.msbuild" Version="3.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="AWSSDK.RDS" Version="3.7.114.22" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.5.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
+    <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Serilog">
+      <HintPath>..\..\..\..\..\.nuget\packages\serilog\2.11.0\lib\net5.0\Serilog.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ProjectExtensions><VisualStudio><UserProperties aws-lambda-tools-defaults_1json__JsonSchema="https://ffizer.github.io/ffizer/ffizer.schema.json" /></VisualStudio></ProjectExtensions>
+</Project>

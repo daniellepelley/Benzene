@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="config.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Benzene.AspNet.Core" Version="0.0.2.1-alpha" />
+    <PackageReference Include="Benzene.FluentValidation" Version="0.0.2.3-alpha" />
+    <PackageReference Include="Benzene.Microsoft.Logging" Version="0.0.2.1-alpha" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
+    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
+  </ItemGroup>
+
+
+</Project>

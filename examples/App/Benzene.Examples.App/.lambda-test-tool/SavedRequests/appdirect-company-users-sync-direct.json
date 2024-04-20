@@ -1,0 +1,4 @@
+{
+    "topic": "appdirect:company:users:sync",
+    "message": "{\"companyId\":\"77231b90-cc58-439f-958c-fd30774cfd4d\"}"
+}

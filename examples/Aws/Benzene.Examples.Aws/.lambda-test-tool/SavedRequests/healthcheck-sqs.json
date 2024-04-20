@@ -1,0 +1,52 @@
+{
+  "Records": [
+    {
+      "MessageId": null,
+      "ReceiptHandle": null,
+      "Body": "{}",
+      "Md5OfBody": null,
+      "Md5OfMessageAttributes": null,
+      "EventSourceArn": null,
+      "EventSource": "aws:sqs",
+      "AwsRegion": null,
+      "Attributes": null,
+      "MessageAttributes": {
+        "topic": {
+          "StringValue": "marketplace:healthcheck",
+          "BinaryValue": null,
+          "StringListValues": null,
+          "BinaryListValues": null,
+          "DataType": "String"
+        },
+        "marketplaceId": {
+          "StringValue": null,
+          "BinaryValue": null,
+          "StringListValues": null,
+          "BinaryListValues": null,
+          "DataType": "String"
+        },
+        "sender": {
+          "StringValue": "2979186b-341c-4e74-bfc3-2676dd74da42",
+          "BinaryValue": null,
+          "StringListValues": null,
+          "BinaryListValues": null,
+          "DataType": "String"
+        },
+        "correlationId": {
+          "StringValue": "46a11140-8dfb-4828-a3f8-8f5150eba6a7",
+          "BinaryValue": null,
+          "StringListValues": null,
+          "BinaryListValues": null,
+          "DataType": "String"
+        },
+        "trace": {
+          "StringValue": "[{  \"sent\": \"2021-06-20T15:38:27.966443Z\",    \"received\": \"0001-01-01T00:00:00\",    \"sender\": \"platform-eventbus-example-dotnet-svc\",    \"receiver\": null,    \"channel\": \"SQS\",    \"elapse\": \"n/a\"}]",
+          "BinaryValue": null,
+          "StringListValues": null,
+          "BinaryListValues": null,
+          "DataType": null
+        }
+      }
+    }
+  ]
+}

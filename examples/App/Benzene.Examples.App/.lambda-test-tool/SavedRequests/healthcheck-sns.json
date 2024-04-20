@@ -1,0 +1,43 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": null,
+      "EventVersion": null,
+      "Sns": {
+        "Message": "{}",
+        "MessageAttributes": {
+          "topic": {
+            "Type": "String",
+            "Value": "marketplace:healthcheck"
+          },
+          "marketplaceId": {
+            "Type": "String",
+            "Value": null
+          },
+          "sender": {
+            "Type": "String",
+            "Value": "bdaa5cac-2490-4fe8-b01d-287c14a7e524"
+          },
+          "correlationId": {
+            "Type": "String",
+            "Value": "092516a2-7aea-4ddd-90f5-c812067bc187"
+          },
+          "trace": {
+            "Type": null,
+            "Value": "[{  \"sent\": \"2021-06-20T15:38:27.966443Z\",    \"received\": \"0001-01-01T00:00:00\",    \"sender\": \"platform-eventbus-example-dotnet-svc\",    \"receiver\": null,    \"channel\": \"SQS\",    \"elapse\": \"n/a\"}]"
+          }
+        },
+        "MessageId": null,
+        "Signature": null,
+        "SignatureVersion": null,
+        "SigningCertUrl": null,
+        "Subject": null,
+        "Timestamp": "0001-01-01T00:00:00",
+        "TopicArn": null,
+        "Type": null,
+        "UnsubscribeUrl": null
+      }
+    }
+  ]
+}

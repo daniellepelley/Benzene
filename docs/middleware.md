@@ -1,4 +1,6 @@
-Middleware in Hex is a software component that is assembled into an application pipeline to handle requests and responses. Each piece of middleware in the pipeline has a specific task and is responsible for invoking the next piece of middleware in the pipeline.
+# Middleware
+
+Middleware in Benzene is a software component that is assembled into an application pipeline to handle requests and responses. Each piece of middleware in the pipeline has a specific task and is responsible for invoking the next piece of middleware in the pipeline.
 
 Middleware components can perform a variety of functions, such as:
 
@@ -7,9 +9,9 @@ Middleware components can perform a variety of functions, such as:
 - Implementing caching.
 - Authentication and authorization.
 
-In Hex, the order in which middleware components are added to the pipeline is significant. The order determines the order in which the middleware components are invoked on requests, and the reverse order for the response. Therefore, the configuration of the middleware pipeline is an important aspect of application behavior and performance.
+In Benzene, the order in which middleware components are added to the pipeline is significant. The order determines the order in which the middleware components are invoked on requests, and the reverse order for the response. Therefore, the configuration of the middleware pipeline is an important aspect of application behavior and performance.
 
-Here is a simple example of how middleware is configured in the LambdaEntryPoint class of a Hex project running in an AWS Lambda.
+Here is a simple example of how middleware is configured in the LambdaEntryPoint class of a Benzene project running in an AWS Lambda.
 
 
 ```csharp

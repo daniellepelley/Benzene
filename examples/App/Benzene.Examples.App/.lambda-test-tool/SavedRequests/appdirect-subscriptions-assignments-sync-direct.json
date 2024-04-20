@@ -1,0 +1,4 @@
+{
+    "topic": "appdirect:subscription:assignments:sync",
+    "message": "{\"subscriptionId\":\"370eaac1-b15b-4268-914d-996224dd8d08\"}"
+}

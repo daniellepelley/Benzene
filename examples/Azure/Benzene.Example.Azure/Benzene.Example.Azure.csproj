@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Benzene.Azure.Core" Version="0.0.2.8-alpha" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <None Remove="output\FluentValidation.dll" />
+    <None Remove="output\FluentValidation.DependencyInjectionExtensions.dll" />
+    <None Remove="output\CoverletSourceRootsMapping" />
+    <None Remove="output\Benzene.Http.dll" />
+    <None Remove="output\Benzene.Http.deps.json" />
+    <None Remove="output\Benzene.HealthChecks.dll" />
+    <None Remove="output\Benzene.HealthChecks.deps.json" />
+    <None Remove="output\Benzene.FluentValidation.dll" />
+    <None Remove="output\Benzene.FluentValidation.deps.json" />
+    <None Remove="output\Benzene.Examples.Aws.Data.runtimeconfig.json" />
+    <None Remove="output\Benzene.Examples.Aws.Data.dll" />
+    <None Remove="output\Benzene.Examples.Aws.Data.deps.json" />
+    <None Remove="output\Benzene.Examples.App.runtimeconfig.json" />
+    <None Remove="output\Benzene.Examples.App.dll" />
+    <None Remove="output\Benzene.Examples.App.deps.json" />
+    <None Remove="output\Benzene.Example.Azure.dll" />
+    <None Remove="output\Benzene.Example.Azure.deps.json" />
+    <None Remove="output\Benzene.Diagnostics.dll" />
+    <None Remove="output\Benzene.Diagnostics.deps.json" />
+    <None Remove="output\Benzene.Core.dll" />
+    <None Remove="output\Benzene.Core.deps.json" />
+    <None Remove="output\Benzene.Azure.Core.dll" />
+    <None Remove="output\Azure.Messaging.ServiceBus.dll" />
+    <None Remove="output\Azure.Identity.dll" />
+    <None Remove="output\Azure.Core.dll" />
+    <None Remove="output\Azure.Core.Amqp.dll" />
+    <None Remove="output\AWSSDK.RDS.dll" />
+    <None Remove="output\AWSSDK.Extensions.NETCore.Setup.dll" />
+    <None Remove="output\AWSSDK.Core.dll" />
+    <None Remove="output\AWSSDK.CloudWatchLogs.dll" />
+    <None Remove="output\AWS.Logger.AspNetCore.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="output\Function" />
+    <Folder Include="output\orders" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
+  </ItemGroup>
+</Project>

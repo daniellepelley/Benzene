@@ -1,0 +1,4 @@
+{
+    "topic": "marketplace:appdirect:bulk:sync",
+    "message": "{\"type\":\"company-users\",\"max\":\"200\"}"
+}

@@ -1,0 +1,4 @@
+{
+    "topic": "appdirect:bulk:sync",
+    "message": "{\"type\":\"products\",\"max\":\"200\"}"
+}

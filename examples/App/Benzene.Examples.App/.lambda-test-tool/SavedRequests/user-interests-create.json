@@ -1,0 +1,4 @@
+{
+ "topic":"marketplace:userinterests:create",
+ "message" : "{\"userId\":\"some-user-id\",\"tenantId\":\"f00c9c18-901a-4a9e-ba4a-88494fcf485b\",\"userInterestIds\": [1,2,3]}"
+}

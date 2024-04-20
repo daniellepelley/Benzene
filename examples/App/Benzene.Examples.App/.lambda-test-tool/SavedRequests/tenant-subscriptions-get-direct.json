@@ -1,0 +1,4 @@
+{
+    "topic": "marketplace:tenantsubscriptions:get",
+    "message": "{\"tenantId\":\"abc38217-37c5-4101-8cea-bbad5a3da511\"}"
+}

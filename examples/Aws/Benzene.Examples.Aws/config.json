@@ -1,0 +1,7 @@
+{
+  "DB_CONNECTION_STRING": "Server = localhost; port = 5432; user id = user; password = mysecretpassword; database = OrdersDB; pooling = true",
+  "AWS_ACCOUNT_ID": "111111111111",
+  "AWS_DEFAULT_REGION": "eu-west-2",
+  "AWS_SERVICE_URL": "http://localhost:4566",
+  "MY_QUEUE_URL": "http://localhost:4566/245633934812/my-queue",
+}
