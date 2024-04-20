@@ -8,7 +8,7 @@ public class RegistrationCheckTest
     [Fact]
     public void RegistrationChecksDeduplicate()
     {
-        var result = RegistrationCheck.Create(typeof(Benzene.Azure.Core.Kafka.KafkaRegistrations), typeof(Benzene.Azure.Core.Kafka.KafkaRegistrations));
+        var result = RegistrationCheck.Create(typeof(Benzene.Azure.Kafka.KafkaRegistrations), typeof(Benzene.Azure.Kafka.KafkaRegistrations));
         Assert.NotNull(result);
     }
 }

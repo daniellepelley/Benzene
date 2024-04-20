@@ -49,7 +49,10 @@
     <ProjectReference Include="..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.AspNet\Benzene.Azure.AspNet.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Core\Benzene.Azure.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.EventHub\Benzene.Azure.EventHub.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Kafka\Benzene.Azure.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Core\Benzene.Cache.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Redis\Benzene.Cache.Redis.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageVersion>0.0.1</PackageVersion>
+		<AssemblyName>Benzene.Azure.EventHub</AssemblyName>
+		<RootNamespace>Benzene.Azure.EventHub</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventHubs" Version="5.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Benzene.Azure.Core\Benzene.Azure.Core.csproj" />
+	</ItemGroup>
+
+</Project>

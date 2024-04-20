@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Benzene.Azure.AspNet;
 using Benzene.Azure.Core;
-using Benzene.Azure.Core.AspNet;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Serialization;
 using Benzene.DataAnnotations;
