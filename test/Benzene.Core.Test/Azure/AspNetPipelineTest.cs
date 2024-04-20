@@ -51,7 +51,6 @@ public class AspNetPipelineTest
 
         var request = HttpBuilder.Create("GET", "/example", Payload)
                 .WithHeader("content-type", "application/xml")
-                // .WithSerializer(new XmlSerializer())
                 .AsAspNetCoreHttpRequest();
 
         var response = await app.HandleHttpRequest(request) as ContentResult;
@@ -59,6 +58,7 @@ public class AspNetPipelineTest
         Assert.NotNull(response);
         Assert.NotNull(response.Content);
         Assert.Equal(200, response.StatusCode);
+        Assert.Equal("application/xml", response.ContentType);
     }
 
     [Fact]

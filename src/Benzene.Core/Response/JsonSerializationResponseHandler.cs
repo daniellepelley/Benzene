@@ -21,6 +21,6 @@ public class JsonSerializationResponseHandler<TContext> : ISerializationResponse
         }
 
         _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(new JsonSerializer()));
-        _benzeneResponseAdapter.SetResponseHeader(context, "content-type", "application/json");
+        _benzeneResponseAdapter.SetContentType(context, "application/json");
     }
 }

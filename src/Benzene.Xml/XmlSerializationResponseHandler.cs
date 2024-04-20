@@ -28,6 +28,6 @@ public class XmlSerializationResponseHandler<TContext> : ISerializationResponseH
         }
 
         _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(new XmlSerializer()));
-        _benzeneResponseAdapter.SetResponseHeader(context, _contentType, _applicationXml);
+        _benzeneResponseAdapter.SetContentType(context, _applicationXml);
     }
 }

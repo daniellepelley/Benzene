@@ -17,7 +17,7 @@ namespace Benzene.Test.Core.Core.Logging;
 
 public class LogContextTest
 {
-    private TestAwsLambdaHost _host;
+    private AwsLambdaBenzeneTestHost _host;
     private Mock<IBenzeneLogContext> _mockBenzeneContext;
 
     private void SetUp(Action<LogContextBuilder<DirectMessageContext>> action)

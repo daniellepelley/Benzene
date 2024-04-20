@@ -2,12 +2,13 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
 using Amazon.XRay.Recorder.Core;
+using Benzene.Abstractions;
 using Benzene.Aws.Core;
 using Newtonsoft.Json;
 
 namespace Benzene.Tools.Aws;
 
-public sealed class TestAwsLambdaHost : IDisposable
+public sealed class AwsLambdaBenzeneTestHost : IBenzeneTestHost, IDisposable
 {
     private readonly IAwsLambdaEntryPoint _awsLambdaEntryPoint;
 
@@ -35,7 +36,7 @@ public sealed class TestAwsLambdaHost : IDisposable
         return reader.ReadToEnd();
     }
 
-    public TestAwsLambdaHost(IAwsLambdaEntryPoint awsLambdaEntryPoint)
+    public AwsLambdaBenzeneTestHost(IAwsLambdaEntryPoint awsLambdaEntryPoint)
     {
         _awsLambdaEntryPoint = awsLambdaEntryPoint;
     }
@@ -66,5 +67,10 @@ public sealed class TestAwsLambdaHost : IDisposable
     public void Dispose()
     {
         _awsLambdaEntryPoint.Dispose();
+    }
+
+    public Task<TResponse> SendEventAsync<TResponse>(object awsEvent)
+    {
+        return SendEventAsync<TResponse>(awsEvent, null);
     }
 }

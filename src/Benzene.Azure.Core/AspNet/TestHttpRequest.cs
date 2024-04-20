@@ -22,7 +22,7 @@ public class TestHttpRequest : HttpRequest
     public override QueryString QueryString { get; set; }
     public override IQueryCollection Query { get; set; }
     public override string Protocol { get; set; }
-    public override IHeaderDictionary Headers => new HeaderDictionary();
+    public override IHeaderDictionary Headers { get; } = new HeaderDictionary();
     public override IRequestCookieCollection Cookies { get; set; }
     public override long? ContentLength { get; set; }
     public override string ContentType { get; set; }

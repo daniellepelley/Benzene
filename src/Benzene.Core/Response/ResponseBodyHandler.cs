@@ -20,6 +20,6 @@ public class ResponseBodyHandler<TContext> : ISyncResponseHandler<TContext> wher
     public void HandleAsync(TContext context)
     {
         _benzeneResponseAdapter.SetBody(context, _responsePayloadMapper.Map(context, _serializer));
-        _benzeneResponseAdapter.SetResponseHeader(context, Constants.ContentTypeHeader, Constants.JsonContentType);
+        _benzeneResponseAdapter.SetContentType(context, Constants.JsonContentType);
     }
 }

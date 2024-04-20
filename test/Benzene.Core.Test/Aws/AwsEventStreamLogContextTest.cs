@@ -5,6 +5,7 @@ using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Core.DirectMessage;
 using Benzene.Core.Logging;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -17,7 +18,7 @@ namespace Benzene.Test.Aws;
 
 public class AwsEventStreamLogContextTest
 {
-    private TestAwsLambdaHost _host;
+    private AwsLambdaBenzeneTestHost _host;
     private Mock<IBenzeneLogContext> _mockBenzeneContext;
 
     private void SetUp(Action<LogContextBuilder<AwsEventStreamContext>> action)

@@ -11,6 +11,11 @@ public class DirectMessageResponseAdapter : IBenzeneResponseAdapter<DirectMessag
         DictionaryUtils.Set(context.DirectMessageResponse.Headers, headerKey, headerValue);
     }
 
+    public void SetContentType(DirectMessageContext context, string contentType)
+    {
+        SetResponseHeader(context, "content-type", contentType);
+    }
+
     public void SetStatusCode(DirectMessageContext context, string statusCode)
     {
         context.EnsureResponseExists();

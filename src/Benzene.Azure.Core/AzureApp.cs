@@ -30,7 +30,7 @@ public class AzureApp : IAzureApp
     {
         foreach (var entryPointMiddleApplication in _apps)
         {
-            if (entryPointMiddleApplication is EntryPointMiddlewareApplication<TRequest> app)
+            if (entryPointMiddleApplication is IEntryPointMiddlewareApplication<TRequest> app)
             {
                 return app.HandleAsync(request);
             }

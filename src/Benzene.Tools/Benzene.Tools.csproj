@@ -16,10 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
     <ProjectReference Include="..\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
-    <ProjectReference Include="..\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
-    <ProjectReference Include="..\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
-    <ProjectReference Include="..\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
   </ItemGroup>
 </Project>

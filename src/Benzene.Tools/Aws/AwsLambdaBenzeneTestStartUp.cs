@@ -8,12 +8,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Tools.Aws;
 
-public class TestAwsLambdaStartUp<TStartUp> where TStartUp : IStartUp<IServiceCollection, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
+public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<IServiceCollection, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
 {
     private readonly List<Action<IServiceCollection>> _actions = new();
     private readonly Dictionary<string, string> _dictionary = new();
 
-    public TestAwsLambdaStartUp<TStartUp> WithConfiguration(Dictionary<string, string> dictionary)
+    public AwsLambdaBenzeneTestStartUp<TStartUp> WithConfiguration(Dictionary<string, string> dictionary)
     {
         foreach (var keyPairValue in dictionary)        
         {
@@ -22,13 +22,13 @@ public class TestAwsLambdaStartUp<TStartUp> where TStartUp : IStartUp<IServiceCo
         return this;
     }
 
-    public TestAwsLambdaStartUp<TStartUp> WithConfiguration(string key, string value)
+    public AwsLambdaBenzeneTestStartUp<TStartUp> WithConfiguration(string key, string value)
     {
         _dictionary.Add(key, value);
         return this;
     }
 
-    public TestAwsLambdaStartUp<TStartUp> WithServices(Action<IServiceCollection> action)
+    public AwsLambdaBenzeneTestStartUp<TStartUp> WithServices(Action<IServiceCollection> action)
     {
         _actions.Add(action);
         return this;

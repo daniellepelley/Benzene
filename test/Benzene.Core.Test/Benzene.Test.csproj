@@ -46,6 +46,8 @@
     <ProjectReference Include="..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Core\Benzene.Azure.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Core\Benzene.Cache.Core.csproj" />

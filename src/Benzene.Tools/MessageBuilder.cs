@@ -1,4 +1,6 @@
-﻿namespace Benzene.Tools;
+﻿using Benzene.Abstractions;
+
+namespace Benzene.Tools;
 
 public class MessageBuilder : IMessageBuilder
 {
@@ -6,7 +8,7 @@ public class MessageBuilder : IMessageBuilder
     public string Topic { get; }
     public object Message { get; }
 
-    protected MessageBuilder(string topic, object message)
+    private MessageBuilder(string topic, object message)
     {
         Message = message;
         Topic = topic;

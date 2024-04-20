@@ -1,4 +1,4 @@
-﻿namespace Benzene.Tools;
+﻿namespace Benzene.Abstractions;
 
 public interface IMessageBuilder
 {

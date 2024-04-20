@@ -21,14 +21,14 @@ public class AwsLambdaStartUpTest
 
         var request = RequestMother.CreateExampleEvent().AsDirectMessage();
         var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
-        var directMessageResponse = TestAwsLambdaHost.StreamToObject<DirectMessageResponse>(response);
+        var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<DirectMessageResponse>(response);
         Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
     }
 
     [Fact]
     public async Task LambdaEntryPoint_WithTestHosting()
     {
-        using var testLambdaHosting = new TestAwsLambdaStartUp<DemoAwsLambdaStartUp>()
+        using var testLambdaHosting = new AwsLambdaBenzeneTestStartUp<DemoAwsLambdaStartUp>()
             .WithConfiguration(new Dictionary<string, string>
             {
                 { "Key1", "Value1"},

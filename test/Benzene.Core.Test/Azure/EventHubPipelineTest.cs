@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Azure.Core;
 using Benzene.Azure.Core.EventHub;
+using Benzene.Azure.Core.Kafka;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Test.Examples;
 using Benzene.Tools;

@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using Benzene.Aws.ApiGateway;
 using Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.DI;

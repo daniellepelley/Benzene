@@ -4,7 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Client;
+using Benzene.Aws.Sqs.Consumer;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -47,6 +49,5 @@ public class SqsBenzeneMessageClientTest
 
         mockSqsClient.Verify(x => x.SendMessageAsync(
             It.Is<SendMessageRequest>(sendMessageRequest => sendMessageRequest.QueueUrl == queueUrl), It.IsAny<CancellationToken>()));
-
     }
 }

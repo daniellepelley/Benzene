@@ -11,6 +11,11 @@ public class HttpContextResponseAdapter : IBenzeneResponseAdapter<HttpContext>
         DictionaryUtils.Set(context.Response.Headers, headerKey, headerValue);
     }
 
+    public void SetContentType(HttpContext context, string contentType)
+    {
+        SetResponseHeader(context, "content-type", contentType);
+    }
+
     public void SetStatusCode(HttpContext context, string statusCode)
     {
         context.EnsureResponseExists();

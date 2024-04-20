@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Benzene.Abstractions.Logging;
 using Benzene.Core.Logging;
 using Benzene.Log4Net;
@@ -9,6 +11,7 @@ using log4net.Appender;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Benzene.Test.Logging.Log4Net;
@@ -17,10 +20,16 @@ public class Log4NetTests
 {
     private readonly MemoryAppender _appender;
 
+    private static MemoryStream StringToStream(string str)
+    {
+        var byteArray = Encoding.UTF8.GetBytes(str);
+        return new MemoryStream(byteArray);
+    }
+
     public Log4NetTests()
     {
         var config = "<log4net><root><level value=\"ALL\"/></root></log4net>";
-        var stream = Tools.Utils.StringToStream(config);
+        var stream = StringToStream(config);
 
         log4net.Config.XmlConfigurator.Configure(stream);
         _appender = new MemoryAppender { Threshold = Level.All };

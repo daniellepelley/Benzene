@@ -2,6 +2,7 @@
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.DirectMessage;
 using Benzene.Core.DI;
+using Benzene.Core.DirectMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Elements.Core.Broadcast;
 using Benzene.Http;
@@ -18,7 +19,7 @@ namespace Benzene.Test.Autogen.Schema.OpenApi;
 
 public class SpecTest
 {
-    private TestAwsLambdaHost CreateStandardHost()
+    private AwsLambdaBenzeneTestHost CreateStandardHost()
     {
         return new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
@@ -39,7 +40,7 @@ public class SpecTest
             .BuildHost();
     }
 
-    private TestAwsLambdaHost CreateIncompleteHost()
+    private AwsLambdaBenzeneTestHost CreateIncompleteHost()
     {
         return new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x

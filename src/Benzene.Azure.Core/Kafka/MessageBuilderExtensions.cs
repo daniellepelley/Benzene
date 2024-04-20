@@ -1,13 +1,13 @@
-﻿using System;
-using Azure.Messaging.EventHubs;
-using Benzene.Tools;
+﻿using Azure.Messaging.EventHubs;
+using Benzene.Abstractions;
+using Benzene.Core.DirectMessage;
 using Microsoft.Azure.WebJobs.Extensions.Kafka;
 
-namespace Benzene.Test.Azure;
+namespace Benzene.Azure.Core.Kafka;
 
 public static class MessageBuilderExtensions
 {
-    public static EventData AsEventHubDirectMessage(this MessageBuilder source)
+    public static EventData AsEventHubDirectMessage(this IMessageBuilder source)
     {
         return new EventData
         {
@@ -15,7 +15,7 @@ public static class MessageBuilderExtensions
         };
     }
 
-    public static KafkaEventData<string> AsAzureKafkaEvent(this MessageBuilder source)
+    public static KafkaEventData<string> AsAzureKafkaEvent(this IMessageBuilder source)
     {
         return new KafkaEventData<string>
         {

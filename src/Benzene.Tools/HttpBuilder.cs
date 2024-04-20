@@ -1,6 +1,8 @@
-﻿namespace Benzene.Tools;
+﻿using Benzene.Abstractions;
 
-public class HttpBuilder
+namespace Benzene.Tools;
+
+public class HttpBuilder : IHttpBuilder
 {
     public IDictionary<string, string> Headers { get; private set; }
     public string Method { get; }

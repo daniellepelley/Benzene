@@ -102,6 +102,6 @@ public class KafkaMessagePipelineTest
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsAwsKafkaEvent();
         await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
 
-        Assert.Equal(Defaults.Message, TestAwsLambdaHost.StreamToString(kafkaContext.KafkaEvent.Records.First().Value.First().Value));
+        Assert.Equal(Defaults.Message, AwsLambdaBenzeneTestHost.StreamToString(kafkaContext.KafkaEvent.Records.First().Value.First().Value));
     }
 }

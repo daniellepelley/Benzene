@@ -1,5 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.Response;
+using Benzene.Core;
 using Benzene.Core.Helper;
 
 namespace Benzene.Aws.ApiGateway;
@@ -10,6 +11,11 @@ public class ApiGatewayResponseAdapter : IBenzeneResponseAdapter<ApiGatewayConte
     {
         context.EnsureResponseExists();
         DictionaryUtils.Set(context.ApiGatewayProxyResponse.Headers, headerKey, headerValue);
+    }
+
+    public void SetContentType(ApiGatewayContext context, string contentType)
+    {
+        SetResponseHeader(context, Constants.ContentTypeHeader, contentType);
     }
 
     public void SetStatusCode(ApiGatewayContext context, string statusCode)
