@@ -18,6 +18,6 @@ public class AutofacServiceResolverFactory : IServiceResolverFactory
 
     public IServiceResolver CreateScope()
     {
-        return new AutofacServiceResolverAdapter(_container.BeginLifetimeScope());
+        return new AutofacServiceResolverAdapter(_container.BeginLifetimeScope(), this);
     }
 }

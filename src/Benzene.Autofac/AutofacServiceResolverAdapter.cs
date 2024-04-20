@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Autofac;
 using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
@@ -9,7 +10,14 @@ namespace Benzene.Autofac;
 public class AutofacServiceResolverAdapter : IServiceResolver
 {
     private IComponentContext _container;
+    private readonly IServiceResolverFactory _serviceResolverFactory;
 
+    public AutofacServiceResolverAdapter(IComponentContext container, IServiceResolverFactory serviceResolverFactory)
+        :this(container)
+    {
+        _serviceResolverFactory = serviceResolverFactory;
+    }
+    
     public AutofacServiceResolverAdapter(IComponentContext container)
     {
         _container = container;
@@ -21,6 +29,17 @@ public class AutofacServiceResolverAdapter : IServiceResolver
         {
             return this as T ?? throw new InvalidOperationException();
         }
+
+        if (typeof(T) == typeof(IServiceResolver))
+        {
+            return this as T ?? throw new InvalidOperationException();
+        }
+
+        if (typeof(T) == typeof(IServiceResolverFactory))
+        {
+            return _serviceResolverFactory as T ?? throw new InvalidOperationException();
+        }
+
         try
         {
             return _container.Resolve<T>();

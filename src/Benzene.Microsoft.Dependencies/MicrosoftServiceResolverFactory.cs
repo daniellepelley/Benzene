@@ -13,9 +13,8 @@ public class MicrosoftServiceResolverFactory : IServiceResolverFactory
     }
 
     public MicrosoftServiceResolverFactory(IServiceCollection container)
-    {
-        _serviceProvider = container.BuildServiceProvider();
-    }
+        : this(container.BuildServiceProvider())
+    { }
 
     public void Dispose()
     {
