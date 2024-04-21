@@ -1,10 +1,7 @@
 name: Deploy Asp Function Example
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 defaults:
   run:
