@@ -34,10 +34,12 @@ public class DatabaseConnectionHealthCheck<TDbContext> : IHealthCheck where TDbC
 {
     private readonly TDbContext _dbContext;
     public string Name => "DatabaseConnection";
+    
     public DatabaseConnectionHealthCheck(TDbContext dbContext)
     {
         _dbContext = dbContext;
     }
+
     public async Task<HealthCheckResult> ExecuteAsync()
     {
         var canConnect = await TryConnect(_dbContext);
@@ -46,6 +48,7 @@ public class DatabaseConnectionHealthCheck<TDbContext> : IHealthCheck where TDbC
             { "CanConnect", canConnect },
         });
     }
+
     private static async Task<bool> TryConnect(DbContext dbContext)
     {
         try
