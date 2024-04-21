@@ -4,7 +4,7 @@ Benzene is a hexaganal framework designed for services running in serverless, co
 
 ### Main Themes
 
-[Message Handlers](MessageHandlers)
+[Message Handlers](message-handlers)
 
 
 ## Getting Started
