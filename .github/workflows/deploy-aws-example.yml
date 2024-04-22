@@ -5,7 +5,7 @@ on:
 
 defaults:
   run:
-    working-directory: ./Examples/Aws/
+    working-directory: ./examples/Aws/
 jobs:
   build:
     environment: test
