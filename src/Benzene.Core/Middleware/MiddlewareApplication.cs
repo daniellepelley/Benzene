@@ -26,7 +26,7 @@ public class MiddlewareApplication<TEvent, TContext, TResult> : IMiddlewareAppli
     }
 }
 
-public class MiddlewareApplication<TEvent, TContext> : IMiddlewareApplication<TEvent> //where TContext : IHasMessageResult
+public class MiddlewareApplication<TEvent, TContext> : IMiddlewareApplication<TEvent>
 {
     private readonly Func<TEvent, TContext> _mapper;
     private readonly IMiddlewarePipeline<TContext> _pipelineBuilder;

@@ -13,7 +13,7 @@ public class LambdaServiceMarkdownBuilder : ICodeBuilder<EventServiceDocument>
     private readonly IExampleBuilder[] _exampleBuilders;
 
     public LambdaServiceMarkdownBuilder(string lambdaName, string serviceName, string headerText)
-        : this(lambdaName, serviceName, headerText, new IExampleBuilder[] { new DirectMessageExampleBuilder(new Dictionary<string, object>()) })
+        : this(lambdaName, serviceName, headerText, new IExampleBuilder[] { new BenzeneMessageExampleBuilder(new Dictionary<string, object>()) })
     { }
 
     public LambdaServiceMarkdownBuilder(string lambdaName, string serviceName, string headerText, IExampleBuilder[] exampleBuilders)

@@ -21,7 +21,7 @@ public class RetryAwsLambdaClientTest
                 x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<string>(),
                     It.IsAny<ExamplePayload>(),
                     It.IsAny<IDictionary<string, string>>()))
-            .ReturnsAsync(ClientResult.Success<ExamplePayload>());
+            .ReturnsAsync(ClientResult.Ok<ExamplePayload>());
         using var retryClient = new RetryBenzeneMessageClient(mockAwsLambdaClient.Object);
         await retryClient.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, new ExamplePayload(),  new Dictionary<string, string>());
         mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, It.IsAny<ExamplePayload>(),  new Dictionary<string, string>()), Times.Exactly(1));

@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
@@ -20,20 +20,20 @@ public class FluentValidationPipelineTest
     public async Task ValidationTest(string name, string expectedStatus)
     {
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();
-        serviceCollection.UsingBenzene(x => x.AddDirectMessage());
+        serviceCollection.UsingBenzene(x => x.AddBenzeneMessage());
 
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
             .UseProcessResponse()
             .UseMessageRouter(x => x.UseFluentValidation());
 
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.Topic,
-            Message = JsonConvert.SerializeObject(new ExampleRequestPayload
+            Body = JsonConvert.SerializeObject(new ExampleRequestPayload
             {
                 Name = name 
             })

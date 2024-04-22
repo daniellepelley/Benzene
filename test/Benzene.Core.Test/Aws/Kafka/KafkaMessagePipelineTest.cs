@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.Results;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Kafka;
+using Benzene.Aws.Kafka.TestHelpers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
@@ -16,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Benzene.Test.Aws;
+namespace Benzene.Test.Aws.Kafka;
 
 public class KafkaMessagePipelineTest
 {

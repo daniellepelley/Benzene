@@ -5,6 +5,7 @@ using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Results;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Sns;
+using Benzene.Aws.Sns.TestHelpers;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.MiddlewareBuilder;

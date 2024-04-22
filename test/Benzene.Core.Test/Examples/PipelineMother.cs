@@ -1,24 +1,24 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MiddlewareBuilder;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MiddlewareBuilder;
 
 namespace Benzene.Test.Examples;
 
 public static class PipelineMother
 {
-    public static IMiddlewarePipelineBuilder<DirectMessageContext> BasicDirectMessagePipeline(
+    public static IMiddlewarePipelineBuilder<BenzeneMessageContext> BasicBenzeneMessagePipeline(
         IBenzeneServiceContainer serviceContainer)
     {
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(serviceContainer);
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(serviceContainer);
 
         return pipeline
             .UseProcessResponse()
             .UseMessageRouter();
     }
 
-    public static Action<IMiddlewarePipelineBuilder<DirectMessageContext>> BasicDirectMessagePipeline()
+    public static Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>> BasicBenzeneMessagePipeline()
     {
         return pipeline => pipeline
             .UseProcessResponse()

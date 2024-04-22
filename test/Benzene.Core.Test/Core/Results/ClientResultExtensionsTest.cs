@@ -9,17 +9,6 @@ namespace Benzene.Test.Core.Results;
 public class ClientResultExtensionsTest
 {
     [Fact]
-    public void IsSuccess_True()
-    {
-        Assert.True(ClientResult.Success().IsSuccess());
-    }
-    [Fact]
-    public void IsSuccess_False()
-    {
-        Assert.False(ClientResult.UnexpectedError().IsSuccess());
-    }
-
-    [Fact]
     public void IsAccepted_True()
     {
         Assert.True(ClientResult.Accepted().IsAccepted());
@@ -128,7 +117,7 @@ public class ClientResultExtensionsTest
     [Fact]
     public void IsUnexpectedError_False()
     {
-        Assert.False(ClientResult.Success().IsUnexpectedError());
+        Assert.False(ClientResult.Ok().IsUnexpectedError());
     }
     [Fact]
     public void IsConflict_True()
@@ -215,7 +204,7 @@ public class ClientResultExtensionsTest
     [Fact]
     public void MapIfSuccessful()
     {
-        var result = Task.FromResult(ClientResult.Success(new ExamplePayload { Name = "foo" }))
+        var result = Task.FromResult(ClientResult.Ok(new ExamplePayload { Name = "foo" }))
             .MapIfSuccessful(x => new ExampleResponsePayload { Name = x.Name })
             .Result;
         Assert.Equal(ClientResultStatus.Ok, result.Status);
@@ -235,7 +224,7 @@ public class ClientResultExtensionsTest
     [Fact]
     public void AsServiceResultMapIfSuccessful()
     {
-        var result = Task.FromResult(ClientResult.Success(new ExamplePayload { Name = "foo" }))
+        var result = Task.FromResult(ClientResult.Ok(new ExamplePayload { Name = "foo" }))
             .AsServiceResultMapIfSuccessful(x => new ExampleResponsePayload { Name = x.Name })
             .Result;
         Assert.Equal(ClientResultStatus.Ok, result.Status);

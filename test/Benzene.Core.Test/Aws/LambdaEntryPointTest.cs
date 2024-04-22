@@ -4,7 +4,7 @@ using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.DI;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Aws.Helpers;
@@ -34,7 +34,7 @@ public class LambdaEntryPointTest
 
         var lambdaEntryPoint = new AwsLambdaEntryPoint(app.Build(), mockServiceResolverFactory.Object);
 
-        var request = new DirectMessageRequest();
+        var request = new BenzeneMessageRequest();
 
         var result = await lambdaEntryPoint.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         Assert.NotNull(result);

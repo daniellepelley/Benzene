@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.DirectMessage;
+using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Elements.Core.Broadcast;
 using Benzene.Http;
@@ -24,14 +24,14 @@ public class SpecTest
         return new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
                 .UsingBenzene(x => x
-                    .AddDirectMessage()
+                    .AddBenzeneMessage()
                     .AddBroadcastEvent()
                     .AddHttpMessageHandlers()
                     .SetApplicationInfo("Example App", "1.0", "Stuff")
                 ))
             .Configure(app =>
             {
-                app.UseDirectMessage(x => x
+                app.UseBenzeneMessage(x => x
                     .UseProcessResponse()
                     .UseSpec("spec")
                     .UseMessageRouter()
@@ -45,12 +45,12 @@ public class SpecTest
         return new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
                 .UsingBenzene(x => x
-                    .AddDirectMessage()
+                    .AddBenzeneMessage()
                     .SetApplicationInfo("Example App", "1.0", "Stuff")
                 ))
             .Configure(app =>
             {
-                app.UseDirectMessage(x => x
+                app.UseBenzeneMessage(x => x
                     .UseProcessResponse()
                     .UseSpec("spec")
                     .UseMessageRouter()
@@ -63,7 +63,7 @@ public class SpecTest
     public async Task OpenApi_Test()
     {
         var host = CreateStandardHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("openapi","json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("openapi","json")));
         var document = new OpenApiStringReader().Read(response.Message, out _);
 
         Assert.Equal(2, document.Components.Schemas.Count);
@@ -73,7 +73,7 @@ public class SpecTest
     public async Task AsyncApi_Test()
     {
         var host = CreateStandardHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("asyncapi","json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("asyncapi","json")));
         var document = new AsyncApiStringReader().Read(response.Message, out _);
 
         Assert.Equal(4, document.Components.Schemas.Count);
@@ -83,7 +83,7 @@ public class SpecTest
     public async Task BenzeneApi_Test()
     {
         var host = CreateStandardHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "json")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Message);
 
         Assert.Equal(4, document.Components.Schemas.Count);
@@ -93,7 +93,7 @@ public class SpecTest
     public async Task OpenApi_MissingDependencies_Test()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("openapi","json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("openapi","json")));
         var document = new OpenApiStringReader().Read(response.Message, out _);
 
         Assert.Equal(0, document.Components.Schemas.Count);
@@ -103,7 +103,7 @@ public class SpecTest
     public async Task AsyncApi_MissingDependencies_Test()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("asyncapi", "json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("asyncapi", "json")));
         var document = new AsyncApiStringReader().Read(response.Message, out _);
 
         Assert.Equal(4, document.Components.Schemas.Count);
@@ -113,7 +113,7 @@ public class SpecTest
     public async Task BenzeneApi_MissingDependencies_Test()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "json")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Message);
 
         Assert.Equal(4, document.Components.Schemas.Count);
@@ -123,7 +123,7 @@ public class SpecTest
     public async Task BenzeneApi_InvalidFormatDefaultsToJson()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "foo")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "foo")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Message);
 
         Assert.Equal(4, document.Components.Schemas.Count);
@@ -133,7 +133,7 @@ public class SpecTest
     public async Task BenzeneApi_InvalidTypeDefaultsToBenzene()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendDirectMessageAsync(MessageBuilder.Create("spec", new SpecRequest("foo", "foo")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("foo", "foo")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Message);
 
         Assert.Equal(4, document.Components.Schemas.Count);

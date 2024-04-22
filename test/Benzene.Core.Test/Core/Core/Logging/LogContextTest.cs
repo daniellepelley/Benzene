@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.DirectMessage;
-using Benzene.Core.DirectMessage;
+using Benzene.Aws.Core.BenzeneMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Logging;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -20,14 +20,14 @@ public class LogContextTest
     private AwsLambdaBenzeneTestHost _host;
     private Mock<IBenzeneLogContext> _mockBenzeneContext;
 
-    private void SetUp(Action<LogContextBuilder<DirectMessageContext>> action)
+    private void SetUp(Action<LogContextBuilder<BenzeneMessageContext>> action)
     {
         _mockBenzeneContext = new Mock<IBenzeneLogContext>();
         _host = new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
                 .AddScoped(_ => _mockBenzeneContext.Object))
             .Configure(app => app
-                .UseDirectMessage(direct => direct
+                .UseBenzeneMessage(direct => direct
                     .UseLogResult(action))
             ).BuildHost();
     }
@@ -58,7 +58,7 @@ public class LogContextTest
     {
         SetUp(x => x.WithCorrelationId());
         
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         VerifyExists("correlationId");
     }
@@ -68,7 +68,7 @@ public class LogContextTest
     {
         SetUp(x => x.WithTransport());
 
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         Verify("transport", "direct");
     }
@@ -78,7 +78,7 @@ public class LogContextTest
     {
         SetUp(x => x.WithTopic());
 
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         Verify("topic", Defaults.Topic);
     }
@@ -89,7 +89,7 @@ public class LogContextTest
     {
         SetUp(x => x.WithHeaders("sender"));
 
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()).WithHeader("sender", "foo"));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()).WithHeader("sender", "foo"));
 
         VerifyExists("sender");
     }
@@ -99,7 +99,7 @@ public class LogContextTest
     {
         SetUp(x => x.WithHeaders("sender"));
 
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()).WithHeader("sender", string.Empty));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()).WithHeader("sender", string.Empty));
 
         VerifyDoesNotExists("sender");
     }
@@ -116,7 +116,7 @@ public class LogContextTest
             .OnRequest((_,_) => new Dictionary<string, string>{{"key6", "value6"}})
         );
 
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         Verify("key1", "value1");
         Verify("key2", "value2");
@@ -138,7 +138,7 @@ public class LogContextTest
             .OnResponse((_, _) => new Dictionary<string, string> { { "key6", "value6" } })
         );
 
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         Verify("key1", "value1");
         Verify("key2", "value2");

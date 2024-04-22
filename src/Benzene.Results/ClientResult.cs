@@ -36,24 +36,6 @@ public static class ClientResult
         return ClientResultInternal<T>.AcceptedInternal(payload);
     }
 
-    [Obsolete("Use Ok instead", false)]
-    public static IClientResult Success()
-    {
-        return Success(new Void());
-    }
-
-    [Obsolete("Use Ok instead", false)]
-    public static IClientResult<T> Success<T>()
-    {
-        return ClientResultInternal<T>.OkInternal(default);
-    }
-
-    [Obsolete("Use Ok instead", false)]
-    public static IClientResult<T> Success<T>(T payload)
-    {
-        return ClientResultInternal<T>.OkInternal(payload);
-    }
-
     public static IClientResult Ok()
     {
         return Ok(new Void());

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -44,9 +44,9 @@ public class HealthCheckTests
         var serviceCollection = new ServiceCollection();
 
         var container = new MicrosoftBenzeneServiceContainer(serviceCollection);
-        container.AddDirectMessage().AddMessageHandlers();
+        container.AddBenzeneMessage().AddMessageHandlers();
 
-        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(container);
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
             .UseProcessResponse()
             .UseHealthCheck("healthcheck", x => x
@@ -65,13 +65,13 @@ public class HealthCheckTests
                 .AddHealthCheck(_ => false));
 
         
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest { Topic = "healthcheck" });
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest { Topic = "healthcheck" });
 
         await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
-        Assert.NotNull(context.DirectMessageResponse);
+        Assert.NotNull(context.BenzeneMessageResponse);
 
-        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.DirectMessageResponse.Message);
+        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.BenzeneMessageResponse.Message);
         Assert.Equal(13, response.HealthChecks.Count);
     }
     
@@ -81,9 +81,9 @@ public class HealthCheckTests
         var serviceCollection = new ServiceCollection();
 
         var container = new MicrosoftBenzeneServiceContainer(serviceCollection);
-        container.AddDirectMessage().AddMessageHandlers();
+        container.AddBenzeneMessage().AddMessageHandlers();
 
-        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(container);
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
             .UseProcessResponse()
             .UseHealthCheck("healthcheck", x => x
@@ -93,13 +93,13 @@ public class HealthCheckTests
                 .AddHealthCheck(_ => new ExceptionThrowingHealthCheck())
                 .AddHealthCheck(resolver => throw new Exception()));
         
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest { Topic = "healthcheck" });
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest { Topic = "healthcheck" });
 
         await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
-        Assert.NotNull(context.DirectMessageResponse);
+        Assert.NotNull(context.BenzeneMessageResponse);
 
-        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.DirectMessageResponse.Message);
+        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.BenzeneMessageResponse.Message);
         Assert.Equal(5, response.HealthChecks.Count);
     }
 

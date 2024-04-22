@@ -7,13 +7,6 @@ namespace Benzene.Test.Clients;
 public class ClientResultTest
 {
     [Fact]
-    public void Success()
-    {
-        var result = ClientResult.Success(new ExamplePayload());
-        Assert.Equal(ClientResultStatus.Success, result.Status);
-    }
-
-    [Fact]
     public void Ok()
     {
         var result = ClientResult.Ok(new ExamplePayload());

@@ -5,7 +5,7 @@ using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Logging;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -58,7 +58,7 @@ public class AwsEventStreamLogContextTest
     {
         SetUp(x => x.WithCorrelationId());
         
-        await _host.SendDirectMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         VerifyExists("correlationId");
     }

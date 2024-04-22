@@ -1,7 +1,9 @@
-﻿namespace Benzene.Xml;
+﻿using Benzene.Core;
+
+namespace Benzene.Xml;
 
 public static class Settings
 {
-    public static string ContentTypeKey { get; set; } = "content-type";
-    public static string ContentTypeValue { get; set; } = "application/xml";
+    public static string ContentTypeKey { get; set; } = Core.Constants.ContentTypeHeader;
+    public static string ContentTypeValue { get; set; } = Constants.XmlContentType;
 }

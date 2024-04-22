@@ -3,7 +3,7 @@ using System.Linq;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Sns.TestHelpers;
 
 public static class MessageBuilderExtensions
 {

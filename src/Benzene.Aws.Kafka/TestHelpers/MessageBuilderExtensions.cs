@@ -4,7 +4,7 @@ using System.Text;
 using Amazon.Lambda.KafkaEvents;
 using Benzene.Abstractions;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Kafka.TestHelpers;
 
 public static class MessageBuilderExtensions
 {

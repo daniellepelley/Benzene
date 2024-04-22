@@ -18,11 +18,6 @@ public class ServiceResultExtensionsTest
         Assert.False(ServiceResult.UnexpectedError().IsOk());
     }
     [Fact]
-    public void IsSuccess_True()
-    {
-        Assert.True(ServiceResult.Success().IsSuccess());
-    }
-    [Fact]
     public void IsSuccess_False()
     {
         Assert.False(ServiceResult.UnexpectedError().IsSuccess());

@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Sns;
+using Benzene.Aws.Sns.TestHelpers;
 using Benzene.Aws.Sqs;
+using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.CodeGen.Core;
 using Benzene.CodeGen.LambdaTestTool;
 using Benzene.CodeGen.Markdown;
@@ -32,7 +34,7 @@ public class LambdaTestToolBuilderTest
         
         var eventBuilders = new IExampleBuilder[]
         {
-            new DirectMessageExampleBuilder(knownValues),
+            new BenzeneMessageExampleBuilder(knownValues),
             new ExampleBuilder("sns", (topic, payload) => MessageBuilder.Create(topic, payload).AsSns(), knownValues),
             new ExampleBuilder("sqs", (topic, payload) => MessageBuilder.Create(topic, payload).AsSqs(), knownValues),
             new HttpExampleBuilder("api-gateway", (method, path, payload) => HttpBuilder.Create(method, path, payload).AsApiGatewayRequest(), knownValues)
@@ -59,7 +61,7 @@ public class LambdaTestToolBuilderTest
 
         var eventBuilders = new IExampleBuilder[]
         {
-            new DirectMessageExampleBuilder(knownValues),
+            new BenzeneMessageExampleBuilder(knownValues),
             new ExampleBuilder("sns", (topic, payload) => MessageBuilder.Create(topic, payload).AsSns(), knownValues),
             new ExampleBuilder("sqs", (topic, payload) => MessageBuilder.Create(topic, payload).AsSqs(), knownValues),
             new HttpExampleBuilder("api-gateway", (method, path, payload) => HttpBuilder.Create(method, path, payload).AsApiGatewayRequest(), knownValues)

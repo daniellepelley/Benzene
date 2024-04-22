@@ -11,7 +11,7 @@ using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Serialization;
 using Benzene.Abstractions.Validation;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Helper;
 using Benzene.Core.Info;
 using Benzene.Core.Logging;
@@ -56,18 +56,18 @@ public static class Extensions
         return services;
     }
 
-    public static IBenzeneServiceContainer AddDirectMessage(this IBenzeneServiceContainer services)
+    public static IBenzeneServiceContainer AddBenzeneMessage(this IBenzeneServiceContainer services)
     {
-        services.TryAddScoped<IRequestMapper<DirectMessageContext>, MultiSerializerOptionsRequestMapper<DirectMessageContext, JsonSerializer>>();
-        services.TryAddScoped<IMessageMapper<DirectMessageContext>, DirectMessageMapper>();
-        services.TryAddScoped<IMessageBodyMapper<DirectMessageContext>, DirectMessageMapper>();
-        services.TryAddScoped<IMessageTopicMapper<DirectMessageContext>, DirectMessageMapper>();
-        services.TryAddScoped<IMessageHeadersMapper<DirectMessageContext>, DirectMessageMapper>();
-        services.TryAddScoped<IBenzeneResponseAdapter<DirectMessageContext>, DirectMessageResponseAdapter>();
+        services.TryAddScoped<IRequestMapper<BenzeneMessageContext>, MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>>();
+        services.TryAddScoped<IMessageMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
+        services.TryAddScoped<IMessageBodyMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
+        services.TryAddScoped<IMessageTopicMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
+        services.TryAddScoped<IMessageHeadersMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
+        services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
         
-        services.TryAddScoped<IResponseHandler<DirectMessageContext>, ResponseBodyHandler<DirectMessageContext>>();
-        services.AddScoped<IResponseHandler<DirectMessageContext>, DefaultResponseStatusHandler<DirectMessageContext>>();
-        services.TryAddScoped<IResponsePayloadMapper<DirectMessageContext>, DefaultResponsePayloadMapper<DirectMessageContext>>();
+        services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, ResponseBodyHandler<BenzeneMessageContext>>();
+        services.AddScoped<IResponseHandler<BenzeneMessageContext>, DefaultResponseStatusHandler<BenzeneMessageContext>>();
+        services.TryAddScoped<IResponsePayloadMapper<BenzeneMessageContext>, DefaultResponsePayloadMapper<BenzeneMessageContext>>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("direct"));
         
@@ -115,83 +115,5 @@ public static class Extensions
 
         services.AddServiceResolver();
         return services;
-    }
-
-    public static IBenzeneServiceContainer TryAddScoped<TImplementation>(this IBenzeneServiceContainer source)
-        where TImplementation : class
-    {
-        return source.IsTypeRegistered<TImplementation>()
-            ? source
-            : source.AddScoped<TImplementation>();
-    }
-
-    public static IBenzeneServiceContainer TryAddScoped<TService, TImplementation>(
-        this IBenzeneServiceContainer source)
-        where TService : class
-        where TImplementation : class, TService
-    {
-        return source.IsTypeRegistered<TService>()
-            ? source
-            : source.AddScoped<TService, TImplementation>();
-    }
-    
-    public static IBenzeneServiceContainer TryAddScoped(
-        this IBenzeneServiceContainer source, Type serviceType, Type implementationType)
-    {
-        return source.IsTypeRegistered(serviceType)
-            ? source
-            : source.AddScoped(serviceType, implementationType);
-    }
-
-    public static IBenzeneServiceContainer TryAddScoped(this IBenzeneServiceContainer source, Type type)
-    {
-        return source.IsTypeRegistered(type)
-            ? source
-            : source.AddScoped(type);
-    }
-    
-    public static IBenzeneServiceContainer TryAddScoped<TImplementation>(this IBenzeneServiceContainer source, Func<IServiceResolver, TImplementation> func)
-        where TImplementation: class
-    {
-        return source.IsTypeRegistered<TImplementation>()
-            ? source
-            : source.AddScoped(func);
-    }
-    
-    public static IBenzeneServiceContainer TryAddSingleton<TImplementation>(this IBenzeneServiceContainer source)
-        where TImplementation : class
-    {
-        return source.IsTypeRegistered<TImplementation>()
-            ? source
-            : source.AddSingleton<TImplementation>();
-    }
-    
-    public static IBenzeneServiceContainer TryAddSingleton<TService, TImplementation>(this IBenzeneServiceContainer source)
-        where TService : class
-        where TImplementation : class, TService
-    {
-        return source.IsTypeRegistered<TService>()
-            ? source
-            : source.AddSingleton<TService, TImplementation>();
-    }
-    public static IBenzeneServiceContainer TryAddSingleton(this IBenzeneServiceContainer source,Type type)
-    {
-        return source.IsTypeRegistered(type)
-            ? source
-            : source.AddScoped(type);
-    }
-    public static IBenzeneServiceContainer TryAddSingleton<TImplementation>(this IBenzeneServiceContainer source,TImplementation implementation)
-        where TImplementation : class
-    {
-        return source.IsTypeRegistered<TImplementation>()
-            ? source
-            : source.AddSingleton(implementation);
-    }
-    public static IBenzeneServiceContainer TryAddSingleton<TImplementation>(this IBenzeneServiceContainer source,Func<IServiceResolver, TImplementation> func)
-        where TImplementation : class
-    {
-        return source.IsTypeRegistered<TImplementation>()
-            ? source
-            : source.AddSingleton(func);
     }
 }

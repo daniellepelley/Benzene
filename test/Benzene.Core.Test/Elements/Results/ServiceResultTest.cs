@@ -18,18 +18,6 @@ public class ClientResultTest
     }
 
     [Fact]
-    public void Success()
-    {
-        Assert.Equal(ClientResultStatus.Success, ClientResult.Success().Status);
-    }
-
-    [Fact]
-    public void Success_T()
-    {
-        Assert.Equal(ClientResultStatus.Success, ClientResult.Success<Void>().Status);
-    }
-
-    [Fact]
     public void Ok()
     {
         Assert.Equal(ClientResultStatus.Ok, ClientResult.Ok().Status);

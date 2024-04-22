@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 
-namespace Benzene.Core.DirectMessage;
+namespace Benzene.Core.BenzeneMessage;
 
-public interface IDirectMessageRequest
+public interface IBenzeneMessageRequest
 {
     string Topic { get; }
     IDictionary<string, string> Headers { get; }
-    string Message { get; }
+    string Body { get; }
 }

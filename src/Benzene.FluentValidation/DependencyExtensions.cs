@@ -5,6 +5,7 @@ using FluentValidation;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Validation;
+using Benzene.Core.DI;
 using Benzene.Core.Helper;
 using Benzene.FluentValidation.Schema;
 
@@ -38,7 +39,7 @@ public static class DependencyExtensions
 
         foreach (var validatorType in validatorTypes)
         {
-            services.AddSingleton(validatorType.GetInterface("IValidator`1"), validatorType);
+            services.TryAddSingleton(validatorType.GetInterface("IValidator`1"), validatorType);
         }
         
         var validators = validatorTypes
@@ -46,7 +47,7 @@ public static class DependencyExtensions
                 Activator.CreateInstance(x) as IValidator)
             .ToArray();
 
-        services.AddSingleton<IValidationSchemaBuilder>(new FluentValidationSchemaBuilder(validators));
+        services.TryAddSingleton<IValidationSchemaBuilder>(new FluentValidationSchemaBuilder(validators));
         return services;
     }
 }

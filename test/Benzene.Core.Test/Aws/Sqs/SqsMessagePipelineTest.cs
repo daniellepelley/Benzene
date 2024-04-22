@@ -7,6 +7,7 @@ using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Client;
+using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.MiddlewareBuilder;
@@ -62,7 +63,6 @@ public class SqsMessagePipelineTest
     public async Task Send_SerializationError()
     {
         var mockExampleService = new Mock<IExampleService>();
-
 
         IMessageResult messageResult = null;
 

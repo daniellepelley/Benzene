@@ -4,7 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Validation;
 using Benzene.Aws.ApiGateway;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandling;
 using Xunit;
 
@@ -42,7 +42,7 @@ public class RegistrationsTest
     [Fact]
     public void RegistrationTest_Generics()
     {
-        var result = RegistrationErrorHandler.CheckType(typeof(MessageRouter<DirectMessageContext>));
+        var result = RegistrationErrorHandler.CheckType(typeof(MessageRouter<BenzeneMessageContext>));
 
         Assert.Contains("Benzene.Core", result);
         Assert.Contains("MessageRouter<>", result);

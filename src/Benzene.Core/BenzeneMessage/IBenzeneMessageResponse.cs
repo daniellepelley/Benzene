@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace Benzene.Core.DirectMessage;
+namespace Benzene.Core.BenzeneMessage;
 
-public interface IDirectMessageResponse
+public interface IBenzeneMessageResponse
 {
     string StatusCode { get; set; }
     IDictionary<string, string> Headers { get; set; }

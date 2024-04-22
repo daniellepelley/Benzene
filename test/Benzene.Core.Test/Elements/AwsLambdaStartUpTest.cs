@@ -2,7 +2,8 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
 using Benzene.Aws.ApiGateway;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
+using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Elements.Examples;
 using Benzene.Test.Examples;
@@ -19,9 +20,9 @@ public class AwsLambdaStartUpTest
     {
         var demoAwsStartUp = new LambdaEntryPoint();
 
-        var request = RequestMother.CreateExampleEvent().AsDirectMessage();
+        var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
         var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
-        var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<DirectMessageResponse>(response);
+        var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<BenzeneMessageResponse>(response);
         Assert.Equal("Ok", directMessageResponse.StatusCode);
     }
 

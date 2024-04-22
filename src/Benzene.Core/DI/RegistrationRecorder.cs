@@ -47,7 +47,49 @@ public class RegistrationRecorder : IBenzeneServiceContainer
         return this;
     }
 
+    public IBenzeneServiceContainer AddScoped<TImplementation>(TImplementation implementation) where TImplementation : class
+    {
+        _types.Add(typeof(TImplementation));
+        return this;
+    }
+
     public IBenzeneServiceContainer AddScoped<TImplementation>(Func<IServiceResolver, TImplementation> func) where TImplementation : class
+    {
+        _types.Add(typeof(TImplementation));
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TImplementation>() where TImplementation : class
+    {
+        _types.Add(typeof(TImplementation));
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TService, TImplementation>() where TService : class where TImplementation : class, TService
+    {
+        _types.Add(typeof(TService));
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient(Type type)
+    {
+        _types.Add(type);
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient(Type serviceType, Type implementationType)
+    {
+        _types.Add(serviceType);
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TImplementation>(TImplementation implementation) where TImplementation : class
+    {
+        _types.Add(typeof(TImplementation));
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TImplementation>(Func<IServiceResolver, TImplementation> func) where TImplementation : class
     {
         _types.Add(typeof(TImplementation));
         return this;

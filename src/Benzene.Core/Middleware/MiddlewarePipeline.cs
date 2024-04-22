@@ -26,7 +26,6 @@ public class MiddlewarePipeline<TContext> : IMiddlewarePipeline<TContext>
         var factory = serviceResolver.GetService<IMiddlewareFactory>();
 
         return _items
-            .AsEnumerable()
             .Reverse()
             .Aggregate(() => Task.CompletedTask, (current, middleware) =>
                 CreateChainItem(context, factory.Create(serviceResolver, middleware(serviceResolver)).HandleAsync, current));

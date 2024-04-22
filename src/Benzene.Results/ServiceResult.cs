@@ -22,32 +22,16 @@ public static class ServiceResult
         return ServiceResultInternal<T>.Internal(status, errors);
     }
 
-    [Obsolete("Use Ok instead", false)]
-    public static IServiceResult Success()
-    {
-        return Success(new Void());
-    }
-
-    [Obsolete("Use Ok instead", false)]
-    public static IServiceResult<T> Success<T>()
-    {
-        return ServiceResultInternal<T>.OkInternal(default);
-    }
-
-    [Obsolete("Use Ok instead", false)]
-    public static IServiceResult<T> Success<T>(T payload)
-    {
-        return ServiceResultInternal<T>.OkInternal(payload);
-    }
-
     public static IServiceResult Ok()
     {
         return Ok(new Void());
     }
+
     public static IServiceResult<T> Ok<T>()
     {
         return ServiceResultInternal<T>.OkInternal(default);
     }
+    
     public static IServiceResult<T> Ok<T>(T payload)
     {
         return ServiceResultInternal<T>.OkInternal(payload);

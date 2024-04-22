@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Azure.Core;
 using Benzene.Azure.EventHub;
+using Benzene.Azure.EventHub.TestHelpers;
 using Benzene.Azure.Kafka;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Test.Examples;
@@ -24,12 +25,12 @@ public class EventHubPipelineTest
                 .AddSingleton(mockExampleService.Object)
             ).Configure(app => app
                 .UseEventHub(eventHub => eventHub
-                    .UseDirectMessage(direct => direct
+                    .UseBenzeneMessage(direct => direct
                     .UseProcessResponse()
                     .UseMessageRouter())))
             .Build();
 
-        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsEventHubDirectMessage();
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsEventHubBenzeneMessage();
 
         await app.HandleEventHub(request);
         mockExampleService.Verify(x => x.Register(Defaults.Name));

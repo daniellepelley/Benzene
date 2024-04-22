@@ -1,7 +1,7 @@
 ﻿using System;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Request;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;
@@ -16,12 +16,12 @@ public class RequestFactoryTest
     [Fact]
     public void GetsRequest()
     {
-        var mockMessageMapper = new Mock<IRequestMapper<DirectMessageContext>>();
-        mockMessageMapper.Setup(x => x.GetBody<ExampleRequestPayload>(It.IsAny<DirectMessageContext>()))
+        var mockMessageMapper = new Mock<IRequestMapper<BenzeneMessageContext>>();
+        mockMessageMapper.Setup(x => x.GetBody<ExampleRequestPayload>(It.IsAny<BenzeneMessageContext>()))
             .Returns(new ExampleRequestPayload());
 
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
-        var requestFactory = new RequestFactory<DirectMessageContext>(mockMessageMapper.Object, context);
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var requestFactory = new RequestFactory<BenzeneMessageContext>(mockMessageMapper.Object, context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
@@ -33,12 +33,12 @@ public class RequestFactoryTest
     {
         var serviceResolver = ServiceResolverMother.CreateServiceResolver();
 
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
-        var requestFactory = new RequestFactory<DirectMessageContext>(
-            new MultiSerializerOptionsRequestMapper<DirectMessageContext, JsonSerializer>(serviceResolver,
-                Mock.Of<IMessageMapper<DirectMessageContext>>(),
-                Array.Empty<ISerializerOption<DirectMessageContext>>(),
-                Array.Empty<IRequestEnricher<DirectMessageContext>>()), context);
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var requestFactory = new RequestFactory<BenzeneMessageContext>(
+            new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
+                Mock.Of<IMessageMapper<BenzeneMessageContext>>(),
+                Array.Empty<ISerializerOption<BenzeneMessageContext>>(),
+                Array.Empty<IRequestEnricher<BenzeneMessageContext>>()), context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
@@ -49,18 +49,18 @@ public class RequestFactoryTest
     [Fact]
     public void GetsRequest_Default_Mapper_Returns_Request()
     {
-        var mockMessageMapper = new Mock<IRequestMapper<DirectMessageContext>>();
-        mockMessageMapper.Setup(x => x.GetBody<ExampleRequestPayload>(It.IsAny<DirectMessageContext>()))
+        var mockMessageMapper = new Mock<IRequestMapper<BenzeneMessageContext>>();
+        mockMessageMapper.Setup(x => x.GetBody<ExampleRequestPayload>(It.IsAny<BenzeneMessageContext>()))
             .Returns(new ExampleRequestPayload());
 
         var serviceResolver = ServiceResolverMother.CreateServiceResolver();
 
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
-        var requestFactory = new RequestFactory<DirectMessageContext>(
-            new MultiSerializerOptionsRequestMapper<DirectMessageContext, JsonSerializer>(serviceResolver,
-                Mock.Of<IMessageMapper<DirectMessageContext>>(),
-                new ISerializerOption<DirectMessageContext>[] { new SerializerOption<DirectMessageContext, JsonSerializer>(x => true) },
-                Array.Empty<IRequestEnricher<DirectMessageContext>>()), context);
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var requestFactory = new RequestFactory<BenzeneMessageContext>(
+            new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
+                Mock.Of<IMessageMapper<BenzeneMessageContext>>(),
+                new ISerializerOption<BenzeneMessageContext>[] { new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => true) },
+                Array.Empty<IRequestEnricher<BenzeneMessageContext>>()), context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 

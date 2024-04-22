@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 
-namespace Benzene.Core.DirectMessage;
+namespace Benzene.Core.BenzeneMessage;
 
 public class DefaultResponseStatusHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class, IHasMessageResult
 {

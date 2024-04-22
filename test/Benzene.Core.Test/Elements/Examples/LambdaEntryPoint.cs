@@ -2,7 +2,7 @@
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Aws.Core.DirectMessage;
+using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Sns;
 using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;
@@ -33,7 +33,7 @@ namespace Benzene.Test.Elements.Examples
 
             const string healthCheckTopic = "hello:world:healthcheck";
 
-            app.UseDirectMessage(directMessageApp => directMessageApp
+            app.UseBenzeneMessage(directMessageApp => directMessageApp
                 .UseCorrelationId()
                 .UseTimer("direct-message-application")
                 .UseLogResult(x => x

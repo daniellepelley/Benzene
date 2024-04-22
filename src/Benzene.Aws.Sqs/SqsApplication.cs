@@ -19,7 +19,7 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
 
     public async Task<SQSBatchResponse> HandleAsync(SQSEvent @event, IServiceResolver serviceResolver)
     {
-        List<SQSBatchResponse.BatchItemFailure> batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
+        var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
         var tasks = @event.Records.Select(record => SqsMessageContext.CreateInstance(@event, record)).Select(async context =>
             {
                 try

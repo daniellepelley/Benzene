@@ -1,9 +1,12 @@
 ﻿using System.Threading.Tasks;
+using Benzene.Abstractions.Middleware;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
+using Benzene.Core.Middleware;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace Benzene.Test.Core.Core.MiddlewareBuilder;
@@ -14,15 +17,17 @@ public class MiddlewareBuilderTest
     public async Task CreatePipeline_OnResponse()
     {
         var services = new ServiceCollection();
-        services.UsingBenzene(x => x.AddBenzene());
+        services.TryAddSingleton<IMiddlewareFactory, DefaultMiddlewareFactory>();
+        
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
-
-        var items = ((MiddlewarePipelineBuilder<DirectMessageContext>)middlewarePipelineBuilder
+        var items = ((MiddlewarePipelineBuilder<BenzeneMessageContext>)middlewarePipelineBuilder
                 .OnResponse("Foo", x =>
                 {
-                    x.DirectMessageResponse = new DirectMessageResponse();
-                    x.DirectMessageResponse.Message = "foo";
+                    x.BenzeneMessageResponse = new BenzeneMessageResponse
+                    {
+                        Message = "foo"
+                    };
                 }))
             .GetItems();
 
@@ -31,10 +36,10 @@ public class MiddlewareBuilderTest
         using var factory = new MicrosoftServiceResolverFactory(services);
         using var serviceResolver = factory.CreateScope();
 
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
-        Assert.Equal("foo", context.DirectMessageResponse.Message);
+        Assert.Equal("foo", context.BenzeneMessageResponse.Message);
     }
     
     [Fact]
@@ -43,9 +48,9 @@ public class MiddlewareBuilderTest
         var services = new ServiceCollection();
         services.UsingBenzene(x => x.AddBenzene());
 
-        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        var items = ((MiddlewarePipelineBuilder<DirectMessageContext>)middlewarePipelineBuilder
+        var items = ((MiddlewarePipelineBuilder<BenzeneMessageContext>)middlewarePipelineBuilder
                 .Use(async (_, next) => await next())
                 .Use(string.Empty, async (_, next) => await next())
                 .Use(async (_, _, next) => await next())
@@ -58,8 +63,8 @@ public class MiddlewareBuilderTest
                 .OnResponse(null, _ => { })
                 .OnResponse((_,_) => { })
                 .OnResponse(null, (_,context) => {
-                    context.DirectMessageResponse = new DirectMessageResponse();
-                    context.DirectMessageResponse.Message = "foo";
+                    context.BenzeneMessageResponse = new BenzeneMessageResponse();
+                    context.BenzeneMessageResponse.Message = "foo";
                 }))
             .GetItems();
 
@@ -73,10 +78,9 @@ public class MiddlewareBuilderTest
             Assert.Equal(Benzene.Core.Constants.Unnamed, item(serviceResolver).Name);
         }
         
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
-        Assert.Equal("foo", context.DirectMessageResponse.Message);
+        Assert.Equal("foo", context.BenzeneMessageResponse.Message);
     }
-
 }

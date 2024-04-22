@@ -12,9 +12,23 @@ public interface IBenzeneServiceContainer
         where TImplementation : class, TService;
     IBenzeneServiceContainer AddScoped(Type type);
     IBenzeneServiceContainer AddScoped(Type serviceType, Type implementationType);
+    IBenzeneServiceContainer AddScoped<TImplementation>(TImplementation implementation)
+        where TImplementation : class;
     IBenzeneServiceContainer AddScoped<TImplementation>(Func<IServiceResolver, TImplementation> func)
         where TImplementation: class;
-    
+   
+    IBenzeneServiceContainer AddTransient<TImplementation>()
+        where TImplementation : class;
+    IBenzeneServiceContainer AddTransient<TService, TImplementation>()
+        where TService : class
+        where TImplementation : class, TService;
+    IBenzeneServiceContainer AddTransient(Type type);
+    IBenzeneServiceContainer AddTransient(Type serviceType, Type implementationType);
+    IBenzeneServiceContainer AddTransient<TImplementation>(TImplementation implementation)
+        where TImplementation : class;
+    IBenzeneServiceContainer AddTransient<TImplementation>(Func<IServiceResolver, TImplementation> func)
+        where TImplementation: class;
+
     IBenzeneServiceContainer AddSingleton<TImplementation>()
         where TImplementation : class;
     IBenzeneServiceContainer AddSingleton<TService, TImplementation>()

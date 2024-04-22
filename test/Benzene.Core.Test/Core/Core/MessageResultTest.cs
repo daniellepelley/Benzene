@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Benzene.Test.Core.Core;
 
-public class LambdaResultTest
+public class MessageResultTest
 {
     [Fact]
     public void LambdaResultPopulates()

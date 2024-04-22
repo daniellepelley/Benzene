@@ -3,28 +3,28 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 
-namespace Benzene.Aws.Core.DirectMessage;
+namespace Benzene.Aws.Core.BenzeneMessage;
 
-public class DirectMessageLambdaHandler : AwsLambdaHandlerMiddleware<DirectMessageRequest>
+public class BenzeneMessageLambdaHandler : AwsLambdaHandlerMiddleware<BenzeneMessageRequest>
 {
-    private readonly DirectMessageApplication _directMessageApplication;
+    private readonly BenzeneMessageApplication _directMessageApplication;
 
-    public DirectMessageLambdaHandler(
-        IMiddlewarePipeline<DirectMessageContext> pipeline,
+    public BenzeneMessageLambdaHandler(
+        IMiddlewarePipeline<BenzeneMessageContext> pipeline,
         IServiceResolver serviceResolver)
     :base(serviceResolver)
     {
-        _directMessageApplication = new DirectMessageApplication(pipeline);
+        _directMessageApplication = new BenzeneMessageApplication(pipeline);
     }
 
-    protected override bool CanHandle(DirectMessageRequest request)
+    protected override bool CanHandle(BenzeneMessageRequest request)
     {
         return request?.Topic != null;
     }
 
-    protected override async Task HandleFunction(DirectMessageRequest request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(BenzeneMessageRequest request, AwsEventStreamContext context, IServiceResolver serviceResolver)
     {
         var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
         setCurrentTransport.SetTransport("direct");

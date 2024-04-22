@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.Response;
+using Benzene.Core;
 using Benzene.Core.Helper;
 
 namespace Benzene.SelfHost.Http;
@@ -13,7 +14,7 @@ public class HttpContextResponseAdapter : IBenzeneResponseAdapter<HttpContext>
 
     public void SetContentType(HttpContext context, string contentType)
     {
-        SetResponseHeader(context, "content-type", contentType);
+        SetResponseHeader(context, Constants.ContentTypeHeader, contentType);
     }
 
     public void SetStatusCode(HttpContext context, string statusCode)

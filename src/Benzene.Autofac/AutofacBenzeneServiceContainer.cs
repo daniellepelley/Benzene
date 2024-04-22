@@ -45,9 +45,15 @@ public class AutofacBenzeneServiceContainer : IBenzeneServiceContainer
         }
         else
         {
-            _containerBuilder.RegisterGeneric(implementationType).As(serviceType).InstancePerLifetimeScope();
+            _containerBuilder.RegisterType(implementationType).As(serviceType).InstancePerLifetimeScope();
         }
 
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddScoped<TImplementation>(TImplementation implementation) where TImplementation : class
+    {
+        _containerBuilder.RegisterType<TImplementation>().InstancePerLifetimeScope();
         return this;
     }
 
@@ -70,6 +76,60 @@ public class AutofacBenzeneServiceContainer : IBenzeneServiceContainer
         _containerBuilder
             .Register<TImplementation>(x => func(new AutofacServiceResolverAdapter(x.Resolve<IComponentContext>())))
             .InstancePerLifetimeScope();
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TImplementation>() where TImplementation : class
+    {
+        _containerBuilder.RegisterType<TImplementation>().InstancePerDependency();
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TService, TImplementation>() where TService : class where TImplementation : class, TService
+    {
+        _containerBuilder.RegisterType<TImplementation>().As<TService>().InstancePerDependency();
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient(Type type)
+    {
+        if (type.IsGenericType)
+        {
+            _containerBuilder.RegisterGeneric(type).InstancePerDependency();
+        }
+        else
+        {
+            _containerBuilder.RegisterType(type).InstancePerDependency();
+        }
+
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient(Type serviceType, Type implementationType)
+    {
+        if (implementationType.IsGenericType)
+        {
+            _containerBuilder.RegisterGeneric(implementationType).As(serviceType).InstancePerDependency();
+        }
+        else
+        {
+            _containerBuilder.RegisterType(implementationType).As(serviceType).InstancePerDependency();
+        }
+
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TImplementation>(TImplementation implementation) where TImplementation : class
+    {
+        _containerBuilder.RegisterType<TImplementation>().InstancePerDependency();
+        return this;
+    }
+
+    public IBenzeneServiceContainer AddTransient<TImplementation>(Func<IServiceResolver, TImplementation> func) where TImplementation : class
+    {
+        _containerBuilder
+            .Register<TImplementation>(x => func(new AutofacServiceResolverAdapter(x.Resolve<IComponentContext>())))
+            .InstancePerDependency();
         return this;
     }
 
@@ -127,7 +187,7 @@ public class AutofacBenzeneServiceContainer : IBenzeneServiceContainer
     public IBenzeneServiceContainer AddSingleton<TImplementation>(TImplementation implementation)
         where TImplementation : class
     {
-        _containerBuilder.RegisterInstance(implementation);
+        _containerBuilder.RegisterInstance(implementation).SingleInstance();
         return this;
     }
 

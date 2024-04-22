@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.Response;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Response;
 using Benzene.Core.Results;
 using Benzene.Core.Serialization;
@@ -18,25 +18,25 @@ public class ResponseHandlerContainerTest
     {
         var messageHandlerDefinition = Mother.CreateMessageHandlerDefinitionV2();
 
-        var messageHandlerFactory = new ResponseHandlerContainer<DirectMessageContext>(new ISyncResponseHandler<DirectMessageContext>[]
+        var messageHandlerFactory = new ResponseHandlerContainer<BenzeneMessageContext>(new ISyncResponseHandler<BenzeneMessageContext>[]
         {
-            new DefaultResponseStatusHandler<DirectMessageContext> (new DirectMessageResponseAdapter()),
-            new ResponseBodyHandler<DirectMessageContext>(
-                new DirectMessageResponseAdapter(),
-                new DefaultResponsePayloadMapper<DirectMessageContext>(),
+            new DefaultResponseStatusHandler<BenzeneMessageContext> (new BenzeneMessageResponseAdapter()),
+            new ResponseBodyHandler<BenzeneMessageContext>(
+                new BenzeneMessageResponseAdapter(),
+                new DefaultResponsePayloadMapper<BenzeneMessageContext>(),
                 new JsonSerializer())
         });
 
         var request = Mother.CreateRequest();
         var expected = new JsonSerializer().Serialize(request);
 
-        var context = DirectMessageContext.CreateInstance(new DirectMessageRequest());
+        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
         context.MessageResult = new MessageResult(Defaults.Topic, messageHandlerDefinition,
             ServiceResultStatus.Ok, true, request, null);
         await messageHandlerFactory.HandleAsync(context);
 
-        Assert.Equal(Constants.JsonContentType, context.DirectMessageResponse.Headers[Constants.ContentTypeHeader]);
-        Assert.Equal(expected, context.DirectMessageResponse.Message);
-        Assert.Equal(ServiceResultStatus.Ok, context.DirectMessageResponse.StatusCode);
+        Assert.Equal(Constants.JsonContentType, context.BenzeneMessageResponse.Headers[Constants.ContentTypeHeader]);
+        Assert.Equal(expected, context.BenzeneMessageResponse.Message);
+        Assert.Equal(ServiceResultStatus.Ok, context.BenzeneMessageResponse.StatusCode);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -42,7 +42,7 @@ public static class ServiceResolverMother
             register(x);
         });
 
-        services.AddScoped<DirectMessageMapper>();
+        services.AddScoped<BenzeneMessageMapper>();
         services.AddSingleton(Mock.Of<IExampleService>());
         return services;
     }

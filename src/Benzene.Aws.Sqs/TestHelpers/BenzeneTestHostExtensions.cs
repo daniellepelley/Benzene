@@ -2,7 +2,7 @@
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Sqs.TestHelpers;
 
 public static class BenzeneTestHostExtensions
 {

@@ -4,7 +4,8 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
+using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
 using Benzene.Core.Middleware;
@@ -23,7 +24,7 @@ using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
 
 namespace Benzene.Test.Core.Core;
 
-public class DirectMessagePipelineTest
+public class BenzeneMessagePipelineTest
 {
     private const string OrderId = "some-order";
 
@@ -32,20 +33,20 @@ public class DirectMessagePipelineTest
     {
         var services = ServiceResolverMother.CreateServiceCollection();
         services
-                .AddTransient<ResponseMiddleware<DirectMessageContext>>()
+                .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
-                    .AddDirectMessage()
+                    .AddBenzeneMessage()
                     .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
 
 
-        var pipeline = PipelineMother.BasicDirectMessagePipeline(new MicrosoftBenzeneServiceContainer(services));
+        var pipeline = PipelineMother.BasicBenzeneMessagePipeline(new MicrosoftBenzeneServiceContainer(services));
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = RequestMother.CreateExampleEvent().AsDirectMessage();
+        var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
 
         var response = await aws.HandleAsync(request, serviceResolver);
 
@@ -58,23 +59,23 @@ public class DirectMessagePipelineTest
     {
         var services = new ServiceCollection();
         services
-                .AddTransient<ResponseMiddleware<DirectMessageContext>>()
+                .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
                     .AddBenzene() 
-                    .AddDirectMessage()
+                    .AddBenzeneMessage()
                     .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
 
 
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
             .UseProcessResponse()
             .UseMessageRouter();
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
         var request = RequestMother
             .CreateExampleEvent()
@@ -83,7 +84,7 @@ public class DirectMessagePipelineTest
                 { "sender", "some-sender" },
                 { "version", "2.0"}
             })
-            .AsDirectMessage();
+            .AsBenzeneMessage();
 
         var response = await aws.HandleAsync(request, serviceResolver);
 
@@ -97,27 +98,27 @@ public class DirectMessagePipelineTest
         var services = new ServiceCollection();
         services
                 .AddTransient<IBenzeneLogger, BenzeneLogger>()
-                .AddTransient<ResponseMiddleware<DirectMessageContext>>()
+                .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
                     .AddBenzene()
-                    .AddDirectMessage()
+                    .AddBenzeneMessage()
                     .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
 
 
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
             .UseProcessResponse()
             .UseMessageRouter();
 
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.TopicNoResponse,
-            Message = JsonConvert.SerializeObject(new ExampleRequestPayload
+            Body = JsonConvert.SerializeObject(new ExampleRequestPayload
             {
                 Name = "foo"
             }),
@@ -135,25 +136,25 @@ public class DirectMessagePipelineTest
     }
 
     [Fact]
-    public async Task SendDirectMessage_UseFunc()
+    public async Task SendBenzeneMessage_UseFunc()
     {
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
         pipeline.Use(null, (context, next) =>
         {
-            context.DirectMessageResponse = new DirectMessageResponse
+            context.BenzeneMessageResponse = new BenzeneMessageResponse
             {
-                Message = context.DirectMessageRequest.Message,
-                Headers = context.DirectMessageRequest.Headers,
-                StatusCode = context.DirectMessageRequest.Topic == Defaults.Topic ? "200" : "503",
+                Message = context.BenzeneMessageRequest.Body,
+                Headers = context.BenzeneMessageRequest.Headers,
+                StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503",
             };
             context.MessageResult = new MessageResult(Defaults.Topic, null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
             return next();
         });
 
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = RequestMother.CreateExampleEvent().AsDirectMessage();
+        var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
 
         var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
 
@@ -163,33 +164,33 @@ public class DirectMessagePipelineTest
     }
 
     [Fact]
-    public async Task SendDirectMessage_MultiApplication()
+    public async Task SendBenzeneMessage_MultiApplication()
     {
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
         var responseStatus = string.Empty;
 
         pipeline.Use(null, (context, next) =>
         {
-            context.DirectMessageResponse = new DirectMessageResponse
+            context.BenzeneMessageResponse = new BenzeneMessageResponse
             {
-                Message = context.DirectMessageRequest.Message,
-                Headers = context.DirectMessageRequest.Headers,
-                StatusCode = context.DirectMessageRequest.Topic == Defaults.Topic ? "200" : "503",
+                Message = context.BenzeneMessageRequest.Body,
+                Headers = context.BenzeneMessageRequest.Headers,
+                StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503",
             };
-            responseStatus = context.DirectMessageResponse.StatusCode;
+            responseStatus = context.BenzeneMessageResponse.StatusCode;
             context.MessageResult = new MessageResult(Defaults.Topic, null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
             return next();
         });
 
-        var aws = new MiddlewareMultiApplication<DirectMessageRequest, DirectMessageContext>("foo", pipeline.Build(), x => new[]
+        var aws = new MiddlewareMultiApplication<BenzeneMessageRequest, BenzeneMessageContext>("foo", pipeline.Build(), x => new[]
         {
-            DirectMessageContext.CreateInstance(x)
+            BenzeneMessageContext.CreateInstance(x)
         });
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.Topic,
-            Message = Defaults.Message,
+            Body = Defaults.Message,
             Headers = new Dictionary<string, string>
             {
                 { "header1", "foo" }
@@ -201,27 +202,27 @@ public class DirectMessagePipelineTest
     }
 
     [Fact]
-    public async Task SendDirectMessage_UseMiddleware()
+    public async Task SendBenzeneMessage_UseMiddleware()
     {
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
-        pipeline.Use(new FuncWrapperMiddleware<DirectMessageContext>((context, next) =>
+        pipeline.Use(new FuncWrapperMiddleware<BenzeneMessageContext>((context, next) =>
         {
-            context.DirectMessageResponse = new DirectMessageResponse
+            context.BenzeneMessageResponse = new BenzeneMessageResponse
             {
-                Message = context.DirectMessageRequest.Message,
-                Headers = context.DirectMessageRequest.Headers,
-                StatusCode = context.DirectMessageRequest.Topic == Defaults.Topic ? "200" : "503"
+                Message = context.BenzeneMessageRequest.Body,
+                Headers = context.BenzeneMessageRequest.Headers,
+                StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503"
             };
             return next();
         }));
 
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.Topic,
-            Message = Defaults.Message,
+            Body = Defaults.Message,
             Headers = new Dictionary<string, string>
             {
                 { "header1", "foo" }
@@ -236,14 +237,14 @@ public class DirectMessagePipelineTest
     }
 
     [Fact]
-    public void DirectMessageMapper()
+    public void BenzeneMessageMapper()
     {
-        var benzeneMessageMapper = new DirectMessageMapper();
+        var benzeneMessageMapper = new BenzeneMessageMapper();
 
-        var benzeneMessageContext = DirectMessageContext.CreateInstance(new DirectMessageRequest
+        var benzeneMessageContext = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest
         {
             Topic = Defaults.Topic,
-            Message = Defaults.Message,
+            Body = Defaults.Message,
             Headers = new Dictionary<string, string>
             {
                 { "orderId", OrderId }
@@ -260,11 +261,11 @@ public class DirectMessagePipelineTest
     }
 
     [Fact]
-    public void DirectMessageMapper_Empty()
+    public void BenzeneMessageMapper_Empty()
     {
-        var benzeneMessageMapper = new DirectMessageMapper();
+        var benzeneMessageMapper = new BenzeneMessageMapper();
 
-        var benzeneMessageContext = DirectMessageContext.CreateInstance(new DirectMessageRequest());
+        var benzeneMessageContext = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
 
         var actualMessage = benzeneMessageMapper.GetMessage(benzeneMessageContext);
         var actualTopic = benzeneMessageMapper.GetTopic(benzeneMessageContext);

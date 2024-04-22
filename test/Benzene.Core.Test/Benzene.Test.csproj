@@ -244,4 +244,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Core\Newtonsoft\" />
+  </ItemGroup>
+
 </Project>

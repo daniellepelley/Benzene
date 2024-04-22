@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Extensions = Benzene.Microsoft.Dependencies.Extensions;
 
-namespace Benzene.Test.Aws;
+namespace Benzene.Test.Aws.ApiGateway;
 
 public class ApiGatewayCustomAuthorizerMessagePipelineTest
 {
@@ -26,7 +26,7 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
     public async Task Send()
     {
         var services = new ServiceCollection();
-        Extensions.UsingBenzene(services, x => x.AddBenzene());
+        services.UsingBenzene(x => x.AddBenzene());
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
 

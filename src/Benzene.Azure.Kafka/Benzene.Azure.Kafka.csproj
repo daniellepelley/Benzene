@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
@@ -12,16 +12,10 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.Identity" Version="1.11.1" />
 		<PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
-		<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventHubs" Version="5.5.0" />
 		<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Kafka" Version="3.9.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Benzene.Azure.Core\Benzene.Azure.Core.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="C:\Users\Daniel.Le.Pelley\.nuget\packages\microsoft.azure.webjobs.extensions.kafka\3.9.0\build\cacert.pem" />
-	</ItemGroup>
-
 </Project>

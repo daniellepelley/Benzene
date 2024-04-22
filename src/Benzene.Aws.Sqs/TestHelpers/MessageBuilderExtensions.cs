@@ -4,7 +4,7 @@ using Amazon.Lambda.SQSEvents;
 using Amazon.SQS.Model;
 using Benzene.Abstractions;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Sqs.TestHelpers;
 
 public static class MessageBuilderExtensions
 {

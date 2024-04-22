@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Request;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Request;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
@@ -19,28 +19,28 @@ public class MappersTest
         var services = new ServiceCollection();
         services
             .UsingBenzene(x => x.AddServiceResolver())
-            .AddTransient<DirectMessageMapper>()
-            .AddSingleton<MultiSerializerOptionsRequestMapper<DirectMessageContext, JsonSerializer>>()
-            .AddSingleton<IMessageMapper<DirectMessageContext>, DirectMessageMapper>()
+            .AddTransient<BenzeneMessageMapper>()
+            .AddSingleton<MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>>()
+            .AddSingleton<IMessageMapper<BenzeneMessageContext>, BenzeneMessageMapper>()
             .AddSingleton<JsonSerializer>()
-            .AddSingleton<ISerializerOption<DirectMessageContext>>(_ =>
-                new SerializerOption<DirectMessageContext, JsonSerializer>(_ => true));
+            .AddSingleton<ISerializerOption<BenzeneMessageContext>>(_ =>
+                new SerializerOption<BenzeneMessageContext, JsonSerializer>(_ => true));
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
 
-        var sut = serviceResolver.GetService<MultiSerializerOptionsRequestMapper<DirectMessageContext, JsonSerializer>>();
+        var sut = serviceResolver.GetService<MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>>();
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.Topic,
-            Message = JsonConvert.SerializeObject(new ExampleRequestPayload
+            Body = JsonConvert.SerializeObject(new ExampleRequestPayload
             {
                 Name = Defaults.Name
             }),
             Headers = null
         };
 
-        var mappedRequest = sut.GetBody<ExampleRequestPayload>(DirectMessageContext.CreateInstance(request));
+        var mappedRequest = sut.GetBody<ExampleRequestPayload>(BenzeneMessageContext.CreateInstance(request));
 
         Assert.Equal(Defaults.Name, mappedRequest.Name);
     }

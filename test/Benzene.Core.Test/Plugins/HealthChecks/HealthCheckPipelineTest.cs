@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Core.DI;
-using Benzene.Core.DirectMessage;
+using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Response;
 using Benzene.HealthChecks;
@@ -29,26 +29,26 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .AddTransient<ResponseMiddleware<DirectMessageContext>>()
+            .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
             .UsingBenzene(x => x
                 .AddBenzene()
-                .AddDirectMessage()
+                .AddBenzeneMessage()
                 .AddMessageHandlers(GetType().Assembly)
             );
 
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
             .UseProcessResponse()
             .UseHealthCheck(Defaults.HealthCheckTopic, x => x.AddHealthCheck(mockHealthCheck.Object))
             .UseMessageRouter();
 
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.HealthCheckTopic,
-            Message = JsonConvert.SerializeObject(new ExampleRequestPayload
+            Body = JsonConvert.SerializeObject(new ExampleRequestPayload
             {
                 Name = "foo"
             })
@@ -73,14 +73,14 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .AddTransient<ResponseMiddleware<DirectMessageContext>>()
+            .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
             .UsingBenzene(x => x
                 .AddBenzene()
-                .AddDirectMessage()
+                .AddBenzeneMessage()
                 .AddMessageHandlers(GetType().Assembly)
             );
 
-        var pipeline = new MiddlewarePipelineBuilder<DirectMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
             .UseProcessResponse()
@@ -93,12 +93,12 @@ public class HealthCheckPipelineTest
             )
             .UseMessageRouter();
 
-        var aws = new DirectMessageApplication(pipeline.Build());
+        var aws = new BenzeneMessageApplication(pipeline.Build());
 
-        var request = new DirectMessageRequest
+        var request = new BenzeneMessageRequest
         {
             Topic = Defaults.HealthCheckTopic,
-            Message = JsonConvert.SerializeObject(new ExampleRequestPayload
+            Body = JsonConvert.SerializeObject(new ExampleRequestPayload
             {
                 Name = "foo"
             })

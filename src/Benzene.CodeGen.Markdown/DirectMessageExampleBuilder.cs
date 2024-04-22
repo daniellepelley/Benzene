@@ -3,10 +3,10 @@ using Newtonsoft.Json;
 
 namespace Benzene.CodeGen.Markdown;
 
-public class DirectMessageExampleBuilder : ExampleBuilder 
+public class BenzeneMessageExampleBuilder : ExampleBuilder 
 {
 
-    public DirectMessageExampleBuilder(IDictionary<string, object> knownValues)
+    public BenzeneMessageExampleBuilder(IDictionary<string, object> knownValues)
         :base("Direct", (topic, payload) => new
         {
             topic,
