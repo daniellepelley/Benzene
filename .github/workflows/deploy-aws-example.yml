@@ -5,13 +5,13 @@ on:
 
 defaults:
   run:
-    working-directory: ./examples/Aws/
+    working-directory: examples/Aws/
 jobs:
   build:
     environment: test
     runs-on: ubuntu-latest
     env: 
-      working-directory: ./examples/Aws/
+      working-directory: examples/Aws/
       AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: eu-west-1
