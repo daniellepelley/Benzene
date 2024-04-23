@@ -2,18 +2,13 @@ using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.AspNet.Core;
 using Benzene.Core.Correlation;
 using Benzene.Core.DI;
-using Benzene.Core.Logging;
 using Benzene.Core.MiddlewareBuilder;
-using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Logging;
-using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.FluentValidation;
-using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Microsoft.Logging;
 using FluentValidation;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Builder;
@@ -46,44 +41,26 @@ public class Startup
             .WriteTo.Console(new CustomJsonFormatter())
             .WriteTo.ApplicationInsights(new TelemetryConfiguration("3f72a47f-1aba-4e7a-913e-b3aa3161e6c6"), TelemetryConverter.Traces)
             .CreateLogger();
-        
+
         services.AddLogging();
         services.AddScoped<ILogger, Logger<string>>();
         services.AddControllers();
 
         services.AddSingleton(Configuration);
-        //services.AddStructuredLogging();
-        // services.AddCorrelationId();
 
-        // services.AddScoped<IOrderDbClient, OrderDbClient>();
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
-        // services.AddScoped<IOrderService, HardcodedOrderService>();
 
-        // services.AddDbContext<DataContext>(x => x.UseNpgsql(Configuration["DB_CONNECTION_STRING"],
-        //     pgOptions => pgOptions.ProvidePasswordCallback(DbConnectionStringFactory.PasswordCallback())));
-
-        // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
-        
-         services
-             .UsingBenzene(x => x
-                     .AddMessageHandlers()
-                 // .AddStructuredLogging()
-             // .AddMicrosoftLogger()
-             .AddCorrelationId()
-             // .AddHttpMessageHandlers()
-            .AddAspNetMessageHandlers()
-             );
+        services
+            .UsingBenzene(x => x
+                .AddMessageHandlers()
+                .AddCorrelationId()
+                .AddAspNetMessageHandlers()
+            );
 
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
         services.AddSingleton<IMiddlewarePipelineBuilder<AspNetContext>>(
             new MiddlewarePipelineBuilder<AspNetContext>(new MicrosoftBenzeneServiceContainer(services)));
-
-        // services.AddScoped<AspNetContextResponseMiddleware>();
-
-        // services.AddScoped<IProcessTimerFactory>(x =>
-        // new CompositeProcessTimerFactory(
-        // new LoggingProcessTimerFactory(x.GetService<ILogger>())));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

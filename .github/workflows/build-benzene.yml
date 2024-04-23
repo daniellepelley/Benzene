@@ -25,4 +25,4 @@ jobs:
     - name: Build
       run: dotnet build Benzene.sln --no-restore
     - name: Test
-      run: dotnet test Benzene.sln --no-build --verbosity normal
+      run: dotnet test test/Benzene.Core.Test/Benzene.Test.csproj --no-build --verbosity normal

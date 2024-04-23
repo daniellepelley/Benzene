@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Kafka.Core</AssemblyName>
+    <RootNamespace>Benzene.Kafka.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Benzene.Core" Version="0.0.2.5-alpha" />
+    <PackageReference Include="Confluent.Kafka" Version="2.0.2" />
+  </ItemGroup>
+
+</Project>

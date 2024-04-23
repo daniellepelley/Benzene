@@ -10,7 +10,7 @@ public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TCon
     where TContext : class, IHasMessageResult
 {
     private readonly IResponseHandler<TContext>[] _responseHandlers;
-    private IBenzeneResponseAdapter<TContext> _responseAdapter;
+    private readonly IBenzeneResponseAdapter<TContext> _responseAdapter;
 
     public ResponseHandlerContainer(IBenzeneResponseAdapter<TContext> responseAdapter, IEnumerable<IResponseHandler<TContext>> responseHandlers)
     {

@@ -24,7 +24,6 @@ public class KafkaPipelineTest
                 .AddSingleton(mockExampleService.Object)
             ).Configure(app => app
                 .UseKafka(kafka => kafka
-                    .UseProcessResponse()
                     .UseMessageRouter()))
             .Build();
 
