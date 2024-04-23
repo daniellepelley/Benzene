@@ -7,6 +7,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Core.DI;
 using Benzene.Core.Helper;
@@ -251,7 +252,7 @@ public static class Extensions
             
             var responseHandlers = builders.Select(x => x(resolver)).ToArray();
 
-            var handlerContainer = new ResponseHandlerContainer<TContext>(responseHandlers);
+            var handlerContainer = new ResponseHandlerContainer<TContext>(resolver.GetService<IBenzeneResponseAdapter<TContext>>(), responseHandlers);
             await handlerContainer.HandleAsync(context);
         });
     }

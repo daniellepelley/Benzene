@@ -31,4 +31,9 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
         context.EnsureResponseExists();
         return context.ContentResult.Content;
     }
+
+    public Task FinalizeAsync(AspNetContext context)
+    {
+       return Task.CompletedTask; 
+    }
 }

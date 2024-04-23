@@ -18,7 +18,8 @@ public class ResponseHandlerContainerTest
     {
         var messageHandlerDefinition = Mother.CreateMessageHandlerDefinitionV2();
 
-        var messageHandlerFactory = new ResponseHandlerContainer<BenzeneMessageContext>(new ISyncResponseHandler<BenzeneMessageContext>[]
+        var messageHandlerFactory = new ResponseHandlerContainer<BenzeneMessageContext>(new BenzeneMessageResponseAdapter(),
+            new ISyncResponseHandler<BenzeneMessageContext>[]
         {
             new DefaultResponseStatusHandler<BenzeneMessageContext> (new BenzeneMessageResponseAdapter()),
             new ResponseBodyHandler<BenzeneMessageContext>(

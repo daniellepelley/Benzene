@@ -3,6 +3,8 @@ using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.Results;
+using Benzene.Examples.App.Results;
+using Benzene.Results;
 
 namespace Benzene.Examples.App.Custom;
 

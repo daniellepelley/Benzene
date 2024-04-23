@@ -51,7 +51,6 @@ public class KafkaMessagePipelineTest
         await aws.HandleAsync(request.AwsEventStreamContext(), () => Task.CompletedTask);
 
         Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
-
     }
 
     [Fact]

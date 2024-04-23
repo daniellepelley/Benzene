@@ -1,5 +1,6 @@
 using System;
 using Benzene.Core.Results;
+using Benzene.Examples.App.Results;
 
 namespace Benzene.Examples.App.Model;
 

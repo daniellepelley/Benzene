@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Core.Results;
 using Benzene.Examples.App.Model;
+using Benzene.Results;
 
 namespace Benzene.Examples.App.Data;
 

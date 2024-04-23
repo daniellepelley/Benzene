@@ -34,4 +34,9 @@ public class HttpContextResponseAdapter : IBenzeneResponseAdapter<HttpContext>
         context.EnsureResponseExists();
         return context.Response.Body;
     }
+
+    public Task FinalizeAsync(HttpContext context)
+    {
+        return Task.CompletedTask;
+    }
 }

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Core.Results;
+using Benzene.Results;
 
 namespace Benzene.Examples.App.Data;
 

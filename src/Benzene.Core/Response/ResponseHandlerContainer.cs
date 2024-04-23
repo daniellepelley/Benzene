@@ -10,9 +10,11 @@ public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TCon
     where TContext : class, IHasMessageResult
 {
     private readonly IResponseHandler<TContext>[] _responseHandlers;
+    private IBenzeneResponseAdapter<TContext> _responseAdapter;
 
-    public ResponseHandlerContainer(IEnumerable<IResponseHandler<TContext>> responseHandlers)
+    public ResponseHandlerContainer(IBenzeneResponseAdapter<TContext> responseAdapter, IEnumerable<IResponseHandler<TContext>> responseHandlers)
     {
+        _responseAdapter = responseAdapter;
         _responseHandlers = responseHandlers.ToArray();
     }
 
@@ -30,5 +32,7 @@ public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TCon
                     break;
             }
         }
+
+        await _responseAdapter.FinalizeAsync(context);
     }
 }

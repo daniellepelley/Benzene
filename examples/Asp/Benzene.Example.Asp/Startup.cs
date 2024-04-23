@@ -1,6 +1,7 @@
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.AspNet.Core;
 using Benzene.Core.Correlation;
+using Benzene.Core.DI;
 using Benzene.Core.Logging;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Diagnostics.Timers;
@@ -64,16 +65,17 @@ public class Startup
 
         // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
         
-        services
-            .UsingBenzene(x => x
-            .AddStructuredLogging()
-            .AddMicrosoftLogger()
-            .AddCorrelationId()
-            .AddHttpMessageHandlers(typeof(CreateOrderMessage).Assembly)
-            .AddAspNetMessageHandlers());
+         services
+             .UsingBenzene(x => x
+                     .AddMessageHandlers()
+                 // .AddStructuredLogging()
+             // .AddMicrosoftLogger()
+             .AddCorrelationId()
+             // .AddHttpMessageHandlers()
+            .AddAspNetMessageHandlers()
+             );
 
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
-        services.AddScoped<IProcessTimerFactory, NullProcessTimerFactory>();
         services.AddSingleton<IMiddlewarePipelineBuilder<AspNetContext>>(
             new MiddlewarePipelineBuilder<AspNetContext>(new MicrosoftBenzeneServiceContainer(services)));
 
@@ -99,7 +101,6 @@ public class Startup
 
         app.UseBenzene(benzene => benzene
             .UseCorrelationId()
-            .UseLogTopic()
             // .UseLogContext("http")
             .UseProcessResponse()
             .UseMessageRouter(x => x.UseFluentValidation())

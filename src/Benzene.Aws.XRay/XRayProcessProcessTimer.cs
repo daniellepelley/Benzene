@@ -7,25 +7,22 @@ public sealed class XRayProcessProcessTimer : IProcessTimer
 {
     public XRayProcessProcessTimer(string timerName)
     {
-        if (AWSXRayRecorder.Instance.IsEntityPresent())
-        {
-            AWSXRayRecorder.Instance.BeginSubsegment(timerName);
-        }
+        if (AWSXRayRecorder.Instance.IsTracingDisabled())
+            return;
+        AWSXRayRecorder.Instance.BeginSubsegment(timerName);
     }
 
     public void Dispose()
     {
-        if (AWSXRayRecorder.Instance.IsEntityPresent())
-        {
-            AWSXRayRecorder.Instance.EndSubsegment();
-        }
+        if (AWSXRayRecorder.Instance.IsTracingDisabled())
+            return;
+        AWSXRayRecorder.Instance.EndSubsegment();
     }
 
     public void SetTag(string key, string value)
     {
-        if (AWSXRayRecorder.Instance.IsEntityPresent())
-        {
-            AWSXRayRecorder.Instance.AddAnnotation(key, value);
-        }
+        if (AWSXRayRecorder.Instance.IsTracingDisabled())
+            return;
+        AWSXRayRecorder.Instance.AddAnnotation(key, value);
     }
 }

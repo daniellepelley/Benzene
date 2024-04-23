@@ -15,7 +15,7 @@ public static class AwsLambdaBenzeneTestHostExtensions
         return new AwsLambdaBenzeneTestHost(source.Build());
     }
 
-    public static AwsLambdaBenzeneTestHost BuildHost(this InlineAwsLambdaStartUp source)
+    public static AwsLambdaBenzeneTestHost BuildHost(this IEntryPointBuilder source)
     {
         return new AwsLambdaBenzeneTestHost(source.Build());
     }

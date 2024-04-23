@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.Response;
+﻿using System.Threading.Tasks;
+using Benzene.Abstractions.Response;
 using Benzene.Core.Helper;
 
 namespace Benzene.Core.BenzeneMessage;
@@ -32,5 +33,10 @@ public class BenzeneMessageResponseAdapter : IBenzeneResponseAdapter<BenzeneMess
     {
         context.EnsureResponseExists();
         return context.BenzeneMessageResponse.Message;
+    }
+
+    public Task FinalizeAsync(BenzeneMessageContext context)
+    {
+        return Task.CompletedTask;
     }
 }

@@ -6,7 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Aws.Core;
 
-public class InlineAwsLambdaStartUp
+public interface IEntryPointBuilder
+{
+    IAwsLambdaEntryPoint Build();
+}
+
+public class InlineAwsLambdaStartUp : IEntryPointBuilder
 {
     private Action<IServiceCollection> _servicesAction = _ => { };
     private Action<IMiddlewarePipelineBuilder<AwsEventStreamContext>> _appAction = _ => { };

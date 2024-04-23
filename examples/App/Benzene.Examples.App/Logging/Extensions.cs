@@ -8,7 +8,7 @@ namespace Benzene.Examples.App.Logging
         public static IBenzeneServiceContainer AddStructuredLogging(this IBenzeneServiceContainer services)
         {
             return services
-                .AddScoped<ILogContext, SerilogLogContext>();
+                .AddScoped<IBenzeneLogContext, SerilogLogContext>();
         }
     }
 }

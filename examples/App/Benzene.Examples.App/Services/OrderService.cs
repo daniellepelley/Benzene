@@ -6,6 +6,7 @@ using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Data.Pagination;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
+using Benzene.Results;
 
 namespace Benzene.Examples.App.Services;
 
@@ -18,18 +19,18 @@ public class OrderService : IOrderService
         _orderDbClient = orderDbClient;
     }
 
-    public async Task<IHandlerResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
+    public async Task<IServiceResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
     {
         var databaseResult = await _orderDbClient.GetAllAsync(pagination.AsPagination());
-        return databaseResult.AsHandlerResult();
+        return databaseResult.AsServiceResult();
     }
 
-    public Task<IHandlerResult<OrderDto>> GetAsync(Guid id)
+    public Task<IServiceResult<OrderDto>> GetAsync(Guid id)
     {
-        return _orderDbClient.GetAsync(id).AsHandlerResult();
+        return _orderDbClient.GetAsync(id).AsServiceResult();
     }
 
-    public async Task<IHandlerResult<OrderDto>> SaveAsync(CreateOrderMessage value)
+    public async Task<IServiceResult<OrderDto>> SaveAsync(CreateOrderMessage value)
     {
         var orderDto = new OrderDto
         {
@@ -42,13 +43,13 @@ public class OrderService : IOrderService
 
         if (databaseResult.Status == ClientResultStatus.Created)
         {
-            return HandlerResult.Created(orderDto);
+            return ServiceResult.Created(orderDto);
         }
 
-        return databaseResult.AsHandlerResult<OrderDto>();
+        return databaseResult.AsServiceResult<OrderDto>();
     }
 
-    public async Task<IHandlerResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
+    public async Task<IServiceResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
     {
         var result = await _orderDbClient.GetAsync(Guid.Parse(updateOrderMessage.Id));
 
@@ -61,20 +62,20 @@ public class OrderService : IOrderService
 
             var resultData = await _orderDbClient.UpdateAsync(orderDto);
 
-            return resultData.AsHandlerResult();
+            return resultData.AsServiceResult();
         }
 
         if (result.Status == ClientResultStatus.NotFound)
         {
-            return HandlerResult.NotFound<OrderDto>();
+            return ServiceResult.NotFound<OrderDto>();
         }
 
-        return HandlerResult.ServiceUnavailable<OrderDto>();
+        return ServiceResult.ServiceUnavailable<OrderDto>();
     }
 
-    public async Task<IHandlerResult<Guid>> DeleteAsync(Guid id)
+    public async Task<IServiceResult<Guid>> DeleteAsync(Guid id)
     {
         var result = await _orderDbClient.DeleteAsync(id);
-        return result.AsHandlerResult();
+        return result.AsServiceResult();
     }
 }

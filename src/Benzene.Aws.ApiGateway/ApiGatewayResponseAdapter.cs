@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Benzene.Abstractions.Response;
 using Benzene.Core;
 using Benzene.Core.Helper;
@@ -34,5 +35,10 @@ public class ApiGatewayResponseAdapter : IBenzeneResponseAdapter<ApiGatewayConte
     {
         context.EnsureResponseExists();
         return context.ApiGatewayProxyResponse.Body;
+    }
+
+    public Task FinalizeAsync(ApiGatewayContext context)
+    {
+        return Task.CompletedTask;
     }
 }

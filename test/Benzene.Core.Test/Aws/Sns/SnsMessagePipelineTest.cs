@@ -65,9 +65,6 @@ public class SnsMessagePipelineTest
 
         var services = ServiceResolverMother.CreateServiceCollection();
         services
-            .AddTransient<ILogger<MessageRouter<SnsRecordContext>>>(_ =>
-                NullLogger<MessageRouter<SnsRecordContext>>.Instance)
-            .AddTransient<ILogger>(_ => NullLogger.Instance)
             .AddTransient(_ => mockExampleService.Object)
             .UsingBenzene(x => x.AddSns());
 

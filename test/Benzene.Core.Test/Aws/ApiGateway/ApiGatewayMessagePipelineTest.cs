@@ -1,10 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using Autofac;
 using Benzene.Abstractions.Request;
+using Benzene.Autofac;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Core.BenzeneMessage;
+using Benzene.Core.DI;
 using Benzene.Core.Mappers;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Request;
@@ -77,7 +81,7 @@ public class ApiGatewayMessagePipelineTest
 
         Assert.NotNull(response);
         var xml = new XmlSerializer().Deserialize<Void>(response.Body);
-        
+
         Assert.Equal(200, response.StatusCode);
         Assert.NotNull(xml);
     }
@@ -115,14 +119,14 @@ public class ApiGatewayMessagePipelineTest
     {
         var mockHttpEndpointFinder = new Mock<IHttpEndpointFinder>();
         mockHttpEndpointFinder.Setup(x => x.FindDefinitions())
-            .Returns(new []
+            .Returns(new[]
             {
-                new HttpEndpointDefinition("GET", "example", Defaults.Topic) as IHttpEndpointDefinition 
+                new HttpEndpointDefinition("GET", "example", Defaults.Topic) as IHttpEndpointDefinition
             });
 
         var apiGatewayContext = new ApiGatewayContext(CreateRequest());
 
-        var httpHeaderMappings = new HttpHeaderMappings(new Dictionary<string, string> {{"x-correlation-id", "correlationId"}});
+        var httpHeaderMappings = new HttpHeaderMappings(new Dictionary<string, string> { { "x-correlation-id", "correlationId" } });
         var actualMessage = new RequestMapper<ApiGatewayContext>(new ApiGatewayMessageBodyMapper(), new JsonSerializer()).GetBody<ExampleRequestPayload>(apiGatewayContext);
         var actualTopic = new ApiGatewayMessageTopicMapper(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
         var headers = new ApiGatewayMessageHeadersMapper(httpHeaderMappings).GetHeaders(apiGatewayContext);
@@ -141,7 +145,7 @@ public class ApiGatewayMessagePipelineTest
         var mockHealthCheck = new Mock<IHealthCheck>();
         mockHealthCheck.Setup(x => x.ExecuteAsync()).ReturnsAsync(HealthCheckResult.CreateInstance(true,
             null));
-    
+
         var host = new InlineAwsLambdaStartUp()
             .ConfigureServices(services => services
                 .ConfigureServiceCollection()
@@ -156,7 +160,7 @@ public class ApiGatewayMessagePipelineTest
 
         var request = HttpBuilder.Create("GET", "/healthcheck").AsApiGatewayRequest();
         var response = await host.SendApiGatewayAsync(request);
-    
+
         Assert.NotNull(response);
     }
 
@@ -186,4 +190,37 @@ public class ApiGatewayMessagePipelineTest
         Assert.NotNull(response.Body);
         Assert.Equal(200, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Autofac_Send()
+    {
+        var assembly = typeof(ExampleRequestPayload).Assembly;
+        var host = new AutofacInlineAwsLambdaStartUp()
+            .ConfigureServices(services =>
+            {
+                services
+                    .UsingBenzene(x =>
+                    {
+                        x.AddBenzene();
+                        x.AddMessageHandlers(assembly);
+                    });
+                    services.RegisterType<BenzeneMessageMapper>();
+                    services.RegisterInstance(Mock.Of<IExampleService>());
+
+            })
+            .Configure(app => app
+                .UseApiGateway(apiGateway => apiGateway
+                    .UseProcessResponse()
+                    .UseMessageRouter()
+                )
+            ).BuildHost();
+
+        var request = CreateRequest();
+        var response = await host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.NotNull(response.Body);
+        Assert.Equal(200, response.StatusCode);
+    }
+
 }

@@ -8,7 +8,7 @@ using Serilog.Core.Enrichers;
 
 namespace Benzene.Examples.App.Logging
 {
-    public class SerilogLogContext : ILogContext
+    public class SerilogLogContext : IBenzeneLogContext
     {
         public IDisposable Create(IDictionary<string, string> properties)
         {

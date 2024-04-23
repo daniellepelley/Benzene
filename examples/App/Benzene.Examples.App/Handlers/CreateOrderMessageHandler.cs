@@ -6,7 +6,7 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
-using Microsoft.Extensions.Logging;
+using Benzene.Results;
 
 namespace Benzene.Examples.App.Handlers;
 
@@ -14,18 +14,15 @@ namespace Benzene.Examples.App.Handlers;
 [Message(MessageTopicNames.OrderCreate)]
 public class CreateOrderMessageHandler : IMessageHandler<CreateOrderMessage, OrderDto>
 {
-    private readonly ILogger _logger;
     private readonly IOrderService _orderService;
 
-    public CreateOrderMessageHandler(IOrderService orderService, ILogger logger)
+    public CreateOrderMessageHandler(IOrderService orderService)
     {
-        _logger = logger;
         _orderService = orderService;
     }
 
-    public async Task<IHandlerResult<OrderDto>> HandleAsync(CreateOrderMessage request)
+    public async Task<IServiceResult<OrderDto>> HandleAsync(CreateOrderMessage request)
     {
-        _logger.LogInformation("Creating order");
         return await _orderService.SaveAsync(request);
     }
 }

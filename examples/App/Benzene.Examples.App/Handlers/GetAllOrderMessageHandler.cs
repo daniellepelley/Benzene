@@ -6,6 +6,7 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
+using Benzene.Results;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Examples.App.Handlers;
@@ -14,18 +15,15 @@ namespace Benzene.Examples.App.Handlers;
 [Message(MessageTopicNames.OrderGetAll)]
 public class GetAllOrderMessageHandler : IMessageHandler<GetAllOrdersMessage, OrderDto[]>
 {
-    private readonly ILogger _logger;
     private readonly IOrderService _orderService;
 
-    public GetAllOrderMessageHandler(IOrderService orderService, ILogger logger)
+    public GetAllOrderMessageHandler(IOrderService orderService)
     {
-        _logger = logger;
         _orderService = orderService;
     }
 
-    public async Task<IHandlerResult<OrderDto[]>> HandleAsync(GetAllOrdersMessage request)
+    public async Task<IServiceResult<OrderDto[]>> HandleAsync(GetAllOrdersMessage request)
     {
-        _logger.LogInformation("Getting all orders");
-        return await _orderService.GetAllAsync(request.Pagination);
+        return await _orderService.GetAllAsync(request?.Pagination);
     }
 }

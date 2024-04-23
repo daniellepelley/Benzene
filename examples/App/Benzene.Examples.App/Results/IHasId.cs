@@ -1,6 +1,6 @@
 using System;
 
-namespace Benzene.Core.Results;
+namespace Benzene.Examples.App.Results;
 
 public interface IHasId : IHasId<Guid>
 {}

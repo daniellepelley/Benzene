@@ -5,14 +5,15 @@ using Benzene.Core.Results;
 using Benzene.Examples.App.Data.Pagination;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
+using Benzene.Results;
 
 namespace Benzene.Examples.App.Services;
 
 public class HardcodedOrderService : IOrderService
 {
-    public Task<IHandlerResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
+    public Task<IServiceResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
     {
-        return HandlerResult.Ok(new []
+        return ServiceResult.Ok(new []
         {
             new OrderDto
             {
@@ -29,9 +30,9 @@ public class HardcodedOrderService : IOrderService
         }).AsTask();
     }
 
-    public Task<IHandlerResult<OrderDto>> GetAsync(Guid id)
+    public Task<IServiceResult<OrderDto>> GetAsync(Guid id)
     {
-        return HandlerResult.Ok(new 
+        return ServiceResult.Ok(new 
             OrderDto
             {
                 Id = Guid.NewGuid(),
@@ -41,9 +42,9 @@ public class HardcodedOrderService : IOrderService
         ).AsTask();
     }
 
-    public Task<IHandlerResult<OrderDto>> SaveAsync(CreateOrderMessage value)
+    public Task<IServiceResult<OrderDto>> SaveAsync(CreateOrderMessage value)
     {
-        return HandlerResult.Ok(new 
+        return ServiceResult.Ok(new 
             OrderDto
             {
                 Id = Guid.NewGuid(),
@@ -53,9 +54,9 @@ public class HardcodedOrderService : IOrderService
         ).AsTask();
     }
 
-    public Task<IHandlerResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
+    public Task<IServiceResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
     {
-        return HandlerResult.Ok(new 
+        return ServiceResult.Ok(new 
             OrderDto
             {
                 Id = Guid.NewGuid(),
@@ -65,8 +66,8 @@ public class HardcodedOrderService : IOrderService
         ).AsTask();
     }
 
-    public Task<IHandlerResult<Guid>> DeleteAsync(Guid id)
+    public Task<IServiceResult<Guid>> DeleteAsync(Guid id)
     {
-        return HandlerResult.Ok(Guid.NewGuid()).AsTask();
+        return ServiceResult.Ok(Guid.NewGuid()).AsTask();
     }
 }

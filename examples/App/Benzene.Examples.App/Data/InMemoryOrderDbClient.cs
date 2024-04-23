@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Benzene.Core.Results;
 using Benzene.Examples.App.Data.Pagination;
 using Benzene.Examples.App.Model;
+using Benzene.Results;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Examples.App.Data;
