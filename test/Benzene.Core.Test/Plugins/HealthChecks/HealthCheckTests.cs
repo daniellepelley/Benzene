@@ -71,7 +71,7 @@ public class HealthCheckTests
 
         Assert.NotNull(context.BenzeneMessageResponse);
 
-        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.BenzeneMessageResponse.Message);
+        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.BenzeneMessageResponse.Body);
         Assert.Equal(13, response.HealthChecks.Count);
     }
     
@@ -99,7 +99,7 @@ public class HealthCheckTests
 
         Assert.NotNull(context.BenzeneMessageResponse);
 
-        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.BenzeneMessageResponse.Message);
+        var response = JsonConvert.DeserializeObject<HealthCheckResponse>(context.BenzeneMessageResponse.Body);
         Assert.Equal(5, response.HealthChecks.Count);
     }
 

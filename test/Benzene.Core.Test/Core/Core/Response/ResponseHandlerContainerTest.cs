@@ -37,7 +37,7 @@ public class ResponseHandlerContainerTest
         await messageHandlerFactory.HandleAsync(context);
 
         Assert.Equal(Constants.JsonContentType, context.BenzeneMessageResponse.Headers[Constants.ContentTypeHeader]);
-        Assert.Equal(expected, context.BenzeneMessageResponse.Message);
+        Assert.Equal(expected, context.BenzeneMessageResponse.Body);
         Assert.Equal(ServiceResultStatus.Ok, context.BenzeneMessageResponse.StatusCode);
     }
 }

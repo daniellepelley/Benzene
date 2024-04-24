@@ -17,9 +17,9 @@ public class MessageMapper<TContext> : IMessageMapper<TContext>
         _messageBodyMapper = messageBodyMapper;
     }
 
-    public string GetMessage(TContext context)
+    public string GetBody(TContext context)
     {
-        return _messageBodyMapper.GetMessage(context);
+        return _messageBodyMapper.GetBody(context);
     }
 
     public IDictionary<string, string> GetHeaders(TContext context)

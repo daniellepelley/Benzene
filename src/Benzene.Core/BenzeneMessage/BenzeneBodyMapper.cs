@@ -20,7 +20,7 @@ public class BenzeneMessageMapper : IMessageMapper<BenzeneMessageContext>
             context.BenzeneMessageRequest.Headers.GetValue("version"));
     }
 
-    public string GetMessage(BenzeneMessageContext context)
+    public string GetBody(BenzeneMessageContext context)
     {
         return context.BenzeneMessageRequest.Body;
     }

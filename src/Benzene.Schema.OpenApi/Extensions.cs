@@ -30,7 +30,7 @@ public static class Extensions
 
             if (messageTopic.Id == topic || messageTopic.Id == Constants.DefaultSpecTopic)
             {
-                var specRequest = JsonConvert.DeserializeObject<SpecRequest>(mapper.GetMessage(context));
+                var specRequest = JsonConvert.DeserializeObject<SpecRequest>(mapper.GetBody(context));
 
                 var output = CreateSpec(resolver, specRequest ?? new SpecRequest("asyncapi", "json"));
 

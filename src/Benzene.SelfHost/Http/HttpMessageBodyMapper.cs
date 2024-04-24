@@ -4,7 +4,7 @@ namespace Benzene.SelfHost.Http;
 
 public class HttpMessageBodyMapper : IMessageBodyMapper<HttpContext>
 {
-    public string GetMessage(HttpContext context)
+    public string GetBody(HttpContext context)
     {
         return context.Request.Body;
     }

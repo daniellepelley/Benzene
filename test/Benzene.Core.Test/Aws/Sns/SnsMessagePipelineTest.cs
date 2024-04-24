@@ -177,7 +177,7 @@ public class SnsMessagePipelineTest
             }
         });
 
-        var actualMessage = sqsMessageMapper.GetMessage(sqsMessageContext);
+        var actualMessage = sqsMessageMapper.GetBody(sqsMessageContext);
         var actualTopic = sqsMessageMapper.GetTopic(sqsMessageContext);
         var actualOrder = sqsMessageMapper.GetHeader(sqsMessageContext, "orderId");
 

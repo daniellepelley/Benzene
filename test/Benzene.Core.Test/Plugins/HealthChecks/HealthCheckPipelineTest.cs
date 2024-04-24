@@ -60,7 +60,7 @@ public class HealthCheckPipelineTest
         mockHealthCheck.Verify(x => x.ExecuteAsync());
 
         Assert.NotNull(response);
-        Assert.Contains("some-name", response.Message);
+        Assert.Contains("some-name", response.Body);
         Assert.Equal(ServiceResultStatus.Ok, response.StatusCode);
     }
 
@@ -110,11 +110,11 @@ public class HealthCheckPipelineTest
         mockHealthCheck.Verify(x => x.ExecuteAsync());
 
         Assert.NotNull(response);
-        Assert.Contains("HealthCheck-1", response.Message);
-        Assert.Contains("HealthCheck-2", response.Message);
-        Assert.Contains("HealthCheck-3", response.Message);
-        Assert.Contains("Simple", response.Message);
-        Assert.Contains("Simple-2", response.Message);
+        Assert.Contains("HealthCheck-1", response.Body);
+        Assert.Contains("HealthCheck-2", response.Body);
+        Assert.Contains("HealthCheck-3", response.Body);
+        Assert.Contains("Simple", response.Body);
+        Assert.Contains("Simple-2", response.Body);
         Assert.Equal(ServiceResultStatus.Ok, response.StatusCode);
     }
 }

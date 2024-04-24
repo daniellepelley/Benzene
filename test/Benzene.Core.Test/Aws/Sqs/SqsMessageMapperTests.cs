@@ -24,7 +24,7 @@ namespace Benzene.Test.Aws.Sqs
             var mapper = new MessageMapper<SqsMessageContext>(new SqsMessageTopicMapper(), new SqsMessageBodyMapper(), new SqsMessageHeadersMapper());
 
             var topic = mapper.GetTopic(sqsMessageContext);
-            var message = mapper.GetMessage(sqsMessageContext);
+            var message = mapper.GetBody(sqsMessageContext);
 
             Assert.Equal("some-topic", topic.Id);
             Assert.Equal("some-message", message);
@@ -42,7 +42,7 @@ namespace Benzene.Test.Aws.Sqs
             var mapper = new MessageMapper<SqsMessageContext>(new SqsMessageTopicMapper(), new SqsMessageBodyMapper(), new SqsMessageHeadersMapper());
 
             var topic = mapper.GetTopic(sqsMessageContext);
-            var message = mapper.GetMessage(sqsMessageContext);
+            var message = mapper.GetBody(sqsMessageContext);
 
             Assert.Equal(Constants.Missing, topic.Id);
             Assert.Equal("some-message", message);

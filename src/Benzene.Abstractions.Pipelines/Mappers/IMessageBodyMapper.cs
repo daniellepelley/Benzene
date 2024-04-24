@@ -2,5 +2,5 @@
 
 public interface IMessageBodyMapper<TContext> 
 {
-    string? GetMessage(TContext context);
+    string? GetBody(TContext context);
 }

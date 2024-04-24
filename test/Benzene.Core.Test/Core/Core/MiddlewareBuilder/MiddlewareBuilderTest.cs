@@ -26,7 +26,7 @@ public class MiddlewareBuilderTest
                 {
                     x.BenzeneMessageResponse = new BenzeneMessageResponse
                     {
-                        Message = "foo"
+                        Body = "foo"
                     };
                 }))
             .GetItems();
@@ -39,7 +39,7 @@ public class MiddlewareBuilderTest
         var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
-        Assert.Equal("foo", context.BenzeneMessageResponse.Message);
+        Assert.Equal("foo", context.BenzeneMessageResponse.Body);
     }
     
     [Fact]
@@ -64,7 +64,7 @@ public class MiddlewareBuilderTest
                 .OnResponse((_,_) => { })
                 .OnResponse(null, (_,context) => {
                     context.BenzeneMessageResponse = new BenzeneMessageResponse();
-                    context.BenzeneMessageResponse.Message = "foo";
+                    context.BenzeneMessageResponse.Body = "foo";
                 }))
             .GetItems();
 
@@ -81,6 +81,6 @@ public class MiddlewareBuilderTest
         var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
-        Assert.Equal("foo", context.BenzeneMessageResponse.Message);
+        Assert.Equal("foo", context.BenzeneMessageResponse.Body);
     }
 }

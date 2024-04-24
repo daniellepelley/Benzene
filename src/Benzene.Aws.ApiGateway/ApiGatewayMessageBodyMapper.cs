@@ -4,7 +4,7 @@ namespace Benzene.Aws.ApiGateway;
 
 public class ApiGatewayMessageBodyMapper : IMessageBodyMapper<ApiGatewayContext>
 {
-    public string GetMessage(ApiGatewayContext context)
+    public string GetBody(ApiGatewayContext context)
     {
         return context.ApiGatewayProxyRequest.Body;
     }

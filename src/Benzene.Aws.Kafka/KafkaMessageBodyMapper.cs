@@ -6,7 +6,7 @@ namespace Benzene.Aws.Kafka;
 
 public class KafkaMessageBodyMapper : IMessageBodyMapper<KafkaContext>
 {
-    public string GetMessage(KafkaContext context)
+    public string GetBody(KafkaContext context)
     {
         return StreamToString(context.KafkaEventRecord.Value);
     }

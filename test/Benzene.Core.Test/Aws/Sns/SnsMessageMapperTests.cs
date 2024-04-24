@@ -27,7 +27,7 @@ namespace Benzene.Test.Aws.Sns
             var mapper = new MessageMapper<SnsRecordContext>(new SnsMessageTopicMapper(), new SnsMessageBodyMapper(), new SnsMessageHeadersMapper());
 
             var topic = mapper.GetTopic(snsRecordContext);
-            var message = mapper.GetMessage(snsRecordContext);
+            var message = mapper.GetBody(snsRecordContext);
 
             Assert.Equal("some-topic", topic.Id);
             Assert.Equal("some-message", message);
@@ -48,7 +48,7 @@ namespace Benzene.Test.Aws.Sns
             var mapper = new MessageMapper<SnsRecordContext>(new SnsMessageTopicMapper(), new SnsMessageBodyMapper(), new SnsMessageHeadersMapper());
 
             var topic = mapper.GetTopic(snsRecordContext);
-            var message = mapper.GetMessage(snsRecordContext);
+            var message = mapper.GetBody(snsRecordContext);
 
             Assert.Equal(Constants.Missing, topic.Id);
             Assert.Equal("some-message", message);

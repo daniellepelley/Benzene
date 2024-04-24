@@ -4,7 +4,7 @@ namespace Benzene.Aws.Sqs;
 
 public class SqsMessageBodyMapper : IMessageBodyMapper<SqsMessageContext>
 {
-    public string GetMessage(SqsMessageContext context)
+    public string GetBody(SqsMessageContext context)
     {
         return context.SqsMessage.Body;
     }

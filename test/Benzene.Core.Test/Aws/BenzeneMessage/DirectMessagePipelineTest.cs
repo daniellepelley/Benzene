@@ -25,7 +25,7 @@ public class BenzeneMessagePipelineTest
         {
             context.BenzeneMessageResponse = new BenzeneMessageResponse
             {
-                Message = context.BenzeneMessageRequest.Body,
+                Body = context.BenzeneMessageRequest.Body,
                 Headers = context.BenzeneMessageRequest.Headers,
                 StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503"
             };
@@ -39,7 +39,7 @@ public class BenzeneMessagePipelineTest
         var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
 
         Assert.NotNull(response);
-        Assert.Equal(Defaults.ResponseMessage, response.Message);
+        Assert.Equal(Defaults.ResponseMessage, response.Body);
         Assert.Equal("200", response.StatusCode);
     }
 
@@ -55,7 +55,7 @@ public class BenzeneMessagePipelineTest
                 BenzeneMessageContext = context;
                 context.BenzeneMessageResponse = new BenzeneMessageResponse
                 {
-                    Message = context.BenzeneMessageRequest.Body,
+                    Body = context.BenzeneMessageRequest.Body,
                     Headers = context.BenzeneMessageRequest.Headers,
                     StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503"
                 };
@@ -67,7 +67,7 @@ public class BenzeneMessagePipelineTest
 
         await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
 
-        Assert.Equal(Defaults.ResponseMessage, BenzeneMessageContext.BenzeneMessageResponse.Message);
+        Assert.Equal(Defaults.ResponseMessage, BenzeneMessageContext.BenzeneMessageResponse.Body);
         Assert.Equal("200", BenzeneMessageContext.BenzeneMessageResponse.StatusCode);
     }
 }

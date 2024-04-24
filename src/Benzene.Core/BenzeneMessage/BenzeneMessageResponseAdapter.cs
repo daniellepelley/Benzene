@@ -26,13 +26,13 @@ public class BenzeneMessageResponseAdapter : IBenzeneResponseAdapter<BenzeneMess
     public void SetBody(BenzeneMessageContext context, string body)
     {
         context.EnsureResponseExists();
-        context.BenzeneMessageResponse.Message = body;
+        context.BenzeneMessageResponse.Body = body;
     }
 
     public string GetBody(BenzeneMessageContext context)
     {
         context.EnsureResponseExists();
-        return context.BenzeneMessageResponse.Message;
+        return context.BenzeneMessageResponse.Body;
     }
 
     public Task FinalizeAsync(BenzeneMessageContext context)

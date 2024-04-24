@@ -184,7 +184,7 @@ public class SqsMessagePipelineTest
                 }
             });
 
-        var actualMessage = sqsMessageMapper.GetMessage(sqsMessageContext);
+        var actualMessage = sqsMessageMapper.GetBody(sqsMessageContext);
         var actualTopic = sqsMessageMapper.GetTopic(sqsMessageContext);
 
         Assert.Equal(Defaults.Message, actualMessage);

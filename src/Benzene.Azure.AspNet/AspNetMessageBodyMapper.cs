@@ -5,7 +5,7 @@ namespace Benzene.Azure.AspNet;
 
 public class AspNetMessageBodyMapper : IMessageBodyMapper<AspNetContext>
 {
-    public string? GetMessage(AspNetContext context)
+    public string? GetBody(AspNetContext context)
     {
         return StreamToString(context.HttpRequest);
     }
