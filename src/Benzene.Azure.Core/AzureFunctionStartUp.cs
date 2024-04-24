@@ -13,7 +13,7 @@ public abstract class AzureFunctionStartUp : IWebJobsStartup, IStartUp<IServiceC
 
     public abstract void ConfigureServices(IServiceCollection services, IConfiguration configuration);
 
-    public abstract void Configure(AzureFunctionFunctionAppBuilder functionFunctionApp, IConfiguration configuration);
+    public abstract void Configure(AzureFunctionFunctionAppBuilder app, IConfiguration configuration);
 
     public void Configure(IWebJobsBuilder builder)
     {

@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Benzene.Azure.AspNet;
 using Benzene.Azure.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,9 +10,9 @@ namespace Benzene.Example.Azure;
 
 public class HttpFunction
 {
-    private readonly IAzureApp _app;
+    private readonly IAzureFunctionApp _app;
 
-    public HttpFunction(IAzureApp app)
+    public HttpFunction(IAzureFunctionApp app)
     {
         _app = app;
     }

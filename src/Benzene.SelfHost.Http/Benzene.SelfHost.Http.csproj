@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Benzene.HostedService\Benzene.HostedService.csproj" />
     <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
   </ItemGroup>
 

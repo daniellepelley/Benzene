@@ -1,0 +1,84 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9F891C50-7099-49FE-8DB8-B4934268BE18}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.App", "..\App\Benzene.Examples.App\Benzene.Examples.App.csproj", "{022C438A-40B2-40BE-823C-119B82C51EFC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Microsoft.Logging", "..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj", "{8CBB5640-A115-499D-8BFC-7D68E440675D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.FluentValidation", "..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj", "{80AD4DE0-1868-479C-86D1-694645765480}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Diagnostics", "..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj", "{A887B126-542E-4C66-9059-5BF5DAE06106}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core", "..\..\src\Benzene.Core\Benzene.Core.csproj", "{A89ABEB3-5586-4B4B-B0E7-C6A583A40E23}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions.Pipelines", "..\..\src\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj", "{871B79EF-CA9E-45A5-8D27-96B922CF7A79}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Xml", "..\..\src\Benzene.Xml\Benzene.Xml.csproj", "{49616880-70ED-4498-8DF4-0C6E6C2A2A92}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Example.Azure", "Benzene.Example.Azure\Benzene.Example.Azure.csproj", "{B5757983-AE03-40AE-934E-B38D9DC8665C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Core", "..\..\src\Benzene.Azure.Core\Benzene.Azure.Core.csproj", "{CF32ADF4-D823-4CD4-9AD4-F787150372F5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.AspNet", "..\..\src\Benzene.Azure.AspNet\Benzene.Azure.AspNet.csproj", "{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{022C438A-40B2-40BE-823C-119B82C51EFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{022C438A-40B2-40BE-823C-119B82C51EFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{022C438A-40B2-40BE-823C-119B82C51EFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{022C438A-40B2-40BE-823C-119B82C51EFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CBB5640-A115-499D-8BFC-7D68E440675D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CBB5640-A115-499D-8BFC-7D68E440675D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CBB5640-A115-499D-8BFC-7D68E440675D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CBB5640-A115-499D-8BFC-7D68E440675D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80AD4DE0-1868-479C-86D1-694645765480}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80AD4DE0-1868-479C-86D1-694645765480}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80AD4DE0-1868-479C-86D1-694645765480}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80AD4DE0-1868-479C-86D1-694645765480}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A887B126-542E-4C66-9059-5BF5DAE06106}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A887B126-542E-4C66-9059-5BF5DAE06106}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A887B126-542E-4C66-9059-5BF5DAE06106}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A887B126-542E-4C66-9059-5BF5DAE06106}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A89ABEB3-5586-4B4B-B0E7-C6A583A40E23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A89ABEB3-5586-4B4B-B0E7-C6A583A40E23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A89ABEB3-5586-4B4B-B0E7-C6A583A40E23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A89ABEB3-5586-4B4B-B0E7-C6A583A40E23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49616880-70ED-4498-8DF4-0C6E6C2A2A92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49616880-70ED-4498-8DF4-0C6E6C2A2A92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49616880-70ED-4498-8DF4-0C6E6C2A2A92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49616880-70ED-4498-8DF4-0C6E6C2A2A92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5757983-AE03-40AE-934E-B38D9DC8665C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5757983-AE03-40AE-934E-B38D9DC8665C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5757983-AE03-40AE-934E-B38D9DC8665C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5757983-AE03-40AE-934E-B38D9DC8665C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF32ADF4-D823-4CD4-9AD4-F787150372F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF32ADF4-D823-4CD4-9AD4-F787150372F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF32ADF4-D823-4CD4-9AD4-F787150372F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF32ADF4-D823-4CD4-9AD4-F787150372F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5AAAC659-867C-482B-A5D2-BCE69DDB9853}
+	EndGlobalSection
+EndGlobal
