@@ -21,7 +21,7 @@ public class AspNetPipelineTest
     [Fact]
     public async Task Send()
     {
-        var app = new InlineAzureStartUp()
+        var app = new InlineAzureFunctionStartUp()
             .ConfigureServices(services => services.ConfigureServiceCollection())
             .Configure(app => app
                 .UseHttp(http => http
@@ -40,7 +40,7 @@ public class AspNetPipelineTest
     [Fact]
     public async Task Send_Xml()
     {
-        var app = new InlineAzureStartUp()
+        var app = new InlineAzureFunctionStartUp()
             .ConfigureServices(services => services.ConfigureServiceCollection()
             ).Configure(app => app
                 .UseHttp(http => http
@@ -64,7 +64,7 @@ public class AspNetPipelineTest
     [Fact]
     public async Task Send_ValidationError()
     {
-        var app = new InlineAzureStartUp()
+        var app = new InlineAzureFunctionStartUp()
             .ConfigureServices(services => services .ConfigureServiceCollection())
             .Configure(app => app
                 .UseHttp(http => http

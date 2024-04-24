@@ -5,7 +5,7 @@ namespace Benzene.Azure.EventHub;
 
 public static class DependencyInjectionExtensions
 {
-    public static IAzureAppBuilder UseEventHub(this IAzureAppBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action)
+    public static IAzureFunctionAppBuilder UseEventHub(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action)
     {
         var pipeline = app.Create<EventHubContext>();
         action(pipeline);

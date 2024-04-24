@@ -1,50 +1,59 @@
 ﻿using Benzene.Abstractions.DI;
+using Benzene.HostedService;
 using Benzene.Kafka.Core.KafkaMessage;
 using Confluent.Kafka;
 
 namespace Benzene.Kafka.Core;
 
-public class BenzeneKafkaConsumer : IDisposable
+public class BenzeneKafkaConsumer : IBenzeneConsumer, IDisposable
 {
-    private readonly ConsumerConfig _consumerConfig;
     private readonly IServiceResolverFactory _serviceResolverFactory;
     private IConsumer<Ignore, string>? _consumer;
     private readonly KafkaApplication<Ignore, string> _kafkaApplication;
+    private readonly BenzeneKafkaConfig _benzeneKafkaConfig;
 
     public BenzeneKafkaConsumer(IServiceResolverFactory serviceResolverFactory,
-        KafkaApplication<Ignore, string> kafkaApplication, ConsumerConfig consumerConfig)
+        KafkaApplication<Ignore, string> kafkaApplication, BenzeneKafkaConfig benzeneKafkaConfig)
     {
+        _benzeneKafkaConfig = benzeneKafkaConfig;
         _kafkaApplication = kafkaApplication;
         _serviceResolverFactory = serviceResolverFactory;
-        _consumerConfig = consumerConfig;
     }
 
-    public async Task Start(IEnumerable<string> topics, CancellationToken token)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        _consumer = new ConsumerBuilder<Ignore, string>(_consumerConfig).Build();
-        _consumer.Subscribe(topics);
+        return Task.Run(async () =>
+        {
+            _consumer = new ConsumerBuilder<Ignore, string>(_benzeneKafkaConfig.ConsumerConfig).Build();
+            _consumer.Subscribe(_benzeneKafkaConfig.Topics);
 
+            var semaphore = new SemaphoreSlim(_benzeneKafkaConfig.ConcurrentRequests);
+            
             try
             {
                 while (true)
                 {
-                    if (token.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested)
                     {
                         return;
                     }
 
+                    
                     try
                     {
-                        var consumeResult = _consumer.Consume(token);
-                        await _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory.CreateScope());
+                        await semaphore.WaitAsync(cancellationToken);
+                        var consumeResult = _consumer.Consume(cancellationToken);
+                        _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory.CreateScope())
+                            .ContinueWith(_ => semaphore.Release());
                     }
                     catch (ConsumeException e)
                     {
+                        semaphore.Release();
                         Console.WriteLine($"Error occured: {e.Error.Reason}");
                     }
                     catch (Exception ex)
                     {
-
+                        semaphore.Release();
                     }
                 }
             }
@@ -52,10 +61,18 @@ public class BenzeneKafkaConsumer : IDisposable
             {
                 _consumer.Close();
             }
+        }, cancellationToken);
     }
 
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _consumer.Close();
+        return Task.CompletedTask;
+    }
+    
     public void Dispose()
     {
         _serviceResolverFactory.Dispose();
     }
+
 }

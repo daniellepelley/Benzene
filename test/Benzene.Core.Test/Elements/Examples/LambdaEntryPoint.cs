@@ -3,6 +3,7 @@ using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
+using Benzene.Aws.Core.DirectMessage;
 using Benzene.Aws.Sns;
 using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;

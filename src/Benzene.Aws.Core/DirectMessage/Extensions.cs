@@ -1,10 +1,11 @@
 ﻿using System;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.DI;
+using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.DI;
 
-namespace Benzene.Aws.Core.BenzeneMessage;
+namespace Benzene.Aws.Core.DirectMessage;
 
 public static class Extensions
 {

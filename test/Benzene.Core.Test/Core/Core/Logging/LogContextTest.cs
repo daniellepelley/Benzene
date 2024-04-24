@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.BenzeneMessage;
+using Benzene.Aws.Core.DirectMessage;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Logging;
 using Benzene.Test.Examples;

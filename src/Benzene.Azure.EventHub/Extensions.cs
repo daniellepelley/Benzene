@@ -23,7 +23,7 @@ public static class Extensions
         return app.Use(resolver => new BenzeneMessageLambdaHandler(pipeline, resolver));
     }
     
-    public static Task HandleEventHub(this IAzureApp source, params EventData[] eventData)
+    public static Task HandleEventHub(this IAzureFunctionApp source, params EventData[] eventData)
     {
         return source.HandleAsync(eventData);
     }

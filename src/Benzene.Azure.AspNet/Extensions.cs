@@ -31,7 +31,7 @@ public static class Extensions
         }));
     }
     
-    public static Task<IActionResult> HandleHttpRequest(this IAzureApp source, HttpRequest httpRequest)
+    public static Task<IActionResult> HandleHttpRequest(this IAzureFunctionApp source, HttpRequest httpRequest)
     {
         return source.HandleAsync<HttpRequest, IActionResult>(httpRequest);
     }

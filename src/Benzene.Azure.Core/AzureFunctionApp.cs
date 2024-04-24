@@ -4,11 +4,11 @@ using Benzene.Core.Middleware;
 
 namespace Benzene.Azure.Core;
 
-public class AzureApp : IAzureApp
+public class AzureFunctionApp : IAzureFunctionApp
 {
     private readonly IEntryPointMiddlewareApplication[] _apps;
 
-    public AzureApp(Func<IServiceResolverFactory, IEntryPointMiddlewareApplication>[] appBuilders, IServiceResolverFactory serviceResolverFactory)
+    public AzureFunctionApp(Func<IServiceResolverFactory, IEntryPointMiddlewareApplication>[] appBuilders, IServiceResolverFactory serviceResolverFactory)
     {
         _apps = appBuilders.Select(x => x(serviceResolverFactory)).ToArray();
     }

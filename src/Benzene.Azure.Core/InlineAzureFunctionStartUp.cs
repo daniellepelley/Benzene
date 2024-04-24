@@ -3,28 +3,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Azure.Core;
 
-public class InlineAzureStartUp
+public class InlineAzureFunctionStartUp
 {
     private Action<IServiceCollection> _servicesAction = _ => { };
-    private Action<IAzureAppBuilder> _appAction = _ => { };
+    private Action<IAzureFunctionAppBuilder> _appAction = _ => { };
 
 
-    public InlineAzureStartUp ConfigureServices(Action<IServiceCollection> action)
+    public InlineAzureFunctionStartUp ConfigureServices(Action<IServiceCollection> action)
     {
         _servicesAction = action;
         return this;
     }
     
-    public InlineAzureStartUp Configure(Action<IAzureAppBuilder> action)
+    public InlineAzureFunctionStartUp Configure(Action<IAzureFunctionAppBuilder> action)
     {
         _appAction = action;
         return this;
     }
 
-    public IAzureApp Build()
+    public IAzureFunctionApp Build()
     {
         var services = new ServiceCollection();
-        var app = new AzureAppBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var app = new AzureFunctionFunctionAppBuilder(new MicrosoftBenzeneServiceContainer(services));
         
         _appAction(app);
         _servicesAction(services);

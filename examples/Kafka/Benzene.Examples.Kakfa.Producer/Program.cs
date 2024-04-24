@@ -16,7 +16,7 @@ ProducerConfig producerConfig = new()
 
 var sender = new KafkaSender(producerConfig);
 
-while (true)
+for(var i = 0; i < 5; i++)
 {       
     var message = new { Status = SomeStatus, Name = SomeName };
 

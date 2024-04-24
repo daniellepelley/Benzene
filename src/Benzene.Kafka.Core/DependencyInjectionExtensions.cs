@@ -1,8 +1,6 @@
 ﻿using System.Reflection;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.Request;
-using Benzene.Core.Request;
 using Benzene.Kafka.Core.KafkaMessage;
 
 namespace Benzene.Kafka.Core;

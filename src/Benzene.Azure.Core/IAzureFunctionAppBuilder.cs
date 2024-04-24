@@ -4,9 +4,9 @@ using Benzene.Core.Middleware;
 
 namespace Benzene.Azure.Core;
 
-public interface IAzureAppBuilder : IRegisterDependency
+public interface IAzureFunctionAppBuilder : IRegisterDependency
 {
     void Add(Func<IServiceResolverFactory, IEntryPointMiddlewareApplication> func);
     IMiddlewarePipelineBuilder<TNewContext> Create<TNewContext>();
-    IAzureApp Create(IServiceResolverFactory serviceResolverFactory);
+    IAzureFunctionApp Create(IServiceResolverFactory serviceResolverFactory);
 }

@@ -5,7 +5,7 @@ namespace Benzene.Azure.Kafka;
 
 public static class Extensions
 {
-    public static Task HandleKafkaEvents(this IAzureApp source, params KafkaEventData<string>[] eventData)
+    public static Task HandleKafkaEvents(this IAzureFunctionApp source, params KafkaEventData<string>[] eventData)
     {
         return source.HandleAsync(eventData);
     }

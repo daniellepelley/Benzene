@@ -23,7 +23,7 @@ public static class DependencyInjectionExtensions
         return services;
     }
     
-    public static IAzureAppBuilder UseKafka(this IAzureAppBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action)
+    public static IAzureFunctionAppBuilder UseKafka(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action)
     {
         app.Register(x => x.AddAzureKafka());
         var pipeline = app.Create<KafkaContext>();

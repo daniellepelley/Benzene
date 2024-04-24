@@ -19,7 +19,7 @@ public class EventHubPipelineTest
     {
         var mockExampleService = new Mock<IExampleService>();
         
-        var app = new InlineAzureStartUp()
+        var app = new InlineAzureFunctionStartUp()
             .ConfigureServices(services => services
                 .ConfigureServiceCollection()
                 .AddSingleton(mockExampleService.Object)

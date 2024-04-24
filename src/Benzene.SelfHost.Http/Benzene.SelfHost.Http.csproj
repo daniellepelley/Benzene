@@ -5,17 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageVersion>0.0.1</PackageVersion>
-    <AssemblyName>Benzene.Kafka.Core</AssemblyName>
-    <RootNamespace>Benzene.Kafka.Core</RootNamespace>
+    <AssemblyName>Benzene.SelfHost.Http</AssemblyName>
+    <RootNamespace>Benzene.SelfHost.Http</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="2.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\Benzene.HostedService\Benzene.HostedService.csproj" />
+    <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
   </ItemGroup>
 
 </Project>

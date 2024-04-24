@@ -7,6 +7,7 @@ using Benzene.Examples.App.Services;
 using Benzene.Kafka.Core;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Microsoft.Logging;
+using Benzene.Xml;
 using Confluent.Kafka;
 
 namespace Benzene.Examples.Kakfa;
@@ -46,6 +47,7 @@ public static class DependenciesBuilder
         // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
 
         services.UsingBenzene(x => x
+            .AddXml()
             .AddMicrosoftLogger()
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
             .AddKafkaMessageHandlers<Ignore, string>(typeof(CreateOrderMessage).Assembly)

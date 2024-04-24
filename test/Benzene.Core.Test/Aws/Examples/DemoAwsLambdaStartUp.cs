@@ -3,6 +3,7 @@ using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
+using Benzene.Aws.Core.DirectMessage;
 using Benzene.Aws.XRay;
 using Benzene.Core.DI;
 using Benzene.Microsoft.Dependencies;

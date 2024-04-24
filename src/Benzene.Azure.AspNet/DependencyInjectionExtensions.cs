@@ -11,7 +11,7 @@ namespace Benzene.Azure.AspNet;
 
 public static class DependencyInjectionExtensions
 {
-    public static IAzureAppBuilder UseHttp(this IAzureAppBuilder app, Action<IMiddlewarePipelineBuilder<AspNetContext>> action)
+    public static IAzureFunctionAppBuilder UseHttp(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<AspNetContext>> action)
     {
         app.Register(x => x.AddAspNet());
         var pipeline = app.Create<AspNetContext>();

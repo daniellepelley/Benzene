@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Benzene.Examples.Kakfa-FCA0D4B8-99E9-4997-BE67-37D72869CC71</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="config.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" Version="2.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
+    <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Benzene.Microsoft.Dependencies">
+      <HintPath>..\..\..\src\Benzene.Microsoft.Dependencies\bin\Debug\net6.0\Benzene.Microsoft.Dependencies.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
