@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
 		<PackageVersion>0.0.1</PackageVersion>
+		<Description>Benzene integration with Microsoft Data Annotations</Description>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<Authors>Daniel Le Pelley</Authors>
 		<AssemblyName>Benzene.DataAnnotations</AssemblyName>
 		<RootNamespace>Benzene.DataAnnotations</RootNamespace>
 		<PackageReadmeFile>README.md</PackageReadmeFile>

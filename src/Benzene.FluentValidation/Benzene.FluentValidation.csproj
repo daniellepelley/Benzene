@@ -3,6 +3,9 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<PackageVersion>0.0.1</PackageVersion>
+		<Description>Benzene integration with FluentValidation</Description>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<Authors>Daniel Le Pelley</Authors>
 		<AssemblyName>Benzene.FluentValidation</AssemblyName>
 		<RootNamespace>Benzene.FluentValidation</RootNamespace>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
