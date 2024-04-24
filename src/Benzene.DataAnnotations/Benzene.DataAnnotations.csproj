@@ -1,16 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageVersion>0.0.1</PackageVersion>
-    <AssemblyName>Benzene.DataAnnotations</AssemblyName>
-    <RootNamespace>Benzene.DataAnnotations</RootNamespace>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageVersion>0.0.1</PackageVersion>
+		<AssemblyName>Benzene.DataAnnotations</AssemblyName>
+		<RootNamespace>Benzene.DataAnnotations</RootNamespace>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="docs\README.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 
 </Project>

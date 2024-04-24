@@ -13,8 +13,11 @@ Benzene is a hexaganal framework designed for services running in serverless, co
     - Entity Framework
   - [Correlation Ids](correlation-ids)
 - Third Party
-  - Fluent Validation
-  - Datadog
+  - Validation
+    - [Fluent Validation](fluent-validation)
+    - [Data Annotations](data-annotations)
+  - Monitoring 
+    - Datadog
 - AWS
   - AWS Lambda
     - Setup
