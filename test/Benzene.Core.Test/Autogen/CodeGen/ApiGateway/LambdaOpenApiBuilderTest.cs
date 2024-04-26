@@ -4,6 +4,7 @@ using Benzene.CodeGen.ApiGateway;
 using Benzene.CodeGen.Core;
 using Benzene.Core.MessageHandling;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.EventService;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Xunit;

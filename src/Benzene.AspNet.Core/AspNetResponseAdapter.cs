@@ -7,7 +7,13 @@ namespace Benzene.AspNet.Core;
 public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
 {
     private string _body = string.Empty;
-    
+    private int _statusCode = 404;
+
+    public void SetResponseHeader(AspNetContext context, string headerKey, string headerValue)
+    {
+        context.HttpContext.Response.Headers.Add(headerKey, headerValue);
+    }
+
     public void SetContentType(AspNetContext context, string contentType)
     {
         context.HttpContext.Response.Headers.Add("content-type", contentType);
@@ -15,7 +21,7 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
 
     public void SetStatusCode(AspNetContext context, string statusCode)
     {
-        context.HttpContext.Response.StatusCode = Convert.ToInt32(statusCode);
+        _statusCode = Convert.ToInt32(statusCode);
     }
 
     public void SetBody(AspNetContext context, string body)
@@ -30,6 +36,8 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
 
     public async Task FinalizeAsync(AspNetContext context)
     {
+        context.HttpContext.Response.StatusCode = _statusCode;
         await context.HttpContext.Response.WriteAsync(_body);
+        await context.HttpContext.Response.Body.FlushAsync();
     }
 }

@@ -23,6 +23,7 @@ using Benzene.Core.Response;
 using Benzene.Core.Serialization;
 using Benzene.Core.Validation;
 using CacheMessageHandlersFinder = Benzene.Core.MessageHandling.CacheMessageHandlersFinder;
+using CompositeMessageHandlersFinder = Benzene.Core.MessageHandling.CompositeMessageHandlersFinder;
 
 namespace Benzene.Core.DI;
 
@@ -38,21 +39,30 @@ public static class Extensions
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         Type[] types)
     {
-        var finder = new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(types));
-        foreach (var handler in finder.FindDefinitions())
+        var cacheMessageHandlersFinder = new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(types));
+        foreach (var handler in cacheMessageHandlersFinder.FindDefinitions())
         {
             services.AddScoped(handler.HandlerType);
         }
 
         services.AddContextItems();
-        
-        services.AddSingleton<IMessageHandlersFinder>(_ => finder);
+
+        services.TryAddSingleton<MessageHandlersList>();
+        services.TryAddSingleton<DependencyMessageHandlersFinder>();
+        services.TryAddSingleton<IMessageHandlersList, MessageHandlersList>();
+        services.TryAddSingleton<IMessageHandlersFinder>(x =>
+            new CompositeMessageHandlersFinder(
+                cacheMessageHandlersFinder,
+            x.GetService<MessageHandlersList>(),
+            x.GetService<DependencyMessageHandlersFinder>()
+        ));
+
         services.TryAddScoped<IMessageHandlersLookUp, MessageHandlersLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
         services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();
         services.TryAddScoped<IMessageHandlerFactory, MessageHandlerFactory>();
         services.TryAddScoped<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
-        
+
         return services;
     }
 
@@ -64,18 +74,18 @@ public static class Extensions
         services.TryAddScoped<IMessageTopicMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
         services.TryAddScoped<IMessageHeadersMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
         services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
-        
+
         services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, ResponseBodyHandler<BenzeneMessageContext>>();
         services.AddScoped<IResponseHandler<BenzeneMessageContext>, DefaultResponseStatusHandler<BenzeneMessageContext>>();
         services.TryAddScoped<IResponsePayloadMapper<BenzeneMessageContext>, DefaultResponsePayloadMapper<BenzeneMessageContext>>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("direct"));
-        
+
         return services;
     }
 
 
-    public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services) 
+    public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
         services.TryAddScoped(typeof(MessageRouter<>));
@@ -84,7 +94,7 @@ public static class Extensions
         services.TryAddScoped(typeof(ResponseMiddleware<>));
         services.TryAddScoped(typeof(ResponseIfHandledMiddleware<>));
         services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));
-        
+
         services.TryAddScoped(typeof(IRequestMapper<>), typeof(JsonDefaultMultiSerializerOptionsRequestMapper<>));
         return services;
     }
@@ -99,11 +109,11 @@ public static class Extensions
     public static IBenzeneServiceContainer AddBenzene(this IBenzeneServiceContainer services)
     {
         services.TryAddSingleton<ITransportsInfo, TransportsInfo>();
-        
+
         services.TryAddScoped<CurrentTransportInfo>();
         services.TryAddScoped<ICurrentTransport>(x => x.GetService<CurrentTransportInfo>());
         services.TryAddScoped<ISetCurrentTransport>(x => x.GetService<CurrentTransportInfo>());
-        
+
         services.TryAddSingleton<IApplicationInfo, BlankApplicationInfo>();
         services.TryAddSingleton<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
         services.TryAddSingleton<IMiddlewareFactory, DefaultMiddlewareFactory>();
@@ -112,7 +122,6 @@ public static class Extensions
         services.TryAddScoped<IBenzeneLogContext, NullBenzeneLogContext>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
         services.TryAddSingleton<JsonSerializer>();
-
         services.AddServiceResolver();
         return services;
     }

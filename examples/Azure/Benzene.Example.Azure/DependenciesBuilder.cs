@@ -1,10 +1,15 @@
 ﻿using System.IO;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.DI;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Results;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
+using Benzene.Schema.OpenApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 // using Microsoft.Extensions.Logging;
@@ -37,9 +42,23 @@ public static class DependenciesBuilder
         // services.AddCorrelationId();
 
         services.AddScoped<IOrderService, HardcodedOrderService>();
-
+        services.AddSingleton<IMessageHandlerDefinition>(_ =>
+            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
+        services.AddScoped<SpecMessageHandler>();
+        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
         services.UsingBenzene(x => x
                 .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
                 .AddHttpMessageHandlers());
     }
 }
+
+// public static class Extensions
+// {
+//     public static IServiceCollection AddRoute(this IServiceCollection services, string method, string path,
+//         string topic)
+//     {
+//         var t = services.BuildServiceProvider().GetService<IListHttpEndpointFinder>();
+//         t.Add(new HttpEndpointDefinition(method, path, topic));
+//         return services;
+//     }
+// }

@@ -2,7 +2,7 @@
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Validation;
-using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.Abstractions;
 using Benzene.Schema.OpenApi.AsyncApi;
 using Benzene.Schema.OpenApi.EventService;

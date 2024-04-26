@@ -35,7 +35,6 @@ public class MicrosoftDependencyInjectionTest
     public void AddServiceResolver()
     {
         var services = new ServiceCollection();
-        services.UsingBenzene(x => x.AddServiceResolver());
 
         using var factory = new MicrosoftServiceResolverFactory(services);
 

@@ -3,6 +3,7 @@ using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.Helper;
 using Benzene.Core.MessageHandling;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.EventService;
 
 namespace Benzene.CodeGen.Core;

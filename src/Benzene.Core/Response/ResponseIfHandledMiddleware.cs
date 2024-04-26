@@ -20,7 +20,9 @@ public class ResponseIfHandledMiddleware<TContext> : IMiddleware<TContext> where
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
         await next();
-        if (context.MessageResult.MessageHandlerDefinition.Topic != Constants.Missing)
+
+        var topic = context.MessageResult.MessageHandlerDefinition?.Topic;
+        if (topic != null && topic != Constants.Missing)
         {
             await _responseHandlerContainer.HandleAsync(context);
         }

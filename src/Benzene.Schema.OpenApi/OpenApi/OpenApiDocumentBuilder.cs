@@ -2,6 +2,7 @@
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Results;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Results;
 using Benzene.Schema.OpenApi.Abstractions;
 using Microsoft.AspNetCore.Routing.Template;

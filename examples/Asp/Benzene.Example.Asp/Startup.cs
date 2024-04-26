@@ -8,6 +8,7 @@ using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.FluentValidation;
+using Benzene.Http.Cors;
 using Benzene.Microsoft.Dependencies;
 using FluentValidation;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -19,6 +20,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using System;
+using Benzene.Abstractions.MessageHandling;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Results;
+using Benzene.Http.Routing;
+using Benzene.Schema.OpenApi;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Benzene.Example.Asp;
@@ -50,6 +57,10 @@ public class Startup
 
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddSingleton<IMessageHandlerDefinition>(_ =>
+            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
+        services.AddScoped<SpecMessageHandler>();
+        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
 
         services
             .UsingBenzene(x => x
@@ -77,9 +88,15 @@ public class Startup
         app.UseAuthorization();
 
         app.UseBenzene(benzene => benzene
+            .UseProcessResponseIfHandled()
             .UseCorrelationId()
             // .UseLogContext("http")
-            .UseProcessResponse()
+            .UseSpec()
+            .UseCors(new CorsSettings
+            {
+                AllowedDomains = new[] { "https://editor-next.swagger.io" },
+                AllowedHeaders = Array.Empty<string>()
+            })
             .UseMessageRouter(x => x.UseFluentValidation())
         );
 

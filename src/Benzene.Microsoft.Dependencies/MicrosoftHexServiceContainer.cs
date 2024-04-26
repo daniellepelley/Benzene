@@ -126,12 +126,17 @@ public class MicrosoftBenzeneServiceContainer : IBenzeneServiceContainer
         return this;
     }
 
+    public IServiceResolverFactory CreateServiceResolverFactory()
+    {
+        return new MicrosoftServiceResolverFactory(_services);
+    }
+
     public IBenzeneServiceContainer AddSingleton<TService>(TService implementation) where TService : class
     {
         _services.AddSingleton(implementation);
         return this;
     }
-    
+
     public IBenzeneServiceContainer AddServiceResolver()
     {
         _services.AddTransient<IServiceResolver>(x => new MicrosoftServiceResolverAdapter(x));

@@ -3,6 +3,7 @@ using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
+using Benzene.Aws.ApiGateway;
 using Benzene.Azure.Core;
 using Benzene.Core.Response;
 using Benzene.Http;
@@ -25,6 +26,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<AspNetContext>, AspNetMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<AspNetContext>, AspNetMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<AspNetContext>, AspNetMessageBodyMapper>();
+        services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
 
         services.AddScoped<IResponseHandler<AspNetContext>, ResponseBodyHandler<AspNetContext>>();

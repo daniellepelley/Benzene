@@ -1,4 +1,4 @@
-﻿using Benzene.Http;
+﻿using Benzene.Http.Routing;
 using Xunit;
 
 namespace Benzene.Test.Core.Http;

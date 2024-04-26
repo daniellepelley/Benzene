@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.MiddlewareBuilder;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Tools.Aws;
 
-public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<IServiceCollection, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
+public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<IServiceCollection, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
 {
     private readonly List<Action<IServiceCollection>> _actions = new();
     private readonly Dictionary<string, string> _dictionary = new();

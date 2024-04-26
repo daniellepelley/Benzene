@@ -15,6 +15,7 @@ using Benzene.Core.Request;
 using Benzene.Core.Serialization;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Aws.ApiGateway.Examples;

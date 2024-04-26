@@ -2,6 +2,7 @@ using Benzene.Core.MiddlewareBuilder;
 using Benzene.FluentValidation;
 using Benzene.HostedService;
 using Benzene.Kafka.Core;
+using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
 using Benzene.Xml;
 using Confluent.Kafka;
@@ -20,7 +21,7 @@ public class Worker : BenzeneHostedServiceStartup
         DependenciesBuilder.Register(services, configuration);
     }
 
-    public override void Configure(IHostedServiceAppBuilder app, IConfiguration configuration)
+    public override void Configure(IBenzeneWorkerBuilder app, IConfiguration configuration)
     {
         var benzeneKafkaConfig1 = new BenzeneKafkaConfig
         {

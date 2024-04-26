@@ -4,6 +4,8 @@ using Benzene.Azure.Core;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Example.Azure;
 using Benzene.FluentValidation;
+using Benzene.Http.Cors;
+using Benzene.Schema.OpenApi;
 using Benzene.Xml;
 using Microsoft.Azure.WebJobs.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -28,7 +30,12 @@ public class StartUp: AzureFunctionStartUp
     {
         app.UseHttp(http => http
             .OnRequest("strip-api", x => x.HttpRequest.Path = x.HttpRequest.Path.Value.Replace("/api", ""))
-            .UseXml()
+            // .UseSpec()
+            .UseCors(new CorsSettings
+            {
+                AllowedDomains = new []{ "https://editor-next.swagger.io" },
+                AllowedHeaders = Array.Empty<string>() 
+            })
             .UseProcessResponse()
             .UseMessageRouter(router => router.UseFluentValidation()));
     }

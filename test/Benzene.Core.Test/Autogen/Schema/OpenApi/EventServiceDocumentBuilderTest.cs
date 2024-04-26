@@ -1,6 +1,7 @@
 ﻿using Benzene.Core.MessageHandling;
 using Benzene.Elements.Core.Broadcast;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Microsoft.OpenApi;

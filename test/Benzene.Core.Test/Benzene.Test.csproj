@@ -25,7 +25,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.1.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageReference Include="Moq" Version="4.18.4" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
@@ -79,12 +79,6 @@
     <ProjectReference Include="..\..\src\Benzene.SelfHost\Benzene.SelfHost.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
-      <HintPath>..\..\..\.nuget\packages\microsoft.extensions.logging.abstractions\2.2.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -249,6 +243,7 @@
   <ItemGroup>
     <Folder Include="Core\Newtonsoft\" />
     <Folder Include="Asp\" />
+    <Folder Include="SelfHost\Http\" />
   </ItemGroup>
 
 </Project>

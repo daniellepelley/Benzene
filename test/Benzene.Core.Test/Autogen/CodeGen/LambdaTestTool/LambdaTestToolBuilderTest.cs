@@ -9,6 +9,7 @@ using Benzene.CodeGen.LambdaTestTool;
 using Benzene.CodeGen.Markdown;
 using Benzene.Core.MessageHandling;
 using Benzene.Http;
+using Benzene.Http.Routing;
 using Benzene.Test.Autogen.CodeGen.Helpers;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Benzene.Test.Autogen.Schema.OpenApi;

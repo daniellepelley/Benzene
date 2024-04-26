@@ -18,7 +18,6 @@ public class MappersTest
     {
         var services = new ServiceCollection();
         services
-            .UsingBenzene(x => x.AddServiceResolver())
             .AddTransient<BenzeneMessageMapper>()
             .AddSingleton<MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>>()
             .AddSingleton<IMessageMapper<BenzeneMessageContext>, BenzeneMessageMapper>()

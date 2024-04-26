@@ -1,7 +1,10 @@
+using System.ComponentModel.Design;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.AspNet.Core;
 
@@ -18,18 +21,22 @@ public static class HexExtensions
 
     public static IApplicationBuilder UseBenzene(this IApplicationBuilder app, Action<IMiddlewarePipelineBuilder<AspNetContext>> builder)
     {
-        var serviceResolverFactory = new MicrosoftServiceResolverFactory(app.ApplicationServices);
+        var tempServiceResolverFactory = new MicrosoftServiceResolverFactory(app.ApplicationServices);
 
-        var middlewarePipelineBuilder = serviceResolverFactory.CreateScope().GetService<IMiddlewarePipelineBuilder<AspNetContext>>();
+        var benzeneServiceContainer =
+            tempServiceResolverFactory.CreateScope().GetService<IBenzeneServiceContainer>();
+        
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<AspNetContext>(benzeneServiceContainer);
         
         builder(middlewarePipelineBuilder);
 
         var pipeline = middlewarePipelineBuilder.Build();
-
+        var serviceResolverFactory = benzeneServiceContainer.CreateServiceResolverFactory();
+        
         app.Use(async (context, next) =>
         {
             await pipeline.HandleAsync(new AspNetContext(context),
-                new MicrosoftServiceResolverAdapter(context.RequestServices));
+                serviceResolverFactory.CreateScope());
 
             if (!context.Response.HasStarted)
             {

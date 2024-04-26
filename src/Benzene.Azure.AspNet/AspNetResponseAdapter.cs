@@ -37,3 +37,5 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
        return Task.CompletedTask; 
     }
 }
+
+

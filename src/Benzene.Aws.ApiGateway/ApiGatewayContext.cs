@@ -3,7 +3,7 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.ApiGateway
 {
-    public class ApiGatewayContext : IHasMessageResult
+    public class ApiGatewayContext : IHasMessageResult, IHttpContext
     {
         public ApiGatewayContext(APIGatewayProxyRequest apiGatewayProxyRequest)
         {

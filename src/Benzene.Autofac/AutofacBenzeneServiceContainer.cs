@@ -184,6 +184,11 @@ public class AutofacBenzeneServiceContainer : IBenzeneServiceContainer
         return this;
     }
 
+    public IServiceResolverFactory CreateServiceResolverFactory()
+    {
+        return new AutofacServiceResolverFactory(_containerBuilder);
+    }
+
     public IBenzeneServiceContainer AddSingleton<TImplementation>(TImplementation implementation)
         where TImplementation : class
     {

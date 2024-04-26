@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Core.Middleware;
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
@@ -9,7 +10,7 @@ namespace Benzene.SelfHost;
 public class InlineSelfHostedStartUp
 {
     private Action<IServiceCollection> _servicesAction = _ => { };
-    private Action<IMiddlewarePipelineBuilder<SelfHostContext>> _appAction = _ => { };
+    private Action<IBenzeneWorkerBuilder> _appAction = _ => { };
 
     public InlineSelfHostedStartUp ConfigureServices(Action<IServiceCollection> action)
     {
@@ -17,22 +18,22 @@ public class InlineSelfHostedStartUp
         return this;
     }
 
-    public InlineSelfHostedStartUp Configure(Action<IMiddlewarePipelineBuilder<SelfHostContext>> action)
+    public InlineSelfHostedStartUp Configure(Action<IBenzeneWorkerBuilder> action)
     {
         _appAction = action;
         return this;
     }
 
-    public IEntryPointMiddlewareApplication<string, string> Build()
+    public IBenzeneWorker Build()
     {
         var services = new ServiceCollection();
-        var app = new MiddlewarePipelineBuilder<SelfHostContext>(new MicrosoftBenzeneServiceContainer(services));
+        var app = new BenzeneWorkerBuilder(new MicrosoftBenzeneServiceContainer(services));
 
         _appAction(app);
         _servicesAction(services);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
-        return new SelfHostMiddlewareApplication(app.Build(), serviceResolverFactory);
+        return app.Create(serviceResolverFactory);
     }
 }

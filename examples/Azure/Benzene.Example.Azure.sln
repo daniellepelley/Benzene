@@ -28,6 +28,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Core", "..\..
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.AspNet", "..\..\src\Benzene.Azure.AspNet\Benzene.Azure.AspNet.csproj", "{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Schema.OpenApi", "..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj", "{7243A428-23C5-4772-B469-8A500053BE07}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,6 +76,10 @@ Global
 		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{911F3F64-02E7-476B-878D-6FA3E8EFEB6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7243A428-23C5-4772-B469-8A500053BE07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7243A428-23C5-4772-B469-8A500053BE07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7243A428-23C5-4772-B469-8A500053BE07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7243A428-23C5-4772-B469-8A500053BE07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

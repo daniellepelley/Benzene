@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Benzene.AspNet.Core;
 
-public class AspNetContext : IHasMessageResult
+public class AspNetContext : IHasMessageResult, IHttpContext
 {
     public AspNetContext(HttpContext httpContext)
     {

@@ -1,4 +1,5 @@
-﻿using Benzene.Core.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Hosting;
+using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
@@ -7,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Azure.Core;
 
-public abstract class AzureFunctionStartUp : IWebJobsStartup, IStartUp<IServiceCollection, AzureFunctionFunctionAppBuilder>
+public abstract class AzureFunctionStartUp : IWebJobsStartup, IStartUp<IServiceCollection, IConfiguration, AzureFunctionFunctionAppBuilder>
 {
     public abstract IConfiguration GetConfiguration();
 

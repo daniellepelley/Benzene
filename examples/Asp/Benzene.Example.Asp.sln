@@ -28,6 +28,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core", "..\..\src\B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions.Pipelines", "..\..\src\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj", "{871B79EF-CA9E-45A5-8D27-96B922CF7A79}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Http", "..\..\src\Benzene.Http\Benzene.Http.csproj", "{55760F9E-BA23-40D7-BD19-80D26FF6061F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Microsoft.Dependencies", "..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj", "{C9667378-6666-4FE9-988A-CF077F480BEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Schema.OpenApi", "..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj", "{B2D6FF19-6CFE-448C-BDA4-0103238EB348}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +72,18 @@ Global
 		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{871B79EF-CA9E-45A5-8D27-96B922CF7A79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55760F9E-BA23-40D7-BD19-80D26FF6061F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55760F9E-BA23-40D7-BD19-80D26FF6061F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55760F9E-BA23-40D7-BD19-80D26FF6061F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55760F9E-BA23-40D7-BD19-80D26FF6061F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9667378-6666-4FE9-988A-CF077F480BEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9667378-6666-4FE9-988A-CF077F480BEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9667378-6666-4FE9-988A-CF077F480BEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9667378-6666-4FE9-988A-CF077F480BEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2D6FF19-6CFE-448C-BDA4-0103238EB348}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2D6FF19-6CFE-448C-BDA4-0103238EB348}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2D6FF19-6CFE-448C-BDA4-0103238EB348}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2D6FF19-6CFE-448C-BDA4-0103238EB348}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -10,6 +10,11 @@ public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCo
 {
     public string Map(TContext context, ISerializer serializer)
     {
+        if (context.MessageResult.MessageHandlerDefinition == null)
+        {
+            return "";
+        }
+        
         return context.MessageResult.IsSuccessful
             ? SerializePayload(context.MessageResult.MessageHandlerDefinition.ResponseType, context.MessageResult.Payload, serializer)
             : serializer.Serialize(AsErrorPayload(context.MessageResult));

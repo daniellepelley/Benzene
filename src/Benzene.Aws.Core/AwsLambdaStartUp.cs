@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
+using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.MiddlewareBuilder;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Aws.Core;
 
-public abstract class AwsLambdaStartUp : IStartUp<IServiceCollection, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
+public abstract class AwsLambdaStartUp : IStartUp<IServiceCollection, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
 {
     private readonly AwsLambdaEntryPoint _awsLambdaEntryPoint;
 

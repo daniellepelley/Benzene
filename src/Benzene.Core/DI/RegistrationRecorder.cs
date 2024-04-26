@@ -131,6 +131,11 @@ public class RegistrationRecorder : IBenzeneServiceContainer
         return this;
     }
 
+    public IServiceResolverFactory CreateServiceResolverFactory()
+    {
+        return null;
+    }
+
     public IBenzeneServiceContainer AddServiceResolver()
     {
         return this;

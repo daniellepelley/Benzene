@@ -40,6 +40,6 @@ public interface IBenzeneServiceContainer
         where TImplementation : class;
     IBenzeneServiceContainer AddSingleton<TImplementation>(Func<IServiceResolver, TImplementation> func)
         where TImplementation : class;
-
+    IServiceResolverFactory CreateServiceResolverFactory();
     IBenzeneServiceContainer AddServiceResolver();
 }

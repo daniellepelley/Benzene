@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+    <ProjectReference Include="..\Benzene.HostedService\Benzene.HostedService.csproj" />
   </ItemGroup>
 
 </Project>

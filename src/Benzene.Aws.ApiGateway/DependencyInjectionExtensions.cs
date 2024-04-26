@@ -30,6 +30,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<ApiGatewayContext>,
                 MultiSerializerOptionsRequestMapper<ApiGatewayContext, JsonSerializer>>();
         services.AddScoped<IRequestEnricher<ApiGatewayContext>, ApiGatewayRequestEnricher>();
+        services.AddScoped<IHttpRequestAdapter<ApiGatewayContext>, ApiGatewayHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<ApiGatewayContext>, ApiGatewayResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         services.AddScoped<IResponseHandler<ApiGatewayContext>, HttpStatusCodeResponseHandler<ApiGatewayContext>>();

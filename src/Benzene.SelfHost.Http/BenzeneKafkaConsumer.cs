@@ -1,17 +1,17 @@
 ﻿using System.Net;
 using Benzene.Abstractions.DI;
-using Benzene.HostedService;
+using Benzene.Abstractions.Hosting;
 
 namespace Benzene.SelfHost.Http;
 
-public class BenzeneHttpConsumer : IBenzeneConsumer, IDisposable
+public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
 {
     private readonly IServiceResolverFactory _serviceResolverFactory;
     private HttpListener _httpListener;
     private HttpApplication _httpApplication;
     private BenzeneHttpConfig _benzeneHttpConfig;
 
-    public BenzeneHttpConsumer(IServiceResolverFactory serviceResolverFactory,
+    public BenzeneHttpWorker(IServiceResolverFactory serviceResolverFactory,
         HttpApplication httpApplication, BenzeneHttpConfig benzeneHttpConfig)
     {
         _benzeneHttpConfig = benzeneHttpConfig;

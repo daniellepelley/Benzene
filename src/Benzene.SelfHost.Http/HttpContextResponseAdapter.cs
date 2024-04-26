@@ -7,6 +7,11 @@ public class HttpContextResponseAdapter : IBenzeneResponseAdapter<HttpContext>
 {
     private string _body = "";
 
+    public void SetResponseHeader(HttpContext context, string headerKey, string headerValue)
+    {
+        context.HttpListenerContext.Response.Headers.Add(headerKey, headerValue);
+    }
+
     public void SetContentType(HttpContext context, string contentType)
     {
         context.HttpListenerContext.Response.ContentType = contentType;

@@ -32,6 +32,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<AspNetContext>,
                 MultiSerializerOptionsRequestMapper<AspNetContext, JsonSerializer>>();
         services.AddScoped<IRequestEnricher<AspNetContext>, AspNetRequestEnricher>();
+        services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         services.AddScoped<ResponseMiddleware<AspNetContext>>();

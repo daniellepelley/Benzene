@@ -34,7 +34,7 @@ public class SpecTest
             {
                 app.UseBenzeneMessage(x => x
                     .UseProcessResponse()
-                    .UseSpec("spec")
+                    .UseSpec()
                     .UseMessageRouter()
                 );
             })
@@ -53,7 +53,7 @@ public class SpecTest
             {
                 app.UseBenzeneMessage(x => x
                     .UseProcessResponse()
-                    .UseSpec("spec")
+                    .UseSpec()
                     .UseMessageRouter()
                 );
             })
@@ -77,17 +77,17 @@ public class SpecTest
         var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("asyncapi","json")));
         var document = new AsyncApiStringReader().Read(response.Body, out _);
 
-        Assert.Equal(4, document.Components.Schemas.Count);
+        Assert.Equal(6, document.Components.Schemas.Count);
     }
 
     [Fact]
     public async Task BenzeneApi_Test()
     {
         var host = CreateStandardHost();
-        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("benzene", "json")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Body);
 
-        Assert.Equal(4, document.Components.Schemas.Count);
+        Assert.Equal(6, document.Components.Schemas.Count);
     }
 
     [Fact]
@@ -107,36 +107,36 @@ public class SpecTest
         var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("asyncapi", "json")));
         var document = new AsyncApiStringReader().Read(response.Body, out _);
 
-        Assert.Equal(4, document.Components.Schemas.Count);
+        Assert.Equal(6, document.Components.Schemas.Count);
     }
 
     [Fact]
     public async Task BenzeneApi_MissingDependencies_Test()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "json")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("benzene", "json")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Body);
 
-        Assert.Equal(4, document.Components.Schemas.Count);
+        Assert.Equal(6, document.Components.Schemas.Count);
     }
 
     [Fact]
     public async Task BenzeneApi_InvalidFormatDefaultsToJson()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("iris", "foo")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("benzene", "foo")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Body);
 
-        Assert.Equal(4, document.Components.Schemas.Count);
+        Assert.Equal(6, document.Components.Schemas.Count);
     }
 
     [Fact]
     public async Task BenzeneApi_InvalidTypeDefaultsToBenzene()
     {
         var host = CreateIncompleteHost();
-        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("foo", "foo")));
+        var response = await host.SendBenzeneMessageAsync(MessageBuilder.Create("spec", new SpecRequest("benzene", "foo")));
         var document = new EventServiceDocumentDeserializer().Deserialize(response.Body);
 
-        Assert.Equal(4, document.Components.Schemas.Count);
+        Assert.Equal(6, document.Components.Schemas.Count);
     }
 }

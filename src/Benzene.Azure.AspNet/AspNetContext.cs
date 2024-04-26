@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Benzene.Azure.AspNet;
 
-public class AspNetContext : IHasMessageResult
+public class AspNetContext : IHasMessageResult, IHttpContext
 {
     public AspNetContext(HttpRequest httpRequest)
     {
