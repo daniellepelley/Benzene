@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Benzene.Http;
 using Benzene.Http.Cors;
 using Xunit;
 
@@ -27,7 +28,7 @@ public class CorsOriginCheckerTest
     [InlineData("http://example1.com1/foo", null)]
     public void MatchesPath(string origin, string expected)
     {
-        var httpRequest = new HttpRequest2
+        var httpRequest = new HttpRequest
         {
             Headers = new Dictionary<string, string>
             {
@@ -42,7 +43,7 @@ public class CorsOriginCheckerTest
     [Fact]
     public void NoHeader()
     {
-        var httpRequest = new HttpRequest2();
+        var httpRequest = new HttpRequest();
         
         var actual = _corsOriginChecker.MatchOrigin(_allowedDomains, httpRequest);
         Assert.Null(actual);

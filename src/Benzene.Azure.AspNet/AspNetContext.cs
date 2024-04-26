@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.Results;
-using Microsoft.AspNetCore.Http;
+using Benzene.Http;
 using Microsoft.AspNetCore.Mvc;
+using HttpRequest = Microsoft.AspNetCore.Http.HttpRequest;
 
 namespace Benzene.Azure.AspNet;
 

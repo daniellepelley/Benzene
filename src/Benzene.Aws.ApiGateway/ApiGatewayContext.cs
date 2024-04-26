@@ -1,5 +1,6 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Results;
+using Benzene.Http;
 
 namespace Benzene.Aws.ApiGateway
 {

@@ -1,12 +1,13 @@
 ﻿using Benzene.Azure.AspNet;
+using Benzene.Http;
 
 namespace Benzene.Aws.ApiGateway;
 
 public class AspNetHttpRequestAdapter : IHttpRequestAdapter<AspNetContext>
 {
-    public HttpRequest2 Map(AspNetContext context)
+    public HttpRequest Map(AspNetContext context)
     {
-        return new HttpRequest2
+        return new HttpRequest
         {
             Path = context.HttpRequest.Path.Value,
             Method = context.HttpRequest.Method,

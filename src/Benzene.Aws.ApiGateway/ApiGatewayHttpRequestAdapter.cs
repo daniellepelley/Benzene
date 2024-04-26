@@ -1,10 +1,12 @@
-﻿namespace Benzene.Aws.ApiGateway;
+﻿using Benzene.Http;
+
+namespace Benzene.Aws.ApiGateway;
 
 public class ApiGatewayHttpRequestAdapter : IHttpRequestAdapter<ApiGatewayContext>
 {
-    public HttpRequest2 Map(ApiGatewayContext context)
+    public HttpRequest Map(ApiGatewayContext context)
     {
-        return new HttpRequest2
+        return new HttpRequest
         {
             Path = context.ApiGatewayProxyRequest.Path,
             Method = context.ApiGatewayProxyRequest.HttpMethod,

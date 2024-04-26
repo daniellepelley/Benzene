@@ -1,10 +1,12 @@
-﻿namespace Benzene.AspNet.Core;
+﻿using Benzene.Http;
+
+namespace Benzene.AspNet.Core;
 
 public class AspNetHttpRequestAdapter : IHttpRequestAdapter<AspNetContext>
 {
-    public HttpRequest2 Map(AspNetContext context)
+    public HttpRequest Map(AspNetContext context)
     {
-        return new HttpRequest2
+        return new HttpRequest
         {
             Path = context.HttpContext.Request.Path,
             Method = context.HttpContext.Request.Method,

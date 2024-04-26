@@ -47,14 +47,14 @@ public class ApiGatewayMessageCorsTest
     public async Task Option()
     {
         var request = HttpBuilder.Create("OPTIONS", "/example?key=value")
-            .WithHeader("origin", "https://example.com/");
+            .WithHeader("origin", "https://example.com");
         var response = await _host.SendApiGatewayAsync(request);
 
         Assert.NotNull(response);
         Assert.Null(response.Body);
         Assert.Equal(200, response.StatusCode);
 
-        Assert.Equal("example.com", response.Headers[AccessControlAllowOrigin]);
+        Assert.Equal("https://example.com", response.Headers[AccessControlAllowOrigin]);
         Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
         Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
     }

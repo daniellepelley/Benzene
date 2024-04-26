@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.Results;
+using Benzene.Http;
 using Microsoft.AspNetCore.Http;
 
 namespace Benzene.AspNet.Core;
