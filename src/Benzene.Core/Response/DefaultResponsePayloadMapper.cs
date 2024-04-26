@@ -12,7 +12,7 @@ public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCo
     {
         if (context.MessageResult.MessageHandlerDefinition == null)
         {
-            return "";
+            return null;
         }
         
         return context.MessageResult.IsSuccessful
@@ -27,6 +27,10 @@ public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCo
 
     private string SerializePayload(Type type, object payload, ISerializer serializer)
     {
+        if (payload == null)
+        {
+            return null;
+        }
            // if (payload is IRawJsonMessage rawJsonMessage)
             // {
                 // return CamelCaseJson(rawJsonMessage.Json);

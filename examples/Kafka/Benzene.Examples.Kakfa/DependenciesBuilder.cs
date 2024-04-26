@@ -1,12 +1,17 @@
 ﻿using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.DI;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Results;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
+using Benzene.Http.Routing;
 using Benzene.Kafka.Core;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Microsoft.Logging;
+using Benzene.Schema.OpenApi;
 using Benzene.Xml;
 using Confluent.Kafka;
 
@@ -59,5 +64,9 @@ public static class DependenciesBuilder
             new CompositeProcessTimerFactory(
                 new LoggingProcessTimerFactory(x.GetService<IBenzeneLogger>())));
 
+        services.AddSingleton<IMessageHandlerDefinition>(_ =>
+            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
+        services.AddScoped<SpecMessageHandler>();
+        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
     }
 }

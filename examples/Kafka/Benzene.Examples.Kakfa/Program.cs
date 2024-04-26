@@ -3,7 +3,7 @@ using Benzene.Examples.Kakfa;
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
-        services.AddHostedService<Worker>();
+        services.AddHostedService<StartUp>();
     })
     .Build();
 

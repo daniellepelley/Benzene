@@ -5,19 +5,18 @@ using Benzene.Http.Routing;
 
 namespace Benzene.SelfHost.Http;
 
-
-public class HttpRequestEnricher : IRequestEnricher<HttpContext>
+public class HttpListenerRequestEnricher : IRequestEnricher<SelfHostHttpContext>
 {
     private readonly IRouteFinder _routeFinder;
     private readonly IHttpHeaderMappings _httpHeaderMappings;
 
-    public HttpRequestEnricher(IRouteFinder routeFinder, IHttpHeaderMappings httpHeaderMappings)
+    public HttpListenerRequestEnricher(IRouteFinder routeFinder, IHttpHeaderMappings httpHeaderMappings)
     {
         _httpHeaderMappings = httpHeaderMappings;
         _routeFinder = routeFinder;
     }
 
-    public IDictionary<string, object> Enrich<TRequest>(TRequest request, HttpContext context)
+    public IDictionary<string, object> Enrich<TRequest>(TRequest request, SelfHostHttpContext context)
     {
         var route = _routeFinder.Find(context.HttpListenerContext.Request.HttpMethod, context.HttpListenerContext.Request.RawUrl);
 

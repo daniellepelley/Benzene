@@ -1,30 +1,12 @@
 ﻿using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Response;using Benzene.Abstractions.Results;
+using Benzene.Abstractions.Response;
+using Benzene.Abstractions.Results;
+using Benzene.Core.MessageHandling;
 using Benzene.Core.Results;
-using Benzene.Http.Cors;
 using Benzene.Http.Routing;
+using Void = Benzene.Results.Void;
 
-public class HttpRequestAdapter
-{
-    
-}
-
-public interface IHttpRequestAdapter<TContext> where TContext : IHttpContext
-{
-    HttpRequest2 Map(TContext context);
-}
-
-public interface IHttpContext
-{
-    
-}
-
-public class HttpRequest2
-{
-    public string Method { get; set; }
-    public string Path { get; set; }
-    public IDictionary<string, string> Headers { get; set; }
-}
+namespace Benzene.Http.Cors;
 
 public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : IHasMessageResult, IHttpContext
 {
@@ -33,6 +15,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
     private readonly UrlMatcher _urlMatcher;
     private readonly IHttpRequestAdapter<TContext> _httpRequestAdapter;
     private readonly IBenzeneResponseAdapter<TContext> _responseAdapter;
+    private CorsOriginChecker _corsOriginChecker;
     public string Name => "Cors";
 
     public CorsMiddleware(CorsSettings corsSettings, IHttpEndpointFinder httpEndpointFinder,
@@ -43,11 +26,12 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
         _httpEndpointFinder = httpEndpointFinder;
         _corsSettings = corsSettings;
         _urlMatcher = new UrlMatcher();
+        _corsOriginChecker = new CorsOriginChecker();
     }
 
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
-        var httpRequest = _httpRequestAdapter.Map(context);
+        var httpRequest = _httpRequestAdapter.Map(context).AsLowerCase();
         if (httpRequest.Method.ToLowerInvariant() != "options")
         {
             await next();
@@ -56,7 +40,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
         AddCorsHeaders(context, httpRequest);
     }
 
-    private void AddCorsHeaders(TContext context, HttpRequest2 httpRequest)
+    private void AddCorsHeaders(TContext context, HttpRequest httpRequest)
     {
         if (httpRequest.Headers.Any(header => header.Key.ToLowerInvariant() == "origin"))
         {
@@ -67,9 +51,9 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                 return;
             }
 
-            var origin = httpRequest.Headers["origin"];
+            var origin = _corsOriginChecker.MatchOrigin(_corsSettings.AllowedDomains, httpRequest);
 
-            if (_corsSettings.AllowedDomains.Contains(origin))
+            if (origin != null)
             {
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Origin", origin);
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Headers",
@@ -78,9 +62,9 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                     "OPTIONS," + string.Join(",", methods));
             }
 
-            if (context.MessageResult == null)
+            if (httpRequest.Method == "options")
             {
-                context.MessageResult = new MessageResult("cors", null, "Ok", true, null, null);
+                context.MessageResult = new MessageResult("cors", MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), "Ok", true, null, null);
             }
         }
     }
@@ -100,5 +84,43 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
         }
 
         return output.ToArray();
+    }
+}
+
+public class CorsOriginChecker
+{
+    public string? MatchOrigin(string[] allowedDomains, HttpRequest httpRequest)
+    {
+        if (httpRequest.Headers == null ||
+            !httpRequest.Headers.ContainsKey("origin"))
+        {
+            return null;
+        }
+        
+        var origin = httpRequest.Headers["origin"];
+        if (origin == null)
+        {
+            return null;
+        }
+        
+        if (allowedDomains
+            .Any(x => GetDomain(x) == GetDomain(origin)))
+        {
+            return origin;
+        }
+
+        return null;
+    }
+
+    private static string? GetDomain(string url)
+    {
+        try
+        {
+            return new Uri(url).Host.ToLowerInvariant();
+        }
+        catch
+        {
+            return url.Replace("/", "");
+        }
     }
 }

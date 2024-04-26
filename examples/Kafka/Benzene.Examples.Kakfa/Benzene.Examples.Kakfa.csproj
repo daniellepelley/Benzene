@@ -28,6 +28,7 @@
     <ProjectReference Include="..\..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />

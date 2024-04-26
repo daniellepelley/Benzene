@@ -12,7 +12,10 @@ namespace Benzene.Test.Aws.ApiGateway;
 
 public class ApiGatewayMessageCorsTest
 {
-    private AwsLambdaBenzeneTestHost _host;
+    private readonly AwsLambdaBenzeneTestHost _host;
+    private const string AccessControlAllowHeaders = "Access-Control-Allow-Headers";
+    private const string AccessControlAllowMethods = "Access-Control-Allow-Methods";
+    private const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
 
     public ApiGatewayMessageCorsTest()
     {
@@ -22,6 +25,7 @@ public class ApiGatewayMessageCorsTest
             )
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
+                    .UseProcessResponse()
                     .UseCors(new CorsSettings
                     {
                         AllowedDomains = new[]
@@ -33,7 +37,6 @@ public class ApiGatewayMessageCorsTest
                             "X-Query-Id","X-Tenant-Id","Authorization","Content-Type","X-Api-Key"
                         }
                     })
-                    .UseProcessResponse()
                     .UseMessageRouter()
                 )
             ).BuildHost();
@@ -44,16 +47,16 @@ public class ApiGatewayMessageCorsTest
     public async Task Option()
     {
         var request = HttpBuilder.Create("OPTIONS", "/example?key=value")
-            .WithHeader("origin", "example.com");
+            .WithHeader("origin", "https://example.com/");
         var response = await _host.SendApiGatewayAsync(request);
 
         Assert.NotNull(response);
         Assert.Null(response.Body);
         Assert.Equal(200, response.StatusCode);
 
-        Assert.Equal("example.com", response.Headers["access-control-allow-origin"]);
-        Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers["access-control-allow-headers"]);
-        Assert.Equal("OPTIONS,GET", response.Headers["access-control-allow-methods"]);
+        Assert.Equal("example.com", response.Headers[AccessControlAllowOrigin]);
+        Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
+        Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
     }
 
 
@@ -68,9 +71,9 @@ public class ApiGatewayMessageCorsTest
         Assert.Null(response.Body);
         Assert.Equal(200, response.StatusCode);
 
-        Assert.False(response.Headers.ContainsKey("access-control-allow-origin"));
-        Assert.False(response.Headers.ContainsKey("access-control-allow-headers"));
-        Assert.False(response.Headers.ContainsKey("access-control-allow-methods"));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowOrigin));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
     }
 
     [Fact]
@@ -85,9 +88,9 @@ public class ApiGatewayMessageCorsTest
         Assert.NotNull(response.Body);
         Assert.Equal(200, response.StatusCode);
 
-        Assert.Equal("example.com", response.Headers["access-control-allow-origin"]);
-        Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers["access-control-allow-headers"]);
-        Assert.Equal("OPTIONS,GET", response.Headers["access-control-allow-methods"]);
+        Assert.Equal("example.com", response.Headers[AccessControlAllowOrigin]);
+        Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
+        Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
     }
 
     [Fact]
@@ -101,9 +104,8 @@ public class ApiGatewayMessageCorsTest
         Assert.NotNull(response.Body);
         Assert.Equal(200, response.StatusCode);
 
-        Assert.False(response.Headers.ContainsKey("access-control-allow-origin"));
-        Assert.False(response.Headers.ContainsKey("access-control-allow-headers"));
-        Assert.False(response.Headers.ContainsKey("access-control-allow-methods"));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowOrigin));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
     }
-
 }

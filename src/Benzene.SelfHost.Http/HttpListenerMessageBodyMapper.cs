@@ -2,9 +2,9 @@
 
 namespace Benzene.SelfHost.Http;
 
-public class HttpMessageBodyMapper : IMessageBodyMapper<HttpContext>
+public class HttpListenerMessageBodyMapper : IMessageBodyMapper<SelfHostHttpContext>
 {
-    public string GetBody(HttpContext context)
+    public string GetBody(SelfHostHttpContext context)
     {
         using var reader = new StreamReader(context.HttpListenerContext.Request.InputStream);
         return reader.ReadToEnd();

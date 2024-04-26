@@ -24,4 +24,14 @@ public static class Extensions
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         return services;
     }
+    
+    public static HttpRequest AsLowerCase(this HttpRequest source)
+    {
+        return new HttpRequest
+        {
+            Path = source.Path.ToLowerInvariant(),
+            Method = source.Method.ToLowerInvariant(),
+            Headers = source.Headers.ToDictionary(x => x.Key.ToLowerInvariant(), x => x.Value)
+        };
+    }
 }

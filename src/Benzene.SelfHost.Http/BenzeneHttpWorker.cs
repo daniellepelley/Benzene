@@ -8,14 +8,14 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
 {
     private readonly IServiceResolverFactory _serviceResolverFactory;
     private HttpListener _httpListener;
-    private HttpApplication _httpApplication;
-    private BenzeneHttpConfig _benzeneHttpConfig;
+    private readonly HttpListenerApplication _httpListenerApplication;
+    private readonly BenzeneHttpConfig _benzeneHttpConfig;
 
     public BenzeneHttpWorker(IServiceResolverFactory serviceResolverFactory,
-        HttpApplication httpApplication, BenzeneHttpConfig benzeneHttpConfig)
+        HttpListenerApplication httpListenerApplication, BenzeneHttpConfig benzeneHttpConfig)
     {
         _benzeneHttpConfig = benzeneHttpConfig;
-        _httpApplication = httpApplication;
+        _httpListenerApplication = httpListenerApplication;
         _serviceResolverFactory = serviceResolverFactory;
     }
 
@@ -42,7 +42,7 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
                     {
                         await semaphore.WaitAsync(cancellationToken);
                         var httpContext = await _httpListener.GetContextAsync();
-                        _httpApplication.HandleAsync(httpContext, _serviceResolverFactory.CreateScope())
+                        _httpListenerApplication.HandleAsync(httpContext, _serviceResolverFactory.CreateScope())
                             .ContinueWith(_ => semaphore.Release());
                     }
                     catch (Exception ex)
@@ -69,5 +69,4 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
     {
         _serviceResolverFactory.Dispose();
     }
-
 }

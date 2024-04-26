@@ -18,19 +18,19 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.TryAddScoped<IMessageTopicMapper<HttpContext>, HttpMessageTopicMapper>();
-        services.TryAddScoped<IMessageHeadersMapper<HttpContext>, HttpMessageHeadersMapper>();
-        services.TryAddScoped<IMessageBodyMapper<HttpContext>, HttpMessageBodyMapper>();
+        services.TryAddScoped<IMessageTopicMapper<SelfHostHttpContext>, HttpListenerMessageTopicMapper>();
+        services.TryAddScoped<IMessageHeadersMapper<SelfHostHttpContext>, HttpListenerMessageHeadersMapper>();
+        services.TryAddScoped<IMessageBodyMapper<SelfHostHttpContext>, HttpListenerMessageBodyMapper>();
         services
-            .AddScoped<IRequestMapper<HttpContext>,
-                MultiSerializerOptionsRequestMapper<HttpContext, JsonSerializer>>();
-        services.AddScoped<IRequestEnricher<HttpContext>, HttpRequestEnricher>();
+            .AddScoped<IRequestMapper<SelfHostHttpContext>,
+                MultiSerializerOptionsRequestMapper<SelfHostHttpContext, JsonSerializer>>();
+        services.AddScoped<IRequestEnricher<SelfHostHttpContext>, HttpListenerRequestEnricher>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
-        services.AddScoped<IResponseHandler<HttpContext>, HttpStatusCodeResponseHandler<HttpContext>>();
-        services
-            .AddScoped<IResponseHandler<HttpContext>,
-                ResponseHandler<JsonSerializationResponseHandler<HttpContext>, HttpContext>>();
-        services.AddScoped<IBenzeneResponseAdapter<HttpContext>, HttpContextResponseAdapter>();
+        services.AddScoped<IHttpRequestAdapter<SelfHostHttpContext>, HttpListenerRequestAdapter>();
+        services.AddScoped<IResponseHandler<SelfHostHttpContext>, HttpStatusCodeResponseHandler<SelfHostHttpContext>>();
+        services.AddScoped<IResponseHandler<SelfHostHttpContext>,
+                ResponseHandler<JsonSerializationResponseHandler<SelfHostHttpContext>, SelfHostHttpContext>>();
+        services.AddScoped<IBenzeneResponseAdapter<SelfHostHttpContext>, HttpContextResponseAdapter>();
         
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("http"));
         services.AddHttpMessageHandlers();

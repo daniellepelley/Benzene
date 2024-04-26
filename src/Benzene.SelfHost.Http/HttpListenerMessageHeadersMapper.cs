@@ -4,16 +4,16 @@ using Benzene.Http;
 
 namespace Benzene.SelfHost.Http;
 
-public class HttpMessageHeadersMapper : IMessageHeadersMapper<HttpContext>
+public class HttpListenerMessageHeadersMapper : IMessageHeadersMapper<SelfHostHttpContext>
 {
     private readonly IHttpHeaderMappings _httpHeaderMappings;
 
-    public HttpMessageHeadersMapper(IHttpHeaderMappings httpHeaderMappings)
+    public HttpListenerMessageHeadersMapper(IHttpHeaderMappings httpHeaderMappings)
     {
         _httpHeaderMappings = httpHeaderMappings;
     }
 
-    public IDictionary<string, string> GetHeaders(HttpContext context)
+    public IDictionary<string, string> GetHeaders(SelfHostHttpContext context)
     {
         return DictionaryUtils.Replace(context.HttpListenerContext.Request.Headers.ToDictionary(),
             _httpHeaderMappings.GetMappings());

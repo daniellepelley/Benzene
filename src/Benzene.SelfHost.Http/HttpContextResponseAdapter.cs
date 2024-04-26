@@ -3,35 +3,35 @@ using Benzene.Abstractions.Response;
 
 namespace Benzene.SelfHost.Http;
 
-public class HttpContextResponseAdapter : IBenzeneResponseAdapter<HttpContext>
+public class HttpContextResponseAdapter : IBenzeneResponseAdapter<SelfHostHttpContext>
 {
     private string _body = "";
 
-    public void SetResponseHeader(HttpContext context, string headerKey, string headerValue)
+    public void SetResponseHeader(SelfHostHttpContext context, string headerKey, string headerValue)
     {
         context.HttpListenerContext.Response.Headers.Add(headerKey, headerValue);
     }
 
-    public void SetContentType(HttpContext context, string contentType)
+    public void SetContentType(SelfHostHttpContext context, string contentType)
     {
         context.HttpListenerContext.Response.ContentType = contentType;
     }
 
-    public void SetStatusCode(HttpContext context, string statusCode)
+    public void SetStatusCode(SelfHostHttpContext context, string statusCode)
     {
         context.HttpListenerContext.Response.StatusCode = Convert.ToInt32(statusCode);
     }
 
-    public void SetBody(HttpContext context, string body)
+    public void SetBody(SelfHostHttpContext context, string body)
     {
         _body = body;
     }
 
-    public string GetBody(HttpContext context)
+    public string GetBody(SelfHostHttpContext context)
     {
         return _body;
     }
-    public async Task FinalizeAsync(HttpContext context)
+    public async Task FinalizeAsync(SelfHostHttpContext context)
     {
         if (context.HttpListenerContext.Response.StatusCode != 204)
         {

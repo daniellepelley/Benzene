@@ -1,7 +1,11 @@
 using Benzene.Core.MiddlewareBuilder;
 using Benzene.FluentValidation;
+using Benzene.HealthChecks;
+using Benzene.HealthChecks.Core;
 using Benzene.HostedService;
+using Benzene.Http.Cors;
 using Benzene.Kafka.Core;
+using Benzene.Schema.OpenApi;
 using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
 using Benzene.Xml;
@@ -9,7 +13,7 @@ using Confluent.Kafka;
 
 namespace Benzene.Examples.Kakfa;
 
-public class Worker : BenzeneHostedServiceStartup
+public class StartUp : BenzeneHostedServiceStartup
 {
     public override IConfiguration GetConfiguration()
     {
@@ -58,8 +62,15 @@ public class Worker : BenzeneHostedServiceStartup
                 Url = "http://localhost:5151/",
                 ConcurrentRequests = 10
             }, http => http
-                .UseXml()
                 .UseProcessResponse()
+                .UseXml()
+                .UseSpec()
+                .UseHealthCheck("get", "healthcheck", x => x.AddHealthCheck("test", x => true))
+                .UseCors(new CorsSettings
+                {
+                    AllowedDomains = new[] { "editor-next.swagger.io" },
+                    AllowedHeaders = Array.Empty<string>()
+                })
                 .UseMessageRouter(x => x.UseFluentValidation()));
     }
 }

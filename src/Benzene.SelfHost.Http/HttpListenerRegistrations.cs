@@ -2,9 +2,9 @@
 
 namespace Benzene.SelfHost.Http;
 
-public class HttpRegistrations : RegistrationsBase
+public class HttpListenerRegistrations : RegistrationsBase
 {
-    public HttpRegistrations()
+    public HttpListenerRegistrations()
     {
         Add(".AddHttp()", x => x.AddHttp());
     }
