@@ -19,7 +19,7 @@ public class HttpFunction
 
     [FunctionName("orders")]
     public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "delete", Route = "{*restOfPath}")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "delete", "options", Route = "{*restOfPath}")] HttpRequest req)
     {
         return await _app.HandleHttpRequest(req);
     }

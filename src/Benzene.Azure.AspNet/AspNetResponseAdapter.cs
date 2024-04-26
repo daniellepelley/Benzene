@@ -7,6 +7,7 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
     public void SetResponseHeader(AspNetContext context, string headerKey, string headerValue)
     {
         context.EnsureResponseExists();
+        context.HttpRequest.HttpContext.Response.Headers.Add(headerKey, headerValue);
     }
 
     public void SetContentType(AspNetContext context, string contentType)

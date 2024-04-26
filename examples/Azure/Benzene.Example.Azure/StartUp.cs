@@ -30,13 +30,13 @@ public class StartUp: AzureFunctionStartUp
     {
         app.UseHttp(http => http
             .OnRequest("strip-api", x => x.HttpRequest.Path = x.HttpRequest.Path.Value.Replace("/api", ""))
-            // .UseSpec()
+            .UseProcessResponse()
             .UseCors(new CorsSettings
             {
                 AllowedDomains = new []{ "https://editor-next.swagger.io" },
                 AllowedHeaders = Array.Empty<string>() 
             })
-            .UseProcessResponse()
+            .UseSpec()
             .UseMessageRouter(router => router.UseFluentValidation()));
     }
 }

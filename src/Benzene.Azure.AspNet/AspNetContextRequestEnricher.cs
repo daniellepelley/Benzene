@@ -27,7 +27,7 @@ public class AspNetContextRequestEnricher : IRequestEnricher<AspNetContext>
 
         var dictionary = new Dictionary<string, object>();
 
-        DictionaryUtils.MapOnto(dictionary, route.Parameters);
+        DictionaryUtils.MapOnto(dictionary, context.HttpRequest.Query.ToDictionary(x => x.Key, x => x.Value.ToString()));
         DictionaryUtils.MapOnto(dictionary, _headersToBodyMapper.GetHeaders(context));
         DictionaryUtils.MapOnto(dictionary, CleanUp(route.Parameters));
         // DictionaryUtils.MapOnto(dictionary, DictionaryUtils.JsonToDictionary(context.ApiGatewayProxyRequest.Body));
