@@ -2,7 +2,7 @@
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Elements.Core.Broadcast;
+namespace Benzene.Core.Broadcast;
 
 public class BroadcastEventMiddlewareBuilder : IHandlerMiddlewareBuilder
 {

@@ -2,7 +2,6 @@
 using System.Reflection;
 // using Amazon.Extensions.NETCore.Setup;
 using Benzene.Core.DI;
-using Benzene.Elements.Core.Logging;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
@@ -42,7 +41,6 @@ namespace Benzene.Test.Elements.Examples
 // #endif
 
             services.AddSingleton(configuration);
-            services.AddStructuredLogging(configuration);
             // services.AddTransient(_ => configuration.GetAWSOptions());
             // services.AddSingleton(awsOptions.CreateServiceClient<IAmazonSQS>());
 

@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Benzene.Abstractions.Logging;
+﻿using Benzene.Abstractions.Logging;
 using Serilog.Context;
 using Serilog.Core;
 using Serilog.Core.Enrichers;
 
-namespace Benzene.Elements.Core
+namespace Benzene.Serilog
 {
     public class SerilogBenzeneLogContext : IBenzeneLogContext
     {

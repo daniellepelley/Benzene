@@ -5,9 +5,8 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;
-using Microsoft.Extensions.Logging;
 
-namespace Benzene.Elements.Core.Broadcast;
+namespace Benzene.Core.Broadcast;
 
 public class BroadcastEventMiddleware<TRequest, TResponse> : IMiddleware<IMessageContext<TRequest, TResponse>>
 {
@@ -23,7 +22,6 @@ public class BroadcastEventMiddleware<TRequest, TResponse> : IMiddleware<IMessag
     public async Task HandleAsync(IMessageContext<TRequest, TResponse> context, Func<Task> next)
     {
         var eventBroadcaster = _serviceResolver.Resolve<IEventSender>();
-        var logger = _serviceResolver.Resolve<ILogger>();
 
         await next();
 

@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Benzene.Elements.Core.Broadcast;
+namespace Benzene.Core.Broadcast;
 
 public interface IEventSender
 {

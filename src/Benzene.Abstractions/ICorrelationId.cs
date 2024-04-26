@@ -1,4 +1,4 @@
-﻿namespace Benzene.Core.Correlation;
+﻿namespace Benzene.Abstractions;
 
 public interface ICorrelationId
 {

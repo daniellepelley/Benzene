@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Benzene.Clients;
-using Benzene.Core.Correlation;
+﻿using Benzene.Abstractions;
 using Benzene.Results;
 
-namespace Benzene.Elements.Core.Clients;
+namespace Benzene.Clients.CorrelationId;
 
 public class CorrelationIdBenzeneMessageClient : IBenzeneMessageClient
 {

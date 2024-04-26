@@ -1,9 +1,7 @@
 ﻿using Benzene.Abstractions;
 using Benzene.Abstractions.DI;
-using Benzene.Clients;
-using Benzene.Core.Correlation;
 
-namespace Benzene.Elements.Core.Clients;
+namespace Benzene.Clients.CorrelationId;
 
 public class CorrelationIdBenzeneMessageClientWrapper : IDependencyWrapper<IBenzeneMessageClient>
 {

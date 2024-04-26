@@ -1,4 +1,4 @@
-﻿using Benzene.Elements.Core.Broadcast;
+﻿using Benzene.Core.Broadcast;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;
 using LEGO.AsyncAPI;

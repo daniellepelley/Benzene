@@ -68,7 +68,6 @@
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Elements.Core\Benzene.Elements.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />

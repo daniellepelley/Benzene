@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Benzene.Abstractions;
 using Benzene.Core.Correlation;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;

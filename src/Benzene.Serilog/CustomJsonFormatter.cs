@@ -1,12 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Serilog.Events;
+﻿using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Formatting.Json;
 using Serilog.Parsing;
 
-namespace Benzene.Elements.Core.Logging
+namespace Benzene.Serilog
 {
     public class CustomJsonFormatter : ITextFormatter
     {

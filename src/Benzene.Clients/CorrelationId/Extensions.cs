@@ -1,6 +1,4 @@
-﻿using Benzene.Clients;
-
-namespace Benzene.Elements.Core.Clients;
+﻿namespace Benzene.Clients.CorrelationId;
 
 public static class Extensions
 {

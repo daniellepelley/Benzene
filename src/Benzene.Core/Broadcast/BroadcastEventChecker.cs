@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Benzene.Abstractions.MessageHandling;
 
-namespace Benzene.Elements.Core.Broadcast;
+namespace Benzene.Core.Broadcast;
 
 public class BroadcastEventChecker : IBroadcastEventChecker
 {

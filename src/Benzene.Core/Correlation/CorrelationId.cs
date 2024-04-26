@@ -1,4 +1,5 @@
 ﻿using System;
+using Benzene.Abstractions;
 
 namespace Benzene.Core.Correlation;
 

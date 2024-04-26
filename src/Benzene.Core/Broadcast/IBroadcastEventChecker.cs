@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandling;
 
-namespace Benzene.Elements.Core.Broadcast;
+namespace Benzene.Core.Broadcast;
 
 public interface IBroadcastEventChecker : IMessageFinder<IMessageDefinition>
 {

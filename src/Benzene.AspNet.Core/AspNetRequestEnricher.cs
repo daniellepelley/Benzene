@@ -27,7 +27,7 @@ public class AspNetRequestEnricher : IRequestEnricher<AspNetContext>
 
         var dictionary = new Dictionary<string, object>();
 
-        DictionaryUtils.MapOnto(dictionary, context.HttpContext.Request.Query.ToDictionary(x => x.Key, x => x.Value.First()));
+        DictionaryUtils.MapOnto(dictionary, context.HttpContext.Request.Query?.ToDictionary(x => x.Key, x => x.Value.First()));
         DictionaryUtils.MapOnto(dictionary, _headersToBodyMapper.GetHeaders(context));
         DictionaryUtils.MapOnto(dictionary, CleanUp(route.Parameters));
 

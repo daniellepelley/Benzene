@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
 
-namespace Benzene.Elements.Core.Broadcast;
+namespace Benzene.Core.Broadcast;
 
 public static class DependencyExtensions
 {
