@@ -26,3 +26,4 @@ public class CreateOrderMessageHandler : IMessageHandler<CreateOrderMessage, Ord
         return await _orderService.SaveAsync(request);
     }
 }
+

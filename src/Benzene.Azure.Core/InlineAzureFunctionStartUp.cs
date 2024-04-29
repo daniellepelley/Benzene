@@ -24,7 +24,7 @@ public class InlineAzureFunctionStartUp
     public IAzureFunctionApp Build()
     {
         var services = new ServiceCollection();
-        var app = new AzureFunctionFunctionAppBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var app = new AzureFunctionAppBuilder(new MicrosoftBenzeneServiceContainer(services));
         
         _appAction(app);
         _servicesAction(services);

@@ -46,7 +46,8 @@ public class Startup
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .WriteTo.Console(new CustomJsonFormatter())
-            .WriteTo.ApplicationInsights(new TelemetryConfiguration("3f72a47f-1aba-4e7a-913e-b3aa3161e6c6"), TelemetryConverter.Traces)
+            .WriteTo.ApplicationInsights(new TelemetryConfiguration("3f72a47f-1aba-4e7a-913e-b3aa3161e6c6"),
+                TelemetryConverter.Traces)
             .CreateLogger();
 
         services.AddLogging();
@@ -58,7 +59,8 @@ public class Startup
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
+            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage),
+                typeof(SpecMessageHandler)));
         services.AddScoped<SpecMessageHandler>();
         services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
 
@@ -87,22 +89,21 @@ public class Startup
 
         app.UseAuthorization();
 
-        app.UseBenzene(benzene => benzene
-            .UseProcessResponseIfHandled()
-            .UseCorrelationId()
-            // .UseLogContext("http")
-            .UseSpec()
-            .UseCors(new CorsSettings
-            {
-                AllowedDomains = new[] { "https://editor-next.swagger.io" },
-                AllowedHeaders = Array.Empty<string>()
-            })
-            .UseMessageRouter(x => x.UseFluentValidation())
+        app.UseBenzene2(benzene => benzene
+            .UseAspNet(asp => asp
+                .UseProcessResponseIfHandled()
+                .UseCorrelationId()
+                // .UseLogContext("http")
+                .UseSpec()
+                .UseCors(new CorsSettings
+                {
+                    AllowedDomains = new[] { "https://editor-next.swagger.io" },
+                    AllowedHeaders = Array.Empty<string>()
+                })
+                .UseMessageRouter(x => x.UseFluentValidation())
+            )
         );
 
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllers();
-        });
+        app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
 }

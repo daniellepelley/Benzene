@@ -17,6 +17,11 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
     
     public TRequest GetBody<TRequest>(TContext context) where TRequest : class
     {
+        if (context is IRequestContext<TRequest>)
+        {
+            return ((IRequestContext<TRequest>)context).Request;
+        }
+        
         var bodyAsString = _messageBodyMapper.GetBody(context);
 
         return string.IsNullOrEmpty(bodyAsString)

@@ -4,11 +4,11 @@ using Benzene.Core.Exceptions;
 
 namespace Benzene.Http.Routing;
 
-public class HttpEndpointFinder : IHttpEndpointFinder
+public class ReflectionHttpEndpointFinder : IHttpEndpointFinder
 {
     private readonly IMessageHandlersFinder _messageHandlersFinder;
 
-    public HttpEndpointFinder(IMessageHandlersFinder messageHandlersFinder)
+    public ReflectionHttpEndpointFinder(IMessageHandlersFinder messageHandlersFinder)
     {
         _messageHandlersFinder = messageHandlersFinder;
     }

@@ -1,17 +1,23 @@
 ﻿using Benzene.Abstractions.DI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Benzene.Microsoft.Dependencies;
 
 public class MicrosoftBenzeneServiceContainer : IBenzeneServiceContainer
 {
-    private readonly IServiceCollection _services;
+    private IServiceCollection _services;
 
     public MicrosoftBenzeneServiceContainer(IServiceCollection services)
     {
         _services = services;
     }
 
+    public void Reopen()
+    {
+        _services = new ServiceCollection { _services };
+    }
+    
     public bool IsTypeRegistered<TService>()
     {
         return IsTypeRegistered(typeof(TService));
@@ -139,7 +145,7 @@ public class MicrosoftBenzeneServiceContainer : IBenzeneServiceContainer
 
     public IBenzeneServiceContainer AddServiceResolver()
     {
-        _services.AddTransient<IServiceResolver>(x => new MicrosoftServiceResolverAdapter(x));
+        _services.TryAddTransient<IServiceResolver>(x => new MicrosoftServiceResolverAdapter(x));
         return this;
     }
 }

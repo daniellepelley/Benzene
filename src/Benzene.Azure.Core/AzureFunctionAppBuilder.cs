@@ -5,12 +5,12 @@ using Benzene.Core.MiddlewareBuilder;
 
 namespace Benzene.Azure.Core;
 
-public class AzureFunctionFunctionAppBuilder : IAzureFunctionAppBuilder
+public class AzureFunctionAppBuilder : IAzureFunctionAppBuilder
 {
     private readonly List<Func<IServiceResolverFactory, IEntryPointMiddlewareApplication>> _apps = new();
     private readonly IBenzeneServiceContainer _benzeneServiceContainer;
 
-    public AzureFunctionFunctionAppBuilder(IBenzeneServiceContainer benzeneServiceContainer)
+    public AzureFunctionAppBuilder(IBenzeneServiceContainer benzeneServiceContainer)
     {
         _benzeneServiceContainer = benzeneServiceContainer;
     }

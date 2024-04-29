@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Benzene.Test.Core.Http;
 
-public class HttpEndpointFinderTest
+public class ReflectionHttpEndpointFinderTest
 {
     [Fact]
     public void FindRoutes()
     {
-        var httpEndpointFinder = new HttpEndpointFinder(new ReflectionMessageHandlersFinder(Assembly.GetExecutingAssembly()));
+        var httpEndpointFinder = new ReflectionHttpEndpointFinder(new ReflectionMessageHandlersFinder(Assembly.GetExecutingAssembly()));
 
         var findRoutes = httpEndpointFinder.FindDefinitions();
 
@@ -26,7 +26,7 @@ public class HttpEndpointFinderTest
     [Fact]
     public void FindRoutes_NoResponse()
     {
-        var httpEndpointFinder = new HttpEndpointFinder(new ReflectionMessageHandlersFinder(Assembly.GetExecutingAssembly()));
+        var httpEndpointFinder = new ReflectionHttpEndpointFinder(new ReflectionMessageHandlersFinder(Assembly.GetExecutingAssembly()));
 
         var findRoutes = httpEndpointFinder.FindDefinitions();
 

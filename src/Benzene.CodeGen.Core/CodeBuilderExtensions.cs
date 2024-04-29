@@ -45,7 +45,7 @@ public static class CodeBuilderExtensions
         var messageHandlersFinder = new ReflectionMessageHandlersFinder(types);
         var messageHandlerDefinitions = messageHandlersFinder.FindDefinitions();
 
-        var httpEndpointFinder = new HttpEndpointFinder(messageHandlersFinder);
+        var httpEndpointFinder = new ReflectionHttpEndpointFinder(messageHandlersFinder);
         var httpEndpointDefinitions = httpEndpointFinder.FindDefinitions();
         return source.BuildCodeFiles(httpEndpointDefinitions.ToEventServiceDocument(messageHandlerDefinitions));
     }

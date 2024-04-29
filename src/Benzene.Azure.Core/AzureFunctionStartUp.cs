@@ -8,19 +8,19 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Azure.Core;
 
-public abstract class AzureFunctionStartUp : IWebJobsStartup, IStartUp<IServiceCollection, IConfiguration, AzureFunctionFunctionAppBuilder>
+public abstract class AzureFunctionStartUp : IWebJobsStartup, IStartUp<IServiceCollection, IConfiguration, AzureFunctionAppBuilder>
 {
     public abstract IConfiguration GetConfiguration();
 
     public abstract void ConfigureServices(IServiceCollection services, IConfiguration configuration);
 
-    public abstract void Configure(AzureFunctionFunctionAppBuilder app, IConfiguration configuration);
+    public abstract void Configure(AzureFunctionAppBuilder app, IConfiguration configuration);
 
     public void Configure(IWebJobsBuilder builder)
     {
         var configuration = GetConfiguration();
         ConfigureServices(builder.Services, configuration);
-        var app = new AzureFunctionFunctionAppBuilder(new MicrosoftBenzeneServiceContainer(builder.Services));
+        var app = new AzureFunctionAppBuilder(new MicrosoftBenzeneServiceContainer(builder.Services));
         Configure(app, configuration);
 
         builder.Services.AddScoped<IAzureFunctionApp>(serviceProvider => app.Create(new MicrosoftServiceResolverFactory(serviceProvider)));

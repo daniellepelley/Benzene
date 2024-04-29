@@ -8,14 +8,14 @@ public static class Extensions
 {
     public static IBenzeneServiceContainer AddHttpMessageHandlers(this IBenzeneServiceContainer services)
     {
-        services.TryAddSingleton<HttpEndpointFinder>();
+        services.TryAddSingleton<ReflectionHttpEndpointFinder>();
         services.TryAddSingleton<ListHttpEndpointFinder>();
         services.TryAddSingleton<DependencyHttpEndpointFinder>();
         services.TryAddSingleton<IListHttpEndpointFinder, ListHttpEndpointFinder>();
         services.TryAddSingleton<IHttpEndpointFinder>(x =>
             new CompositeHttpEndpointFinder(
             new CacheHttpEndpointFinder(
-            x.GetService<HttpEndpointFinder>()),
+            x.GetService<ReflectionHttpEndpointFinder>()),
             x.GetService<ListHttpEndpointFinder>(),
             x.GetService<DependencyHttpEndpointFinder>()));
         services.TryAddSingleton<IRouteFinder, RouteFinder>();
