@@ -2,10 +2,9 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
-using Benzene.Core.DI;
 using Benzene.Core.Info;
 using Benzene.Core.Middleware;
 using Benzene.Core.Request;
@@ -14,6 +13,7 @@ using Benzene.Core.Serialization;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Constants = Benzene.HealthChecks.Constants;
 
 namespace Benzene.Aws.ApiGateway;
 

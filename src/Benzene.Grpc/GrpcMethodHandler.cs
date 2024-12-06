@@ -5,7 +5,6 @@ using Benzene.Core.BenzeneMessage;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Grpc.Core;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Benzene.Grpc;
 

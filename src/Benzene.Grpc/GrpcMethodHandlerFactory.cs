@@ -1,7 +1,6 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
 using Google.Protobuf.Reflection;
 
 namespace Benzene.Grpc;

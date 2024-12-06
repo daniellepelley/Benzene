@@ -1,5 +1,5 @@
 ﻿using System;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;

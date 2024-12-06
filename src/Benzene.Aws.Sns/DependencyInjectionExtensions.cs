@@ -2,7 +2,6 @@
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Request;
-using Benzene.Core.DI;
 using Benzene.Core.Info;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;

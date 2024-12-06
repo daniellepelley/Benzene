@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
@@ -9,6 +9,7 @@ using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Xunit;
+using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Plugins.FluentValidation;
 
@@ -26,7 +27,7 @@ public class FluentValidationPipelineTest
 
         pipeline
             .UseProcessResponse()
-            .UseMessageRouter(x => x.UseFluentValidation());
+            .UseMessageHandlers(x => x.UseFluentValidation());
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 

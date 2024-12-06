@@ -1,4 +1,3 @@
-using Benzene.Core.BenzeneMessage;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 

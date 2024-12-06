@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.Hosting;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;

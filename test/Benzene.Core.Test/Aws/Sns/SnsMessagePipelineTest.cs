@@ -8,7 +8,7 @@ using Benzene.Aws.Sns;
 using Benzene.Aws.Sns.TestHelpers;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandling;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
@@ -17,8 +17,6 @@ using Benzene.Test.Aws.Sns.Examples;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -48,7 +46,7 @@ public class SnsMessagePipelineTest
                 {
                     messageResult = context.MessageResult;
                 })
-                .UseMessageRouter(x => x.UseFluentValidation()))
+                .UseMessageHandlers(x => x.UseFluentValidation()))
             .Build(x => new SnsApplication(x));
 
         var request = CreateRequest();
@@ -79,7 +77,7 @@ public class SnsMessagePipelineTest
             {
                 messageResult = context.MessageResult;
             })
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new SnsApplication(pipeline.Build());
 
@@ -203,7 +201,7 @@ public class SnsMessagePipelineTest
                 {
                     messageResult = context.MessageResult;
                 })
-                .UseMessageRouter(x => x
+                .UseMessageHandlers(x => x
                     .UseFluentValidation()
                 ))
             .Build(x => new SnsApplication(x));

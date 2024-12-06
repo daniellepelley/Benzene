@@ -5,7 +5,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;

@@ -5,7 +5,7 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Kafka;
 using Benzene.Aws.Kafka.TestHelpers;
 using Benzene.Core.MessageHandling;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Aws.Helpers;
@@ -42,7 +42,7 @@ public class KafkaMessagePipelineTest
             {
                 messageResult = context.MessageResult;
             })
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new KafkaLambdaHandler(new KafkaApplication(pipelineBuilder.Build()), serviceResolver);
 
@@ -73,7 +73,7 @@ public class KafkaMessagePipelineTest
             {
                 messageResult = context.MessageResult;
             })
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new KafkaApplication(pipeline.Build());
 

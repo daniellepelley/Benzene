@@ -1,6 +1,4 @@
-﻿using Benzene.Core;
-
-namespace Benzene.Xml;
+﻿namespace Benzene.Xml;
 
 public static class Settings
 {

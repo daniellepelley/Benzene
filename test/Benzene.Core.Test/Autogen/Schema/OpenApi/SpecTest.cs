@@ -1,11 +1,9 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Core.DirectMessage;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Broadcast;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
@@ -15,6 +13,7 @@ using Benzene.Tools.Aws;
 using LEGO.AsyncAPI.Readers;
 using Microsoft.OpenApi.Readers;
 using Xunit;
+using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Autogen.Schema.OpenApi;
 
@@ -25,6 +24,7 @@ public class SpecTest
         return new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
                 .UsingBenzene(x => x
+                    .AddBenzene()
                     .AddBenzeneMessage()
                     .AddBroadcastEvent()
                     .AddHttpMessageHandlers()
@@ -35,7 +35,7 @@ public class SpecTest
                 app.UseBenzeneMessage(x => x
                     .UseProcessResponse()
                     .UseSpec()
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 );
             })
             .BuildHost();
@@ -46,6 +46,7 @@ public class SpecTest
         return new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
                 .UsingBenzene(x => x
+                    .AddBenzene()
                     .AddBenzeneMessage()
                     .SetApplicationInfo("Example App", "1.0", "Stuff")
                 ))
@@ -54,7 +55,7 @@ public class SpecTest
                 app.UseBenzeneMessage(x => x
                     .UseProcessResponse()
                     .UseSpec()
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 );
             })
             .BuildHost();

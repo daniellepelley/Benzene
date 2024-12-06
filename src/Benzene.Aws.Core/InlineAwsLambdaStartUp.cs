@@ -1,5 +1,5 @@
 ﻿using System;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;

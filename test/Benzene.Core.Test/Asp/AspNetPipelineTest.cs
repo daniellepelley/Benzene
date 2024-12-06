@@ -109,7 +109,7 @@
 
 //         pipeline
 //             .UseProcessResponse()
-//             .UseMessageRouter()
+//             .UseMessageHandlers()
 //             .Build();
 
 //         var application = new AspNetApplication(pipeline.Build(), serviceResolverFactory);
@@ -141,7 +141,7 @@
 
 //         pipeline
 //             .UseProcessResponse()
-//             .UseMessageRouter();
+//             .UseMessageHandlers();
 
 //         var application = new AspNetApplication(pipeline.Build(), serviceResolverFactory);
 
@@ -224,7 +224,7 @@
 //     //         {
 //     //             mockHealthCheck.Object
 //     //         })
-//     //         .UseMessageRouter();
+//     //         .UseMessageHandlers();
 //     //
 //     //     var aws = new ApiGatewayApplication(pipeline);
 //     //

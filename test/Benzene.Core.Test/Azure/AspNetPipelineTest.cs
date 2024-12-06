@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Azure.AspNet;
 using Benzene.Azure.Core;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Core.Serialization;
 using Benzene.DataAnnotations;
 using Benzene.Results;
@@ -26,7 +26,7 @@ public class AspNetPipelineTest
             .Configure(app => app
                 .UseHttp(http => http
                     .UseProcessResponse()
-                    .UseMessageRouter()))
+                    .UseMessageHandlers()))
             .Build();
 
         var request = HttpBuilder.Create("GET", "/example", Payload).AsAspNetCoreHttpRequest();
@@ -46,7 +46,7 @@ public class AspNetPipelineTest
                 .UseHttp(http => http
                     .UseXml()
                     .UseProcessResponse()
-                    .UseMessageRouter()))
+                    .UseMessageHandlers()))
             .Build();
 
         var request = HttpBuilder.Create("GET", "/example", Payload)
@@ -69,7 +69,7 @@ public class AspNetPipelineTest
             .Configure(app => app
                 .UseHttp(http => http
                     .UseProcessResponse()
-                    .UseMessageRouter(x => x.UseDataAnnotationsValidation())))
+                    .UseMessageHandlers(x => x.UseDataAnnotationsValidation())))
             .Build();
 
         var request = HttpBuilder.Create("GET", "/example", new ExampleRequestPayload

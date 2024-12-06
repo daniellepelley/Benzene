@@ -1,7 +1,7 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Http.Routing;
 
 namespace Benzene.Http.Cors;

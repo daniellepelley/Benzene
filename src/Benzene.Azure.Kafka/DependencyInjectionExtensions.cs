@@ -1,9 +1,8 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Core;
-using Benzene.Core.DI;
 using Benzene.Core.Info;
 using Benzene.Core.Serialization;
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandling;
-using Benzene.Abstractions.Middleware;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandling;

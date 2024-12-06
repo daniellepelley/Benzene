@@ -1,7 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 
 namespace Benzene.Azure.Core;
 

@@ -8,9 +8,10 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Client;
 using Benzene.Aws.Sqs.TestHelpers;
+using Benzene.Core.DI;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandling;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Aws.Helpers;
@@ -40,6 +41,7 @@ public class SqsMessagePipelineTest
                 .AddTransient<ILogger>(_ => NullLogger.Instance)
                 .AddTransient(_ => mockExampleService.Object)
                 .UsingBenzene(x => x
+                    .AddBenzene()
                     .AddSqs())
                 )
             .Configure(app => app
@@ -48,7 +50,7 @@ public class SqsMessagePipelineTest
                 {
                     messageResult = context.MessageResult;
                 })
-                .UseMessageRouter()
+                .UseMessageHandlers()
             )
         ).BuildHost();
 
@@ -72,6 +74,7 @@ public class SqsMessagePipelineTest
                 .AddTransient<ILogger>(_ => NullLogger.Instance)
                 .AddTransient(_ => mockExampleService.Object)
                 .UsingBenzene(x => x
+                    .AddBenzene()
                     .AddSqs())
                 )
             .Configure(app => app
@@ -80,7 +83,7 @@ public class SqsMessagePipelineTest
                 {
                     messageResult = context.MessageResult;
                 })
-                .UseMessageRouter()
+                .UseMessageHandlers()
             )
         ).BuildHost();
 
@@ -114,7 +117,7 @@ public class SqsMessagePipelineTest
             {
                 messageResult = context.MessageResult;
             })
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new SqsApplication(pipeline.Build());
 
@@ -215,7 +218,7 @@ public class SqsMessagePipelineTest
         var pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new SqsApplication(pipeline.Build());
 

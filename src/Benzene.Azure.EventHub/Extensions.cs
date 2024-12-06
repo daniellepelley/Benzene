@@ -1,5 +1,5 @@
 ﻿using Azure.Messaging.EventHubs;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Core;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;

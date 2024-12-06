@@ -1,5 +1,5 @@
 ﻿using Amazon.XRay.Recorder.Handlers.AwsSdk;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Aws.XRay;
 

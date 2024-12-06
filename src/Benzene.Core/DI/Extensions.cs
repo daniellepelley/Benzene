@@ -6,7 +6,6 @@ using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandling;
-using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Serialization;
@@ -116,13 +115,20 @@ public static class Extensions
 
         services.TryAddSingleton<IApplicationInfo, BlankApplicationInfo>();
         services.TryAddSingleton<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
-        services.TryAddSingleton<IMiddlewareFactory, DefaultMiddlewareFactory>();
         services.TryAddSingleton<IVersionSelector, VersionSelector>();
-        services.TryAddSingleton<IBenzeneLogger, BenzeneLogger>();
-        services.TryAddScoped<IBenzeneLogContext, NullBenzeneLogContext>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
         services.TryAddSingleton<JsonSerializer>();
+        services.AddDefaultBenzeneLogging();
+        services.AddBenzeneMiddleware();
+        return services;
+    }
+    
+    public static IBenzeneServiceContainer AddDefaultBenzeneLogging(this IBenzeneServiceContainer services)
+    {
+        services.TryAddSingleton<IBenzeneLogger, BenzeneLogger>();
+        services.TryAddScoped<IBenzeneLogContext, NullBenzeneLogContext>();
         services.AddServiceResolver();
         return services;
     }
+
 }

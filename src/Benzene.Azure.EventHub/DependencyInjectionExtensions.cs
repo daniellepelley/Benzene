@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Core;
 
 namespace Benzene.Azure.EventHub;

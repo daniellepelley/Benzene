@@ -1,15 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Info;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Middleware;
 
 public class MiddlewareMultiApplication<TEvent, TContext, TResult> : IMiddlewareApplication<TEvent, TResult[]>
-    where TContext : IHasMessageResult
 {
     private readonly Func<TEvent, TContext[]> _mapper;
     private readonly IMiddlewarePipeline<TContext> _pipelineBuilder;
@@ -41,11 +35,9 @@ public class MiddlewareMultiApplication<TEvent, TContext> : IMiddlewareApplicati
 {
     private readonly Func<TEvent, TContext[]> _mapper;
     private readonly IMiddlewarePipeline<TContext> _pipeline;
-    private readonly string _transport;
 
-    public MiddlewareMultiApplication(string transport, IMiddlewarePipeline<TContext> pipeline, Func<TEvent, TContext[]> mapper)
+    public MiddlewareMultiApplication(IMiddlewarePipeline<TContext> pipeline, Func<TEvent, TContext[]> mapper)
     {
-        _transport = transport;
         _mapper = mapper;
         _pipeline = pipeline;
     }
@@ -55,8 +47,6 @@ public class MiddlewareMultiApplication<TEvent, TContext> : IMiddlewareApplicati
         var tasks = _mapper(@event).Select(async context =>
             {
                 using var scope = serviceResolver.GetService<IServiceResolverFactory>().CreateScope();
-                var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
-                setCurrentTransport.SetTransport(_transport);
                 await _pipeline.HandleAsync(context, scope);
             })
             .ToArray();
@@ -64,3 +54,5 @@ public class MiddlewareMultiApplication<TEvent, TContext> : IMiddlewareApplicati
         return Task.WhenAll(tasks);
     }
 }
+
+

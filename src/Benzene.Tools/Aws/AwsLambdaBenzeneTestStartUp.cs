@@ -1,8 +1,7 @@
 ﻿using Benzene.Abstractions.Hosting;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

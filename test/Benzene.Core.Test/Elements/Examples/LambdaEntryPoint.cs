@@ -1,14 +1,13 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Middleware;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Core.DirectMessage;
 using Benzene.Aws.Sns;
 using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;
 using Benzene.Core.Logging;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Diagnostics.Timers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
@@ -45,7 +44,7 @@ namespace Benzene.Test.Elements.Examples
                 )
                 .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
-                .UseMessageRouter(x => x
+                .UseMessageHandlers(x => x
                     .UseFluentValidation()
                 )
             );
@@ -55,7 +54,7 @@ namespace Benzene.Test.Elements.Examples
                 .UseTimer("sns-application")
                 .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
-                .UseMessageRouter(x => x
+                .UseMessageHandlers(x => x
                     .UseFluentValidation()
                 )
             );
@@ -65,7 +64,7 @@ namespace Benzene.Test.Elements.Examples
                 .UseTimer("sqs-application")
                 .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
-                .UseMessageRouter(x => x
+                .UseMessageHandlers(x => x
                     .UseFluentValidation()
                 )
             );
@@ -75,7 +74,7 @@ namespace Benzene.Test.Elements.Examples
                 .UseTimer("api-gateway-pipeline")
                 .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, "POST", "/healthcheck", healthCheckBuilder)
-                .UseMessageRouter(x => x
+                .UseMessageHandlers(x => x
                     .UseFluentValidation()
                 )
             );

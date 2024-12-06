@@ -5,7 +5,7 @@ using Benzene.Abstractions;
 using Benzene.Core.Correlation;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

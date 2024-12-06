@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;

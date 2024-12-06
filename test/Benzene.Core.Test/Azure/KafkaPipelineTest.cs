@@ -2,7 +2,7 @@
 using Benzene.Azure.Core;
 using Benzene.Azure.Kafka;
 using Benzene.Azure.Kafka.TestHelpers;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +24,7 @@ public class KafkaPipelineTest
                 .AddSingleton(mockExampleService.Object)
             ).Configure(app => app
                 .UseKafka(kafka => kafka
-                    .UseMessageRouter()))
+                    .UseMessageHandlers()))
             .Build();
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsAzureKafkaEvent();

@@ -1,5 +1,4 @@
-﻿using Benzene.Http;
-using Benzene.Http.Routing;
+﻿using Benzene.Http.Routing;
 using Benzene.Test.Examples;
 using Moq;
 using Xunit;

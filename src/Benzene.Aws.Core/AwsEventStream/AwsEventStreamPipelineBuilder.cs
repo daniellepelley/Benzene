@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Core.AwsEventStream;
 

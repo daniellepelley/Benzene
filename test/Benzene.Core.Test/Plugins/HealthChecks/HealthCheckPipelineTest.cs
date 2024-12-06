@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Core.Response;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Plugins.HealthChecks;
 
@@ -41,7 +42,7 @@ public class HealthCheckPipelineTest
         pipeline
             .UseProcessResponse()
             .UseHealthCheck(Defaults.HealthCheckTopic, x => x.AddHealthCheck(mockHealthCheck.Object))
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 
@@ -91,7 +92,7 @@ public class HealthCheckPipelineTest
                 .AddHealthCheck(new SimpleHealthCheck())
                 .AddHealthCheck(new SimpleHealthCheck())
             )
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 

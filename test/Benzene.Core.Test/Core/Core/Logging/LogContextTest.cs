@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Core.DirectMessage;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.DI;
 using Benzene.Core.Logging;
+using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Benzene.Tools.Aws;
@@ -26,6 +27,7 @@ public class LogContextTest
         _mockBenzeneContext = new Mock<IBenzeneLogContext>();
         _host = new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
+                .UsingBenzene(b => b.AddBenzene())
                 .AddScoped(_ => _mockBenzeneContext.Object))
             .Configure(app => app
                 .UseBenzeneMessage(direct => direct

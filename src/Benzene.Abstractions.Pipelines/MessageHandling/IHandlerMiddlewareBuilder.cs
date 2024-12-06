@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Abstractions.Middleware;
+namespace Benzene.Abstractions.MessageHandling;
 
 public interface IHandlerMiddlewareBuilder
 {

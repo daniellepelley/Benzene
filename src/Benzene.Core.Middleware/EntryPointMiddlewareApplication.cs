@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.Middleware;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using Amazon.Lambda.SQSEvents;
-using Amazon.SQS.Model;
 using Benzene.Abstractions;
 
 namespace Benzene.Aws.Sqs.TestHelpers;

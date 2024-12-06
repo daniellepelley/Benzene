@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.Core</AssemblyName>
     <RootNamespace>Benzene.Core</RootNamespace>
@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
     <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
   </ItemGroup>
 
 </Project>

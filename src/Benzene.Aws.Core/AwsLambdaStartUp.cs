@@ -2,9 +2,8 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Benzene.Abstractions.Hosting;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

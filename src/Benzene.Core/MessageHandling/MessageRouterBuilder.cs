@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandling;
-using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.MessageHandling;
 

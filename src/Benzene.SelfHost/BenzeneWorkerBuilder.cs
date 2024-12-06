@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
-using Benzene.Abstractions.MiddlewareBuilder;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
+using Benzene.Core.Middleware;
 
 namespace Benzene.SelfHost;
 

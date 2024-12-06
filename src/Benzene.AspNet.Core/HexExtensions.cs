@@ -1,13 +1,11 @@
-using System.ComponentModel.Design;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Benzene.AspNet.Core;
 
@@ -18,7 +16,7 @@ public static class HexExtensions
         return app.UseBenzene(x => x
                 //.UseProcessAspNetResponse()
                 .UseProcessResponseIfHandled()
-            // .UseMessageRouter()
+            // .UseMessageHandlers()
         );
     }
 

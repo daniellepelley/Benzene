@@ -1,7 +1,4 @@
-﻿using System;
-using Benzene.Abstractions.DI;
-
-namespace Benzene.Core.DI;
+﻿namespace Benzene.Abstractions.DI;
 
 public static class BenzeneServiceContainerExtensions
 {

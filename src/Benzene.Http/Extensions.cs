@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Core.DI;
 using Benzene.Http.Routing;
 
 namespace Benzene.Http;

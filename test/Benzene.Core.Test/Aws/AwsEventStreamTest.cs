@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;

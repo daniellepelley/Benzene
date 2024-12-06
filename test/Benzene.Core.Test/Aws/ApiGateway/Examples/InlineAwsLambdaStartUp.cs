@@ -1,6 +1,6 @@
 ﻿using System;
 using Autofac;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;

@@ -6,7 +6,9 @@ using Benzene.Abstractions.Logging;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.DI;
 using Benzene.Core.Logging;
+using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Benzene.Tools.Aws;
@@ -25,7 +27,7 @@ public class AwsEventStreamLogContextTest
     {
         _mockBenzeneContext = new Mock<IBenzeneLogContext>();
         _host = new InlineAwsLambdaStartUp()
-            .ConfigureServices(x => x.AddScoped(_ => _mockBenzeneContext.Object))
+            .ConfigureServices(x => x.AddScoped(_ => _mockBenzeneContext.Object).UsingBenzene(b => b.AddBenzene()))
             .Configure(app => app
                 .UseLogResult(action)
             )

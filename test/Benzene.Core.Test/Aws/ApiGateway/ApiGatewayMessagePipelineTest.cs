@@ -10,7 +10,8 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Middleware;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;
 using Benzene.HealthChecks.Core;
@@ -47,7 +48,7 @@ public class ApiGatewayMessagePipelineTest
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
                     .UseProcessResponse()
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 )
             ).BuildHost();
 
@@ -70,7 +71,7 @@ public class ApiGatewayMessagePipelineTest
                 .UseApiGateway(apiGateway => apiGateway
                     .UseXml()
                     .UseProcessResponse()
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 )
             ).BuildHost();
 
@@ -155,7 +156,7 @@ public class ApiGatewayMessagePipelineTest
                 .UseApiGateway(apiGateway => apiGateway
                     .UseProcessResponse()
                     .UseHealthCheck("healthcheck", "GET", "/healthcheck", mockHealthCheck.Object)
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 )
             ).BuildHost();
 
@@ -176,7 +177,7 @@ public class ApiGatewayMessagePipelineTest
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
                     .UseProcessResponse()
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 )
             ).BuildHost();
 
@@ -212,7 +213,7 @@ public class ApiGatewayMessagePipelineTest
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
                     .UseProcessResponse()
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 )
             ).BuildHost();
 

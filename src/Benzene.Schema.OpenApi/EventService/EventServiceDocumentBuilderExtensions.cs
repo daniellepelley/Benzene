@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.MessageHandling;
-using Benzene.Http;
 using Benzene.Http.Routing;
 
 namespace Benzene.Schema.OpenApi.EventService;

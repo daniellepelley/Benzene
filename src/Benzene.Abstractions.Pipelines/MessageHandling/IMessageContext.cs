@@ -1,7 +1,6 @@
-﻿using Benzene.Abstractions.MessageHandling;
-using Benzene.Results;
+﻿using Benzene.Results;
 
-namespace Benzene.Abstractions.Middleware;
+namespace Benzene.Abstractions.MessageHandling;
 
 public interface IMessageContext<TRequest, TResponse>
 {

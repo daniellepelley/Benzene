@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.MiddlewareBuilder;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Core.Logging;
 

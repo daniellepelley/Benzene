@@ -1,8 +1,9 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Test.Examples;
 
@@ -15,13 +16,13 @@ public static class PipelineMother
 
         return pipeline
             .UseProcessResponse()
-            .UseMessageRouter();
+            .UseMessageHandlers();
     }
 
     public static Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>> BasicBenzeneMessagePipeline()
     {
         return pipeline => pipeline
             .UseProcessResponse()
-            .UseMessageRouter();
+            .UseMessageHandlers();
     }
 }

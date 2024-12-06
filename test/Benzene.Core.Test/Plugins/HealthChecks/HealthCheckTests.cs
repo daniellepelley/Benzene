@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Plugins.HealthChecks;
 
@@ -44,7 +45,7 @@ public class HealthCheckTests
         var serviceCollection = new ServiceCollection();
 
         var container = new MicrosoftBenzeneServiceContainer(serviceCollection);
-        container.AddBenzeneMessage().AddMessageHandlers();
+        container.AddBenzene().AddBenzeneMessage().AddMessageHandlers();
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
@@ -81,7 +82,7 @@ public class HealthCheckTests
         var serviceCollection = new ServiceCollection();
 
         var container = new MicrosoftBenzeneServiceContainer(serviceCollection);
-        container.AddBenzeneMessage().AddMessageHandlers();
+        container.AddBenzene().AddBenzeneMessage().AddMessageHandlers();
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.Middleware;
 
-public class MiddlewareApplication<TEvent, TContext, TResult> : IMiddlewareApplication<TEvent, TResult> //where TContext : IHasMessageResult
+public class MiddlewareApplication<TEvent, TContext, TResult> : IMiddlewareApplication<TEvent, TResult> 
 {
     private readonly Func<TEvent, TContext> _mapper;
     private readonly IMiddlewarePipeline<TContext> _pipeline;

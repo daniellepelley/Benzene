@@ -5,6 +5,7 @@ using FluentValidation;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;
+using Benzene.Abstractions.MessageHandling;
 
 namespace Benzene.FluentValidation;
 

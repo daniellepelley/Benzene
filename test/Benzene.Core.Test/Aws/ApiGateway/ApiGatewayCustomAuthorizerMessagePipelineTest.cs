@@ -4,14 +4,13 @@ using Benzene.Aws.ApiGateway;
 using Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.DI;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
-using Extensions = Benzene.Microsoft.Dependencies.Extensions;
 
 namespace Benzene.Test.Aws.ApiGateway;
 

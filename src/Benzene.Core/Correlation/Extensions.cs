@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Mappers;
 using Benzene.Core.Middleware;

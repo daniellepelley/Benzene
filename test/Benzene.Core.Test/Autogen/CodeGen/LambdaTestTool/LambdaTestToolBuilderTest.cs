@@ -1,14 +1,11 @@
 ﻿using System.Collections.Generic;
 using Benzene.Aws.ApiGateway;
-using Benzene.Aws.Sns;
 using Benzene.Aws.Sns.TestHelpers;
-using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.CodeGen.Core;
 using Benzene.CodeGen.LambdaTestTool;
 using Benzene.CodeGen.Markdown;
 using Benzene.Core.MessageHandling;
-using Benzene.Http;
 using Benzene.Http.Routing;
 using Benzene.Test.Autogen.CodeGen.Helpers;
 using Benzene.Test.Autogen.CodeGen.Model;

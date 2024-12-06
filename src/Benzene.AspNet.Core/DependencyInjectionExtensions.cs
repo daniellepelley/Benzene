@@ -1,14 +1,13 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.DI;
 using Benzene.Core.Info;
 using Benzene.Core.MessageHandling;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Core.Request;
 using Benzene.Core.Response;
 using Benzene.Core.Serialization;

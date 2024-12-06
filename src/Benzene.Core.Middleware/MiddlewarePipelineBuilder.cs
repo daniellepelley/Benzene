@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.MiddlewareBuilder;
-using Benzene.Core.DI;
-using Benzene.Core.Middleware;
 
-namespace Benzene.Core.MiddlewareBuilder;
+namespace Benzene.Core.Middleware;
 
 public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TContext>
 {
@@ -16,7 +11,7 @@ public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TC
     public MiddlewarePipelineBuilder(IBenzeneServiceContainer benzeneServiceContainer)
     {
         _benzeneServiceContainer = benzeneServiceContainer;
-        _benzeneServiceContainer.AddBenzene();
+        _benzeneServiceContainer.AddBenzeneMiddleware();
     }
 
     public IMiddlewarePipelineBuilder<TContext> Use(Func<IServiceResolver, IMiddleware<TContext>> func)

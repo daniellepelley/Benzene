@@ -7,7 +7,6 @@ using Benzene.Results;
 using Benzene.Test.Aws.Examples;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
-using Benzene.Tools;
 using Benzene.Tools.Aws;
 using Xunit;
 

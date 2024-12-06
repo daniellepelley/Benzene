@@ -2,13 +2,14 @@
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Filters;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Xunit;
+using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Core.Core.Filters;
 
@@ -26,7 +27,7 @@ public class FiltersPipelineTest
 
         pipeline
             .UseProcessResponse()
-            .UseMessageRouter(x => x.UseFilters());
+            .UseMessageHandlers(x => x.UseFilters());
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 

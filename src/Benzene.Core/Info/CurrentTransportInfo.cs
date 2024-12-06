@@ -10,4 +10,3 @@ public class CurrentTransportInfo : ICurrentTransport, ISetCurrentTransport
         Name = transport;
     }
 }
-

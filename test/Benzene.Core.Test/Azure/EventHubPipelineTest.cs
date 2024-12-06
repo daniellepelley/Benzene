@@ -2,8 +2,7 @@
 using Benzene.Azure.Core;
 using Benzene.Azure.EventHub;
 using Benzene.Azure.EventHub.TestHelpers;
-using Benzene.Azure.Kafka;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +26,7 @@ public class EventHubPipelineTest
                 .UseEventHub(eventHub => eventHub
                     .UseBenzeneMessage(direct => direct
                     .UseProcessResponse()
-                    .UseMessageRouter())))
+                    .UseMessageHandlers())))
             .Build();
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsEventHubBenzeneMessage();

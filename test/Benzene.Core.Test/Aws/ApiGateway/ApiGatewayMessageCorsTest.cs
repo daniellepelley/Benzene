@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Http.Cors;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -37,7 +37,7 @@ public class ApiGatewayMessageCorsTest
                             "X-Query-Id","X-Tenant-Id","Authorization","Content-Type","X-Api-Key"
                         }
                     })
-                    .UseMessageRouter()
+                    .UseMessageHandlers()
                 )
             ).BuildHost();
     }

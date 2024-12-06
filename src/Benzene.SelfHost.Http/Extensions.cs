@@ -1,9 +1,10 @@
-﻿using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Constants = Benzene.HealthChecks.Constants;
 
 namespace Benzene.SelfHost.Http;
 

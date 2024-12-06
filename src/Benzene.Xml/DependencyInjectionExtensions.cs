@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;

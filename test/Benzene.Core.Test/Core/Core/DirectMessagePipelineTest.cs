@@ -9,7 +9,6 @@ using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Core.Response;
 using Benzene.Core.Results;
 using Benzene.Microsoft.Dependencies;
@@ -21,6 +20,7 @@ using Newtonsoft.Json;
 using Xunit;
 using Constants = Benzene.Core.Constants;
 using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
+using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Core.Core;
 
@@ -72,7 +72,7 @@ public class BenzeneMessagePipelineTest
 
         pipeline
             .UseProcessResponse()
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
         var aws = new BenzeneMessageApplication(pipeline.Build());
@@ -111,7 +111,7 @@ public class BenzeneMessagePipelineTest
 
         pipeline
             .UseProcessResponse()
-            .UseMessageRouter();
+            .UseMessageHandlers();
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 
@@ -182,7 +182,7 @@ public class BenzeneMessagePipelineTest
             return next();
         });
 
-        var aws = new MiddlewareMultiApplication<BenzeneMessageRequest, BenzeneMessageContext>("foo", pipeline.Build(), x => new[]
+        var aws = new MiddlewareMultiApplication<BenzeneMessageRequest, BenzeneMessageContext>(pipeline.Build(), x => new[]
         {
             BenzeneMessageContext.CreateInstance(x)
         });

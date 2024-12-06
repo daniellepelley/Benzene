@@ -15,6 +15,8 @@ public static class HttpBuilderExtensions
             Method = source.Method,
             Path = source.Path, 
             Body = ObjectToStream(source.Message),
+            Host = new HostString(""),
+            PathBase = new PathString("")
         };
 
         foreach (var header in source.Headers)

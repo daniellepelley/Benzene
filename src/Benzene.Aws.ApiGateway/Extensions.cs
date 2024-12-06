@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Amazon.Lambda.APIGatewayEvents;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.ApiGateway;
