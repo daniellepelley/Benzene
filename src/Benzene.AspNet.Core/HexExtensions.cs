@@ -1,6 +1,7 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;

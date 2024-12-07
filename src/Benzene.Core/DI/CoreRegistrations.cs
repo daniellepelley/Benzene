@@ -10,7 +10,6 @@ public class CoreRegistrations : RegistrationsBase
         Add(".AddBenzene()", Extensions.AddBenzene);
         Add(".AddBenzeneMessage()", Extensions.AddBenzeneMessage);
         Add(".AddCorrelationId()", x => x.AddCorrelationId());
-        Add(".AddMessageHandlers(<assemblies>)", x => x.AddMessageHandlers(AppDomain.CurrentDomain.GetAssemblies()));
         Add(".SetApplicationInfo(<name>, <version>, <description>)", x => x.SetApplicationInfo("", "", ""));
     }
 }

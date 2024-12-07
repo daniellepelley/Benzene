@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandling;
 
 namespace Benzene.Core.Mappers;

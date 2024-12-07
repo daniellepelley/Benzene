@@ -9,7 +9,7 @@ public class SqsMessageContext : IHasMessageResult
     {
         SqsMessage = sqsMessage;
         SqsEvent = sqsEvent;
-        MessageResult = Benzene.Core.Results.MessageResult.Empty();
+        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public static SqsMessageContext CreateInstance(SQSEvent sqsEvent, SQSEvent.SQSMessage sqsMessage)

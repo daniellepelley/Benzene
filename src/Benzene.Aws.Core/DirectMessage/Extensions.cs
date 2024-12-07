@@ -4,6 +4,7 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers;
 
 namespace Benzene.Aws.Core.DirectMessage;
 

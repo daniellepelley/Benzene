@@ -1,4 +1,5 @@
-﻿using Benzene.Core.Results;
+﻿using Benzene.Core.MessageHandlers;
+using Benzene.Core.Results;
 using Xunit;
 
 namespace Benzene.Test.Aws;

@@ -7,6 +7,7 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Sns;
 using Benzene.Aws.Sns.TestHelpers;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.FluentValidation;

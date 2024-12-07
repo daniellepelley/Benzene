@@ -4,6 +4,7 @@ using Benzene.Abstractions.Results;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Kafka;
 using Benzene.Aws.Kafka.TestHelpers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;

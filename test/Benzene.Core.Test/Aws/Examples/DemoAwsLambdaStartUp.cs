@@ -5,6 +5,7 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.DirectMessage;
 using Benzene.Aws.XRay;
 using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +26,7 @@ public class DemoAwsLambdaStartUp : AwsLambdaStartUp
         services.UsingBenzene(x => x
             .AddBenzene()
             .AddBenzeneMessage()
-            .AddMessageHandlers(Assembly.GetExecutingAssembly())
+            .AddMessageHandlers2(Assembly.GetExecutingAssembly())
         );
     }
 

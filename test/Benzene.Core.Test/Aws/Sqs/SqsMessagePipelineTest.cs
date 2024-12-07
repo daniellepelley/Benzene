@@ -10,6 +10,7 @@ using Benzene.Aws.Sqs.Client;
 using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;

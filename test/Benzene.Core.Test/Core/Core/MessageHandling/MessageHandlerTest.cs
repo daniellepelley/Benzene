@@ -3,6 +3,7 @@ using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.Logging;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Results;
 using Benzene.Test.Examples;

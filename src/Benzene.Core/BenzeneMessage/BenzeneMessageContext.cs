@@ -8,7 +8,7 @@ public class BenzeneMessageContext : IHasMessageResult
     {
         BenzeneMessageRequest = benzeneMessageRequest;
         BenzeneMessageResponse = new BenzeneMessageResponse();
-        MessageResult = Results.MessageResult.Empty();
+        MessageResult = null;//Results.MessageResult.Empty();
     }
 
     public static BenzeneMessageContext CreateInstance(IBenzeneMessageRequest benzeneMessageRequest)

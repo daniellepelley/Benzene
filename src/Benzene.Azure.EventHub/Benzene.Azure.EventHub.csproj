@@ -15,6 +15,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Benzene.Azure.Core\Benzene.Azure.Core.csproj" />
+	  <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -10,6 +10,7 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Core.Request;
@@ -204,7 +205,7 @@ public class ApiGatewayMessagePipelineTest
                     .UsingBenzene(x =>
                     {
                         x.AddBenzene();
-                        x.AddMessageHandlers(assembly);
+                        x.AddMessageHandlers2(assembly);
                     });
                     services.RegisterType<BenzeneMessageMapper>();
                     services.RegisterInstance(Mock.Of<IExampleService>());

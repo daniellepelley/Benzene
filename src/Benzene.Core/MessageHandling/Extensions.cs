@@ -7,7 +7,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Core.DI;
-using Benzene.Core.Helper;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Core.Response;
 
@@ -37,7 +37,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Type[] types)
         where TContext : IHasMessageResult
     {
-        app.Register(x => x.AddMessageHandlers(types));
+        app.Register(x => x.AddMessageHandlers2(types));
         return app.Use<TContext, MessageRouter<TContext>>();
     }
 
@@ -50,7 +50,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Assembly[] assemblies, Action<MessageRouterBuilder> router) where TContext : IHasMessageResult
     {
-        return app.UseMessageHandlers(Utils.GetAllTypes(assemblies).ToArray(), router);
+        return UseMessageHandlers(app, (Type[])Utils.GetAllTypes(assemblies).ToArray(), router);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,

@@ -12,7 +12,7 @@ public class GrpcContext : IHasMessageResult
     public GrpcContext(string topic)
     {
         Topic = topic;
-        MessageResult = Benzene.Core.Results.MessageResult.Empty();
+        MessageResult = Core.MessageHandlers.MessageResult.Empty();
     }
 
     public IMessageResult MessageResult { get; set; }

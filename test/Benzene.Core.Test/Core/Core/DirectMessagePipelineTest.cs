@@ -8,6 +8,7 @@ using Benzene.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Core.Response;
 using Benzene.Core.Results;
@@ -38,7 +39,7 @@ public class BenzeneMessagePipelineTest
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
                     .AddBenzeneMessage()
-                    .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
+                    .AddMessageHandlers2(typeof(ExampleRequestPayload).Assembly));
 
 
         var pipeline = PipelineMother.BasicBenzeneMessagePipeline(new MicrosoftBenzeneServiceContainer(services));
@@ -65,7 +66,7 @@ public class BenzeneMessagePipelineTest
                 .UsingBenzene(x => x
                     .AddBenzene() 
                     .AddBenzeneMessage()
-                    .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
+                    .AddMessageHandlers2(typeof(ExampleRequestPayload).Assembly));
 
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
@@ -104,7 +105,7 @@ public class BenzeneMessagePipelineTest
                 .UsingBenzene(x => x
                     .AddBenzene()
                     .AddBenzeneMessage()
-                    .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
+                    .AddMessageHandlers2(typeof(ExampleRequestPayload).Assembly));
 
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));

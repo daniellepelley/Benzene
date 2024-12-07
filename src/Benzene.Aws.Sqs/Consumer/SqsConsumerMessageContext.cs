@@ -8,7 +8,7 @@ public class SqsConsumerMessageContext : IHasMessageResult
     private SqsConsumerMessageContext(Message message)
     {
         Message = message;
-        MessageResult = Benzene.Core.Results.MessageResult.Empty();
+        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public static SqsConsumerMessageContext CreateInstance(Message message)

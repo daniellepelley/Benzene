@@ -9,7 +9,7 @@ namespace Benzene.Aws.ApiGateway
         public ApiGatewayContext(APIGatewayProxyRequest apiGatewayProxyRequest)
         {
             ApiGatewayProxyRequest = apiGatewayProxyRequest;
-            MessageResult = Benzene.Core.Results.MessageResult.Empty();
+            MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
         }
 
         public APIGatewayProxyRequest ApiGatewayProxyRequest { get; }

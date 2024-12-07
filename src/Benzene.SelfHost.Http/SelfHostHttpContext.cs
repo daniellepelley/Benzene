@@ -9,7 +9,7 @@ namespace Benzene.SelfHost.Http
         public SelfHostHttpContext(HttpListenerContext httpListenerContext)
         {
             HttpListenerContext = httpListenerContext;
-            MessageResult = Core.Results.MessageResult.Empty();
+            MessageResult = Core.MessageHandlers.MessageResult.Empty();
         }
 
         public HttpListenerContext HttpListenerContext { get; }

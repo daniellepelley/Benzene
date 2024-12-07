@@ -2,6 +2,7 @@
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Request;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;

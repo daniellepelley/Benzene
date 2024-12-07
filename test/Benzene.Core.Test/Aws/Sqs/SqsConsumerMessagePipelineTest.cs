@@ -6,6 +6,7 @@ using Amazon.SQS.Model;
 using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;

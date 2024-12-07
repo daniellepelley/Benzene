@@ -1,8 +1,9 @@
 ﻿using Azure.Messaging.EventHubs;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Core;
-using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.DI;
 
 namespace Benzene.Azure.EventHub;
 

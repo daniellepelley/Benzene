@@ -1,4 +1,5 @@
 ﻿using Benzene.Core.Broadcast;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;

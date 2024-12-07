@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Results;
 using Benzene.Test.Examples;

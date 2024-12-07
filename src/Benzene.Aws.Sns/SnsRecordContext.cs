@@ -9,7 +9,7 @@ public class SnsRecordContext : IHasMessageResult
     {
         SnsRecord = snsRecord;
         SnsEvent = snsEvent;
-        MessageResult = Benzene.Core.Results.MessageResult.Empty();
+        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public static SnsRecordContext CreateInstance(SNSEvent snsEvent, SNSEvent.SNSRecord snsRecord)

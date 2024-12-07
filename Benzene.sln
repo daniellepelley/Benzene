@@ -148,6 +148,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Core.Middleware", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Abstractions.Middleware", "src\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj", "{B0953067-1548-492D-843B-5BA639A40184}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Core.MessageHandlers", "src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj", "{AF6D07DE-82B3-4FD4-A3C6-FE5996EEDA97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Abstractions.MessageHandlers", "src\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj", "{8078A8CC-5968-44F1-B705-848677A9E18F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.TempCore", "src\Benzene.TempCore\Benzene.TempCore.csproj", "{4A2B10F1-F043-4500-BC4D-B48FFAA5C2E3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -370,6 +376,18 @@ Global
 		{B0953067-1548-492D-843B-5BA639A40184}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0953067-1548-492D-843B-5BA639A40184}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0953067-1548-492D-843B-5BA639A40184}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF6D07DE-82B3-4FD4-A3C6-FE5996EEDA97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF6D07DE-82B3-4FD4-A3C6-FE5996EEDA97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF6D07DE-82B3-4FD4-A3C6-FE5996EEDA97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF6D07DE-82B3-4FD4-A3C6-FE5996EEDA97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8078A8CC-5968-44F1-B705-848677A9E18F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8078A8CC-5968-44F1-B705-848677A9E18F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8078A8CC-5968-44F1-B705-848677A9E18F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8078A8CC-5968-44F1-B705-848677A9E18F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A2B10F1-F043-4500-BC4D-B48FFAA5C2E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A2B10F1-F043-4500-BC4D-B48FFAA5C2E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A2B10F1-F043-4500-BC4D-B48FFAA5C2E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A2B10F1-F043-4500-BC4D-B48FFAA5C2E3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -429,6 +447,9 @@ Global
 		{FF095B9C-91B9-4918-8A52-0CD3348F559E} = {6F9227E9-4621-4DB5-884D-E4463AA5349C}
 		{CACA7019-711A-4EE4-98AB-5526F683E6BE} = {0992316E-655D-4E7E-A30F-54660F9E36C4}
 		{B0953067-1548-492D-843B-5BA639A40184} = {0992316E-655D-4E7E-A30F-54660F9E36C4}
+		{AF6D07DE-82B3-4FD4-A3C6-FE5996EEDA97} = {0992316E-655D-4E7E-A30F-54660F9E36C4}
+		{8078A8CC-5968-44F1-B705-848677A9E18F} = {0992316E-655D-4E7E-A30F-54660F9E36C4}
+		{4A2B10F1-F043-4500-BC4D-B48FFAA5C2E3} = {0992316E-655D-4E7E-A30F-54660F9E36C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

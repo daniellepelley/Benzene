@@ -66,6 +66,8 @@
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.MockLambdaTool\Benzene.CodeGen.MockLambdaTool.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
     <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />

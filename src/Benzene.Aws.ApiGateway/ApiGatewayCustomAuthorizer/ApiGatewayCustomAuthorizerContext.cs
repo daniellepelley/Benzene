@@ -8,7 +8,7 @@ public class ApiGatewayCustomAuthorizerContext : IHasMessageResult
     public ApiGatewayCustomAuthorizerContext(APIGatewayCustomAuthorizerRequest apiGatewayCustomAuthorizerRequest)
     {
         ApiGatewayCustomAuthorizerRequest = apiGatewayCustomAuthorizerRequest;
-        MessageResult = Benzene.Core.Results.MessageResult.Empty();
+        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public APIGatewayCustomAuthorizerRequest ApiGatewayCustomAuthorizerRequest { get; }

@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,7 @@ public class MicrosoftDependencyInjectionTest
     {
         var services = new ServiceCollection();
         services.AddScoped(_ => Mock.Of<IExampleService>());
-        services.UsingBenzene(x => x.AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
+        services.UsingBenzene(x => x.AddMessageHandlers2(typeof(ExampleRequestPayload).Assembly));
 
         using var factory = new MicrosoftServiceResolverFactory(services);
 
