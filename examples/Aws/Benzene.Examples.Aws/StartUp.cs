@@ -1,21 +1,23 @@
 ﻿using System.IO;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
+using Benzene.Aws.ApiGateway;
+using Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.ApiGateway;
-using Benzene.Aws.Core.ApiGatewayCustomAuthorizer;
+using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Core.DirectMessage;
-using Benzene.Aws.Core.Kafka;
-using Benzene.Aws.Core.Sns;
-using Benzene.Aws.Core.Sqs;
+using Benzene.Aws.Kafka;
+using Benzene.Aws.Sns;
+using Benzene.Aws.Sqs;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Correlation;
 using Benzene.Core.Logging;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.Diagnostics.Timers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
+using Benzene.HealthChecks.Core;
 using Benzene.Serilog.Logging;
 using Benzene.Xml;
 using Microsoft.Extensions.Configuration;
@@ -42,7 +44,6 @@ public class StartUp : AwsLambdaStartUp
     {
         app
             .UseSerilog()
-            .AddXml()
             .UseTimer("aws-stream-application");
 
         var healthChecks = new IHealthCheck[]
@@ -56,22 +57,24 @@ public class StartUp : AwsLambdaStartUp
             app.Create<BenzeneMessageContext>()
                 .UseTimer("benzene-message-application")
                 .UseCorrelationId()
-                .UseLogContext()
+                // .UseLogContext()
                 .UseLogResult()
                 .UseProcessResponse()
+                .UseXml()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
-                .UseMessageRouter(router => router
+                .UseMessageHandlers(router => router
                     .UseFluentValidation()
                 );
         
-        app.UseDirectMessage(benzeneMessagePipeline);
+        app.UseBenzeneMessage(benzeneMessagePipeline);
 
         app.UseApiGateway(apiGatewayApp => apiGatewayApp
             // .Use<ApiGatewayContext, Extensions.AdminBenzeneMessageMiddleware>()
             .UseHttpToBenzeneMessage(benzeneMessagePipeline)
             .UseCorrelationId()
             .UseTimer("api-gateway-application")
-            .UseLogContext()
+            // .UseLogContext()
+            .UseXml()
             .UseProcessResponse()
             .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
             // .UseSerializer(x => x.Use<XmlSerializer>())
@@ -85,7 +88,7 @@ public class StartUp : AwsLambdaStartUp
             //         .UseDefault<JsonBenzeneMessageBodyMapper>()
             //     // .Use(new MessageBodyMapperOption<ApiGatewayContext, JsonApiGatewayMessageBodyMapper>(context => true))
             // ))
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -95,12 +98,13 @@ public class StartUp : AwsLambdaStartUp
             .UseCorrelationId()
             .UseTimer<SnsRecordContext>("sns-application")
             // .UseTestLogger()
-            .UseLogContext()
+            // .UseLogContext()
             .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSns()
+            .UseXml()
             .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -109,12 +113,13 @@ public class StartUp : AwsLambdaStartUp
             .UseCorrelationId()
             .UseTimer<SqsMessageContext>("sqs-application")
             // .UseTestLogger()
-            .UseLogContext()
+            // .UseLogContext()
             .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSqs()
+            .UseXml()
             .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -122,16 +127,16 @@ public class StartUp : AwsLambdaStartUp
         app.UseKafka(kafkaApp => kafkaApp
             .UseCorrelationId()
             .UseTimer("kafka-application")
-            .UseLogContext()
+            // .UseLogContext()
             // .UseLogResult()
             // .UseProcessResponseSqs()
             // .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router.UseFluentValidation()
+            .UseMessageHandlers(router => router.UseFluentValidation()
             )
         );
 
         app.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp
-            .UseMessageRouter<ApiGatewayCustomAuthorizerContext>()
+            .UseMessageHandlers<ApiGatewayCustomAuthorizerContext>()
         );
     }
 }

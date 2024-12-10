@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using Amazon.Lambda.SQSEvents;
-using Benzene.Aws.Core.Sqs;
+using Benzene.Aws.Sqs;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Xunit;
 
 namespace Benzene.Examples.Aws.Tests.Framework.Routing;
@@ -11,7 +12,7 @@ public class SqsMessageMapperTests
     [Fact]
     public void SqsMessageMapperTest()
     {
-        var sqsMessageContext = new SqsMessageContext(null, new SQSEvent.SQSMessage
+        var sqsMessageContext = SqsMessageContext.CreateInstance(null, new SQSEvent.SQSMessage
         {
             Body = "some-message",
             MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>
@@ -32,7 +33,7 @@ public class SqsMessageMapperTests
     [Fact]
     public void SqsMessageMapperTest_NoTopic()
     {
-        var sqsMessageContext = new SqsMessageContext(null, new SQSEvent.SQSMessage
+        var sqsMessageContext = SqsMessageContext.CreateInstance(null, new SQSEvent.SQSMessage
         {
             Body = "some-message",
             MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>()
@@ -43,7 +44,7 @@ public class SqsMessageMapperTests
         var topic = mapper.GetTopic(sqsMessageContext);
         var message = mapper.GetBody(sqsMessageContext);
 
-        Assert.Null(topic.Id);
+        Assert.Equal(Constants.Missing, topic.Id);
         Assert.Equal("some-message", message);
     }
 }

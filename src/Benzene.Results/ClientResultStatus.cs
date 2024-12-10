@@ -3,8 +3,6 @@
     public static class ClientResultStatus
     {
         public const string Accepted = "Accepted";
-        [Obsolete("Use Ok instead", false)]
-        public const string Success = Ok;
         public const string Ok = "Ok";
         public const string Created = "Created";
         public const string Updated = "Updated";

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Amazon.Lambda.SNSEvents;
-using Benzene.Aws.Core.Sns;
+using Benzene.Aws.Sns;
 using Benzene.Core.Mappers;
 using Xunit;
 
@@ -11,7 +11,7 @@ public class SnsMessageMapperTests
     [Fact]
     public void SnsMessageMapperTest()
     {
-        var snsRecordContext = new SnsRecordContext(null, new SNSEvent.SNSRecord
+        var snsRecordContext = SnsRecordContext.CreateInstance(null, new SNSEvent.SNSRecord
         {
             Sns = new SNSEvent.SNSMessage
             {

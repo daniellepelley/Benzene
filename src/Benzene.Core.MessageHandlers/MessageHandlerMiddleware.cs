@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.MessageHandlers;

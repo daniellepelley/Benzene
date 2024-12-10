@@ -9,7 +9,7 @@
     "profile"     : "golambda",
     "region"      : "eu-west-1",
     "configuration" : "Release",
-    "framework"     : "net6.0",
+    "framework"     : "net8.0",
     "function-runtime" : "dotnet6",
     "function-memory-size" : 1024,
     "function-timeout"     : 30,

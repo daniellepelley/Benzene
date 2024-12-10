@@ -3,11 +3,12 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Aws.Core.DirectMessage;
+using Benzene.Core.DI;
+using Benzene.Core.MessageHandling;
 using Benzene.Examples.App.Model;
 using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
@@ -27,11 +28,11 @@ public class BareMetalLambdaEntryPoint
         
         var middlewarePipelineBuilder = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services))
             .UseBenzeneMessage(x =>
-                x.UseMessageRouter(s =>
+                x.UseMessageHandlers(s =>
                     s.UseFluentValidation()));
 
         services.UsingBenzene(x => x
-            .AddAwsMessageHandlers(Assembly.GetAssembly(typeof(OrderDto))));
+            .AddMessageHandlers(Assembly.GetAssembly(typeof(OrderDto))));
 
         // services.AddScoped<IOrderDbClient, OrderDbClient>();
         // services.AddScoped<IOrderService, OrderService>();
@@ -42,7 +43,7 @@ public class BareMetalLambdaEntryPoint
         // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
 
         _microsoftServiceResolverFactory = new MicrosoftServiceResolverFactory(services.BuildServiceProvider());
-        _pipeline = middlewarePipelineBuilder.AsPipeline();
+        _pipeline = middlewarePipelineBuilder.Build();
     }
 
     public async Task<Stream> FunctionHandler(Stream input, ILambdaContext lambdaContext)

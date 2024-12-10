@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.Logging;
 

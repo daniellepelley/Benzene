@@ -1,9 +1,6 @@
-﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.MiddlewareBuilder;
+﻿using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 using Serilog;
 using Serilog.Context;
 using Serilog.Events;

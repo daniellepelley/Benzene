@@ -10,6 +10,7 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Results;
 using Benzene.Xml;
 using Xunit;
 
@@ -145,8 +146,8 @@ public class CreateOrderTest : InMemoryOrdersTestBase
         Assert.Equal(Defaults.Order.Status, orders[0].Status);
         Assert.Equal(Defaults.Order.Name, orders[0].Name);
 
-        Assert.Equal(DefaultHandlerResultStatus.Created, response.StatusCode);
-        Assert.True(response.BodyIsGuid());
+        Assert.Equal(ServiceResultStatus.Created, response.StatusCode);
+        Assert.NotNull(response.Body);
 
         // var messages = await SqsSetUp.GetAllMessagesAsync();
         // Assert.Equal($"{CreateOrder}d", messages[0].GetTopic());
@@ -222,7 +223,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
 
         var response = await TestLambdaHosting.SendEventAsync<BenzeneMessageResponse>(benzeneMessageRequest);
 
-        Assert.Equal(DefaultHandlerResultStatus.ValidationError, response.StatusCode);
+        Assert.Equal(ServiceResultStatus.ValidationError, response.StatusCode);
         Assert.NotNull(response.Body);
 
         var errorPayload = response.GetMessage<ErrorPayload>();

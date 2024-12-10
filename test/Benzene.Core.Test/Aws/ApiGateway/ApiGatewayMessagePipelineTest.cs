@@ -205,7 +205,7 @@ public class ApiGatewayMessagePipelineTest
                     .UsingBenzene(x =>
                     {
                         x.AddBenzene();
-                        x.AddMessageHandlers2(assembly);
+                        x.AddMessageHandlers(assembly);
                     });
                     services.RegisterType<BenzeneMessageMapper>();
                     services.RegisterInstance(Mock.Of<IExampleService>());

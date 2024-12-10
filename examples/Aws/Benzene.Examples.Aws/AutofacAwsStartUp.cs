@@ -2,18 +2,18 @@ using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Autofac;
-using Benzene.Abstractions.MiddlewareBuilder;
+using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 using Microsoft.Extensions.Configuration;
 
 namespace Benzene.Examples.Aws;
 
-public abstract class AutofacAwsStartUp : IAwsStartUp<ContainerBuilder, AwsEventStreamContext>, ILambdaEntryPoint
+public abstract class AutofacAwsStartUp : IStartUp<ContainerBuilder, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
 {
-    private readonly LambdaEntryPoint _lambdaEntryPoint;
+    private readonly AwsLambdaEntryPoint _awsLambdaEntryPoint;
 
     protected AutofacAwsStartUp()
     {
@@ -27,10 +27,10 @@ public abstract class AutofacAwsStartUp : IAwsStartUp<ContainerBuilder, AwsEvent
         
         // ReSharper disable once VirtualMemberCallInConstructor
         Configure(app, configuration);
-        var pipeline = app.AsPipeline();
+        var pipeline = app.Build();
         
         var serviceResolverFactory = new AutofacServiceResolverFactory(configurationBuilder);
-        _lambdaEntryPoint = new LambdaEntryPoint(pipeline, serviceResolverFactory);
+        _awsLambdaEntryPoint = new AwsLambdaEntryPoint(pipeline, serviceResolverFactory);
     }
 
     public abstract IConfiguration GetConfiguration();
@@ -39,8 +39,14 @@ public abstract class AutofacAwsStartUp : IAwsStartUp<ContainerBuilder, AwsEvent
 
     public abstract void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> middlewarePipeline, IConfiguration configuration);
 
-    public Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext)
+    public Task<Stream> FunctionHandler(Stream stream, ILambdaContext lambdaContext)
     {
-        return _lambdaEntryPoint.FunctionHandlerAsync(stream, lambdaContext);
+        return _awsLambdaEntryPoint.FunctionHandler(stream, lambdaContext);
     }
+
+    public void Dispose()
+    {
+        _awsLambdaEntryPoint.Dispose();
+    }
+
 }

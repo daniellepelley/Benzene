@@ -38,30 +38,8 @@ public static class Extensions
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         Type[] types)
     {
-        var cacheMessageHandlersFinder = new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(types));
-        foreach (var handler in cacheMessageHandlersFinder.FindDefinitions())
-        {
-            services.AddScoped(handler.HandlerType);
-        }
-    
+        services.AddMessageHandlers2(types);
         services.AddContextItems();
-    
-        services.TryAddSingleton<MessageHandlersList>();
-        services.TryAddSingleton<DependencyMessageHandlersFinder>();
-        services.TryAddSingleton<IMessageHandlersList, MessageHandlersList>();
-        services.TryAddSingleton<IMessageHandlersFinder>(x =>
-            new CompositeMessageHandlersFinder(
-                cacheMessageHandlersFinder,
-            x.GetService<MessageHandlersList>(),
-            x.GetService<DependencyMessageHandlersFinder>()
-        ));
-    
-        services.TryAddScoped<IMessageHandlersLookUp, MessageHandlersLookUp>();
-        services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
-        services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();
-        services.TryAddScoped<IMessageHandlerFactory, MessageHandlerFactory>();
-        services.TryAddScoped<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
-    
         return services;
     }
 
@@ -87,7 +65,6 @@ public static class Extensions
     public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
-        services.TryAddScoped(typeof(MessageRouter<>));
         services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
         services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
         services.TryAddScoped(typeof(ResponseMiddleware<>));

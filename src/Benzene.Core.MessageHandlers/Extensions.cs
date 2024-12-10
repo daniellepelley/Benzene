@@ -31,7 +31,7 @@ public static class Extensions
         {
             services.AddScoped(handler.HandlerType);
         }
-
+    
         services.TryAddSingleton<MessageHandlersList>();
         services.TryAddSingleton<DependencyMessageHandlersFinder>();
         services.TryAddSingleton<IMessageHandlersList, MessageHandlersList>();
@@ -41,13 +41,13 @@ public static class Extensions
             x.GetService<MessageHandlersList>(),
             x.GetService<DependencyMessageHandlersFinder>()
         ));
-
+    
         services.TryAddScoped<IMessageHandlersLookUp, MessageHandlersLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
         services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();
         services.TryAddScoped<IMessageHandlerFactory, MessageHandlerFactory>();
         services.TryAddScoped(typeof(MessageRouter<>));
-
+    
         return services;
     }
 

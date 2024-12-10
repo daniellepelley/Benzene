@@ -1,27 +1,30 @@
 ﻿using System.IO;
 using Autofac;
-using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.ApiGateway;
-using Benzene.Aws.Core.ApiGatewayCustomAuthorizer;
+using Benzene.Aws.ApiGateway;
+using Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
-using Benzene.Aws.Core.Kafka;
-using Benzene.Aws.Core.Sns;
-using Benzene.Aws.Core.Sqs;
+using Benzene.Aws.Kafka;
+using Benzene.Aws.Sns;
+using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;
 using Benzene.Core.Logging;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Diagnostics.Timers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.Serilog.Logging;
 using Microsoft.Extensions.Configuration;
+using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.Middleware;
+using Benzene.Aws.Core.DirectMessage;
+using Benzene.Aws.XRay;
+using Benzene.Core.MessageHandling;
+using Benzene.HealthChecks.Core;
 
 namespace Benzene.Examples.Aws;
 
-public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, AwsEventStreamContext>
-{
+public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>{
     public override IConfiguration GetConfiguration()
     {
         return new ConfigurationBuilder()
@@ -57,7 +60,7 @@ public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, A
             // .Use<ApiGatewayContext, AdminBenzeneMessageMiddleware>()
             .UseCorrelationId()
             .UseTimer("api-gateway-application")
-            .UseLogContext()
+            // .UseLogContext()
             .UseHealthCheck("healthcheck", "POST", "/healthcheck", new SimpleHealthCheck())
             // .AsHttp(http => http.UseRequestMapping(x => x
             //         .Use<XmlHttpMessageBodyMapperOption>()
@@ -71,7 +74,7 @@ public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, A
             // ))
             // .UseBroadcastResult()
             .UseProcessResponse()
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -79,11 +82,11 @@ public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, A
         app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
             .UseTimer("benzene-message-application")
             .UseCorrelationId()
-            .UseLogContext()
+            // .UseLogContext()
             .UseLogResult()
             .UseProcessResponse()
             .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -92,12 +95,12 @@ public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, A
             .UseCorrelationId()
             .UseTimer<SnsRecordContext>("sns-application")
             // .UseTestLogger()
-            .UseLogContext()
+            // .UseLogContext()
             .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSns()
             .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -106,12 +109,12 @@ public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, A
             .UseCorrelationId()
             .UseTimer<SqsMessageContext>("sqs-application")
             // .UseTestLogger()
-            .UseLogContext()
+            // .UseLogContext()
             .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSqs()
             .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router
+            .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
         );
@@ -119,16 +122,16 @@ public class StartUpAutofac : AutofacAwsStartUp, IAwsStartUp<ContainerBuilder, A
         app.UseKafka(kafkaApp => kafkaApp
             .UseCorrelationId()
             .UseTimer("kafka-application")
-            .UseLogContext()
+            // .UseLogContext()
             // .UseLogResult()
             // .UseProcessResponseSqs()
             // .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageRouter(router => router.UseFluentValidation()
+            .UseMessageHandlers(router => router.UseFluentValidation()
             )
         );
 
         app.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp
-            .UseMessageRouter<ApiGatewayCustomAuthorizerContext>()
+            .UseMessageHandlers()
         );
     }
 }

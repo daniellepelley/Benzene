@@ -2,9 +2,8 @@
 using System.Dynamic;
 using System.Text;
 using Benzene.Abstractions.Results;
-using Benzene.Core.Serialization;
 
-namespace Benzene.Elements.Core
+namespace Benzene.Core.Serialization
 {
     public static class PayloadSerializer
     {

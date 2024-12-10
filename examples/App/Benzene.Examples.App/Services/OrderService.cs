@@ -53,7 +53,7 @@ public class OrderService : IOrderService
     {
         var result = await _orderDbClient.GetAsync(Guid.Parse(updateOrderMessage.Id));
 
-        if (result.Status == ClientResultStatus.Success)
+        if (result.Status == ClientResultStatus.Ok)
         {
             var orderDto = result.Payload;
 

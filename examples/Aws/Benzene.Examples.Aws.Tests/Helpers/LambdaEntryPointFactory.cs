@@ -4,7 +4,7 @@ namespace Benzene.Examples.Aws.Tests.Helpers;
 
 public static class LambdaEntryPointFactory
 {
-    public static ILambdaEntryPoint Create()
+    public static IAwsLambdaEntryPoint Create()
     {
         return new TestLambdaStartUp<StartUp>().Build();
     }

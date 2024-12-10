@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Middleware;
 using Benzene.Core.Exceptions;
 using Benzene.Core.Middleware;
 

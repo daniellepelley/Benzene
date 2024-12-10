@@ -8,7 +8,7 @@ public abstract class InMemoryOrdersTestBase
 {
     protected TestLambdaHosting TestLambdaHosting;
 
-    protected InMemoryOrdersTestBase(ILambdaEntryPoint lambdaEntryPoint)
+    protected InMemoryOrdersTestBase(IAwsLambdaEntryPoint lambdaEntryPoint)
     {
         SetUp();
         TestLambdaHosting = new TestLambdaHosting(lambdaEntryPoint);

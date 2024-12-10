@@ -30,7 +30,7 @@ public abstract class CacheWriteActions<T> : CacheInvalidateActions, ICacheWrite
         return result.Status switch
         {
             ServiceResultStatus.Accepted or
-            ServiceResultStatus.Success or
+            ServiceResultStatus.Ok or
             ServiceResultStatus.Created or
             ServiceResultStatus.Updated => CacheUpdateAction.Set,
             ServiceResultStatus.Deleted => CacheUpdateAction.Invalidate,

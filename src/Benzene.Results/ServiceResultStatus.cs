@@ -3,7 +3,6 @@
 public static class ServiceResultStatus
 {
     public const string Accepted = "Accepted";
-    public const string Success = Ok;
     public const string Ok = "Ok";
     public const string Created = "Created";
     public const string Updated = "Updated";

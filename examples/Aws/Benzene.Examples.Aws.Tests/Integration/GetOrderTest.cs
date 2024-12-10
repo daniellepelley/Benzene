@@ -11,6 +11,7 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Results;
 using Benzene.Xml;
 using Xunit;
 

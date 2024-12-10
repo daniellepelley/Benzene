@@ -20,6 +20,7 @@ public static class DependencyInjectionExtensions
 
     public static IBenzeneServiceContainer AddXml<TContext>(this IBenzeneServiceContainer services) where TContext : class, IHasMessageResult
     {
+        services.AddSingleton(typeof(ISerializerOption<TContext>), typeof(XmlSerializerOption<TContext>));
         services
             .AddScoped<IResponseHandler<TContext>,
                 ResponseHandler<XmlSerializationResponseHandler<TContext>, TContext>>();

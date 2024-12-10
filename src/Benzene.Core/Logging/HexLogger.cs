@@ -23,10 +23,3 @@ public class BenzeneLogger : IBenzeneLogger
 
     public static IBenzeneLogger NullLogger => new NullBenzeneLogger();
 }
-
-internal class NullBenzeneLogger : IBenzeneLogger
-{
-    public void Log(BenzeneLogLevel benzeneLogLevel, Exception exception, string message, params object[] args)
-    {
-    }
-}

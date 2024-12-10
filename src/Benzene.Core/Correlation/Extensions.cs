@@ -27,7 +27,6 @@ namespace Benzene.Core.Correlation
                 var messageMapper = resolver.GetService<IMessageMapper<TContext>>();
                 var correlationId = messageMapper.GetHeader(context, header);
                 setCorrelationId.Set(correlationId);
-
                 await next();
             }));
             return app;

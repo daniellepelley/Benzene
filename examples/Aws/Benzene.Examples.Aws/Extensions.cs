@@ -6,13 +6,11 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.Abstractions.Results;
-using Benzene.Aws.Core.ApiGateway;
+using Benzene.Aws.ApiGateway;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Mappers;
 using Benzene.Core.Middleware;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Http;
 using Newtonsoft.Json;
 
@@ -43,22 +41,22 @@ public static class Extensions
     //     }));
     // }
 
-    public static IMiddlewarePipelineBuilder<ApiGatewayContext> AsBenzeneMessage(
-        this IMiddlewarePipelineBuilder<ApiGatewayContext> app,
-        Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>> action)
-    {
-        var middlewarePipelineBuilder = app.Create<BenzeneMessageContext>();
-        action(middlewarePipelineBuilder);
-        var pipeline = middlewarePipelineBuilder.AsPipeline();
-
-        return app.Use(resolver => new FuncWrapperMiddleware<ApiGatewayContext>("AsBenzeneMessage", async (context, next) =>
-        {
-            await pipeline.HandleAsync(
-                new BenzeneMessageContext(new ApiGatewayBenzeneRequestWrapper(context.ApiGatewayProxyRequest)),
-                resolver);
-            await next();
-        }));
-    }
+    // public static IMiddlewarePipelineBuilder<ApiGatewayContext> AsBenzeneMessage(
+    //     this IMiddlewarePipelineBuilder<ApiGatewayContext> app,
+    //     Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>> action)
+    // {
+    //     var middlewarePipelineBuilder = app.Create<BenzeneMessageContext>();
+    //     action(middlewarePipelineBuilder);
+    //     var pipeline = middlewarePipelineBuilder.Build();
+    //
+    //     return app.Use(resolver => new FuncWrapperMiddleware<ApiGatewayContext>("AsBenzeneMessage", async (context, next) =>
+    //     {
+    //         await pipeline.HandleAsync(
+    //             new BenzeneMessageContext(new ApiGatewayBenzeneRequestWrapper(context.ApiGatewayProxyRequest)),
+    //             resolver);
+    //         await next();
+    //     }));
+    // }
 
     // public static IMiddlewarePipelineBuilder<IBenzeneHttpContext> UseRequestMapping(
     //     this IMiddlewarePipelineBuilder<IBenzeneHttpContext> app, Action<RequestMapBuilder<IBenzeneHttpContext>> action)
@@ -68,31 +66,31 @@ public static class Extensions
     //     return app;
     // }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseLogHeaders<TContext>(
-        this IMiddlewarePipelineBuilder<TContext> app, params string[] headers) where TContext : IHasMessageResult
-    {
-        return app.Use(resolver => new FuncWrapperMiddleware<TContext>("LogHeaders", async (context, next) =>
-        {
-            var logContext = resolver.GetService<ILogContext>();
-
-            var dictionary = new Dictionary<string, string>();
-
-            foreach (var header in headers)
-            {
-                var messageMapper = resolver.GetService<IMessageMapper<TContext>>();
-                var value = messageMapper.GetHeader(context, header);
-                if (!string.IsNullOrEmpty(value))
-                {
-                    dictionary.Add(header, value);
-                }
-            }
-
-            using (logContext.Create(dictionary))
-            {
-                await next();
-            }
-        }));
-    }
+    // public static IMiddlewarePipelineBuilder<TContext> UseLogHeaders<TContext>(
+    //     this IMiddlewarePipelineBuilder<TContext> app, params string[] headers) where TContext : IHasMessageResult
+    // {
+    //     return app.Use(resolver => new FuncWrapperMiddleware<TContext>("LogHeaders", async (context, next) =>
+    //     {
+    //         var logContext = resolver.GetService<ILogContext>();
+    //
+    //         var dictionary = new Dictionary<string, string>();
+    //
+    //         foreach (var header in headers)
+    //         {
+    //             var messageMapper = resolver.GetService<IMessageMapper<TContext>>();
+    //             var value = messageMapper.GetHeader(context, header);
+    //             if (!string.IsNullOrEmpty(value))
+    //             {
+    //                 dictionary.Add(header, value);
+    //             }
+    //         }
+    //
+    //         using (logContext.Create(dictionary))
+    //         {
+    //             await next();
+    //         }
+    //     }));
+    // }
 
     public static IMiddlewarePipelineBuilder<THasResponse> UseLogResult<THasResponse>(
         this IMiddlewarePipelineBuilder<THasResponse> app) where THasResponse : IHasMessageResult
@@ -116,7 +114,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHttpToBenzeneMessage(
         this IMiddlewarePipelineBuilder<ApiGatewayContext> app, IMiddlewarePipelineBuilder<BenzeneMessageContext> middlewarePipelineBuilder)
     {
-        var pipeline = middlewarePipelineBuilder.AsPipeline();
+        var pipeline = middlewarePipelineBuilder.Build();
         return app.Use(resolver => new FuncWrapperMiddleware<ApiGatewayContext>("HttpToBenzene", async (context, next) =>
         {
             if (context.ApiGatewayProxyRequest.HttpMethod == "POST" &&
@@ -125,7 +123,7 @@ public static class Extensions
                 var httpStatusCodeMapper = resolver.GetService<IHttpStatusCodeMapper>();
                 var benzeneMessage = JsonConvert.DeserializeObject<BenzeneMessageRequest>(context.ApiGatewayProxyRequest.Body);
     
-                var benzeneMessageContext = new BenzeneMessageContext(benzeneMessage);
+                var benzeneMessageContext = BenzeneMessageContext.CreateInstance(benzeneMessage);
                 await pipeline.HandleAsync(benzeneMessageContext, resolver);
                 context.ApiGatewayProxyResponse = new APIGatewayProxyResponse
                 {
@@ -165,7 +163,7 @@ public static class Extensions
             {
                 var benzeneMessage = JsonConvert.DeserializeObject<BenzeneMessageRequest>(context.ApiGatewayProxyRequest.Body);
     
-                var benzeneMessageContext = new BenzeneMessageContext(benzeneMessage);
+                var benzeneMessageContext = BenzeneMessageContext.CreateInstance(benzeneMessage);
                 // await _middleware.HandleAsync(benzeneMessageContext, _serviceResolver);
                 // context.ApiGatewayProxyResponse = new APIGatewayProxyResponse
                 // {

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;

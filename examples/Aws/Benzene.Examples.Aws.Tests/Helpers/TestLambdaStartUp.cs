@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
+using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Examples.Aws.Tests.Helpers;
 
-public class TestLambdaStartUp<TStartUp> where TStartUp : IAwsStartUp<IServiceCollection, AwsEventStreamContext>
+public class TestLambdaStartUp<TStartUp> where TStartUp : IStartUp<IServiceCollection, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
 {
     private readonly List<Action<IServiceCollection>> _actions = new();
     private Dictionary<string, string> _dictionary;
@@ -26,7 +27,7 @@ public class TestLambdaStartUp<TStartUp> where TStartUp : IAwsStartUp<IServiceCo
         return this;
     }
 
-    public ILambdaEntryPoint Build()
+    public IAwsLambdaEntryPoint Build()
     {
         var startup = Activator.CreateInstance<TStartUp>();
 
@@ -47,6 +48,6 @@ public class TestLambdaStartUp<TStartUp> where TStartUp : IAwsStartUp<IServiceCo
         startup.Configure(app, configuration);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
-        return new LambdaEntryPoint(app.AsPipeline(), serviceResolverFactory);
+        return new AwsLambdaEntryPoint(app.Build(), serviceResolverFactory);
     }
 }

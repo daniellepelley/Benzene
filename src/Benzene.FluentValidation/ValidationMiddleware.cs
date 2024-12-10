@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;
 using Benzene.Abstractions.MessageHandling;

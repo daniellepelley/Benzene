@@ -9,6 +9,9 @@
     <PackageReference Include="Autofac" Version="6.5.0" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.4" />
     <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.101.29" />
+    <PackageReference Include="Benzene.FluentValidation" Version="0.0.2.3-alpha" />
+    <PackageReference Include="Benzene.Microsoft.Logging" Version="0.0.2.1-alpha" />
+    <PackageReference Include="Benzene.Xml" Version="0.0.2.1-alpha" />
     <PackageReference Include="coverlet.collector" Version="3.2.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -31,17 +34,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
   <ItemGroup>

@@ -12,10 +12,10 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Autofac;
-using Benzene.Aws.Core.ApiGateway;
-using Benzene.Aws.Core.Sns;
-using Benzene.Aws.Core.Sqs;
-using Benzene.Aws.Core.XRay;
+using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Sns;
+using Benzene.Aws.Sqs;
+using Benzene.Aws.XRay;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.Request;
@@ -45,43 +45,44 @@ public static class AutofacDependenciesBuilder
         JsonConvert.DeserializeObject("{}");
         var awsRegion = configuration.GetValue<string>("AWS_DEFAULT_REGION");
         var awsServiceUrl = configuration.GetValue<string>("AWS_SERVICE_URL");
-        
+
         var awsOptions = new AWSOptions
         {
             Region = string.IsNullOrWhiteSpace(awsRegion)
                 ? RegionEndpoint.EUWest2
                 : RegionEndpoint.GetBySystemName(awsRegion),
         };
-        
+
         if (!string.IsNullOrEmpty(awsServiceUrl))
         {
             awsOptions.DefaultClientConfig.ServiceURL = awsServiceUrl;
         }
-        
+
         containerBuilder.RegisterInstance(configuration).SingleInstance();
         // services.AddLogging(x => x.AddConsole());
-        
+
         containerBuilder.RegisterInstance(new LoggerFactory())
             .As<ILoggerFactory>();
-        
+
         containerBuilder.RegisterInstance(NullLoggerProvider.Instance)
             .As<ILoggerProvider>();
-        
+
         containerBuilder.RegisterGeneric(typeof(Logger<>))
             .As(typeof(ILogger<>))
             .SingleInstance();
-        
+
         containerBuilder.RegisterType<Logger<string>>().As<ILogger>().InstancePerLifetimeScope();
         containerBuilder.Register(_ => configuration.GetAWSOptions()).InstancePerLifetimeScope();
         containerBuilder.RegisterInstance(awsOptions.CreateServiceClient<IAmazonSQS>()).SingleInstance();
         containerBuilder.RegisterType<CreateOrderMessageValidator>().As<IValidator<CreateOrderMessage>>()
             .SingleInstance();
-        
+
         containerBuilder.UsingBenzene(x => x
-            .AddStructuredLogging()
+                .AddBenzene()
+                .AddStructuredLogging()
             .AddMicrosoftLogger()
             .AddXml()
-            .AddAwsMessageHandlers(typeof(CreateOrderMessage).Assembly)
+            .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
             .AddScoped<IOrderDbClient, InMemoryOrderDbClient>()
             .AddScoped<IOrderService, OrderService>()
             .AddScoped<ResponseMiddleware<ApiGatewayContext>>()
@@ -93,9 +94,9 @@ public static class AutofacDependenciesBuilder
             .AddScoped<XmlSerializationResponseHandler<ApiGatewayContext>>()
             .AddScoped<IResponseHandler<ApiGatewayContext>, HttpStatusCodeResponseHandler<ApiGatewayContext>>()
             .AddScoped<IRequestEnricher<ApiGatewayContext>, ApiGatewayRequestEnricher>()
-            .AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
-                new XRayProcessTimerFactory()))
-            .AddScoped<IProcessTimerFactory, NullProcessTimerFactory>()
+            // .AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
+            //     new XRayProcessTimerFactory()))
+            // .AddScoped<IProcessTimerFactory, NullProcessTimerFactory>()
             .AddScoped<IResponsePayloadMapper<ApiGatewayContext>, CustomResponsePayloadMapper<ApiGatewayContext>>()
             .AddScoped<IResponsePayloadMapper<BenzeneMessageContext>,
                 CustomResponsePayloadMapper<BenzeneMessageContext>>()
@@ -113,7 +114,7 @@ public static class AutofacDependenciesBuilder
             .AddSingleton<ISerializerOption<SqsMessageContext>>(
                 new SerializerOption<SqsMessageContext, JsonSerializer>(x => true))
             .AddSingleton<JsonSerializer>()
-            // .AddSingleton<XmlSerializer>()
+        // .AddSingleton<XmlSerializer>()
         );
 
 

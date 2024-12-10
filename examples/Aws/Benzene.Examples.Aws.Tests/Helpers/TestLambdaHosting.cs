@@ -12,9 +12,9 @@ namespace Benzene.Examples.Aws.Tests.Helpers;
 
 public class TestLambdaHosting
 {
-    private readonly ILambdaEntryPoint _lambdaEntryPoint;
+    private readonly IAwsLambdaEntryPoint _lambdaEntryPoint;
 
-    public TestLambdaHosting(ILambdaEntryPoint lambdaEntryPoint)
+    public TestLambdaHosting(IAwsLambdaEntryPoint lambdaEntryPoint)
     {
         _lambdaEntryPoint = lambdaEntryPoint;
     }
@@ -47,7 +47,7 @@ public class TestLambdaHosting
     {
         AWSXRayRecorder.Instance.BeginSegment("Test");
         using var debugTimer = new DebugProcessTimer("test_send_event");
-        var response = await _lambdaEntryPoint.FunctionHandlerAsync(ObjectToStream(awsEvent), lambdaContext);
+        var response = await _lambdaEntryPoint.FunctionHandler(ObjectToStream(awsEvent), lambdaContext);
         AWSXRayRecorder.Instance.EndSegment();
         return response;
     }

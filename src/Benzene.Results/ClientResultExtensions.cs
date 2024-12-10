@@ -6,11 +6,6 @@
         {
             return clientResult.Status == ClientResultStatus.Accepted;
         }
-        [Obsolete("Use IsOk instead", false)]
-        public static bool IsSuccess(this IClientResult clientResult)
-        {
-            return clientResult.Status == ClientResultStatus.Success;
-        }
         public static bool IsOk(this IClientResult clientResult)
         {
             return clientResult.Status == ClientResultStatus.Ok;

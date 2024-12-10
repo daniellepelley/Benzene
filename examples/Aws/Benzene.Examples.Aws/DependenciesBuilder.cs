@@ -11,11 +11,12 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
-using Benzene.Aws.Core.ApiGateway;
-using Benzene.Aws.Core.Client;
-using Benzene.Aws.Core.Sns;
-using Benzene.Aws.Core.Sqs;
+using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Sns;
+using Benzene.Aws.Sqs;
+using Benzene.Aws.Sqs.Client;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.DI;
 using Benzene.Core.Request;
 using Benzene.Core.Response;
 using Benzene.Diagnostics;
@@ -78,7 +79,7 @@ public static class DependenciesBuilder
         services.AddScoped<ILogger, Logger<string>>();
         services.AddTransient(_ => configuration.GetAWSOptions());
         services.AddSingleton(awsOptions.CreateServiceClient<IAmazonSQS>());
-        services.AddScoped<ISqsClient>(x => new SqsClient(x.GetService<IAmazonSQS>(), configuration["MY_QUEUE_URL"] ));
+        // services.AddScoped<ISqsClient>(x => new SqsClient(x.GetService<IAmazonSQS>(), configuration["MY_QUEUE_URL"] ));
 
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
@@ -94,19 +95,21 @@ public static class DependenciesBuilder
 
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
         services.UsingBenzene(x => x
+            .AddBenzene()
+            .AddBenzeneMessage()
             .AddStructuredLogging()
             .AddMicrosoftLogger()
             // .AddXml()
             // .AddSerializer<XmlSerializer>("application/xml")
             // .AddCorrelationId()
-            .AddAwsMessageHandlers(typeof(CreateOrderMessage).Assembly));
+            .AddMessageHandlers(typeof(CreateOrderMessage).Assembly));
         
-        services.AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
-            new DebugTimerFactory()
-            // new XRayProcessTimerFactory()
-            ));
-
-        services.AddScoped<IProcessTimerFactory, NullProcessTimerFactory>();
+        // services.AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
+        //     new DebugTimerFactory()
+        //     // new XRayProcessTimerFactory()
+        //     ));
+        //
+        // services.AddScoped<IProcessTimerFactory, NullProcessTimerFactory>();
         
         services.AddScoped<IProcessTimerFactory>(x =>
             new CompositeProcessTimerFactory(

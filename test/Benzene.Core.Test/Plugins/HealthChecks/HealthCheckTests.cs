@@ -93,7 +93,7 @@ public class HealthCheckTests
                 .AddHealthCheck(new ExceptionThrowingHealthCheck())
                 .AddHealthCheckFactory(new ExceptionThrowingHealthCheckFactory())
                 .AddHealthCheck(_ => new ExceptionThrowingHealthCheck())
-                .AddHealthCheck(resolver => throw new Exception()));
+                .AddHealthCheck(_ => throw new Exception()));
         
         var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest { Topic = "healthcheck" });
 

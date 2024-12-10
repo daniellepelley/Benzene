@@ -31,17 +31,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
   <ItemGroup>
