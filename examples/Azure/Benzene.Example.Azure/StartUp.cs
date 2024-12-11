@@ -1,12 +1,12 @@
 using System;
 using Benzene.Azure.AspNet;
 using Benzene.Azure.Core;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Middleware;
 using Benzene.Example.Azure;
 using Benzene.FluentValidation;
 using Benzene.Http.Cors;
 using Benzene.Schema.OpenApi;
-using Benzene.Xml;
 using Microsoft.Azure.WebJobs.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +26,7 @@ public class StartUp: AzureFunctionStartUp
         DependenciesBuilder.Register(services, configuration);
     }
 
-    public override void Configure(AzureFunctionFunctionAppBuilder app, IConfiguration configuration)
+    public override void Configure(AzureFunctionAppBuilder app, IConfiguration configuration)
     {
         app.UseHttp(http => http
             .OnRequest("strip-api", x => x.HttpRequest.Path = x.HttpRequest.Path.Value.Replace("/api", ""))
@@ -37,6 +37,6 @@ public class StartUp: AzureFunctionStartUp
                 AllowedHeaders = Array.Empty<string>() 
             })
             .UseSpec()
-            .UseMessageRouter(router => router.UseFluentValidation()));
+            .UseMessageHandlers(router => router.UseFluentValidation()));
     }
 }

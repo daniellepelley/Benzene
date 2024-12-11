@@ -29,4 +29,9 @@
     <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Benzene.Core.Middleware">
+      <HintPath>..\..\..\src\Benzene.Azure.AspNet\bin\Debug\net8.0\Benzene.Core.Middleware.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>
