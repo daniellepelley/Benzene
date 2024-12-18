@@ -14,7 +14,7 @@ public static class Defaults
     public const string Name = "some-name";
     public static object MessageAsObject = new { name = "some-name"};
     public const string Message = "{\"name\":\"some-name\"}";
-    public const string ResponseMessage = "{\"Id\":42,\"Name\":\"some-name\",\"Mapped\":null}";
+    public const string ResponseMessage = "{\"id\":42,\"name\":\"some-name\",\"mapped\":null}";
     public const string LambdaName = "some-lambda";
     public const string SqsQueueUrl = "some-url";
     public const string StateMachineArn = "some-arn";

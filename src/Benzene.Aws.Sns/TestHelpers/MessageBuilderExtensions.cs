@@ -2,12 +2,19 @@
 using System.Linq;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions;
+using Benzene.Abstractions.Serialization;
+using Benzene.Core.Serialization;
 
 namespace Benzene.Aws.Sns.TestHelpers;
 
 public static class MessageBuilderExtensions
 {
-    public static SNSEvent AsSns(this IMessageBuilder source)
+    public static SNSEvent AsSns<T>(this IMessageBuilder<T> source)
+    {
+        return AsSns(source, new JsonSerializer());
+    }
+
+    public static SNSEvent AsSns<T>(this IMessageBuilder<T> source, ISerializer serializer)
     {
         var headers = source.Headers.ToDictionary(x => x.Key, x => x.Value);
         headers.Add("topic", source.Topic);
@@ -25,7 +32,7 @@ public static class MessageBuilderExtensions
                                     Value = x.Value,
                                     Type = "String"
                                 }),
-                        Message = System.Text.Json.JsonSerializer.Serialize(source.Message)
+                        Message = serializer.Serialize(source.Message)
                     }
                 }
             }

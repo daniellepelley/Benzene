@@ -13,6 +13,7 @@ using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Benzene.Tools.Aws;
+using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -48,6 +49,41 @@ public class KafkaMessagePipelineTest
         var aws = new KafkaLambdaHandler(new KafkaApplication(pipelineBuilder.Build()), serviceResolver);
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsAwsKafkaEvent();
+
+        await aws.HandleAsync(request.AwsEventStreamContext(), () => Task.CompletedTask);
+
+        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+    }
+
+    [Fact]
+    public async Task Send_Xml()
+    {
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services.AddTransient<ILogger<MessageRouter<KafkaContext>>>(_ =>
+                        NullLogger<MessageRouter<KafkaContext>>.Instance)
+                    .AddTransient<ILogger>(_ => NullLogger.Instance)
+                    .UsingBenzene(x => x
+                        .AddXml()
+                        .AddKafka());
+
+        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+
+        var pipelineBuilder = new MiddlewarePipelineBuilder<KafkaContext>(new MicrosoftBenzeneServiceContainer(services));
+
+        IMessageResult messageResult = null;
+
+        pipelineBuilder
+            .OnResponse("Check Response", context =>
+            {
+                messageResult = context.MessageResult;
+            })
+            .UseMessageHandlers();
+
+        var aws = new KafkaLambdaHandler(new KafkaApplication(pipelineBuilder.Build()), serviceResolver);
+
+        var request = MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload { Name = "foo"})
+            .WithHeader("content-type", "application/xml")
+            .AsAwsKafkaEvent(new XmlSerializer());
 
         await aws.HandleAsync(request.AwsEventStreamContext(), () => Task.CompletedTask);
 

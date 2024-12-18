@@ -52,7 +52,7 @@ public class AspNetPipelineTest
 
         var request = HttpBuilder.Create("GET", "/example", Payload)
                 .WithHeader("content-type", "application/xml")
-                .AsAspNetCoreHttpRequest();
+                .AsAspNetCoreHttpRequest(new XmlSerializer());
 
         var response = await app.HandleHttpRequest(request) as ContentResult;
 

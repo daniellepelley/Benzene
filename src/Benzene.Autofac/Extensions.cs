@@ -7,8 +7,8 @@ public static class Extensions
 {
     public static ContainerBuilder UsingBenzene(this ContainerBuilder containerBuilder, Action<IBenzeneServiceContainer> action)
     {
-        var microsoftBenzeneServiceContainer = new AutofacBenzeneServiceContainer(containerBuilder);
-        action(microsoftBenzeneServiceContainer);
+        var autofacBenzeneServiceContainer = new AutofacBenzeneServiceContainer(containerBuilder);
+        action(autofacBenzeneServiceContainer);
         return containerBuilder;
     }
 }

@@ -5,7 +5,7 @@ namespace Benzene.Azure.Kafka.TestHelpers;
 
 public static class MessageBuilderExtensions
 {
-    public static KafkaEventData<string> AsAzureKafkaEvent(this IMessageBuilder source)
+    public static KafkaEventData<string> AsAzureKafkaEvent<T>(this IMessageBuilder<T> source)
     {
         return new KafkaEventData<string>
         {

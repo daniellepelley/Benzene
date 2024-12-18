@@ -38,7 +38,6 @@ public class BenzeneKafkaWorker : IBenzeneWorker, IDisposable
                         return;
                     }
 
-                    
                     try
                     {
                         await semaphore.WaitAsync(cancellationToken);

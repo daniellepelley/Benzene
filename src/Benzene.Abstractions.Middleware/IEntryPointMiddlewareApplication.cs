@@ -6,6 +6,7 @@ public interface IEntryPointMiddlewareApplication<in TEvent> : IEntryPointMiddle
 {
     Task HandleAsync(TEvent @event);
 }
+
 public interface IEntryPointMiddlewareApplication<in TEvent, TResult> : IEntryPointMiddlewareApplication
 {
     Task<TResult> HandleAsync(TEvent @event);

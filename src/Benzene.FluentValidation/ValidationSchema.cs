@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Validation;
 
-namespace Benzene.Core.Validation;
+namespace Benzene.FluentValidation;
 
 public class ValidationSchema : IValidationSchema
 {

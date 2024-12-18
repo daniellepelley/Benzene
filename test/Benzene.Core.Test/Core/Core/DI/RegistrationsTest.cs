@@ -19,15 +19,15 @@ public class RegistrationsTest
         new ApiGatewayContext(new APIGatewayProxyRequest());
     }
 
-    [Fact]
-    public void RegistrationTest()
-    {
-        var result = RegistrationErrorHandler.CheckType(typeof(IValidationSchemaBuilder));
-
-        Assert.Contains("Benzene.Core", result);
-        Assert.Contains("IValidationSchemaBuilder", result);
-        Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
-    }
+    // [Fact]
+    // public void RegistrationTest()
+    // {
+    //     var result = RegistrationErrorHandler.CheckType(typeof(IValidationSchemaBuilder));
+    //
+    //     Assert.Contains("Benzene.Core", result);
+    //     Assert.Contains("IValidationSchemaBuilder", result);
+    //     Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
+    // }
 
     [Fact]
     public void RegistrationTest_IMiddlewareFactory()

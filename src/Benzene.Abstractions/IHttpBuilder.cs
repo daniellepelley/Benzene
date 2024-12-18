@@ -1,9 +1,9 @@
 ﻿namespace Benzene.Abstractions;
 
-public interface IHttpBuilder
+public interface IHttpBuilder<T>
 {
     IDictionary<string, string> Headers { get; }
     string Method { get; }
     string Path { get; }
-    object? Message { get; }
+    T? Message { get; }
 }

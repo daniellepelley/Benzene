@@ -185,7 +185,7 @@ public class BenzeneMessagePipelineTest
 
         var aws = new MiddlewareMultiApplication<BenzeneMessageRequest, BenzeneMessageContext>(pipeline.Build(), x => new[]
         {
-            BenzeneMessageContext.CreateInstance(x)
+            new BenzeneMessageContext(x)
         });
 
         var request = new BenzeneMessageRequest
@@ -242,7 +242,7 @@ public class BenzeneMessagePipelineTest
     {
         var benzeneMessageMapper = new BenzeneMessageMapper();
 
-        var benzeneMessageContext = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest
+        var benzeneMessageContext = new BenzeneMessageContext(new BenzeneMessageRequest
         {
             Topic = Defaults.Topic,
             Body = Defaults.Message,
@@ -266,7 +266,7 @@ public class BenzeneMessagePipelineTest
     {
         var benzeneMessageMapper = new BenzeneMessageMapper();
 
-        var benzeneMessageContext = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var benzeneMessageContext = new BenzeneMessageContext(new BenzeneMessageRequest());
 
         var actualMessage = benzeneMessageMapper.GetBody(benzeneMessageContext);
         var actualTopic = benzeneMessageMapper.GetTopic(benzeneMessageContext);

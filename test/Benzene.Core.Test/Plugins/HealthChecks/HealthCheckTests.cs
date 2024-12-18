@@ -67,7 +67,7 @@ public class HealthCheckTests
                 .AddHealthCheck(_ => false));
 
         
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest { Topic = "healthcheck" });
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Topic = "healthcheck" });
 
         await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
@@ -95,7 +95,7 @@ public class HealthCheckTests
                 .AddHealthCheck(_ => new ExceptionThrowingHealthCheck())
                 .AddHealthCheck(_ => throw new Exception()));
         
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest { Topic = "healthcheck" });
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Topic = "healthcheck" });
 
         await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 

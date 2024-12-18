@@ -1,6 +1,5 @@
 ﻿using FluentValidation.Validators;
 using Benzene.Abstractions.Validation;
-using Benzene.Core.Validation;
 
 namespace Benzene.FluentValidation.Schema;
 

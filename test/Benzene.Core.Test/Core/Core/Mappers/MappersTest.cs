@@ -39,7 +39,7 @@ public class MappersTest
             Headers = null
         };
 
-        var mappedRequest = sut.GetBody<ExampleRequestPayload>(BenzeneMessageContext.CreateInstance(request));
+        var mappedRequest = sut.GetBody<ExampleRequestPayload>(new BenzeneMessageContext(request));
 
         Assert.Equal(Defaults.Name, mappedRequest.Name);
     }

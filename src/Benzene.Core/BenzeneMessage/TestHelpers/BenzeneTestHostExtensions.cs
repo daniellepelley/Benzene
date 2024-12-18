@@ -11,7 +11,7 @@ public static class BenzeneTestHostExtensions
         return source.SendEventAsync<BenzeneMessageResponse>(benzeneMessageRequest);
     }
 
-    public static Task<BenzeneMessageResponse> SendBenzeneMessageAsync(this IBenzeneTestHost source, IMessageBuilder messageBuilder)
+    public static Task<BenzeneMessageResponse> SendBenzeneMessageAsync<T>(this IBenzeneTestHost source, IMessageBuilder<T> messageBuilder)
     {
         return source.SendBenzeneMessageAsync(messageBuilder.AsBenzeneMessage());
     }

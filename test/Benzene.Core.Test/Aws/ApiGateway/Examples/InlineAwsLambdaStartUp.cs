@@ -7,7 +7,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Test.Aws.ApiGateway.Examples;
 
-public class AutofacInlineAwsLambdaStartUp : IEntryPointBuilder
+public class AutofacInlineAwsLambdaStartUp : IAwsEntryPointBuilder
 {
     private Action<ContainerBuilder> _servicesAction = _ => { };
     private Action<IMiddlewarePipelineBuilder<AwsEventStreamContext>> _appAction = _ => { };

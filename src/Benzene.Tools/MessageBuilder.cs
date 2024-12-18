@@ -2,32 +2,35 @@
 
 namespace Benzene.Tools;
 
-public class MessageBuilder : IMessageBuilder
+public class MessageBuilder<T> : IMessageBuilder<T>
 {
     public IDictionary<string, string> Headers { get; }
     public string Topic { get; }
-    public object Message { get; }
+    public T? Message { get; }
 
-    private MessageBuilder(string topic, object message)
+    internal MessageBuilder(string topic, T message)
     {
         Message = message;
         Topic = topic;
         Headers = new Dictionary<string, string>();
     }
 
-    public static MessageBuilder Create(string topic)
-    {
-        return new MessageBuilder(topic, null);
-    }
-
-    public static MessageBuilder Create(string topic, object message)
-    {
-        return new MessageBuilder(topic, message);
-    }
-
-    public MessageBuilder WithHeader(string key, string value)
+    public MessageBuilder<T> WithHeader(string key, string value)
     {
         Headers.Add(key, value);
         return this;
+    }
+}
+
+public static class MessageBuilder
+{
+    public static MessageBuilder<object> Create(string topic)
+    {
+        return new MessageBuilder<object>(topic, null);
+    }
+
+    public static MessageBuilder<T> Create<T>(string topic, T message)
+    {
+        return new MessageBuilder<T>(topic, message);
     }
 }

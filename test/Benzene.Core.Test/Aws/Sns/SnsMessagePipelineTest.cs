@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Results;
@@ -17,9 +18,11 @@ using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Aws.Sns.Examples;
 using Benzene.Test.Examples;
 using Benzene.Tools;
+using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
+using XmlSerializer = Benzene.Xml.XmlSerializer;
 
 namespace Benzene.Test.Aws.Sns;
 
@@ -38,9 +41,38 @@ public class SnsMessagePipelineTest
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
             {
-                ServiceResolverMother.ConfigureServiceCollection(services);
                 services
+                    .ConfigureServiceCollection()
                     .UsingBenzene(x => x.AddSns());
+            })
+            .Configure(app => app
+                .OnResponse("Check Response", context =>
+                {
+                    messageResult = context.MessageResult;
+                })
+                .UseMessageHandlers())
+            .Build(x => new SnsApplication(x));
+
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSns();
+
+        await host.HandleAsync(request);
+
+        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+    }
+
+    [Fact]
+    public async Task Send_Xml()
+    {
+        IMessageResult messageResult = null;
+
+        var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
+            .ConfigureServices(services =>
+            {
+                services
+                    .ConfigureServiceCollection()
+                    .UsingBenzene(x => x
+                        .AddXml()
+                        .AddSns());
             })
             .Configure(app => app
                 .OnResponse("Check Response", context =>
@@ -50,7 +82,9 @@ public class SnsMessagePipelineTest
                 .UseMessageHandlers(x => x.UseFluentValidation()))
             .Build(x => new SnsApplication(x));
 
-        var request = CreateRequest();
+        var request = MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload { Name = "foo" })
+            .WithHeader("content-type", "application/xml")
+            .AsSns(new XmlSerializer());
 
         await host.HandleAsync(request);
 

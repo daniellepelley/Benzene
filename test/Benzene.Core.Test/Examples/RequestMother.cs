@@ -1,25 +1,26 @@
 ﻿
+using Benzene.Abstractions;
 using Benzene.Tools;
 
 namespace Benzene.Test.Examples;
 
 public static class RequestMother
 {
-    public static MessageBuilder CreateExampleEvent()
+    public static MessageBuilder<ExampleRequestPayload> CreateExampleEvent()
     {
         return MessageBuilder.Create(Defaults.Topic,
             new ExampleRequestPayload { Id = Defaults.Id, Name = Defaults.Name, });
     }
 
-    public static HttpBuilder CreateExampleHttp()
+    public static HttpBuilder<ExampleRequestPayload> CreateExampleHttp()
     {
-        return HttpBuilder.Create(Defaults.Method, Defaults.Path,
+        return HttpBuilder.Create<ExampleRequestPayload>(Defaults.Method, Defaults.Path,
             new ExampleRequestPayload { Id = Defaults.Id, Name = Defaults.Name, });
     }
 
-    public static MessageBuilder CreateSerializationErrorPayload()
+    public static MessageBuilder<object> CreateSerializationErrorPayload()
     {
-        return MessageBuilder.Create(Defaults.TopicWithGuid,
+        return MessageBuilder.Create<object>(Defaults.TopicWithGuid,
             new { Id = ""});
     }
 }

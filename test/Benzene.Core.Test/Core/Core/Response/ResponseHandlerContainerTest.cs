@@ -32,7 +32,7 @@ public class ResponseHandlerContainerTest
         var request = Mother.CreateRequest();
         var expected = new JsonSerializer().Serialize(request);
 
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         context.MessageResult = new MessageResult(Defaults.Topic, messageHandlerDefinition,
             ServiceResultStatus.Ok, true, request, null);
         await messageHandlerFactory.HandleAsync(context);

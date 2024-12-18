@@ -11,7 +11,7 @@ public class MiddlewarePipeline<TContext> : IMiddlewarePipeline<TContext>
     {
         _items = items;
     }
-    
+
     public Task HandleAsync(TContext context, IServiceResolver serviceResolver)
     {
         var chain = CreateChain(context, serviceResolver);
@@ -20,7 +20,7 @@ public class MiddlewarePipeline<TContext> : IMiddlewarePipeline<TContext>
 
     private Func<Task> CreateChain(TContext context, IServiceResolver serviceResolver)
     {
-        var factory = serviceResolver.GetService<IMiddlewareFactory>();
+        var factory = GetMiddlewareFactory(serviceResolver);
 
         return _items
             .Reverse()
@@ -31,5 +31,10 @@ public class MiddlewarePipeline<TContext> : IMiddlewarePipeline<TContext>
     private static Func<Task> CreateChainItem(TContext context, Func<TContext, Func<Task>, Task> function, Func<Task> next)
     {
         return () => function(context, next);
+    }
+
+    private static IMiddlewareFactory GetMiddlewareFactory(IServiceResolver serviceResolver)
+    {
+        return serviceResolver.TryGetService<IMiddlewareFactory>() ?? new DefaultMiddlewareFactory(Array.Empty<IMiddlewareWrapper>());
     }
 }

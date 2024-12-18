@@ -7,7 +7,7 @@ public class BenzeneMessageApplication : MiddlewareApplication<IBenzeneMessageRe
 {
     public BenzeneMessageApplication(IMiddlewarePipeline<BenzeneMessageContext> pipeline)
         : base(pipeline, 
-            @event => BenzeneMessageContext.CreateInstance(@event),
+            @event => new BenzeneMessageContext(@event),
             context => context.BenzeneMessageResponse)
     { }
 }

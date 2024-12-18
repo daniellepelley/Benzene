@@ -1,8 +1,8 @@
 ﻿namespace Benzene.Abstractions;
 
-public interface IMessageBuilder
+public interface IMessageBuilder<T>
 {
     IDictionary<string, string> Headers { get; }
     string Topic { get; }
-    object Message { get; }
+    T? Message { get; }
 }

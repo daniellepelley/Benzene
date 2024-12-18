@@ -31,7 +31,7 @@ public class CorrelationMiddlewareTest
         using var factory = new MicrosoftServiceResolverFactory(services);
         using var serviceResolver = factory.CreateScope();
 
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         var correlationId = serviceResolver.GetService<ICorrelationId>();
@@ -58,7 +58,7 @@ public class CorrelationMiddlewareTest
         using var factory = new MicrosoftServiceResolverFactory(services);
         using var serviceResolver = factory.CreateScope();
 
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest
         {
             Headers = new Dictionary<string, string>
             {

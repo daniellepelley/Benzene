@@ -11,7 +11,7 @@ public static class BenzeneTestHostExtensions
         return source.SendEventAsync<SQSBatchResponse>(sqsEvent);
     }
 
-    public static Task<SQSBatchResponse> SendSqsAsync(this IBenzeneTestHost source, IMessageBuilder messageBuilder)
+    public static Task<SQSBatchResponse> SendSqsAsync<T>(this IBenzeneTestHost source, IMessageBuilder<T> messageBuilder)
     {
         return source.SendSqsAsync(messageBuilder.AsSqs());
     }

@@ -1,8 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
-using Benzene.Serilog;
 
-namespace Benzene.Microsoft.Logging;
+namespace Benzene.Serilog;
 
 public static class Extensions
 {

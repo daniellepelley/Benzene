@@ -35,7 +35,7 @@ public class MiddlewareBuilderTest
         using var factory = new MicrosoftServiceResolverFactory(services);
         using var serviceResolver = factory.CreateScope();
 
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         Assert.Equal("foo", context.BenzeneMessageResponse.Body);
@@ -77,7 +77,7 @@ public class MiddlewareBuilderTest
             Assert.Equal(Benzene.Core.Constants.Unnamed, item(serviceResolver).Name);
         }
         
-        var context = BenzeneMessageContext.CreateInstance(new BenzeneMessageRequest());
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
 
         Assert.Equal("foo", context.BenzeneMessageResponse.Body);

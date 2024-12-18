@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Aws.Core.DirectMessage;
+using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.Middleware;

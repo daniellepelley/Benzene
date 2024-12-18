@@ -5,7 +5,7 @@ namespace Benzene.Tools;
 
 public static class MessageBuilderExtensions
 {
-    public static MessageBuilder WithHeaders(this MessageBuilder source, IDictionary<string, string> headers)
+    public static MessageBuilder<T> WithHeaders<T>(this MessageBuilder<T> source, IDictionary<string, string> headers)
     {
         foreach (var header in headers)
         {
@@ -15,7 +15,8 @@ public static class MessageBuilderExtensions
         return source;
     }
 
-    public static string AsRawHttpRequest(this HttpBuilder source)
+    public static string AsRawHttpRequest<T>(this HttpBuilder<T> source)
+        where T : class
     {
         var stringBuilder = new StringBuilder();
         // Start line

@@ -16,12 +16,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+		<ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
+		<ProjectReference Include="..\Benzene.Abstractions.Validation\Benzene.Abstractions.Validation.csproj" />
 		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
-		<ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="docs\README.md" Pack="true" PackagePath="\"/>
+		<None Include="docs\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 </Project>

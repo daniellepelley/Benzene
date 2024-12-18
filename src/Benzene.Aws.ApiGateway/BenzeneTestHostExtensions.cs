@@ -11,7 +11,8 @@ public static class BenzeneTestHostExtensions
         return source.SendEventAsync<APIGatewayProxyResponse>(apiGatewayProxyRequest);
     }
 
-    public static Task<APIGatewayProxyResponse> SendApiGatewayAsync(this IBenzeneTestHost source, IHttpBuilder httpBuilder)
+    public static Task<APIGatewayProxyResponse> SendApiGatewayAsync<T>(this IBenzeneTestHost source, IHttpBuilder<T> httpBuilder)
+        where T : class
     {
         return source.SendApiGatewayAsync(httpBuilder.AsApiGatewayRequest());
     }

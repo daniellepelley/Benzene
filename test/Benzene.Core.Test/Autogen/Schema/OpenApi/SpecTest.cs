@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Aws.Core;
-using Benzene.Aws.Core.DirectMessage;
+using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Broadcast;

@@ -76,9 +76,9 @@ public class ApiGatewayMessagePipelineTest
                 )
             ).BuildHost();
 
-        var request = HttpBuilder.Create("GET", "/example", Defaults.MessageAsObject)
+        var request = HttpBuilder.Create("GET", "/example", new ExampleRequestPayload())
             .WithHeader("content-type", "application/xml")
-            .AsApiGatewayRequest();
+            .AsApiGatewayRequest(new XmlSerializer());
 
         var response = await host.SendApiGatewayAsync(request);
 

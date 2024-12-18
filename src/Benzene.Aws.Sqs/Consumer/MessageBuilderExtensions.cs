@@ -6,7 +6,7 @@ namespace Benzene.Aws.Sqs.Consumer;
 
 public static class MessageBuilderExtensions
 {
-    public static Message AsSqsMessage(this IMessageBuilder source)
+    public static Message AsSqsMessage<T>(this IMessageBuilder<T> source)
     {
         var headers = source.Headers.ToDictionary(x => x.Key, x => x.Value);
         headers.Add("topic", source.Topic);

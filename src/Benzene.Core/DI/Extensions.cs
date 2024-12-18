@@ -9,9 +9,7 @@ using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Serialization;
-using Benzene.Abstractions.Validation;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.Helper;
 using Benzene.Core.Info;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
@@ -21,7 +19,6 @@ using Benzene.Core.Middleware;
 using Benzene.Core.Request;
 using Benzene.Core.Response;
 using Benzene.Core.Serialization;
-using Benzene.Core.Validation;
 using Utils = Benzene.Core.Helper.Utils;
 
 namespace Benzene.Core.DI;
@@ -91,7 +88,7 @@ public static class Extensions
         services.TryAddScoped<ISetCurrentTransport>(x => x.GetService<CurrentTransportInfo>());
 
         services.TryAddSingleton<IApplicationInfo, BlankApplicationInfo>();
-        services.TryAddSingleton<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
+        // services.TryAddSingleton<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
         services.TryAddSingleton<IVersionSelector, VersionSelector>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
         services.TryAddSingleton<JsonSerializer>();

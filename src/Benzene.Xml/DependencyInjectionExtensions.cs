@@ -25,6 +25,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IResponseHandler<TContext>,
                 ResponseHandler<XmlSerializationResponseHandler<TContext>, TContext>>();
         services.AddScoped<XmlSerializationResponseHandler<TContext>>();
+        services.AddSingleton<XmlSerializer>();
         return services;
     }
     

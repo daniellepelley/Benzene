@@ -19,6 +19,7 @@ using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Benzene.Tools.Aws;
+using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -61,6 +62,44 @@ public class SqsMessagePipelineTest
         Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
         Assert.Empty(batchResponse.BatchItemFailures);
     }
+
+    [Fact]
+    public async Task Send_Xml()
+    {
+        var mockExampleService = new Mock<IExampleService>();
+
+        IMessageResult messageResult = null;
+
+        var host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .AddTransient<ILogger<MessageRouter<SqsMessageContext>>>(_ => NullLogger<MessageRouter<SqsMessageContext>>.Instance)
+                .AddTransient<ILogger>(_ => NullLogger.Instance)
+                .AddTransient(_ => mockExampleService.Object)
+                .UsingBenzene(x => x
+                    .AddBenzene()
+                    .AddXml()
+                    .AddSqs())
+                )
+            .Configure(app => app
+                .UseSqs(sqs => sqs
+                .OnResponse("Check Response", context =>
+                {
+                    messageResult = context.MessageResult;
+                })
+                .UseMessageHandlers()
+            )
+        ).BuildHost();
+
+        var request = MessageBuilder
+            .Create(Defaults.Topic, new ExampleRequestPayload { Name = "some-name"})
+            .WithHeader("content-type", "application/xml")
+            .AsSqs(new XmlSerializer());
+
+        SQSBatchResponse batchResponse = await host.SendSqsAsync(request);
+        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.Empty(batchResponse.BatchItemFailures);
+    }
+
 
     [Fact]
     public async Task Send_SerializationError()

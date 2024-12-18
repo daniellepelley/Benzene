@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using Benzene.Abstractions.Validation;
-using Benzene.Core.Validation;
 using Benzene.FluentValidation.Common;
 
 namespace Benzene.FluentValidation.Schema;
