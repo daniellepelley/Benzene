@@ -79,7 +79,7 @@ public class LambdaResultExtensionTest
     [InlineData("503", ClientResultStatus.ServiceUnavailable)]
     public void MapFailureTestGuid(string responseStatusCode, string expectedStatus)
     {
-        var lambdaResponse = new BenzeneMessageClientResponse(responseStatusCode, JsonConvert.SerializeObject(new { Errors = new[] { "some-error" } }));
+        var lambdaResponse = new BenzeneMessageClientResponse(responseStatusCode, JsonConvert.SerializeObject(new ProblemDetails { Detail = "some-error" }));
         var lambdaClientResult = lambdaResponse.AsClientResult<Guid>(new JsonSerializer());
 
         Assert.Equal(expectedStatus, lambdaClientResult.Status);
@@ -96,7 +96,7 @@ public class LambdaResultExtensionTest
     [InlineData("503", ClientResultStatus.ServiceUnavailable)]
     public void MapFailureTestObject(string responseStatusCode, string expectedStatus)
     {
-        var lambdaResponse = new BenzeneMessageClientResponse(responseStatusCode, JsonConvert.SerializeObject(new { Errors = new[] { "some-error" } }));
+        var lambdaResponse = new BenzeneMessageClientResponse(responseStatusCode, JsonConvert.SerializeObject(new ProblemDetails { Detail = "some-error" }));
 
         var lambdaClientResult = lambdaResponse.AsClientResult<object>(new JsonSerializer());
 
@@ -137,6 +137,6 @@ public class LambdaResultExtensionTest
         var lambdaClientResult = lambdaResponse.AsClientResult<Guid>(new JsonSerializer());
 
         Assert.Equal(expectedStatus, lambdaClientResult.Status);
-        Assert.Null(lambdaClientResult.Errors);
+        Assert.Empty(lambdaClientResult.Errors);
     }
 }

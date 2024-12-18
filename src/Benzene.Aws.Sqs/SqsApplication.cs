@@ -24,7 +24,6 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
             {
                 try
                 {
-
                     using (var scope = serviceResolver.GetService<IServiceResolverFactory>().CreateScope())
                     {
                         var setCurrentTransport = scope.GetService<ISetCurrentTransport>();

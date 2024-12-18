@@ -17,7 +17,6 @@ using Benzene.Serilog.Logging;
 using Microsoft.Extensions.Configuration;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.Core.DirectMessage;
 using Benzene.Aws.XRay;
 using Benzene.Core.MessageHandling;
 using Benzene.HealthChecks.Core;

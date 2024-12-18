@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/product.schema.json",
+    "title": "ExampleRequestPayload",
+    "description": "An example Benzene payload",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "The unique identifier for a object",
+            "type": "integer"
+        },
+        "name": {
+            "description": "Name",
+            "type": "string",
+            "maxLength": 3
+        },
+        "mapped": {
+            "description": "A mapped value",
+            "type": "string"
+        }
+    },
+    "required": [ "id", "name", "mapped" ]
+}

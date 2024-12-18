@@ -1,19 +1,28 @@
 ﻿namespace Benzene.Results;
 
-public class ErrorPayload
+public class ErrorPayload : ProblemDetails
 {
     public ErrorPayload()
     {
         
     }
-
+    
     public ErrorPayload(string status, string[] errors)
     {
         Status = status;
-        Errors = errors;
+        Detail = string.Join(", ", errors);
     }
+    //
+    // public string Status { get; set; }
+    //
+    // public string[] Errors { get; set; }
+}
 
+public class ProblemDetails
+{
+    public string Type { get; set; }
     public string Status { get; set; }
-
-    public string[] Errors { get; set; }
+    public string Title { get; set; }
+    public string Detail { get; set; }
+    public string Instance { get; set; }
 }

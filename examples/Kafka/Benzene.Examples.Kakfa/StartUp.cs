@@ -1,4 +1,4 @@
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -54,9 +54,9 @@ public class StartUp : BenzeneHostedServiceStartup
         };
         app
             .UseKafka(benzeneKafkaConfig1, x =>
-                x.UseMessageRouter())
+                x.UseMessageHandlers())
             .UseKafka(benzeneKafkaConfig2, x =>
-                x.UseMessageRouter())
+                x.UseMessageHandlers())
             .UseHttp(new BenzeneHttpConfig
             {
                 Url = "http://localhost:5151/",
@@ -71,6 +71,6 @@ public class StartUp : BenzeneHostedServiceStartup
                     AllowedDomains = new[] { "editor-next.swagger.io" },
                     AllowedHeaders = Array.Empty<string>()
                 })
-                .UseMessageRouter(x => x.UseFluentValidation()));
+                .UseMessageHandlers(x => x.UseFluentValidation()));
     }
 }

@@ -8,8 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
-    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
-    <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
   </ItemGroup>
 
 </Project>

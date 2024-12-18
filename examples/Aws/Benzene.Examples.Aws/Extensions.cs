@@ -123,7 +123,7 @@ public static class Extensions
                 var httpStatusCodeMapper = resolver.GetService<IHttpStatusCodeMapper>();
                 var benzeneMessage = JsonConvert.DeserializeObject<BenzeneMessageRequest>(context.ApiGatewayProxyRequest.Body);
     
-                var benzeneMessageContext = BenzeneMessageContext.CreateInstance(benzeneMessage);
+                var benzeneMessageContext = new BenzeneMessageContext(benzeneMessage);
                 await pipeline.HandleAsync(benzeneMessageContext, resolver);
                 context.ApiGatewayProxyResponse = new APIGatewayProxyResponse
                 {
@@ -163,7 +163,7 @@ public static class Extensions
             {
                 var benzeneMessage = JsonConvert.DeserializeObject<BenzeneMessageRequest>(context.ApiGatewayProxyRequest.Body);
     
-                var benzeneMessageContext = BenzeneMessageContext.CreateInstance(benzeneMessage);
+                var benzeneMessageContext = new BenzeneMessageContext(benzeneMessage);
                 // await _middleware.HandleAsync(benzeneMessageContext, _serviceResolver);
                 // context.ApiGatewayProxyResponse = new APIGatewayProxyResponse
                 // {

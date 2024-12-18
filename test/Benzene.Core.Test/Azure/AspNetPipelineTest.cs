@@ -86,7 +86,6 @@ public class AspNetPipelineTest
 
         Assert.Equal(422, response.StatusCode);
         Assert.Equal("ValidationError", payload.Status);
-        Assert.Single(payload.Errors);
-        Assert.NotEmpty(payload.Errors.First());
+        Assert.NotEmpty(payload.Detail);
     }
 }

@@ -36,7 +36,7 @@ namespace Benzene.Clients.Aws.Common
                 case "503":
                     return source.Message == null
                         ? ClientResult.Set<T>(clientStatusCode, false)
-                        : ClientResult.Set<T>(clientStatusCode, serializer.Deserialize<ErrorPayload>(source.Message)?.Errors);
+                        : ClientResult.Set<T>(clientStatusCode, serializer.Deserialize<ErrorPayload>(source.Message).Detail);
                 default:
                     return ClientResult.UnexpectedError<T>("Status code {statusCode} not mapped", source.StatusCode);
             }
@@ -60,7 +60,7 @@ namespace Benzene.Clients.Aws.Common
                 case "422":
                 case "501":
                 case "503":
-                    return ClientResult.Set<T>(clientStatusCode, serializer.Deserialize<ErrorPayload>(source.Message)?.Errors);
+                    return ClientResult.Set<T>(clientStatusCode, serializer.Deserialize<ErrorPayload>(source.Message)?.Detail);
                 default:
                     return ClientResult.ServiceUnavailable<T>("Status code {statusCode} not mapped",
                         source.StatusCode);

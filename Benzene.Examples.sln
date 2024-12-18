@@ -102,6 +102,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Kafka.Core", "src\B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.HostedService", "src\Benzene.HostedService\Benzene.HostedService.csproj", "{5736E78A-99FE-4159-9AE8-7FBE906409BD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.SelfHost.Http", "src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj", "{B405CF4B-DC3A-447F-94F3-0CE9E097AD04}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -260,6 +262,10 @@ Global
 		{5736E78A-99FE-4159-9AE8-7FBE906409BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5736E78A-99FE-4159-9AE8-7FBE906409BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5736E78A-99FE-4159-9AE8-7FBE906409BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B405CF4B-DC3A-447F-94F3-0CE9E097AD04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B405CF4B-DC3A-447F-94F3-0CE9E097AD04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B405CF4B-DC3A-447F-94F3-0CE9E097AD04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B405CF4B-DC3A-447F-94F3-0CE9E097AD04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -13,11 +13,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+		<None Include="docs\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="docs\README.md" Pack="true" PackagePath="\"/>
+	  <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
 	</ItemGroup>
 
 </Project>

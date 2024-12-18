@@ -20,6 +20,13 @@ public static class ClientResult
     {
         return ClientResultInternal<T>.Internal(status, errors);
     }
+    public static IClientResult<T> Set<T>(string status, string? error)
+    {
+        return error == null
+            ? ClientResultInternal<T>.Internal(status, false)
+            : ClientResultInternal<T>.Internal(status, [error]);
+    }
+
 
     public static IClientResult Accepted()
     {

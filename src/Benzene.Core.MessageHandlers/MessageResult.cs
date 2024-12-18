@@ -1,7 +1,22 @@
 ﻿using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Results;
+using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;
+
+public interface IMessageResultBuilder
+{
+    public IMessageResult ValidationError();
+}
+
+public class MessageResultBuilder : IMessageResultBuilder
+{
+    public IMessageResult ValidationError()
+    {
+        return new MessageResult(Constants.Missing, MessageHandlerDefinition.Empty(),
+            ServiceResultStatus.ValidationError, false, null, Array.Empty<string>());
+    }
+}
 
 public class MessageResult : IMessageResult
 {
