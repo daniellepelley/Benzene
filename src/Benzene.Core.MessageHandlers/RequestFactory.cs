@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Results;
 
@@ -15,7 +15,7 @@ public class RequestFactory<TContext> : IRequestFactory where TContext : IHasMes
         _messageMapper = messageMapper;
     }
 
-    public TRequest GetRequest<TRequest>() where TRequest : class
+    public TRequest? GetRequest<TRequest>() where TRequest : class
     {
         return _messageMapper.GetBody<TRequest>(_context);
     }

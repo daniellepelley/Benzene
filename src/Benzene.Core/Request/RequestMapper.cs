@@ -15,11 +15,11 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
         _messageBodyMapper = messageBodyMapper;
     }
     
-    public TRequest GetBody<TRequest>(TContext context) where TRequest : class
+    public TRequest? GetBody<TRequest>(TContext context) where TRequest : class
     {
         if (context is IRequestContext<TRequest>)
         {
-            return ((IRequestContext<TRequest>)context).Request;
+            return ((IRequestContext<TRequest?>)context).Request;
         }
         
         var bodyAsString = _messageBodyMapper.GetBody(context);

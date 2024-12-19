@@ -1,14 +1,9 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.Results;
 using Benzene.Results;
 
 namespace Benzene.Schema.OpenApi;
-
-public class SpecResponse
-{
-   public string Content { get; set; } 
-}
 
 public class SpecMessageHandler : IMessageHandler<SpecRequest, RawStringMessage>
 {

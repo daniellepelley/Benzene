@@ -2,27 +2,31 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Serialization;
+using Benzene.Core.Predicates;
 
 namespace Benzene.Core.Request;
 
 public class SerializerOption<TContext, TSerializer> : ISerializerOption<TContext> where TSerializer : class, ISerializer
 {
-    public SerializerOption(Func<TContext, bool> canHandle)
+    public SerializerOption(Func<ContextPredicateBuilder<TContext>, IContextPredicate<TContext>> builder)
+    {
+        CanHandle = builder(new ContextPredicateBuilder<TContext>());
+    }
+
+    public SerializerOption(Func<TContext, IServiceResolver, bool> canHandle)
+    {
+        CanHandle = new InlineContextPredicate<TContext>(canHandle);
+    }
+
+    public SerializerOption(IContextPredicate<TContext> canHandle)
     {
         CanHandle = canHandle;
     }
 
-    public Func<TContext, bool> CanHandle { get; }
+    public IContextPredicate<TContext> CanHandle { get; }
     
     public ISerializer GetSerializer(IServiceResolver serviceResolver)
     {
         return serviceResolver.GetService<TSerializer>();
     }
-}
-
-public abstract class SerializerOptionBase<TContext, TSerializer> : ISerializerOption<TContext> where TSerializer : class, ISerializer
-{
-    public abstract ISerializer GetSerializer(IServiceResolver serviceResolver);
-
-    public abstract Func<TContext, bool> CanHandle { get; }
 }

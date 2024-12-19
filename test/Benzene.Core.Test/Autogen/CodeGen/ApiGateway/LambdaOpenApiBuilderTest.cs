@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.CodeGen.ApiGateway;
 using Benzene.CodeGen.Core;

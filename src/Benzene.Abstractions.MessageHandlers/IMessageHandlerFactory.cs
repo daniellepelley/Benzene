@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.MessageHandling;
+﻿namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IMessageHandlerFactory
 {

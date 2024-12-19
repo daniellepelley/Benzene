@@ -1,6 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers;
-
-namespace Benzene.Abstractions.MessageHandling;
+﻿namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IMessageHandlersLookUp
 {

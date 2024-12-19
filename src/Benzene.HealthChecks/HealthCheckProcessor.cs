@@ -1,4 +1,5 @@
-﻿using Benzene.Core.MessageHandlers;
+﻿using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Results;
 using Benzene.HealthChecks.Core;
@@ -20,6 +21,6 @@ public static class HealthCheckProcessor
             x => healthCheckNamer.GetName(x.Item2.Result.Type),
             x => new HealthCheckResult(x.Item2.Result.Status, x.Item2.Result.Type, x.Item2.Result.Data)));
 
-        return new MessageResult(topic, MessageHandlerDefinition.Empty(), ServiceResultStatus.Ok, true, message, Array.Empty<string>());
+        return new MessageResult(new Topic(topic), MessageHandlerDefinition.Empty(), ServiceResultStatus.Ok, true, message, Array.Empty<string>());
     }
 }

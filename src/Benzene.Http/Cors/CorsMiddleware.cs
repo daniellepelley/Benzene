@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
+using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Results;
@@ -65,7 +66,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
 
             if (httpRequest.Method == "options")
             {
-                context.MessageResult = new MessageResult("cors", MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), "Ok", true, null, null);
+                context.MessageResult = new MessageResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), "Ok", true, null, null);
             }
         }
     }

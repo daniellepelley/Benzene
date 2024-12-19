@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.Response;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Response;
 using Benzene.Core.Results;
@@ -33,7 +34,7 @@ public class ResponseHandlerContainerTest
         var expected = new JsonSerializer().Serialize(request);
 
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
-        context.MessageResult = new MessageResult(Defaults.Topic, messageHandlerDefinition,
+        context.MessageResult = new MessageResult(new Topic(Defaults.Topic), messageHandlerDefinition,
             ServiceResultStatus.Ok, true, request, null);
         await messageHandlerFactory.HandleAsync(context);
 

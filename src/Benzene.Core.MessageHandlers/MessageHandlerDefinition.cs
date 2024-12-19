@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandling;
 using Void = Benzene.Results.Void;
 
 namespace Benzene.Core.MessageHandlers;
@@ -31,7 +32,7 @@ public class MessageHandlerDefinition : IMessageHandlerDefinition
 
     public static MessageHandlerDefinition Empty()
     {
-        return new MessageHandlerDefinition(Constants.Missing, string.Empty, typeof(Void), typeof(Void), typeof(Void));
+        return new MessageHandlerDefinition(Constants.Missing.Id, string.Empty, typeof(Void), typeof(Void), typeof(Void));
     }
 
     public string Topic { get; init; }

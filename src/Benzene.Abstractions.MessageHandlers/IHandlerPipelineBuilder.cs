@@ -1,8 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Abstractions.MessageHandling;
+namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IHandlerPipelineBuilder
 {

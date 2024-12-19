@@ -8,7 +8,7 @@ public class Topic : ITopic
 {
     public Topic(string id)
     {
-        Id = id ?? Constants.Missing;
+        Id = id ?? Constants.Missing.Id;
         Version = string.Empty;
     }
 

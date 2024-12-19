@@ -1,4 +1,5 @@
-﻿using Benzene.Core.MessageHandlers;
+﻿using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Results;
 using Xunit;
 
@@ -13,9 +14,9 @@ public class MessageResultTest
         const string status = "some-status";
         const string error = "some-error";
 
-        var messageResult = new MessageResult(topic, null, status, true, new object(), new[] { error });
+        var messageResult = new MessageResult(new Topic(topic), null, status, true, new object(), new[] { error });
 
-        Assert.Equal(topic, messageResult.Topic);
+        Assert.Equal(topic, messageResult.Topic.Id);
         Assert.Equal(status, messageResult.Status);
         Assert.Equal(error, messageResult.Errors[0]);
     }

@@ -22,7 +22,7 @@ public class RequestMapBuilder<TContext> : IRequestMapBuilder<TContext>
 
     public IRequestMapBuilder<TContext> Use<T>() where T : class, ISerializer
     {
-        _register(x => x.AddScoped<ISerializerOption<TContext>>(_ => new SerializerOption<TContext, T>(_ => true)));
+        _register(x => x.AddScoped<ISerializerOption<TContext>>(_ => new SerializerOption<TContext, T>(o => o.Always())));
         return this;
     }
 
@@ -34,7 +34,7 @@ public class RequestMapBuilder<TContext> : IRequestMapBuilder<TContext>
 
     public IRequestMapBuilder<TContext> UseDefault<T>() where T : class, ISerializer
     {
-        _register(x => x.AddScoped(_ => new SerializerOption<TContext, T>(_ => true)));
+        _register(x => x.AddScoped(_ => new SerializerOption<TContext, T>(x => x.Always())));
         return this; 
     }
 }

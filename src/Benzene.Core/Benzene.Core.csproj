@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <PackageVersion>0.0.1</PackageVersion>
+    <Nullable>enable</Nullable>
     <AssemblyName>Benzene.Core</AssemblyName>
     <RootNamespace>Benzene.Core</RootNamespace>
   </PropertyGroup>

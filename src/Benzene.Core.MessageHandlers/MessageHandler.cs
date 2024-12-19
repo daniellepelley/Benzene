@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Results;
 using Void = Benzene.Results.Void;
 
@@ -19,7 +19,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
 
     public async Task<IServiceResult> HandlerAsync(IRequestFactory requestFactory)
     {
-        TRequest messageObject;
+        TRequest? messageObject;
         try
         {
             messageObject = requestFactory.GetRequest<TRequest>();

@@ -8,10 +8,13 @@
   <ItemGroup>
     <Compile Remove="Aws\Framework\**" />
     <Compile Remove="Benzene.Helpers\**" />
+    <Compile Remove="Core\Newtonsoft\**" />
     <EmbeddedResource Remove="Aws\Framework\**" />
     <EmbeddedResource Remove="Benzene.Helpers\**" />
+    <EmbeddedResource Remove="Core\Newtonsoft\**" />
     <None Remove="Aws\Framework\**" />
     <None Remove="Benzene.Helpers\**" />
+    <None Remove="Core\Newtonsoft\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -246,7 +249,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Core\Newtonsoft\" />
     <Folder Include="Asp\" />
     <Folder Include="SelfHost\Http\" />
   </ItemGroup>

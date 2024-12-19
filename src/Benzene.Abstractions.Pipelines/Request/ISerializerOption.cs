@@ -5,6 +5,6 @@ namespace Benzene.Abstractions.Request;
 
 public interface ISerializerOption<TContext>
 {
-    Func<TContext, bool> CanHandle { get; }
+    IContextPredicate<TContext> CanHandle { get; }
     ISerializer GetSerializer(IServiceResolver serviceResolver);
 }

@@ -149,7 +149,7 @@ public class BenzeneMessagePipelineTest
                 Headers = context.BenzeneMessageRequest.Headers,
                 StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503",
             };
-            context.MessageResult = new MessageResult(Defaults.Topic, null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
+            context.MessageResult = new MessageResult(new Topic(Defaults.Topic), null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
             return next();
         });
 
@@ -179,7 +179,7 @@ public class BenzeneMessagePipelineTest
                 StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503",
             };
             responseStatus = context.BenzeneMessageResponse.StatusCode;
-            context.MessageResult = new MessageResult(Defaults.Topic, null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
+            context.MessageResult = new MessageResult(new Topic(Defaults.Topic), null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
             return next();
         });
 

@@ -1,10 +1,11 @@
-﻿using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandling;
 
 namespace Benzene.Abstractions.Results;
 
 public interface IMessageResult
 {
-    string Topic { get; }
+    ITopic Topic { get; }
     IMessageHandlerDefinition MessageHandlerDefinition { get; }
     string Status { get; }
     bool IsSuccessful { get; }

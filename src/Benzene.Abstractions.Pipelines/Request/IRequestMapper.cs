@@ -2,10 +2,5 @@
 
 public interface IRequestMapper<in TContext>
 {
-    TRequest GetBody<TRequest>(TContext context) where TRequest : class;
-}
-
-public interface IRequestContext<TRequest>
-{
-    TRequest Request { get; }
+    TRequest? GetBody<TRequest>(TContext context) where TRequest : class;
 }

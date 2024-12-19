@@ -23,7 +23,7 @@ public class MappersTest
             .AddSingleton<IMessageMapper<BenzeneMessageContext>, BenzeneMessageMapper>()
             .AddSingleton<JsonSerializer>()
             .AddSingleton<ISerializerOption<BenzeneMessageContext>>(_ =>
-                new SerializerOption<BenzeneMessageContext, JsonSerializer>(_ => true));
+                new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()));
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
 

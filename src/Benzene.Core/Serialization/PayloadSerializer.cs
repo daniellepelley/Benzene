@@ -2,30 +2,30 @@
 using System.Dynamic;
 using System.Text;
 using Benzene.Abstractions.Results;
+using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Core.Serialization
+namespace Benzene.Core.Serialization;
+
+public class PayloadSerializer : ISerializer
 {
-    public static class PayloadSerializer
+    private readonly ISerializer _serializer;
+
+    public PayloadSerializer(ISerializer serializer)
     {
-        public static string SerializePayload(object payload)
+        _serializer = serializer;
+    }
+
+    public static string? SerializePayload(object payload)
+    {
+        switch (payload)
         {
-            if (payload is IRawJsonMessage rawJsonMessage)
-            {
+            case IRawJsonMessage rawJsonMessage:
                 return CamelCaseJson(rawJsonMessage.Json);
-            }
-
-            if (payload is IRawStringMessage rawStringMessage)
-            {
+            case IRawStringMessage rawStringMessage:
                 return rawStringMessage.Content;
-            }
-
-            if (payload is IBase64JsonMessage base64JsonMessage)
-            {
-                if (string.IsNullOrEmpty(base64JsonMessage.Base64Json))
-                {
-                    return null;
-                }
-
+            case IBase64JsonMessage base64JsonMessage when string.IsNullOrEmpty(base64JsonMessage.Base64Json):
+                return null;
+            case IBase64JsonMessage base64JsonMessage:
                 try
                 {
                     var data = Convert.FromBase64String(base64JsonMessage.Base64Json);
@@ -35,20 +35,48 @@ namespace Benzene.Core.Serialization
                 {
                     return null;
                 }
-            }
 
-            return SerializeObject(payload);
+            default:
+                return null;
         }
+    }
 
-        private static string SerializeObject(object payload)
+
+    private static string SerializeObject(object payload)
+    {
+        return new JsonSerializer().Serialize(payload);
+    }
+
+    private static string CamelCaseJson(string json)
+    {
+        var obj = new JsonSerializer().Deserialize<ExpandoObject>(json);
+        return SerializeObject(obj);
+    }
+
+    public string Serialize(Type type, object payload)
+    {
+        var value = SerializePayload(payload);
+        return value ?? _serializer.Serialize(type, payload);
+    }
+
+    public string Serialize<T>(T payload)
+    {
+        if (payload == null)
         {
-            return new JsonSerializer().Serialize(payload); 
+            return _serializer.Serialize(payload);
         }
 
-        private static string CamelCaseJson(string json)
-        {
-            var obj = new JsonSerializer().Deserialize<ExpandoObject>(json);
-            return SerializeObject(obj);
-        }
+        var value = SerializePayload(payload);
+        return value ?? _serializer.Serialize(payload);
+    }
+
+    public object? Deserialize(Type type, string payload)
+    {
+        return _serializer.Deserialize(type, payload);
+    }
+
+    public T? Deserialize<T>(string payload)
+    {
+        return _serializer.Deserialize<T>(payload);
     }
 }

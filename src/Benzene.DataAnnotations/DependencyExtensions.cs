@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
 
 namespace Benzene.DataAnnotations;
 

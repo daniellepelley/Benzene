@@ -19,13 +19,12 @@ public class AspNetRequestEnricher : IRequestEnricher<AspNetContext>
     public IDictionary<string, object> Enrich<TRequest>(TRequest request, AspNetContext context)
     {
         var route = _routeFinder.Find(context.HttpContext.Request.Method, context.HttpContext.Request.Path);
+        var dictionary = new Dictionary<string, object>();
 
         if (route == null)
         {
-            return null;
+            return dictionary;
         }
-
-        var dictionary = new Dictionary<string, object>();
 
         DictionaryUtils.MapOnto(dictionary, context.HttpContext.Request.Query?.ToDictionary(x => x.Key, x => x.Value.First()));
         DictionaryUtils.MapOnto(dictionary, _headersToBodyMapper.GetHeaders(context));

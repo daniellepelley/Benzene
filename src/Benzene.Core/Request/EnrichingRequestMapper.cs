@@ -16,10 +16,15 @@ public class EnrichingRequestMapper<TContext> : IRequestMapper<TContext>
         _requestMapper = requestMapper;
     }
 
-    public TRequest GetBody<TRequest>(TContext context) where TRequest : class
+    public TRequest? GetBody<TRequest>(TContext context) where TRequest : class
     {
         var request = _requestMapper.GetBody<TRequest>(context);
-        
+
+        if (request == null)
+        {
+            return null;
+        }
+
         var dictionary = _enrichers.Aggregate(new Dictionary<string, object>() as IDictionary<string, object>, (current, enricher) =>
             DictionaryUtils.MapOnto(current, enricher.Enrich(request, context)));
 

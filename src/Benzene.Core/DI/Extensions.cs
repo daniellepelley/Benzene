@@ -42,7 +42,6 @@ public static class Extensions
 
     public static IBenzeneServiceContainer AddBenzeneMessage(this IBenzeneServiceContainer services)
     {
-        services.TryAddScoped<IRequestMapper<BenzeneMessageContext>, MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>>();
         services.TryAddScoped<IMessageMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
         services.TryAddScoped<IMessageBodyMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
         services.TryAddScoped<IMessageTopicMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
@@ -81,6 +80,7 @@ public static class Extensions
 
     public static IBenzeneServiceContainer AddBenzene(this IBenzeneServiceContainer services)
     {
+        services.TryAddSingleton<IDefaultStatuses, DefaultStatuses>();
         services.TryAddSingleton<ITransportsInfo, TransportsInfo>();
 
         services.TryAddScoped<CurrentTransportInfo>();

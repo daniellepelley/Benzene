@@ -27,15 +27,15 @@ public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> :
         _serviceResolver = serviceResolver;
     }
 
-    public TRequest GetBody<TRequest>(TContext context) where TRequest : class
+    public TRequest? GetBody<TRequest>(TContext context) where TRequest : class
     {
         var mapper = GetMapper(context);
-        return mapper?.GetBody<TRequest>(context);
+        return mapper.GetBody<TRequest>(context);
     }
 
     private IRequestMapper<TContext> GetMapper(TContext context)
     {
-        var serializerOption = _options.FirstOrDefault(option => option.CanHandle(context));
+        var serializerOption = _options.FirstOrDefault(option => option.CanHandle.Check(context, _serviceResolver));
         var serializer = serializerOption != null
             ? serializerOption.GetSerializer(_serviceResolver)
             : _serviceResolver.GetService<TDefaultSerializer>();

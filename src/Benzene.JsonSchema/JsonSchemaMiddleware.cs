@@ -12,11 +12,11 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
 {
     private readonly IMessageBodyMapper<TContext> _messageBodyMapper;
     private readonly IJsonSchemaProvider<TContext> _jsonSchemaProvider;
-    private readonly IMessageResultBuilder _messageResultBuilder;
+    private IDefaultStatuses _defaultStatuses;
 
-    public JsonSchemaMiddleware(IMessageBodyMapper<TContext> messageBodyMapper, IJsonSchemaProvider<TContext> jsonSchemaProvider, IMessageResultBuilder messageResultBuilder)
+    public JsonSchemaMiddleware(IMessageBodyMapper<TContext> messageBodyMapper, IJsonSchemaProvider<TContext> jsonSchemaProvider, IDefaultStatuses defaultStatuses)
     {
-        _messageResultBuilder = messageResultBuilder;
+        _defaultStatuses = defaultStatuses;
         _jsonSchemaProvider = jsonSchemaProvider;
         _messageBodyMapper = messageBodyMapper;
     }
@@ -37,7 +37,7 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
 
         if (body == null)
         {
-            context.MessageResult = _messageResultBuilder.ValidationError();
+            context.MessageResult = MessageResult.Failure(_defaultStatuses.ValidationError);
             return;
         }
 
@@ -57,7 +57,7 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
         }
         else
         {
-            context.MessageResult = _messageResultBuilder.ValidationError();
+            context.MessageResult = MessageResult.Failure(_defaultStatuses.ValidationError);
         }
     }
 }

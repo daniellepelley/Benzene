@@ -1,7 +1,10 @@
-﻿namespace Benzene.Core.MessageHandlers
+﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Core.Mappers;
+
+namespace Benzene.Core.MessageHandlers
 {
     public static class Constants
     {
-        public const string Missing = "<missing>";
+        public static ITopic Missing => new Topic("<missing>");
     }
 }
