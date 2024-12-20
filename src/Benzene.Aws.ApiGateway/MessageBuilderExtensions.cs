@@ -24,19 +24,16 @@ public static class MessageBuilderExtensions
             Headers = source.Headers
         };
     }
-    public static APIGatewayCustomAuthorizerRequest AsApiGatewayCustomAuthorizerEvent<T>(this IHttpBuilder<T> source)
+    public static APIGatewayCustomAuthorizerRequest AsApiGatewayCustomAuthorizerEvent<T>(this IHttpBuilder<T> source, string apiId = "some-id")
     {
         return new APIGatewayCustomAuthorizerRequest
         {
             HttpMethod = source.Method,
             Path = source.Path,
-            Headers = new Dictionary<string, string>
-            {
-                { "x-correlation-id", Guid.NewGuid().ToString() }
-            },
+            Headers = source.Headers,
             RequestContext = new APIGatewayProxyRequest.ProxyRequestContext
             {
-                ApiId = "some-id"
+                ApiId = apiId
             }
         };
     }

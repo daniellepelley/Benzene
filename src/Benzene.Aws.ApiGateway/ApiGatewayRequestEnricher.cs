@@ -7,7 +7,6 @@ using Benzene.Http.Routing;
 
 namespace Benzene.Aws.ApiGateway;
 
-
 public class ApiGatewayRequestEnricher : IRequestEnricher<ApiGatewayContext>
 {
     private readonly IRouteFinder _routeFinder;

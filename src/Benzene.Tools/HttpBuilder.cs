@@ -14,10 +14,7 @@ public class HttpBuilder<T> : IHttpBuilder<T>
         Message = message;
         Method = method;
         Path = path;
-        Headers = new Dictionary<string, string>
-        {
-            { "x-correlation-id", Guid.NewGuid().ToString() }
-        };
+        Headers = new Dictionary<string, string>();
     }
 
     public static HttpBuilder<T> Create(string method, string path, T? message = default)

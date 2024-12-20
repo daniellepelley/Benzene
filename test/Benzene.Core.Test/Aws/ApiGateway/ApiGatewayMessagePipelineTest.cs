@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Autofac;
@@ -19,7 +20,6 @@ using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Results;
 using Benzene.Test.Aws.ApiGateway.Examples;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
@@ -29,6 +29,7 @@ using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
+using Void = Benzene.Results.Void;
 
 namespace Benzene.Test.Aws.ApiGateway;
 
@@ -36,7 +37,9 @@ public class ApiGatewayMessagePipelineTest
 {
     private static APIGatewayProxyRequest CreateRequest()
     {
-        return HttpBuilder.Create("GET", "/example", Defaults.MessageAsObject).AsApiGatewayRequest();
+        return HttpBuilder.Create("GET", "/example", Defaults.MessageAsObject)
+            .WithHeader("x-correlation-id", Guid.NewGuid().ToString())
+            .AsApiGatewayRequest();
     }
 
     [Fact]

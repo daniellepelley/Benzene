@@ -27,7 +27,6 @@ public static class ClientResult
             : ClientResultInternal<T>.Internal(status, [error]);
     }
 
-
     public static IClientResult Accepted()
     {
         return Accepted(new Void());
