@@ -50,6 +50,7 @@
     <ProjectReference Include="..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.EventBridge\Benzene.Aws.EventBridge.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
@@ -251,6 +252,12 @@
   <ItemGroup>
     <Folder Include="Asp\" />
     <Folder Include="SelfHost\Http\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Amazon.Lambda.S3Events">
+      <HintPath>..\..\..\..\..\.nuget\packages\amazon.lambda.s3events\3.1.0\lib\net8.0\Amazon.Lambda.S3Events.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
