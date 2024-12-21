@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.Hosting;
+﻿using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
@@ -8,12 +9,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Tools.Aws;
 
-public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<IServiceCollection, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
+public class AwsLambdaBenzeneTestStartUp<TStartUp>
+    : AwsLambdaBenzeneTestStartUp<TStartUp, IServiceCollection> where TStartUp : IStartUp<IServiceCollection, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
 {
-    private readonly List<Action<IServiceCollection>> _actions = new();
-    private readonly Dictionary<string, string> _dictionary = new();
+    public AwsLambdaBenzeneTestStartUp()
+     : base(new MicrosoftDependencyInjectionAdapter())
+    {
+        
+    } 
+}
 
-    public AwsLambdaBenzeneTestStartUp<TStartUp> WithConfiguration(Dictionary<string, string> dictionary)
+public class AwsLambdaBenzeneTestStartUp<TStartUp, TContainer> where TStartUp : IStartUp<TContainer, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>
+{
+    private readonly List<Action<TContainer>> _actions = new();
+    private readonly Dictionary<string, string> _dictionary = new();
+    private readonly IDependencyInjectionAdapter<TContainer> _dependencyInjectionAdapter;
+
+    public AwsLambdaBenzeneTestStartUp(IDependencyInjectionAdapter<TContainer> dependencyInjectionAdapter)
+    {
+        _dependencyInjectionAdapter = dependencyInjectionAdapter;
+    }
+    
+    public AwsLambdaBenzeneTestStartUp<TStartUp, TContainer> WithConfiguration(Dictionary<string, string> dictionary)
     {
         foreach (var keyPairValue in dictionary)        
         {
@@ -22,13 +39,13 @@ public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<ISe
         return this;
     }
 
-    public AwsLambdaBenzeneTestStartUp<TStartUp> WithConfiguration(string key, string value)
+    public AwsLambdaBenzeneTestStartUp<TStartUp, TContainer> WithConfiguration(string key, string value)
     {
         _dictionary.Add(key, value);
         return this;
     }
 
-    public AwsLambdaBenzeneTestStartUp<TStartUp> WithServices(Action<IServiceCollection> action)
+    public  AwsLambdaBenzeneTestStartUp<TStartUp, TContainer> WithServices(Action<TContainer> action)
     {
         _actions.Add(action);
         return this;
@@ -44,8 +61,8 @@ public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<ISe
             .AddConfiguration(configuration)
             .AddInMemoryCollection(_dictionary);
 
-        var services = new ServiceCollection();
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var services = _dependencyInjectionAdapter.CreateContainer();
+        var app = new AwsEventStreamPipelineBuilder(_dependencyInjectionAdapter.CreateBenzeneServiceContainer(services));
 
         startup.ConfigureServices(services, configurationBuilder.Build());
         foreach (var action in _actions)
@@ -55,8 +72,7 @@ public class AwsLambdaBenzeneTestStartUp<TStartUp> where TStartUp : IStartUp<ISe
 
         startup.Configure(app, configuration);
 
-        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
-        return new AwsLambdaEntryPoint(app.Build(), serviceResolverFactory);
+        return new AwsLambdaEntryPoint(app.Build(), _dependencyInjectionAdapter.CreateBenzeneServiceResolverFactory(services));
     }
     
     private static void SetEnvironmentVariables(IDictionary<string, string> dictionary)

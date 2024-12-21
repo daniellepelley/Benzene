@@ -17,11 +17,12 @@ public class MessageHandlersLookUp : IMessageHandlersLookUp
     public IMessageHandlerDefinition FindHandler(ITopic topic)
     {
         var handlers = GetMessageHandlers()
-            .Where(x => x.Topic == topic.Id)
+            .Where(x => x.Topic.Id == topic.Id)
             .ToArray();
 
         return handlers.FirstOrDefault(x =>
-            x.Version == _versionSelector.Select(topic.Version, handlers.Select(x1 => x1.Version).ToArray()));
+            x.Topic.Version == _versionSelector.Select(topic.Version, handlers
+                .Select(x1 => x1.Topic.Version).ToArray()));
     }
 
     public IMessageHandlerDefinition[] GetAllHandlers()
@@ -33,7 +34,7 @@ public class MessageHandlersLookUp : IMessageHandlersLookUp
     {
         return _messageHandlersFinder
             .SelectMany(x => x.FindDefinitions())
-            .GroupBy(x => new {x.Topic, x.Version})
+            .GroupBy(x => new {x.Topic.Id, x.Topic.Version})
             .Select(x => x.First())
             .ToArray();
     }

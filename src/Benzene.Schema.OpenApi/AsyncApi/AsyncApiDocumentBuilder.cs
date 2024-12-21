@@ -69,7 +69,7 @@ public class AsyncApiDocumentBuilder :
 
     public AsyncApiDocumentBuilder AddMessageHandlerDefinitions(IMessageHandlerDefinition[] messageHandlerDefinitions)
     {
-        var messageDefinitionsDictionary = messageHandlerDefinitions.GroupBy(x => x.Topic)
+        var messageDefinitionsDictionary = messageHandlerDefinitions.GroupBy(x => x.Topic.Id)
             .ToDictionary(x => x.Key, x => x.ToArray());
         
         foreach (var messageHandlerDefinition in messageDefinitionsDictionary)
@@ -87,7 +87,7 @@ public class AsyncApiDocumentBuilder :
             {
                 OperationId = topic,
                 Message = messageHandlerDefinitions.Select(x => 
-                    CreateAsyncApiMessage(topic, x.Version, x.RequestType)).ToList(),
+                    CreateAsyncApiMessage(topic, x.Topic.Version, x.RequestType)).ToList(),
             }
         });
 
@@ -97,7 +97,7 @@ public class AsyncApiDocumentBuilder :
             {
                 OperationId = $"{topic}:result",
                 Message = messageHandlerDefinitions.Select(x => 
-                    CreateAsyncApiMessage(topic, x.Version, x.ResponseType)).ToList()
+                    CreateAsyncApiMessage(topic, x.Topic.Version, x.ResponseType)).ToList()
             }
         });
     }
@@ -131,16 +131,16 @@ public class AsyncApiDocumentBuilder :
 
     public AsyncApiDocumentBuilder AddBroadcastEventDefinition(IMessageDefinition messageDefinition)
     {
-        _channels.Add(messageDefinition.Topic, new AsyncApiChannel
+        _channels.Add(messageDefinition.Topic.Id, new AsyncApiChannel
         {
             Publish = new AsyncApiOperation
             {
-                OperationId = messageDefinition.Topic,
+                OperationId = messageDefinition.Topic.Id,
                 Summary = "Summary",
                 Description = "Description",
                 Message = new List<AsyncApiMessage>
                 {
-                    CreateAsyncApiMessage(messageDefinition.Topic, "", messageDefinition.RequestType)
+                    CreateAsyncApiMessage(messageDefinition.Topic.Id, "", messageDefinition.RequestType)
                 }
             }
         });
@@ -178,16 +178,16 @@ public class AsyncApiDocumentBuilder :
     
     public AsyncApiDocumentBuilder AddMessageSenderDefinition(IMessageDefinition messageDefinition)
     {
-        _channels.Add(messageDefinition.Topic, new AsyncApiChannel
+        _channels.Add(messageDefinition.Topic.Id, new AsyncApiChannel
         {
             Publish = new AsyncApiOperation
             {
-                OperationId = messageDefinition.Topic,
+                OperationId = messageDefinition.Topic.Id,
                 Summary = "Summary",
                 Description = "Description",
                 Message = new List<AsyncApiMessage>
                 {
-                    CreateAsyncApiMessage(messageDefinition.Topic, "", messageDefinition.RequestType)
+                    CreateAsyncApiMessage(messageDefinition.Topic.Id, "", messageDefinition.RequestType)
                 }
             }
         });
@@ -206,7 +206,7 @@ public class AsyncApiDocumentBuilder :
 
     private string GetUniqueId(IMessageHandlerDefinition messageHandlerDefinition)
     {
-        return $"{messageHandlerDefinition.Topic}{messageHandlerDefinition.Version}";
+        return $"{messageHandlerDefinition.Topic}{messageHandlerDefinition.Topic.Version}";
     }
 
     public string GenerateJson()

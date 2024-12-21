@@ -103,16 +103,16 @@ public static class AutofacDependenciesBuilder
             .AddScoped<IResponsePayloadMapper<SqsMessageContext>, CustomResponsePayloadMapper<SqsMessageContext>>()
             .AddScoped<IResponsePayloadMapper<SnsRecordContext>, CustomResponsePayloadMapper<SnsRecordContext>>()
             .AddSingleton<ISerializerOption<BenzeneMessageContext>>(
-                new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => true))
+                new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()))
             // .AddSingleton<ISerializerOption<ApiGatewayContext>, XmlApiGatewaySerializerOption>()
             .AddSingleton<ISerializerOption<ApiGatewayContext>>(
-                new SerializerOption<ApiGatewayContext, JsonSerializer>(x => true))
+                new SerializerOption<ApiGatewayContext, JsonSerializer>(x => x.Always()))
             // .AddSingleton<ISerializerOption<SnsRecordContext>, XmlSnsSerializerOption>()
             .AddSingleton<ISerializerOption<SnsRecordContext>>(
-                new SerializerOption<SnsRecordContext, JsonSerializer>(x => true))
+                new SerializerOption<SnsRecordContext, JsonSerializer>(x => x.Always()))
             // .AddSingleton<ISerializerOption<SqsMessageContext>, XmlSerializerOption<SqsMessageContext>>()
             .AddSingleton<ISerializerOption<SqsMessageContext>>(
-                new SerializerOption<SqsMessageContext, JsonSerializer>(x => true))
+                new SerializerOption<SqsMessageContext, JsonSerializer>(x => x.Always()))
             .AddSingleton<JsonSerializer>()
         // .AddSingleton<XmlSerializer>()
         );

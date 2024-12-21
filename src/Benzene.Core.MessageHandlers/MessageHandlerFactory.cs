@@ -1,9 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.Exceptions;
-using Benzene.Core.Mappers;
 
 namespace Benzene.Core.MessageHandlers;
 
@@ -22,7 +20,7 @@ public class MessageHandlerFactory : IMessageHandlerFactory
 
     public IMessageHandler Create(IMessageHandlerDefinition messageHandlerDefinition)
     {
-        return CreateMessageHandler(new Topic(messageHandlerDefinition.Topic, messageHandlerDefinition.Version), messageHandlerDefinition.HandlerType, messageHandlerDefinition.RequestType,
+        return CreateMessageHandler(new Topic(messageHandlerDefinition.Topic.Id, messageHandlerDefinition.Topic.Version), messageHandlerDefinition.HandlerType, messageHandlerDefinition.RequestType,
             messageHandlerDefinition.ResponseType);
     }
 

@@ -1,8 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
-using Benzene.Core.MessageHandlers;
 
-namespace Benzene.Core.Mappers;
+namespace Benzene.Core.MessageHandlers;
 
 public class Topic : ITopic 
 {

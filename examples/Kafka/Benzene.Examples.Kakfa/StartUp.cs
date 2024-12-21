@@ -27,11 +27,11 @@ public class StartUp : BenzeneHostedServiceStartup
 
     public override void Configure(IBenzeneWorkerBuilder app, IConfiguration configuration)
     {
-        var benzeneKafkaConfig1 = new BenzeneKafkaConfig
+        var benzeneKafkaConfig = new BenzeneKafkaConfig
         {
             ConsumerConfig = new ConsumerConfig
             {
-                BootstrapServers = "localhost:9092",
+                BootstrapServers = "localhost:29092",
                 SaslMechanism = SaslMechanism.Plain,
                 SecurityProtocol = SecurityProtocol.Plaintext,
                 GroupId = Guid.NewGuid().ToString(),
@@ -40,22 +40,20 @@ public class StartUp : BenzeneHostedServiceStartup
             Topics = new[] { "order_create", "order_delete" }
         };
 
-        var benzeneKafkaConfig2 = new BenzeneKafkaConfig
-        {
-            ConsumerConfig = new ConsumerConfig
-            {
-                BootstrapServers = "localhost:9092",
-                SaslMechanism = SaslMechanism.Plain,
-                SecurityProtocol = SecurityProtocol.Plaintext,
-                GroupId = Guid.NewGuid().ToString(),
-                AutoOffsetReset = AutoOffsetReset.Earliest
-            },
-            Topics = new[] { "order_create", "order_delete" }
-        };
+        // var benzeneKafkaConfig2 = new BenzeneKafkaConfig
+        // {
+        //     ConsumerConfig = new ConsumerConfig
+        //     {
+        //         BootstrapServers = "localhost:29092",
+        //         SaslMechanism = SaslMechanism.Plain,
+        //         SecurityProtocol = SecurityProtocol.Plaintext,
+        //         GroupId = Guid.NewGuid().ToString(),
+        //         AutoOffsetReset = AutoOffsetReset.Earliest
+        //     },
+        //     Topics = new[] { "order_create", "order_delete" }
+        // };
         app
-            .UseKafka(benzeneKafkaConfig1, x =>
-                x.UseMessageHandlers())
-            .UseKafka(benzeneKafkaConfig2, x =>
+            .UseKafka(benzeneKafkaConfig, x =>
                 x.UseMessageHandlers())
             .UseHttp(new BenzeneHttpConfig
             {

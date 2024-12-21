@@ -65,7 +65,7 @@ public class BenzeneKafkaWorker : IBenzeneWorker, IDisposable
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _consumer.Close();
+        _consumer?.Close();
         return Task.CompletedTask;
     }
     

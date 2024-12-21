@@ -258,7 +258,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
 
         var errorPayload = response.GetMessage<ErrorPayload>();
         Assert.Equal(Defaults.ErrorStatus.ValidationError, errorPayload.Status);
-        Assert.NotEmpty(errorPayload.Errors);
+        Assert.NotEmpty(errorPayload.Detail);
     }
 
     [Fact]

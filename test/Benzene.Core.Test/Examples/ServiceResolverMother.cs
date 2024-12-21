@@ -1,5 +1,7 @@
 ﻿using System;
+using Autofac;
 using Benzene.Abstractions.DI;
+using Benzene.Autofac;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
@@ -32,21 +34,35 @@ public static class ServiceResolverMother
         return ConfigureServiceCollection(services, x => { });
     }
 
-    public static IServiceCollection ConfigureServiceCollection(IServiceCollection services, Action<IBenzeneServiceContainer> register)
+    public static ContainerBuilder ConfigureServiceCollection(this ContainerBuilder services)
     {
-        var assembly = typeof(ExampleRequestPayload).Assembly;
-        services.UsingBenzene(x =>
-        {
-            x.AddBenzene();
-            // x.AddCorrelationId();
-            x.AddMessageHandlers(assembly);
-            register(x);
-        });
-
-        services.AddScoped<BenzeneMessageMapper>();
-        services.AddSingleton(Mock.Of<IExampleService>());
-        return services;
+        return ConfigureServiceCollection(services, x => { });
     }
 
+    public static IServiceCollection ConfigureServiceCollection(IServiceCollection services, Action<IBenzeneServiceContainer> register)
+    {
+        return services.UsingBenzene(x =>
+        {
+            ConfigureServiceCollection(x, register);
+        });
+    }
 
+    public static ContainerBuilder ConfigureServiceCollection(ContainerBuilder services, Action<IBenzeneServiceContainer> register)
+    {
+        return services.UsingBenzene(x =>
+        {
+            ConfigureServiceCollection(x, register);
+        });
+    }
+
+    public static IBenzeneServiceContainer ConfigureServiceCollection(IBenzeneServiceContainer container, Action<IBenzeneServiceContainer> register)
+    {
+        var assembly = typeof(ExampleRequestPayload).Assembly;
+        container.AddBenzene();
+        container.AddMessageHandlers(assembly);
+        container.AddScoped<BenzeneMessageMapper>();
+        container.AddSingleton(Mock.Of<IExampleService>());
+        register(container);
+        return container;
+    }
 }

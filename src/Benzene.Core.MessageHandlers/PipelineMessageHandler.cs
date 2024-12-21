@@ -1,12 +1,9 @@
-﻿using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Message;
 using Benzene.Results;
 
-namespace Benzene.Core.MessageHandling;
+namespace Benzene.Core.MessageHandlers;
 
 public class PipelineMessageHandler<TRequest, TResponse> : IMessageHandler<TRequest, TResponse>
 {

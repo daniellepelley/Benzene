@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Core.Helper;
 using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
+using Utils = Benzene.Core.Helper.Utils;
 
 namespace Benzene.Core.BenzeneMessage;
 
@@ -17,7 +18,7 @@ public class BenzeneMessageMapper : IMessageMapper<BenzeneMessageContext>
     {
         return new Topic(
             context.BenzeneMessageRequest.Topic,
-            context.BenzeneMessageRequest.Headers.GetValue("version"));
+            Utils.GetValue(context.BenzeneMessageRequest.Headers, "version"));
     }
 
     public string GetBody(BenzeneMessageContext context)

@@ -55,13 +55,13 @@ public class ReflectionMessageHandlersFinder : IMessageHandlersFinder
                 ) as IMessageHandlerDefinition;
             })
             .Where(x => x != null)
-            .OrderBy(x => x.Topic)
-            .GroupBy(x => new { x.Topic, x.Version, x.HandlerType.AssemblyQualifiedName })
+            .OrderBy(x => x.Topic.Id)
+            .GroupBy(x => new { x.Topic.Id, x.Topic.Version, x.HandlerType.AssemblyQualifiedName })
             .Select(x => x.First())
             .ToArray();
 
         var duplicates = handlers
-            .GroupBy(x => new { x.Topic, x.Version })
+            .GroupBy(x => new { x.Topic.Id, x.Topic.Version })
             .Where(x => x.Count() > 1)
             
             .ToArray();

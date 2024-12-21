@@ -16,13 +16,13 @@ public class MessageHandlersFinderTest
 
         var handlers = httpEndpointFinder.FindDefinitions();
 
-        var handlerDefinition = handlers.First(x => x.Topic == Defaults.Topic);
+        var handlerDefinition = handlers.First(x => x.Topic.Id == Defaults.Topic);
 
         Assert.Equal(typeof(ExampleMessageHandler), handlerDefinition.HandlerType);
         Assert.Equal(typeof(ExampleRequestPayload), handlerDefinition.RequestType);
         Assert.Equal(typeof(Void), handlerDefinition.ResponseType);
 
-        var handlerDefinition2 = handlers.First(x => x.Topic == Defaults.TopicNoResponse);
+        var handlerDefinition2 = handlers.First(x => x.Topic.Id == Defaults.TopicNoResponse);
 
         Assert.Equal(typeof(ExampleNoResponseMessageHandler), handlerDefinition2.HandlerType);
         Assert.Equal(typeof(ExampleRequestPayload), handlerDefinition2.RequestType);
@@ -37,7 +37,7 @@ public class MessageHandlersFinderTest
         var handlerDefinitions = httpEndpointFinder.FindDefinitions();
         Assert.Single(handlerDefinitions);
 
-        var handlerDefinition = handlerDefinitions.First(x => x.Topic == Defaults.Topic);
+        var handlerDefinition = handlerDefinitions.First(x => x.Topic.Id == Defaults.Topic);
 
         Assert.Equal(typeof(ExampleMessageHandler), handlerDefinition.HandlerType);
         Assert.Equal(typeof(ExampleRequestPayload), handlerDefinition.RequestType);

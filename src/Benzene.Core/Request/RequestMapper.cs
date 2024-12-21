@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.Mappers;
+﻿using System;
+using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Serialization;
 
@@ -24,8 +25,11 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
         
         var bodyAsString = _messageBodyMapper.GetBody(context);
 
-        return string.IsNullOrEmpty(bodyAsString)
-            ? null
-            : _serializer.Deserialize<TRequest>(bodyAsString);
+        if (!string.IsNullOrEmpty(bodyAsString))
+        {
+            return _serializer.Deserialize<TRequest>(bodyAsString);
+        }
+
+        return Activator.CreateInstance<TRequest>();
     }
 }

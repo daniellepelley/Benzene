@@ -17,7 +17,7 @@ public static class KafkaSetUp
     {
         ProducerConfig producerConfig = new()
         {
-            BootstrapServers = "localhost:9092",
+            BootstrapServers = "localhost:29092",
             SaslMechanism = SaslMechanism.Plain,
             SecurityProtocol = SecurityProtocol.Plaintext,
         };
@@ -32,7 +32,7 @@ public static class KafkaSetUp
     {
         ProducerConfig producerConfig = new()
         {
-            BootstrapServers = "localhost:9092",
+            BootstrapServers = "localhost:29092",
             SaslMechanism = SaslMechanism.Plain,
             SecurityProtocol = SecurityProtocol.Plaintext,
         };

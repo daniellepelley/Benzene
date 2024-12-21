@@ -2,6 +2,6 @@
 
 public interface IMessageDefinition
 {
-    string Topic { get; }
+    ITopic Topic { get; }
     Type RequestType { get; }
 }

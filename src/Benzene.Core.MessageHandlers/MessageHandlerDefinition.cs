@@ -1,15 +1,13 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Void = Benzene.Results.Void;
 
 namespace Benzene.Core.MessageHandlers;
 
 public class MessageHandlerDefinition : IMessageHandlerDefinition
 {
-    private MessageHandlerDefinition(string topic, string version, Type requestType, Type responseType, Type handlerType)
+    private MessageHandlerDefinition(ITopic topic, Type requestType, Type responseType, Type handlerType)
     {
         Topic = topic;
-        Version = version;
         RequestType = requestType;
         ResponseType = responseType;
         HandlerType = handlerType;
@@ -17,26 +15,25 @@ public class MessageHandlerDefinition : IMessageHandlerDefinition
 
     public static MessageHandlerDefinition CreateInstance(string topic, string version, Type requestType, Type responseType, Type handlerType)
     {
-        return new MessageHandlerDefinition(topic, version, requestType, responseType, handlerType);
+        return new MessageHandlerDefinition(new Topic(topic, version), requestType, responseType, handlerType);
     }
     
     public static MessageHandlerDefinition CreateInstance(string topic, Type requestType, Type responseType, Type handlerType)
     {
-        return new MessageHandlerDefinition(topic, string.Empty, requestType, responseType, handlerType);
+        return new MessageHandlerDefinition(new Topic(topic), requestType, responseType, handlerType);
     }
 
     public static MessageHandlerDefinition CreateInstance(string topic, Type requestType, Type responseType)
     {
-        return new MessageHandlerDefinition(topic, string.Empty, requestType, responseType, typeof(Void));
+        return new MessageHandlerDefinition(new Topic(topic), requestType, responseType, typeof(Void));
     }
 
     public static MessageHandlerDefinition Empty()
     {
-        return new MessageHandlerDefinition(Constants.Missing.Id, string.Empty, typeof(Void), typeof(Void), typeof(Void));
+        return new MessageHandlerDefinition(new Topic(Constants.Missing.Id), typeof(Void), typeof(Void), typeof(Void));
     }
 
-    public string Topic { get; init; }
-    public string Version { get; init; }
+    public ITopic Topic { get; init; }
     public Type RequestType { get; init; }
     public Type ResponseType { get; init; }
     public Type HandlerType { get; init; }

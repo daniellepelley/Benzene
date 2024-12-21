@@ -83,12 +83,12 @@ namespace Benzene.Schema.OpenApi.EventService
 
         public void AddMessageHandlerDefinition(IMessageHandlerDefinition messageHandlerDefinition)
         {
-            if (!_requests.Any(x => x.Topic == messageHandlerDefinition.Topic && x.Version == messageHandlerDefinition.Version))
+            if (!_requests.Any(x => x.Topic == messageHandlerDefinition.Topic.Id && x.Version == messageHandlerDefinition.Topic.Version))
             {
                 _requests.Add(new RequestResponse
                 {
-                    Topic = messageHandlerDefinition.Topic,
-                    Version = messageHandlerDefinition.Version,
+                    Topic = messageHandlerDefinition.Topic.Id,
+                    Version = messageHandlerDefinition.Topic.Version,
                     Request = _schemaBuilder.AddSchema(messageHandlerDefinition.RequestType),
                     Response = _schemaBuilder.AddSchema(messageHandlerDefinition.ResponseType)
                 });
@@ -108,7 +108,7 @@ namespace Benzene.Schema.OpenApi.EventService
         {
             _events.Add(new Event
             (
-                messageDefinition.Topic,
+                messageDefinition.Topic.Id,
                 _schemaBuilder.AddSchema(messageDefinition.RequestType)
             ));
             return this;
@@ -125,7 +125,7 @@ namespace Benzene.Schema.OpenApi.EventService
 
         public EventServiceDocumentBuilder AddMessageSenderDefinition(IMessageDefinition messageDefinition)
         {
-            return AddEvent(messageDefinition.Topic, messageDefinition.RequestType);
+            return AddEvent(messageDefinition.Topic.Id, messageDefinition.RequestType);
         }
 
         public EventServiceDocumentBuilder AddEvent(string topic, Type type)

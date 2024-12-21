@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.TestUtilities;
+using Autofac;
+using Benzene.Autofac;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Results;
@@ -26,6 +28,17 @@ public class AwsLambdaStartUpTest
     }
 
     [Fact]
+    public async Task LambdaEntryPoint_Autofac()
+    {
+        using var demoAwsStartUp = new DemoAutofacAwsLambdaStartUp();
+
+        var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
+        var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
+        var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<BenzeneMessageResponse>(response);
+        Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task LambdaEntryPoint_WithTestHosting()
     {
         using var testLambdaHosting = new AwsLambdaBenzeneTestStartUp<DemoAwsLambdaStartUp>()
@@ -41,4 +54,22 @@ public class AwsLambdaStartUpTest
         
         Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
     }
+    
+    [Fact]
+    public async Task LambdaEntryPoint_WithTestHostingAutofac()
+    {
+        using var testLambdaHosting = new AwsLambdaBenzeneTestStartUp<DemoAutofacAwsLambdaStartUp, ContainerBuilder>(new AutofacDependencyInjectionAdapter())
+            .WithConfiguration(new Dictionary<string, string>
+            {
+                { "Key1", "Value1"},
+                { "Key2", "Value2"}
+            })
+            .BuildHost();
+
+        var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
+        var directMessageResponse = await testLambdaHosting.SendEventAsync<BenzeneMessageResponse>(request);
+        
+        Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
+    }
+
 }

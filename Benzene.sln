@@ -162,6 +162,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.OpenTelemetry", "Be
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Aws.EventBridge", "src\Benzene.Aws.EventBridge\Benzene.Aws.EventBridge.csproj", "{91113DA5-4F5C-418C-BB29-53D7BD131D9B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Testing", "src\Benzene.Testing\Benzene.Testing.csproj", "{0DBEDD2D-749E-4F25-BB8E-1CAC7898672E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -412,6 +414,10 @@ Global
 		{91113DA5-4F5C-418C-BB29-53D7BD131D9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91113DA5-4F5C-418C-BB29-53D7BD131D9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91113DA5-4F5C-418C-BB29-53D7BD131D9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DBEDD2D-749E-4F25-BB8E-1CAC7898672E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DBEDD2D-749E-4F25-BB8E-1CAC7898672E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DBEDD2D-749E-4F25-BB8E-1CAC7898672E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DBEDD2D-749E-4F25-BB8E-1CAC7898672E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -478,6 +484,7 @@ Global
 		{D1876713-0A1C-4C5F-80CF-8374D00DA5EB} = {DF2E1524-7A43-4B2B-80BD-35ED42137E8F}
 		{E409F357-E993-442C-81D8-E7E741B54A16} = {DF2E1524-7A43-4B2B-80BD-35ED42137E8F}
 		{91113DA5-4F5C-418C-BB29-53D7BD131D9B} = {66D2851D-A680-4BAB-B360-322313B64811}
+		{0DBEDD2D-749E-4F25-BB8E-1CAC7898672E} = {35A4AB56-B561-47D5-B529-8F1C2BD8E150}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

@@ -1,5 +1,7 @@
 ﻿using System;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Void = Benzene.Results.Void;
 
 namespace Benzene.Core.MessageHandling;
@@ -7,9 +9,12 @@ namespace Benzene.Core.MessageHandling;
 public class MessageSenderDefinition : IMessageSenderDefinition
 {
     private MessageSenderDefinition(string topic, string version, Type requestType, Type responseType, Type senderType)
+        :this(new Topic(topic, version), requestType, responseType, senderType)
+    { }
+
+    private MessageSenderDefinition(ITopic topic, Type requestType, Type responseType, Type senderType)
     {
         Topic = topic;
-        Version = version;
         RequestType = requestType;
         ResponseType = responseType;
         SenderType = senderType;
@@ -40,8 +45,7 @@ public class MessageSenderDefinition : IMessageSenderDefinition
         return new MessageSenderDefinition(Constants.Missing, string.Empty, typeof(Void), typeof(Void), typeof(Void));
     }
 
-    public string Topic { get; init; }
-    public string Version { get; init; }
+    public ITopic Topic { get; init; }
     public Type RequestType { get; init; }
     public Type ResponseType { get; init; }
     public Type SenderType { get; init; }

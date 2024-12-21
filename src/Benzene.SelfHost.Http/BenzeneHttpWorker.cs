@@ -60,8 +60,8 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _httpListener.Stop();
-        _httpListener.Close();
+        _httpListener?.Stop();
+        _httpListener?.Close();
         return Task.CompletedTask;
     }
     

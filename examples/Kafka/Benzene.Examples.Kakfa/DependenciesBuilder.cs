@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
@@ -53,6 +54,7 @@ public static class DependenciesBuilder
         // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
 
         services.UsingBenzene(x => x
+            .AddBenzene()
             .AddXml()
             .AddMicrosoftLogger()
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)

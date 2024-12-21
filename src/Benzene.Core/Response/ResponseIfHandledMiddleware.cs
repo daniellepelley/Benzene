@@ -22,7 +22,7 @@ public class ResponseIfHandledMiddleware<TContext> : IMiddleware<TContext> where
         await next();
 
         var topic = context.MessageResult.MessageHandlerDefinition?.Topic;
-        if (topic != null && topic != Constants.Missing)
+        if (topic != null && topic.Id != Constants.Missing)
         {
             await _responseHandlerContainer.HandleAsync(context);
         }

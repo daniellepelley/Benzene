@@ -9,7 +9,7 @@ var SomeName = "some-name";
 
 ProducerConfig producerConfig = new()
 {
-    BootstrapServers = "localhost:9092",
+    BootstrapServers = "localhost:29092",
     SaslMechanism = SaslMechanism.Plain,
     SecurityProtocol = SecurityProtocol.Plaintext,
 };

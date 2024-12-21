@@ -106,7 +106,7 @@ public class OpenApiDocumentBuilder :
     {
         var operationType = MapOperationType(httpEndpointDefinition.Method);
 
-        var messageHandlerDefinition = messageHandlerDefinitions.First(h => h.Topic == httpEndpointDefinition.Topic);
+        var messageHandlerDefinition = messageHandlerDefinitions.First(h => h.Topic.Id == httpEndpointDefinition.Topic);
 
 
         var operation = new OpenApiOperation();

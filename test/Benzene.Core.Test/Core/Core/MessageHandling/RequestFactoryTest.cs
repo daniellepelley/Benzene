@@ -49,7 +49,7 @@ public class RequestFactoryTest
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
-        Assert.Null(request);
+        Assert.NotNull(request);
     }
 
 
@@ -71,7 +71,7 @@ public class RequestFactoryTest
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
-        Assert.Null(request);
+        Assert.Null(request!.Name);
     }
 
 

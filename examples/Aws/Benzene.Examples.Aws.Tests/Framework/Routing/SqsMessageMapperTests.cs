@@ -44,7 +44,7 @@ public class SqsMessageMapperTests
         var topic = mapper.GetTopic(sqsMessageContext);
         var message = mapper.GetBody(sqsMessageContext);
 
-        Assert.Equal(Constants.Missing, topic.Id);
+        Assert.Equal(Constants.Missing.Id, topic.Id);
         Assert.Equal("some-message", message);
     }
 }

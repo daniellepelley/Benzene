@@ -15,7 +15,7 @@ public class BroadcastEventChecker : IBroadcastEventChecker
 
     public bool Check<T>(string topic, T payload)
     {
-        return _messageDefinitions.Any(x => x.Topic == topic && typeof(T) == x.RequestType);
+        return _messageDefinitions.Any(x => x.Topic.Id == topic && typeof(T) == x.RequestType);
     }
 
     public IMessageDefinition[] FindDefinitions() => _messageDefinitions;

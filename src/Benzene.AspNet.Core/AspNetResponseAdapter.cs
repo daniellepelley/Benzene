@@ -15,7 +15,7 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
 
     public void SetContentType(AspNetContext context, string contentType)
     {
-        context.HttpContext.Response.Headers.Add("content-type", contentType);
+        context.HttpContext.Response.Headers["content-type"] = contentType;
     }
 
     public void SetStatusCode(AspNetContext context, string statusCode)

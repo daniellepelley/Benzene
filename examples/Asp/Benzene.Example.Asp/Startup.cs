@@ -1,8 +1,6 @@
-using Benzene.Abstractions.MiddlewareBuilder;
 using Benzene.AspNet.Core;
 using Benzene.Core.Correlation;
 using Benzene.Core.DI;
-using Benzene.Core.MiddlewareBuilder;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Services;
@@ -21,8 +19,12 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using System;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
+using Benzene.Core.Middleware;
 using Benzene.Core.Results;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
@@ -66,6 +68,7 @@ public class Startup
 
         services
             .UsingBenzene(x => x
+                .AddBenzene()
                 .AddMessageHandlers()
                 .AddCorrelationId()
                 .AddAspNetMessageHandlers()
@@ -93,14 +96,13 @@ public class Startup
             .UseAspNet(asp => asp
                 .UseProcessResponseIfHandled()
                 .UseCorrelationId()
-                // .UseLogContext("http")
                 .UseSpec()
-                .UseCors(new CorsSettings
-                {
-                    AllowedDomains = new[] { "https://editor-next.swagger.io" },
-                    AllowedHeaders = Array.Empty<string>()
-                })
-                .UseMessageRouter(x => x.UseFluentValidation())
+                // .UseCors(new CorsSettings
+                // {
+                    // AllowedDomains = ["https://editor-next.swagger.io"],
+                    // AllowedHeaders = Array.Empty<string>()
+                // })
+                .UseMessageHandlers(x => x.UseFluentValidation())
             )
         );
 

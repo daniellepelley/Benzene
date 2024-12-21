@@ -17,7 +17,7 @@ public class CustomResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCon
 
     private static string TopicFunction(IMessageResult lambdaResult)
     {
-        return lambdaResult.Topic.Split("_").Last();
+        return lambdaResult.Topic.Id.Split("_").Last();
     }
 
     private static ErrorPayload AsErrorPayload(IMessageResult lambdaResult)

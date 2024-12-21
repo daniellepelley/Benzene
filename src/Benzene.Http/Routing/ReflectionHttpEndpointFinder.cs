@@ -37,7 +37,7 @@ public class ReflectionHttpEndpointFinder : IHttpEndpointFinder
     private static IHttpEndpointDefinition[] MapHandlers(IMessageHandlerDefinition messageHandlerDefinition)
     {
         return messageHandlerDefinition.HandlerType.GetCustomAttributes<HttpEndpointAttribute>()
-            .Select(httpEndpoint => MapEndpoint(httpEndpoint, messageHandlerDefinition.Topic))
+            .Select(httpEndpoint => MapEndpoint(httpEndpoint, messageHandlerDefinition.Topic.Id))
             .Where(x => x != null)
             .Select(x => x!)
             .ToArray();
