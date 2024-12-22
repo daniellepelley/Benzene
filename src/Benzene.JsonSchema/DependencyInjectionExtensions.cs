@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Core.MessageHandlers;
 
 namespace Benzene.JsonSchema;
 

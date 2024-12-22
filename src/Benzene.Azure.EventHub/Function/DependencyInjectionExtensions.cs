@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Core;
 
-namespace Benzene.Azure.EventHub;
+namespace Benzene.Azure.EventHub.Function;
 
 public static class DependencyInjectionExtensions
 {

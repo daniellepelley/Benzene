@@ -26,6 +26,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<AspNetContext>, AspNetMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<AspNetContext>, AspNetMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<AspNetContext>, AspNetMessageBodyMapper>();
+        services.AddScoped<IResultSetter<AspNetContext>, AspNetMessageResultSetter>();
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
 
@@ -37,5 +38,4 @@ public static class DependencyInjectionExtensions
         services.AddHttpMessageHandlers();
         return services;
     }
-
 }

@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
+using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;
 
@@ -48,3 +50,15 @@ public class HandlerPipelineBuilder : IHandlerPipelineBuilder
             .Select(x => new Func<IServiceResolver, IMiddleware<IMessageContext<TRequest, TResponse>>>(_ => x)).ToArray());
     }
 }
+
+public abstract class MessageResultSetterBase<TContext>: IResultSetter<TContext> where TContext : IHasMessageResult
+{
+    public void SetResult(TContext context, IResult result, ITopic? topic,
+        IMessageHandlerDefinition? messageHandlerDefinition)
+    {
+        context.MessageResult = new MessageResult(topic, messageHandlerDefinition, result.Status, result.IsSuccessful,
+            result.PayloadAsObject, result.Errors);
+    }
+}
+
+

@@ -17,7 +17,6 @@ namespace Benzene.Core.Correlation
 
         public static IMiddlewarePipelineBuilder<TContext> UseCorrelationId<TContext>(
             this IMiddlewarePipelineBuilder<TContext> app, string header = "correlationId")
-            where TContext : IHasMessageResult
         {
             app.Register(x => x.AddCorrelationId());
 

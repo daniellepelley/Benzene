@@ -3,7 +3,6 @@ using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
 
 namespace Benzene.Azure.AspNet;

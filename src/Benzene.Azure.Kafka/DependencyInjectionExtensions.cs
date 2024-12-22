@@ -17,6 +17,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<KafkaContext>, KafkaMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<KafkaContext>, KafkaMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<KafkaContext>, KafkaMessageBodyMapper>();
+        services.AddScoped<IResultSetter<KafkaContext>, KafkaMessageResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("kafka"));
         return services;
@@ -31,5 +32,3 @@ public static class DependencyInjectionExtensions
         return app;
     }
 }
-
-

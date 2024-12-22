@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using Autofac;
 using Benzene.Abstractions.DI;
-using Benzene.Core.DI;
 using Benzene.Core.Exceptions;
 
 namespace Benzene.Autofac;

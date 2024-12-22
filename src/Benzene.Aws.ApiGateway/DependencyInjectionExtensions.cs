@@ -6,6 +6,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Core.Info;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Core.Request;
 using Benzene.Core.Response;
@@ -26,6 +27,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageTopicMapper<ApiGatewayContext>, ApiGatewayMessageTopicMapper>();
         services.TryAddScoped<IMessageHeadersMapper<ApiGatewayContext>, ApiGatewayMessageHeadersMapper>();
         services.TryAddScoped<IMessageBodyMapper<ApiGatewayContext>, ApiGatewayMessageBodyMapper>();
+        services.TryAddScoped<IResultSetter<ApiGatewayContext>, ApiGatewayMessageResultSetter>();
         services
             .AddScoped<IRequestMapper<ApiGatewayContext>,
                 MultiSerializerOptionsRequestMapper<ApiGatewayContext, JsonSerializer>>();
@@ -74,10 +76,12 @@ public static class DependencyInjectionExtensions
     {
         return app.Use(resolver => new FuncWrapperMiddleware<ApiGatewayContext>("HealthCheck", async (context, next) =>
         {
+            var resultSetter = resolver.GetService<IResultSetter<ApiGatewayContext>>();
             if (context.ApiGatewayProxyRequest.HttpMethod.ToUpperInvariant() == method.ToUpperInvariant() &&
                 context.ApiGatewayProxyRequest.Path == path)
             {
-                context.MessageResult = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
+                var result = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
+                resultSetter.SetResult(context, result, new Topic(topic), MessageHandlerDefinition.Empty());
             }
             else
             {

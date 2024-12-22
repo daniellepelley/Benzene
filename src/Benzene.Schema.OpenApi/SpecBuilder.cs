@@ -1,7 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Validation;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.Abstractions;
@@ -67,7 +66,7 @@ public class SpecBuilder
         }
         if (builder is IConsumesBroadcastEventsDefinitions<TBuilder> consumesBroadcastEventsDefinitions)
         {
-            var messageFinder = resolver.TryGetService<IMessageFinder<IMessageDefinition>>();
+            var messageFinder = resolver.TryGetService<IMessageDefinitionFinder<IMessageDefinition>>();
             if (messageFinder != null)
             {
                 consumesBroadcastEventsDefinitions.AddBroadcastEventDefinitions(messageFinder.FindDefinitions());

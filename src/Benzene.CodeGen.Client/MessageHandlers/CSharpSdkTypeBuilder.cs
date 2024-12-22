@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.CodeGen.Core;
 using Benzene.CodeGen.Core.Writers;
 

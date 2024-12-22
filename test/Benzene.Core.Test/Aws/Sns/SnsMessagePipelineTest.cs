@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Results;
@@ -8,7 +7,6 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Sns;
 using Benzene.Aws.Sns.TestHelpers;
 using Benzene.Core.Mappers;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.FluentValidation;

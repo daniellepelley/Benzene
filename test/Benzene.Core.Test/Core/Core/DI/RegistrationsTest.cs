@@ -1,12 +1,10 @@
 ﻿using System;
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Validation;
 using Benzene.Aws.ApiGateway;
-using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
+using Benzene.Microsoft.Dependencies;
 using Xunit;
 
 namespace Benzene.Test.Core.Core.DI;
@@ -19,15 +17,15 @@ public class RegistrationsTest
         new ApiGatewayContext(new APIGatewayProxyRequest());
     }
 
-    // [Fact]
-    // public void RegistrationTest()
-    // {
-    //     var result = RegistrationErrorHandler.CheckType(typeof(IValidationSchemaBuilder));
-    //
-    //     Assert.Contains("Benzene.Core", result);
-    //     Assert.Contains("IValidationSchemaBuilder", result);
-    //     Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
-    // }
+    [Fact]
+    public void RegistrationTest()
+    {
+        var result = RegistrationErrorHandler.CheckType(typeof(IDefaultStatuses));
+    
+        Assert.Contains("Benzene.Core", result);
+        Assert.Contains("IDefaultStatuses", result);
+        Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
+    }
 
     [Fact]
     public void RegistrationTest_IMiddlewareFactory()

@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks.Core;
 
@@ -27,19 +28,20 @@ public static class Extensions
 
     public static IMiddlewarePipelineBuilder<THasMessageResult> UseHealthCheck<THasMessageResult>(
         this IMiddlewarePipelineBuilder<THasMessageResult> app, string topic, IHealthCheckBuilder builder)
-        where THasMessageResult : IHasMessageResult
     {
         return app.Use(resolver => new FuncWrapperMiddleware<THasMessageResult>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
             var mapper = resolver.GetService<IMessageMapper<THasMessageResult>>();
+            var resultSetter = resolver.GetService<IResultSetter<THasMessageResult>>();
 
             var messageTopic = mapper.GetTopic(context);
 
             if (new [] { topic, Constants.DefaultHealthCheckTopic }.Contains(messageTopic.Id))
             {
-                context.MessageResult =
+                var result =
                     await HealthCheckProcessor.PerformHealthChecksAsync(topic,
                         builder.GetHealthChecks(resolver));
+                resultSetter.SetResult(context, result, messageTopic, MessageHandlerDefinition.Empty());
             }
             else
             {

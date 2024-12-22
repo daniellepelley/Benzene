@@ -6,7 +6,6 @@ using Benzene.CodeGen.Core;
 using Benzene.CodeGen.LambdaTestTool;
 using Benzene.CodeGen.Markdown;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
 using Benzene.Http.Routing;
 using Benzene.Test.Autogen.CodeGen.Helpers;
 using Benzene.Test.Autogen.CodeGen.Model;

@@ -35,7 +35,7 @@ public class SqsMessagePipelineTest
     {
         var mockExampleService = new Mock<IExampleService>();
 
-        IMessageResult messageResult = null;
+        bool? isSuccessful = null;
 
         var host = new InlineAwsLambdaStartUp()
             .ConfigureServices(services => services
@@ -50,7 +50,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                 .OnResponse("Check Response", context =>
                 {
-                    messageResult = context.MessageResult;
+                    isSuccessful = context.IsSuccessful;
                 })
                 .UseMessageHandlers()
             )
@@ -59,7 +59,7 @@ public class SqsMessagePipelineTest
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqs();
 
         SQSBatchResponse batchResponse = await host.SendSqsAsync(request);
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(isSuccessful);
         Assert.Empty(batchResponse.BatchItemFailures);
     }
 
@@ -68,7 +68,7 @@ public class SqsMessagePipelineTest
     {
         var mockExampleService = new Mock<IExampleService>();
 
-        IMessageResult messageResult = null;
+        bool? isSuccessful = null;
 
         var host = new InlineAwsLambdaStartUp()
             .ConfigureServices(services => services
@@ -84,7 +84,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                 .OnResponse("Check Response", context =>
                 {
-                    messageResult = context.MessageResult;
+                    isSuccessful = context.IsSuccessful;
                 })
                 .UseMessageHandlers()
             )
@@ -96,7 +96,7 @@ public class SqsMessagePipelineTest
             .AsSqs(new XmlSerializer());
 
         SQSBatchResponse batchResponse = await host.SendSqsAsync(request);
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(isSuccessful);
         Assert.Empty(batchResponse.BatchItemFailures);
     }
 
@@ -106,7 +106,7 @@ public class SqsMessagePipelineTest
     {
         var mockExampleService = new Mock<IExampleService>();
 
-        IMessageResult messageResult = null;
+        bool? isSuccessful = null;
 
         var host = new InlineAwsLambdaStartUp()
             .ConfigureServices(services => services
@@ -121,7 +121,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                 .OnResponse("Check Response", context =>
                 {
-                    messageResult = context.MessageResult;
+                    isSuccessful = context.IsSuccessful;
                 })
                 .UseMessageHandlers()
             )
@@ -130,7 +130,7 @@ public class SqsMessagePipelineTest
         var request = RequestMother.CreateSerializationErrorPayload();
         SQSBatchResponse batchResponse = await host.SendSqsAsync(request);
 
-        Assert.Equal(ServiceResultStatus.BadRequest, messageResult.Status);
+        Assert.False(isSuccessful);
         Assert.NotEmpty(batchResponse.BatchItemFailures);
     }
 
@@ -150,12 +150,12 @@ public class SqsMessagePipelineTest
 
         var pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        IMessageResult messageResult = null;
+        bool? isSuccessful = null;
 
         pipeline
             .OnResponse("Check Response", context =>
             {
-                messageResult = context.MessageResult;
+                isSuccessful = context.IsSuccessful;
             })
             .UseMessageHandlers();
 
@@ -165,7 +165,7 @@ public class SqsMessagePipelineTest
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
         await aws.HandleAsync(request, serviceResolver);
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(isSuccessful);
     }
 
     [Fact]

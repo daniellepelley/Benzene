@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;
 

@@ -5,7 +5,7 @@ using Benzene.Abstractions.Serialization;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Azure.EventHub;
+namespace Benzene.Azure.EventHub.Function;
 
 public class BenzeneMessageLambdaHandler : MiddlewareRouter<BenzeneMessageRequest, EventHubContext>
 {
@@ -15,7 +15,7 @@ public class BenzeneMessageLambdaHandler : MiddlewareRouter<BenzeneMessageReques
     public BenzeneMessageLambdaHandler(
         IMiddlewarePipeline<BenzeneMessageContext> pipeline,
         IServiceResolver serviceResolver)
-    :base(serviceResolver)
+    : base(serviceResolver)
     {
         _serializer = serviceResolver.GetService<ISerializer>();
         _directMessageApplication = new BenzeneMessageApplication(pipeline);

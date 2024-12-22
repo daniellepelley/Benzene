@@ -1,10 +1,9 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Request;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.MessageHandlers;
 
-public class RequestFactory<TContext> : IRequestFactory where TContext : IHasMessageResult
+public class RequestFactory<TContext> : IRequestFactory
 {
     private readonly TContext _context;
     private readonly IRequestMapper<TContext> _messageMapper;

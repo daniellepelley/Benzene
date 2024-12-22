@@ -7,7 +7,6 @@ using Benzene.Aws.Sns;
 using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;
 using Benzene.Core.Logging;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Diagnostics.Timers;
 using Benzene.FluentValidation;
@@ -53,7 +52,7 @@ namespace Benzene.Test.Elements.Examples
             app.UseSns(snsApp => snsApp
                 .UseCorrelationId()
                 .UseTimer("sns-application")
-                .UseProcessResponse()
+                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()
@@ -63,7 +62,7 @@ namespace Benzene.Test.Elements.Examples
             app.UseSqs(sqsApp => sqsApp
                 .UseCorrelationId()
                 .UseTimer("sqs-application")
-                .UseProcessResponse()
+                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()

@@ -3,5 +3,5 @@
 namespace Benzene.Abstractions.Response;
 
 
-public interface IResponseHandler<TContext> where TContext : class, IHasMessageResult
+public interface IResponseHandler<TContext>// where TContext : class, IHasMessageResult
 { }

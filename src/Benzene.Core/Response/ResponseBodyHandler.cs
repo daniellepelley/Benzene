@@ -4,7 +4,7 @@ using Benzene.Abstractions.Serialization;
 
 namespace Benzene.Core.Response;
 
-public class ResponseBodyHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class, IHasMessageResult
+public class ResponseBodyHandler<TContext> : ISyncResponseHandler<TContext>// where TContext : class, IHasMessageResult
 {
     private readonly IResponsePayloadMapper<TContext> _responsePayloadMapper;
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;

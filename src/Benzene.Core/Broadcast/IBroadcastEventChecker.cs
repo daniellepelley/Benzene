@@ -1,9 +1,8 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 
 namespace Benzene.Core.Broadcast;
 
-public interface IBroadcastEventChecker : IMessageFinder<IMessageDefinition>
+public interface IBroadcastEventChecker : IMessageDefinitionFinder<IMessageDefinition>
 {
     bool Check<T>(string topic, T payload);
 }

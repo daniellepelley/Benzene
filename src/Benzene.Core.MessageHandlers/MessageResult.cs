@@ -29,7 +29,7 @@ public class MessageResult : IMessageResult
             status, false, null, [error]);
     }
 
-    public MessageResult(ITopic topic, IMessageHandlerDefinition messageHandlerDefinition, string status, bool isSuccessful, object? payload, string[] errors)
+    public MessageResult(ITopic? topic, IMessageHandlerDefinition? messageHandlerDefinition, string status, bool isSuccessful, object? payload, string[] errors)
     {
         MessageHandlerDefinition = messageHandlerDefinition;
         Topic = topic;
@@ -45,8 +45,8 @@ public class MessageResult : IMessageResult
             string.Empty, false, null, Array.Empty<string>());
     }
 
-    public ITopic Topic { get; }
-    public IMessageHandlerDefinition MessageHandlerDefinition { get; }
+    public ITopic? Topic { get; }
+    public IMessageHandlerDefinition? MessageHandlerDefinition { get; }
     public string Status { get; }
     public bool IsSuccessful { get; }
     public object? Payload { get; }

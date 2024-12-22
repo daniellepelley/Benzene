@@ -1,9 +1,6 @@
-﻿using System;
-using System.Linq;
-using Benzene.TempCore.DI;
-using Benzene.TempCore.Helper;
+﻿using Benzene.TempCore.DI;
 
-namespace Benzene.Core.DI;
+namespace Benzene.Microsoft.Dependencies;
 
 public static class RegistrationErrorHandler
 {
@@ -30,13 +27,13 @@ public static class RegistrationErrorHandler
         {
             Init();
         }
-
+    
         if (exception.Message.StartsWith("Unable to resolve service for type") ||
             exception.Message.StartsWith("No service for type"))
         {
             return _registrationCheck!.CheckType(exception.Message.Split('\'')[1]);
         }
-
+    
         return string.Empty;
     }
 }

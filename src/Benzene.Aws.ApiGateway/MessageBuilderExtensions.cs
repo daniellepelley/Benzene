@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Amazon.Lambda.APIGatewayEvents;
+﻿using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.Serialization;

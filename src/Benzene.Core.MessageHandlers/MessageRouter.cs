@@ -2,25 +2,31 @@
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
-using Benzene.Abstractions.Results;
 using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;
 
-public class MessageRouter<TContext> : IMiddleware<TContext> where TContext : IHasMessageResult
+public class MessageRouter<TContext> : IMiddleware<TContext>// where TContext : IHasMessageResult
 {
     private readonly IBenzeneLogger _logger;
     private readonly IMessageHandlerFactory _messageHandlerFactory;
     private readonly IMessageHandlersLookUp _messageHandlersLookUp;
     private readonly IMessageMapper<TContext> _messageMapper;
     private readonly IRequestMapper<TContext> _requestMapper;
-    private IDefaultStatuses _defaultStatuses;
+    private readonly IDefaultStatuses _defaultStatuses;
+    private readonly IResultSetter<TContext> _resultSetter;
 
-    public MessageRouter(IMessageHandlerFactory messageHandlerFactory, IMessageMapper<TContext> messageMapper, IMessageHandlersLookUp messageHandlersLookUpUp, IRequestMapper<TContext> requestMapper, IDefaultStatuses defaultStatuses, IBenzeneLogger logger)
+    public MessageRouter(IMessageHandlerFactory messageHandlerFactory,
+        IMessageMapper<TContext> messageMapper,
+        IMessageHandlersLookUp messageHandlersLookUpUp,
+        IRequestMapper<TContext> requestMapper,
+        IResultSetter<TContext> resultSetter,
+        IDefaultStatuses defaultStatuses,
+        IBenzeneLogger logger)
     {
+        _resultSetter = resultSetter;
         _defaultStatuses = defaultStatuses;
         _requestMapper = requestMapper;
         _messageHandlersLookUp = messageHandlersLookUpUp;
@@ -37,31 +43,31 @@ public class MessageRouter<TContext> : IMiddleware<TContext> where TContext : IH
         if (string.IsNullOrEmpty(topic?.Id))
         {
             _logger.LogWarning("Topic is missing");
-            context.MessageResult = MessageResult.Failure(_defaultStatuses.ValidationError, "Topic is missing");
+            _resultSetter.SetResult(context, ServiceResult.Set( _defaultStatuses.ValidationError, "Topic is missing"), null, null);
             return;
         }
 
         _logger.LogDebug("Finding message handler for {topic}", topic.Id);
         Debug.WriteLine($"Finding message handler for {topic.Id}");
-        var handlerDefinition = _messageHandlersLookUp.FindHandler(topic);
-        if (handlerDefinition == null)
+        var messageHandlerDefinition = _messageHandlersLookUp.FindHandler(topic);
+        if (messageHandlerDefinition == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            context.MessageResult = MessageResult.Failure(topic, _defaultStatuses.NotFound, $"No handler found for topic {topic.Id}");
+            _resultSetter.SetResult(context, ServiceResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}"), topic, null);
             return;
         }
 
-        var handler = _messageHandlerFactory.Create(handlerDefinition);
+        var handler = _messageHandlerFactory.Create(messageHandlerDefinition);
         if (handler == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            context.MessageResult = ServiceResult.NotFound($"No handler found for topic {topic.Id}").AsMessageResult(topic, null);
+            _resultSetter.SetResult(context, ServiceResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}"), topic, null); 
             return;
         }
 
         _logger.LogDebug("Handler mapped to topic");
 
         var result = await handler.HandlerAsync(new RequestFactory<TContext>(_requestMapper, context));
-        context.MessageResult = result.AsMessageResult(topic, handlerDefinition);
+        _resultSetter.SetResult(context, result, topic, messageHandlerDefinition);
     }
 }

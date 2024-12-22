@@ -2,6 +2,6 @@
 
 namespace Benzene.Abstractions.MessageHandling;
 
-public interface IMessageSendersFinder : IMessageFinder<IMessageSenderDefinition>
+public interface IMessageSendersFinder : IMessageDefinitionFinder<IMessageSenderDefinition>
 {
 }

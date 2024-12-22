@@ -4,7 +4,6 @@ using Benzene.Abstractions.DI;
 using Benzene.Autofac;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

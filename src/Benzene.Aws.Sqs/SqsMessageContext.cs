@@ -3,13 +3,13 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs;
 
-public class SqsMessageContext : IHasMessageResult
+public class SqsMessageContext 
 {
     private SqsMessageContext(SQSEvent sqsEvent, SQSEvent.SQSMessage sqsMessage)
     {
         SqsMessage = sqsMessage;
         SqsEvent = sqsEvent;
-        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
+        // MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public static SqsMessageContext CreateInstance(SQSEvent sqsEvent, SQSEvent.SQSMessage sqsMessage)
@@ -19,5 +19,6 @@ public class SqsMessageContext : IHasMessageResult
 
     public SQSEvent SqsEvent { get; }
     public SQSEvent.SQSMessage SqsMessage { get; }
-    public IMessageResult MessageResult { get; set; }
+    // public IMessageResult MessageResult { get; set; }
+    public bool? IsSuccessful { get; set; }
 }

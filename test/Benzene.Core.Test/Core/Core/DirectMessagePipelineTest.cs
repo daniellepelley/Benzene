@@ -11,7 +11,6 @@ using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Core.Response;
-using Benzene.Core.Results;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;

@@ -46,6 +46,7 @@ public static class Extensions
         services.TryAddScoped<IMessageBodyMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
         services.TryAddScoped<IMessageTopicMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
         services.TryAddScoped<IMessageHeadersMapper<BenzeneMessageContext>, BenzeneMessageMapper>();
+        services.TryAddScoped<IResultSetter<BenzeneMessageContext>, BenzeneMessageResultSetter>();
         services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
     
         services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, ResponseBodyHandler<BenzeneMessageContext>>();
@@ -88,7 +89,6 @@ public static class Extensions
         services.TryAddScoped<ISetCurrentTransport>(x => x.GetService<CurrentTransportInfo>());
 
         services.TryAddSingleton<IApplicationInfo, BlankApplicationInfo>();
-        // services.TryAddSingleton<IValidationSchemaBuilder, BlankValidationSchemaBuilder>();
         services.TryAddSingleton<IVersionSelector, VersionSelector>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
         services.TryAddSingleton<JsonSerializer>();

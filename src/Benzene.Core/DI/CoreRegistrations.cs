@@ -1,5 +1,4 @@
-﻿using System;
-using Benzene.Core.Correlation;
+﻿using Benzene.Core.Correlation;
 
 namespace Benzene.Core.DI;
 

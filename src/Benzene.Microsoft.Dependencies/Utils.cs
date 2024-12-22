@@ -1,21 +1,9 @@
 ﻿using System.Reflection;
 
-namespace Benzene.TempCore.Helper;
+namespace Benzene.Microsoft.Dependencies;
 
 public static class Utils
 {
-
-    public static string GetValue(this IDictionary<string, string> dictionary, string key)
-    {
-        if (dictionary != null &&
-            dictionary.TryGetValue(key, out var value))
-        {
-            return value;
-        }
-
-        return null;
-    }
-
     public static IEnumerable<Type> GetAllTypes(params Assembly[] assemblies)
     {
         return GetAssemblies(assemblies)
@@ -47,5 +35,4 @@ public static class Utils
             ? assemblies
             : AppDomain.CurrentDomain.GetAssemblies();
     }
-
 }

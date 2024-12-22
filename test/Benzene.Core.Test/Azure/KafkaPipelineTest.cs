@@ -2,7 +2,6 @@
 using Benzene.Azure.Core;
 using Benzene.Azure.Kafka;
 using Benzene.Azure.Kafka.TestHelpers;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Test.Examples;
 using Benzene.Tools;

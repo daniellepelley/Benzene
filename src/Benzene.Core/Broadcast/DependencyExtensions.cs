@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 
 namespace Benzene.Core.Broadcast;
 
@@ -15,7 +14,7 @@ public static class DependencyExtensions
     {
         var broadcastEventChecker = new BroadcastEventChecker(messageDefinitions);
         builder.AddSingleton<IBroadcastEventChecker>(broadcastEventChecker);
-        builder.AddSingleton<IMessageFinder<IMessageDefinition>>(broadcastEventChecker);
+        builder.AddSingleton<IMessageDefinitionFinder<IMessageDefinition>>(broadcastEventChecker);
         return builder;
     }
 }

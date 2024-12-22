@@ -1,5 +1,7 @@
-﻿using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -57,11 +59,13 @@ public static class Extensions
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>("HealthCheck", async (context, next) =>
         {
             var httpRequestAdapter = resolver.GetService<IHttpRequestAdapter<TContext>>();
+            var resultSetter = resolver.GetService<IResultSetter<TContext>>();
             var httpRequest = httpRequestAdapter.Map(context);
             if (httpRequest.Method.ToUpperInvariant() == method.ToUpperInvariant() &&
                 httpRequest.Path == path)
             {
-                context.MessageResult = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
+                var result = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
+                resultSetter.SetResult(context, result, new Topic(topic), MessageHandlerDefinition.Empty());
             }
             else
             {

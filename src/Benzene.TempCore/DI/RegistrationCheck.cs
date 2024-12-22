@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Benzene.Core.DI;
-using Benzene.TempCore.Helper;
 
 namespace Benzene.TempCore.DI;
 
@@ -24,7 +23,7 @@ public class RegistrationCheck : IRegistrationCheck
             .Select(registrationType => (IRegistrations)Activator.CreateInstance(registrationType))
             .Where(registrations => registrations != null)
             .GroupBy(x => x.PackageName)
-            .ToDictionary(registrations => registrations.First().PackageName, registrations => DictionaryUtils.Combine(registrations.Select(x => x.GetRegistrations())));
+            .ToDictionary(registrations => registrations.First().PackageName, registrations => DictionaryCombine(registrations.Select(x => x.GetRegistrations())));
 
         return new RegistrationCheck(registrationDictionary);
     }
@@ -91,5 +90,20 @@ public class RegistrationCheck : IRegistrationCheck
         }
 
         return stringBuilder.ToString();
+    }
+    
+    public static IDictionary<TKey, TValue> DictionaryCombine<TKey, TValue>(IEnumerable<IDictionary<TKey, TValue>> source)
+    {
+        var output = new Dictionary<TKey, TValue>();
+
+        foreach (var dictionary in source)
+        {
+            foreach (var keyValue in dictionary)
+            {
+                output.TryAdd(keyValue.Key, keyValue.Value); 
+            }
+        }
+
+        return output;
     }
 }

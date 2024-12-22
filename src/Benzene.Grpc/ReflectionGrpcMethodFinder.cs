@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Core.Exceptions;
 
 namespace Benzene.Grpc;
@@ -37,7 +36,7 @@ public class ReflectionGrpcMethodFinder : IGrpcMethodFinder
     private static IGrpcMethodDefinition[] MapHandlers(IMessageHandlerDefinition messageHandlerDefinition)
     {
         return messageHandlerDefinition.HandlerType.GetCustomAttributes<GrpcMethodAttribute>()
-            .Select(GrpcMethod => MapEndpoint(GrpcMethod, messageHandlerDefinition.Topic))
+            .Select(grpcMethod => MapEndpoint(grpcMethod, messageHandlerDefinition.Topic.Id))
             .Where(x => x != null)
             .Select(x => x!)
             .ToArray();

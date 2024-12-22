@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Amazon.Lambda.S3Events;
 using Benzene.Aws.EventBridge;
 using Benzene.Core.Middleware;

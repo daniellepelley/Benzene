@@ -4,7 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core.Info;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Azure.EventHub;
+namespace Benzene.Azure.EventHub.Function;
 
 public class EventHubApplication : EntryPointMiddlewareApplication<EventData[]>
 {

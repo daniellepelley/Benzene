@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Mappers;
 
@@ -32,3 +33,5 @@ public class MessageMapper<TContext> : IMessageMapper<TContext>
         return _messageTopicMapper.GetTopic(context);
     }
 }
+
+

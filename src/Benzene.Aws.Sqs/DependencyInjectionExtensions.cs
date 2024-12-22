@@ -18,6 +18,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<SqsMessageContext>, SqsMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<SqsMessageContext>, SqsMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<SqsMessageContext>, SqsMessageBodyMapper>();
+        services.AddScoped<IResultSetter<SqsMessageContext>, SqsMessageResultSetter>();
         services
             .AddScoped<IRequestMapper<SqsMessageContext>,
                 MultiSerializerOptionsRequestMapper<SqsMessageContext, JsonSerializer>>();
@@ -34,13 +35,11 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<SqsConsumerMessageContext>, SqsConsumerMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<SqsConsumerMessageContext>, SqsConsumerMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<SqsConsumerMessageContext>, SqsConsumerMessageBodyMapper>();
+        services.AddScoped<IResultSetter<SqsConsumerMessageContext>, SqsConsumerMessageResultSetter>();
         services
             .AddScoped<IRequestMapper<SqsConsumerMessageContext>,
                 MultiSerializerOptionsRequestMapper<SqsConsumerMessageContext, JsonSerializer>>();
 
         return services;
     }
-
 }
-
-

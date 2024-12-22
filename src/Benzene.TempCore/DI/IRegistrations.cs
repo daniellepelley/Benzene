@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Benzene.Core.DI;
+﻿namespace Benzene.Core.DI;
 
 public interface IRegistrations
 {

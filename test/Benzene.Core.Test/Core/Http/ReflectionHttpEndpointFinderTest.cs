@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Reflection;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
 using Benzene.Http.Routing;
 using Benzene.Test.Examples;
 using Xunit;

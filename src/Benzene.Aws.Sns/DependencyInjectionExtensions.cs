@@ -17,6 +17,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<SnsRecordContext>, SnsMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<SnsRecordContext>, SnsMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<SnsRecordContext>, SnsMessageBodyMapper>();
+        services.AddScoped<IResultSetter<SnsRecordContext>, SnsMessageResultSetter>();
         services
             .AddScoped<IRequestMapper<SnsRecordContext>,
                 MultiSerializerOptionsRequestMapper<SnsRecordContext, JsonSerializer>>();
@@ -26,5 +27,3 @@ public static class DependencyInjectionExtensions
         return services;
     }
 }
-
-

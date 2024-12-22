@@ -31,7 +31,7 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                         await _pipeline.HandleAsync(context, scope);
                     }
 
-                    if (!context.MessageResult.IsSuccessful)
+                    if (context.IsSuccessful.HasValue && !context.IsSuccessful.Value)
                     {
                         batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId});
                     }

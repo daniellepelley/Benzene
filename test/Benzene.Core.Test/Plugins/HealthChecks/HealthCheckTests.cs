@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -36,7 +35,7 @@ public class HealthCheckTests
 
         var result =  await HealthCheckProcessor.PerformHealthChecksAsync(Defaults.HealthCheckTopic, new []{ mockHealthCheck.Object });
 
-        var healthCheckResult = result.Payload as HealthCheckResponse;
+        var healthCheckResult = result.PayloadAsObject as HealthCheckResponse;
         Assert.False(healthCheckResult.IsHealthy);
     }
 

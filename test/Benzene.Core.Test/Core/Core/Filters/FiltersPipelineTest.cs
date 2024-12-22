@@ -2,7 +2,6 @@
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Filters;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;

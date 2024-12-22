@@ -1,8 +1,5 @@
 ﻿using System.Linq;
-using System.Threading.Tasks;
 using Amazon.Lambda.KafkaEvents;
-using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Info;
 using Benzene.Core.Middleware;

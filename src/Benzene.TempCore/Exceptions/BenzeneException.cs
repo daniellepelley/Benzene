@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Benzene.Core.Exceptions
+﻿namespace Benzene.Core.Exceptions
 {
     public class BenzeneException : Exception
     {

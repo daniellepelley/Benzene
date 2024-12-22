@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.Info;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.Abstractions;
 using Microsoft.OpenApi;

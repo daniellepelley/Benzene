@@ -1,18 +1,15 @@
 ﻿using System.Threading.Tasks;
-using Avro;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
-using Benzene.FluentValidation;
 using Benzene.JsonSchema;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Benzene.Tools;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Xunit;
 
 namespace Benzene.Test.Plugins.JsonSchema;

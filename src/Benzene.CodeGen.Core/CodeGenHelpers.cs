@@ -1,7 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Microsoft.OpenApi;

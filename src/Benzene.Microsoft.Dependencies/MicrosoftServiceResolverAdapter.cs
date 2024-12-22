@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Benzene.Abstractions.DI;
-using Benzene.Core.DI;
 using Benzene.Core.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -45,6 +44,7 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
         {
             return this as T ?? throw new InvalidOperationException();
         }
+
         try
         {
             return _serviceProvider.GetRequiredService<T>();

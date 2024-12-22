@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
 
-namespace Benzene.Core.MessageHandling;
+namespace Benzene.Core.MessageHandlers;
 
 public class DependencyMessageHandlersFinder : IMessageHandlersFinder
 {

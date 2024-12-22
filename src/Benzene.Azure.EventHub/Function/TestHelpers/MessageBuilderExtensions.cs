@@ -4,15 +4,15 @@ using Benzene.Abstractions.Serialization;
 using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.Serialization;
 
-namespace Benzene.Azure.EventHub.TestHelpers;
+namespace Benzene.Azure.EventHub.Function.TestHelpers;
 
 public static class MessageBuilderExtensions
 {
     public static EventData AsEventHubBenzeneMessage<T>(this IMessageBuilder<T> source)
     {
-        return AsEventHubBenzeneMessage(source, new JsonSerializer());
+        return source.AsEventHubBenzeneMessage(new JsonSerializer());
     }
-    
+
     public static EventData AsEventHubBenzeneMessage<T>(this IMessageBuilder<T> source, ISerializer serializer)
     {
         return new EventData
