@@ -3,7 +3,7 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Http;
 
-public class HttpStatusCodeResponseHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class, IHasMessageResult 
+public class HttpStatusCodeResponseHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class
 {
     private readonly IHttpStatusCodeMapper _httpStatusCodeMapper;
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
@@ -14,8 +14,8 @@ public class HttpStatusCodeResponseHandler<TContext> : ISyncResponseHandler<TCon
         _httpStatusCodeMapper = httpStatusCodeMapper;
     }
 
-    public void HandleAsync(TContext context)
+    public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        _benzeneResponseAdapter.SetStatusCode(context, _httpStatusCodeMapper.Map(context.MessageResult.Status));
+        _benzeneResponseAdapter.SetStatusCode(context, _httpStatusCodeMapper.Map(messageHandlerResult.Result.Status));
     }
 }

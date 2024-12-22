@@ -7,7 +7,7 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Response;
 
-public class ResponseBuilder<TContext> : IResponseBuilder<TContext> where TContext : class, IHasMessageResult
+public class ResponseBuilder<TContext> : IResponseBuilder<TContext> where TContext : class
 {
     private readonly List<Func<IServiceResolver, IResponseHandler<TContext>>> _builders = new();
     private readonly IRegisterDependency _register;

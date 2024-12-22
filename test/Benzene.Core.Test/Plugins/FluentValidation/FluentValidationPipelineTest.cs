@@ -26,7 +26,6 @@ public class FluentValidationPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
-            .UseProcessResponse()
             .UseMessageHandlers(x => x.UseFluentValidation());
 
         var aws = new BenzeneMessageApplication(pipeline.Build());

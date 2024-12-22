@@ -42,7 +42,7 @@ namespace Benzene.Test.Elements.Examples
                     .WithCorrelationId()
                     .WithHeaders("tenantId", "userId", "sender")
                 )
-                .UseProcessResponse()
+                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()
@@ -72,7 +72,7 @@ namespace Benzene.Test.Elements.Examples
             app.UseApiGateway(apiGatewayApp => apiGatewayApp
                 .UseCorrelationId()
                 .UseTimer("api-gateway-pipeline")
-                .UseProcessResponse()
+                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, "POST", "/healthcheck", healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()

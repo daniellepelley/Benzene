@@ -33,7 +33,6 @@ public class BenzeneMessagePipelineTest
     {
         var services = ServiceResolverMother.CreateServiceCollection();
         services
-                .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
@@ -59,7 +58,6 @@ public class BenzeneMessagePipelineTest
     {
         var services = new ServiceCollection();
         services
-                .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
@@ -71,7 +69,6 @@ public class BenzeneMessagePipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseProcessResponse()
             .UseMessageHandlers();
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
@@ -98,7 +95,6 @@ public class BenzeneMessagePipelineTest
         var services = new ServiceCollection();
         services
                 .AddTransient<IBenzeneLogger, BenzeneLogger>()
-                .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x
@@ -110,7 +106,6 @@ public class BenzeneMessagePipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseProcessResponse()
             .UseMessageHandlers();
 
         var aws = new BenzeneMessageApplication(pipeline.Build());

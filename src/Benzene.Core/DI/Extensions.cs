@@ -64,8 +64,8 @@ public static class Extensions
         services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
         services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
         services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
-        services.TryAddScoped(typeof(ResponseMiddleware<>));
-        services.TryAddScoped(typeof(ResponseIfHandledMiddleware<>));
+        // services.TryAddScoped(typeof(ResponseMiddleware<>));
+        // services.TryAddScoped(typeof(ResponseIfHandledMiddleware<>));
         services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));
     
         services.TryAddScoped(typeof(IRequestMapper<>), typeof(JsonDefaultMultiSerializerOptionsRequestMapper<>));

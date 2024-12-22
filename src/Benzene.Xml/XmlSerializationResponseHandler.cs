@@ -19,7 +19,7 @@ public class XmlSerializationResponseHandler<TContext> : ISerializationResponseH
         _benzeneResponseAdapter = benzeneResponseAdapter;
     }
 
-    public void HandleAsync(TContext context, IBodySerializer bodySerializer)
+    public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult, IBodySerializer bodySerializer)
     {
         if (!DictionaryUtils.KeyEquals(_messageHeadersMapper.GetHeaders(context), _contentType,
                 _applicationXml))
@@ -27,7 +27,7 @@ public class XmlSerializationResponseHandler<TContext> : ISerializationResponseH
             return;
         }
 
-        _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(new XmlSerializer()));
+        _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(new XmlSerializer(), messageHandlerResult));
         _benzeneResponseAdapter.SetContentType(context, _applicationXml);
     }
 }

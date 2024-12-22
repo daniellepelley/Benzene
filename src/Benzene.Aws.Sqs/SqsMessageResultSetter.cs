@@ -1,14 +1,14 @@
-﻿using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MessageHandlers;
-using Benzene.Results;
+﻿using System.Threading.Tasks;
+using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs;
 
 public class SqsMessageResultSetter : IResultSetter<SqsMessageContext>
 {
-    public void SetResult(SqsMessageContext context, IResult result, ITopic topic,
-        IMessageHandlerDefinition messageHandlerDefinition)
+    public Task SetResultAsync(SqsMessageContext context, IMessageHandlerResult messageHandlerResult)
     {
-        context.IsSuccessful = result.IsSuccessful;
+        context.IsSuccessful = messageHandlerResult.Result.IsSuccessful;
+        return Task.CompletedTask;
     }
 }

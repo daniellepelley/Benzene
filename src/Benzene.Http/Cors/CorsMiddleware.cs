@@ -1,8 +1,10 @@
-﻿using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Core.MessageHandlers;
 using Benzene.Http.Routing;
+using Benzene.Results;
 using Void = Benzene.Results.Void;
 
 namespace Benzene.Http.Cors;
@@ -15,11 +17,13 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
     private readonly IHttpRequestAdapter<TContext> _httpRequestAdapter;
     private readonly IBenzeneResponseAdapter<TContext> _responseAdapter;
     private CorsOriginChecker _corsOriginChecker;
+    private IResultSetter<TContext> _resultSetter;
     public string Name => "Cors";
 
     public CorsMiddleware(CorsSettings corsSettings, IHttpEndpointFinder httpEndpointFinder,
-        IHttpRequestAdapter<TContext> httpRequestAdapter, IBenzeneResponseAdapter<TContext> responseAdapter)
+        IHttpRequestAdapter<TContext> httpRequestAdapter, IBenzeneResponseAdapter<TContext> responseAdapter, IResultSetter<TContext> resultSetter)
     {
+        _resultSetter = resultSetter;
         _responseAdapter = responseAdapter;
         _httpRequestAdapter = httpRequestAdapter;
         _httpEndpointFinder = httpEndpointFinder;
@@ -63,7 +67,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
 
             if (httpRequest.Method == "options")
             {
-                context.MessageResult = new MessageResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), "Ok", true, null, null);
+                _resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), ServiceResult.Ok()));
             }
         }
     }

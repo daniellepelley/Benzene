@@ -66,33 +66,33 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseProcessResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
-        where TContext : class, IHasMessageResult
-    {
-        return app.Use<TContext, ResponseMiddleware<TContext>>();
-    }
+    // public static IMiddlewarePipelineBuilder<TContext> UseProcessResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
+    //     where TContext : class, IHasMessageResult
+    // {
+    //     return app.Use<TContext, ResponseMiddleware<TContext>>();
+    // }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseProcessResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app, Action<IResponseBuilder<TContext>> action)
-        where TContext : class, IHasMessageResult
-    {
-        var responseBuilder = new ResponseBuilder<TContext>(app);
-        action(responseBuilder);
-        var builders = responseBuilder.GetBuilders();
+    // public static IMiddlewarePipelineBuilder<TContext> UseProcessResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app, Action<IResponseBuilder<TContext>> action)
+    //     where TContext : class, IHasMessageResult
+    // {
+    //     var responseBuilder = new ResponseBuilder<TContext>(app);
+    //     action(responseBuilder);
+    //     var builders = responseBuilder.GetBuilders();
+    //
+    //     return app.Use("Response", async (resolver, context, next) =>
+    //     {
+    //         await next();
+    //
+    //         var responseHandlers = builders.Select(x => x(resolver)).ToArray();
+    //
+    //         var handlerContainer = new ResponseHandlerContainer<TContext>(resolver.GetService<IBenzeneResponseAdapter<TContext>>(), responseHandlers);
+    //         await handlerContainer.HandleAsync(context);
+    //     });
+    // }
 
-        return app.Use("Response", async (resolver, context, next) =>
-        {
-            await next();
-
-            var responseHandlers = builders.Select(x => x(resolver)).ToArray();
-
-            var handlerContainer = new ResponseHandlerContainer<TContext>(resolver.GetService<IBenzeneResponseAdapter<TContext>>(), responseHandlers);
-            await handlerContainer.HandleAsync(context);
-        });
-    }
-
-    public static IMiddlewarePipelineBuilder<TContext> UseProcessResponseIfHandled<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
-        where TContext : class, IHasMessageResult
-    {
-        return app.Use<TContext, ResponseIfHandledMiddleware<TContext>>();
-    }
+    // public static IMiddlewarePipelineBuilder<TContext> UseProcessResponseIfHandled<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
+    //     where TContext : class, IHasMessageResult
+    // {
+    //     return app.Use<TContext, ResponseIfHandledMiddleware<TContext>>();
+    // }
 }

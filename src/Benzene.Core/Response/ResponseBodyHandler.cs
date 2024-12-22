@@ -1,10 +1,11 @@
 ﻿using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
+using Benzene.Results;
 
 namespace Benzene.Core.Response;
 
-public class ResponseBodyHandler<TContext> : ISyncResponseHandler<TContext>// where TContext : class, IHasMessageResult
+public class ResponseBodyHandler<TContext> : ISyncResponseHandler<TContext>
 {
     private readonly IResponsePayloadMapper<TContext> _responsePayloadMapper;
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
@@ -17,9 +18,9 @@ public class ResponseBodyHandler<TContext> : ISyncResponseHandler<TContext>// wh
         _responsePayloadMapper = responsePayloadMapper;
     }
 
-    public void HandleAsync(TContext context)
+    public void HandleAsync(TContext context, IMessageHandlerResult result)
     {
-        _benzeneResponseAdapter.SetBody(context, _responsePayloadMapper.Map(context, _serializer));
+        _benzeneResponseAdapter.SetBody(context, _responsePayloadMapper.Map(context, result, _serializer));
         _benzeneResponseAdapter.SetContentType(context, Constants.JsonContentType);
     }
 }

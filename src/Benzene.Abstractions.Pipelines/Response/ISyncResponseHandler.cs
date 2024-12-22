@@ -1,8 +1,9 @@
 ﻿using Benzene.Abstractions.Results;
+using Benzene.Results;
 
 namespace Benzene.Abstractions.Response;
 
-public interface ISyncResponseHandler<TContext> : IResponseHandler<TContext>// where TContext : class, IHasMessageResult
+public interface ISyncResponseHandler<TContext> : IResponseHandler<TContext>
 {
-    void HandleAsync(TContext context);
+    void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult);
 }

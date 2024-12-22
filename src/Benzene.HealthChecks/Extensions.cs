@@ -41,7 +41,7 @@ public static class Extensions
                 var result =
                     await HealthCheckProcessor.PerformHealthChecksAsync(topic,
                         builder.GetHealthChecks(resolver));
-                resultSetter.SetResult(context, result, messageTopic, MessageHandlerDefinition.Empty());
+                resultSetter.SetResultAsync(context, new MessageHandlerResult( messageTopic, MessageHandlerDefinition.Empty(), result));
             }
             else
             {

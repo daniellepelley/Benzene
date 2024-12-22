@@ -5,6 +5,7 @@ using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
+using Benzene.Abstractions.Results;
 using Benzene.Core.Info;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
@@ -81,7 +82,7 @@ public static class DependencyInjectionExtensions
                 context.ApiGatewayProxyRequest.Path == path)
             {
                 var result = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
-                resultSetter.SetResult(context, result, new Topic(topic), MessageHandlerDefinition.Empty());
+                resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic(topic), MessageHandlerDefinition.Empty(), result));
             }
             else
             {

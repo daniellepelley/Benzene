@@ -31,7 +31,6 @@ public class JsonSchemaPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
-            .UseProcessResponse()
             .UseJsonSchema()
             .UseMessageHandlers();
 
@@ -46,7 +45,6 @@ public class JsonSchemaPipelineTest
 
         var response = await aws.HandleAsync(request, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
-        Assert.NotNull(response);
         Assert.Equal(expectedStatus, response.StatusCode);
     }
 
@@ -59,7 +57,6 @@ public class JsonSchemaPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
-            .UseProcessResponse()
             .UseJsonSchema()
             .UseMessageHandlers();
 
@@ -91,7 +88,6 @@ public class JsonSchemaPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
-            .UseProcessResponse()
             .UseJsonSchema()
             .UseMessageHandlers();
 
@@ -102,7 +98,6 @@ public class JsonSchemaPipelineTest
 
         var response = await aws.HandleAsync(request, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
-        Assert.NotNull(response);
         Assert.Equal(ServiceResultStatus.ValidationError, response.StatusCode);
     }
 }

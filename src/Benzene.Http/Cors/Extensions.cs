@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
@@ -15,7 +16,8 @@ public static class Extensions
             x.AddSingleton(resolver => new CorsMiddleware<TContext>(
                 corsSettings, resolver.GetService<IHttpEndpointFinder>(),
                 resolver.GetService<IHttpRequestAdapter<TContext>>(),
-                resolver.GetService<IBenzeneResponseAdapter<TContext>>()
+                resolver.GetService<IBenzeneResponseAdapter<TContext>>(),
+                resolver.GetService<IResultSetter<TContext>>()
             )));
             
         return app.Use<TContext, CorsMiddleware<TContext>>();

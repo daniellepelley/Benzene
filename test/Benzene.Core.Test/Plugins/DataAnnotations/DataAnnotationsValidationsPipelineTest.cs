@@ -26,7 +26,6 @@ public class DataAnnotationsValidationsPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
-            .UseProcessResponse()
             .UseMessageHandlers(x => x.UseDataAnnotationsValidation());
 
         var aws = new BenzeneMessageApplication(pipeline.Build());

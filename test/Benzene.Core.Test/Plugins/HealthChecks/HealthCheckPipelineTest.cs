@@ -31,7 +31,6 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
             .UsingBenzene(x => x
                 .AddBenzene()
                 .AddBenzeneMessage()
@@ -41,7 +40,6 @@ public class HealthCheckPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseProcessResponse()
             .UseHealthCheck(Defaults.HealthCheckTopic, x => x.AddHealthCheck(mockHealthCheck.Object))
             .UseMessageHandlers();
 
@@ -75,7 +73,6 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .AddTransient<ResponseMiddleware<BenzeneMessageContext>>()
             .UsingBenzene(x => x
                 .AddBenzene()
                 .AddBenzeneMessage()
@@ -85,7 +82,6 @@ public class HealthCheckPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseProcessResponse()
             .UseHealthCheck(Defaults.HealthCheckTopic, x => x
                 .AddHealthCheck(mockHealthCheck.Object)
                 .AddHealthCheck(mockHealthCheck.Object)

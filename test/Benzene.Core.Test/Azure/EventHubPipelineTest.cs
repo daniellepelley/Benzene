@@ -27,7 +27,6 @@ public class EventHubPipelineTest
             ).Configure(app => app
                 .UseEventHub(eventHub => eventHub
                     .UseBenzeneMessage(direct => direct
-                    .UseProcessResponse()
                     .UseMessageHandlers())))
             .Build();
 
@@ -50,7 +49,6 @@ public class EventHubPipelineTest
             ).Configure(app => app
                 .UseEventHub(eventHub => eventHub
                     .UseBenzeneMessage(direct => direct
-                    .UseProcessResponse()
                     .UseMessageHandlers())))
             .Build();
 

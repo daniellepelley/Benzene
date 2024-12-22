@@ -2,10 +2,7 @@
 
 namespace Benzene.Abstractions.Response;
 
-/// <summary>
-/// Handles creation of a response
-/// </summary>
-public interface IResponseHandlerContainer<TContext> where TContext : class, IHasMessageResult
+public interface IResponseHandlerContainer<TContext>
 {
-    Task HandleAsync(TContext context);
+    Task HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult);
 }

@@ -4,6 +4,7 @@ using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Core.MessageHandlers;
+using Benzene.Results;
 using Json.Schema;
 
 namespace Benzene.JsonSchema;
@@ -12,10 +13,12 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
 {
     private readonly IMessageBodyMapper<TContext> _messageBodyMapper;
     private readonly IJsonSchemaProvider<TContext> _jsonSchemaProvider;
-    private IDefaultStatuses _defaultStatuses;
+    private readonly IDefaultStatuses _defaultStatuses;
+    private IResultSetter<TContext> _resultSetter;
 
-    public JsonSchemaMiddleware(IMessageBodyMapper<TContext> messageBodyMapper, IJsonSchemaProvider<TContext> jsonSchemaProvider, IDefaultStatuses defaultStatuses)
+    public JsonSchemaMiddleware(IMessageBodyMapper<TContext> messageBodyMapper, IJsonSchemaProvider<TContext> jsonSchemaProvider, IDefaultStatuses defaultStatuses, IResultSetter<TContext> resultSetter)
     {
+        _resultSetter = resultSetter;
         _defaultStatuses = defaultStatuses;
         _jsonSchemaProvider = jsonSchemaProvider;
         _messageBodyMapper = messageBodyMapper;
@@ -37,7 +40,8 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
 
         if (body == null)
         {
-            context.MessageResult = MessageResult.Failure(_defaultStatuses.ValidationError);
+            _resultSetter.SetResultAsync(context,
+                new MessageHandlerResult(ServiceResult.Set(_defaultStatuses.ValidationError, false)));
             return;
         }
 
@@ -57,7 +61,8 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
         }
         else
         {
-            context.MessageResult = MessageResult.Failure(_defaultStatuses.ValidationError);
+            _resultSetter.SetResultAsync(context,
+                new MessageHandlerResult(ServiceResult.Set(_defaultStatuses.ValidationError, false)));
         }
     }
 }

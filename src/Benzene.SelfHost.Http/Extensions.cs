@@ -65,7 +65,7 @@ public static class Extensions
                 httpRequest.Path == path)
             {
                 var result = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
-                resultSetter.SetResult(context, result, new Topic(topic), MessageHandlerDefinition.Empty());
+                resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic(topic), MessageHandlerDefinition.Empty(), result));
             }
             else
             {

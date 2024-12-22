@@ -26,7 +26,6 @@ public class FiltersPipelineTest
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
         pipeline
-            .UseProcessResponse()
             .UseMessageHandlers(x => x.UseFilters());
 
         var aws = new BenzeneMessageApplication(pipeline.Build());

@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.Response;
+using Benzene.Abstractions.Results;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Response;
@@ -34,7 +35,7 @@ public class ResponseHandlerContainerTest
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         context.MessageResult = new MessageResult(new Topic(Defaults.Topic), messageHandlerDefinition,
             ServiceResultStatus.Ok, true, request, null);
-        await messageHandlerFactory.HandleAsync(context);
+        await messageHandlerFactory.HandleAsync(context, new MessageHandlerResult(new Topic(Defaults.Topic), messageHandlerDefinition, ServiceResult.Ok(request)));
 
         Assert.Equal(Constants.JsonContentType, context.BenzeneMessageResponse.Headers[Constants.ContentTypeHeader]);
         Assert.Equal(expected, context.BenzeneMessageResponse.Body);

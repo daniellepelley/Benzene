@@ -33,7 +33,6 @@ public class SpecTest
             .Configure(app =>
             {
                 app.UseBenzeneMessage(x => x
-                    .UseProcessResponse()
                     .UseSpec()
                     .UseMessageHandlers()
                 );
@@ -53,7 +52,6 @@ public class SpecTest
             .Configure(app =>
             {
                 app.UseBenzeneMessage(x => x
-                    .UseProcessResponse()
                     .UseSpec()
                     .UseMessageHandlers()
                 );

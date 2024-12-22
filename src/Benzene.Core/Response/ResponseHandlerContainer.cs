@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
+using Benzene.Results;
 
 namespace Benzene.Core.Response;
 
@@ -18,17 +19,17 @@ public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TCon
         _responseHandlers = responseHandlers.ToArray();
     }
 
-    public async Task HandleAsync(TContext context)
+    public async Task HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
         foreach (var responseHandler in _responseHandlers)
         {
             switch (responseHandler)
             {
                 case ISyncResponseHandler<TContext> syncResponseHandler:
-                    syncResponseHandler.HandleAsync(context);
+                    syncResponseHandler.HandleAsync(context, messageHandlerResult);
                     break;
                 case IAsyncResponseHandler<TContext> asyncResponseHandler:
-                    await asyncResponseHandler.HandleAsync(context);
+                    await asyncResponseHandler.HandleAsync(context, messageHandlerResult);
                     break;
             }
         }

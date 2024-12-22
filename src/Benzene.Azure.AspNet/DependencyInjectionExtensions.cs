@@ -33,7 +33,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IResponseHandler<AspNetContext>, ResponseBodyHandler<AspNetContext>>();
         services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
 
-        services.AddScoped<ResponseMiddleware<AspNetContext>>();
+        // services.AddScoped<ResponseMiddleware<AspNetContext>>();
         services.AddScoped<IRequestEnricher<AspNetContext>, AspNetContextRequestEnricher>();
         services.AddHttpMessageHandlers();
         return services;

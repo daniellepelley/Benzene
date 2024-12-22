@@ -3,7 +3,7 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Response;
 
-public class ResponseHandler<T, TContext> : ISyncResponseHandler<TContext> where T : ISerializationResponseHandler<TContext> where TContext : class, IHasMessageResult
+public class ResponseHandler<T, TContext> : ISyncResponseHandler<TContext> where T : ISerializationResponseHandler<TContext> where TContext : class
 {
     private readonly IResponsePayloadMapper<TContext> _responsePayloadMapper;
     private readonly T _httpSerializationResponseHandler;
@@ -14,9 +14,9 @@ public class ResponseHandler<T, TContext> : ISyncResponseHandler<TContext> where
         _responsePayloadMapper = responsePayloadMapper;
     }
 
-    public void HandleAsync(TContext context)
+    public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
         var HttpHttpBodySerializer = new BodySerializer<TContext>(_responsePayloadMapper, context);
-        _httpSerializationResponseHandler.HandleAsync(context, HttpHttpBodySerializer);
+        _httpSerializationResponseHandler.HandleAsync(context, messageHandlerResult, HttpHttpBodySerializer);
     }
 }

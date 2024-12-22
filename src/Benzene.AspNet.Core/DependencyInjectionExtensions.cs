@@ -34,7 +34,6 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
-        services.AddScoped<ResponseMiddleware<AspNetContext>>();
         
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("asp"));
         services.AddHttpMessageHandlers();

@@ -24,7 +24,6 @@ public class AspNetPipelineTest
             .ConfigureServices(services => services.ConfigureServiceCollection())
             .Configure(app => app
                 .UseHttp(http => http
-                    .UseProcessResponse()
                     .UseMessageHandlers()))
             .Build();
 
@@ -44,7 +43,6 @@ public class AspNetPipelineTest
             ).Configure(app => app
                 .UseHttp(http => http
                     .UseXml()
-                    .UseProcessResponse()
                     .UseMessageHandlers()))
             .Build();
 
@@ -67,7 +65,6 @@ public class AspNetPipelineTest
             .ConfigureServices(services => services .ConfigureServiceCollection())
             .Configure(app => app
                 .UseHttp(http => http
-                    .UseProcessResponse()
                     .UseMessageHandlers(x => x.UseDataAnnotationsValidation())))
             .Build();
 

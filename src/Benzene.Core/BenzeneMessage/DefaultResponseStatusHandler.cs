@@ -1,9 +1,10 @@
 ﻿using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
+using Benzene.Results;
 
 namespace Benzene.Core.BenzeneMessage;
 
-public class DefaultResponseStatusHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class, IHasMessageResult
+public class DefaultResponseStatusHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class
 {
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
 
@@ -12,8 +13,8 @@ public class DefaultResponseStatusHandler<TContext> : ISyncResponseHandler<TCont
         _benzeneResponseAdapter = benzeneResponseAdapter;
     }
     
-    public void HandleAsync(TContext context)
+    public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        _benzeneResponseAdapter.SetStatusCode(context, context.MessageResult.Status);
+        _benzeneResponseAdapter.SetStatusCode(context, messageHandlerResult.Result.Status);
     }
 }

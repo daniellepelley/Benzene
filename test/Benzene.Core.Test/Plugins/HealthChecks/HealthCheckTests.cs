@@ -49,7 +49,7 @@ public class HealthCheckTests
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
-            .UseProcessResponse()
+            // .UseProcessResponse()
             .UseHealthCheck("healthcheck", x => x
                 .AddHealthCheck<SimpleHealthCheck>()
                 .AddHealthCheck(new SimpleHealthCheck())
@@ -86,7 +86,7 @@ public class HealthCheckTests
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
-            .UseProcessResponse()
+            // .UseProcessResponse()
             .UseHealthCheck("healthcheck", x => x
                 .AddHealthCheck<ExceptionThrowingHealthCheck>()
                 .AddHealthCheck(new ExceptionThrowingHealthCheck())

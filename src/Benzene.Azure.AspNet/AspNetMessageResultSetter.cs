@@ -1,5 +1,11 @@
-﻿using Benzene.Core.MessageHandlers;
+﻿using Benzene.Abstractions.Response;
+using Benzene.Core.MessageHandlers;
 
 namespace Benzene.Azure.AspNet;
 
-public class AspNetMessageResultSetter : MessageResultSetterBase<AspNetContext>;
+public class AspNetMessageResultSetter : ResponseMessageResultSetterBase<AspNetContext>
+{
+    public AspNetMessageResultSetter(IResponseHandlerContainer<AspNetContext> responseHandlerContainer) : base(responseHandlerContainer)
+    {
+    }
+}

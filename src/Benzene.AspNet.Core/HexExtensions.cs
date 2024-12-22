@@ -12,11 +12,11 @@ public static class HexExtensions
 {
     public static IApplicationBuilder UseBenzene(this IApplicationBuilder app)
     {
-        return app.UseBenzene(x => x
+        return app;//.UseBenzene(x => x
                 //.UseProcessAspNetResponse()
-                .UseProcessResponseIfHandled()
+                // .UseProcessResponseIfHandled()
             // .UseMessageHandlers()
-        );
+        //);
     }
 
     public static IApplicationBuilder UseBenzene(this IApplicationBuilder app, Action<IMiddlewarePipelineBuilder<AspNetContext>> builder)

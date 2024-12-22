@@ -15,14 +15,12 @@ public static class PipelineMother
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(serviceContainer);
 
         return pipeline
-            .UseProcessResponse()
             .UseMessageHandlers();
     }
 
     public static Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>> BasicBenzeneMessagePipeline()
     {
         return pipeline => pipeline
-            .UseProcessResponse()
             .UseMessageHandlers();
     }
 }

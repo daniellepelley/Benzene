@@ -6,23 +6,24 @@ using Benzene.Results;
 
 namespace Benzene.Core.Response;
 
-public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TContext> where TContext : IHasMessageResult
+public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TContext>
 {
-    public string Map(TContext context, ISerializer serializer)
+    public string Map(TContext context, IMessageHandlerResult messageHandlerResult, ISerializer serializer)
     {
-        if (context.MessageResult.MessageHandlerDefinition == null)
+        if (messageHandlerResult.MessageHandlerDefinition == null)
+
         {
             return null;
         }
         
-        return context.MessageResult.IsSuccessful
-            ? SerializePayload(context.MessageResult.MessageHandlerDefinition.ResponseType, context.MessageResult.Payload, serializer)
-            : serializer.Serialize(AsErrorPayload(context.MessageResult));
+        return messageHandlerResult.Result.IsSuccessful
+            ? SerializePayload(messageHandlerResult.MessageHandlerDefinition.ResponseType, messageHandlerResult.Result.PayloadAsObject, serializer)
+            : serializer.Serialize(AsErrorPayload(messageHandlerResult.Result));
     }
 
-    private static ErrorPayload AsErrorPayload(IMessageResult messageResult)
+    private static ErrorPayload AsErrorPayload(IResult result)
     {
-        return new ErrorPayload(messageResult.Status, messageResult.Errors);
+        return new ErrorPayload(result.Status, result.Errors);
     }
 
     private string SerializePayload(Type type, object payload, ISerializer serializer)

@@ -50,7 +50,6 @@ public class ApiGatewayMessagePipelineTest
             )
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
-                    .UseProcessResponse()
                     .UseMessageHandlers()
                 )
             ).BuildHost();
@@ -73,7 +72,6 @@ public class ApiGatewayMessagePipelineTest
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
                     .UseXml()
-                    .UseProcessResponse()
                     .UseMessageHandlers()
                 )
             ).BuildHost();
@@ -157,7 +155,6 @@ public class ApiGatewayMessagePipelineTest
             )
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
-                    .UseProcessResponse()
                     .UseHealthCheck("healthcheck", "GET", "/healthcheck", mockHealthCheck.Object)
                     .UseMessageHandlers()
                 )
@@ -179,7 +176,6 @@ public class ApiGatewayMessagePipelineTest
             )
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
-                    .UseProcessResponse()
                     .UseMessageHandlers()
                 )
             ).BuildHost();
@@ -215,7 +211,6 @@ public class ApiGatewayMessagePipelineTest
             })
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
-                    .UseProcessResponse()
                     .UseMessageHandlers()
                 )
             ).BuildHost();
