@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Benzene.Clients;
 using Benzene.Results;
 using Benzene.Test.Clients.Samples;

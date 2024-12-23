@@ -1,7 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Results;
 using Benzene.Results;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Benzene.Core.MessageHandlers;
 

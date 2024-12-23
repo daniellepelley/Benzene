@@ -5,10 +5,8 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Kafka;
 using Benzene.Aws.Kafka.TestHelpers;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Results;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -40,11 +38,10 @@ public class KafkaMessagePipelineTest
         IMessageResult messageResult = null;
 
         pipelineBuilder
-            .OnResponse("Check Response", context =>
-            {
-                messageResult = context.MessageResult;
-            })
-            .UseMessageHandlers();
+                .OnResponse("Check Response", context =>
+                {
+                    messageResult = context.MessageResult;
+                }).UseMessageHandlers();
 
         var aws = new KafkaLambdaHandler(new KafkaApplication(pipelineBuilder.Build()), serviceResolver);
 
@@ -73,11 +70,10 @@ public class KafkaMessagePipelineTest
         IMessageResult messageResult = null;
 
         pipelineBuilder
-            .OnResponse("Check Response", context =>
-            {
-                messageResult = context.MessageResult;
-            })
-            .UseMessageHandlers();
+                .OnResponse("Check Response", context =>
+                {
+                    messageResult = context.MessageResult;
+                }).UseMessageHandlers();
 
         var aws = new KafkaLambdaHandler(new KafkaApplication(pipelineBuilder.Build()), serviceResolver);
 
@@ -106,11 +102,10 @@ public class KafkaMessagePipelineTest
         IMessageResult messageResult = null;
 
         pipeline
-            .OnResponse("Check Response", context =>
-            {
-                messageResult = context.MessageResult;
-            })
-            .UseMessageHandlers();
+                .OnResponse("Check Response", context =>
+                {
+                    messageResult = context.MessageResult;
+                }).UseMessageHandlers();
 
         var aws = new KafkaApplication(pipeline.Build());
 

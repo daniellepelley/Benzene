@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
-using Benzene.Results;
 
 namespace Benzene.Abstractions.Response;
 

@@ -1,5 +1,4 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 

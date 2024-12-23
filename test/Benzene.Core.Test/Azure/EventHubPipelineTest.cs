@@ -2,7 +2,7 @@
 using Benzene.Azure.Core;
 using Benzene.Azure.EventHub.Function;
 using Benzene.Azure.EventHub.Function.TestHelpers;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Tools;

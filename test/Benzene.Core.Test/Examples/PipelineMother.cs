@@ -2,7 +2,7 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.BenzeneMessage;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Test.Examples;

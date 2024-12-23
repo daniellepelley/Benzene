@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Request;
 using Benzene.Core.Serialization;

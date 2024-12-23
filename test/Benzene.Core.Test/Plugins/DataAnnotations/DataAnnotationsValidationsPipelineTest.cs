@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.DataAnnotations;
 using Benzene.Microsoft.Dependencies;
@@ -9,7 +10,6 @@ using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Xunit;
-using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Plugins.DataAnnotations;
 

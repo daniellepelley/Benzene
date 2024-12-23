@@ -5,11 +5,11 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.XRay;
 using Benzene.Core.DI;
-using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Extensions = Benzene.Core.MessageHandlers.Extensions;
 
 namespace Benzene.Test.Aws.Examples;
 
@@ -22,11 +22,10 @@ public class DemoAwsLambdaStartUp : AwsLambdaStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        ServiceResolverMother.ConfigureServiceCollection(services);
-        services.UsingBenzene(x => x
-            .AddBenzene()
-            .AddBenzeneMessage()
-            .AddMessageHandlers2(Assembly.GetExecutingAssembly())
+        services.ConfigureServiceCollection();
+        services.UsingBenzene(x => Extensions.AddMessageHandlers(x
+                .AddBenzene()
+                .AddBenzeneMessage(), Assembly.GetExecutingAssembly())
         );
     }
 
@@ -35,5 +34,6 @@ public class DemoAwsLambdaStartUp : AwsLambdaStartUp
         app
             .UseXRayTracing(true)
             .UseBenzeneMessage(PipelineMother.BasicBenzeneMessagePipeline());
+        
     }
 }

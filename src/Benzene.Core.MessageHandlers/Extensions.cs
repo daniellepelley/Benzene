@@ -1,22 +1,39 @@
 ﻿using System.Reflection;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
+using Benzene.Abstractions.Request;
+using Benzene.Abstractions.Response;
+using Benzene.Core.Mappers;
 using Benzene.Core.Middleware;
+using Benzene.Core.Request;
+using Benzene.Core.Response;
 
 namespace Benzene.Core.MessageHandlers;
 
 public static class Extensions
 {
-    public static IBenzeneServiceContainer AddMessageHandlers2(this IBenzeneServiceContainer services,
+    public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
+    {
+        services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
+        services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
+        services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
+        services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));
+
+        services.TryAddScoped(typeof(IRequestMapper<>), typeof(JsonDefaultMultiSerializerOptionsRequestMapper<>));
+        return services;
+    }
+
+
+    public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         params Assembly[] assemblies)
     {
         var types = Utils.GetAllTypes(assemblies).ToArray();
-        return services.AddMessageHandlers2(types);
+        return services.AddMessageHandlers(types);
     }
 
-    public static IBenzeneServiceContainer AddMessageHandlers2(this IBenzeneServiceContainer services,
+    public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         Type[] types)
     {
         var cacheMessageHandlersFinder = new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(types));
@@ -40,49 +57,50 @@ public static class Extensions
         services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();
         services.TryAddScoped<IMessageHandlerFactory, MessageHandlerFactory>();
         services.TryAddScoped(typeof(MessageRouter<>));
-    
+
+        services.AddContextItems();
         return services;
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
+    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
     {
-        return app.UseMessageHandlers2(AppDomain.CurrentDomain.GetAssemblies());
+        return app.UseMessageHandlers(AppDomain.CurrentDomain.GetAssemblies());
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Action<MessageRouterBuilder> router)
     {
-        return app.UseMessageHandlers2(AppDomain.CurrentDomain.GetAssemblies(), router);
+        return app.UseMessageHandlers(AppDomain.CurrentDomain.GetAssemblies(), router);
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Assembly[] assemblies)
+    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Assembly[] assemblies)
     {
-        app.Register(x => AddMessageHandlers2(x, assemblies));
+        app.Register(x => AddMessageHandlers(x, assemblies));
         return app.Use<TContext, MessageRouter<TContext>>();
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Type[] types)
     {
-        app.Register(x => AddMessageHandlers2(x, types));
+        app.Register(x => AddMessageHandlers(x, types));
         return app.Use<TContext, MessageRouter<TContext>>();
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Assembly assembly, Action<MessageRouterBuilder> router) 
     {
-        return app.UseMessageHandlers2(new[] { assembly }, router);
+        return app.UseMessageHandlers(new[] { assembly }, router);
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Assembly[] assemblies, Action<MessageRouterBuilder> router)
     {
-        return app.UseMessageHandlers2(Utils.GetAllTypes(assemblies).ToArray(), router);
+        return app.UseMessageHandlers(Utils.GetAllTypes(assemblies).ToArray(), router);
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Type[] types, Action<MessageRouterBuilder> router) 
     {
-        app.Register(x => AddMessageHandlers2(x, types));
+        app.Register(x => AddMessageHandlers(x, types));
         var builder = new MessageRouterBuilder(new List<IHandlerMiddlewareBuilder>(), app.Register);
         router(builder);
 

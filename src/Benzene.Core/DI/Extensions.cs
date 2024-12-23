@@ -1,44 +1,37 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandling;
-using Benzene.Abstractions.Request;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Info;
 using Benzene.Core.Logging;
-using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
-using Benzene.Core.Request;
 using Benzene.Core.Response;
 using Benzene.Core.Serialization;
-using Utils = Benzene.Core.Helper.Utils;
 
 namespace Benzene.Core.DI;
 
 public static class Extensions
 {
-    public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
-        params Assembly[] assemblies)
-    {
-        var types = Utils.GetAllTypes(assemblies).ToArray();
-        return services.AddMessageHandlers(types);
-    }
+    // public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
+    //     params Assembly[] assemblies)
+    // {
+    //     var types = Utils.GetAllTypes(assemblies).ToArray();
+    //     return services.AddMessageHandlers(types);
+    // }
 
-    public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
-        Type[] types)
-    {
-        services.AddMessageHandlers2(types);
-        services.AddContextItems();
-        return services;
-    }
+    // public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
+    //     Type[] types)
+    // {
+    //     MessageHandlers.Extensions.AddMessageHandlers(services, types);
+    //     services.AddContextItems();
+    //     return services;
+    // }
 
     public static IBenzeneServiceContainer AddBenzeneMessage(this IBenzeneServiceContainer services)
     {
@@ -59,18 +52,16 @@ public static class Extensions
     }
 
 
-    public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
-    {
-        services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
-        services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
-        services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
-        // services.TryAddScoped(typeof(ResponseMiddleware<>));
-        // services.TryAddScoped(typeof(ResponseIfHandledMiddleware<>));
-        services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));
-    
-        services.TryAddScoped(typeof(IRequestMapper<>), typeof(JsonDefaultMultiSerializerOptionsRequestMapper<>));
-        return services;
-    }
+    // public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
+    // {
+    //     services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
+    //     services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
+    //     services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
+    //     services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));
+    //
+    //     services.TryAddScoped(typeof(IRequestMapper<>), typeof(JsonDefaultMultiSerializerOptionsRequestMapper<>));
+    //     return services;
+    // }
 
     public static IBenzeneServiceContainer SetApplicationInfo(this IBenzeneServiceContainer services,
         string name, string version, string description)
@@ -104,5 +95,4 @@ public static class Extensions
         services.AddServiceResolver();
         return services;
     }
-
 }

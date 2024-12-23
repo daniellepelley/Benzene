@@ -7,7 +7,6 @@ using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
@@ -142,8 +141,7 @@ public class SqsConsumerMessagePipelineTest
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
-        pipeline
-            .UseMessageHandlers();
+        pipeline.UseMessageHandlers();
 
         var application = new SqsConsumerApplication(pipeline.Build());
 

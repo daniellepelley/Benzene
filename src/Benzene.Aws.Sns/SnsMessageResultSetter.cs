@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.Response;
-using Benzene.Core.MessageHandlers;
+﻿using Benzene.Core.MessageHandlers;
 
 namespace Benzene.Aws.Sns;
 

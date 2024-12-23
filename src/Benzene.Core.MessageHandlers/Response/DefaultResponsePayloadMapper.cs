@@ -1,5 +1,4 @@
-﻿using System;
-using Benzene.Abstractions.Response;
+﻿using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Results;

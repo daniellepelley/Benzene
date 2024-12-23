@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Results;
 using Void = Benzene.Results.Void;

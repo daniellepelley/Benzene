@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
-using Benzene.Abstractions.Results;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Sqs;
@@ -11,10 +10,8 @@ using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Results;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -48,11 +45,10 @@ public class SqsMessagePipelineTest
                 )
             .Configure(app => app
                 .UseSqs(sqs => sqs
-                .OnResponse("Check Response", context =>
-                {
-                    isSuccessful = context.IsSuccessful;
-                })
-                .UseMessageHandlers()
+                    .OnResponse("Check Response", context =>
+                    {
+                        isSuccessful = context.IsSuccessful;
+                    }).UseMessageHandlers()
             )
         ).BuildHost();
 
@@ -82,11 +78,10 @@ public class SqsMessagePipelineTest
                 )
             .Configure(app => app
                 .UseSqs(sqs => sqs
-                .OnResponse("Check Response", context =>
-                {
-                    isSuccessful = context.IsSuccessful;
-                })
-                .UseMessageHandlers()
+                    .OnResponse("Check Response", context =>
+                    {
+                        isSuccessful = context.IsSuccessful;
+                    }).UseMessageHandlers()
             )
         ).BuildHost();
 
@@ -119,11 +114,10 @@ public class SqsMessagePipelineTest
                 )
             .Configure(app => app
                 .UseSqs(sqs => sqs
-                .OnResponse("Check Response", context =>
-                {
-                    isSuccessful = context.IsSuccessful;
-                })
-                .UseMessageHandlers()
+                    .OnResponse("Check Response", context =>
+                    {
+                        isSuccessful = context.IsSuccessful;
+                    }).UseMessageHandlers()
             )
         ).BuildHost();
 
@@ -153,11 +147,10 @@ public class SqsMessagePipelineTest
         bool? isSuccessful = null;
 
         pipeline
-            .OnResponse("Check Response", context =>
-            {
-                isSuccessful = context.IsSuccessful;
-            })
-            .UseMessageHandlers();
+                .OnResponse("Check Response", context =>
+                {
+                    isSuccessful = context.IsSuccessful;
+                }).UseMessageHandlers();
 
         var aws = new SqsApplication(pipeline.Build());
 
@@ -257,8 +250,7 @@ public class SqsMessagePipelineTest
 
         var pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        pipeline
-            .UseMessageHandlers();
+        pipeline.UseMessageHandlers();
 
         var aws = new SqsApplication(pipeline.Build());
 

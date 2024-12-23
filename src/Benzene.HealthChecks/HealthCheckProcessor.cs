@@ -1,5 +1,4 @@
-﻿using Benzene.Core.MessageHandlers;
-using Benzene.HealthChecks.Core;
+﻿using Benzene.HealthChecks.Core;
 using Benzene.Results;
 
 namespace Benzene.HealthChecks;

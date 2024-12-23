@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
 
 namespace Benzene.JsonSchema;

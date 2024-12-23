@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -12,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Benzene.Core.MessageHandling;
 
 namespace Benzene.Test.Plugins.HealthChecks;
 

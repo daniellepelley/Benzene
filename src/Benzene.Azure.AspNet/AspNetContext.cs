@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.Results;
-using Benzene.Http;
+﻿using Benzene.Http;
 using Microsoft.AspNetCore.Mvc;
 using HttpRequest = Microsoft.AspNetCore.Http.HttpRequest;
 

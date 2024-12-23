@@ -11,7 +11,7 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;

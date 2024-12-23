@@ -1,5 +1,4 @@
 ﻿using Amazon.SQS.Model;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs.Consumer;
 

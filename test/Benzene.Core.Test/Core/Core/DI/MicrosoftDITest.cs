@@ -15,7 +15,7 @@ public class MicrosoftDependencyInjectionTest
     {
         var services = new ServiceCollection();
         services.AddScoped(_ => Mock.Of<IExampleService>());
-        services.UsingBenzene(x => x.AddMessageHandlers2(typeof(ExampleRequestPayload).Assembly));
+        services.UsingBenzene(x => x.AddMessageHandlers(typeof(ExampleRequestPayload).Assembly));
 
         using var factory = new MicrosoftServiceResolverFactory(services);
 

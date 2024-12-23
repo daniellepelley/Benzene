@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Http.Cors;
 using Benzene.Test.Examples;
 using Benzene.Tools;

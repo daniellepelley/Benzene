@@ -9,7 +9,6 @@ using Benzene.Abstractions.Logging;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Logging;
-using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Moq;

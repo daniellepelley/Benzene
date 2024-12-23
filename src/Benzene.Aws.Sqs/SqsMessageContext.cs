@@ -1,5 +1,4 @@
 ﻿using Amazon.Lambda.SQSEvents;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs;
 

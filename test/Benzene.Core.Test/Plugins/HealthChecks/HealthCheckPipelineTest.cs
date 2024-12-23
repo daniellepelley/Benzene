@@ -4,7 +4,6 @@ using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
-using Benzene.Core.Response;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
@@ -14,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Benzene.Core.MessageHandling;
+using Extensions = Benzene.Core.MessageHandlers.Extensions;
 
 namespace Benzene.Test.Plugins.HealthChecks;
 
@@ -31,17 +30,16 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .UsingBenzene(x => x
-                .AddBenzene()
-                .AddBenzeneMessage()
-                .AddMessageHandlers2(GetType().Assembly)
+            .UsingBenzene(x => Extensions.AddMessageHandlers(x
+                    .AddBenzene()
+                    .AddBenzeneMessage(), GetType().Assembly)
             );
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseHealthCheck(Defaults.HealthCheckTopic, x => x.AddHealthCheck(mockHealthCheck.Object))
-            .UseMessageHandlers();
+                .UseHealthCheck(Defaults.HealthCheckTopic, x => x.AddHealthCheck(mockHealthCheck.Object))
+                .UseMessageHandlers();
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 
@@ -73,23 +71,21 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .UsingBenzene(x => x
-                .AddBenzene()
-                .AddBenzeneMessage()
-                .AddMessageHandlers2(GetType().Assembly)
+            .UsingBenzene(x => Extensions.AddMessageHandlers(x
+                    .AddBenzene()
+                    .AddBenzeneMessage(), GetType().Assembly)
             );
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
         pipeline
-            .UseHealthCheck(Defaults.HealthCheckTopic, x => x
-                .AddHealthCheck(mockHealthCheck.Object)
-                .AddHealthCheck(mockHealthCheck.Object)
-                .AddHealthCheck(mockHealthCheck.Object)
-                .AddHealthCheck(new SimpleHealthCheck())
-                .AddHealthCheck(new SimpleHealthCheck())
-            )
-            .UseMessageHandlers();
+                .UseHealthCheck(Defaults.HealthCheckTopic, x => x
+                    .AddHealthCheck(mockHealthCheck.Object)
+                    .AddHealthCheck(mockHealthCheck.Object)
+                    .AddHealthCheck(mockHealthCheck.Object)
+                    .AddHealthCheck(new SimpleHealthCheck())
+                    .AddHealthCheck(new SimpleHealthCheck())
+                ).UseMessageHandlers();
 
         var aws = new BenzeneMessageApplication(pipeline.Build());
 

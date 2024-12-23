@@ -7,7 +7,7 @@ using Benzene.Aws.Sns;
 using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;
 using Benzene.Core.Logging;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Diagnostics.Timers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
