@@ -18,19 +18,18 @@ namespace Benzene.Clients
             _inner.Dispose();
         }
 
-        public async Task<IClientResult<TResponse>> SendMessageAsync<TMessage, TResponse>(string topic, TMessage message, IDictionary<string, string> headers)
+        public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
         {
             for (var i = 0; i < _numberOfRetries; i++)
             {
-                var result = await _inner.SendMessageAsync<TMessage, TResponse>(topic, message, headers);
+                var result = await _inner.SendMessageAsync<TRequest, TResponse>(request);
                 if (!result.IsServiceUnavailable())
                 {
                     return result;
                 }
             }
 
-            return ClientResult.ServiceUnavailable<TResponse>();
+            return BenzeneResult.ServiceUnavailable<TResponse>();
         }
     }
-
 }

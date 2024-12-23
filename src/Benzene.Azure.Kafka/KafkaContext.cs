@@ -8,7 +8,6 @@ public class KafkaContext : IHasMessageResult
     public KafkaContext(KafkaEventData<string> kafkaEvent)
     {
         KafkaEvent = kafkaEvent;
-        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public KafkaEventData<string> KafkaEvent { get; }

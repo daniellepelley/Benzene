@@ -30,7 +30,7 @@ public class MiddlewareTest
             new EntryPointMiddlewareApplication<string>(new MiddlewareApplication<string, string>(app, s => s),
                 services.CreateServiceResolverFactory());
 
-        await entryPoint.HandleAsync("foo");
+        await entryPoint.SendAsync("foo");
     }
 }
 
@@ -59,11 +59,11 @@ public class MiddlewareBenzeneMessageClient : IBenzeneMessageClient
     {
     }
 
-    public async Task<IClientResult<TResponse>> SendMessageAsync<TMessage, TResponse>(string topic, TMessage message, IDictionary<string, string> headers)
+    public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         await _middlewarePipeline.HandleAsync(context, _serviceResolver);
-        return ClientResult.Set(context.MessageResult.Status, _serializer.Deserialize<TResponse>(context.BenzeneMessageResponse.Body));
+        return BenzeneResult.Set(BenzeneResultStatus.Ok, _serializer.Deserialize<TResponse>(context.BenzeneMessageResponse.Body));
     }
 }
 

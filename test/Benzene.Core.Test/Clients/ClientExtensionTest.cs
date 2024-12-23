@@ -86,8 +86,8 @@ public class ClientExtensionTest
     //     var client = serviceResolver.GetService<IBenzeneMessageClient>();
     //     Assert.IsType<RetryBenzeneMessageClient>(client);
     //
-    //     var result = await client.SendMessageAsync<ExamplePayload, Void>(Defaults.Topic, new ExamplePayload());
-    //     Assert.True(result.IsAccepted());
+    //     var benzeneResult = await client.SendMessageAsync<ExamplePayload, Void>(Defaults.Topic, new ExamplePayload());
+    //     Assert.True(benzeneResult.IsAccepted());
     //
     //     _mockAmazonLambda.Verify(x => x.InvokeAsync(It.Is<InvokeRequest>(request =>
     //         JsonConvert.DeserializeObject<BenzeneMessageClientRequest>(request.Payload).Headers["correlationId"] == "foo"

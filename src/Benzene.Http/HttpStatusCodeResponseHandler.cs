@@ -16,6 +16,6 @@ public class HttpStatusCodeResponseHandler<TContext> : ISyncResponseHandler<TCon
 
     public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        _benzeneResponseAdapter.SetStatusCode(context, _httpStatusCodeMapper.Map(messageHandlerResult.Result.Status));
+        _benzeneResponseAdapter.SetStatusCode(context, _httpStatusCodeMapper.Map(messageHandlerResult.BenzeneResult.Status));
     }
 }

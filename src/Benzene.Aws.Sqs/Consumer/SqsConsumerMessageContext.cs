@@ -3,12 +3,11 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
-public class SqsConsumerMessageContext : IHasMessageResult
+public class SqsConsumerMessageContext 
 {
     private SqsConsumerMessageContext(Message message)
     {
         Message = message;
-        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public static SqsConsumerMessageContext CreateInstance(Message message)
@@ -17,5 +16,4 @@ public class SqsConsumerMessageContext : IHasMessageResult
     }
 
     public Message Message { get; }
-    public IMessageResult MessageResult { get; set; }
 }

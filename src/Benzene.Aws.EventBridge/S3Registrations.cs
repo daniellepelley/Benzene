@@ -2,9 +2,9 @@
 
 namespace Benzene.Aws.EventBridge;
 
-public class SnsRegistrations : RegistrationsBase
+public class S3Registrations : RegistrationsBase
 {
-    public SnsRegistrations()
+    public S3Registrations()
     {
         Add(".AddS3()", x => x.AddS3());
     }

@@ -9,10 +9,10 @@ public class MessageContext<TRequest, TResponse> : IMessageContext<TRequest, TRe
     {
         Topic = topic;
         Request = request;
-        Response = ServiceResult.ServiceUnavailable<TResponse>();
+        Response = BenzeneResult.ServiceUnavailable<TResponse>();
     }
 
     public ITopic Topic { get; }
     public TRequest Request { get; }
-    public IServiceResult<TResponse> Response { get; set; }
+    public IBenzeneResult<TResponse> Response { get; set; }
 }

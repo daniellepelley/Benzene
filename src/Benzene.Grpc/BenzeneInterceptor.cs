@@ -28,3 +28,17 @@ public class BenzeneInterceptor : Interceptor
         return base.UnaryServerHandler(request, context, continuation);
     }
 }
+
+public class BenzeneInterceptor2 : Interceptor
+{
+    public BenzeneInterceptor2()
+    {
+        
+    }
+    
+    public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(TRequest request, ServerCallContext context,
+        UnaryServerMethod<TRequest, TResponse> continuation)
+    {
+        return base.UnaryServerHandler(request, context, continuation);
+    }
+}

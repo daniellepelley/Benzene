@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Response;
 

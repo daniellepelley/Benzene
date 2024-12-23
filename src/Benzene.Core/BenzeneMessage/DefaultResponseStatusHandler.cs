@@ -15,6 +15,6 @@ public class DefaultResponseStatusHandler<TContext> : ISyncResponseHandler<TCont
     
     public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        _benzeneResponseAdapter.SetStatusCode(context, messageHandlerResult.Result.Status);
+        _benzeneResponseAdapter.SetStatusCode(context, messageHandlerResult.BenzeneResult.Status);
     }
 }

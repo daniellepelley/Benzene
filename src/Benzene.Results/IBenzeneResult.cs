@@ -1,6 +1,6 @@
 ﻿namespace Benzene.Results;
 
-public interface IResult
+public interface IBenzeneResult
 {
     string Status { get; }
     bool IsSuccessful { get; }
@@ -8,7 +8,7 @@ public interface IResult
     string[] Errors { get; }
 }
 
-public interface IResult<T> : IResult
+public interface IBenzeneResult<T> : IBenzeneResult
 {
     T Payload { get; }
 }

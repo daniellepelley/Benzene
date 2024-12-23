@@ -18,10 +18,12 @@ namespace Benzene.Clients
             _inner.Dispose();
         }
 
-        public Task<IClientResult<TResponse>> SendMessageAsync<TMessage, TResponse>(string topic, TMessage message, IDictionary<string, string> headers)
+        public Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(
+            IBenzeneClientRequest<TRequest> request)
         {
-            var newHeaders = PopulateHeaders(headers, _clientHeaders.Get());
-            return _inner.SendMessageAsync<TMessage, TResponse>(topic, message, newHeaders);
+            var headers = PopulateHeaders(request.Headers, _clientHeaders.Get());
+            return _inner.SendMessageAsync<TRequest, TResponse>(
+                new BenzeneClientRequest<TRequest>(request.Topic, request.Message, headers));
         }
 
         private static IDictionary<string, string> PopulateHeaders(IDictionary<string, string> sourceHeaders,

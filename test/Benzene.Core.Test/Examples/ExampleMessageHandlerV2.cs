@@ -8,8 +8,8 @@ namespace Benzene.Test.Examples;
 [Message(Defaults.Topic, "2.0")]
 public class ExampleMessageHandlerV2 : IMessageHandler<ExampleRequestPayload, ExampleResponsePayload>
 {
-    public Task<IServiceResult<ExampleResponsePayload>> HandleAsync(ExampleRequestPayload request)
+    public Task<IBenzeneResult<ExampleResponsePayload>> HandleAsync(ExampleRequestPayload request)
     {
-        return Task.FromResult(ServiceResult.Deleted(Mother.CreateResponse(request.Name)));
+        return Task.FromResult(BenzeneResult.Deleted(Mother.CreateResponse(request.Name)));
     }
 }

@@ -21,7 +21,7 @@ public static class Extensions
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Action<MessageRouterBuilder> router) //where TContext : IHasMessageResult
+        Action<MessageRouterBuilder> router)
     {
         return app.UseMessageHandlers(AppDomain.CurrentDomain.GetAssemblies(), router);
     }
@@ -33,26 +33,25 @@ public static class Extensions
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Type[] types)
-        where TContext : IHasMessageResult
     {
         app.Register(x => x.AddMessageHandlers2(types));
         return app.Use<TContext, MessageRouter<TContext>>();
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Assembly assembly, Action<MessageRouterBuilder> router) where TContext : IHasMessageResult
+        Assembly assembly, Action<MessageRouterBuilder> router) 
     {
         return app.UseMessageHandlers(new[] { assembly }, router);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Assembly[] assemblies, Action<MessageRouterBuilder> router) //where TContext : IHasMessageResult
+        Assembly[] assemblies, Action<MessageRouterBuilder> router)
     {
         return UseMessageHandlers(app, (Type[])Utils.GetAllTypes(assemblies).ToArray(), router);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Type[] types, Action<MessageRouterBuilder> router) //where TContext : IHasMessageResult
+        Type[] types, Action<MessageRouterBuilder> router)
     {
         app.Register(x => x.AddMessageHandlers(types));
         var builder = new MessageRouterBuilder(new List<IHandlerMiddlewareBuilder>(), app.Register);
@@ -65,34 +64,4 @@ public static class Extensions
             return resolver.GetService<MessageRouter<TContext>>();
         });
     }
-
-    // public static IMiddlewarePipelineBuilder<TContext> UseProcessResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
-    //     where TContext : class, IHasMessageResult
-    // {
-    //     return app.Use<TContext, ResponseMiddleware<TContext>>();
-    // }
-
-    // public static IMiddlewarePipelineBuilder<TContext> UseProcessResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app, Action<IResponseBuilder<TContext>> action)
-    //     where TContext : class, IHasMessageResult
-    // {
-    //     var responseBuilder = new ResponseBuilder<TContext>(app);
-    //     action(responseBuilder);
-    //     var builders = responseBuilder.GetBuilders();
-    //
-    //     return app.Use("Response", async (resolver, context, next) =>
-    //     {
-    //         await next();
-    //
-    //         var responseHandlers = builders.Select(x => x(resolver)).ToArray();
-    //
-    //         var handlerContainer = new ResponseHandlerContainer<TContext>(resolver.GetService<IBenzeneResponseAdapter<TContext>>(), responseHandlers);
-    //         await handlerContainer.HandleAsync(context);
-    //     });
-    // }
-
-    // public static IMiddlewarePipelineBuilder<TContext> UseProcessResponseIfHandled<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
-    //     where TContext : class, IHasMessageResult
-    // {
-    //     return app.Use<TContext, ResponseIfHandledMiddleware<TContext>>();
-    // }
 }

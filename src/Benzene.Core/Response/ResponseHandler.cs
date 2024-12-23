@@ -16,7 +16,7 @@ public class ResponseHandler<T, TContext> : ISyncResponseHandler<TContext> where
 
     public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        var HttpHttpBodySerializer = new BodySerializer<TContext>(_responsePayloadMapper, context);
-        _httpSerializationResponseHandler.HandleAsync(context, messageHandlerResult, HttpHttpBodySerializer);
+        var httpHttpBodySerializer = new BodySerializer<TContext>(_responsePayloadMapper, context);
+        _httpSerializationResponseHandler.HandleAsync(context, messageHandlerResult, httpHttpBodySerializer);
     }
 }

@@ -21,10 +21,10 @@ public class CorrelationIdBenzeneMessageClient : IBenzeneMessageClient
         _inner.Dispose();
     }
 
-    public Task<IClientResult<TResponse>> SendMessageAsync<TMessage, TResponse>(string topic, TMessage message, IDictionary<string, string> headers)
+    public Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
-        var matchingHeaders = PopulateHeaders(headers);
-        return _inner.SendMessageAsync<TMessage, TResponse>(topic, message, matchingHeaders);
+        var matchingHeaders = PopulateHeaders(request.Headers);
+        return _inner.SendMessageAsync<TRequest, TResponse>(new BenzeneClientRequest<TRequest>(request.Topic, request.Message, matchingHeaders));
     }
 
     private IDictionary<string, string> PopulateHeaders(IDictionary<string, string> headers)
@@ -42,3 +42,4 @@ public class CorrelationIdBenzeneMessageClient : IBenzeneMessageClient
         return headers;
     }
 }
+

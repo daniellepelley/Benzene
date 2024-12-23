@@ -8,9 +8,9 @@ namespace Benzene.Test.Examples;
 [Message(Defaults.TopicWithGuid)]
 public class ExampleMessageWithGuidHandler : IMessageHandler<ExampleRequestPayloadWithGuid, Void>
 {
-    public Task<IServiceResult<Void>> HandleAsync(ExampleRequestPayloadWithGuid request)
+    public Task<IBenzeneResult<Void>> HandleAsync(ExampleRequestPayloadWithGuid request)
     {
-        return Task.FromResult(ServiceResult.Ok(new Void()));
+        return Task.FromResult(BenzeneResult.Ok(new Void()));
     }
 }
 

@@ -25,30 +25,30 @@ public abstract class CacheWriteActions<T> : CacheInvalidateActions, ICacheWrite
         return await SetEntryValueAsync(cacheValue, expireIn);
     }
 
-    private static CacheUpdateAction DefaultCacheActionMapping<TResult>(TResult result) where TResult : IResult
+    private static CacheUpdateAction DefaultCacheActionMapping<TResult>(TResult result) where TResult : IBenzeneResult
     {
         return result.Status switch
         {
-            ServiceResultStatus.Accepted or
-            ServiceResultStatus.Ok or
-            ServiceResultStatus.Created or
-            ServiceResultStatus.Updated => CacheUpdateAction.Set,
-            ServiceResultStatus.Deleted => CacheUpdateAction.Invalidate,
+            BenzeneResultStatus.Accepted or
+            BenzeneResultStatus.Ok or
+            BenzeneResultStatus.Created or
+            BenzeneResultStatus.Updated => CacheUpdateAction.Set,
+            BenzeneResultStatus.Deleted => CacheUpdateAction.Invalidate,
             _ => CacheUpdateAction.None,
         };
     }
 
-    public Task<TResult> WriteThroughAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc) where TResult : IResult<T>
+    public Task<TResult> WriteThroughAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc) where TResult : IBenzeneResult<T>
     {
         return WriteThroughAsync(modifyDatabaseFunc, result => result.Payload, DefaultCacheActionMapping);
     }
 
-    public Task<TResult> WriteThroughAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc, Func<TResult, T> getCacheValue) where TResult : IResult
+    public Task<TResult> WriteThroughAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc, Func<TResult, T> getCacheValue) where TResult : IBenzeneResult
     {
         return WriteThroughAsync(modifyDatabaseFunc, getCacheValue, DefaultCacheActionMapping);
     }
 
-    public async Task<TResult> WriteThroughAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc, Func<TResult, T> getCacheValue, Func<TResult, CacheUpdateAction> getCacheAction) where TResult : IResult
+    public async Task<TResult> WriteThroughAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc, Func<TResult, T> getCacheValue, Func<TResult, CacheUpdateAction> getCacheAction) where TResult : IBenzeneResult
     {
         using var timerScope = ProcessTimerFactory.Create("CacheActions_WriteThrough");
 

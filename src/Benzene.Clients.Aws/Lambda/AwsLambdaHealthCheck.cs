@@ -24,7 +24,7 @@ public class AwsLambdaHealthCheck : IHealthCheck
 
         await Task.WhenAny(delay, pingLambdaTask);
 
-        if (pingLambdaTask.IsCompleted && pingLambdaTask.Result.Status == ClientResultStatus.Ok)
+        if (pingLambdaTask.IsCompleted && pingLambdaTask.Result.Status == BenzeneResultStatus.Ok)
         {
             return HealthCheckResult.CreateInstance(true, Type);
         }

@@ -28,7 +28,7 @@ public class FiltersMiddleware<TRequest, TResponse> : IMiddleware<IMessageContex
             if (!canProcess)
             {
                 context.Response =
-                    ServiceResult.Ignored<TResponse>();
+                    BenzeneResult.Ignored<TResponse>();
                 return;
             }
         }

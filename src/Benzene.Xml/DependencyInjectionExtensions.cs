@@ -18,7 +18,7 @@ public static class DependencyInjectionExtensions
         return services;
     }
 
-    public static IBenzeneServiceContainer AddXml<TContext>(this IBenzeneServiceContainer services) where TContext : class, IHasMessageResult
+    public static IBenzeneServiceContainer AddXml<TContext>(this IBenzeneServiceContainer services) where TContext : class
     {
         services.AddSingleton(typeof(ISerializerOption<TContext>), typeof(XmlSerializerOption<TContext>));
         services
@@ -30,7 +30,7 @@ public static class DependencyInjectionExtensions
     }
     
     public static IMiddlewarePipelineBuilder<TContext> UseXml<TContext>(this IMiddlewarePipelineBuilder<TContext> source)
-       where TContext : class, IHasMessageResult
+       where TContext : class
 
     {
         source.Register(x => x.AddXml<TContext>());

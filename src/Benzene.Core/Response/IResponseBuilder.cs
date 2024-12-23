@@ -1,7 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Response;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Response;
 

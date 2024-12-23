@@ -16,7 +16,7 @@ public class AspApplicationBuilder : IAspApplicationBuilder
     public AspApplicationBuilder(IApplicationBuilder applicationBuilder)
     {
         _applicationBuilder = applicationBuilder;
-
+        
         var microsoftBenzeneServiceContainer =
             new MicrosoftServiceResolverFactory(applicationBuilder.ApplicationServices)
                     .CreateScope()
@@ -34,7 +34,7 @@ public class AspApplicationBuilder : IAspApplicationBuilder
         
         _applicationBuilder.Use(async (context, next) =>
         {
-            await entryPoint.HandleAsync(context);
+            await entryPoint.SendAsync(context);
             if (!context.Response.HasStarted)
             {
                 await next();

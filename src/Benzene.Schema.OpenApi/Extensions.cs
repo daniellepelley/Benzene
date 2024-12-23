@@ -1,7 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Results;
 
@@ -9,16 +8,14 @@ namespace Benzene.Schema.OpenApi;
 
 public static class Extensions
 {
-    public static IMiddlewarePipelineBuilder<THasMessageResult> UseSpec<THasMessageResult>(
-        this IMiddlewarePipelineBuilder<THasMessageResult> app)
-        where THasMessageResult : IHasMessageResult
+    public static IMiddlewarePipelineBuilder<TContext> UseSpec<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app)
     {
         return app.UseSpec(Constants.DefaultSpecTopic);
     }
 
-    public static IMiddlewarePipelineBuilder<THasMessageResult> UseSpec<THasMessageResult>(
-        this IMiddlewarePipelineBuilder<THasMessageResult> app, string topic)
-        where THasMessageResult : IHasMessageResult
+    public static IMiddlewarePipelineBuilder<TContext> UseSpec<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string topic)
     {
         app.Register(x =>
         {
@@ -31,13 +28,12 @@ public static class Extensions
         return app;
     }
 
-    // public static IMiddlewarePipelineBuilder<THasMessageResult> UseSpec<THasMessageResult>(
-    //     this IMiddlewarePipelineBuilder<THasMessageResult> app, string topic)
-    //     where THasMessageResult : IHasMessageResult
+    // public static IMiddlewarePipelineBuilder<TContext> UseSpec<TContext>(
+    //     this IMiddlewarePipelineBuilder<TContext> app, string topic)
     // {
     //     return app.Use("Spec", async (resolver, context, next) =>
     //     {
-    //         var mapper = resolver.GetService<IMessageMapper<THasMessageResult>>();
+    //         var mapper = resolver.GetService<IMessageMapper<TContext>>();
     //         var messageTopic = mapper.GetTopic(context);
     //
     //         if (messageTopic.Id == topic || messageTopic.Id == Constants.DefaultSpecTopic)
@@ -50,7 +46,7 @@ public static class Extensions
     //                 new MessageResult(
     //                     topic,
     //                     MessageHandlerDefinition.Empty(),
-    //                     ServiceResultStatus.Ok,
+    //                     BenzeneResultStatus.Ok,
     //                     true,
     //                     new RawStringMessage(output),
     //                     Array.Empty<string>()

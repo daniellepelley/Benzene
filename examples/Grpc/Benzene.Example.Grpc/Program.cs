@@ -1,14 +1,14 @@
 using Benzene.Abstractions.DI;
 using Benzene.AspNet.Core;
 using Benzene.Core.DI;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandling;
+using Benzene.Core.Middleware;
 using Benzene.Example.Grpc;
 using Benzene.Example.Grpc.Services;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Services;
 using Benzene.Grpc;
-using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,10 +18,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddGrpc(x => x.Interceptors.Add(typeof(BenzeneInterceptor)));
-// var benzeneServiceContainer = new MicrosoftBenzeneServiceContainer(builder.Services);
-// builder.Services.AddScoped<IBenzeneServiceContainer>(_ => benzeneServiceContainer);
-// var benzeneGrpc = new GrpcMethodHandlerFactory(benzeneServiceContainer, Greeter.Descriptor);
-// builder.Services.AddScoped<IGrpcMethodHandlerFactory>(_ => benzeneGrpc);
+var benzeneServiceContainer = new MicrosoftBenzeneServiceContainer(builder.Services);
+builder.Services.AddScoped<IBenzeneServiceContainer>(_ => benzeneServiceContainer);
+
+var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<GrpcContext>(benzeneServiceContainer);
+
+var benzeneGrpc = new GrpcMethodHandlerFactory(benzeneServiceContainer, Greeter.Descriptor,
+    middlewarePipelineBuilder.UseMessageHandlers().Build()); 
+builder.Services.AddScoped<IGrpcMethodHandlerFactory>(_ => benzeneGrpc);
 
 builder.Services.UsingBenzene(
     x => x.AddBenzene()
@@ -38,13 +42,13 @@ app.MapGrpcService<GreeterService>();
 app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 // app.UseBenzene(x => x.UseMessageRouter());
 app.UseBenzene2(x => x
-    .UseAspNet(asp => asp
-        .UseProcessResponseIfHandled()
-        .UseMessageRouter()
-    )
+    //.UseAspNet(asp => asp
+    //     // .UseProcessResponseIfHandled()
+    //     .UseMessageHandlers()
+    // )
     .UseGrpc(grpc => grpc
-        .UseProcessResponse()
-        .UseMessageRouter()
+        // .UseProcessResponse()
+        .UseMessageHandlers()
     )
 );
 

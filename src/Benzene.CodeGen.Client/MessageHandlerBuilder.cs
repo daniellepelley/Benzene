@@ -64,7 +64,7 @@ public class MessageHandlerBuilder : ICodeBuilder<EventServiceDocument>
         lineWriter.WriteLine("//inject any dependencies here", 2);
         lineWriter.WriteLine("}", 1);
         lineWriter.WriteLine("");
-        lineWriter.WriteLine($"public async Task<IServiceResult<{responseTypeName}>> HandleAsync({requestTypeName} message)", 1);
+        lineWriter.WriteLine($"public async Task<IBenzeneResult<{responseTypeName}>> HandleAsync({requestTypeName} message)", 1);
         lineWriter.WriteLine("{", 1);
         lineWriter.WriteLine($"return await Task.FromResult(ServiceResult.NotImplemented<{responseTypeName}>());", 2);
         lineWriter.WriteLine("}", 1);

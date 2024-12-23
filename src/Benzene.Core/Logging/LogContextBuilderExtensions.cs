@@ -3,7 +3,6 @@ using Benzene.Abstractions;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.Results;
 using Benzene.Core.Correlation;
 using Benzene.Core.Mappers;
 
@@ -19,9 +18,8 @@ public static class LogContextBuilderExtensions
             return applicationInfo?.Name;
         });
     }
-    
+
     public static LogContextBuilder<TContext> WithTransport<TContext>(this LogContextBuilder<TContext> source)
-        where TContext : IHasMessageResult
     {
         return source.OnRequest("transport", resolver =>
         {
@@ -29,9 +27,8 @@ public static class LogContextBuilderExtensions
             return currentTransport.Name;
         });
     }
-    
+
     public static LogContextBuilder<TContext> WithHeaders<TContext>(this LogContextBuilder<TContext> source, params string[] headers)
-        where TContext : IHasMessageResult
     {
         return source.OnRequest((resolver, context) =>
         {
@@ -39,7 +36,7 @@ public static class LogContextBuilderExtensions
 
             var dictionary = headers.ToDictionary(header => header,
                 header => messageMapper.GetHeader(context, header));
-            
+
             return dictionary;
         });
     }
@@ -55,42 +52,39 @@ public static class LogContextBuilderExtensions
     }
 
     public static LogContextBuilder<TContext> WithTopic<TContext>(this LogContextBuilder<TContext> source)
-        where TContext : IHasMessageResult
     {
         return source.OnRequest("topic", GetTopic);
     }
 
-    public static LogContextBuilder<TContext> WithResponseStatus<TContext>(this LogContextBuilder<TContext> source)
-        where TContext : IHasMessageResult
-    {
-        return source.OnResponse("status", (resolver, context) =>
-        {
-            if (context.MessageResult?.Status != null)
-            {
-                return context.MessageResult.Status;
-            }
+    // public static LogContextBuilder<TContext> WithResponseStatus<TContext>(this LogContextBuilder<TContext> source)
+    // {
+    //     return source.OnResponse("status", (resolver, context) =>
+    //     {
+    //         if (context.MessageResult?.Status != null)
+    //         {
+    //             return context.MessageResult.Status;
+    //         }
+    //
+    //         return null;
+    //     });
+    // }
 
-            return null;
-        });
-    }
+    // public static LogContextBuilder<TContext> WithResponseError<TContext>(this LogContextBuilder<TContext> source)
+    //     where TContext 
+    // {
+    //     return source.OnResponse("error", (resolver, context) =>
+    //     {
+    //         if (context.MessageResult?.Errors != null && context.MessageResult.Errors.Any())
+    //         {
+    //             return context.MessageResult.Errors.First();
+    //         }
+    //         return null;
+    //     });
+    // }
 
-    public static LogContextBuilder<TContext> WithResponseError<TContext>(this LogContextBuilder<TContext> source)
-        where TContext : IHasMessageResult
+    private static string GetTopic<TContext>(IServiceResolver resolver, TContext context)
     {
-        return source.OnResponse("error", (resolver, context) =>
-        {
-            if (context.MessageResult?.Errors != null && context.MessageResult.Errors.Any())
-            {
-                return context.MessageResult.Errors.First();
-            }
-            return null;
-        });
-    }
-
-    private static string GetTopic<THasMessageResult>(IServiceResolver resolver, THasMessageResult context)
-        where THasMessageResult : IHasMessageResult
-    {
-        var mapper = resolver.TryGetService<IMessageMapper<THasMessageResult>>();
+        var mapper = resolver.TryGetService<IMessageMapper<TContext>>();
 
         if (mapper == null)
         {

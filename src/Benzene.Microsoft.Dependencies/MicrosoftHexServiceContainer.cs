@@ -8,6 +8,10 @@ public class MicrosoftBenzeneServiceContainer : IBenzeneServiceContainer
 {
     private IServiceCollection _services;
 
+    public MicrosoftBenzeneServiceContainer()
+        :this(new ServiceCollection())
+    { }
+    
     public MicrosoftBenzeneServiceContainer(IServiceCollection services)
     {
         _services = services;

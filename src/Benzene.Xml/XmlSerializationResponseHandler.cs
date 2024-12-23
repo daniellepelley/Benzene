@@ -6,7 +6,7 @@ using Benzene.Core.Response;
 
 namespace Benzene.Xml;
 
-public class XmlSerializationResponseHandler<TContext> : ISerializationResponseHandler<TContext> where TContext : class, IHasMessageResult
+public class XmlSerializationResponseHandler<TContext> : ISerializationResponseHandler<TContext> where TContext : class 
 {
     private readonly string _contentType = Settings.ContentTypeKey;
     private readonly string _applicationXml = Settings.ContentTypeValue;

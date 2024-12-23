@@ -44,7 +44,7 @@ public class S3MessagePipelineTest
                 }))
             .Build(x => new S3Application(x));
 
-        await host.HandleAsync(CreateRequest());
+        await host.SendAsync(CreateRequest());
 
         Assert.Equal("some-event", eventName);
     }

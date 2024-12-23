@@ -7,7 +7,7 @@ using Benzene.Core.BenzeneMessage;
 
 namespace Benzene.Aws.Core.BenzeneMessage;
 
-public class BenzeneMessageLambdaHandler : AwsLambdaHandlerMiddleware<BenzeneMessageRequest>
+public class BenzeneMessageLambdaHandler : AwsLambdaMiddlewareRouter<BenzeneMessageRequest>
 {
     private readonly BenzeneMessageApplication _directMessageApplication;
 

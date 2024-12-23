@@ -20,7 +20,7 @@ public class AzureFunctionApp : IAzureFunctionApp
         {
             if (entryPointMiddleApplication is EntryPointMiddlewareApplication<TRequest, TResponse> app)
             {
-                return app.HandleAsync(request);
+                return app.SendAsync(request);
             }
         }
 
@@ -33,7 +33,7 @@ public class AzureFunctionApp : IAzureFunctionApp
         {
             if (entryPointMiddleApplication is IEntryPointMiddlewareApplication<TRequest> app)
             {
-                return app.HandleAsync(request);
+                return app.SendAsync(request);
             }
         }
 

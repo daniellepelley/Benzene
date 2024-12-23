@@ -9,9 +9,9 @@ namespace Platform.Service.Clients.Tenant
 {
     public interface ITenantServiceClient : IHasHealthCheck
     {
-        Task<IClientResult<TenantDto>> GetTenantAsync(GetTenantMessage message);
-        Task<IClientResult<TenantDto>> GetTenantAsync(GetTenantMessage message, IDictionary<string, string> headers);
-        Task<IClientResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message);
-        Task<IClientResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message, IDictionary<string, string> headers);
+        Task<IBenzeneResult<TenantDto>> GetTenantAsync(GetTenantMessage message);
+        Task<IBenzeneResult<TenantDto>> GetTenantAsync(GetTenantMessage message, IDictionary<string, string> headers);
+        Task<IBenzeneResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message);
+        Task<IBenzeneResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message, IDictionary<string, string> headers);
     }
 }

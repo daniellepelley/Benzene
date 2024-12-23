@@ -1,19 +1,15 @@
 ﻿using System.Net;
-using Benzene.Abstractions.Results;
 using Benzene.Http;
 
 namespace Benzene.SelfHost.Http
 {
-    public class SelfHostHttpContext : IHasMessageResult, IHttpContext
+    public class SelfHostHttpContext : IHttpContext
     {
         public SelfHostHttpContext(HttpListenerContext httpListenerContext)
         {
             HttpListenerContext = httpListenerContext;
-            MessageResult = Core.MessageHandlers.MessageResult.Empty();
         }
 
         public HttpListenerContext HttpListenerContext { get; }
-
-        public IMessageResult MessageResult { get; set; }
     }
 }

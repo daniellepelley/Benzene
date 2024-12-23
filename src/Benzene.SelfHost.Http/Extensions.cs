@@ -26,7 +26,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, string method, string path,
         params IHealthCheck[] healthChecks)
-            where TContext : IHttpContext, IHasMessageResult
+            where TContext : IHttpContext
     {
         return app.UseHealthCheck(Constants.DefaultHealthCheckTopic, method, path, healthChecks);
     }
@@ -34,19 +34,19 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, string topic, string method, string path,
         params IHealthCheck[] healthChecks)
-            where TContext : IHttpContext, IHasMessageResult
+            where TContext : IHttpContext
     {
         return app.UseHealthCheck(topic, method, path, x => x.AddHealthChecks(healthChecks));
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(this IMiddlewarePipelineBuilder<TContext> app, string method, string path, Action<IHealthCheckBuilder> action)
-        where TContext : IHttpContext, IHasMessageResult
+        where TContext : IHttpContext
     {
         return app.UseHealthCheck(Constants.DefaultHealthCheckTopic, method, path, action);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(this IMiddlewarePipelineBuilder<TContext> app, string topic, string method, string path, Action<IHealthCheckBuilder> action)
-        where TContext : IHttpContext, IHasMessageResult
+        where TContext : IHttpContext
     {
         var builder = app.GetHealthCheckerBuilder();
         action(builder);
@@ -54,7 +54,7 @@ public static class Extensions
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(this IMiddlewarePipelineBuilder<TContext> app, string topic, string method, string path, IHealthCheckBuilder builder)
-        where TContext : IHttpContext, IHasMessageResult
+        where TContext : IHttpContext
     {
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>("HealthCheck", async (context, next) =>
         {

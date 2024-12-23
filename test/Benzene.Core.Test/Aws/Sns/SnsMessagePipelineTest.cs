@@ -53,9 +53,9 @@ public class SnsMessagePipelineTest
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSns();
 
-        await host.HandleAsync(request);
+        await host.SendAsync(request);
 
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
     [Fact]
@@ -84,9 +84,9 @@ public class SnsMessagePipelineTest
             .WithHeader("content-type", "application/xml")
             .AsSns(new XmlSerializer());
 
-        await host.HandleAsync(request);
+        await host.SendAsync(request);
 
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class SnsMessagePipelineTest
         var request = CreateRequest();
 
         await aws.HandleAsync(request, serviceResolver);
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
     [Fact]
@@ -242,9 +242,9 @@ public class SnsMessagePipelineTest
         var request = CreateRequest();
         request.Records[0].Sns.MessageId = "foo";
 
-        await host.HandleAsync(request);
+        await host.SendAsync(request);
 
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
 }

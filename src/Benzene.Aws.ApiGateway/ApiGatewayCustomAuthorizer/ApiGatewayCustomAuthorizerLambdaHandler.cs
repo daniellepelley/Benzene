@@ -7,7 +7,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 
-public class ApiGatewayCustomAuthorizerLambdaHandler : AwsLambdaHandlerMiddleware<APIGatewayCustomAuthorizerRequest>
+public class ApiGatewayCustomAuthorizerLambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayCustomAuthorizerRequest>
 {
     private readonly ApiGatewayCustomAuthorizerApplication _apiGatewayApplication;
 

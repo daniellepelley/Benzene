@@ -35,7 +35,7 @@ public class StepFunctionsClientTest
                            JsonConvert.DeserializeObject<ExampleRequestPayload>(message.Input).Name == "hi"
                            ), It.IsAny<CancellationToken>()));
 
-        Assert.Equal(ClientResultStatus.Accepted, result.Status);
+        Assert.Equal(BenzeneResultStatus.Accepted, result.Status);
     }
 
     [Fact]
@@ -54,6 +54,6 @@ public class StepFunctionsClientTest
                            JsonConvert.DeserializeObject<ExampleRequestPayload>(message.Input).Name == "hi"
                            ), It.IsAny<CancellationToken>()));
 
-        Assert.Equal(ClientResultStatus.ServiceUnavailable, result.Status);
+        Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
 }

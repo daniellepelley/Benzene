@@ -17,8 +17,8 @@ namespace Benzene.Test.Plugins.JsonSchema;
 public class JsonSchemaPipelineTest
 {
     [Theory]
-    [InlineData("foo", ServiceResultStatus.Ok)]
-    [InlineData("foo-bar-foo-bar", ServiceResultStatus.ValidationError)]
+    [InlineData("foo", BenzeneResultStatus.Ok)]
+    [InlineData("foo-bar-foo-bar", BenzeneResultStatus.ValidationError)]
     public async Task ValidationTest(string name, string expectedStatus)
     {
         var jsonSchema = Json.Schema.JsonSchema.FromFile("Plugins/JsonSchema/schema.jsonc");
@@ -72,7 +72,7 @@ public class JsonSchemaPipelineTest
         var response = await aws.HandleAsync(request, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
         Assert.NotNull(response);
-        Assert.Equal(ServiceResultStatus.Ok, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, response.StatusCode);
     }
 
     [Fact]
@@ -98,6 +98,6 @@ public class JsonSchemaPipelineTest
 
         var response = await aws.HandleAsync(request, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
-        Assert.Equal(ServiceResultStatus.ValidationError, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
     }
 }

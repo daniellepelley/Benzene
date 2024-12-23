@@ -6,7 +6,6 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
-using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;
 
@@ -52,17 +51,24 @@ public class HandlerPipelineBuilder : IHandlerPipelineBuilder
     }
 }
 
-public abstract class MessageResultSetterBase<TContext>: IResultSetter<TContext> where TContext : IHasMessageResult
+public abstract class DefaultMessageResultSetterBase<TContext>: IResultSetter<TContext> 
 {
     public Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        context.MessageResult = new MessageResult(messageHandlerResult.Topic, messageHandlerResult.MessageHandlerDefinition, messageHandlerResult.Result.Status, messageHandlerResult.Result.IsSuccessful,
-            messageHandlerResult.Result.PayloadAsObject, messageHandlerResult.Result.Errors);
         return Task.CompletedTask;
     }
 }
 
-public class ResponseMessageResultSetterBase<TContext> : IResultSetter<TContext> where TContext : class, IHasMessageResult
+public abstract class MessageResultSetterBase<TContext>: IResultSetter<TContext> where TContext : IHasMessageResult
+{
+    public Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
+    {
+        context.MessageResult = new MessageResult(messageHandlerResult.BenzeneResult.IsSuccessful);
+        return Task.CompletedTask;
+    }
+}
+
+public class ResponseMessageResultSetterBase<TContext> : IResultSetter<TContext> where TContext : class
 {
     private readonly IResponseHandlerContainer<TContext> _responseHandlerContainer;
 
@@ -73,8 +79,6 @@ public class ResponseMessageResultSetterBase<TContext> : IResultSetter<TContext>
 
     public async Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
-        context.MessageResult = new MessageResult(messageHandlerResult.Topic, messageHandlerResult.MessageHandlerDefinition, messageHandlerResult.Result.Status, messageHandlerResult.Result.IsSuccessful,
-            messageHandlerResult.Result.PayloadAsObject, messageHandlerResult.Result.Errors);
         await _responseHandlerContainer.HandleAsync(context, messageHandlerResult);
     }
 }

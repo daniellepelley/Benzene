@@ -6,7 +6,7 @@ namespace Benzene.HealthChecks;
 
 public static class HealthCheckProcessor
 {
-    public static async Task<IResult> PerformHealthChecksAsync(string topic, IHealthCheck[] healthChecks) 
+    public static async Task<IBenzeneResult> PerformHealthChecksAsync(string topic, IHealthCheck[] healthChecks) 
     {
         var runningHealthChecks = healthChecks.Select(x => (x.Type, 
             new TimeOutHealthCheck(new ExceptionHandlingHealthCheck(x)).ExecuteAsync())).ToArray();
@@ -18,6 +18,6 @@ public static class HealthCheckProcessor
             x => healthCheckNamer.GetName(x.Item2.Result.Type),
             x => new HealthCheckResult(x.Item2.Result.Status, x.Item2.Result.Type, x.Item2.Result.Data)));
 
-        return ServiceResult.Ok(message);
+        return BenzeneResult.Ok(message);
     }
 }

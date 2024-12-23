@@ -9,7 +9,7 @@ using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;
 
-public class MessageRouter<TContext> : IMiddleware<TContext>// where TContext : IHasMessageResult
+public class MessageRouter<TContext> : IMiddleware<TContext>
 {
     private readonly IBenzeneLogger _logger;
     private readonly IMessageHandlerFactory _messageHandlerFactory;
@@ -44,7 +44,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>// where TContext : 
         if (string.IsNullOrEmpty(topic?.Id))
         {
             _logger.LogWarning("Topic is missing");
-            _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), ServiceResult.Set( _defaultStatuses.ValidationError, "Topic is missing")));
+            _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set( _defaultStatuses.ValidationError, "Topic is missing")));
             return;
         }
 
@@ -54,7 +54,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>// where TContext : 
         if (messageHandlerDefinition == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), ServiceResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
+            _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
             return;
         }
 
@@ -62,7 +62,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>// where TContext : 
         if (handler == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, ServiceResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}"))); 
+            _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}"))); 
             return;
         }
 

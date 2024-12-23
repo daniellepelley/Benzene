@@ -23,13 +23,13 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         _grpcMethodDefinition = grpcMethodDefinition;
     }
 
-    private async Task<object> CallAsync<TRequest>(string topic, TRequest request)
+    private async Task<TResponse?> CallAsync<TRequest, TResponse>(string topic, TRequest request)
     {
-        var context = new GrpcContext<TRequest>(topic, request);
+        var context = new GrpcContext<TRequest, TResponse>(topic, request);
 
         await _middlewarePipeline.HandleAsync(context,
             _serviceResolverFactory.CreateScope());
-        return context.MessageResult.Payload;
+        return context.Response;
     }
 
     private T Parse<T>(string json, string methodName) where T : class
@@ -42,14 +42,14 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         where TRequest : class
         where TResponse : class
     {
-        var result = await CallAsync(_grpcMethodDefinition.Topic, request);
+        var result = await CallAsync<TRequest, TResponse>(_grpcMethodDefinition.Topic, request);
 
-        if (result is TRequest)
+        if (result is TResponse response)
         {
-            return result as TResponse;
+            return response;
         }
 
-        var responseJson = System.Text.Json.JsonSerializer.Serialize(result, new JsonSerializerOptions
+        var responseJson = JsonSerializer.Serialize(result, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             IgnoreNullValues = true

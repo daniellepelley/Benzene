@@ -44,7 +44,7 @@ public class SqsBenzeneMessageClientTest
 
 
         var sqsClient = new SqsMessageClient(mockSqsClient.Object, queueUrl);
-        await sqsClient.PublishAsync(Defaults.Topic, Defaults.Message, ServiceResultStatus.Ok);
+        await sqsClient.PublishAsync(Defaults.Topic, Defaults.Message, BenzeneResultStatus.Ok);
 
         mockSqsClient.Verify(x => x.SendMessageAsync(
             It.Is<SendMessageRequest>(sendMessageRequest => sendMessageRequest.QueueUrl == queueUrl), It.IsAny<CancellationToken>()));

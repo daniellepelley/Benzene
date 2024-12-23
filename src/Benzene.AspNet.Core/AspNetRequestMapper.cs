@@ -55,7 +55,7 @@
 //             }
 //
 //             using var sr = new StreamReader(request.Body);
-//             var json = sr.ReadToEndAsync().Result;
+//             var json = sr.ReadToEndAsync().BenzeneResult;
 //             return json;
 //         }
 //         catch (Exception ex)

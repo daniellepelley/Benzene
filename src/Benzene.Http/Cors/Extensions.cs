@@ -10,7 +10,7 @@ namespace Benzene.Http.Cors;
 public static class Extensions
 {
     public static IMiddlewarePipelineBuilder<TContext> UseCors<TContext>(
-        this IMiddlewarePipelineBuilder<TContext> app, CorsSettings corsSettings) where TContext : IHasMessageResult, IHttpContext
+        this IMiddlewarePipelineBuilder<TContext> app, CorsSettings corsSettings) where TContext : IHttpContext
     {
         app.Register(x =>
             x.AddSingleton(resolver => new CorsMiddleware<TContext>(

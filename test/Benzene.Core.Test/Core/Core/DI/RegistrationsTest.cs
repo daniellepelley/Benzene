@@ -43,9 +43,9 @@ public class RegistrationsTest
     {
         var result = RegistrationErrorHandler.CheckType(typeof(MessageRouter<BenzeneMessageContext>));
 
-        // Assert.Contains("Benzene.Core", result);
+        // Assert.Contains("Benzene.Core", benzeneResult);
         Assert.Contains("MessageRouter<>", result);
-        // Assert.Contains(".UsingBenzene(x => x.AddMessageHandlers(<assemblies>))", result);
+        // Assert.Contains(".UsingBenzene(x => x.AddMessageHandlers(<assemblies>))", benzeneResult);
 
         Assert.Contains("Benzene.Aws.Core", result);
         Assert.Contains(".UsingBenzene(x => x.AddAwsMessageHandlers(<assemblies>))", result);

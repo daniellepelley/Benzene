@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Results;
 using Void = Benzene.Results.Void;
@@ -17,7 +18,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         _inner = inner;
     }
 
-    public async Task<IServiceResult> HandlerAsync(IRequestFactory requestFactory)
+    public async Task<IBenzeneResult> HandlerAsync(IRequestFactory requestFactory)
     {
         TRequest? messageObject;
         try
@@ -28,7 +29,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         {
             Debug.WriteLine($"Message is not valid: {ex}");
             _logger.LogWarning(ex, "Message is not valid");
-            return ServiceResult.BadRequest("Message is not valid", ex.Message);
+            return BenzeneResult.BadRequest("Message is not valid", ex.Message);
         }
         
         try
@@ -36,7 +37,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
             var result = await _inner.HandleAsync(messageObject);
             if (result == null)
             {
-                return ServiceResult.Accepted<Void>();
+                return BenzeneResult.Accepted<Void>();
             }
 
             return result;
@@ -45,13 +46,13 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         {
             Debug.WriteLine($"Message handler threw argument exception: {ex}");
             _logger.LogError(ex, "Message handler threw argument exception");
-            return ServiceResult.ValidationError(ex.Message);
+            return BenzeneResult.ValidationError(ex.Message);
         }
         catch(Exception ex)
         {
             Debug.WriteLine($"Message handler threw an exception: {ex}");
             _logger.LogError(ex, "Message handler threw an exception");
-            return ServiceResult.ServiceUnavailable("Message handler threw an exception", ex.Message);
+            return BenzeneResult.ServiceUnavailable("Message handler threw an exception", ex.Message);
         }
     }
 }

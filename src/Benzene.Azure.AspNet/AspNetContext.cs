@@ -5,7 +5,7 @@ using HttpRequest = Microsoft.AspNetCore.Http.HttpRequest;
 
 namespace Benzene.Azure.AspNet;
 
-public class AspNetContext : IHasMessageResult, IHttpContext
+public class AspNetContext : IHttpContext
 {
     public AspNetContext(HttpRequest httpRequest)
     {
@@ -14,5 +14,4 @@ public class AspNetContext : IHasMessageResult, IHttpContext
 
     public HttpRequest HttpRequest { get; }
     public ContentResult? ContentResult { get; set; }
-    public IMessageResult? MessageResult { get; set; }
 }

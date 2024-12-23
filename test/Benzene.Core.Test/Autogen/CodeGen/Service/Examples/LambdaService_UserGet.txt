@@ -11,7 +11,7 @@ public class UserGetMessageHandler : IMessageHandler<GetUserMessage, UserDto>
         //inject any dependencies here
     }
 
-    public async Task<IServiceResult<UserDto>> HandleAsync(GetUserMessage message)
+    public async Task<IBenzeneResult<UserDto>> HandleAsync(GetUserMessage message)
     {
         return await Task.FromResult(ServiceResult.NotImplemented<UserDto>());
     }

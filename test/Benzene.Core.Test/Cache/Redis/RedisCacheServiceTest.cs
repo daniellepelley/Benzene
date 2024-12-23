@@ -78,9 +78,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.LazyLoadAsync(() => Task.FromResult(ServiceResult.ServiceUnavailable<TestDataType>()));
+        var result = await entry.LazyLoadAsync(() => Task.FromResult(BenzeneResult.ServiceUnavailable<TestDataType>()));
 
-        Assert.Equal(ServiceResultStatus.Ok, result.Status);
+        Assert.Equal(BenzeneResultStatus.Ok, result.Status);
         Assert.Equivalent(testValue, result.Payload);
     }
 
@@ -96,9 +96,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.LazyLoadAsync(() => Task.FromResult(ServiceResult.Ok(testValue)));
+        var result = await entry.LazyLoadAsync(() => Task.FromResult(BenzeneResult.Ok(testValue)));
 
-        Assert.Equal(ServiceResultStatus.Ok, result.Status);
+        Assert.Equal(BenzeneResultStatus.Ok, result.Status);
         Assert.Equivalent(testValue, result.Payload);
         connectionFactory.DataBaseMock.Verify();
     }
@@ -114,9 +114,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughAsync(() => Task.FromResult(ServiceResult.Created(testValue)));
+        var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Created(testValue)));
 
-        Assert.Equal(ServiceResultStatus.Created, result.Status);
+        Assert.Equal(BenzeneResultStatus.Created, result.Status);
         Assert.Equivalent(testValue, result.Payload);
         connectionFactory.DataBaseMock.Verify();
     }
@@ -132,9 +132,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughAsync(() => Task.FromResult(ServiceResult.Deleted(testValue)));
+        var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Deleted(testValue)));
 
-        Assert.Equal(ServiceResultStatus.Deleted, result.Status);
+        Assert.Equal(BenzeneResultStatus.Deleted, result.Status);
         Assert.Equivalent(testValue, result.Payload);
         connectionFactory.DataBaseMock.Verify();
     }
@@ -146,9 +146,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughAsync(() => Task.FromResult(ServiceResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)));
+        var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)));
 
-        Assert.Equal(ServiceResultStatus.BadRequest, result.Status);
+        Assert.Equal(BenzeneResultStatus.BadRequest, result.Status);
         Assert.Equivalent(TEST_ERROR_MESSAGE, Assert.Single(result.Errors));
     }
 
@@ -163,9 +163,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughAsync(() => Task.FromResult(ServiceResult.Updated(new { TestValue = testValue })), x => x.Payload.TestValue);
+        var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Updated(new { TestValue = testValue })), x => x.Payload.TestValue);
 
-        Assert.Equal(ServiceResultStatus.Updated, result.Status);
+        Assert.Equal(BenzeneResultStatus.Updated, result.Status);
         Assert.Equivalent(testValue, result.Payload.TestValue);
         connectionFactory.DataBaseMock.Verify();
     }
@@ -181,9 +181,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughAsync(() => Task.FromResult(ServiceResult.Deleted(new { TestValue = testValue })), x => x.Payload.TestValue);
+        var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Deleted(new { TestValue = testValue })), x => x.Payload.TestValue);
 
-        Assert.Equal(ServiceResultStatus.Deleted, result.Status);
+        Assert.Equal(BenzeneResultStatus.Deleted, result.Status);
         Assert.Equivalent(testValue, result.Payload.TestValue);
         connectionFactory.DataBaseMock.Verify();
     }
@@ -195,9 +195,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughAsync(() => Task.FromResult(ServiceResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)), x => x.Payload);
+        var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)), x => x.Payload);
 
-        Assert.Equal(ServiceResultStatus.BadRequest, result.Status);
+        Assert.Equal(BenzeneResultStatus.BadRequest, result.Status);
         Assert.Equivalent(TEST_ERROR_MESSAGE, Assert.Single(result.Errors));
     }
 
@@ -210,9 +210,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughInvalidateAsync(() => Task.FromResult(ServiceResult.Created("Test")));
+        var result = await entry.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.Created("Test")));
 
-        Assert.Equal(ServiceResultStatus.Created, result.Status);
+        Assert.Equal(BenzeneResultStatus.Created, result.Status);
         Assert.Equivalent("Test", result.Payload);
         connectionFactory.DataBaseMock.Verify();
     }
@@ -224,9 +224,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
-        var result = await entry.WriteThroughInvalidateAsync(() => Task.FromResult(ServiceResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)));
+        var result = await entry.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)));
 
-        Assert.Equal(ServiceResultStatus.BadRequest, result.Status);
+        Assert.Equal(BenzeneResultStatus.BadRequest, result.Status);
         Assert.Equivalent(TEST_ERROR_MESSAGE, Assert.Single(result.Errors));
     }
 
@@ -261,9 +261,9 @@ public class RedisCacheServiceTest
         var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
         var actions = service.GetTestPrefixActions();
 
-        var result = await actions.WriteThroughInvalidateAsync(() => Task.FromResult(ServiceResult.Deleted()));
+        var result = await actions.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.Deleted()));
 
-        Assert.Equal(ServiceResultStatus.Deleted, result.Status);
+        Assert.Equal(BenzeneResultStatus.Deleted, result.Status);
     }
 
     [Fact]

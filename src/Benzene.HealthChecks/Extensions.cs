@@ -9,16 +9,14 @@ namespace Benzene.HealthChecks;
 
 public static class Extensions
 {
-    public static IMiddlewarePipelineBuilder<THasMessageResult> UseHealthCheck<THasMessageResult>(
-        this IMiddlewarePipelineBuilder<THasMessageResult> app, string topic, params IHealthCheck[] healthChecks)
-        where THasMessageResult : IHasMessageResult
+    public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string topic, params IHealthCheck[] healthChecks)
     {
         return app.UseHealthCheck(topic, builder => builder.AddHealthChecks(healthChecks));
     }
 
-    public static IMiddlewarePipelineBuilder<THasMessageResult> UseHealthCheck<THasMessageResult>(
-        this IMiddlewarePipelineBuilder<THasMessageResult> app, string topic, Action<IHealthCheckBuilder> action)
-        where THasMessageResult : IHasMessageResult
+    public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string topic, Action<IHealthCheckBuilder> action)
     {
         var builder = app.GetHealthCheckerBuilder();
         action(builder);
@@ -26,13 +24,13 @@ public static class Extensions
         return app.UseHealthCheck(topic, builder);
     }
 
-    public static IMiddlewarePipelineBuilder<THasMessageResult> UseHealthCheck<THasMessageResult>(
-        this IMiddlewarePipelineBuilder<THasMessageResult> app, string topic, IHealthCheckBuilder builder)
+    public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string topic, IHealthCheckBuilder builder)
     {
-        return app.Use(resolver => new FuncWrapperMiddleware<THasMessageResult>(Constants.HealthCheckMiddlewareName, async (context, next) =>
+        return app.Use(resolver => new FuncWrapperMiddleware<TContext>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
-            var mapper = resolver.GetService<IMessageMapper<THasMessageResult>>();
-            var resultSetter = resolver.GetService<IResultSetter<THasMessageResult>>();
+            var mapper = resolver.GetService<IMessageMapper<TContext>>();
+            var resultSetter = resolver.GetService<IResultSetter<TContext>>();
 
             var messageTopic = mapper.GetTopic(context);
 

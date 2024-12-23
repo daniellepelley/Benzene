@@ -52,7 +52,7 @@ public class KafkaMessagePipelineTest
 
         await aws.HandleAsync(request.AwsEventStreamContext(), () => Task.CompletedTask);
 
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class KafkaMessagePipelineTest
 
         await aws.HandleAsync(request.AwsEventStreamContext(), () => Task.CompletedTask);
 
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class KafkaMessagePipelineTest
 
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
         await aws.HandleAsync(request, serviceResolver);
-        Assert.Equal(ServiceResultStatus.Ok, messageResult.Status);
+        Assert.True(messageResult.IsSuccessful);
     }
 
     [Fact]

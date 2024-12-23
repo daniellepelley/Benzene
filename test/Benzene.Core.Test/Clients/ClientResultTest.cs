@@ -4,82 +4,82 @@ using Xunit;
 
 namespace Benzene.Test.Clients;
 
-public class ClientResultTest
+public class BenzeneResultTest
 {
     [Fact]
     public void Ok()
     {
-        var result = ClientResult.Ok(new ExamplePayload());
-        Assert.Equal(ClientResultStatus.Ok, result.Status);
+        var result = BenzeneResult.Ok(new ExamplePayload());
+        Assert.Equal(BenzeneResultStatus.Ok, result.Status);
     }
 
     [Fact]
     public void Accepted()
     {
-        var result = ClientResult.Accepted(new ExamplePayload());
-        Assert.Equal(ClientResultStatus.Accepted, result.Status);
+        var result = BenzeneResult.Accepted(new ExamplePayload());
+        Assert.Equal(BenzeneResultStatus.Accepted, result.Status);
     }
     
     [Fact]
     public void Accepted_T()
     {
-        var result = ClientResult.Accepted<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.Accepted, result.Status);
+        var result = BenzeneResult.Accepted<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.Accepted, result.Status);
     }
 
     [Fact]
     public void Created()
     {
-        var result = ClientResult.Created(new ExamplePayload());
-        Assert.Equal(ClientResultStatus.Created, result.Status);
+        var result = BenzeneResult.Created(new ExamplePayload());
+        Assert.Equal(BenzeneResultStatus.Created, result.Status);
     }
 
     [Fact]
     public void Ignored()
     {
-        var result = ClientResult.Ignored();
-        Assert.Equal(ClientResultStatus.Ignored, result.Status);
+        var result = BenzeneResult.Ignored();
+        Assert.Equal(BenzeneResultStatus.Ignored, result.Status);
     }
 
     [Fact]
     public void Conflict()
     {
-        var result = ClientResult.Conflict<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.Conflict, result.Status);
+        var result = BenzeneResult.Conflict<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.Conflict, result.Status);
     }
 
     [Fact]
     public void NotFound()
     {
-        var result = ClientResult.NotFound<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.NotFound, result.Status);
+        var result = BenzeneResult.NotFound<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.NotFound, result.Status);
     }
 
     [Fact]
     public void ServiceUnavailable()
     {
-        var result = ClientResult.ServiceUnavailable<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.ServiceUnavailable, result.Status);
+        var result = BenzeneResult.ServiceUnavailable<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
 
     [Fact]
     public void NotImplemented()
     {
-        var result = ClientResult.NotImplemented<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.NotImplemented, result.Status);
+        var result = BenzeneResult.NotImplemented<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.NotImplemented, result.Status);
     }
 
     [Fact]
     public void UnexpectedError()
     {
-        var result = ClientResult.UnexpectedError<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.UnexpectedError, result.Status);
+        var result = BenzeneResult.UnexpectedError<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.UnexpectedError, result.Status);
     }
 
     [Fact]
     public void ValidationError()
     {
-        var result = ClientResult.ValidationError<ExamplePayload>();
-        Assert.Equal(ClientResultStatus.ValidationError, result.Status);
+        var result = BenzeneResult.ValidationError<ExamplePayload>();
+        Assert.Equal(BenzeneResultStatus.ValidationError, result.Status);
     }
 }

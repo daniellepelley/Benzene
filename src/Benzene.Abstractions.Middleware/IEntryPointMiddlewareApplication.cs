@@ -4,10 +4,10 @@ public interface IEntryPointMiddlewareApplication;
 
 public interface IEntryPointMiddlewareApplication<in TEvent> : IEntryPointMiddlewareApplication
 {
-    Task HandleAsync(TEvent @event);
+    Task SendAsync(TEvent @event);
 }
 
 public interface IEntryPointMiddlewareApplication<in TEvent, TResult> : IEntryPointMiddlewareApplication
 {
-    Task<TResult> HandleAsync(TEvent @event);
+    Task<TResult> SendAsync(TEvent @event);
 }

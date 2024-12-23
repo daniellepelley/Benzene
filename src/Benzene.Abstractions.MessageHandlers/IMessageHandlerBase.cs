@@ -1,6 +1,8 @@
-﻿namespace Benzene.Abstractions.MessageHandlers;
+﻿using Benzene.Results;
+
+namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IMessageHandlerBase<TRequest, TResponse>
 {
-    Task<TResponse> HandleAsync(TRequest request);
+    Task<IBenzeneResult<TResponse>> HandleAsync(TRequest request);
 }

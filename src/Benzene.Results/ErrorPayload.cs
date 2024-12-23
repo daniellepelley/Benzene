@@ -12,10 +12,6 @@ public class ErrorPayload : ProblemDetails
         Status = status;
         Detail = string.Join(", ", errors);
     }
-    //
-    // public string Status { get; set; }
-    //
-    // public string[] Errors { get; set; }
 }
 
 public class ProblemDetails

@@ -50,7 +50,7 @@ public class BenzeneMessagePipelineTest
         var response = await aws.HandleAsync(request, serviceResolver);
 
         Assert.NotNull(response);
-        Assert.Equal(ServiceResultStatus.Ok, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, response.StatusCode);
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class BenzeneMessagePipelineTest
         var response = await aws.HandleAsync(request, serviceResolver);
 
         Assert.NotNull(response);
-        Assert.Equal(ServiceResultStatus.Deleted, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Deleted, response.StatusCode);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class BenzeneMessagePipelineTest
         var response = await aws.HandleAsync(request, serviceResolver);
 
         Assert.NotNull(response);
-        Assert.Equal(ServiceResultStatus.Accepted, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Accepted, response.StatusCode);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class BenzeneMessagePipelineTest
                 Headers = context.BenzeneMessageRequest.Headers,
                 StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503",
             };
-            context.MessageResult = new MessageResult(new Topic(Defaults.Topic), null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
+            // context.MessageResult = new MessageResult(new Topic(Defaults.Topic), null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
             return next();
         });
 
@@ -173,7 +173,7 @@ public class BenzeneMessagePipelineTest
                 StatusCode = context.BenzeneMessageRequest.Topic == Defaults.Topic ? "200" : "503",
             };
             responseStatus = context.BenzeneMessageResponse.StatusCode;
-            context.MessageResult = new MessageResult(new Topic(Defaults.Topic), null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
+            // context.MessageResult = new MessageResult(new Topic(Defaults.Topic), null, "", true, Defaults.ResponseMessage, Array.Empty<string>());
             return next();
         });
 

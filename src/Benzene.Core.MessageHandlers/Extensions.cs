@@ -45,45 +45,42 @@ public static class Extensions
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app)
-        where TContext : IHasMessageResult
     {
         return app.UseMessageHandlers2(AppDomain.CurrentDomain.GetAssemblies());
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Action<MessageRouterBuilder> router) where TContext : IHasMessageResult
+        Action<MessageRouterBuilder> router)
     {
         return app.UseMessageHandlers2(AppDomain.CurrentDomain.GetAssemblies(), router);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Assembly[] assemblies)
-        where TContext : IHasMessageResult
     {
         app.Register(x => AddMessageHandlers2(x, assemblies));
         return app.Use<TContext, MessageRouter<TContext>>();
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app, params Type[] types)
-        where TContext : IHasMessageResult
     {
         app.Register(x => AddMessageHandlers2(x, types));
         return app.Use<TContext, MessageRouter<TContext>>();
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Assembly assembly, Action<MessageRouterBuilder> router) where TContext : IHasMessageResult
+        Assembly assembly, Action<MessageRouterBuilder> router) 
     {
         return app.UseMessageHandlers2(new[] { assembly }, router);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Assembly[] assemblies, Action<MessageRouterBuilder> router) where TContext : IHasMessageResult
+        Assembly[] assemblies, Action<MessageRouterBuilder> router)
     {
         return app.UseMessageHandlers2(Utils.GetAllTypes(assemblies).ToArray(), router);
     }
 
     public static IMiddlewarePipelineBuilder<TContext> UseMessageHandlers2<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
-        Type[] types, Action<MessageRouterBuilder> router) where TContext : IHasMessageResult
+        Type[] types, Action<MessageRouterBuilder> router) 
     {
         app.Register(x => AddMessageHandlers2(x, types));
         var builder = new MessageRouterBuilder(new List<IHandlerMiddlewareBuilder>(), app.Register);

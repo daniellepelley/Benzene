@@ -20,7 +20,7 @@ public abstract class CacheInvalidateActions : ICacheInvalidateActions
         return InvalidateEntryAsync();
     }
 
-    public async Task<TResult> WriteThroughInvalidateAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc) where TResult : IResult
+    public async Task<TResult> WriteThroughInvalidateAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc) where TResult : IBenzeneResult
     {
         using var timerScope = ProcessTimerFactory.Create("CacheActions_WriteThrough");
 

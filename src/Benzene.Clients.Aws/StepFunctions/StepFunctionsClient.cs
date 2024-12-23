@@ -23,7 +23,7 @@ public class StepFunctionsClient : IStepFunctionsClient
         _serializer = new JsonSerializer();
     }
 
-    public async Task<IClientResult<TResponse>> StartExecutionAsync<TMessage, TResponse>(TMessage message)
+    public async Task<IBenzeneResult<TResponse>> StartExecutionAsync<TMessage, TResponse>(TMessage message)
     {
         try
         {
@@ -33,12 +33,12 @@ public class StepFunctionsClient : IStepFunctionsClient
                 Input = _serializer.Serialize(message)
             });
 
-            return ClientResult.Accepted<TResponse>();
+            return BenzeneResult.Accepted<TResponse>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Sending message to {receiver} failed", _stateMachineArn);
-            return ClientResult.ServiceUnavailable<TResponse>(ex.Message);
+            return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
         }
     }
         

@@ -20,7 +20,7 @@
 //         _pipelineBuilder = pipelineBuilder;
 //     }
 //
-//     public async Task<IServiceResult<TResponse>> HandleAsync(TRequest request)
+//     public async Task<IBenzeneResult<TResponse>> HandleAsync(TRequest request)
 //     {
 //         var context = new MessageContext<TRequest, TResponse>(_topic, request);
 //         await _pipelineBuilder.HandleAsync(context, _serviceResolver);

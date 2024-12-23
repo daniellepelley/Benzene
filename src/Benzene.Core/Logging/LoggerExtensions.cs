@@ -29,7 +29,7 @@ public static class LoggerExtensions
                     {
                         using (logContext.Create("processTime", $"{stopwatch.ElapsedMilliseconds}"))
                         {
-                            logger.LogInformation("Result");
+                            logger.LogInformation("BenzeneResult");
                         }
                     }
                 }

@@ -5,11 +5,11 @@ using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Core;
 
-public abstract class AwsLambdaHandlerMiddleware<TRequest> : MiddlewareRouter<TRequest, AwsEventStreamContext>
+public abstract class AwsLambdaMiddlewareRouter<TRequest> : MiddlewareRouter<TRequest, AwsEventStreamContext>
 {
     protected DefaultLambdaJsonSerializer JsonSerializer = new();
 
-    protected AwsLambdaHandlerMiddleware(IServiceResolver serviceResolver)
+    protected AwsLambdaMiddlewareRouter(IServiceResolver serviceResolver)
         :base(serviceResolver)
     {
     }

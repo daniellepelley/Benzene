@@ -12,6 +12,6 @@ public class ExampleNoResponseMessageHandler : IMessageHandler<ExampleRequestPay
 {
     public Task HandleAsync(ExampleRequestPayload request)
     {
-        return Task.FromResult(ServiceResult.Ok(new Void()));
+        return Task.FromResult(BenzeneResult.Ok(new Void()));
     }
 }

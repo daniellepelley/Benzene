@@ -16,7 +16,7 @@
 //         _serviceResolver = serviceResolver;
 //     }
 //
-//     public async Task<IServiceResult<HealthCheckResult>> HandleAsync(NullPayload request)
+//     public async Task<IBenzeneResult<HealthCheckResult>> HandleAsync(NullPayload request)
 //     {
 //         var tasks = _healthChecks.Select(x => x.ExecuteAsync(_serviceResolver)).ToArray();
 //

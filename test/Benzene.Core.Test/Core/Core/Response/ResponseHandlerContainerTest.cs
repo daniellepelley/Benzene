@@ -33,12 +33,12 @@ public class ResponseHandlerContainerTest
         var expected = new JsonSerializer().Serialize(request);
 
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
-        context.MessageResult = new MessageResult(new Topic(Defaults.Topic), messageHandlerDefinition,
-            ServiceResultStatus.Ok, true, request, null);
-        await messageHandlerFactory.HandleAsync(context, new MessageHandlerResult(new Topic(Defaults.Topic), messageHandlerDefinition, ServiceResult.Ok(request)));
+        // context.MessageResult = new MessageResult(new Topic(Defaults.Topic), messageHandlerDefinition,
+            // BenzeneResultStatus.Ok, true, request, null);
+        await messageHandlerFactory.HandleAsync(context, new MessageHandlerResult(new Topic(Defaults.Topic), messageHandlerDefinition, BenzeneResult.Ok(request)));
 
         Assert.Equal(Constants.JsonContentType, context.BenzeneMessageResponse.Headers[Constants.ContentTypeHeader]);
         Assert.Equal(expected, context.BenzeneMessageResponse.Body);
-        Assert.Equal(ServiceResultStatus.Ok, context.BenzeneMessageResponse.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, context.BenzeneMessageResponse.StatusCode);
     }
 }

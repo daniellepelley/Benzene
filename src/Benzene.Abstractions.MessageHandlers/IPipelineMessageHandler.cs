@@ -4,5 +4,5 @@ namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IPipelineMessageHandler<TRequest, TResponse>
 {
-    Task<IServiceResult<TResponse>> HandleAsync(ITopic topic, TRequest request);
+    Task<IBenzeneResult<TResponse>> HandleAsync(ITopic topic, TRequest request);
 }

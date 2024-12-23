@@ -9,7 +9,7 @@ using Json.Schema;
 
 namespace Benzene.JsonSchema;
 
-public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TContext : class, IHasMessageResult
+public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TContext : class
 {
     private readonly IMessageBodyMapper<TContext> _messageBodyMapper;
     private readonly IJsonSchemaProvider<TContext> _jsonSchemaProvider;
@@ -41,7 +41,7 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
         if (body == null)
         {
             _resultSetter.SetResultAsync(context,
-                new MessageHandlerResult(ServiceResult.Set(_defaultStatuses.ValidationError, false)));
+                new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
             return;
         }
 
@@ -62,7 +62,7 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
         else
         {
             _resultSetter.SetResultAsync(context,
-                new MessageHandlerResult(ServiceResult.Set(_defaultStatuses.ValidationError, false)));
+                new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
         }
     }
 }

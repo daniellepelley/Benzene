@@ -3,7 +3,7 @@
 namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IMessageHandler<TRequest, TResponse>
-    : IMessageHandlerBase<TRequest, IServiceResult<TResponse>>
+    : IMessageHandlerBase<TRequest, TResponse>
 {}
 
 public interface IMessageHandler<TRequest>
@@ -13,5 +13,5 @@ public interface IMessageHandler<TRequest>
 
 public interface IMessageHandler
 {
-    Task<IServiceResult> HandlerAsync(IRequestFactory requestFactory);
+    Task<IBenzeneResult> HandlerAsync(IRequestFactory requestFactory);
 }

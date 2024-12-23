@@ -8,7 +8,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.Kafka;
 
-public class KafkaLambdaHandler : AwsLambdaHandlerMiddleware<KafkaEvent>
+public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
 {
     private readonly IMiddlewareApplication<KafkaEvent> _application;
 

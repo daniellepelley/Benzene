@@ -16,14 +16,14 @@ public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCo
             return null;
         }
         
-        return messageHandlerResult.Result.IsSuccessful
-            ? SerializePayload(messageHandlerResult.MessageHandlerDefinition.ResponseType, messageHandlerResult.Result.PayloadAsObject, serializer)
-            : serializer.Serialize(AsErrorPayload(messageHandlerResult.Result));
+        return messageHandlerResult.BenzeneResult.IsSuccessful
+            ? SerializePayload(messageHandlerResult.MessageHandlerDefinition.ResponseType, messageHandlerResult.BenzeneResult.PayloadAsObject, serializer)
+            : serializer.Serialize(AsErrorPayload(messageHandlerResult.BenzeneResult));
     }
 
-    private static ErrorPayload AsErrorPayload(IResult result)
+    private static ErrorPayload AsErrorPayload(IBenzeneResult benzeneResult)
     {
-        return new ErrorPayload(result.Status, result.Errors);
+        return new ErrorPayload(benzeneResult.Status, benzeneResult.Errors);
     }
 
     private string SerializePayload(Type type, object payload, ISerializer serializer)

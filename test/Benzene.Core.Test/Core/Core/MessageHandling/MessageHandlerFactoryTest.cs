@@ -35,6 +35,6 @@ public class MessageHandlerFactoryTest
         var messageHandler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic)));
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
-        Assert.Equal(ServiceResultStatus.Ok, result.Status);
+        Assert.Equal(BenzeneResultStatus.Ok, result.Status);
     }
 }

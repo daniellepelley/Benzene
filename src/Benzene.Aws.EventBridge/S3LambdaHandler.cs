@@ -8,7 +8,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.EventBridge;
 
-public class S3LambdaHandler : AwsLambdaHandlerMiddleware<S3Event>
+public class S3LambdaHandler : AwsLambdaMiddlewareRouter<S3Event>
 {
     private readonly IMiddlewareApplication<S3Event> _application;
 

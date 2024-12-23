@@ -5,7 +5,7 @@ using Benzene.Results;
 namespace Benzene.Abstractions.Response;
 
 /// <summary>
-/// Converts a message result into a response body using the passed serializer 
+/// Converts a message benzeneResult into a response body using the passed serializer 
 /// </summary>
 public interface IResponsePayloadMapper<TContext>
 {

@@ -107,20 +107,20 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
     {
         var lineWriter = new LineWriter();
         lineWriter.WriteLine(
-            $"public async Task<IClientResult<HealthCheckResponse>> HealthCheckAsync()", 2);
+            $"public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()", 2);
         lineWriter.WriteLine("{", 2);
         lineWriter.WriteLine($"using (var client = _clientFactory.Create(\"{_serviceName}\", \"healthcheck\"))",
             3);
         lineWriter.WriteLine("{", 3);
         lineWriter.WriteLine(
-            $@"var result = await client.SendMessageAsync<NullPayload, HealthCheckResponse>(""healthcheck"", new NullPayload(), null);",
+            $@"var benzeneResult = await client.SendMessageAsync<NullPayload, HealthCheckResponse>(""healthcheck"", new NullPayload(), null);",
             4);
         lineWriter.WriteLine(
-            "return result.Status != ClientResultStatus.Ok",
+            "return benzeneResult.Status != BenzeneResultStatus.Ok",
             4);
-        lineWriter.WriteLine("? result", 5);
+        lineWriter.WriteLine("? benzeneResult", 5);
         lineWriter.WriteLine(
-            ": ClientResult.Ok(ClientHealthCheckProcessor.Process(result.Payload, HashCode) as HealthCheckResponse);", 5);
+            ": BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);", 5);
         lineWriter.WriteLine("}", 3);
         lineWriter.WriteLine("}", 2);
         return lineWriter.GetLines();
@@ -136,14 +136,14 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
 
         var lineWriter = new LineWriter();
         lineWriter.WriteLine(
-            $"public Task<IClientResult<{responseTypeName}>> {methodName}Async({requestTypeName} message)", 2);
+            $"public Task<IBenzeneResult<{responseTypeName}>> {methodName}Async({requestTypeName} message)", 2);
         lineWriter.WriteLine("{", 2);
         lineWriter.WriteLine($@"return {methodName}Async(message, null);", 3);
         lineWriter.WriteLine("}", 2);
         lineWriter.WriteLine();
 
         lineWriter.WriteLine(
-            $"public async Task<IClientResult<{responseTypeName}>> {methodName}Async({requestTypeName} message, IDictionary<string, string> headers)", 2);
+            $"public async Task<IBenzeneResult<{responseTypeName}>> {methodName}Async({requestTypeName} message, IDictionary<string, string> headers)", 2);
         lineWriter.WriteLine("{", 2);
         lineWriter.WriteLine($"using (var client = _clientFactory.Create(\"{_serviceName}\", \"{topic}\"))",
             3);
@@ -183,9 +183,9 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
             var methodName = _methodName.Create(definition.Topic, definition.Request);
     
             lineWriter.WriteLine(
-                $"Task<IClientResult<{responseTypeName}>> {methodName}Async({requestTypeName} message);", 2);
+                $"Task<IBenzeneResult<{responseTypeName}>> {methodName}Async({requestTypeName} message);", 2);
             lineWriter.WriteLine(
-                $"Task<IClientResult<{responseTypeName}>> {methodName}Async({requestTypeName} message, IDictionary<string, string> headers);", 2);
+                $"Task<IBenzeneResult<{responseTypeName}>> {methodName}Async({requestTypeName} message, IDictionary<string, string> headers);", 2);
         }
 
         lineWriter.WriteLine("}", 1);

@@ -90,11 +90,11 @@ public class AsyncApiDocumentBuilder :
             }
         });
 
-        _channels.Add($"{topic}:result", new AsyncApiChannel
+        _channels.Add($"{topic}:benzeneResult", new AsyncApiChannel
         {
             Publish = new AsyncApiOperation
             {
-                OperationId = $"{topic}:result",
+                OperationId = $"{topic}:benzeneResult",
                 Message = messageHandlerDefinitions.Select(x => 
                     CreateAsyncApiMessage(topic, x.Topic.Version, x.ResponseType)).ToList()
             }

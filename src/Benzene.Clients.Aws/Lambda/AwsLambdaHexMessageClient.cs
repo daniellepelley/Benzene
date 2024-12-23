@@ -23,12 +23,11 @@ namespace Benzene.Clients.Aws.Lambda
             _logger = logger;
             _serializer = new JsonSerializer();
         }
-
-        public async Task<IClientResult<TResponse>> SendMessageAsync<TMessage, TResponse>(string topic, TMessage message, IDictionary<string, string> headers)
+        public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
         {
             try
             {
-                var lambdaRequest = new BenzeneMessageClientRequest(topic, headers, _serializer.Serialize(message));
+                var lambdaRequest = new BenzeneMessageClientRequest(request.Topic, request.Headers, _serializer.Serialize(request.Message));
 
                 var invocationType = typeof(TResponse).Name == "Void"
                     ? InvocationType.Event
@@ -36,23 +35,23 @@ namespace Benzene.Clients.Aws.Lambda
 
                 if (invocationType == InvocationType.Event)
                 {
-                    _logger.LogInformation("Fire and Forget message {receiverTopic} sent to {receiver}", topic, _lambdaName);
+                    _logger.LogInformation("Fire and Forget message {receiverTopic} sent to {receiver}", request.Topic, _lambdaName);
                     await _awsLambdaClient.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(lambdaRequest, _lambdaName, invocationType);
-                    return ClientResult.Accepted<TResponse>();
+                    return BenzeneResult.Accepted<TResponse>();
                 }
 
                 var response = await _awsLambdaClient.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(lambdaRequest, _lambdaName, invocationType);
-                var clientResult = response.AsClientResult<TResponse>(_serializer);
+                var clientResult = response.AsBenzeneResult<TResponse>(_serializer);
 
                 _logger.LogInformation("Request and Response message {receiverTopic} sent to {receiver} with status {receiverStatus}",
-                    topic, _lambdaName, clientResult.Status);
+                    request.Topic, _lambdaName, clientResult.Status);
 
                 return clientResult;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", topic, _lambdaName);
-                return ClientResult.ServiceUnavailable<TResponse>(ex.Message);
+                _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", request.Topic, _lambdaName);
+                return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
             }
         }
 
@@ -60,5 +59,6 @@ namespace Benzene.Clients.Aws.Lambda
         {
             // Method intentionally left empty.
         }
+
     }
 }

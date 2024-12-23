@@ -18,10 +18,8 @@ public class HeaderBenzeneMessageClientTest
         await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload(),
             new Dictionary<string, string>());
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(
-            "some-topic",
-            It.IsAny<ExamplePayload>(),
-            It.Is<IDictionary<string, string>>(d => d["some-key"] == "some-value")));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.Is<IBenzeneClientRequest<ExamplePayload>>(r =>
+            r.Topic == "some-topic" && r.Headers["some-key"] == "some-value")));
     }
 
     [Fact]
@@ -32,10 +30,8 @@ public class HeaderBenzeneMessageClientTest
         var client = new HeaderBenzeneMessageClient(mockAwsLambdaClient.Object, "some-key", "some-value");
         await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload());
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(
-            "some-topic",
-            It.IsAny<ExamplePayload>(),
-            It.Is<IDictionary<string, string>>(d => d["some-key"] == "some-value")));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.Is<IBenzeneClientRequest<ExamplePayload>>(r =>
+            r.Topic == "some-topic" && r.Headers["some-key"] == "some-value")));
     }
 
     [Fact]
@@ -51,9 +47,7 @@ public class HeaderBenzeneMessageClientTest
         var client = new HeaderBenzeneMessageClient(mockAwsLambdaClient.Object, "some-key", "some-value");
         await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload(),  dictionary);
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(
-            "some-topic",
-            It.IsAny<ExamplePayload>(),
-            It.Is<IDictionary<string, string>>(d => d["some-key"] == "some-value")));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.Is<IBenzeneClientRequest<ExamplePayload>>(r =>
+            r.Topic == "some-topic" && r.Headers["some-key"] == "some-value")));
     }
 }

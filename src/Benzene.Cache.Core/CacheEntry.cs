@@ -31,17 +31,12 @@ public abstract class CacheEntry<T> : CacheWriteActions<T>, ICacheEntry<T>
         return default;
     }
 
-    public Task<IClientResult<T>> LazyLoadAsync(Func<Task<IClientResult<T>>> databaseReadFunc)
+    public Task<IBenzeneResult<T>> LazyLoadAsync(Func<Task<IBenzeneResult<T>>> databaseReadFunc)
     {
-        return LazyLoadAsync(databaseReadFunc, value => ClientResult.Ok(value));
+        return LazyLoadAsync(databaseReadFunc, value => BenzeneResult.Ok(value));
     }
 
-    public Task<IServiceResult<T>> LazyLoadAsync(Func<Task<IServiceResult<T>>> databaseReadFunc)
-    {
-        return LazyLoadAsync(databaseReadFunc, value => ServiceResult.Ok(value));
-    }
-
-    public async Task<TResult> LazyLoadAsync<TResult>(Func<Task<TResult>> databaseReadFunc, Func<T, TResult> createResult) where TResult : IResult<T>
+    public async Task<TResult> LazyLoadAsync<TResult>(Func<Task<TResult>> databaseReadFunc, Func<T, TResult> createResult) where TResult : IBenzeneResult<T>
     {
         using var timerScope = ProcessTimerFactory.Create("CacheEntry_LazyLoad");
 
@@ -58,14 +53,14 @@ public abstract class CacheEntry<T> : CacheWriteActions<T>, ICacheEntry<T>
             timerScope.SetTag("cache-status", "miss");
             Logger.LogDebug("No hit in cache for key {key}", KeyDescription);
 
-            var serviceResult = await databaseReadFunc();
+            var benzeneResult = await databaseReadFunc();
 
-            if (serviceResult.IsSuccessful)
+            if (benzeneResult.IsSuccessful)
             {
-                await SetValueAsync(serviceResult.Payload);
+                await SetValueAsync(benzeneResult.Payload);
             }
 
-            return serviceResult;
+            return benzeneResult;
         }
     }
 }

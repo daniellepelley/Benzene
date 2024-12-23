@@ -2,7 +2,7 @@
 
 namespace Benzene.Azure.EventHub.Function;
 
-public class EventHubContext// : IHasMessageResult
+public class EventHubContext
 {
     private EventHubContext(EventData eventData)
     {

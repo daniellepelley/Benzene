@@ -61,7 +61,7 @@ public class HealthCheckPipelineTest
 
         Assert.NotNull(response);
         Assert.Contains("some-name", response.Body);
-        Assert.Equal(ServiceResultStatus.Ok, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, response.StatusCode);
     }
 
     [Fact]
@@ -113,6 +113,6 @@ public class HealthCheckPipelineTest
         Assert.Contains("HealthCheck-3", response.Body);
         Assert.Contains("Simple", response.Body);
         Assert.Contains("Simple-2", response.Body);
-        Assert.Equal(ServiceResultStatus.Ok, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, response.StatusCode);
     }
 }

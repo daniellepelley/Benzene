@@ -24,7 +24,7 @@ public class AwsLambdaStartUpTest
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
         var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<BenzeneMessageResponse>(response);
-        Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, directMessageResponse.StatusCode);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class AwsLambdaStartUpTest
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
         var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<BenzeneMessageResponse>(response);
-        Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, directMessageResponse.StatusCode);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class AwsLambdaStartUpTest
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
         var directMessageResponse = await testLambdaHosting.SendEventAsync<BenzeneMessageResponse>(request);
         
-        Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, directMessageResponse.StatusCode);
     }
     
     [Fact]
@@ -69,7 +69,7 @@ public class AwsLambdaStartUpTest
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
         var directMessageResponse = await testLambdaHosting.SendEventAsync<BenzeneMessageResponse>(request);
         
-        Assert.Equal(ServiceResultStatus.Ok, directMessageResponse.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Ok, directMessageResponse.StatusCode);
     }
 
 }

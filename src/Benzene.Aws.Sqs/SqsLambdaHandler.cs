@@ -8,7 +8,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.Sqs;
 
-public class SqsLambdaHandler : AwsLambdaHandlerMiddleware<SQSEvent>
+public class SqsLambdaHandler : AwsLambdaMiddlewareRouter<SQSEvent>
 {
     private readonly IMiddlewareApplication<SQSEvent, SQSBatchResponse> _application;
 

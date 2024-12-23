@@ -1,19 +1,15 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
-using Benzene.Abstractions.Results;
 using Benzene.Http;
 
-namespace Benzene.Aws.ApiGateway
-{
-    public class ApiGatewayContext : IHasMessageResult, IHttpContext
-    {
-        public ApiGatewayContext(APIGatewayProxyRequest apiGatewayProxyRequest)
-        {
-            ApiGatewayProxyRequest = apiGatewayProxyRequest;
-            MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
-        }
+namespace Benzene.Aws.ApiGateway;
 
-        public APIGatewayProxyRequest ApiGatewayProxyRequest { get; }
-        public APIGatewayProxyResponse ApiGatewayProxyResponse { get; set; }
-        public IMessageResult MessageResult { get; set; }
+public class ApiGatewayContext : IHttpContext
+{
+    public ApiGatewayContext(APIGatewayProxyRequest apiGatewayProxyRequest)
+    {
+        ApiGatewayProxyRequest = apiGatewayProxyRequest;
     }
+
+    public APIGatewayProxyRequest ApiGatewayProxyRequest { get; }
+    public APIGatewayProxyResponse ApiGatewayProxyResponse { get; set; }
 }

@@ -16,8 +16,8 @@ namespace Benzene.Test.Plugins.DataAnnotations;
 public class DataAnnotationsValidationsPipelineTest
 {
     [Theory]
-    [InlineData("foo", ServiceResultStatus.Ok)]
-    [InlineData("foo-bar-foo-bar", ServiceResultStatus.ValidationError)]
+    [InlineData("foo", BenzeneResultStatus.Ok)]
+    [InlineData("foo-bar-foo-bar", BenzeneResultStatus.ValidationError)]
     public async Task ValidationTest(string name, string expectedStatus)
     {
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();

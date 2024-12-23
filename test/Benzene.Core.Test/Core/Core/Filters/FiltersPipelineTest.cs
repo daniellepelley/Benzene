@@ -16,8 +16,8 @@ namespace Benzene.Test.Core.Core.Filters;
 public class FiltersPipelineTest
 {
     [Theory]
-    [InlineData("foo", ServiceResultStatus.Ok)]
-    [InlineData("foo-bar-foo-bar", ServiceResultStatus.Ignored)]
+    [InlineData("foo", BenzeneResultStatus.Ok)]
+    [InlineData("foo-bar-foo-bar", BenzeneResultStatus.Ignored)]
     public async Task Send_HealthCheck(string name, string expectedStatus)
     {
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();

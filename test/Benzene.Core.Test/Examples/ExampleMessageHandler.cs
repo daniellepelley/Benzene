@@ -17,10 +17,10 @@ public class ExampleMessageHandler : IMessageHandler<ExampleRequestPayload, Void
         _exampleService = exampleService;
     }
 
-    public Task<IServiceResult<Void>> HandleAsync(ExampleRequestPayload request)
+    public Task<IBenzeneResult<Void>> HandleAsync(ExampleRequestPayload request)
     {
         _exampleService.Register(request.Name);
-        return Task.FromResult(ServiceResult.Ok(new Void()));
+        return Task.FromResult(BenzeneResult.Ok(new Void()));
     }
 }
 

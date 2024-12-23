@@ -9,7 +9,7 @@ using Void = Benzene.Results.Void;
 
 namespace Benzene.Http.Cors;
 
-public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : IHasMessageResult, IHttpContext
+public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : IHttpContext
 {
     private readonly CorsSettings _corsSettings;
     private readonly IHttpEndpointFinder _httpEndpointFinder;
@@ -67,7 +67,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
 
             if (httpRequest.Method == "options")
             {
-                _resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), ServiceResult.Ok()));
+                _resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), BenzeneResult.Ok()));
             }
         }
     }

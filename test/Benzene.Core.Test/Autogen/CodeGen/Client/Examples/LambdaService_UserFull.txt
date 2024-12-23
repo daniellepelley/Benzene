@@ -21,12 +21,12 @@ namespace Platform.Service.Clients.User
 
         public string HashCode => "819704d1f5276a20cd4cac80d9c75a2dd7f3ec96496380b5891692ecffdd346a";
 
-        public Task<IClientResult<UserDto>> GetUserAsync(GetUserMessage message)
+        public Task<IBenzeneResult<UserDto>> GetUserAsync(GetUserMessage message)
         {
             return GetUserAsync(message, null);
         }
 
-        public async Task<IClientResult<UserDto>> GetUserAsync(GetUserMessage message, IDictionary<string, string> headers)
+        public async Task<IBenzeneResult<UserDto>> GetUserAsync(GetUserMessage message, IDictionary<string, string> headers)
         {
             using (var client = _clientFactory.Create("User", "user:get"))
             {
@@ -34,12 +34,12 @@ namespace Platform.Service.Clients.User
             }
         }
 
-        public Task<IClientResult<string>> CreateUserAsync(CreateUserMessage message)
+        public Task<IBenzeneResult<string>> CreateUserAsync(CreateUserMessage message)
         {
             return CreateUserAsync(message, null);
         }
 
-        public async Task<IClientResult<string>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers)
+        public async Task<IBenzeneResult<string>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers)
         {
             using (var client = _clientFactory.Create("User", "user:create"))
             {
@@ -47,14 +47,14 @@ namespace Platform.Service.Clients.User
             }
         }
 
-        public async Task<IClientResult<HealthCheckResponse>> HealthCheckAsync()
+        public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()
         {
             using (var client = _clientFactory.Create("User", "healthcheck"))
             {
-                var result = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
-                return result.Status != ClientResultStatus.Ok
-                    ? result
-                    : ClientResult.Ok(ClientHealthCheckProcessor.Process(result.Payload, HashCode) as HealthCheckResponse);
+                var benzeneResult = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
+                return benzeneResult.Status != BenzeneResultStatus.Ok
+                    ? benzeneResult
+                    : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
             }
         }
     }

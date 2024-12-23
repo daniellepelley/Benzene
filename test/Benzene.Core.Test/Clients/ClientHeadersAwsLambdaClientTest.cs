@@ -20,10 +20,8 @@ public class ClientHeadersAwsLambdaClientTest
         using var client = new HeadersBenzeneMessageClient(mockAwsLambdaClient.Object, clientHeaders);
         await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload(), new Dictionary<string, string>());
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(
-            "some-topic",
-            It.IsAny<ExamplePayload>(),
-            It.Is<IDictionary<string, string>>(d => d["some-key"] == "some-value")));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.Is<IBenzeneClientRequest<ExamplePayload>>(r =>
+            r.Topic == "some-topic" && r.Headers["some-key"] == "some-value")));
     }
 
     [Fact]
@@ -37,10 +35,8 @@ public class ClientHeadersAwsLambdaClientTest
         using var client = new HeadersBenzeneMessageClient(mockAwsLambdaClient.Object, clientHeaders);
         await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload());
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(
-            "some-topic",
-            It.IsAny<ExamplePayload>(),
-            It.Is<IDictionary<string, string>>(d => d["some-key"] == "some-value")));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.Is<IBenzeneClientRequest<ExamplePayload>>(r =>
+            r.Topic == "some-topic" && r.Headers["some-key"] == "some-value")));
     }
 
     [Fact]
@@ -60,10 +56,7 @@ public class ClientHeadersAwsLambdaClientTest
         using var client = new HeadersBenzeneMessageClient(mockAwsLambdaClient.Object, clientHeaders);
         await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload(),  dictionary);
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(
-            "some-topic",
-            It.IsAny<ExamplePayload>(),
-            It.Is<IDictionary<string, string>>(d => 
-                d["some-key"] == "some-value" && d["some-other-key"] == "other-value")));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.Is<IBenzeneClientRequest<ExamplePayload>>(r =>
+            r.Topic == "some-topic" && r.Headers["some-key"] == "some-value" && r.Headers["some-other-key"] == "other-value")));
     }
 }

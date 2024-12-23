@@ -32,7 +32,7 @@ internal class RedisWildcardActions : CacheInvalidateActions
             var redisDatabase = await _service.RedisSetup();
             Logger.LogDebug("Sending {pattern} search to cache", _pattern);
             var result = (RedisKey[]?)await redisDatabase.ExecuteAsync("KEYS", _pattern);
-            Logger.LogDebug("Result for {pattern} - {result.Length} keys.", _pattern, result?.Length);
+            Logger.LogDebug("BenzeneResult for {pattern} - {benzeneResult.Length} keys.", _pattern, result?.Length);
             for (var i = 0; i < result?.Length; i += MaxKeyForDelete)
             {
                 var keysForSending = result.Skip(i).Take(MaxKeyForDelete).ToArray();

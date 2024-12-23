@@ -12,9 +12,9 @@ public class MessageHandlerNoResultWrapper<TRequest, TResponse> : IMessageHandle
         _inner = inner;
     }
 
-    public async Task<IServiceResult<TResponse>> HandleAsync(TRequest request)
+    public async Task<IBenzeneResult<TResponse>> HandleAsync(TRequest request)
     {
         await _inner.HandleAsync(request);
-        return ServiceResult.Accepted<TResponse>();
+        return BenzeneResult.Accepted<TResponse>();
     }
 }

@@ -8,5 +8,5 @@ public interface ICacheInvalidateActions
 {
     Task<bool> InvalidateAsync();
 
-    Task<TResult> WriteThroughInvalidateAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc) where TResult : IResult;
+    Task<TResult> WriteThroughInvalidateAsync<TResult>(Func<Task<TResult>> modifyDatabaseFunc) where TResult : IBenzeneResult;
 }

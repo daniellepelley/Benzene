@@ -8,7 +8,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.ApiGateway;
 
-public class ApiGatewayLambdaHandler : AwsLambdaHandlerMiddleware<APIGatewayProxyRequest>
+public class ApiGatewayLambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayProxyRequest>
 {
     private readonly ApiGatewayApplication _apiGatewayApplication;
 

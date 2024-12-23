@@ -18,13 +18,11 @@ public class RetryAwsLambdaClientTest
         var mockAwsLambdaClient = new Mock<IBenzeneMessageClient>();
 
         mockAwsLambdaClient.Setup(x =>
-                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<string>(),
-                    It.IsAny<ExamplePayload>(),
-                    It.IsAny<IDictionary<string, string>>()))
-            .ReturnsAsync(ClientResult.Ok<ExamplePayload>());
+                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()))
+            .ReturnsAsync(BenzeneResult.Ok<ExamplePayload>());
         using var retryClient = new RetryBenzeneMessageClient(mockAwsLambdaClient.Object);
         await retryClient.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, new ExamplePayload(),  new Dictionary<string, string>());
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, It.IsAny<ExamplePayload>(),  new Dictionary<string, string>()), Times.Exactly(1));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()), Times.Exactly(1));
     }
 
     [Fact]
@@ -33,15 +31,13 @@ public class RetryAwsLambdaClientTest
         var mockAwsLambdaClient = new Mock<IBenzeneMessageClient>();
 
         mockAwsLambdaClient.Setup(x =>
-                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<string>(),
-                    It.IsAny<ExamplePayload>(),
-                    It.IsAny<IDictionary<string, string>>()))
-            .ReturnsAsync(ClientResult.ServiceUnavailable<ExamplePayload>());
+                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()))
+            .ReturnsAsync(BenzeneResult.ServiceUnavailable<ExamplePayload>());
 
         using var retryClient = new RetryBenzeneMessageClient(mockAwsLambdaClient.Object);
 
         await retryClient.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, new ExamplePayload(), new Dictionary<string, string>());
 
-        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, It.IsAny<ExamplePayload>(), new Dictionary<string, string>()), Times.Exactly(3));
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()), Times.Exactly(3));
     }
 }

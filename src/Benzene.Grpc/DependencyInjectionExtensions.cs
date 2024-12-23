@@ -13,6 +13,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<GrpcContext>, GrpcMessageTopicMapper>();
         services.AddScoped<IMessageBodyMapper<GrpcContext>, GrpcMessageBodyMapper>();
         services.AddScoped<IMessageHeadersMapper<GrpcContext>, GrpcMessageHeadersMapper>();
+        services.AddScoped<IResultSetter<GrpcContext>, GrpcMessageResultSetter>();
         services.AddContextItems();
         return services;
     }

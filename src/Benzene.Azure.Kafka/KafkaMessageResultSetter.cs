@@ -2,4 +2,4 @@
 
 namespace Benzene.Azure.Kafka;
 
-public class KafkaMessageResultSetter : MessageResultSetterBase<KafkaContext>;
+public class KafkaMessageResultSetter : DefaultMessageResultSetterBase<KafkaContext>;

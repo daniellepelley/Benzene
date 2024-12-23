@@ -24,6 +24,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageTopicMapper<AspNetContext>, AspNetMessageTopicMapper>();
         services.AddScoped<IMessageHeadersMapper<AspNetContext>, AspNetMessageHeadersMapper>();
         services.AddScoped<IMessageBodyMapper<AspNetContext>, AspNetMessageBodyMapper>();
+        services.AddScoped<IResultSetter<AspNetContext>, AspMessageResultSetter>();
          services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
          services.AddScoped<IResponseHandler<AspNetContext>, ResponseBodyHandler<AspNetContext>>();
         services.AddScoped<MessageRouter<AspNetContext>>();

@@ -26,10 +26,10 @@
 //             )
 //         }});
 //
-//         var result = Benzene.Clients.HealthChecks.HealthCheckProcessor.Process(healthCheckResult, "some-code");
-//         dynamic output = result.HealthChecks["schema"].Data["data"];
+//         var benzeneResult = Benzene.Clients.HealthChecks.HealthCheckProcessor.Process(healthCheckResult, "some-code");
+//         dynamic output = benzeneResult.HealthChecks["schema"].Data["data"];
 //
-//         Assert.True(result.IsHealthy);
+//         Assert.True(benzeneResult.IsHealthy);
 //         Assert.True(output.isMatch);
 //     }
 // }

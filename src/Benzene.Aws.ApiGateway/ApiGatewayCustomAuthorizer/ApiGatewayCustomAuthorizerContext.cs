@@ -3,15 +3,13 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
 
-public class ApiGatewayCustomAuthorizerContext : IHasMessageResult
+public class ApiGatewayCustomAuthorizerContext 
 {
     public ApiGatewayCustomAuthorizerContext(APIGatewayCustomAuthorizerRequest apiGatewayCustomAuthorizerRequest)
     {
         ApiGatewayCustomAuthorizerRequest = apiGatewayCustomAuthorizerRequest;
-        MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public APIGatewayCustomAuthorizerRequest ApiGatewayCustomAuthorizerRequest { get; }
     public APIGatewayCustomAuthorizerResponse ApiGatewayCustomAuthorizerResponse { get; set; }
-    public IMessageResult MessageResult { get; set; }
 }

@@ -11,32 +11,32 @@ public class DefaultHttpStatusCodeMapper : IHttpStatusCodeMapper
     {
         _dictionary = new Dictionary<string, string>
         {
-            { ServiceResultStatus.Ok, "200"},
-            { ServiceResultStatus.Ignored, "200"},
-            { ServiceResultStatus.Created, "201"},
-            { ServiceResultStatus.Accepted, "202" },
-            { ServiceResultStatus.Updated, "204"},
-            { ServiceResultStatus.Deleted, "204"},
-            { ServiceResultStatus.BadRequest, "400"},
-            { ServiceResultStatus.Unauthorized, "401"},
-            { ServiceResultStatus.Forbidden, "403"},
-            { ServiceResultStatus.NotFound, "404"},
-            { ServiceResultStatus.Conflict, "409"},
-            { ServiceResultStatus.ValidationError, "422"},
-            { ServiceResultStatus.UnexpectedError, "500"},
-            { ServiceResultStatus.NotImplemented, "501"},
-            { ServiceResultStatus.ServiceUnavailable, "503"}
+            { BenzeneResultStatus.Ok, "200"},
+            { BenzeneResultStatus.Ignored, "200"},
+            { BenzeneResultStatus.Created, "201"},
+            { BenzeneResultStatus.Accepted, "202" },
+            { BenzeneResultStatus.Updated, "204"},
+            { BenzeneResultStatus.Deleted, "204"},
+            { BenzeneResultStatus.BadRequest, "400"},
+            { BenzeneResultStatus.Unauthorized, "401"},
+            { BenzeneResultStatus.Forbidden, "403"},
+            { BenzeneResultStatus.NotFound, "404"},
+            { BenzeneResultStatus.Conflict, "409"},
+            { BenzeneResultStatus.ValidationError, "422"},
+            { BenzeneResultStatus.UnexpectedError, "500"},
+            { BenzeneResultStatus.NotImplemented, "501"},
+            { BenzeneResultStatus.ServiceUnavailable, "503"}
         };
     }
 
-    public string Map(string? serviceResultStatus)
+    public string Map(string? benzeneResultStatus)
     {
-        if (serviceResultStatus == null)
+        if (benzeneResultStatus == null)
         {
             return DefaultValue;
         }
 
-        return _dictionary.TryGetValue(serviceResultStatus, out var map)
+        return _dictionary.TryGetValue(benzeneResultStatus, out var map)
             ? map
             : DefaultValue;
     }

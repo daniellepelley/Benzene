@@ -1,6 +1,5 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.MessageHandling;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;

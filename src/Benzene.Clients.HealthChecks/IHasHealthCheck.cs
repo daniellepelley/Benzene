@@ -6,6 +6,6 @@ namespace Benzene.Clients.HealthChecks
     public interface IHasHealthCheck
     {
         string HashCode { get; }
-        Task<IClientResult<HealthCheckResponse>> HealthCheckAsync();
+        Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync();
     }
 }

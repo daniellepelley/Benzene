@@ -2,5 +2,5 @@
 
 public interface IHttpStatusCodeMapper
 {
-    string Map(string serviceResultStatus);
+    string Map(string benzeneResultStatus);
 }

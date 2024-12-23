@@ -27,9 +27,9 @@ public class BroadcastEventMiddleware<TRequest, TResponse> : IMiddleware<IMessag
 
         var topicFunction = TopicFunction(context.Topic);
 
-        if (topicFunction == "create" && context.Response.Status == ServiceResultStatus.Created ||
-            topicFunction == "update" && context.Response.Status == ServiceResultStatus.Updated ||
-            topicFunction == "delete" && context.Response.Status == ServiceResultStatus.Deleted)
+        if (topicFunction == "create" && context.Response.Status == BenzeneResultStatus.Created ||
+            topicFunction == "update" && context.Response.Status == BenzeneResultStatus.Updated ||
+            topicFunction == "delete" && context.Response.Status == BenzeneResultStatus.Deleted)
         {
             await eventBroadcaster.SendAsync($"{context.Topic.Id}d", context.Response.Payload);
         }

@@ -4,6 +4,6 @@ namespace Benzene.Core.MessageHandlers;
 
 public class DefaultStatuses : IDefaultStatuses
 {
-    public string ValidationError => ServiceResultStatus.ValidationError;
-    public string NotFound => ServiceResultStatus.NotFound;
+    public string ValidationError => BenzeneResultStatus.ValidationError;
+    public string NotFound => BenzeneResultStatus.NotFound;
 }

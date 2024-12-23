@@ -51,6 +51,6 @@ public class AwsLambdaBenzeneMessageClientTest
         var result = await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload());
 
         Assert.NotNull(result);
-        Assert.Equal(ClientResultStatus.ServiceUnavailable, result.Status);
+        Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
 }

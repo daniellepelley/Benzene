@@ -35,14 +35,14 @@ public class SqsConsumerMessagePipelineTest
     //
     //     var createQueueResponse = await client.CreateQueueAsync(queueName);
     //
-    //     var result = await client.ReceiveMessageAsync(new ReceiveMessageRequest
+    //     var benzeneResult = await client.ReceiveMessageAsync(new ReceiveMessageRequest
     //     {
     //         QueueUrl = createQueueResponse.QueueUrl,
     //         MessageAttributeNames = new[] { "All" }.ToList(),
     //         MaxNumberOfMessages = 10
     //     });
     //
-    //     foreach (var message in result.Messages)
+    //     foreach (var message in benzeneResult.Messages)
     //     {
     //         await client.DeleteMessageAsync(createQueueResponse.QueueUrl, message.ReceiptHandle);
     //     }

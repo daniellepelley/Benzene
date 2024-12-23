@@ -14,7 +14,7 @@ public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageCon
     {
         if (context.Request == default)
         {
-            context.Response = ServiceResult.ValidationError<TResponse>("Request is null");
+            context.Response = BenzeneResult.ValidationError<TResponse>("Request is null");
             return;
         }
 
@@ -24,7 +24,7 @@ public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageCon
         if (validationResults.Any())
         {
             context.Response =
-                ServiceResult.ValidationError<TResponse>(validationResults
+                BenzeneResult.ValidationError<TResponse>(validationResults
                     .Where(x => x.ErrorMessage != null)
                     .Select(x => x.ErrorMessage!)
                     .ToArray());

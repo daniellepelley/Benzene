@@ -14,11 +14,11 @@ public class SpecMessageHandler : IMessageHandler<SpecRequest, RawStringMessage>
         _serviceResolver = serviceResolver;
     }
     
-    public Task<IServiceResult<RawStringMessage>> HandleAsync(SpecRequest request)
+    public Task<IBenzeneResult<RawStringMessage>> HandleAsync(SpecRequest request)
     {
         var output = CreateSpec(_serviceResolver, request ?? new SpecRequest("asyncapi", "json"));
 
-        return ServiceResult.Ok(new RawStringMessage(output)).AsTask();
+        return BenzeneResult.Ok(new RawStringMessage(output)).AsTask();
     }
 
     private static string CreateSpec(IServiceResolver resolver, SpecRequest specRequest)

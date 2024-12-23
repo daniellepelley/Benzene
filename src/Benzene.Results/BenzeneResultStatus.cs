@@ -1,6 +1,6 @@
 ﻿namespace Benzene.Results;
 
-public static class ServiceResultStatus
+public static class BenzeneResultStatus
 {
     public const string Accepted = "Accepted";
     public const string Ok = "Ok";

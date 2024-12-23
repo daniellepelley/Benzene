@@ -8,7 +8,7 @@ using Benzene.Aws.Core.AwsEventStream;
 
 namespace Benzene.Aws.Sns;
 
-public class SnsLambdaHandler : AwsLambdaHandlerMiddleware<SNSEvent>
+public class SnsLambdaHandler : AwsLambdaMiddlewareRouter<SNSEvent>
 {
     private readonly IMiddlewareApplication<SNSEvent> _application;
 

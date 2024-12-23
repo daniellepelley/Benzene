@@ -3,12 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Response;
 using Benzene.Abstractions.Results;
-using Benzene.Results;
 
 namespace Benzene.Core.Response;
 
 public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TContext>
-    where TContext : class, IHasMessageResult
+    where TContext : class
 {
     private readonly IResponseHandler<TContext>[] _responseHandlers;
     private readonly IBenzeneResponseAdapter<TContext> _responseAdapter;
