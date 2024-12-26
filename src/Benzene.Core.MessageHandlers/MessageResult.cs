@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Results;
+﻿using Benzene.Abstractions.MessageHandlers.ToDelete;
 
 namespace Benzene.Core.MessageHandlers;
 

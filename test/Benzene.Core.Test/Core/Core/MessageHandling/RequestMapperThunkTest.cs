@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.Request;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Benzene.Test.Core.Core.MessageHandling;
 
-public class RequestFactoryTest
+public class RequestMapperThunkTest
 {
     [Fact]
     public void GetsRequest()
@@ -28,7 +28,7 @@ public class RequestFactoryTest
         });
         
         var requestMapper = new RequestMapper<BenzeneMessageContext>(new BenzeneMessageMapper(), serializer);
-        var requestFactory = new RequestFactory<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
@@ -41,7 +41,7 @@ public class RequestFactoryTest
         var serviceResolver = ServiceResolverMother.CreateServiceResolver();
 
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
-        var requestFactory = new RequestFactory<BenzeneMessageContext>(
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(
             new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
                 Mock.Of<IMessageMapper<BenzeneMessageContext>>(),
                 Array.Empty<ISerializerOption<BenzeneMessageContext>>(),
@@ -63,7 +63,7 @@ public class RequestFactoryTest
         var serviceResolver = ServiceResolverMother.CreateServiceResolver();
 
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
-        var requestFactory = new RequestFactory<BenzeneMessageContext>(
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(
             new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
                 Mock.Of<IMessageMapper<BenzeneMessageContext>>(),
                 new ISerializerOption<BenzeneMessageContext>[] { new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()) },
@@ -90,7 +90,7 @@ public class RequestFactoryTest
                 new ISerializerOption<BenzeneMessageContext>[] { new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()) },
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
         
-        var requestFactory = new RequestFactory<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
@@ -119,7 +119,7 @@ public class RequestFactoryTest
                 },
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
        
-        var requestFactory = new RequestFactory<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
         Assert.Equal("some-name", request!.Name);

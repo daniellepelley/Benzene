@@ -1,8 +1,9 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Request;
-using Benzene.Abstractions.Response;
 using Benzene.Aws.ApiGateway;
 using Benzene.Azure.Core;
 using Benzene.Core.Response;

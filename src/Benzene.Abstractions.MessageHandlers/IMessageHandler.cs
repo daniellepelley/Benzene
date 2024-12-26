@@ -13,5 +13,5 @@ public interface IMessageHandler<TRequest>
 
 public interface IMessageHandler
 {
-    Task<IBenzeneResult> HandlerAsync(IRequestFactory requestFactory);
+    Task<IBenzeneResult> HandlerAsync(IRequestMapperThunk requestMapperThunk);
 }

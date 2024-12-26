@@ -17,7 +17,7 @@ public class MessageHandlerFactoryTest
     [Fact]
     public async Task FindRoutes()
     {
-        var mockRequestFactory = new Mock<IRequestFactory>();
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {

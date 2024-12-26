@@ -1,6 +1,6 @@
 ﻿namespace Benzene.Abstractions.MessageHandlers;
 
-public interface IRequestFactory
+public interface IRequestMapperThunk
 {
     TRequest? GetRequest<TRequest>() where TRequest : class;
 }

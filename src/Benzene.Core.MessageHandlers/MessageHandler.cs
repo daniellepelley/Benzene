@@ -17,12 +17,12 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         _inner = inner;
     }
 
-    public async Task<IBenzeneResult> HandlerAsync(IRequestFactory requestFactory)
+    public async Task<IBenzeneResult> HandlerAsync(IRequestMapperThunk requestMapperThunk)
     {
         TRequest? messageObject;
         try
         {
-            messageObject = requestFactory.GetRequest<TRequest>();
+            messageObject = requestMapperThunk.GetRequest<TRequest>();
         }
         catch(Exception ex)
         {

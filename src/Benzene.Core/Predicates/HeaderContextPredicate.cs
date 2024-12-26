@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.Request;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.Helper;
 
 namespace Benzene.Core.Predicates;

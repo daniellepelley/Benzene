@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.Request;
+﻿namespace Benzene.Abstractions.MessageHandlers.Request;
 
 public interface IRequestContext<TRequest>
 {

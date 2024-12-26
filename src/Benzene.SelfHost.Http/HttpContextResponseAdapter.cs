@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using Benzene.Abstractions.Response;
+using Benzene.Abstractions.MessageHandlers.Response;
 
 namespace Benzene.SelfHost.Http;
 

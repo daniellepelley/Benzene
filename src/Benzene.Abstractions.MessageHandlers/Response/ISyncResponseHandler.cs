@@ -1,6 +1,4 @@
-﻿using Benzene.Abstractions.Results;
-
-namespace Benzene.Abstractions.Response;
+﻿namespace Benzene.Abstractions.MessageHandlers.Response;
 
 public interface ISyncResponseHandler<TContext> : IResponseHandler<TContext>
 {

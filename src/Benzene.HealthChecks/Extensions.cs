@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;

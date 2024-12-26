@@ -2,8 +2,9 @@
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Request;
 using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;
@@ -67,7 +68,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
 
         _logger.LogDebug("Handler mapped to topic");
 
-        var result = await handler.HandlerAsync(new RequestFactory<TContext>(_requestMapper, context));
+        var result = await handler.HandlerAsync(new RequestMapperThunk<TContext>(_requestMapper, context));
         _resultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, result));
     }
 }

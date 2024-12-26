@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Autofac;
-using Benzene.Abstractions.Request;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Autofac;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Core;

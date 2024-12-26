@@ -1,6 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Request;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.Predicates;
 

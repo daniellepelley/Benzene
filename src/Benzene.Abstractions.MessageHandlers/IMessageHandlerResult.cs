@@ -1,7 +1,6 @@
-﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Results;
+﻿using Benzene.Results;
 
-namespace Benzene.Abstractions.Results;
+namespace Benzene.Abstractions.MessageHandlers;
 
 public interface IMessageHandlerResultBase
 {

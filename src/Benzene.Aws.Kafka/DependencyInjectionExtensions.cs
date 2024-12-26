@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Core.Info;
 using Benzene.Core.Serialization;
 

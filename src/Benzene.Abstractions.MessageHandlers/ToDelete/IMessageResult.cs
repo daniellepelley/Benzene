@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.Results;
+﻿namespace Benzene.Abstractions.MessageHandlers.ToDelete;
 
 public interface IMessageResult
 {

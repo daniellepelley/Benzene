@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Request;
+﻿using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Helper;
 
 namespace Benzene.Core.Request;

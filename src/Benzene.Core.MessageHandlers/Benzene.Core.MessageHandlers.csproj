@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
     <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
     <ProjectReference Include="..\Benzene.TempCore\Benzene.TempCore.csproj" />
   </ItemGroup>

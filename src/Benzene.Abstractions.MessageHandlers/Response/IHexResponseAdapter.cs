@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.Response;
+﻿namespace Benzene.Abstractions.MessageHandlers.Response;
 
 public interface IBenzeneResponseAdapter<TContext>
 {

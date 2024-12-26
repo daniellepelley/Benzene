@@ -1,4 +1,4 @@
-using Benzene.Abstractions.Response;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.Response;
 
 namespace Benzene.Xml;

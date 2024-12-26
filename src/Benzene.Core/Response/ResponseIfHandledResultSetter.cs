@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.Response;
+using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Results;
 
 namespace Benzene.Core.Response;

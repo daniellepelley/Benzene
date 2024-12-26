@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Response;
 
 namespace Benzene.Core.Response;
 

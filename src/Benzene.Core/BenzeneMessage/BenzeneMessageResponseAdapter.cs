@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Abstractions.Response;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.Helper;
 
 namespace Benzene.Core.BenzeneMessage;

@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Request;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Serialization;
 
 namespace Benzene.Core.Request;

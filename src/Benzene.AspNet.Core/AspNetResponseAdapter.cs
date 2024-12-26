@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Response;
+﻿using Benzene.Abstractions.MessageHandlers.Response;
 using Microsoft.AspNetCore.Http;
 
 namespace Benzene.AspNet.Core;

@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.Request;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.Helper;
 using Benzene.Http.Routing;
 

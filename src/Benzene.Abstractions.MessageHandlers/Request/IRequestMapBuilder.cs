@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Abstractions.Request;
+namespace Benzene.Abstractions.MessageHandlers.Request;
 
 public interface IRequestMapBuilder<TContext>
 {

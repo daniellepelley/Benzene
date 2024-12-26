@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs;

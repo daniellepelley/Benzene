@@ -16,7 +16,7 @@ public class MessageHandlerTest
     [Fact]
     public async Task HandlersMessage()
     {
-        var mockRequestFactory = new Mock<IRequestFactory>();
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -37,7 +37,7 @@ public class MessageHandlerTest
     [Fact]
     public async Task HandlersMessage_ArgumentException()
     {
-        var mockRequestFactory = new Mock<IRequestFactory>();
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -58,7 +58,7 @@ public class MessageHandlerTest
     [Fact]
     public async Task HandlersMessage_Null()
     {
-        var mockRequestFactory = new Mock<IRequestFactory>();
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(null as ExampleRequestPayload);
 
@@ -76,7 +76,7 @@ public class MessageHandlerTest
     [Fact]
     public async Task HandlersMessage_HandlerError()
     {
-        var mockRequestFactory = new Mock<IRequestFactory>();
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -98,7 +98,7 @@ public class MessageHandlerTest
     public async Task HandlersMessage_SerializationError()
     {
         var errorMessage = "Invalid Format";
-        var mockRequestFactory = new Mock<IRequestFactory>();
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Throws(new SerializationException(errorMessage));
 

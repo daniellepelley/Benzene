@@ -1,7 +1,6 @@
-﻿using Benzene.Abstractions.Results;
-using Benzene.Abstractions.Serialization;
+﻿using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Abstractions.Response;
+namespace Benzene.Abstractions.MessageHandlers.Response;
 
 /// <summary>
 /// Converts a message benzeneResult into a response body using the passed serializer 
