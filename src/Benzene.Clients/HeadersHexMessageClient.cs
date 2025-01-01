@@ -1,4 +1,5 @@
-﻿using Benzene.Results;
+﻿using Benzene.Abstractions.Middleware;
+using Benzene.Results;
 
 namespace Benzene.Clients
 {

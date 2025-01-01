@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.Middleware;
 using Benzene.Core.Exceptions;
 using Benzene.Core.Helper;
 using Void = Benzene.Results.Void;

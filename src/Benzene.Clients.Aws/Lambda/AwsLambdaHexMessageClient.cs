@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
 using Benzene.Clients.Aws.Common;
 using Benzene.Results;

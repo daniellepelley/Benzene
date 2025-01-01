@@ -38,7 +38,7 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
     {
         _logger = logger;
         _queueUrl = queueUrl;
-        var benzeneServiceContainer =  new NullBenzeneServiceContainer();
+        var benzeneServiceContainer = new NullBenzeneServiceContainer();
 
         var application = new MiddlewareApplication<SendMessageRequest, SqsSendMessageContext, SendMessageResponse>(
             middlewarePipeline, request => new SqsSendMessageContext(request), context => context.Response);

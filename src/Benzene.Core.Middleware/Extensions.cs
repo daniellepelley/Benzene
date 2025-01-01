@@ -38,16 +38,19 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         Func<IServiceResolver, TContext, Func<Task>, Task> func)
     {
-        return app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>((context, next) => func(serviceResolver, context, next)));
+        return app.Use(serviceResolver =>
+            new FuncWrapperMiddleware<TContext>((context, next) => func(serviceResolver, context, next)));
     }
 
     public static IMiddlewarePipelineBuilder<TContext> Use<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         string name, Func<IServiceResolver, TContext, Func<Task>, Task> func)
     {
-        return app.Use(serviceResolver => new FuncWrapperMiddleware<TContext>(name, (context, next) => func(serviceResolver, context, next)));
+        return app.Use(serviceResolver =>
+            new FuncWrapperMiddleware<TContext>(name, (context, next) => func(serviceResolver, context, next)));
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         Action<TContext> action)
     {
         return app.Use(async (context, next) =>
@@ -57,7 +60,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         string name,
         Action<TContext> action)
     {
@@ -68,7 +72,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         Action<IServiceResolver, TContext> action)
     {
         return app.Use(async (resolver, context, next) =>
@@ -78,7 +83,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnRequest<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         string name,
         Action<IServiceResolver, TContext> action)
     {
@@ -89,7 +95,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         Action<TContext> action)
     {
         return app.Use(async (context, next) =>
@@ -99,7 +106,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         string name,
         Action<TContext> action)
     {
@@ -109,7 +117,9 @@ public static class Extensions
             action(context);
         });
     }
-    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+
+    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         Action<IServiceResolver, TContext> action)
     {
         return app.Use(async (resolver, context, next) =>
@@ -119,7 +129,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+    public static IMiddlewarePipelineBuilder<TContext> OnResponse<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
         string name,
         Action<IServiceResolver, TContext> action)
     {
@@ -130,7 +141,8 @@ public static class Extensions
         });
     }
 
-    public static IMiddlewarePipelineBuilder<TContext> Use<TContext, TMiddleware>(this IMiddlewarePipelineBuilder<TContext> app)
+    public static IMiddlewarePipelineBuilder<TContext> Use<TContext, TMiddleware>(
+        this IMiddlewarePipelineBuilder<TContext> app)
         where TMiddleware : class, IMiddleware<TContext>
     {
         return app.Use(resolver => resolver.GetService<TMiddleware>());
@@ -162,4 +174,11 @@ public static class Extensions
         return services;
     }
 
+    public static IMiddlewarePipeline<TContext> CreateMiddlewarePipeline<TContext>(this IRegisterDependency source,
+        Action<IMiddlewarePipelineBuilder<TContext>> action)
+    {
+        var middlewareBuilder = new MiddlewarePipelineBuilder<TContext>(source);
+        action(middlewareBuilder);
+        return middlewareBuilder.Build();
+    }
 }

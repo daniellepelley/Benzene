@@ -7,11 +7,11 @@ namespace Benzene.Core.MessageHandlers;
 
 public class PipelineMessageHandler<TRequest, TResponse> : IMessageHandler<TRequest, TResponse>
 {
-    private readonly IMiddlewarePipeline<IMessageContext<TRequest, TResponse>> _pipeline;
+    private readonly IMiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>> _pipeline;
     private readonly IServiceResolver _serviceResolver;
     private readonly ITopic _topic;
 
-    public PipelineMessageHandler(ITopic topic, IMiddlewarePipeline<IMessageContext<TRequest, TResponse>> pipeline, IServiceResolver serviceResolver)
+    public PipelineMessageHandler(ITopic topic, IMiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>> pipeline, IServiceResolver serviceResolver)
     {
         _topic = topic;
         _serviceResolver = serviceResolver;
@@ -20,7 +20,7 @@ public class PipelineMessageHandler<TRequest, TResponse> : IMessageHandler<TRequ
 
     public async Task<IBenzeneResult<TResponse>> HandleAsync(TRequest request)
     {
-        var context = new MessageContext<TRequest, TResponse>(_topic, request);
+        var context = new MessageHandlerContext<TRequest, TResponse>(_topic, request);
         await _pipeline.HandleAsync(context, _serviceResolver);
         return context.Response;
     }

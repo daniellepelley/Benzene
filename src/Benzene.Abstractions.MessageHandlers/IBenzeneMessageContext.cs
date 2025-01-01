@@ -2,7 +2,7 @@
 
 namespace Benzene.Abstractions.MessageHandlers;
 
-public interface IMessageContext<TRequest, TResponse>
+public interface IMessageHandlerContext<TRequest, TResponse>
 {
     ITopic Topic { get; }
     TRequest Request { get; }

@@ -41,7 +41,7 @@ This allows you to query schemas from the service such as openapi, asyncapi and 
 This is the middleware that will route the raw message to a message handler by pulling out the topic and deserializing the payload. You can add additional middleware to the message router such as validation and permissions.
 
 ```csharp
-.UseMessageRouter(x => x
+.UseMessageHandler(x => x
 ```
 
 ## UseFluentValidation

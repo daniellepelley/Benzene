@@ -27,7 +27,7 @@ public class MessageHandlerFactoryTest
         var services = ServiceResolverMother.CreateServiceCollection();
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
 
-        var messageHandlerLookup = new MessageHandlersLookUp(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) }, new VersionSelector());
+        var messageHandlerLookup = new MessageHandlerDefinitionLookUp(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) }, new VersionSelector());
         var messageHandlerFactory = new MessageHandlerFactory(serviceResolver, new PipelineMessageHandlerWrapper(
             new HandlerPipelineBuilder(Array.Empty<IHandlerMiddlewareBuilder>()),
              serviceResolver), BenzeneLogger.NullLogger);

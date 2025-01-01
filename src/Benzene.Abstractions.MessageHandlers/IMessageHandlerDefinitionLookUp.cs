@@ -1,6 +1,6 @@
 ﻿namespace Benzene.Abstractions.MessageHandlers;
 
-public interface IMessageHandlersLookUp
+public interface IMessageHandlerDefinitionLookUp
 {
     IMessageHandlerDefinition? FindHandler(ITopic topic);
     IMessageHandlerDefinition[] GetAllHandlers();

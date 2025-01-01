@@ -56,5 +56,4 @@ public static class Extensions
     {
         return builder.AddHealthCheck(resolver => new StepFunctionsHealthCheck(stateMachineArn, resolver.GetService<IAmazonStepFunctions>()));
     }
-
 }

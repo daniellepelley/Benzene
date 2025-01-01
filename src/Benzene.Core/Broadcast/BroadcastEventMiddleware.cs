@@ -8,7 +8,7 @@ using Benzene.Results;
 
 namespace Benzene.Core.Broadcast;
 
-public class BroadcastEventMiddleware<TRequest, TResponse> : IMiddleware<IMessageContext<TRequest, TResponse>>
+public class BroadcastEventMiddleware<TRequest, TResponse> : IMiddleware<IMessageHandlerContext<TRequest, TResponse>>
 {
     private readonly IServiceResolver _serviceResolver;
 
@@ -19,7 +19,7 @@ public class BroadcastEventMiddleware<TRequest, TResponse> : IMiddleware<IMessag
 
     public string Name => "Broadcast Event";
 
-    public async Task HandleAsync(IMessageContext<TRequest, TResponse> context, Func<Task> next)
+    public async Task HandleAsync(IMessageHandlerContext<TRequest, TResponse> context, Func<Task> next)
     {
         var eventBroadcaster = _serviceResolver.Resolve<IEventSender>();
 

@@ -1,4 +1,6 @@
-﻿namespace Benzene.Clients.Aws.Sqs;
+﻿using Benzene.Abstractions.Middleware;
+
+namespace Benzene.Clients.Aws.Sqs;
 
 public interface IClientRequestMapper<TRequest>
 {

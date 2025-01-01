@@ -1,4 +1,6 @@
-﻿namespace Benzene.Clients;
+﻿using Benzene.Abstractions.Middleware;
+
+namespace Benzene.Clients;
 
 public class BenzeneClientRequest<TMessage> : IBenzeneClientRequest<TMessage>
 {

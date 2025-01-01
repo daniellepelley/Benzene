@@ -52,7 +52,7 @@ public static class Extensions
             x.GetService<DependencyMessageHandlersFinder>()
         ));
     
-        services.TryAddScoped<IMessageHandlersLookUp, MessageHandlersLookUp>();
+        services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
         services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();
         services.TryAddScoped<IMessageHandlerFactory, MessageHandlerFactory>();

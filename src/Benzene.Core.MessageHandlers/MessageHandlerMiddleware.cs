@@ -3,7 +3,7 @@ using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.MessageHandlers;
 
-public class MessageHandlerMiddleware<TRequest, TResponse> : IMiddleware<IMessageContext<TRequest, TResponse>>
+public class MessageHandlerMiddleware<TRequest, TResponse> : IMiddleware<IMessageHandlerContext<TRequest, TResponse>>
 {
     private readonly IMessageHandler<TRequest, TResponse> _messageHandler;
 
@@ -14,7 +14,7 @@ public class MessageHandlerMiddleware<TRequest, TResponse> : IMiddleware<IMessag
 
     public string Name => "MessageHandler";
 
-    public async Task HandleAsync(IMessageContext<TRequest, TResponse> context, Func<Task> next)
+    public async Task HandleAsync(IMessageHandlerContext<TRequest, TResponse> context, Func<Task> next)
     {
         context.Response = await _messageHandler.HandleAsync(context.Request);
     }

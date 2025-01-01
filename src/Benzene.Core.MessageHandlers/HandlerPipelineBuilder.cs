@@ -3,6 +3,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Response;
+using Benzene.Abstractions.MessageHandlers.ToDelete;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
@@ -23,11 +24,11 @@ public class HandlerPipelineBuilder : IHandlerPipelineBuilder
         _routerMiddlewareBuilders.AddRange(routerMiddlewareBuilders);
     }
 
-    public IMiddlewarePipeline<IMessageContext<TRequest, TResponse>> Create<TRequest, TResponse>(
+    public IMiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>> Create<TRequest, TResponse>(
         IMessageHandler<TRequest, TResponse> messageHandler, IServiceResolver serviceResolver) 
         where TRequest : class
     {
-        var items = new List<IMiddleware<IMessageContext<TRequest, TResponse>>>();
+        var items = new List<IMiddleware<IMessageHandlerContext<TRequest, TResponse>>>();
         foreach (var routerMiddlewareBuilder in _routerMiddlewareBuilders)
         {
             if (routerMiddlewareBuilder == null)
@@ -46,8 +47,8 @@ public class HandlerPipelineBuilder : IHandlerPipelineBuilder
 
         items.Add(new MessageHandlerMiddleware<TRequest, TResponse>(messageHandler));
         
-        return new MiddlewarePipeline<IMessageContext<TRequest, TResponse>>(items
-            .Select(x => new Func<IServiceResolver, IMiddleware<IMessageContext<TRequest, TResponse>>>(_ => x)).ToArray());
+        return new MiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>>(items
+            .Select(x => new Func<IServiceResolver, IMiddleware<IMessageHandlerContext<TRequest, TResponse>>>(_ => x)).ToArray());
     }
 }
 

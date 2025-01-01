@@ -9,7 +9,7 @@ using Benzene.Results;
 
 namespace Benzene.FluentValidation;
 
-public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageContext<TRequest, TResponse>> 
+public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageHandlerContext<TRequest, TResponse>> 
     where TRequest : class
 {
     private readonly IServiceResolver _serviceResolver;
@@ -21,7 +21,7 @@ public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageCon
 
     public string Name => "FluentValidation";
 
-    public async Task HandleAsync(IMessageContext<TRequest, TResponse> context, Func<Task> next)
+    public async Task HandleAsync(IMessageHandlerContext<TRequest, TResponse> context, Func<Task> next)
     {
         var validator = _serviceResolver.TryGetService<IValidator<TRequest>>();
         if (validator != null)

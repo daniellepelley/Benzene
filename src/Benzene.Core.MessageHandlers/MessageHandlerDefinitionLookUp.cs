@@ -3,12 +3,12 @@ using Benzene.Abstractions.MessageHandling;
 
 namespace Benzene.Core.MessageHandlers;
 
-public class MessageHandlersLookUp : IMessageHandlersLookUp
+public class MessageHandlerDefinitionLookUp : IMessageHandlerDefinitionLookUp
 {
     private readonly IEnumerable<IMessageHandlersFinder> _messageHandlersFinder;
     private readonly IVersionSelector _versionSelector;
 
-    public MessageHandlersLookUp(IEnumerable<IMessageHandlersFinder> messageHandlersFinder, IVersionSelector versionSelector)
+    public MessageHandlerDefinitionLookUp(IEnumerable<IMessageHandlersFinder> messageHandlersFinder, IVersionSelector versionSelector)
     {
         _versionSelector = versionSelector;
         _messageHandlersFinder = messageHandlersFinder;

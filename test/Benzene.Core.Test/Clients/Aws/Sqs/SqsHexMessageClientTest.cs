@@ -108,7 +108,7 @@ public class GetTopicTest
             { typeof(ExampleRequestPayload), Defaults.Topic }
         });
 
-        var topic = dictionaryGetTopic.GetTopic<ExampleRequestPayload>();
+        var topic = dictionaryGetTopic.GetTopic(typeof(ExampleRequestPayload));
 
         Assert.Equal(Defaults.Topic, topic);
     }
@@ -116,15 +116,15 @@ public class GetTopicTest
 
 public class DictionaryGetTopic : IGetTopic
 {
-    private IDictionary<Type, string> _dictionary;
+    private readonly IDictionary<Type, string> _dictionary;
 
     public DictionaryGetTopic(IDictionary<Type, string> dictionary)
     {
         _dictionary = dictionary;
     }
 
-    public string GetTopic<TRequest>()
+    public string GetTopic(Type type)
     {
-        return _dictionary[typeof(TRequest)];
+        return _dictionary[type];
     }
 }

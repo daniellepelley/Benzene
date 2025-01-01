@@ -5,12 +5,12 @@ using Benzene.Results;
 
 namespace Benzene.DataAnnotations;
 
-public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageContext<TRequest, TResponse>>
+public class ValidationMiddleware<TRequest, TResponse> : IMiddleware<IMessageHandlerContext<TRequest, TResponse>>
     where TRequest : class
 {
     public string Name => "DataAnnotationValidation";
 
-    public async Task HandleAsync(IMessageContext<TRequest, TResponse> context, Func<Task> next)
+    public async Task HandleAsync(IMessageHandlerContext<TRequest, TResponse> context, Func<Task> next)
     {
         if (context.Request == default)
         {

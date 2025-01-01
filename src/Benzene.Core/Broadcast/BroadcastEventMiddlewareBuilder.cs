@@ -6,7 +6,7 @@ namespace Benzene.Core.Broadcast;
 
 public class BroadcastEventMiddlewareBuilder : IHandlerMiddlewareBuilder
 {
-    public IMiddleware<IMessageContext<TRequest, TResponse>> Create<TRequest, TResponse>(IServiceResolver serviceResolver, IMessageHandler<TRequest, TResponse> messageHandler)
+    public IMiddleware<IMessageHandlerContext<TRequest, TResponse>> Create<TRequest, TResponse>(IServiceResolver serviceResolver, IMessageHandler<TRequest, TResponse> messageHandler)
         where TRequest : class
     {
         return new BroadcastEventMiddleware<TRequest, TResponse>(serviceResolver);

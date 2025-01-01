@@ -13,7 +13,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
 {
     private readonly IBenzeneLogger _logger;
     private readonly IMessageHandlerFactory _messageHandlerFactory;
-    private readonly IMessageHandlersLookUp _messageHandlersLookUp;
+    private readonly IMessageHandlerDefinitionLookUp _messageHandlerDefinitionLookUp;
     private readonly IMessageMapper<TContext> _messageMapper;
     private readonly IRequestMapper<TContext> _requestMapper;
     private readonly IDefaultStatuses _defaultStatuses;
@@ -21,7 +21,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
 
     public MessageRouter(IMessageHandlerFactory messageHandlerFactory,
         IMessageMapper<TContext> messageMapper,
-        IMessageHandlersLookUp messageHandlersLookUpUp,
+        IMessageHandlerDefinitionLookUp messageHandlerDefinitionLookUpUp,
         IRequestMapper<TContext> requestMapper,
         IResultSetter<TContext> resultSetter,
         IDefaultStatuses defaultStatuses,
@@ -30,7 +30,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         _resultSetter = resultSetter;
         _defaultStatuses = defaultStatuses;
         _requestMapper = requestMapper;
-        _messageHandlersLookUp = messageHandlersLookUpUp;
+        _messageHandlerDefinitionLookUp = messageHandlerDefinitionLookUpUp;
         _logger = logger;
         _messageMapper = messageMapper;
         _messageHandlerFactory = messageHandlerFactory;
@@ -50,7 +50,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
 
         _logger.LogDebug("Finding message handler for {topic}", topic.Id);
         Debug.WriteLine($"Finding message handler for {topic.Id}");
-        var messageHandlerDefinition = _messageHandlersLookUp.FindHandler(topic);
+        var messageHandlerDefinition = _messageHandlerDefinitionLookUp.FindHandler(topic);
         if (messageHandlerDefinition == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);

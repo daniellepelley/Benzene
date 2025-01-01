@@ -22,7 +22,7 @@ public class ClientMessageSender<TRequest, TResponse> : IMessageSender<TRequest,
     public Task<IBenzeneResult<TResponse>> SendMessageAsync(TRequest request)
     {
         var client = _clientMessageRouter.GetClient<TRequest>();
-        var topic = _getTopic.GetTopic<TRequest>();
+        var topic = _getTopic.GetTopic(typeof(TRequest));
         return client.SendMessageAsync<TRequest, TResponse>(
             new BenzeneClientRequest<TRequest>(topic, request, new Dictionary<string, string>()));
     }
@@ -35,5 +35,5 @@ public interface IClientMessageRouter
 
 public interface IGetTopic
 {
-    string GetTopic<TRequest>();
+    string GetTopic(Type type);
 }

@@ -6,12 +6,16 @@ namespace Benzene.Core.Middleware;
 public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TContext>
 {
     private readonly List<Func<IServiceResolver, IMiddleware<TContext>>> _items = new();
-    private readonly IBenzeneServiceContainer _benzeneServiceContainer;
+    private readonly IRegisterDependency _registerDependency;
 
     public MiddlewarePipelineBuilder(IBenzeneServiceContainer benzeneServiceContainer)
+        :this(new RegisterDependency(benzeneServiceContainer))
+    { }
+
+    public MiddlewarePipelineBuilder(IRegisterDependency registerDependency)
     {
-        _benzeneServiceContainer = benzeneServiceContainer;
-        _benzeneServiceContainer.AddBenzeneMiddleware();
+        _registerDependency = registerDependency;
+        registerDependency.Register(x => x.AddBenzeneMiddleware());
     }
 
     public IMiddlewarePipelineBuilder<TContext> Use(Func<IServiceResolver, IMiddleware<TContext>> func)
@@ -22,14 +26,14 @@ public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TC
 
     public void Register(Action<IBenzeneServiceContainer> action)
     {
-        action(_benzeneServiceContainer);
+       _registerDependency.Register(action); 
     }
 
     public Func<IServiceResolver, IMiddleware<TContext>>[] GetItems() => _items.ToArray();
     
     public IMiddlewarePipelineBuilder<TNewContext> Create<TNewContext>()
     {
-        return new MiddlewarePipelineBuilder<TNewContext>(_benzeneServiceContainer);
+        return new MiddlewarePipelineBuilder<TNewContext>(_registerDependency);
     }
 
     public IMiddlewarePipeline<TContext> Build()

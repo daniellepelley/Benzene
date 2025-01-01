@@ -7,7 +7,7 @@ using Benzene.Results;
 
 namespace Benzene.Core.Filters;
 
-public class FiltersMiddleware<TRequest, TResponse> : IMiddleware<IMessageContext<TRequest, TResponse>> 
+public class FiltersMiddleware<TRequest, TResponse> : IMiddleware<IMessageHandlerContext<TRequest, TResponse>> 
     where TRequest : class
 {
     private readonly IServiceResolver _serviceResolver;
@@ -19,7 +19,7 @@ public class FiltersMiddleware<TRequest, TResponse> : IMiddleware<IMessageContex
 
     public string Name => "Filters";
 
-    public async Task HandleAsync(IMessageContext<TRequest, TResponse> context, Func<Task> next)
+    public async Task HandleAsync(IMessageHandlerContext<TRequest, TResponse> context, Func<Task> next)
     {
         var filter = _serviceResolver.TryGetService<IFilter<TRequest>>();
         if (filter != null)

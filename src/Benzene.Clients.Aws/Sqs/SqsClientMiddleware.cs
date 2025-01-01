@@ -15,6 +15,7 @@ public class SqsClientMiddleware : IMiddleware<SqsSendMessageContext>
     }
     
     public string Name => nameof(SqsClientMiddleware);
+
     public async Task HandleAsync(SqsSendMessageContext context, Func<Task> next)
     {
         context.Response = await _amazonSqs.SendMessageAsync(context.Request);
