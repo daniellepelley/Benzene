@@ -1,8 +1,7 @@
 ﻿using Amazon.Lambda.Model;
-using Amazon.SQS.Model;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
-using Benzene.Clients.Aws.Sqs;
+using Benzene.Clients.Aws.Common;
 using Benzene.Results;
 
 namespace Benzene.Clients.Aws.Lambda;

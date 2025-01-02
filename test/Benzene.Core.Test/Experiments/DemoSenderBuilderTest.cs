@@ -38,7 +38,7 @@ public class DemoSenderBuilderTest
 
         pipelineBuilder
             .Out(x => x.CreateSender<ExampleRequestPayload>(builder => builder
-                .UseSqs(builder2 => builder2
+                .UseSqs("", builder2 => builder2
                     .UseSqsClient(mockAmazonSqs.Object))));
 
         var sender = serviceContainer.CreateServiceResolverFactory().CreateScope().GetService<IMessageSender<ExampleRequestPayload>>();
@@ -66,7 +66,7 @@ public class DemoSenderBuilderTest
 
         pipelineBuilder
             .Out(x => x.CreateSender<ExampleRequestPayload>(builder => builder
-                .UseSqs(builder2 => builder2
+                .UseSqs("", builder2 => builder2
                     .UseSqsClient())));
 
         var sender = serviceContainer.CreateServiceResolverFactory().CreateScope().GetService<IMessageSender<ExampleRequestPayload>>();
@@ -93,7 +93,7 @@ public class DemoSenderBuilderTest
         var pipelineBuilder = new MiddlewarePipelineBuilder<AwsEventStreamContext>(serviceContainer);
 
         pipelineBuilder
-            .Out(x => x.CreateSender<ExampleRequestPayload>(builder => builder.UseSqs()));
+            .Out(x => x.CreateSender<ExampleRequestPayload>(builder => builder.UseSqs("")));
 
         var sender = serviceContainer.CreateServiceResolverFactory().CreateScope().GetService<IMessageSender<ExampleRequestPayload>>();
         var result = await sender.SendMessageAsync(new ExampleRequestPayload());

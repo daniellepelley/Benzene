@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Clients.Aws.Common;
 
 namespace Benzene.Clients.Aws.Sqs;
 

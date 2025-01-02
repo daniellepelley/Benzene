@@ -1,4 +1,4 @@
-﻿namespace Benzene.Clients.Aws.Sqs;
+﻿namespace Benzene.Clients.Aws.Common;
 
 public interface IContextConverter<TContextIn, TContextOut>
 {

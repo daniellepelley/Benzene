@@ -1,4 +1,6 @@
-﻿namespace Benzene.Results;
+﻿using System.Net;
+
+namespace Benzene.Results;
 
 public static class BenzeneResultExtensions
 {
@@ -119,44 +121,59 @@ public static class BenzeneResultExtensions
         return source.Result.As<T, TOutput>();
     }
 
-    public static string AsHttpStatusCode(this string benzeneResultStatus)
-    {
-        switch (benzeneResultStatus)
-        {
-            case BenzeneResultStatus.Ok:
-            case BenzeneResultStatus.Ignored:
-                return "200";
-            case BenzeneResultStatus.Created:
-                return "201";
-            case BenzeneResultStatus.Accepted:
-                return "202";
-            case BenzeneResultStatus.Updated:
-                return "204";
-            case BenzeneResultStatus.Deleted:
-                return "204";
-            case BenzeneResultStatus.BadRequest:
-                return "400";
-            case BenzeneResultStatus.Unauthorized:
-                return "401";
-            case BenzeneResultStatus.Forbidden:
-                return "403";
-            case BenzeneResultStatus.NotFound:
-                return "404";
-            case BenzeneResultStatus.Conflict:
-                return "409";
-            case BenzeneResultStatus.ValidationError:
-                return "422";
-            case BenzeneResultStatus.NotImplemented:
-                return "501";
-            case BenzeneResultStatus.ServiceUnavailable:
-                return "503";
-            default:
-                return "500";
-        }
-    }
-
     public static Task<IBenzeneResult<T>> AsTask<T>(this IBenzeneResult<T> serviceBenzeneResult)
     {
         return Task.FromResult(serviceBenzeneResult);
+    }
+
+    public static IBenzeneResult Convert(this HttpStatusCode httpStatusCode)
+    {
+        return httpStatusCode switch
+        {
+            HttpStatusCode.Accepted => BenzeneResult.Accepted(),
+            HttpStatusCode.OK => BenzeneResult.Ok(),
+            HttpStatusCode.Created => BenzeneResult.Created(),
+            HttpStatusCode.NoContent => BenzeneResult.Deleted(),
+            HttpStatusCode.NotFound => BenzeneResult.NotFound(),
+            HttpStatusCode.BadRequest => BenzeneResult.BadRequest(),
+            HttpStatusCode.Conflict => BenzeneResult.Conflict(),
+            HttpStatusCode.Forbidden => BenzeneResult.Forbidden(),
+            HttpStatusCode.Unauthorized => BenzeneResult.Unauthorized(),
+            _ => BenzeneResult.UnexpectedError()
+        };
+    }
+    
+    public static IBenzeneResult<T> Convert<T>(this HttpStatusCode httpStatusCode, T payload)
+    {
+        return httpStatusCode switch
+        {
+            HttpStatusCode.Accepted => BenzeneResult.Accepted(payload),
+            HttpStatusCode.OK => BenzeneResult.Ok(payload),
+            HttpStatusCode.Created => BenzeneResult.Created(payload),
+            HttpStatusCode.NoContent => BenzeneResult.Deleted(payload),
+            HttpStatusCode.NotFound => BenzeneResult.NotFound<T>(),
+            HttpStatusCode.BadRequest => BenzeneResult.BadRequest<T>(),
+            HttpStatusCode.Conflict => BenzeneResult.Conflict<T>(),
+            HttpStatusCode.Forbidden => BenzeneResult.Forbidden<T>(),
+            HttpStatusCode.Unauthorized => BenzeneResult.Unauthorized<T>(),
+            _ => BenzeneResult.UnexpectedError<T>()
+        };
+    }
+
+    public static IBenzeneResult<T> Convert<T>(this HttpStatusCode httpStatusCode)
+    {
+        return httpStatusCode switch
+        {
+            HttpStatusCode.Accepted => BenzeneResult.Accepted<T>(),
+            HttpStatusCode.OK => BenzeneResult.Ok<T>(),
+            HttpStatusCode.Created => BenzeneResult.Created<T>(),
+            HttpStatusCode.NoContent => BenzeneResult.Deleted<T>(),
+            HttpStatusCode.NotFound => BenzeneResult.NotFound<T>(),
+            HttpStatusCode.BadRequest => BenzeneResult.BadRequest<T>(),
+            HttpStatusCode.Conflict => BenzeneResult.Conflict<T>(),
+            HttpStatusCode.Forbidden => BenzeneResult.Forbidden<T>(),
+            HttpStatusCode.Unauthorized => BenzeneResult.Unauthorized<T>(),
+            _ => BenzeneResult.UnexpectedError<T>()
+        };
     }
 }

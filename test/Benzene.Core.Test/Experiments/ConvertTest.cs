@@ -4,6 +4,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
 using Benzene.Clients;
+using Benzene.Clients.Aws.Common;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Middleware;
