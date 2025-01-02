@@ -42,7 +42,7 @@ public class BenzeneKafkaWorker : IBenzeneWorker, IDisposable
                     {
                         await semaphore.WaitAsync(cancellationToken);
                         var consumeResult = _consumer.Consume(cancellationToken);
-                        _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory.CreateScope())
+                        _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory)
                             .ContinueWith(_ => semaphore.Release());
                     }
                     catch (ConsumeException e)

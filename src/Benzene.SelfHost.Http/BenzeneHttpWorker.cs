@@ -42,7 +42,7 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
                     {
                         await semaphore.WaitAsync(cancellationToken);
                         var httpContext = await _httpListener.GetContextAsync();
-                        _httpListenerApplication.HandleAsync(httpContext, _serviceResolverFactory.CreateScope())
+                        _httpListenerApplication.HandleAsync(httpContext, _serviceResolverFactory)
                             .ContinueWith(_ => semaphore.Release());
                     }
                     catch (Exception ex)

@@ -78,7 +78,7 @@ public class GrpcMethodHandler2 : IGrpcMethodHandler
         {
             Topic = topic,
             Body = JsonSerializer.Serialize(request)
-        }, _serviceResolverFactory.CreateScope());
+        }, _serviceResolverFactory);
 
         return result.Body;
     }
