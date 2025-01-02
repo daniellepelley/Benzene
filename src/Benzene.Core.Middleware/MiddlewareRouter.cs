@@ -27,7 +27,7 @@ public abstract class MiddlewareRouter<TRequest, TContext> : IMiddleware<TContex
         {
             if (CanHandle(request))
             {
-                await HandleFunction(request, context, _serviceResolver);
+                await HandleFunction(request, context, _serviceResolver.GetService<IServiceResolverFactory>());
             }
             else
             {
@@ -37,6 +37,6 @@ public abstract class MiddlewareRouter<TRequest, TContext> : IMiddleware<TContex
     }
 
     protected abstract bool CanHandle(TRequest request);
-    protected abstract Task HandleFunction(TRequest request, TContext context, IServiceResolver serviceResolver);
+    protected abstract Task HandleFunction(TRequest request, TContext context, IServiceResolverFactory serviceResolverFactory);
     protected abstract TRequest TryExtractRequest(TContext context);
 }

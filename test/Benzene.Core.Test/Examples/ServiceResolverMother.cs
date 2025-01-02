@@ -13,10 +13,16 @@ namespace Benzene.Test.Examples;
 
 public static class ServiceResolverMother
 {
+    public static IServiceResolverFactory CreateServiceResolverFactory()
+    {
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(CreateServiceCollection());
+        return serviceResolverFactory;
+    }
+
     public static IServiceResolver CreateServiceResolver()
     {
         var serviceResolver = new MicrosoftServiceResolverFactory(CreateServiceCollection()).CreateScope();
-        return serviceResolver;
+        return CreateServiceResolverFactory().CreateScope();
     }
 
     public static IServiceCollection CreateServiceCollection()

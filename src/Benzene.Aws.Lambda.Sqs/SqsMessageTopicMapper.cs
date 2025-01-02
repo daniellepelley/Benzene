@@ -2,7 +2,7 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.MessageHandlers;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsMessageTopicMapper : IMessageTopicMapper<SqsMessageContext>
 {

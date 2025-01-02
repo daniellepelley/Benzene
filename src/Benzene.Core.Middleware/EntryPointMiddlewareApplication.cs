@@ -16,7 +16,7 @@ public class EntryPointMiddlewareApplication<TEvent> : IEntryPointMiddlewareAppl
 
     public Task SendAsync(TEvent @event)
     {
-        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory.CreateScope());
+        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory);
     }
 }
 
@@ -34,6 +34,6 @@ public class EntryPointMiddlewareApplication<TEvent, TResult> : IEntryPointMiddl
 
     public Task<TResult> SendAsync(TEvent @event)
     {
-        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory.CreateScope());
+        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory);
     }
 }

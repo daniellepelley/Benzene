@@ -98,7 +98,7 @@ public class SnsMessagePipelineTest
             .AddTransient(_ => mockExampleService.Object)
             .UsingBenzene(x => x.AddSns());
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
         var pipeline = new MiddlewarePipelineBuilder<SnsRecordContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
@@ -115,7 +115,7 @@ public class SnsMessagePipelineTest
 
         var request = CreateRequest();
 
-        await aws.HandleAsync(request, serviceResolver);
+        await aws.HandleAsync(request, serviceResolverFactory);
         Assert.True(messageResult.IsSuccessful);
     }
 
@@ -148,7 +148,7 @@ public class SnsMessagePipelineTest
             }
         };
 
-        await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
+        await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
 
         Assert.Equal(Defaults.Message, messageSent);
     }

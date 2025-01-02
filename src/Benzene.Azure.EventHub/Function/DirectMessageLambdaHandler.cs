@@ -26,11 +26,9 @@ public class BenzeneMessageLambdaHandler : MiddlewareRouter<BenzeneMessageReques
         return request?.Topic != null;
     }
 
-    protected override async Task HandleFunction(BenzeneMessageRequest request, EventHubContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(BenzeneMessageRequest request, EventHubContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
-        setCurrentTransport.SetTransport("direct");
-        await _directMessageApplication.HandleAsync(request, serviceResolver);
+        await _directMessageApplication.HandleAsync(request, serviceResolverFactory);
     }
 
     protected override BenzeneMessageRequest TryExtractRequest(EventHubContext context)

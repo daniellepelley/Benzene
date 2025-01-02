@@ -17,11 +17,11 @@ public class MiddlewareMultiApplication<TEvent, TContext, TResult> : IMiddleware
         _pipelineBuilder = pipelineBuilder;
     }
 
-    public Task<TResult[]> HandleAsync(TEvent @event, IServiceResolver serviceResolver)
+    public Task<TResult[]> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var tasks = _mapper(@event).Select(async context =>
             {
-                using var scope = serviceResolver.GetService<IServiceResolverFactory>().CreateScope();
+                using var scope = serviceResolverFactory.CreateScope();
                 await _pipelineBuilder.HandleAsync(context, scope);
                 return _resultMapper(context);
             })
@@ -42,11 +42,11 @@ public class MiddlewareMultiApplication<TEvent, TContext> : IMiddlewareApplicati
         _pipeline = pipeline;
     }
 
-    public Task HandleAsync(TEvent @event, IServiceResolver serviceResolver)
+    public Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var tasks = _mapper(@event).Select(async context =>
             {
-                using var scope = serviceResolver.GetService<IServiceResolverFactory>().CreateScope();
+                using var scope = serviceResolverFactory.CreateScope();
                 await _pipeline.HandleAsync(context, scope);
             })
             .ToArray();

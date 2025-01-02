@@ -111,8 +111,8 @@ public class KafkaMessagePipelineTest
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsAwsKafkaEvent();
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        await aws.HandleAsync(request, serviceResolver);
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        await aws.HandleAsync(request, serviceResolverFactory);
         Assert.True(messageResult.IsSuccessful);
     }
 

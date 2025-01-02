@@ -2,7 +2,7 @@
 using System.Linq;
 using Benzene.Abstractions.Mappers;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsMessageHeadersMapper : IMessageHeadersMapper<SqsMessageContext>
 {

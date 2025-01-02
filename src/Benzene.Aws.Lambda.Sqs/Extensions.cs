@@ -1,8 +1,9 @@
 ﻿using System;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public static class Extensions
 {

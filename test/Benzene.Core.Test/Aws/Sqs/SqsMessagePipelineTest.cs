@@ -4,9 +4,10 @@ using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Sqs;
+using Benzene.Aws.Lambda.Sqs.TestHelpers;
 using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Client;
-using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
@@ -156,8 +157,8 @@ public class SqsMessagePipelineTest
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqs();
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        await aws.HandleAsync(request, serviceResolver);
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        await aws.HandleAsync(request, serviceResolverFactory);
         Assert.True(isSuccessful);
     }
 
@@ -178,7 +179,7 @@ public class SqsMessagePipelineTest
 
         var request = MessageBuilder.Create("some-topic", Defaults.MessageAsObject).AsSqs();
 
-        await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
+        await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
 
         Assert.Equal(Defaults.Message, messageSent);
     }
@@ -246,7 +247,7 @@ public class SqsMessagePipelineTest
             .UsingBenzene(x => x
                 .AddSqs());
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
         var pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 
@@ -256,7 +257,7 @@ public class SqsMessagePipelineTest
 
         var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqs(5);
 
-        SQSBatchResponse batchResponse = await aws.HandleAsync(request, serviceResolver);
+        SQSBatchResponse batchResponse = await aws.HandleAsync(request, serviceResolverFactory);
         Assert.Equal(5, batchResponse.BatchItemFailures.Count);
     }
 

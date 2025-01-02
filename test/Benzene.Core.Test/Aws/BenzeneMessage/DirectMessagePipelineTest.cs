@@ -34,7 +34,7 @@ public class BenzeneMessagePipelineTest
 
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
 
-        var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
+        var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
 
         Assert.NotNull(response);
         Assert.Equal(Defaults.ResponseMessage, response.Body);

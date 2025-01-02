@@ -5,6 +5,7 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Consumer;
+using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
@@ -155,7 +156,7 @@ public class SqsConsumerMessagePipelineTest
         var tokenSource = new CancellationTokenSource(5000);
         var token = tokenSource.Token;
 
-        var task = consumer.Start(token);
+        var task = consumer.StartAsync(token);
 
         try
         {

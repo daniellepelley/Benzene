@@ -6,7 +6,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
 {
@@ -17,14 +17,14 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
         _pipeline = pipeline;
     }
 
-    public async Task<SQSBatchResponse> HandleAsync(SQSEvent @event, IServiceResolver serviceResolver)
+    public async Task<SQSBatchResponse> HandleAsync(SQSEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
         var tasks = @event.Records.Select(record => SqsMessageContext.CreateInstance(@event, record)).Select(async context =>
             {
                 try
                 {
-                    using (var scope = serviceResolver.GetService<IServiceResolverFactory>().CreateScope())
+                    using (var scope = serviceResolverFactory.CreateScope())
                     {
                         var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
                         setCurrentTransport.SetTransport("sqs");

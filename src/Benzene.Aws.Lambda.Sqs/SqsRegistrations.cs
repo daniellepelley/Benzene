@@ -1,11 +1,11 @@
 ﻿using Benzene.Core.DI;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsRegistrations : RegistrationsBase
 {
     public SqsRegistrations()
     {
-        Add(".AddSqsConsumer()", x => x.AddSqsConsumer());
+        Add(".AddSqs()", x => x.AddSqs());
     }
 }

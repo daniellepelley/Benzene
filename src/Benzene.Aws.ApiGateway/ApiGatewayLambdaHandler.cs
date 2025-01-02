@@ -24,11 +24,9 @@ public class ApiGatewayLambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayProxy
         return request?.HttpMethod != null;
     }
 
-    protected override async Task HandleFunction(APIGatewayProxyRequest request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(APIGatewayProxyRequest request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
-        setCurrentTransport.SetTransport("api-gateway");
-        var response = await _apiGatewayApplication.HandleAsync(request, serviceResolver);
+        var response = await _apiGatewayApplication.HandleAsync(request, serviceResolverFactory);
 
         MapResponse(context, response);
     }

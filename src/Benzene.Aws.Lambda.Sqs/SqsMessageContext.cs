@@ -1,6 +1,6 @@
 ﻿using Amazon.Lambda.SQSEvents;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsMessageContext 
 {

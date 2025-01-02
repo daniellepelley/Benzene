@@ -3,10 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Hosting;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
-public class SqsConsumer
+public class SqsConsumer : IBenzeneWorker
 {
     private readonly IServiceResolverFactory _serviceResolverFactory;
     private readonly SqsConsumerApplication _sqsConsumerApplication;
@@ -22,7 +23,7 @@ public class SqsConsumer
         _serviceResolverFactory = serviceResolverFactory;
     }
 
-    public async Task Start(CancellationToken token)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var client = _sqsClientFactory.Create(_sqsConsumerConfig.ServiceUrl);
         do
@@ -33,9 +34,9 @@ public class SqsConsumer
                 MessageAttributeNames = new[] { "All" }.ToList(),
                 MaxNumberOfMessages = _sqsConsumerConfig.MaxNumberOfMessages,
                 WaitTimeSeconds = 10
-            }, token);
+            }, cancellationToken);
 
-            await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory.CreateScope());
+            await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory);
 
             await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
             {
@@ -43,7 +44,12 @@ public class SqsConsumer
                 Entries = result.Messages
                     .Select(x => new DeleteMessageBatchRequestEntry(x.MessageId, x.ReceiptHandle))
                     .ToList()
-            }, token);
-        } while (!token.IsCancellationRequested);
+            }, cancellationToken);
+        } while (!cancellationToken.IsCancellationRequested);
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        throw new System.NotImplementedException();
     }
 }

@@ -27,7 +27,7 @@ public class S3LambdaHandler : AwsLambdaMiddlewareRouter<S3Event>
                request.Records[0].EventSource == "aws:s3";
     }
 
-    protected override async Task HandleFunction(S3Event request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(S3Event request, AwsEventStreamContext context, IServiceResolverFactory serviceResolver)
     {
         await _application.HandleAsync(request, serviceResolver);
     }

@@ -6,7 +6,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsLambdaHandler : AwsLambdaMiddlewareRouter<SQSEvent>
 {
@@ -27,9 +27,9 @@ public class SqsLambdaHandler : AwsLambdaMiddlewareRouter<SQSEvent>
                request.Records[0].EventSource == "aws:sqs";
     }
 
-    protected override async Task HandleFunction(SQSEvent request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(SQSEvent request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        var response = await _application.HandleAsync(request, serviceResolver);
+        var response = await _application.HandleAsync(request, serviceResolverFactory);
         MapResponse(context, response);
     }
 }

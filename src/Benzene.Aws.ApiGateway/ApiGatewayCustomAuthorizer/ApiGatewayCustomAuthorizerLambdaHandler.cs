@@ -22,9 +22,9 @@ public class ApiGatewayCustomAuthorizerLambdaHandler : AwsLambdaMiddlewareRouter
         return !string.IsNullOrEmpty(request?.RequestContext?.ApiId);
     }
 
-    protected override async Task HandleFunction(APIGatewayCustomAuthorizerRequest request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(APIGatewayCustomAuthorizerRequest request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        var response = await _apiGatewayApplication.HandleAsync(request, serviceResolver);
+        var response = await _apiGatewayApplication.HandleAsync(request, serviceResolverFactory);
         JsonSerializer.Serialize(response, context.Response);
         if (context.Response != null)
         {

@@ -25,10 +25,10 @@ public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
         return request?.EventSource == "aws:kafka";
     }
 
-    protected override async Task HandleFunction(KafkaEvent request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(KafkaEvent request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
-        setCurrentTransport.SetTransport("kafka");
-        await _application.HandleAsync(request, serviceResolver);
+        // var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
+        // setCurrentTransport.SetTransport("kafka");
+        await _application.HandleAsync(request, serviceResolverFactory);
     }
 }

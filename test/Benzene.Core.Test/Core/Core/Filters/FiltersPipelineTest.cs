@@ -39,7 +39,7 @@ public class FiltersPipelineTest
             })
         };
 
-        var response = await aws.HandleAsync(request, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
+        var response = await aws.HandleAsync(request, new MicrosoftServiceResolverFactory(serviceCollection.BuildServiceProvider()));
 
         Assert.NotNull(response);
         Assert.Equal(expectedStatus, response.StatusCode);

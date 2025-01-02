@@ -24,10 +24,10 @@ public class BenzeneMessageLambdaHandler : AwsLambdaMiddlewareRouter<BenzeneMess
         return request?.Topic != null;
     }
 
-    protected override async Task HandleFunction(BenzeneMessageRequest request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(BenzeneMessageRequest request, AwsEventStreamContext context, IServiceResolverFactory serviceResolver)
     {
-        var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
-        setCurrentTransport.SetTransport("direct");
+        // var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
+        // setCurrentTransport.SetTransport("direct");
         var response = await _directMessageApplication.HandleAsync(request, serviceResolver);
         MapResponse(context, response);
     }

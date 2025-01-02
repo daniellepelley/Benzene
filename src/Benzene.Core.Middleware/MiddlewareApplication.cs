@@ -16,10 +16,10 @@ public class MiddlewareApplication<TEvent, TContext, TResult> : IMiddlewareAppli
         _pipeline = pipeline;
     }
 
-    public async Task<TResult> HandleAsync(TEvent @event, IServiceResolver serviceResolver)
+    public async Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var context = _mapper(@event);
-        await _pipeline.HandleAsync(context, serviceResolver);
+        await _pipeline.HandleAsync(context, serviceResolverFactory.CreateScope());
         return _resultMapper(context);
     }
 }
@@ -35,9 +35,9 @@ public class MiddlewareApplication<TEvent, TContext> : IMiddlewareApplication<TE
         _pipeline = pipeline;
     }
 
-    public async Task HandleAsync(TEvent @event, IServiceResolver serviceResolver)
+    public async Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var context = _mapper(@event);
-        await _pipeline.HandleAsync(context, serviceResolver);
+        await _pipeline.HandleAsync(context, serviceResolverFactory.CreateScope());
     }
 }

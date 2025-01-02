@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Amazon.Lambda.SQSEvents;
+using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Sqs;
 using Benzene.Core;
 using Benzene.Core.Mappers;

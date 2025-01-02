@@ -73,7 +73,7 @@ public class LogContextTest
 
         await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
-        Verify("transport", "direct");
+        Verify("transport", "benzene");
     }
 
     [Fact]

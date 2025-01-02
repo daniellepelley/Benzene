@@ -27,7 +27,7 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
         var services = new ServiceCollection();
         services.UsingBenzene(x => x.AddBenzene());
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
         var pipeline = new MiddlewarePipelineBuilder<ApiGatewayCustomAuthorizerContext>(new MicrosoftBenzeneServiceContainer(services))
             .Use(null, (context, next) =>
@@ -43,7 +43,7 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
 
         var request = CreateRequest();
 
-        var response = await aws.HandleAsync(request, serviceResolver);
+        var response = await aws.HandleAsync(request, serviceResolverFactory);
 
         Assert.NotNull(response);
         Assert.Equal("some-id", response.PrincipalID);

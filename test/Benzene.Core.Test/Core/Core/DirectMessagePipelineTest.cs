@@ -39,12 +39,12 @@ public class BenzeneMessagePipelineTest
 
         var pipeline = PipelineMother.BasicBenzeneMessagePipeline(new MicrosoftBenzeneServiceContainer(services));
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
         var aws = new BenzeneMessageApplication(pipeline.Build());
 
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
 
-        var response = await aws.HandleAsync(request, serviceResolver);
+        var response = await aws.HandleAsync(request, serviceResolverFactory);
 
         Assert.NotNull(response);
         Assert.Equal(BenzeneResultStatus.Ok, response.StatusCode);
@@ -67,7 +67,7 @@ public class BenzeneMessagePipelineTest
 
         pipeline.UseMessageHandlers();
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
         var aws = new BenzeneMessageApplication(pipeline.Build());
 
         var request = RequestMother
@@ -79,7 +79,7 @@ public class BenzeneMessagePipelineTest
             })
             .AsBenzeneMessage();
 
-        var response = await aws.HandleAsync(request, serviceResolver);
+        var response = await aws.HandleAsync(request, serviceResolverFactory);
 
         Assert.NotNull(response);
         Assert.Equal(BenzeneResultStatus.Deleted, response.StatusCode);
@@ -119,8 +119,8 @@ public class BenzeneMessagePipelineTest
             }
         };
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var response = await aws.HandleAsync(request, serviceResolver);
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        var response = await aws.HandleAsync(request, serviceResolverFactory);
 
         Assert.NotNull(response);
         Assert.Equal(BenzeneResultStatus.Accepted, response.StatusCode);
@@ -147,7 +147,7 @@ public class BenzeneMessagePipelineTest
 
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
 
-        var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
+        var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
 
         Assert.NotNull(response);
         Assert.Equal(Defaults.ResponseMessage, response.Body);
@@ -188,7 +188,7 @@ public class BenzeneMessagePipelineTest
             }
         };
 
-        await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
+        await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
         Assert.Equal("200", responseStatus);
     }
 
@@ -220,7 +220,7 @@ public class BenzeneMessagePipelineTest
             }
         };
 
-        var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolver());
+        var response = await aws.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
 
         Assert.NotNull(response);
         Assert.Equal(Defaults.Message, response.Body);

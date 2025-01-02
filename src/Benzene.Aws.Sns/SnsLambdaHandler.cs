@@ -27,8 +27,8 @@ public class SnsLambdaHandler : AwsLambdaMiddlewareRouter<SNSEvent>
                request.Records[0].EventSource == "aws:sns";
     }
 
-    protected override async Task HandleFunction(SNSEvent request, AwsEventStreamContext context, IServiceResolver serviceResolver)
+    protected override async Task HandleFunction(SNSEvent request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        await _application.HandleAsync(request, serviceResolver);
+        await _application.HandleAsync(request, serviceResolverFactory);
     }
 }

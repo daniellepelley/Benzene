@@ -30,9 +30,10 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .UsingBenzene(x => Extensions.AddMessageHandlers(x
-                    .AddBenzene()
-                    .AddBenzeneMessage(), GetType().Assembly)
+            .UsingBenzene(x => x
+                .AddBenzene()
+                .AddBenzeneMessage()
+                .AddMessageHandlers(GetType().Assembly)
             );
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
@@ -52,8 +53,8 @@ public class HealthCheckPipelineTest
             })
         };
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var response = await aws.HandleAsync(request, serviceResolver);
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        var response = await aws.HandleAsync(request, serviceResolverFactory);
 
         mockHealthCheck.Verify(x => x.ExecuteAsync());
 
@@ -98,8 +99,8 @@ public class HealthCheckPipelineTest
             })
         };
 
-        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
-        var response = await aws.HandleAsync(request, serviceResolver);
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        var response = await aws.HandleAsync(request, serviceResolverFactory);
 
         mockHealthCheck.Verify(x => x.ExecuteAsync());
 

@@ -4,10 +4,10 @@ namespace Benzene.Abstractions.Middleware;
 
 public interface IMiddlewareApplication<TEvent>
 {
-    Task HandleAsync(TEvent @event, IServiceResolver serviceResolver);
+    Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory);
 }
 
 public interface IMiddlewareApplication<TEvent, TResult>
 {
-    Task<TResult> HandleAsync(TEvent @event, IServiceResolver serviceResolver);
+    Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory);
 }

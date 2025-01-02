@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
-using Benzene.Abstractions.Results;
 
-namespace Benzene.Aws.Sqs;
+namespace Benzene.Aws.Lambda.Sqs;
 
 public class SqsMessageResultSetter : IResultSetter<SqsMessageContext>
 {
