@@ -1,5 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Middleware.BenzeneClient;
 using Benzene.Core.Middleware;
 using Void = Benzene.Results.Void;
 
@@ -14,13 +15,25 @@ public class MessageSenderBuilder : IMessageSenderBuilder
         _registerDependency = registerDependency;
     }
     
-    public void CreateSender<T>(Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>>> action)
+    public void CreateSender<TRequest>(Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<TRequest, Void>>> action)
     {
         var pipeline = _registerDependency.CreateMiddlewarePipeline(action);
         
         _registerDependency.Register(x =>
         {
-            x.AddScoped<IMessageSender<T>, MessageSender<T>>();
+            x.AddScoped<IMessageSender<TRequest>, MessageSender<TRequest>>();
+            x.AddScoped(_ => pipeline);
+            x.AddScoped<IGetTopic, DefaultGetTopic>();
+        });
+    }
+    
+    public void CreateSender<TRequest, TResponse>(Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<TRequest, TResponse>>> action)
+    {
+        var pipeline = _registerDependency.CreateMiddlewarePipeline(action);
+        
+        _registerDependency.Register(x =>
+        {
+            x.AddScoped<IMessageSender<TRequest, TResponse>, MessageSender<TRequest, TResponse>>();
             x.AddScoped(_ => pipeline);
             x.AddScoped<IGetTopic, DefaultGetTopic>();
         });

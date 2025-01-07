@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Middleware.BenzeneClient;
 
 namespace Benzene.Clients.Aws.Sqs;
 

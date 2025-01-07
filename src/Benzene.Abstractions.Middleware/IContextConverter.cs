@@ -1,4 +1,4 @@
-﻿namespace Benzene.Clients.Aws.Common;
+﻿namespace Benzene.Abstractions.Middleware;
 
 public interface IContextConverter<TContextIn, TContextOut>
 {

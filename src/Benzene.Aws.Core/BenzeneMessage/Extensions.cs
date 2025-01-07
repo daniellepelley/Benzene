@@ -3,6 +3,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Core.BenzeneMessage;
 
@@ -11,9 +12,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseBenzeneMessage(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>> action)
     {
         app.Register(x => x.AddBenzeneMessage());
-        var middlewarePipelineBuilder = app.Create<BenzeneMessageContext>();
-        action(middlewarePipelineBuilder);
-        var pipeline = middlewarePipelineBuilder.Build();
+        var pipeline = app.CreateMiddlewarePipeline(action);
         return app.Use(resolver => new BenzeneMessageLambdaHandler(pipeline, resolver));
     }
     

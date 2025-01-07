@@ -1,10 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Aws.Common;
 
-namespace Benzene.Clients.Aws.Sqs;
+namespace Benzene.Core.Middleware;
 
 public class ContextConverterMiddleware<TContext, TContextOut> : IMiddleware<TContext>
 {
@@ -20,11 +17,11 @@ public class ContextConverterMiddleware<TContext, TContextOut> : IMiddleware<TCo
     }
 
     public string Name => "Convert";
-    
+
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
         var contextOut = _converter.CreateRequest(context);
         await _middlewarePipeline.HandleAsync(contextOut, _serviceResolver);
-        _converter.MapResponse(context, contextOut); 
+        _converter.MapResponse(context, contextOut);
     }
 }

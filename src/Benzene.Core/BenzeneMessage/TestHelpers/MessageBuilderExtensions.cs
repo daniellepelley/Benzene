@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Serialization;
 
 namespace Benzene.Core.BenzeneMessage.TestHelpers;

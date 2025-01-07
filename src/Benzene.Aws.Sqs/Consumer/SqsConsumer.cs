@@ -28,24 +28,34 @@ public class SqsConsumer : IBenzeneWorker
         using var client = _sqsClientFactory.Create(_sqsConsumerConfig.ServiceUrl);
         do
         {
-            var result = await client.ReceiveMessageAsync(new ReceiveMessageRequest
+            try
             {
-                QueueUrl = _sqsConsumerConfig.QueueUrl,
-                MessageAttributeNames = new[] { "All" }.ToList(),
-                MaxNumberOfMessages = _sqsConsumerConfig.MaxNumberOfMessages,
-                WaitTimeSeconds = 10
-            }, cancellationToken);
+                var result = await client.ReceiveMessageAsync(new ReceiveMessageRequest
+                {
+                    QueueUrl = _sqsConsumerConfig.QueueUrl,
+                    MessageAttributeNames = new[] { "All" }.ToList(),
+                    MaxNumberOfMessages = _sqsConsumerConfig.MaxNumberOfMessages,
+                    WaitTimeSeconds = 1
+                }, cancellationToken);
 
-            await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory);
+                if (result.Messages.Any())
+                {
+                    await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory);
 
-            await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
+                    await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
+                    {
+                        QueueUrl = _sqsConsumerConfig.QueueUrl,
+                        Entries = result.Messages
+                            .Select(x => new DeleteMessageBatchRequestEntry(x.MessageId, x.ReceiptHandle))
+                            .ToList()
+                    }, cancellationToken);
+                }
+            }
+            catch (TaskCanceledException)
             {
-                QueueUrl = _sqsConsumerConfig.QueueUrl,
-                Entries = result.Messages
-                    .Select(x => new DeleteMessageBatchRequestEntry(x.MessageId, x.ReceiptHandle))
-                    .ToList()
-            }, cancellationToken);
-        } while (!cancellationToken.IsCancellationRequested);
+            }
+        }
+        while (!cancellationToken.IsCancellationRequested);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

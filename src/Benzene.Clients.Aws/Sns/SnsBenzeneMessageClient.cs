@@ -3,12 +3,10 @@ using System.Net;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
-using Amazon.SQS;
-using Amazon.SQS.Model;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Aws.Common;
-using Benzene.Clients.Aws.Sns;
+using Benzene.Abstractions.Middleware.BenzeneClient;
+using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Results;
 

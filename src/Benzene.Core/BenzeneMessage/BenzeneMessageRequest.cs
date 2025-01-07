@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Benzene.Abstractions.MessageHandlers;
 
 namespace Benzene.Core.BenzeneMessage;
 

@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.BenzeneMessage;

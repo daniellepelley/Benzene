@@ -1,11 +1,7 @@
 ﻿using System.Diagnostics;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandlers.Mappers;
-using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Abstractions.MessageHandlers.ToDelete;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Core.MessageHandlers;
@@ -51,37 +47,3 @@ public class HandlerPipelineBuilder : IHandlerPipelineBuilder
             .Select(x => new Func<IServiceResolver, IMiddleware<IMessageHandlerContext<TRequest, TResponse>>>(_ => x)).ToArray());
     }
 }
-
-public abstract class DefaultMessageResultSetterBase<TContext>: IResultSetter<TContext> 
-{
-    public Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
-    {
-        return Task.CompletedTask;
-    }
-}
-
-public abstract class MessageResultSetterBase<TContext>: IResultSetter<TContext> where TContext : IHasMessageResult
-{
-    public Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
-    {
-        context.MessageResult = new MessageResult(messageHandlerResult.BenzeneResult.IsSuccessful);
-        return Task.CompletedTask;
-    }
-}
-
-public class ResponseMessageResultSetterBase<TContext> : IResultSetter<TContext> where TContext : class
-{
-    private readonly IResponseHandlerContainer<TContext> _responseHandlerContainer;
-
-    public ResponseMessageResultSetterBase(IResponseHandlerContainer<TContext> responseHandlerContainer)
-    {
-        _responseHandlerContainer = responseHandlerContainer;
-    }
-
-    public async Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
-    {
-        await _responseHandlerContainer.HandleAsync(context, messageHandlerResult);
-    }
-}
-
-

@@ -1,6 +1,4 @@
-﻿using Benzene.Results;
-
-namespace Benzene.Clients;
+﻿namespace Benzene.Clients;
 
 // public interface IBenzeneClientRequest<TMessage>
 // {

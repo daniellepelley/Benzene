@@ -9,6 +9,7 @@ using Benzene.Abstractions.Logging;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Logging;
+using Benzene.Core.Middleware;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Moq;
@@ -76,7 +77,7 @@ public class SqsBenzeneMessageClientTest
 
         var mockClientMessageRouter = new Mock<IClientMessageRouter>();
         mockClientMessageRouter.Setup(x => x.GetClient<ExampleRequestPayload>())
-            .Returns(new SqsBenzeneMessageClient(Defaults.SqsQueueUrl, mockAmazonSqs.Object, new BenzeneLogger(new List<IBenzeneLogAppender>())));
+            .Returns(new SqsBenzeneMessageClient(Defaults.SqsQueueUrl, mockAmazonSqs.Object, new BenzeneLogger(new List<IBenzeneLogAppender>()), new NullServiceResolver()));
 
         var getTopic = new DictionaryGetTopic(new Dictionary<Type, string>
         {

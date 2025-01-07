@@ -1,5 +1,5 @@
 ﻿using System;
-using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Middleware.BenzeneClient;
 
 namespace Benzene.Core.MessageSender;
 

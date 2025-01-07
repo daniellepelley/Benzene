@@ -2,14 +2,9 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Serialization;
-using Benzene.Clients;
-using Benzene.Clients.Aws.Common;
-using Benzene.Clients.Aws.Sqs;
-using Benzene.Core.BenzeneMessage;
+using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Results;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

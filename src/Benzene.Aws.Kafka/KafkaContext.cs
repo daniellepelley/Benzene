@@ -1,6 +1,5 @@
 ﻿using Amazon.Lambda.KafkaEvents;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
-using Benzene.Abstractions.Results;
 
 
 namespace Benzene.Aws.Kafka;

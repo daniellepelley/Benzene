@@ -2,6 +2,7 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Middleware;

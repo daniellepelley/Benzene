@@ -167,18 +167,18 @@ public static class Extensions
         }));
     }
 
-    public static IBenzeneServiceContainer AddBenzeneMiddleware(this IBenzeneServiceContainer services)
+    public static IMiddlewarePipelineBuilder<TContext> Convert<TContext, TContextOut>(this IMiddlewarePipelineBuilder<TContext> app,
+       IContextConverter<TContext, TContextOut> converter, IMiddlewarePipeline<TContextOut> middlewarePipeline)
     {
-        services.TryAddSingleton<IMiddlewareFactory, DefaultMiddlewareFactory>();
-        services.AddServiceResolver();
-        return services;
+        return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
     }
 
-    public static IMiddlewarePipeline<TContext> CreateMiddlewarePipeline<TContext>(this IRegisterDependency source,
-        Action<IMiddlewarePipelineBuilder<TContext>> action)
+    public static IMiddlewarePipelineBuilder<TContext> Convert<TContext, TContextOut>(this IMiddlewarePipelineBuilder<TContext> app,
+        IContextConverter<TContext, TContextOut> converter, Action<IMiddlewarePipelineBuilder<TContextOut>> action)
     {
-        var middlewareBuilder = new MiddlewarePipelineBuilder<TContext>(source);
-        action(middlewareBuilder);
-        return middlewareBuilder.Build();
+        var middlewarePipeline = app.CreateMiddlewarePipeline(action);
+
+        return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
     }
+
 }

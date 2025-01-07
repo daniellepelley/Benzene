@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
@@ -8,6 +9,7 @@ using Benzene.Core.MessageHandlers;
 using Benzene.Core.Request;
 using Benzene.Core.Serialization;
 using Benzene.Microsoft.Dependencies;
+using Benzene.Test.Core.Core.Mappers;
 using Benzene.Test.Examples;
 using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;

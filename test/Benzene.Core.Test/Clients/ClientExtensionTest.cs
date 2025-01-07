@@ -13,6 +13,7 @@ using Benzene.Clients.Aws;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Clients.CorrelationId;
+using Benzene.Core.Middleware;
 using Benzene.Results;
 using Benzene.Test.Clients.Aws.Samples;
 using Benzene.Test.Examples;
@@ -55,7 +56,7 @@ public class ClientExtensionTest
         if (action == null)
         {
             benzene.AddBenzeneMessageClients(x => x
-                .CreateSqsBenzeneMessageClient("sqs", "some-queue", sqs => sqs.WithCorrelationId())
+                .CreateSqsBenzeneMessageClient("sqs", "some-queue", new NullServiceResolver(), sqs => sqs.WithCorrelationId())
                 .CreateAwsLambdaBenzeneMessageClient("lambda2", map => map.ForService("lambda1"))
                 .CreateAwsLambdaBenzeneMessageClient("sns", map => map.ForTopic("topic1"))
                 .CreateAwsLambdaBenzeneMessageClient("lambdai", map => map.ForServiceAndTopic("lambda3", "topic2"), lambda =>

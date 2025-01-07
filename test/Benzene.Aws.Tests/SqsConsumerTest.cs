@@ -1,14 +1,12 @@
 ﻿using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Aws.Tests.Fixtures;
-using Benzene.Clients.Aws.Sqs;
-using Benzene.Core.MessageSender;
+using Benzene.Core.DI;
+using Benzene.Core.Exceptions;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Results;
 using Moq;
 using Xunit;
 
@@ -74,21 +72,63 @@ public class SqsConsumerTest : IClassFixture<SqsFixture>
         var amazonSqsClient = CreateAmazonSqsClient();
         var mockFactory = new Mock<ISqsClientFactory>();
         mockFactory.Setup(x => x.Create(It.IsAny<string>())).Returns(amazonSqsClient);
-        
-        var serviceContainer = new MicrosoftBenzeneServiceContainer();
-        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
-        var pipelineBuilder = new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(serviceContainer);
 
-        // pipelineBuilder
+        await amazonSqsClient.SendMessageAsync(new SendMessageRequest(QueueUrl, "test"));
+
+        var messages = new List<Message>();
+
+        var serviceContainer = new MicrosoftBenzeneServiceContainer();
+        serviceContainer.AddBenzene();
+        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
+        var pipeline = new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(serviceContainer)
+            .OnRequest(x => messages.Add(x.Message))
+            .Build();
 
         var sqsConsumer = new SqsConsumer(serviceContainer.CreateServiceResolverFactory(),
-            new SqsConsumerApplication(pipelineBuilder.Build()),
-            new SqsConsumerConfig(), mockFactory.Object);
+            new SqsConsumerApplication(pipeline),
+            new SqsConsumerConfig
+            {
+                ServiceUrl = ServiceUrl,
+                QueueUrl = QueueUrl,
+                MaxNumberOfMessages = 10
+            }, mockFactory.Object);
 
-        await sqsConsumer.StartAsync(new CancellationToken());
-        
-        var messages = await GetAllMessagesAsync();
-        Assert.Equal("{\"name\":\"some-name\"}", messages[0].Body);
+        var cancelationTokenSource = new CancellationTokenSource(10000);
+
+        await sqsConsumer.StartAsync(cancelationTokenSource.Token);
+
+        Assert.Equal("test", messages[0].Body);
     }
+    
+    [Fact]
+    public async Task Sqs_Receive_DIError()
+    {
+        await SetUp();
+        var amazonSqsClient = CreateAmazonSqsClient();
+        var mockFactory = new Mock<ISqsClientFactory>();
+        mockFactory.Setup(x => x.Create(It.IsAny<string>())).Returns(amazonSqsClient);
 
-   }
+        await amazonSqsClient.SendMessageAsync(new SendMessageRequest(QueueUrl, "test"));
+
+        var messages = new List<Message>();
+
+        var serviceContainer = new MicrosoftBenzeneServiceContainer();
+        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
+        var pipeline = new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(serviceContainer)
+            .OnRequest(x => messages.Add(x.Message))
+            .Build();
+
+        var sqsConsumer = new SqsConsumer(serviceContainer.CreateServiceResolverFactory(),
+            new SqsConsumerApplication(pipeline),
+            new SqsConsumerConfig
+            {
+                ServiceUrl = ServiceUrl,
+                QueueUrl = QueueUrl,
+                MaxNumberOfMessages = 10
+            }, mockFactory.Object);
+
+        var cancelationTokenSource = new CancellationTokenSource(10000);
+
+        await Assert.ThrowsAsync<BenzeneException>(() => sqsConsumer.StartAsync(cancelationTokenSource.Token));
+    }
+}

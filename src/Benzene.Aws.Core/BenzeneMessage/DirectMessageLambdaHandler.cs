@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Core.BenzeneMessage;

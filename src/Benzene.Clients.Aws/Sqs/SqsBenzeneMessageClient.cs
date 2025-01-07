@@ -3,9 +3,11 @@ using System.Net;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Aws.Common;
+using Benzene.Abstractions.Middleware.BenzeneClient;
+using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Results;
 
@@ -15,41 +17,42 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly IBenzeneLogger _logger;
     private readonly string _queueUrl;
-    private readonly EntryPointMiddlewareApplication<SendMessageRequest, SendMessageResponse> _entryPointMiddlewareApplication;
-    private readonly IClientRequestMapper<SendMessageRequest> _requestMapper;
+    private IMiddlewarePipeline<SqsSendMessageContext> _middlewarePipeline;
+    private IServiceResolver _serviceResolver;
 
-    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, IBenzeneLogger logger)
+    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
+        _serviceResolver = serviceResolver;
+        _queueUrl = queueUrl;
         _logger = logger;
-        _requestMapper = new SqsClientRequestMapper(queueUrl, new JsonSerializer());
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<SqsSendMessageContext>(benzeneServiceContainer);
-        var middlewarePipeline = middlewarePipelineBuilder
+        _middlewarePipeline = middlewarePipelineBuilder
             .UseSqsClient(amazonSqsClient)
             .Build();
-
-        var application = new MiddlewareApplication<SendMessageRequest, SqsSendMessageContext, SendMessageResponse>(
-            middlewarePipeline, request => new SqsSendMessageContext(request), context => context.Response);
-        _entryPointMiddlewareApplication = new EntryPointMiddlewareApplication<SendMessageRequest, SendMessageResponse>(application, benzeneServiceContainer.CreateServiceResolverFactory());
     }
 
-    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, IBenzeneLogger logger)
+    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
+        _serviceResolver = serviceResolver;
+        _middlewarePipeline = middlewarePipeline;
         _logger = logger;
         _queueUrl = queueUrl;
-        var benzeneServiceContainer = new NullBenzeneServiceContainer();
-
-        var application = new MiddlewareApplication<SendMessageRequest, SqsSendMessageContext, SendMessageResponse>(
-            middlewarePipeline, request => new SqsSendMessageContext(request), context => context.Response);
-        _entryPointMiddlewareApplication = new EntryPointMiddlewareApplication<SendMessageRequest, SendMessageResponse>(application, benzeneServiceContainer.CreateServiceResolverFactory());
     }
 
     public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
         try
         {
-            var response = await _entryPointMiddlewareApplication.SendAsync(_requestMapper.CreateRequest(request));
+            var mapper = new SqsClientRequestMapper(_queueUrl, new JsonSerializer());
+            var mappedRequest = mapper.CreateRequest(request);
+
+            var context = new SqsSendMessageContext(mappedRequest);
+            
+            await _middlewarePipeline.HandleAsync(context, _serviceResolver);
+
+            var response = context.Response;
 
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {

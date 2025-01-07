@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
-using Amazon.SQS;
 using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Clients.Aws.Sns;

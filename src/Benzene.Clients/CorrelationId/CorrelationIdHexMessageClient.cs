@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions;
-using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Middleware.BenzeneClient;
 using Benzene.Results;
 
 namespace Benzene.Clients.CorrelationId;

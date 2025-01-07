@@ -1,9 +1,8 @@
-﻿using System;
-using Benzene.Abstractions.Serialization;
+﻿using Benzene.Abstractions.Serialization;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Results;
 
-namespace Benzene.Clients.Aws.Common
+namespace Benzene.Clients.Common
 {
     public static class BenzeneResultExtensions
     {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Amazon.Lambda;
-using Amazon.SQS;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients.Aws.Sqs;
 

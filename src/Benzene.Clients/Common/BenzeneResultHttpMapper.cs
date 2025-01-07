@@ -1,8 +1,7 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using Benzene.Results;
 
-namespace Benzene.Clients.Aws.Common;
+namespace Benzene.Clients.Common;
 
 public static class BenzeneResultHttpMapper
 {

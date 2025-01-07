@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Aws.Sqs.Client;
-using Benzene.Aws.Sqs.Consumer;
 using Benzene.Aws.Sqs.TestHelpers;
 using Benzene.Results;
 using Benzene.Test.Examples;

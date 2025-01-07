@@ -8,8 +8,18 @@ namespace Benzene.Diagnostics
     {
         public static IBenzeneServiceContainer AddDiagnostics(this IBenzeneServiceContainer services)
         {
-            services.AddScoped<IMiddlewareWrapper, DebugMiddlewareWrapper>();
-            services.AddScoped<IMiddlewareWrapper, TimerMiddlewareWrapper>();
+            if (!services.IsTypeRegistered<DebugMiddlewareWrapper>())
+            {
+                services.AddScoped<DebugMiddlewareWrapper>();
+                services.AddScoped<IMiddlewareWrapper, DebugMiddlewareWrapper>();
+            }
+
+            if (!services.IsTypeRegistered<TimerMiddlewareWrapper>())
+            {
+                services.AddScoped<TimerMiddlewareWrapper>();
+                services.AddScoped<IMiddlewareWrapper, TimerMiddlewareWrapper>();
+            }
+
             services.AddScoped<IProcessTimerFactory, LoggingProcessTimerFactory>();
 
             return services;

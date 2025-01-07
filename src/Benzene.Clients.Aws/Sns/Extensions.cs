@@ -1,10 +1,8 @@
 ﻿using System;
 using Amazon.SimpleNotificationService;
-using Amazon.SQS;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Aws.Common;
-using Benzene.Clients.Aws.Sns;
-using Benzene.Clients.Aws.Sqs;
+using Benzene.Abstractions.Middleware.BenzeneClient;
+using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Clients.Aws.Sns;

@@ -1,6 +1,5 @@
 ﻿using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sns;
 

@@ -5,7 +5,6 @@ using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Sns;
-using Benzene.Aws.Sqs;
 using Benzene.Core.Correlation;
 using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
@@ -43,7 +42,6 @@ namespace Benzene.Test.Elements.Examples
                     .WithCorrelationId()
                     .WithHeaders("tenantId", "userId", "sender")
                 )
-                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()
@@ -53,7 +51,6 @@ namespace Benzene.Test.Elements.Examples
             app.UseSns(snsApp => snsApp
                 .UseCorrelationId()
                 .UseTimer("sns-application")
-                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()
@@ -63,7 +60,6 @@ namespace Benzene.Test.Elements.Examples
             app.UseSqs(sqsApp => sqsApp
                 .UseCorrelationId()
                 .UseTimer("sqs-application")
-                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()
@@ -73,7 +69,6 @@ namespace Benzene.Test.Elements.Examples
             app.UseApiGateway(apiGatewayApp => apiGatewayApp
                 .UseCorrelationId()
                 .UseTimer("api-gateway-pipeline")
-                // .UseProcessResponse()
                 .UseHealthCheck(healthCheckTopic, "POST", "/healthcheck", healthCheckBuilder)
                 .UseMessageHandlers(x => x
                     .UseFluentValidation()

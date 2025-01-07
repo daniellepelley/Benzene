@@ -6,7 +6,6 @@ using Benzene.Aws.Core;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Lambda.Sqs.TestHelpers;
-using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Client;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
@@ -260,5 +259,4 @@ public class SqsMessagePipelineTest
         SQSBatchResponse batchResponse = await aws.HandleAsync(request, serviceResolverFactory);
         Assert.Equal(5, batchResponse.BatchItemFailures.Count);
     }
-
 }

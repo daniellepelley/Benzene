@@ -1,5 +1,6 @@
 ﻿using Amazon.SQS;
 using Benzene.Abstractions.Logging;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Clients.Aws.Sqs;
 
@@ -18,7 +19,7 @@ public class SqsBenzeneMessageClientFactory : IBenzeneMessageClientFactory
 
     public virtual IBenzeneMessageClient Create()
     {
-        return new SqsBenzeneMessageClient(_queueUrl, _amazonSqsClient, _logger);
+        return new SqsBenzeneMessageClient(_queueUrl, _amazonSqsClient, _logger, new NullServiceResolver());
     }
     
     public IBenzeneMessageClient Create(string service, string topic)

@@ -1,6 +1,6 @@
-﻿using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Middleware.BenzeneClient;
 
-namespace Benzene.Clients.Aws.Common;
+namespace Benzene.Clients.Common;
 
 public interface IClientRequestMapper<TRequest>
 {

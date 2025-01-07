@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
-using Benzene.Abstractions.Results;
 
 namespace Benzene.Grpc;
 
