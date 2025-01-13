@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Mappers;
@@ -23,7 +22,7 @@ namespace Benzene.Core.Correlation
             app.Use(resolver => new FuncWrapperMiddleware<TContext>("CorrelationId", async (context, next) =>
             {
                 var setCorrelationId = resolver.GetService<ICorrelationId>();
-                var messageMapper = resolver.GetService<IMessageMapper<TContext>>();
+                var messageMapper = resolver.GetService<IMessageGetter<TContext>>();
                 var correlationId = messageMapper.GetHeader(context, header);
                 setCorrelationId.Set(correlationId);
                 await next();

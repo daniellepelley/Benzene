@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Request;
-using Benzene.Core.Serialization;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Core.Core.Mappers;
 using Benzene.Test.Examples;
@@ -29,7 +29,7 @@ public class RequestMapperThunkTest
             Body = serializer.Serialize(new ExampleRequestPayload { Name = "some-name"})
         });
         
-        var requestMapper = new RequestMapper<BenzeneMessageContext>(new BenzeneMessageMapper(), serializer);
+        var requestMapper = new RequestMapper<BenzeneMessageContext>(new BenzeneMessageGetter(), serializer);
         var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
@@ -45,7 +45,7 @@ public class RequestMapperThunkTest
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(
             new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
-                Mock.Of<IMessageMapper<BenzeneMessageContext>>(),
+                Mock.Of<IMessageGetter<BenzeneMessageContext>>(),
                 Array.Empty<ISerializerOption<BenzeneMessageContext>>(),
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>()), context);
 
@@ -67,7 +67,7 @@ public class RequestMapperThunkTest
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
         var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(
             new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
-                Mock.Of<IMessageMapper<BenzeneMessageContext>>(),
+                Mock.Of<IMessageGetter<BenzeneMessageContext>>(),
                 new ISerializerOption<BenzeneMessageContext>[] { new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()) },
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>()), context);
 
@@ -88,7 +88,7 @@ public class RequestMapperThunkTest
         
         var serviceResolver = ServiceResolverMother.CreateServiceResolver();
         var requestMapper = new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(serviceResolver,
-                new BenzeneMessageMapper(),
+                new BenzeneMessageGetter(),
                 new ISerializerOption<BenzeneMessageContext>[] { new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()) },
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
         
@@ -114,7 +114,7 @@ public class RequestMapperThunkTest
         
         var requestMapper = new MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>(
                 new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()),
-                new BenzeneMessageMapper(),
+                new BenzeneMessageGetter(),
                 new ISerializerOption<BenzeneMessageContext>[]
                 {
                     new SerializerOption<BenzeneMessageContext, XmlSerializer>(x => x.CheckHeader("content-type", "application/xml"))

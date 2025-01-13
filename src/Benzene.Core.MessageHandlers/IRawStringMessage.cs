@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.Results;
+﻿namespace Benzene.Core.MessageHandlers;
 
 public interface IRawStringMessage
 {

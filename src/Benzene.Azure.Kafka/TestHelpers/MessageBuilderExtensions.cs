@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions;
+using Benzene.Core.MessageHandlers.Serialization;
 using Microsoft.Azure.WebJobs.Extensions.Kafka;
 
 namespace Benzene.Azure.Kafka.TestHelpers;
@@ -10,7 +11,7 @@ public static class MessageBuilderExtensions
         return new KafkaEventData<string>
         {
             Topic = source.Topic,
-            Value = new Benzene.Core.Serialization.JsonSerializer().Serialize(source.Message)
+            Value = new JsonSerializer().Serialize(source.Message)
         };
     }
 }

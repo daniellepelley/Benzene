@@ -5,7 +5,7 @@ using System.Text;
 using Amazon.Lambda.KafkaEvents;
 using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Aws.Kafka.TestHelpers;
 

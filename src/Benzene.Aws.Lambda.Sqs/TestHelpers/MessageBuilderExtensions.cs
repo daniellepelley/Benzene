@@ -3,7 +3,7 @@ using System.Linq;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Aws.Lambda.Sqs.TestHelpers;
 

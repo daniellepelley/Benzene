@@ -1,9 +1,8 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Core.Info;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Aws.Kafka;
 
@@ -13,10 +12,10 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.AddScoped<IMessageTopicMapper<KafkaContext>, KafkaMessageTopicMapper>();
-        services.AddScoped<IMessageHeadersMapper<KafkaContext>, KafkaMessageHeadersMapper>();
-        services.AddScoped<IMessageBodyMapper<KafkaContext>, KafkaMessageBodyMapper>();
-        services.AddScoped<IResultSetter<KafkaContext>, KafkaMessageResultSetter>();
+        services.AddScoped<IMessageTopicGetter<KafkaContext>, KafkaMessageTopicGetter>();
+        services.AddScoped<IMessageHeadersGetter<KafkaContext>, KafkaMessageHeadersGetter>();
+        services.AddScoped<IMessageBodyGetter<KafkaContext>, KafkaMessageBodyGetter>();
+        services.AddScoped<IMessageHandlerResultSetter<KafkaContext>, KafkaMessageMessageHandlerResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("kafka"));
         return services;

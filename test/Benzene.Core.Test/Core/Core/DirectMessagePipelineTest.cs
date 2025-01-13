@@ -8,6 +8,7 @@ using Benzene.Core.BenzeneMessage.TestHelpers;
 using Benzene.Core.Logging;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
@@ -17,7 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Xunit;
 using Constants = Benzene.Core.Constants;
-using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
+using JsonSerializer = Benzene.Core.MessageHandlers.Serialization.JsonSerializer;
 using Extensions = Benzene.Core.MessageHandlers.Extensions;
 
 namespace Benzene.Test.Core.Core;
@@ -230,7 +231,7 @@ public class BenzeneMessagePipelineTest
     [Fact]
     public void BenzeneMessageMapper()
     {
-        var benzeneMessageMapper = new BenzeneMessageMapper();
+        var benzeneMessageMapper = new BenzeneMessageGetter();
 
         var benzeneMessageContext = new BenzeneMessageContext(new BenzeneMessageRequest
         {
@@ -254,7 +255,7 @@ public class BenzeneMessagePipelineTest
     [Fact]
     public void BenzeneMessageMapper_Empty()
     {
-        var benzeneMessageMapper = new BenzeneMessageMapper();
+        var benzeneMessageMapper = new BenzeneMessageGetter();
 
         var benzeneMessageContext = new BenzeneMessageContext(new BenzeneMessageRequest());
 

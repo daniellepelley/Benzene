@@ -174,7 +174,7 @@ public class SqsConsumerMessagePipelineTest
     [Fact]
     public void SqsMessageMapper()
     {
-        var sqsMessageMapper = new MessageMapper<SqsConsumerMessageContext>(new SqsConsumerMessageTopicMapper(), new SqsConsumerMessageBodyMapper(), new SqsConsumerMessageHeadersMapper());
+        var sqsMessageMapper = new MessageGetter<SqsConsumerMessageContext>(new SqsConsumerMessageTopicGetter(), new SqsConsumerMessageBodyGetter(), new SqsConsumerMessageHeadersGetter());
 
         var sqsMessageContext = SqsConsumerMessageContext.CreateInstance(new Message
         {

@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Serialization;
 
@@ -11,15 +11,15 @@ public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> :
     private readonly IEnumerable<ISerializerOption<TContext>> _options;
     private readonly IServiceResolver _serviceResolver;
     private readonly IEnumerable<IRequestEnricher<TContext>> _enrichers;
-    private readonly IMessageBodyMapper<TContext> _messageBodyMapper;
+    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
 
     public MultiSerializerOptionsRequestMapper(
         IServiceResolver serviceResolver,
-        IMessageBodyMapper<TContext> messageBodyMapper,
+        IMessageBodyGetter<TContext> messageBodyGetter,
         IEnumerable<ISerializerOption<TContext>> options,
         IEnumerable<IRequestEnricher<TContext>> enrichers)
     {
-        _messageBodyMapper = messageBodyMapper;
+        _messageBodyGetter = messageBodyGetter;
         _enrichers = enrichers;
         _options = options;
         _serviceResolver = serviceResolver;
@@ -39,7 +39,7 @@ public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> :
             : _serviceResolver.GetService<TDefaultSerializer>();
         
         return new EnrichingRequestMapper<TContext>(
-                        new RequestMapper<TContext>(_messageBodyMapper, serializer),
+                        new RequestMapper<TContext>(_messageBodyGetter, serializer),
                         _enrichers);
     }
 }

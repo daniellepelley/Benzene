@@ -1,5 +1,5 @@
-﻿using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MessageHandlers;
+﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.Helper;
 using Benzene.Core.Response;
@@ -11,17 +11,17 @@ public class XmlSerializationResponseHandler<TContext> : ISerializationResponseH
     private readonly string _contentType = Settings.ContentTypeKey;
     private readonly string _applicationXml = Settings.ContentTypeValue;
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
-    private readonly IMessageHeadersMapper<TContext> _messageHeadersMapper;
+    private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
 
-    public XmlSerializationResponseHandler(IBenzeneResponseAdapter<TContext> benzeneResponseAdapter, IMessageHeadersMapper<TContext> messageHeadersMapper)
+    public XmlSerializationResponseHandler(IBenzeneResponseAdapter<TContext> benzeneResponseAdapter, IMessageHeadersGetter<TContext> messageHeadersGetter)
     {
-        _messageHeadersMapper = messageHeadersMapper;
+        _messageHeadersGetter = messageHeadersGetter;
         _benzeneResponseAdapter = benzeneResponseAdapter;
     }
 
     public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult, IBodySerializer bodySerializer)
     {
-        if (!DictionaryUtils.KeyEquals(_messageHeadersMapper.GetHeaders(context), _contentType,
+        if (!DictionaryUtils.KeyEquals(_messageHeadersGetter.GetHeaders(context), _contentType,
                 _applicationXml))
         {
             return;

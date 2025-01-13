@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Core.Response;
 

@@ -1,12 +1,12 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
-using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.Info;
+using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Request;
 using Benzene.Core.Response;
-using Benzene.Core.Serialization;
 using Benzene.Http;
 
 namespace Benzene.SelfHost.Http;
@@ -17,9 +17,9 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.TryAddScoped<IMessageTopicMapper<SelfHostHttpContext>, HttpListenerMessageTopicMapper>();
-        services.TryAddScoped<IMessageHeadersMapper<SelfHostHttpContext>, HttpListenerMessageHeadersMapper>();
-        services.TryAddScoped<IMessageBodyMapper<SelfHostHttpContext>, HttpListenerMessageBodyMapper>();
+        services.TryAddScoped<IMessageTopicGetter<SelfHostHttpContext>, HttpListenerMessageTopicGetter>();
+        services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
+        services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
         services
             .AddScoped<IRequestMapper<SelfHostHttpContext>,
                 MultiSerializerOptionsRequestMapper<SelfHostHttpContext, JsonSerializer>>();

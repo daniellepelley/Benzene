@@ -12,9 +12,10 @@ using Benzene.Core.BenzeneMessage;
 using Benzene.Core.DI;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Middleware;
 using Benzene.Core.Request;
-using Benzene.Core.Serialization;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Http.Routing;
@@ -130,10 +131,10 @@ public class ApiGatewayMessagePipelineTest
         var apiGatewayContext = new ApiGatewayContext(CreateRequest());
 
         var httpHeaderMappings = new HttpHeaderMappings(new Dictionary<string, string> { { "x-correlation-id", "correlationId" } });
-        var actualMessage = new RequestMapper<ApiGatewayContext>(new ApiGatewayMessageBodyMapper(), new JsonSerializer()).GetBody<ExampleRequestPayload>(apiGatewayContext);
-        var actualTopic = new ApiGatewayMessageTopicMapper(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
-        var headers = new ApiGatewayMessageHeadersMapper(httpHeaderMappings).GetHeaders(apiGatewayContext);
-        var correlationId = new ApiGatewayMessageHeadersMapper(httpHeaderMappings).GetHeader(apiGatewayContext, "correlationId");
+        var actualMessage = new RequestMapper<ApiGatewayContext>(new ApiGatewayMessageBodyGetter(), new JsonSerializer()).GetBody<ExampleRequestPayload>(apiGatewayContext);
+        var actualTopic = new ApiGatewayMessageTopicGetter(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
+        var headers = new ApiGatewayMessageHeadersGetter(httpHeaderMappings).GetHeaders(apiGatewayContext);
+        var correlationId = new ApiGatewayMessageHeadersGetter(httpHeaderMappings).GetHeader(apiGatewayContext, "correlationId");
 
         Assert.Equal(Defaults.Name, actualMessage.Name);
         Assert.Equal(Defaults.Topic, actualTopic.Id);
@@ -205,7 +206,7 @@ public class ApiGatewayMessagePipelineTest
                         x.AddBenzene();
                         x.AddMessageHandlers(assembly);
                     });
-                    services.RegisterType<BenzeneMessageMapper>();
+                    services.RegisterType<BenzeneMessageGetter>();
                     services.RegisterInstance(Mock.Of<IExampleService>());
 
             })

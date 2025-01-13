@@ -169,9 +169,9 @@
 //     //     var apiGatewayContext = new AspNetContext(CreateRequest());
 //     //
 //     //     var actualMessage = new JsonAspNetMessageBodyMapper(new RouteFinder(mockHttpEndpointFinder.Object)).GetBody<ExamplePayload>(apiGatewayContext);
-//     //     var actualTopic = new ApiGatewayMessageTopicMapper(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
-//     //     var headers = new ApiGatewayMessageHeadersMapper().GetHeaders(apiGatewayContext);
-//     //     var correlationId = new ApiGatewayMessageHeadersMapper().GetHeader(apiGatewayContext, "correlationId");
+//     //     var actualTopic = new ApiGatewayMessageTopicGetter(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
+//     //     var headers = new ApiGatewayMessageHeadersGetter().GetHeaders(apiGatewayContext);
+//     //     var correlationId = new ApiGatewayMessageHeadersGetter().GetHeader(apiGatewayContext, "correlationId");
 //     //
 //     //     Assert.Equal(Payload.Name, actualMessage.Name);
 //     //     Assert.Equal(Topic, actualTopic);
@@ -190,7 +190,7 @@
 //     //     var apiGatewayContext = new ApiGatewayContext(CreateRequest());
 //     //
 //     //     var actualMessage = new JsonApiGatewayMessageBodyMapper(new RouteFinder(mockHttpEndpointFinder.Object)).GetBody<ExamplePayload>(apiGatewayContext);
-//     //     var actualTopic = new ApiGatewayMessageTopicMapper(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
+//     //     var actualTopic = new ApiGatewayMessageTopicGetter(new RouteFinder(mockHttpEndpointFinder.Object)).GetTopic(apiGatewayContext);
 //     //
 //     //     Assert.Null(actualMessage);
 //     //     Assert.Null(actualTopic);

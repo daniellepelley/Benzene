@@ -1,14 +1,13 @@
-﻿
-using Benzene.Abstractions.Mappers;
+﻿using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Http;
 
 namespace Benzene.AspNet.Core;
 
-public class AspNetMessageHeadersMapper : IMessageHeadersMapper<AspNetContext>
+public class AspNetMessageHeadersGetter : IMessageHeadersGetter<AspNetContext>
 {
     private readonly IDictionary<string, string> _headerMapping;
 
-    public AspNetMessageHeadersMapper(IHttpHeaderMappings httpHeaderMappings)
+    public AspNetMessageHeadersGetter(IHttpHeaderMappings httpHeaderMappings)
     {
         _headerMapping = httpHeaderMappings.GetMappings();
     }

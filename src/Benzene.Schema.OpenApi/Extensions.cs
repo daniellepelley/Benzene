@@ -33,7 +33,7 @@ public static class Extensions
     // {
     //     return app.Use("Spec", async (resolver, context, next) =>
     //     {
-    //         var mapper = resolver.GetService<IMessageMapper<TContext>>();
+    //         var mapper = resolver.GetService<IMessageGetter<TContext>>();
     //         var messageTopic = mapper.GetTopic(context);
     //
     //         if (messageTopic.Id == topic || messageTopic.Id == Constants.DefaultSpecTopic)

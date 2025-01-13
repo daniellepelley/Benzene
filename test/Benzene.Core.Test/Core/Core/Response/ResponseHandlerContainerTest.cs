@@ -2,12 +2,14 @@
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.MessageHandlers.Serialization;
+using Benzene.Core.Messages;
 using Benzene.Core.Response;
-using Benzene.Core.Serialization;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Xunit;
-using Constants = Benzene.Core.Constants;
+using Constants = Benzene.Core.MessageHandlers.Constants;
 
 namespace Benzene.Test.Core.Core.Response;
 

@@ -1,4 +1,5 @@
-﻿using Benzene.Results;
+﻿using Benzene.Abstractions.Messages;
+using Benzene.Results;
 
 namespace Benzene.Abstractions.MessageHandlers;
 

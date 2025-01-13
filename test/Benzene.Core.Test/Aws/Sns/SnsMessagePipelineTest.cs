@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.SNSEvents;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
@@ -18,6 +20,7 @@ using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Mappers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages;
 using Benzene.Core.Middleware;
 using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
@@ -38,6 +41,7 @@ namespace Benzene.Test.Aws.Sns;
 
 public class SnsMessagePipelineTest
 {
+
     private static SNSEvent CreateRequest()
     {
         return MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSns();
@@ -206,7 +210,7 @@ public class SnsMessagePipelineTest
     [Fact]
     public void SnsMessageMapper()
     {
-        var sqsMessageMapper = new MessageMapper<SnsRecordContext>(new SnsMessageTopicMapper(), new SnsMessageBodyMapper(), new SnsMessageHeadersMapper());
+        var sqsMessageMapper = new MessageGetter<SnsRecordContext>(new SnsMessageTopicGetter(), new SnsMessageBodyGetter(), new SnsMessageHeadersGetter());
 
         var sqsMessageContext = SnsRecordContext.CreateInstance(new SNSEvent(), new SNSEvent.SNSRecord
         {
@@ -334,6 +338,42 @@ public class SnsMessagePipelineTest
             m.MessageAttributes["topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
     }
+
+    [Fact]
+    public async Task SendSnsToSqs3()
+    {
+        var isSuccessful = false;
+        var mockSqsClient = new Mock<IAmazonSQS>();
+        mockSqsClient.Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMessageResponse
+            {
+                HttpStatusCode = HttpStatusCode.OK
+            });
+        
+        var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
+            .ConfigureServices(services =>
+            {
+                services
+                    .ConfigureServiceCollection()
+                    .UsingBenzene(x => x.AddSns());
+            })
+            .Configure(app => app
+                .OnResponse(x => isSuccessful = x.MessageResult.IsSuccessful)
+                .ToSqsClientMessage(builder => builder.UseSqsClient(mockSqsClient.Object)
+                ))
+            .Build(x => new SnsApplication(x));
+
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSns();
+
+        await host.SendAsync(request);
+
+        mockSqsClient.Verify(x => x.SendMessageAsync(It.Is<SendMessageRequest>(m =>
+            m.MessageBody == Defaults.Message &&
+            m.MessageAttributes["topic"].StringValue == Defaults.Topic
+            ), It.IsAny<CancellationToken>()));
+
+        Assert.True(isSuccessful);
+    }
 }
 
 public static class Extensions
@@ -344,10 +384,28 @@ public static class Extensions
         var pipeline = source.CreateMiddlewarePipeline(builder);
 
         return source.Use(resolver =>
-            new BenzeneMessageConverterMiddleware<TContext>(new BenzeneMessageContextConverter<TContext>(
-                    resolver.GetService<IMessageBodyMapper<TContext>>(),
-                    resolver.GetService<IMessageHeadersMapper<TContext>>(),
-                    resolver.GetService<IMessageTopicMapper<TContext>>()
+            new ConverterMiddleware<TContext, BenzeneMessageContext>(new BenzeneMessageContextConverter<TContext>(
+                    resolver.GetService<IMessageBodyGetter<TContext>>(),
+                    resolver.GetService<IMessageHeadersGetter<TContext>>(),
+                    resolver.GetService<IMessageTopicGetter<TContext>>(),
+                    resolver.GetService<IMessageHandlerResultSetter<TContext>>()
+                ),
+                pipeline,
+                resolver
+            ));
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> ToSqsClientMessage<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> source, Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> builder)
+    {
+        var pipeline = source.CreateMiddlewarePipeline(builder);
+
+        return source.Use(resolver =>
+            new ConverterMiddleware<TContext, SqsSendMessageContext>(new SqsMessageContextConverter<TContext>(
+                    resolver.GetService<IMessageBodyGetter<TContext>>(),
+                    resolver.GetService<IMessageHeadersGetter<TContext>>(),
+                    resolver.TryGetService<IMessageHandlerResultSetter<TContext>>(),
+                    resolver.TryGetService<IBenzeneResponseAdapter<TContext>>()
                 ),
                 pipeline,
                 resolver
@@ -355,13 +413,13 @@ public static class Extensions
     }
 }
 
-public class BenzeneMessageConverterMiddleware<TContext> : IMiddleware<TContext>
+public class ConverterMiddleware<TContextIn, TContextOut> : IMiddleware<TContextIn>
 {
-    private readonly IContextConverter<TContext, BenzeneMessageContext> _converter;
-    private readonly IMiddlewarePipeline<BenzeneMessageContext> _middlewarePipeline;
+    private readonly IContextConverter<TContextIn, TContextOut> _converter;
+    private readonly IMiddlewarePipeline<TContextOut> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
 
-    public BenzeneMessageConverterMiddleware(IContextConverter<TContext, BenzeneMessageContext> converter, IMiddlewarePipeline<BenzeneMessageContext> middlewarePipeline, IServiceResolver serviceResolver)
+    public ConverterMiddleware(IContextConverter<TContextIn, TContextOut> converter, IMiddlewarePipeline<TContextOut> middlewarePipeline, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
         _middlewarePipeline = middlewarePipeline;
@@ -370,7 +428,7 @@ public class BenzeneMessageConverterMiddleware<TContext> : IMiddleware<TContext>
 
     public string Name => "Convert";
 
-    public async Task HandleAsync(TContext context, Func<Task> next)
+    public async Task HandleAsync(TContextIn context, Func<Task> next)
     {
         var contextOut = _converter.CreateRequest(context);
         await _middlewarePipeline.HandleAsync(contextOut, _serviceResolver);
@@ -378,32 +436,75 @@ public class BenzeneMessageConverterMiddleware<TContext> : IMiddleware<TContext>
     }
 }
 
-
-
 public class BenzeneMessageContextConverter<TContext> : IContextConverter<TContext, BenzeneMessageContext>
 {
-    private readonly IMessageBodyMapper<TContext> _messageBodyMapper;
-    private readonly IMessageHeadersMapper<TContext> _messageHeadersMapper;
-    private readonly IMessageTopicMapper<TContext> _messageTopicMapper;
+    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
+    private readonly IMessageTopicGetter<TContext> _messageTopicGetter;
+    private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
 
-    public BenzeneMessageContextConverter(IMessageBodyMapper<TContext> messageBodyMapper, IMessageHeadersMapper<TContext> messageHeadersMapper, IMessageTopicMapper<TContext> messageTopicMapper)
+    public BenzeneMessageContextConverter(IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter, IMessageTopicGetter<TContext> messageTopicGetter, IMessageHandlerResultSetter<TContext> messageHandlerResultSetter)
     {
-        _messageTopicMapper = messageTopicMapper;
-        _messageHeadersMapper = messageHeadersMapper;
-        _messageBodyMapper = messageBodyMapper;
+        _messageHandlerResultSetter = messageHandlerResultSetter;
+        _messageTopicGetter = messageTopicGetter;
+        _messageHeadersGetter = messageHeadersGetter;
+        _messageBodyGetter = messageBodyGetter;
     }
 
     public BenzeneMessageContext CreateRequest(TContext contextIn)
     {
         return new BenzeneMessageContext(new BenzeneMessageRequest
         {
-            Topic = _messageTopicMapper.GetTopic(contextIn)?.Id, 
-            Body = _messageBodyMapper.GetBody(contextIn),
-            Headers = _messageHeadersMapper.GetHeaders(contextIn),
+            Topic = _messageTopicGetter?.GetTopic(contextIn)?.Id, 
+            Body = _messageBodyGetter?.GetBody(contextIn),
+            Headers = _messageHeadersGetter.GetHeaders(contextIn),
         });
     }
 
     public void MapResponse(TContext contextIn, BenzeneMessageContext contextOut)
     {
+        _messageHandlerResultSetter.SetResultAsync(contextIn,
+            new MessageHandlerResult(new Topic(contextOut.BenzeneMessageRequest.Topic),
+                MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.BenzeneMessageResponse.StatusCode)));
     }
 }
+
+public class SqsMessageContextConverter<TContext> : IContextConverter<TContext, SqsSendMessageContext>
+{
+    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
+    private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
+    private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
+
+    public SqsMessageContextConverter(IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter, IMessageHandlerResultSetter<TContext> messageHandlerResultSetter, IBenzeneResponseAdapter<TContext> benzeneResponseAdapter)
+    {
+        _benzeneResponseAdapter = benzeneResponseAdapter;
+        _messageHandlerResultSetter = messageHandlerResultSetter;
+        _messageHeadersGetter = messageHeadersGetter;
+        _messageBodyGetter = messageBodyGetter;
+    }
+
+    public SqsSendMessageContext CreateRequest(TContext contextIn)
+    {
+        return new SqsSendMessageContext(new SendMessageRequest
+        {
+            QueueUrl = "",
+            MessageBody = _messageBodyGetter.GetBody(contextIn),
+            MessageAttributes = _messageHeadersGetter.GetHeaders(contextIn).ToDictionary(d => d.Key, d => new MessageAttributeValue{ StringValue = d.Value })
+        });
+    }
+
+    public void MapResponse(TContext contextIn, SqsSendMessageContext contextOut)
+    {
+        if (_benzeneResponseAdapter != null)
+        {
+            _benzeneResponseAdapter.SetStatusCode(contextIn, contextOut.Response.HttpStatusCode.ToString());
+            return;
+        }
+
+        _messageHandlerResultSetter.SetResultAsync(contextIn,
+            new MessageHandlerResult(new Topic(contextOut.Request.MessageAttributes["topic"].StringValue),
+                MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.Response.HttpStatusCode.ToString())));
+    }
+}
+

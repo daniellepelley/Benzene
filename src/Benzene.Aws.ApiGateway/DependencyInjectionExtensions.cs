@@ -1,21 +1,20 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Info;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.Serialization;
+using Benzene.Core.Messages;
 using Benzene.Core.Middleware;
 using Benzene.Core.Request;
 using Benzene.Core.Response;
-using Benzene.Core.Serialization;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
-using Constants = Benzene.HealthChecks.Constants;
 
 namespace Benzene.Aws.ApiGateway;
 
@@ -25,10 +24,10 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.TryAddScoped<IMessageTopicMapper<ApiGatewayContext>, ApiGatewayMessageTopicMapper>();
-        services.TryAddScoped<IMessageHeadersMapper<ApiGatewayContext>, ApiGatewayMessageHeadersMapper>();
-        services.TryAddScoped<IMessageBodyMapper<ApiGatewayContext>, ApiGatewayMessageBodyMapper>();
-        services.TryAddScoped<IResultSetter<ApiGatewayContext>, ApiGatewayMessageResultSetter>();
+        services.TryAddScoped<IMessageTopicGetter<ApiGatewayContext>, ApiGatewayMessageTopicGetter>();
+        services.TryAddScoped<IMessageHeadersGetter<ApiGatewayContext>, ApiGatewayMessageHeadersGetter>();
+        services.TryAddScoped<IMessageBodyGetter<ApiGatewayContext>, ApiGatewayMessageBodyGetter>();
+        services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageMessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<ApiGatewayContext>,
                 MultiSerializerOptionsRequestMapper<ApiGatewayContext, JsonSerializer>>();
@@ -77,7 +76,7 @@ public static class DependencyInjectionExtensions
     {
         return app.Use(resolver => new FuncWrapperMiddleware<ApiGatewayContext>("HealthCheck", async (context, next) =>
         {
-            var resultSetter = resolver.GetService<IResultSetter<ApiGatewayContext>>();
+            var resultSetter = resolver.GetService<IMessageHandlerResultSetter<ApiGatewayContext>>();
             if (context.ApiGatewayProxyRequest.HttpMethod.ToUpperInvariant() == method.ToUpperInvariant() &&
                 context.ApiGatewayProxyRequest.Path == path)
             {

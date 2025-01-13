@@ -8,11 +8,11 @@ namespace Benzene.AspNet.Core;
 public class AspNetRequestEnricher : IRequestEnricher<AspNetContext>
 {
     private readonly IRouteFinder _routeFinder;
-    private readonly AspNetHeadersToBodyMapper _headersToBodyMapper;
+    private readonly AspNetHeadersToBodyGetter _headersToBodyGetter;
 
     public AspNetRequestEnricher(IRouteFinder routeFinder, IHttpHeaderMappings httpHeaderMappings)
     {
-        _headersToBodyMapper = new AspNetHeadersToBodyMapper(httpHeaderMappings);
+        _headersToBodyGetter = new AspNetHeadersToBodyGetter(httpHeaderMappings);
         _routeFinder = routeFinder;
     }
 
@@ -27,7 +27,7 @@ public class AspNetRequestEnricher : IRequestEnricher<AspNetContext>
         }
 
         DictionaryUtils.MapOnto(dictionary, context.HttpContext.Request.Query?.ToDictionary(x => x.Key, x => x.Value.First()));
-        DictionaryUtils.MapOnto(dictionary, _headersToBodyMapper.GetHeaders(context));
+        DictionaryUtils.MapOnto(dictionary, _headersToBodyGetter.GetHeaders(context));
         DictionaryUtils.MapOnto(dictionary, CleanUp(route.Parameters));
 
         return dictionary;

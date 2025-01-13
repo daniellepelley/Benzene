@@ -2,7 +2,7 @@
 using Benzene.Azure.AspNet;
 using Benzene.Azure.Core;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.DataAnnotations;
 using Benzene.Results;
 using Benzene.Test.Examples;

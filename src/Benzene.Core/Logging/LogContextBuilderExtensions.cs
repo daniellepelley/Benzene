@@ -2,7 +2,6 @@
 using Benzene.Abstractions;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Core.Correlation;
 using Benzene.Core.Mappers;
@@ -33,7 +32,7 @@ public static class LogContextBuilderExtensions
     {
         return source.OnRequest((resolver, context) =>
         {
-            var messageMapper = resolver.Resolve<IMessageHeadersMapper<TContext>>();
+            var messageMapper = resolver.Resolve<IMessageHeadersGetter<TContext>>();
 
             var dictionary = headers.ToDictionary(header => header,
                 header => messageMapper.GetHeader(context, header));
@@ -85,7 +84,7 @@ public static class LogContextBuilderExtensions
 
     private static string GetTopic<TContext>(IServiceResolver resolver, TContext context)
     {
-        var mapper = resolver.TryGetService<IMessageMapper<TContext>>();
+        var mapper = resolver.TryGetService<IMessageGetter<TContext>>();
 
         if (mapper == null)
         {

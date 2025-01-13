@@ -21,7 +21,7 @@ namespace Benzene.Test.Aws.Sqs
                 }
             });
 
-            var mapper = new MessageMapper<SqsMessageContext>(new SqsMessageTopicMapper(), new SqsMessageBodyMapper(), new SqsMessageHeadersMapper());
+            var mapper = new MessageGetter<SqsMessageContext>(new SqsMessageTopicGetter(), new SqsMessageBodyGetter(), new SqsMessageHeadersGetter());
 
             var topic = mapper.GetTopic(sqsMessageContext);
             var message = mapper.GetBody(sqsMessageContext);
@@ -39,7 +39,7 @@ namespace Benzene.Test.Aws.Sqs
                 MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>()
             });
 
-            var mapper = new MessageMapper<SqsMessageContext>(new SqsMessageTopicMapper(), new SqsMessageBodyMapper(), new SqsMessageHeadersMapper());
+            var mapper = new MessageGetter<SqsMessageContext>(new SqsMessageTopicGetter(), new SqsMessageBodyGetter(), new SqsMessageHeadersGetter());
 
             var topic = mapper.GetTopic(sqsMessageContext);
             var message = mapper.GetBody(sqsMessageContext);

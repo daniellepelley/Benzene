@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.Mappers;
-using Benzene.Abstractions.MessageHandlers.Mappers;
+﻿using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
@@ -29,8 +28,8 @@ public static class Extensions
     {
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
-            var mapper = resolver.GetService<IMessageMapper<TContext>>();
-            var resultSetter = resolver.GetService<IResultSetter<TContext>>();
+            var mapper = resolver.GetService<IMessageGetter<TContext>>();
+            var resultSetter = resolver.GetService<IMessageHandlerResultSetter<TContext>>();
 
             var messageTopic = mapper.GetTopic(context);
 

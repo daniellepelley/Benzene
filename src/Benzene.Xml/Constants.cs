@@ -1,7 +1,7 @@
-﻿namespace Benzene.Xml
+﻿namespace Benzene.Xml;
+
+public static class Constants
 {
-    public static class Constants
-    {
-        public const string XmlContentType = "application/xml";
-    }
+    public const string ContentTypeHeader = "content-type";
+    public const string XmlContentType = "application/xml";
 }

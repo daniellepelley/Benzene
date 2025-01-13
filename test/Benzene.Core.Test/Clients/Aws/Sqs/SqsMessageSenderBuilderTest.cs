@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Amazon.SQS;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Clients.Aws.Sqs;

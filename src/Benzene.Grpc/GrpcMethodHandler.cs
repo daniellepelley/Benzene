@@ -2,6 +2,7 @@ using System.Text.Json;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.BenzeneMessage;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Grpc.Core;

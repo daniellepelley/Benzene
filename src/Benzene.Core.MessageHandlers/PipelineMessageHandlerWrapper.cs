@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Messages;
 
 namespace Benzene.Core.MessageHandlers;
 
@@ -17,7 +18,7 @@ public class PipelineMessageHandlerWrapper : IMessageHandlerWrapper
     public IMessageHandler<TRequest, TResponse> Wrap<TRequest, TResponse>(ITopic topic, IMessageHandler<TRequest> messageHandler)
         where TRequest : class
     {
-        var pipeline = _handlerPipelineBuilder.Create(new MessageHandlers.MessageHandlerNoResultWrapper<TRequest, TResponse>(messageHandler), _serviceResolver);
+        var pipeline = _handlerPipelineBuilder.Create(new MessageHandlerNoResultWrapper<TRequest, TResponse>(messageHandler), _serviceResolver);
         return new PipelineMessageHandler<TRequest, TResponse>(topic, pipeline, _serviceResolver);
     }
 

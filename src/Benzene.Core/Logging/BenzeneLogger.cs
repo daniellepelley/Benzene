@@ -13,7 +13,7 @@ public class BenzeneLogger : IBenzeneLogger
         _benzeneLogAppenders = benzeneLogAppenders;
     }
 
-    public void Log(BenzeneLogLevel benzeneLogLevel, Exception exception, string message, params object[] args)
+    public void Log(BenzeneLogLevel benzeneLogLevel, Exception? exception, string message, params object[] args)
     {
         foreach (var benzeneLogAppender in _benzeneLogAppenders)
         {

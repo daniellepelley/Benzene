@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
@@ -24,10 +23,10 @@ public static class DependencyInjectionExtensions
     
     public static IBenzeneServiceContainer AddAspNet(this IBenzeneServiceContainer services)
     {
-        services.AddScoped<IMessageTopicMapper<AspNetContext>, AspNetMessageTopicMapper>();
-        services.AddScoped<IMessageHeadersMapper<AspNetContext>, AspNetMessageHeadersMapper>();
-        services.AddScoped<IMessageBodyMapper<AspNetContext>, AspNetMessageBodyMapper>();
-        services.AddScoped<IResultSetter<AspNetContext>, AspNetMessageResultSetter>();
+        services.AddScoped<IMessageTopicGetter<AspNetContext>, AspNetMessageTopicGetter>();
+        services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
+        services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
+        services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspNetMessageMessageHandlerResultSetter>();
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
 

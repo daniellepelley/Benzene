@@ -2,7 +2,8 @@
 using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.BenzeneMessage.TestHelpers;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
+using Benzene.Core.Messages.BenzeneMessage.TestHelpers;
 
 namespace Benzene.Azure.EventHub.Function.TestHelpers;
 

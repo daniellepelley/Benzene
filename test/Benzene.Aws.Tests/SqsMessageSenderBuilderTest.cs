@@ -1,6 +1,7 @@
 ﻿using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Tests.Fixtures;
 using Benzene.Clients.Aws.Sqs;

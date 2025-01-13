@@ -180,5 +180,4 @@ public static class Extensions
 
         return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
     }
-
 }

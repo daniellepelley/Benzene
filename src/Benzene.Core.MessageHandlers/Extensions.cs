@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
@@ -17,7 +16,7 @@ public static class Extensions
 {
     public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
     {
-        services.TryAddScoped(typeof(IMessageMapper<>), typeof(MessageMapper<>));
+        services.TryAddScoped(typeof(IMessageGetter<>), typeof(MessageGetter<>));
         services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
         services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
         services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));

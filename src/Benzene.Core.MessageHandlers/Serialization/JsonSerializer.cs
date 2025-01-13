@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Core.Serialization;
+namespace Benzene.Core.MessageHandlers.Serialization;
 
 public class JsonSerializer : ISerializer
 {

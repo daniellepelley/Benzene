@@ -8,13 +8,13 @@
 //
 // public class AspNetRequestMapper : IRequestMapper<AspNetContext>
 // {
-//     private readonly IMessageHeadersMapper<AspNetContext> _headersToBodyMapper;
+//     private readonly IMessageHeadersGetter<AspNetContext> _headersToBodyGetter;
 //     private readonly IRouteFinder _routeFinder;
 //
 //     public AspNetRequestMapper(IRouteFinder routeFinder, IHttpHeaderMappings httpHeaderMappings)
 //     {
 //         _routeFinder = routeFinder;
-//         _headersToBodyMapper = new AspNetHeadersToBodyMapper(httpHeaderMappings);
+//         _headersToBodyGetter = new AspNetHeadersToBodyGetter(httpHeaderMappings);
 //     }
 //
 //     public TRequest? GetBody<TRequest>(AspNetContext context) where TRequest : class
@@ -33,9 +33,9 @@
 //
 //         var dictionary = new Dictionary<string, object>();
 //
-//         DictionaryUtils.MapOnto(dictionary, _headersToBodyMapper.GetHeaders(context));
+//         DictionaryUtils.MapOnto(dictionary, _headersToBodyGetter.GetHeaders(context));
 //         DictionaryUtils.MapOnto(dictionary, context.HttpContext.Request.Query.ToDictionary(x => x.Key, x => x.Value.First()));
-//         DictionaryUtils.MapOnto(dictionary, _headersToBodyMapper.GetHeaders(context));
+//         DictionaryUtils.MapOnto(dictionary, _headersToBodyGetter.GetHeaders(context));
 //         DictionaryUtils.MapOnto(dictionary, CleanUp(route.Parameters));
 //
 //         var json = StreamToString(context.HttpContext.Request);

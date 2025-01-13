@@ -208,7 +208,7 @@ public class SqsMessagePipelineTest
     [Fact]
     public void SqsMessageMapper()
     {
-        var sqsMessageMapper = new MessageMapper<SqsMessageContext>(new SqsMessageTopicMapper(), new SqsMessageBodyMapper(), new SqsMessageHeadersMapper());
+        var sqsMessageMapper = new MessageGetter<SqsMessageContext>(new SqsMessageTopicGetter(), new SqsMessageBodyGetter(), new SqsMessageHeadersGetter());
 
         var sqsMessageContext = SqsMessageContext.CreateInstance(new SQSEvent(),
             new SQSEvent.SQSMessage

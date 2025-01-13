@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Results;
 
 namespace Benzene.Cache.Core;

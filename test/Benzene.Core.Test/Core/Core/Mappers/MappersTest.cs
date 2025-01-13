@@ -1,17 +1,17 @@
 ﻿using System.Collections.Generic;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.Request;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Xunit;
-using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
+using JsonSerializer = Benzene.Core.MessageHandlers.Serialization.JsonSerializer;
 
 namespace Benzene.Test.Core.Core.Mappers;
 
@@ -22,9 +22,9 @@ public class MappersTest
     {
         var services = new ServiceCollection();
         services
-            .AddTransient<BenzeneMessageMapper>()
+            .AddTransient<BenzeneMessageGetter>()
             .AddSingleton<MultiSerializerOptionsRequestMapper<BenzeneMessageContext, JsonSerializer>>()
-            .AddSingleton<IMessageMapper<BenzeneMessageContext>, BenzeneMessageMapper>()
+            .AddSingleton<IMessageGetter<BenzeneMessageContext>, BenzeneMessageGetter>()
             .AddSingleton<JsonSerializer>()
             .AddSingleton<ISerializerOption<BenzeneMessageContext>>(_ =>
                 new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()));

@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
-using Benzene.Core.Serialization;
+using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Core.Request;
 
@@ -9,9 +9,9 @@ public class JsonDefaultMultiSerializerOptionsRequestMapper<TContext> : MultiSer
 {
     public JsonDefaultMultiSerializerOptionsRequestMapper(
         IServiceResolver serviceResolver,
-        IMessageBodyMapper<TContext> messageBodyMapper,
+        IMessageBodyGetter<TContext> messageBodyGetter,
         IEnumerable<ISerializerOption<TContext>> options,
         IEnumerable<IRequestEnricher<TContext>> enrichers)
-        : base(serviceResolver, messageBodyMapper, options, enrichers)
+        : base(serviceResolver, messageBodyGetter, options, enrichers)
     { } 
 }

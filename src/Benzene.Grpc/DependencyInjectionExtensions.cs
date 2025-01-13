@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Core.MessageHandlers;
 
@@ -11,10 +10,10 @@ public static class DependencyInjectionExtensions
     {
         services.AddScoped<IGrpcRouteFinder, GrpcRouteFinder>();
         services.AddScoped<IGrpcMethodFinder, ReflectionGrpcMethodFinder>();
-        services.AddScoped<IMessageTopicMapper<GrpcContext>, GrpcMessageTopicMapper>();
-        services.AddScoped<IMessageBodyMapper<GrpcContext>, GrpcMessageBodyMapper>();
-        services.AddScoped<IMessageHeadersMapper<GrpcContext>, GrpcMessageHeadersMapper>();
-        services.AddScoped<IResultSetter<GrpcContext>, GrpcMessageResultSetter>();
+        services.AddScoped<IMessageTopicGetter<GrpcContext>, GrpcMessageTopicGetter>();
+        services.AddScoped<IMessageBodyGetter<GrpcContext>, GrpcMessageBodyGetter>();
+        services.AddScoped<IMessageHeadersGetter<GrpcContext>, GrpcMessageHeadersGetter>();
+        services.AddScoped<IMessageHandlerResultSetter<GrpcContext>, GrpcMessageMessageHandlerResultSetter>();
         services.AddContextItems();
         return services;
     }

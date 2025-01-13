@@ -9,8 +9,4 @@
     <RootNamespace>Benzene.Abstractions</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
-  </ItemGroup>
-
 </Project>

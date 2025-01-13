@@ -24,7 +24,7 @@ namespace Benzene.Test.Aws.Sns
                 }
             });
 
-            var mapper = new MessageMapper<SnsRecordContext>(new SnsMessageTopicMapper(), new SnsMessageBodyMapper(), new SnsMessageHeadersMapper());
+            var mapper = new MessageGetter<SnsRecordContext>(new SnsMessageTopicGetter(), new SnsMessageBodyGetter(), new SnsMessageHeadersGetter());
 
             var topic = mapper.GetTopic(snsRecordContext);
             var message = mapper.GetBody(snsRecordContext);
@@ -45,7 +45,7 @@ namespace Benzene.Test.Aws.Sns
                 }
             });
 
-            var mapper = new MessageMapper<SnsRecordContext>(new SnsMessageTopicMapper(), new SnsMessageBodyMapper(), new SnsMessageHeadersMapper());
+            var mapper = new MessageGetter<SnsRecordContext>(new SnsMessageTopicGetter(), new SnsMessageBodyGetter(), new SnsMessageHeadersGetter());
 
             var topic = mapper.GetTopic(snsRecordContext);
             var message = mapper.GetBody(snsRecordContext);

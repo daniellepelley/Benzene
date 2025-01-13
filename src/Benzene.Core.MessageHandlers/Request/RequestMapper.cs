@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Mappers;
+﻿using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Serialization;
 
@@ -6,29 +6,26 @@ namespace Benzene.Core.Request;
 
 public class RequestMapper<TContext> : IRequestMapper<TContext>
 {
-    private readonly IMessageBodyMapper<TContext> _messageBodyMapper;
+    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
     private readonly ISerializer _serializer;
 
-    public RequestMapper(IMessageBodyMapper<TContext> messageBodyMapper, ISerializer serializer)
+    public RequestMapper(IMessageBodyGetter<TContext> messageBodyGetter, ISerializer serializer)
     {
         _serializer = serializer;
-        _messageBodyMapper = messageBodyMapper;
+        _messageBodyGetter = messageBodyGetter;
     }
     
     public TRequest? GetBody<TRequest>(TContext context) where TRequest : class
     {
-        if (context is IRequestContext<TRequest>)
+        if (context is IRequestContext<TRequest> requestContext)
         {
-            return ((IRequestContext<TRequest?>)context).Request;
+            return requestContext.Request;
         }
         
-        var bodyAsString = _messageBodyMapper.GetBody(context);
+        var bodyAsString = _messageBodyGetter.GetBody(context);
 
-        if (!string.IsNullOrEmpty(bodyAsString))
-        {
-            return _serializer.Deserialize<TRequest>(bodyAsString);
-        }
-
-        return Activator.CreateInstance<TRequest>();
+        return !string.IsNullOrEmpty(bodyAsString)
+            ? _serializer.Deserialize<TRequest>(bodyAsString)
+            : Activator.CreateInstance<TRequest>();
     }
 }

@@ -16,7 +16,7 @@ public static class Extensions
                 corsSettings, resolver.GetService<IHttpEndpointFinder>(),
                 resolver.GetService<IHttpRequestAdapter<TContext>>(),
                 resolver.GetService<IBenzeneResponseAdapter<TContext>>(),
-                resolver.GetService<IResultSetter<TContext>>()
+                resolver.GetService<IMessageHandlerResultSetter<TContext>>()
             )));
             
         return app.Use<TContext, CorsMiddleware<TContext>>();

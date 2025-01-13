@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Mappers;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.Helper;
 
@@ -18,7 +18,7 @@ public class HeaderContextPredicate<TContext> : IContextPredicate<TContext>
 
     public bool Check(TContext context, IServiceResolver serviceResolver)
     {
-        var messageHeadersMapper = serviceResolver.GetService<IMessageHeadersMapper<TContext>>();
+        var messageHeadersMapper = serviceResolver.GetService<IMessageHeadersGetter<TContext>>();
         if (DictionaryUtils.KeyEquals(messageHeadersMapper.GetHeaders(context), _headerKey,
                 _headerValue))
         {

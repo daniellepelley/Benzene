@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Core.AwsEventStream;
 using Benzene.Clients.Aws.Lambda;

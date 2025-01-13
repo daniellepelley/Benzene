@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Core.MessageSender;

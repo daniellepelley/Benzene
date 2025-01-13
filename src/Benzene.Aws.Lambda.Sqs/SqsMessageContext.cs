@@ -8,7 +8,6 @@ public class SqsMessageContext
     {
         SqsMessage = sqsMessage;
         SqsEvent = sqsEvent;
-        // MessageResult = Benzene.Core.MessageHandlers.MessageResult.Empty();
     }
 
     public static SqsMessageContext CreateInstance(SQSEvent sqsEvent, SQSEvent.SQSMessage sqsMessage)
@@ -18,6 +17,5 @@ public class SqsMessageContext
 
     public SQSEvent SqsEvent { get; }
     public SQSEvent.SQSMessage SqsMessage { get; }
-    // public IMessageResult MessageResult { get; set; }
     public bool? IsSuccessful { get; set; }
 }

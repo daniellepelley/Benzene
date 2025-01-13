@@ -5,6 +5,7 @@ using Benzene.Autofac;
 using Benzene.Core.DI;
 using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -66,7 +67,7 @@ public static class ServiceResolverMother
         var assembly = typeof(ExampleRequestPayload).Assembly;
         container.AddBenzene();
         container.AddMessageHandlers(assembly);
-        container.AddScoped<BenzeneMessageMapper>();
+        container.AddScoped<BenzeneMessageGetter>();
         container.AddSingleton(Mock.Of<IExampleService>());
         register(container);
         return container;

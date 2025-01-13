@@ -6,6 +6,7 @@ using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Diagnostics;
+using Benzene.Integration.Test.Fixtures;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Tools;
@@ -23,7 +24,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Benzene.Integration.Test;
 
-public class SqsMessagePipelineTest //: IClassFixture<ZipkinFixture>
+public class SqsMessagePipelineTest : IClassFixture<ZipkinFixture>
 {
 
     [Fact]
