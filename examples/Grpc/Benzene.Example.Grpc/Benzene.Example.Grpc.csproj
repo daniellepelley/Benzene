@@ -21,4 +21,10 @@
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Benzene.Core.Messages">
+      <HintPath>..\..\..\src\Benzene.Core.Messages\bin\Debug\net8.0\Benzene.Core.Messages.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

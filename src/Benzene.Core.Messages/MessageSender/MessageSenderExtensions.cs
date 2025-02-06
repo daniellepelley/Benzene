@@ -1,7 +1,6 @@
-﻿using System;
-using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Core.MessageSender;
+namespace Benzene.Core.Messages.MessageSender;
 
 public static class MessageSenderExtensions
 {

@@ -1,4 +1,6 @@
-﻿namespace Benzene.Results;
+﻿using Benzene.Abstractions.Results;
+
+namespace Benzene.Results;
 
 public static class BenzeneResult
 {

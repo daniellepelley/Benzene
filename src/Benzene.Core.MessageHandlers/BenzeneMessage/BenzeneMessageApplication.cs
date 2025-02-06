@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Middleware;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.Info;
+using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Core.MessageHandlers.BenzeneMessage;

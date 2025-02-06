@@ -1,6 +1,7 @@
-﻿using Benzene.Results;
+﻿using Benzene.Abstractions.Results;
+using Benzene.Results;
 
-namespace Benzene.Abstractions.Middleware.BenzeneClient;
+namespace Benzene.Abstractions.Messages.BenzeneClient;
 
 public interface IBenzeneClientContext<TRequest, TResponse>
 {

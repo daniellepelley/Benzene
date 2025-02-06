@@ -1,4 +1,4 @@
-﻿namespace Benzene.Core.Filters;
+﻿namespace Benzene.Core.MessageHandlers.Filters;
 
 public interface IFilter<T>
 {

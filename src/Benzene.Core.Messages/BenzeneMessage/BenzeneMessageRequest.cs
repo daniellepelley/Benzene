@@ -1,4 +1,4 @@
-﻿namespace Benzene.Core.BenzeneMessage;
+﻿namespace Benzene.Core.Messages.BenzeneMessage;
 
 public class BenzeneMessageRequest : IBenzeneMessageRequest
 {

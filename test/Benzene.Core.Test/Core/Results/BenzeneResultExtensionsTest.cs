@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Benzene.Abstractions.Results;
 using Benzene.Http;
 using Benzene.Results;
 using Xunit;

@@ -1,8 +1,8 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Azure.EventHub.Function;

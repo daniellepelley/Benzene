@@ -2,12 +2,12 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
 using Benzene.Aws.ApiGateway;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Elements.Examples;
 using Benzene.Test.Examples;
-using Benzene.Tools;
+using Benzene.Testing;
 using Benzene.Tools.Aws;
 using Xunit;
 

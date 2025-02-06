@@ -3,7 +3,7 @@ using System.Text;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.TestUtilities;
-using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Newtonsoft.Json;
 
 namespace Benzene.Test.Aws.Helpers;

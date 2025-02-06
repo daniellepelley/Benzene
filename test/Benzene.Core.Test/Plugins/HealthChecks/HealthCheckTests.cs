@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
-using Benzene.Core.DI;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;

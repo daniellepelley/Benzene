@@ -1,11 +1,10 @@
-﻿using System;
-using Benzene.Abstractions.Messages;
+﻿using Benzene.Abstractions.Messages;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Middleware.BenzeneClient;
 using Benzene.Core.Middleware;
 using Void = Benzene.Results.Void;
 
-namespace Benzene.Core.MessageSender;
+namespace Benzene.Core.Messages.MessageSender;
 
 public class MessageSenderBuilder : IMessageSenderBuilder
 {

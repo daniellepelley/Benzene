@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Benzene.Core.BenzeneMessage;
+﻿namespace Benzene.Core.Messages.BenzeneMessage;
 
 public static class Extensions
 {

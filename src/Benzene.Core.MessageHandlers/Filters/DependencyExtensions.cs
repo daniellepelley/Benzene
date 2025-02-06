@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Core.Filters;
 
 namespace Benzene.Core.MessageHandlers.Filters;
 

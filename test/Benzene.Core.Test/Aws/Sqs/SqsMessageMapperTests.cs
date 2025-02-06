@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Aws.Lambda.Sqs;
-using Benzene.Core;
-using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Xunit;
+using Constants = Benzene.Core.Constants;
 
 namespace Benzene.Test.Aws.Sqs
 {

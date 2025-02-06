@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Logging;
-using Benzene.Aws.Core;
-using Benzene.Aws.Core.BenzeneMessage;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.BenzeneMessage.TestHelpers;
-using Benzene.Core.DI;
+using Benzene.Aws.Lambda.Core;
+using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Core.Logging;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Diagnostics.Correlation;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
-using Benzene.Tools;
+using Benzene.Testing;
 using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -24,7 +24,7 @@ public class LogContextTest
     private AwsLambdaBenzeneTestHost _host;
     private Mock<IBenzeneLogContext> _mockBenzeneContext;
 
-    private void SetUp(Action<LogContextBuilder<BenzeneMessageContext>> action)
+    private void SetUp(Action<ILogContextBuilder<BenzeneMessageContext>> action)
     {
         _mockBenzeneContext = new Mock<IBenzeneLogContext>();
         _host = new InlineAwsLambdaStartUp()

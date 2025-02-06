@@ -1,7 +1,7 @@
 ﻿using System;
 using Amazon.SimpleNotificationService;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Middleware.BenzeneClient;
 using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 

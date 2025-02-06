@@ -1,8 +1,8 @@
-﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandlers.Mappers;
+﻿using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages;
+using Benzene.Abstractions.Messages.Mappers;
 
-namespace Benzene.Core.Mappers;
+namespace Benzene.Core.MessageHandlers;
 
 public class MessageGetter<TContext> : IMessageGetter<TContext>
 {

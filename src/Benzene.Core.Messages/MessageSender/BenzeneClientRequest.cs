@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using Benzene.Abstractions.Middleware.BenzeneClient;
+﻿using Benzene.Abstractions.Messages.BenzeneClient;
 
-namespace Benzene.Core.MessageSender;
+namespace Benzene.Core.Messages.MessageSender;
 
 public class BenzeneClientRequest<TMessage> : IBenzeneClientRequest<TMessage>
 {

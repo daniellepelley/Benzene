@@ -1,9 +1,10 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Aws.Sqs.Consumer;
+using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
-using Benzene.Core.Request;
 
 namespace Benzene.Aws.Sqs;
 

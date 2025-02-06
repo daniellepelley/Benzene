@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using Benzene.Core.Results;
+using Benzene.Abstractions.Results;
 using Benzene.Examples.App.Data.Pagination;
 using Benzene.Examples.App.Model;
 using Benzene.Results;
@@ -21,23 +21,23 @@ public class InMemoryOrderDbClient : IOrderDbClient
 
     public static ConcurrentBag<Order> Orders { get; } = new();
 
-    public Task<IClientResult<OrderDto>> GetAsync(Guid id)
+    public Task<IBenzeneResult<OrderDto>> GetAsync(Guid id)
     {
         try
         {
             var order = Orders.FirstOrDefault(x => x.Id == id);
             return order == null
-                ? ClientResult.NotFound<OrderDto>().AsTask()
-                : ClientResult.Ok(order.AsOrderDto()).AsTask();
+                ? BenzeneResult.NotFound<OrderDto>().AsTask()
+                : BenzeneResult.Ok(order.AsOrderDto()).AsTask();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Database error");
-            return ClientResult.ServiceUnavailable<OrderDto>().AsTask();
+            return BenzeneResult.ServiceUnavailable<OrderDto>().AsTask();
         }
     }
 
-    public Task<IClientResult<OrderDto>> UpdateAsync(OrderDto orderDto)
+    public Task<IBenzeneResult<OrderDto>> UpdateAsync(OrderDto orderDto)
     {
         try
         {
@@ -45,22 +45,22 @@ public class InMemoryOrderDbClient : IOrderDbClient
 
             if (existingOrder == null)
             {
-                return ClientResult.NotFound<OrderDto>().AsTask();
+                return BenzeneResult.NotFound<OrderDto>().AsTask();
             }
 
             existingOrder.Status = orderDto.Status;
             existingOrder.Name = orderDto.Name;
-            return ClientResult.Updated(orderDto).AsTask();
+            return BenzeneResult.Updated(orderDto).AsTask();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Database error");
-            return ClientResult.ServiceUnavailable<OrderDto>().AsTask();
+            return BenzeneResult.ServiceUnavailable<OrderDto>().AsTask();
 
         }
     }
 
-    public Task<IClientResult<Guid>> DeleteAsync(Guid id)
+    public Task<IBenzeneResult<Guid>> DeleteAsync(Guid id)
     {
         try
         {
@@ -69,20 +69,20 @@ public class InMemoryOrderDbClient : IOrderDbClient
 
             if (order == null)
             {
-                return ClientResult.NotFound<Guid>($"Order {id} not found").AsTask();
+                return BenzeneResult.NotFound<Guid>($"Order {id} not found").AsTask();
             }
 
             Orders.Remove(order);
-            return ClientResult.Deleted(id).AsTask();
+            return BenzeneResult.Deleted(id).AsTask();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Database error");
-            return ClientResult.ServiceUnavailable<Guid>().AsTask();
+            return BenzeneResult.ServiceUnavailable<Guid>().AsTask();
         }
     }
 
-    public Task<IClientResult<OrderDto[]>> GetAllAsync(Pagination.Pagination pagination)
+    public Task<IBenzeneResult<OrderDto[]>> GetAllAsync(Pagination.Pagination pagination)
     {
         try
         {
@@ -92,26 +92,26 @@ public class InMemoryOrderDbClient : IOrderDbClient
                 .Select(x =>x.AsOrderDto())
                 .ToArray();
                 
-            return ClientResult.Ok(orderDtos).AsTask();
+            return BenzeneResult.Ok(orderDtos).AsTask();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Database error");
-            return ClientResult.ServiceUnavailable<OrderDto[]>().AsTask();
+            return BenzeneResult.ServiceUnavailable<OrderDto[]>().AsTask();
         }
     }
 
-    public Task<IClientResult> CreateAsync(OrderDto orderDto)
+    public Task<IBenzeneResult> CreateAsync(OrderDto orderDto)
     {
         try
         {
             Orders.Add(orderDto.AsOrder());
-            return ClientResult.Created().AsTask();
+            return BenzeneResult.Created().AsTask();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Database error");
-            return ClientResult.ServiceUnavailable().AsTask();
+            return BenzeneResult.ServiceUnavailable().AsTask();
         }
     }
 }

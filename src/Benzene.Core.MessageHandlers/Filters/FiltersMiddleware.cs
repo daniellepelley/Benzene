@@ -1,11 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;
 
-namespace Benzene.Core.Filters;
+namespace Benzene.Core.MessageHandlers.Filters;
 
 public class FiltersMiddleware<TRequest, TResponse> : IMiddleware<IMessageHandlerContext<TRequest, TResponse>> 
     where TRequest : class

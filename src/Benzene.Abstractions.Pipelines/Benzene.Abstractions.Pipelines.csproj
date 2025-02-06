@@ -16,8 +16,4 @@
     <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="MessageHandling\" />
-  </ItemGroup>
-
 </Project>

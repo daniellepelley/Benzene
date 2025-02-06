@@ -1,7 +1,7 @@
 ﻿using System;
 using Amazon.Lambda;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Middleware.BenzeneClient;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Middleware;
 

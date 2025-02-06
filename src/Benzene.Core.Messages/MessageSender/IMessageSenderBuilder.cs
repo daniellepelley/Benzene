@@ -1,8 +1,7 @@
-﻿using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Middleware.BenzeneClient;
-using Benzene.Results;
+﻿using Benzene.Abstractions.Messages.BenzeneClient;
+using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Core.MessageSender;
+namespace Benzene.Core.Messages.MessageSender;
 
 public interface IMessageSenderBuilder
 {

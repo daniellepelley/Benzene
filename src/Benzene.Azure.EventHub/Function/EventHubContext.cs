@@ -14,5 +14,4 @@ public class EventHubContext
     }
 
     public EventData EventData { get; }
-    // public IMessageResult? MessageResult { get; set; }
 }

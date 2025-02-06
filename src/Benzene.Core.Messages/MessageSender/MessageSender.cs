@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Messages;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Middleware.BenzeneClient;
+using Benzene.Abstractions.Results;
 using Benzene.Results;
 using Void = Benzene.Results.Void;
 
-namespace Benzene.Core.MessageSender;
+namespace Benzene.Core.Messages.MessageSender;
 
 public class MessageSender<TMessage> :  IMessageSender<TMessage>
 {

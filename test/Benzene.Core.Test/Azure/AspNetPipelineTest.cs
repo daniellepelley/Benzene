@@ -6,7 +6,7 @@ using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.DataAnnotations;
 using Benzene.Results;
 using Benzene.Test.Examples;
-using Benzene.Tools;
+using Benzene.Testing;
 using Benzene.Xml;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;

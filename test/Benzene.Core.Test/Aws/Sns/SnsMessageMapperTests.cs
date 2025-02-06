@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Aws.Sns;
-using Benzene.Core;
-using Benzene.Core.Mappers;
+using Benzene.Core.MessageHandlers;
 using Xunit;
+using Constants = Benzene.Core.Constants;
 
 namespace Benzene.Test.Aws.Sns
 {

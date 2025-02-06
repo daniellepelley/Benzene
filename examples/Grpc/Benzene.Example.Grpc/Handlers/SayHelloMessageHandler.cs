@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.Results;
+using Benzene.Core.MessageHandlers;
 using Benzene.Grpc;
 using Benzene.Results;
 
@@ -9,9 +10,9 @@ namespace Benzene.Example.Grpc.Handlers;
 [Message("say_hello")]
 public class SayHelloMessageHandler : IMessageHandler<HelloRequest2, HelloReply2>
 {
-    public Task<IServiceResult<HelloReply2>> HandleAsync(HelloRequest2 request)
+    public Task<IBenzeneResult<HelloReply2>> HandleAsync(HelloRequest2 request)
     {
-        return ServiceResult.Ok(new HelloReply2
+        return BenzeneResult.Ok(new HelloReply2
         {
             Message = "Hello " + request.Name + ", this is Benzene"
         }).AsTask();

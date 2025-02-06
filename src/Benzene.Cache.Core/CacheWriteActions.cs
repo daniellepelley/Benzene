@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Results;
 
 namespace Benzene.Cache.Core;
@@ -13,7 +13,7 @@ public abstract class CacheWriteActions<T> : CacheInvalidateActions, ICacheWrite
 
     protected CacheWriteActions()
     {
-        Serializer = new JsonSerializer();
+        Serializer = new Benzene.Core.MessageHandlers.Serialization.JsonSerializer();
     }
 
     protected abstract Task<bool> SetEntryValueAsync(string value, TimeSpan? expireIn);

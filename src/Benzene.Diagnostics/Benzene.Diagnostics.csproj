@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions.Messages\Benzene.Abstractions.Messages.csproj" />
     <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
   </ItemGroup>
 

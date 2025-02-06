@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Results;
-using Benzene.Core.Results;
 using Benzene.Examples.App.Data.Pagination;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
@@ -11,9 +10,9 @@ namespace Benzene.Examples.App.Services;
 
 public class HardcodedOrderService : IOrderService
 {
-    public Task<IServiceResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
+    public Task<IBenzeneResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
     {
-        return ServiceResult.Ok(new []
+        return BenzeneResult.Ok(new []
         {
             new OrderDto
             {
@@ -30,9 +29,9 @@ public class HardcodedOrderService : IOrderService
         }).AsTask();
     }
 
-    public Task<IServiceResult<OrderDto>> GetAsync(Guid id)
+    public Task<IBenzeneResult<OrderDto>> GetAsync(Guid id)
     {
-        return ServiceResult.Ok(new 
+        return BenzeneResult.Ok(new 
             OrderDto
             {
                 Id = Guid.NewGuid(),
@@ -42,9 +41,9 @@ public class HardcodedOrderService : IOrderService
         ).AsTask();
     }
 
-    public Task<IServiceResult<OrderDto>> SaveAsync(CreateOrderMessage value)
+    public Task<IBenzeneResult<OrderDto>> SaveAsync(CreateOrderMessage value)
     {
-        return ServiceResult.Ok(new 
+        return BenzeneResult.Ok(new 
             OrderDto
             {
                 Id = Guid.NewGuid(),
@@ -54,9 +53,9 @@ public class HardcodedOrderService : IOrderService
         ).AsTask();
     }
 
-    public Task<IServiceResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
+    public Task<IBenzeneResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
     {
-        return ServiceResult.Ok(new 
+        return BenzeneResult.Ok(new 
             OrderDto
             {
                 Id = Guid.NewGuid(),
@@ -66,8 +65,8 @@ public class HardcodedOrderService : IOrderService
         ).AsTask();
     }
 
-    public Task<IServiceResult<Guid>> DeleteAsync(Guid id)
+    public Task<IBenzeneResult<Guid>> DeleteAsync(Guid id)
     {
-        return ServiceResult.Ok(Guid.NewGuid()).AsTask();
+        return BenzeneResult.Ok(Guid.NewGuid()).AsTask();
     }
 }

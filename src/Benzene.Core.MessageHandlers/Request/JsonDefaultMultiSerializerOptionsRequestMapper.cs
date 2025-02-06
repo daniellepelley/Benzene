@@ -1,9 +1,9 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Core.Request;
+namespace Benzene.Core.MessageHandlers.Request;
 
 public class JsonDefaultMultiSerializerOptionsRequestMapper<TContext> : MultiSerializerOptionsRequestMapper<TContext, JsonSerializer> 
 {

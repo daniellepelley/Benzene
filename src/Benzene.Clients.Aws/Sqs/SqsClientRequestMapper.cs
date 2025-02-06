@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Amazon.SQS.Model;
-using Benzene.Abstractions.Middleware.BenzeneClient;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Serialization;
 
 namespace Benzene.Clients.Aws.Sqs;

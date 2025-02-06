@@ -2,6 +2,7 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Results;
 using Benzene.Results;
 
 namespace Benzene.Core.MessageHandlers;

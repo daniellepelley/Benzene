@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Amazon.SimpleNotificationService.Model;
-using Benzene.Abstractions.Middleware.BenzeneClient;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Serialization;
 using Benzene.Clients.Common;
 

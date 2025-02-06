@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.BenzeneMessage.TestHelpers;
+using Benzene.Core.Messages.BenzeneMessage;
 
 namespace Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
 

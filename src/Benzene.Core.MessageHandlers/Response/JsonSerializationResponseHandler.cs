@@ -2,7 +2,7 @@
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Core.Response;
+namespace Benzene.Core.MessageHandlers.Response;
 
 public class JsonSerializationResponseHandler<TContext> : ISerializationResponseHandler<TContext> where TContext : class
 {

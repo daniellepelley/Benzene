@@ -1,8 +1,6 @@
-﻿using System.Linq;
-using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
+﻿using Benzene.Abstractions.MessageHandlers;
 
-namespace Benzene.Core.MessageHandling;
+namespace Benzene.Core.MessageHandlers;
 
 public class VersionSelector : IVersionSelector
 {

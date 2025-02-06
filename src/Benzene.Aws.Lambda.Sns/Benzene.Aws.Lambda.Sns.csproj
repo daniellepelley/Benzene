@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.Aws.Lambda.Sns</AssemblyName>
+    <RootNamespace>Benzene.Aws.Lambda.Sns</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.SNSEvents" Version="2.0.0" />
+		<PackageReference Include="System.Text.Encodings.Web" Version="6.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+	</ItemGroup>
+
+</Project>

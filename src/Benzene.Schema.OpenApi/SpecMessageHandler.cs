@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Core.Results;
+using Benzene.Abstractions.Results;
+using Benzene.Core.Messages;
 using Benzene.Results;
 
 namespace Benzene.Schema.OpenApi;

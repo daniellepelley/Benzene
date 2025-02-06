@@ -1,4 +1,4 @@
-﻿using Benzene.Elements.Core.Patches;
+﻿using Benzene.Extras.Patches;
 
 namespace Benzene.Test.Examples;
 

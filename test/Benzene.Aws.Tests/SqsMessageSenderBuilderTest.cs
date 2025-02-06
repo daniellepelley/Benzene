@@ -5,7 +5,7 @@ using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Tests.Fixtures;
 using Benzene.Clients.Aws.Sqs;
-using Benzene.Core.MessageSender;
+using Benzene.Core.Messages.MessageSender;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;

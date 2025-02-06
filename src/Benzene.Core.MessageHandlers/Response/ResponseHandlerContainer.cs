@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Response;
 
-namespace Benzene.Core.Response;
+namespace Benzene.Core.MessageHandlers.Response;
 
 public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TContext>
     where TContext : class

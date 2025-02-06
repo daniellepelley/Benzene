@@ -1,7 +1,6 @@
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
-using Benzene.HealthChecks.Core;
 using Benzene.HostedService;
 using Benzene.Http.Cors;
 using Benzene.Kafka.Core;
@@ -60,7 +59,6 @@ public class StartUp : BenzeneHostedServiceStartup
                 Url = "http://localhost:5151/",
                 ConcurrentRequests = 10
             }, http => http
-                .UseProcessResponse()
                 .UseXml()
                 .UseSpec()
                 .UseHealthCheck("get", "healthcheck", x => x.AddHealthCheck("test", x => true))

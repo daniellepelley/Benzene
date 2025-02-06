@@ -2,11 +2,11 @@
 using Autofac;
 using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
-using Benzene.Aws.Core;
-using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Aws.Core.BenzeneMessage;
+using Benzene.Aws.Lambda.Core;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.XRay;
-using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.Configuration;
 using Extensions = Benzene.Core.MessageHandlers.Extensions;

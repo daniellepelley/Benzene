@@ -3,10 +3,11 @@ using Benzene.Abstractions.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Core.Info;
+using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.Request;
+using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
-using Benzene.Core.Request;
-using Benzene.Core.Response;
 using Benzene.Http;
 
 namespace Benzene.SelfHost.Http;

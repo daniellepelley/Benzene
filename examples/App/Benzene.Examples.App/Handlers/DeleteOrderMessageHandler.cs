@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Results;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
@@ -22,7 +21,7 @@ public class DeleteOrderMessageHandler : IMessageHandler<DeleteOrderMessage, Gui
         _orderService = orderService;
     }
 
-    public async Task<IServiceResult<Guid>> HandleAsync(DeleteOrderMessage request)
+    public async Task<IBenzeneResult<Guid>> HandleAsync(DeleteOrderMessage request)
     {
         return await _orderService.DeleteAsync(Guid.Parse(request.Id));
     }

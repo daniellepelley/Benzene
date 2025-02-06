@@ -10,9 +10,9 @@ namespace Benzene.Examples.App.Services;
 
 public interface IOrderService
 {
-    Task<IServiceResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination);
-    Task<IServiceResult<OrderDto>> GetAsync(Guid id);
-    Task<IServiceResult<OrderDto>> SaveAsync(CreateOrderMessage value);
-    Task<IServiceResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage);
-    Task<IServiceResult<Guid>> DeleteAsync(Guid id);
+    Task<IBenzeneResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination);
+    Task<IBenzeneResult<OrderDto>> GetAsync(Guid id);
+    Task<IBenzeneResult<OrderDto>> SaveAsync(CreateOrderMessage value);
+    Task<IBenzeneResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage);
+    Task<IBenzeneResult<Guid>> DeleteAsync(Guid id);
 }

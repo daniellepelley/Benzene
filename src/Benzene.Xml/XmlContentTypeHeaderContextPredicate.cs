@@ -1,4 +1,4 @@
-﻿using Benzene.Core.Predicates;
+﻿using Benzene.Core.Messages.Predicates;
 
 namespace Benzene.Xml;
 

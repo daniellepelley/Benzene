@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 
-namespace Benzene.Core.Response;
+namespace Benzene.Core.MessageHandlers.Response;
 
 public interface ISerializationResponseHandler<TContext> where TContext : class
 {

@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;

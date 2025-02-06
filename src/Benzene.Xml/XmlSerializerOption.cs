@@ -1,7 +1,8 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.Request;
+using Benzene.Core.MessageHandlers.Request;
 
 namespace Benzene.Xml;
 

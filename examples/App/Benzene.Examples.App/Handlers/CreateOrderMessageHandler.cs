@@ -1,8 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Results;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
@@ -22,7 +21,7 @@ public class CreateOrderMessageHandler : IMessageHandler<CreateOrderMessage, Ord
         _orderService = orderService;
     }
 
-    public async Task<IServiceResult<OrderDto>> HandleAsync(CreateOrderMessage request)
+    public async Task<IBenzeneResult<OrderDto>> HandleAsync(CreateOrderMessage request)
     {
         return await _orderService.SaveAsync(request);
     }

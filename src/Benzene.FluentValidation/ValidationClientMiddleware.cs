@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Middleware.BenzeneClient;
 using Benzene.Results;
 using FluentValidation;
 

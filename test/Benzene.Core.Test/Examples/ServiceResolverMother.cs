@@ -2,8 +2,6 @@
 using Autofac;
 using Benzene.Abstractions.DI;
 using Benzene.Autofac;
-using Benzene.Core.DI;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;

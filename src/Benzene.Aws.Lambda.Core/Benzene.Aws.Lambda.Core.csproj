@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+    <PackageVersion>0.0.1</PackageVersion>
+    <AssemblyName>Benzene.Aws.Lambda.Core</AssemblyName>
+    <RootNamespace>Benzene.Aws.Lambda.Core</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
+		<PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
+		<PackageReference Include="System.Text.Encodings.Web" Version="6.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
+	  <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
+	  <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+	  <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+	  <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+	</ItemGroup>
+
+</Project>

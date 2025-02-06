@@ -1,8 +1,8 @@
 ﻿using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Test.Examples;

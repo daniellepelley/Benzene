@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers.Mappers;
+﻿using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.Helper;
 using Benzene.Http;
 

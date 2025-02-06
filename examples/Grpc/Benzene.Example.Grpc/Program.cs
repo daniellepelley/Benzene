@@ -1,7 +1,6 @@
 using Benzene.Abstractions.DI;
 using Benzene.AspNet.Core;
-using Benzene.Core.DI;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Example.Grpc;
 using Benzene.Example.Grpc.Services;
@@ -41,13 +40,12 @@ var app = builder.Build();
 app.MapGrpcService<GreeterService>();
 app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 // app.UseBenzene(x => x.UseMessageRouter());
-app.UseBenzene2(x => x
+app.UseBenzene(x => x
     //.UseAspNet(asp => asp
     //     // .UseProcessResponseIfHandled()
     //     .UseMessageHandlers()
     // )
     .UseGrpc(grpc => grpc
-        // .UseProcessResponse()
         .UseMessageHandlers()
     )
 );

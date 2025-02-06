@@ -48,12 +48,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Aws.EventBridge\Benzene.Aws.EventBridge.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.EventBridge\Benzene.Aws.Lambda.EventBridge.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Kafka\Benzene.Aws.Lambda.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sns\Benzene.Aws.Lambda.Sns.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.AspNet\Benzene.Azure.AspNet.csproj" />
@@ -76,6 +76,7 @@
     <ProjectReference Include="..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Extras\Benzene.Extras.csproj" />
     <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />

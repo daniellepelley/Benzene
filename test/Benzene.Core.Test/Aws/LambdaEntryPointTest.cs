@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.DI;
-using Benzene.Aws.Core;
-using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Core.BenzeneMessage;
+using Benzene.Aws.Lambda.Core;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Aws.Helpers;

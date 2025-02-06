@@ -1,7 +1,6 @@
-﻿using System;
-using Benzene.Abstractions.Middleware.BenzeneClient;
+﻿using Benzene.Abstractions.Messages.BenzeneClient;
 
-namespace Benzene.Core.MessageSender;
+namespace Benzene.Core.Messages.MessageSender;
 
 public class DefaultGetTopic : IGetTopic
 {

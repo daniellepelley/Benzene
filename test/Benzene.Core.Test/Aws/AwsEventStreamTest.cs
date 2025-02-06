@@ -2,7 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;

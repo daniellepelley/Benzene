@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.Middleware.BenzeneClient;
+﻿namespace Benzene.Abstractions.Messages.BenzeneClient;
 
 public interface IBenzeneClientRequest<TMessage>
 {

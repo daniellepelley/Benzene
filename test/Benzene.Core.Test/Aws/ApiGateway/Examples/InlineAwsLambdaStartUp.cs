@@ -2,8 +2,8 @@
 using Autofac;
 using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
-using Benzene.Aws.Core;
-using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
 
 namespace Benzene.Test.Aws.ApiGateway.Examples;
 

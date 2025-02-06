@@ -2,7 +2,7 @@
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Response;
+using Benzene.Core.MessageHandlers.Response;
 
 namespace Benzene.Xml;
 

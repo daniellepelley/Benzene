@@ -4,7 +4,7 @@ using Benzene.Azure.Kafka;
 using Benzene.Azure.Kafka.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Test.Examples;
-using Benzene.Tools;
+using Benzene.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;

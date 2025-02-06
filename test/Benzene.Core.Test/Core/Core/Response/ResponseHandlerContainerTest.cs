@@ -1,11 +1,11 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Messages;
-using Benzene.Core.Response;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Xunit;

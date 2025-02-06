@@ -10,13 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Benzene.Abstractions.Messages\Benzene.Abstractions.Messages.csproj" />
-    <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
     <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
-    <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
-    <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
-    <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
-    <ProjectReference Include="..\Benzene.TempCore\Benzene.TempCore.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,19 +1,18 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using Benzene.Core.Results;
-using Benzene.Results;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Examples.App.Data;
 
 public static class Extensions
 {
-    public static Task<IClientResult<T>> AsTask<T>(this IClientResult<T> source)
+    public static Task<IBenzeneResult<T>> AsTask<T>(this IBenzeneResult<T> source)
     {
         return Task.FromResult(source);
     }
 
-    public static Task<IClientResult> AsTask(this IClientResult source)
+    public static Task<IBenzeneResult> AsTask(this IBenzeneResult source)
     {
         return Task.FromResult(source);
     }

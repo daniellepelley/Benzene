@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Info;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Sqs.Consumer;

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.Messages.Mappers;
 
 namespace Benzene.Aws.Lambda.Sqs;
 

@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
     <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />

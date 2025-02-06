@@ -1,11 +1,11 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.Results;
+using Benzene.Core.MessageHandlers;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
-using Benzene.Results;
 
 namespace Benzene.Examples.App.Handlers;
 
@@ -20,7 +20,7 @@ public class UpdateOrderMessageHandler : IMessageHandler<UpdateOrderMessage, Ord
         _orderService = orderService;
     }
 
-    public async Task<IServiceResult<OrderDto>> HandleAsync(UpdateOrderMessage request)
+    public async Task<IBenzeneResult<OrderDto>> HandleAsync(UpdateOrderMessage request)
     {
         return await _orderService.UpdateAsync(request);
     }

@@ -6,6 +6,8 @@ public class CoreRegistrations : RegistrationsBase
 {
     public CoreRegistrations()
     {
-        // Add(".AddMessageHandlers(<assemblies>)", x => x.AddMessageHandlers(AppDomain.CurrentDomain.GetAssemblies()));
+        Add(".AddBenzene()", Extensions.AddBenzene);
+        Add(".AddBenzeneMessage()", Extensions.AddBenzeneMessage);
+        Add(".SetApplicationInfo(<name>, <version>, <description>)", x => x.SetApplicationInfo("", "", ""));
     }
 }

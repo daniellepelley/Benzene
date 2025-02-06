@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Middleware;
 using Benzene.AspNet.Core;
-using Benzene.Core.BenzeneMessage;
+using Benzene.Core.Messages.BenzeneMessage;
 
 namespace Benzene.Example.Grpc.Services
 {

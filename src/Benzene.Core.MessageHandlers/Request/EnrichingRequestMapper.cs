@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Helper;
 
-namespace Benzene.Core.Request;
+namespace Benzene.Core.MessageHandlers.Request;
 
 public class EnrichingRequestMapper<TContext> : IRequestMapper<TContext>
 {

@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers.Mappers;
+﻿using Benzene.Abstractions.Messages.Mappers;
 
 namespace Benzene.SelfHost.Http;
 

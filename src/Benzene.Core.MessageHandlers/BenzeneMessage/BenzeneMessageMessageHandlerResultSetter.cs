@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
 
-namespace Benzene.Core.BenzeneMessage;
+namespace Benzene.Core.MessageHandlers.BenzeneMessage;
 
 public class BenzeneMessageMessageHandlerResultSetter : ResponseMessageMessageHandlerResultSetterBase<BenzeneMessageContext>
 {

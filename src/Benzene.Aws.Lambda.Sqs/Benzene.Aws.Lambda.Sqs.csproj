@@ -12,7 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
+		<ProjectReference Include="..\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
 	</ItemGroup>
 
 </Project>

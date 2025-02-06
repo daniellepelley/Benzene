@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Results;
-using Benzene.Core.Results;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Data.Pagination;
 using Benzene.Examples.App.Model;
@@ -19,18 +18,18 @@ public class OrderService : IOrderService
         _orderDbClient = orderDbClient;
     }
 
-    public async Task<IServiceResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
+    public async Task<IBenzeneResult<OrderDto[]>> GetAllAsync(PaginationMessage pagination)
     {
         var databaseResult = await _orderDbClient.GetAllAsync(pagination.AsPagination());
-        return databaseResult.AsServiceResult();
+        return databaseResult;
     }
 
-    public Task<IServiceResult<OrderDto>> GetAsync(Guid id)
+    public Task<IBenzeneResult<OrderDto>> GetAsync(Guid id)
     {
-        return _orderDbClient.GetAsync(id).AsServiceResult();
+        return _orderDbClient.GetAsync(id);
     }
 
-    public async Task<IServiceResult<OrderDto>> SaveAsync(CreateOrderMessage value)
+    public async Task<IBenzeneResult<OrderDto>> SaveAsync(CreateOrderMessage value)
     {
         var orderDto = new OrderDto
         {
@@ -41,19 +40,19 @@ public class OrderService : IOrderService
 
         var databaseResult = await _orderDbClient.CreateAsync(orderDto);
 
-        if (databaseResult.Status == ClientResultStatus.Created)
+        if (databaseResult.Status == BenzeneResultStatus.Created)
         {
-            return ServiceResult.Created(orderDto);
+            return BenzeneResult.Created(orderDto);
         }
 
-        return databaseResult.AsServiceResult<OrderDto>();
+        return databaseResult.As<OrderDto>();
     }
 
-    public async Task<IServiceResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
+    public async Task<IBenzeneResult<OrderDto>> UpdateAsync(UpdateOrderMessage updateOrderMessage)
     {
         var result = await _orderDbClient.GetAsync(Guid.Parse(updateOrderMessage.Id));
 
-        if (result.Status == ClientResultStatus.Ok)
+        if (result.Status == BenzeneResultStatus.Ok)
         {
             var orderDto = result.Payload;
 
@@ -62,20 +61,20 @@ public class OrderService : IOrderService
 
             var resultData = await _orderDbClient.UpdateAsync(orderDto);
 
-            return resultData.AsServiceResult();
+            return resultData;
         }
 
-        if (result.Status == ClientResultStatus.NotFound)
+        if (result.Status == BenzeneResultStatus.NotFound)
         {
-            return ServiceResult.NotFound<OrderDto>();
+            return BenzeneResult.NotFound<OrderDto>();
         }
 
-        return ServiceResult.ServiceUnavailable<OrderDto>();
+        return BenzeneResult.ServiceUnavailable<OrderDto>();
     }
 
-    public async Task<IServiceResult<Guid>> DeleteAsync(Guid id)
+    public async Task<IBenzeneResult<Guid>> DeleteAsync(Guid id)
     {
         var result = await _orderDbClient.DeleteAsync(id);
-        return result.AsServiceResult();
+        return result;
     }
 }

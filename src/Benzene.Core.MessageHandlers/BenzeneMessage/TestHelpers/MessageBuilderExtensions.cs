@@ -1,10 +1,9 @@
 ﻿using Benzene.Abstractions;
-using Benzene.Abstractions.Serialization;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Serialization;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Messages.BenzeneMessage.TestHelpers;
 
-namespace Benzene.Core.BenzeneMessage.TestHelpers;
+namespace Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
 
 public static class MessageBuilderExtensions
 {

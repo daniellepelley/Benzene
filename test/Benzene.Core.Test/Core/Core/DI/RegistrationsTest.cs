@@ -2,8 +2,8 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.ApiGateway;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Xunit;
 
@@ -47,8 +47,8 @@ public class RegistrationsTest
         Assert.Contains("MessageRouter<>", result);
         // Assert.Contains(".UsingBenzene(x => x.AddMessageHandlers(<assemblies>))", benzeneResult);
 
-        Assert.Contains("Benzene.Aws.Core", result);
-        Assert.Contains(".UsingBenzene(x => x.AddAwsMessageHandlers(<assemblies>))", result);
+        Assert.Contains("Benzene.Aws.Lambda.Core", result);
+        Assert.Contains(".UsingBenzene(x => x.AddMessageHandlers(<assemblies>))", result);
     }
     
     [Fact]

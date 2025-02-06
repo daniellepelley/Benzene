@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Info;
 using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Core.Info;
+namespace Benzene.Core.MessageHandlers.Info;
 
 public class TransportMiddlewarePipeline<TContext> : IMiddlewarePipeline<TContext>
 {

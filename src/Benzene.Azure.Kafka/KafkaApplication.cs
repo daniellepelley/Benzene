@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Info;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Microsoft.Azure.WebJobs.Extensions.Kafka;
 

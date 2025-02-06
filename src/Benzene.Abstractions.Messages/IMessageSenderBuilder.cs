@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Middleware.BenzeneClient;
+﻿using Benzene.Abstractions.Messages.BenzeneClient;
 using Void = Benzene.Results.Void;
 
 namespace Benzene.Abstractions.Middleware;

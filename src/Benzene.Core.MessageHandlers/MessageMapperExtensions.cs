@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Benzene.Abstractions.MessageHandlers.Mappers;
+﻿using Benzene.Abstractions.Messages.Mappers;
 
-namespace Benzene.Core.Mappers;
+namespace Benzene.Core.MessageHandlers;
 
 public static class MessageMapperExtensions
 {

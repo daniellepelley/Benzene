@@ -1,8 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Core.Helper;
-using Benzene.Core.Response;
+using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Core.MessageHandlers.Response;
 
 namespace Benzene.Xml;
 
@@ -21,7 +20,7 @@ public class XmlSerializationResponseHandler<TContext> : ISerializationResponseH
 
     public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult, IBodySerializer bodySerializer)
     {
-        if (!DictionaryUtils.KeyEquals(_messageHeadersGetter.GetHeaders(context), _contentType,
+        if (!KeyEquals(_messageHeadersGetter.GetHeaders(context), _contentType,
                 _applicationXml))
         {
             return;
@@ -30,4 +29,15 @@ public class XmlSerializationResponseHandler<TContext> : ISerializationResponseH
         _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(new XmlSerializer(), messageHandlerResult));
         _benzeneResponseAdapter.SetContentType(context, _applicationXml);
     }
+
+    public static bool KeyEquals(IDictionary<string, string> dictionary, string key, string value)
+    {
+        if (dictionary != null && dictionary.TryGetValue(key, out var keyValue))
+        {
+            return keyValue == value;
+        }
+
+        return false;
+    }
+
 }

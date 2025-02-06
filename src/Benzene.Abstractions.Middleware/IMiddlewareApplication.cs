@@ -7,7 +7,7 @@ public interface IMiddlewareApplication<TEvent>
     Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory);
 }
 
-public interface IMiddlewareApplication<TEvent, TResult>
+public interface IMiddlewareApplication<TRequest, TResponse>
 {
-    Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory);
+    Task<TResponse> HandleAsync(TRequest @event, IServiceResolverFactory serviceResolverFactory);
 }

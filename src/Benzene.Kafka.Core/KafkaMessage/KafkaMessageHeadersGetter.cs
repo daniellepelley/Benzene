@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.Messages.Mappers;
 
 namespace Benzene.Kafka.Core.KafkaMessage;
 

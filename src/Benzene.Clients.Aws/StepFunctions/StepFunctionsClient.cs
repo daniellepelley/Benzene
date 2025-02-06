@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
 using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Results;
 

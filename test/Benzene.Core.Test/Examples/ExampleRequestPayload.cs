@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Xml.Serialization;
-using Benzene.Core.Filters;
+using Benzene.Core.MessageHandlers.Filters;
 
 namespace Benzene.Test.Examples;
 

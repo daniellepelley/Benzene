@@ -1,5 +1,5 @@
 ﻿using Amazon.Lambda.SQSEvents;
-using Benzene.Aws.Core;
+using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Lambda.Sqs.TestHelpers;
 using Benzene.Core.DI;
@@ -9,6 +9,7 @@ using Benzene.Diagnostics;
 using Benzene.Integration.Test.Fixtures;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
+using Benzene.Testing;
 using Benzene.Tools;
 using Benzene.Tools.Aws;
 using Benzene.Zipkin;

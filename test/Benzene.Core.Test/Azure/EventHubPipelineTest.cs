@@ -5,7 +5,7 @@ using Benzene.Azure.EventHub.Function.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
-using Benzene.Tools;
+using Benzene.Testing;
 using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

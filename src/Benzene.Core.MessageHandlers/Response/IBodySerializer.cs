@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Core.Response;
+namespace Benzene.Core.MessageHandlers.Response;
 
 public interface IBodySerializer
 {

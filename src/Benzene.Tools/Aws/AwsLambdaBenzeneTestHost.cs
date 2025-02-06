@@ -3,7 +3,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
 using Amazon.XRay.Recorder.Core;
 using Benzene.Abstractions;
-using Benzene.Aws.Core;
+using Benzene.Aws.Lambda.Core;
 using Newtonsoft.Json;
 
 namespace Benzene.Tools.Aws;

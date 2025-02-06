@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions.Middleware;
 using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers;
 using Benzene.Kafka.Core.KafkaMessage;
 using Benzene.SelfHost;
 using Confluent.Kafka;

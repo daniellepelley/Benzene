@@ -10,11 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.11.1" />
+    <PackageReference Include="Azure.Identity" Version="1.11.4" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
     <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />

@@ -1,8 +1,8 @@
-﻿using Benzene.Abstractions.MessageHandlers.Mappers;
-using Benzene.Abstractions.MessageHandlers.Request;
+﻿using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Core.Request;
+namespace Benzene.Core.MessageHandlers.Request;
 
 public class RequestMapper<TContext> : IRequestMapper<TContext>
 {

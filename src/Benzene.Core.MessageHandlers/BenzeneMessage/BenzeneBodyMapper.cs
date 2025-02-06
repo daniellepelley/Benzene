@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages;
-using Benzene.Core.BenzeneMessage;
 using Benzene.Core.Messages;
+using Benzene.Core.Messages.BenzeneMessage;
 
 namespace Benzene.Core.MessageHandlers.BenzeneMessage;
 

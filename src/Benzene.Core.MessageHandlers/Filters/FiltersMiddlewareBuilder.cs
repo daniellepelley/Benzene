@@ -2,7 +2,7 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Core.Filters;
+namespace Benzene.Core.MessageHandlers.Filters;
 
 public class FiltersMiddlewareBuilder : IHandlerMiddlewareBuilder
 {

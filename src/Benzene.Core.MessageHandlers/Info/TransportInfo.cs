@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Info;
 
-namespace Benzene.Core.Info;
+namespace Benzene.Core.MessageHandlers.Info;
 
 public class TransportInfo : ITransportInfo
 {

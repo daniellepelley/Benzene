@@ -2,7 +2,7 @@
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Core.Response;
+namespace Benzene.Core.MessageHandlers.Response;
 
 public class BodySerializer<TContext> : IBodySerializer
 {

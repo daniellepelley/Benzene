@@ -10,7 +10,7 @@ using Benzene.Http.Routing;
 using Benzene.Test.Autogen.CodeGen.Helpers;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Benzene.Test.Autogen.Schema.OpenApi;
-using Benzene.Tools;
+using Benzene.Testing;
 using Xunit;
 
 namespace Benzene.Test.Autogen.CodeGen.LambdaTestTool;

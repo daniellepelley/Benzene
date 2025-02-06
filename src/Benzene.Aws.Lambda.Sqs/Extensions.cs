@@ -1,6 +1,6 @@
 ﻿using System;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Lambda.Sqs;

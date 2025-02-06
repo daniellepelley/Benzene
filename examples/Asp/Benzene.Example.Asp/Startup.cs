@@ -1,12 +1,8 @@
 using Benzene.AspNet.Core;
-using Benzene.Core.Correlation;
-using Benzene.Core.DI;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
-using Benzene.FluentValidation;
-using Benzene.Http.Cors;
 using Benzene.Microsoft.Dependencies;
 using FluentValidation;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -18,14 +14,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
-using System;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandling;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.Messages;
 using Benzene.Core.Middleware;
-using Benzene.Core.Results;
+using Benzene.Diagnostics.Correlation;
+using Benzene.FluentValidation;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -66,17 +61,9 @@ public class Startup
         services.AddScoped<SpecMessageHandler>();
         services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
 
-        services
-            .UsingBenzene(x => x
-                .AddBenzene()
-                .AddMessageHandlers()
-                .AddCorrelationId()
-                .AddAspNetMessageHandlers()
-            );
+        services.UsingBenzene();
 
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
-        services.AddSingleton<IMiddlewarePipelineBuilder<AspNetContext>>(
-            new MiddlewarePipelineBuilder<AspNetContext>(new MicrosoftBenzeneServiceContainer(services)));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -92,9 +79,8 @@ public class Startup
 
         app.UseAuthorization();
 
-        app.UseBenzene2(benzene => benzene
+        app.UseBenzene(benzene => benzene
             .UseAspNet(asp => asp
-                .UseProcessResponseIfHandled()
                 .UseCorrelationId()
                 .UseSpec()
                 // .UseCors(new CorsSettings

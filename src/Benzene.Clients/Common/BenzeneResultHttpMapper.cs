@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Benzene.Abstractions.Results;
 using Benzene.Results;
 
 namespace Benzene.Clients.Common;

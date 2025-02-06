@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.Core;
-using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
 
 namespace Benzene.Aws.Lambda.Sqs;
 

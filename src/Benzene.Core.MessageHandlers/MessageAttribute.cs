@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.MessageHandling;
+﻿namespace Benzene.Core.MessageHandlers;
 
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]

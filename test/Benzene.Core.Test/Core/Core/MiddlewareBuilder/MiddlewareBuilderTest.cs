@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.DI;
-using Benzene.Core.BenzeneMessage;
+using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;

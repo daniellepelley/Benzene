@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Identity" Version="1.11.1" />
+		<PackageReference Include="Azure.Identity" Version="1.11.4" />
 		<PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
 		<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Kafka" Version="3.9.0" />
 	</ItemGroup>

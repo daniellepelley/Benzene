@@ -1,4 +1,5 @@
-﻿using Benzene.HealthChecks.Core;
+﻿using Benzene.Abstractions.Results;
+using Benzene.HealthChecks.Core;
 using Benzene.Results;
 
 namespace Benzene.HealthChecks;
