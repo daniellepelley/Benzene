@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using Benzene.Abstractions.Messages.Mappers;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public class KafkaMessageHeadersGetter : IMessageHeadersGetter<KafkaContext>
 {

@@ -2,7 +2,7 @@
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
+namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 
 public class ApiGatewayCustomAuthorizerApplication : MiddlewareApplication<APIGatewayCustomAuthorizerRequest, ApiGatewayCustomAuthorizerContext, APIGatewayCustomAuthorizerResponse>
 {

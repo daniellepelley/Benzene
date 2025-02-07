@@ -4,7 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public class KafkaApplication : MiddlewareMultiApplication<KafkaEvent, KafkaContext>
 {

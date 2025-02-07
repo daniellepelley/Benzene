@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.Sns.TestHelpers;
 using Benzene.Aws.Lambda.Sqs.TestHelpers;
-using Benzene.Aws.Sns.TestHelpers;
 using Benzene.CodeGen.Core;
 using Benzene.CodeGen.LambdaTestTool;
 using Benzene.CodeGen.Markdown;

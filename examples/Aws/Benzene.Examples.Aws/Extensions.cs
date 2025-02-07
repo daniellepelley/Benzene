@@ -1,15 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.Mappers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Results;
 using Benzene.Aws.ApiGateway;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.Mappers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Http;
 using Newtonsoft.Json;
@@ -92,24 +87,24 @@ public static class Extensions
     //     }));
     // }
 
-    public static IMiddlewarePipelineBuilder<THasResponse> UseLogResult<THasResponse>(
-        this IMiddlewarePipelineBuilder<THasResponse> app) where THasResponse : IHasMessageResult
-    {
-        return app.Use(resolver => new FuncWrapperMiddleware<THasResponse>("LogResult", async (context, next) =>
-        {
-            var logger = resolver.GetService<IBenzeneLogger>();
-            await next();
-
-            var result = context.MessageResult;
-
-            if (result == null)
-            {
-                return;
-            }
-
-            logger.LogInformation("Lambda Response status {response}", result.Status);
-        }));
-    }
+    // public static IMiddlewarePipelineBuilder<THasResponse> UseLogResult<THasResponse>(
+    //     this IMiddlewarePipelineBuilder<THasResponse> app) where THasResponse : IHasMessageResult
+    // {
+    //     return app.Use(resolver => new FuncWrapperMiddleware<THasResponse>("LogResult", async (context, next) =>
+    //     {
+    //         var logger = resolver.GetService<IBenzeneLogger>();
+    //         await next();
+    //
+    //         var result = context.MessageResult;
+    //
+    //         if (result == null)
+    //         {
+    //             return;
+    //         }
+    //
+    //         logger.LogInformation("Lambda Response status {response}", result.Status);
+    //     }));
+    // }
 
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHttpToBenzeneMessage(
         this IMiddlewarePipelineBuilder<ApiGatewayContext> app, IMiddlewarePipelineBuilder<BenzeneMessageContext> middlewarePipelineBuilder)
@@ -127,8 +122,8 @@ public static class Extensions
                 await pipeline.HandleAsync(benzeneMessageContext, resolver);
                 context.ApiGatewayProxyResponse = new APIGatewayProxyResponse
                 {
-                    StatusCode = Convert.ToInt32(httpStatusCodeMapper.Map(benzeneMessageContext.MessageResult.Status)),
-                    Body = JsonConvert.SerializeObject(benzeneMessageContext.MessageResult.Payload)
+                    StatusCode = Convert.ToInt32(httpStatusCodeMapper.Map(benzeneMessageContext.BenzeneMessageResponse.StatusCode)),
+                    Body = benzeneMessageContext.BenzeneMessageResponse.Body
                 };
             }
             else

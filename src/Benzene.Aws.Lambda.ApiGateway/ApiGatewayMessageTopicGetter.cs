@@ -3,7 +3,7 @@ using Benzene.Abstractions.Messages;
 using Benzene.Core.Messages;
 using Benzene.Http.Routing;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayMessageTopicGetter : IMessageTopicGetter<ApiGatewayContext>
 {

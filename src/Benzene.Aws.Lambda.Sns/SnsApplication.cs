@@ -4,7 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Lambda.Sns;
 
 public class SnsApplication : MiddlewareMultiApplication<SNSEvent, SnsRecordContext>
 {

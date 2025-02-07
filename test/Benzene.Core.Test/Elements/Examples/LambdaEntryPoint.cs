@@ -1,10 +1,11 @@
 ﻿using Benzene.Abstractions.Middleware;
 using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
+using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
-using Benzene.Aws.Sns;
 using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
 using Benzene.Diagnostics.Correlation;

@@ -5,7 +5,7 @@ using Benzene.Core.Helper;
 using Benzene.Http;
 using Benzene.Http.Routing;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayRequestEnricher : IRequestEnricher<ApiGatewayContext>
 {

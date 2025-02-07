@@ -1,6 +1,6 @@
 ﻿using Benzene.Core.DI;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayRegistrations : RegistrationsBase
 {

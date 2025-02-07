@@ -2,25 +2,24 @@
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.ApiGateway;
 using Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
-using Benzene.Aws.Core;
-using Benzene.Aws.ApiGateway;
-using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Aws.Core.BenzeneMessage;
 using Benzene.Aws.Kafka;
+using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.Core;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.BenzeneMessage;
+using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Sns;
-using Benzene.Aws.Sqs;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.Correlation;
-using Benzene.Core.Logging;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Diagnostics.Correlation;
 using Benzene.Diagnostics.Timers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
-using Benzene.HealthChecks.Core;
 using Benzene.Serilog.Logging;
 using Benzene.Xml;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using IHealthCheck = Benzene.HealthChecks.Core.IHealthCheck;
 
 namespace Benzene.Examples.Aws;
 
@@ -57,8 +56,7 @@ public class StartUp : AwsLambdaStartUp
                 .UseTimer("benzene-message-application")
                 .UseCorrelationId()
                 // .UseLogContext()
-                .UseLogResult()
-                .UseProcessResponse()
+                // .UseLogResult()
                 .UseXml()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router
@@ -74,7 +72,6 @@ public class StartUp : AwsLambdaStartUp
             .UseTimer("api-gateway-application")
             // .UseLogContext()
             .UseXml()
-            .UseProcessResponse()
             .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
             // .UseSerializer(x => x.Use<XmlSerializer>())
             // .AsHttp(http => http.UseRequestMapping(x => x:w
@@ -98,7 +95,7 @@ public class StartUp : AwsLambdaStartUp
             .UseTimer<SnsRecordContext>("sns-application")
             // .UseTestLogger()
             // .UseLogContext()
-            .UseLogResult()
+            // .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSns()
             .UseXml()
@@ -113,7 +110,7 @@ public class StartUp : AwsLambdaStartUp
             .UseTimer<SqsMessageContext>("sqs-application")
             // .UseTestLogger()
             // .UseLogContext()
-            .UseLogResult()
+            // .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSqs()
             .UseXml()

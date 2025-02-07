@@ -1,8 +1,7 @@
 ﻿using Amazon.Lambda.KafkaEvents;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
 
-
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public class KafkaContext : IHasMessageResult
 {

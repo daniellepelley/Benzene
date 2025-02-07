@@ -1,9 +1,9 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
-using Benzene.Aws.Kafka;
-using Benzene.Aws.Kafka.TestHelpers;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Kafka;
+using Benzene.Aws.Lambda.Kafka.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;

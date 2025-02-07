@@ -4,7 +4,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public static class Extensions
 {

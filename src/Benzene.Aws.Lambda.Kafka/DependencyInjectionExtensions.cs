@@ -5,7 +5,7 @@ using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public static class DependencyInjectionExtensions
 {

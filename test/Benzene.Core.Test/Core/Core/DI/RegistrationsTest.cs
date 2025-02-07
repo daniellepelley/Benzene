@@ -2,6 +2,7 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
@@ -54,10 +55,10 @@ public class RegistrationsTest
     [Fact]
     public void RegistrationTest_Exception_UnableToResolve()
     {
-        var result = RegistrationErrorHandler.CheckException(new Exception("Unable to resolve service for type 'Benzene.Abstractions.MessageHandlers.Mappers.IMessageTopicGetter`1[Benzene.Aws.ApiGateway.ApiGatewayContext]' while attempting to activate 'Benzene.Core.Mappers.MessageGetter`1[Benzene.Aws.ApiGateway.ApiGateway.ApiGatewayContext]'."));
+        var result = RegistrationErrorHandler.CheckException(new Exception("Unable to resolve service for type 'Benzene.Abstractions.MessageHandlers.Mappers.IMessageTopicGetter`1[Benzene.Aws.Lambda.ApiGateway.ApiGatewayContext]' while attempting to activate 'Benzene.Core.Mappers.MessageGetter`1[Benzene.Aws.Lambda.ApiGateway.ApiGatewayContext]'."));
 
-        Assert.Contains("Benzene.Aws.ApiGateway", result);
-        Assert.Contains("Benzene.Abstractions.MessageHandlers.Mappers.IMessageTopicGetter<Benzene.Aws.ApiGateway.ApiGatewayContext>", result);
+        Assert.Contains("Benzene.Aws.Lambda.ApiGateway", result);
+        Assert.Contains("Benzene.Abstractions.MessageHandlers.Mappers.IMessageTopicGetter<Benzene.Aws.Lambda.ApiGateway.ApiGatewayContext>", result);
         Assert.Contains(".UsingBenzene(x => x.AddApiGateway())", result);
     }
 

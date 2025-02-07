@@ -6,7 +6,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Lambda.Sns;
 
 public class SnsLambdaHandler : AwsLambdaMiddlewareRouter<SNSEvent>
 {

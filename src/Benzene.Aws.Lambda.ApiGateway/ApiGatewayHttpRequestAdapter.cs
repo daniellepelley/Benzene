@@ -1,6 +1,6 @@
 ﻿using Benzene.Http;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayHttpRequestAdapter : IHttpRequestAdapter<ApiGatewayContext>
 {

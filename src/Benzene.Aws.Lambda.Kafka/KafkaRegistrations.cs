@@ -1,6 +1,6 @@
 ﻿using Benzene.Core.DI;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public class KafkaRegistrations : RegistrationsBase
 {

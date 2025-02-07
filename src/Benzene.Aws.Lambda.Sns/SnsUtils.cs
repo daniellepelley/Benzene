@@ -1,4 +1,4 @@
-﻿namespace Benzene.Aws.Sns;
+﻿namespace Benzene.Aws.Lambda.Sns;
 
 public static class SnsUtils
 {

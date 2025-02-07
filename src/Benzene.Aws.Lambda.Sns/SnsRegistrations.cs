@@ -1,6 +1,6 @@
 ﻿using Benzene.Core.DI;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Lambda.Sns;
 
 public class SnsRegistrations : RegistrationsBase
 {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Amazon.Lambda.SNSEvents;
-using Benzene.Aws.Sns;
+using Benzene.Aws.Lambda.Sns;
 using Benzene.Core.MessageHandlers;
 using Xunit;
 using Constants = Benzene.Core.Constants;

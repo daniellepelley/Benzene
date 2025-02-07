@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Benzene.Abstractions.MessageHandlers.Request;
-using Benzene.Aws.Sns;
+using Benzene.Aws.Lambda.Sns;
 
 namespace Benzene.Test.Aws.Sns.Examples;
 

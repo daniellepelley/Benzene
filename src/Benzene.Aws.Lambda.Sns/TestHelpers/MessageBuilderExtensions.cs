@@ -5,7 +5,7 @@ using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.Sns.TestHelpers;
+namespace Benzene.Aws.Lambda.Sns.TestHelpers;
 
 public static class MessageBuilderExtensions
 {

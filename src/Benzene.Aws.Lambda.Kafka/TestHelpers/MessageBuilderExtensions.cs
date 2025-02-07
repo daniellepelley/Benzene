@@ -7,7 +7,7 @@ using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.Kafka.TestHelpers;
+namespace Benzene.Aws.Lambda.Kafka.TestHelpers;
 
 public static class MessageBuilderExtensions
 {

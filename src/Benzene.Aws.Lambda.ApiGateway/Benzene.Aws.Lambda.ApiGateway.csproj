@@ -22,9 +22,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
 	  <ProjectReference Include="..\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
-	  <ProjectReference Include="..\Benzene.HealthChecks.Core\Benzene.HealthChecks.Core.csproj" />
 	  <ProjectReference Include="..\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
 	  <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
 	</ItemGroup>
-
 </Project>

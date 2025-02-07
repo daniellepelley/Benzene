@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway;
 
 namespace Benzene.Test.Aws.ApiGateway.Examples;
 

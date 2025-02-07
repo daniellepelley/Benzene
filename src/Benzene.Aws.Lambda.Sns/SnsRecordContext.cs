@@ -1,7 +1,7 @@
 ﻿using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Lambda.Sns;
 
 public class SnsRecordContext : IHasMessageResult
 {

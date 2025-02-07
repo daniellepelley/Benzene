@@ -2,7 +2,7 @@
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayApplication : MiddlewareApplication<APIGatewayProxyRequest, ApiGatewayContext, APIGatewayProxyResponse>
 {

@@ -1,7 +1,7 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Http;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayContext : IHttpContext
 {

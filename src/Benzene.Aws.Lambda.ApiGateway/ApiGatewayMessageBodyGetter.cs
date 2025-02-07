@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.Messages.Mappers;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayMessageBodyGetter : IMessageBodyGetter<ApiGatewayContext>
 {

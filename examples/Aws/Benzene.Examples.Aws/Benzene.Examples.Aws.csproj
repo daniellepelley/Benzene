@@ -32,10 +32,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.ApiGateway\Benzene.Aws.ApiGateway.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Core\Benzene.Aws.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Kafka\Benzene.Aws.Kafka.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Sns\Benzene.Aws.Sns.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Kafka\Benzene.Aws.Lambda.Kafka.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sns\Benzene.Aws.Lambda.Sns.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
@@ -45,6 +46,9 @@
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Benzene.Core.Messages">
+      <HintPath>..\..\..\src\Benzene.Core.Messages\obj\Debug\net8.0\ref\Benzene.Core.Messages.dll</HintPath>
+    </Reference>
     <Reference Include="Serilog">
       <HintPath>..\..\..\..\..\.nuget\packages\serilog\2.11.0\lib\net5.0\Serilog.dll</HintPath>
     </Reference>

@@ -1,6 +1,6 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 
-namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
+namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 
 public class ApiGatewayCustomAuthorizerContext 
 {

@@ -7,7 +7,7 @@ using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Lambda.Sns;
 
 public static class DependencyInjectionExtensions
 {

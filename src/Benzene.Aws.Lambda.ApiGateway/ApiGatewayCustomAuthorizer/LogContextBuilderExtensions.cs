@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.Logging;
 using Benzene.Core.Logging;
 
-namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
+namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 
 public static class LogContextBuilderExtensions
 {

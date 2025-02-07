@@ -2,7 +2,7 @@
 using System.Linq;
 using Benzene.Abstractions.Messages.Mappers;
 
-namespace Benzene.Aws.Sns;
+namespace Benzene.Aws.Lambda.Sns;
 
 public class SnsMessageHeadersGetter : IMessageHeadersGetter<SnsRecordContext>
 {

@@ -15,12 +15,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
 	  <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
 	  <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
-	  <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
-	  <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
 	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="Benzene.Core.Messages">
+	    <HintPath>..\Benzene.Core.Messages\obj\Debug\net8.0\ref\Benzene.Core.Messages.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 </Project>

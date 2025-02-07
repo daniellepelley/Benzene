@@ -2,7 +2,7 @@
 using Benzene.Abstractions.Messages;
 using Benzene.Core.Messages;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public class KafkaMessageTopicGetter : IMessageTopicGetter<KafkaContext>
 {

@@ -2,7 +2,7 @@
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 
-namespace Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
+namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 
 public static class Extensions
 {

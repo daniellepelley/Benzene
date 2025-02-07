@@ -16,8 +16,9 @@ using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Constants = Benzene.Aws.Lambda.ApiGateway.Constants;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public static class DependencyInjectionExtensions
 {

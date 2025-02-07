@@ -6,6 +6,7 @@ using Autofac;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Autofac;
 using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.MessageHandlers;

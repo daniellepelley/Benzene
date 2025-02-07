@@ -5,7 +5,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
 {

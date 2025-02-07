@@ -3,7 +3,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.Kafka;
+namespace Benzene.Aws.Lambda.Kafka;
 
 public static class Extensions
 {

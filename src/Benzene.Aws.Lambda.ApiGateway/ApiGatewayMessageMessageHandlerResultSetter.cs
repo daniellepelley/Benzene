@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway;
 
 public class ApiGatewayMessageMessageHandlerResultSetter: ResponseMessageMessageHandlerResultSetterBase<ApiGatewayContext>
 {
