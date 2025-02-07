@@ -135,7 +135,8 @@ public static class DictionaryUtils
             if (fields.Any())
             {
                 source = EnsureNotNull(source);
-                propertyInfo.SetValue(source, fields.First().Value);
+                var value = GetValue(fields.First().Value, propertyInfo.PropertyType);
+                propertyInfo.SetValue(source, value);
             }
         }
 
@@ -147,8 +148,13 @@ public static class DictionaryUtils
         return source ?? Activator.CreateInstance<T>();
     }
 
-    // public class RootWrapper<T>
-    // {
-    //     public T Root { get; set; }
-    // }
+    private static object GetValue(object originalValue, Type propertyType)
+    {
+        if (originalValue.GetType() != propertyType)
+        {
+            return Convert.ChangeType(originalValue, propertyType);
+        }
+
+        return originalValue;
+    }
 }

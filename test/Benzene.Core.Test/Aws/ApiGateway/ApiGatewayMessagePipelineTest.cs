@@ -14,6 +14,7 @@ using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Middleware;
+using Benzene.FluentValidation;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Http.Routing;
@@ -35,7 +36,7 @@ public class ApiGatewayMessagePipelineTest
 {
     private static APIGatewayProxyRequest CreateRequest()
     {
-        return HttpBuilder.Create("GET", "/example", Defaults.MessageAsObject)
+        return HttpBuilder.Create("GET", Defaults.Path, Defaults.MessageAsObject)
             .WithHeader("x-correlation-id", Guid.NewGuid().ToString())
             .AsApiGatewayRequest();
     }
@@ -60,6 +61,53 @@ public class ApiGatewayMessagePipelineTest
         Assert.NotNull(response.Body);
         Assert.Equal(200, response.StatusCode);
     }
+
+    [Fact]
+    public async Task SendNullBody()
+    {
+        var host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .ConfigureServiceCollection()
+            )
+            .Configure(app => app
+                .UseApiGateway(apiGateway => apiGateway
+                    .UseMessageHandlers(x => x.UseFluentValidation())
+                )
+            ).BuildHost();
+
+        var request = HttpBuilder.Create("GET", Defaults.PathWithParam.Replace("{id}", Defaults.Id.ToString()))
+                    .WithHeader("x-correlation-id", Guid.NewGuid().ToString())
+                    .AsApiGatewayRequest();
+        var response = await host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.NotNull(response.Body);
+        Assert.Equal(200, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SendNullBody_TypeError()
+    {
+        var host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .ConfigureServiceCollection()
+            )
+            .Configure(app => app
+                .UseApiGateway(apiGateway => apiGateway
+                    .UseMessageHandlers(x => x.UseFluentValidation())
+                )
+            ).BuildHost();
+
+        var request = HttpBuilder.Create("GET", Defaults.PathWithParam.Replace("{id}", "wrong-type"))
+                    .WithHeader("x-correlation-id", Guid.NewGuid().ToString())
+                    .AsApiGatewayRequest();
+        var response = await host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.NotNull(response.Body);
+        Assert.Equal(400, response.StatusCode);
+    }
+
 
     [Fact]
     public async Task Send_Xml()
@@ -204,8 +252,8 @@ public class ApiGatewayMessagePipelineTest
                         x.AddBenzene();
                         x.AddMessageHandlers(assembly);
                     });
-                    services.RegisterType<BenzeneMessageGetter>();
-                    services.RegisterInstance(Mock.Of<IExampleService>());
+                services.RegisterType<BenzeneMessageGetter>();
+                services.RegisterInstance(Mock.Of<IExampleService>());
 
             })
             .Configure(app => app

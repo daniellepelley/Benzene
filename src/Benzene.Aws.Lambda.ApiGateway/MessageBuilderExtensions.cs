@@ -18,7 +18,7 @@ public static class MessageBuilderExtensions
         {
             HttpMethod = source.Method,
             Path = source.Path,
-            Body = serializer.Serialize(source.Message),
+            Body = source.Message != null ? serializer.Serialize(source.Message) : null,
             Headers = source.Headers
         };
     }

@@ -16,10 +16,13 @@ public class ReflectionHttpEndpointFinderTest
 
         var findRoutes = httpEndpointFinder.FindDefinitions();
 
-        var exampleRoute = findRoutes.First(x => x.Topic == Defaults.Topic);
+        var exampleRoutes = findRoutes.Where(x => x.Topic == Defaults.Topic).ToArray();
         
-        Assert.Equal("GET", exampleRoute.Method);
-        Assert.Equal("/example", exampleRoute.Path);
+        Assert.Equal("GET", exampleRoutes[0].Method);
+        Assert.Equal("/example/{id}", exampleRoutes[0].Path);
+        
+        Assert.Equal("GET", exampleRoutes[1].Method);
+        Assert.Equal("/example", exampleRoutes[1].Path);
     }
     
     [Fact]

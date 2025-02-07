@@ -7,6 +7,7 @@ using Benzene.Results;
 
 namespace Benzene.Test.Examples;
 
+[HttpEndpoint(Defaults.Method, Defaults.PathWithParam)]
 [HttpEndpoint(Defaults.Method, Defaults.Path)]
 [Message(Defaults.Topic)]
 public class ExampleMessageHandler : IMessageHandler<ExampleRequestPayload, Void>

@@ -6,6 +6,7 @@ public static class Defaults
     public const string TopicNoResponse = "example-no-response";
     public const string TopicWithGuid = "example-guid";
     public const string Path = "/example";
+    public const string PathWithParam = "/example/{id}";
     public const string PathNoResponse = "/example-no-response";
     public const string Method = "GET";
     public const string Version2 = "2.0";
