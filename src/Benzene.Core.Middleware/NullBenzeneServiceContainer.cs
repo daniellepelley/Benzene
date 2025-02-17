@@ -11,7 +11,7 @@ public class NullBenzeneServiceContainer : IBenzeneServiceContainer
 
     public bool IsTypeRegistered(Type type)
     {
-        throw new NotImplementedException();
+        return true;
     }
 
     public IBenzeneServiceContainer AddScoped<TImplementation>() where TImplementation : class

@@ -25,20 +25,20 @@ public class HttpContextConverter<TRequest, TResponse> : IContextConverter<IBenz
         _serializer = serializer;
     }
 
-    public HttpSendMessageContext CreateRequest(IBenzeneClientContext<TRequest, TResponse> contextIn)
+    public Task<HttpSendMessageContext> CreateRequestAsync(IBenzeneClientContext<TRequest, TResponse> contextIn)
     {
-        return new HttpSendMessageContext(new HttpRequestMessage
+        return Task.FromResult(new HttpSendMessageContext(new HttpRequestMessage
         {
             Content = new StringContent(_serializer.Serialize(contextIn.Request.Message), Encoding.UTF8, "application/json"),
             RequestUri = new Uri(_path),
             Method = new HttpMethod(_verb)
-        });
+        }));
     }
 
-    public void MapResponse(IBenzeneClientContext<TRequest, TResponse> contextIn, HttpSendMessageContext contextOut)
+    public async Task MapResponseAsync(IBenzeneClientContext<TRequest, TResponse> contextIn, HttpSendMessageContext contextOut)
     {
-        var body = contextOut.Response.Content.ReadAsStringAsync().Result;
-        var response = _serializer.Deserialize<TResponse>(body);
-        contextIn.Response = contextOut.Response.StatusCode.Convert<TResponse>(response);
+        var body = await contextOut.Response.Content.ReadAsStringAsync();
+        var response = _serializer.Deserialize<TResponse>(body)!;
+        contextIn.Response = contextOut.Response.StatusCode.Convert(response);
     }
 }

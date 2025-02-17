@@ -6,12 +6,11 @@ public class NullServiceResolver : IServiceResolver
 {
     public void Dispose()
     {
-        throw new NotImplementedException();
     }
 
     public T GetService<T>() where T : class
     {
-        throw new NotImplementedException();
+        return default!;
     }
 
     public T? TryGetService<T>() where T : class

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Middleware;
+using Benzene.Core.Logging;
 
-namespace Benzene.Core.Logging;
+namespace Benzene.Core.Middleware;
 
 public static class LoggerExtensions
 {

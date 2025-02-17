@@ -429,9 +429,9 @@ public class ConverterMiddleware<TContextIn, TContextOut> : IMiddleware<TContext
 
     public async Task HandleAsync(TContextIn context, Func<Task> next)
     {
-        var contextOut = _converter.CreateRequest(context);
+        var contextOut = await _converter.CreateRequestAsync(context);
         await _middlewarePipeline.HandleAsync(contextOut, _serviceResolver);
-        _converter.MapResponse(context, contextOut);
+        await _converter.MapResponseAsync(context, contextOut);
     }
 }
 
@@ -450,21 +450,22 @@ public class BenzeneMessageContextConverter<TContext> : IContextConverter<TConte
         _messageBodyGetter = messageBodyGetter;
     }
 
-    public BenzeneMessageContext CreateRequest(TContext contextIn)
+    public Task<BenzeneMessageContext> CreateRequestAsync(TContext contextIn)
     {
-        return new BenzeneMessageContext(new BenzeneMessageRequest
+        return Task.FromResult(new BenzeneMessageContext(new BenzeneMessageRequest
         {
             Topic = _messageTopicGetter?.GetTopic(contextIn)?.Id, 
             Body = _messageBodyGetter?.GetBody(contextIn),
             Headers = _messageHeadersGetter.GetHeaders(contextIn),
-        });
+        }));
     }
 
-    public void MapResponse(TContext contextIn, BenzeneMessageContext contextOut)
+    public Task MapResponseAsync(TContext contextIn, BenzeneMessageContext contextOut)
     {
         _messageHandlerResultSetter.SetResultAsync(contextIn,
             new MessageHandlerResult(new Topic(contextOut.BenzeneMessageRequest.Topic),
                 MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.BenzeneMessageResponse.StatusCode)));
+        return Task.CompletedTask;
     }
 }
 
@@ -483,27 +484,29 @@ public class SqsMessageContextConverter<TContext> : IContextConverter<TContext, 
         _messageBodyGetter = messageBodyGetter;
     }
 
-    public SqsSendMessageContext CreateRequest(TContext contextIn)
+    public Task<SqsSendMessageContext> CreateRequestAsync(TContext contextIn)
     {
-        return new SqsSendMessageContext(new SendMessageRequest
+        return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {
             QueueUrl = "",
             MessageBody = _messageBodyGetter.GetBody(contextIn),
             MessageAttributes = _messageHeadersGetter.GetHeaders(contextIn).ToDictionary(d => d.Key, d => new MessageAttributeValue{ StringValue = d.Value })
-        });
+        }));
     }
 
-    public void MapResponse(TContext contextIn, SqsSendMessageContext contextOut)
+    public Task MapResponseAsync(TContext contextIn, SqsSendMessageContext contextOut)
     {
         if (_benzeneResponseAdapter != null)
         {
             _benzeneResponseAdapter.SetStatusCode(contextIn, contextOut.Response.HttpStatusCode.ToString());
-            return;
+            return Task.CompletedTask;
         }
 
         _messageHandlerResultSetter.SetResultAsync(contextIn,
             new MessageHandlerResult(new Topic(contextOut.Request.MessageAttributes["topic"].StringValue),
                 MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.Response.HttpStatusCode.ToString())));
+
+        return Task.CompletedTask;
     }
 }
 

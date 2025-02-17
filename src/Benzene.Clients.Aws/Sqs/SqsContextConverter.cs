@@ -1,4 +1,5 @@
-﻿using Amazon.SQS.Model;
+﻿using System.Threading.Tasks;
+using Amazon.SQS.Model;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
@@ -21,17 +22,18 @@ public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         _serializer = serializer;
     }
 
-    public SqsSendMessageContext CreateRequest(IBenzeneClientContext<T, Void> contextIn)
-    {
-        return new SqsSendMessageContext(new SendMessageRequest
+    public Task<SqsSendMessageContext> CreateRequestAsync(IBenzeneClientContext<T, Void> contextIn)
+    { 
+        return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {
             QueueUrl = _queueUrl,
             MessageBody = _serializer.Serialize(contextIn.Request.Message)
-        });
+        }));
     }
 
-    public void MapResponse(IBenzeneClientContext<T, Void> contextIn, SqsSendMessageContext contextOut)
+    public Task MapResponseAsync(IBenzeneClientContext<T, Void> contextIn, SqsSendMessageContext contextOut)
     {
         contextIn.Response = contextOut.Response.HttpStatusCode.Convert<Void>();
+        return Task.CompletedTask;
     }
 }

@@ -1,8 +1,8 @@
-﻿using Amazon.SimpleNotificationService.Model;
+﻿using System.Threading.Tasks;
+using Amazon.SimpleNotificationService.Model;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
-using Benzene.Clients.Common;
 using Benzene.Results;
 
 namespace Benzene.Clients.Aws.Sns;
@@ -23,17 +23,18 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         _serializer = serializer;
     }
 
-    public SnsSendMessageContext CreateRequest(IBenzeneClientContext<T, Void> contextIn)
+    public Task<SnsSendMessageContext> CreateRequestAsync(IBenzeneClientContext<T, Void> contextIn)
     {
-        return new SnsSendMessageContext(new PublishRequest
+        return Task.FromResult(new SnsSendMessageContext(new PublishRequest
         {
             TopicArn = _topicArn,
             Message = _serializer.Serialize(contextIn.Request.Message)
-        });
+        }));
     }
 
-    public void MapResponse(IBenzeneClientContext<T, Void> contextIn, SnsSendMessageContext contextOut)
+    public Task MapResponseAsync(IBenzeneClientContext<T, Void> contextIn, SnsSendMessageContext contextOut)
     {
         contextIn.Response = contextOut.Response.HttpStatusCode.Convert<Void>();
+        return Task.CompletedTask;
     }
 }

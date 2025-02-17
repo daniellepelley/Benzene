@@ -20,8 +20,8 @@ public class ContextConverterMiddleware<TContext, TContextOut> : IMiddleware<TCo
 
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
-        var contextOut = _converter.CreateRequest(context);
+        var contextOut = await _converter.CreateRequestAsync(context);
         await _middlewarePipeline.HandleAsync(contextOut, _serviceResolver);
-        _converter.MapResponse(context, contextOut);
+        await _converter.MapResponseAsync(context, contextOut);
     }
 }

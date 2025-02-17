@@ -2,7 +2,6 @@
 using System.Net;
 using System.Threading.Tasks;
 using Amazon.SQS;
-using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
@@ -18,8 +17,8 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly IBenzeneLogger _logger;
     private readonly string _queueUrl;
-    private IMiddlewarePipeline<SqsSendMessageContext> _middlewarePipeline;
-    private IServiceResolver _serviceResolver;
+    private readonly IMiddlewarePipeline<SqsSendMessageContext> _middlewarePipeline;
+    private readonly IServiceResolver _serviceResolver;
 
     public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {

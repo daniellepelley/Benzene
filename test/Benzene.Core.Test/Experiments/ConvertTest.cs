@@ -53,8 +53,13 @@ public class InlineContextConverter<TContextIn, TContextOut> : IContextConverter
         _createContextFunc = createContextFunc;
     }
 
-    public TContextOut CreateRequest(TContextIn contextIn) => _createContextFunc(contextIn);
+    public Task<TContextOut> CreateRequestAsync(TContextIn contextIn)
+        => Task.FromResult(_createContextFunc(contextIn));
 
-    public void MapResponse(TContextIn contextIn, TContextOut contextOut) => _mapContext(contextIn, contextOut);
+    public Task MapResponseAsync(TContextIn contextIn, TContextOut contextOut)
+    {
+        _mapContext(contextIn, contextOut);
+        return Task.CompletedTask;
+    }
 }
 

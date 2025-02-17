@@ -20,10 +20,4 @@
 	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Reference Include="Benzene.Core.Messages">
-	    <HintPath>..\Benzene.Core.Messages\obj\Debug\net8.0\ref\Benzene.Core.Messages.dll</HintPath>
-	  </Reference>
-	</ItemGroup>
-
 </Project>

@@ -2,6 +2,6 @@
 
 public interface IContextConverter<TContextIn, TContextOut>
 {
-    public TContextOut CreateRequest(TContextIn contextIn);
-    public void MapResponse(TContextIn contextIn, TContextOut contextOut);
+    public Task<TContextOut> CreateRequestAsync(TContextIn contextIn);
+    public Task MapResponseAsync(TContextIn contextIn, TContextOut contextOut);
 }

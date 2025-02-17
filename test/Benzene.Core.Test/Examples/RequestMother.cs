@@ -12,7 +12,7 @@ public static class RequestMother
 
     public static HttpBuilder<ExampleRequestPayload> CreateExampleHttp()
     {
-        return HttpBuilder.Create<ExampleRequestPayload>(Defaults.Method, Defaults.Path,
+        return HttpBuilder.Create(Defaults.Method, Defaults.Path,
             new ExampleRequestPayload { Id = Defaults.Id, Name = Defaults.Name, });
     }
 
