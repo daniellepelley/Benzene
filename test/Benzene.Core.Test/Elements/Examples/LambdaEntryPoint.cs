@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.Middleware;
-using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;

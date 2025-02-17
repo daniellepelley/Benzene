@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.Messages;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Core.Messages;
 

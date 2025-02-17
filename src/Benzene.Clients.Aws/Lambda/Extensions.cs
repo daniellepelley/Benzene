@@ -4,6 +4,7 @@ using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Middleware;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Lambda;
 
@@ -22,13 +23,13 @@ public static class Extensions
         return app.Use<LambdaSendMessageContext, AwsLambdaClientMiddleware>();
     }
    
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> UseAwsLambda<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> app,
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseAwsLambda<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
         Action<IMiddlewarePipelineBuilder<LambdaSendMessageContext>> action)
     {
         return app.Convert(new LambdaContextConverter<T>(), action);
     }
     
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> UseAwsLambda<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> app)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseAwsLambda<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app)
     {
         return app.Convert(new LambdaContextConverter<T>(), builder => builder.UseAwsLambdaClient());
     }

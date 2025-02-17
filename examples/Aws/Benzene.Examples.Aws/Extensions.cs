@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Http;

@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.Info
+﻿namespace Benzene.Abstractions.MessageHandlers.Info
 {
     public interface IApplicationInfo
     {

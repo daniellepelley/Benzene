@@ -1,17 +1,18 @@
-using Benzene.Aws.Core;
+using Benzene.Aws.Lambda.Core;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.Aws.Tests.Helpers;
+using Benzene.Tools.Aws;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
 
 public abstract class InMemoryOrdersTestBase
 {
-    protected TestLambdaHosting TestLambdaHosting;
+    protected AwsLambdaBenzeneTestHost TestLambdaHosting;
 
     protected InMemoryOrdersTestBase(IAwsLambdaEntryPoint lambdaEntryPoint)
     {
         SetUp();
-        TestLambdaHosting = new TestLambdaHosting(lambdaEntryPoint);
+        TestLambdaHosting = new AwsLambdaBenzeneTestHost(lambdaEntryPoint);
     }
 
     public Order[] GetPersistedOrders()

@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Messages;
 using Benzene.Core.Messages;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Core.MessageHandlers;
 

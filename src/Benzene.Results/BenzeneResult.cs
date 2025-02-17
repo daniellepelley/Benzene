@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.Results;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Results;
 

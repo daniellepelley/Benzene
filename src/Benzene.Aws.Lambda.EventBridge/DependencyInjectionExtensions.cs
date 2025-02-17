@@ -1,5 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Info;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Info;
 
 namespace Benzene.Aws.EventBridge;

@@ -1,4 +1,5 @@
 ﻿using Amazon.Lambda;
+using Benzene.Clients;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Schema.OpenApi;
 using Microsoft.Extensions.Logging;

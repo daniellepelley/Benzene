@@ -1,7 +1,6 @@
-﻿using Benzene.Azure.AspNet;
-using Benzene.Http;
+﻿using Benzene.Http;
 
-namespace Benzene.Aws.ApiGateway;
+namespace Benzene.Azure.AspNet;
 
 public class AspNetHttpRequestAdapter : IHttpRequestAdapter<AspNetContext>
 {

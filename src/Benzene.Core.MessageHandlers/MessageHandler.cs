@@ -3,7 +3,7 @@ using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Results;
 using Benzene.Results;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Core.MessageHandlers;
 

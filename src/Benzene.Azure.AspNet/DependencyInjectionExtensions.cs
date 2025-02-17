@@ -4,7 +4,6 @@ using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.ApiGateway;
 using Benzene.Azure.Core;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Http;

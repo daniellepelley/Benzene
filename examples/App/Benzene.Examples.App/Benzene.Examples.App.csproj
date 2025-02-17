@@ -13,5 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Results\Benzene.Results.csproj" />
   </ItemGroup>
 </Project>

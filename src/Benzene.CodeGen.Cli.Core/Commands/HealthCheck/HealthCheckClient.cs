@@ -1,4 +1,5 @@
 ﻿using Amazon.Lambda;
+using Benzene.Clients;
 using Benzene.Clients.Aws.Lambda;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;

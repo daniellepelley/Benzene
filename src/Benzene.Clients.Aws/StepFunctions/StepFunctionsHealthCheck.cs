@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using Benzene.HealthChecks.Core;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
+using Benzene.HealthChecks.Core;
 
-namespace Benzene.Clients.Aws.Lambda;
+namespace Benzene.Clients.Aws.StepFunctions;
 
 public class StepFunctionsHealthCheck : IHealthCheck
 {

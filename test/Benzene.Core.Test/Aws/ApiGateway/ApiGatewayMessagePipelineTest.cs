@@ -5,7 +5,6 @@ using Amazon.Lambda.APIGatewayEvents;
 using Autofac;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Autofac;
-using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
@@ -28,7 +27,7 @@ using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Test.Aws.ApiGateway;
 

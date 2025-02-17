@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Info;
+﻿using Benzene.Abstractions.MessageHandlers.Info;
 
 namespace Benzene.Schema.OpenApi.Abstractions;
 

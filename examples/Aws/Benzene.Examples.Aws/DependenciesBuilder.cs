@@ -2,26 +2,19 @@
 using Amazon;
 using Amazon.SQS;
 using FluentValidation;
-using Benzene.Aws.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Amazon.Extensions.NETCore.Setup;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Response;
-using Benzene.Aws.ApiGateway;
-using Benzene.Aws.Sns;
-using Benzene.Aws.Sqs;
-using Benzene.Aws.Sqs.Client;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.DI;
-using Benzene.Core.Request;
-using Benzene.Core.Response;
-using Benzene.Diagnostics;
+using Benzene.Abstractions.MessageHandlers.Response;
+using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.Sns;
+using Benzene.Aws.Lambda.Sqs;
+using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Diagnostics.Timers;
-using Benzene.Examples.App.Custom;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Model.Messages;
@@ -29,12 +22,9 @@ using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Microsoft.Logging;
-using Benzene.Serilog.Logging;
-using Benzene.Xml;
 using Newtonsoft.Json;
 using Serilog;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
-using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
 
 namespace Benzene.Examples.Aws;
 
@@ -85,10 +75,10 @@ public static class DependenciesBuilder
         services.AddScoped<IOrderService, OrderService>();
 
         //Custom 
-        services.AddScoped<IResponsePayloadMapper<ApiGatewayContext>, CustomResponsePayloadMapper<ApiGatewayContext>>();
-        services.AddScoped<IResponsePayloadMapper<BenzeneMessageContext>, CustomResponsePayloadMapper<BenzeneMessageContext>>();
-        services.AddScoped<IResponsePayloadMapper<SqsMessageContext>, CustomResponsePayloadMapper<SqsMessageContext>>();
-        services.AddScoped<IResponsePayloadMapper<SnsRecordContext>, CustomResponsePayloadMapper<SnsRecordContext>>();
+        // services.AddScoped<IResponsePayloadMapper<ApiGatewayContext>, CustomResponsePayloadMapper<ApiGatewayContext>>();
+        // services.AddScoped<IResponsePayloadMapper<BenzeneMessageContext>, CustomResponsePayloadMapper<BenzeneMessageContext>>();
+        // services.AddScoped<IResponsePayloadMapper<SqsMessageContext>, CustomResponsePayloadMapper<SqsMessageContext>>();
+        // services.AddScoped<IResponsePayloadMapper<SnsRecordContext>, CustomResponsePayloadMapper<SnsRecordContext>>();
         //
         
         // services.AddSingleton<ISerializerOption<BenzeneMessageContext>>(new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => true));

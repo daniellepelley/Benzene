@@ -1,7 +1,6 @@
-﻿using System;
-using Benzene.Abstractions;
+﻿using Benzene.Abstractions;
 
-namespace Benzene.Core.Correlation;
+namespace Benzene.Diagnostics.Correlation;
 
 public class CorrelationId : ICorrelationId
 {

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Benzene.Clients.Aws.Lambda
+﻿namespace Benzene.Clients
 {
     public class BenzeneMessageClientResponse
     {

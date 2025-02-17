@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
 using Benzene.Core.Messages.BenzeneMessage;

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Benzene.Abstractions.Logging;
+using Benzene.Abstractions.Results;
 using Benzene.HealthChecks.Core;
 using Benzene.Results;
 

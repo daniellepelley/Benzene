@@ -1,6 +1,4 @@
-﻿using Benzene.Abstractions.Messages;
-
-namespace Benzene.Abstractions.MessageHandlers;
+﻿namespace Benzene.Abstractions.Messages;
 
 public interface IMessageDefinition
 {

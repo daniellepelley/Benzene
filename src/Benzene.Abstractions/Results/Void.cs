@@ -1,3 +1,3 @@
-﻿namespace Benzene.Results;
+﻿namespace Benzene.Abstractions.Results;
 
 public class Void {}

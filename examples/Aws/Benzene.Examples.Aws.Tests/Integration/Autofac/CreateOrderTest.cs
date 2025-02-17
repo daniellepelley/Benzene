@@ -4,9 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.Results;
+using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Examples.App.Handlers;
+using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
@@ -146,7 +147,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
         Assert.Equal(Defaults.Order.Status, orders[0].Status);
         Assert.Equal(Defaults.Order.Name, orders[0].Name);
 
-        Assert.Equal(ServiceResultStatus.Created, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.Created, response.StatusCode);
         Assert.NotNull(response.Body);
 
         // var messages = await SqsSetUp.GetAllMessagesAsync();
@@ -203,9 +204,9 @@ public class CreateOrderTest : InMemoryOrdersTestBase
         Assert.Equal(201, response.StatusCode);
         Assert.NotNull(response.Body);
 
-        var result = new XmlSerializer().Deserialize<string>(response.Body);
+        var result = new XmlSerializer().Deserialize<OrderDto>(response.Body);
        
-        Assert.True(Guid.TryParse(result, out _));
+        Assert.Equal(Defaults.Order.Name, result.Name);
 
         // var messages = await SqsSetUp.GetAllMessagesAsync();
         // Assert.Equal($"{CreateOrder}d", messages[0].GetTopic());
@@ -221,9 +222,9 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     {
         var benzeneMessageRequest = BenzeneMessageBuilder.Create(CreateOrder, new CreateOrderMessage { Status = "1234567890123456789012345678901234567890123456789012345678901234567890" });
 
-        var response = await TestLambdaHosting.SendEventAsync<BenzeneMessageResponse>(benzeneMessageRequest);
+        var response = await TestLambdaHosting.SendBenzeneMessageAsync(benzeneMessageRequest);
 
-        Assert.Equal(ServiceResultStatus.ValidationError, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
         Assert.NotNull(response.Body);
 
         var errorPayload = response.GetMessage<ErrorPayload>();

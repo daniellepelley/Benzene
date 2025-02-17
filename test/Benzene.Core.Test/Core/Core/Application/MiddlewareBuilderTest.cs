@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Info;
+﻿using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Microsoft.Dependencies;

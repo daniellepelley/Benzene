@@ -3,7 +3,6 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.Correlation;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Diagnostics.Correlation;
@@ -51,5 +50,4 @@ public static class Extensions
 
         return !headers.TryGetValue(key, out var header) ? string.Empty : header;
     }
-
 }

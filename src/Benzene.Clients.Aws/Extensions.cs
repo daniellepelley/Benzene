@@ -6,6 +6,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Clients.Aws.Sqs;
+using Benzene.Clients.Aws.StepFunctions;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.Clients.Aws;

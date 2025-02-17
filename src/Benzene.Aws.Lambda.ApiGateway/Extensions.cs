@@ -17,7 +17,6 @@ public static class Extensions
         return app.Use(resolver => new ApiGatewayLambdaHandler(pipeline, resolver));
     }
 
-
     public static void EnsureResponseExists(this ApiGatewayContext context)
     {
         context.ApiGatewayProxyResponse ??= new APIGatewayProxyResponse();

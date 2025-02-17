@@ -1,24 +1,22 @@
 ﻿using System.IO;
 using Autofac;
-using Benzene.Aws.Core;
-using Benzene.Aws.ApiGateway;
-using Benzene.Aws.ApiGateway.ApiGatewayCustomAuthorizer;
-using Benzene.Aws.Core.AwsEventStream;
-using Benzene.Aws.Core.BenzeneMessage;
-using Benzene.Aws.Kafka;
-using Benzene.Aws.Sns;
-using Benzene.Aws.Sqs;
-using Benzene.Core.Correlation;
-using Benzene.Core.Logging;
 using Benzene.Diagnostics.Timers;
-using Benzene.FluentValidation;
 using Benzene.HealthChecks;
-using Benzene.Serilog.Logging;
 using Microsoft.Extensions.Configuration;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
+using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.BenzeneMessage;
+using Benzene.Aws.Lambda.Kafka;
+using Benzene.Aws.Lambda.Sns;
+using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.XRay;
-using Benzene.Core.MessageHandling;
+using Benzene.Core.MessageHandlers;
+using Benzene.Diagnostics.Correlation;
+using Benzene.Examples.Aws.Logging;
+using Benzene.FluentValidation;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.Examples.Aws;
@@ -72,7 +70,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
             //     // .Use(new MessageBodyMapperOption<ApiGatewayContext, JsonApiGatewayMessageBodyMapper>(context => true))
             // ))
             // .UseBroadcastResult()
-            .UseProcessResponse()
             .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
@@ -82,8 +79,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
             .UseTimer("benzene-message-application")
             .UseCorrelationId()
             // .UseLogContext()
-            .UseLogResult()
-            .UseProcessResponse()
             .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router
                 .UseFluentValidation()
@@ -95,7 +90,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
             .UseTimer<SnsRecordContext>("sns-application")
             // .UseTestLogger()
             // .UseLogContext()
-            .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSns()
             .UseHealthCheck(healthCheckTopic, healthChecks)
@@ -109,7 +103,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
             .UseTimer<SqsMessageContext>("sqs-application")
             // .UseTestLogger()
             // .UseLogContext()
-            .UseLogResult()
             // .UseBroadcastResult()
             // .UseProcessResponseSqs()
             .UseHealthCheck(healthCheckTopic, healthChecks)

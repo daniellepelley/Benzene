@@ -1,7 +1,6 @@
 ﻿using System;
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages.BenzeneMessage;

@@ -4,6 +4,7 @@ using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sns;
 
@@ -36,13 +37,13 @@ public static class Extensions
         return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
     }
     
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> app,
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
         string queueUrl, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action)
     {
         return Convert(app, new SnsContextConverter<T>(queueUrl), action);
     }
     
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Results.Void>> app, string queueUrl)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl)
     {
         return app.Convert(new SnsContextConverter<T>(queueUrl), builder => builder.UseSnsClient());
     }

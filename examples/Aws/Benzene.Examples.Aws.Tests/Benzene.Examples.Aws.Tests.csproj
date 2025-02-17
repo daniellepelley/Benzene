@@ -27,6 +27,7 @@
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\Benzene.Examples.Aws\Benzene.Examples.Aws.csproj" />
   </ItemGroup>
 </Project>

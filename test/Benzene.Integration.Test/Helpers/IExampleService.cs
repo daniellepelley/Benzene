@@ -1,4 +1,4 @@
-﻿namespace Benzene.Test.Examples;
+﻿namespace Benzene.Integration.Test.Helpers;
 
 public interface IExampleService
 {

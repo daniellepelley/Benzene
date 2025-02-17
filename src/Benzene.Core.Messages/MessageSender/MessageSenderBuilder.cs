@@ -1,8 +1,9 @@
-﻿using Benzene.Abstractions.Messages;
+﻿using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Core.Messages.MessageSender;
 

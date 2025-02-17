@@ -12,6 +12,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
     <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
+    <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
+    <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
   </ItemGroup>
 
 </Project>

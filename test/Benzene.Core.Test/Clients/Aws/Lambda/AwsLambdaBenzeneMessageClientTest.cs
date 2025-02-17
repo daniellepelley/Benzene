@@ -11,7 +11,7 @@ using Benzene.Test.Clients.Aws.Samples;
 using Benzene.Test.Examples;
 using Moq;
 using Xunit;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Test.Clients.Aws.Lambda;
 

@@ -1,19 +1,22 @@
 using System;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.Results;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Examples.App.Handlers;
+using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
 using Benzene.Results;
+using Benzene.Tools.Aws;
 using Benzene.Xml;
 using Newtonsoft.Json;
 using Xunit;
+using ThreadSafeTestLambdaLogger = Benzene.Examples.Aws.Tests.Helpers.ThreadSafeTestLambdaLogger;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
 
@@ -24,7 +27,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     private const string CreateOrder = MessageTopicNames.OrderCreate;
 
     public CreateOrderTest()
-        :base(new TestLambdaStartUp<StartUp>().Build())
+        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
     { }
     
     private static CreateOrderMessage CreateCreateOrderMessage()
@@ -147,8 +150,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
         Assert.Equal(Defaults.Order.Status, orders[0].Status);
         Assert.Equal(Defaults.Order.Name, orders[0].Name);
 
-        Assert.Equal(ServiceResultStatus.Created, response.StatusCode);
-        Assert.True(response.BodyIsGuid());
+        Assert.Equal(BenzeneResultStatus.Created, response.StatusCode);
 
         // var messages = await SqsSetUp.GetAllMessagesAsync();
         // Assert.Equal($"{CreateOrder}d", messages[0].GetTopic());
@@ -233,9 +235,9 @@ public class CreateOrderTest : InMemoryOrdersTestBase
         Assert.Equal(201, response.StatusCode);
         Assert.NotNull(response.Body);
 
-        var result = new XmlSerializer().Deserialize<string>(response.Body);
+        var result = new XmlSerializer().Deserialize<OrderDto>(response.Body);
        
-        Assert.True(Guid.TryParse(result, out _));
+        Assert.Equal(Defaults.Order.Name, result.Name);
 
         // var messages = await SqsSetUp.GetAllMessagesAsync();
         // Assert.Equal($"{CreateOrder}d", messages[0].GetTopic());
@@ -253,7 +255,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
 
         var response = await TestLambdaHosting.SendEventAsync<BenzeneMessageResponse>(benzeneMessageRequest);
 
-        Assert.Equal(ServiceResultStatus.ValidationError, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
         Assert.NotNull(response.Body);
 
         var errorPayload = response.GetMessage<ErrorPayload>();

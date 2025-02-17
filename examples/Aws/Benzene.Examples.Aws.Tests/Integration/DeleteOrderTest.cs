@@ -5,6 +5,7 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Tools.Aws;
 using Xunit;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
@@ -17,7 +18,7 @@ public class DeleteOrderTest : InMemoryOrdersTestBase
     private const string DeleteOrder = MessageTopicNames.OrderDelete;
 
     public DeleteOrderTest()
-        :base(new TestLambdaStartUp<StartUp>().Build())
+        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
     { }
     private static DeleteOrderMessage CreateDeleteOrderMessage(string orderId)
     {

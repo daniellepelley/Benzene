@@ -6,7 +6,9 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Tools.Aws;
 using Xunit;
+using ThreadSafeTestLambdaLogger = Benzene.Examples.Aws.Tests.Helpers.ThreadSafeTestLambdaLogger;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
 
@@ -16,13 +18,11 @@ public class UpdateOrderTest : InMemoryOrdersTestBase
 {
     private const string CreateOrder = MessageTopicNames.OrderCreate;
     private const string UpdateOrder = MessageTopicNames.OrderUpdate;
-    private const string SomeStatus = "some-status";
-    private const string SomeName = "some-name";
     private const string UpdatedStatus = "updated-crn";
     private const string UpdatedName = "updated-name";
 
     public UpdateOrderTest()
-        :base(new TestLambdaStartUp<StartUp>().Build())
+        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
     { }
     
     private CreateOrderMessage CreateOrderMessage()

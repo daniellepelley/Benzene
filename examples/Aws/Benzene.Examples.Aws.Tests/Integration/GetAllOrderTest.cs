@@ -10,7 +10,9 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Tools.Aws;
 using Xunit;
+using ThreadSafeTestLambdaLogger = Benzene.Examples.Aws.Tests.Helpers.ThreadSafeTestLambdaLogger;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
 
@@ -23,7 +25,7 @@ public class GetAllOrderTest : InMemoryOrdersTestBase
     private readonly Guid _id2 = Guid.Parse(Defaults.Order.Id2);
 
     public GetAllOrderTest()
-        :base(new TestLambdaStartUp<StartUp>().Build())
+        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
     { }
     
     private static GetAllOrdersMessage CreateGetAllOrdersMessage()

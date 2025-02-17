@@ -1,6 +1,4 @@
-﻿using Benzene.Abstractions.DI;
-
-namespace Benzene.Abstractions.Middleware;
+﻿namespace Benzene.Abstractions.DI;
 
 public interface IRegisterDependency
 {

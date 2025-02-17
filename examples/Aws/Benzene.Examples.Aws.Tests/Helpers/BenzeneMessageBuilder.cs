@@ -1,4 +1,4 @@
-using Benzene.Core.BenzeneMessage;
+using Benzene.Core.Messages.BenzeneMessage;
 using Newtonsoft.Json;
 
 namespace Benzene.Examples.Aws.Tests.Helpers;

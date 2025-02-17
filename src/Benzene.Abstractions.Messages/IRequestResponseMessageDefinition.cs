@@ -1,4 +1,4 @@
-﻿namespace Benzene.Abstractions.MessageHandlers;
+﻿namespace Benzene.Abstractions.Messages;
 
 public interface IRequestResponseMessageDefinition : IMessageDefinition
 {

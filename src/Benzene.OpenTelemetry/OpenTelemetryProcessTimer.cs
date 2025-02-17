@@ -1,5 +1,8 @@
 ﻿using Benzene.Diagnostics.Timers;
 using OpenTelemetry.Trace;
+
+namespace Benzene.OpenTelemetry;
+
 public sealed class OpenTelemetryProcessTimer : IProcessTimer
 {
     private readonly TelemetrySpan _span;

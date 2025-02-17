@@ -1,7 +1,8 @@
 ﻿using Benzene.Abstractions.Messages.BenzeneClient;
-using Void = Benzene.Results.Void;
+using Benzene.Abstractions.Middleware;
+using Void = Benzene.Abstractions.Results.Void;
 
-namespace Benzene.Abstractions.Middleware;
+namespace Benzene.Abstractions.Messages;
 
 public interface IMessageSenderBuilder
 {

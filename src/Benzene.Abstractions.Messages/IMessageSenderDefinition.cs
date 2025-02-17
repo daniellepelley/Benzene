@@ -1,6 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers;
-
-namespace Benzene.Abstractions.Messages;
+﻿namespace Benzene.Abstractions.Messages;
 
 public interface IMessageSenderDefinition : IRequestResponseMessageDefinition
 {

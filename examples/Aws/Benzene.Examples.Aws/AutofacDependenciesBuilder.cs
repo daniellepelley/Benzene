@@ -1,28 +1,19 @@
-﻿using System.IO;
-using Amazon;
+﻿using Amazon;
 using Amazon.SQS;
 using FluentValidation;
-using Benzene.Aws.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Amazon.Extensions.NETCore.Setup;
 using Autofac;
-using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Middleware;
-using Benzene.Abstractions.Request;
-using Benzene.Abstractions.Response;
+using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Autofac;
-using Benzene.Aws.ApiGateway;
-using Benzene.Aws.Sns;
-using Benzene.Aws.Sqs;
-using Benzene.Aws.XRay;
-using Benzene.Core.BenzeneMessage;
-using Benzene.Core.DI;
-using Benzene.Core.Request;
-using Benzene.Core.Response;
-using Benzene.Diagnostics;
-using Benzene.Diagnostics.Timers;
-using Benzene.Examples.App.Custom;
+using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.Sns;
+using Benzene.Aws.Lambda.Sqs;
+using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.Response;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Model.Messages;
@@ -30,11 +21,9 @@ using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.Http;
 using Benzene.Microsoft.Logging;
-using Benzene.Serilog.Logging;
 using Benzene.Xml;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
-using JsonSerializer = Benzene.Core.Serialization.JsonSerializer;
 
 namespace Benzene.Examples.Aws;
 
@@ -85,7 +74,7 @@ public static class AutofacDependenciesBuilder
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
             .AddScoped<IOrderDbClient, InMemoryOrderDbClient>()
             .AddScoped<IOrderService, OrderService>()
-            .AddScoped<ResponseMiddleware<ApiGatewayContext>>()
+            // .AddScoped<ResponseMiddleware<ApiGatewayContext>>()
             .AddScoped<IResponseHandler<ApiGatewayContext>,
                 ResponseHandler<JsonSerializationResponseHandler<ApiGatewayContext>, ApiGatewayContext>>()
             .AddScoped<IResponseHandler<ApiGatewayContext>,
@@ -97,22 +86,22 @@ public static class AutofacDependenciesBuilder
             // .AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
             //     new XRayProcessTimerFactory()))
             // .AddScoped<IProcessTimerFactory, NullProcessTimerFactory>()
-            .AddScoped<IResponsePayloadMapper<ApiGatewayContext>, CustomResponsePayloadMapper<ApiGatewayContext>>()
-            .AddScoped<IResponsePayloadMapper<BenzeneMessageContext>,
-                CustomResponsePayloadMapper<BenzeneMessageContext>>()
-            .AddScoped<IResponsePayloadMapper<SqsMessageContext>, CustomResponsePayloadMapper<SqsMessageContext>>()
-            .AddScoped<IResponsePayloadMapper<SnsRecordContext>, CustomResponsePayloadMapper<SnsRecordContext>>()
-            .AddSingleton<ISerializerOption<BenzeneMessageContext>>(
-                new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()))
+            // .AddScoped<IResponsePayloadMapper<ApiGatewayContext>, CustomResponsePayloadMapper<ApiGatewayContext>>()
+            // .AddScoped<IResponsePayloadMapper<BenzeneMessageContext>,
+                // CustomResponsePayloadMapper<BenzeneMessageContext>>()
+            // .AddScoped<IResponsePayloadMapper<SqsMessageContext>, CustomResponsePayloadMapper<SqsMessageContext>>()
+            // .AddScoped<IResponsePayloadMapper<SnsRecordContext>, CustomResponsePayloadMapper<SnsRecordContext>>()
+            // .AddSingleton<ISerializerOption<BenzeneMessageContext>>(
+                // new SerializerOption<BenzeneMessageContext, JsonSerializer>(x => x.Always()))
             // .AddSingleton<ISerializerOption<ApiGatewayContext>, XmlApiGatewaySerializerOption>()
-            .AddSingleton<ISerializerOption<ApiGatewayContext>>(
-                new SerializerOption<ApiGatewayContext, JsonSerializer>(x => x.Always()))
+            // .AddSingleton<ISerializerOption<ApiGatewayContext>>(
+                // new SerializerOption<ApiGatewayContext, JsonSerializer>(x => x.Always()))
             // .AddSingleton<ISerializerOption<SnsRecordContext>, XmlSnsSerializerOption>()
-            .AddSingleton<ISerializerOption<SnsRecordContext>>(
-                new SerializerOption<SnsRecordContext, JsonSerializer>(x => x.Always()))
+            // .AddSingleton<ISerializerOption<SnsRecordContext>>(
+                // new SerializerOption<SnsRecordContext, JsonSerializer>(x => x.Always()))
             // .AddSingleton<ISerializerOption<SqsMessageContext>, XmlSerializerOption<SqsMessageContext>>()
-            .AddSingleton<ISerializerOption<SqsMessageContext>>(
-                new SerializerOption<SqsMessageContext, JsonSerializer>(x => x.Always()))
+            // .AddSingleton<ISerializerOption<SqsMessageContext>>(
+                // new SerializerOption<SqsMessageContext, JsonSerializer>(x => x.Always()))
             .AddSingleton<JsonSerializer>()
         // .AddSingleton<XmlSerializer>()
         );

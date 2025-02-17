@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
-using Benzene.Clients.Aws.Lambda;
 using Benzene.Results;
 
 namespace Benzene.Clients.Common

@@ -5,7 +5,7 @@ using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
 using Benzene.Http.Routing;
 using Benzene.Results;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Http.Cors;
 

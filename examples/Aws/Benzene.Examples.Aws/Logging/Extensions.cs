@@ -1,11 +1,12 @@
 ﻿using Benzene.Abstractions.Middleware;
-using Benzene.Aws.Core.AwsEventStream;
+using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Middleware;
+using Benzene.Serilog.Logging;
 using Serilog;
 using Serilog.Context;
 using Serilog.Events;
 
-namespace Benzene.Serilog.Logging
+namespace Benzene.Examples.Aws.Logging
 {
     public static class Extensions
     {

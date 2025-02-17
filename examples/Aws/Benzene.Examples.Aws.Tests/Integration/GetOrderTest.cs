@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-using Benzene.Core.Results;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model;
@@ -12,8 +11,10 @@ using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
 using Benzene.Results;
+using Benzene.Tools.Aws;
 using Benzene.Xml;
 using Xunit;
+using ThreadSafeTestLambdaLogger = Benzene.Examples.Aws.Tests.Helpers.ThreadSafeTestLambdaLogger;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
 
@@ -25,7 +26,7 @@ public class GetOrderTest : InMemoryOrdersTestBase
     private readonly Guid _id = Guid.Parse(Defaults.Order.Id);
 
     public GetOrderTest()
-        :base(new TestLambdaStartUp<StartUp>().Build())
+        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
     { }
     
     private GetOrderMessage GetOrderMessage()
@@ -45,10 +46,6 @@ public class GetOrderTest : InMemoryOrdersTestBase
         var snsEvent = AwsEventBuilder.CreateSnsEvent(GetOrder, GetOrderMessage());
 
         await TestLambdaHosting.SendEventAsync(snsEvent);
-
-        // var messages = await SqsSetUp.GetAllMessagesAsync();
-        // Assert.Equal($"{GetOrder}:result", messages[0].GetTopic());
-        // Assert.Equal("200", messages[0].GetStatus());
     }
 
     [Fact]
@@ -59,10 +56,6 @@ public class GetOrderTest : InMemoryOrdersTestBase
         var sqsEvent = AwsEventBuilder.CreateSqsEvent(GetOrder, GetOrderMessage());
 
         await TestLambdaHosting.SendEventAsync(sqsEvent);
-
-        // var messages = await SqsSetUp.GetAllMessagesAsync();
-        // Assert.Equal($"{GetOrder}:result", messages[0].GetTopic());
-        // Assert.Equal("200", messages[0].GetStatus());
     }
 
 
@@ -121,39 +114,12 @@ public class GetOrderTest : InMemoryOrdersTestBase
         Assert.NotNull(response.Body);
     }
 
-    // [Fact]
-    // public async Task GetOrder_ApiGateway_BenzeneMessage()
-    // {
-    //     SetUpDatabase();
-    //     var databaseOrder= GetPersistedOrders().First();
-    //         
-    //     var apiGatewayProxyRequest = new ApiGatewayProxyRequestBuilder("POST", $"/admin/benzene-message")
-    //         .WithBody(new
-    //         {
-    //             topic = GetOrder,
-    //             body = JsonConvert.SerializeObject(new { id = databaseOrder.Id }),
-    //         })
-    //         .Build();
-    //
-    //     var response = await TestLambdaHosting.SendEventAsync<APIGatewayProxyResponse>(apiGatewayProxyRequest);
-    //         
-    //     var order = response.Body<Order>();
-    //
-    //     Assert.Equal(databaseOrder.Id, order.Id);
-    // }
-
-
     [Fact]
     public async Task GetOrder_SQSEvent_WhenDeleted()
     {
         var sqsEvent = AwsEventBuilder.CreateSqsEvent(GetOrder, GetOrderMessage());
 
         await TestLambdaHosting.SendEventAsync(sqsEvent);
-
-        // var messages = await SqsSetUp.GetAllMessagesAsync();
-        // Assert.Equal($"{GetOrder}:result", messages[0].GetTopic());
-        // var errorPayload = messages[0].Body<ErrorPayload>();
-        // Assert.Equal(Defaults.ErrorStatus.NotFound, errorPayload.Status);
     }
 
     [Fact]
@@ -198,10 +164,6 @@ public class GetOrderTest : InMemoryOrdersTestBase
         }
 
         await Task.Delay(2000);
-
-        // var messages = await SqsSetUp.GetAllMessagesAsync();
-        // Assert.Equal($"{GetOrder}:result", messages[0].GetTopic());
-        // Assert.Equal(20, messages.Length);
     }
 
     private void SetUpDatabase()

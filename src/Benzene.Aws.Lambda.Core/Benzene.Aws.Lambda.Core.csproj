@@ -17,6 +17,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj" />
 	  <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+	  <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
 	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 	</ItemGroup>
 

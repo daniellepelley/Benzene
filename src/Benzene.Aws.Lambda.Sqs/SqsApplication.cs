@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Info;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Aws.Lambda.Sqs;

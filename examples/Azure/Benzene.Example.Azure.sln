@@ -30,6 +30,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.AspNet", "..\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Schema.OpenApi", "..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj", "{7243A428-23C5-4772-B469-8A500053BE07}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions", "..\..\src\Benzene.Abstractions\Benzene.Abstractions.csproj", "{C3CA1FAE-D140-4C2D-B376-5E93ACBE8FAC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Results", "..\..\src\Benzene.Results\Benzene.Results.csproj", "{7570F0DB-B84B-4F89-A194-3C80C7C05C0D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core.Messages", "..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj", "{4D67CA5C-1537-494B-AE25-CAB73C557B4D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Http", "..\..\src\Benzene.Http\Benzene.Http.csproj", "{887C1757-18D1-42A7-A58F-2C94E5FC2174}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +88,22 @@ Global
 		{7243A428-23C5-4772-B469-8A500053BE07}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7243A428-23C5-4772-B469-8A500053BE07}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7243A428-23C5-4772-B469-8A500053BE07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3CA1FAE-D140-4C2D-B376-5E93ACBE8FAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3CA1FAE-D140-4C2D-B376-5E93ACBE8FAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3CA1FAE-D140-4C2D-B376-5E93ACBE8FAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3CA1FAE-D140-4C2D-B376-5E93ACBE8FAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7570F0DB-B84B-4F89-A194-3C80C7C05C0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7570F0DB-B84B-4F89-A194-3C80C7C05C0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7570F0DB-B84B-4F89-A194-3C80C7C05C0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7570F0DB-B84B-4F89-A194-3C80C7C05C0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D67CA5C-1537-494B-AE25-CAB73C557B4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D67CA5C-1537-494B-AE25-CAB73C557B4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D67CA5C-1537-494B-AE25-CAB73C557B4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D67CA5C-1537-494B-AE25-CAB73C557B4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{887C1757-18D1-42A7-A58F-2C94E5FC2174}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{887C1757-18D1-42A7-A58F-2C94E5FC2174}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{887C1757-18D1-42A7-A58F-2C94E5FC2174}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{887C1757-18D1-42A7-A58F-2C94E5FC2174}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

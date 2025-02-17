@@ -19,6 +19,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Xml", "..\..\src\Be
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core.Messages", "..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj", "{8950E5F6-9047-4E40-8B5A-EBCE7B05D67C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.Aws.Tests", "Benzene.Examples.Aws.Tests\Benzene.Examples.Aws.Tests.csproj", "{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Tools", "..\..\src\Benzene.Tools\Benzene.Tools.csproj", "{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{8950E5F6-9047-4E40-8B5A-EBCE7B05D67C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8950E5F6-9047-4E40-8B5A-EBCE7B05D67C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8950E5F6-9047-4E40-8B5A-EBCE7B05D67C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

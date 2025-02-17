@@ -21,7 +21,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Test.Clients;
 //Named clients

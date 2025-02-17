@@ -1,5 +1,6 @@
-﻿using Benzene.Abstractions.Info;
-using Benzene.Abstractions.MessageHandlers;
+﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Info;
+using Benzene.Abstractions.Messages;
 using Benzene.Schema.OpenApi.Abstractions;
 using LEGO.AsyncAPI;
 using LEGO.AsyncAPI.Models;

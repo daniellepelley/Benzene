@@ -1,4 +1,4 @@
-﻿using Benzene.TempCore.DI;
+﻿using Benzene.Core.DI;
 
 namespace Benzene.Microsoft.Dependencies;
 

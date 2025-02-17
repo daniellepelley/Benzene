@@ -3,8 +3,7 @@ using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
-using Benzene.Results;
-using Void = Benzene.Results.Void;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Core.Messages.MessageSender;
 

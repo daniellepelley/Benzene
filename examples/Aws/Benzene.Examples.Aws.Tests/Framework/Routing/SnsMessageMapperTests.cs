@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Amazon.Lambda.SNSEvents;
-using Benzene.Aws.Sns;
-using Benzene.Core.Mappers;
+using Benzene.Aws.Lambda.Sns;
+using Benzene.Core.MessageHandlers;
 using Xunit;
 
 namespace Benzene.Examples.Aws.Tests.Framework.Routing;
@@ -23,7 +23,7 @@ public class SnsMessageMapperTests
             }
         });
         
-        var mapper = new MessageMapper<SnsRecordContext>(new SnsMessageTopicMapper(), new SnsMessageBodyMapper(), new SnsMessageHeadersMapper());
+        var mapper = new MessageGetter<SnsRecordContext>(new SnsMessageTopicGetter(), new SnsMessageBodyGetter(), new SnsMessageHeadersGetter());
 
         var topic = mapper.GetTopic(snsRecordContext);
         var message = mapper.GetBody(snsRecordContext);

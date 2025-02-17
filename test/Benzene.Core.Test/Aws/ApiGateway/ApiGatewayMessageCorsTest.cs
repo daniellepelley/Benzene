@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Aws.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Core.MessageHandlers;

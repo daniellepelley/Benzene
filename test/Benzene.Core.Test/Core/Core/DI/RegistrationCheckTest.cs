@@ -1,4 +1,4 @@
-﻿using Benzene.TempCore.DI;
+﻿using Benzene.Core.DI;
 using Xunit;
 
 namespace Benzene.Test.Core.Core.DI;

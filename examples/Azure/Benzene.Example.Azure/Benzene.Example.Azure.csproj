@@ -32,7 +32,4 @@
     <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
-	<ItemGroup>
-		<Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
-	</ItemGroup>
 </Project>
