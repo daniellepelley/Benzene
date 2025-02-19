@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Messages;
+using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.Messages.Predicates;
 

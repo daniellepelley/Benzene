@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Clients.Aws.Sns;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,8 +18,12 @@ public class ConvertTest
         var services = new MicrosoftBenzeneServiceContainer(new ServiceCollection());
         var appBuilder = new MiddlewarePipelineBuilder<string>(services);
         var appBuilder2 = new MiddlewarePipelineBuilder<StringConvert>(services);
+
         var app = appBuilder
-            .Use(resolver => new DemoConvertMiddleware(resolver, appBuilder2.Build()))
+            .Convert(
+                x => new StringConvert { Value = x },
+            (_, _) => { },
+                appBuilder2.Build())
             .Build();
 
         var entryPoint =
@@ -32,34 +37,5 @@ public class ConvertTest
 public class StringConvert
 {
     public string Value { get; set; }
-}
-
-public class DemoConvertMiddleware : ContextConverterMiddleware<string, StringConvert>
-{
-    public DemoConvertMiddleware(IServiceResolver serviceResolver, IMiddlewarePipeline<StringConvert> middlewarePipeline)
-        :base(new InlineContextConverter<string, StringConvert>(x => new StringConvert{ Value = x }, (s, content) => { }), middlewarePipeline, serviceResolver)
-    {
-    }
-}
-
-public class InlineContextConverter<TContextIn, TContextOut> : IContextConverter<TContextIn, TContextOut>
-{
-    private readonly Func<TContextIn, TContextOut> _createContextFunc;
-    private readonly Action<TContextIn, TContextOut> _mapContext;
-
-    public InlineContextConverter(Func<TContextIn, TContextOut> createContextFunc, Action<TContextIn, TContextOut> mapContext)
-    {
-        _mapContext = mapContext;
-        _createContextFunc = createContextFunc;
-    }
-
-    public Task<TContextOut> CreateRequestAsync(TContextIn contextIn)
-        => Task.FromResult(_createContextFunc(contextIn));
-
-    public Task MapResponseAsync(TContextIn contextIn, TContextOut contextOut)
-    {
-        _mapContext(contextIn, contextOut);
-        return Task.CompletedTask;
-    }
 }
 

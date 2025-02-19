@@ -6,6 +6,7 @@ using Benzene.Aws.Tests.Fixtures;
 using Benzene.Core.DI;
 using Benzene.Core.Exceptions;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.Messages.Predicates;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Moq;

@@ -167,6 +167,25 @@ public static class Extensions
         }));
     }
 
+    public static IMiddlewarePipelineBuilder<TContext> Split<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+        IContextPredicate<TContext> predicate, Action<IMiddlewarePipelineBuilder<TContext>> builder)
+    {
+        var newApp = app.Create<TContext>();
+        builder(app);
+
+        return app.Use(resolver => new FuncWrapperMiddleware<TContext>("Split", async (context, next) =>
+        {
+            if (predicate.Check(context, resolver))
+            {
+                await newApp.Build().HandleAsync(context, resolver);
+            }
+            else
+            {
+                await next();
+            }
+        }));
+    }
+
     public static IMiddlewarePipelineBuilder<TContext> Convert<TContext, TContextOut>(this IMiddlewarePipelineBuilder<TContext> app,
        IContextConverter<TContext, TContextOut> converter, IMiddlewarePipeline<TContextOut> middlewarePipeline)
     {
@@ -177,6 +196,24 @@ public static class Extensions
         IContextConverter<TContext, TContextOut> converter, Action<IMiddlewarePipelineBuilder<TContextOut>> action)
     {
         var middlewarePipeline = app.CreateMiddlewarePipeline(action);
+
+        return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
+    }
+    
+    public static IMiddlewarePipelineBuilder<TContext> Convert<TContext, TContextOut>(this IMiddlewarePipelineBuilder<TContext> app,
+        Func<TContext, TContextOut> createContextFunc, Action<TContext, TContextOut> mapContext, IMiddlewarePipeline<TContextOut> middlewarePipeline)
+    {
+        var converter = new InlineContextConverter<TContext, TContextOut>(createContextFunc, mapContext);
+
+        return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> Convert<TContext, TContextOut>(this IMiddlewarePipelineBuilder<TContext> app,
+        Func<TContext, TContextOut> createContextFunc, Action<TContext, TContextOut> mapContext, Action<IMiddlewarePipelineBuilder<TContextOut>> action)
+    {
+        var middlewarePipeline = app.CreateMiddlewarePipeline(action);
+
+        var converter = new InlineContextConverter<TContext, TContextOut>(createContextFunc, mapContext);
 
         return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
     }

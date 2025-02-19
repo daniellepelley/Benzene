@@ -1,6 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
 
-namespace Benzene.Abstractions.Messages;
+namespace Benzene.Abstractions.Middleware;
 
 public interface IContextPredicate<TContext>
 {
