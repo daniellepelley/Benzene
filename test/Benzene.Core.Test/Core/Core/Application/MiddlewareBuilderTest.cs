@@ -1,5 +1,6 @@
 ﻿using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;

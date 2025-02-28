@@ -30,29 +30,17 @@ public class StartUp : BenzeneHostedServiceStartup
         {
             ConsumerConfig = new ConsumerConfig
             {
-                BootstrapServers = "localhost:29092",
+                BootstrapServers = "localhost:9092",
                 SaslMechanism = SaslMechanism.Plain,
                 SecurityProtocol = SecurityProtocol.Plaintext,
                 GroupId = Guid.NewGuid().ToString(),
                 AutoOffsetReset = AutoOffsetReset.Earliest
             },
-            Topics = new[] { "order_create", "order_delete" }
+            Topics = new[] { "order_create" }
         };
 
-        // var benzeneKafkaConfig2 = new BenzeneKafkaConfig
-        // {
-        //     ConsumerConfig = new ConsumerConfig
-        //     {
-        //         BootstrapServers = "localhost:29092",
-        //         SaslMechanism = SaslMechanism.Plain,
-        //         SecurityProtocol = SecurityProtocol.Plaintext,
-        //         GroupId = Guid.NewGuid().ToString(),
-        //         AutoOffsetReset = AutoOffsetReset.Earliest
-        //     },
-        //     Topics = new[] { "order_create", "order_delete" }
-        // };
         app
-            .UseKafka(benzeneKafkaConfig, x =>
+            .UseKafka<Ignore, string>(benzeneKafkaConfig, x =>
                 x.UseMessageHandlers())
             .UseHttp(new BenzeneHttpConfig
             {

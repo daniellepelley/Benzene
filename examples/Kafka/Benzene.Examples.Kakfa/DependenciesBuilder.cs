@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
@@ -39,23 +40,16 @@ public static class DependenciesBuilder
         
         services.AddSingleton(configuration);
         services.AddLogging();
-        // services.AddStructuredLogging();
-        // services.AddCorrelationId();
 
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
-
-        // services.AddDbContext<DataContext>(x => x.UseNpgsql(configuration["DB_CONNECTION_STRING"],
-        //     pgOptions => pgOptions.ProvidePasswordCallback(DbConnectionStringFactory.PasswordCallback())));
-
-        // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
 
         services.UsingBenzene(x => x
             .AddBenzene()
             .AddXml()
             .AddMicrosoftLogger()
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
-            .AddKafkaMessageHandlers<Ignore, string>(typeof(CreateOrderMessage).Assembly)
+            .AddKafka<Ignore, string>()
         );
         // services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
         services.AddScoped<ILogger>(x => x.GetService<ILogger<string>>());

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Benzene.Clients;
+using Benzene.Abstractions.Messages.BenzeneClient;
 
 namespace Benzene.Test.Clients.Aws.Sqs;
 

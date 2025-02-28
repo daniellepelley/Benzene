@@ -4,6 +4,7 @@ using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Lambda.Sqs.TestHelpers;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Diagnostics;
 using Benzene.Integration.Test.Fixtures;

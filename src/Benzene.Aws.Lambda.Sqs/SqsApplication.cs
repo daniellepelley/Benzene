@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
@@ -33,12 +34,12 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
 
                     if (context.IsSuccessful.HasValue && !context.IsSuccessful.Value)
                     {
-                        batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId});
+                        batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId});
+                    batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
                 }
             })
             .ToArray();

@@ -36,6 +36,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Http", "..\..\src\B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Schema.OpenApi", "..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj", "{25432704-EDD1-4FF6-97B2-11119FF8C677}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core.Middleware", "..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj", "{86238AB6-1BC9-42FD-BFE9-7C49607F0284}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions", "..\..\src\Benzene.Abstractions\Benzene.Abstractions.csproj", "{463AD449-5B8F-475A-9373-1D8DFF3B3917}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions.Middleware", "..\..\src\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj", "{CAC0B5C7-0A6B-46FD-951C-30CE5558D748}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Microsoft.Dependencies", "..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj", "{3A8846D4-65E3-47FF-A9EC-C5E8C117BAAD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -98,6 +106,22 @@ Global
 		{25432704-EDD1-4FF6-97B2-11119FF8C677}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25432704-EDD1-4FF6-97B2-11119FF8C677}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25432704-EDD1-4FF6-97B2-11119FF8C677}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86238AB6-1BC9-42FD-BFE9-7C49607F0284}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86238AB6-1BC9-42FD-BFE9-7C49607F0284}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86238AB6-1BC9-42FD-BFE9-7C49607F0284}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86238AB6-1BC9-42FD-BFE9-7C49607F0284}.Release|Any CPU.Build.0 = Release|Any CPU
+		{463AD449-5B8F-475A-9373-1D8DFF3B3917}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{463AD449-5B8F-475A-9373-1D8DFF3B3917}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{463AD449-5B8F-475A-9373-1D8DFF3B3917}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{463AD449-5B8F-475A-9373-1D8DFF3B3917}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAC0B5C7-0A6B-46FD-951C-30CE5558D748}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAC0B5C7-0A6B-46FD-951C-30CE5558D748}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAC0B5C7-0A6B-46FD-951C-30CE5558D748}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAC0B5C7-0A6B-46FD-951C-30CE5558D748}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A8846D4-65E3-47FF-A9EC-C5E8C117BAAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A8846D4-65E3-47FF-A9EC-C5E8C117BAAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A8846D4-65E3-47FF-A9EC-C5E8C117BAAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A8846D4-65E3-47FF-A9EC-C5E8C117BAAD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

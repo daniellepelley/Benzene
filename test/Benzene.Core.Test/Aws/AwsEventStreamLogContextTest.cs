@@ -8,6 +8,7 @@ using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Diagnostics.Correlation;
 using Benzene.Microsoft.Dependencies;

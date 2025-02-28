@@ -2,7 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
-using Amazon.SimpleNotificationService.Model;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
@@ -10,49 +10,47 @@ using Benzene.Abstractions.Results;
 using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Results;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sns;
 
 public class SnsBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly IBenzeneLogger _logger;
-    private readonly string _queueUrl;
-    private readonly EntryPointMiddlewareApplication<PublishRequest, PublishResponse> _entryPointMiddlewareApplication;
-    private readonly IClientRequestMapper<PublishRequest> _requestMapper;
+    private readonly string _topicArn;
+    private readonly IServiceResolver _serviceResolver;
+    private readonly IMiddlewarePipeline<SnsSendMessageContext> _middlewarePipeline;
 
-    public SnsBenzeneMessageClient(string queueUrl, IAmazonSimpleNotificationService amazonSnsClient, IBenzeneLogger logger)
+    public SnsBenzeneMessageClient(string topicArn, IAmazonSimpleNotificationService amazonSnsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
+        _topicArn = topicArn;
+        _serviceResolver = serviceResolver;
         _logger = logger;
-        _requestMapper = new SnsClientRequestMapper(queueUrl, new JsonSerializer());
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<SnsSendMessageContext>(benzeneServiceContainer);
-        var middlewarePipeline = middlewarePipelineBuilder
+        _middlewarePipeline = middlewarePipelineBuilder
             .UseSnsClient(amazonSnsClient)
             .Build();
-
-        var application = new MiddlewareApplication<PublishRequest, SnsSendMessageContext, PublishResponse>(
-            middlewarePipeline, request => new SnsSendMessageContext(request), context => context.Response);
-        _entryPointMiddlewareApplication = new EntryPointMiddlewareApplication<PublishRequest, PublishResponse>(application, benzeneServiceContainer.CreateServiceResolverFactory());
     }
 
-    public SnsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, IBenzeneLogger logger)
+    public SnsBenzeneMessageClient(string topicArn, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, IBenzeneLogger logger)
     {
         _logger = logger;
-        _queueUrl = queueUrl;
-        var benzeneServiceContainer = new NullBenzeneServiceContainer();
-
-        var application = new MiddlewareApplication<PublishRequest, SnsSendMessageContext, PublishResponse>(
-            middlewarePipeline, request => new SnsSendMessageContext(request), context => context.Response);
-        _entryPointMiddlewareApplication = new EntryPointMiddlewareApplication<PublishRequest, PublishResponse>(application, benzeneServiceContainer.CreateServiceResolverFactory());
+        _topicArn = topicArn;
+        _middlewarePipeline = middlewarePipeline;
     }
 
     public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
         try
-        {
-            var response = await _entryPointMiddlewareApplication.SendAsync(_requestMapper.CreateRequest(request));
+        {   var converter = new SnsContextConverter<TRequest>(_topicArn, new JsonSerializer());
+            var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
+            await _middlewarePipeline.HandleAsync(context, _serviceResolver);
+
+            var response = context.Response;
+            
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 return BenzeneResult.Accepted<TResponse>();
@@ -62,7 +60,7 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", request.Topic, _queueUrl);
+            _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", request.Topic, _topicArn);
             return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
         }
     }

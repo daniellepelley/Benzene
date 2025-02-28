@@ -1,13 +1,22 @@
 ﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.KafkaEvents;
+using Amazon.Lambda.SQSEvents;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
 using Benzene.Abstractions.MessageHandlers.ToDelete;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Kafka;
 using Benzene.Aws.Lambda.Kafka.TestHelpers;
+using Benzene.Aws.Lambda.Sqs;
+using Benzene.Aws.Lambda.Sqs.TestHelpers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Aws.Helpers;
+using Benzene.Test.Aws.Sns;
 using Benzene.Test.Examples;
 using Benzene.Testing;
 using Benzene.Tools.Aws;
@@ -15,6 +24,7 @@ using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace Benzene.Test.Aws.Kafka;
@@ -136,4 +146,44 @@ public class KafkaMessagePipelineTest
 
         Assert.Equal(Defaults.Message, AwsLambdaBenzeneTestHost.StreamToString(kafkaContext.KafkaEvent.Records.First().Value.First().Value));
     }
+    
+    [Fact]
+    public async Task KafkaInSnsOut()
+    {
+        var mockAmazonSimpleNotificationService = new Mock<IAmazonSimpleNotificationService>();
+        mockAmazonSimpleNotificationService
+            .Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PublishResponse());
+        var services = new MicrosoftBenzeneServiceContainer(new ServiceCollection());
+        services.AddBenzeneMiddleware()
+            .AddBenzene()
+            .AddBenzeneMessage()
+            .AddKafka();
+        
+        var appBuilder = new MiddlewarePipelineBuilder<KafkaContext>(services);
+        
+        var app = appBuilder
+            .WhenIsTopic(Defaults.Topic.ToUpperInvariant(), 
+                x => x.SendToSns(mockAmazonSimpleNotificationService.Object))
+            .Build();
+
+        var entryPoint =
+            new EntryPointMiddlewareApplication<KafkaEvent>(new KafkaApplication(app),
+                services.CreateServiceResolverFactory());
+
+        var exampleRequestPayload = new ExampleRequestPayload
+        {
+            Name = "foo"
+        };
+
+        var sqsEvent = MessageBuilder.Create(Defaults.Topic, exampleRequestPayload).AsAwsKafkaEvent();
+        await entryPoint.SendAsync(sqsEvent);
+        
+        mockAmazonSimpleNotificationService.Verify(x => 
+            x.PublishAsync(It.Is<PublishRequest>(x => x
+                .Message.Contains("foo") &&
+                x.MessageAttributes["topic"].StringValue == Defaults.Topic
+            ), It.IsAny<CancellationToken>()));
+    }
+
 }

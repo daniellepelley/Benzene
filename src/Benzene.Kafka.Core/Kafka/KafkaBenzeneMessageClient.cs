@@ -1,68 +1,61 @@
-﻿using System;
-using System.Net;
-using System.Threading.Tasks;
-using Amazon.SQS;
-using Benzene.Abstractions.DI;
+﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
-using Benzene.Clients.Common;
+using Benzene.Clients;
 using Benzene.Core.Middleware;
 using Benzene.Results;
+using Confluent.Kafka;
 using Void = Benzene.Abstractions.Results.Void;
 
-namespace Benzene.Clients.Aws.Sqs;
+namespace Benzene.Kafka.Core.Kafka;
 
-public class SqsBenzeneMessageClient : IBenzeneMessageClient
+public class KafkaBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly IBenzeneLogger _logger;
-    private readonly string _queueUrl;
-    private readonly IMiddlewarePipeline<SqsSendMessageContext> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
+    private readonly IMiddlewarePipeline<KafkaSendMessageContext> _middlewarePipeline;
 
-    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public KafkaBenzeneMessageClient(IProducer<string, string> producer, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
-        _queueUrl = queueUrl;
         _logger = logger;
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
-        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<SqsSendMessageContext>(benzeneServiceContainer);
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<KafkaSendMessageContext>(benzeneServiceContainer);
         _middlewarePipeline = middlewarePipelineBuilder
-            .UseSqsClient(amazonSqsClient)
+            .UseKafkaClient(producer)
             .Build();
     }
 
-    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public KafkaBenzeneMessageClient(IMiddlewarePipeline<KafkaSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
-        _middlewarePipeline = middlewarePipeline;
         _logger = logger;
-        _queueUrl = queueUrl;
+        _middlewarePipeline = middlewarePipeline;
     }
 
     public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
         try
-        {
-            var converter = new SqsContextConverter<TRequest>(_queueUrl, new JsonSerializer());
+        {   var converter = new KafkaContextConverter<TRequest>(new JsonSerializer());
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
-            
+
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);
 
             var response = context.Response;
-
-            if (response.HttpStatusCode == HttpStatusCode.OK)
+            
+            if (response.Status == PersistenceStatus.Persisted)
             {
                 return BenzeneResult.Accepted<TResponse>();
             }
 
-            return BenzeneResultHttpMapper.Map<TResponse>(response.HttpStatusCode);
+            return BenzeneResult.UnexpectedError<TResponse>();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", request.Topic, _queueUrl);
+            _logger.LogError(ex, "Sending message {receiverTopic} failed", request.Topic);
             return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
         }
     }

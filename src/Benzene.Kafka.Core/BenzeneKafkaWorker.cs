@@ -5,15 +5,15 @@ using Confluent.Kafka;
 
 namespace Benzene.Kafka.Core;
 
-public class BenzeneKafkaWorker : IBenzeneWorker, IDisposable
+public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
 {
     private readonly IServiceResolverFactory _serviceResolverFactory;
-    private IConsumer<Ignore, string>? _consumer;
-    private readonly KafkaApplication<Ignore, string> _kafkaApplication;
+    private IConsumer<TKey, TValue>? _consumer;
+    private readonly KafkaApplication<TKey, TValue> _kafkaApplication;
     private readonly BenzeneKafkaConfig _benzeneKafkaConfig;
 
     public BenzeneKafkaWorker(IServiceResolverFactory serviceResolverFactory,
-        KafkaApplication<Ignore, string> kafkaApplication, BenzeneKafkaConfig benzeneKafkaConfig)
+        KafkaApplication<TKey, TValue> kafkaApplication, BenzeneKafkaConfig benzeneKafkaConfig)
     {
         _benzeneKafkaConfig = benzeneKafkaConfig;
         _kafkaApplication = kafkaApplication;
@@ -24,7 +24,7 @@ public class BenzeneKafkaWorker : IBenzeneWorker, IDisposable
     {
         return Task.Run(async () =>
         {
-            _consumer = new ConsumerBuilder<Ignore, string>(_benzeneKafkaConfig.ConsumerConfig).Build();
+            _consumer = new ConsumerBuilder<TKey, TValue>(_benzeneKafkaConfig.ConsumerConfig).Build();
             _consumer.Subscribe(_benzeneKafkaConfig.Topics);
 
             var semaphore = new SemaphoreSlim(_benzeneKafkaConfig.ConcurrentRequests);

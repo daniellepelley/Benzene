@@ -33,10 +33,4 @@
     <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Benzene.Microsoft.Dependencies">
-      <HintPath>..\..\..\src\Benzene.Microsoft.Dependencies\bin\Debug\net6.0\Benzene.Microsoft.Dependencies.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 </Project>

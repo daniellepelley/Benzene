@@ -2,6 +2,7 @@
 using System.Reflection;
 // using Amazon.Extensions.NETCore.Setup;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;

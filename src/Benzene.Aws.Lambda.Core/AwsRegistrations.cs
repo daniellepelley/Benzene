@@ -1,5 +1,6 @@
 ﻿using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 
 namespace Benzene.Aws.Lambda.Core;
 

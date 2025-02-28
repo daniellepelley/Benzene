@@ -6,6 +6,7 @@ using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
@@ -32,9 +33,9 @@ public class BenzeneMessagePipelineTest
         services
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
-                .UsingBenzene(x => Extensions.AddMessageHandlers(x
-                        .AddBenzeneMessage(), typeof(ExampleRequestPayload).Assembly));
-
+                .UsingBenzene(x => x
+                    .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly)
+                    .AddBenzeneMessage());
 
         var pipeline = PipelineMother.BasicBenzeneMessagePipeline(new MicrosoftBenzeneServiceContainer(services));
 

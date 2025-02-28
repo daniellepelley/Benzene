@@ -2,13 +2,16 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.Messages;
+using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Tests.Fixtures;
+using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Messages.MessageSender;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
+using Moq;
 using Xunit;
 
 namespace Benzene.Aws.Tests;
@@ -70,10 +73,7 @@ public class SqsMessageSenderBuilderTest : IClassFixture<SqsFixture>
     public async Task Sqs_Send()
     {
         await SetUp();
-        var amazonSqsClient = CreateAmazonSqsClient();
-
-        var serviceContainer = new MicrosoftBenzeneServiceContainer();
-        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
+        var serviceContainer = CreateMicrosoftBenzeneServiceContainer();
         var pipelineBuilder = new MiddlewarePipelineBuilder<string>(serviceContainer);
 
         pipelineBuilder
@@ -95,10 +95,7 @@ public class SqsMessageSenderBuilderTest : IClassFixture<SqsFixture>
     public async Task Sqs_Send2()
     {
         await SetUp();
-        var amazonSqsClient = CreateAmazonSqsClient();
-
-        var serviceContainer = new MicrosoftBenzeneServiceContainer();
-        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
+        var serviceContainer = CreateMicrosoftBenzeneServiceContainer();
         var pipelineBuilder = new MiddlewarePipelineBuilder<string>(serviceContainer);
 
         pipelineBuilder
@@ -115,14 +112,13 @@ public class SqsMessageSenderBuilderTest : IClassFixture<SqsFixture>
         Assert.Equal("{\"name\":\"some-name\"}", messages[0].Body);
     }
 
+
     [Fact]
     public async Task Sqs_Send3()
     {
         await SetUp();
-        var amazonSqsClient = CreateAmazonSqsClient();
 
-        var serviceContainer = new MicrosoftBenzeneServiceContainer();
-        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
+        var serviceContainer = CreateMicrosoftBenzeneServiceContainer();
         var pipelineBuilder = new MiddlewarePipelineBuilder<string>(serviceContainer);
 
         pipelineBuilder
@@ -137,4 +133,19 @@ public class SqsMessageSenderBuilderTest : IClassFixture<SqsFixture>
         var messages = await GetAllMessagesAsync();
         Assert.Equal("{\"name\":\"some-name\"}", messages[0].Body);
     }
+    
+    private static MicrosoftBenzeneServiceContainer CreateMicrosoftBenzeneServiceContainer()
+    {
+        var mockGetTopic = new Mock<IGetTopic>();
+        mockGetTopic.Setup(x => x.GetTopic(typeof(ExampleRequestPayload))).Returns("example");
+        
+        var amazonSqsClient = CreateAmazonSqsClient();
+
+        var serviceContainer = new MicrosoftBenzeneServiceContainer();
+        serviceContainer.AddSingleton<IAmazonSQS>(amazonSqsClient);
+        serviceContainer.AddSingleton(mockGetTopic.Object);
+        
+        return serviceContainer;
+    }
+
 }

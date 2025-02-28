@@ -6,6 +6,6 @@ namespace Benzene.Core.Messages.MessageSender;
 
 public interface IMessageSenderBuilder
 {
-    void CreateSender<TMessage>(System.Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<TMessage, Void>>> action);
-    void CreateSender<TRequest, TResponse>(System.Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<TRequest, TResponse>>> action);
+    void CreateSender<TMessage>(Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<TMessage, Void>>> action);
+    void CreateSender<TRequest, TResponse>(Action<IMiddlewarePipelineBuilder<IBenzeneClientContext<TRequest, TResponse>>> action);
 }

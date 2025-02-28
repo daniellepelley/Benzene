@@ -6,7 +6,6 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
-using Benzene.Results;
 
 namespace Benzene.Examples.App.Handlers;
 

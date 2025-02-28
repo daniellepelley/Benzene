@@ -152,7 +152,7 @@ public static class Extensions
         Func<TContext, bool> check, Action<IMiddlewarePipelineBuilder<TContext>> builder)
     {
         var newApp = app.Create<TContext>();
-        builder(app);
+        builder(newApp);
 
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>("Split", async (context, next) =>
         {

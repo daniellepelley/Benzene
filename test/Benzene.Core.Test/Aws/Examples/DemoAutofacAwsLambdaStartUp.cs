@@ -7,6 +7,7 @@ using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.XRay;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.Configuration;
 using Extensions = Benzene.Core.MessageHandlers.Extensions;
@@ -27,10 +28,10 @@ public class DemoAutofacAwsLambdaStartUp : AwsLambdaStartUp<ContainerBuilder>
     public override void ConfigureServices(ContainerBuilder services, IConfiguration configuration)
     {
         ServiceResolverMother.ConfigureServiceCollection(services);
-        services.UsingBenzene(x => Extensions.AddMessageHandlers(x
+        services.UsingBenzene(x => x
+                .AddMessageHandlers(Assembly.GetExecutingAssembly())
                 .AddBenzene()
-                .AddBenzeneMessage(), Assembly.GetExecutingAssembly())
-        );
+                .AddBenzeneMessage());
     }
 
     public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)

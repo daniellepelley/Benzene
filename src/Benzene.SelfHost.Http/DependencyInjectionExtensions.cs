@@ -21,6 +21,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageTopicGetter<SelfHostHttpContext>, HttpListenerMessageTopicGetter>();
         services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
+        services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, KafkaMessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<SelfHostHttpContext>,
                 MultiSerializerOptionsRequestMapper<SelfHostHttpContext, JsonSerializer>>();

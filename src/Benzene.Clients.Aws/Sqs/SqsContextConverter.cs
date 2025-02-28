@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
@@ -11,7 +12,7 @@ namespace Benzene.Clients.Aws.Sqs;
 public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T, Void>, SqsSendMessageContext>
 {
     private readonly ISerializer _serializer;
-    private string _queueUrl;
+    private readonly string _queueUrl;
 
     public SqsContextConverter(string queueUrl)
         :this(queueUrl, new JsonSerializer())
@@ -28,7 +29,11 @@ public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {
             QueueUrl = _queueUrl,
-            MessageBody = _serializer.Serialize(contextIn.Request.Message)
+            MessageBody = _serializer.Serialize(contextIn.Request.Message),
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                { "topic", new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String"} }
+            }
         }));
     }
 

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
@@ -72,10 +73,10 @@ public class HealthCheckPipelineTest
 
         var services = new ServiceCollection();
         services
-            .UsingBenzene(x => Extensions.AddMessageHandlers(x
+            .UsingBenzene(x => x
+                    .AddMessageHandlers(GetType().Assembly)
                     .AddBenzene()
-                    .AddBenzeneMessage(), GetType().Assembly)
-            );
+                    .AddBenzeneMessage());
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
 

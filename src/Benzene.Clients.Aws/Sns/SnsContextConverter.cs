@@ -14,13 +14,12 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
     private readonly string _topicArn;
 
     public SnsContextConverter(string topicArn)
-        :this(new JsonSerializer())
+        :this( topicArn, new JsonSerializer())
+    { }
+    
+    public SnsContextConverter(string topicArn, ISerializer serializer)
     {
         _topicArn = topicArn;
-    }
-    
-    public SnsContextConverter(ISerializer serializer)
-    {
         _serializer = serializer;
     }
 

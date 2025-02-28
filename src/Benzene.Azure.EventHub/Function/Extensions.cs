@@ -3,6 +3,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Core;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 
 namespace Benzene.Azure.EventHub.Function;

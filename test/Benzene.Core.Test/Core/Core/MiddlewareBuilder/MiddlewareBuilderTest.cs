@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;

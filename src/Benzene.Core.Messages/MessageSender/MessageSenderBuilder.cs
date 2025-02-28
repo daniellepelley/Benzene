@@ -22,9 +22,9 @@ public class MessageSenderBuilder : IMessageSenderBuilder
         
         _registerDependency.Register(x =>
         {
-            x.AddScoped<IMessageSender<TRequest>, MessageSender<TRequest>>();
-            x.AddScoped(_ => pipeline);
-            x.AddScoped<IGetTopic, DefaultGetTopic>();
+            x.TryAddScoped<IMessageSender<TRequest>, MessageSender<TRequest>>();
+            x.TryAddScoped(_ => pipeline);
+            x.TryAddScoped<IGetTopic, DefaultGetTopic>();
         });
     }
     
@@ -34,9 +34,9 @@ public class MessageSenderBuilder : IMessageSenderBuilder
         
         _registerDependency.Register(x =>
         {
-            x.AddScoped<IMessageSender<TRequest, TResponse>, MessageSender<TRequest, TResponse>>();
-            x.AddScoped(_ => pipeline);
-            x.AddScoped<IGetTopic, DefaultGetTopic>();
+            x.TryAddScoped<IMessageSender<TRequest, TResponse>, MessageSender<TRequest, TResponse>>();
+            x.TryAddScoped(_ => pipeline);
+            x.TryAddScoped<IGetTopic, DefaultGetTopic>();
         });
     }
 }

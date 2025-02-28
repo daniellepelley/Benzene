@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
     <ProjectReference Include="..\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\Benzene.HostedService\Benzene.HostedService.csproj" />
   </ItemGroup>

@@ -12,4 +12,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core\Benzene.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -5,6 +5,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.SNSEvents;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
@@ -17,23 +19,27 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sns.TestHelpers;
+using Benzene.Clients;
+using Benzene.Clients.Aws.Sns;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.Messages;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.FluentValidation;
+using Benzene.Kafka.Core.Kafka;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Aws.Sns.Examples;
 using Benzene.Test.Examples;
-using Benzene.Test.Experiments;
 using Benzene.Testing;
 using Benzene.Xml;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
+using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
+using Topic = Benzene.Core.Messages.Topic;
 using XmlSerializer = Benzene.Xml.XmlSerializer;
 
 namespace Benzene.Test.Aws.Sns;
@@ -266,7 +272,7 @@ public class SnsMessagePipelineTest
     public async Task SendSnsToSqs()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();
-        
+
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
             {
@@ -274,18 +280,18 @@ public class SnsMessagePipelineTest
                     .ConfigureServiceCollection()
                     .UsingBenzene(x => x.AddSns());
             })
-            .Configure(app => app
-                .Convert<SnsRecordContext, BenzeneMessageContext>(new InlineContextConverter<SnsRecordContext, BenzeneMessageContext>(x => new BenzeneMessageContext(new BenzeneMessageRequest
+            .Configure(app => Benzene.Core.Middleware.Extensions
+                .Convert<SnsRecordContext, BenzeneMessageContext>(app, new InlineContextConverter<SnsRecordContext, BenzeneMessageContext>(x => new BenzeneMessageContext(new BenzeneMessageRequest
                 {
                     Body = x.SnsRecord.Sns.Message,
                     Headers = x.SnsRecord.Sns.MessageAttributes.ToDictionary(d => d.Key, d => d.Value.Value)
                 }), (x1, x2) => x1.MessageResult = new MessageResult(true)), builder =>
                 {
-                    builder.Convert(new InlineContextConverter<BenzeneMessageContext, SqsSendMessageContext>(x =>
+                    Benzene.Core.Middleware.Extensions.Convert(builder, new InlineContextConverter<BenzeneMessageContext, SqsSendMessageContext>(x =>
                             new SqsSendMessageContext(new SendMessageRequest
                             {
                                 MessageBody = x.BenzeneMessageRequest.Body,
-                                MessageAttributes = x.BenzeneMessageRequest.Headers.ToDictionary(d => d.Key, d => new MessageAttributeValue{ StringValue = d.Value })
+                                MessageAttributes = x.BenzeneMessageRequest.Headers.ToDictionary(d => d.Key, d => new MessageAttributeValue { StringValue = d.Value })
                             }), (x1, x2) => x1.BenzeneMessageResponse.StatusCode = BenzeneResultStatus.Ok),
                         builder1 => builder1.UseSqsClient(mockSqsClient.Object)
                     );
@@ -306,7 +312,7 @@ public class SnsMessagePipelineTest
     public async Task SendSnsToSqs2()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();
-        
+
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
             {
@@ -317,11 +323,11 @@ public class SnsMessagePipelineTest
             .Configure(app => app
                 .ToBenzeneMessage(builder =>
                 {
-                    builder.Convert(new InlineContextConverter<BenzeneMessageContext, SqsSendMessageContext>(x =>
+                    Benzene.Core.Middleware.Extensions.Convert(builder, new InlineContextConverter<BenzeneMessageContext, SqsSendMessageContext>(x =>
                             new SqsSendMessageContext(new SendMessageRequest
                             {
                                 MessageBody = x.BenzeneMessageRequest.Body,
-                                MessageAttributes = x.BenzeneMessageRequest.Headers.ToDictionary(d => d.Key, d => new MessageAttributeValue{ StringValue = d.Value })
+                                MessageAttributes = x.BenzeneMessageRequest.Headers.ToDictionary(d => d.Key, d => new MessageAttributeValue { StringValue = d.Value })
                             }), (x1, x2) => x1.BenzeneMessageResponse.StatusCode = BenzeneResultStatus.Ok),
                         builder1 => builder1.UseSqsClient(mockSqsClient.Object)
                     );
@@ -348,7 +354,7 @@ public class SnsMessagePipelineTest
             {
                 HttpStatusCode = HttpStatusCode.OK
             });
-        
+
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
             {
@@ -410,6 +416,84 @@ public static class Extensions
                 resolver
             ));
     }
+
+    public static IMiddlewarePipelineBuilder<TContext> ToSnsClientMessage<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> source, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> builder)
+    {
+        var pipeline = source.CreateMiddlewarePipeline(builder);
+
+        return source.Use(resolver =>
+            new ConverterMiddleware<TContext, SnsSendMessageContext>(new SnsMessageContextConverter<TContext>(
+                    resolver.GetService<IMessageBodyGetter<TContext>>(),
+                    resolver.GetService<IMessageHeadersGetter<TContext>>(),
+                    resolver.TryGetService<IMessageHandlerResultSetter<TContext>>(),
+                    resolver.TryGetService<IBenzeneResponseAdapter<TContext>>()
+                ),
+                pipeline,
+                resolver
+            ));
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> ToKafkaClientMessage<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> source, Action<IMiddlewarePipelineBuilder<KafkaSendMessageContext>> builder)
+    {
+        var pipeline = source.CreateMiddlewarePipeline(builder);
+
+        return source.Use(resolver =>
+            new ConverterMiddleware<TContext, KafkaSendMessageContext>(new KafkaMessageContextConverter<TContext>(
+                    resolver.GetService<IMessageTopicGetter<TContext>>(),
+                    resolver.GetService<IMessageBodyGetter<TContext>>(),
+                    resolver.GetService<IMessageHeadersGetter<TContext>>(),
+                    resolver.TryGetService<IMessageHandlerResultSetter<TContext>>(),
+                    resolver.TryGetService<IBenzeneResponseAdapter<TContext>>()
+                ),
+                pipeline,
+                resolver
+            ));
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> SendToSns<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> source,
+        IAmazonSimpleNotificationService amazonSns)
+    {
+        return source.ToSnsClientMessage(x => x
+            .UseSnsClient(amazonSns));
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> SendToKafka<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> source,
+        IProducer<string, string> producer)
+    {
+        return source.ToKafkaClientMessage(x => x
+            .UseKafkaClient(producer));
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> WhenIsTopic<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
+        string topic, Action<IMiddlewarePipelineBuilder<TContext>> builder)
+    {
+        return app.WhenIsTopic(topic, false, builder);
+    }
+
+    public static IMiddlewarePipelineBuilder<TContext> WhenIsTopic<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+        string topic, bool isCaseSensitive, Action<IMiddlewarePipelineBuilder<TContext>> builder)
+    {
+        var newApp = app.Create<TContext>();
+        builder(newApp);
+
+        return app.Use(resolver => new FuncWrapperMiddleware<TContext>("WhenIsTopic", async (context, next) =>
+        {
+            var getTopic = resolver.GetService<IMessageTopicGetter<TContext>>();
+            if (getTopic.Is(context, topic, isCaseSensitive))
+            {
+                await newApp.Build().HandleAsync(context, resolver);
+            }
+            else
+            {
+                await next();
+            }
+        }));
+    }
 }
 
 public class ConverterMiddleware<TContextIn, TContextOut> : IMiddleware<TContextIn>
@@ -454,7 +538,7 @@ public class BenzeneMessageContextConverter<TContext> : IContextConverter<TConte
     {
         return Task.FromResult(new BenzeneMessageContext(new BenzeneMessageRequest
         {
-            Topic = _messageTopicGetter?.GetTopic(contextIn)?.Id, 
+            Topic = _messageTopicGetter?.GetTopic(contextIn)?.Id,
             Body = _messageBodyGetter?.GetBody(contextIn),
             Headers = _messageHeadersGetter.GetHeaders(contextIn),
         }));
@@ -490,7 +574,7 @@ public class SqsMessageContextConverter<TContext> : IContextConverter<TContext, 
         {
             QueueUrl = "",
             MessageBody = _messageBodyGetter.GetBody(contextIn),
-            MessageAttributes = _messageHeadersGetter.GetHeaders(contextIn).ToDictionary(d => d.Key, d => new MessageAttributeValue{ StringValue = d.Value })
+            MessageAttributes = _messageHeadersGetter.GetHeaders(contextIn).ToDictionary(d => d.Key, d => new MessageAttributeValue { StringValue = d.Value })
         }));
     }
 
@@ -505,6 +589,90 @@ public class SqsMessageContextConverter<TContext> : IContextConverter<TContext, 
         _messageHandlerResultSetter.SetResultAsync(contextIn,
             new MessageHandlerResult(new Topic(contextOut.Request.MessageAttributes["topic"].StringValue),
                 MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.Response.HttpStatusCode.ToString())));
+
+        return Task.CompletedTask;
+    }
+}
+
+public class SnsMessageContextConverter<TContext> : IContextConverter<TContext, SnsSendMessageContext>
+{
+    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
+    private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
+    private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
+
+    public SnsMessageContextConverter(IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter, IMessageHandlerResultSetter<TContext> messageHandlerResultSetter, IBenzeneResponseAdapter<TContext> benzeneResponseAdapter)
+    {
+        _benzeneResponseAdapter = benzeneResponseAdapter;
+        _messageHandlerResultSetter = messageHandlerResultSetter;
+        _messageHeadersGetter = messageHeadersGetter;
+        _messageBodyGetter = messageBodyGetter;
+    }
+
+    public Task<SnsSendMessageContext> CreateRequestAsync(TContext contextIn)
+    {
+        return Task.FromResult(new SnsSendMessageContext(new PublishRequest
+        {
+            Message = _messageBodyGetter.GetBody(contextIn),
+            MessageAttributes = _messageHeadersGetter.GetHeaders(contextIn).ToDictionary(d => d.Key, d => new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = d.Value })
+        }));
+    }
+
+    public Task MapResponseAsync(TContext contextIn, SnsSendMessageContext contextOut)
+    {
+        if (_benzeneResponseAdapter != null)
+        {
+            _benzeneResponseAdapter.SetStatusCode(contextIn, contextOut.Response.HttpStatusCode.ToString());
+            return Task.CompletedTask;
+        }
+
+        _messageHandlerResultSetter.SetResultAsync(contextIn,
+            new MessageHandlerResult(new Topic(contextOut.Request.MessageAttributes["topic"].StringValue),
+                MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.Response.HttpStatusCode.ToString())));
+
+        return Task.CompletedTask;
+    }
+}
+
+public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext, KafkaSendMessageContext>
+{
+    private readonly IMessageTopicGetter<TContext> _messageTopicGetter;
+    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
+    private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
+    private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
+
+    public KafkaMessageContextConverter(IMessageTopicGetter<TContext> messageTopicGetter, IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter, IMessageHandlerResultSetter<TContext> messageHandlerResultSetter, IBenzeneResponseAdapter<TContext> benzeneResponseAdapter)
+    {
+        _messageTopicGetter = messageTopicGetter;
+        _benzeneResponseAdapter = benzeneResponseAdapter;
+        _messageHandlerResultSetter = messageHandlerResultSetter;
+        _messageHeadersGetter = messageHeadersGetter;
+        _messageBodyGetter = messageBodyGetter;
+    }
+
+    public Task<KafkaSendMessageContext> CreateRequestAsync(TContext contextIn)
+    {
+        return Task.FromResult(new KafkaSendMessageContext(
+            _messageTopicGetter.GetTopic(contextIn).Id,
+            new Message<string, string>
+            {
+                Value = _messageBodyGetter.GetBody(contextIn)
+            }
+        ));
+    }
+
+    public Task MapResponseAsync(TContext contextIn, KafkaSendMessageContext contextOut)
+    {
+        if (_benzeneResponseAdapter != null)
+        {
+            _benzeneResponseAdapter.SetStatusCode(contextIn, "Ok");
+            return Task.CompletedTask;
+        }
+
+        _messageHandlerResultSetter.SetResultAsync(contextIn,
+            new MessageHandlerResult(new Topic(contextOut.Topic),
+                MessageHandlerDefinition.Empty(), BenzeneResult.Set("Ok")));
 
         return Task.CompletedTask;
     }

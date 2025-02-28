@@ -1,41 +1,30 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.SQSEvents;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Aws.Lambda.Sqs;
+using Benzene.Aws.Lambda.Sqs.TestHelpers;
 using Benzene.Clients.Aws.Sns;
+using Benzene.Clients.Aws.Sqs;
+using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.Messages.MessageSender;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
+using Benzene.Test.Aws.Sns;
+using Benzene.Test.Examples;
+using Benzene.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace Benzene.Test.Experiments;
 
 public class ConvertTest
 {
-    [Fact]
-    public async Task Convert()
-    {
-        var services = new MicrosoftBenzeneServiceContainer(new ServiceCollection());
-        var appBuilder = new MiddlewarePipelineBuilder<string>(services);
-        var appBuilder2 = new MiddlewarePipelineBuilder<StringConvert>(services);
-
-        var app = appBuilder
-            .Convert(
-                x => new StringConvert { Value = x },
-            (_, _) => { },
-                appBuilder2.Build())
-            .Build();
-
-        var entryPoint =
-            new EntryPointMiddlewareApplication<string>(new MiddlewareApplication<string, string>(app, s => s),
-                services.CreateServiceResolverFactory());
-
-        await entryPoint.SendAsync("foo");
-    }
-}
-
-public class StringConvert
-{
-    public string Value { get; set; }
 }
 

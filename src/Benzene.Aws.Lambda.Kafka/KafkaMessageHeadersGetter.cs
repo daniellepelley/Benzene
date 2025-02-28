@@ -16,6 +16,11 @@ public class KafkaMessageHeadersGetter : IMessageHeadersGetter<KafkaContext>
             return new Dictionary<string, string>();
         }
 
-        return headers.ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.Value));
+        var dictionary = headers
+            .ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.Value));
+        
+        dictionary.Add("topic", context.KafkaEventRecord.Topic);
+
+        return dictionary;
     }
 }
