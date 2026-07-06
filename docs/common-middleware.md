@@ -31,7 +31,7 @@ This will allow healthchecks to be accessed using the topic added. By default â€
 ```
 
 ## UseSpec
-This allows you to query schemas from the service such as openapi, asyncapi and iris. It is essential that this is added if you want to use the Command line tools to generate code.
+This allows you to query schemas from the service such as openapi and asyncapi. It is essential that this is added if you want to use the Command line tools to generate code.
 
 ```csharp
 .UseSpec("spec")

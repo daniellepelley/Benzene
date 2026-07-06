@@ -1,32 +1,31 @@
 # Benzene
 
-Benzene is a hexaganal framework designed for services running in serverless, containers or on physical servers. It is supports multiple cloud providers.
+Benzene is a hexagonal framework designed for services running in serverless environments, containers, or on physical servers. It supports multiple cloud providers and provides a unified programming model for message-based architectures.
 
 ### Main Themes
 
-- General
+- **General**
   - [Message Handlers](message-handlers)
   - [Message Results](message-result)
   - [Middleware](middleware)
+  - [Common Middleware](common-middleware)
   - [Testing Benzene](testing-benzene)
   - [Health Checks](health-checks)
-    - Entity Framework
-  - [Correlation Ids](correlation-ids)
-- Third Party
-  - Validation
+  - [Monitoring & Diagnostics](monitoring)
+
+- **Cloud Providers**
+  - **AWS**
+    - [AWS Lambda Setup](getting-started-aws)
+  - **Azure**
+    - [Azure Functions](azure-functions) (Coming Soon)
+
+- **Integrations**
+  - [ASP.NET Core](asp-net-core)
+  - **Validation**
     - [Fluent Validation](fluent-validation)
     - [Data Annotations](data-annotations)
-  - Monitoring 
-    - Datadog
-- AWS
-  - AWS Lambda
-    - Setup
-    - SQS
-    - SNS
-    - Kafka
-- Azure
-  - Azure Function
-    - Http
-    - Kafka
-    - EventHub
-- Asp.Net
+
+- **Code Generation**
+  - [Terraform](terraform)
+  - [Client SDKs](client-sdks) (Coming Soon)
+  - [OpenAPI Specification](spec)
