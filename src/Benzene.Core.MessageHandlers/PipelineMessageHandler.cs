@@ -12,17 +12,19 @@ public class PipelineMessageHandler<TRequest, TResponse> : IMessageHandler<TRequ
     private readonly IMiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>> _pipeline;
     private readonly IServiceResolver _serviceResolver;
     private readonly ITopic _topic;
+    private readonly Type? _handlerType;
 
-    public PipelineMessageHandler(ITopic topic, IMiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>> pipeline, IServiceResolver serviceResolver)
+    public PipelineMessageHandler(ITopic topic, IMiddlewarePipeline<IMessageHandlerContext<TRequest, TResponse>> pipeline, IServiceResolver serviceResolver, Type? handlerType = null)
     {
         _topic = topic;
         _serviceResolver = serviceResolver;
         _pipeline = pipeline;
+        _handlerType = handlerType;
     }
 
     public async Task<IBenzeneResult<TResponse>> HandleAsync(TRequest request)
     {
-        var context = new MessageHandlerContext<TRequest, TResponse>(_topic, request);
+        var context = new MessageHandlerContext<TRequest, TResponse>(_topic, request, _handlerType);
         await _pipeline.HandleAsync(context, _serviceResolver);
         return context.Response;
     }

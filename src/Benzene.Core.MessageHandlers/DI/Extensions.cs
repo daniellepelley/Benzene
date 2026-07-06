@@ -86,7 +86,7 @@ public static class Extensions
     {
         services.TryAddSingleton<MessageHandlersList>();
         services.TryAddSingleton<DependencyMessageHandlersFinder>();
-        services.TryAddSingleton<IMessageHandlersList, MessageHandlersList>();
+        services.TryAddSingleton<IMessageHandlersList>(x => x.GetService<MessageHandlersList>());
         services.TryAddSingleton<IMessageHandlersFinder>(x =>
             new CompositeMessageHandlersFinder(
                 x.GetService<MessageHandlersList>(),
@@ -114,7 +114,7 @@ public static class Extensions
     
         services.TryAddSingleton<MessageHandlersList>();
         services.TryAddSingleton<DependencyMessageHandlersFinder>();
-        services.TryAddSingleton<IMessageHandlersList, MessageHandlersList>();
+        services.TryAddSingleton<IMessageHandlersList>(x => x.GetService<MessageHandlersList>());
         services.TryAddSingleton<IMessageHandlersFinder>(x =>
             new CompositeMessageHandlersFinder(
                 cacheMessageHandlersFinder,

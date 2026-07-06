@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
@@ -75,6 +76,28 @@ public static class MiddlewarePipelineExtensions
             var routePipelineBuilder = resolver.GetService<IHandlerPipelineBuilder>();
             routePipelineBuilder.Add(builder.GetBuilders());
             return resolver.GetService<MessageRouter<TContext>>();
+        });
+    }
+
+    public static void AddMessageHandler<THandler, TRequest, TResponse>(this IMessageRouterBuilder builder, string topic, string? version = null)
+        where THandler : class, IMessageHandler<TRequest, TResponse>
+        where TRequest : class
+    {
+        builder.Register(x =>
+        {
+            x.TryAddScoped<THandler>();
+            x.AddSingleton<IMessageHandlerDefinition>(MessageHandlerDefinition.CreateInstance(topic, version ?? string.Empty, typeof(TRequest), typeof(TResponse), typeof(THandler)));
+        });
+    }
+
+    public static void AddMessageHandler<THandler, TRequest>(this IMessageRouterBuilder builder, string topic, string? version = null)
+        where THandler : class, IMessageHandler<TRequest>
+        where TRequest : class
+    {
+        builder.Register(x =>
+        {
+            x.TryAddScoped<THandler>();
+            x.AddSingleton<IMessageHandlerDefinition>(MessageHandlerDefinition.CreateInstance(topic, version ?? string.Empty, typeof(TRequest), typeof(Benzene.Abstractions.Results.Void), typeof(THandler)));
         });
     }
 }

@@ -30,6 +30,8 @@ public static class DependencyExtensions
 
     public static IBenzeneServiceContainer AddFluentValidation(this IBenzeneServiceContainer services, Type[] types)
     {
+        services.TryAddSingleton<IValidationStatusMapper, DefaultValidationStatusMapper>();
+
         var validatorTypes = types
             .Where(t => typeof(IValidator).IsAssignableFrom(t) && !t.IsAbstract &&
                         !t.Assembly.FullName.StartsWith("FluentValidation,"))

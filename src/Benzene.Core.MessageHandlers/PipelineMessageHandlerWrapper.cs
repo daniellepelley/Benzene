@@ -19,13 +19,13 @@ public class PipelineMessageHandlerWrapper : IMessageHandlerWrapper
         where TRequest : class
     {
         var pipeline = _handlerPipelineBuilder.Create(new MessageHandlerNoResultWrapper<TRequest, TResponse>(messageHandler), _serviceResolver);
-        return new PipelineMessageHandler<TRequest, TResponse>(topic, pipeline, _serviceResolver);
+        return new PipelineMessageHandler<TRequest, TResponse>(topic, pipeline, _serviceResolver, messageHandler.GetType());
     }
 
     public IMessageHandler<TRequest, TResponse> Wrap<TRequest, TResponse>(ITopic topic, IMessageHandler<TRequest, TResponse> messageHandler)
         where TRequest : class
     {
         var pipeline = _handlerPipelineBuilder.Create(messageHandler, _serviceResolver);
-        return new PipelineMessageHandler<TRequest, TResponse>(topic, pipeline, _serviceResolver);
+        return new PipelineMessageHandler<TRequest, TResponse>(topic, pipeline, _serviceResolver, messageHandler.GetType());
     }
 }
