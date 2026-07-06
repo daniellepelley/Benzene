@@ -4,6 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Test.Aws.ApiGateway.Examples;
 
@@ -27,7 +28,7 @@ public class AutofacInlineAwsLambdaStartUp : IAwsEntryPointBuilder
     public IAwsLambdaEntryPoint Build()
     {
         var containerBuilder = new ContainerBuilder();
-        var app = new AwsEventStreamPipelineBuilder(new AutofacBenzeneServiceContainer(containerBuilder));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new AutofacBenzeneServiceContainer(containerBuilder));
         
         _appAction(app);
         _servicesAction(containerBuilder);

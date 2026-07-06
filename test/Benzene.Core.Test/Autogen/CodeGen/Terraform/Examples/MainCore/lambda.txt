@@ -1,8 +1,8 @@
-﻿resource "aws_lambda_function" "platform_pedal_core_func" {
-  function_name = "platform-pedal-core-func"
+﻿resource "aws_lambda_function" "benzene_main_core_func" {
+  function_name = "benzene_main_core_func"
   filename = "${path.module}/file.zip"
-  role = aws_iam_role.platform_pedal_core_func_role.arn
-  handler = "Platform.Pedal.Core.Func::Platform.Pedal.Core.LambdaEntryPoint::FunctionHandler"
+  role = aws_iam_role.benzene_main_core_func_role.arn
+  handler = "Benzene.Main.Core.Func::benzene.main.Core.LambdaEntryPoint::FunctionHandlerAsync"
   runtime = "dotnet6"
   timeout = 30
   memory_size = 2048
@@ -29,8 +29,8 @@
   }
 
   tags = {
-    Name = "platform-pedal-core-func"
-    Domain = "platform"
-    Subdomain = "pedal"
+    name = "benzene_main_core_func"
+    domain = "benzene"
+    subdomain = "main"
   }
 }

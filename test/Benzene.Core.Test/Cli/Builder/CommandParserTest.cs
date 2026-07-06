@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Benzene.CodeGen.Cli.Core;
 using Benzene.CodeGen.Cli.Core.Commands.Build;
 using Benzene.CodeGen.Cli.Core.Parsing;
@@ -42,9 +42,10 @@ public class CodePayloadMapperTest
     [Fact]
     public async Task Map_ConsoleApplication()
     {
-        var input = "build -profile developer@darwindevelopment -lambda-name \"platform-pedal-core-func\" -directory \"C:/Users/Daniel.Le.Pelley/source/repos/Benzene/Output\" -output some-output";
+        var input = "build -profile developer@darwindevelopment -lambda-name \"benzene-main-core-func\" -directory \"C:/Users/Daniel.Le.Pelley/source/repos/Benzene/Output\" -output some-output";
     
         await new ConsoleApplication().ExecuteAsync(input);
     }
 
 }
+

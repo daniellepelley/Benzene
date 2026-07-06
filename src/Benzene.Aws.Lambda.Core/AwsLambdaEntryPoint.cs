@@ -19,7 +19,7 @@ public class AwsLambdaEntryPoint : IAwsLambdaEntryPoint
         _serviceResolverFactory = serviceResolverFactory;
     }
 
-    public async Task<Stream> FunctionHandler(Stream stream, ILambdaContext lambdaContext)
+    public async Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext)
     {
         using var scope = _serviceResolverFactory.CreateScope();
 

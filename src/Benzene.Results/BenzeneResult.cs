@@ -20,6 +20,11 @@ public static class BenzeneResult
         return ServiceBenzeneResultInternal<T>.Internal(status, payload);
     }
 
+    public static IBenzeneResult Set(string status, params string[] errors)
+    {
+        return Set<Void>(status, errors);
+    }
+
     public static IBenzeneResult<T> Set<T>(string status, params string[] errors)
     {
         return ServiceBenzeneResultInternal<T>.Internal(status, errors);
@@ -202,19 +207,17 @@ public static class BenzeneResult
 
     private class ServiceBenzeneResultInternal<T> : IBenzeneResult<T>
     {
-        private readonly T _payload;
-
         private ServiceBenzeneResultInternal(string status, bool isSuccessful)
         {
             Status = status;
             IsSuccessful = isSuccessful;
-            Errors = Array.Empty<string>();
+            Errors = [];
         }
 
         private ServiceBenzeneResultInternal(string status, T payload)
             : this(status, true)
         {
-            _payload = payload;
+            Payload = payload;
         }
 
         private ServiceBenzeneResultInternal(string status, string[] errors)
@@ -227,9 +230,9 @@ public static class BenzeneResult
         public bool IsSuccessful { get; }
         public string[] Errors { get; }
 
-        public T Payload => _payload;
+        public T Payload { get; }
 
-        public object PayloadAsObject => _payload;
+        public object PayloadAsObject => Payload;
 
         public static IBenzeneResult<T> Internal(string status, bool isSuccessful)
         {

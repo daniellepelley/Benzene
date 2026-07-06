@@ -140,7 +140,7 @@ public class ApiGatewayMessagePipelineTest
     public async Task Send_FromStream()
     {
         ApiGatewayContext apiGatewayContext = null;
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
         app.UseApiGateway(message => message
             .Use(null, (context, next) =>

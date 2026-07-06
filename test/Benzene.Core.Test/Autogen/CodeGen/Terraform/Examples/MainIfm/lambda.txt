@@ -1,8 +1,8 @@
-﻿resource "aws_lambda_function" "platform_pedal_ifm_func" {
-  function_name = "platform-pedal-ifm-func"
+﻿resource "aws_lambda_function" "benzene_main_ifm_func" {
+  function_name = "benzene-main-ifm-func"
   filename = "${path.module}/file.zip"
-  role = aws_iam_role.platform_pedal_ifm_func_role.arn
-  handler = "Platform.Pedal.Ifm.Func::Platform.Pedal.Ifm.LambdaEntryPoint::FunctionHandler"
+  role = aws_iam_role.benzene_main_ifm_func_role.arn
+  handler = "benzene.main.Ifm.Func::benzene.main.Ifm.LambdaEntryPoint::FunctionHandlerAsync"
   runtime = "dotnet6"
   timeout = 30
   memory_size = 2048
@@ -28,8 +28,8 @@
   }
 
   tags = {
-    Name = "platform-pedal-ifm-func"
-    Domain = "platform"
-    Subdomain = "pedal"
+    name = "benzene-main-ifm-func"
+    domain = "benzene"
+    subdomain = "main"
   }
 }

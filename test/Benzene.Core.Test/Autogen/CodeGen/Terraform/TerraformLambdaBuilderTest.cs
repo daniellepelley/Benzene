@@ -10,21 +10,21 @@ public class TerraformLambdaBuilderTest
     private string LoadExpected(string fileName) => File.ReadAllText($"{Directory.GetCurrentDirectory()}/Autogen/CodeGen/Terraform/Examples/{fileName}");
 
     [Fact]
-    public void PedalCoreService_Test()
+    public void MainCoreService_Test()
     {
-        var expectedLambda = LoadExpected("PedalCore/lambda.txt");
-        var expectedRole = LoadExpected("PedalCore/iam_roles.txt");
+        var expectedLambda = LoadExpected("MainCore/lambda.txt");
+        var expectedRole = LoadExpected("MainCore/iam_roles.txt");
 
         var terraformBuilder = new TerraformLambdaBuilder();
 
         var result = terraformBuilder.Build(new TerraformLambdaSettings
         {
-            Name = "platform-pedal-core-func",
-            EntryPoint = "Platform.Pedal.Core.Func::Platform.Pedal.Core.LambdaEntryPoint::FunctionHandler",
+            Name = "benzene_main_core_func",
+            EntryPoint = "Benzene.Main.Core.Func::benzene.main.Core.LambdaEntryPoint::FunctionHandlerAsync",
             Timeout = 30,
             MemorySize = 2048,
-            Domain = "platform",
-            SubDomain = "pedal"
+            Domain = "benzene",
+            SubDomain = "main"
         });
 
         Assert.Equal(expectedLambda, result["lambda.tf"], ignoreLineEndingDifferences: true);

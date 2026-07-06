@@ -12,7 +12,7 @@ namespace Benzene.SelfHost.Http;
 
 public static class Extensions
 {
-    public static IBenzeneWorkerBuilder UseHttp(this IBenzeneWorkerBuilder app, BenzeneHttpConfig benzeneHttpConfig, Action<IMiddlewarePipelineBuilder<SelfHostHttpContext>> action)
+    public static IBenzeneWorkerStartup UseHttp(this IBenzeneWorkerStartup app, BenzeneHttpConfig benzeneHttpConfig, Action<IMiddlewarePipelineBuilder<SelfHostHttpContext>> action)
     {
         app.Register(x => x.AddHttp());
         var middlewarePipelineBuilder = app.Create<SelfHostHttpContext>();

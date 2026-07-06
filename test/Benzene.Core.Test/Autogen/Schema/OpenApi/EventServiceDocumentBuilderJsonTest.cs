@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Benzene.Extras.Broadcast;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
@@ -82,7 +82,7 @@ public class EventServiceDocumentBuilderJsonTest
         return new EventServiceDocumentBuilder(_schemaBuilder)
             .AddInfo(new OpenApiInfo
             {
-                Title = "platform-tenant-core-func",
+                Title = "benzene-tenant-core-func",
                 Version = "1.0",
                 Description = "Core Tenant Data"
             })
@@ -92,7 +92,8 @@ public class EventServiceDocumentBuilderJsonTest
             })
             .AddTag(new OpenApiTag
             {
-                Name = "Platform"
+                Name = "benzene"
             });
     }
 }
+

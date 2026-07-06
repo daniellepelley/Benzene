@@ -1,7 +1,7 @@
-﻿using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.MessageHandling;
 using Benzene.Results;
 
-namespace Platform.Service.Clients.User;
+namespace benzene.Service.Clients.User;
 
 [Message("user:create")]
 public class UserCreateMessageHandler : IMessageHandler<CreateUserMessage, string>

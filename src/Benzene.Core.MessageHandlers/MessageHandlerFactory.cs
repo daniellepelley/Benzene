@@ -12,9 +12,11 @@ public class MessageHandlerFactory : IMessageHandlerFactory
     private readonly IMessageHandlerWrapper _messageHandlerWrapper;
     private readonly IServiceResolver _serviceResolver;
     private readonly IBenzeneLogger _logger;
+    private IDefaultStatuses _defaultStatuses;
 
-    public MessageHandlerFactory(IServiceResolver serviceResolver, IMessageHandlerWrapper messageHandlerWrapper, IBenzeneLogger logger)
+    public MessageHandlerFactory(IServiceResolver serviceResolver, IMessageHandlerWrapper messageHandlerWrapper, IBenzeneLogger logger, IDefaultStatuses defaultStatuses)
     {
+        _defaultStatuses = defaultStatuses;
         _logger = logger;
         _serviceResolver = serviceResolver;
         _messageHandlerWrapper = messageHandlerWrapper;
@@ -49,12 +51,12 @@ public class MessageHandlerFactory : IMessageHandlerFactory
             case IMessageHandler<TRequest, TResponse> handlerWithResponse:
             {
                 var wrapped = _messageHandlerWrapper.Wrap(topic, handlerWithResponse);
-                return new MessageHandler<TRequest, TResponse>(wrapped, _logger);
+                return new MessageHandler<TRequest, TResponse>(wrapped, _logger, _defaultStatuses);
             }
             case IMessageHandler<TRequest> handlerNoResponse:
             {
                 var wrapped = _messageHandlerWrapper.Wrap<TRequest, TResponse>(topic, handlerNoResponse);
-                return new MessageHandler<TRequest, TResponse>(wrapped, _logger);
+                return new MessageHandler<TRequest, TResponse>(wrapped, _logger, _defaultStatuses);
             }
             default:
                 return null;

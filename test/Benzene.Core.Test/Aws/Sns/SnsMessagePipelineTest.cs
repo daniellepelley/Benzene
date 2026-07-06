@@ -181,7 +181,7 @@ public class SnsMessagePipelineTest
         SnsRecordContext snsRecordContext = null;
 
         var services = ServiceResolverMother.CreateServiceCollection();
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
 
         app.UseSns(message => message
             .Use(null, (context, next) =>
@@ -634,47 +634,4 @@ public class SnsMessageContextConverter<TContext> : IContextConverter<TContext, 
     }
 }
 
-public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext, KafkaSendMessageContext>
-{
-    private readonly IMessageTopicGetter<TContext> _messageTopicGetter;
-    private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
-    private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
-    private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
-    private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
-
-    public KafkaMessageContextConverter(IMessageTopicGetter<TContext> messageTopicGetter, IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter, IMessageHandlerResultSetter<TContext> messageHandlerResultSetter, IBenzeneResponseAdapter<TContext> benzeneResponseAdapter)
-    {
-        _messageTopicGetter = messageTopicGetter;
-        _benzeneResponseAdapter = benzeneResponseAdapter;
-        _messageHandlerResultSetter = messageHandlerResultSetter;
-        _messageHeadersGetter = messageHeadersGetter;
-        _messageBodyGetter = messageBodyGetter;
-    }
-
-    public Task<KafkaSendMessageContext> CreateRequestAsync(TContext contextIn)
-    {
-        return Task.FromResult(new KafkaSendMessageContext(
-            _messageTopicGetter.GetTopic(contextIn).Id,
-            new Message<string, string>
-            {
-                Value = _messageBodyGetter.GetBody(contextIn)
-            }
-        ));
-    }
-
-    public Task MapResponseAsync(TContext contextIn, KafkaSendMessageContext contextOut)
-    {
-        if (_benzeneResponseAdapter != null)
-        {
-            _benzeneResponseAdapter.SetStatusCode(contextIn, "Ok");
-            return Task.CompletedTask;
-        }
-
-        _messageHandlerResultSetter.SetResultAsync(contextIn,
-            new MessageHandlerResult(new Topic(contextOut.Topic),
-                MessageHandlerDefinition.Empty(), BenzeneResult.Set("Ok")));
-
-        return Task.CompletedTask;
-    }
-}
 

@@ -1,13 +1,9 @@
-﻿using Amazon.Runtime;
+using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Aws.Tests.Fixtures;
-using Benzene.Core.DI;
-using Benzene.Core.Exceptions;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
-using Benzene.Core.Messages.Predicates;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Moq;
@@ -20,7 +16,7 @@ public class SqsConsumerTest : IClassFixture<SqsFixture>
 {
     private const string ServiceUrl = "http://localhost:4566";
     private const string QueueUrl = $"{ServiceUrl}/000000000000/{QueueName}";
-    private const string QueueName = "platform-eventbus-main-queue";
+    private const string QueueName = "benzene-eventbus-main-queue";
     private const string AccessKey = "123";
     private const string SecretKey = "xyz";
 
@@ -74,7 +70,7 @@ public class SqsConsumerTest : IClassFixture<SqsFixture>
         await SetUp();
         var amazonSqsClient = CreateAmazonSqsClient();
         var mockFactory = new Mock<ISqsClientFactory>();
-        mockFactory.Setup(x => x.Create(It.IsAny<string>())).Returns(amazonSqsClient);
+        mockFactory.Setup(x => x.Create()).Returns(amazonSqsClient);
 
         await amazonSqsClient.SendMessageAsync(new SendMessageRequest(QueueUrl, "test"));
 
@@ -91,7 +87,6 @@ public class SqsConsumerTest : IClassFixture<SqsFixture>
             new SqsConsumerApplication(pipeline),
             new SqsConsumerConfig
             {
-                ServiceUrl = ServiceUrl,
                 QueueUrl = QueueUrl,
                 MaxNumberOfMessages = 10
             }, mockFactory.Object);

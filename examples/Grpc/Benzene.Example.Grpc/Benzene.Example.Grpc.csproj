@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <Reference Include="Benzene.Core.Messages">
-      <HintPath>..\..\..\src\Benzene.Core.Messages\bin\Debug\net8.0\Benzene.Core.Messages.dll</HintPath>
+      <HintPath>..\..\..\src\Benzene.Core.Messages\bin\Debug\net10.0\Benzene.Core.Messages.dll</HintPath>
     </Reference>
   </ItemGroup>
 

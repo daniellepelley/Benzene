@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Clients;
@@ -7,7 +7,7 @@ using Benzene.HealthChecks.Core;
 using Benzene.Results;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Platform.Service.Clients.Tenant
+namespace Benzene.Service.Clients.Tenant
 {
     [ExcludeFromCodeCoverage]
     public class TenantServiceClient : ITenantServiceClient

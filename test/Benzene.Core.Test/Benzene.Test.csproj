@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -227,22 +227,22 @@
     <None Update="Autogen\CodeGen\Terraform\Examples\EventBusMap.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\aws_lambda_permission.txt">
+    <None Update="Autogen\CodeGen\Terraform\Examples\MainIfm\aws_lambda_permission.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\iam_roles.txt">
+    <None Update="Autogen\CodeGen\Terraform\Examples\MainIfm\iam_roles.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\aws_sns_topic_subscription.txt">
+    <None Update="Autogen\CodeGen\Terraform\Examples\MainIfm\aws_sns_topic_subscription.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Terraform\Examples\PedalIfm\lambda.txt">
+    <None Update="Autogen\CodeGen\Terraform\Examples\MainIfm\lambda.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Terraform\Examples\PedalCore\iam_roles.txt">
+    <None Update="Autogen\CodeGen\Terraform\Examples\MainCore\iam_roles.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Terraform\Examples\PedalCore\lambda.txt">
+    <None Update="Autogen\CodeGen\Terraform\Examples\MainCore\lambda.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Elements\EventBusMapping\EventBusMap.txt">
@@ -260,7 +260,7 @@
 
   <ItemGroup>
     <Reference Include="Amazon.Lambda.S3Events">
-      <HintPath>..\..\..\..\..\.nuget\packages\amazon.lambda.s3events\3.1.0\lib\net8.0\Amazon.Lambda.S3Events.dll</HintPath>
+      <HintPath>..\..\..\..\..\.nuget\packages\amazon.lambda.s3events\3.1.0\lib\net10.0\Amazon.Lambda.S3Events.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
@@ -26,7 +26,7 @@ public class OpenApiDocumentBuilderTest
         var doc = schemaBuilder
             .AddInfo(new OpenApiInfo
             {
-                Title = "platform-tenant-core-func",
+                Title = "benzene-tenant-core-func",
                 Version = "1.0",
                 Description = "Core Tenant Data"
             })
@@ -36,7 +36,7 @@ public class OpenApiDocumentBuilderTest
             })
             .AddTag(new OpenApiTag
             {
-                Name = "Platform"
+                Name = "benzene"
             })
             .AddHttpEndpointDefinitions(new IHttpEndpointDefinition[] { httpEndpointDefinition}, new IMessageHandlerDefinition[] { messageHandlerDefinition })
             .Build();
@@ -49,3 +49,4 @@ public class OpenApiDocumentBuilderTest
         Assert.Equal(yaml, yaml1);
     }
 }
+

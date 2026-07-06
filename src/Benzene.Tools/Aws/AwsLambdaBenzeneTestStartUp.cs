@@ -3,6 +3,7 @@ using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,7 +63,7 @@ public class AwsLambdaBenzeneTestStartUp<TStartUp, TContainer> where TStartUp : 
             .AddInMemoryCollection(_dictionary);
 
         var services = _dependencyInjectionAdapter.CreateContainer();
-        var app = new AwsEventStreamPipelineBuilder(_dependencyInjectionAdapter.CreateBenzeneServiceContainer(services));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(_dependencyInjectionAdapter.CreateBenzeneServiceContainer(services));
 
         startup.ConfigureServices(services, configurationBuilder.Build());
         foreach (var action in _actions)

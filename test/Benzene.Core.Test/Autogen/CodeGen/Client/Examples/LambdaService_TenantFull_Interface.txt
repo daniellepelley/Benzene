@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Clients;
 using Benzene.Clients.HealthChecks;
 using Benzene.Results;
 
-namespace Platform.Service.Clients.Tenant
+namespace Benzene.Service.Clients.Tenant
 {
     public interface ITenantServiceClient : IHasHealthCheck
     {

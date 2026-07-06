@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Benzene.Elements.LambdaClients.Core;
 
-namespace Platform.Service.Clients.User
+namespace benzene.Service.Clients.User
 {
     public class UpdateUserMessage : UpdateMessage
     {

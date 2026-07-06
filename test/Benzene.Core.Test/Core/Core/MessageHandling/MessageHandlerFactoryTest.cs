@@ -30,7 +30,7 @@ public class MessageHandlerFactoryTest
         var messageHandlerLookup = new MessageHandlerDefinitionLookUp(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) }, new VersionSelector());
         var messageHandlerFactory = new MessageHandlerFactory(serviceResolver, new PipelineMessageHandlerWrapper(
             new HandlerPipelineBuilder(Array.Empty<IHandlerMiddlewareBuilder>()),
-             serviceResolver), BenzeneLogger.NullLogger);
+             serviceResolver), BenzeneLogger.NullLogger, new DefaultStatuses());
 
         var messageHandler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic)));
 

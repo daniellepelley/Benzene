@@ -4,10 +4,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.SelfHost;
 
-public class InlineSelfHostedStartUp
+public interface IBenzeneWorkerBuilder
+{
+    public IBenzeneWorker Build();
+}
+
+public class InlineSelfHostedStartUp : IBenzeneWorkerBuilder
 {
     private Action<IServiceCollection> _servicesAction = _ => { };
-    private Action<IBenzeneWorkerBuilder> _appAction = _ => { };
+    private Action<IBenzeneWorkerStartup> _appAction = _ => { };
 
     public InlineSelfHostedStartUp ConfigureServices(Action<IServiceCollection> action)
     {
@@ -15,7 +20,7 @@ public class InlineSelfHostedStartUp
         return this;
     }
 
-    public InlineSelfHostedStartUp Configure(Action<IBenzeneWorkerBuilder> action)
+    public InlineSelfHostedStartUp Configure(Action<IBenzeneWorkerStartup> action)
     {
         _appAction = action;
         return this;
@@ -24,7 +29,7 @@ public class InlineSelfHostedStartUp
     public IBenzeneWorker Build()
     {
         var services = new ServiceCollection();
-        var app = new BenzeneWorkerBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var app = new BenzeneWorkerStartup2(new MicrosoftBenzeneServiceContainer(services));
 
         _appAction(app);
         _servicesAction(services);

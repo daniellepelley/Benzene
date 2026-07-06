@@ -1,4 +1,4 @@
-﻿using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
 using Benzene.Extras.Broadcast;
 using Benzene.Schema.OpenApi;
@@ -27,7 +27,7 @@ public class AsyncApiDocumentBuilderTest
         var doc = asyncApiDocumentBuilder
             .AddInfo(new AsyncApiInfo
             {
-                Title = "platform-tenant-core-func",
+                Title = "benzene-tenant-core-func",
                 Version = "1.0",
                 Description = "Core Tenant Data"
             })
@@ -37,7 +37,7 @@ public class AsyncApiDocumentBuilderTest
             })
             .AddTag(new AsyncApiTag
             {
-                Name = "Platform"
+                Name = "benzene"
             })
             .AddMessageHandlerDefinitions(new[] { messageHandlerDefinition })
             .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
@@ -53,3 +53,4 @@ public class AsyncApiDocumentBuilderTest
 
     }
 }
+

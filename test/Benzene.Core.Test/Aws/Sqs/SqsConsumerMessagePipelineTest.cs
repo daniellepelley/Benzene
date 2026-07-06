@@ -106,7 +106,7 @@ public class SqsConsumerMessagePipelineTest
         var mockSqsClient = new Mock<IAmazonSQS>();
 
         var mockSqsClientFactory = new Mock<ISqsClientFactory>();
-        mockSqsClientFactory.Setup(x => x.Create(serviceUrl))
+        mockSqsClientFactory.Setup(x => x.Create())
             .Returns(mockSqsClient.Object);
 
         mockSqsClient
@@ -147,7 +147,6 @@ public class SqsConsumerMessagePipelineTest
 
         var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
         {
-            ServiceUrl = serviceUrl,
             MaxNumberOfMessages = 10,
             QueueUrl = "some-url"
         }, mockSqsClientFactory.Object);

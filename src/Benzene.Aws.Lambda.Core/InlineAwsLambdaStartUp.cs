@@ -1,6 +1,7 @@
 ﻿using System;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,7 +27,7 @@ public class InlineAwsLambdaStartUp : IAwsEntryPointBuilder
     public IAwsLambdaEntryPoint Build()
     {
         var services = new ServiceCollection();
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
         
         _appAction(app);
         _servicesAction(services);

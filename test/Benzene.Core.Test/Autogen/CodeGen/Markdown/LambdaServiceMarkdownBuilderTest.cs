@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -15,10 +15,10 @@ public class LambdaServiceMarkdownBuilderTest
 {
     private const string BaseNameSpace = "This is the header";
 
-    private const string UserLambdaName = "platform-user-core-func";
+    private const string UserLambdaName = "benzene-user-core-func";
     private const string UserServiceName = "User";
         
-    private const string TenantLambdaName = "platform-tenant-core-func";
+    private const string TenantLambdaName = "benzene-tenant-core-func";
     private const string TenantServiceName = "Tenant";
 
     private string LoadExpected(string fileName) => File.ReadAllText($"{Directory.GetCurrentDirectory()}/Autogen/CodeGen/Markdown/Examples/{fileName}.md");
@@ -96,3 +96,4 @@ public class LambdaServiceMarkdownBuilderTest
         Assert.Equal(expected, result["README.md"], ignoreLineEndingDifferences: true);
     }
 }
+

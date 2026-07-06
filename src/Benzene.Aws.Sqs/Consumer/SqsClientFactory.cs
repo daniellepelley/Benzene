@@ -4,11 +4,15 @@ namespace Benzene.Aws.Sqs.Consumer;
 
 public class SqsClientFactory : ISqsClientFactory
 {
-    public IAmazonSQS Create(string serviceUrl)
+    private readonly IAmazonSQS _amazonSqs;
+
+    public SqsClientFactory(IAmazonSQS amazonSqs)
     {
-        return new AmazonSQSClient(new AmazonSQSConfig
-        {
-            ServiceURL = serviceUrl
-        });
+        _amazonSqs = amazonSqs;
+    }
+    
+    public IAmazonSQS Create()
+    {
+        return _amazonSqs;
     }
 }

@@ -1,4 +1,4 @@
-﻿using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
 using Benzene.Extras.Broadcast;
 using Benzene.Http.Routing;
@@ -30,7 +30,7 @@ public class EventServiceDocumentBuilderTest
         var doc = eventServiceDocumentBuilder
             .AddInfo(new OpenApiInfo
             {
-                Title = "platform-tenant-core-func",
+                Title = "benzene-tenant-core-func",
                 Version = "1.0",
                 Description = "Core Tenant Data"
             })
@@ -40,7 +40,7 @@ public class EventServiceDocumentBuilderTest
             })
             .AddTag(new OpenApiTag
             {
-                Name = "Platform"
+                Name = "benzene"
             })
             .AddMessageHandlerDefinitions(new[] { messageHandlerDefinition })
             .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
@@ -57,3 +57,4 @@ public class EventServiceDocumentBuilderTest
         Assert.Equal(json, json2);
     }
 }
+

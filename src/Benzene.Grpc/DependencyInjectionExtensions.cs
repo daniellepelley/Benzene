@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
-using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 
 namespace Benzene.Grpc;
 

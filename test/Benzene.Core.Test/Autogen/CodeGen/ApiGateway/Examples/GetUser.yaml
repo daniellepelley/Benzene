@@ -1,4 +1,4 @@
-﻿# AUTOGEN START PLATFORM_MARKETPLACE_CORE_FUNC_URI
+# AUTOGEN START BENZENE_MARKETPLACE_CORE_FUNC_URI
 
   /rbac/user/{id}:
     options:
@@ -79,7 +79,7 @@
       x-amazon-apigateway-integration:
         type: "AWS"
         httpMethod: POST
-        uri: "#platform_marketplace_core_func_uri#"
+        uri: "#BENZENE_MARKETPLACE_CORE_FUNC_URI#"
         passthroughBehavior: "never"
         requestTemplates:
           application/json: |
@@ -181,7 +181,7 @@
       x-amazon-apigateway-integration:
         type: "AWS"
         httpMethod: POST
-        uri: "#platform_marketplace_core_func_uri#"
+        uri: "#BENZENE_MARKETPLACE_CORE_FUNC_URI#"
         passthroughBehavior: "never"
         requestTemplates:
           application/json: |

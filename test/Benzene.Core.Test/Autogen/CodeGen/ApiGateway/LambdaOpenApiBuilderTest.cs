@@ -31,7 +31,7 @@ public class LambdaOpenApiBuilderTest
 
         var eventServiceDocument = httpEndpointDefinitions.ToEventServiceDocument(messageHandlerDefinitions);
             
-        var apiGatewayBuilderV1 = new ApiGatewayBuilderV1("platform_marketplace_core_func_uri");
+        var apiGatewayBuilderV1 = new ApiGatewayBuilderV1("BENZENE_MARKETPLACE_CORE_FUNC_URI");
 
         var result = apiGatewayBuilderV1.BuildCodeFiles(eventServiceDocument).ToFilesDictionary();
 
@@ -54,7 +54,7 @@ public class LambdaOpenApiBuilderTest
         var eventServiceDocument = httpEndpointDefinitions.ToEventServiceDocument(messageHandlerDefinitions);
 
 
-        var apiGatewayBuilderV1 = new ApiGatewayBuilderV1("platform_rbac_bff_func_uri");
+        var apiGatewayBuilderV1 = new ApiGatewayBuilderV1("BENZENE_RBAC_BFF_FUNC_URI");
 
         var result = apiGatewayBuilderV1.BuildCodeFiles(eventServiceDocument).ToFilesDictionary();
 

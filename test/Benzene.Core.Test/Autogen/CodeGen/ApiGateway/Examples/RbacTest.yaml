@@ -1,4 +1,4 @@
-﻿# AUTOGEN START PLATFORM_RBAC_BFF_FUNC_URI
+# AUTOGEN START BENZENE_RBAC_BFF_FUNC_URI
 
   /rbac/test:
     options:
@@ -67,7 +67,7 @@
       x-amazon-apigateway-integration:
         type: "AWS"
         httpMethod: POST
-        uri: "#platform_rbac_bff_func_uri#"
+        uri: "#BENZENE_RBAC_BFF_FUNC_URI#"
         passthroughBehavior: "never"
         requestTemplates:
           application/json: |

@@ -11,7 +11,7 @@ public class DockerComposeFixture : IDisposable
 
     public DockerComposeFixture(string fileName)
     {
-        _fileName = $"Fixtures/Files/{fileName}";
+        _fileName = Path.Combine("Fixtures","Files", fileName);
         DockerComposeUp();
     }
 

@@ -46,7 +46,7 @@ public class BenzeneMessagePipelineTest
     public async Task SendBenzeneMessage_FromStream()
     {
         BenzeneMessageContext BenzeneMessageContext = null;
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
         app.UseBenzeneMessage(BenzeneMessage => BenzeneMessage
             .Use(null, (context, next) =>

@@ -7,5 +7,5 @@ namespace Benzene.Aws.Lambda.Core;
 
 public interface IAwsLambdaEntryPoint : IDisposable
 {
-    Task<Stream> FunctionHandler(Stream stream, ILambdaContext lambdaContext);
+    Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext);
 }

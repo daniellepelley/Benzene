@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Platform.Service.Clients.User
+namespace benzene.Service.Clients.User
 {
     [ExcludeFromCodeCoverage]
     public class InternalDto

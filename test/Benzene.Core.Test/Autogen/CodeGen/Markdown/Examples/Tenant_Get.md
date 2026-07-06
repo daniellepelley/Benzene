@@ -1,4 +1,4 @@
-﻿# platform-tenant-core-func
+# benzene-tenant-core-func
 ## Tenant Service
 This is the header
 ## Messages

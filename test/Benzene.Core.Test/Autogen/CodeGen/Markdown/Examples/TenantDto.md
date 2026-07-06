@@ -1,4 +1,4 @@
-﻿{
+{
     id: guid
     name: string
     crn: string

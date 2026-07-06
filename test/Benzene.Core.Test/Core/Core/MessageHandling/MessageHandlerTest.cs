@@ -28,7 +28,7 @@ public class MessageHandlerTest
             .ReturnsAsync(BenzeneResult.Ok<ExampleResponsePayload>());
         
         var messageHandler =
-            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger);
+            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger, new DefaultStatuses());
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.Ok, result.Status);
@@ -49,7 +49,7 @@ public class MessageHandlerTest
             .Throws(new ArgumentException("Wrong Argument"));
         
         var messageHandler =
-            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger);
+            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger, new DefaultStatuses());
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.ValidationError, result.Status);
@@ -67,7 +67,7 @@ public class MessageHandlerTest
             .ReturnsAsync(BenzeneResult.Ok<ExampleResponsePayload>());
         
         var messageHandler =
-            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger);
+            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger, new DefaultStatuses());
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.Ok, result.Status);
@@ -88,7 +88,7 @@ public class MessageHandlerTest
             .Throws(new Exception("some-error"));
         
         var messageHandler =
-            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger);
+            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger, new DefaultStatuses());
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
@@ -107,7 +107,7 @@ public class MessageHandlerTest
             .ReturnsAsync(BenzeneResult.Ok<ExampleResponsePayload>());
         
         var messageHandler =
-            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger);
+            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, BenzeneLogger.NullLogger, new DefaultStatuses());
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.BadRequest, result.Status);

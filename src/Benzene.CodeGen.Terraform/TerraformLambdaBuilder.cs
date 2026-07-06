@@ -87,9 +87,9 @@ public class TerraformLambdaBuilder : ICodeBuilder<TerraformLambdaSettings>
             lineWriter.WriteLine("tags = {");
             using (lineWriter.StartIndent())
             {
-                lineWriter.WriteLine($"Name = \"{settings.Name}\"");
-                lineWriter.WriteLine($"Domain = \"{settings.Domain}\"");
-                lineWriter.WriteLine($"Subdomain = \"{settings.SubDomain}\"");
+                lineWriter.WriteLine($"name = \"{settings.Name}\"");
+                lineWriter.WriteLine($"domain = \"{settings.Domain}\"");
+                lineWriter.WriteLine($"subdomain = \"{settings.SubDomain}\"");
             }
 
             lineWriter.WriteLine("}");
@@ -114,9 +114,9 @@ public class TerraformLambdaBuilder : ICodeBuilder<TerraformLambdaSettings>
             lineWriter.WriteLine("tags = {");
             using (lineWriter.StartIndent())
             {
-                lineWriter.WriteLine($"Name = \"{settings.Name}-role\"");
-                lineWriter.WriteLine($"Domain = \"{settings.Domain}\"");
-                lineWriter.WriteLine($"Subdomain = \"{settings.SubDomain}\"");
+                lineWriter.WriteLine($"name = \"{settings.Name}-role\"");
+                lineWriter.WriteLine($"domain = \"{settings.Domain}\"");
+                lineWriter.WriteLine($"subdomain = \"{settings.SubDomain}\"");
             }
             lineWriter.WriteLine("}");
         }

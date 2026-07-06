@@ -6,4 +6,5 @@ public class DefaultStatuses : IDefaultStatuses
 {
     public string ValidationError => BenzeneResultStatus.ValidationError;
     public string NotFound => BenzeneResultStatus.NotFound;
+    public string BadRequest => BenzeneResultStatus.BadRequest;
 }

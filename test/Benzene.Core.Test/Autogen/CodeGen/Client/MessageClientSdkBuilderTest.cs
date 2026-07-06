@@ -10,7 +10,7 @@ namespace Benzene.Test.Autogen.CodeGen.Client;
 
 public class MessageClientSdkBuilderTest
 {
-    private const string BaseNameSpace = "Platform.Service.Clients";
+    private const string BaseNameSpace = "Benzene.Service.Clients";
     private const string UserServiceName = "User";
     private const string TenantServiceName = "Tenant";
 
@@ -150,3 +150,4 @@ public class MessageClientSdkBuilderTest
         Assert.Equal(expectedInterface, result["ITenantServiceClient.cs"], ignoreLineEndingDifferences: true);
     }
 }
+

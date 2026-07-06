@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Benzene.CodeGen.Client;
@@ -10,7 +10,7 @@ namespace Benzene.Test.Autogen.CodeGen.Service;
 
 public class MessageHandlerBuilderTest
 {
-    private const string BaseNameSpace = "Platform.Service.Clients.User";
+    private const string BaseNameSpace = "benzene.Service.Clients.User";
 
     private string LoadExpected(string fileName) => File.ReadAllText($"{Directory.GetCurrentDirectory()}/Autogen/CodeGen/Service/Examples/{fileName}.txt");
 
@@ -64,3 +64,4 @@ public class MessageHandlerBuilderTest
         Assert.Equal(expectedInternalDto, result["InternalDto.cs"], ignoreLineEndingDifferences: true);
     }
 }
+

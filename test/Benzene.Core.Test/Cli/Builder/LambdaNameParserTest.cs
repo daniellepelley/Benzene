@@ -6,9 +6,9 @@ namespace Benzene.Test.Cli.Builder
     public class LambdaNameParserTest
     {
         [Theory]
-        [InlineData("platform-pedal-core-func", "Client","Platform.Pedal.Core.Client")]
-        [InlineData("platform-tenant-core-func","Client","Platform.Tenant.Core.Client")]
-        [InlineData("platform-tenant-core-func","Func","Platform.Tenant.Core.Func")]
+        [InlineData("benzene-main-core-func", "Client","Benzene.Main.Core.Client")]
+        [InlineData("benzene-tenant-core-func","Client","Benzene.Tenant.Core.Client")]
+        [InlineData("benzene-tenant-core-func","Func","Benzene.Tenant.Core.Func")]
         public void GetNamespace(string input, string suffix, string expected)
         {
             var actual = LambdaNameParser.GetNamespace(input, suffix);
@@ -17,8 +17,8 @@ namespace Benzene.Test.Cli.Builder
         
         
         [Theory]
-        [InlineData("platform-pedal-core-func","PlatformPedalCore")]
-        [InlineData("platform-tenant-core-func","PlatformTenantCore")]
+        [InlineData("benzene-main-core-func","BenzeneMainCore")]
+        [InlineData("benzene-tenant-core-func","BenzeneTenantCore")]
         public void GetServiceName(string input, string expected)
         {
             var actual = LambdaNameParser.GetServiceName(input);

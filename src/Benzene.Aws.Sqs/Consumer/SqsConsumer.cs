@@ -25,7 +25,7 @@ public class SqsConsumer : IBenzeneWorker
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using var client = _sqsClientFactory.Create(_sqsConsumerConfig.ServiceUrl);
+        using var client = _sqsClientFactory.Create();
         do
         {
             try
@@ -60,6 +60,6 @@ public class SqsConsumer : IBenzeneWorker
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        throw new System.NotImplementedException();
+        return Task.CompletedTask;
     }
 }

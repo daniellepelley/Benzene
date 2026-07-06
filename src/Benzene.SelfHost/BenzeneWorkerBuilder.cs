@@ -5,12 +5,12 @@ using Benzene.Core.Middleware;
 
 namespace Benzene.SelfHost;
 
-public class BenzeneWorkerBuilder : IBenzeneWorkerBuilder
+public class BenzeneWorkerStartup2 : IBenzeneWorkerStartup
 {
     private readonly List<Func<IServiceResolverFactory, IBenzeneWorker>> _apps = new();
     private readonly IBenzeneServiceContainer _benzeneServiceContainer;
 
-    public BenzeneWorkerBuilder(IBenzeneServiceContainer benzeneServiceContainer)
+    public BenzeneWorkerStartup2(IBenzeneServiceContainer benzeneServiceContainer)
     {
         _benzeneServiceContainer = benzeneServiceContainer;
     }

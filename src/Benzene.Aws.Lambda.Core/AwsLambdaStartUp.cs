@@ -5,6 +5,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +28,7 @@ public abstract class AwsLambdaStartUp<TContainer> : IStartUp<TContainer, IConfi
         // ReSharper disable once VirtualMemberCallInConstructor
         var configuration = GetConfiguration();
         var services = dependencyInjectionAdapter.CreateContainer();
-        var app = new AwsEventStreamPipelineBuilder(dependencyInjectionAdapter.CreateBenzeneServiceContainer(services));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(dependencyInjectionAdapter.CreateBenzeneServiceContainer(services));
 
         // ReSharper disable once VirtualMemberCallInConstructor
         ConfigureServices(services, configuration);
@@ -44,9 +45,9 @@ public abstract class AwsLambdaStartUp<TContainer> : IStartUp<TContainer, IConfi
 
     public abstract void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration);
 
-    public Task<Stream> FunctionHandler(Stream stream, ILambdaContext lambdaContext)
+    public Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext)
     {
-        return _awsLambdaEntryPoint.FunctionHandler(stream, lambdaContext);
+        return _awsLambdaEntryPoint.FunctionHandlerAsync(stream, lambdaContext);
     }
 
     public void Dispose()

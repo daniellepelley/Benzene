@@ -131,7 +131,7 @@ public class KafkaMessagePipelineTest
     {
         KafkaContext kafkaContext = null;
         var services = ServiceResolverMother.CreateServiceCollection();
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
 
         app.UseKafka(message => message
             .Use(null, (context, next) =>

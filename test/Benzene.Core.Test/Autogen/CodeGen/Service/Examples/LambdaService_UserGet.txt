@@ -1,7 +1,7 @@
-﻿using Benzene.Abstractions.MessageHandling;
+using Benzene.Abstractions.MessageHandling;
 using Benzene.Results;
 
-namespace Platform.Service.Clients.User;
+namespace benzene.Service.Clients.User;
 
 [Message("user:get")]
 public class UserGetMessageHandler : IMessageHandler<GetUserMessage, UserDto>

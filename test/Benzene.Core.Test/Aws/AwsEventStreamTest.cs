@@ -19,7 +19,7 @@ public class AwsEventStreamTest
     {
         const string message = "Test";
 
-        var aws = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var aws = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
         aws
             .Use(new FuncWrapperMiddleware<AwsEventStreamContext>((_, next) => next()))

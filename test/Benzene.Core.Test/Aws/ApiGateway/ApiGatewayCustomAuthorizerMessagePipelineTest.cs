@@ -54,7 +54,7 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
     public async Task Send_FromStream()
     {
         ApiGatewayCustomAuthorizerContext apiGatewayCustomAuthorizerContext = null;
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
         app.UseApiGatewayCustomAuthorizer(message => message
             .Use(null, (context, next) =>

@@ -1,4 +1,4 @@
-﻿using Amazon.Runtime;
+using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.Messages;
@@ -21,7 +21,7 @@ public class SqsMessageSenderBuilderTest : IClassFixture<SqsFixture>
 {
     private const string ServiceUrl = "http://localhost:4566";
     private const string QueueUrl = $"{ServiceUrl}/000000000000/{QueueName}";
-    private const string QueueName = "platform-eventbus-main-queue";
+    private const string QueueName = "benzene-eventbus-main-queue";
     private const string AccessKey = "123";
     private const string SecretKey = "xyz";
 

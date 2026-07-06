@@ -21,7 +21,7 @@ public class AwsLambdaStartUpTest
         var demoAwsStartUp = new LambdaEntryPoint();
 
         var request = RequestMother.CreateExampleEvent().AsBenzeneMessage();
-        var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
+        var response = await demoAwsStartUp.FunctionHandlerAsync(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<BenzeneMessageResponse>(response);
         Assert.Equal("Ok", directMessageResponse.StatusCode);
     }
@@ -55,7 +55,7 @@ public class AwsLambdaStartUpTest
             .CreateExampleHttp()
             .AsApiGatewayRequest();
 
-        var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
+        var response = await demoAwsStartUp.FunctionHandlerAsync(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<APIGatewayProxyResponse>(response);
         Assert.Equal(200, directMessageResponse.StatusCode);
     }
@@ -67,7 +67,7 @@ public class AwsLambdaStartUpTest
 
         var request = HttpBuilder.Create("POST", "/healthcheck").AsApiGatewayRequest();
 
-        var response = await demoAwsStartUp.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
+        var response = await demoAwsStartUp.FunctionHandlerAsync(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         var directMessageResponse = AwsLambdaBenzeneTestHost.StreamToObject<APIGatewayProxyResponse>(response);
         Assert.Equal(200, directMessageResponse.StatusCode);
     }

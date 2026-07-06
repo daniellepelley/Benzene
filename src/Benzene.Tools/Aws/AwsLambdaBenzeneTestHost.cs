@@ -45,7 +45,7 @@ public sealed class AwsLambdaBenzeneTestHost : IBenzeneTestHost, IDisposable
     {
         lambdaContext ??= new TestLambdaContext();
         AWSXRayRecorder.Instance.BeginSegment("Test");
-        var response = await _awsLambdaEntryPoint.FunctionHandler(ObjectToStream(awsEvent), lambdaContext);
+        var response = await _awsLambdaEntryPoint.FunctionHandlerAsync(ObjectToStream(awsEvent), lambdaContext);
         AWSXRayRecorder.Instance.EndSegment();
         return response;
     }

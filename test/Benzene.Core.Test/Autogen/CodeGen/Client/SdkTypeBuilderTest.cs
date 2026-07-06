@@ -12,7 +12,7 @@ namespace Benzene.Test.Autogen.CodeGen.Client;
 
 public class SdkTypeBuilderTest
 {
-    private const string BaseNameSpace = "Platform.Service.Clients.User";
+    private const string BaseNameSpace = "Benzene.Service.Clients.User";
 
     private string LoadExpected(string fileName) =>
         File.ReadAllLines($"{Directory.GetCurrentDirectory()}/Autogen/CodeGen/Client/Examples/{fileName}.txt").ToText();
@@ -102,3 +102,4 @@ public class SdkTypeBuilderTest
         Assert.Equal(expectedMessageWrapper, result.Lines.ToText());
     }
 }
+

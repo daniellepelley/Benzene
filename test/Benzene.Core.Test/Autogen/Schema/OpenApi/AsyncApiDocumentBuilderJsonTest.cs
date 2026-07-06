@@ -1,4 +1,4 @@
-﻿using Benzene.Extras.Broadcast;
+using Benzene.Extras.Broadcast;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;
 using LEGO.AsyncAPI;
@@ -90,7 +90,7 @@ public class AsyncApiDocumentBuilderJsonTest
         return new AsyncApiDocumentBuilder(_schemaBuilder)
             .AddInfo(new AsyncApiInfo()
             {
-                Title = "platform-tenant-core-func",
+                Title = "benzene-tenant-core-func",
                 Version = "1.0",
                 Description = "Core Tenant Data"
             })
@@ -100,7 +100,8 @@ public class AsyncApiDocumentBuilderJsonTest
             })
             .AddTag(new AsyncApiTag
             {
-                Name = "Platform"
+                Name = "benzene"
             });
     }
 }
+

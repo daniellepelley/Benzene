@@ -11,9 +11,11 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
 {
     private readonly IMessageHandler<TRequest, TResponse> _inner;
     private readonly IBenzeneLogger _logger;
+    private IDefaultStatuses _defaultStatuses;
 
-    public MessageHandler(IMessageHandler<TRequest, TResponse> inner, IBenzeneLogger logger)
+    public MessageHandler(IMessageHandler<TRequest, TResponse> inner, IBenzeneLogger logger, IDefaultStatuses defaultStatuses)
     {
+        _defaultStatuses = defaultStatuses;
         _logger = logger;
         _inner = inner;
     }
@@ -29,7 +31,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         {
             Debug.WriteLine($"Message is not valid: {ex}");
             _logger.LogWarning(ex, "Message is not valid");
-            return BenzeneResult.BadRequest("Message is not valid", ex.Message);
+            return BenzeneResult.Set(_defaultStatuses.BadRequest, "Message is not valid", ex.Message);
         }
         
         try
@@ -46,7 +48,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         {
             Debug.WriteLine($"Message handler threw argument exception: {ex}");
             _logger.LogError(ex, "Message handler threw argument exception");
-            return BenzeneResult.ValidationError(ex.Message);
+            return BenzeneResult.Set(_defaultStatuses.ValidationError, ex.Message);
         }
         catch(Exception ex)
         {

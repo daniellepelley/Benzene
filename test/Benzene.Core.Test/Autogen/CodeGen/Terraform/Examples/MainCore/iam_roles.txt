@@ -1,0 +1,10 @@
+﻿resource "aws_iam_role" "benzene_main_core_func_role" {
+  name = "benzene_main_core_func-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+
+  tags = {
+    name = "benzene_main_core_func-role"
+    domain = "benzene"
+    subdomain = "main"
+  }
+}

@@ -2,7 +2,6 @@
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Benzene.Abstractions.Messages;
-using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Tests.Fixtures;
 using Benzene.Clients.Aws.Sns;
 using Benzene.Core.Messages.MessageSender;

@@ -6,6 +6,7 @@ public interface IDefaultStatuses
 {
     public string ValidationError { get; }
     public string NotFound { get; }
+    public string BadRequest { get; }
 }
 
 public class MessageResult : IMessageResult

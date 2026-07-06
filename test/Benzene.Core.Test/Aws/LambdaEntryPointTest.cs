@@ -20,7 +20,7 @@ public class LambdaEntryPointTest
     [Fact]
     public async Task LambdaEntryPoint()
     {
-        var app = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(new ServiceCollection()))
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()))
             .Use(null, async (x, next) =>
             {
                 x.Response = new MemoryStream();
@@ -36,7 +36,7 @@ public class LambdaEntryPointTest
 
         var request = new BenzeneMessageRequest();
 
-        var result = await lambdaEntryPoint.FunctionHandler(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
+        var result = await lambdaEntryPoint.FunctionHandlerAsync(AwsEventStreamContextBuilder.ObjectToStream(request), new TestLambdaContext());
         Assert.NotNull(result);
     }
 }

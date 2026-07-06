@@ -7,7 +7,7 @@ namespace Benzene.Kafka.Core;
 
 public static class Extensions
 {
-    public static IBenzeneWorkerBuilder UseKafka<TKey, TValue>(this IBenzeneWorkerBuilder app, BenzeneKafkaConfig benzeneKafkaConfig, Action<IMiddlewarePipelineBuilder<KafkaRecordContext<TKey, TValue>>> action)
+    public static IBenzeneWorkerStartup UseKafka<TKey, TValue>(this IBenzeneWorkerStartup app, BenzeneKafkaConfig benzeneKafkaConfig, Action<IMiddlewarePipelineBuilder<KafkaRecordContext<TKey, TValue>>> action)
     {
         app.Register(x => x
             .AddBenzeneMessage()
