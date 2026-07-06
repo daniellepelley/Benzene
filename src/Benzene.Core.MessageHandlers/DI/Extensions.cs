@@ -82,6 +82,27 @@ public static class Extensions
         return services.AddMessageHandlers(types);
     }
 
+    public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services)
+    {
+        services.TryAddSingleton<MessageHandlersList>();
+        services.TryAddSingleton<DependencyMessageHandlersFinder>();
+        services.TryAddSingleton<IMessageHandlersList, MessageHandlersList>();
+        services.TryAddSingleton<IMessageHandlersFinder>(x =>
+            new CompositeMessageHandlersFinder(
+                x.GetService<MessageHandlersList>(),
+                x.GetService<DependencyMessageHandlersFinder>()
+            ));
+
+        services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
+        services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
+        services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();
+        services.TryAddScoped<IMessageHandlerFactory, MessageHandlerFactory>();
+        services.TryAddScoped(typeof(MessageRouter<>));
+
+        services.AddContextItems();
+        return services;
+    }
+
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         Type[] types)
     {

@@ -43,6 +43,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -70,6 +72,7 @@
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Core\Benzene.CodeGen.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.MockLambdaTool\Benzene.CodeGen.MockLambdaTool.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.SourceGenerators\Benzene.CodeGen.SourceGenerators.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
