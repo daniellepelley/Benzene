@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers.ToDelete;
+﻿using Benzene.Abstractions.MessageHandlers;
 using Confluent.Kafka;
 
 namespace Benzene.Kafka.Core.KafkaMessage;

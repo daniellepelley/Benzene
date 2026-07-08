@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers.ToDelete;
+﻿using Benzene.Abstractions.MessageHandlers;
 using Microsoft.Azure.WebJobs.Extensions.Kafka;
 
 namespace Benzene.Azure.Kafka;

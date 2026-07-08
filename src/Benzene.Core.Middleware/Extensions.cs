@@ -171,7 +171,7 @@ public static class Extensions
         IContextPredicate<TContext> predicate, Action<IMiddlewarePipelineBuilder<TContext>> builder)
     {
         var newApp = app.Create<TContext>();
-        builder(app);
+        builder(newApp);
 
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>("Split", async (context, next) =>
         {

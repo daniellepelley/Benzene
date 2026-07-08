@@ -121,7 +121,7 @@ public static class BenzeneServiceContainerExtensions
     {
         return source.IsTypeRegistered(type)
             ? source
-            : source.AddScoped(type);
+            : source.AddSingleton(type);
     }
 
     public static IBenzeneServiceContainer TryAddSingleton<TImplementation>(this IBenzeneServiceContainer source,TImplementation implementation)
