@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Http", "src\Benzene
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Diagnostics", "src\Benzene.Diagnostics\Benzene.Diagnostics.csproj", "{4029D8C6-360B-441B-B408-77F2F09B7E43}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Resilience", "src\Benzene.Resilience\Benzene.Resilience.csproj", "{750E4FAA-4ABD-467F-91E4-B1C668D8E904}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Microsoft.Dependencies", "src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj", "{161D7FDC-F9F7-4828-9157-3AC67EFDB22A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Xml", "src\Benzene.Xml\Benzene.Xml.csproj", "{69D7B0FB-AE2F-4430-BA28-0EB92C715146}"
@@ -468,6 +470,10 @@ Global
 		{10494F4C-B368-4889-962B-7599CC01BAB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10494F4C-B368-4889-962B-7599CC01BAB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10494F4C-B368-4889-962B-7599CC01BAB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{750E4FAA-4ABD-467F-91E4-B1C668D8E904}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{750E4FAA-4ABD-467F-91E4-B1C668D8E904}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{750E4FAA-4ABD-467F-91E4-B1C668D8E904}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{750E4FAA-4ABD-467F-91E4-B1C668D8E904}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
