@@ -19,7 +19,6 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sns.TestHelpers;
-using Benzene.Clients;
 using Benzene.Clients.Aws.Sns;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;

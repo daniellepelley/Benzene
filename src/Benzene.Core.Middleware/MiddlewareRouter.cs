@@ -3,15 +3,8 @@ using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.Middleware;
 
-public abstract class MiddlewareRouter<TRequest, TContext> : IMiddleware<TContext>
+public abstract class MiddlewareRouter<TRequest, TContext>(IServiceResolver serviceResolver) : IMiddleware<TContext>
 {
-    private readonly IServiceResolver _serviceResolver;
-
-    protected MiddlewareRouter(IServiceResolver serviceResolver)
-    {
-        _serviceResolver = serviceResolver;
-    }
-
     public string Name => "MiddlewareRouter";
 
     
@@ -27,7 +20,7 @@ public abstract class MiddlewareRouter<TRequest, TContext> : IMiddleware<TContex
         {
             if (CanHandle(request))
             {
-                await HandleFunction(request, context, _serviceResolver.GetService<IServiceResolverFactory>());
+                await HandleFunction(request, context, serviceResolver.GetService<IServiceResolverFactory>());
             }
             else
             {

@@ -22,6 +22,7 @@ Provides concrete implementations of Benzene's middleware pipeline system. Inclu
 - `FuncWrapperMiddleware<TContext>` - Wraps Func as middleware
 - `ContextConverterMiddleware<TContext, TContextOut>` - Converts context types
 - `MiddlewareRouter` - Routes to different pipelines
+- `ExceptionHandlerMiddleware<TContext>` - Centralized exception handling
 
 ### Context Conversion
 - `InlineContextConverter<TIn, TOut>` - Inline context transformation
@@ -37,6 +38,8 @@ Provides concrete implementations of Benzene's middleware pipeline system. Inclu
 - `.OnResponse()` - Executes action on response
 - `.Split()` - Splits pipeline into branches
 - `.Convert()` - Converts context type
+- `.UseExceptionHandler()` - Adds exception handling middleware
+- `.UseTimer()` - Adds timing middleware
 - Many more fluent configuration methods
 
 ### Other

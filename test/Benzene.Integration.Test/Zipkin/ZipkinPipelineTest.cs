@@ -2,7 +2,6 @@
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Lambda.Sqs.TestHelpers;
-using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
@@ -11,7 +10,6 @@ using Benzene.Integration.Test.Fixtures;
 using Benzene.Integration.Test.Helpers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Testing;
-using Benzene.Tools;
 using Benzene.Tools.Aws;
 using Benzene.Zipkin;
 using Microsoft.Extensions.DependencyInjection;

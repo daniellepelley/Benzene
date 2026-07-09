@@ -1,5 +1,3 @@
-using Benzene.Results;
-
 namespace Benzene.Abstractions.Validation;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]

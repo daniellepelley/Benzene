@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Middleware;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.HealthChecks;

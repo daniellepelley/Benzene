@@ -1,5 +1,4 @@
-﻿using System.Net;
-using Benzene.Abstractions.Middleware;
+﻿using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
 
 namespace Benzene.SelfHost.Http;

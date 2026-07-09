@@ -25,4 +25,9 @@ public static class Extensions
             }
         }));
     }
+    
+    public static IMiddlewarePipelineBuilder<TContext> UseTimer<TContext>(this IMiddlewarePipelineBuilder<TContext> app, Action<TContext, long> onTimer)
+    {
+        return app.Use(new TimerMiddleware<TContext>(onTimer));
+    }
 }

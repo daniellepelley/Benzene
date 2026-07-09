@@ -1,7 +1,6 @@
 ﻿using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.Diagnostics.Timers;
-using Benzene.Results;
 
 namespace Benzene.Cache.Core;
 

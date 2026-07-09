@@ -2,7 +2,6 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Aws.Sqs;
-using Benzene.Aws.Sqs.Client;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;

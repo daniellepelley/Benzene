@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Request;
-using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.Messages.Predicates;

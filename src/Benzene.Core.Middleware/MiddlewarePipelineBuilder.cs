@@ -40,4 +40,10 @@ public class MiddlewarePipelineBuilder<TContext> : IMiddlewarePipelineBuilder<TC
     {
         return new MiddlewarePipeline<TContext>(GetItems());
     }
+
+    public IMiddlewarePipelineBuilder<TContext> Clear()
+    {
+        _items.Clear();
+        return this;
+    }
 }

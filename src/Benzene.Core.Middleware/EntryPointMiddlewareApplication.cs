@@ -3,37 +3,24 @@ using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Core.Middleware;
 
-public class EntryPointMiddlewareApplication<TEvent> : IEntryPointMiddlewareApplication<TEvent>
+public class EntryPointMiddlewareApplication<TEvent>(
+    IMiddlewareApplication<TEvent> middlewareApplication,
+    IServiceResolverFactory serviceResolverFactory)
+    : IEntryPointMiddlewareApplication<TEvent>
 {
-    private readonly IMiddlewareApplication<TEvent> _middlewareApplication;
-    private readonly IServiceResolverFactory _serviceResolverFactory;
-
-    public EntryPointMiddlewareApplication(IMiddlewareApplication<TEvent> middlewareApplication, IServiceResolverFactory serviceResolverFactory)
-    {
-        _serviceResolverFactory = serviceResolverFactory;
-        _middlewareApplication = middlewareApplication;
-    }
-
     public Task SendAsync(TEvent @event)
     {
-        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory);
+        return middlewareApplication.HandleAsync(@event, serviceResolverFactory);
     }
 }
 
-public class EntryPointMiddlewareApplication<TEvent, TResult> : IEntryPointMiddlewareApplication<TEvent, TResult>
+public class EntryPointMiddlewareApplication<TEvent, TResult>(
+    IMiddlewareApplication<TEvent, TResult> middlewareApplication,
+    IServiceResolverFactory serviceResolverFactory)
+    : IEntryPointMiddlewareApplication<TEvent, TResult>
 {
-    private readonly IMiddlewareApplication<TEvent,TResult> _middlewareApplication;
-    private readonly IServiceResolverFactory _serviceResolverFactory;
-
-    public EntryPointMiddlewareApplication(IMiddlewareApplication<TEvent, TResult> middlewareApplication,
-        IServiceResolverFactory serviceResolverFactory)
-    {
-        _serviceResolverFactory = serviceResolverFactory;
-        _middlewareApplication = middlewareApplication;
-    }
-
     public Task<TResult> SendAsync(TEvent @event)
     {
-        return _middlewareApplication.HandleAsync(@event, _serviceResolverFactory);
+        return middlewareApplication.HandleAsync(@event, serviceResolverFactory);
     }
 }

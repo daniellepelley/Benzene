@@ -2,7 +2,6 @@
 using Amazon.Lambda;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Middleware;
 using Void = Benzene.Abstractions.Results.Void;
 

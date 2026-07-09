@@ -1,6 +1,4 @@
-﻿using Benzene.Abstractions.Messages.BenzeneClient;
-
-namespace Benzene.Clients.Common;
+﻿namespace Benzene.Clients.Common;
 
 // public interface IClientRequestMapper<TRequest>
 // {

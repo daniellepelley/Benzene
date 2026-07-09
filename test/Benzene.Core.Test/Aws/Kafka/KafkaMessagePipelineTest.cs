@@ -2,15 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.KafkaEvents;
-using Amazon.Lambda.SQSEvents;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Kafka;
 using Benzene.Aws.Lambda.Kafka.TestHelpers;
-using Benzene.Aws.Lambda.Sqs;
-using Benzene.Aws.Lambda.Sqs.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;

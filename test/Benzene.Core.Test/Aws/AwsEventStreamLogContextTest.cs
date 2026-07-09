@@ -5,8 +5,6 @@ using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
-using Benzene.Core.Logging;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;

@@ -6,11 +6,9 @@ using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.XRay;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.Configuration;
-using Extensions = Benzene.Core.MessageHandlers.Extensions;
 
 namespace Benzene.Test.Aws.Examples;
 

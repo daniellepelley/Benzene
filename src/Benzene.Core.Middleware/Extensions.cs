@@ -217,4 +217,9 @@ public static class Extensions
 
         return app.Use(serviceResolver => new ContextConverterMiddleware<TContext, TContextOut>(converter, middlewarePipeline, serviceResolver));
     }
+
+    public static IMiddlewarePipelineBuilder<TContext> UseExceptionHandler<TContext>(this IMiddlewarePipelineBuilder<TContext> app, Action<TContext, Exception> onException)
+    {
+        return app.Use(new ExceptionHandlerMiddleware<TContext>(onException));
+    }
 }

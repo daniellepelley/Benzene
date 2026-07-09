@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Response;
-using Benzene.Abstractions.Middleware;
 
 namespace Benzene.Extras.Response;
 

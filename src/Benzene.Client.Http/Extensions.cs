@@ -1,6 +1,5 @@
 ﻿using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Client.Http;

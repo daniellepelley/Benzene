@@ -18,7 +18,6 @@ using Newtonsoft.Json;
 using Xunit;
 using Constants = Benzene.Core.Constants;
 using JsonSerializer = Benzene.Core.MessageHandlers.Serialization.JsonSerializer;
-using Extensions = Benzene.Core.MessageHandlers.Extensions;
 
 namespace Benzene.Test.Core.Core;
 

@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.Messages.Mappers;
-using Confluent.Kafka;
 
 namespace Benzene.Kafka.Core.KafkaMessage;
 

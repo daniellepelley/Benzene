@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Extensions = Benzene.Core.MessageHandlers.Extensions;
 
 namespace Benzene.Test.Plugins.HealthChecks;
 
