@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<PackageVersion>0.0.1</PackageVersion>
+		<AssemblyName>Benzene.Aws.Lambda.Kafka.TestHelpers</AssemblyName>
+		<RootNamespace>Benzene.Aws.Lambda.Kafka.TestHelpers</RootNamespace>
+		<Description>Test helpers for Benzene.Aws.Lambda.Kafka - for testing purposes only</Description>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.KafkaEvents" Version="1.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+	</ItemGroup>
+
+</Project>

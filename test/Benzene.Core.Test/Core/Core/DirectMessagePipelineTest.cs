@@ -5,7 +5,7 @@ using Benzene.Abstractions.Serialization;
 using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
-using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.TestHelpers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;

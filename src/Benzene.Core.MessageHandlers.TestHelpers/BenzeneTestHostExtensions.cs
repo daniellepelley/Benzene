@@ -1,7 +1,7 @@
 ﻿using Benzene.Abstractions;
 using Benzene.Core.Messages.BenzeneMessage;
 
-namespace Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+namespace Benzene.Core.MessageHandlers.TestHelpers;
 
 public static class BenzeneTestHostExtensions
 {

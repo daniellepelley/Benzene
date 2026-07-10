@@ -21,6 +21,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sqs.TestHelpers\Benzene.Aws.Lambda.Sqs.TestHelpers.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />

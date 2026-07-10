@@ -6,6 +6,7 @@ using Autofac;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Autofac;
 using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.MessageHandlers;
@@ -52,7 +53,8 @@ public class ApiGatewayMessagePipelineTest
                 .UseApiGateway(apiGateway => apiGateway
                     .UseMessageHandlers()
                 )
-            ).BuildHost();
+            )
+            .BuildHost();
 
         var request = CreateRequest();
         var response = await host.SendApiGatewayAsync(request);

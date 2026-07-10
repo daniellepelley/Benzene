@@ -2,7 +2,7 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions;
 
-namespace Benzene.Aws.Lambda.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 
 public static class BenzeneTestHostExtensions
 {

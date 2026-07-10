@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Amazon.SQS.Model;
+﻿using Amazon.SQS.Model;
 using Benzene.Abstractions;
 
 namespace Benzene.Aws.Sqs.TestHelpers;

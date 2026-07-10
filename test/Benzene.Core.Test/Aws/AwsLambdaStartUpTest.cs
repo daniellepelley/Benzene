@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Amazon.Lambda.TestUtilities;
 using Autofac;
 using Benzene.Autofac;
-using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.TestHelpers;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Results;
 using Benzene.Test.Aws.Examples;

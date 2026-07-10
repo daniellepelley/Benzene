@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<PackageVersion>0.0.1</PackageVersion>
+		<AssemblyName>Benzene.Aws.Lambda.Sns.TestHelpers</AssemblyName>
+		<RootNamespace>Benzene.Aws.Lambda.Sns.TestHelpers</RootNamespace>
+		<Description>Test helpers for Benzene.Aws.Lambda.Sns - for testing purposes only</Description>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.SNSEvents" Version="2.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+	</ItemGroup>
+
+</Project>

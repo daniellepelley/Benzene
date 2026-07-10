@@ -2,7 +2,7 @@
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
-using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.TestHelpers;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
