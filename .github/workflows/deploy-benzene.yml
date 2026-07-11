@@ -1,15 +1,10 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: Deploy Benzene 
+name: Deploy Benzene
 
 on:
   workflow_dispatch:
-    inputs:    
-      version:
-        description: 'Version of the Nuget package'
-        type: string
-        required: true 
 jobs:
   deploy:
 
@@ -21,12 +16,37 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 10.0.x
+    - name: Determine version
+      id: version
+      run: |
+        set -euo pipefail
+        BASE_VERSION="$(tr -d '[:space:]' < version.txt)"
+        PACKAGE_ID="benzene.core"
+
+        HTTP_STATUS=$(curl -s -o /tmp/nuget-versions.json -w '%{http_code}' \
+          "https://api.nuget.org/v3-flatcontainer/${PACKAGE_ID}/index.json")
+
+        LAST_BUILD=0
+        if [ "$HTTP_STATUS" = "200" ]; then
+          ESCAPED_BASE_VERSION=$(printf '%s' "$BASE_VERSION" | sed 's/\./\\./g')
+          while IFS= read -r BUILD; do
+            if [ "$BUILD" -gt "$LAST_BUILD" ]; then
+              LAST_BUILD="$BUILD"
+            fi
+          done < <(jq -r '.versions[]' /tmp/nuget-versions.json \
+            | grep -E "^${ESCAPED_BASE_VERSION}\.[0-9]+-alpha$" \
+            | sed -E "s/^${ESCAPED_BASE_VERSION}\.([0-9]+)-alpha$/\1/")
+        fi
+
+        FULL_VERSION="${BASE_VERSION}.$((LAST_BUILD + 1))-alpha"
+        echo "Resolved version: ${FULL_VERSION}"
+        echo "full_version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
     - name: Restore dependencies
       run: dotnet restore Benzene.sln
     - name: Build
       run: dotnet build Benzene.sln --no-restore
     - name: Pack
-      run: dotnet pack Benzene.sln -c Release -p:PackageVersion=${{ inputs.version }}
+      run: dotnet pack Benzene.sln -c Release -p:PackageVersion=${{ steps.version.outputs.full_version }}
     - name: Publish
       if: startsWith(github.ref, 'refs/heads/main')
-      run: dotnet nuget push **\*.nupkg --source 'https://api.nuget.org/v3/index.json' --api-key ${{secrets.NUGET_API_KEY}}
+      run: dotnet nuget push **/*.nupkg --source 'https://api.nuget.org/v3/index.json' --api-key ${{secrets.NUGET_API_KEY}}
