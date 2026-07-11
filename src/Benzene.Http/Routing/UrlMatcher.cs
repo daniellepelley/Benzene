@@ -2,8 +2,26 @@
 
 namespace Benzene.Http.Routing;
 
+/// <summary>
+/// Provides URL pattern matching functionality for HTTP routing, including extraction of route parameters.
+/// </summary>
+/// <remarks>
+/// This class compares incoming URL paths against route patterns and extracts parameter values
+/// from parameterized route segments (e.g., extracting "123" from "/users/123" when matched
+/// against "/users/{id}"). Matching is case-insensitive and supports complex patterns with
+/// multiple parameters and literal text segments.
+/// </remarks>
 public class UrlMatcher
 {
+    /// <summary>
+    /// Matches a URL path against a route pattern and extracts route parameters.
+    /// </summary>
+    /// <param name="path">The incoming URL path to match.</param>
+    /// <param name="routerPath">The route pattern to match against, which may contain parameters (e.g., "/users/{id}").</param>
+    /// <returns>
+    /// A dictionary containing the extracted route parameters if the path matches the pattern,
+    /// or <c>null</c> if there is no match.
+    /// </returns>
     public IDictionary<string, object>? MatchUrl(string path, string routerPath)
     {
         var routerPathParts = SplitPath(routerPath);

@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Benzene.Core.DI;
 
+/// <summary>
+/// Provides dependency injection registration validation and diagnostic capabilities.
+/// </summary>
 public class RegistrationCheck : IRegistrationCheck
 {
     private readonly IDictionary<string, IDictionary<string, string[]>> _registrations;
@@ -15,6 +18,11 @@ public class RegistrationCheck : IRegistrationCheck
             x => Convert(x.Value));
     }
 
+    /// <summary>
+    /// Creates a new registration check instance from an array of types.
+    /// </summary>
+    /// <param name="types">The types to scan for <see cref="IRegistrations"/> implementations.</param>
+    /// <returns>A new <see cref="RegistrationCheck"/> instance configured with discovered registrations.</returns>
     public static RegistrationCheck Create(params Type[] types)
     {
         var registrationTypes =  types.Where(x => x.IsClass && !x.IsAbstract && typeof(IRegistrations)
@@ -37,6 +45,11 @@ public class RegistrationCheck : IRegistrationCheck
             x => x.Value.Select(type => GetSimpleTypeName(type.FullName)).ToArray());
     }
 
+    /// <summary>
+    /// Checks if a type is registered in the dependency injection container and provides registration guidance if missing.
+    /// </summary>
+    /// <param name="typeName">The full name of the type to check.</param>
+    /// <returns>A diagnostic message indicating registration status and guidance for missing registrations.</returns>
     public string CheckType(string typeName)
     {
         typeName = GetSimpleTypeName(typeName);
@@ -94,6 +107,13 @@ public class RegistrationCheck : IRegistrationCheck
         return stringBuilder.ToString();
     }
     
+    /// <summary>
+    /// Combines multiple dictionaries into a single dictionary, using the first occurrence of each key.
+    /// </summary>
+    /// <typeparam name="TKey">The type of dictionary keys.</typeparam>
+    /// <typeparam name="TValue">The type of dictionary values.</typeparam>
+    /// <param name="source">The collection of dictionaries to combine.</param>
+    /// <returns>A combined dictionary containing all unique keys from the source dictionaries.</returns>
     public static IDictionary<TKey, TValue> DictionaryCombine<TKey, TValue>(IEnumerable<IDictionary<TKey, TValue>> source)
     {
         var output = new Dictionary<TKey, TValue>();

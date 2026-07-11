@@ -7,6 +7,7 @@
     <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.Abstractions</AssemblyName>
     <RootNamespace>Benzene.Abstractions</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 </Project>

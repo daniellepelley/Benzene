@@ -4,15 +4,33 @@ using Benzene.Core.Exceptions;
 
 namespace Benzene.Http.Routing;
 
+/// <summary>
+/// Discovers HTTP endpoints by scanning message handler classes for <see cref="HttpEndpointAttribute"/> attributes.
+/// </summary>
+/// <remarks>
+/// This finder uses reflection to discover message handlers and examines their
+/// <see cref="HttpEndpointAttribute"/> attributes to build the list of HTTP endpoints.
+/// It validates that each route (method + path combination) is unique and throws an
+/// exception if duplicate routes are detected.
+/// </remarks>
 public class ReflectionHttpEndpointFinder : IHttpEndpointFinder
 {
     private readonly IMessageHandlersFinder _messageHandlersFinder;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ReflectionHttpEndpointFinder"/> class.
+    /// </summary>
+    /// <param name="messageHandlersFinder">The message handler finder used to discover handler classes.</param>
     public ReflectionHttpEndpointFinder(IMessageHandlersFinder messageHandlersFinder)
     {
         _messageHandlersFinder = messageHandlersFinder;
     }
 
+    /// <summary>
+    /// Finds and returns all HTTP endpoint definitions by scanning message handlers for <see cref="HttpEndpointAttribute"/> attributes.
+    /// </summary>
+    /// <returns>An array of HTTP endpoint definitions discovered via reflection.</returns>
+    /// <exception cref="BenzeneException">Thrown when duplicate routes (same method and path) are detected.</exception>
     public IHttpEndpointDefinition[] FindDefinitions()
     {
         var handlers = _messageHandlersFinder.FindDefinitions()
