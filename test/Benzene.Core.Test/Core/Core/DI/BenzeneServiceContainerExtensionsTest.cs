@@ -124,32 +124,6 @@ public class BenzeneServiceContainerExtensionsTest
     }
 
     [Fact]
-    public void AddScoped_Instance_RegistersWhenAbsent()
-    {
-        var services = new ServiceCollection();
-        var container = new MicrosoftBenzeneServiceContainer(services);
-
-        // Called via the static class explicitly: IBenzeneServiceContainer also declares
-        // its own AddScoped<T>(T implementation) member, so normal instance-method syntax
-        // always resolves to that (unconditional) method instead of this "Try" extension.
-        BenzeneServiceContainerExtensions.AddScoped(container, new Foo());
-
-        Assert.True(container.IsTypeRegistered<Foo>());
-    }
-
-    [Fact]
-    public void AddScoped_Instance_DoesNotDuplicateWhenAlreadyRegistered()
-    {
-        var services = new ServiceCollection();
-        var container = new MicrosoftBenzeneServiceContainer(services);
-
-        BenzeneServiceContainerExtensions.AddScoped(container, new Foo());
-        BenzeneServiceContainerExtensions.AddScoped(container, new Foo());
-
-        Assert.Single(services, x => x.ServiceType == typeof(Foo));
-    }
-
-    [Fact]
     public void TryAddTransient_RegistersWhenAbsent()
     {
         var services = new ServiceCollection();

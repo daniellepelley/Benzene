@@ -27,9 +27,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed enrichment values bug where values would fail if they were the wrong type
 - Fixed service resolver factory issue
 - Fixed build issues
+- Fixed `Benzene.Examples.sln`, which referenced pre-restructure project paths/names
+  and did not build; regenerated against the current project layout
+- Fixed 6 example projects (`Benzene.Example.Azure`, `Benzene.Examples.CodeGen.Client`,
+  `Benzene.Examples.Google`, `Benzene.Example.Grpc`, `Benzene.Examples.Aws`,
+  `Benzene.Examples.Kakfa`) with pre-existing compile errors that had been masked by
+  the broken solution file
 
 ### Removed
 - Removed ToDelete folder - `IMessageResult` and `IHasMessageResult` moved to proper location in `Benzene.Abstractions.MessageHandlers`
+- **BREAKING:** Removed `BenzeneServiceContainerExtensions.AddScoped<T>(T instance)`.
+  It was unreachable dead code — `IBenzeneServiceContainer` declares its own
+  `AddScoped<T>(T instance)` member with the same signature, so normal call syntax
+  always resolved to that (unconditional) method instead of this "Try" extension's
+  dedup logic. See [Migration Guide](docs/migration-alpha-to-1.0.md) for details.
+
+See the [Migration Guide](docs/migration-alpha-to-1.0.md) for a full list of API
+renames between alpha and 1.0, and notes on the two critical bug fixes above.
 
 ## [0.x.x-alpha] - Historical
 
@@ -58,4 +72,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Benzene was in alpha (0.x.x-alpha) during initial development. This CHANGELOG was created retroactively as part of preparing for the 1.0.0 release.
 
-For detailed commit history, see: https://github.com/[your-org]/Benzene/commits/main
+For detailed commit history, see: https://github.com/daniellepelley/Benzene/commits/main

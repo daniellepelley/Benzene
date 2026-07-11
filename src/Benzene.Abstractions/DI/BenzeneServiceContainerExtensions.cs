@@ -81,21 +81,6 @@ public static class BenzeneServiceContainerExtensions
     }
 
     /// <summary>
-    /// Registers a scoped service using an existing instance if it is not already registered.
-    /// </summary>
-    /// <typeparam name="TImplementation">The implementation type.</typeparam>
-    /// <param name="source">The service container.</param>
-    /// <param name="implementation">The instance to register.</param>
-    /// <returns>The service container for method chaining.</returns>
-    public static IBenzeneServiceContainer AddScoped<TImplementation>(this IBenzeneServiceContainer source, TImplementation implementation)
-        where TImplementation : class
-    {
-        return source.IsTypeRegistered<TImplementation>()
-            ? source
-            : source.AddScoped(implementation);
-    }
-   
-    /// <summary>
     /// Registers a transient service if it is not already registered.
     /// </summary>
     /// <typeparam name="TImplementation">The implementation type to register.</typeparam>

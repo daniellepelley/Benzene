@@ -85,6 +85,7 @@ written once and apply everywhere.
 
 Full documentation is available in [`docs/`](./docs), including:
 
+- [Migration Guide (Alpha → 1.0)](docs/migration-alpha-to-1.0.md)
 - [Message Handlers](docs/message-handlers.md) and [Handler Results](docs/message-result.md)
 - [Middleware](docs/middleware.md) and [Common Middleware](docs/common-middleware.md)
 - [Testing Benzene](docs/testing-benzene.md)
