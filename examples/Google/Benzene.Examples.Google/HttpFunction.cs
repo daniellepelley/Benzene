@@ -1,7 +1,10 @@
-﻿using Google.Cloud.Functions.Framework;
+using Google.Cloud.Functions.Framework;
 using Microsoft.AspNetCore.Http;
 using Benzene.AspNet.Core;
-using Benzene.Core.MiddlewareBuilder;
+using Benzene.Core.MessageHandlers;
+using Benzene.Core.Middleware;
+using Benzene.Diagnostics.Timers;
+using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,15 +22,13 @@ public class HttpFunction : IHttpFunction
     {
         var pipeline = new MiddlewarePipelineBuilder<AspNetContext>(new MicrosoftBenzeneServiceContainer(services))
             .UseTimer("asp-net")
-            .UseProcessResponse()
-            .UseMessageRouter(router => router.UseFluentValidation());
+            .UseMessageHandlers(router => router.UseFluentValidation());
 
-        _app = new AspNetApplication(pipeline.AsPipeline(), new MicrosoftServiceResolverFactory(services));
+        _app = new AspNetApplication(pipeline.Build(), new MicrosoftServiceResolverFactory(services));
     }
-
 
     public async Task HandleAsync(HttpContext context)
     {
-        await _app.HandleAsync(context);
+        await _app.SendAsync(context);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;

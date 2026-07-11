@@ -24,6 +24,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Framework\" />
@@ -31,5 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Examples.Google\Benzene.Examples.Google.csproj" />
+    <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
   </ItemGroup>
 </Project>

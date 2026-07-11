@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-using Benzene.Core.MessageHandlers.BenzeneMessage.TestHelpers;
+using Benzene.Core.MessageHandlers.TestHelpers;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model;

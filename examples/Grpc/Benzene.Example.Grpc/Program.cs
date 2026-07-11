@@ -1,6 +1,7 @@
 using Benzene.Abstractions.DI;
 using Benzene.AspNet.Core;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Example.Grpc;
 using Benzene.Example.Grpc.Services;

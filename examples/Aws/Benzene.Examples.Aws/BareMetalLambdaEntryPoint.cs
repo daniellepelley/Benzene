@@ -6,6 +6,8 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.Middleware;
 using Benzene.Examples.App.Model;
 using Benzene.FluentValidation;
 using Benzene.Microsoft.Dependencies;
@@ -23,7 +25,7 @@ public class BareMetalLambdaEntryPoint
     {
         var services = new ServiceCollection();
         
-        var middlewarePipelineBuilder = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services))
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services))
             .UseBenzeneMessage(x =>
                 x.UseMessageHandlers(s =>
                     s.UseFluentValidation()));

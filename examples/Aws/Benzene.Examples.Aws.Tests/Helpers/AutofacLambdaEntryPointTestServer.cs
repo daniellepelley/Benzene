@@ -6,6 +6,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Middleware;
 using Microsoft.Extensions.Configuration;
 
 namespace Benzene.Examples.Aws.Tests.Helpers;
@@ -37,7 +38,7 @@ public class AutofacTestLambdaStartUp<TStartUp> where TStartUp : IStartUp<Contai
             .AddInMemoryCollection(_dictionary);
 
         var services = new ContainerBuilder();
-        var app = new AwsEventStreamPipelineBuilder(new AutofacBenzeneServiceContainer(services));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new AutofacBenzeneServiceContainer(services));
         
         startup.ConfigureServices(services, configurationBuilder.Build());
         foreach (var action in _actions)

@@ -1,6 +1,8 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Google.Tests.Helpers;
 using Benzene.Examples.Google.Tests.Helpers.Builders;
@@ -33,10 +35,11 @@ public class CreateOrderTest : InMemoryOrdersTestBase
         Assert.Equal(Defaults.Order.Status, orders[0].Status);
         Assert.Equal(Defaults.Order.Name, orders[0].Name);
 
-        var order = httpContext.Response.Body<string>();
+        var order = httpContext.Response.Body<OrderDto>();
 
         Assert.Equal(201, response.StatusCode);
         Assert.NotNull(order);
+        Assert.NotEqual(Guid.Empty, order.Id);
     }
 
 

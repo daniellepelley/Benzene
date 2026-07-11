@@ -24,7 +24,7 @@ public class StartUp : BenzeneHostedServiceStartup
         DependenciesBuilder.Register(services, configuration);
     }
 
-    public override void Configure(IBenzeneWorkerBuilder app, IConfiguration configuration)
+    public override void Configure(IBenzeneWorkerStartup app, IConfiguration configuration)
     {
         var benzeneKafkaConfig = new BenzeneKafkaConfig
         {

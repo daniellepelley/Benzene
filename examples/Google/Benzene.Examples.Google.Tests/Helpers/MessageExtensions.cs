@@ -1,4 +1,4 @@
-using Benzene.Core.Helper;
+using System.IO;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
@@ -8,6 +8,8 @@ public static class MessageExtensions
 {
     public static T Body<T>(this HttpResponse httpResponse)
     {
-        return JsonConvert.DeserializeObject<T>(Utils.StreamToString(httpResponse.Body));
+        httpResponse.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(httpResponse.Body);
+        return JsonConvert.DeserializeObject<T>(reader.ReadToEnd());
     }
 }

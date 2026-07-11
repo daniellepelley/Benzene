@@ -13,6 +13,7 @@ using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;

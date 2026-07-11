@@ -7,6 +7,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Autofac;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.Middleware;
 using Microsoft.Extensions.Configuration;
 
 namespace Benzene.Examples.Aws;
@@ -20,7 +21,7 @@ public abstract class AutofacAwsStartUp : IStartUp<ContainerBuilder, IConfigurat
         // ReSharper disable once VirtualMemberCallInConstructor
         var configuration = GetConfiguration();
         var configurationBuilder = new ContainerBuilder();
-        var app = new AwsEventStreamPipelineBuilder(new AutofacBenzeneServiceContainer(configurationBuilder));
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new AutofacBenzeneServiceContainer(configurationBuilder));
 
         // ReSharper disable once VirtualMemberCallInConstructor
         ConfigureServices(configurationBuilder, configuration);
@@ -39,9 +40,9 @@ public abstract class AutofacAwsStartUp : IStartUp<ContainerBuilder, IConfigurat
 
     public abstract void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> middlewarePipeline, IConfiguration configuration);
 
-    public Task<Stream> FunctionHandler(Stream stream, ILambdaContext lambdaContext)
+    public Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext)
     {
-        return _awsLambdaEntryPoint.FunctionHandler(stream, lambdaContext);
+        return _awsLambdaEntryPoint.FunctionHandlerAsync(stream, lambdaContext);
     }
 
     public void Dispose()

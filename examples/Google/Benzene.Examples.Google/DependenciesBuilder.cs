@@ -1,12 +1,12 @@
 ﻿using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.Response;
 using Benzene.AspNet.Core;
-using Benzene.Core.DI;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
+using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Microsoft.Logging;
 using FluentValidation;
@@ -54,13 +54,13 @@ public static class DependenciesBuilder
         // services.AddScoped<IDataContext>(x => new OrderDataContext(x.GetService<DataContext>()));
         services
             .UsingBenzene(x => x
+                .AddBenzene()
                 .AddMicrosoftLogger()
                 .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
-                .AddHttpMessageHandlers(typeof(CreateOrderMessage).Assembly)
+                .AddHttpMessageHandlers()
                 .AddAspNetMessageHandlers());
 
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
-        services.AddScoped<IResponsePayloadMapper<AspNetContext>, Custom.CustomResponsePayloadMapper<AspNetContext>>();
 
         services.AddScoped<IProcessTimerFactory>(x =>
             new CompositeProcessTimerFactory(
