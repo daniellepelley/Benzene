@@ -13,6 +13,9 @@ namespace Benzene.Core.Middleware;
 /// </remarks>
 public class NullBenzeneServiceContainer : IBenzeneServiceContainer
 {
+    private const string NotSupportedMessage =
+        "NullBenzeneServiceContainer is a null-object placeholder and does not support service registration.";
+
     /// <summary>
     /// Determines whether a service type is registered in the container.
     /// </summary>
@@ -41,109 +44,109 @@ public class NullBenzeneServiceContainer : IBenzeneServiceContainer
     /// <exception cref="NotImplementedException">Always thrown as this is a null implementation.</exception>
     public IBenzeneServiceContainer AddScoped<TImplementation>() where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddScoped<TService, TImplementation>() where TService : class where TImplementation : class, TService
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddScoped(Type type)
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddScoped(Type serviceType, Type implementationType)
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddScoped<TImplementation>(TImplementation implementation) where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddScoped<TImplementation>(Func<IServiceResolver, TImplementation> func) where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddTransient<TImplementation>() where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddTransient<TService, TImplementation>() where TService : class where TImplementation : class, TService
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddTransient(Type type)
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddTransient(Type serviceType, Type implementationType)
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddTransient<TImplementation>(TImplementation implementation) where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddTransient<TImplementation>(Func<IServiceResolver, TImplementation> func) where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddSingleton<TImplementation>() where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddSingleton<TService, TImplementation>() where TService : class where TImplementation : class, TService
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddSingleton(Type type)
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddSingleton(Type serviceType, Type implementationType)
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddSingleton<TImplementation>(TImplementation implementation) where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <inheritdoc />
     public IBenzeneServiceContainer AddSingleton<TImplementation>(Func<IServiceResolver, TImplementation> func) where TImplementation : class
     {
-        throw new NotImplementedException();
+        throw new NotImplementedException(NotSupportedMessage);
     }
 
     /// <summary>

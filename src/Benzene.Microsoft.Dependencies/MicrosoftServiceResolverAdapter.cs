@@ -34,7 +34,7 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
         {
             var str = RegistrationErrorHandler.CheckException(ex);
             Debug.WriteLine($"Unable to resolve type {typeof(T).FullName}, {str}, Exception: {ex}");
-            throw new BenzeneException($"Unable to resolve type {typeof(T).FullName}, {str}, Exception: {ex}");
+            throw new BenzeneException($"Unable to resolve type {typeof(T).FullName}, {str}", ex);
         }
     }
 

@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FluentValidation extensions
 - Source generators for message handlers
 - Claude agent for architecture reviews
+- `BenzeneException(string message, Exception innerException)` constructor overload,
+  so wrapped exceptions preserve proper `.InnerException` chaining instead of being
+  stringified into the message text
 
 ### Changed
 - Updated to .NET 10
@@ -33,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Benzene.Examples.Google`, `Benzene.Example.Grpc`, `Benzene.Examples.Aws`,
   `Benzene.Examples.Kakfa`) with pre-existing compile errors that had been masked by
   the broken solution file
+- `MicrosoftServiceResolverAdapter`/`AutofacServiceResolverAdapter` now wrap DI
+  resolution failures via `BenzeneException`'s new inner-exception constructor
+  instead of stringifying the original exception into the message text
+- `NullBenzeneServiceContainer`'s registration methods now throw
+  `NotImplementedException` with a message explaining it's an intentional
+  null-object placeholder, instead of the bare, contextless default message
 
 ### Removed
 - Removed ToDelete folder - `IMessageResult` and `IHasMessageResult` moved to proper location in `Benzene.Abstractions.MessageHandlers`
