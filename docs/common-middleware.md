@@ -13,14 +13,7 @@ This will attempt to pick up a Correlation Id from the message, usually this wil
 This will create a timer with the name passed in and will write this to either the logs, X-Ray, or anything else you have configured.
 
 ```csharp
-.UseTimer("direct-message-application")
-```
-
-## UseProcessResponse
-This will create a response to be returns out of the service
-
-```csharp
-.UseProcessDirectMessageResponse()
+.UseTimer("benzene-message-application")
 ```
 
 ## UseHealthCheck
@@ -37,17 +30,18 @@ This allows you to query schemas from the service such as openapi and asyncapi. 
 .UseSpec("spec")
 ```
 
-## UseMessageRouter
+## UseMessageHandlers
 This is the middleware that will route the raw message to a message handler by pulling out the topic and deserializing the payload. You can add additional middleware to the message router such as validation and permissions.
 
 ```csharp
-.UseMessageHandler(x => x
+.UseMessageHandlers(router => router
+    .UseFluentValidation())
 ```
 
 ## UseFluentValidation
 This adds FluentValidation to the pipeline. It will attempt to find a validator for the request type, and if it finds a validation failure it will return a validation failure before it even hits the message handler.
 
 ```csharp
-.UseMessageRouter(x => x
+.UseMessageHandlers(router => router
     .UseFluentValidation())
 ```

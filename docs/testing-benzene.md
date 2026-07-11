@@ -4,18 +4,16 @@ You can create a virtual host for your AWS Lambda and use this to send messages 
 
 This is the recommended approach to testing services as it allows you to test the service end to end.
 
-## Creating a TestAwsLambdaHost
+## Creating a Test Host
 
 ```csharp
-TestAwsLambdaStartUp<TStartUp>
+AwsLambdaBenzeneTestStartUp<TStartUp>
 ```
 
-This allows you to run an AWS Lambda in memory and test it end to end by sending messages into it.
-
-
+This allows you to run an AWS Lambda in memory and test it end to end by sending messages into it, using your real production `StartUp` class (the same one deployed to Lambda).
 
 ```csharp
-var testAwsLambdaHost = new TestAwsLambdaStartUp<LambdaEntryPoint>()
+var testHost = new AwsLambdaBenzeneTestStartUp<StartUp>()
     .BuildHost();
 ```
 
@@ -23,64 +21,51 @@ var testAwsLambdaHost = new TestAwsLambdaStartUp<LambdaEntryPoint>()
 
 You can override configuration by adding a dictionary of the configuration values you want to override. This is especially useful if you are using Docker to replace services that the Lambda depends on.
 
-
-
 ```csharp
-var testAwsLambdaHost = new TestAwsLambdaStartUp<LambdaEntryPoint>()
+var testHost = new AwsLambdaBenzeneTestStartUp<StartUp>()
     .WithConfiguration(new Dictionary<string, string>
     {
         { "some-key", "some-value" }
     })
     .BuildHost();
 ```
- 
 
 ### Override Services
+
 You can override service registration with any fakes or mocks which allows you to stub out things such as calls to other services.
 
-
-
 ```csharp
-var testAwsLambdaHost = new TestAwsLambdaStartUp<LambdaEntryPoint>()
+var testHost = new AwsLambdaBenzeneTestStartUp<StartUp>()
     .WithServices(services => services.AddScoped(_ => mockHelloWorldService.Object))
     .BuildHost();
 ```
 
-### Sending Events
+### Sending Messages
 
-You can send events to the hosted Lambda using SendEventAsync. You can optionally include the response type, otherwise it will return a Stream.
-
-Depending how the service is built some events may not return a response out of the Lambda.
-
+You can send a message to the hosted Lambda using `SendBenzeneMessageAsync`, built with `MessageBuilder`. The response comes back as a `BenzeneMessageResponse`, containing the status code and the serialized body.
 
 ```csharp
-var directMessageRequest = new DirectMessageRequest
-{
-    Topic = MessageTopicNames.HeyWorld,
-    Message = JsonConvert.SerializeObject(message)
-};
-await testAwsLambdaHost.SendEventAsync<DirectMessageResponse>(directMessageRequest);
+var message = MessageBuilder.Create("hello:world", new HelloWorldMessage { Name = "World" });
+var response = await testHost.SendBenzeneMessageAsync(message);
 ```
 
 ### Example Test
 
 ```csharp
 [Fact]
-public async Task HeyWorld_DirectMessage()
+public async Task HeyWorld_BenzeneMessage()
 {
     var mockHelloWorldService = new Mock<IHelloWorldService>();
-    var testAwsLambdaHost = new TestAwsLambdaStartUp<LambdaEntryPoint>()
+    var testHost = new AwsLambdaBenzeneTestStartUp<StartUp>()
         .WithServices(services => services.AddScoped(_ => mockHelloWorldService.Object))
         .BuildHost();
-    var message = new HelloWorldMessage
-    {
-        Name = "World"
-    };
-    var directMessageRequest = EventBuilder.Create("hello:world", message).AsDirectMessage();
-    var response = await testAwsLambdaHost.SendEventAsync<DirectMessageResponse>(directMessageRequest);
+
+    var message = MessageBuilder.Create("hello:world", new HelloWorldMessage { Name = "World" });
+    var response = await testHost.SendBenzeneMessageAsync(message);
+
     mockHelloWorldService.Verify(x => x.GetAsync(It.IsAny<HelloWorldMessage>()), Times.Once());
     Assert.Equal("200", response.StatusCode);
-    var payload = JsonConvert.DeserializeObject<HelloWorldResponse>(response.Message);
+    var payload = JsonConvert.DeserializeObject<HelloWorldResponse>(response.Body);
     Assert.Equal("Hello World", payload.Message);
 }
 ```

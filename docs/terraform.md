@@ -13,19 +13,21 @@ You can use the `TerraformLambdaBuilder` to generate `.tf` files based on your s
 ```csharp
 var terraformBuilder = new TerraformLambdaBuilder();
 
-var result = terraformBuilder.Build(new TerraformLambdaSettings
+var codeFiles = terraformBuilder.BuildCodeFiles(new TerraformLambdaSettings
 {
     Name = "my-service-func",
-    EntryPoint = "MyNamespace::MyNamespace.LambdaEntryPoint::FunctionHandlerAsync",
+    EntryPoint = "MyNamespace::MyNamespace.StartUp::FunctionHandlerAsync",
     Timeout = 30,
     MemorySize = 2048,
     Domain = "my-domain",
     SubDomain = "my-subdomain"
 });
 
-// result is a dictionary of filename -> content
-var lambdaTf = result["lambda.tf"];
-var rolesTf = result["iam_roles.tf"];
+// codeFiles is an ICodeFile[] — each has a Name (e.g. "lambda.tf") and Lines (the file content)
+foreach (var file in codeFiles)
+{
+    File.WriteAllLines(file.Name, file.Lines);
+}
 ```
 
 ## Generated Resources

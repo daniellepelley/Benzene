@@ -1,91 +1,120 @@
-<!--
-  NOTE: Sections marked [FILL IN] need real content from the actual
-  Benzene codebase — I don't have direct read access to your source,
-  so these are structural placeholders, not invented API details.
--->
-
 # Benzene
 
-[![Build Status](https://github.com/daniellepelley/Benzene/actions/workflows/[WORKFLOW_FILE].yml/badge.svg)](https://github.com/daniellepelley/Benzene/actions)
+[![Build Status](https://github.com/daniellepelley/Benzene/actions/workflows/build-benzene.yml/badge.svg)](https://github.com/daniellepelley/Benzene/actions)
+[![codecov](https://codecov.io/gh/daniellepelley/Benzene/graph/badge.svg)](https://codecov.io/gh/daniellepelley/Benzene)
 [![NuGet](https://img.shields.io/nuget/v/Benzene.svg)](https://www.nuget.org/packages/Benzene/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<!-- [FILL IN — one sentence: what problem does this solve that plain
-ASP.NET Core middleware or a generic mediator library doesn't?] -->
-**Benzene is a lightweight middleware pipeline for C# that makes it
-easy to build hexagonal (ports-and-adapters) applications — the same
-core logic runs behind HTTP, AWS Lambda, queues, or any other
-adapter, without duplicating cross-cutting concerns like logging,
-retries, or validation.**
+**Benzene is a hexagonal (ports-and-adapters) framework for C# built
+around a shared middleware pipeline — write your message handlers and
+cross-cutting concerns (logging, correlation IDs, validation, health
+checks) once, then run the same service behind AWS Lambda (API
+Gateway, SQS, SNS, Kafka, EventBridge), Azure Functions, or ASP.NET
+Core without rewriting any of it.**
 
 ## Why Benzene?
 
-<!-- [FILL IN — 2-4 bullets on the actual pain point this solves.
-Draft bullets below — replace with the real motivation] -->
-
-- Write your application logic once, against a port interface — swap
-  the adapter (HTTP, Lambda, SQS, etc.) without touching business logic
-- Cross-cutting concerns (logging, retries, validation, auth) live in
-  composable middleware, not scattered across handlers
-- Minimal dependencies, designed for serverless cold-start performance
+- Write a message handler once, against a topic — swap the transport
+  (HTTP, Lambda, SQS, SNS, Kafka...) without touching handler code
+- Cross-cutting concerns (correlation IDs, logging, validation,
+  health checks) live in composable middleware, not scattered across
+  handlers
+- New message handlers are discovered automatically by reflection —
+  no manual routing tables to maintain
+- Multi-cloud by design: the same handlers run on AWS, Azure, or a
+  plain ASP.NET Core host
 
 ## Quickstart
 
 ```bash
-dotnet add package Benzene
+dotnet add package Benzene.AspNet.Core
 ```
 
-<!-- [FILL IN — a real, runnable 10-15 line example. This is the most
-important part of the README. Someone should be able to copy this,
-paste it into a new console app, and see it work in under a minute.
-Suggested shape below: -->
+A message handler, mapped to a topic:
 
 ```csharp
-// [FILL IN with real Benzene API — example shape only]
-var pipeline = new MiddlewarePipelineBuilder<MyContext>()
-    .UseLogging()
-    .UseRetry(maxRetries: 3)
-    .Build(myPort);
-
-var result = await pipeline.HandleAsync(context);
+[Message("hello:world")]
+public class HelloWorldMessageHandler : IMessageHandler<HelloWorldMessage, HelloWorldResponse>
+{
+    public Task<IBenzeneResult<HelloWorldResponse>> HandleAsync(HelloWorldMessage message)
+    {
+        return BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}" }).AsTask();
+    }
+}
 ```
 
-See [`examples/`](./examples) for complete, runnable sample projects.
+Wired into an ASP.NET Core host (in `Startup.cs`):
+
+```csharp
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddControllers();
+    services.UsingBenzene(x => x.AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
+}
+
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    app.UseRouting();
+    app.UseBenzene(benzene => benzene
+        .UseAspNet(asp => asp
+            .UseCorrelationId()
+            .UseMessageHandlers(router => router.UseFluentValidation())
+        )
+    );
+    app.UseEndpoints(endpoints => endpoints.MapControllers());
+}
+```
+
+See [`examples/`](./examples) for complete, runnable sample projects covering AWS Lambda, Azure Functions, ASP.NET Core, Kafka, and more.
 
 ## How it fits into hexagonal architecture
 
-<!-- [FILL IN — short explanation, or a simple diagram, of how ports,
-adapters, and the middleware pipeline relate in Benzene specifically] -->
+Your message handlers are the application core — they depend only on
+`Benzene.Abstractions` types (`IMessageHandler<TRequest, TResponse>`,
+`IBenzeneResult<T>`) and whatever port interfaces you define for your
+own dependencies (databases, other services). Each transport
+(`Benzene.AspNet.Core`, `Benzene.Aws.Lambda.*`, `Benzene.Azure.*`) is
+an adapter that converts its native request into a message and routes
+it to the matching handler via `UseMessageHandlers()`, then converts
+the `IBenzeneResult` back into a transport-native response. Middleware
+in `Benzene.Core.Middleware` provides the pipeline that every adapter
+shares, so correlation IDs, logging, validation, and health checks are
+written once and apply everywhere.
 
 ## Documentation
 
 Full documentation is available in [`docs/`](./docs), including:
 
-- <!-- [FILL IN — list actual docs pages, e.g. "Getting started",
-  "Writing custom middleware", "AWS Lambda adapter guide"] -->
+- [Message Handlers](docs/message-handlers.md) and [Handler Results](docs/message-result.md)
+- [Middleware](docs/middleware.md) and [Common Middleware](docs/common-middleware.md)
+- [Testing Benzene](docs/testing-benzene.md)
+- [Health Checks](docs/health-checks.md) and [Monitoring & Diagnostics](docs/monitoring.md)
+- [AWS Lambda Setup](docs/getting-started-aws.md)
+- [ASP.NET Core Integration](docs/asp-net-core.md)
+- [Fluent Validation](docs/fluent-validation.md) and [Data Annotations](docs/data-annotations.md)
+- [Terraform Code Generation](docs/terraform.md) and [OpenAPI/AsyncAPI Spec](docs/spec.md)
+- [Correlation IDs](docs/correlation-ids.md)
 
 ## Installation
 
 ```bash
-dotnet add package Benzene
+dotnet add package Benzene.Core
 ```
 
-Requires <!-- [FILL IN — target .NET version(s)] -->.
+Plus whichever transport and integration packages your service needs
+(`Benzene.AspNet.Core`, `Benzene.Aws.Lambda.ApiGateway`,
+`Benzene.Azure.Core`, `Benzene.FluentValidation`, etc.) — see
+[`docs/`](./docs) for the relevant package per adapter.
+
+Requires .NET 10.
 
 ## Contributing
 
-Contributions are welcome. Please see [CONTRIBUTING.md](./CONTRIBUTING.md)
-<!-- create this file if it doesn't exist yet — see note below --> for:
+Contributions are welcome. To get started:
 
-- How to set up a local dev environment
-- Coding conventions
-- How to run the test suite (`dotnet test`)
-- How to open a good pull request
-
-Good first issues are labeled
-[`good first issue`](https://github.com/daniellepelley/Benzene/labels/good%20first%20issue).
-<!-- Create a few of these — they're one of the highest-converting
-things for a project trying to attract first-time contributors -->
+- Clone the repo and open `Benzene.sln`
+- Follow the existing middleware/test conventions in `src/` and `test/`
+- Run the test suite with `dotnet test test/Benzene.Core.Test/Benzene.Test.csproj`
 
 ## License
 

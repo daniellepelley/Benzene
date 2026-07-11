@@ -22,7 +22,7 @@ A message handler most contain a single method, which takes in the message as a 
 [Message Results](message-result)
 
 ```csharp
-Task<IServiceResult<TResponse>> HandleAsync(TMessage message)
+Task<IBenzeneResult<TResponse>> HandleAsync(TMessage message)
 ```
 
 ---
@@ -40,7 +40,7 @@ Task<IServiceResult<TResponse>> HandleAsync(TMessage message)
             _logger = logger;
             _helloWorldService = helloWorldService;
         }
-        public async Task<IServiceResult<HelloWorldResponse>> HandleAsync(HelloWorldMessage message)
+        public async Task<IBenzeneResult<HelloWorldResponse>> HandleAsync(HelloWorldMessage message)
         {
             _logger.LogInformation("Hello World");
             return await _helloWorldService.GetAsync(message);

@@ -4,7 +4,7 @@ Benzene is designed to run efficiently in AWS Lambda, supporting multiple event 
 
 ## Core Concepts
 
-In Benzene, an AWS Lambda function is typically structured using a `StartUp` class that inherits from `AwsLambdaStartUp`. This class defines how services are configured and how the middleware pipeline is built.
+In Benzene, an AWS Lambda function is structured using a `StartUp` class that inherits from `AwsLambdaStartUp`. This class defines how services are configured and how the middleware pipeline is built. `AwsLambdaStartUp` itself is the Lambda entry point — there is no separate entry point class to write.
 
 ## Basic Setup
 
@@ -23,35 +23,39 @@ public class StartUp : AwsLambdaStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddBenzeneMessageHandlers(typeof(MyHandler).Assembly);
+        services.UsingBenzene(x => x.AddMessageHandlers(typeof(MyHandler).Assembly));
         // Register other dependencies
     }
 
     public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
     {
-        app.UseSerilog()
-           .UseCorrelationId();
+        app.UseTimer("aws-stream-application");
 
-        // Handle different AWS Event Sources
+        var benzeneMessagePipeline = app.Create<BenzeneMessageContext>()
+            .UseCorrelationId()
+            .UseMessageHandlers(router => router.UseFluentValidation());
+
+        app.UseBenzeneMessage(benzeneMessagePipeline);
+
+        // Reuse the same pipeline behind API Gateway, SNS, SQS, Kafka, etc.
         app.UseApiGateway(apiGatewayApp => apiGatewayApp
-            .UseMessageHandlers(router => router.UseFluentValidation())
+            .UseHttpToBenzeneMessage(benzeneMessagePipeline)
         );
 
         app.UseSqs(sqsApp => sqsApp
+            .UseCorrelationId()
             .UseMessageHandlers(router => router.UseFluentValidation())
         );
     }
 }
 ```
 
-### 2. Define the Entry Point
+### 2. Configure the Lambda handler
 
-The entry point is the class that AWS Lambda invokes. You can use `BenzeneLambdaEntryPoint` which uses your `StartUp` class.
+Because `StartUp` implements `FunctionHandlerAsync(Stream, ILambdaContext)`, it is the class AWS Lambda invokes directly — point your `function-handler` at it (in `aws-lambda-tools-defaults.json`, a `serverless.template`, or your CDK/Terraform config):
 
-```csharp
-public class LambdaEntryPoint : BenzeneLambdaEntryPoint<StartUp>
-{
-}
+```
+YourAssembly::YourNamespace.StartUp::FunctionHandlerAsync
 ```
 
 ## Supported Event Sources
@@ -62,41 +66,43 @@ Benzene provides specialized middleware for various AWS event sources:
 - **SQS**: `app.UseSqs(...)`
 - **SNS**: `app.UseSns(...)`
 - **Kafka**: `app.UseKafka(...)`
-- **EventBridge**: `app.UseEventBridge(...)`
+- **EventBridge**: EventBridge-specific middleware in `Benzene.Aws.Lambda.EventBridge`
 
-Each of these allows you to define a specific sub-pipeline for that event source, while still being able to share common logic and message handlers.
+Each of these allows you to define a specific sub-pipeline for that event source, while still being able to share common logic and message handlers via `UseHttpToBenzeneMessage`/`UseBenzeneMessage`.
 
 ## Bare Metal Entry Point
 
-If you prefer more control, you can implement a "bare metal" entry point:
+If you prefer more control than `AwsLambdaStartUp` gives you, you can build the pipeline and entry point by hand:
 
 ```csharp
 public class BareMetalLambdaEntryPoint
 {
-    private ServiceCollection _serviceCollection;
-    private IMiddlewarePipeline<AwsEventStreamContext> _app;
+    private readonly IMiddlewarePipeline<AwsEventStreamContext> _pipeline;
+    private readonly MicrosoftServiceResolverFactory _microsoftServiceResolverFactory;
 
     public BareMetalLambdaEntryPoint()
     {
-        _app = new AwsEventStreamApplication()
-            .UseBenzeneMessage(x => x
-                .UseMessageHandlers(s => s.UseFluentValidation())
-            );
+        var services = new ServiceCollection();
 
-        _serviceCollection = new ServiceCollection();
-        _serviceCollection.AddAwsMessageHandlers(Assembly.GetExecutingAssembly());
+        var middlewarePipelineBuilder = new AwsEventStreamPipelineBuilder(new MicrosoftBenzeneServiceContainer(services))
+            .UseBenzeneMessage(x => x
+                .UseMessageHandlers(s => s.UseFluentValidation()));
+
+        services.UsingBenzene(x => x.AddMessageHandlers(Assembly.GetExecutingAssembly()));
+
+        _microsoftServiceResolverFactory = new MicrosoftServiceResolverFactory(services.BuildServiceProvider());
+        _pipeline = middlewarePipelineBuilder.Build();
     }
 
     public async Task<Stream> FunctionHandler(Stream input, ILambdaContext lambdaContext)
     {
-        var factory = new MicrosoftServiceResolverFactory(_serviceCollection.BuildServiceProvider());
+        using var serviceResolver = _microsoftServiceResolverFactory.CreateScope();
 
-        using (var serviceResolver = factory.CreateScope())
-        {
-            var context = new AwsEventStreamContext(input, lambdaContext);
-            await _app.HandleAsync(context, serviceResolver);
-            return context.Response;
-        }
+        var context = new AwsEventStreamContext(input, lambdaContext);
+        await _pipeline.HandleAsync(context, serviceResolver);
+        return context.Response;
     }
 }
 ```
+
+See [`examples/Aws`](../examples/Aws) for a complete, runnable project covering all of the above.

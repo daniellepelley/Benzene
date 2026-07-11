@@ -14,13 +14,10 @@ In your `Startup.cs` or `Program.cs`, use the `UsingBenzene()` extension method 
 public void ConfigureServices(IServiceCollection services)
 {
     services.AddControllers();
-    
-    // Register Benzene services
-    services.UsingBenzene();
-    
-    // Register your message handlers
-    services.AddBenzeneMessageHandlers(typeof(MyHandler).Assembly);
-    
+
+    // Register Benzene services and message handlers (discovered by reflection from the given assembly)
+    services.UsingBenzene(x => x.AddMessageHandlers(typeof(MyHandler).Assembly));
+
     // Optional: Add FluentValidation
     services.AddValidatorsFromAssembly(typeof(MyValidator).Assembly);
 }

@@ -11,18 +11,17 @@ Middleware components can perform a variety of functions, such as:
 
 In Benzene, the order in which middleware components are added to the pipeline is significant. The order determines the order in which the middleware components are invoked on requests, and the reverse order for the response. Therefore, the configuration of the middleware pipeline is an important aspect of application behavior and performance.
 
-Here is a simple example of how middleware is configured in the LambdaEntryPoint class of a Benzene project running in an AWS Lambda.
+Here is a simple example of how middleware is configured in the `StartUp` class of a Benzene project running in an AWS Lambda.
 
 
 ```csharp
-app.UseDirectMessage(directMessageApp => directMessageApp
+app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
     .UseCorrelationId()
-    .UseTimer("direct")
-    .UseElementsLogContext()
-    .UseProcessDirectMessageResponse()
+    .UseTimer("benzene-message")
+    .UseLogResult(x => x.WithCorrelationId())
     .UseHealthCheck("healthcheck", healthCheckBuilder)
-    .UseMessageRouter(x => x
-    .UseFluentValidation()
+    .UseMessageHandlers(router => router
+        .UseFluentValidation()
     )
 );
 ```
@@ -50,7 +49,7 @@ In the example below ILogger is resolved so that the topic can be logged before 
 .Use("middleware-demo", async (resolver, context, next) =>
 {
     var logger = resolver.GetService<ILogger>();
-    logger.LogInformation(context.DirectMessageRequest.Topic);
+    logger.LogInformation(context.BenzeneMessageRequest.Topic);
     await next();
 })
 ```
@@ -64,7 +63,7 @@ This is a middleware extension that will be called during the request.
 {
     //Do something on the request
     var logger = resolver.GetService<ILogger>();
-    logger.LogInformation(context.DirectMessageRequest.Topic);           
+    logger.LogInformation(context.BenzeneMessageRequest.Topic);           
 })
 ```
 

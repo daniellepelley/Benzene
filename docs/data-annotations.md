@@ -4,12 +4,12 @@ System.ComponentModel.DataAnnotations is a namespace in .NET that provides a set
 
 ### Integration with Benzene
 
-Data Annotations can be added to the message router middleware, this is the point where the type of request has been resolved.
+Data Annotations can be added to the message handlers middleware, this is the point where the type of request has been resolved.
 
 The data annotations middleware will validate for the request type using the data annotations on the request type. If the request fails validation it will return a ValidationError result. If the payload is valid then the request will be forwarded on towards the message handler.
 
 ```csharp
-.UseMessageRouter(router => router
+.UseMessageHandlers(router => router
     .UseDataAnnotationsValidation()
 );
 ```
