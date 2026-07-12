@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
-using Benzene.AspNet.Core;
+﻿using Benzene.AspNet.Core;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
@@ -8,7 +7,6 @@ using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Microsoft.Logging;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,10 +36,8 @@ public static class DependenciesBuilder
     {
         services.AddSingleton(configuration);
         services.AddLogging();
-        // services.AddStructuredLogging();
         // services.AddCorrelationId();
 
-        services.AddScoped<ILogger, Logger<string>>();
         // services.AddScoped<IOrderDbClient, OrderDbClient>();
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
@@ -55,7 +51,6 @@ public static class DependenciesBuilder
         services
             .UsingBenzene(x => x
                 .AddBenzene()
-                .AddMicrosoftLogger()
                 .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
                 .AddHttpMessageHandlers()
                 .AddAspNetMessageHandlers());
@@ -64,7 +59,7 @@ public static class DependenciesBuilder
 
         services.AddScoped<IProcessTimerFactory>(x =>
             new CompositeProcessTimerFactory(
-                new LoggingProcessTimerFactory(x.GetService<IBenzeneLogger>()),
+                new LoggingProcessTimerFactory(x.GetService<ILogger<LoggingProcessTimer>>()),
                 new DebugTimerFactory()
             ));
     }

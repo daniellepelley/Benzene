@@ -8,7 +8,7 @@ app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
 );
 ```
 
-The Correlation Id can be added to the Log Context using the following.
+The Correlation Id can be added to the logging scope (via `ILogger.BeginScope`) using the following.
 
 ```csharp
 .UseLogResult(x => x.WithCorrelationId());

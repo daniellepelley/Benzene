@@ -1,5 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
-using Benzene.Abstractions.MessageHandlers;
+﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages;
@@ -10,7 +9,6 @@ using Benzene.Examples.App.Services;
 using Benzene.Http.Routing;
 using Benzene.Kafka.Core;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Microsoft.Logging;
 using Benzene.Schema.OpenApi;
 using Benzene.Xml;
 using Confluent.Kafka;
@@ -47,16 +45,14 @@ public static class DependenciesBuilder
         services.UsingBenzene(x => x
             .AddBenzene()
             .AddXml()
-            .AddMicrosoftLogger()
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
             .AddKafka<Ignore, string>()
         );
         // services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
-        services.AddScoped<ILogger>(x => x.GetService<ILogger<string>>());
-        
+
         services.AddScoped<IProcessTimerFactory>(x =>
             new CompositeProcessTimerFactory(
-                new LoggingProcessTimerFactory(x.GetService<IBenzeneLogger>())));
+                new LoggingProcessTimerFactory(x.GetService<ILogger<LoggingProcessTimer>>())));
 
         services.AddSingleton<IMessageHandlerDefinition>(_ =>
             MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));

@@ -35,7 +35,7 @@ Task<IBenzeneResult<TResponse>> HandleAsync(TMessage message)
     {
         private readonly IHelloWorldService _helloWorldService;
         private readonly ILogger _logger;
-        public HelloWorldMessageHandler(IHelloWorldService helloWorldService, ILogger logger)
+        public HelloWorldMessageHandler(IHelloWorldService helloWorldService, ILogger<HelloWorldMessageHandler> logger)
         {
             _logger = logger;
             _helloWorldService = helloWorldService;
@@ -59,7 +59,7 @@ public class HeyWorldMessageHandler : IMessageHandler<HelloWorldMessage>
 {
     private readonly IHelloWorldService _helloWorldService;
     private readonly ILogger _logger;
-    public HeyWorldMessageHandler(IHelloWorldService helloWorldService, ILogger logger)
+    public HeyWorldMessageHandler(IHelloWorldService helloWorldService, ILogger<HeyWorldMessageHandler> logger)
     {
         _logger = logger;
         _helloWorldService = helloWorldService;

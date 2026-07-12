@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Amazon.Extensions.NETCore.Setup;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Sns;
@@ -17,15 +16,12 @@ using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
-using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Microsoft.Logging;
 using Newtonsoft.Json;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Benzene.Examples.Aws;
 
@@ -67,7 +63,6 @@ public static class DependenciesBuilder
 
         services.AddSingleton(configuration);
         services.AddLogging(x => x.AddConsole().AddSerilog());
-        services.AddScoped<ILogger, Logger<string>>();
         services.AddTransient(_ => configuration.GetAWSOptions());
         services.AddSingleton(awsOptions.CreateServiceClient<IAmazonSQS>());
         // services.AddScoped<ISqsClient>(x => new SqsClient(x.GetService<IAmazonSQS>(), configuration["MY_QUEUE_URL"] ));
@@ -88,8 +83,6 @@ public static class DependenciesBuilder
         services.UsingBenzene(x => x
             .AddBenzene()
             .AddBenzeneMessage()
-            .AddStructuredLogging()
-            .AddMicrosoftLogger()
             // .AddXml()
             // .AddSerializer<XmlSerializer>("application/xml")
             // .AddCorrelationId()
@@ -104,7 +97,7 @@ public static class DependenciesBuilder
         
         services.AddScoped<IProcessTimerFactory>(x =>
             new CompositeProcessTimerFactory(
-                new LoggingProcessTimerFactory(x.GetService<IBenzeneLogger>())
+                new LoggingProcessTimerFactory(x.GetService<ILogger<LoggingProcessTimer>>())
                 // new XRayProcessTimerFactory()
                 ));
 

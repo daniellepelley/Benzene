@@ -26,3 +26,7 @@ Autofac DI container integration for Benzene. Adapts Benzene's DI abstractions t
 - Lifetime scopes mapped to Benzene scopes
 - Autofac modules work with Benzene
 - Decorators and interceptors supported
+- `AutofacServiceResolverFactory` registers `NullLoggerFactory`/open-generic `Logger<>` fallbacks
+  (via `IfNotRegistered`) so `ILogger<T>` always resolves; register your own `ILoggerFactory`
+  instance (e.g. `LoggerFactory.Create(x => x.AddConsole())`) to enable real logging — user
+  registrations always win over the fallbacks

@@ -26,3 +26,6 @@ Microsoft.Extensions.DependencyInjection integration for Benzene. Adapts Benzene
 - Scoped, Singleton, Transient lifetimes mapped
 - Works seamlessly with ASP.NET Core DI
 - No additional DI container needed
+- `UsingBenzene` calls `services.AddLogging()` so `ILogger<T>`/`ILoggerFactory` always resolve;
+  host logging configuration (before or after `UsingBenzene`) is respected because MEL's
+  registration is TryAdd-based and composable

@@ -1,4 +1,4 @@
-﻿# Monitoring & Diagnostics
+# Monitoring & Diagnostics
 
 Benzene includes built-in support for common monitoring and diagnostic patterns, ensuring your services are observable and easy to debug. Detailed information on core middleware can be found in the [Common Middleware](common-middleware) section.
 
@@ -35,15 +35,54 @@ This will log the duration of the pipeline execution under the specified name.
 
 ## Logging
 
-Benzene integrates with common logging frameworks. Each integration package registers its own `IBenzeneLogContext`/`IBenzeneLogAppender` implementation; the actual logging middleware in your pipeline is still the framework-agnostic `.UseLogResult()` / `.UseLogContext()` from [Common Middleware](common-middleware).
+Benzene logs through [`Microsoft.Extensions.Logging`](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging) (`ILogger<T>`). There is no Benzene-specific logger to configure: whatever logging providers your host sets up (console, Serilog, log4net, Application Insights, ...) automatically receive Benzene's framework logs and your handlers' logs alike.
 
-### Serilog Integration
-
-To use Serilog, add the `Benzene.Serilog` package and register it with your service container:
+`UsingBenzene(...)` calls `services.AddLogging()` for you, so `ILogger<T>` always resolves — with no providers configured, log calls are simply no-ops. Configure providers the standard .NET way:
 
 ```csharp
-services.UsingBenzene(x => x.AddSerilog());
+services.AddLogging(x => x.AddConsole());
+// or with Serilog's Microsoft.Extensions.Logging provider:
+services.AddLogging(x => x.AddSerilog());
 ```
+
+Your message handlers just take a logger via constructor injection:
+
+```csharp
+public class CreateOrderMessageHandler : IMessageHandler<CreateOrderMessage, OrderDto>
+{
+    private readonly ILogger<CreateOrderMessageHandler> _logger;
+
+    public CreateOrderMessageHandler(ILogger<CreateOrderMessageHandler> logger)
+    {
+        _logger = logger;
+    }
+    // ...
+}
+```
+
+### Structured log scopes
+
+The pipeline middleware `.UseLogResult(...)` / `.UseLogContext(...)` attach structured properties (correlation ID, topic, transport, AWS request ID, ...) to the logging scope for the duration of the request, using `ILogger.BeginScope`:
+
+```csharp
+app.UseLogResult(x => x
+    .WithCorrelationId()
+    .WithTopic()
+    .WithTransport());
+```
+
+Scope properties flow to any provider that supports scopes — for the console provider enable `IncludeScopes`; Serilog's provider maps scopes to its `LogContext` automatically.
+
+### Autofac
+
+The Autofac integration registers fallbacks so `ILogger<T>` always resolves. To enable real logging, register a logger factory — your registration always wins over the fallback:
+
+```csharp
+containerBuilder.RegisterInstance(LoggerFactory.Create(x => x.AddConsole()))
+    .As<ILoggerFactory>();
+```
+
+> Note: if you construct Benzene from an already-built `IServiceProvider`, Benzene cannot add logging defaults — configure `AddLogging()` on the host yourself (ASP.NET Core and the generic host always do).
 
 ### Datadog Integration
 

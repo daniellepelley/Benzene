@@ -41,14 +41,14 @@ Simple middleware can be added inline within the pipeline itself. This is great 
 
 If needed you can pass in the IServiceResolver which allows you to resolve any service that has been registered by dependency injection.
 
-In the example below ILogger is resolved so that the topic can be logged before next() is called and the request will continue down the middleware pipeline.
+In the example below an ILogger (Microsoft.Extensions.Logging) is resolved so that the topic can be logged before next() is called and the request will continue down the middleware pipeline.
 
 
 
 ```csharp
 .Use("middleware-demo", async (resolver, context, next) =>
 {
-    var logger = resolver.GetService<ILogger>();
+    var logger = resolver.GetService<ILoggerFactory>().CreateLogger("middleware-demo");
     logger.LogInformation(context.BenzeneMessageRequest.Topic);
     await next();
 })
@@ -62,7 +62,7 @@ This is a middleware extension that will be called during the request.
 .OnRequest("request-demo", async (resolver, context) =>
 {
     //Do something on the request
-    var logger = resolver.GetService<ILogger>();
+    var logger = resolver.GetService<ILoggerFactory>().CreateLogger("request-demo");
     logger.LogInformation(context.BenzeneMessageRequest.Topic);           
 })
 ```

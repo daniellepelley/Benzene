@@ -27,7 +27,6 @@
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />

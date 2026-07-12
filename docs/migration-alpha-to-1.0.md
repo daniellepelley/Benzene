@@ -24,6 +24,30 @@ complete diff of every alpha release.
 | `Benzene.Core.MiddlewareBuilder` (namespace) | `Benzene.Core.Middleware` |
 | `AwsEventStreamPipelineBuilder` | `MiddlewarePipelineBuilder<AwsEventStreamContext>` |
 
+## Logging: IBenzeneLogger → Microsoft.Extensions.Logging
+
+The custom logging stack has been removed in favour of `Microsoft.Extensions.Logging`.
+Framework and handler code now inject `ILogger<T>`; structured log context flows via
+`ILogger.BeginScope`. `UsingBenzene(...)` calls `AddLogging()` for you, so loggers
+always resolve — configure providers the standard .NET way.
+
+| Alpha | 1.0 |
+|---|---|
+| `IBenzeneLogger` | `ILogger<T>` / `ILogger` (Microsoft.Extensions.Logging) |
+| `BenzeneLogLevel` | `LogLevel` (values map 1:1) |
+| `BenzeneLogger.NullLogger` | `NullLogger.Instance` / `NullLogger<T>.Instance` |
+| `IBenzeneLogAppender` | `ILoggerProvider` (register via `AddLogging(x => x.Add...())`) |
+| `IBenzeneLogContext.Create(props)` | `ILogger.BeginScope(props)` |
+| `AddMicrosoftLogger()` | Removed — `AddLogging()` is called by `UsingBenzene` |
+| `AddSerilog()` (Benzene.Serilog) | `AddLogging(x => x.AddSerilog())` (Serilog's MEL provider) |
+| `AddLog4Net()` (Benzene.Log4Net) | log4net's MEL provider (`Microsoft.Extensions.Logging.Log4Net.AspNetCore`) |
+| `ILogContextBuilder.CreateForRequest/CreateForResponse` | `BuildRequestScope`/`BuildResponseScope` (only relevant to custom middleware; the `With*`/`OnRequest`/`OnResponse` fluent API is unchanged) |
+
+The packages `Benzene.Microsoft.Logging`, `Benzene.Serilog` and `Benzene.Log4Net`
+no longer exist. `UseLogResult(...)`/`UseLogContext(...)` and the enrichment
+extensions (`WithCorrelationId`, `WithTopic`, `WithTransport`, `WithHeaders`,
+`WithRequestId`, `WithApplication`, `WithHttp`) are source-compatible.
+
 ## Message results
 
 The old `IMessageResult` carried `Topic`, `Status`, `Errors`, `Payload`, and

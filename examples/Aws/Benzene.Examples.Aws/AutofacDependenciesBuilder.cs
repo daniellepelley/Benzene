@@ -16,14 +16,11 @@ using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Examples.App.Data;
-using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
 using Benzene.Http;
-using Benzene.Microsoft.Logging;
 using Benzene.Xml;
-using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 
 namespace Benzene.Examples.Aws;
@@ -49,28 +46,17 @@ public static class AutofacDependenciesBuilder
         }
 
         containerBuilder.RegisterInstance(configuration).SingleInstance();
-        // services.AddLogging(x => x.AddConsole());
 
-        containerBuilder.RegisterInstance(new LoggerFactory())
+        containerBuilder.RegisterInstance(LoggerFactory.Create(x => x.AddConsole()))
             .As<ILoggerFactory>();
 
-        containerBuilder.RegisterInstance(NullLoggerProvider.Instance)
-            .As<ILoggerProvider>();
-
-        containerBuilder.RegisterGeneric(typeof(Logger<>))
-            .As(typeof(ILogger<>))
-            .SingleInstance();
-
-        containerBuilder.RegisterType<Logger<string>>().As<ILogger>().InstancePerLifetimeScope();
         containerBuilder.Register(_ => configuration.GetAWSOptions()).InstancePerLifetimeScope();
         containerBuilder.RegisterInstance(awsOptions.CreateServiceClient<IAmazonSQS>()).SingleInstance();
         containerBuilder.RegisterType<CreateOrderMessageValidator>().As<IValidator<CreateOrderMessage>>()
             .SingleInstance();
 
         containerBuilder.UsingBenzene(x => x
-                .AddBenzene()
-                .AddStructuredLogging()
-            .AddMicrosoftLogger()
+            .AddBenzene()
             .AddXml()
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
             .AddScoped<IOrderDbClient, InMemoryOrderDbClient>()

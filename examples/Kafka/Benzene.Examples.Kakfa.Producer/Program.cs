@@ -1,11 +1,11 @@
 ﻿using Benzene.Clients;
-using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Kafka.Core.Kafka;
 using Benzene.Microsoft.Dependencies;
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 var SomeStatus = "some-status";
 var SomeName = "some-name";
@@ -31,7 +31,7 @@ var middlewarePipeline = middlewarePipelineBuilder
     .UseKafkaClient(producer)
     .Build();
 
-var kafkaClient = new KafkaBenzeneMessageClient(middlewarePipeline, BenzeneLogger.NullLogger, serviceContainer.CreateServiceResolverFactory().CreateScope());
+var kafkaClient = new KafkaBenzeneMessageClient(middlewarePipeline, NullLogger<KafkaBenzeneMessageClient>.Instance, serviceContainer.CreateServiceResolverFactory().CreateScope());
 
 for(var i = 0; i < 5; i++)
 {       
