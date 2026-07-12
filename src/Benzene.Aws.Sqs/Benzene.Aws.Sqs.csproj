@@ -5,6 +5,7 @@
     <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.Aws.Sqs</AssemblyName>
     <RootNamespace>Benzene.Aws.Sqs</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

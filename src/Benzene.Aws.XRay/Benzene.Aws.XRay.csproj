@@ -5,6 +5,7 @@
     <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.Aws.XRay</AssemblyName>
     <RootNamespace>Benzene.Aws.XRay</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

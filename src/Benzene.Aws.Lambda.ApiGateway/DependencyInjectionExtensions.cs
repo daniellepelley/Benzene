@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
@@ -19,8 +19,22 @@ using Benzene.Http;
 
 namespace Benzene.Aws.Lambda.ApiGateway;
 
+/// <summary>
+/// Provides extension methods for registering API Gateway services and adding API Gateway-specific
+/// health check endpoints.
+/// </summary>
 public static class DependencyInjectionExtensions
 {
+    /// <summary>
+    /// Registers the services required to process API Gateway requests: request mapping, response
+    /// handling, routing, and transport info.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <returns>The service container for method chaining.</returns>
+    /// <remarks>
+    /// Called automatically by <see cref="Extensions.UseApiGateway"/>; you don't normally need to call
+    /// this directly.
+    /// </remarks>
     public static IBenzeneServiceContainer AddApiGateway(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped<JsonSerializer>();
@@ -40,13 +54,21 @@ public static class DependencyInjectionExtensions
         services
             .AddScoped<IResponseHandler<ApiGatewayContext>,
                 ResponseHandler<JsonSerializationResponseHandler<ApiGatewayContext>, ApiGatewayContext>>();
-        
+
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("api-gateway"));
         services.AddHttpMessageHandlers();
 
         return services;
     }
 
+    /// <summary>
+    /// Adds a health check endpoint at the given method and path, using the default health check topic.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="method">The HTTP method the health check responds to.</param>
+    /// <param name="path">The HTTP path the health check responds to.</param>
+    /// <param name="healthChecks">The health checks to run.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHealthCheck(
         this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string method, string path,
         params IHealthCheck[] healthChecks)
@@ -54,18 +76,45 @@ public static class DependencyInjectionExtensions
         return app.UseHealthCheck(Constants.DefaultHealthCheckTopic, method, path, healthChecks);
     }
 
+    /// <summary>
+    /// Adds a health check endpoint at the given topic, method, and path.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="topic">The message topic to associate with the health check result.</param>
+    /// <param name="method">The HTTP method the health check responds to.</param>
+    /// <param name="path">The HTTP path the health check responds to.</param>
+    /// <param name="healthChecks">The health checks to run.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHealthCheck(
         this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string topic, string method, string path,
         params IHealthCheck[] healthChecks)
     {
         return app.UseHealthCheck(topic, method, path, x => x.AddHealthChecks(healthChecks));
     }
-    
+
+    /// <summary>
+    /// Adds a health check endpoint at the given method and path, using the default health check topic
+    /// and a health check builder action.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="method">The HTTP method the health check responds to.</param>
+    /// <param name="path">The HTTP path the health check responds to.</param>
+    /// <param name="action">The action that configures the health check builder.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHealthCheck(this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string method, string path, Action<IHealthCheckBuilder> action)
     {
         return app.UseHealthCheck(Constants.DefaultHealthCheckTopic, method, path, action);
     }
 
+    /// <summary>
+    /// Adds a health check endpoint at the given topic, method, and path, using a health check builder action.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="topic">The message topic to associate with the health check result.</param>
+    /// <param name="method">The HTTP method the health check responds to.</param>
+    /// <param name="path">The HTTP path the health check responds to.</param>
+    /// <param name="action">The action that configures the health check builder.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHealthCheck(this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string topic, string method, string path, Action<IHealthCheckBuilder> action)
     {
         var builder = app.GetHealthCheckerBuilder();
@@ -73,6 +122,19 @@ public static class DependencyInjectionExtensions
         return app.UseHealthCheck(topic, method, path, builder);
     }
 
+    /// <summary>
+    /// Adds a health check endpoint at the given topic, method, and path, using a pre-configured health check builder.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="topic">The message topic to associate with the health check result.</param>
+    /// <param name="method">The HTTP method the health check responds to.</param>
+    /// <param name="path">The HTTP path the health check responds to.</param>
+    /// <param name="builder">The pre-configured health check builder.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    /// <remarks>
+    /// If the incoming request's method and path match, health checks are run and the result is set on
+    /// the context; otherwise, the request is passed to the next middleware.
+    /// </remarks>
     public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseHealthCheck(this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string topic, string method, string path, IHealthCheckBuilder builder)
     {
         return app.Use(resolver => new FuncWrapperMiddleware<ApiGatewayContext>("HealthCheck", async (context, next) =>
@@ -91,5 +153,4 @@ public static class DependencyInjectionExtensions
         }));
     }
 }
-
 

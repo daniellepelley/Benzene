@@ -6,6 +6,7 @@
     <AssemblyName>Benzene.Aws.Lambda.ApiGateway</AssemblyName>
     <RootNamespace>Benzene.Aws.Lambda.ApiGateway</RootNamespace>
     <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

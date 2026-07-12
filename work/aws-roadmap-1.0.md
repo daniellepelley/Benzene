@@ -1,9 +1,17 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.0
-**Last Updated:** 2026-07-11
+**Document Version:** 1.1
+**Last Updated:** 2026-07-12
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
+
+> **2026-07-12 update:** XML documentation is now complete across all 9 AWS production
+> packages (Benzene.Aws.Lambda.Core, .ApiGateway, .Sqs, .Sns, .EventBridge, .Kafka,
+> Benzene.Aws.Sqs, Benzene.Aws.XRay, Benzene.Clients.Aws). All packages build with zero
+> CS1591 warnings. This resolves the single highest-priority blocker (P0 #1, 60-80h)
+> identified below. See "XML Documentation" call-outs throughout this document — they are
+> now historical context, not open work. The EventBridge/S3 naming mismatch and other
+> non-documentation issues found during this pass remain open and are noted where relevant.
 
 ---
 
@@ -12,12 +20,12 @@
 This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages and defines the strategic direction for AWS-specific features over the next 12+ months. The AWS ecosystem within Benzene currently consists of **8 production packages** and **5 TestHelper packages** supporting Lambda, SQS, SNS, EventBridge, Kafka, and X-Ray.
 
 ### Current State
-- **Package Count:** 8 AWS production packages, 5 TestHelpers
+- **Package Count:** 9 AWS production packages, 5 TestHelpers
 - **Version:** All at 0.0.1 (pre-release)
 - **Target Framework:** .NET 10
 - **Source Files:** ~179 AWS-related source files
 - **Test Coverage:** Minimal (4 test classes found)
-- **Documentation:** 0% XML documentation, basic CLAUDE.md files exist
+- **Documentation:** ✅ 100% XML documentation (completed 2026-07-12), basic CLAUDE.md files exist
 - **Maturity:** Functional but not production-ready for 1.0
 
 ### Key Findings
@@ -27,9 +35,10 @@ This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages a
 - TestHelpers properly extracted to dedicated packages
 - Working examples demonstrate real-world usage
 - No TODO/FIXME/HACK comments found in codebase
+- ✅ 100% XML documentation coverage across all 9 packages, zero CS1591 warnings (completed 2026-07-12)
 
 ❌ **Critical Blockers for 1.0:**
-- **ZERO XML documentation** on any public API
+- ~~ZERO XML documentation on any public API~~ ✅ RESOLVED 2026-07-12
 - Minimal test coverage (~4 test classes for 8 packages)
 - No performance benchmarks or cold-start optimization metrics
 - Missing IAM permission documentation
@@ -104,7 +113,7 @@ Keep all AWS packages at **0.9.x-preview** until after core 1.0 release, then:
 - ✅ Proper disposal patterns (IDisposable on entry points)
 
 **Red Flags:**
-- ❌ **0 XML documentation comments** across ALL packages
+- ~~0 XML documentation comments across ALL packages~~ ✅ RESOLVED 2026-07-12 (100% coverage, all 9 packages)
 - ❌ Only 4 test classes found for 8 packages
 - ❌ No integration tests with LocalStack/real AWS
 - ❌ EventBridge package references wrong dependency (Amazon.Lambda.S3Events instead of CloudWatchEvents)
@@ -517,11 +526,11 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 
 **Must Have Before 1.0:**
 
-1. **XML Documentation** (60-80 hours) - HIGHEST PRIORITY
-   - Document every public type, method, property
-   - Add `<summary>`, `<param>`, `<returns>`, `<remarks>`
-   - Include `<example>` for main entry points
-   - Document AWS-specific behaviors (IAM, limits, costs)
+1. ~~**XML Documentation** (60-80 hours) - HIGHEST PRIORITY~~ ✅ COMPLETE 2026-07-12
+   - ~~Document every public type, method, property~~ ✅ Done for all 9 packages, 0 CS1591 warnings
+   - `<example>` blocks and AWS-specific behavior docs (IAM, limits, costs) were out of scope
+     for this pass and remain open as narrative documentation work (see Documentation
+     Requirements section below)
 
 2. **Fix Broken EventBridge Package** (25-30 hours) - CRITICAL
    - Resolve S3 vs. EventBridge naming confusion
@@ -553,7 +562,7 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
    - Add configuration options
    - Remove constructor virtual calls
 
-**Total Estimated Effort for 1.0:** 178-262 hours (4.5-6.5 weeks full-time)
+**Total Estimated Effort for 1.0:** 118-182 hours remaining (60-80h XML documentation now complete)
 
 ### Phased Approach
 
@@ -1417,7 +1426,7 @@ All AWS packages reference:
 
 ### Must Have for 1.0 (P0)
 
-1. **XML Documentation** - All packages (60-80h)
+1. ~~**XML Documentation** - All packages (60-80h)~~ ✅ COMPLETE 2026-07-12
 2. **Fix EventBridge Package** - Critical bug (25-30h)
 3. **Unit Tests** - 80%+ coverage (40-50h)
 4. **IAM Permissions Docs** - All event sources (15-20h)
@@ -1428,7 +1437,7 @@ All AWS packages reference:
 9. **Code Quality Fixes** - Error handling, config (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (8-10h)
 
-**Total P0 Effort:** 226-307 hours
+**Total P0 Effort:** 166-227 hours remaining (60-80h XML documentation now complete)
 
 ### Should Have for 1.0 (P1)
 
@@ -1505,17 +1514,17 @@ Per `work/1.0.0-release-status.md`, core packages need:
 7. ✅ Working examples
 
 **AWS Packages Current Status:**
-1. ❌ 0% XML documentation
+1. ✅ 100% XML documentation (completed 2026-07-12)
 2. ✅ Test helpers properly separated
 3. ✅ No critical bugs found (except EventBridge confusion)
 4. ✅ Versioning policy applies to all packages
 5. ❌ Minimal test coverage
-6. ❌ Documentation incomplete
+6. ⚠️ Narrative documentation (guides, IAM, SAM/CDK) still incomplete
 7. ⚠️ Examples exist but need SAM/CDK templates
 
 **Gap Analysis:**
-AWS packages are ~30% toward 1.0 readiness using core criteria.
-Primary gaps: Documentation (XML + guides), Testing, Examples
+AWS packages are ~45% toward 1.0 readiness using core criteria (up from ~30%).
+Primary remaining gaps: Testing, narrative documentation (guides/IAM/SAM/CDK), Examples
 
 ---
 

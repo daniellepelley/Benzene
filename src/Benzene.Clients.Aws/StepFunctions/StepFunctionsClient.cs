@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
@@ -9,6 +9,9 @@ using Benzene.Results;
 
 namespace Benzene.Clients.Aws.StepFunctions;
 
+/// <summary>
+/// Starts executions of an AWS Step Functions state machine.
+/// </summary>
 public class StepFunctionsClient : IStepFunctionsClient
 {
     private readonly IBenzeneLogger _logger;
@@ -16,6 +19,12 @@ public class StepFunctionsClient : IStepFunctionsClient
     private readonly IAmazonStepFunctions _amazonStepFunctionsClient;
     private readonly ISerializer _serializer;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StepFunctionsClient"/> class.
+    /// </summary>
+    /// <param name="stateMachineArn">The ARN of the state machine to start executions on.</param>
+    /// <param name="amazonStepFunctionsClient">The Step Functions client used to start executions.</param>
+    /// <param name="logger">The logger used to record send failures.</param>
     public StepFunctionsClient(string stateMachineArn, IAmazonStepFunctions amazonStepFunctionsClient, IBenzeneLogger logger)
     {
         _amazonStepFunctionsClient = amazonStepFunctionsClient;
@@ -24,6 +33,16 @@ public class StepFunctionsClient : IStepFunctionsClient
         _serializer = new JsonSerializer();
     }
 
+    /// <summary>
+    /// Starts a new execution of the state machine with the given message as its input.
+    /// </summary>
+    /// <typeparam name="TMessage">The type of the input message.</typeparam>
+    /// <typeparam name="TResponse">The expected response payload type.</typeparam>
+    /// <param name="message">The message to serialize as the execution input.</param>
+    /// <returns>
+    /// A task that resolves to an accepted result if the execution started successfully, or a
+    /// service-unavailable result if starting it threw.
+    /// </returns>
     public async Task<IBenzeneResult<TResponse>> StartExecutionAsync<TMessage, TResponse>(TMessage message)
     {
         try
@@ -42,7 +61,10 @@ public class StepFunctionsClient : IStepFunctionsClient
             return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
         }
     }
-        
+
+    /// <summary>
+    /// Disposes the client. No-op; the client holds no disposable resources of its own.
+    /// </summary>
     public void Dispose()
     {
         // Method intentionally left empty.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
@@ -14,6 +14,9 @@ using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sns;
 
+/// <summary>
+/// A Benzene message client that publishes outgoing messages to an SNS topic.
+/// </summary>
 public class SnsBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly IBenzeneLogger _logger;
@@ -21,6 +24,14 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
     private readonly IServiceResolver _serviceResolver;
     private readonly IMiddlewarePipeline<SnsSendMessageContext> _middlewarePipeline;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SnsBenzeneMessageClient"/> class, building a
+    /// default single-middleware pipeline around the given SNS client.
+    /// </summary>
+    /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
+    /// <param name="amazonSnsClient">The SNS client to publish with.</param>
+    /// <param name="logger">The logger used to record send failures.</param>
+    /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
     public SnsBenzeneMessageClient(string topicArn, IAmazonSimpleNotificationService amazonSnsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
         _topicArn = topicArn;
@@ -34,6 +45,13 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
             .Build();
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SnsBenzeneMessageClient"/> class with a pre-built
+    /// middleware pipeline.
+    /// </summary>
+    /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
+    /// <param name="middlewarePipeline">The built middleware pipeline to publish through.</param>
+    /// <param name="logger">The logger used to record send failures.</param>
     public SnsBenzeneMessageClient(string topicArn, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, IBenzeneLogger logger)
     {
         _logger = logger;
@@ -41,6 +59,16 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
         _middlewarePipeline = middlewarePipeline;
     }
 
+    /// <summary>
+    /// Publishes the request as a message to the configured SNS topic.
+    /// </summary>
+    /// <typeparam name="TRequest">The request payload type.</typeparam>
+    /// <typeparam name="TResponse">The expected response payload type.</typeparam>
+    /// <param name="request">The client request to send.</param>
+    /// <returns>
+    /// A task that resolves to an accepted result if the publish succeeded, a mapped error result based
+    /// on the HTTP status code otherwise, or a service-unavailable result if the publish threw.
+    /// </returns>
     public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
         try
@@ -50,7 +78,7 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);
 
             var response = context.Response;
-            
+
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 return BenzeneResult.Accepted<TResponse>();
@@ -65,6 +93,9 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
         }
     }
 
+    /// <summary>
+    /// Disposes the client. No-op; the client holds no disposable resources of its own.
+    /// </summary>
     public void Dispose()
     {
         // Method intentionally left empty.

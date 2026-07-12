@@ -5,6 +5,7 @@
 		<PackageVersion>0.0.1</PackageVersion>
 		<AssemblyName>Benzene.Aws.EventBridge</AssemblyName>
 		<RootNamespace>Benzene.Aws.EventBridge</RootNamespace>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

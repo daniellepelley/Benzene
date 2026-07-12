@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
@@ -7,6 +7,16 @@ using Benzene.Abstractions.Hosting;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
+/// <summary>
+/// A long-running worker that continuously polls an SQS queue, runs received messages through the
+/// middleware pipeline as a batch, and deletes them once handled.
+/// </summary>
+/// <remarks>
+/// Uses long polling (1 second wait) in a loop until <see cref="StartAsync"/>'s cancellation token is
+/// signaled. Messages are only deleted after the whole batch has been processed; if processing throws,
+/// the messages are left on the queue to be retried (subject to the queue's visibility timeout and
+/// redrive policy).
+/// </remarks>
 public class SqsConsumer : IBenzeneWorker
 {
     private readonly IServiceResolverFactory _serviceResolverFactory;
@@ -14,6 +24,13 @@ public class SqsConsumer : IBenzeneWorker
     private readonly SqsConsumerConfig _sqsConsumerConfig;
     private readonly ISqsClientFactory _sqsClientFactory;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SqsConsumer"/> class.
+    /// </summary>
+    /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
+    /// <param name="sqsConsumerApplication">The application that runs each batch of messages through the middleware pipeline.</param>
+    /// <param name="sqsConsumerConfig">The queue URL and batch size to poll with.</param>
+    /// <param name="sqsClientFactory">The factory used to create the underlying SQS client.</param>
     public SqsConsumer(IServiceResolverFactory serviceResolverFactory,
         SqsConsumerApplication sqsConsumerApplication, SqsConsumerConfig sqsConsumerConfig, ISqsClientFactory sqsClientFactory)
     {
@@ -23,6 +40,11 @@ public class SqsConsumer : IBenzeneWorker
         _serviceResolverFactory = serviceResolverFactory;
     }
 
+    /// <summary>
+    /// Starts the poll loop, running until <paramref name="cancellationToken"/> is signaled.
+    /// </summary>
+    /// <param name="cancellationToken">The token used to stop the poll loop.</param>
+    /// <returns>A task that completes when the poll loop stops.</returns>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var client = _sqsClientFactory.Create();
@@ -58,6 +80,11 @@ public class SqsConsumer : IBenzeneWorker
         while (!cancellationToken.IsCancellationRequested);
     }
 
+    /// <summary>
+    /// Stops the worker. No cleanup is required beyond exiting the poll loop in <see cref="StartAsync"/>.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token for the stop operation.</param>
+    /// <returns>A completed task.</returns>
     public Task StopAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
