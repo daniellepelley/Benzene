@@ -9,6 +9,14 @@ namespace Benzene.CodeGen.SourceGenerators
     [Generator]
     public class MessageHandlerSourceGenerator : IIncrementalGenerator
     {
+        public static readonly DiagnosticDescriptor DuplicateTopic = new(
+            id: "BENZ001",
+            title: "Duplicate message topic",
+            messageFormat: "Message topic '{0}'{1} is handled by multiple handlers: {2}",
+            category: "Benzene",
+            defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var provider = context.SyntaxProvider
@@ -86,7 +94,8 @@ namespace Benzene.CodeGen.SourceGenerators
                 version,
                 requestType,
                 responseType,
-                typeSymbol.ToDisplayString()
+                typeSymbol.ToDisplayString(),
+                classDeclaration.Identifier.GetLocation()
             );
         }
 
@@ -95,16 +104,19 @@ namespace Benzene.CodeGen.SourceGenerators
             if (handlers.IsDefaultOrEmpty)
                 return;
 
-            var duplicates = handlers
+            var duplicateGroups = handlers
                 .GroupBy(h => new { h.Topic, h.Version })
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .ToList();
+                .Where(g => g.Count() > 1);
 
-            foreach (var duplicate in duplicates)
+            foreach (var group in duplicateGroups)
             {
-                // In a real scenario, we would report a diagnostic here
-                // context.ReportDiagnostic(Diagnostic.Create(...));
+                var versionText = string.IsNullOrEmpty(group.Key.Version) ? "" : $" (version '{group.Key.Version}')";
+                var handlerNames = string.Join(", ", group.Select(h => h.HandlerFullType));
+                foreach (var handler in group)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        DuplicateTopic, handler.Location, group.Key.Topic, versionText, handlerNames));
+                }
             }
 
             var sb = new StringBuilder();
@@ -151,14 +163,16 @@ namespace Benzene.CodeGen.SourceGenerators
         public string RequestFullType { get; }
         public string ResponseFullType { get; }
         public string HandlerFullType { get; }
+        public Location Location { get; }
 
-        public MessageHandlerInfo(string topic, string version, string requestFullType, string responseFullType, string handlerFullType)
+        public MessageHandlerInfo(string topic, string version, string requestFullType, string responseFullType, string handlerFullType, Location location)
         {
             Topic = topic;
             Version = version;
             RequestFullType = requestFullType;
             ResponseFullType = responseFullType;
             HandlerFullType = handlerFullType;
+            Location = location;
         }
     }
 }

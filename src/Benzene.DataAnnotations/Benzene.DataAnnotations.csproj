@@ -2,7 +2,6 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<PackageVersion>0.0.1</PackageVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Description>Benzene integration with Microsoft Data Annotations</Description>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

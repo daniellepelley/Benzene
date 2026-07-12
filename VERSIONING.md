@@ -73,20 +73,28 @@ public void OldMethod() { }
 
 ## Package Versioning Strategy
 
-### Core Packages (Stable at 1.0+)
-Packages at 1.0.0 or higher follow strict semver:
-- `Benzene.Abstractions`
-- `Benzene.Abstractions.Middleware`
-- `Benzene.Core`
-- `Benzene.Core.Middleware`
-- `Benzene.Http`
+### Single version source
 
-### Preview Packages
-Some packages may remain at `0.x.x` or use `-preview` suffix while maturing:
-- Breaking changes allowed in MINOR versions while `< 1.0.0`
-- Breaking changes in MAJOR versions once `>= 1.0.0`
+All Benzene packages share one version, defined in **`version.txt`** at the
+repository root. The root `Directory.Build.props` reads it into `VersionPrefix`;
+individual `.csproj` files must not set `PackageVersion`/`Version`. The publish
+workflow (`deploy-benzene.yml`) overrides the version at pack time with
+`-p:PackageVersion=x.y.z-alpha.N` for pre-release builds.
 
-Check individual package versions on NuGet.
+To cut a new version, change `version.txt` — nothing else.
+
+### Packability
+
+Projects do not pack by default (`IsPackable=false` in the root
+`Directory.Build.props`). Everything under `src/` is opted in via
+`src/Directory.Build.props` — including `*.TestHelpers`, `Benzene.Testing` and
+`Benzene.Tools`, which are deliberately shipped as user-facing test support.
+Test and example projects never pack.
+
+### Pre-1.0
+
+While the shared version is `< 1.0.0`, breaking changes are allowed in MINOR
+versions. Once `>= 1.0.0`, breaking changes require a MAJOR bump.
 
 ## Compatibility Guarantees
 

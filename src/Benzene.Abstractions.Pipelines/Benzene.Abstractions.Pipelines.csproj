@@ -5,7 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Benzene.Abstractions</RootNamespace>
-    <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.Abstrations.Pipelines</AssemblyName>
   </PropertyGroup>
 

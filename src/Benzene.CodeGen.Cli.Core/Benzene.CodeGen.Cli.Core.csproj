@@ -4,7 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.CodeGen.Cli.Core</AssemblyName>
     <RootNamespace>Benzene.CodeGen.Cli.Core</RootNamespace>
   </PropertyGroup>

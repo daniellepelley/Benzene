@@ -6,7 +6,6 @@
     <AssemblyName>Benzene.AspNet.Core</AssemblyName>
     <RootNamespace>Benzene.AspNet.Core</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageVersion>0.0.1</PackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

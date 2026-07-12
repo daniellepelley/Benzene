@@ -1,0 +1,11 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <!-- Everything under src/ is a shippable package (including *.TestHelpers,
+         Benzene.Testing and Benzene.Tools, which are user-facing test support). -->
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+</Project>
