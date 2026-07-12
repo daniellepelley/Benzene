@@ -13,7 +13,6 @@
         <PackageReference Include="AWSSDK.SQS" Version="3.7.502.57" />
         <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.301.4" />
         <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.301.4" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     </ItemGroup>
 
     <ItemGroup>

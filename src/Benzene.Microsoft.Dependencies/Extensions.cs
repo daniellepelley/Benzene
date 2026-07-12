@@ -20,6 +20,7 @@ public static class Extensions
 
     private static MicrosoftBenzeneServiceContainer CreateMicrosoftBenzeneServiceContainer(IServiceCollection services)
     {
+        services.AddLogging();
         var microsoftBenzeneServiceContainer = new MicrosoftBenzeneServiceContainer(services);
         microsoftBenzeneServiceContainer.AddScoped<IBenzeneServiceContainer>(_ => microsoftBenzeneServiceContainer);
         microsoftBenzeneServiceContainer.AddServiceResolver();
