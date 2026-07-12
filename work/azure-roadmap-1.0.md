@@ -1,6 +1,6 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Last Updated:** 2026-07-12
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
@@ -36,6 +36,29 @@
 > non-obvious default: if `SetStatusCode` is never called, the response defaults to
 > `404` rather than `200` — now called out explicitly in its XML doc comment since it's
 > easy to miss.
+>
+> **2026-07-12 update (dependency fix):** P0 #1 (ASP.NET Core 2.1.x on .NET 10) is now
+> **RESOLVED**. `Benzene.Azure.AspNet.csproj` and `Benzene.AspNet.Core.csproj` no longer
+> reference the EOL `Microsoft.AspNetCore.Mvc.Core` 2.1.38 / `Microsoft.AspNetCore.Routing`
+> 2.1.1 / `Microsoft.AspNetCore.Http.Abstractions` 2.1.1 NuGet packages, and the
+> hard-coded Windows-only `HintPath` to a `netcoreapp3.1` reference assembly is gone.
+> Both now use `<FrameworkReference Include="Microsoft.AspNetCore.App" />`, the correct
+> way to reference ASP.NET Core types from a plain `Microsoft.NET.Sdk` project targeting
+> .NET Core 3.0+ (the old packages are legacy/empty shims from the 2.x era — this was
+> never really a valid dependency, just one that happened to still compile). Also
+> removed a now-redundant `Microsoft.Extensions.DependencyInjection.Abstractions`
+> `PackageReference` from `Benzene.AspNet.Core.csproj` (flagged by NuGet's NU1510
+> "will not be pruned" warning, already supplied transitively by the framework
+> reference and not directly used in the package's own code), and added the
+> previously-missing `<PackageVersion>0.0.1</PackageVersion>` to that same csproj.
+> Verified: both packages build with 0 errors; full `Benzene.sln` builds clean; full
+> test suite still 655/655 passing; `examples/Azure/Benzene.Example.Azure.sln` builds
+> clean. Side effect: warning count rose in both packages (22→99 in
+> `Benzene.Azure.AspNet`) because the real, nullable-annotated ASP.NET Core reference
+> assemblies surface nullability warnings (CS8602/8603/8604/etc.) and analyzer warnings
+> (ASP0019) the old, unannotated 2.1.x packages never triggered — a more accurate
+> picture of the code, not a regression, left for a future code-quality pass rather than
+> fixed here since this was scoped as a dependency-only fix.
 
 ---
 
@@ -50,7 +73,8 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - **Source Files:** ~117 Azure-related source files (91 Azure.*, 26 AspNet.*)
 - **Test Coverage:** ✅ mostly good — Azure.Core 82.8%, Azure.AspNet 81.0%, Azure.EventHub 86.3%, Azure.Kafka 90.7% (measured 2026-07-12); only Benzene.AspNet.Core is genuinely 0%
 - **Documentation:** ✅ 100% XML documentation across all 5 packages (completed 2026-07-12), basic CLAUDE.md files exist (some stale — see package sections), one ASP.NET Core doc
-- **Maturity:** Functional; test/doc gap with AWS is much smaller than originally assessed, but the old ASP.NET Core 2.1.x dependency remains real technical debt
+- **Dependencies:** ✅ ASP.NET Core 2.1.x issue resolved (2026-07-12) — `Benzene.Azure.AspNet` and `Benzene.AspNet.Core` now use `FrameworkReference` to `Microsoft.AspNetCore.App` instead of EOL 2.1.x NuGet packages; hard-coded Windows-only `HintPath` removed
+- **Maturity:** Functional; test/doc gap with AWS is much smaller than originally assessed; the dependency blocker is now fixed
 
 ### Key Findings
 ✅ **Strengths:**
@@ -63,12 +87,14 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - ✅ 100% XML documentation, 0 CS1591 warnings (completed 2026-07-12)
 - ✅ 4 of 5 packages already have solid test coverage (81-91%), contrary to this
   document's original "zero tests" claim (measured 2026-07-12)
+- ✅ ASP.NET Core dependencies fixed — `FrameworkReference` to `Microsoft.AspNetCore.App`
+  instead of EOL 2.1.x packages (resolved 2026-07-12)
 
 ❌ **Critical Blockers for 1.0:**
 - ~~ZERO XML documentation on any public API~~ ✅ RESOLVED 2026-07-12
 - **Benzene.AspNet.Core has 0% test coverage** (the other 4 packages are 81-91%,
   corrected 2026-07-12 — this is a single-package gap now, not a "zero tests" problem)
-- Very old ASP.NET Core dependencies (2.1.x on .NET 10 project - major compatibility issue)
+- ~~Very old ASP.NET Core dependencies (2.1.x on .NET 10 project - major compatibility issue)~~ ✅ RESOLVED 2026-07-12
 - Inconsistent Azure SDK versions
 - Missing deployment templates (ARM/Bicep/Terraform)
 - No Application Insights integration examples
@@ -141,7 +167,7 @@ Keep all Azure packages at **0.9.x-preview** until well after core 1.0 release, 
 **Red Flags:**
 - ❌ **0 XML documentation comments** across ALL packages
 - ❌ **ZERO test files** found - complete absence of tests
-- ❌ **CRITICAL DEPENDENCY ISSUE**: ASP.NET Core 2.1.x packages on .NET 10 project
+- ~~❌ **CRITICAL DEPENDENCY ISSUE**: ASP.NET Core 2.1.x packages on .NET 10 project~~ ✅ RESOLVED 2026-07-12 (now `FrameworkReference` to `Microsoft.AspNetCore.App`)
 - ❌ Old Microsoft.Azure.WebJobs (3.0.39) - should be 3.0.40+
 - ❌ Inconsistent Azure SDK versions
 - ❌ No ARM/Bicep/Terraform deployment templates
@@ -162,17 +188,20 @@ Microsoft.Azure.Functions.Extensions             1.1.0
 Microsoft.Azure.WebJobs                          3.0.39      ⚠️ OLD
 Microsoft.Azure.WebJobs.Extensions.EventHubs     6.3.5
 Microsoft.Azure.WebJobs.Extensions.Kafka         3.9.0
-Microsoft.AspNetCore.Mvc.Core                    2.1.38      ⚠️ CRITICAL - TOO OLD
-Microsoft.AspNetCore.Routing                     2.1.1       ⚠️ CRITICAL - TOO OLD
-Microsoft.AspNetCore.Http.Abstractions           2.1.1       ⚠️ CRITICAL - TOO OLD
-Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
+Microsoft.AspNetCore.App (FrameworkReference)    (shared fw) ✅ FIXED 2026-07-12 — replaces the three rows below
 ```
+~~Microsoft.AspNetCore.Mvc.Core 2.1.38 / Microsoft.AspNetCore.Routing 2.1.1 /
+Microsoft.AspNetCore.Http.Abstractions 2.1.1~~ — removed 2026-07-12, replaced by a
+`FrameworkReference` to `Microsoft.AspNetCore.App` in both `Benzene.Azure.AspNet.csproj`
+and `Benzene.AspNet.Core.csproj`. The redundant `Microsoft.Extensions.DependencyInjection.Abstractions`
+`PackageReference` in `Benzene.AspNet.Core.csproj` was also removed (NU1510 flagged it
+as already supplied transitively).
 
 **Critical Issues:**
-1. ❌ **ASP.NET Core 2.1.x on .NET 10** - This is a MAJOR incompatibility
-   - ASP.NET Core 2.1 reached end-of-life in August 2021
-   - .NET 10 requires ASP.NET Core 8.0+ (or use built-in framework references)
-   - This likely causes runtime failures or requires workarounds
+1. ~~❌ **ASP.NET Core 2.1.x on .NET 10** - This is a MAJOR incompatibility~~
+   ✅ **RESOLVED 2026-07-12** — replaced with `FrameworkReference` to
+   `Microsoft.AspNetCore.App`, the correct approach for referencing ASP.NET Core types
+   from a plain `Microsoft.NET.Sdk` project on .NET Core 3.0+.
 2. ⚠️ Microsoft.Azure.WebJobs 3.0.39 is old - should update to latest 3.0.x
 3. ⚠️ No Application Insights SDK references
 4. ⚠️ Missing Azure.Core for consistent Azure SDK usage
@@ -258,7 +287,7 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 ### 2. Benzene.Azure.AspNet 🔧 HTTP Functions Adapter
 
 **Location:** `src/Benzene.Azure.AspNet/`
-**Current State:** Low maturity, CRITICAL dependency issues
+**Current State:** Low maturity; dependency crisis resolved 2026-07-12
 
 **Public API Surface:**
 - `AspNetApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.AspNet\AspNetApplication.cs)
@@ -276,11 +305,11 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 - IActionResult response model
 
 **Critical Issues:**
-1. ❌ **BROKEN DEPENDENCIES**: References ASP.NET Core 2.1.x on .NET 10 project
-   - Microsoft.AspNetCore.Mvc.Core 2.1.38 (EOL since 2021)
-   - Microsoft.AspNetCore.Routing 2.1.1 (EOL since 2021)
-   - Hard-coded DLL reference path (line 14 of csproj) - very bad practice
-2. ❌ No XML documentation
+1. ~~❌ **BROKEN DEPENDENCIES**: References ASP.NET Core 2.1.x on .NET 10 project~~
+   ✅ **RESOLVED 2026-07-12** — swapped `Microsoft.AspNetCore.Mvc.Core` 2.1.38 /
+   `Microsoft.AspNetCore.Routing` 2.1.1 and the hard-coded Windows-only `HintPath` for a
+   single `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
+2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12
 3. ❌ TestHttpRequest should be in TestHelpers package
 4. ⚠️ Commented-out health check code (lines 14-28 of Extensions.cs)
 5. ⚠️ AspNetContext too simple - only has HttpRequest and ContentResult
@@ -291,10 +320,10 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 10. ⚠️ Package naming confusing (Azure.AspNet for Functions HTTP trigger)
 
 **1.0 Requirements:**
-- [ ] **CRITICAL**: Fix ASP.NET Core dependencies (use framework references or update to 8.0+)
-- [ ] **CRITICAL**: Remove hard-coded DLL path
+- [x] **CRITICAL**: Fix ASP.NET Core dependencies (use framework references or update to 8.0+) — done 2026-07-12
+- [x] **CRITICAL**: Remove hard-coded DLL path — done 2026-07-12
 - [ ] **CRITICAL**: Move TestHttpRequest to TestHelpers
-- [ ] Add comprehensive XML documentation
+- [x] Add comprehensive XML documentation — done 2026-07-12
 - [ ] Expand AspNetContext with convenience properties
 - [ ] Add CORS middleware
 - [ ] Add authentication/authorization middleware
@@ -305,7 +334,9 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 - [ ] Add custom domain and SSL configuration guidance
 - [ ] Document scaling considerations
 
-**Estimated Effort:** 30-40 hours (includes fixing critical dependency issues)
+**Estimated Effort:** ~~30-40 hours (includes fixing critical dependency issues)~~ 5-10
+hours remaining (dependency fix and XML docs both done 2026-07-12; remaining scope is
+TestHttpRequest relocation, CORS/auth middleware, OpenAPI examples)
 
 ---
 
@@ -424,9 +455,12 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 - More complete than Azure Functions adapters
 
 **Issues:**
-1. ❌ No XML documentation
-2. ❌ No package version (missing from csproj)
-3. ⚠️ Old Microsoft.AspNetCore.Http.Abstractions (2.1.1)
+1. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12
+2. ~~❌ No package version (missing from csproj)~~ ✅ RESOLVED 2026-07-12 (`<PackageVersion>0.0.1</PackageVersion>` added)
+3. ~~⚠️ Old Microsoft.AspNetCore.Http.Abstractions (2.1.1)~~ ✅ RESOLVED 2026-07-12
+   (replaced with `FrameworkReference` to `Microsoft.AspNetCore.App`; the redundant
+   `Microsoft.Extensions.DependencyInjection.Abstractions` PackageReference was also
+   removed, per NU1510)
 4. ⚠️ Extensive commented-out code (lines 12-49 of BenzeneExtensions.cs)
 5. ⚠️ AspNetContext too simple - only has HttpContext property
 6. ⚠️ No Azure App Service specific features
@@ -436,9 +470,9 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 10. ⚠️ No managed identity integration
 
 **1.0 Requirements:**
-- [ ] Add package version to csproj
-- [ ] Update Microsoft.AspNetCore.Http.Abstractions to 8.0+
-- [ ] Add comprehensive XML documentation
+- [x] Add package version to csproj — done 2026-07-12
+- [x] Update Microsoft.AspNetCore.Http.Abstractions to 8.0+ — done 2026-07-12 (via `FrameworkReference`)
+- [x] Add comprehensive XML documentation — done 2026-07-12
 - [ ] Remove or document commented code
 - [ ] Expand AspNetContext with convenience properties
 - [ ] Add Application Insights middleware
@@ -450,7 +484,10 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 - [ ] Add health check integration
 - [ ] Document logging integration (App Service logs)
 
-**Estimated Effort:** 25-30 hours
+**Estimated Effort:** ~~25-30 hours~~ 15-20 hours remaining (dependency fix, package
+version, and XML docs all done 2026-07-12; remaining scope is test coverage — this
+package is still the one genuinely 0% covered — plus commented-code cleanup and the
+Azure-specific feature items)
 
 ---
 
@@ -460,21 +497,22 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
 
 **Must Have Before 1.0:**
 
-1. **Fix Critical Dependency Issues** (40-50 hours) - HIGHEST PRIORITY
-   - Fix ASP.NET Core 2.1.x references on .NET 10
-   - Remove hard-coded DLL paths
-   - Update all Azure SDK packages to consistent versions
-   - Update Microsoft.Azure.WebJobs to latest
+1. ~~**Fix Critical Dependency Issues** (40-50 hours) - HIGHEST PRIORITY~~
+   ✅ **MOSTLY RESOLVED 2026-07-12** (~2 hours actual, far under the original estimate —
+   the fix was a one-line `FrameworkReference` swap, not a rewrite):
+   - [x] Fix ASP.NET Core 2.1.x references on .NET 10 — done, via `FrameworkReference`
+   - [x] Remove hard-coded DLL paths — done
+   - [ ] Update all Azure SDK packages to consistent versions — not yet done
+   - [ ] Update Microsoft.Azure.WebJobs to latest — not yet done
 
-2. **XML Documentation** (50-70 hours) - CRITICAL
-   - Document every public type, method, property
-   - Add `<summary>`, `<param>`, `<returns>`, `<remarks>`
-   - Include `<example>` for main entry points
-   - Document Azure-specific behaviors (hosting plans, costs, scaling)
+2. ~~**XML Documentation** (50-70 hours) - CRITICAL~~ ✅ **RESOLVED 2026-07-12** — 100%
+   across all 5 packages, 0 CS1591 warnings.
 
-3. **Test Coverage** (60-80 hours) - CRITICAL
-   - Create test infrastructure (Azure Functions test host)
-   - Unit tests for all packages (target 80%+ coverage)
+3. **Test Coverage** (60-80 hours) - CRITICAL — **re-scoped to ~15-20 hours.** 4 of 5
+   packages already measured at 81-91% coverage (2026-07-12); only
+   `Benzene.AspNet.Core` is genuinely 0%. Remaining work is that one package plus
+   integration tests/benchmarks, not the full original scope.
+   - Unit tests for Benzene.AspNet.Core (target 80%+ coverage)
    - Integration tests with Azurite/emulators
    - End-to-end Azure Functions examples
    - Performance benchmarks
@@ -507,7 +545,10 @@ Microsoft.Extensions.DependencyInjection.Abs     8.0.0       ✅ GOOD
    - CORS middleware (Azure.AspNet)
    - Authentication/Authorization middleware
 
-**Total Estimated Effort for 1.0:** 245-368 hours (6-9 weeks full-time)
+**Total Estimated Effort for 1.0:** ~~245-368 hours (6-9 weeks full-time)~~ **~170-260
+hours remaining** (2026-07-12: dependency fix ~2h actual vs 40-50h estimated, XML docs
+fully done vs 50-70h estimated, test coverage re-scoped from 60-80h to ~15-20h — net
+reduction of roughly 100-150 hours off the original estimate)
 
 ### Phased Approach
 
@@ -1269,12 +1310,14 @@ public async Task Http_BatchProcessing_100Requests()
 
 ### Allowed Before 1.0 (Do Now)
 
-**1. Fix ASP.NET Core Dependencies** (CRITICAL)
-- Remove ASP.NET Core 2.1.x references
-- Use framework references for .NET 10 or upgrade to 8.0+ packages
-- Remove hard-coded DLL path
-- **Impact:** High - anyone using Benzene.Azure.AspNet
-- **Migration:** Package reference updates, potential API changes
+**1. Fix ASP.NET Core Dependencies** ✅ DONE 2026-07-12
+- Removed ASP.NET Core 2.1.x references
+- Used `FrameworkReference` to `Microsoft.AspNetCore.App` (net10.0)
+- Removed hard-coded DLL path
+- **Impact:** Low in practice — anyone building against these packages will just pick
+  up the shared framework instead of the old NuGet packages; no source-level API
+  changes were needed since the FrameworkReference exposes the same types
+- **Migration:** None required for consumers; internal package reference change only
 
 **2. Move TestHttpRequest to TestHelpers**
 - Move from Benzene.Azure.AspNet to TestHelpers package
@@ -1480,8 +1523,10 @@ All Azure packages reference:
 
 ### Must Have for 1.0 (P0)
 
-1. **Fix ASP.NET Core Dependencies** - CRITICAL, but confirmed not currently breaking
-   the build (see 2026-07-12 update above) (40-50h)
+1. ~~**Fix ASP.NET Core Dependencies** - CRITICAL (40-50h)~~ ✅ MOSTLY COMPLETE
+   2026-07-12 (~2h actual — `FrameworkReference` swap, not a rewrite). Remaining:
+   Azure SDK version consistency + `Microsoft.Azure.WebJobs` bump, not part of the
+   ASP.NET Core fix itself (~5-10h)
 2. ~~**XML Documentation** - All packages (50-70h)~~ ✅ COMPLETE 2026-07-12
 3. **Unit Tests** - 80%+ coverage — RE-SCOPED 2026-07-12: only `Benzene.AspNet.Core`
    needs this; the other 4 packages already measure 81-91% (was 80-100h for "all
@@ -1495,9 +1540,10 @@ All Azure packages reference:
 9. **Application Insights Integration** - Middleware (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (10-12h)
 
-**Total P0 Effort:** 190-275 hours remaining (60-70h XML documentation now complete;
-Unit Tests re-scoped down from 80-100h to ~15-20h now that 4 of 5 packages are
-confirmed already well-covered)
+**Total P0 Effort:** ~170-260 hours remaining (2026-07-12: dependency fix ~2h actual vs
+40-50h estimated, XML documentation now fully complete vs 50-70h estimated, Unit Tests
+re-scoped down from 80-100h to ~15-20h now that 4 of 5 packages are confirmed already
+well-covered)
 
 ### Should Have for 1.0 (P1)
 
@@ -1606,8 +1652,9 @@ Per `work/1.0.0-release-status.md`, core packages need:
 **Azure Packages Current Status (updated 2026-07-12 against actual code, not assumed):**
 1. ✅ 100% XML documentation (completed 2026-07-12)
 2. ⚠️ Test helpers separated BUT TestHttpRequest still in production
-3. ⚠️ Old ASP.NET Core 2.1.x dependencies confirmed real, but build succeeds (not
-   currently broken — see 2026-07-12 update above)
+3. ✅ ASP.NET Core 2.1.x dependency issue resolved 2026-07-12 (`FrameworkReference` to
+   `Microsoft.AspNetCore.App`); Azure SDK version consistency and
+   `Microsoft.Azure.WebJobs` bump still open
 4. ✅ Versioning policy applies
 5. ✅ 4 of 5 packages well-covered (81-91%); only Benzene.AspNet.Core is 0%
    (corrected 2026-07-12 — the original "zero test files" claim was wrong)
@@ -1615,23 +1662,23 @@ Per `work/1.0.0-release-status.md`, core packages need:
    templates, etc. still needed)
 7. ⚠️ Example exists but no deployment templates
 
-**Azure Readiness:** ~55% toward 1.0 (up from ~15-20%; still behind AWS's ~93%, but the
-gap was previously overstated)
+**Azure Readiness:** ~65% toward 1.0 (up from ~15-20% originally, ~55% after the docs
+pass; still behind AWS's ~93%, but the gap was previously overstated)
 
 **Gap Analysis:**
 Azure packages are behind AWS packages, but less dramatically than this document
 originally claimed:
 - AWS is at 90%+ coverage across all 9 packages; Azure is at 81-91% for 4 of 5, with
   one real gap (Benzene.AspNet.Core)
-- AWS has already fixed its dependency inconsistencies; Azure's ASP.NET Core 2.1.x
-  issue remains open (real debt, but not a broken build)
+- AWS has already fixed its dependency inconsistencies; Azure's ASP.NET Core dependency
+  issue is now fixed too (2026-07-12) — remaining dependency work on both sides is
+  minor SDK-version consistency, not a structural blocker
 - AWS has 9 packages at high maturity; Azure has 5, now with complete XML
-  documentation but still lacking narrative docs, deployment templates, and
-  integration tests
-- Primary remaining gaps: ASP.NET Core dependency modernization, narrative
-  documentation (getting-started, ARM/Bicep), integration tests, the
-  `Benzene.AspNet.Core` test gap, code quality (naming, dead code, the file/class
-  mismatches found 2026-07-12)
+  documentation and a fixed dependency baseline, but still lacking narrative docs,
+  deployment templates, and integration tests
+- Primary remaining gaps: narrative documentation (getting-started, ARM/Bicep),
+  integration tests, the `Benzene.AspNet.Core` test gap, code quality (naming, dead
+  code, the file/class mismatches found 2026-07-12), TestHttpRequest relocation
 
 ---
 
@@ -1639,7 +1686,7 @@ originally claimed:
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| ASP.NET Core 2.1 incompatibility | High | Critical | Fix immediately, test thoroughly on .NET 10 |
+| ~~ASP.NET Core 2.1 incompatibility~~ | ~~High~~ | ~~Critical~~ | ✅ RESOLVED 2026-07-12 — replaced with `FrameworkReference` |
 | Azure SDK breaking changes | Medium | High | Pin versions, test updates before adopting |
 | Azure Functions v4 breaking changes | Medium | High | Monitor releases, maintain compatibility layer |
 | Community adoption lower than AWS | High | Medium | Azure-specific marketing, Microsoft partnership |
