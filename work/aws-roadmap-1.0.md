@@ -1,6 +1,6 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.4
+**Document Version:** 1.5
 **Last Updated:** 2026-07-12
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
@@ -28,10 +28,18 @@
 >    SNS/S3/Kafka snippets; new `examples/Aws/Benzene.Examples.Aws/template.yaml` SAM
 >    template (API Gateway + SQS + SNS, optional Kafka/MSK). SAM only — CDK explicitly
 >    out of scope for this pass, noted as future work.
+> 6. **Dependency Cleanup** (P0 #8) — aligned `AWSSDK.SQS` to one version
+>    (`3.7.502.57`) across all packages, deliberately staying within the 3.7.x line
+>    rather than jumping to the new v4 major (every AWSSDK.*/Amazon.Lambda.* package
+>    has had a major release since this repo pinned; that's a bigger, riskier
+>    decision left for later — see package section for the full version table).
+>    Removed the unused `AWSSDK.SQS` reference from `Benzene.Aws.XRay` and the stale
+>    `System.Text.Encodings.Web` 6.0.0 pin from 7 packages (vestigial from before they
+>    targeted `net10.0`; verified safe via restore/build/full test suite).
 >
-> Remaining P0 work: Dependency Cleanup, Code Quality Fixes, Migration Guide (31-42h,
-> see Prioritized Feature List below). Full narrative detail for each completed item
-> remains in that item's own section further down this document.
+> Remaining P0 work: Code Quality Fixes, Migration Guide (23-30h, see Prioritized
+> Feature List below). Full narrative detail for each completed item remains in that
+> item's own section further down this document.
 
 ---
 
@@ -573,10 +581,20 @@ naming/dependency work is done)
    - End-to-end Lambda examples — still open
    - Performance benchmarks — still open
 
-4. **Dependency Cleanup** (8-12 hours)
-   - Standardize AWSSDK versions
-   - Remove unnecessary dependencies
-   - Update System.Text.Encodings.Web to align with .NET 10
+4. ~~**Dependency Cleanup** (8-12 hours)~~ ✅ COMPLETE 2026-07-12
+   - ~~Standardize AWSSDK versions~~ ✅ `AWSSDK.SQS` was on two different versions
+     (`3.7.100.74` in Benzene.Aws.Sqs/XRay vs `3.7.2.63` in Benzene.Clients.Aws);
+     aligned to `3.7.502.57` (latest within the 3.7.x line — no major-version jump,
+     per a conscious decision to keep this pass low-risk since AWS SDK majors can
+     carry breaking changes and this sandbox has no way to test against live AWS)
+   - ~~Remove unnecessary dependencies~~ ✅ Removed `AWSSDK.SQS` from
+     `Benzene.Aws.XRay` — nothing in that package touches SQS
+   - ~~Update System.Text.Encodings.Web to align with .NET 10~~ ✅ Removed the
+     explicit `6.0.0` pin from all 7 packages that had it — vestigial from before
+     these projects targeted `net10.0`; the pin was actually forcing an *older*
+     version than what `net10.0`'s shared framework already provides transitively.
+     Verified via `dotnet restore`/`dotnet build` (no NU1605 downgrade errors) and
+     the full test suite (653/653 passing)
 
 5. **Documentation** (30-40 hours)
    - Getting started guide for each adapter
@@ -1478,12 +1496,12 @@ All AWS packages reference:
 6. ~~**SAM Template Examples** - All event sources (15-20h)~~ ✅ COMPLETE 2026-07-12
    (`examples/Aws/Benzene.Examples.Aws/template.yaml`; SAM only, no CDK — see note below)
 7. ~~**Integration Tests** - LocalStack (20-30h)~~ ✅ COMPLETE 2026-07-12 (wired into CI, passing)
-8. **Dependency Cleanup** - Standardize versions (8-12h)
+8. ~~**Dependency Cleanup** - Standardize versions (8-12h)~~ ✅ COMPLETE 2026-07-12
 9. **Code Quality Fixes** - Error handling, config (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (8-10h)
 
-**Total P0 Effort:** 31-42 hours remaining (Dependency Cleanup, Code Quality Fixes,
-Migration Guide only — everything else on this list is now complete)
+**Total P0 Effort:** 23-30 hours remaining (Code Quality Fixes, Migration Guide only —
+everything else on this list is now complete)
 
 ### Should Have for 1.0 (P1)
 
@@ -1573,11 +1591,15 @@ Per `work/1.0.0-release-status.md`, core packages need:
 6. ✅ IAM permissions doc, getting-started guide expansion, and a SAM template all
    complete (completed 2026-07-12); CDK example remains unbuilt, tracked as future work
 7. ⚠️ Examples exist but a CDK template is not yet built (SAM is)
+8. ✅ Dependency versions aligned and unused/stale references removed (completed
+   2026-07-12); AWSSDK v3→v4 and Amazon.Lambda.* major-version upgrades deliberately
+   deferred as a separate, higher-risk decision
 
 **Gap Analysis:**
-AWS packages are ~85% toward 1.0 readiness using core criteria (up from ~75%).
-Primary remaining gaps: Dependency Cleanup, Code Quality Fixes, Migration Guide, the
-`AddLambdaClients` DI gap, and (lower priority) a CDK example alongside the SAM one
+AWS packages are ~90% toward 1.0 readiness using core criteria (up from ~85%).
+Primary remaining gaps: Code Quality Fixes, Migration Guide, the `AddLambdaClients` DI
+gap, and (lower priority) a CDK example alongside the SAM one, plus the AWSSDK v3→v4 /
+Amazon.Lambda.* major-version decision deliberately deferred out of Dependency Cleanup
 
 ---
 
