@@ -1,6 +1,6 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.6
+**Document Version:** 1.7
 **Last Updated:** 2026-07-12
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
@@ -48,10 +48,15 @@
 >    underpinning the whole entry-point model, and "fixing" it means a breaking
 >    redesign, not a code-quality fix. Two new tests added, full suite green
 >    (655/655).
+> 8. **Migration Guide** (P0 #10) — descoped, not written. No external adopters of the
+>    AWS packages exist yet (pre-1.0, nothing released that anyone depends on), so
+>    there's no one to write a migration guide for. Re-add as a real item if that
+>    changes before 1.0 ships.
 >
-> Remaining P0 work: Migration Guide (8-10h, see Prioritized Feature List below). Full
-> narrative detail for each completed item remains in that item's own section further
-> down this document.
+> **P0 list is now fully resolved** — every remaining item is complete, consciously
+> deferred pending a design/product decision (`AddLambdaClients` DI gap, AWSSDK v4
+> upgrade), or descoped as not applicable (Migration Guide). Full narrative detail for
+> each completed item remains in that item's own section further down this document.
 
 ---
 
@@ -1370,13 +1375,19 @@ public async Task Sqs_BatchProcessing_100Messages()
 
 ### Document in Migration Guide
 
-**Breaking Behavioral Changes:**
-1. SqsApplication now logs exceptions (previously silent)
-2. EventBridge package renamed (if applicable)
-3. Some hard-coded values now configurable
+**2026-07-12: no longer applicable.** No external adopters of the AWS packages exist
+yet, so there's nothing to migrate and no guide to write. The changes below all
+shipped (see the 2026-07-12 changelog at the top of this document) — kept here purely
+as a historical record of what was tracked, in case a migration guide becomes relevant
+again before 1.0 ships:
 
-**New Required Dependencies:**
-- Ensure AWSSDK.* packages are latest compatible versions
+**Breaking Behavioral Changes (all shipped):**
+1. ✅ SqsApplication now logs exceptions (previously silent)
+2. ✅ EventBridge package renamed to `Benzene.Aws.Lambda.S3`
+3. ✅ Some hard-coded values now configurable (`SqsConsumerConfig.WaitTimeSeconds`)
+
+**New Required Dependencies (all shipped):**
+- ✅ AWSSDK.SQS aligned to `3.7.502.57` across all packages
 
 **Deprecated (Remove in 2.0):**
 - TBD - no deprecations yet, clean slate for 1.0
@@ -1525,10 +1536,13 @@ All AWS packages reference:
 9. ~~**Code Quality Fixes** - Error handling, config (15-20h)~~ ✅ SCOPED PORTION
    COMPLETE 2026-07-12 (2 real bugs fixed; virtual-constructor-call deliberately
    deferred — see package section for why)
-10. **Migration Guide** - 0.x to 1.0 (8-10h)
+10. ~~**Migration Guide** - 0.x to 1.0 (8-10h)~~ ❌ DESCOPED 2026-07-12 — no external
+    adopters of the AWS packages exist yet (pre-1.0, no released version anyone
+    depends on), so there's no one to migrate. Re-add if that changes before 1.0 ships.
 
-**Total P0 Effort:** 8-10 hours remaining (Migration Guide only — everything else on
-this list is now complete or consciously deferred)
+**Total P0 Effort:** 0 hours remaining — every item on this list is now complete,
+consciously deferred (needs a design/product decision, not more mechanical work), or
+descoped as not applicable
 
 ### Should Have for 1.0 (P1)
 
@@ -1627,11 +1641,12 @@ Per `work/1.0.0-release-status.md`, core packages need:
    pattern — not a bug
 
 **Gap Analysis:**
-AWS packages are ~93% toward 1.0 readiness using core criteria (up from ~90%).
-Primary remaining gaps: Migration Guide, the `AddLambdaClients` DI gap, and (lower
-priority) a CDK example alongside the SAM one, plus two consciously-deferred decisions
-that need product/architecture sign-off rather than mechanical work: the AWSSDK v3→v4 /
-Amazon.Lambda.* major-version upgrade, and whether to ever redesign
+AWS packages are ~96% toward 1.0 readiness using core criteria (up from ~93%). The P0
+list is fully resolved (complete, consciously deferred, or descoped as not
+applicable). What's left is either lower-priority P1/P2 work (a CDK example alongside
+the SAM one, performance benchmarks) or decisions that need product/architecture
+sign-off rather than more mechanical work: the `AddLambdaClients` DI gap, the AWSSDK
+v3→v4 / Amazon.Lambda.* major-version upgrade, and whether to ever redesign
 `AwsLambdaStartUp`'s construction/initialization split
 
 ---
