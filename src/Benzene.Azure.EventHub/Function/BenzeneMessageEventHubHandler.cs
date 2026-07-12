@@ -16,17 +16,17 @@ namespace Benzene.Azure.EventHub.Function;
 /// It only handles the event if its body deserializes into a <see cref="BenzeneMessageRequest"/> with a
 /// non-null topic; otherwise it defers to the next middleware.
 /// </remarks>
-public class BenzeneMessageLambdaHandler : MiddlewareRouter<BenzeneMessageRequest, EventHubContext>
+public class BenzeneMessageEventHubHandler : MiddlewareRouter<BenzeneMessageRequest, EventHubContext>
 {
     private readonly BenzeneMessageApplication _directMessageApplication;
     private readonly ISerializer _serializer;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BenzeneMessageLambdaHandler"/> class.
+    /// Initializes a new instance of the <see cref="BenzeneMessageEventHubHandler"/> class.
     /// </summary>
     /// <param name="pipeline">The direct-message middleware pipeline to dispatch matching events to.</param>
     /// <param name="serviceResolver">The service resolver for the current invocation scope.</param>
-    public BenzeneMessageLambdaHandler(
+    public BenzeneMessageEventHubHandler(
         IMiddlewarePipeline<BenzeneMessageContext> pipeline,
         IServiceResolver serviceResolver)
     : base(serviceResolver)

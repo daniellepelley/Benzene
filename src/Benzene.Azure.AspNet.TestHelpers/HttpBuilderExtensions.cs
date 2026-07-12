@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using JsonSerializer = Benzene.Core.MessageHandlers.Serialization.JsonSerializer;
 
-namespace Benzene.Azure.AspNet;
+namespace Benzene.Azure.AspNet.TestHelpers;
 
 /// <summary>
 /// Provides extension methods for converting an <see cref="IHttpBuilder{T}"/> into an ASP.NET Core

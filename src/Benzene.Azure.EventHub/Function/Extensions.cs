@@ -24,7 +24,7 @@ public static class Extensions
         var middlewarePipelineBuilder = app.Create<BenzeneMessageContext>();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
-        return app.Use(resolver => new BenzeneMessageLambdaHandler(pipeline, resolver));
+        return app.Use(resolver => new BenzeneMessageEventHubHandler(pipeline, resolver));
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<EventHubContext> UseBenzeneMessage(this IMiddlewarePipelineBuilder<EventHubContext> app, IMiddlewarePipelineBuilder<BenzeneMessageContext> builder)
     {
         var pipeline = builder.Build();
-        return app.Use(resolver => new BenzeneMessageLambdaHandler(pipeline, resolver));
+        return app.Use(resolver => new BenzeneMessageEventHubHandler(pipeline, resolver));
     }
 
     /// <summary>

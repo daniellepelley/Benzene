@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace Benzene.Azure.AspNet;
+namespace Benzene.Azure.AspNet.TestHelpers;
 
 /// <summary>
 /// A minimal, settable <see cref="HttpRequest"/> implementation used by

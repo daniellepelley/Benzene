@@ -1,6 +1,6 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.2
+**Document Version:** 1.3
 **Last Updated:** 2026-07-12
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
@@ -59,6 +59,23 @@
 > (ASP0019) the old, unannotated 2.1.x packages never triggered — a more accurate
 > picture of the code, not a regression, left for a future code-quality pass rather than
 > fixed here since this was scoped as a dependency-only fix.
+>
+> **2026-07-12 update (code quality):** Two more P0/high-priority items resolved.
+> (1) `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` — both pure test
+> infrastructure (a settable fake `HttpRequest` and the builder extension that produces
+> it from `IHttpBuilder<T>`, used only by `AspNetPipelineTest`) — moved out of the
+> production `Benzene.Azure.AspNet` package into a new
+> `Benzene.Azure.AspNet.TestHelpers` package, mirroring the existing
+> `Benzene.Azure.EventHub.TestHelpers`/`Benzene.Azure.Kafka.TestHelpers` pattern. Added
+> to `Benzene.sln` and referenced from `Benzene.Test.csproj`. (2) The Event Hub
+> package's message router class was literally named `BenzeneMessageLambdaHandler`
+> (copy-pasted from the AWS Lambda equivalent in `Benzene.Aws.Lambda.Core`) despite
+> having nothing to do with AWS Lambda — renamed to `BenzeneMessageEventHubHandler`,
+> and its file (previously mismatched as `DirectMessageLambdaHandler.cs`) renamed to
+> match. Both are breaking API changes but pre-1.0 with no external consumers yet.
+> Verified: all affected packages build with 0 errors, full solution and Azure example
+> solution build clean, 655/655 tests still passing (including the moved
+> `AspNetPipelineTest`, run in isolation to confirm the relocation works).
 
 ---
 
@@ -297,7 +314,8 @@ as already supplied transitively).
 - Message handlers (BodyGetter, HeadersGetter, TopicGetter, ResultSetter)
 - `AspNetContextRequestEnricher` - Request enrichment
 - `Extensions.HandleHttpRequest()` - Entry point helper
-- `TestHttpRequest` - Test utilities (should be in TestHelpers)
+- ~~`TestHttpRequest` - Test utilities (should be in TestHelpers)~~ moved to
+  `Benzene.Azure.AspNet.TestHelpers` 2026-07-12
 
 **Strengths:**
 - Clean HTTP abstraction
@@ -310,7 +328,8 @@ as already supplied transitively).
    `Microsoft.AspNetCore.Routing` 2.1.1 and the hard-coded Windows-only `HintPath` for a
    single `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
 2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12
-3. ❌ TestHttpRequest should be in TestHelpers package
+3. ~~❌ TestHttpRequest should be in TestHelpers package~~ ✅ RESOLVED 2026-07-12 (moved
+   to new `Benzene.Azure.AspNet.TestHelpers` package, along with `HttpBuilderExtensions`)
 4. ⚠️ Commented-out health check code (lines 14-28 of Extensions.cs)
 5. ⚠️ AspNetContext too simple - only has HttpRequest and ContentResult
 6. ⚠️ No CORS support
@@ -322,7 +341,7 @@ as already supplied transitively).
 **1.0 Requirements:**
 - [x] **CRITICAL**: Fix ASP.NET Core dependencies (use framework references or update to 8.0+) — done 2026-07-12
 - [x] **CRITICAL**: Remove hard-coded DLL path — done 2026-07-12
-- [ ] **CRITICAL**: Move TestHttpRequest to TestHelpers
+- [x] **CRITICAL**: Move TestHttpRequest to TestHelpers — done 2026-07-12
 - [x] Add comprehensive XML documentation — done 2026-07-12
 - [ ] Expand AspNetContext with convenience properties
 - [ ] Add CORS middleware
@@ -334,9 +353,9 @@ as already supplied transitively).
 - [ ] Add custom domain and SSL configuration guidance
 - [ ] Document scaling considerations
 
-**Estimated Effort:** ~~30-40 hours (includes fixing critical dependency issues)~~ 5-10
-hours remaining (dependency fix and XML docs both done 2026-07-12; remaining scope is
-TestHttpRequest relocation, CORS/auth middleware, OpenAPI examples)
+**Estimated Effort:** ~~30-40 hours (includes fixing critical dependency issues)~~ 3-6
+hours remaining (dependency fix, XML docs, and TestHttpRequest relocation all done
+2026-07-12; remaining scope is CORS/auth middleware and OpenAPI examples)
 
 ---
 
@@ -348,7 +367,9 @@ TestHttpRequest relocation, CORS/auth middleware, OpenAPI examples)
 **Public API Surface:**
 - `EventHubApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.EventHub\Function\EventHubApplication.cs)
 - `EventHubContext` - Event context
-- `DirectMessageLambdaHandler` - Direct message handler (confusing name - uses "Lambda")
+- ~~`DirectMessageLambdaHandler` - Direct message handler (confusing name - uses
+  "Lambda")~~ renamed to `BenzeneMessageEventHubHandler` 2026-07-12 (file also renamed
+  to match, fixing the file/class mismatch found during the docs pass)
 - Registration and extension methods
 
 **Strengths:**
@@ -357,8 +378,9 @@ TestHttpRequest relocation, CORS/auth middleware, OpenAPI examples)
 - Supports Event Hubs batch triggers
 
 **Issues:**
-1. ❌ No XML documentation
-2. ⚠️ "DirectMessageLambdaHandler" name is AWS terminology, confusing in Azure context
+1. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12
+2. ~~⚠️ "DirectMessageLambdaHandler" name is AWS terminology, confusing in Azure
+   context~~ ✅ RESOLVED 2026-07-12 (renamed to `BenzeneMessageEventHubHandler`)
 3. ⚠️ Minimal implementation - only ~5 files
 4. ⚠️ No partition key handling documented
 5. ⚠️ No checkpointing guidance
@@ -369,8 +391,9 @@ TestHttpRequest relocation, CORS/auth middleware, OpenAPI examples)
 10. ⚠️ No Managed Identity authentication example
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
-- [ ] Rename "DirectMessageLambdaHandler" to Azure-appropriate name
+- [x] Add comprehensive XML documentation — done 2026-07-12
+- [x] Rename "DirectMessageLambdaHandler" to Azure-appropriate name — done 2026-07-12
+  (`BenzeneMessageEventHubHandler`)
 - [ ] Document partition and checkpointing strategies
 - [ ] Add Event Hubs Capture integration examples
 - [ ] Document consumer group patterns
@@ -382,7 +405,8 @@ TestHttpRequest relocation, CORS/auth middleware, OpenAPI examples)
 - [ ] Document cost optimization (throughput units, partitions)
 - [ ] Add dead-letter queue patterns
 
-**Estimated Effort:** 20-25 hours
+**Estimated Effort:** ~~20-25 hours~~ 15-20 hours remaining (XML docs and naming fix
+done 2026-07-12; remaining scope is narrative/operational documentation, not code)
 
 ---
 
@@ -517,9 +541,11 @@ Azure-specific feature items)
    - End-to-end Azure Functions examples
    - Performance benchmarks
 
-4. **Move Test Code** (5-8 hours) - BLOCKING
-   - Move TestHttpRequest from Benzene.Azure.AspNet to TestHelpers
-   - Ensure no test code in production packages
+4. ~~**Move Test Code** (5-8 hours) - BLOCKING~~ ✅ RESOLVED 2026-07-12
+   - [x] Move TestHttpRequest from Benzene.Azure.AspNet to TestHelpers — moved
+     `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` to new
+     `Benzene.Azure.AspNet.TestHelpers` package
+   - [x] Ensure no test code in production packages
 
 5. **Documentation** (40-60 hours) - CRITICAL
    - Getting started guide for each adapter
@@ -810,15 +836,16 @@ reduction of roughly 100-150 hours off the original estimate)
 ### Current Technical Debt
 
 **Critical Priority:**
-1. ⚠️ ASP.NET Core 2.1.x on .NET 10 - MAJOR compatibility issue
-2. ⚠️ Hard-coded DLL path in Benzene.Azure.AspNet.csproj
-3. ⚠️ TestHttpRequest in production package
+1. ~~⚠️ ASP.NET Core 2.1.x on .NET 10 - MAJOR compatibility issue~~ ✅ RESOLVED 2026-07-12
+2. ~~⚠️ Hard-coded DLL path in Benzene.Azure.AspNet.csproj~~ ✅ RESOLVED 2026-07-12
+3. ~~⚠️ TestHttpRequest in production package~~ ✅ RESOLVED 2026-07-12
 4. ⚠️ Old Microsoft.Azure.WebJobs (3.0.39)
-5. ⚠️ No package version for Benzene.AspNet.Core
+5. ~~⚠️ No package version for Benzene.AspNet.Core~~ ✅ RESOLVED 2026-07-12
 
 **High Priority:**
 1. Extensive commented-out code in multiple files
-2. "DirectMessageLambdaHandler" using AWS terminology in Azure package
+2. ~~"DirectMessageLambdaHandler" using AWS terminology in Azure package~~ ✅ RESOLVED
+   2026-07-12 (renamed to `BenzeneMessageEventHubHandler`)
 3. AspNetContext implementations too simple
 4. Exception messages not actionable
 5. No test coverage at all
@@ -1319,10 +1346,12 @@ public async Task Http_BatchProcessing_100Requests()
   changes were needed since the FrameworkReference exposes the same types
 - **Migration:** None required for consumers; internal package reference change only
 
-**2. Move TestHttpRequest to TestHelpers**
-- Move from Benzene.Azure.AspNet to TestHelpers package
+**2. Move TestHttpRequest to TestHelpers** ✅ DONE 2026-07-12
+- Moved `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` from
+  `Benzene.Azure.AspNet` to the new `Benzene.Azure.AspNet.TestHelpers` package
 - **Impact:** Low - test code shouldn't be in production references
-- **Migration:** Update test project references
+- **Migration:** Consumers referencing these types add a reference to
+  `Benzene.Azure.AspNet.TestHelpers` and a `using Benzene.Azure.AspNet.TestHelpers;`
 
 **3. Update All Azure SDK Versions**
 - Standardize Azure.Identity, Azure SDK packages
@@ -1337,14 +1366,18 @@ public async Task Http_BatchProcessing_100Requests()
 - **Impact:** None - commented code doesn't affect users
 - **Migration:** None required
 
-**5. Rename Azure Package Classes**
-- "DirectMessageLambdaHandler" → "DirectMessageFunctionHandler"
-- Remove AWS terminology from Azure packages
-- **Impact:** Low - unlikely to be directly referenced
-- **Migration:** Type name changes if used
+**5. Rename Azure Package Classes** ✅ DONE 2026-07-12
+- `BenzeneMessageLambdaHandler` → `BenzeneMessageEventHubHandler` (the class was
+  actually named `BenzeneMessageLambdaHandler`, not `DirectMessageLambdaHandler` as
+  this section originally guessed — that was the mismatched filename, not the class
+  name; file renamed to match too)
+- Removed AWS terminology from the Azure Event Hub package
+- **Impact:** Low - only used internally via `Extensions.UseBenzeneMessage`, unlikely
+  to have been directly referenced
+- **Migration:** Type name change if referenced directly
 
-**6. Add Package Version to AspNet.Core**
-- Add `<PackageVersion>0.0.1</PackageVersion>` to csproj
+**6. Add Package Version to AspNet.Core** ✅ DONE 2026-07-12
+- Added `<PackageVersion>0.0.1</PackageVersion>` to csproj
 - **Impact:** None - adds missing metadata
 - **Migration:** None required
 
@@ -1361,10 +1394,13 @@ public async Task Http_BatchProcessing_100Requests()
 ### Document in Migration Guide
 
 **Breaking Behavioral Changes:**
-1. ASP.NET Core 2.1 → 8.0+ (or framework refs) - major dependency update
-2. TestHttpRequest moved to TestHelpers package
-3. Azure SDK versions updated
-4. Error messages improved (more verbose)
+1. ~~ASP.NET Core 2.1 → 8.0+ (or framework refs) - major dependency update~~ ✅ DONE
+   2026-07-12
+2. ~~TestHttpRequest moved to TestHelpers package~~ ✅ DONE 2026-07-12
+3. Azure SDK versions updated (still open)
+4. Error messages improved (more verbose) (still open)
+5. `BenzeneMessageLambdaHandler` renamed to `BenzeneMessageEventHubHandler`
+   (`Benzene.Azure.EventHub`) ✅ DONE 2026-07-12
 
 **New Required Dependencies:**
 - Ensure Azure SDK packages are latest compatible versions
@@ -1531,19 +1567,23 @@ All Azure packages reference:
 3. **Unit Tests** - 80%+ coverage — RE-SCOPED 2026-07-12: only `Benzene.AspNet.Core`
    needs this; the other 4 packages already measure 81-91% (was 80-100h for "all
    packages," now a single-package gap, estimate ~15-20h)
-4. **Move Test Code** - TestHelpers separation (5-8h)
+4. ~~**Move Test Code** - TestHelpers separation (5-8h)~~ ✅ COMPLETE 2026-07-12
 5. **Getting Started Guides** - All adapters (25-30h)
 6. **ARM/Bicep Templates** - Deployment examples (20-25h)
 7. **Integration Tests** - Azurite, Functions test host (30-40h)
-8. **Code Quality Fixes** - Remove commented code, fix naming, the two file/class
-   mismatches found 2026-07-12 (20-30h)
+8. **Code Quality Fixes** - RE-SCOPED 2026-07-12: the `BenzeneMessageLambdaHandler` →
+   `BenzeneMessageEventHubHandler` rename (one of the two file/class mismatches found)
+   is done; remaining scope is removing commented-out dead code and the
+   `ApiGatewayHttpRequestAdapter.cs`/`AspNetHeadersMapper.cs` file/class mismatches
+   (~10-15h, down from 20-30h)
 9. **Application Insights Integration** - Middleware (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (10-12h)
 
-**Total P0 Effort:** ~170-260 hours remaining (2026-07-12: dependency fix ~2h actual vs
+**Total P0 Effort:** ~155-245 hours remaining (2026-07-12: dependency fix ~2h actual vs
 40-50h estimated, XML documentation now fully complete vs 50-70h estimated, Unit Tests
 re-scoped down from 80-100h to ~15-20h now that 4 of 5 packages are confirmed already
-well-covered)
+well-covered, Move Test Code now complete vs 5-8h estimated, Code Quality Fixes
+re-scoped down to ~10-15h with the Lambda-naming rename done)
 
 ### Should Have for 1.0 (P1)
 
@@ -1651,7 +1691,8 @@ Per `work/1.0.0-release-status.md`, core packages need:
 
 **Azure Packages Current Status (updated 2026-07-12 against actual code, not assumed):**
 1. ✅ 100% XML documentation (completed 2026-07-12)
-2. ⚠️ Test helpers separated BUT TestHttpRequest still in production
+2. ✅ Test helpers properly separated (TestHttpRequest moved to
+   `Benzene.Azure.AspNet.TestHelpers` 2026-07-12)
 3. ✅ ASP.NET Core 2.1.x dependency issue resolved 2026-07-12 (`FrameworkReference` to
    `Microsoft.AspNetCore.App`); Azure SDK version consistency and
    `Microsoft.Azure.WebJobs` bump still open
@@ -1662,8 +1703,9 @@ Per `work/1.0.0-release-status.md`, core packages need:
    templates, etc. still needed)
 7. ⚠️ Example exists but no deployment templates
 
-**Azure Readiness:** ~65% toward 1.0 (up from ~15-20% originally, ~55% after the docs
-pass; still behind AWS's ~93%, but the gap was previously overstated)
+**Azure Readiness:** ~70% toward 1.0 (up from ~15-20% originally, ~55% after the docs
+pass, ~65% after the dependency fix; still behind AWS's ~93%, but the gap was
+previously overstated)
 
 **Gap Analysis:**
 Azure packages are behind AWS packages, but less dramatically than this document
@@ -1677,8 +1719,10 @@ originally claimed:
   documentation and a fixed dependency baseline, but still lacking narrative docs,
   deployment templates, and integration tests
 - Primary remaining gaps: narrative documentation (getting-started, ARM/Bicep),
-  integration tests, the `Benzene.AspNet.Core` test gap, code quality (naming, dead
-  code, the file/class mismatches found 2026-07-12), TestHttpRequest relocation
+  integration tests, the `Benzene.AspNet.Core` test gap, remaining code quality
+  (commented-out dead code, the `ApiGatewayHttpRequestAdapter.cs`/
+  `AspNetHeadersMapper.cs` file/class mismatches — the Lambda-naming one and
+  TestHttpRequest relocation are both done as of 2026-07-12)
 
 ---
 
@@ -1745,8 +1789,8 @@ originally claimed:
 **Immediate Actions (Week 1):**
 1. Review this roadmap with stakeholders
 2. Prioritize P0 features
-3. **CRITICAL**: Fix ASP.NET Core dependency crisis
-4. Move TestHttpRequest to TestHelpers
+3. ~~**CRITICAL**: Fix ASP.NET Core dependency crisis~~ ✅ DONE 2026-07-12
+4. ~~Move TestHttpRequest to TestHelpers~~ ✅ DONE 2026-07-12
 5. Set up test infrastructure (Azurite, Functions test host)
 
 **Short-Term (Month 1):**
