@@ -1,5 +1,7 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Benzene.Core.Middleware;
 
@@ -467,6 +469,7 @@ public static class Extensions
     /// </remarks>
     public static IMiddlewarePipelineBuilder<TContext> UseExceptionHandler<TContext>(this IMiddlewarePipelineBuilder<TContext> app, Action<TContext, Exception> onException)
     {
-        return app.Use(new ExceptionHandlerMiddleware<TContext>(onException));
+        return app.Use(resolver => new ExceptionHandlerMiddleware<TContext>(onException,
+            resolver.TryGetService<ILoggerFactory>()?.CreateLogger("Benzene") ?? NullLogger.Instance));
     }
 }

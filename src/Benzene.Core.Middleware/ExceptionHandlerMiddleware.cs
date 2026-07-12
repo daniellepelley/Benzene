@@ -1,4 +1,5 @@
 using Benzene.Abstractions.Middleware;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Core.Middleware;
 
@@ -8,10 +9,11 @@ namespace Benzene.Core.Middleware;
 /// <typeparam name="TContext">The context type that the middleware operates on.</typeparam>
 /// <remarks>
 /// This middleware wraps the execution of downstream middleware in a try-catch block, allowing
-/// centralized exception handling. Exceptions are passed to the configured handler along with the
-/// current context, enabling context-aware error handling and response generation.
+/// centralized exception handling. Caught exceptions are logged at Error level and then passed to
+/// the configured handler along with the current context, enabling context-aware error handling
+/// and response generation.
 /// </remarks>
-public class ExceptionHandlerMiddleware<TContext>(Action<TContext, Exception> onException) : IMiddleware<TContext>
+public class ExceptionHandlerMiddleware<TContext>(Action<TContext, Exception> onException, ILogger logger) : IMiddleware<TContext>
 {
     /// <summary>
     /// Gets the name of this middleware component.
@@ -32,6 +34,7 @@ public class ExceptionHandlerMiddleware<TContext>(Action<TContext, Exception> on
         }
         catch (Exception ex)
         {
+            logger.LogError(ex, "Unhandled exception caught in middleware pipeline");
             onException(context, ex);
         }
     }
