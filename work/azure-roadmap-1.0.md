@@ -1,6 +1,6 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.3
+**Document Version:** 1.4
 **Last Updated:** 2026-07-12
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
@@ -8,27 +8,27 @@
 > **2026-07-12 update:** Two of this document's core claims were verified against actual
 > code and found stale — corrected here rather than trusted at face value (the AWS
 > roadmap had the same problem before its own update pass):
-> - **XML Documentation** (P0 #2): now 100% across all 5 packages (Benzene.Azure.Core,
+> - **XML Documentation** (P0 #2): now 100% across all 5 packages (Benzene.Azure.Function.Core,
 >   .AspNet, .EventHub, .Kafka, Benzene.AspNet.Core), 0 CS1591 warnings. Full solution
 >   and the Azure example solution both build clean; full test suite still green
 >   (655/655).
 > - **Test Coverage** (P0 #3): the "ZERO test files, complete absence of tests" claim
 >   was wrong. Real coverage, measured via `dotnet test --collect:"XPlat Code
->   Coverage"`: Benzene.Azure.Core 82.8%, Benzene.Azure.AspNet 81.0%,
->   Benzene.Azure.EventHub 86.3%, Benzene.Azure.Kafka 90.7%. Only **Benzene.AspNet.Core**
+>   Coverage"`: Benzene.Azure.Function.Core 82.8%, Benzene.Azure.Function.AspNet 81.0%,
+>   Benzene.Azure.Function.EventHub 86.3%, Benzene.Azure.Function.Kafka 90.7%. Only **Benzene.AspNet.Core**
 >   is genuinely 0% covered. This is a much smaller gap than the original 80-100h
 >   estimate assumed — re-scope before starting that work.
 > - **ASP.NET Core 2.1.x on .NET 10** (P0 #1) was also re-checked: the dependency really
->   is that old (confirmed in `Benzene.Azure.AspNet.csproj` and
+>   is that old (confirmed in `Benzene.Azure.Function.AspNet.csproj` and
 >   `Benzene.AspNet.Core.csproj`), and there's a hard-coded Windows-only `HintPath`
->   pointing at a `netcoreapp3.1` reference assembly in `Benzene.Azure.AspNet.csproj`
+>   pointing at a `netcoreapp3.1` reference assembly in `Benzene.Azure.Function.AspNet.csproj`
 >   that can't resolve on non-Windows machines — but despite both issues, **both
 >   packages currently build successfully with 0 errors**. The "CRITICAL — likely
 >   causes runtime failures" framing is overstated for the current state; treat this as
 >   real technical debt worth fixing, not a currently-broken build.
 >
 > Discovered along the way, not yet fixed: two file/class name mismatches
-> (`ApiGatewayHttpRequestAdapter.cs` in `Benzene.Azure.AspNet` actually contains
+> (`ApiGatewayHttpRequestAdapter.cs` in `Benzene.Azure.Function.AspNet` actually contains
 > `AspNetHttpRequestAdapter`; `AspNetHeadersMapper.cs` in `Benzene.AspNet.Core` actually
 > contains `AspNetMessageHeadersGetter`) — consistent with similar mismatches found and
 > left as-is during the AWS documentation pass, not fixed here either since this was a
@@ -38,7 +38,7 @@
 > easy to miss.
 >
 > **2026-07-12 update (dependency fix):** P0 #1 (ASP.NET Core 2.1.x on .NET 10) is now
-> **RESOLVED**. `Benzene.Azure.AspNet.csproj` and `Benzene.AspNet.Core.csproj` no longer
+> **RESOLVED**. `Benzene.Azure.Function.AspNet.csproj` and `Benzene.AspNet.Core.csproj` no longer
 > reference the EOL `Microsoft.AspNetCore.Mvc.Core` 2.1.38 / `Microsoft.AspNetCore.Routing`
 > 2.1.1 / `Microsoft.AspNetCore.Http.Abstractions` 2.1.1 NuGet packages, and the
 > hard-coded Windows-only `HintPath` to a `netcoreapp3.1` reference assembly is gone.
@@ -54,7 +54,7 @@
 > Verified: both packages build with 0 errors; full `Benzene.sln` builds clean; full
 > test suite still 655/655 passing; `examples/Azure/Benzene.Example.Azure.sln` builds
 > clean. Side effect: warning count rose in both packages (22→99 in
-> `Benzene.Azure.AspNet`) because the real, nullable-annotated ASP.NET Core reference
+> `Benzene.Azure.Function.AspNet`) because the real, nullable-annotated ASP.NET Core reference
 > assemblies surface nullability warnings (CS8602/8603/8604/etc.) and analyzer warnings
 > (ASP0019) the old, unannotated 2.1.x packages never triggered — a more accurate
 > picture of the code, not a regression, left for a future code-quality pass rather than
@@ -64,9 +64,9 @@
 > (1) `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` — both pure test
 > infrastructure (a settable fake `HttpRequest` and the builder extension that produces
 > it from `IHttpBuilder<T>`, used only by `AspNetPipelineTest`) — moved out of the
-> production `Benzene.Azure.AspNet` package into a new
-> `Benzene.Azure.AspNet.TestHelpers` package, mirroring the existing
-> `Benzene.Azure.EventHub.TestHelpers`/`Benzene.Azure.Kafka.TestHelpers` pattern. Added
+> production `Benzene.Azure.Function.AspNet` package into a new
+> `Benzene.Azure.Function.AspNet.TestHelpers` package, mirroring the existing
+> `Benzene.Azure.Function.EventHub.TestHelpers`/`Benzene.Azure.Function.Kafka.TestHelpers` pattern. Added
 > to `Benzene.sln` and referenced from `Benzene.Test.csproj`. (2) The Event Hub
 > package's message router class was literally named `BenzeneMessageLambdaHandler`
 > (copy-pasted from the AWS Lambda equivalent in `Benzene.Aws.Lambda.Core`) despite
@@ -76,6 +76,22 @@
 > Verified: all affected packages build with 0 errors, full solution and Azure example
 > solution build clean, 655/655 tests still passing (including the moved
 > `AspNetPipelineTest`, run in isolation to confirm the relocation works).
+>
+> **2026-07-12 update (package rename, user-requested):** All four Azure-Functions-
+> specific production packages, plus their three `.TestHelpers` packages, renamed for
+> consistency with the AWS `Benzene.Aws.Lambda.<Transport>` convention:
+> `Benzene.Azure.Core` → `Benzene.Azure.Function.Core`, `Benzene.Azure.AspNet` →
+> `Benzene.Azure.Function.AspNet`, `Benzene.Azure.EventHub` →
+> `Benzene.Azure.Function.EventHub`, `Benzene.Azure.Kafka` →
+> `Benzene.Azure.Function.Kafka`, and the matching `.TestHelpers` packages. Directory,
+> `.csproj` filename, `AssemblyName`, `RootNamespace`, and every `namespace`/`using`
+> reference across the whole repo (including `Benzene.sln`, `Benzene.Examples.sln`, the
+> `examples/Azure` project and solution, `README.md`, and this document) were updated to
+> match. `Benzene.AspNet.Core` was deliberately left untouched — it isn't
+> Azure-Functions-specific. This is a breaking rename but pre-1.0 with no external
+> consumers yet. Verified: full solution and both example solutions
+> (`Benzene.Examples.sln`'s Azure entries, `examples/Azure/Benzene.Example.Azure.sln`)
+> build with 0 errors, 655/655 tests still passing.
 
 ---
 
@@ -90,7 +106,7 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - **Source Files:** ~117 Azure-related source files (91 Azure.*, 26 AspNet.*)
 - **Test Coverage:** ✅ mostly good — Azure.Core 82.8%, Azure.AspNet 81.0%, Azure.EventHub 86.3%, Azure.Kafka 90.7% (measured 2026-07-12); only Benzene.AspNet.Core is genuinely 0%
 - **Documentation:** ✅ 100% XML documentation across all 5 packages (completed 2026-07-12), basic CLAUDE.md files exist (some stale — see package sections), one ASP.NET Core doc
-- **Dependencies:** ✅ ASP.NET Core 2.1.x issue resolved (2026-07-12) — `Benzene.Azure.AspNet` and `Benzene.AspNet.Core` now use `FrameworkReference` to `Microsoft.AspNetCore.App` instead of EOL 2.1.x NuGet packages; hard-coded Windows-only `HintPath` removed
+- **Dependencies:** ✅ ASP.NET Core 2.1.x issue resolved (2026-07-12) — `Benzene.Azure.Function.AspNet` and `Benzene.AspNet.Core` now use `FrameworkReference` to `Microsoft.AspNetCore.App` instead of EOL 2.1.x NuGet packages; hard-coded Windows-only `HintPath` removed
 - **Maturity:** Functional; test/doc gap with AWS is much smaller than originally assessed; the dependency blocker is now fixed
 
 ### Key Findings
@@ -161,15 +177,15 @@ Keep all Azure packages at **0.9.x-preview** until well after core 1.0 release, 
 
 | Package | Version | Purpose | Maturity | 1.0 Ready? |
 |---------|---------|---------|----------|------------|
-| **Benzene.Azure.Core** | 0.0.1 | Core Azure Functions abstractions & startup | Low-Medium | ❌ Not ready |
-| **Benzene.Azure.AspNet** | 0.0.1 | Azure Functions HTTP trigger adapter | Low | ❌ Not ready |
-| **Benzene.Azure.EventHub** | 0.0.1 | Event Hubs trigger adapter | Low | ❌ Not ready |
-| **Benzene.Azure.Kafka** | 0.0.1 | Kafka via Event Hubs trigger adapter | Low | ❌ Not ready |
+| **Benzene.Azure.Function.Core** | 0.0.1 | Core Azure Functions abstractions & startup | Low-Medium | ❌ Not ready |
+| **Benzene.Azure.Function.AspNet** | 0.0.1 | Azure Functions HTTP trigger adapter | Low | ❌ Not ready |
+| **Benzene.Azure.Function.EventHub** | 0.0.1 | Event Hubs trigger adapter | Low | ❌ Not ready |
+| **Benzene.Azure.Function.Kafka** | 0.0.1 | Kafka via Event Hubs trigger adapter | Low | ❌ Not ready |
 | **Benzene.AspNet.Core** | No version | General ASP.NET Core integration | Low-Medium | ❌ Not ready |
 
 **TestHelper Packages (not for 1.0):**
-- Benzene.Azure.EventHub.TestHelpers
-- Benzene.Azure.Kafka.TestHelpers
+- Benzene.Azure.Function.EventHub.TestHelpers
+- Benzene.Azure.Function.Kafka.TestHelpers
 
 ### Code Quality Metrics
 
@@ -209,7 +225,7 @@ Microsoft.AspNetCore.App (FrameworkReference)    (shared fw) ✅ FIXED 2026-07-1
 ```
 ~~Microsoft.AspNetCore.Mvc.Core 2.1.38 / Microsoft.AspNetCore.Routing 2.1.1 /
 Microsoft.AspNetCore.Http.Abstractions 2.1.1~~ — removed 2026-07-12, replaced by a
-`FrameworkReference` to `Microsoft.AspNetCore.App` in both `Benzene.Azure.AspNet.csproj`
+`FrameworkReference` to `Microsoft.AspNetCore.App` in both `Benzene.Azure.Function.AspNet.csproj`
 and `Benzene.AspNet.Core.csproj`. The redundant `Microsoft.Extensions.DependencyInjection.Abstractions`
 `PackageReference` in `Benzene.AspNet.Core.csproj` was also removed (NU1510 flagged it
 as already supplied transitively).
@@ -252,15 +268,15 @@ as already supplied transitively).
 
 ## Package-by-Package Analysis
 
-### 1. Benzene.Azure.Core ⭐ Foundation Package
+### 1. Benzene.Azure.Function.Core ⭐ Foundation Package
 
-**Location:** `src/Benzene.Azure.Core/`
+**Location:** `src/Benzene.Azure.Function.Core/`
 **Current State:** Low-Medium maturity, foundational but incomplete
 
 **Public API Surface:**
-- `IAzureFunctionApp` - Entry point abstraction (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Core\IAzureFunctionApp.cs)
-- `AzureFunctionApp` - Main implementation (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Core\AzureFunctionApp.cs)
-- `AzureFunctionStartUp` - Startup pattern (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Core\AzureFunctionStartUp.cs)
+- `IAzureFunctionApp` - Entry point abstraction (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Core\IAzureFunctionApp.cs)
+- `AzureFunctionApp` - Main implementation (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Core\AzureFunctionApp.cs)
+- `AzureFunctionStartUp` - Startup pattern (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Core\AzureFunctionStartUp.cs)
 - `InlineAzureFunctionStartUp` - Inline configuration
 - `IAzureFunctionAppBuilder` / `AzureFunctionAppBuilder` - Builder pattern
 - Integration with Azure Functions hosting model
@@ -301,21 +317,21 @@ as already supplied transitively).
 
 ---
 
-### 2. Benzene.Azure.AspNet 🔧 HTTP Functions Adapter
+### 2. Benzene.Azure.Function.AspNet 🔧 HTTP Functions Adapter
 
-**Location:** `src/Benzene.Azure.AspNet/`
+**Location:** `src/Benzene.Azure.Function.AspNet/`
 **Current State:** Low maturity; dependency crisis resolved 2026-07-12
 
 **Public API Surface:**
-- `AspNetApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.AspNet\AspNetApplication.cs)
-- `AspNetContext` - HTTP context (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.AspNet\AspNetContext.cs)
+- `AspNetApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.AspNet\AspNetApplication.cs)
+- `AspNetContext` - HTTP context (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.AspNet\AspNetContext.cs)
 - `ApiGatewayHttpRequestAdapter` - Request adapter
 - `AspNetResponseAdapter` - Response builder
 - Message handlers (BodyGetter, HeadersGetter, TopicGetter, ResultSetter)
 - `AspNetContextRequestEnricher` - Request enrichment
 - `Extensions.HandleHttpRequest()` - Entry point helper
 - ~~`TestHttpRequest` - Test utilities (should be in TestHelpers)~~ moved to
-  `Benzene.Azure.AspNet.TestHelpers` 2026-07-12
+  `Benzene.Azure.Function.AspNet.TestHelpers` 2026-07-12
 
 **Strengths:**
 - Clean HTTP abstraction
@@ -329,7 +345,7 @@ as already supplied transitively).
    single `<FrameworkReference Include="Microsoft.AspNetCore.App" />`.
 2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12
 3. ~~❌ TestHttpRequest should be in TestHelpers package~~ ✅ RESOLVED 2026-07-12 (moved
-   to new `Benzene.Azure.AspNet.TestHelpers` package, along with `HttpBuilderExtensions`)
+   to new `Benzene.Azure.Function.AspNet.TestHelpers` package, along with `HttpBuilderExtensions`)
 4. ⚠️ Commented-out health check code (lines 14-28 of Extensions.cs)
 5. ⚠️ AspNetContext too simple - only has HttpRequest and ContentResult
 6. ⚠️ No CORS support
@@ -359,13 +375,13 @@ hours remaining (dependency fix, XML docs, and TestHttpRequest relocation all do
 
 ---
 
-### 3. Benzene.Azure.EventHub 📊 Event Streaming
+### 3. Benzene.Azure.Function.EventHub 📊 Event Streaming
 
-**Location:** `src/Benzene.Azure.EventHub/`
+**Location:** `src/Benzene.Azure.Function.EventHub/`
 **Current State:** Low maturity, minimal implementation
 
 **Public API Surface:**
-- `EventHubApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.EventHub\Function\EventHubApplication.cs)
+- `EventHubApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.EventHub\Function\EventHubApplication.cs)
 - `EventHubContext` - Event context
 - ~~`DirectMessageLambdaHandler` - Direct message handler (confusing name - uses
   "Lambda")~~ renamed to `BenzeneMessageEventHubHandler` 2026-07-12 (file also renamed
@@ -410,13 +426,13 @@ done 2026-07-12; remaining scope is narrative/operational documentation, not cod
 
 ---
 
-### 4. Benzene.Azure.Kafka 🆕 Kafka via Event Hubs
+### 4. Benzene.Azure.Function.Kafka 🆕 Kafka via Event Hubs
 
-**Location:** `src/Benzene.Azure.Kafka/`
+**Location:** `src/Benzene.Azure.Function.Kafka/`
 **Current State:** Low maturity, newer addition
 
 **Public API Surface:**
-- `KafkaApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Kafka\KafkaApplication.cs)
+- `KafkaApplication` - Main application (C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Kafka\KafkaApplication.cs)
 - `KafkaContext` - Kafka context
 - Message handlers (BodyGetter, HeadersGetter, TopicGetter, ResultSetter)
 - `KafkaRegistrations` - Service registration
@@ -542,9 +558,9 @@ Azure-specific feature items)
    - Performance benchmarks
 
 4. ~~**Move Test Code** (5-8 hours) - BLOCKING~~ ✅ RESOLVED 2026-07-12
-   - [x] Move TestHttpRequest from Benzene.Azure.AspNet to TestHelpers — moved
+   - [x] Move TestHttpRequest from Benzene.Azure.Function.AspNet to TestHelpers — moved
      `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` to new
-     `Benzene.Azure.AspNet.TestHelpers` package
+     `Benzene.Azure.Function.AspNet.TestHelpers` package
    - [x] Ensure no test code in production packages
 
 5. **Documentation** (40-60 hours) - CRITICAL
@@ -837,7 +853,7 @@ reduction of roughly 100-150 hours off the original estimate)
 
 **Critical Priority:**
 1. ~~⚠️ ASP.NET Core 2.1.x on .NET 10 - MAJOR compatibility issue~~ ✅ RESOLVED 2026-07-12
-2. ~~⚠️ Hard-coded DLL path in Benzene.Azure.AspNet.csproj~~ ✅ RESOLVED 2026-07-12
+2. ~~⚠️ Hard-coded DLL path in Benzene.Azure.Function.AspNet.csproj~~ ✅ RESOLVED 2026-07-12
 3. ~~⚠️ TestHttpRequest in production package~~ ✅ RESOLVED 2026-07-12
 4. ⚠️ Old Microsoft.Azure.WebJobs (3.0.39)
 5. ~~⚠️ No package version for Benzene.AspNet.Core~~ ✅ RESOLVED 2026-07-12
@@ -1069,7 +1085,7 @@ docs/azure/
 
 **Example Documentation Needed:**
 ```markdown
-# RBAC for Benzene.Azure.EventHub
+# RBAC for Benzene.Azure.Function.EventHub
 
 ## Minimal Permissions
 Event Hubs Data Receiver role on the Event Hub namespace or specific Event Hub.
@@ -1348,10 +1364,10 @@ public async Task Http_BatchProcessing_100Requests()
 
 **2. Move TestHttpRequest to TestHelpers** ✅ DONE 2026-07-12
 - Moved `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` from
-  `Benzene.Azure.AspNet` to the new `Benzene.Azure.AspNet.TestHelpers` package
+  `Benzene.Azure.Function.AspNet` to the new `Benzene.Azure.Function.AspNet.TestHelpers` package
 - **Impact:** Low - test code shouldn't be in production references
 - **Migration:** Consumers referencing these types add a reference to
-  `Benzene.Azure.AspNet.TestHelpers` and a `using Benzene.Azure.AspNet.TestHelpers;`
+  `Benzene.Azure.Function.AspNet.TestHelpers` and a `using Benzene.Azure.Function.AspNet.TestHelpers;`
 
 **3. Update All Azure SDK Versions**
 - Standardize Azure.Identity, Azure SDK packages
@@ -1400,7 +1416,7 @@ public async Task Http_BatchProcessing_100Requests()
 3. Azure SDK versions updated (still open)
 4. Error messages improved (more verbose) (still open)
 5. `BenzeneMessageLambdaHandler` renamed to `BenzeneMessageEventHubHandler`
-   (`Benzene.Azure.EventHub`) ✅ DONE 2026-07-12
+   (`Benzene.Azure.Function.EventHub`) ✅ DONE 2026-07-12
 
 **New Required Dependencies:**
 - Ensure Azure SDK packages are latest compatible versions
@@ -1633,22 +1649,22 @@ re-scoped down to ~10-15h with the Lambda-naming rename done)
 **Key Source Files:**
 
 **Azure.Core:**
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Core\AzureFunctionApp.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Core\AzureFunctionStartUp.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Core\AzureFunctionAppBuilder.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Core\AzureFunctionApp.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Core\AzureFunctionStartUp.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Core\AzureFunctionAppBuilder.cs`
 
 **Azure.AspNet:**
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.AspNet\AspNetApplication.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.AspNet\AspNetContext.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.AspNet\Extensions.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.AspNet\AspNetApplication.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.AspNet\AspNetContext.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.AspNet\Extensions.cs`
 
 **Azure.EventHub:**
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.EventHub\Function\EventHubApplication.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.EventHub\Function\EventHubContext.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.EventHub\Function\EventHubApplication.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.EventHub\Function\EventHubContext.cs`
 
 **Azure.Kafka:**
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Kafka\KafkaApplication.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Kafka\KafkaContext.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Kafka\KafkaApplication.cs`
+- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Azure.Function.Kafka\KafkaContext.cs`
 
 **AspNet.Core:**
 - `C:\Users\pelled\source\libs\Benzene\src\Benzene.AspNet.Core\AspNetApplication.cs`
@@ -1692,7 +1708,7 @@ Per `work/1.0.0-release-status.md`, core packages need:
 **Azure Packages Current Status (updated 2026-07-12 against actual code, not assumed):**
 1. ✅ 100% XML documentation (completed 2026-07-12)
 2. ✅ Test helpers properly separated (TestHttpRequest moved to
-   `Benzene.Azure.AspNet.TestHelpers` 2026-07-12)
+   `Benzene.Azure.Function.AspNet.TestHelpers` 2026-07-12)
 3. ✅ ASP.NET Core 2.1.x dependency issue resolved 2026-07-12 (`FrameworkReference` to
    `Microsoft.AspNetCore.App`); Azure SDK version consistency and
    `Microsoft.Azure.WebJobs` bump still open

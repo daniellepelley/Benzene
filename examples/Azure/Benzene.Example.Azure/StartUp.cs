@@ -1,5 +1,5 @@
-using Benzene.Azure.AspNet;
-using Benzene.Azure.Core;
+using Benzene.Azure.Function.AspNet;
+using Benzene.Azure.Function.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Example.Azure;

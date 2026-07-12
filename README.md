@@ -104,7 +104,7 @@ dotnet add package Benzene.Core
 
 Plus whichever transport and integration packages your service needs
 (`Benzene.AspNet.Core`, `Benzene.Aws.Lambda.ApiGateway`,
-`Benzene.Azure.Core`, `Benzene.FluentValidation`, etc.) — see
+`Benzene.Azure.Function.Core`, `Benzene.FluentValidation`, etc.) — see
 [`docs/`](./docs) for the relevant package per adapter.
 
 Requires .NET 10.

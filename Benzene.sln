@@ -68,7 +68,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.CodeGen.MockLambdaT
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Azure", "Azure", "{CDFA0948-0562-4FA5-B007-D38BEAFFA391}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Core", "src\Benzene.Azure.Core\Benzene.Azure.Core.csproj", "{B114B4F4-587E-47D3-B942-4FBBAEA79749}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Function.Core", "src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj", "{B114B4F4-587E-47D3-B942-4FBBAEA79749}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.CodeGen.Client", "src\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj", "{5A45E6B4-6759-46BC-AFAB-423E4EE9B3BB}"
 EndProject
@@ -112,13 +112,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Cache.Redis", "src\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Autofac", "src\Benzene.Autofac\Benzene.Autofac.csproj", "{FA1B985B-0CA7-4AE5-9A0B-78E912CEE7C0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.AspNet", "src\Benzene.Azure.AspNet\Benzene.Azure.AspNet.csproj", "{36EAD40C-CF85-4984-8DBB-C26F4BC7D555}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Function.AspNet", "src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj", "{36EAD40C-CF85-4984-8DBB-C26F4BC7D555}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.AspNet.TestHelpers", "src\Benzene.Azure.AspNet.TestHelpers\Benzene.Azure.AspNet.TestHelpers.csproj", "{72AE431A-712C-4DA6-BBE6-3A087C92D9DF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Function.AspNet.TestHelpers", "src\Benzene.Azure.Function.AspNet.TestHelpers\Benzene.Azure.Function.AspNet.TestHelpers.csproj", "{72AE431A-712C-4DA6-BBE6-3A087C92D9DF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.EventHub", "src\Benzene.Azure.EventHub\Benzene.Azure.EventHub.csproj", "{8D26848F-A835-45AC-8425-D42974D44E70}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Function.EventHub", "src\Benzene.Azure.Function.EventHub\Benzene.Azure.Function.EventHub.csproj", "{8D26848F-A835-45AC-8425-D42974D44E70}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Kafka", "src\Benzene.Azure.Kafka\Benzene.Azure.Kafka.csproj", "{303CDEAE-1C68-4788-824F-0930E43D74BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Azure.Function.Kafka", "src\Benzene.Azure.Function.Kafka\Benzene.Azure.Function.Kafka.csproj", "{303CDEAE-1C68-4788-824F-0930E43D74BA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Asp", "Asp", "{8CC3A02C-A858-4CDE-9B8C-33F0088DB01C}"
 EndProject
@@ -196,9 +196,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Aws.Lambda.Sqs.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Aws.Sqs.TestHelpers", "src\Benzene.Aws.Sqs.TestHelpers\Benzene.Aws.Sqs.TestHelpers.csproj", "{5518EA33-E567-4D2E-B9E3-F0DAF509644B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.EventHub.TestHelpers", "src\Benzene.Azure.EventHub.TestHelpers\Benzene.Azure.EventHub.TestHelpers.csproj", "{2DAED25F-BE75-4926-93F4-2D3C47482664}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Function.EventHub.TestHelpers", "src\Benzene.Azure.Function.EventHub.TestHelpers\Benzene.Azure.Function.EventHub.TestHelpers.csproj", "{2DAED25F-BE75-4926-93F4-2D3C47482664}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Kafka.TestHelpers", "src\Benzene.Azure.Kafka.TestHelpers\Benzene.Azure.Kafka.TestHelpers.csproj", "{09E661D3-8784-41BE-95EB-8F211C756DB8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Function.Kafka.TestHelpers", "src\Benzene.Azure.Function.Kafka.TestHelpers\Benzene.Azure.Function.Kafka.TestHelpers.csproj", "{09E661D3-8784-41BE-95EB-8F211C756DB8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Core.Messages.TestHelpers", "src\Benzene.Core.Messages.TestHelpers\Benzene.Core.Messages.TestHelpers.csproj", "{E3998F53-9E98-46C5-AE65-C972B2ACB4AD}"
 EndProject

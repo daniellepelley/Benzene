@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Azure.Core;
-using Benzene.Azure.EventHub.Function;
-using Benzene.Azure.EventHub.TestHelpers;
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.EventHub.Function;
+using Benzene.Azure.Function.EventHub.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;

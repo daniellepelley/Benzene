@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using Benzene.Azure.AspNet;
-using Benzene.Azure.Core;
+using Benzene.Azure.Function.AspNet;
+using Benzene.Azure.Function.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;

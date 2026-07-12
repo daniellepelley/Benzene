@@ -11,7 +11,7 @@ These interfaces are implemented/used in:
 2. `Benzene.Aws.Lambda.Sns/SnsRecordContext.cs`
 3. `Benzene.Aws.Lambda.Kafka/KafkaContext.cs`
 4. `Benzene.Core.MessageHandlers/MessageMessageHandlerResultSetterBase.cs`
-5. `Benzene.Azure.Kafka/KafkaContext.cs`
+5. `Benzene.Azure.Function.Kafka/KafkaContext.cs`
 6. `Benzene.Kafka.Core/KafkaMessage/KafkaRecordContext.cs`
 7. `Benzene.Grpc/GrpcContext.cs`
 

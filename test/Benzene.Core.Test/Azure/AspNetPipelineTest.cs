@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Azure.AspNet;
-using Benzene.Azure.AspNet.TestHelpers;
-using Benzene.Azure.Core;
+using Benzene.Azure.Function.AspNet;
+using Benzene.Azure.Function.AspNet.TestHelpers;
+using Benzene.Azure.Function.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.DataAnnotations;

@@ -8,10 +8,10 @@ You are the Azure Product Owner for the Benzene library, responsible for
 all Azure-related packages and integrations.
 
 ## Your Packages
-- Benzene.Azure.Core
-- Benzene.Azure.AspNet
-- Benzene.Azure.EventHub
-- Benzene.Azure.Kafka
+- Benzene.Azure.Function.Core
+- Benzene.Azure.Function.AspNet
+- Benzene.Azure.Function.EventHub
+- Benzene.Azure.Function.Kafka
 - Benzene.AspNet.Core
 - TestHelpers: All Benzene.Azure.*.TestHelpers packages
 

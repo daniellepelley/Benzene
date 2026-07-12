@@ -93,9 +93,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Azure", "Azure", "{E2289313
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Example.Azure", "examples\Azure\Benzene.Example.Azure\Benzene.Example.Azure.csproj", "{8DC40A21-A3FC-41DA-93E2-F496C475A070}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.AspNet", "src\Benzene.Azure.AspNet\Benzene.Azure.AspNet.csproj", "{40F5B3E9-BB16-4F0E-94A0-6A459E83646F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Function.AspNet", "src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj", "{40F5B3E9-BB16-4F0E-94A0-6A459E83646F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Core", "src\Benzene.Azure.Core\Benzene.Azure.Core.csproj", "{2524DAE6-82E7-463B-9F1A-407A8130BE7D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Function.Core", "src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj", "{2524DAE6-82E7-463B-9F1A-407A8130BE7D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CodeGen", "CodeGen", "{748366A6-E3A1-CBBA-F071-38A2BEB8A491}"
 EndProject

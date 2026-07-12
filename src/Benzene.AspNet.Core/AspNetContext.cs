@@ -5,7 +5,7 @@ namespace Benzene.AspNet.Core;
 
 /// <summary>
 /// Implements <see cref="IHttpContext"/> for a request flowing through a real ASP.NET Core middleware
-/// pipeline (as opposed to an Azure Functions HTTP trigger — see <c>Benzene.Azure.AspNet</c>).
+/// pipeline (as opposed to an Azure Functions HTTP trigger — see <c>Benzene.Azure.Function.AspNet</c>).
 /// </summary>
 public class AspNetContext : IHttpContext
 {

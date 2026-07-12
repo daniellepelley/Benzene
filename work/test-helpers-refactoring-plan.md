@@ -25,8 +25,8 @@ Test helper code exists in production packages, which:
 - `Benzene.Aws.Sqs/TestHelpers/MessageBuilderExtensions.cs`
 
 ### Azure Packages:
-- `Benzene.Azure.Kafka/TestHelpers/MessageBuilderExtensions.cs`
-- `Benzene.Azure.EventHub/Function/TestHelpers/MessageBuilderExtensions.cs`
+- `Benzene.Azure.Function.Kafka/TestHelpers/MessageBuilderExtensions.cs`
+- `Benzene.Azure.Function.EventHub/Function/TestHelpers/MessageBuilderExtensions.cs`
 
 ## Existing Test Package
 `Benzene.Testing` already exists and has:

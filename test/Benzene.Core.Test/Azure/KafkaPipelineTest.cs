@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using Benzene.Azure.Core;
-using Benzene.Azure.Kafka;
-using Benzene.Azure.Kafka.TestHelpers;
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.Kafka;
+using Benzene.Azure.Function.Kafka.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Test.Examples;
 using Benzene.Testing;
