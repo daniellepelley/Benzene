@@ -1,66 +1,37 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.3
+**Document Version:** 1.4
 **Last Updated:** 2026-07-12
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
 
-> **2026-07-12 update (documentation):** XML documentation is now complete across all 9
-> AWS production packages (Benzene.Aws.Lambda.Core, .ApiGateway, .Sqs, .Sns, .S3
-> [formerly .EventBridge], .Kafka, Benzene.Aws.Sqs, Benzene.Aws.XRay, Benzene.Clients.Aws).
-> All packages build with zero CS1591 warnings. This resolves the single highest-priority
-> blocker (P0 #1, 60-80h) identified below. See "XML Documentation" call-outs throughout
-> this document — they are now historical context, not open work.
+> **2026-07-12 changelog** — P0 items resolved today, in order. Package/percentage
+> details and discovered bugs are recorded inline at each item's section below rather
+> than repeated here:
+> 1. **XML Documentation** (P0 #1) — 100% coverage across all 9 AWS packages, 0 CS1591
+>    warnings.
+> 2. **EventBridge/S3 rename** (P0 #2) — `Benzene.Aws.Lambda.EventBridge` renamed to
+>    `Benzene.Aws.Lambda.S3` (pure rename; the code was always S3 event handling, never
+>    EventBridge). Real EventBridge/CloudWatch Events support remains unbuilt, tracked
+>    separately (see package section 5).
+> 3. **Unit Tests** (P0 #3) — all 9 packages to 90%+ coverage (up from as low as 52%).
+>    Found and fixed 3 real bugs along the way (X-Ray timer crash, SNS client resolver
+>    bug, Lambda health check status bug); found but did NOT fix a 4th
+>    (`Extensions.AddLambdaClients` DI registration gap — needs a design decision, not
+>    a mechanical fix).
+> 4. **Integration Tests / LocalStack** (P0 #7) — `test/Benzene.Aws.Tests` wired into
+>    CI (`aws-integration-tests` job), passing against a real LocalStack container.
+>    Fixed fixture robustness issues and a CI-environment `docker-compose` binary gap
+>    along the way; added 3 new tests exercising client classes directly.
+> 5. **IAM Permissions Docs, Getting Started Guides, SAM Template** (P0 #4-#6) — new
+>    `docs/aws-iam-permissions.md`; `docs/getting-started-aws.md` expanded with
+>    SNS/S3/Kafka snippets; new `examples/Aws/Benzene.Examples.Aws/template.yaml` SAM
+>    template (API Gateway + SQS + SNS, optional Kafka/MSK). SAM only — CDK explicitly
+>    out of scope for this pass, noted as future work.
 >
-> **2026-07-12 update (EventBridge/S3 rename):** `Benzene.Aws.Lambda.EventBridge` has
-> been renamed to `Benzene.Aws.Lambda.S3` (assembly/namespace `Benzene.Aws.S3`),
-> resolving the second-highest-priority blocker (P0 #2, 25-30h). This was a pure rename
-> — the package's actual code (S3 event notification handling) never changed; only the
-> name now matches the content. Real EventBridge/CloudWatch Events support does not
-> exist and is tracked separately as unstarted future work (see package section 5
-> below). See "EventBridge Package" call-outs throughout this document — they now refer
-> to this resolved rename, not open work, unless explicitly describing the future
-> EventBridge package.
->
-> **2026-07-12 update (test coverage):** Unit test coverage across all 9 AWS packages is
-> now well above the 80% target from this roadmap, resolving the third blocker (P0 #3,
-> 40-50h): Benzene.Aws.Lambda.Core 93.2%, .ApiGateway 91.5%, .Sqs 94.8%, .Sns 98.5%, .S3
-> 100%, .Kafka 96.7%, Benzene.Aws.Sqs 100%, Benzene.Aws.XRay 92.7%, Benzene.Clients.Aws
-> 90.6% (up from 52.3%). The "only 4 test classes" figure below described
-> `test/Benzene.Aws.Tests` (a separate, LocalStack/Docker-dependent integration test
-> project) in isolation — it undercounted the substantial unit-test coverage already
-> present in `test/Benzene.Core.Test/Aws/`, which this update builds on. Writing these
-> tests surfaced three real production bugs, now fixed: (1) `XRayProcessProcessTimer`
-> threw `EntityNotAvailableException` instead of no-op'ing when no X-Ray segment was
-> active (e.g. running outside Lambda); (2) `SnsBenzeneMessageClient`'s pre-built-pipeline
-> constructor never set `_serviceResolver`, so it always failed with a swallowed
-> `NullReferenceException`; (3) `AwsLambdaHealthCheck` checked for
-> `BenzeneResultStatus.Ok`, which a fire-and-forget `Void` ping can never return (it
-> returns `Accepted`), so the health check could never report healthy. A fourth issue
-> was found but NOT fixed (needs a design decision, not a mechanical fix):
-> `Extensions.AddLambdaClients` registers `AwsLambdaBenzeneMessageClient` and
-> `AwsLambdaBenzeneMessageClientFactory` via bare `AddScoped<T>()`, but both require a
-> constructor `string lambdaName` that this method never supplies to the container —
-> resolving `IBenzeneMessageClient`/`IBenzeneMessageClientFactory` registered this way
-> throws.
->
-> **2026-07-12 update (LocalStack integration tests):** `test/Benzene.Aws.Tests` is now
-> wired into CI as a new `aws-integration-tests` job in `build-benzene.yml`, running
-> against a real LocalStack container and passing — resolving the "Integration Tests"
-> line item (20-30h) from the P0 list below. `LocalStackFixture` already drove Docker
-> Compose programmatically via `Ductus.FluentDocker` (not a shell `docker-compose up`
-> step); it needed three fixes: a `static` field that could clobber across fixture
-> instances, no readiness wait after container start (added a poll against LocalStack's
-> `/_localstack/health` endpoint), and the LocalStack image floating on `:latest` (now
-> pinned to `:3`). The CI job itself needed one more fix after the first run: GitHub's
-> `ubuntu-latest` runners no longer ship the legacy `docker-compose` v1 binary that
-> FluentDocker looks for by name (only the `docker compose` v2 plugin) — added a setup
-> step that shims `docker-compose` to `docker compose` when the legacy binary is
-> missing. Added three new tests exercising `SqsHealthCheck`,
-> `SqsBenzeneMessageClient`, and `SnsBenzeneMessageClient` directly against LocalStack
-> (previously only unit-tested with mocks), alongside the pre-existing
-> pipeline-level and consumer-polling tests. Performance benchmarks and end-to-end
-> Lambda examples remain open — see Testing Strategy below.
+> Remaining P0 work: Dependency Cleanup, Code Quality Fixes, Migration Guide (31-42h,
+> see Prioritized Feature List below). Full narrative detail for each completed item
+> remains in that item's own section further down this document.
 
 ---
 
@@ -1500,17 +1471,19 @@ All AWS packages reference:
 1. ~~**XML Documentation** - All packages (60-80h)~~ ✅ COMPLETE 2026-07-12
 2. ~~**Fix EventBridge Package** - Critical bug (25-30h)~~ ✅ RENAMED to Benzene.Aws.Lambda.S3 2026-07-12
 3. ~~**Unit Tests** - 80%+ coverage (40-50h)~~ ✅ COMPLETE 2026-07-12 (all 9 packages 90%+)
-4. **IAM Permissions Docs** - All event sources (15-20h)
-5. **Getting Started Guides** - All event sources (20-25h)
-6. **SAM Template Examples** - All event sources (15-20h)
+4. ~~**IAM Permissions Docs** - All event sources (15-20h)~~ ✅ COMPLETE 2026-07-12
+   (`docs/aws-iam-permissions.md`)
+5. ~~**Getting Started Guides** - All event sources (20-25h)~~ ✅ COMPLETE 2026-07-12
+   (SNS/S3/Kafka snippets added to `docs/getting-started-aws.md`)
+6. ~~**SAM Template Examples** - All event sources (15-20h)~~ ✅ COMPLETE 2026-07-12
+   (`examples/Aws/Benzene.Examples.Aws/template.yaml`; SAM only, no CDK — see note below)
 7. ~~**Integration Tests** - LocalStack (20-30h)~~ ✅ COMPLETE 2026-07-12 (wired into CI, passing)
 8. **Dependency Cleanup** - Standardize versions (8-12h)
 9. **Code Quality Fixes** - Error handling, config (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (8-10h)
 
-**Total P0 Effort:** 81-117 hours remaining (60-80h XML documentation + 25-30h
-EventBridge/S3 naming fix + 40-50h unit test coverage + 20-30h LocalStack integration
-tests now complete)
+**Total P0 Effort:** 31-42 hours remaining (Dependency Cleanup, Code Quality Fixes,
+Migration Guide only — everything else on this list is now complete)
 
 ### Should Have for 1.0 (P1)
 
@@ -1597,13 +1570,14 @@ Per `work/1.0.0-release-status.md`, core packages need:
 4. ✅ Versioning policy applies to all packages
 5. ✅ Unit test coverage complete, 90%+ across all 9 packages, plus LocalStack
    integration tests wired into CI and passing (both completed 2026-07-12)
-6. ⚠️ Narrative documentation (guides, IAM, SAM/CDK) still incomplete
-7. ⚠️ Examples exist but need SAM/CDK templates
+6. ✅ IAM permissions doc, getting-started guide expansion, and a SAM template all
+   complete (completed 2026-07-12); CDK example remains unbuilt, tracked as future work
+7. ⚠️ Examples exist but a CDK template is not yet built (SAM is)
 
 **Gap Analysis:**
-AWS packages are ~75% toward 1.0 readiness using core criteria (up from ~65%).
-Primary remaining gaps: narrative documentation (guides/IAM/SAM/CDK), examples, the
-`AddLambdaClients` DI gap
+AWS packages are ~85% toward 1.0 readiness using core criteria (up from ~75%).
+Primary remaining gaps: Dependency Cleanup, Code Quality Fixes, Migration Guide, the
+`AddLambdaClients` DI gap, and (lower priority) a CDK example alongside the SAM one
 
 ---
 

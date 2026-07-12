@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Benzene example Lambda function - handles API Gateway (HTTP API), SQS, and SNS
+  event sources through a single Benzene middleware pipeline (see StartUp.cs), plus
+  an optional Kafka/MSK event source if you provide an existing cluster ARN.
+  See ../../../docs/getting-started-aws.md and
+  ../../../docs/aws-iam-permissions.md in the main Benzene repo for background.
+  This template has been hand-checked against the SAM/CloudFormation spec but not
+  run through `sam validate` or deployed - review before using in production.
+
+Parameters:
+  MskClusterArn:
+    Type: String
+    Default: ''
+    Description: >
+      Optional ARN of an existing MSK cluster to wire up as a Kafka event source.
+      Leave blank to deploy without Kafka (API Gateway + SQS + SNS only).
+  MskTopicName:
+    Type: String
+    Default: ''
+    Description: Kafka topic name to consume from (required if MskClusterArn is set).
+
+Conditions:
+  HasMskCluster: !Not [!Equals [!Ref MskClusterArn, '']]
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    # .NET 10 has no AWS-managed Lambda runtime yet (see work/aws-roadmap-1.0.md) -
+    # dotnet8 is the current managed runtime and works fine for this .NET 10 project
+    # since it targets a compatible Lambda ABI.
+    Runtime: dotnet8
+    Architectures:
+      - arm64
+    Tracing: Active # enables X-Ray and grants the execution role the permissions
+                     # documented under "X-Ray" in ../../../docs/aws-iam-permissions.md
+
+Resources:
+  BenzeneQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: benzene-example-queue
+
+  BenzeneTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: benzene-example-topic
+
+  BenzeneFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+    Properties:
+      FunctionName: benzene-example
+      Handler: Benzene.Examples.Aws::Benzene.Examples.Aws.StartUp::FunctionHandlerAsync
+      CodeUri: ./
+      Policies:
+        # SAM policy template - grants exactly the SQS actions documented under
+        # "SQS trigger" in ../../../docs/aws-iam-permissions.md. CloudWatch Logs
+        # permissions are included automatically in every SAM function's default
+        # execution role, no extra policy needed for that.
+        - SQSPollerPolicy:
+            QueueName: !GetAtt BenzeneQueue.QueueName
+      Events:
+        HttpApi:
+          Type: HttpApi
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt BenzeneQueue.Arn
+            BatchSize: 10
+
+  # SNS invokes via a resource-based permission (below), not the execution role -
+  # see "SNS trigger" in ../../../docs/aws-iam-permissions.md.
+  BenzeneTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref BenzeneTopic
+      Protocol: lambda
+      Endpoint: !GetAtt BenzeneFunction.Arn
+
+  BenzeneTopicLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref BenzeneFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref BenzeneTopic
+
+  # Only created if MskClusterArn is supplied - see the Kafka trigger section in
+  # ../../../docs/aws-iam-permissions.md for the (more involved) IAM permissions
+  # this needs beyond what SAM adds automatically.
+  BenzeneKafkaEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Condition: HasMskCluster
+    Properties:
+      EventSourceArn: !Ref MskClusterArn
+      FunctionName: !Ref BenzeneFunction
+      Topics:
+        - !Ref MskTopicName
+      StartingPosition: LATEST
+      BatchSize: 100
+
+Outputs:
+  HttpApiUrl:
+    Description: Invoke URL for the HTTP API
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  QueueArn:
+    Description: ARN of the SQS queue
+    Value: !GetAtt BenzeneQueue.Arn
+  TopicArn:
+    Description: ARN of the SNS topic
+    Value: !Ref BenzeneTopic
+  FunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt BenzeneFunction.Arn

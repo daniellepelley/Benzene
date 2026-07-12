@@ -66,9 +66,76 @@ Benzene provides specialized middleware for various AWS event sources:
 - **SQS**: `app.UseSqs(...)`
 - **SNS**: `app.UseSns(...)`
 - **Kafka**: `app.UseKafka(...)`
-- **S3**: S3 event notification middleware in `Benzene.Aws.Lambda.S3`
+- **S3**: `app.UseS3(...)`, in `Benzene.Aws.Lambda.S3`
 
-Each of these allows you to define a specific sub-pipeline for that event source, while still being able to share common logic and message handlers via `UseHttpToBenzeneMessage`/`UseBenzeneMessage`.
+Each of these allows you to define a specific sub-pipeline for that event source, while still being able to share common logic and message handlers via `UseHttpToBenzeneMessage`/`UseBenzeneMessage`. All of them are added inside the same `Configure` method, on the same `app` (an `IMiddlewarePipelineBuilder<AwsEventStreamContext>`) shown in Basic Setup above — a single Lambda function can handle several event sources at once, each routed to its own sub-pipeline based on the shape of the incoming payload.
+
+### SNS
+
+```csharp
+app.UseSns(snsApp => snsApp
+    .UseCorrelationId()
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+SNS invokes your function via a resource-based Lambda permission — no extra
+execution-role IAM is needed to receive notifications (see
+[AWS IAM Permissions](aws-iam-permissions.md)). The SNS message's `topic` message
+attribute (or the raw topic ARN, depending on delivery configuration) is used to route
+to the matching message handler, same as every other transport.
+
+### S3
+
+```csharp
+app.UseS3(s3App => s3App
+    .UseCorrelationId()
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+Like SNS, S3 invokes via a resource-based permission plus a bucket notification
+configuration — no extra execution-role IAM needed to receive. S3 event notifications
+are fire-and-forget: no response is written back, since S3 doesn't expect one.
+
+### Kafka
+
+```csharp
+app.UseKafka(kafkaApp => kafkaApp
+    .UseCorrelationId()
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+Works for both MSK and self-managed Kafka. Kafka record headers are mapped to Benzene
+message headers, and partition/offset are available on `KafkaContext`. See
+[AWS IAM Permissions](aws-iam-permissions.md) for the MSK-specific permissions your
+execution role needs — these are more involved than the other event sources since MSK
+event source mappings require VPC connectivity.
+
+## IAM Permissions
+
+Each event source above has different IAM requirements — some need explicit
+execution-role permissions (SQS, Kafka), others invoke your function via a
+resource-based permission and need none. See
+[AWS IAM Permissions Reference](aws-iam-permissions.md) for a minimal policy per
+package, with the specific SDK call in Benzene's source that drives each requirement.
+
+## Deploying with SAM
+
+[`examples/Aws/Benzene.Examples.Aws/template.yaml`](../examples/Aws/Benzene.Examples.Aws/template.yaml)
+is a working AWS SAM template for the example project, wiring up API Gateway, SQS, and
+SNS (matching what `StartUp.cs` in that project actually configures), with an optional
+Kafka/MSK event source mapping if you provide an existing cluster ARN. To deploy it:
+
+```bash
+cd examples/Aws/Benzene.Examples.Aws
+sam build
+sam deploy --guided
+```
+
+`sam deploy --guided` walks you through stack name, region, and parameter values on
+first run, then remembers them in `samconfig.toml` for subsequent deploys.
 
 ## Bare Metal Entry Point
 
