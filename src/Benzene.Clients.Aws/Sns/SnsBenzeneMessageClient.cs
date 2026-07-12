@@ -52,11 +52,13 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <param name="middlewarePipeline">The built middleware pipeline to publish through.</param>
     /// <param name="logger">The logger used to record send failures.</param>
-    public SnsBenzeneMessageClient(string topicArn, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, IBenzeneLogger logger)
+    /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
+    public SnsBenzeneMessageClient(string topicArn, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
     {
         _logger = logger;
         _topicArn = topicArn;
         _middlewarePipeline = middlewarePipeline;
+        _serviceResolver = serviceResolver;
     }
 
     /// <summary>

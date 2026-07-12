@@ -21,6 +21,29 @@
 > below). See "EventBridge Package" call-outs throughout this document — they now refer
 > to this resolved rename, not open work, unless explicitly describing the future
 > EventBridge package.
+>
+> **2026-07-12 update (test coverage):** Unit test coverage across all 9 AWS packages is
+> now well above the 80% target from this roadmap, resolving the third blocker (P0 #3,
+> 40-50h): Benzene.Aws.Lambda.Core 93.2%, .ApiGateway 91.5%, .Sqs 94.8%, .Sns 98.5%, .S3
+> 100%, .Kafka 96.7%, Benzene.Aws.Sqs 100%, Benzene.Aws.XRay 92.7%, Benzene.Clients.Aws
+> 90.6% (up from 52.3%). The "only 4 test classes" figure below described
+> `test/Benzene.Aws.Tests` (a separate, LocalStack/Docker-dependent integration test
+> project) in isolation — it undercounted the substantial unit-test coverage already
+> present in `test/Benzene.Core.Test/Aws/`, which this update builds on. Writing these
+> tests surfaced three real production bugs, now fixed: (1) `XRayProcessProcessTimer`
+> threw `EntityNotAvailableException` instead of no-op'ing when no X-Ray segment was
+> active (e.g. running outside Lambda); (2) `SnsBenzeneMessageClient`'s pre-built-pipeline
+> constructor never set `_serviceResolver`, so it always failed with a swallowed
+> `NullReferenceException`; (3) `AwsLambdaHealthCheck` checked for
+> `BenzeneResultStatus.Ok`, which a fire-and-forget `Void` ping can never return (it
+> returns `Accepted`), so the health check could never report healthy. A fourth issue
+> was found but NOT fixed (needs a design decision, not a mechanical fix):
+> `Extensions.AddLambdaClients` registers `AwsLambdaBenzeneMessageClient` and
+> `AwsLambdaBenzeneMessageClientFactory` via bare `AddScoped<T>()`, but both require a
+> constructor `string lambdaName` that this method never supplies to the container —
+> resolving `IBenzeneMessageClient`/`IBenzeneMessageClientFactory` registered this way
+> throws. Integration testing (LocalStack, `test/Benzene.Aws.Tests`) remains a separate,
+> unaddressed item — see Testing Strategy below.
 
 ---
 
@@ -33,7 +56,7 @@ This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages a
 - **Version:** All at 0.0.1 (pre-release)
 - **Target Framework:** .NET 10
 - **Source Files:** ~179 AWS-related source files
-- **Test Coverage:** Minimal (4 test classes found)
+- **Test Coverage:** ✅ 90%+ unit test coverage across all 9 packages (completed 2026-07-12); integration testing (LocalStack) still outstanding
 - **Documentation:** ✅ 100% XML documentation (completed 2026-07-12), basic CLAUDE.md files exist
 - **Maturity:** Functional but not production-ready for 1.0
 
@@ -554,11 +577,12 @@ naming/dependency work is done)
      tracked as separate, distinct future work (a new package, not a fix to this one) —
      see medium-term roadmap
 
-3. **Test Coverage** (40-60 hours) - CRITICAL
-   - Unit tests for all packages (target 80%+ coverage)
-   - Integration tests with LocalStack
-   - End-to-end Lambda examples
-   - Performance benchmarks
+3. ~~**Test Coverage** (40-60 hours) - CRITICAL~~ ⚠️ UNIT TESTS COMPLETE 2026-07-12
+   - ~~Unit tests for all packages (target 80%+ coverage)~~ ✅ All 9 packages now 90%+
+     (see 2026-07-12 update above); 3 real bugs found and fixed along the way
+   - Integration tests with LocalStack — still open
+   - End-to-end Lambda examples — still open
+   - Performance benchmarks — still open
 
 4. **Dependency Cleanup** (8-12 hours)
    - Standardize AWSSDK versions
@@ -579,8 +603,8 @@ naming/dependency work is done)
    - Add configuration options
    - Remove constructor virtual calls
 
-**Total Estimated Effort for 1.0:** 93-152 hours remaining (60-80h XML documentation +
-25-30h EventBridge/S3 naming fix now complete)
+**Total Estimated Effort for 1.0:** 53-112 hours remaining (60-80h XML documentation +
+25-30h EventBridge/S3 naming fix + 40-50h unit test coverage now complete)
 
 ### Phased Approach
 
@@ -862,8 +886,15 @@ naming/dependency work is done)
 ## Testing Strategy
 
 ### Current State
-- Only 4 test classes found (LambdaSenderBuilderTest, SnsMessageSenderBuilderTest, SqsConsumerTest, SqsMessageSenderBuilderTest)
-- No comprehensive integration tests
+- ✅ Unit test coverage complete (2026-07-12): all 9 packages 90%+ (Core 93.2%,
+  ApiGateway 91.5%, Sqs 94.8%, Sns 98.5%, S3 100%, Kafka 96.7%, Aws.Sqs 100%, XRay
+  92.7%, Clients.Aws 90.6%), in `test/Benzene.Core.Test/Aws/`
+- `test/Benzene.Aws.Tests` remains a separate, LocalStack/Docker-dependent integration
+  test project with only 4 test classes (LambdaSenderBuilderTest,
+  SnsMessageSenderBuilderTest, SqsConsumerTest, SqsMessageSenderBuilderTest) — this was
+  the source of the original "only 4 test classes" figure, which undercounted unit
+  coverage
+- No comprehensive integration tests beyond the above
 - No performance benchmarks
 - No load tests
 
@@ -1446,7 +1477,7 @@ All AWS packages reference:
 
 1. ~~**XML Documentation** - All packages (60-80h)~~ ✅ COMPLETE 2026-07-12
 2. ~~**Fix EventBridge Package** - Critical bug (25-30h)~~ ✅ RENAMED to Benzene.Aws.Lambda.S3 2026-07-12
-3. **Unit Tests** - 80%+ coverage (40-50h)
+3. ~~**Unit Tests** - 80%+ coverage (40-50h)~~ ✅ COMPLETE 2026-07-12 (all 9 packages 90%+)
 4. **IAM Permissions Docs** - All event sources (15-20h)
 5. **Getting Started Guides** - All event sources (20-25h)
 6. **SAM Template Examples** - All event sources (15-20h)
@@ -1455,8 +1486,8 @@ All AWS packages reference:
 9. **Code Quality Fixes** - Error handling, config (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (8-10h)
 
-**Total P0 Effort:** 141-197 hours remaining (60-80h XML documentation + 25-30h
-EventBridge/S3 naming fix now complete)
+**Total P0 Effort:** 101-147 hours remaining (60-80h XML documentation + 25-30h
+EventBridge/S3 naming fix + 40-50h unit test coverage now complete)
 
 ### Should Have for 1.0 (P1)
 
@@ -1535,15 +1566,21 @@ Per `work/1.0.0-release-status.md`, core packages need:
 **AWS Packages Current Status:**
 1. ✅ 100% XML documentation (completed 2026-07-12)
 2. ✅ Test helpers properly separated
-3. ✅ No critical bugs found (except EventBridge confusion)
+3. ✅ EventBridge/S3 naming confusion resolved (renamed 2026-07-12); 3 further bugs
+   found and fixed during the test-coverage pass (X-Ray timer crash, SNS client
+   resolver bug, Lambda health check status bug — see 2026-07-12 update above); 1 more
+   found but not fixed (`AddLambdaClients` DI registration gap — needs a design
+   decision)
 4. ✅ Versioning policy applies to all packages
-5. ❌ Minimal test coverage
+5. ✅ Unit test coverage complete, 90%+ across all 9 packages (completed 2026-07-12);
+   integration/LocalStack testing still open
 6. ⚠️ Narrative documentation (guides, IAM, SAM/CDK) still incomplete
 7. ⚠️ Examples exist but need SAM/CDK templates
 
 **Gap Analysis:**
-AWS packages are ~45% toward 1.0 readiness using core criteria (up from ~30%).
-Primary remaining gaps: Testing, narrative documentation (guides/IAM/SAM/CDK), Examples
+AWS packages are ~65% toward 1.0 readiness using core criteria (up from ~45%).
+Primary remaining gaps: narrative documentation (guides/IAM/SAM/CDK), integration
+testing, examples, the `AddLambdaClients` DI gap
 
 ---
 

@@ -32,6 +32,11 @@ public class AwsLambdaHealthCheck : IHealthCheck
     /// complete successfully within the timeout.
     /// </summary>
     /// <returns>A task that resolves to the outcome of the health check.</returns>
+    /// <remarks>
+    /// The ping uses <see cref="Void"/> as its response type, so
+    /// <see cref="AwsLambdaBenzeneMessageClient"/> always invokes it fire-and-forget, which returns
+    /// <see cref="BenzeneResultStatus.Accepted"/> on success rather than <see cref="BenzeneResultStatus.Ok"/>.
+    /// </remarks>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
         var delay = Task.Delay(TimeOut);
@@ -39,7 +44,7 @@ public class AwsLambdaHealthCheck : IHealthCheck
 
         await Task.WhenAny(delay, pingLambdaTask);
 
-        if (pingLambdaTask.IsCompleted && pingLambdaTask.Result.Status == BenzeneResultStatus.Ok)
+        if (pingLambdaTask.IsCompleted && pingLambdaTask.Result.Status == BenzeneResultStatus.Accepted)
         {
             return HealthCheckResult.CreateInstance(true, Type);
         }
