@@ -1,4 +1,5 @@
 using Amazon.XRay.Recorder.Core;
+using Amazon.XRay.Recorder.Core.Exceptions;
 using Benzene.Diagnostics.Timers;
 
 namespace Benzene.Aws.XRay;
@@ -7,8 +8,11 @@ namespace Benzene.Aws.XRay;
 /// Times a unit of work as an AWS X-Ray subsegment, from construction until disposal.
 /// </summary>
 /// <remarks>
-/// All operations are no-ops if X-Ray tracing is disabled (e.g. no active segment for the current
-/// execution context), so this is safe to use unconditionally.
+/// All operations are no-ops if X-Ray tracing is disabled, or if there is no active X-Ray segment for
+/// the current execution context (e.g. running locally without the Lambda X-Ray context, or the segment
+/// not propagating across an async boundary) — the X-Ray SDK's default <c>RUNTIME_ERROR</c> context-missing
+/// strategy would otherwise throw <see cref="EntityNotAvailableException"/> in that case. This makes the
+/// timer safe to use unconditionally.
 /// </remarks>
 public sealed class XRayProcessProcessTimer : IProcessTimer
 {
@@ -21,7 +25,14 @@ public sealed class XRayProcessProcessTimer : IProcessTimer
     {
         if (AWSXRayRecorder.Instance.IsTracingDisabled())
             return;
-        AWSXRayRecorder.Instance.BeginSubsegment(timerName);
+
+        try
+        {
+            AWSXRayRecorder.Instance.BeginSubsegment(timerName);
+        }
+        catch (EntityNotAvailableException)
+        {
+        }
     }
 
     /// <summary>
@@ -31,7 +42,14 @@ public sealed class XRayProcessProcessTimer : IProcessTimer
     {
         if (AWSXRayRecorder.Instance.IsTracingDisabled())
             return;
-        AWSXRayRecorder.Instance.EndSubsegment();
+
+        try
+        {
+            AWSXRayRecorder.Instance.EndSubsegment();
+        }
+        catch (EntityNotAvailableException)
+        {
+        }
     }
 
     /// <summary>
@@ -43,6 +61,13 @@ public sealed class XRayProcessProcessTimer : IProcessTimer
     {
         if (AWSXRayRecorder.Instance.IsTracingDisabled())
             return;
-        AWSXRayRecorder.Instance.AddAnnotation(key, value);
+
+        try
+        {
+            AWSXRayRecorder.Instance.AddAnnotation(key, value);
+        }
+        catch (EntityNotAvailableException)
+        {
+        }
     }
 }

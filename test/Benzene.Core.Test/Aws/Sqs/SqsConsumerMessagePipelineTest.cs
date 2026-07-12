@@ -170,6 +170,64 @@ public class SqsConsumerMessagePipelineTest
 
 
     [Fact]
+    public async Task StartAsync_ReceiveMessageThrowsTaskCanceled_StopsWithoutRethrowing()
+    {
+        var mockSqsClient = new Mock<IAmazonSQS>();
+
+        var mockSqsClientFactory = new Mock<ISqsClientFactory>();
+        mockSqsClientFactory.Setup(x => x.Create())
+            .Returns(mockSqsClient.Object);
+
+        mockSqsClient
+            .Setup(x => x.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new TaskCanceledException());
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<SqsConsumerMessageContext>>>(_ =>
+                NullLogger<MessageRouter<SqsConsumerMessageContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .UsingBenzene(x => x.AddSqsConsumer());
+
+        var pipeline =
+            new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        pipeline.UseMessageHandlers();
+
+        var application = new SqsConsumerApplication(pipeline.Build());
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+
+        var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
+        {
+            MaxNumberOfMessages = 10,
+            QueueUrl = "some-url"
+        }, mockSqsClientFactory.Object);
+
+        var tokenSource = new CancellationTokenSource();
+        tokenSource.CancelAfter(50);
+
+        await consumer.StartAsync(tokenSource.Token);
+
+        mockSqsClient.Verify(x => x.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task StopAsync_CompletesSuccessfully()
+    {
+        var mockSqsClientFactory = new Mock<ISqsClientFactory>();
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(ServiceResolverMother.CreateServiceCollection());
+        var application = new SqsConsumerApplication(
+            new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection())).Build());
+
+        var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
+        {
+            MaxNumberOfMessages = 10,
+            QueueUrl = "some-url"
+        }, mockSqsClientFactory.Object);
+
+        await consumer.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public void SqsMessageMapper()
     {
         var sqsMessageMapper = new MessageGetter<SqsConsumerMessageContext>(new SqsConsumerMessageTopicGetter(), new SqsConsumerMessageBodyGetter(), new SqsConsumerMessageHeadersGetter());

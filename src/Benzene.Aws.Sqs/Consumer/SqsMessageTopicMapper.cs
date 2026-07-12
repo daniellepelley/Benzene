@@ -13,7 +13,10 @@ public class SqsConsumerMessageTopicGetter : IMessageTopicGetter<SqsConsumerMess
     /// Gets the topic from the SQS message's <c>topic</c> attribute.
     /// </summary>
     /// <param name="context">The SQS consumer message context to extract the topic from.</param>
-    /// <returns>The topic, or a topic with a null ID if the <c>topic</c> attribute isn't present.</returns>
+    /// <returns>
+    /// The topic, or a topic with <see cref="Benzene.Core.Constants.Missing"/> as its ID if the
+    /// <c>topic</c> attribute isn't present.
+    /// </returns>
     public ITopic GetTopic(SqsConsumerMessageContext context)
     {
         return new Topic(GetFromAttributes(context, "topic"));
