@@ -1,6 +1,6 @@
 using Benzene.Core.DI;
 
-namespace Benzene.Aws.EventBridge;
+namespace Benzene.Aws.S3;
 
 /// <summary>
 /// Declares the dependency injection registrations made by <see cref="DependencyInjectionExtensions.AddS3"/>,

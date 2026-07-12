@@ -25,7 +25,7 @@ This document describes the product ownership structure for the Benzene library.
 
 ### AWS Product Owner
 **Agent**: `aws-product-owner`
-**Focus**: AWS Lambda, SQS, SNS, EventBridge, X-Ray integrations
+**Focus**: AWS Lambda, SQS, SNS, S3, X-Ray integrations
 **Packages**: Benzene.Aws.*, Benzene.Clients.Aws, AWS TestHelpers
 
 **Key Responsibilities:**
@@ -208,7 +208,10 @@ Product owners are living documents that evolve with the product:
 
 ### AWS PO
 - **SnapStart**: Investigate Lambda SnapStart support
-- **EventBridge**: Improve EventBridge integration
+- **EventBridge**: No real EventBridge/CloudWatch Events support exists yet (the
+  former `Benzene.Aws.Lambda.EventBridge` package was renamed to
+  `Benzene.Aws.Lambda.S3` — it only ever implemented S3 event notifications). Building
+  genuine EventBridge support is unstarted future work.
 - **Observability**: Better X-Ray integration
 
 ### Azure PO

@@ -1,17 +1,26 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Last Updated:** 2026-07-12
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
 
-> **2026-07-12 update:** XML documentation is now complete across all 9 AWS production
-> packages (Benzene.Aws.Lambda.Core, .ApiGateway, .Sqs, .Sns, .EventBridge, .Kafka,
-> Benzene.Aws.Sqs, Benzene.Aws.XRay, Benzene.Clients.Aws). All packages build with zero
-> CS1591 warnings. This resolves the single highest-priority blocker (P0 #1, 60-80h)
-> identified below. See "XML Documentation" call-outs throughout this document — they are
-> now historical context, not open work. The EventBridge/S3 naming mismatch and other
-> non-documentation issues found during this pass remain open and are noted where relevant.
+> **2026-07-12 update (documentation):** XML documentation is now complete across all 9
+> AWS production packages (Benzene.Aws.Lambda.Core, .ApiGateway, .Sqs, .Sns, .S3
+> [formerly .EventBridge], .Kafka, Benzene.Aws.Sqs, Benzene.Aws.XRay, Benzene.Clients.Aws).
+> All packages build with zero CS1591 warnings. This resolves the single highest-priority
+> blocker (P0 #1, 60-80h) identified below. See "XML Documentation" call-outs throughout
+> this document — they are now historical context, not open work.
+>
+> **2026-07-12 update (EventBridge/S3 rename):** `Benzene.Aws.Lambda.EventBridge` has
+> been renamed to `Benzene.Aws.Lambda.S3` (assembly/namespace `Benzene.Aws.S3`),
+> resolving the second-highest-priority blocker (P0 #2, 25-30h). This was a pure rename
+> — the package's actual code (S3 event notification handling) never changed; only the
+> name now matches the content. Real EventBridge/CloudWatch Events support does not
+> exist and is tracked separately as unstarted future work (see package section 5
+> below). See "EventBridge Package" call-outs throughout this document — they now refer
+> to this resolved rename, not open work, unless explicitly describing the future
+> EventBridge package.
 
 ---
 
@@ -89,7 +98,7 @@ Keep all AWS packages at **0.9.x-preview** until after core 1.0 release, then:
 | **Benzene.Aws.Lambda.ApiGateway** | 0.0.1 | API Gateway (REST/HTTP) adapter | Medium | ⚠️ Needs work |
 | **Benzene.Aws.Lambda.Sqs** | 0.0.1 | SQS event source adapter | Medium | ⚠️ Needs work |
 | **Benzene.Aws.Lambda.Sns** | 0.0.1 | SNS event source adapter | Medium | ⚠️ Needs work |
-| **Benzene.Aws.Lambda.EventBridge** | 0.0.1 | EventBridge/CloudWatch Events adapter | Low | ❌ Not ready |
+| **Benzene.Aws.Lambda.S3** (was `.EventBridge`) | 0.0.1 | S3 event notification adapter | Medium | ⚠️ Needs work |
 | **Benzene.Aws.Lambda.Kafka** | 0.0.1 | MSK/Kafka event source adapter | Low | ❌ Not ready |
 | **Benzene.Aws.Sqs** | 0.0.1 | SQS client for publishing | Medium | ⚠️ Needs work |
 | **Benzene.Aws.XRay** | 0.0.1 | AWS X-Ray distributed tracing | Low | ❌ Not ready |
@@ -321,36 +330,41 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 
 ---
 
-### 5. Benzene.Aws.Lambda.EventBridge 🔧 Needs Work
+### 5. Benzene.Aws.Lambda.S3 ✅ Renamed (was Benzene.Aws.Lambda.EventBridge)
 
-**Location:** `src/Benzene.Aws.Lambda.EventBridge/`
-**Current State:** Low maturity, **BROKEN DEPENDENCY**
+**Location:** `src/Benzene.Aws.Lambda.S3/`
+**Current State:** Medium maturity, naming mismatch resolved 2026-07-12
+
+> **2026-07-12 update:** This package was renamed from `Benzene.Aws.Lambda.EventBridge`
+> (`AssemblyName`/`RootNamespace` `Benzene.Aws.EventBridge`) to
+> `Benzene.Aws.Lambda.S3` (`Benzene.Aws.S3`), resolving the naming-mismatch blocker
+> below. This was a pure rename — no functional changes. All classes (`S3Application`,
+> `S3LambdaHandler`, `S3RecordContext`, `S3Registrations`) were already correctly named
+> for what they do (S3 event notification handling); only the package/assembly/
+> namespace and surrounding docs were wrong. `Amazon.Lambda.S3Events` is the correct
+> dependency for this package's actual functionality — it was never "wrong," it just
+> didn't match the old package name.
+>
+> Real EventBridge/CloudWatch Events support **does not exist** anywhere in Benzene.
+> Building it is now tracked as a distinct, unstarted future package (working name
+> `Benzene.Aws.Lambda.EventBridge`, to be created from scratch with
+> `Amazon.Lambda.CloudWatchEvents`) — see the "Post-1.0 Features" / medium-term roadmap
+> sections for the EventBridge-specific line items originally listed here, which now
+> describe that future work rather than this package.
 
 **Public API Surface:**
-- Files named `S3Application`, `S3LambdaHandler`, `S3RecordContext`, `S3Registrations`
-- ⚠️ **NAMING MISMATCH**: Files are for S3 but package is for EventBridge
-
-**Critical Issues:**
-1. ❌ **WRONG DEPENDENCY**: References `Amazon.Lambda.S3Events` instead of CloudWatchEvents
-2. ❌ **NAMING CONFUSION**: All classes named S3* but package is EventBridge
-3. ❌ Package appears to be misnamed or contains wrong code
-4. ❌ No XML documentation
-5. ❌ AssemblyName mismatch: `Benzene.Aws.EventBridge` (no "Lambda" in name)
+- `S3Application`, `S3LambdaHandler`, `S3RecordContext`, `S3Registrations` — names now
+  match the package name and match what they've always done
 
 **1.0 Requirements:**
-- [ ] **CRITICAL:** Fix package naming OR replace with correct EventBridge code
-- [ ] Replace Amazon.Lambda.S3Events with Amazon.Lambda.CloudWatchEvents
-- [ ] Rename all S3* classes to EventBridge* if package is for EventBridge
-- [ ] OR: Create separate Benzene.Aws.Lambda.S3 package
-- [ ] Add comprehensive XML documentation
-- [ ] Document EventBridge event structure
-- [ ] Document detail-type routing patterns
-- [ ] Add EventBridge rule examples
-- [ ] Document scheduled event handling
-- [ ] Add cross-account event handling
-- [ ] Document event replay scenarios
+- [x] Fix package naming (renamed to `Benzene.Aws.Lambda.S3`)
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide
+      documentation pass)
+- [ ] Document S3 event notification structure (object created/removed/restored, etc.)
+- [ ] Add example: image processing pipeline triggered by S3 uploads
 
-**Estimated Effort:** 25-30 hours (includes fixing architectural confusion)
+**Estimated Effort:** 2-3 hours remaining (narrative documentation only; the
+naming/dependency work is done)
 
 ---
 
@@ -532,10 +546,13 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
      for this pass and remain open as narrative documentation work (see Documentation
      Requirements section below)
 
-2. **Fix Broken EventBridge Package** (25-30 hours) - CRITICAL
-   - Resolve S3 vs. EventBridge naming confusion
-   - Fix dependencies
-   - Implement correct EventBridge functionality
+2. ~~**Fix Broken EventBridge Package** (25-30 hours) - CRITICAL~~ ✅ NAMING RESOLVED 2026-07-12
+   - ~~Resolve S3 vs. EventBridge naming confusion~~ ✅ Renamed `Benzene.Aws.Lambda.EventBridge`
+     → `Benzene.Aws.Lambda.S3`; dependency (`Amazon.Lambda.S3Events`) was already correct
+     for the package's actual S3 functionality
+   - Building genuine EventBridge/CloudWatch Events support remains unstarted and is now
+     tracked as separate, distinct future work (a new package, not a fix to this one) —
+     see medium-term roadmap
 
 3. **Test Coverage** (40-60 hours) - CRITICAL
    - Unit tests for all packages (target 80%+ coverage)
@@ -562,7 +579,8 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
    - Add configuration options
    - Remove constructor virtual calls
 
-**Total Estimated Effort for 1.0:** 118-182 hours remaining (60-80h XML documentation now complete)
+**Total Estimated Effort for 1.0:** 93-152 hours remaining (60-80h XML documentation +
+25-30h EventBridge/S3 naming fix now complete)
 
 ### Phased Approach
 
@@ -1427,7 +1445,7 @@ All AWS packages reference:
 ### Must Have for 1.0 (P0)
 
 1. ~~**XML Documentation** - All packages (60-80h)~~ ✅ COMPLETE 2026-07-12
-2. **Fix EventBridge Package** - Critical bug (25-30h)
+2. ~~**Fix EventBridge Package** - Critical bug (25-30h)~~ ✅ RENAMED to Benzene.Aws.Lambda.S3 2026-07-12
 3. **Unit Tests** - 80%+ coverage (40-50h)
 4. **IAM Permissions Docs** - All event sources (15-20h)
 5. **Getting Started Guides** - All event sources (20-25h)
@@ -1437,7 +1455,8 @@ All AWS packages reference:
 9. **Code Quality Fixes** - Error handling, config (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (8-10h)
 
-**Total P0 Effort:** 166-227 hours remaining (60-80h XML documentation now complete)
+**Total P0 Effort:** 141-197 hours remaining (60-80h XML documentation + 25-30h
+EventBridge/S3 naming fix now complete)
 
 ### Should Have for 1.0 (P1)
 

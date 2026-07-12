@@ -1,43 +1,52 @@
-# Benzene.Aws.Lambda.EventBridge
+# Benzene.Aws.Lambda.S3
 
 ## What this package does
-AWS EventBridge Lambda integration for Benzene. Processes EventBridge events from Lambda triggers through Benzene's message handler pipeline. Handles CloudWatch Events, EventBridge rules, and custom events.
+AWS S3 event notification Lambda integration for Benzene. Processes S3 event
+notifications (object created, removed, etc.) from Lambda triggers through Benzene's
+middleware pipeline as a fire-and-forget, no-response transport.
+
+> **Note:** This package was previously named `Benzene.Aws.Lambda.EventBridge`
+> (assembly/namespace `Benzene.Aws.EventBridge`). It never contained EventBridge/
+> CloudWatch Events code — every type here has always handled S3 event notifications
+> via `Amazon.Lambda.S3Events`. It was renamed to `Benzene.Aws.Lambda.S3` to match what
+> it actually does. Real EventBridge/CloudWatch Events support does not exist yet and
+> would be a separate, future package.
 
 ## Key types/interfaces
 
 ### Application & Handler
-- `EventBridgeApplication` - EventBridge application for Lambda
-- `EventBridgeLambdaHandler` - Lambda function handler for EventBridge
+- `S3Application` - Maps each record in an `S3Event` batch to an `S3RecordContext` and
+  runs them through the middleware pipeline, tagging the transport as `"s3"`
+- `S3LambdaHandler` - Routes AWS Lambda invocations whose payload deserializes into an
+  `S3Event` (matched via `Records[0].EventSource == "aws:s3"`) to `S3Application`
 
 ### Context
-- `EventBridgeContext` - Context for EventBridge event processing
+- `S3RecordContext` - Context for a single record within an S3 event notification
+  batch; exposes both the full `S3Event` batch and the specific
+  `S3Event.S3EventNotificationRecord`
 
-### Message Handling
-- `EventBridgeMessageBodyGetter` - Extracts detail from EventBridge event
-- `EventBridgeMessageTopicGetter` - Extracts detail-type as topic
-- `EventBridgeMessageMessageHandlerResultSetter` - Sets result on context
-
-### Other
-- `EventBridgeRegistrations` - Registers EventBridge services
-- Extension methods for configuration
+### Registration
+- `S3Registrations` - Declares the `.AddS3()` registration for `RegistrationCheck`'s
+  missing-registration diagnostics
+- `DependencyInjectionExtensions.AddS3` - Registers the `ITransportInfo` for `"s3"`
+- `Extensions.UseS3` - Adds S3 handling to an `AwsEventStreamContext` pipeline
 
 ## When to use this package
-- When building Lambda functions triggered by EventBridge
-- For scheduled tasks via EventBridge rules
-- When you need event-driven workflows with EventBridge
-- For cross-account event processing
+- When building Lambda functions triggered by S3 event notifications (object created,
+  removed, restored, etc.)
+- For processing pipelines driven by S3 bucket activity (e.g. image processing,
+  file ingestion)
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions** - Core abstractions
 - **Benzene.Abstractions.Middleware** - Middleware abstractions
-- **Benzene.Core.MessageHandlers** - Message handler infrastructure
-- **Benzene.Aws.Lambda.Core** - AWS Lambda core
-- **Amazon.Lambda.CloudWatchEvents** - EventBridge event types
+- **Benzene.Core.Middleware** - Middleware pipeline implementation
+- **Benzene.Aws.Lambda.Core** - AWS Lambda core (`AwsEventStreamContext`,
+  `AwsLambdaMiddlewareRouter`)
+- **Amazon.Lambda.S3Events** - S3 event types
 
 ## Important conventions
-- Detail-type used as message topic
-- Event detail contains message payload
-- Source identifies event origin
-- Resources array available in context
-- Scheduled events have different structure
-- No response expected - fire-and-forget
+- No response expected — this is a fire-and-forget pattern, consistent with SNS/Kafka
+- `CanHandle` only matches invocations where the first record's `EventSource` is
+  `"aws:s3"`; otherwise the router defers to the next middleware
+- Transport tagged as `"s3"` for the duration of processing each batch

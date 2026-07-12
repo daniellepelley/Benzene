@@ -178,7 +178,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Aws.Lambda.Sns", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Aws.Lambda.ApiGateway", "src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj", "{8B035871-3620-4F9C-80D0-D3BDF883CDCB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Aws.Lambda.EventBridge", "src\Benzene.Aws.Lambda.EventBridge\Benzene.Aws.Lambda.EventBridge.csproj", "{F42AD604-288A-40BF-B7B1-8D47B68CB327}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Aws.Lambda.S3", "src\Benzene.Aws.Lambda.S3\Benzene.Aws.Lambda.S3.csproj", "{F42AD604-288A-40BF-B7B1-8D47B68CB327}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.OpenTelemetry", "src\Benzene.OpenTelemetry\Benzene.OpenTelemetry.csproj", "{EF9FC590-A7F5-4051-B096-0FCD478AEE9D}"
 EndProject

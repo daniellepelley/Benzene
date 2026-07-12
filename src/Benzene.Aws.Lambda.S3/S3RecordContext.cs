@@ -1,6 +1,6 @@
 using Amazon.Lambda.S3Events;
 
-namespace Benzene.Aws.EventBridge;
+namespace Benzene.Aws.S3;
 
 /// <summary>
 /// Provides the middleware pipeline context for a single record within an S3 event notification batch.

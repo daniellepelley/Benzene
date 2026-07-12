@@ -4,7 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.EventBridge;
+namespace Benzene.Aws.S3;
 
 /// <summary>
 /// Processes an S3 event notification batch by mapping each record to an <see cref="S3RecordContext"/>

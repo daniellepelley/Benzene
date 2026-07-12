@@ -66,7 +66,7 @@ Benzene provides specialized middleware for various AWS event sources:
 - **SQS**: `app.UseSqs(...)`
 - **SNS**: `app.UseSns(...)`
 - **Kafka**: `app.UseKafka(...)`
-- **EventBridge**: EventBridge-specific middleware in `Benzene.Aws.Lambda.EventBridge`
+- **S3**: S3 event notification middleware in `Benzene.Aws.Lambda.S3`
 
 Each of these allows you to define a specific sub-pipeline for that event source, while still being able to share common logic and message handlers via `UseHttpToBenzeneMessage`/`UseBenzeneMessage`.
 

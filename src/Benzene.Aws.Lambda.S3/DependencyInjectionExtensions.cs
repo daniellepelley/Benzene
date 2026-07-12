@@ -2,7 +2,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Info;
 
-namespace Benzene.Aws.EventBridge;
+namespace Benzene.Aws.S3;
 
 /// <summary>
 /// Provides extension methods for registering S3 event notification services.
