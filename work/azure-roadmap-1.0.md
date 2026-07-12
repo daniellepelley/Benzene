@@ -1,9 +1,41 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.0
-**Last Updated:** 2026-07-11
+**Document Version:** 1.1
+**Last Updated:** 2026-07-12
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
+
+> **2026-07-12 update:** Two of this document's core claims were verified against actual
+> code and found stale — corrected here rather than trusted at face value (the AWS
+> roadmap had the same problem before its own update pass):
+> - **XML Documentation** (P0 #2): now 100% across all 5 packages (Benzene.Azure.Core,
+>   .AspNet, .EventHub, .Kafka, Benzene.AspNet.Core), 0 CS1591 warnings. Full solution
+>   and the Azure example solution both build clean; full test suite still green
+>   (655/655).
+> - **Test Coverage** (P0 #3): the "ZERO test files, complete absence of tests" claim
+>   was wrong. Real coverage, measured via `dotnet test --collect:"XPlat Code
+>   Coverage"`: Benzene.Azure.Core 82.8%, Benzene.Azure.AspNet 81.0%,
+>   Benzene.Azure.EventHub 86.3%, Benzene.Azure.Kafka 90.7%. Only **Benzene.AspNet.Core**
+>   is genuinely 0% covered. This is a much smaller gap than the original 80-100h
+>   estimate assumed — re-scope before starting that work.
+> - **ASP.NET Core 2.1.x on .NET 10** (P0 #1) was also re-checked: the dependency really
+>   is that old (confirmed in `Benzene.Azure.AspNet.csproj` and
+>   `Benzene.AspNet.Core.csproj`), and there's a hard-coded Windows-only `HintPath`
+>   pointing at a `netcoreapp3.1` reference assembly in `Benzene.Azure.AspNet.csproj`
+>   that can't resolve on non-Windows machines — but despite both issues, **both
+>   packages currently build successfully with 0 errors**. The "CRITICAL — likely
+>   causes runtime failures" framing is overstated for the current state; treat this as
+>   real technical debt worth fixing, not a currently-broken build.
+>
+> Discovered along the way, not yet fixed: two file/class name mismatches
+> (`ApiGatewayHttpRequestAdapter.cs` in `Benzene.Azure.AspNet` actually contains
+> `AspNetHttpRequestAdapter`; `AspNetHeadersMapper.cs` in `Benzene.AspNet.Core` actually
+> contains `AspNetMessageHeadersGetter`) — consistent with similar mismatches found and
+> left as-is during the AWS documentation pass, not fixed here either since this was a
+> docs-only pass. `AspNetResponseAdapter.cs` (Benzene.AspNet.Core) also has a
+> non-obvious default: if `SetStatusCode` is never called, the response defaults to
+> `404` rather than `200` — now called out explicitly in its XML doc comment since it's
+> easy to miss.
 
 ---
 
@@ -16,9 +48,9 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - **Version:** All at 0.0.1 (pre-release)
 - **Target Framework:** .NET 10
 - **Source Files:** ~117 Azure-related source files (91 Azure.*, 26 AspNet.*)
-- **Test Coverage:** ZERO test files found for Azure packages
-- **Documentation:** 0% XML documentation, basic CLAUDE.md files exist, one ASP.NET Core doc
-- **Maturity:** Functional but LESS mature than AWS packages - not production-ready for 1.0
+- **Test Coverage:** ✅ mostly good — Azure.Core 82.8%, Azure.AspNet 81.0%, Azure.EventHub 86.3%, Azure.Kafka 90.7% (measured 2026-07-12); only Benzene.AspNet.Core is genuinely 0%
+- **Documentation:** ✅ 100% XML documentation across all 5 packages (completed 2026-07-12), basic CLAUDE.md files exist (some stale — see package sections), one ASP.NET Core doc
+- **Maturity:** Functional; test/doc gap with AWS is much smaller than originally assessed, but the old ASP.NET Core 2.1.x dependency remains real technical debt
 
 ### Key Findings
 ✅ **Strengths:**
@@ -28,10 +60,14 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - Working example demonstrates Azure Functions usage
 - No TODO/FIXME/HACK comments found in codebase
 - Simpler than AWS (fewer packages, cleaner scope)
+- ✅ 100% XML documentation, 0 CS1591 warnings (completed 2026-07-12)
+- ✅ 4 of 5 packages already have solid test coverage (81-91%), contrary to this
+  document's original "zero tests" claim (measured 2026-07-12)
 
 ❌ **Critical Blockers for 1.0:**
-- **ZERO XML documentation** on any public API
-- **ZERO test coverage** - no test files found at all
+- ~~ZERO XML documentation on any public API~~ ✅ RESOLVED 2026-07-12
+- **Benzene.AspNet.Core has 0% test coverage** (the other 4 packages are 81-91%,
+  corrected 2026-07-12 — this is a single-package gap now, not a "zero tests" problem)
 - Very old ASP.NET Core dependencies (2.1.x on .NET 10 project - major compatibility issue)
 - Inconsistent Azure SDK versions
 - Missing deployment templates (ARM/Bicep/Terraform)
@@ -1444,18 +1480,24 @@ All Azure packages reference:
 
 ### Must Have for 1.0 (P0)
 
-1. **Fix ASP.NET Core Dependencies** - CRITICAL (40-50h)
-2. **XML Documentation** - All packages (50-70h)
-3. **Unit Tests** - 80%+ coverage (80-100h)
+1. **Fix ASP.NET Core Dependencies** - CRITICAL, but confirmed not currently breaking
+   the build (see 2026-07-12 update above) (40-50h)
+2. ~~**XML Documentation** - All packages (50-70h)~~ ✅ COMPLETE 2026-07-12
+3. **Unit Tests** - 80%+ coverage — RE-SCOPED 2026-07-12: only `Benzene.AspNet.Core`
+   needs this; the other 4 packages already measure 81-91% (was 80-100h for "all
+   packages," now a single-package gap, estimate ~15-20h)
 4. **Move Test Code** - TestHelpers separation (5-8h)
 5. **Getting Started Guides** - All adapters (25-30h)
 6. **ARM/Bicep Templates** - Deployment examples (20-25h)
 7. **Integration Tests** - Azurite, Functions test host (30-40h)
-8. **Code Quality Fixes** - Remove commented code, fix naming (20-30h)
+8. **Code Quality Fixes** - Remove commented code, fix naming, the two file/class
+   mismatches found 2026-07-12 (20-30h)
 9. **Application Insights Integration** - Middleware (15-20h)
 10. **Migration Guide** - 0.x to 1.0 (10-12h)
 
-**Total P0 Effort:** 295-435 hours
+**Total P0 Effort:** 190-275 hours remaining (60-70h XML documentation now complete;
+Unit Tests re-scoped down from 80-100h to ~15-20h now that 4 of 5 packages are
+confirmed already well-covered)
 
 ### Should Have for 1.0 (P1)
 
@@ -1561,23 +1603,35 @@ Per `work/1.0.0-release-status.md`, core packages need:
 
 **AWS Readiness:** ~30% toward 1.0
 
-**Azure Packages Current Status:**
-1. ❌ 0% XML documentation
+**Azure Packages Current Status (updated 2026-07-12 against actual code, not assumed):**
+1. ✅ 100% XML documentation (completed 2026-07-12)
 2. ⚠️ Test helpers separated BUT TestHttpRequest still in production
-3. ❌ CRITICAL dependency bugs (ASP.NET Core 2.1 on .NET 10)
+3. ⚠️ Old ASP.NET Core 2.1.x dependencies confirmed real, but build succeeds (not
+   currently broken — see 2026-07-12 update above)
 4. ✅ Versioning policy applies
-5. ❌ ZERO test coverage (no test files at all)
-6. ❌ Minimal documentation (1 doc file)
+5. ✅ 4 of 5 packages well-covered (81-91%); only Benzene.AspNet.Core is 0%
+   (corrected 2026-07-12 — the original "zero test files" claim was wrong)
+6. ❌ Minimal narrative documentation (1 doc file; getting-started guides, ARM/Bicep
+   templates, etc. still needed)
 7. ⚠️ Example exists but no deployment templates
 
-**Azure Readiness:** ~15-20% toward 1.0 (LESS ready than AWS)
+**Azure Readiness:** ~55% toward 1.0 (up from ~15-20%; still behind AWS's ~93%, but the
+gap was previously overstated)
 
 **Gap Analysis:**
-Azure packages are significantly behind AWS packages:
-- AWS has 4 test classes; Azure has 0
-- AWS has correct dependencies; Azure has critical dependency issues
-- AWS has 8 packages at medium maturity; Azure has 5 at low maturity
-- Primary gaps: Dependencies (CRITICAL), Testing (CRITICAL), Documentation
+Azure packages are behind AWS packages, but less dramatically than this document
+originally claimed:
+- AWS is at 90%+ coverage across all 9 packages; Azure is at 81-91% for 4 of 5, with
+  one real gap (Benzene.AspNet.Core)
+- AWS has already fixed its dependency inconsistencies; Azure's ASP.NET Core 2.1.x
+  issue remains open (real debt, but not a broken build)
+- AWS has 9 packages at high maturity; Azure has 5, now with complete XML
+  documentation but still lacking narrative docs, deployment templates, and
+  integration tests
+- Primary remaining gaps: ASP.NET Core dependency modernization, narrative
+  documentation (getting-started, ARM/Bicep), integration tests, the
+  `Benzene.AspNet.Core` test gap, code quality (naming, dead code, the file/class
+  mismatches found 2026-07-12)
 
 ---
 

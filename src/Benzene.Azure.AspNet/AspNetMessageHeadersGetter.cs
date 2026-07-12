@@ -1,7 +1,12 @@
-﻿using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Abstractions.Messages.Mappers;
 
 namespace Benzene.Azure.AspNet;
 
+/// <summary>
+/// Extracts message headers from the HTTP request, mapping a fixed set of well-known headers
+/// (<c>x-user-id</c>, <c>x-correlation-id</c>) to shorter field names while passing all other headers
+/// through unchanged.
+/// </summary>
 public class AspNetMessageHeadersGetter : IMessageHeadersGetter<AspNetContext>
 {
     private readonly IDictionary<string, string> _headerMapping = new Dictionary<string, string>
@@ -10,6 +15,11 @@ public class AspNetMessageHeadersGetter : IMessageHeadersGetter<AspNetContext>
         {"x-correlation-id", "correlationId" },
     };
 
+    /// <summary>
+    /// Gets the request's headers, with well-known headers mapped to shorter field names.
+    /// </summary>
+    /// <param name="context">The HTTP context to extract headers from.</param>
+    /// <returns>A dictionary of (lower-cased) header/field names to (lower-cased) values.</returns>
     public IDictionary<string, string> GetHeaders(AspNetContext context)
     {
         return context.HttpRequest.Headers

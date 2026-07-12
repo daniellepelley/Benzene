@@ -16,8 +16,21 @@ using Benzene.Http;
 
 namespace Benzene.AspNet.Core;
 
+/// <summary>
+/// Provides extension methods for registering the services required to process HTTP requests through
+/// Benzene's message handler pipeline in ASP.NET Core.
+/// </summary>
 public static class DependencyInjectionExtensions
 {
+    /// <summary>
+    /// Registers the services required to route HTTP requests to message handlers.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <returns>The service container, for method chaining.</returns>
+    /// <remarks>
+    /// Called automatically by <see cref="BenzeneExtensions.UseAspNet"/>; you don't normally need to
+    /// call this directly.
+    /// </remarks>
     public static IBenzeneServiceContainer AddAspNetMessageHandlers(this IBenzeneServiceContainer services)
     {
         services.AddScoped<ISerializer, JsonSerializer>();
@@ -36,7 +49,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
-        
+
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("asp"));
         services.AddHttpMessageHandlers();
 

@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Benzene.AspNet.Core</AssemblyName>
     <RootNamespace>Benzene.AspNet.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.1.1" />

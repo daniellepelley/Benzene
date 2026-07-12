@@ -7,6 +7,7 @@
     <PackageVersion>0.0.1</PackageVersion>
     <AssemblyName>Benzene.Azure.AspNet</AssemblyName>
     <RootNamespace>Benzene.Azure.AspNet</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
