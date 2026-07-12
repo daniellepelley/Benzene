@@ -184,6 +184,10 @@ exception.
 
 ## 5. Related Documents
 
+- [`benzene-clients-vision.md`](benzene-clients-vision.md) — narrows in on the outbound
+  "pipes out" side (`Benzene.Clients` and friends), which this document's §2.3
+  ("one middleware pipeline") implies but which has not, in practice, been designed
+  with the same discipline as the inbound side
 - [`README.md`](../README.md) — current-state overview of the framework and quickstart
 - [`docs/message-handlers.md`](../docs/message-handlers.md) — the handler pattern in
   practice
