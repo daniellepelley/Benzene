@@ -14,11 +14,11 @@ Core abstraction layer for Benzene. Defines fundamental interfaces for dependenc
 - `BenzeneServiceContainerExtensions` - Extension methods for fluent registration
 
 ### Logging
-- `IBenzeneLogger` - Logger abstraction (provider-agnostic)
-- `IBenzeneLogContext` - Log context with structured data (IDisposable)
-- `IBenzeneLogAppender` - Appends structured data to log context
-- `ILogContextBuilder<T>` - Fluent builder for creating log contexts
-- `BenzeneLogLevel` - Enum: Trace, Debug, Information, Warning, Error, Critical
+Benzene logs through `Microsoft.Extensions.Logging` (`ILogger<T>`/`ILoggerFactory` from
+Microsoft.Extensions.Logging.Abstractions, referenced by this package) — there is no
+Benzene-specific logger interface. What remains here is the scope-enrichment builder:
+- `ILogContextBuilder<T>` - Fluent builder producing log-scope state (fed to `ILogger.BeginScope`)
+- `LogContextBuilderExtensions` - `OnRequest`/`OnResponse` convenience overloads
 
 ### Serialization
 - `ISerializer` - Abstraction for serializing/deserializing objects
@@ -49,7 +49,7 @@ None - this is the root abstraction layer with no Benzene dependencies.
 
 ## Important conventions
 - All interfaces use the `I` prefix
-- Logging interfaces support structured logging via `IBenzeneLogContext`
+- Structured logging uses `ILogger.BeginScope`; `ILogContextBuilder<T>` builds the scope state
 - DI abstractions follow standard container patterns (Register, Resolve)
 - Extension methods provide fluent registration API
 - `Void` class (not struct) represents absence of payload - use for handlers with no response

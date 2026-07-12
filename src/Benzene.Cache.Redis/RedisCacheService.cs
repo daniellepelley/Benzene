@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Benzene.Cache.Core;
 using Benzene.Diagnostics.Timers;
 using StackExchange.Redis;
@@ -7,14 +7,14 @@ namespace Benzene.Cache.Redis;
 
 public abstract class RedisCacheService : ICacheService
 {
-    public IBenzeneLogger Logger { get; }
+    public ILogger Logger { get; }
     public IProcessTimerFactory ProcessTimerFactory { get; }
 
     private readonly Lazy<Task<IConnectionMultiplexer>> _redisConnection;
 
     public virtual TimeSpan DefaultCacheLifespan => TimeSpan.FromMinutes(5);
 
-    protected RedisCacheService(IBenzeneLogger logger, IProcessTimerFactory processTimerFactory, IRedisConnectionFactory connectionFactory)
+    protected RedisCacheService(ILogger<RedisCacheService> logger, IProcessTimerFactory processTimerFactory, IRedisConnectionFactory connectionFactory)
     {
         Logger = logger;
         ProcessTimerFactory = processTimerFactory;

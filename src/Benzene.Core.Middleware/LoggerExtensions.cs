@@ -1,7 +1,8 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Core.Middleware;
 
@@ -10,6 +11,8 @@ namespace Benzene.Core.Middleware;
 /// </summary>
 public static class LoggerExtensions
 {
+    private const string LoggerCategory = "Benzene";
+
     /// <summary>
     /// Adds middleware that logs the request, response, and processing time for each pipeline execution.
     /// </summary>
@@ -18,8 +21,9 @@ public static class LoggerExtensions
     /// <param name="action">The action that configures the log context builder.</param>
     /// <returns>The pipeline builder for method chaining.</returns>
     /// <remarks>
-    /// This middleware measures the processing time and logs structured information about the request
-    /// and response, including any properties configured via the log context builder.
+    /// This middleware measures the processing time and emits a single structured log line per execution.
+    /// The properties configured via the log context builder are attached as logger scopes, so they also
+    /// enrich every other log statement made within the pipeline execution.
     /// </remarks>
     public static IMiddlewarePipelineBuilder<TContext> UseLogResult<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, Action<ILogContextBuilder<TContext>> action)
@@ -30,27 +34,23 @@ public static class LoggerExtensions
         return app
             .Use("LogResult", resolver => async (context, next) =>
             {
-                var logContext = resolver.GetService<IBenzeneLogContext>();
-                var logger = resolver.GetService<IBenzeneLogger>();
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                using (builder.CreateForRequest(logContext, resolver, context))
+                var logger = resolver.GetService<ILoggerFactory>().CreateLogger(LoggerCategory);
+                var stopwatch = Stopwatch.StartNew();
+                using (logger.BeginScope(builder.BuildRequestScope(resolver, context)))
                 {
                     await next();
 
-                    using (builder.CreateForResponse(logContext, resolver, context))
+                    using (logger.BeginScope(builder.BuildResponseScope(resolver, context)))
+                    using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = stopwatch.ElapsedMilliseconds }))
                     {
-                        using (logContext.Create("processTime", $"{stopwatch.ElapsedMilliseconds}"))
-                        {
-                            logger.LogInformation("BenzeneResult");
-                        }
+                        logger.LogInformation("BenzeneResult");
                     }
                 }
             });
     }
 
     /// <summary>
-    /// Adds middleware that enriches the logging context for the duration of the request.
+    /// Adds middleware that enriches the logging scope for the duration of the request.
     /// </summary>
     /// <typeparam name="TContext">The context type that the middleware operates on.</typeparam>
     /// <param name="app">The pipeline builder to add logging context to.</param>
@@ -63,14 +63,14 @@ public static class LoggerExtensions
     public static IMiddlewarePipelineBuilder<TContext> UseLogContext<TContext>(
             this IMiddlewarePipelineBuilder<TContext> app, Action<ILogContextBuilder<TContext>> action)
     {
-        ILogContextBuilder<TContext>  builder = new LogContextBuilder<TContext>(app);
+        ILogContextBuilder<TContext> builder = new LogContextBuilder<TContext>(app);
         action(builder);
 
         return app
             .Use("LogContext", resolver => async (context, next) =>
             {
-                var logContext = resolver.GetService<IBenzeneLogContext>();
-                using (builder.CreateForRequest(logContext, resolver, context))
+                var logger = resolver.GetService<ILoggerFactory>().CreateLogger(LoggerCategory);
+                using (logger.BeginScope(builder.BuildRequestScope(resolver, context)))
                 {
                     await next();
                 }

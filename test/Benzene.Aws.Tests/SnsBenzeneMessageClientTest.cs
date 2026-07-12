@@ -1,13 +1,12 @@
 using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Aws.Tests.Fixtures;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sns;
 using Benzene.Core.Middleware;
 using Benzene.Results;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Benzene.Aws.Tests;
@@ -34,7 +33,7 @@ public class SnsBenzeneMessageClientTest : IClassFixture<SqsFixture>
         var createTopicResponse = await amazonSnsClient.CreateTopicAsync(new CreateTopicRequest("benzene-client-topic"));
 
         var client = new SnsBenzeneMessageClient(createTopicResponse.TopicArn, amazonSnsClient,
-            Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+            NullLogger<SnsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 

@@ -1,5 +1,5 @@
 using Amazon.Lambda;
-using Benzene.Abstractions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.Lambda;
 
@@ -9,7 +9,7 @@ namespace Benzene.Clients.Aws.Lambda;
 public class AwsLambdaBenzeneMessageClientFactory : IBenzeneMessageClientFactory
 {
     private readonly string _lambdaName;
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<AwsLambdaBenzeneMessageClient> _logger;
     private readonly IAmazonLambda _amazonLambda;
 
     /// <summary>
@@ -18,7 +18,7 @@ public class AwsLambdaBenzeneMessageClientFactory : IBenzeneMessageClientFactory
     /// <param name="lambdaName">The name of the Lambda function clients created by this factory will target.</param>
     /// <param name="amazonLambda">The Lambda client used by created clients.</param>
     /// <param name="logger">The logger used by created clients.</param>
-    public AwsLambdaBenzeneMessageClientFactory(string lambdaName, IAmazonLambda amazonLambda, IBenzeneLogger logger)
+    public AwsLambdaBenzeneMessageClientFactory(string lambdaName, IAmazonLambda amazonLambda, ILogger<AwsLambdaBenzeneMessageClient> logger)
     {
         _amazonLambda = amazonLambda;
         _logger = logger;

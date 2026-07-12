@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.StepFunctions;
 using Benzene.Results;
 using Benzene.Test.Examples;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -26,7 +26,7 @@ public class StepFunctionsClientTest
                 HttpStatusCode = HttpStatusCode.OK
             });
 
-        var client = new StepFunctionsClientFactory(Defaults.StateMachineArn, mockAmazonStepFunctions.Object, Mock.Of<IBenzeneLogger>()).Create();
+        var client = new StepFunctionsClientFactory(Defaults.StateMachineArn, mockAmazonStepFunctions.Object, NullLogger<StepFunctionsClient>.Instance).Create();
         var result = await client.StartExecutionAsync<ExampleRequestPayload, ExampleResponsePayload>(new ExampleRequestPayload { Id = 42, Name = "hi" });
 
         mockAmazonStepFunctions.Verify(x => x.StartExecutionAsync(
@@ -45,7 +45,7 @@ public class StepFunctionsClientTest
         mockAmazonStepFunctions.Setup(x => x.StartExecutionAsync(It.IsAny<StartExecutionRequest>(), It.IsAny<CancellationToken>()))
             .Throws(new Exception());
 
-        var client = new StepFunctionsClientFactory(Defaults.StateMachineArn, mockAmazonStepFunctions.Object, Mock.Of<IBenzeneLogger>()).Create();
+        var client = new StepFunctionsClientFactory(Defaults.StateMachineArn, mockAmazonStepFunctions.Object, NullLogger<StepFunctionsClient>.Instance).Create();
         var result = await client.StartExecutionAsync<ExampleRequestPayload, ExampleResponsePayload>(new ExampleRequestPayload { Id = 42, Name = "hi" });
 
         mockAmazonStepFunctions.Verify(x => x.StartExecutionAsync(

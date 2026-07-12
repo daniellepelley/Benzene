@@ -1,14 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Logging;
 
 namespace Benzene.Core.Logging;
 
 /// <summary>
-/// Builds log context configuration for request and response phases of processing.
+/// Builds log scope state for request and response phases of processing.
 /// </summary>
-/// <typeparam name="TContext">The type of context to build log context from.</typeparam>
+/// <typeparam name="TContext">The type of context to build log scopes from.</typeparam>
 public class LogContextBuilder<TContext> : ILogContextBuilder<TContext>
 {
     private readonly IContextDictionaryBuilder<TContext> _requestContextDictionaryBuilder = new ContextDictionaryBuilder<TContext>();
@@ -25,9 +26,9 @@ public class LogContextBuilder<TContext> : ILogContextBuilder<TContext>
     }
 
     /// <summary>
-    /// Configures log context to be applied during the request phase.
+    /// Configures log scope properties to be applied during the request phase.
     /// </summary>
-    /// <param name="dictionaryAction">The function to extract log context from the request.</param>
+    /// <param name="dictionaryAction">The function to extract log properties from the request.</param>
     /// <returns>The builder for method chaining.</returns>
     public ILogContextBuilder<TContext> OnRequest(Func<IServiceResolver, TContext, IDictionary<string, string>> dictionaryAction)
     {
@@ -36,9 +37,9 @@ public class LogContextBuilder<TContext> : ILogContextBuilder<TContext>
     }
 
     /// <summary>
-    /// Configures log context to be applied during the response phase.
+    /// Configures log scope properties to be applied during the response phase.
     /// </summary>
-    /// <param name="dictionaryAction">The function to extract log context from the response.</param>
+    /// <param name="dictionaryAction">The function to extract log properties from the response.</param>
     /// <returns>The builder for method chaining.</returns>
     public ILogContextBuilder<TContext> OnResponse(Func<IServiceResolver, TContext, IDictionary<string, string>> dictionaryAction)
     {
@@ -47,27 +48,25 @@ public class LogContextBuilder<TContext> : ILogContextBuilder<TContext>
     }
 
     /// <summary>
-    /// Creates a disposable log context scope for the request phase.
+    /// Builds the request-phase scope state from the configured request properties.
     /// </summary>
-    /// <param name="benzeneLogContext">The log context to create the scope in.</param>
     /// <param name="serviceResolver">The service resolver for dependency resolution.</param>
     /// <param name="context">The request context.</param>
-    /// <returns>A disposable scope that removes the log context when disposed.</returns>
-    public IDisposable CreateForRequest(IBenzeneLogContext benzeneLogContext, IServiceResolver serviceResolver, TContext context)
+    /// <returns>The scope state as a key/value dictionary.</returns>
+    public IReadOnlyDictionary<string, object> BuildRequestScope(IServiceResolver serviceResolver, TContext context)
     {
-        return benzeneLogContext.Create(_requestContextDictionaryBuilder.Build(serviceResolver, context));
+        return Build(_requestContextDictionaryBuilder, serviceResolver, context);
     }
 
     /// <summary>
-    /// Creates a disposable log context scope for the response phase.
+    /// Builds the response-phase scope state from the configured response properties.
     /// </summary>
-    /// <param name="benzeneLogContext">The log context to create the scope in.</param>
     /// <param name="serviceResolver">The service resolver for dependency resolution.</param>
     /// <param name="context">The response context.</param>
-    /// <returns>A disposable scope that removes the log context when disposed.</returns>
-    public IDisposable CreateForResponse(IBenzeneLogContext benzeneLogContext, IServiceResolver serviceResolver, TContext context)
+    /// <returns>The scope state as a key/value dictionary.</returns>
+    public IReadOnlyDictionary<string, object> BuildResponseScope(IServiceResolver serviceResolver, TContext context)
     {
-        return benzeneLogContext.Create(_responseContextDictionaryBuilder.Build(serviceResolver, context));
+        return Build(_responseContextDictionaryBuilder, serviceResolver, context);
     }
 
     /// <summary>
@@ -77,5 +76,12 @@ public class LogContextBuilder<TContext> : ILogContextBuilder<TContext>
     public void Register(Action<IBenzeneServiceContainer> action)
     {
         _registerDependency.Register(action);
+    }
+
+    private static IReadOnlyDictionary<string, object> Build(IContextDictionaryBuilder<TContext> builder,
+        IServiceResolver serviceResolver, TContext context)
+    {
+        return builder.Build(serviceResolver, context)
+            .ToDictionary(x => x.Key, x => (object)x.Value);
     }
 }

@@ -4,12 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Middleware;
 using Benzene.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -25,7 +25,7 @@ public class SqsBenzeneMessageClientTest
             .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SendMessageResponse { HttpStatusCode = HttpStatusCode.OK });
 
-        var client = new SqsBenzeneMessageClient("some-queue-url", mockSqsClient.Object, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SqsBenzeneMessageClient("some-queue-url", mockSqsClient.Object, NullLogger<SqsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 
@@ -40,7 +40,7 @@ public class SqsBenzeneMessageClientTest
             .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SendMessageResponse { HttpStatusCode = HttpStatusCode.BadRequest });
 
-        var client = new SqsBenzeneMessageClient("some-queue-url", mockSqsClient.Object, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SqsBenzeneMessageClient("some-queue-url", mockSqsClient.Object, NullLogger<SqsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 
@@ -55,7 +55,7 @@ public class SqsBenzeneMessageClientTest
             .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("boom"));
 
-        var client = new SqsBenzeneMessageClient("some-queue-url", mockSqsClient.Object, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SqsBenzeneMessageClient("some-queue-url", mockSqsClient.Object, NullLogger<SqsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 
@@ -74,7 +74,7 @@ public class SqsBenzeneMessageClientTest
             .UseSqsClient(mockSqsClient.Object)
             .Build();
 
-        var client = new SqsBenzeneMessageClient("some-queue-url", pipeline, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SqsBenzeneMessageClient("some-queue-url", pipeline, NullLogger<SqsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 

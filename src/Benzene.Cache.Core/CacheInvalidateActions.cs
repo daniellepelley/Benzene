@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.Diagnostics.Timers;
 
@@ -8,7 +8,7 @@ namespace Benzene.Cache.Core;
 
 public abstract class CacheInvalidateActions : ICacheInvalidateActions
 {
-    protected abstract IBenzeneLogger Logger { get; }
+    protected abstract ILogger Logger { get; }
     protected abstract IProcessTimerFactory ProcessTimerFactory { get; }
     protected abstract string KeyDescription { get; }
 

@@ -1,6 +1,6 @@
 using System;
 using Amazon.Lambda;
-using Benzene.Abstractions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.Lambda;
 
@@ -23,7 +23,7 @@ public static class AwsLambdaBenzeneMessageClientExtensions
         null)
     {
         var clientBuilder = new ClientBuilder(resolver =>
-            new AwsLambdaBenzeneMessageClient(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<IBenzeneLogger>()));
+            new AwsLambdaBenzeneMessageClient(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<ILogger<AwsLambdaBenzeneMessageClient>>()));
 
         if (buildClient != null)
         {

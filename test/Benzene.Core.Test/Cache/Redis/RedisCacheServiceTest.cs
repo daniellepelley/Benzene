@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Benzene.Abstractions.Logging;
 using Benzene.Cache.Core;
 using Benzene.Cache.Redis;
 using Benzene.Diagnostics.Timers;
@@ -9,6 +8,7 @@ using Benzene.Results;
 using Benzene.Test.Cache.Redis.Instance;
 using Benzene.Test.Cache.Redis.Mocks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using StackExchange.Redis;
 using Xunit;
@@ -24,7 +24,7 @@ public class RedisCacheServiceTest
     public async Task HealthCheckTest()
     {
         var services = new ServiceCollection();
-        services.AddScoped(_ => Mock.Of<IBenzeneLogger>());
+        services.AddLogging();
         services.AddScoped<IProcessTimerFactory>(_ => new DebugTimerFactory());
         services.AddScoped<IRedisConnectionFactory>(_ => new MockConnectionFactory());
         services.AddScoped<TestRedisCacheService>();
@@ -48,7 +48,7 @@ public class RedisCacheServiceTest
         connectionFactory.DataBaseMock.Setup(x => x.PingAsync(StackExchange.Redis.CommandFlags.None)).ThrowsAsync(new System.Exception(TEST_ERROR_MESSAGE));
 
         var services = new ServiceCollection();
-        services.AddScoped(_ => Mock.Of<IBenzeneLogger>());
+        services.AddLogging();
         services.AddScoped<IProcessTimerFactory>(_ => new DebugTimerFactory());
         services.AddScoped<IRedisConnectionFactory>(_ => connectionFactory);
         services.AddScoped<TestRedisCacheService>();
@@ -75,7 +75,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.StringGetAsync(It.IsAny<RedisKey>(), CommandFlags.None)).ReturnsAsync(new RedisValue(cacheValue));
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.LazyLoadAsync(() => Task.FromResult(BenzeneResult.ServiceUnavailable<TestDataType>()));
@@ -93,7 +93,7 @@ public class RedisCacheServiceTest
         connectionFactory.DataBaseMock.Setup(x => x.StringGetAsync(It.IsAny<RedisKey>(), CommandFlags.None)).ReturnsAsync(RedisValue.Null);
         connectionFactory.DataBaseMock.Setup(x => x.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan>(), It.IsAny<bool>(), When.Always, CommandFlags.None)).ReturnsAsync(true).Verifiable();
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.LazyLoadAsync(() => Task.FromResult(BenzeneResult.Ok(testValue)));
@@ -111,7 +111,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan>(), It.IsAny<bool>(), When.Always, CommandFlags.None)).ReturnsAsync(true).Verifiable();
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Created(testValue)));
@@ -129,7 +129,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), CommandFlags.None)).ReturnsAsync(true).Verifiable();
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Deleted(testValue)));
@@ -143,7 +143,7 @@ public class RedisCacheServiceTest
     public async Task CacheEntryWriteThroughSimpleNoWriteTest()
     {
         var connectionFactory = new MockConnectionFactory();
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)));
@@ -160,7 +160,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan>(), It.IsAny<bool>(), When.Always, CommandFlags.None)).ReturnsAsync(true).Verifiable();
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Updated(new { TestValue = testValue })), x => x.Payload.TestValue);
@@ -178,7 +178,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), CommandFlags.None)).ReturnsAsync(true).Verifiable();
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.Deleted(new { TestValue = testValue })), x => x.Payload.TestValue);
@@ -192,7 +192,7 @@ public class RedisCacheServiceTest
     public async Task CacheEntryWriteThroughConvertNoWriteTest()
     {
         var connectionFactory = new MockConnectionFactory();
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughAsync(() => Task.FromResult(BenzeneResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)), x => x.Payload);
@@ -207,7 +207,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), CommandFlags.None)).ReturnsAsync(true).Verifiable();
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.Created("Test")));
@@ -221,7 +221,7 @@ public class RedisCacheServiceTest
     public async Task CacheEntryWriteThroughInvlidateNoActionTest()
     {
         var connectionFactory = new MockConnectionFactory();
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var entry = service.GetTestCacheEntry(42);
 
         var result = await entry.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.BadRequest<TestDataType>(TEST_ERROR_MESSAGE)));
@@ -237,7 +237,7 @@ public class RedisCacheServiceTest
         connectionFactory.DataBaseMock.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), CommandFlags.None)).ReturnsAsync(true);
         connectionFactory.DataBaseMock.Setup(x => x.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan>(), It.IsAny<bool>(), When.Always, CommandFlags.None)).ReturnsAsync(true);
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var actions = service.GetTestMultipleEntries(23, 45);
 
         Assert.True(await actions.SetValueAsync(new TestDataType { Id = 42, Name = "Test" }));
@@ -258,7 +258,7 @@ public class RedisCacheServiceTest
         connectionFactory.DataBaseMock.Setup(x => x.ExecuteAsync("KEYS", It.IsAny<string>())).ReturnsAsync(keys);
         connectionFactory.DataBaseMock.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey[]>(), CommandFlags.None)).ReturnsAsync(2);
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var actions = service.GetTestPrefixActions();
 
         var result = await actions.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.Deleted()));
@@ -272,7 +272,7 @@ public class RedisCacheServiceTest
         var connectionFactory = new MockConnectionFactory();
         connectionFactory.DataBaseMock.Setup(x => x.ExecuteAsync("KEYS", It.IsAny<string>())).ThrowsAsync(new System.Exception(TEST_ERROR_MESSAGE));
 
-        var service = new TestRedisCacheService(Mock.Of<IBenzeneLogger>(), new DebugTimerFactory(), connectionFactory);
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
         var actions = service.GetTestWildcardActions();
 
         Assert.False(await actions.InvalidateAsync());

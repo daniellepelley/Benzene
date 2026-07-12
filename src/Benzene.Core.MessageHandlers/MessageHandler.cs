@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Results;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Core.MessageHandlers;
@@ -10,10 +10,10 @@ namespace Benzene.Core.MessageHandlers;
 public class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequest : class
 {
     private readonly IMessageHandler<TRequest, TResponse> _inner;
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger _logger;
     private IDefaultStatuses _defaultStatuses;
 
-    public MessageHandler(IMessageHandler<TRequest, TResponse> inner, IBenzeneLogger logger, IDefaultStatuses defaultStatuses)
+    public MessageHandler(IMessageHandler<TRequest, TResponse> inner, ILogger logger, IDefaultStatuses defaultStatuses)
     {
         _defaultStatuses = defaultStatuses;
         _logger = logger;

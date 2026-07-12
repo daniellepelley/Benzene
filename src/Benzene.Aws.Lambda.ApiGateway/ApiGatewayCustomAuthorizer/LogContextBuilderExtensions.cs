@@ -1,5 +1,4 @@
 using Benzene.Abstractions.Logging;
-using Benzene.Core.Logging;
 
 namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 
@@ -13,7 +12,7 @@ public static class LogContextBuilderExtensions
     /// </summary>
     /// <param name="source">The log context builder to extend.</param>
     /// <returns>The log context builder for method chaining.</returns>
-    public static ILogContextBuilder<ApiGatewayCustomAuthorizerContext> WithHttp(this LogContextBuilder<ApiGatewayCustomAuthorizerContext> source)
+    public static ILogContextBuilder<ApiGatewayCustomAuthorizerContext> WithHttp(this ILogContextBuilder<ApiGatewayCustomAuthorizerContext> source)
     {
         return source
             .OnRequest("path", (_, context) => context.ApiGatewayCustomAuthorizerRequest.Path)

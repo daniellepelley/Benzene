@@ -1,17 +1,17 @@
 ﻿using System.Diagnostics;
-using Benzene.Abstractions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Diagnostics.Timers;
 
 public sealed class LoggingProcessTimer : IProcessTimer
 {
-    private readonly IBenzeneLogger _logger;
-    private readonly BenzeneLogLevel _logLevel = BenzeneLogLevel.Trace;
+    private readonly ILogger _logger;
+    private readonly LogLevel _logLevel = LogLevel.Trace;
     private readonly Stopwatch _stopwatch;
     private readonly string _timerName;
     private readonly Dictionary<string, string> _tags = new Dictionary<string, string>();
 
-    public LoggingProcessTimer(string timerName, IBenzeneLogger logger)
+    public LoggingProcessTimer(string timerName, ILogger logger)
     {
         _logger = logger;
         _stopwatch = new Stopwatch();

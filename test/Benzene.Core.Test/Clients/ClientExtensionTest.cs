@@ -7,7 +7,6 @@ using Amazon.Lambda.Model;
 using Amazon.SQS;
 using Benzene.Abstractions;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients;
 using Benzene.Clients.Aws;
 using Benzene.Clients.Aws.Lambda;
@@ -49,7 +48,7 @@ public class ClientExtensionTest
         _services.AddScoped(_ => _mockAmazonLambda.Object);
         _services.AddScoped(_ => mockAmazonSqs.Object);
         _services.AddScoped(_ => mockCorrelationId.Object);
-        _services.AddScoped(_ => Mock.Of<IBenzeneLogger>());
+        _services.AddLogging();
 
         var benzene = new Microsoft.Dependencies.MicrosoftBenzeneServiceContainer(_services);
 

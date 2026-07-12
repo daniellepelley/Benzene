@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.HealthChecks.Core;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.Lambda;
 
@@ -22,7 +22,7 @@ public class AwsLambdaHealthCheck : IHealthCheck
     /// <param name="lambdaName">The name of the Lambda function to ping.</param>
     /// <param name="amazonLambda">The Lambda client used to invoke the function.</param>
     /// <param name="logger">The logger used to record invocation outcomes and failures.</param>
-    public AwsLambdaHealthCheck(string lambdaName, IAmazonLambda amazonLambda, IBenzeneLogger logger)
+    public AwsLambdaHealthCheck(string lambdaName, IAmazonLambda amazonLambda, ILogger<AwsLambdaHealthCheck> logger)
     {
         _awsLambdaBenzeneMessageClient = new AwsLambdaBenzeneMessageClient(lambdaName, amazonLambda, logger);
     }

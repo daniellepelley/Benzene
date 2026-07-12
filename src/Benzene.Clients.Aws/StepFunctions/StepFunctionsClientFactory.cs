@@ -1,5 +1,5 @@
 using Amazon.StepFunctions;
-using Benzene.Abstractions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.StepFunctions;
 
@@ -20,7 +20,7 @@ public interface IStepFunctionsClientFactory
 /// </summary>
 public class StepFunctionsClientFactory : IStepFunctionsClientFactory
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<StepFunctionsClient> _logger;
     private readonly string _stateMachineArn;
     private readonly IAmazonStepFunctions _amazonStepFunctionsClient;
 
@@ -30,7 +30,7 @@ public class StepFunctionsClientFactory : IStepFunctionsClientFactory
     /// <param name="stateMachineArn">The ARN of the state machine clients created by this factory will target.</param>
     /// <param name="amazonStepFunctionsClient">The Step Functions client used by created clients.</param>
     /// <param name="logger">The logger used by created clients.</param>
-    public StepFunctionsClientFactory(string stateMachineArn, IAmazonStepFunctions amazonStepFunctionsClient, IBenzeneLogger logger)
+    public StepFunctionsClientFactory(string stateMachineArn, IAmazonStepFunctions amazonStepFunctionsClient, ILogger<StepFunctionsClient> logger)
     {
         _amazonStepFunctionsClient = amazonStepFunctionsClient;
         _stateMachineArn = stateMachineArn;

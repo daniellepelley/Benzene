@@ -1,16 +1,16 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.Cache.Core;
 
 public class CacheHealthCheck<TCacheService> : IHealthCheck where TCacheService : ICacheService
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<CacheHealthCheck<TCacheService>> _logger;
     private readonly TCacheService _cacheService;
 
     public string Type => "Cache";
 
-    public CacheHealthCheck(TCacheService cacheService, IBenzeneLogger logger)
+    public CacheHealthCheck(TCacheService cacheService, ILogger<CacheHealthCheck<TCacheService>> logger)
     {
         _cacheService = cacheService;
         _logger = logger;

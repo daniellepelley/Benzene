@@ -8,6 +8,8 @@ using Benzene.Clients.Aws.Lambda;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -98,7 +100,7 @@ public class ExtensionsTest
 
         var mockResolver = new Mock<IServiceResolver>();
         mockResolver.Setup(x => x.GetService<IAmazonLambda>()).Returns(Mock.Of<IAmazonLambda>());
-        mockResolver.Setup(x => x.GetService<Abstractions.Logging.IBenzeneLogger>()).Returns(Mock.Of<Abstractions.Logging.IBenzeneLogger>());
+        mockResolver.Setup(x => x.GetService<ILogger<AwsLambdaHealthCheck>>()).Returns(NullLogger<AwsLambdaHealthCheck>.Instance);
 
         var healthCheck = factory(mockResolver.Object);
 

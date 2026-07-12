@@ -1,6 +1,6 @@
 using Amazon.SQS;
-using Benzene.Abstractions.Logging;
 using Benzene.Core.Middleware;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.Sqs;
 
@@ -9,7 +9,7 @@ namespace Benzene.Clients.Aws.Sqs;
 /// </summary>
 public class SqsBenzeneMessageClientFactory : IBenzeneMessageClientFactory
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<SqsBenzeneMessageClient> _logger;
     private readonly string _queueUrl;
     private readonly IAmazonSQS _amazonSqsClient;
 
@@ -19,7 +19,7 @@ public class SqsBenzeneMessageClientFactory : IBenzeneMessageClientFactory
     /// <param name="queueUrl">The URL of the queue clients created by this factory will target.</param>
     /// <param name="amazonSqsClient">The SQS client used by created clients.</param>
     /// <param name="logger">The logger used by created clients.</param>
-    public SqsBenzeneMessageClientFactory(string queueUrl, IAmazonSQS amazonSqsClient, IBenzeneLogger logger)
+    public SqsBenzeneMessageClientFactory(string queueUrl, IAmazonSQS amazonSqsClient, ILogger<SqsBenzeneMessageClient> logger)
     {
         _amazonSqsClient = amazonSqsClient;
         _queueUrl = queueUrl;

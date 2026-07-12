@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
-using Benzene.Abstractions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
@@ -84,7 +84,7 @@ public class SqsConsumer : IBenzeneWorker
             catch (Exception ex)
             {
                 using var loggingScope = _serviceResolverFactory.CreateScope();
-                loggingScope.GetService<IBenzeneLogger>()
+                loggingScope.GetService<ILogger<SqsConsumer>>()
                     .LogError(ex, "SQS poll iteration for queue {queueUrl} failed", _sqsConsumerConfig.QueueUrl);
             }
         }

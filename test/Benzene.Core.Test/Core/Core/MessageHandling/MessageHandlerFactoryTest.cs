@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -30,7 +30,7 @@ public class MessageHandlerFactoryTest
         var messageHandlerLookup = new MessageHandlerDefinitionLookUp(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) }, new VersionSelector());
         var messageHandlerFactory = new MessageHandlerFactory(serviceResolver, new PipelineMessageHandlerWrapper(
             new HandlerPipelineBuilder(Array.Empty<IHandlerMiddlewareBuilder>()),
-             serviceResolver), BenzeneLogger.NullLogger, new DefaultStatuses());
+             serviceResolver), NullLoggerFactory.Instance, new DefaultStatuses());
 
         var messageHandler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic)));
 

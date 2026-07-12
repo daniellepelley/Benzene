@@ -1,9 +1,9 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Messages;
 using Benzene.Core.Exceptions;
 using Benzene.Core.Messages;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Core.MessageHandlers;
 
@@ -11,13 +11,13 @@ public class MessageHandlerFactory : IMessageHandlerFactory
 {
     private readonly IMessageHandlerWrapper _messageHandlerWrapper;
     private readonly IServiceResolver _serviceResolver;
-    private readonly IBenzeneLogger _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private IDefaultStatuses _defaultStatuses;
 
-    public MessageHandlerFactory(IServiceResolver serviceResolver, IMessageHandlerWrapper messageHandlerWrapper, IBenzeneLogger logger, IDefaultStatuses defaultStatuses)
+    public MessageHandlerFactory(IServiceResolver serviceResolver, IMessageHandlerWrapper messageHandlerWrapper, ILoggerFactory loggerFactory, IDefaultStatuses defaultStatuses)
     {
         _defaultStatuses = defaultStatuses;
-        _logger = logger;
+        _loggerFactory = loggerFactory;
         _serviceResolver = serviceResolver;
         _messageHandlerWrapper = messageHandlerWrapper;
     }
@@ -45,18 +45,19 @@ public class MessageHandlerFactory : IMessageHandlerFactory
         where TRequest : class
     {
         var messageHandler = _serviceResolver.GetService<TMessageHandler>();
+        var logger = _loggerFactory.CreateLogger(typeof(TMessageHandler));
 
         switch (messageHandler)
         {
             case IMessageHandler<TRequest, TResponse> handlerWithResponse:
             {
                 var wrapped = _messageHandlerWrapper.Wrap(topic, handlerWithResponse);
-                return new MessageHandler<TRequest, TResponse>(wrapped, _logger, _defaultStatuses);
+                return new MessageHandler<TRequest, TResponse>(wrapped, logger, _defaultStatuses);
             }
             case IMessageHandler<TRequest> handlerNoResponse:
             {
                 var wrapped = _messageHandlerWrapper.Wrap<TRequest, TResponse>(topic, handlerNoResponse);
-                return new MessageHandler<TRequest, TResponse>(wrapped, _logger, _defaultStatuses);
+                return new MessageHandler<TRequest, TResponse>(wrapped, logger, _defaultStatuses);
             }
             default:
                 return null;

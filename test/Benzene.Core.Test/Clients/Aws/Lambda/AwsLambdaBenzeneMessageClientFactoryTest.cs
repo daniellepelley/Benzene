@@ -1,7 +1,7 @@
 ﻿using Amazon.Lambda;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Test.Examples;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -12,7 +12,7 @@ public class AwsLambdaBenzeneMessageClientFactoryTest
     [Fact]
     public void CreatesClient()
     {
-        var factory = new AwsLambdaBenzeneMessageClientFactory(Defaults.LambdaName, Mock.Of<IAmazonLambda>(), Mock.Of<IBenzeneLogger>());
+        var factory = new AwsLambdaBenzeneMessageClientFactory(Defaults.LambdaName, Mock.Of<IAmazonLambda>(), NullLogger<AwsLambdaBenzeneMessageClient>.Instance);
         var client = factory.Create();
         Assert.NotNull(client);
     }

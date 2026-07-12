@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
 using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.Logging;
@@ -11,10 +10,11 @@ using Benzene.Core.Middleware;
 using Benzene.Diagnostics.Correlation;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
+using Benzene.Test.Logging.Helpers;
 using Benzene.Testing;
 using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Benzene.Test.Aws;
@@ -22,13 +22,15 @@ namespace Benzene.Test.Aws;
 public class AwsEventStreamLogContextTest
 {
     private AwsLambdaBenzeneTestHost _host;
-    private Mock<IBenzeneLogContext> _mockBenzeneContext;
+    private FakeLoggerFactory _fakeLoggerFactory;
 
     private void SetUp(Action<ILogContextBuilder<AwsEventStreamContext>> action)
     {
-        _mockBenzeneContext = new Mock<IBenzeneLogContext>();
+        _fakeLoggerFactory = new FakeLoggerFactory();
         _host = new InlineAwsLambdaStartUp()
-            .ConfigureServices(x => x.AddScoped(_ => _mockBenzeneContext.Object).UsingBenzene(b => b.AddBenzene()))
+            .ConfigureServices(x => x
+                .AddSingleton<ILoggerFactory>(_ => _fakeLoggerFactory)
+                .UsingBenzene(b => b.AddBenzene()))
             .Configure(app => app
                 .UseLogResult(action)
             )
@@ -37,35 +39,30 @@ public class AwsEventStreamLogContextTest
 
     private void VerifyExists(string key)
     {
-        _mockBenzeneContext.Verify(logContext => logContext.Create(It.Is<IDictionary<string, string>>(
-                x => x.ContainsKey(key)
-            )));
+        Assert.Contains(_fakeLoggerFactory.Collector.ScopeDictionaries, x => x.ContainsKey(key));
     }
 
     private void VerifyDoesNotExists(string key)
     {
-        _mockBenzeneContext.Verify(logContext => logContext.Create(It.Is<IDictionary<string, string>>(
-                x => !x.ContainsKey(key)
-            )));
+        Assert.DoesNotContain(_fakeLoggerFactory.Collector.ScopeDictionaries, x => x.ContainsKey(key));
     }
-    
+
     private void Verify(string key, string value)
     {
-        _mockBenzeneContext.Verify(logContext => logContext.Create(It.Is<IDictionary<string, string>>(
-                x => x.ContainsKey(key) && x[key] == value
-            )));
+        Assert.Contains(_fakeLoggerFactory.Collector.ScopeDictionaries,
+            x => x.ContainsKey(key) && x[key]?.ToString() == value);
     }
-    
+
     [Fact]
     public async Task CorrelationId()
     {
         SetUp(x => x.WithCorrelationId());
-        
+
         await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
         VerifyExists("correlationId");
     }
-    
+
     [Fact]
     public async Task LambdaContext()
     {
@@ -73,7 +70,7 @@ public class AwsEventStreamLogContextTest
             .WithApplication()
             .WithRequestId()
         );
-        
+
         await _host.SendEventAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()), new TestLambdaContext
         {
             FunctionName = "foo::bar",
@@ -91,7 +88,7 @@ public class AwsEventStreamLogContextTest
             .WithApplication()
             .WithRequestId()
         );
-        
+
         await _host.SendEventAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()), new TestLambdaContext());
 
         VerifyDoesNotExists("application");

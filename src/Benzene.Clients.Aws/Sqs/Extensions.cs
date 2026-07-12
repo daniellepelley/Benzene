@@ -1,10 +1,10 @@
 using System;
 using Amazon.SQS;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
+using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sqs;
@@ -80,7 +80,7 @@ public static class Extensions
         var pipeline = middlewarePipelineBuilder.Build();
 
         services.AddScoped(x => new SqsBenzeneMessageClient(queueUrl, pipeline,
-            x.GetService<IBenzeneLogger>(), x.GetService<IServiceResolver>()));
+            x.GetService<ILogger<SqsBenzeneMessageClient>>(), x.GetService<IServiceResolver>()));
         return services;
     }
 }

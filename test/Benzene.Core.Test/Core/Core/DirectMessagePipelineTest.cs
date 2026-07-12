@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Serialization;
-using Benzene.Core.Logging;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.TestHelpers;
@@ -89,7 +87,6 @@ public class BenzeneMessagePipelineTest
     {
         var services = new ServiceCollection();
         services
-                .AddTransient<IBenzeneLogger, BenzeneLogger>()
                 .AddTransient<ISerializer, JsonSerializer>()
                 .AddTransient<JsonSerializer>()
                 .UsingBenzene(x => x

@@ -2,10 +2,10 @@ using System;
 using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.StepFunctions;
 
@@ -14,7 +14,7 @@ namespace Benzene.Clients.Aws.StepFunctions;
 /// </summary>
 public class StepFunctionsClient : IStepFunctionsClient
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<StepFunctionsClient> _logger;
     private readonly string _stateMachineArn;
     private readonly IAmazonStepFunctions _amazonStepFunctionsClient;
     private readonly ISerializer _serializer;
@@ -25,7 +25,7 @@ public class StepFunctionsClient : IStepFunctionsClient
     /// <param name="stateMachineArn">The ARN of the state machine to start executions on.</param>
     /// <param name="amazonStepFunctionsClient">The Step Functions client used to start executions.</param>
     /// <param name="logger">The logger used to record send failures.</param>
-    public StepFunctionsClient(string stateMachineArn, IAmazonStepFunctions amazonStepFunctionsClient, IBenzeneLogger logger)
+    public StepFunctionsClient(string stateMachineArn, IAmazonStepFunctions amazonStepFunctionsClient, ILogger<StepFunctionsClient> logger)
     {
         _amazonStepFunctionsClient = amazonStepFunctionsClient;
         _logger = logger;

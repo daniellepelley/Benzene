@@ -6,11 +6,9 @@ Provides concrete implementations of core Benzene abstractions. Includes default
 ## Key types/interfaces
 
 ### Logging Implementations
-- `BenzeneLogger` - Default logger implementation wrapping `IBenzeneLogger`
-- `NullBenzeneLogger` - Null object pattern logger (no-op)
-- `NullBenzeneLogContext` - Null object pattern log context
-- `NullDisposable` - Null object pattern for IDisposable
-- `LogContextBuilder<TContext>` - Builds log context from typed context
+Logging goes through `Microsoft.Extensions.Logging` (`ILogger<T>`); this package only provides
+the scope-state builders used by `UseLogResult`/`UseLogContext`:
+- `LogContextBuilder<TContext>` - Builds log-scope state from typed context (implements `ILogContextBuilder<TContext>`)
 - `ContextDictionaryBuilder<TContext>` - Builds dictionary from context
 - `IContextDictionaryBuilder<TContext>` - Abstraction for context dictionary building
 
@@ -31,8 +29,6 @@ Provides concrete implementations of core Benzene abstractions. Includes default
 - `Constants` - Framework constants
 
 ### Extension Methods
-- `LogContextExtensions` - Extensions for `IBenzeneLogContext`
-- `LoggerExtensions` - Extensions for `IBenzeneLogger`
 - Various DI-related extensions
 
 ## When to use this package
@@ -47,8 +43,7 @@ Provides concrete implementations of core Benzene abstractions. Includes default
 ## Important conventions
 - Null object pattern used extensively for optional components
 - `RegistrationsBase` is the standard base class for DI registration modules
-- Logger extensions support structured logging with key-value pairs
-- `ContextDictionaryBuilder` enables extracting log context from any object
+- `ContextDictionaryBuilder` enables extracting log-scope properties from any object
 - Registration validation helps ensure DI container is properly configured
 - Constants class provides shared magic strings across framework
 - All implementations are thread-safe where applicable

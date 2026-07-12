@@ -58,7 +58,7 @@ public static class Extensions
         services.TryAddSingleton<IVersionSelector, VersionSelector>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
         services.TryAddSingleton<JsonSerializer>();
-        services.AddDefaultBenzeneLogging();
+        services.AddServiceResolver();
         services.AddBenzeneMiddleware();
         return services;
     }

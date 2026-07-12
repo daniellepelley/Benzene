@@ -3,13 +3,13 @@ using System.Net;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sns;
@@ -19,7 +19,7 @@ namespace Benzene.Clients.Aws.Sns;
 /// </summary>
 public class SnsBenzeneMessageClient : IBenzeneMessageClient
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<SnsBenzeneMessageClient> _logger;
     private readonly string _topicArn;
     private readonly IServiceResolver _serviceResolver;
     private readonly IMiddlewarePipeline<SnsSendMessageContext> _middlewarePipeline;
@@ -32,7 +32,7 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="amazonSnsClient">The SNS client to publish with.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public SnsBenzeneMessageClient(string topicArn, IAmazonSimpleNotificationService amazonSnsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public SnsBenzeneMessageClient(string topicArn, IAmazonSimpleNotificationService amazonSnsClient, ILogger<SnsBenzeneMessageClient> logger, IServiceResolver serviceResolver)
     {
         _topicArn = topicArn;
         _serviceResolver = serviceResolver;
@@ -53,7 +53,7 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="middlewarePipeline">The built middleware pipeline to publish through.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public SnsBenzeneMessageClient(string topicArn, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public SnsBenzeneMessageClient(string topicArn, IMiddlewarePipeline<SnsSendMessageContext> middlewarePipeline, ILogger<SnsBenzeneMessageClient> logger, IServiceResolver serviceResolver)
     {
         _logger = logger;
         _topicArn = topicArn;

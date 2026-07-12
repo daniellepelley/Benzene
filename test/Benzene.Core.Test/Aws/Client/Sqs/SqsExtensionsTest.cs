@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
@@ -56,7 +55,6 @@ public class SqsExtensionsTest
     {
         var services = new ServiceCollection();
         services.AddSingleton(Mock.Of<IAmazonSQS>());
-        services.AddSingleton(Mock.Of<IBenzeneLogger>());
         services.AddSingleton<IServiceResolver>(Mock.Of<IServiceResolver>());
 
         var container = new MicrosoftBenzeneServiceContainer(services);

@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Results;

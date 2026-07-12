@@ -2,10 +2,10 @@ using System;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Sqs;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -21,10 +21,10 @@ public class SqsApplicationExceptionLoggingTest
             .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
-        var mockLogger = new Mock<IBenzeneLogger>();
+        var mockLogger = new Mock<ILogger<SqsApplication>>();
         var mockResolver = new Mock<IServiceResolver>();
         mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
-        mockResolver.Setup(x => x.GetService<IBenzeneLogger>()).Returns(mockLogger.Object);
+        mockResolver.Setup(x => x.GetService<ILogger<SqsApplication>>()).Returns(mockLogger.Object);
 
         var mockResolverFactory = new Mock<IServiceResolverFactory>();
         mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
@@ -44,9 +44,10 @@ public class SqsApplicationExceptionLoggingTest
         Assert.Single(response.BatchItemFailures);
         Assert.Equal("some-message-id", response.BatchItemFailures[0].ItemIdentifier);
         mockLogger.Verify(x => x.Log(
-            BenzeneLogLevel.Error,
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString().Contains("some-message-id")),
             It.Is<Exception>(ex => ex.Message == "boom"),
-            It.IsAny<string>(),
-            It.IsAny<object[]>()));
+            (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()));
     }
 }

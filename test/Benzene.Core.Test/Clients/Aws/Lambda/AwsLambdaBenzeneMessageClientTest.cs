@@ -3,12 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Results;
 using Benzene.Test.Clients.Aws.Samples;
 using Benzene.Test.Examples;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 using Void = Benzene.Abstractions.Results.Void;
@@ -22,7 +22,7 @@ public class AwsLambdaBenzeneMessageClientTest
     {
         var mockInnerAwsLambdaClient = new Mock<IAmazonLambda>();
 
-        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, Mock.Of<IBenzeneLogger>());
+        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, NullLogger.Instance);
         var result = await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload());
 
         Assert.NotNull(result);
@@ -33,7 +33,7 @@ public class AwsLambdaBenzeneMessageClientTest
     {
         var mockInnerAwsLambdaClient = new Mock<IAmazonLambda>();
 
-        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, Mock.Of<IBenzeneLogger>());
+        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, NullLogger.Instance);
         var result = await client.SendMessageAsync<ExamplePayload, Void >("some-topic", new ExamplePayload());
 
         Assert.NotNull(result);
@@ -47,7 +47,7 @@ public class AwsLambdaBenzeneMessageClientTest
                 x.InvokeAsync(It.IsAny<InvokeRequest>(), It.IsAny<CancellationToken>()))
             .Throws(new Exception());
 
-        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, Mock.Of<IBenzeneLogger>());
+        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, NullLogger.Instance);
         var result = await client.SendMessageAsync<ExamplePayload, ExamplePayload>("some-topic", new ExamplePayload());
 
         Assert.NotNull(result);

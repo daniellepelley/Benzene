@@ -1,12 +1,12 @@
 using System;
 using System.Threading.Tasks;
 using Amazon.Lambda;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Clients.Common;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws.Lambda
 {
@@ -18,7 +18,7 @@ namespace Benzene.Clients.Aws.Lambda
     public class AwsLambdaBenzeneMessageClient : IBenzeneMessageClient
     {
         private readonly string _lambdaName;
-        private readonly IBenzeneLogger _logger;
+        private readonly ILogger _logger;
         private readonly AwsLambdaClient _awsLambdaClient;
         private readonly ISerializer _serializer;
 
@@ -28,7 +28,7 @@ namespace Benzene.Clients.Aws.Lambda
         /// <param name="lambdaName">The name of the target Lambda function.</param>
         /// <param name="amazonLambda">The Lambda client used to invoke the function.</param>
         /// <param name="logger">The logger used to record invocation outcomes and failures.</param>
-        public AwsLambdaBenzeneMessageClient(string lambdaName, IAmazonLambda amazonLambda, IBenzeneLogger logger)
+        public AwsLambdaBenzeneMessageClient(string lambdaName, IAmazonLambda amazonLambda, ILogger logger)
         {
             _awsLambdaClient = new AwsLambdaClient(amazonLambda);
             _lambdaName = lambdaName;

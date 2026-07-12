@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Benzene.Cache.Core;
 using Benzene.Diagnostics.Timers;
 
@@ -15,7 +15,7 @@ internal class RedisCacheEntry<T> : CacheEntry<T>
         _key = key;
     }
 
-    protected override IBenzeneLogger Logger => _service.Logger;
+    protected override ILogger Logger => _service.Logger;
 
     protected override IProcessTimerFactory ProcessTimerFactory => _service.ProcessTimerFactory;
 

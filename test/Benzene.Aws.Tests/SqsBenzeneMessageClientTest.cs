@@ -1,13 +1,12 @@
 using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Aws.Tests.Fixtures;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.Middleware;
 using Benzene.Results;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Benzene.Aws.Tests;
@@ -35,7 +34,7 @@ public class SqsBenzeneMessageClientTest : IClassFixture<SqsFixture>
         var createQueueResponse = await amazonSqsClient.CreateQueueAsync(new CreateQueueRequest(QueueName));
 
         var client = new SqsBenzeneMessageClient(createQueueResponse.QueueUrl, amazonSqsClient,
-            Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+            NullLogger<SqsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 

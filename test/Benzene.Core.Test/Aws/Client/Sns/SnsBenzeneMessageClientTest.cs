@@ -4,12 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Results;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sns;
 using Benzene.Core.Middleware;
 using Benzene.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -25,7 +25,7 @@ public class SnsBenzeneMessageClientTest
             .Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
 
-        var client = new SnsBenzeneMessageClient("some-topic-arn", mockSnsClient.Object, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SnsBenzeneMessageClient("some-topic-arn", mockSnsClient.Object, NullLogger<SnsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 
@@ -40,7 +40,7 @@ public class SnsBenzeneMessageClientTest
             .Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PublishResponse { HttpStatusCode = HttpStatusCode.BadRequest });
 
-        var client = new SnsBenzeneMessageClient("some-topic-arn", mockSnsClient.Object, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SnsBenzeneMessageClient("some-topic-arn", mockSnsClient.Object, NullLogger<SnsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 
@@ -55,7 +55,7 @@ public class SnsBenzeneMessageClientTest
             .Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("boom"));
 
-        var client = new SnsBenzeneMessageClient("some-topic-arn", mockSnsClient.Object, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SnsBenzeneMessageClient("some-topic-arn", mockSnsClient.Object, NullLogger<SnsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 
@@ -74,7 +74,7 @@ public class SnsBenzeneMessageClientTest
             .UseSnsClient(mockSnsClient.Object)
             .Build();
 
-        var client = new SnsBenzeneMessageClient("some-topic-arn", pipeline, Mock.Of<IBenzeneLogger>(), new NullServiceResolver());
+        var client = new SnsBenzeneMessageClient("some-topic-arn", pipeline, NullLogger<SnsBenzeneMessageClient>.Instance, new NullServiceResolver());
 
         var result = await client.SendMessageAsync<string, string>("some-topic", "some-message");
 

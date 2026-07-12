@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Lambda.Core;
@@ -12,10 +11,11 @@ using Benzene.Core.Middleware;
 using Benzene.Diagnostics.Correlation;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
+using Benzene.Test.Logging.Helpers;
 using Benzene.Testing;
 using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Benzene.Test.Core.Core.Logging;
@@ -23,15 +23,15 @@ namespace Benzene.Test.Core.Core.Logging;
 public class UseLogContextTest
 {
     private AwsLambdaBenzeneTestHost _host;
-    private Mock<IBenzeneLogContext> _mockBenzeneContext;
+    private FakeLoggerFactory _fakeLoggerFactory;
 
     private void SetUp(Action<ILogContextBuilder<BenzeneMessageContext>> action)
     {
-        _mockBenzeneContext = new Mock<IBenzeneLogContext>();
+        _fakeLoggerFactory = new FakeLoggerFactory();
         _host = new InlineAwsLambdaStartUp()
             .ConfigureServices(x => x
                 .UsingBenzene(b => b.AddBenzene())
-                .AddScoped(_ => _mockBenzeneContext.Object))
+                .AddSingleton<ILoggerFactory>(_ => _fakeLoggerFactory))
             .Configure(app => app
                 .UseBenzeneMessage(direct => direct
                     .UseLogContext(action))
@@ -40,9 +40,8 @@ public class UseLogContextTest
 
     private void Verify(string key, string value)
     {
-        _mockBenzeneContext.Verify(logContext => logContext.Create(It.Is<IDictionary<string, string>>(
-                x => x.ContainsKey(key) && x[key] == value
-            )));
+        Assert.Contains(_fakeLoggerFactory.Collector.ScopeDictionaries,
+            x => x.ContainsKey(key) && x[key]?.ToString() == value);
     }
 
     [Fact]
@@ -52,9 +51,7 @@ public class UseLogContextTest
 
         await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
 
-        _mockBenzeneContext.Verify(logContext => logContext.Create(It.Is<IDictionary<string, string>>(
-            x => x.ContainsKey("correlationId")
-        )));
+        Assert.Contains(_fakeLoggerFactory.Collector.ScopeDictionaries, x => x.ContainsKey("correlationId"));
     }
 
     [Fact]

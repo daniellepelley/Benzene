@@ -1,16 +1,16 @@
 ﻿using System.Diagnostics;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Middleware;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Core.MessageHandlers;
 
 public class MessageRouter<TContext> : IMiddleware<TContext>
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<MessageRouter<TContext>> _logger;
     private readonly IMessageHandlerFactory _messageHandlerFactory;
     private readonly IMessageHandlerDefinitionLookUp _messageHandlerDefinitionLookUp;
     private readonly IMessageGetter<TContext> _messageGetter;
@@ -24,7 +24,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         IRequestMapper<TContext> requestMapper,
         IMessageHandlerResultSetter<TContext> messageHandlerResultSetter,
         IDefaultStatuses defaultStatuses,
-        IBenzeneLogger logger)
+        ILogger<MessageRouter<TContext>> logger)
     {
         _messageHandlerResultSetter = messageHandlerResultSetter;
         _defaultStatuses = defaultStatuses;

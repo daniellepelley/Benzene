@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Benzene.Cache.Core;
 using Benzene.Diagnostics.Timers;
 using StackExchange.Redis;
@@ -18,7 +18,7 @@ internal class RedisWildcardActions : CacheInvalidateActions
         _pattern = pattern;
     }
 
-    protected override IBenzeneLogger Logger => _service.Logger;
+    protected override ILogger Logger => _service.Logger;
 
     protected override IProcessTimerFactory ProcessTimerFactory => _service.ProcessTimerFactory;
 

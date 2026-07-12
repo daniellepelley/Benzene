@@ -1,5 +1,4 @@
 using Benzene.Abstractions.Logging;
-using Benzene.Core.Logging;
 
 namespace Benzene.Aws.Lambda.ApiGateway;
 
@@ -13,7 +12,7 @@ public static class LogContextBuilderExtensions
     /// </summary>
     /// <param name="source">The log context builder to extend.</param>
     /// <returns>The log context builder for method chaining.</returns>
-    public static ILogContextBuilder<ApiGatewayContext> WithHttp(this LogContextBuilder<ApiGatewayContext> source)
+    public static ILogContextBuilder<ApiGatewayContext> WithHttp(this ILogContextBuilder<ApiGatewayContext> source)
     {
         return source
             .OnRequest("path", (_, context) => context.ApiGatewayProxyRequest.Path)

@@ -25,7 +25,6 @@
 	  <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
-	  <ProjectReference Include="..\..\src\Benzene.Microsoft.Logging\Benzene.Microsoft.Logging.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Zipkin\Benzene.Zipkin.csproj" />
 	</ItemGroup>

@@ -1,16 +1,16 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Benzene.Abstractions.Logging;
 using Benzene.Cache.Core;
 using Benzene.Cache.Redis;
 using Benzene.Diagnostics.Timers;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace Benzene.Test.Cache.Redis.Instance;
 
 internal class TestRedisCacheService : RedisCacheService
 {
-    public TestRedisCacheService(IBenzeneLogger logger, IProcessTimerFactory processTimerFactory, IRedisConnectionFactory connectionFactory) : base(logger, processTimerFactory, connectionFactory)
+    public TestRedisCacheService(ILogger<RedisCacheService> logger, IProcessTimerFactory processTimerFactory, IRedisConnectionFactory connectionFactory) : base(logger, processTimerFactory, connectionFactory)
     {
         StartConnection();
     }

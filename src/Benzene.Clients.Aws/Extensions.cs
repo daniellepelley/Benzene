@@ -3,11 +3,11 @@ using Amazon.Lambda;
 using Amazon.SQS;
 using Amazon.StepFunctions;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Clients.Aws.StepFunctions;
 using Benzene.HealthChecks.Core;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Clients.Aws;
 
@@ -85,7 +85,7 @@ public static class Extensions
     /// <returns>The health check builder for method chaining.</returns>
     public static IHealthCheckBuilder AddLambdaHealthCheck(this IHealthCheckBuilder builder, string lambdaName)
     {
-        return builder.AddHealthCheck(resolver => new AwsLambdaHealthCheck(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<IBenzeneLogger>()));
+        return builder.AddHealthCheck(resolver => new AwsLambdaHealthCheck(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<ILogger<AwsLambdaHealthCheck>>()));
     }
 
     /// <summary>

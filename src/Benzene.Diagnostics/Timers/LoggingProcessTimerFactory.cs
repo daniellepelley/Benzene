@@ -1,12 +1,12 @@
-﻿using Benzene.Abstractions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Benzene.Diagnostics.Timers;
 
 public class LoggingProcessTimerFactory : IProcessTimerFactory
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger _logger;
 
-    public LoggingProcessTimerFactory(IBenzeneLogger logger)
+    public LoggingProcessTimerFactory(ILogger<LoggingProcessTimer> logger)
     {
         _logger = logger;
     }

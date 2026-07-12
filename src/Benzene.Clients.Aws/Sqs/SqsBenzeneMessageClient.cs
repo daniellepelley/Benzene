@@ -3,13 +3,13 @@ using System.Net;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Clients.Common;
 using Benzene.Core.Middleware;
 using Benzene.Results;
+using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sqs;
@@ -19,7 +19,7 @@ namespace Benzene.Clients.Aws.Sqs;
 /// </summary>
 public class SqsBenzeneMessageClient : IBenzeneMessageClient
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<SqsBenzeneMessageClient> _logger;
     private readonly string _queueUrl;
     private readonly IMiddlewarePipeline<SqsSendMessageContext> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
@@ -32,7 +32,7 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="amazonSqsClient">The SQS client to send with.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, ILogger<SqsBenzeneMessageClient> logger, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
         _queueUrl = queueUrl;
@@ -53,7 +53,7 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="middlewarePipeline">The built middleware pipeline to send through.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, ILogger<SqsBenzeneMessageClient> logger, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
         _middlewarePipeline = middlewarePipeline;

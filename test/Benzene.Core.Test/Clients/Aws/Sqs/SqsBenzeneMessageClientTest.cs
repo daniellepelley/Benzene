@@ -5,13 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
-using Benzene.Core.Logging;
 using Benzene.Core.Middleware;
 using Benzene.Results;
 using Benzene.Test.Examples;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -30,7 +29,7 @@ public class SqsBenzeneMessageClientTest
                 HttpStatusCode = HttpStatusCode.OK
             });
 
-        var client = new SqsBenzeneMessageClientFactory(Defaults.SqsQueueUrl, mockAmazonSqs.Object, Mock.Of<IBenzeneLogger>()).Create();
+        var client = new SqsBenzeneMessageClientFactory(Defaults.SqsQueueUrl, mockAmazonSqs.Object, NullLogger<SqsBenzeneMessageClient>.Instance).Create();
         var result = await client.SendMessageAsync<ExampleRequestPayload, ExampleResponsePayload>(Defaults.Topic, 
             new ExampleRequestPayload { Id = 42, Name = "foo" });
 
@@ -51,7 +50,7 @@ public class SqsBenzeneMessageClientTest
         mockAmazonSqs.Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
             .Throws(new Exception());
 
-        var client = new SqsBenzeneMessageClientFactory(Defaults.SqsQueueUrl, mockAmazonSqs.Object, Mock.Of<IBenzeneLogger>()).Create();
+        var client = new SqsBenzeneMessageClientFactory(Defaults.SqsQueueUrl, mockAmazonSqs.Object, NullLogger<SqsBenzeneMessageClient>.Instance).Create();
         var result = await client.SendMessageAsync<ExampleRequestPayload, ExampleResponsePayload>(Defaults.Topic, 
             new ExampleRequestPayload { Id = 42, Name = "hi" });
 
@@ -77,7 +76,7 @@ public class SqsBenzeneMessageClientTest
 
         var mockClientMessageRouter = new Mock<IClientMessageRouter>();
         mockClientMessageRouter.Setup(x => x.GetClient<ExampleRequestPayload>())
-            .Returns(new SqsBenzeneMessageClient(Defaults.SqsQueueUrl, mockAmazonSqs.Object, new BenzeneLogger(new List<IBenzeneLogAppender>()), new NullServiceResolver()));
+            .Returns(new SqsBenzeneMessageClient(Defaults.SqsQueueUrl, mockAmazonSqs.Object, NullLogger<SqsBenzeneMessageClient>.Instance, new NullServiceResolver()));
 
         var getTopic = new DictionaryGetTopic(new Dictionary<Type, string>
         {

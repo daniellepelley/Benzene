@@ -3,9 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.StepFunctions;
 using Benzene.Results;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -21,7 +21,7 @@ public class StepFunctionsClientTest
             .Setup(x => x.StartExecutionAsync(It.IsAny<StartExecutionRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StartExecutionResponse());
 
-        var client = new StepFunctionsClient("some-state-machine-arn", mockStepFunctionsClient.Object, Mock.Of<IBenzeneLogger>());
+        var client = new StepFunctionsClient("some-state-machine-arn", mockStepFunctionsClient.Object, NullLogger<StepFunctionsClient>.Instance);
 
         var result = await client.StartExecutionAsync<string, string>("some-message");
 
@@ -36,7 +36,7 @@ public class StepFunctionsClientTest
             .Setup(x => x.StartExecutionAsync(It.IsAny<StartExecutionRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("boom"));
 
-        var client = new StepFunctionsClient("some-state-machine-arn", mockStepFunctionsClient.Object, Mock.Of<IBenzeneLogger>());
+        var client = new StepFunctionsClient("some-state-machine-arn", mockStepFunctionsClient.Object, NullLogger<StepFunctionsClient>.Instance);
 
         var result = await client.StartExecutionAsync<string, string>("some-message");
 
@@ -46,7 +46,7 @@ public class StepFunctionsClientTest
     [Fact]
     public void Dispose_DoesNotThrow()
     {
-        var client = new StepFunctionsClient("some-state-machine-arn", Mock.Of<IAmazonStepFunctions>(), Mock.Of<IBenzeneLogger>());
+        var client = new StepFunctionsClient("some-state-machine-arn", Mock.Of<IAmazonStepFunctions>(), NullLogger<StepFunctionsClient>.Instance);
 
         client.Dispose();
     }
@@ -54,7 +54,7 @@ public class StepFunctionsClientTest
     [Fact]
     public void Create_ReturnsStepFunctionsClient()
     {
-        var factory = new StepFunctionsClientFactory("some-state-machine-arn", Mock.Of<IAmazonStepFunctions>(), Mock.Of<IBenzeneLogger>());
+        var factory = new StepFunctionsClientFactory("some-state-machine-arn", Mock.Of<IAmazonStepFunctions>(), NullLogger<StepFunctionsClient>.Instance);
 
         using var client = factory.Create();
 

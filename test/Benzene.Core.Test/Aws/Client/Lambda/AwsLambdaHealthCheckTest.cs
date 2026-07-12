@@ -3,9 +3,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
-using Benzene.Abstractions.Logging;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.HealthChecks.Core;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -29,7 +29,7 @@ public class AwsLambdaHealthCheckTest
                 Payload = ToPayloadStream("{\"status\":\"Ok\"}")
             });
 
-        var healthCheck = new AwsLambdaHealthCheck("some-lambda", mockLambdaClient.Object, Mock.Of<IBenzeneLogger>());
+        var healthCheck = new AwsLambdaHealthCheck("some-lambda", mockLambdaClient.Object, NullLogger<AwsLambdaHealthCheck>.Instance);
 
         var result = await healthCheck.ExecuteAsync();
 

@@ -1,5 +1,4 @@
 ﻿using Benzene.Abstractions.DI;
-using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
@@ -7,17 +6,18 @@ using Benzene.Clients;
 using Benzene.Core.Middleware;
 using Benzene.Results;
 using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Kafka.Core.Kafka;
 
 public class KafkaBenzeneMessageClient : IBenzeneMessageClient
 {
-    private readonly IBenzeneLogger _logger;
+    private readonly ILogger<KafkaBenzeneMessageClient> _logger;
     private readonly IServiceResolver _serviceResolver;
     private readonly IMiddlewarePipeline<KafkaSendMessageContext> _middlewarePipeline;
 
-    public KafkaBenzeneMessageClient(IProducer<string, string> producer, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public KafkaBenzeneMessageClient(IProducer<string, string> producer, ILogger<KafkaBenzeneMessageClient> logger, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
         _logger = logger;
@@ -29,7 +29,7 @@ public class KafkaBenzeneMessageClient : IBenzeneMessageClient
             .Build();
     }
 
-    public KafkaBenzeneMessageClient(IMiddlewarePipeline<KafkaSendMessageContext> middlewarePipeline, IBenzeneLogger logger, IServiceResolver serviceResolver)
+    public KafkaBenzeneMessageClient(IMiddlewarePipeline<KafkaSendMessageContext> middlewarePipeline, ILogger<KafkaBenzeneMessageClient> logger, IServiceResolver serviceResolver)
     {
         _serviceResolver = serviceResolver;
         _logger = logger;
