@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Nodes;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
@@ -45,12 +44,9 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
             return;
         }
 
-        var jsonNode = JsonSerializer.Deserialize<JsonNode>(body, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        using var jsonDocument = JsonDocument.Parse(body);
 
-        var schemaResult = jsonSchema.Evaluate(jsonNode, new EvaluationOptions
+        var schemaResult = jsonSchema.Evaluate(jsonDocument.RootElement, new EvaluationOptions
         {
             OutputFormat = OutputFormat.List
         });

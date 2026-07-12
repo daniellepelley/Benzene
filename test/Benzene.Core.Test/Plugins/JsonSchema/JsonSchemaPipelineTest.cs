@@ -17,17 +17,18 @@ namespace Benzene.Test.Plugins.JsonSchema;
 
 public class JsonSchemaPipelineTest
 {
+    private static readonly Json.Schema.JsonSchema Schema =
+        Json.Schema.JsonSchema.FromFile(System.IO.Path.GetFullPath("Plugins/JsonSchema/schema.jsonc"));
+
     [Theory]
     [InlineData("foo", BenzeneResultStatus.Ok)]
     [InlineData("foo-bar-foo-bar", BenzeneResultStatus.ValidationError)]
     public async Task ValidationTest(string name, string expectedStatus)
     {
-        var jsonSchema = Json.Schema.JsonSchema.FromFile("Plugins/JsonSchema/schema.jsonc");
-
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();
         serviceCollection.UsingBenzene(x => x.AddBenzeneMessage());
         serviceCollection
-            .AddScoped<IJsonSchemaProvider<BenzeneMessageContext>>(x => new SimpleJsonSchemaProvider<BenzeneMessageContext>(jsonSchema));
+            .AddScoped<IJsonSchemaProvider<BenzeneMessageContext>>(x => new SimpleJsonSchemaProvider<BenzeneMessageContext>(Schema));
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 
@@ -79,12 +80,10 @@ public class JsonSchemaPipelineTest
     [Fact]
     public async Task ValidationTest_NoBody()
     {
-        var jsonSchema = Json.Schema.JsonSchema.FromFile("Plugins/JsonSchema/schema.jsonc");
-
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();
         serviceCollection.UsingBenzene(x => x.AddBenzeneMessage());
         serviceCollection
-             .AddScoped<IJsonSchemaProvider<BenzeneMessageContext>>(x => new SimpleJsonSchemaProvider<BenzeneMessageContext>(jsonSchema));
+             .AddScoped<IJsonSchemaProvider<BenzeneMessageContext>>(x => new SimpleJsonSchemaProvider<BenzeneMessageContext>(Schema));
 
         var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
 

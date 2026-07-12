@@ -20,7 +20,9 @@ JSON Schema generation and validation for Benzene. Generates JSON schemas from r
 - **Benzene.Abstractions** - Core abstractions
 
 ## Important conventions
-- Generates JSON Schema draft 7
-- Supports data annotations
-- Schema caching for performance
-- Used by code generation tools
+- `DefaultJsonSchemaProvider<TContext>` generates a schema from the request type
+  of the handler registered for the current topic (via `JsonSchema.Net.Generation`,
+  draft 2020-12), using camelCase property names to match the default serializer
+- Returns no schema (skips validation) when the topic has no registered handler
+- Generated schemas are cached per request type
+- Replace by registering a custom `IJsonSchemaProvider<TContext>`
