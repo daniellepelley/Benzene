@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<PackageVersion>0.0.1</PackageVersion>
+		<AssemblyName>Benzene.Azure.AspNet.TestHelpers</AssemblyName>
+		<RootNamespace>Benzene.Azure.AspNet.TestHelpers</RootNamespace>
+		<Description>Test helpers for Benzene.Azure.AspNet - for testing purposes only</Description>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+	</ItemGroup>
+
+</Project>
