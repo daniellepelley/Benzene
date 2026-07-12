@@ -1,9 +1,11 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.Logging;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
@@ -12,10 +14,12 @@ namespace Benzene.Aws.Sqs.Consumer;
 /// middleware pipeline as a batch, and deletes them once handled.
 /// </summary>
 /// <remarks>
-/// Uses long polling (1 second wait) in a loop until <see cref="StartAsync"/>'s cancellation token is
-/// signaled. Messages are only deleted after the whole batch has been processed; if processing throws,
-/// the messages are left on the queue to be retried (subject to the queue's visibility timeout and
-/// redrive policy).
+/// Uses long polling (<see cref="SqsConsumerConfig.WaitTimeSeconds"/>) in a loop until
+/// <see cref="StartAsync"/>'s cancellation token is signaled. Messages are only deleted after the whole
+/// batch has been processed; if processing throws, the messages are left on the queue to be retried
+/// (subject to the queue's visibility timeout and redrive policy). A poll iteration that throws for a
+/// reason other than cancellation (e.g. a transient AWS error) is logged and the loop continues, rather
+/// than the exception propagating out and permanently ending the worker.
 /// </remarks>
 public class SqsConsumer : IBenzeneWorker
 {
@@ -57,7 +61,7 @@ public class SqsConsumer : IBenzeneWorker
                     QueueUrl = _sqsConsumerConfig.QueueUrl,
                     MessageAttributeNames = new[] { "All" }.ToList(),
                     MaxNumberOfMessages = _sqsConsumerConfig.MaxNumberOfMessages,
-                    WaitTimeSeconds = 1
+                    WaitTimeSeconds = _sqsConsumerConfig.WaitTimeSeconds
                 }, cancellationToken);
 
                 if (result.Messages.Any())
@@ -73,8 +77,15 @@ public class SqsConsumer : IBenzeneWorker
                     }, cancellationToken);
                 }
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
+                // Expected when cancellationToken is signaled mid-poll; the loop condition below exits cleanly.
+            }
+            catch (Exception ex)
+            {
+                using var loggingScope = _serviceResolverFactory.CreateScope();
+                loggingScope.GetService<IBenzeneLogger>()
+                    .LogError(ex, "SQS poll iteration for queue {queueUrl} failed", _sqsConsumerConfig.QueueUrl);
             }
         }
         while (!cancellationToken.IsCancellationRequested);

@@ -1,6 +1,6 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.5
+**Document Version:** 1.6
 **Last Updated:** 2026-07-12
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
@@ -36,10 +36,22 @@
 >    Removed the unused `AWSSDK.SQS` reference from `Benzene.Aws.XRay` and the stale
 >    `System.Text.Encodings.Web` 6.0.0 pin from 7 packages (vestigial from before they
 >    targeted `net10.0`; verified safe via restore/build/full test suite).
+> 7. **Code Quality Fixes** (P0 #9) — scoped to two verifiable bugs, not the full
+>    original list: `SqsApplication.HandleAsync` no longer swallows a failed record's
+>    exception (now logged via `IBenzeneLogger`); `SqsConsumer.StartAsync` no longer
+>    dies permanently on a transient AWS error (broadened from catching only
+>    `TaskCanceledException` to all `OperationCanceledException`, with any other
+>    exception logged and the poll loop continuing) and its hardcoded
+>    `WaitTimeSeconds = 1` is now a configurable `SqsConsumerConfig` property
+>    (defaulting to `1`, non-breaking). The `AwsLambdaStartUp` virtual-call-in-constructor
+>    item was deliberately NOT touched — it's a suppressed, intentional pattern
+>    underpinning the whole entry-point model, and "fixing" it means a breaking
+>    redesign, not a code-quality fix. Two new tests added, full suite green
+>    (655/655).
 >
-> Remaining P0 work: Code Quality Fixes, Migration Guide (23-30h, see Prioritized
-> Feature List below). Full narrative detail for each completed item remains in that
-> item's own section further down this document.
+> Remaining P0 work: Migration Guide (8-10h, see Prioritized Feature List below). Full
+> narrative detail for each completed item remains in that item's own section further
+> down this document.
 
 ---
 
@@ -603,12 +615,25 @@ naming/dependency work is done)
    - Architecture decision records
    - Migration guides
 
-6. **Code Quality Fixes** (15-20 hours)
-   - Improve error messages
-   - Add missing error handling
-   - Fix hard-coded values
-   - Add configuration options
-   - Remove constructor virtual calls
+6. ~~**Code Quality Fixes** (15-20 hours)~~ ✅ PARTIALLY COMPLETE 2026-07-12 (scoped to
+   the two verifiable bugs; virtual-constructor-call left as a deliberate pattern)
+   - ~~Improve error messages~~ ✅ `SqsApplication.HandleAsync` no longer swallows the
+     exception from a failed record — now logged via `IBenzeneLogger` before the item
+     is added to `BatchItemFailures`
+   - ~~Add missing error handling~~ ✅ `SqsConsumer.StartAsync` no longer dies
+     permanently on a transient AWS error — only `OperationCanceledException` exits
+     the loop silently; any other exception is logged and polling continues
+   - ~~Fix hard-coded values~~ ✅ `WaitTimeSeconds` (was hardcoded `1`) is now a
+     `SqsConsumerConfig` property, defaulting to `1` for unchanged behavior
+   - Add configuration options — out of scope for this pass (see Medium/Low priority
+     items below, e.g. batch send, retry policies — these are feature work, not fixes)
+   - Remove constructor virtual calls — deliberately NOT done: `AwsLambdaStartUp`'s
+     virtual-call-in-constructor pattern is how `new StartUp()` becomes immediately
+     usable as the Lambda entry point; the calls are already explicitly suppressed
+     (`// ReSharper disable once VirtualMemberCallInConstructor`), and "fixing" it
+     means splitting construction from initialization — a breaking redesign of the
+     whole entry-point pattern, not a code-quality fix. Left as a distinct,
+     consciously-deferred item
 
 **Total Estimated Effort for 1.0:** 53-112 hours remaining (60-80h XML documentation +
 25-30h EventBridge/S3 naming fix + 40-50h unit test coverage now complete)
@@ -1497,11 +1522,13 @@ All AWS packages reference:
    (`examples/Aws/Benzene.Examples.Aws/template.yaml`; SAM only, no CDK — see note below)
 7. ~~**Integration Tests** - LocalStack (20-30h)~~ ✅ COMPLETE 2026-07-12 (wired into CI, passing)
 8. ~~**Dependency Cleanup** - Standardize versions (8-12h)~~ ✅ COMPLETE 2026-07-12
-9. **Code Quality Fixes** - Error handling, config (15-20h)
+9. ~~**Code Quality Fixes** - Error handling, config (15-20h)~~ ✅ SCOPED PORTION
+   COMPLETE 2026-07-12 (2 real bugs fixed; virtual-constructor-call deliberately
+   deferred — see package section for why)
 10. **Migration Guide** - 0.x to 1.0 (8-10h)
 
-**Total P0 Effort:** 23-30 hours remaining (Code Quality Fixes, Migration Guide only —
-everything else on this list is now complete)
+**Total P0 Effort:** 8-10 hours remaining (Migration Guide only — everything else on
+this list is now complete or consciously deferred)
 
 ### Should Have for 1.0 (P1)
 
@@ -1594,12 +1621,18 @@ Per `work/1.0.0-release-status.md`, core packages need:
 8. ✅ Dependency versions aligned and unused/stale references removed (completed
    2026-07-12); AWSSDK v3→v4 and Amazon.Lambda.* major-version upgrades deliberately
    deferred as a separate, higher-risk decision
+9. ✅ Two real code-quality bugs fixed (completed 2026-07-12): SqsApplication's
+   swallowed exception, SqsConsumer's fragile catch + hardcoded wait time.
+   Virtual-call-in-constructor deliberately left as an intentional, suppressed
+   pattern — not a bug
 
 **Gap Analysis:**
-AWS packages are ~90% toward 1.0 readiness using core criteria (up from ~85%).
-Primary remaining gaps: Code Quality Fixes, Migration Guide, the `AddLambdaClients` DI
-gap, and (lower priority) a CDK example alongside the SAM one, plus the AWSSDK v3→v4 /
-Amazon.Lambda.* major-version decision deliberately deferred out of Dependency Cleanup
+AWS packages are ~93% toward 1.0 readiness using core criteria (up from ~90%).
+Primary remaining gaps: Migration Guide, the `AddLambdaClients` DI gap, and (lower
+priority) a CDK example alongside the SAM one, plus two consciously-deferred decisions
+that need product/architecture sign-off rather than mechanical work: the AWSSDK v3→v4 /
+Amazon.Lambda.* major-version upgrade, and whether to ever redesign
+`AwsLambdaStartUp`'s construction/initialization split
 
 ---
 

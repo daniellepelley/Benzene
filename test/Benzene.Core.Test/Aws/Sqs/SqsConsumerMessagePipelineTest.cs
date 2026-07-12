@@ -211,6 +211,48 @@ public class SqsConsumerMessagePipelineTest
     }
 
     [Fact]
+    public async Task StartAsync_ReceiveMessageThrowsTransientException_LogsAndContinuesPolling()
+    {
+        var mockSqsClient = new Mock<IAmazonSQS>();
+
+        var mockSqsClientFactory = new Mock<ISqsClientFactory>();
+        mockSqsClientFactory.Setup(x => x.Create())
+            .Returns(mockSqsClient.Object);
+
+        mockSqsClient
+            .SetupSequence(x => x.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new AmazonSQSException("throttled"))
+            .ReturnsAsync(() => new ReceiveMessageResponse { Messages = new List<Message>() });
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<SqsConsumerMessageContext>>>(_ =>
+                NullLogger<MessageRouter<SqsConsumerMessageContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .UsingBenzene(x => x.AddSqsConsumer());
+
+        var pipeline =
+            new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        pipeline.UseMessageHandlers();
+
+        var application = new SqsConsumerApplication(pipeline.Build());
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+
+        var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
+        {
+            MaxNumberOfMessages = 10,
+            QueueUrl = "some-url"
+        }, mockSqsClientFactory.Object);
+
+        var tokenSource = new CancellationTokenSource();
+        tokenSource.CancelAfter(100);
+
+        await consumer.StartAsync(tokenSource.Token);
+
+        mockSqsClient.Verify(x => x.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()), Times.AtLeast(2));
+    }
+
+    [Fact]
     public async Task StopAsync_CompletesSuccessfully()
     {
         var mockSqsClientFactory = new Mock<ISqsClientFactory>();

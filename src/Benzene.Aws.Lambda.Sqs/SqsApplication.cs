@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Logging;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 
@@ -57,6 +58,12 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                 }
                 catch (Exception ex)
                 {
+                    using (var loggingScope = serviceResolverFactory.CreateScope())
+                    {
+                        loggingScope.GetService<IBenzeneLogger>()
+                            .LogError(ex, "Processing SQS message {messageId} failed", context.SqsMessage.MessageId);
+                    }
+
                     batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
                 }
             })
