@@ -1,8 +1,7 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.MessageHandlers.BenzeneMessage;
-using Benzene.Core.Messages.BenzeneMessage;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Grpc.Core;
@@ -53,49 +52,8 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         var responseJson = JsonSerializer.Serialize(result, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            IgnoreNullValues = true
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         });
-        return Parse<TResponse>(responseJson, _grpcMethodDefinition.Method.Split("/").Last());
-    }
-}
-public class GrpcMethodHandler2 : IGrpcMethodHandler
-{
-    private IGrpcMethodDefinition _grpcMethodDefinition;
-    private IServiceResolverFactory _serviceResolverFactory;
-    private ServiceDescriptor _serviceDescriptor;
-    private BenzeneMessageApplication _application;
-
-    public GrpcMethodHandler2(IGrpcMethodDefinition grpcMethodDefinition, IServiceResolverFactory serviceResolverFactory, IMiddlewarePipeline<BenzeneMessageContext> middlewarePipeline, ServiceDescriptor serviceDescriptor)
-    {
-        _application = new BenzeneMessageApplication(middlewarePipeline);
-        _serviceDescriptor = serviceDescriptor;
-        _serviceResolverFactory = serviceResolverFactory;
-        _grpcMethodDefinition = grpcMethodDefinition;
-    }
-
-    private async Task<string> CallAsync<TRequest>(string topic, TRequest request)
-    {
-        var result = await _application.HandleAsync(new BenzeneMessageRequest
-        {
-            Topic = topic,
-            Body = JsonSerializer.Serialize(request)
-        }, _serviceResolverFactory);
-
-        return result.Body;
-    }
-
-    private T Parse<T>(string json, string methodName) where T : class
-    {
-        var methodDescriptor = _serviceDescriptor.FindMethodByName(methodName).OutputType;
-        return JsonParser.Default.Parse(json, methodDescriptor) as T;
-    }
-
-    public async Task<TResponse> HandleAsync<TRequest, TResponse>(TRequest request, ServerCallContext context)
-        where TRequest : class
-        where TResponse : class
-    {
-        var responseJson = await CallAsync(_grpcMethodDefinition.Topic, request);
-
         return Parse<TResponse>(responseJson, _grpcMethodDefinition.Method.Split("/").Last());
     }
 }
