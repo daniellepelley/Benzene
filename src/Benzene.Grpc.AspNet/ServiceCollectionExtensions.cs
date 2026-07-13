@@ -27,13 +27,41 @@ public static class ServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddBenzeneGrpc(this IServiceCollection services, Action<GrpcServiceOptions>? configure = null)
     {
+        return services.AddBenzeneGrpc(options => options.ConfigureGrpc = configure);
+    }
+
+    /// <summary>
+    /// Registers ASP.NET Core's gRPC services and adds <see cref="BenzeneInterceptor"/>, same as the
+    /// other overload, plus the optional health check
+    /// (<see cref="BenzeneGrpcOptions.EnableHealthChecks"/>) and reflection
+    /// (<see cref="BenzeneGrpcOptions.EnableReflection"/>) services - both off by default. Map the
+    /// resulting endpoints with <see cref="GrpcEndpointExtensions"/>.
+    /// </summary>
+    /// <param name="services">The service collection to register gRPC services with.</param>
+    /// <param name="configureOptions">Configures <see cref="BenzeneGrpcOptions"/>.</param>
+    /// <returns><paramref name="services"/>, for method chaining.</returns>
+    public static IServiceCollection AddBenzeneGrpc(this IServiceCollection services, Action<BenzeneGrpcOptions> configureOptions)
+    {
+        var options = new BenzeneGrpcOptions();
+        configureOptions(options);
+
         services.TryAdd(ServiceDescriptor.Singleton<IGrpcMethodHandlerFactoryAccessor>(new GrpcMethodHandlerFactoryAccessor()));
 
-        services.AddGrpc(options =>
+        services.AddGrpc(grpcOptions =>
         {
-            options.Interceptors.Add(typeof(BenzeneInterceptor));
-            configure?.Invoke(options);
+            grpcOptions.Interceptors.Add(typeof(BenzeneInterceptor));
+            options.ConfigureGrpc?.Invoke(grpcOptions);
         });
+
+        if (options.EnableHealthChecks)
+        {
+            services.AddGrpcHealthChecks().AddCheck<BenzeneHealthCheckBridge>("benzene");
+        }
+
+        if (options.EnableReflection)
+        {
+            services.AddGrpcReflection();
+        }
 
         return services;
     }

@@ -12,12 +12,15 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.62.0" />
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.62.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
     <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
     <ProjectReference Include="..\Benzene.Grpc\Benzene.Grpc.csproj" />
+    <ProjectReference Include="..\Benzene.HealthChecks.Core\Benzene.HealthChecks.Core.csproj" />
     <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
   </ItemGroup>
 
