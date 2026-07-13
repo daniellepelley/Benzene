@@ -5,6 +5,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 ### Main Themes
 
 - **General**
+  - [Getting Started](getting-started) — build and run your first Benzene service in 5 minutes
   - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
   - [Unified Hosting Model](hosting)
   - [Message Handlers](message-handlers)
@@ -41,8 +42,15 @@ Benzene is a hexagonal framework designed for services running in serverless env
 
 - **Code Generation**
   - [Terraform](terraform)
-  - [Client SDKs](client-sdks) (Coming Soon)
+  - [Client SDKs](client-sdks)
   - [OpenAPI Specification](spec)
+
+- **Reference**
+  - [Package Reference](reference/packages) — every NuGet package and when to install it
+  - [Middleware Reference](reference/middleware) — every pipeline step and its options
+  - [Attributes Reference](reference/attributes) — the attributes you apply to handlers
+  - [Result & Status Reference](reference/results) — result statuses and their HTTP mappings
+  - [Configuration Reference](reference/configuration) — the StartUp lifecycle and config options
 
 - **Cookbooks**
   - [Cookbook Index](cookbooks/README)
