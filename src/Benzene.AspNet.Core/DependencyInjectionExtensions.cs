@@ -28,7 +28,7 @@ public static class DependencyInjectionExtensions
     /// <param name="services">The service container to register services with.</param>
     /// <returns>The service container, for method chaining.</returns>
     /// <remarks>
-    /// Called automatically by <see cref="BenzeneExtensions.UseAspNet"/>; you don't normally need to
+    /// Called automatically by <see cref="BenzeneExtensions.UseHttp(IAspApplicationBuilder, Action{IMiddlewarePipelineBuilder{AspNetContext}})"/>; you don't normally need to
     /// call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddAspNetMessageHandlers(this IBenzeneServiceContainer services)

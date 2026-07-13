@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
@@ -10,9 +11,17 @@ namespace Benzene.AspNet.Core;
 /// <summary>
 /// Default implementation of <see cref="IAspApplicationBuilder"/>. Wires entry point applications
 /// directly into the ASP.NET Core request pipeline via <see cref="IApplicationBuilder.Use(System.Func{RequestDelegate,RequestDelegate})"/>.
+/// Also implements the platform-neutral <see cref="IBenzeneApplicationBuilder"/> so a <see cref="BenzeneStartUp"/>
+/// can be configured identically whether hosted on ASP.NET Core or any other Benzene host.
 /// </summary>
-public class AspApplicationBuilder : IAspApplicationBuilder
+public class AspApplicationBuilder : IAspApplicationBuilder, IBenzeneApplicationBuilder
 {
+    /// <summary>The platform identifier reported by <see cref="Platform"/>.</summary>
+    public const string PlatformName = "AspNet";
+
+    /// <inheritdoc />
+    public string Platform => PlatformName;
+
     private readonly List<Func<IServiceResolverFactory, IEntryPointMiddlewareApplication>> _apps = new();
     private IApplicationBuilder _applicationBuilder;
     private readonly IBenzeneServiceContainer _benzeneServiceContainer;

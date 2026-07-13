@@ -80,7 +80,7 @@ public class Startup
         app.UseAuthorization();
 
         app.UseBenzene(benzene => benzene
-            .UseAspNet(asp => asp
+            .UseHttp(asp => asp
                 .UseCorrelationId()
                 .UseSpec()
                 // .UseCors(new CorsSettings
