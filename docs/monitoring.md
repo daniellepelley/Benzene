@@ -111,8 +111,25 @@ For AWS Lambda environments, you can use the `Benzene.Aws.XRay` package to integ
 
 ### OpenTelemetry
 
-Benzene provides a `Benzene.OpenTelemetry` package for standardized distributed tracing and metrics:
+`AddDiagnostics()` already produces `Activity` spans (one per middleware, see [Tracing](#tracing)
+above) and, when you add [`UseBenzeneMetrics()`](common-middleware#usebenzenemetrics), the
+`benzene.messages.processed`/`benzene.message.duration` metrics. Neither goes anywhere on its own —
+the `Benzene.OpenTelemetry` package wires both into an OTel provider so they get exported to a real
+backend:
 
 ```csharp
-services.UsingBenzene(x => x.AddOpenTelemetry());
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddBenzeneInstrumentation()
+    .AddOtlpExporter()
+    .Build();
+
+using var meterProvider = Sdk.CreateMeterProviderBuilder()
+    .AddBenzeneInstrumentation()
+    .AddOtlpExporter()
+    .Build();
 ```
+
+`AddBenzeneInstrumentation()` is a plain extension on OTel's own `TracerProviderBuilder`/
+`MeterProviderBuilder` — it registers no Benzene DI services, so it composes with any exporter or
+hosting integration (`OpenTelemetry.Extensions.Hosting`'s `AddOpenTelemetry()`, the console exporter,
+etc.) the same way any other `AddSource`/`AddMeter` call would.

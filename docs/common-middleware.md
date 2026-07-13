@@ -18,6 +18,19 @@ naming a specific stage explicitly.
 .UseTimer("benzene-message-application")
 ```
 
+## UseBenzeneMetrics
+
+This records `benzene.messages.processed` (a count) and `benzene.message.duration` (in
+milliseconds) for the wrapped pipeline stage, tagged by `topic`, `transport`, and `result`
+(`success`/`failure`, where the context implements `IHasMessageResult`). Unlike the automatic
+per-middleware `Activity` spans from `AddDiagnostics()`, this is once-per-message granularity and
+must be added explicitly around the stage you want measured. See
+[OpenTelemetry](monitoring#opentelemetry) for exporting these to a real backend.
+
+```csharp
+.UseBenzeneMetrics()
+```
+
 ## UseHealthCheck
 This will allow healthchecks to be accessed using the topic added. By default “healthcheck” will always access the healthchecks on a service, but you might want call multiple healthchecks from outside the service so this give you the options to have a topic called something like “<service-name>:healthcheck”.
 

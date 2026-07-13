@@ -18,4 +18,10 @@ public static class BenzeneDiagnostics
 
     /// <summary>The <see cref="System.Diagnostics.Metrics.Meter"/> Benzene's built-in instruments are recorded on.</summary>
     public static readonly Meter Meter = new(SourceName);
+
+    /// <summary>Count of messages processed by <c>UseBenzeneMetrics</c>, tagged by topic/transport/result.</summary>
+    public static readonly Counter<long> MessagesProcessed = Meter.CreateCounter<long>("benzene.messages.processed");
+
+    /// <summary>Duration in milliseconds of messages processed by <c>UseBenzeneMetrics</c>, tagged by topic/transport/result.</summary>
+    public static readonly Histogram<double> MessageDuration = Meter.CreateHistogram<double>("benzene.message.duration");
 }
