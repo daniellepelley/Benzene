@@ -17,6 +17,10 @@ public class AwsLambdaHost<TStartUp> : IAwsLambdaEntryPoint where TStartUp : Ben
 {
     private readonly AwsLambdaEntryPoint _entryPoint;
 
+    /// <summary>
+    /// Constructs <typeparamref name="TStartUp"/>, runs its configuration/service registration, and
+    /// builds the middleware pipeline the Lambda entry point dispatches every invocation through.
+    /// </summary>
     public AwsLambdaHost()
     {
         var startUp = new TStartUp();
@@ -32,8 +36,17 @@ public class AwsLambdaHost<TStartUp> : IAwsLambdaEntryPoint where TStartUp : Ben
         _entryPoint = new AwsLambdaEntryPoint(eventPipeline.Build(), new MicrosoftServiceResolverFactory(services));
     }
 
+    /// <summary>
+    /// The Lambda function handler entry point — point your function-handler setting at this method.
+    /// </summary>
+    /// <param name="stream">The raw invocation payload stream.</param>
+    /// <param name="lambdaContext">The Lambda runtime's invocation context.</param>
+    /// <returns>The raw response payload stream.</returns>
     public Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext) =>
         _entryPoint.FunctionHandlerAsync(stream, lambdaContext);
 
+    /// <summary>
+    /// Disposes the underlying entry point (and, transitively, its service resolver factory).
+    /// </summary>
     public void Dispose() => _entryPoint.Dispose();
 }

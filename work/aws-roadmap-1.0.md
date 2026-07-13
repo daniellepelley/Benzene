@@ -1,9 +1,67 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.7
-**Last Updated:** 2026-07-12
+**Document Version:** 1.8
+**Last Updated:** 2026-07-13
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
+
+> **2026-07-13 changelog** — audit pass ticking off work completed since the
+> 2026-07-12 update, in order of significance:
+> 1. **`Benzene.Aws.XRay` deleted** (Checkpoint B, commit `1081bd1`) — the whole
+>    package (section 8 below) no longer exists. X-Ray tracing isn't gone, it's
+>    superseded: every pipeline already gets a real `System.Diagnostics.Activity`
+>    span per middleware via `AddDiagnostics()`, and `Benzene.OpenTelemetry`'s
+>    `AddBenzeneInstrumentation()` exports those spans to X-Ray (or any other
+>    backend) through a standard OTel exporter — one mechanism instead of a
+>    dedicated per-vendor package. **AWS production package count is now 8, not
+>    9** — every "current state" reference to "9 packages" in this document has
+>    been corrected to 8; the 2026-07-12 changelog's own "9 packages" narrative
+>    is left as-is, since it accurately describes what was true at the time that
+>    work was done (XRay wasn't deleted until the next day). Section 8 below is
+>    kept as a historical record, marked deleted, rather than removed outright.
+> 2. **SQS/SNS client header forwarding fixed** (commit `6e88ad6`) —
+>    `SqsContextConverter`/`SnsContextConverter` in `Benzene.Clients.Aws` now
+>    copy `IBenzeneClientRequest.Headers` onto `MessageAttributes` (previously
+>    only the `topic` attribute was set; headers, including correlation IDs and
+>    W3C trace context, were silently dropped on the wire). This resolves the
+>    SNS section's "Document message attributes vs. headers mapping" item —
+>    it's now real, working behavior, documented in `docs/clients.md`.
+>    (The raw-`InvokeRequest` Lambda client path has no header concept to
+>    forward into and is documented as such, not a gap.)
+> 3. **New cookbooks resolve several open documentation items** (commit
+>    `51cd0b4`, "Write comprehensive documentation across the docs/ tree"):
+>    `docs/cookbooks/handling-sqs-failures.md` (retry + DLQ patterns — resolves
+>    two open SQS-section items), `docs/cookbooks/sns-fan-out.md` (fan-out
+>    architecture example — resolves an open SNS-section item, and documents
+>    the header-mapping fix above), `docs/cookbooks/testing-lambda-functions.md`
+>    (resolves the open "Testing guide (LocalStack, mocking)" documentation
+>    item), and a new `docs/clients.md` reference doc for `Benzene.Clients.Aws`
+>    (resolves part of that package's "clarify purpose" / "usage examples"
+>    items). `docs/getting-started-aws.md` also gained a "Test locally with
+>    `BenzeneTestHost`" section (commit `fc4cda2`'s new
+>    `BuildAwsLambdaHost()` bridge).
+> 4. **Logging stack unified** (commits `3f3b25d`, `eee1aa5`) — the old
+>    `IBenzeneLogger` abstraction was replaced with `Microsoft.Extensions.Logging`
+>    across every package, AWS included. Resolves the "Standardized logging
+>    approach" item under Code Quality Improvements.
+> 5. **Found and fixed one real gap while auditing "AWSSDK.SQS aligned to
+>    3.7.502.57 across all packages"**: `Benzene.Aws.Sqs.TestHelpers` was
+>    missed in the 2026-07-12 pass and was still on `3.7.100.74`. Bumped to
+>    `3.7.502.57`; verified via `dotnet build`. The alignment claim is now
+>    actually true, not just claimed.
+> 6. **Found and fixed one dangling doc cross-reference**: the SAM template's
+>    `Tracing: Active` comment (`examples/Aws/Benzene.Examples.Aws/template.yaml`)
+>    pointed at an "X-Ray" section in `docs/aws-iam-permissions.md` that
+>    `1081bd1` deleted. Rewritten to explain SAM's automatic IAM grant and the
+>    OTel-based tracing story instead.
+> 7. **`WithRequestId()`/`WithApplication()` in `Benzene.Aws.Lambda.Core` marked
+>    `[Obsolete]`** (commit `13c71de`), superseded by the portable
+>    `Benzene.Diagnostics.EnrichmentExtensions.UseBenzeneEnrichment()`. Noted
+>    here since it's a new public-API surface change in a package this roadmap
+>    tracks; no roadmap checkbox maps directly to it.
+>
+> Everything else in the 2026-07-12 changelog above remains accurate and
+> unchanged by this pass.
 
 > **2026-07-12 changelog** — P0 items resolved today, in order. Package/percentage
 > details and discovered bugs are recorded inline at each item's section below rather
@@ -62,15 +120,15 @@
 
 ## Executive Summary
 
-This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages and defines the strategic direction for AWS-specific features over the next 12+ months. The AWS ecosystem within Benzene currently consists of **8 production packages** and **5 TestHelper packages** supporting Lambda, SQS, SNS, EventBridge, Kafka, and X-Ray.
+This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages and defines the strategic direction for AWS-specific features over the next 12+ months. The AWS ecosystem within Benzene currently consists of **8 production packages** and **5 TestHelper packages** supporting Lambda, SQS, SNS, S3, and Kafka. (X-Ray tracing is no longer a dedicated package — see the 2026-07-13 changelog above.)
 
 ### Current State
-- **Package Count:** 9 AWS production packages, 5 TestHelpers
+- **Package Count:** 8 AWS production packages, 5 TestHelpers (`Benzene.Aws.XRay` deleted 2026-07-13, superseded by OpenTelemetry — see changelog)
 - **Version:** All at 0.0.1 (pre-release)
 - **Target Framework:** .NET 10
-- **Source Files:** ~179 AWS-related source files
-- **Test Coverage:** ✅ 90%+ unit test coverage across all 9 packages, plus LocalStack integration tests passing in CI (both completed 2026-07-12)
-- **Documentation:** ✅ 100% XML documentation (completed 2026-07-12), basic CLAUDE.md files exist
+- **Source Files:** ~179 AWS-related source files (pre-XRay-deletion count; not yet recounted)
+- **Test Coverage:** ✅ 90%+ unit test coverage across all 8 remaining packages, plus LocalStack integration tests passing in CI (both completed 2026-07-12)
+- **Documentation:** ✅ 100% XML documentation (completed 2026-07-12; regressed to 3 missing summaries on `AwsLambdaHost<TStartUp>` when that class was added afterward, found and fixed 2026-07-13 — see changelog), basic CLAUDE.md files exist
 - **Maturity:** Functional but not production-ready for 1.0
 
 ### Key Findings
@@ -80,7 +138,7 @@ This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages a
 - TestHelpers properly extracted to dedicated packages
 - Working examples demonstrate real-world usage
 - No TODO/FIXME/HACK comments found in codebase
-- ✅ 100% XML documentation coverage across all 9 packages, zero CS1591 warnings (completed 2026-07-12)
+- ✅ 100% XML documentation coverage across all 8 remaining packages, zero CS1591 warnings (completed 2026-07-12; a regression from `AwsLambdaHost<TStartUp>`'s 3 undocumented members, added after that pass, was found and fixed 2026-07-13 — verified via a clean rebuild)
 
 ❌ **Critical Blockers for 1.0:**
 - ~~ZERO XML documentation on any public API~~ ✅ RESOLVED 2026-07-12
@@ -137,7 +195,7 @@ Keep all AWS packages at **0.9.x-preview** until after core 1.0 release, then:
 | **Benzene.Aws.Lambda.S3** (was `.EventBridge`) | 0.0.1 | S3 event notification adapter | Medium | ⚠️ Needs work |
 | **Benzene.Aws.Lambda.Kafka** | 0.0.1 | MSK/Kafka event source adapter | Low | ❌ Not ready |
 | **Benzene.Aws.Sqs** | 0.0.1 | SQS client for publishing | Medium | ⚠️ Needs work |
-| **Benzene.Aws.XRay** | 0.0.1 | AWS X-Ray distributed tracing | Low | ❌ Not ready |
+| ~~**Benzene.Aws.XRay**~~ | — | ✅ Deleted 2026-07-13 — superseded by `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` (see changelog) | — | N/A |
 | **Benzene.Clients.Aws** | 0.0.1 | AWS service clients (Lambda, SQS, SNS, Step Functions) | Low | ❌ Not ready |
 
 **TestHelper Packages (not for 1.0):**
@@ -183,10 +241,18 @@ AWSSDK.SimpleNotificationService       3.7.301.4
 AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 ```
 
+> This table is the original as-found snapshot and is kept for historical
+> context. All three issues below were resolved 2026-07-12 (SDK versions
+> aligned, "EventBridge" renamed to `Benzene.Aws.Lambda.S3` since it always was
+> S3 event handling, `System.Text.Encodings.Web` pin removed) — see the
+> 2026-07-12 changelog at the top of this document. `AWSXRayRecorder.Handlers.AwsSdk`
+> no longer appears anywhere in the repo — it was `Benzene.Aws.XRay`'s only
+> purpose, and that package was deleted 2026-07-13 (see the 2026-07-13 changelog).
+
 **Issues:**
-1. ⚠️ **Inconsistent AWSSDK.SQS versions** (3.7.100.74 vs 3.7.2.63)
-2. ⚠️ **EventBridge package references S3Events** instead of CloudWatchEvents
-3. ⚠️ Old `System.Text.Encodings.Web` version (6.0.0) - should align with .NET 10
+1. ~~⚠️ **Inconsistent AWSSDK.SQS versions** (3.7.100.74 vs 3.7.2.63)~~ ✅ RESOLVED 2026-07-12 (aligned to `3.7.502.57`); one package missed in that pass (`Benzene.Aws.Sqs.TestHelpers`) was found and fixed 2026-07-13
+2. ~~⚠️ **EventBridge package references S3Events** instead of CloudWatchEvents~~ ✅ RESOLVED 2026-07-12 (renamed to `Benzene.Aws.Lambda.S3`; the dependency was always correct)
+3. ~~⚠️ Old `System.Text.Encodings.Web` version (6.0.0) - should align with .NET 10~~ ✅ RESOLVED 2026-07-12 (pin removed from all 7 affected packages)
 
 ---
 
@@ -221,7 +287,7 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 5. ⚠️ No metrics/logging for startup time
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Improve error messages with actionable guidance
 - [ ] Add startup time logging
 - [ ] Document cold-start best practices
@@ -267,7 +333,7 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 7. ⚠️ No OpenAPI/Swagger integration examples
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Expand ApiGatewayContext with convenience properties
 - [ ] Document CORS setup with examples
 - [ ] Document custom authorizer patterns
@@ -311,11 +377,11 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 8. ⚠️ Batch failure handling could log more details
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
-- [ ] Improve exception logging in batch processing
-- [ ] Document DLQ configuration patterns
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
+- [x] Improve exception logging in batch processing (completed 2026-07-12 — `SqsApplication.HandleAsync` now logs a failed record's exception via `ILogger` before adding it to `BatchItemFailures`)
+- [x] Document DLQ configuration patterns (completed 2026-07-13 — `docs/cookbooks/handling-sqs-failures.md`)
 - [ ] Document FIFO queue usage
-- [ ] Add retry and backoff strategies
+- [x] Add retry and backoff strategies (completed 2026-07-13 — `docs/cookbooks/handling-sqs-failures.md` covers in-process retry middleware plus partial-batch-failure reporting)
 - [ ] Document visibility timeout implications
 - [ ] Add message attribute best practices
 - [ ] Document batch size optimization
@@ -352,13 +418,17 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 5. ⚠️ Topic ARN parsing could fail - no error handling
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Document subscription confirmation flow
 - [ ] Add message filtering policy examples
 - [ ] Document raw vs. wrapped message delivery
 - [ ] Add SNS FIFO topic support documentation
-- [ ] Document message attributes vs. headers mapping
-- [ ] Add fan-out architecture examples
+- [x] Document message attributes vs. headers mapping (completed 2026-07-13 — this
+      was also a real bug, not just missing docs: `SnsContextConverter` didn't forward
+      `IBenzeneClientRequest.Headers` onto `PublishRequest.MessageAttributes` at all,
+      silently dropping correlation IDs/W3C trace context; fixed in commit `6e88ad6`,
+      documented in `docs/clients.md` and `docs/cookbooks/sns-fan-out.md`)
+- [x] Add fan-out architecture examples (completed 2026-07-13 — `docs/cookbooks/sns-fan-out.md`)
 - [ ] Document message deduplication for FIFO
 - [ ] Add error handling for malformed topic ARNs
 
@@ -432,7 +502,7 @@ naming/dependency work is done)
 8. ⚠️ No MSK IAM authentication examples
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Document MSK vs. self-managed Kafka differences
 - [ ] Add IAM authentication examples for MSK
 - [ ] Document offset commit strategies
@@ -479,7 +549,7 @@ naming/dependency work is done)
 9. ⚠️ Depends on Amazon.Lambda.SQSEvents but isn't a Lambda package
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Add batch send operation
 - [ ] Add configurable polling settings
 - [ ] Improve cancellation handling
@@ -495,45 +565,47 @@ naming/dependency work is done)
 
 ---
 
-### 8. Benzene.Aws.XRay 📊 Distributed Tracing
+### 8. ~~Benzene.Aws.XRay~~ 📊 Distributed Tracing — ✅ DELETED 2026-07-13
 
-**Location:** `src/Benzene.Aws.XRay/`
-**Current State:** Low maturity, minimal implementation
+**Location:** `src/Benzene.Aws.XRay/` — no longer exists (commit `1081bd1`, "Delete
+Benzene.Datadog, Benzene.Zipkin, and Benzene.Aws.XRay (Checkpoint B)").
 
-**Public API Surface:**
-- `Extensions.UseXRayTracing<TContext>()` (C:\Users\pelled\source\libs\Benzene\src\Benzene.Aws.XRay\Extensions.cs)
-- `XRayProcessTimerFactory` - Timer factory
-- `XRayProcessProcessTimer` - Process timer
+Every issue and requirement this section used to list — no XML docs, no
+segment/subsegment management, no annotation/metadata capture, no integration
+with Benzene's diagnostics, an unnecessary `AWSSDK.SQS` reference — is now moot;
+there's no package left to fix. It wasn't replaced by a better X-Ray-specific
+package, it was **subsumed**: `AddDiagnostics()` (`Benzene.Diagnostics`) already
+wraps every middleware in every pipeline in a real `System.Diagnostics.Activity`
+span, and `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` exports those
+spans through any standard OpenTelemetry exporter — including an X-Ray one, via
+the OTel Collector's AWS X-Ray exporter — instead of a bespoke package hard-wired
+to one backend. This is a strict improvement over the old package's "Too
+simplistic - only registers SDK handler" state: annotation/metadata capture,
+custom span naming, and segment nesting are now just standard `Activity` API,
+already exercised by the existing diagnostics test suite (`BenzeneInstrumentationTest`).
 
-**Strengths:**
-- Simple integration point
-- Wraps AWS X-Ray SDK
+Deleted alongside its tests (`test/Benzene.Core.Test/Aws/XRay/*`), its
+`ProjectReference` from `Benzene.Test.csproj`, its entries in both `.sln` files,
+and its usage in the AWS example (`StartUpAutofac.cs`'s `.UseXRayTracing(true)`
+call). `docs/aws-iam-permissions.md` and `docs/monitoring.md` had their
+X-Ray-specific sections removed as part of the same commit; general OTel export
+guidance remains in `docs/monitoring.md`'s "OpenTelemetry" section.
 
-**Issues:**
-1. ❌ No XML documentation
-2. ⚠️ Too simplistic - only registers SDK handler (line 12 of Extensions.cs)
-3. ⚠️ No segment/subsegment management
-4. ⚠️ No annotation/metadata capture
-5. ⚠️ No custom tracing middleware
-6. ⚠️ Timer implementation not reviewed
-7. ⚠️ No guidance on X-Ray sampling rules
-8. ⚠️ No integration with Benzene's diagnostics
-9. ⚠️ References AWSSDK.SQS which seems unnecessary
+A real OTel-collector-backed integration test proving the X-Ray export path
+end-to-end is explicitly left as follow-up per the deletion commit's own
+message — the OTel wiring itself is unit-tested, but nothing in CI currently
+verifies a span actually lands in X-Ray specifically.
 
-**1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
-- [ ] Add segment/subsegment middleware
-- [ ] Add annotation and metadata helpers
-- [ ] Document X-Ray sampling configuration
-- [ ] Add tracing best practices guide
-- [ ] Integrate with Benzene.Diagnostics
-- [ ] Add custom segment naming strategies
-- [ ] Remove unnecessary AWSSDK.SQS dependency
-- [ ] Add error and exception tracking
-- [ ] Document cost optimization (sampling)
-- [ ] Add service map visualization examples
+**Remaining work (if this is ever revisited):**
+- [ ] Add an integration test that exports a span through the OTel Collector's
+      AWS X-Ray exporter and confirms it's queryable in X-Ray (or an X-Ray-shaped
+      local emulator) — the one thing the deletion commit didn't cover
+- [ ] Consider a short cookbook ("Exporting Benzene traces to AWS X-Ray") if
+      this comes up in practice — `docs/monitoring.md` documents the OTel path
+      generically but doesn't have an X-Ray-specific walkthrough
 
-**Estimated Effort:** 15-20 hours
+**Estimated Effort:** 0 hours (package deleted); 4-6 hours if the integration
+test above is picked up
 
 ---
 
@@ -556,9 +628,13 @@ naming/dependency work is done)
 
 **1.0 Requirements:**
 - [ ] Full code review of client implementations
-- [ ] Add comprehensive XML documentation
-- [ ] Clarify purpose vs. AWS SDK
-- [ ] Add client usage examples
+- [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
+- [x] Clarify purpose vs. AWS SDK (completed 2026-07-13 — `docs/clients.md`: a
+      Benzene client is an `IBenzeneMessageClient` decorated with cross-cutting
+      behavior — correlation IDs, W3C trace propagation, retries — that another
+      Benzene service calls through, on top of the AWS SDK, not instead of it)
+- [x] Add client usage examples (completed 2026-07-13 — `docs/clients.md` and
+      `docs/cookbooks/sns-fan-out.md`)
 - [ ] Document authentication patterns
 - [ ] Add retry and resilience patterns
 - [ ] Document health check integration
@@ -577,7 +653,9 @@ naming/dependency work is done)
 **Must Have Before 1.0:**
 
 1. ~~**XML Documentation** (60-80 hours) - HIGHEST PRIORITY~~ ✅ COMPLETE 2026-07-12
-   - ~~Document every public type, method, property~~ ✅ Done for all 9 packages, 0 CS1591 warnings
+   - ~~Document every public type, method, property~~ ✅ Done for all 8 remaining
+     packages, 0 CS1591 warnings (a 3-member regression on `AwsLambdaHost<TStartUp>`,
+     added after this pass, was found and fixed 2026-07-13)
    - `<example>` blocks and AWS-specific behavior docs (IAM, limits, costs) were out of scope
      for this pass and remain open as narrative documentation work (see Documentation
      Requirements section below)
@@ -877,18 +955,18 @@ naming/dependency work is done)
 ### Current Technical Debt
 
 **High Priority:**
-1. ⚠️ EventBridge package naming/dependency confusion
-2. ⚠️ Inconsistent AWSSDK versions
-3. ⚠️ Exception swallowing in SqsApplication
-4. ⚠️ Virtual member calls in constructors
-5. ⚠️ Hard-coded configuration values (e.g., WaitTimeSeconds = 1)
-6. ⚠️ Unnecessary dependencies (XRay → AWSSDK.SQS)
+1. ~~⚠️ EventBridge package naming/dependency confusion~~ ✅ RESOLVED 2026-07-12 (renamed to `Benzene.Aws.Lambda.S3`)
+2. ~~⚠️ Inconsistent AWSSDK versions~~ ✅ RESOLVED 2026-07-12 (aligned to `3.7.502.57`); `Benzene.Aws.Sqs.TestHelpers` missed in that pass, fixed 2026-07-13
+3. ~~⚠️ Exception swallowing in SqsApplication~~ ✅ RESOLVED 2026-07-12 (now logged via `IBenzeneLogger`/`ILogger`)
+4. ⚠️ Virtual member calls in constructors — deliberately NOT fixed; see `AwsLambdaStartUp` discussion in the 2026-07-12 changelog (item 7) — fixing it means a breaking redesign of the entry-point pattern, not a code-quality fix
+5. ~~⚠️ Hard-coded configuration values (e.g., WaitTimeSeconds = 1)~~ ✅ RESOLVED 2026-07-12 (now a configurable `SqsConsumerConfig` property, defaulting to `1`)
+6. ~~⚠️ Unnecessary dependencies (XRay → AWSSDK.SQS)~~ ✅ MOOT 2026-07-13 — `Benzene.Aws.XRay` was deleted entirely, not just cleaned up
 
 **Medium Priority:**
 1. ApiGatewayContext too simple - needs convenience properties
 2. Error messages not actionable
 3. No batch operations in SqsMessageClient
-4. Consumer infinite loop without safeguards
+4. ~~Consumer infinite loop without safeguards~~ ✅ PARTIALLY RESOLVED 2026-07-12 — `SqsConsumer.StartAsync` no longer dies permanently on a transient error (broadened from catching only `TaskCanceledException` to all `OperationCanceledException`, with any other exception logged and polling continuing); the loop is still intentionally infinite (that's the design for a long-running consumer), it just no longer silently stops
 5. No retry policies on client operations
 
 **Low Priority:**
@@ -901,7 +979,10 @@ naming/dependency work is done)
 
 **Standardization:**
 - [ ] Consistent error handling patterns
-- [ ] Standardized logging approach
+- [x] Standardized logging approach — ✅ the old `IBenzeneLogger` abstraction was
+      replaced with `Microsoft.Extensions.Logging` across every Benzene package,
+      AWS included (commits `3f3b25d`, `eee1aa5`); every package now logs through
+      the same standard `ILogger`/`ILogger<T>` API
 - [ ] Unified configuration patterns
 - [ ] Common retry/resilience patterns
 - [ ] Consistent async/await usage
@@ -923,9 +1004,11 @@ naming/dependency work is done)
 ## Testing Strategy
 
 ### Current State
-- ✅ Unit test coverage complete (2026-07-12): all 9 packages 90%+ (Core 93.2%,
-  ApiGateway 91.5%, Sqs 94.8%, Sns 98.5%, S3 100%, Kafka 96.7%, Aws.Sqs 100%, XRay
-  92.7%, Clients.Aws 90.6%), in `test/Benzene.Core.Test/Aws/`
+- ✅ Unit test coverage complete (2026-07-12): all 8 remaining packages 90%+ (Core
+  93.2%, ApiGateway 91.5%, Sqs 94.8%, Sns 98.5%, S3 100%, Kafka 96.7%, Aws.Sqs 100%,
+  Clients.Aws 90.6%), in `test/Benzene.Core.Test/Aws/`. (`Benzene.Aws.XRay` measured
+  92.7% at the time but was deleted 2026-07-13, superseded by OpenTelemetry — see
+  changelog; its tests were deleted with it, not left uncovered.)
 - ✅ LocalStack integration tests complete (2026-07-12): `test/Benzene.Aws.Tests` is now
   wired into CI as the `aws-integration-tests` job in `build-benzene.yml` and passing
   against a real LocalStack container. 7 test classes total (up from 4):
@@ -1024,14 +1107,20 @@ services:
 - [ ] CDK construct examples (TypeScript + C#)
 - [ ] Migration guide from raw Lambda to Benzene
 - [ ] Best practices guide (costs, performance, security)
-- [ ] Troubleshooting guide (common errors)
+- [ ] Troubleshooting guide (common errors) — not a dedicated guide, but partially covered:
+      `docs/getting-started-aws.md` has its own "Troubleshooting" section, and
+      `docs/cookbooks/handling-sqs-failures.md` has one per the standard cookbook structure
 - [ ] FAQ for each adapter
 
 **Developer Documentation:**
 - [ ] Architecture decision records (ADRs)
 - [ ] Contributing guide for AWS packages
 - [ ] Adding new event source guide
-- [ ] Testing guide (LocalStack, mocking)
+- [x] Testing guide (LocalStack, mocking) (completed 2026-07-13 —
+      `docs/cookbooks/testing-lambda-functions.md` covers in-memory `BenzeneTestHost`-based
+      testing of API Gateway + SQS end to end; `docs/testing-benzene.md` was also restructured
+      the same day with a `BenzeneTestHost`-first AWS section. LocalStack integration testing
+      itself was already covered by `test/Benzene.Aws.Tests` + CI, completed 2026-07-12)
 - [ ] Release process for AWS packages
 - [ ] Compatibility matrix (AWS SDK versions, .NET versions)
 
@@ -1333,32 +1422,32 @@ public async Task Sqs_BatchProcessing_100Messages()
 
 ### Allowed Before 1.0 (Do Now)
 
-**1. EventBridge Package Restructure** (CRITICAL)
-- Rename S3* classes to EventBridge* OR
-- Create separate Benzene.Aws.Lambda.S3 package
-- Fix dependency (S3Events → CloudWatchEvents)
+**1. EventBridge Package Restructure** (CRITICAL) — ✅ DONE 2026-07-12
+- ~~Rename S3* classes to EventBridge* OR~~
+- ~~Create separate Benzene.Aws.Lambda.S3 package~~ ✅ renamed `Benzene.Aws.Lambda.EventBridge` → `Benzene.Aws.Lambda.S3`
+- ~~Fix dependency (S3Events → CloudWatchEvents)~~ ✅ turned out unnecessary — `Amazon.Lambda.S3Events` was always the correct dependency for what the package actually does
 - **Impact:** High - anyone using EventBridge package
 - **Migration:** Automatic rename if classes renamed
 
-**2. Standardize AWS SDK Versions**
-- Update all AWSSDK.* packages to latest compatible versions
+**2. Standardize AWS SDK Versions** — ✅ DONE 2026-07-12 (one package missed and fixed 2026-07-13)
+- ~~Update all AWSSDK.* packages to latest compatible versions~~ ✅ `AWSSDK.SQS` aligned to `3.7.502.57`
 - **Impact:** Low - internal dependency change
 - **Migration:** None required
 
-**3. Remove AWSSDK.SQS from Benzene.Aws.XRay**
-- Remove unnecessary dependency
+**3. Remove AWSSDK.SQS from Benzene.Aws.XRay** — ✅ MOOT 2026-07-13
+- ~~Remove unnecessary dependency~~ — `Benzene.Aws.XRay` was deleted entirely, not just cleaned up
 - **Impact:** Low - unlikely anyone depends on this transitive dependency
 - **Migration:** None required
 
-**4. Rename SqsMessageClient.PublishAsync Parameters**
-- Change `status` parameter to `messageAttributes` (Dictionary)
+**4. Rename SqsMessageClient.PublishAsync Parameters** — still open
+- Change `status` parameter to `messageAttributes` (Dictionary) — `ISqsClient.PublishAsync(string topic, string message, string status)` is unchanged
 - More flexible message attribute support
 - **Impact:** Medium - anyone using SqsMessageClient
 - **Migration:** Simple parameter name change
 
-**5. Make SqsConsumer Configuration More Flexible**
-- Move hard-coded values to SqsConsumerConfig
-- Add cancellation token support
+**5. Make SqsConsumer Configuration More Flexible** — ✅ DONE 2026-07-12
+- ~~Move hard-coded values to SqsConsumerConfig~~ ✅ `WaitTimeSeconds` is now a `SqsConsumerConfig` property (default `1`, non-breaking)
+- Add cancellation token support — not done; broadened exception handling (any `OperationCanceledException` exits cleanly, other exceptions are logged and polling continues) is a related but distinct improvement, also shipped 2026-07-12
 - **Impact:** Low - likely few users of SqsConsumer
 - **Migration:** Configuration object changes
 
@@ -1367,9 +1456,9 @@ public async Task Sqs_BatchProcessing_100Messages()
 - **Impact:** Low - additive change
 - **Migration:** None required
 
-**7. Exception Handling in SqsApplication**
-- Log exceptions instead of silently catching
-- Add configurable exception handling strategy
+**7. Exception Handling in SqsApplication** — ✅ PARTIALLY DONE 2026-07-12
+- ~~Log exceptions instead of silently catching~~ ✅ done, via `ILogger` before the item is added to `BatchItemFailures`
+- Add configurable exception handling strategy — not done, still a fixed behavior
 - **Impact:** Medium - error handling behavior change
 - **Migration:** May expose errors previously hidden
 
@@ -1398,9 +1487,9 @@ again before 1.0 ships:
 
 ### AWS SDK Version Strategy
 
-**Current Issues:**
-- Inconsistent AWSSDK.SQS versions (3.7.100.74 vs 3.7.2.63)
-- Old System.Text.Encodings.Web (6.0.0)
+**Current Issues:** ✅ both resolved (see 2026-07-12/2026-07-13 changelogs)
+- ~~Inconsistent AWSSDK.SQS versions (3.7.100.74 vs 3.7.2.63)~~ aligned to `3.7.502.57` everywhere
+- ~~Old System.Text.Encodings.Web (6.0.0)~~ stale pin removed from all 7 affected packages
 
 **Proposed Strategy:**
 - Use latest stable AWS SDK packages at release time
@@ -1437,13 +1526,13 @@ All AWS packages reference:
 ### Third-Party Dependencies
 
 **Current:**
-- Microsoft.Extensions.Configuration.Abstractions: 5.0.0
+- Microsoft.Extensions.Configuration.Abstractions: 8.0.0 (was 5.0.0 when this table was written)
 - Microsoft.Extensions.DependencyInjection: (from Core packages)
-- System.Text.Encodings.Web: 6.0.0
+- ~~System.Text.Encodings.Web: 6.0.0~~ pin removed entirely 2026-07-12 (see changelog)
 
 **Action Items:**
-- [ ] Update to Microsoft.Extensions.* 8.0+ (align with .NET 10)
-- [ ] Update System.Text.Encodings.Web to 8.0+
+- [x] Update to Microsoft.Extensions.* 8.0+ (align with .NET 10) — `Microsoft.Extensions.Configuration.Abstractions` is now `8.0.0`
+- [x] Update System.Text.Encodings.Web to 8.0+ — done differently than specified: the explicit pin was removed entirely rather than bumped, since it was vestigial and net10.0's shared framework already provides a newer version transitively (completed 2026-07-12)
 - [ ] Document minimum version requirements
 
 ### Lambda Runtime Compatibility
@@ -1595,7 +1684,7 @@ descoped as not applicable
 - `C:\Users\pelled\source\libs\Benzene\src\Benzene.Aws.Lambda.Sns\SnsApplication.cs`
 - `C:\Users\pelled\source\libs\Benzene\src\Benzene.Aws.Sqs\Client\SqsMessageClient.cs`
 - `C:\Users\pelled\source\libs\Benzene\src\Benzene.Aws.Sqs\Consumer\SqsConsumer.cs`
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.Aws.XRay\Extensions.cs`
+- ~~`C:\Users\pelled\source\libs\Benzene\src\Benzene.Aws.XRay\Extensions.cs`~~ — deleted 2026-07-13, see changelog
 
 **Related Documentation:**
 - `C:\Users\pelled\source\libs\Benzene\work\1.0.0-release-status.md`
@@ -1619,7 +1708,8 @@ Per `work/1.0.0-release-status.md`, core packages need:
 7. ✅ Working examples
 
 **AWS Packages Current Status:**
-1. ✅ 100% XML documentation (completed 2026-07-12)
+1. ✅ 100% XML documentation (completed 2026-07-12; a 3-member regression on
+   `AwsLambdaHost<TStartUp>`, added after that pass, found and fixed 2026-07-13)
 2. ✅ Test helpers properly separated
 3. ✅ EventBridge/S3 naming confusion resolved (renamed 2026-07-12); 3 further bugs
    found and fixed during the test-coverage pass (X-Ray timer crash, SNS client
@@ -1627,23 +1717,33 @@ Per `work/1.0.0-release-status.md`, core packages need:
    found but not fixed (`AddLambdaClients` DI registration gap — needs a design
    decision)
 4. ✅ Versioning policy applies to all packages
-5. ✅ Unit test coverage complete, 90%+ across all 9 packages, plus LocalStack
+5. ✅ Unit test coverage complete, 90%+ across all 8 remaining packages (was 9,
+   `Benzene.Aws.XRay` deleted 2026-07-13 — see changelog), plus LocalStack
    integration tests wired into CI and passing (both completed 2026-07-12)
 6. ✅ IAM permissions doc, getting-started guide expansion, and a SAM template all
-   complete (completed 2026-07-12); CDK example remains unbuilt, tracked as future work
+   complete (completed 2026-07-12, guide further expanded 2026-07-13 with a
+   `BenzeneTestHost` testing section); CDK example remains unbuilt, tracked as
+   future work. New cookbooks (`handling-sqs-failures.md`, `sns-fan-out.md`,
+   `testing-lambda-functions.md`) and a `docs/clients.md` reference doc added
+   2026-07-13 close several previously-open documentation gaps — see changelog
 7. ⚠️ Examples exist but a CDK template is not yet built (SAM is)
 8. ✅ Dependency versions aligned and unused/stale references removed (completed
-   2026-07-12); AWSSDK v3→v4 and Amazon.Lambda.* major-version upgrades deliberately
-   deferred as a separate, higher-risk decision
+   2026-07-12, one missed package — `Benzene.Aws.Sqs.TestHelpers` — found and
+   fixed 2026-07-13); AWSSDK v3→v4 and Amazon.Lambda.* major-version upgrades
+   deliberately deferred as a separate, higher-risk decision
 9. ✅ Two real code-quality bugs fixed (completed 2026-07-12): SqsApplication's
    swallowed exception, SqsConsumer's fragile catch + hardcoded wait time.
    Virtual-call-in-constructor deliberately left as an intentional, suppressed
    pattern — not a bug
 
 **Gap Analysis:**
-AWS packages are ~96% toward 1.0 readiness using core criteria (up from ~93%). The P0
-list is fully resolved (complete, consciously deferred, or descoped as not
-applicable). What's left is either lower-priority P1/P2 work (a CDK example alongside
+AWS packages are ~97% toward 1.0 readiness using core criteria (up from ~93% on
+2026-07-12, ~96% before this pass). The P0 list is fully resolved (complete,
+consciously deferred, or descoped as not applicable), and this 2026-07-13 pass
+closed several previously-open P1 documentation items (SNS message-attribute/header
+mapping and fan-out examples, SQS retry/DLQ patterns, a testing guide, and a
+`Benzene.Clients.Aws` reference doc) plus standardized logging across every
+package. What's left is either lower-priority P1/P2 work (a CDK example alongside
 the SAM one, performance benchmarks) or decisions that need product/architecture
 sign-off rather than more mechanical work: the `AddLambdaClients` DI gap, the AWSSDK
 v3→v4 / Amazon.Lambda.* major-version upgrade, and whether to ever redesign

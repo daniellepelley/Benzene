@@ -34,8 +34,13 @@ Globals:
     Runtime: dotnet8
     Architectures:
       - arm64
-    Tracing: Active # enables X-Ray and grants the execution role the permissions
-                     # documented under "X-Ray" in ../../../docs/aws-iam-permissions.md
+    Tracing: Active # enables X-Ray; SAM grants the execution role the necessary
+                     # permissions automatically via the AWSXRayDaemonWriteAccess
+                     # managed policy. Benzene itself doesn't have an X-Ray-specific
+                     # package - every pipeline already emits a System.Diagnostics.Activity
+                     # per middleware via AddDiagnostics(), which Benzene.OpenTelemetry's
+                     # AddBenzeneInstrumentation() can export to X-Ray (or any other
+                     # backend) through a standard OTel exporter. See docs/monitoring.md.
 
 Resources:
   BenzeneQueue:
