@@ -10,7 +10,9 @@ This will attempt to pick up a Correlation Id from the message, usually this wil
 
 ## UseTimer
 
-This will create a timer with the name passed in and will write this to either the logs, X-Ray, or anything else you have configured.
+This opens a named [`Activity`](monitoring#tracing) span around the rest of the pipeline. Every
+middleware already gets its own `Activity` automatically via `AddDiagnostics()` — `UseTimer` is for
+naming a specific stage explicitly.
 
 ```csharp
 .UseTimer("benzene-message-application")

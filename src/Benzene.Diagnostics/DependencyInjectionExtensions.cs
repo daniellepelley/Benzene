@@ -14,13 +14,16 @@ namespace Benzene.Diagnostics
                 services.AddScoped<IMiddlewareWrapper, DebugMiddlewareWrapper>();
             }
 
-            if (!services.IsTypeRegistered<TimerMiddlewareWrapper>())
+            if (!services.IsTypeRegistered<ActivityMiddlewareWrapper>())
             {
-                services.AddScoped<TimerMiddlewareWrapper>();
-                services.AddScoped<IMiddlewareWrapper, TimerMiddlewareWrapper>();
+                services.AddScoped<ActivityMiddlewareWrapper>();
+                services.AddScoped<IMiddlewareWrapper, ActivityMiddlewareWrapper>();
             }
 
-            services.AddScoped<IProcessTimerFactory, LoggingProcessTimerFactory>();
+            if (!services.IsTypeRegistered<ActivityProcessTimerFactory>())
+            {
+                services.AddScoped<IProcessTimerFactory, ActivityProcessTimerFactory>();
+            }
 
             return services;
         }

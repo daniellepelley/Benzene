@@ -1,31 +1,54 @@
 # Benzene.Diagnostics
 
 ## What this package does
-Diagnostic and debugging utilities for Benzene. Provides middleware for request/response logging, performance timing, exception handling, and debugging information during development.
+Tracing and timing utilities for Benzene, built on `System.Diagnostics.Activity`. `BenzeneDiagnostics`
+exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage reports through.
+`AddDiagnostics()` wires `ActivityMiddlewareWrapper`, which automatically wraps *every* middleware in
+*every* pipeline in an `Activity` span (tagged `benzene.transport`/`benzene.topic`/`benzene.version`/
+`benzene.handler` where resolvable) — no explicit call needed per middleware. Also provides
+`DebugMiddlewareWrapper` (unrelated `Debug.WriteLine` dev tracing) and correlation-ID middleware.
 
 ## Key types/interfaces
 
-### Diagnostic Middleware
-- Request/response logging middleware
-- Performance timing middleware
-- Exception details middleware
-- Debug information middleware
+### Tracing
+- `BenzeneDiagnostics` - the shared `ActivitySource`/`Meter`, named `"Benzene"`
+- `ActivityMiddlewareWrapper`/`ActivityMiddlewareDecorator<TContext>` - auto-wraps every middleware
+  instance in an `Activity` span; registered by `AddDiagnostics()`
+- `DebugMiddlewareWrapper`/`DebugMiddlewareDecorator<TContext>` - `Debug.WriteLine` start/stop
+  tracing, unrelated to `Activity`/tracing proper
+
+### Timers (`IProcessTimer`/`IProcessTimerFactory`)
+- `IProcessTimer`/`IProcessTimerFactory` - a scoped, named timer abstraction; `UseTimer(string)`
+  resolves the registered `IProcessTimerFactory` and wraps `next()` in one
+- `ActivityProcessTimer`/`ActivityProcessTimerFactory` - the default `IProcessTimerFactory`
+  registered by `AddDiagnostics()`; opens a real `Activity` per timer, same source as
+  `ActivityMiddlewareWrapper`. **`IProcessTimer` is kept for source-compat with existing
+  `UseTimer("name")` call sites — new code should prefer `Activity`/`ActivitySource` directly.**
+- `LoggingProcessTimer(Factory)`/`DebugProcessTimer`/`DebugTimerFactory`/`CompositeProcessTimer(Factory)` -
+  generic `IProcessTimerFactory` implementations still available to register explicitly (e.g. if you
+  want plain log-line timers instead of `Activity` spans); not vendor backends, not deprecated
+
+### Correlation
+- `ICorrelationId`/`CorrelationId`, `UseCorrelationId()`/`WithCorrelationId()` - legacy
+  `correlationId`-header-based cross-service correlation, superseded by `Activity`'s `TraceId` for
+  new code but still supported
 
 ## When to use this package
-- During development for debugging
-- For detailed request/response logging
-- When troubleshooting issues
-- For performance analysis
-- Should be disabled or limited in production
+- Add `AddDiagnostics()` to get automatic `Activity` spans per middleware and `UseTimer("name")`
+  support, on every platform (AWS, Azure, ASP.NET Core, Worker)
+- Wire `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` against an OTel `TracerProviderBuilder`/
+  `MeterProviderBuilder` to actually export what this package produces to a real backend
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions** - Core abstractions
 - **Benzene.Abstractions.Middleware** - Middleware abstractions
+- **Benzene.Abstractions.MessageHandlers** - `ICurrentTransport`/`IMessageGetter<TContext>`/
+  `IMessageHandlerDefinitionLookUp`, used to resolve `ActivityMiddlewareDecorator`'s tags
 - **Benzene.Core.Middleware** - Middleware implementations
 
 ## Important conventions
-- Add diagnostics middleware conditionally
-- May log sensitive data - use carefully
-- Performance overhead in production
-- Useful for development and staging
-- Can be filtered by log level
+- `ActivitySource.StartActivity` is a documented no-op (returns `null`) when nothing is listening —
+  `AddDiagnostics()` has effectively zero cost with no OTel exporter wired up, same as before
+- Every middleware gets its own `Activity`, forming a real trace tree via `Activity.Current`'s
+  ambient parent-tracking — this is the *automatic* behavior, not something you opt into per call
+- `DebugMiddlewareWrapper` is separate from tracing; it's `Debug.WriteLine`-only dev output

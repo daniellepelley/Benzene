@@ -21,17 +21,28 @@ By default, this will:
 
 To also add the correlation ID to structured logs, see [Common Middleware](common-middleware) — `.UseLogResult(x => x.WithCorrelationId())`.
 
-## Timers
+## Tracing
 
-Timers allow you to measure the duration of different parts of your pipeline.
+Every middleware in every pipeline is automatically wrapped in a [`System.Diagnostics.Activity`](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/distributed-tracing)
+span, tagged with `benzene.transport`, `benzene.topic`, `benzene.version`, and `benzene.handler`
+where resolvable — no explicit call needed. This is enabled by `AddDiagnostics()`:
 
-### Usage
+```csharp
+services.UsingBenzene(x => x.AddDiagnostics());
+```
+
+`Activity.StartActivity` is a documented no-op when nothing is listening, so this has no real cost
+until you attach a listener or exporter. To export spans to a real tracing backend, see the
+[OpenTelemetry](#opentelemetry) section below.
+
+### Named timers
+
+For measuring a specific part of your pipeline by name, `UseTimer(name)` still works and now opens
+an `Activity` span under that name:
 
 ```csharp
 app.UseTimer("my-application");
 ```
-
-This will log the duration of the pipeline execution under the specified name.
 
 ## Logging
 
