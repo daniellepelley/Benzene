@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
@@ -33,12 +34,28 @@ public static class DependencyInjectionExtensions
     }
 
     /// <summary>
+    /// Applies HTTP-specific configuration to a platform-neutral <see cref="IBenzeneApplicationBuilder"/>.
+    /// No-op on any platform other than Azure Functions.
+    /// </summary>
+    /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
+    /// <param name="action">The action that configures the HTTP middleware pipeline.</param>
+    /// <returns><paramref name="app"/>, for method chaining.</returns>
+    public static IBenzeneApplicationBuilder UseHttp(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<AspNetContext>> action)
+    {
+        if (app is IAzureFunctionAppBuilder azureApp)
+        {
+            azureApp.UseHttp(action);
+        }
+        return app;
+    }
+
+    /// <summary>
     /// Registers the services required to process HTTP-triggered messages.
     /// </summary>
     /// <param name="services">The service container to register services with.</param>
     /// <returns>The service container, for method chaining.</returns>
     /// <remarks>
-    /// Called automatically by <see cref="UseHttp"/>; you don't normally need to call this directly.
+    /// Called automatically by <see cref="UseHttp(IAzureFunctionAppBuilder, Action{IMiddlewarePipelineBuilder{AspNetContext}})"/>; you don't normally need to call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddAspNet(this IBenzeneServiceContainer services)
     {

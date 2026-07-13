@@ -1,5 +1,5 @@
 using Benzene.Azure.Function.Core;
-using Microsoft.Azure.WebJobs.Extensions.Kafka;
+using Microsoft.Azure.Functions.Worker;
 
 namespace Benzene.Azure.Function.Kafka;
 
@@ -14,7 +14,7 @@ public static class Extensions
     /// <param name="source">The built Azure Function app to dispatch to.</param>
     /// <param name="eventData">The Kafka events to handle.</param>
     /// <returns>A task that completes when the batch has been handled.</returns>
-    public static Task HandleKafkaEvents(this IAzureFunctionApp source, params KafkaEventData<string>[] eventData)
+    public static Task HandleKafkaEvents(this IAzureFunctionApp source, params KafkaRecord[] eventData)
     {
         return source.HandleAsync(eventData);
     }

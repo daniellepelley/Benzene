@@ -4,7 +4,6 @@ using Benzene.Azure.Function.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.WebJobs;
 
 namespace Benzene.Example.Azure;
 

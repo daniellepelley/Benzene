@@ -1,3 +1,4 @@
+using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
 
@@ -23,4 +24,19 @@ public static class DependencyInjectionExtensions
         return app;
     }
 
+    /// <summary>
+    /// Applies Event Hub-specific configuration to a platform-neutral <see cref="IBenzeneApplicationBuilder"/>.
+    /// No-op on any platform other than Azure Functions.
+    /// </summary>
+    /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
+    /// <param name="action">The action that configures the Event Hub middleware pipeline.</param>
+    /// <returns><paramref name="app"/>, for method chaining.</returns>
+    public static IBenzeneApplicationBuilder UseEventHub(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action)
+    {
+        if (app is IAzureFunctionAppBuilder azureApp)
+        {
+            azureApp.UseEventHub(action);
+        }
+        return app;
+    }
 }

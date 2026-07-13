@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
@@ -21,7 +22,7 @@ public static class DependencyInjectionExtensions
     /// <param name="services">The service container to register services with.</param>
     /// <returns>The service container, for method chaining.</returns>
     /// <remarks>
-    /// Called automatically by <see cref="UseKafka"/>; you don't normally need to call this directly.
+    /// Called automatically by <see cref="UseKafka(IAzureFunctionAppBuilder, Action{IMiddlewarePipelineBuilder{KafkaContext}})"/>; you don't normally need to call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddAzureKafka(this IBenzeneServiceContainer services)
     {
@@ -49,6 +50,22 @@ public static class DependencyInjectionExtensions
         var pipeline = app.Create<KafkaContext>();
         action(pipeline);
         app.Add(serviceResolverFactory => new KafkaApplication(pipeline.Build(), serviceResolverFactory));
+        return app;
+    }
+
+    /// <summary>
+    /// Applies Kafka-specific configuration to a platform-neutral <see cref="IBenzeneApplicationBuilder"/>.
+    /// No-op on any platform other than Azure Functions.
+    /// </summary>
+    /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
+    /// <param name="action">The action that configures the Kafka middleware pipeline.</param>
+    /// <returns><paramref name="app"/>, for method chaining.</returns>
+    public static IBenzeneApplicationBuilder UseKafka(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action)
+    {
+        if (app is IAzureFunctionAppBuilder azureApp)
+        {
+            azureApp.UseKafka(action);
+        }
         return app;
     }
 }

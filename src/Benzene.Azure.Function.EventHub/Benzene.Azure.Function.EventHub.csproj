@@ -11,7 +11,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Messaging.EventHubs.Processor" Version="5.11.5" />
-		<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.EventHubs" Version="6.3.5" />
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.EventHubs" Version="6.5.0" />
 	</ItemGroup>
 
 	<ItemGroup>

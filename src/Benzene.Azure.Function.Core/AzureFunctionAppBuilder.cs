@@ -5,20 +5,25 @@ using Benzene.Core.Middleware;
 namespace Benzene.Azure.Function.Core;
 
 /// <summary>
-/// Default implementation of <see cref="IAzureFunctionAppBuilder"/>.
+/// Default implementation of <see cref="IAzureFunctionAppBuilder"/>. Also implements the
+/// platform-neutral <see cref="Benzene.Abstractions.Hosting.IBenzeneApplicationBuilder"/> (via
+/// <see cref="BenzeneApplicationBuilder"/>) so a <see cref="Benzene.Microsoft.Dependencies.BenzeneStartUp"/>
+/// can be configured identically whether hosted on Azure Functions or any other Benzene host.
 /// </summary>
-public class AzureFunctionAppBuilder : IAzureFunctionAppBuilder
+public class AzureFunctionAppBuilder : BenzeneApplicationBuilder, IAzureFunctionAppBuilder
 {
+    /// <summary>The platform identifier reported by <see cref="BenzeneApplicationBuilder.Platform"/>.</summary>
+    public const string PlatformName = "AzureFunctions";
+
     private readonly List<Func<IServiceResolverFactory, IEntryPointMiddlewareApplication>> _apps = new();
-    private readonly IBenzeneServiceContainer _benzeneServiceContainer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AzureFunctionAppBuilder"/> class.
     /// </summary>
     /// <param name="benzeneServiceContainer">The service container used for registrations and pipeline building.</param>
     public AzureFunctionAppBuilder(IBenzeneServiceContainer benzeneServiceContainer)
+        : base(PlatformName, benzeneServiceContainer)
     {
-        _benzeneServiceContainer = benzeneServiceContainer;
     }
 
     /// <summary>
@@ -39,25 +44,5 @@ public class AzureFunctionAppBuilder : IAzureFunctionAppBuilder
     public IAzureFunctionApp Create(IServiceResolverFactory serviceResolverFactory)
     {
         return new AzureFunctionApp(_apps.ToArray(), serviceResolverFactory);
-    }
-
-    /// <summary>
-    /// Registers services with the underlying service container.
-    /// </summary>
-    /// <param name="action">The action that performs the registration.</param>
-    public void Register(Action<IBenzeneServiceContainer> action)
-    {
-        action(_benzeneServiceContainer);
-    }
-
-    /// <summary>
-    /// Creates a new middleware pipeline builder for a given context type, sharing this builder's
-    /// underlying service container.
-    /// </summary>
-    /// <typeparam name="TNewContext">The context type the pipeline operates on.</typeparam>
-    /// <returns>The created pipeline builder.</returns>
-    public IMiddlewarePipelineBuilder<TNewContext> Create<TNewContext>()
-    {
-        return new MiddlewarePipelineBuilder<TNewContext>(_benzeneServiceContainer);
     }
 }

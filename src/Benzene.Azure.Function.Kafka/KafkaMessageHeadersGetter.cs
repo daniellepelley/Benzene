@@ -4,7 +4,7 @@ namespace Benzene.Azure.Function.Kafka;
 
 /// <summary>
 /// Extracts headers from a Kafka event. Currently always returns an empty dictionary, since
-/// <see cref="Microsoft.Azure.WebJobs.Extensions.Kafka.KafkaEventData{TValue}"/> headers aren't mapped.
+/// <c>KafkaRecord</c> headers aren't mapped.
 /// </summary>
 public class KafkaMessageHeadersGetter : IMessageHeadersGetter<KafkaContext>
 {

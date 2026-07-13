@@ -4,9 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Benzene.Azure.Function.Core;
 
 /// <summary>
-/// Provides an inline, fluent alternative to <see cref="AzureFunctionStartUp"/> for building an
-/// <see cref="IAzureFunctionApp"/> without a dedicated startup class — useful for tests and small
-/// standalone hosts.
+/// Provides an inline, fluent alternative to a dedicated startup class for building an
+/// <see cref="IAzureFunctionApp"/> — useful for tests and small standalone hosts.
 /// </summary>
 public class InlineAzureFunctionStartUp
 {

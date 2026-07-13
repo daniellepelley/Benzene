@@ -11,7 +11,6 @@ using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-// using Microsoft.Extensions.Logging;
 
 namespace Benzene.Example.Azure;
 
@@ -21,7 +20,6 @@ public static class DependenciesBuilder
     {
         return new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            // .AddJsonFile("config.json")
             .AddEnvironmentVariables()
             .Build();
     }
@@ -36,9 +34,6 @@ public static class DependenciesBuilder
     public static void Register(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(configuration);
-        // services.AddLogging();
-        // services.AddScoped<ILogger, Logger<string>>();
-        // services.AddCorrelationId();
 
         services.AddScoped<IOrderService, HardcodedOrderService>();
         services.AddSingleton<IMessageHandlerDefinition>(_ =>
@@ -50,14 +45,3 @@ public static class DependenciesBuilder
                 .AddHttpMessageHandlers());
     }
 }
-
-// public static class Extensions
-// {
-//     public static IServiceCollection AddRoute(this IServiceCollection services, string method, string path,
-//         string topic)
-//     {
-//         var t = services.BuildServiceProvider().GetService<IListHttpEndpointFinder>();
-//         t.Add(new HttpEndpointDefinition(method, path, topic));
-//         return services;
-//     }
-// }

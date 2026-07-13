@@ -1,5 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
-using Microsoft.Azure.WebJobs.Extensions.Kafka;
+using Microsoft.Azure.Functions.Worker;
 
 namespace Benzene.Azure.Function.Kafka;
 
@@ -13,7 +13,7 @@ public class KafkaContext : IHasMessageResult
     /// Initializes a new instance of the <see cref="KafkaContext"/> class.
     /// </summary>
     /// <param name="kafkaEvent">The Kafka event data for this record.</param>
-    public KafkaContext(KafkaEventData<string> kafkaEvent)
+    public KafkaContext(KafkaRecord kafkaEvent)
     {
         KafkaEvent = kafkaEvent;
     }
@@ -21,7 +21,7 @@ public class KafkaContext : IHasMessageResult
     /// <summary>
     /// Gets the Kafka event data for this record.
     /// </summary>
-    public KafkaEventData<string> KafkaEvent { get; }
+    public KafkaRecord KafkaEvent { get; }
 
     /// <summary>
     /// Gets or sets the result of handling this record's message.
