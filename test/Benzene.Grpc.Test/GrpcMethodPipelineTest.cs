@@ -1,8 +1,10 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Grpc.Test.Handlers;
+using Benzene.Grpc.Test.Helpers;
 using Benzene.Grpc.Test.Protos;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,8 +25,8 @@ public class GrpcMethodPipelineTest
         var uploadHandler = new GrpcMethodHandler(
             new GrpcMethodDefinition("/other.package.OtherService/Summarize", "grpc-test-upload-topic"), serviceResolverFactory, pipeline);
 
-        var echoReply = await echoHandler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "world" }, null!);
-        var uploadSummary = await uploadHandler.HandleAsync<UploadItem, UploadSummary>(new UploadItem { Value = 21 }, null!);
+        var echoReply = await echoHandler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "world" }, TestCallContext.Create());
+        var uploadSummary = await uploadHandler.HandleAsync<UploadItem, UploadSummary>(new UploadItem { Value = 21 }, TestCallContext.Create());
 
         Assert.Equal("Hello world", echoReply.Message);
         Assert.Equal(42, uploadSummary.Total);
@@ -38,7 +40,7 @@ public class GrpcMethodPipelineTest
         var handler = new GrpcMethodHandler(
             new GrpcMethodDefinition("/benzene.test.TestService/Echo", "grpc-test-echo-poco-topic"), serviceResolverFactory, pipeline);
 
-        var reply = await handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "poco" }, null!);
+        var reply = await handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "poco" }, TestCallContext.Create());
 
         Assert.Equal("Hello poco", reply.Message);
     }
