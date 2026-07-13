@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Benzene.Abstractions.MessageHandlers;
+﻿using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Request;
 
 namespace Benzene.Grpc;
@@ -7,9 +6,10 @@ namespace Benzene.Grpc;
 public class GrpcContext : IHasMessageResult
 {
     public string Topic { get; }
-   
-    public virtual object RequestAsObject { get; }  
-    public virtual object? ResponseAsObject { get; set; }  
+
+    public virtual object RequestAsObject { get; }
+    public virtual object? ResponseAsObject { get; set; }
+    public object? ResponsePayload { get; set; }
 
     public GrpcContext(string topic)
     {
@@ -17,6 +17,7 @@ public class GrpcContext : IHasMessageResult
     }
 
     public IMessageResult MessageResult { get; set; }
+    public IMessageHandlerResult? MessageHandlerResult { get; set; }
 }
 
 public class GrpcContext<TRequest, TResponse> : GrpcContext, IRequestContext<TRequest>
@@ -28,9 +29,9 @@ public class GrpcContext<TRequest, TResponse> : GrpcContext, IRequestContext<TRe
     }
 
     public override object RequestAsObject => Request;
-    public override object ResponseAsObject
+    public override object? ResponseAsObject
     {
-        get { return Response; }
+        get => (object?)Response ?? ResponsePayload;
         set
         {
             if (value is TResponse typed)
@@ -39,7 +40,7 @@ public class GrpcContext<TRequest, TResponse> : GrpcContext, IRequestContext<TRe
                 return;
             }
 
-            Response = JsonSerializer.Deserialize<TResponse>(JsonSerializer.Serialize(value));
+            ResponsePayload = value;
         }
     }
 

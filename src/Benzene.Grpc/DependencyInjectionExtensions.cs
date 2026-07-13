@@ -1,7 +1,9 @@
 ﻿using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Grpc.Serialization;
 
 namespace Benzene.Grpc;
 
@@ -15,6 +17,8 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageBodyGetter<GrpcContext>, GrpcMessageBodyGetter>();
         services.AddScoped<IMessageHeadersGetter<GrpcContext>, GrpcMessageHeadersGetter>();
         services.AddScoped<IMessageHandlerResultSetter<GrpcContext>, GrpcMessageMessageHandlerResultSetter>();
+        services.TryAddScoped<IGrpcMessageAdapter, ProtobufJsonGrpcMessageAdapter>();
+        services.AddScoped<IRequestMapper<GrpcContext>, GrpcRequestMapper>();
         services.AddContextItems();
         return services;
     }

@@ -7,6 +7,7 @@ public class GrpcMessageMessageHandlerResultSetter : IMessageHandlerResultSetter
 {
     public Task SetResultAsync(GrpcContext context, IMessageHandlerResult messageHandlerResult)
     {
+        context.MessageHandlerResult = messageHandlerResult;
         context.ResponseAsObject = messageHandlerResult.BenzeneResult.PayloadAsObject;
         return Task.CompletedTask;
     }
