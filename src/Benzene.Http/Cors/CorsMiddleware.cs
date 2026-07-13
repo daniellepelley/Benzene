@@ -82,6 +82,11 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                 return;
             }
 
+            // The response for this path differs by Origin (allowed vs. rejected, or which
+            // origin is echoed back), so caches sitting in front of this endpoint must not
+            // conflate responses for different origins.
+            _responseAdapter.SetResponseHeader(context, "Vary", "Origin");
+
             var origin = _corsOriginChecker.MatchOrigin(_corsSettings.AllowedDomains, httpRequest);
 
             if (origin != null)
@@ -91,6 +96,17 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                     string.Join(",", _corsSettings.AllowedHeaders));
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Methods",
                     "OPTIONS," + string.Join(",", methods));
+
+                if (_corsSettings.AllowCredentials)
+                {
+                    _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Credentials", "true");
+                }
+
+                if (httpRequest.Method == "options" && _corsSettings.MaxAgeSeconds.HasValue)
+                {
+                    _responseAdapter.SetResponseHeader(context, "Access-Control-Max-Age",
+                        _corsSettings.MaxAgeSeconds.Value.ToString());
+                }
             }
 
             if (httpRequest.Method == "options")
@@ -150,9 +166,9 @@ public class CorsOriginChecker
         {
             return null;
         }
-        
-        if (allowedDomains
-            .Any(x => GetDomain(x) == GetDomain(origin)))
+
+        if (allowedDomains.Contains("*") ||
+            allowedDomains.Any(x => GetDomain(x) == GetDomain(origin)))
         {
             return origin;
         }

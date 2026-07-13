@@ -28,4 +28,27 @@ public class CorsSettings
     /// Common headers include "Content-Type", "Authorization", "X-Requested-With", etc.
     /// </remarks>
     public string[] AllowedHeaders { get; set; }
+
+    /// <summary>
+    /// Gets or sets how long, in seconds, browsers may cache a preflight (OPTIONS) response
+    /// before sending another one.
+    /// </summary>
+    /// <remarks>
+    /// When set, this value is sent as the <c>Access-Control-Max-Age</c> header on preflight
+    /// responses for allowed origins. Leave <c>null</c> to omit the header, which means
+    /// browsers fall back to their own (usually short) default preflight cache duration.
+    /// </remarks>
+    public int? MaxAgeSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the response should include <c>Access-Control-Allow-Credentials: true</c>,
+    /// permitting cross-origin requests to include cookies or HTTP authentication.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <c>false</c>. This is safe to combine with a wildcard entry in
+    /// <see cref="AllowedDomains"/> because the middleware always echoes back the specific
+    /// request's <c>Origin</c> value rather than a literal <c>"*"</c>, which is what the CORS
+    /// specification requires when credentials are allowed.
+    /// </remarks>
+    public bool AllowCredentials { get; set; }
 }

@@ -38,9 +38,11 @@ Provides HTTP abstractions and utilities for building HTTP-based Benzene applica
 - `DefaultHttpHeaderMappings` - Default header mappings
 
 ### CORS
-- `CorsSettings` - CORS configuration
-- `CorsMiddleware<TContext>` - CORS middleware
-- `CorsOriginChecker` - Validates CORS origins
+- `CorsSettings` - CORS configuration (`AllowedDomains` supports a `"*"` wildcard entry;
+  `AllowCredentials`/`MaxAgeSeconds` control `Access-Control-Allow-Credentials`/`Access-Control-Max-Age`)
+- `CorsMiddleware<TContext>` - CORS middleware; also sets `Vary: Origin` on every response it processes
+- `CorsOriginChecker` - Validates CORS origins; always echoes the actual `Origin` value (never a
+  literal `"*"`), which is what makes wildcard + credentials safe to combine
 
 ### Other
 - `HttpEndpointAttribute` - Marks HTTP endpoints

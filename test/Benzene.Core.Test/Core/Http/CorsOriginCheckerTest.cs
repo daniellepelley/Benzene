@@ -44,8 +44,28 @@ public class CorsOriginCheckerTest
     public void NoHeader()
     {
         var httpRequest = new HttpRequest();
-        
+
         var actual = _corsOriginChecker.MatchOrigin(_allowedDomains, httpRequest);
         Assert.Null(actual);
+    }
+
+    [Theory]
+    [InlineData("https://anything.example")]
+    [InlineData("https://another-origin.test")]
+    public void Wildcard_MatchesAnyOrigin(string origin)
+    {
+        var httpRequest = new HttpRequest
+        {
+            Headers = new Dictionary<string, string>
+            {
+                { "origin", origin }
+            }
+        };
+
+        var actual = _corsOriginChecker.MatchOrigin(new[] { "*" }, httpRequest);
+
+        // The actual origin is always echoed back rather than a literal "*", so the header
+        // stays valid even when Access-Control-Allow-Credentials is also set.
+        Assert.Equal(origin, actual);
     }
 }

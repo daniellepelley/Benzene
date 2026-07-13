@@ -482,10 +482,18 @@ app.UseCors(new CorsSettings
 {
     AllowedDomains = new[] { "https://example.com" },
     AllowedHeaders = new[] { "Content-Type", "Authorization" },
+    AllowCredentials = true,   // adds Access-Control-Allow-Credentials: true
+    MaxAgeSeconds = 600,       // adds Access-Control-Max-Age on preflight responses
 });
 ```
 
 Applies to any `TContext : IHttpContext` — ASP.NET Core, API Gateway, `Benzene.SelfHost.Http`, etc.
+
+`AllowedDomains` accepts a `"*"` entry to allow any origin; the middleware always echoes back the
+specific request's `Origin` value rather than a literal `"*"`, so this is safe to combine with
+`AllowCredentials = true` (the CORS spec forbids a literal `"*"` when credentials are allowed, but
+allows an echoed origin). The middleware also sets `Vary: Origin` on any response it processes, so
+caches/CDNs sitting in front of the API don't serve one origin's CORS-tailored response to another.
 
 ---
 

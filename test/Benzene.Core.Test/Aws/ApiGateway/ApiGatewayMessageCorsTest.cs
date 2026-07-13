@@ -17,6 +17,9 @@ public class ApiGatewayMessageCorsTest
     private const string AccessControlAllowHeaders = "Access-Control-Allow-Headers";
     private const string AccessControlAllowMethods = "Access-Control-Allow-Methods";
     private const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
+    private const string AccessControlAllowCredentials = "Access-Control-Allow-Credentials";
+    private const string AccessControlMaxAge = "Access-Control-Max-Age";
+    private const string Vary = "Vary";
 
     public ApiGatewayMessageCorsTest()
     {
@@ -35,7 +38,9 @@ public class ApiGatewayMessageCorsTest
                         AllowedHeaders = new[]
                         {
                             "X-Query-Id","X-Tenant-Id","Authorization","Content-Type","X-Api-Key"
-                        }
+                        },
+                        AllowCredentials = true,
+                        MaxAgeSeconds = 600
                     })
                     .UseMessageHandlers()
                 )
@@ -57,6 +62,9 @@ public class ApiGatewayMessageCorsTest
         Assert.Equal("https://example.com", response.Headers[AccessControlAllowOrigin]);
         Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
         Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
+        Assert.Equal("true", response.Headers[AccessControlAllowCredentials]);
+        Assert.Equal("600", response.Headers[AccessControlMaxAge]);
+        Assert.Equal("Origin", response.Headers[Vary]);
     }
 
 
@@ -74,6 +82,11 @@ public class ApiGatewayMessageCorsTest
         Assert.False(response.Headers.ContainsKey(AccessControlAllowOrigin));
         Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
         Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowCredentials));
+        Assert.False(response.Headers.ContainsKey(AccessControlMaxAge));
+        // Still varies by Origin: an unknown origin today could be an allowed one tomorrow,
+        // and a cache must not serve this rejection to a different, allowed origin.
+        Assert.Equal("Origin", response.Headers[Vary]);
     }
 
     [Fact]
@@ -91,6 +104,10 @@ public class ApiGatewayMessageCorsTest
         Assert.Equal("example.com", response.Headers[AccessControlAllowOrigin]);
         Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
         Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
+        Assert.Equal("true", response.Headers[AccessControlAllowCredentials]);
+        Assert.Equal("Origin", response.Headers[Vary]);
+        // Access-Control-Max-Age is only meaningful on preflight (OPTIONS) responses.
+        Assert.False(response.Headers.ContainsKey(AccessControlMaxAge));
     }
 
     [Fact]
@@ -107,5 +124,6 @@ public class ApiGatewayMessageCorsTest
         Assert.False(response.Headers.ContainsKey(AccessControlAllowOrigin));
         Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
         Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
+        Assert.False(response.Headers.ContainsKey(Vary));
     }
 }
