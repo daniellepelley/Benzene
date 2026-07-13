@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Benzene OpenTelemetry Example</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    label { display: block; margin-top: 1rem; font-weight: 600; }
+    textarea, select { width: 100%; font-family: monospace; margin-top: .25rem; box-sizing: border-box; }
+    textarea { min-height: 6rem; }
+    button { margin-top: 1rem; padding: .5rem 1.5rem; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+    .error { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Benzene OpenTelemetry Example</h1>
+  <p>Send a message into a Benzene pipeline, then view the trace in
+     <a href="http://localhost:3000" target="_blank">Grafana</a> (Explore &rarr; Tempo,
+     service <code>benzene-otel-example</code>).</p>
+
+  <label for="topic">Topic</label>
+  <select id="topic"></select>
+
+  <label for="body">Message body (JSON)</label>
+  <textarea id="body">{}</textarea>
+
+  <label for="headers">Headers (JSON object of string values)</label>
+  <textarea id="headers">{}</textarea>
+
+  <button id="send">Send message</button>
+
+  <h2>Response</h2>
+  <pre id="response">&ndash;</pre>
+
+  <script>
+    const sampleBodies = {
+      "greeting":     { name: "world" },
+      "order_create": { productId: "widget-1", quantity: 2 },
+      "order_fail":   { reason: "card-declined" }
+    };
+
+    const topicSelect = document.getElementById("topic");
+    const bodyInput = document.getElementById("body");
+    const headersInput = document.getElementById("headers");
+    const responseEl = document.getElementById("response");
+
+    async function loadTopics() {
+      const topics = await (await fetch("/api/topics")).json();
+      for (const t of topics) {
+        const option = document.createElement("option");
+        option.value = t.topic;
+        option.textContent = `${t.topic} (${t.handler})`;
+        topicSelect.appendChild(option);
+      }
+      applySample();
+    }
+
+    function applySample() {
+      const sample = sampleBodies[topicSelect.value];
+      bodyInput.value = JSON.stringify(sample ?? {}, null, 2);
+    }
+    topicSelect.addEventListener("change", applySample);
+
+    document.getElementById("send").addEventListener("click", async () => {
+      responseEl.textContent = "Sending...";
+      responseEl.classList.remove("error");
+      try {
+        const headers = JSON.parse(headersInput.value || "{}");
+        const res = await fetch("/api/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: topicSelect.value,
+            body: bodyInput.value,
+            headers: headers
+          })
+        });
+        const data = await res.json();
+        responseEl.textContent = JSON.stringify(data, null, 2) +
+          (data.traceId ? `\n\nSearch Tempo for trace id: ${data.traceId}` : "");
+      } catch (e) {
+        responseEl.classList.add("error");
+        responseEl.textContent = "Error: " + e.message;
+      }
+    });
+
+    loadTopics();
+  </script>
+</body>
+</html>
