@@ -19,7 +19,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
     - [AWS Lambda Setup](getting-started-aws)
     - [AWS IAM Permissions Reference](aws-iam-permissions)
   - **Azure**
-    - [Azure Functions](azure-functions) (Coming Soon)
+    - [Azure Functions Setup](azure-functions)
 
 - **Integrations**
   - [ASP.NET Core](asp-net-core)
