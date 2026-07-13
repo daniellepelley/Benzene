@@ -29,13 +29,26 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   want plain log-line timers instead of `Activity` spans); not vendor backends, not deprecated
 
 ### Correlation
-- `ICorrelationId`/`CorrelationId`, `UseCorrelationId()`/`WithCorrelationId()` - legacy
-  `correlationId`-header-based cross-service correlation, superseded by `Activity`'s `TraceId` for
-  new code but still supported
+- `ICorrelationId`/`CorrelationId`, `WithCorrelationId()` - `correlationId`-header-based cross-service
+  correlation; `UseCorrelationId()` is `[Obsolete]` (superseded by W3C `traceparent` propagation) but
+  still supported as a legacy fallback and still emitted to log scopes via `WithCorrelationId()`.
+  Default header lookup checks `x-correlation-id`, `correlation-id`, then legacy `correlationId`,
+  case-insensitively, first match wins.
+
+### Enrichment
+- `UseBenzeneEnrichment<TContext>()` (`EnrichmentExtensions.cs`) - one portable, explicit-opt-in
+  middleware that attaches `invocationId` (from `IBenzeneInvocation`), `traceId`/`spanId` (from
+  `Activity.Current`), `topic`, `transport`, and `handler` to the logging scope, and tags the current
+  `Activity` with `benzene.invocationId`. Each key degrades gracefully (simply omitted) when its
+  backing service isn't registered for that pipeline scope — e.g. `invocationId` is omitted inside a
+  per-message SQS/SNS/Kafka sub-pipeline, since `IBenzeneInvocation` isn't wired into those nested DI
+  scopes today. Replaces the AWS-only `WithRequestId()`/`WithApplication()` (now `[Obsolete]`).
 
 ## When to use this package
 - Add `AddDiagnostics()` to get automatic `Activity` spans per middleware and `UseTimer("name")`
   support, on every platform (AWS, Azure, ASP.NET Core, Worker)
+- Add `UseBenzeneEnrichment()` once per pipeline for portable log/trace enrichment instead of
+  hand-composing platform-specific `WithXxx()` log-context extensions
 - Wire `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` against an OTel `TracerProviderBuilder`/
   `MeterProviderBuilder` to actually export what this package produces to a real backend
 

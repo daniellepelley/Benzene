@@ -44,7 +44,7 @@ public class CorrelationMiddlewareTest
     {
         var correlationId = Guid.NewGuid().ToString();
 
-        var services = new ServiceCollection();  
+        var services = new ServiceCollection();
         services.UsingBenzene(x => x.AddBenzene().AddBenzeneMessage());
 
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
@@ -70,4 +70,58 @@ public class CorrelationMiddlewareTest
         Assert.Equal(correlationId, serviceResolver.GetService<ICorrelationId>().Get());
     }
 
+    [Theory]
+    [InlineData("x-correlation-id")]
+    [InlineData("X-Correlation-Id")]
+    [InlineData("correlation-id")]
+    [InlineData("correlationId")]
+    public async Task DefaultHeader_ChecksDocumentedFallbackList_CaseInsensitively(string headerKey)
+    {
+        var correlationId = Guid.NewGuid().ToString();
+
+        var services = new ServiceCollection();
+        services.UsingBenzene(x => x.AddBenzene().AddBenzeneMessage());
+
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        middlewarePipelineBuilder.UseCorrelationId();
+
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var serviceResolver = factory.CreateScope();
+
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest
+        {
+            Headers = new Dictionary<string, string> { { headerKey, correlationId } }
+        });
+        await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
+
+        Assert.Equal(correlationId, serviceResolver.GetService<ICorrelationId>().Get());
+    }
+
+    [Fact]
+    public async Task DefaultHeader_PrefersXCorrelationIdOverLegacyCorrelationId()
+    {
+        var preferred = Guid.NewGuid().ToString();
+        var legacy = Guid.NewGuid().ToString();
+
+        var services = new ServiceCollection();
+        services.UsingBenzene(x => x.AddBenzene().AddBenzeneMessage());
+
+        var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        middlewarePipelineBuilder.UseCorrelationId();
+
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var serviceResolver = factory.CreateScope();
+
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest
+        {
+            Headers = new Dictionary<string, string>
+            {
+                { "x-correlation-id", preferred },
+                { "correlationId", legacy },
+            }
+        });
+        await middlewarePipelineBuilder.Build().HandleAsync(context, serviceResolver);
+
+        Assert.Equal(preferred, serviceResolver.GetService<ICorrelationId>().Get());
+    }
 }

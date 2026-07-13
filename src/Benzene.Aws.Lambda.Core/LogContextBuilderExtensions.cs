@@ -19,6 +19,8 @@ public static class LogContextBuilderExtensions
     /// </summary>
     /// <param name="source">The log context builder to extend.</param>
     /// <returns>The log context builder for method chaining.</returns>
+    [Obsolete("Superseded by the portable Benzene.Diagnostics.EnrichmentExtensions.UseBenzeneEnrichment(), " +
+        "which attaches the equivalent invocationId key on every platform, not just AWS Lambda.")]
     public static ILogContextBuilder<AwsEventStreamContext> WithRequestId(this ILogContextBuilder<AwsEventStreamContext> source)
     {
         return source.OnRequest("requestId", (_, context) => context.LambdaContext.AwsRequestId);
@@ -30,6 +32,8 @@ public static class LogContextBuilderExtensions
     /// </summary>
     /// <param name="source">The log context builder to extend.</param>
     /// <returns>The log context builder for method chaining.</returns>
+    [Obsolete("Superseded by the portable Benzene.Diagnostics.EnrichmentExtensions.UseBenzeneEnrichment(); " +
+        "for a transport-agnostic application name use Benzene.Core.MessageHandlers.LogContextBuilderExtensions.WithApplication() (IApplicationInfo-based) instead.")]
     public static ILogContextBuilder<AwsEventStreamContext> WithApplication(this ILogContextBuilder<AwsEventStreamContext> source)
     {
         return source.OnRequest("application", (_, context) => GetApplicationName(context.LambdaContext.FunctionName));

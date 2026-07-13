@@ -2,7 +2,9 @@
 
 ## UseCorrelationId
 
-This will attempt to pick up a Correlation Id from the message, usually this will be on the header as “x-correlation-id” or “correlation-id”, but this can be set in the middleware itself. It will create an instance of ICorrelationId which can then be injected into classes if you need to access the correlation id. The correlation id can be added to structured logs to help with tracing.
+> Obsolete in favor of automatic [W3C `traceparent` propagation](monitoring#w3c-trace-context) for cross-service correlation. Still supported as a legacy fallback.
+
+This will attempt to pick up a Correlation Id from the message, checking the headers “x-correlation-id”, “correlation-id”, then the legacy “correlationId” (case-insensitively, first match wins) — or a specific header if passed in. It will create an instance of ICorrelationId which can then be injected into classes if you need to access the correlation id. The correlation id can be added to structured logs to help with tracing.
 
 ```csharp
 .UseCorrelationId()
@@ -29,6 +31,19 @@ must be added explicitly around the stage you want measured. See
 
 ```csharp
 .UseBenzeneMetrics()
+```
+
+## UseBenzeneEnrichment
+
+This attaches `invocationId`, `traceId`, `spanId`, `topic`, `transport`, and `handler` to the logging
+scope (via `ILogger.BeginScope`), and tags the current `Activity` with `benzene.invocationId` — one
+portable call that works the same way on AWS Lambda, Azure Functions, and ASP.NET Core. Each key is
+resolved independently and simply omitted if its backing service isn't registered for that pipeline
+(e.g. `invocationId` requires `UseBenzeneInvocation()` to have been called on this pipeline or an
+outer one).
+
+```csharp
+.UseBenzeneEnrichment()
 ```
 
 ## UseHealthCheck
