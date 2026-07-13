@@ -62,7 +62,6 @@
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sns.TestHelpers\Benzene.Aws.Lambda.Sns.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Sqs.TestHelpers\Benzene.Aws.Sqs.TestHelpers.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.AspNet.TestHelpers\Benzene.Azure.Function.AspNet.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />

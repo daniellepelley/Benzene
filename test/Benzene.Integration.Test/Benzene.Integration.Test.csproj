@@ -26,14 +26,10 @@
 	  <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
-	  <ProjectReference Include="..\..\src\Benzene.Zipkin\Benzene.Zipkin.csproj" />
 	</ItemGroup>
 
   <ItemGroup>
     <None Update="Fixtures\Files\sqs-docker-compose.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Fixtures\Files\zipkin-docker-compose.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

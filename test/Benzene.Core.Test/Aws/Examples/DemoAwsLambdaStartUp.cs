@@ -3,7 +3,6 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
-using Benzene.Aws.XRay;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
@@ -31,7 +30,6 @@ public class DemoAwsLambdaStartUp : AwsLambdaStartUp
     public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
     {
         app
-            .UseXRayTracing(true)
             .UseBenzeneMessage(PipelineMother.BasicBenzeneMessagePipeline());
 
     }

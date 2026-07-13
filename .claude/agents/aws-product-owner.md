@@ -15,7 +15,6 @@ all AWS-related packages and integrations.
 - Benzene.Aws.Lambda.Sns
 - Benzene.Aws.Lambda.Sqs
 - Benzene.Aws.Sqs
-- Benzene.Aws.XRay
 - Benzene.Clients.Aws
 - TestHelpers: All Benzene.Aws.*.TestHelpers packages
 

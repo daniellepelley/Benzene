@@ -20,6 +20,11 @@
     <PackageReference Include="AWSSDK.RDS" Version="3.7.114.22" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.5.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
@@ -38,7 +43,6 @@
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sns\Benzene.Aws.Lambda.Sns.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.XRay\Benzene.Aws.XRay.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Xml\Benzene.Xml.csproj" />

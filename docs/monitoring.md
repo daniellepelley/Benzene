@@ -99,14 +99,6 @@ containerBuilder.RegisterInstance(LoggerFactory.Create(x => x.AddConsole()))
 
 > Note: if you construct Benzene from an already-built `IServiceProvider`, Benzene cannot add logging defaults — configure `AddLogging()` on the host yourself (ASP.NET Core and the generic host always do).
 
-### Datadog Integration
-
-Benzene provides a `Benzene.Datadog` package for easier integration with Datadog monitoring:
-
-```csharp
-services.UsingBenzene(x => x.AddDatadog());
-```
-
 ## Distributed Tracing
 
 ### W3C Trace Context
@@ -143,10 +135,6 @@ own message envelope) — but has no effect on a client pipeline built via the l
 > extraction is not yet implemented, so a trace started by an HTTP request continues correctly through
 > the outbound clients above, but a queue/stream consumer won't yet pick the parent back up on the
 > receiving end.
-
-### AWS X-Ray
-
-For AWS Lambda environments, you can use the `Benzene.Aws.XRay` package to integrate with AWS X-Ray for distributed tracing.
 
 ### OpenTelemetry
 

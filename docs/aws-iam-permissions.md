@@ -180,33 +180,3 @@ receives and deletes messages as a batch:
 This is a separate package from the Lambda SQS trigger above — it's for a long-running
 worker (e.g. behind `Benzene.SelfHost`/`Benzene.HostedService`) that polls SQS directly
 rather than being invoked by a Lambda event source mapping.
-
-## X-Ray (`Benzene.Aws.XRay`)
-
-The simplest option is to attach the AWS-managed `AWSXRayDaemonWriteAccess` policy to
-your execution role. If you'd rather write a custom policy, these are the actions it
-grants:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "xray:PutTraceSegments",
-        "xray:PutTelemetryRecords",
-        "xray:GetSamplingRules",
-        "xray:GetSamplingTargets",
-        "xray:GetSamplingStatisticSummaries"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
-`xray:PutTraceSegments`/`PutTelemetryRecords` are required for `XRayProcessProcessTimer`
-to report subsegments; the `GetSampling*` actions support the X-Ray SDK's adaptive
-sampling, which isn't strictly required but avoids the SDK falling back to a fixed
-sampling rate.

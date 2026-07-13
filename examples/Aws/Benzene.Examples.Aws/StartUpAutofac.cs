@@ -12,7 +12,6 @@ using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.Lambda.Kafka;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
-using Benzene.Aws.XRay;
 using Benzene.Core.MessageHandlers;
 using Benzene.Diagnostics.Correlation;
 using Benzene.Examples.Aws.Logging;
@@ -40,7 +39,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
     {
         app
             .UseSerilog()
-            .UseXRayTracing(true)
             // .UseLogApplication()
             .UseTimer("aws-stream-application");
 

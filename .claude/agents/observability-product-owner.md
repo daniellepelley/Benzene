@@ -13,9 +13,6 @@ for all logging, monitoring, tracing, and diagnostics capabilities.
 - Benzene.Microsoft.Logging
 - Benzene.Serilog
 - Benzene.Log4Net
-- Benzene.Datadog
-- Benzene.Zipkin
-- Benzene.Aws.XRay (joint ownership with AWS PO)
 - Benzene.HealthChecks
 - Benzene.HealthChecks.Core
 - Benzene.HealthChecks.Http

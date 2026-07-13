@@ -253,7 +253,6 @@ Product owners are living documents that evolve with the product:
 | Benzene.Diagnostics | Observability |
 | Benzene.OpenTelemetry | Observability |
 | Benzene.HealthChecks.* | Observability |
-| Benzene.Datadog, Zipkin, XRay | Observability |
 | Benzene.FluentValidation | Validation |
 | Benzene.DataAnnotations | Validation |
 | Benzene.Schema.* | Validation |
