@@ -24,6 +24,15 @@ Benzene's tracing model.
 
 ```bash
 cd examples/OpenTelemetry
+./run.sh
+```
+
+`run.sh` just runs `docker compose up -d` followed by
+`dotnet run --project Benzene.Examples.OpenTelemetry` — equivalent to running
+those two commands yourself:
+
+```bash
+cd examples/OpenTelemetry
 docker compose up -d
 dotnet run --project Benzene.Examples.OpenTelemetry
 ```
