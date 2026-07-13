@@ -45,15 +45,38 @@
     const headersInput = document.getElementById("headers");
     const responseEl = document.getElementById("response");
 
-    async function loadTopics() {
-      const topics = await (await fetch("/api/topics")).json();
-      for (const t of topics) {
-        const option = document.createElement("option");
-        option.value = t.topic;
-        option.textContent = `${t.topic} (${t.handler})`;
-        topicSelect.appendChild(option);
+    // Wraps fetch + JSON parsing so a wrong-origin misconfiguration (e.g. this page opened
+    // from a different port/server than the one hosting the API) fails with a clear message
+    // instead of a cryptic "Unexpected token '<'" JSON parse error.
+    async function fetchJson(url, options) {
+      const res = await fetch(url, options);
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const body = await res.text();
+        throw new Error(
+          `Expected JSON from ${window.location.origin}${url} but got "${contentType || "no content-type"}" ` +
+          `(HTTP ${res.status}). This page must be opened at the same address the app is running on ` +
+          `(the "Now listening on: ..." URL printed by dotnet run) - not via a separate static file ` +
+          `server or by opening index.html directly. Response started with: ${body.slice(0, 200)}`
+        );
       }
-      applySample();
+      return res.json();
+    }
+
+    async function loadTopics() {
+      try {
+        const topics = await fetchJson("/api/topics");
+        for (const t of topics) {
+          const option = document.createElement("option");
+          option.value = t.topic;
+          option.textContent = `${t.topic} (${t.handler})`;
+          topicSelect.appendChild(option);
+        }
+        applySample();
+      } catch (e) {
+        responseEl.classList.add("error");
+        responseEl.textContent = "Error loading topics: " + e.message;
+      }
     }
 
     function applySample() {
@@ -67,7 +90,7 @@
       responseEl.classList.remove("error");
       try {
         const headers = JSON.parse(headersInput.value || "{}");
-        const res = await fetch("/api/send", {
+        const data = await fetchJson("/api/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -76,7 +99,6 @@
             headers: headers
           })
         });
-        const data = await res.json();
         responseEl.textContent = JSON.stringify(data, null, 2) +
           (data.traceId ? `\n\nSearch Tempo for trace id: ${data.traceId}` : "");
       } catch (e) {

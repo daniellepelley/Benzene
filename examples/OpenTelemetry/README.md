@@ -40,6 +40,18 @@ dotnet run --project Benzene.Examples.OpenTelemetry
 - Web UI: http://localhost:5000
 - Grafana: http://localhost:3000 (no login required)
 
+**Open the Web UI at the exact URL `dotnet run` prints** (the
+`Now listening on: ...` line in the console) — do not open
+`wwwroot/index.html` directly from disk, and don't serve it via a separate
+static-file tool (e.g. an editor's "Live Server" extension). The page's
+`Send message` button calls `/api/topics` and `/api/send` as *relative*
+URLs, which resolve against whatever address loaded the page. If that's a
+different port than the one the API is actually running on, those calls hit
+the wrong server and you'll see an empty topics list and a
+`Send message` error like "Unexpected token '<' ... is not valid JSON" (the
+other server's 404 HTML page, not JSON). The app will report this
+mismatch clearly if it happens.
+
 `docker compose up -d` starts a single container,
 [`grafana/otel-lgtm`](https://github.com/grafana/docker-otel-lgtm), which
 bundles an OTLP collector, Tempo (traces), Prometheus (metrics), Loki, and
