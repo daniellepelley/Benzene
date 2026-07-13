@@ -1,9 +1,6 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
-using Google.Protobuf;
-using Google.Protobuf.Reflection;
+using Benzene.Grpc.Serialization;
 using Grpc.Core;
 
 namespace Benzene.Grpc;
@@ -12,48 +9,29 @@ public class GrpcMethodHandler : IGrpcMethodHandler
 {
     private IGrpcMethodDefinition _grpcMethodDefinition;
     private IServiceResolverFactory _serviceResolverFactory;
-    private ServiceDescriptor _serviceDescriptor;
     private IMiddlewarePipeline<GrpcContext> _middlewarePipeline;
 
-    public GrpcMethodHandler(IGrpcMethodDefinition grpcMethodDefinition, IServiceResolverFactory serviceResolverFactory, IMiddlewarePipeline<GrpcContext> middlewarePipeline, ServiceDescriptor serviceDescriptor)
+    public GrpcMethodHandler(IGrpcMethodDefinition grpcMethodDefinition, IServiceResolverFactory serviceResolverFactory, IMiddlewarePipeline<GrpcContext> middlewarePipeline)
     {
         _middlewarePipeline = middlewarePipeline;
-        _serviceDescriptor = serviceDescriptor;
         _serviceResolverFactory = serviceResolverFactory;
         _grpcMethodDefinition = grpcMethodDefinition;
-    }
-
-    private async Task<TResponse?> CallAsync<TRequest, TResponse>(string topic, TRequest request)
-    {
-        var context = new GrpcContext<TRequest, TResponse>(topic, request);
-
-        await _middlewarePipeline.HandleAsync(context,
-            _serviceResolverFactory.CreateScope());
-        return context.Response;
-    }
-
-    private T Parse<T>(string json, string methodName) where T : class
-    {
-        var methodDescriptor = _serviceDescriptor.FindMethodByName(methodName).OutputType;
-        return JsonParser.Default.Parse(json, methodDescriptor) as T;
     }
 
     public async Task<TResponse> HandleAsync<TRequest, TResponse>(TRequest request, ServerCallContext context)
         where TRequest : class
         where TResponse : class
     {
-        var result = await CallAsync<TRequest, TResponse>(_grpcMethodDefinition.Topic, request);
+        var grpcContext = new GrpcContext<TRequest, TResponse>(_grpcMethodDefinition.Topic, request);
 
-        if (result is TResponse response)
+        using var resolver = _serviceResolverFactory.CreateScope();
+        await _middlewarePipeline.HandleAsync(grpcContext, resolver);
+
+        if (grpcContext.Response is TResponse typed)
         {
-            return response;
+            return typed;
         }
 
-        var responseJson = JsonSerializer.Serialize(result, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        });
-        return Parse<TResponse>(responseJson, _grpcMethodDefinition.Method.Split("/").Last());
+        return resolver.GetService<IGrpcMessageAdapter>().ConvertResponse<TResponse>(grpcContext.ResponsePayload);
     }
 }

@@ -22,14 +22,26 @@ public class GrpcContextTest
     }
 
     [Fact]
-    public void ResponseAsObject_WhenValueIsNotTResponse_ConvertsViaJsonRoundTrip()
+    public void ResponseAsObject_WhenValueIsNotTResponse_SetsResponsePayloadInsteadOfResponse()
     {
         var context = new GrpcContext<string, EchoResponsePoco>("test-topic", "request");
+        var payload = new { Message = "hi" };
 
-        context.ResponseAsObject = new { Message = "hi" };
+        context.ResponseAsObject = payload;
 
-        Assert.NotNull(context.Response);
-        Assert.Equal("hi", context.Response!.Message);
+        Assert.Null(context.Response);
+        Assert.Same(payload, context.ResponsePayload);
+    }
+
+    [Fact]
+    public void ResponseAsObject_Getter_FallsBackToResponsePayloadWhenResponseNotSet()
+    {
+        var context = new GrpcContext<string, EchoResponsePoco>("test-topic", "request");
+        var payload = new { Message = "hi" };
+
+        context.ResponseAsObject = payload;
+
+        Assert.Same(payload, context.ResponseAsObject);
     }
 
     [Fact]
