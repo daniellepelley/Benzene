@@ -33,6 +33,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IRequestMapper<GrpcContext>, GrpcRequestMapper>();
         services.AddScoped<MessageRouter<GrpcContext>>();
 
+        services.TryAddSingleton<IGrpcStatusCodeMapper, DefaultGrpcStatusCodeMapper>();
+        services.AddScoped<GrpcServerCallAccessor>();
+        services.AddScoped<IGrpcServerCallAccessor>(x => x.GetService<GrpcServerCallAccessor>());
+
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("grpc"));
         services.AddContextItems();
         return services;

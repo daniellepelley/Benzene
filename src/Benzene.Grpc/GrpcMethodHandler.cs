@@ -22,10 +22,41 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         where TRequest : class
         where TResponse : class
     {
-        var grpcContext = new GrpcContext<TRequest, TResponse>(_grpcMethodDefinition.Topic, request);
+        var grpcContext = new GrpcContext<TRequest, TResponse>(_grpcMethodDefinition.Topic, context, request);
 
         using var resolver = _serviceResolverFactory.CreateScope();
-        await _middlewarePipeline.HandleAsync(grpcContext, resolver);
+
+        var callAccessor = resolver.TryGetService<GrpcServerCallAccessor>();
+        if (callAccessor != null)
+        {
+            callAccessor.CallContext = context;
+        }
+
+        try
+        {
+            await _middlewarePipeline.HandleAsync(grpcContext, resolver);
+        }
+        catch (OperationCanceledException)
+        {
+            var cancelCode = DateTime.UtcNow >= context.Deadline ? StatusCode.DeadlineExceeded : StatusCode.Cancelled;
+            throw new RpcException(new Status(cancelCode, "The call was cancelled."));
+        }
+
+        var status = grpcContext.MessageHandlerResult?.BenzeneResult.Status;
+        grpcContext.ResponseTrailers.Add("benzene-status", status ?? "Unknown");
+
+        var statusCode = resolver.GetService<IGrpcStatusCodeMapper>().Map(status);
+        if (statusCode != StatusCode.OK)
+        {
+            var errors = grpcContext.MessageHandlerResult?.BenzeneResult.Errors;
+            var detail = errors is { Length: > 0 } ? string.Join("; ", errors) : status ?? "Error";
+            throw new RpcException(new Status(statusCode, detail));
+        }
+
+        if (grpcContext.ResponseHeaders.Count > 0)
+        {
+            await context.WriteResponseHeadersAsync(grpcContext.ResponseHeaders);
+        }
 
         if (grpcContext.Response is TResponse typed)
         {
