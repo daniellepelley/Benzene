@@ -69,6 +69,8 @@
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub.TestHelpers\Benzene.Azure.Function.EventHub.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Kafka\Benzene.Azure.Function.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Kafka.TestHelpers\Benzene.Azure.Function.Kafka.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Function.ServiceBus\Benzene.Azure.Function.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Function.ServiceBus.TestHelpers\Benzene.Azure.Function.ServiceBus.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Core\Benzene.Cache.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Redis\Benzene.Cache.Redis.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Client.Http\Benzene.Client.Http.csproj" />
