@@ -33,9 +33,10 @@ public class GrpcContext<TRequest, TResponse> : GrpcContext, IRequestContext<TRe
         get { return Response; }
         set
         {
-            if (value is TResponse)
+            if (value is TResponse typed)
             {
-                Response = (TResponse)value;
+                Response = typed;
+                return;
             }
 
             Response = JsonSerializer.Deserialize<TResponse>(JsonSerializer.Serialize(value));
