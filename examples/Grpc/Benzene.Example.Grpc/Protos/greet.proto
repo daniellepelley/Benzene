@@ -8,6 +8,12 @@ package greet;
 service Greeter {
   // Sends a greeting
   rpc SayHello (HelloRequest) returns (HelloReply);
+  // Sends a few greeting variations for one name
+  rpc SayHelloServerStream (HelloRequest) returns (stream HelloReply);
+  // Greets everyone named in the uploaded stream at once
+  rpc SayHelloClientStream (stream HelloRequest) returns (HelloReply);
+  // Greets each uploaded name as it arrives
+  rpc SayHelloBidiStream (stream HelloRequest) returns (stream HelloReply);
 }
 
 // The request message containing the user's name.

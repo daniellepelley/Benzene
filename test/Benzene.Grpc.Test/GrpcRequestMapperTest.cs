@@ -1,5 +1,5 @@
 using Benzene.Grpc.Serialization;
-using Benzene.Grpc.Test.Helpers;
+using Benzene.Grpc.TestHelpers;
 using Benzene.Grpc.Test.Protos;
 using Moq;
 using Xunit;
@@ -19,7 +19,7 @@ public class GrpcRequestMapperTest
         var adapter = new Mock<IGrpcMessageAdapter>(MockBehavior.Strict);
         var mapper = new GrpcRequestMapper(adapter.Object);
         var request = new EchoRequest { Name = "foo" };
-        var context = new GrpcContext<EchoRequest, EchoReply>("topic", TestCallContext.Create(), request);
+        var context = new GrpcContext<EchoRequest, EchoReply>("topic", TestServerCallContext.Create(), request);
 
         var result = mapper.GetBody<EchoRequest>(context);
 
@@ -35,7 +35,7 @@ public class GrpcRequestMapperTest
         adapter.Setup(x => x.ConvertRequest<EchoRequestPoco>(It.IsAny<object>())).Returns(converted);
         var mapper = new GrpcRequestMapper(adapter.Object);
         var request = new EchoRequest { Name = "foo" };
-        var context = new GrpcContext<EchoRequest, EchoReply>("topic", TestCallContext.Create(), request);
+        var context = new GrpcContext<EchoRequest, EchoReply>("topic", TestServerCallContext.Create(), request);
 
         var result = mapper.GetBody<EchoRequestPoco>(context);
 
@@ -49,7 +49,7 @@ public class GrpcRequestMapperTest
         var adapter = new Mock<IGrpcMessageAdapter>(MockBehavior.Strict);
         var mapper = new GrpcRequestMapper(adapter.Object);
         var items = AsAsyncEnumerable(new[] { new EchoRequest { Name = "a" }, new EchoRequest { Name = "b" } });
-        var context = new GrpcContext<IAsyncEnumerable<EchoRequest>, EchoReply>("topic", TestCallContext.Create(), items);
+        var context = new GrpcContext<IAsyncEnumerable<EchoRequest>, EchoReply>("topic", TestServerCallContext.Create(), items);
 
         var result = mapper.GetBody<IAsyncEnumerable<EchoRequest>>(context);
 
@@ -65,7 +65,7 @@ public class GrpcRequestMapperTest
         adapter.Setup(x => x.ConvertRequest<EchoRequestPoco>(It.IsAny<object>())).Returns(converted);
         var mapper = new GrpcRequestMapper(adapter.Object);
         var items = AsAsyncEnumerable(new[] { new EchoRequest { Name = "a" } });
-        var context = new GrpcContext<IAsyncEnumerable<EchoRequest>, EchoReply>("topic", TestCallContext.Create(), items);
+        var context = new GrpcContext<IAsyncEnumerable<EchoRequest>, EchoReply>("topic", TestServerCallContext.Create(), items);
 
         var result = mapper.GetBody<IAsyncEnumerable<EchoRequestPoco>>(context);
         Assert.NotNull(result);

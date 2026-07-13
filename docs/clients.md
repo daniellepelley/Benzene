@@ -324,6 +324,44 @@ services.UsingBenzene(x => x.AddBenzeneMessageClients(clients => clients
 
 `KafkaContextConverter<T>` forwards `IBenzeneClientRequest.Headers` onto the outbound `Message.Headers` (UTF-8 encoded, matching Confluent.Kafka's `byte[]`-valued headers). A send is treated as accepted when the resulting `PersistenceStatus` is `Persisted`; anything else maps to `BenzeneResult.UnexpectedError<TResponse>()`.
 
+### gRPC
+
+Package: `Benzene.Grpc.Client`. Like Kafka and SNS, there's no `ClientsBuilder` sugar extension yet — wire `GrpcBenzeneMessageClient` with `ClientBuilder` directly, over a `GrpcChannel` the application owns:
+
+```csharp
+var routes = new GrpcClientRouteRegistry()
+    .Add<HelloRequest, HelloReply>("greet", "/greet.Greeter/SayHello");
+
+var clientBuilder = new ClientBuilder(resolver =>
+    new GrpcBenzeneMessageClient(GrpcChannel.ForAddress("https://greeter.internal"), routes,
+        resolver.GetService<IGrpcMessageAdapter>(),
+        resolver.GetService<IGrpcStatusReverseMapper>(),
+        resolver.GetService<ILogger<GrpcBenzeneMessageClient>>(),
+        new NullServiceResolver()));
+
+clientBuilder.WithCorrelationId().WithW3CTraceContext();
+
+services.UsingBenzene(x => x.AddBenzeneMessageClients(clients => clients
+    .WithMessageClient("greet", clientBuilder.Build)));
+```
+
+`IGrpcClientRouteRegistry.Add<TRequest,TResponse>(topic, fullMethodName)` registers the RPC's
+*protobuf wire types* (not necessarily what you pass to `SendMessageAsync<TRequest,TResponse>` — a
+POCO caller type is bridged onto the wire type by `IGrpcMessageAdapter`, same JSON-bridging rule as
+the server side) against its full gRPC method path. `AddGrpcClient(routes => routes.Add<...>(...))`
+is the DI-registration shorthand for `IGrpcMessageAdapter`/`IGrpcStatusReverseMapper`/the route
+registry itself, if you'd rather resolve those from the container than construct them by hand as
+above — it still expects a `GrpcChannel` to already be registered separately, the same way the
+Kafka client above expects an `IProducer<string,string>`.
+
+Unlike the other transports, a non-OK gRPC status doesn't collapse to a single generic failure
+status: `IGrpcStatusReverseMapper` maps the `StatusCode` back to a `BenzeneResultStatus` (e.g.
+`NotFound` → `NotFound`, `PermissionDenied` → `Forbidden`), preferring a `benzene-status` trailer
+verbatim when the far side is itself a Benzene.Grpc service — several distinct Benzene statuses
+(`Created`, `Accepted`, `Updated`, ...) collapse to the same `StatusCode.OK` on the wire, and the
+trailer is the only way to recover which one it actually was. An `RpcException` is caught inside
+`GrpcClientMiddleware` and mapped the same way, rather than propagating out of `SendMessageAsync`.
+
 ### HTTP
 
 Package: `Benzene.Client.Http`.
@@ -354,6 +392,7 @@ Every built-in decorator (`WithCorrelationId()`, `WithW3CTraceContext()`, `Heade
 - **SQS** — `SqsContextConverter` copies `Headers` onto `SendMessageRequest.MessageAttributes` (alongside `topic`).
 - **SNS** — `SnsContextConverter` copies `Headers` onto `PublishRequest.MessageAttributes`.
 - **Kafka** — `KafkaContextConverter` copies `Headers` onto `Message.Headers` (UTF-8 encoded).
+- **gRPC** — `GrpcClientRoute` copies `Headers` onto the outbound `CallOptions.Headers` (a `Metadata`).
 - **AWS Lambda** (`AwsLambdaBenzeneMessageClient`) — embeds `Headers` directly into its own `BenzeneMessageClientRequest` envelope, which is what actually gets invoked as the payload.
 
 The one exception is the lower-level `UseAwsLambda()`/`LambdaContextConverter` pipeline style (see [The context-converter pipeline](#the-context-converter-pipeline) below): a raw `InvokeRequest` has no header-like concept comparable to HTTP/SQS/SNS/Kafka, so `LambdaContextConverter.CreateRequestAsync` does not forward `Headers` — a decorator like `WithW3CTraceContext()` has no effect on a client pipeline built with `UseAwsLambda()` specifically. This doesn't affect `AwsLambdaBenzeneMessageClient`/`CreateAwsLambdaBenzeneMessageClient()`, which is unrelated and already forwards headers as described above.
@@ -372,10 +411,11 @@ public interface IContextConverter<TContextIn, TContextOut>
 }
 ```
 
-`.Convert(converter, action)` (or the transport-specific shorthand — `UseSqs<T>(queueUrl)`, `UseSns<T>(topicArn)`, `UseKafka<T>()`, `UseHttp<TRequest,TResponse>(verb, path)`, `UseAwsLambda<T>()`) plugs a converter into an `IMiddlewarePipelineBuilder`, letting you build a custom send pipeline directly out of transport-specific middleware (`UseSqsClient()`, `UseSnsClient()`, `UseKafkaClient()`, `UseHttpClient()`, `UseAwsLambdaClient()`) rather than going through a named, decorator-wrapped `IBenzeneMessageClient`. Reach for this when you need pipeline-level control (e.g. inserting custom middleware between the conversion and the transport call) that the `ClientBuilder` decorator chain doesn't expose — the named-client pattern documented above is the better default for most services.
+`.Convert(converter, action)` (or the transport-specific shorthand — `UseSqs<T>(queueUrl)`, `UseSns<T>(topicArn)`, `UseKafka<T>()`, `UseGrpc<T>()`, `UseHttp<TRequest,TResponse>(verb, path)`, `UseAwsLambda<T>()`) plugs a converter into an `IMiddlewarePipelineBuilder`, letting you build a custom send pipeline directly out of transport-specific middleware (`UseSqsClient()`, `UseSnsClient()`, `UseKafkaClient()`, `UseGrpcClient()`, `UseHttpClient()`, `UseAwsLambdaClient()`) rather than going through a named, decorator-wrapped `IBenzeneMessageClient`. Reach for this when you need pipeline-level control (e.g. inserting custom middleware between the conversion and the transport call) that the `ClientBuilder` decorator chain doesn't expose — the named-client pattern documented above is the better default for most services. Note `UseGrpc<T>()`'s converter always maps the response to `Void` (matching Kafka's fire-and-forget shape); `GrpcBenzeneMessageClient` above bypasses it precisely to return the real typed response instead.
 
 ## See Also
 
 - [Correlation IDs](correlation-ids)
 - [Monitoring & Diagnostics — W3C Trace Context](monitoring#w3c-trace-context)
 - [Message Handlers](message-handlers)
+- [gRPC Setup](getting-started-grpc)

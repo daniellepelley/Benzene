@@ -301,6 +301,33 @@ the topic-based version does. ASP.NET Core doesn't currently have an equivalent 
 already resolved via routing before it reaches this middleware, so there's no raw path left to match
 on at this point in the pipeline).
 
+### gRPC (grpc.health.v1)
+
+Package: `Benzene.Grpc.AspNet`. This one is different in kind from everything above: instead of
+routing a message topic or HTTP path through `.UseHealthCheck()`, it bridges Benzene's health checks
+onto the *standard* [grpc.health.v1](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
+protocol, so any generic gRPC health-checking tool (`grpc_health_probe`, Kubernetes gRPC liveness
+probes, `grpcurl`) can query it without knowing anything about Benzene:
+
+```csharp
+services.AddBenzeneGrpc(o => o.EnableHealthChecks = true);
+services.AddScoped<IHealthCheck, DatabaseHealthCheck>();   // Benzene.HealthChecks.Core.IHealthCheck
+
+app.MapGrpcService<GreeterService>();
+app.MapBenzeneGrpcHealthService();
+```
+
+`BenzeneHealthCheckBridge` is an ASP.NET Core `Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck`
+(not the same interface as above — note the different namespace) registered as the `"benzene"` check;
+it resolves every `Benzene.HealthChecks.Core.IHealthCheck` from the container directly (plain
+`services.AddScoped<IHealthCheck, T>()`, no `IHealthCheckBuilder` involved) and aggregates them:
+unhealthy if any failed, degraded if any warned, healthy otherwise. A gRPC `Check`/`Watch` call then
+reflects that aggregate as `SERVING`/`NOT_SERVING` per the standard protocol.
+
+Both health checks and reflection are off by default (`EnableHealthChecks`/`EnableReflection` on
+`BenzeneGrpcOptions`) — see [gRPC Setup](getting-started-grpc#10-health-checks-and-reflection-d8)
+for the full walkthrough.
+
 ## Response format
 
 The response payload is a `HealthCheckResponse` (`IHealthCheckResponse<HealthCheckResult>`),
@@ -433,3 +460,4 @@ this if you want different `Data`/behavior than the shipped one.)
   middleware
 - [Middleware](middleware) — how middleware ordering and inline middleware work in general
 - [Monitoring & Diagnostics](monitoring) — tracing, logging, and metrics for the rest of your pipeline
+- [gRPC Setup](getting-started-grpc) — the grpc.health.v1 bridge

@@ -313,6 +313,45 @@ is a no-op `IBenzeneApplicationBuilder` extension on any platform other than ASP
 pattern as `UseAwsLambda`/`UseWorker`. See [ASP.NET Core Integration](asp-net-core) for more
 detail on request routing.
 
+### gRPC on ASP.NET Core
+
+Package: `Benzene.Grpc.AspNet`. Rides the same ASP.NET Core host adapter as `UseHttp` above — same
+`WebApplicationBuilder.UseBenzene<TStartUp>()`/`app.UseBenzene()` pair, same `AspApplicationBuilder`
+— just a second, independent `Use*` extension you can call alongside (or instead of) `UseHttp` in
+the same `Configure` method, exactly like `UseAwsLambda`/`UseWorker` can coexist:
+
+```csharp
+public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+{
+    services.AddBenzeneGrpc();
+    services.UsingBenzene(x => x.AddMessageHandlers(typeof(SayHelloMessageHandler).Assembly));
+}
+
+public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
+    => app.UseGrpc(grpc => grpc.UseMessageHandlers());
+```
+
+```csharp
+var app = builder.Build();
+app.MapGrpcService<GreeterService>();   // still needed - see below
+app.UseBenzene();
+app.Run();
+```
+
+Two things are easy to miss because gRPC's hosting model differs from Benzene's other transports:
+
+- **`AddBenzeneGrpc()` in `ConfigureServices` is required, in addition to `UsingBenzene(...)`.** It
+  registers ASP.NET Core's own gRPC services and `BenzeneInterceptor` as a server interceptor —
+  `UseGrpc` alone isn't enough, because the interceptor is activated by ASP.NET Core's own
+  per-request DI, not Benzene's pipeline-building container.
+- **You still need `app.MapGrpcService<TService>()`** for a generated `ServiceBase`-derived class,
+  even for methods `BenzeneInterceptor` will always claim — gRPC's own routing/reflection needs
+  something to bind to. Methods with a matching `[GrpcMethod]`-tagged handler never actually reach
+  that class's method body; unmatched methods fall through to it normally.
+
+See [gRPC Setup](getting-started-grpc) for the full walkthrough, including all four RPC shapes,
+metadata, status-code mapping, and the optional health check/reflection services.
+
 ## `IBenzeneInvocation` and `IBenzeneInvocationAccessor`
 
 Package: `Benzene.Abstractions.Pipelines` (interfaces, namespace `Benzene.Abstractions.Hosting`),
@@ -472,6 +511,7 @@ is the Autofac equivalent of the Microsoft-DI-only `BenzeneTestHost`.
 - [AWS Lambda Setup](getting-started-aws)
 - [Azure Functions Setup](azure-functions)
 - [ASP.NET Core Integration](asp-net-core)
+- [gRPC Setup](getting-started-grpc)
 - [Testing Benzene](testing-benzene)
 - [Middleware](middleware)
 - [Message Handlers](message-handlers)

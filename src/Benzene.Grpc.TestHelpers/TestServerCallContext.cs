@@ -1,15 +1,15 @@
 using Grpc.Core;
 
-namespace Benzene.Grpc.Test.Helpers;
+namespace Benzene.Grpc.TestHelpers;
 
 /// <summary>
-/// A minimal, hand-rolled <see cref="ServerCallContext"/> for unit tests that don't need a real
-/// in-process host (see <see cref="Benzene.Grpc.Test.GrpcHostingTest"/> for those). Only the members
-/// Benzene.Grpc actually reads (<see cref="Method"/>, <see cref="Deadline"/>, <see cref="RequestHeaders"/>,
-/// <see cref="CancellationToken"/>, <see cref="ResponseTrailers"/>, <see cref="WriteResponseHeadersAsync"/>)
-/// are meaningfully implemented; anything else throws if touched.
+/// A minimal, hand-rolled <see cref="ServerCallContext"/> for unit tests that don't need a real in-process
+/// host (see <see cref="GrpcTestHost"/> for those). Only the members Benzene.Grpc actually reads
+/// (<see cref="Method"/>, <see cref="Deadline"/>, <see cref="RequestHeaders"/>, <see cref="CancellationToken"/>,
+/// <see cref="ResponseTrailers"/>, <see cref="WriteResponseHeadersAsync"/>) are meaningfully implemented;
+/// anything else throws if touched. Grpc.Core.Testing is deliberately not a dependency of Benzene.Grpc.
 /// </summary>
-public class TestCallContext : ServerCallContext
+public class TestServerCallContext : ServerCallContext
 {
     private readonly string _method;
     private readonly Metadata _requestHeaders;
@@ -17,16 +17,16 @@ public class TestCallContext : ServerCallContext
     private readonly DateTime _deadline;
     private readonly Metadata _responseTrailers = new();
 
-    public static TestCallContext Create(
+    public static TestServerCallContext Create(
         string method = "/benzene.test.TestService/Echo",
         Metadata? requestHeaders = null,
         CancellationToken cancellationToken = default,
         DateTime? deadline = null)
     {
-        return new TestCallContext(method, requestHeaders ?? new Metadata(), cancellationToken, deadline ?? DateTime.MaxValue);
+        return new TestServerCallContext(method, requestHeaders ?? new Metadata(), cancellationToken, deadline ?? DateTime.MaxValue);
     }
 
-    private TestCallContext(string method, Metadata requestHeaders, CancellationToken cancellationToken, DateTime deadline)
+    private TestServerCallContext(string method, Metadata requestHeaders, CancellationToken cancellationToken, DateTime deadline)
     {
         _method = method;
         _requestHeaders = requestHeaders;

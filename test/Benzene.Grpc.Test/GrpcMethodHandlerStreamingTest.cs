@@ -5,6 +5,7 @@ using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Grpc.Test.Helpers;
 using Benzene.Grpc.Test.Protos;
+using Benzene.Grpc.TestHelpers;
 using Benzene.Microsoft.Dependencies;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +23,7 @@ public class GrpcMethodHandlerStreamingTest
             new GrpcMethodDefinition("/benzene.test.TestService/Subscribe", "grpc-test-subscribe-topic"), serviceResolverFactory, pipeline);
         var writer = new FakeServerStreamWriter<SubscribeReply>();
 
-        await handler.ServerStreamingAsync<SubscribeRequest, SubscribeReply>(new SubscribeRequest { Topic = "t" }, writer, TestCallContext.Create());
+        await handler.ServerStreamingAsync<SubscribeRequest, SubscribeReply>(new SubscribeRequest { Topic = "t" }, writer, TestServerCallContext.Create());
 
         Assert.Equal(new[] { "t-0", "t-1", "t-2" }, writer.Written.Select(x => x.Item));
     }
@@ -35,7 +36,7 @@ public class GrpcMethodHandlerStreamingTest
             new GrpcMethodDefinition("/x/y", "grpc-test-subscribe-poco-topic"), serviceResolverFactory, pipeline);
         var writer = new FakeServerStreamWriter<SubscribeReply>();
 
-        await handler.ServerStreamingAsync<SubscribeRequest, SubscribeReply>(new SubscribeRequest { Topic = "poco" }, writer, TestCallContext.Create());
+        await handler.ServerStreamingAsync<SubscribeRequest, SubscribeReply>(new SubscribeRequest { Topic = "poco" }, writer, TestServerCallContext.Create());
 
         Assert.Equal(new[] { "poco-0", "poco-1", "poco-2" }, writer.Written.Select(x => x.Item));
     }
@@ -49,7 +50,7 @@ public class GrpcMethodHandlerStreamingTest
         var writer = new FakeServerStreamWriter<SubscribeReply>();
 
         var exception = await Assert.ThrowsAsync<RpcException>(() =>
-            handler.ServerStreamingAsync<SubscribeRequest, SubscribeReply>(new SubscribeRequest { Topic = "t" }, writer, TestCallContext.Create()));
+            handler.ServerStreamingAsync<SubscribeRequest, SubscribeReply>(new SubscribeRequest { Topic = "t" }, writer, TestServerCallContext.Create()));
 
         Assert.Equal(StatusCode.NotFound, exception.StatusCode);
         Assert.Empty(writer.Written);
@@ -68,7 +69,7 @@ public class GrpcMethodHandlerStreamingTest
             new UploadItem { Value = 3 },
         });
 
-        var summary = await handler.ClientStreamingAsync<UploadItem, UploadSummary>(reader, TestCallContext.Create());
+        var summary = await handler.ClientStreamingAsync<UploadItem, UploadSummary>(reader, TestServerCallContext.Create());
 
         Assert.Equal(6, summary.Total);
     }
@@ -82,7 +83,7 @@ public class GrpcMethodHandlerStreamingTest
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
-        var callContext = TestCallContext.Create(cancellationToken: cts.Token);
+        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
 
         var exception = await Assert.ThrowsAsync<RpcException>(() =>
             handler.ClientStreamingAsync<UploadItem, UploadSummary>(reader, callContext));
@@ -103,7 +104,7 @@ public class GrpcMethodHandlerStreamingTest
         });
         var writer = new FakeServerStreamWriter<ChatMessage>();
 
-        await handler.DuplexStreamingAsync<ChatMessage, ChatMessage>(reader, writer, TestCallContext.Create());
+        await handler.DuplexStreamingAsync<ChatMessage, ChatMessage>(reader, writer, TestServerCallContext.Create());
 
         Assert.Equal(new[] { "Echo: a", "Echo: b" }, writer.Written.Select(x => x.Text));
     }
