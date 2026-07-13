@@ -22,7 +22,7 @@ public class AwsLambdaHost<TStartUp> : IAwsLambdaEntryPoint where TStartUp : Ben
         var startUp = new TStartUp();
         var configuration = startUp.GetConfiguration();
         var services = new ServiceCollection();
-        // services.AddLogging();
+        services.AddLogging();
         var container = new MicrosoftBenzeneServiceContainer(services);
         var eventPipeline = new MiddlewarePipelineBuilder<AwsEventStreamContext>(container);
 
