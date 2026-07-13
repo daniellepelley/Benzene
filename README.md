@@ -56,7 +56,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 {
     app.UseRouting();
     app.UseBenzene(benzene => benzene
-        .UseAspNet(asp => asp
+        .UseHttp(asp => asp
             .UseCorrelationId()
             .UseMessageHandlers(router => router.UseFluentValidation())
         )
@@ -91,6 +91,7 @@ Full documentation is available in [`docs/`](./docs), including:
 - [Testing Benzene](docs/testing-benzene.md)
 - [Health Checks](docs/health-checks.md) and [Monitoring & Diagnostics](docs/monitoring.md)
 - [AWS Lambda Setup](docs/getting-started-aws.md)
+- [Azure Functions Setup](docs/azure-functions.md)
 - [ASP.NET Core Integration](docs/asp-net-core.md)
 - [Fluent Validation](docs/fluent-validation.md) and [Data Annotations](docs/data-annotations.md)
 - [Terraform Code Generation](docs/terraform.md) and [OpenAPI/AsyncAPI Spec](docs/spec.md)
