@@ -1,4 +1,4 @@
-using Benzene.Grpc.Test.Helpers;
+using Benzene.Grpc.TestHelpers;
 using Grpc.Core;
 using Xunit;
 
@@ -14,7 +14,7 @@ public class GrpcMessageHeadersGetterTest
             { "x-correlation-id", "abc-123" },
             { "x-trace-id", "trace-456" }
         };
-        var context = new GrpcContext<string, string>("topic", TestCallContext.Create(requestHeaders: requestHeaders), "request");
+        var context = new GrpcContext<string, string>("topic", TestServerCallContext.Create(requestHeaders: requestHeaders), "request");
         var getter = new GrpcMessageHeadersGetter();
 
         var headers = getter.GetHeaders(context);
@@ -31,7 +31,7 @@ public class GrpcMessageHeadersGetterTest
             { "x-plain", "value" },
             { "x-binary-bin", new byte[] { 1, 2, 3 } }
         };
-        var context = new GrpcContext<string, string>("topic", TestCallContext.Create(requestHeaders: requestHeaders), "request");
+        var context = new GrpcContext<string, string>("topic", TestServerCallContext.Create(requestHeaders: requestHeaders), "request");
         var getter = new GrpcMessageHeadersGetter();
 
         var headers = getter.GetHeaders(context);
@@ -48,7 +48,7 @@ public class GrpcMessageHeadersGetterTest
             { "x-header", "first" },
             { "x-header", "second" }
         };
-        var context = new GrpcContext<string, string>("topic", TestCallContext.Create(requestHeaders: requestHeaders), "request");
+        var context = new GrpcContext<string, string>("topic", TestServerCallContext.Create(requestHeaders: requestHeaders), "request");
         var getter = new GrpcMessageHeadersGetter();
 
         var headers = getter.GetHeaders(context);

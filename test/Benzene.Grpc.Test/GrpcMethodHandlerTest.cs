@@ -3,7 +3,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
-using Benzene.Grpc.Test.Helpers;
+using Benzene.Grpc.TestHelpers;
 using Benzene.Grpc.Test.Protos;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
@@ -21,7 +21,7 @@ public class GrpcMethodHandlerTest
         var pipeline = BuildPipeline(out var serviceResolverFactory);
         var handler = new GrpcMethodHandler(
             new GrpcMethodDefinition("/benzene.test.TestService/Echo", "grpc-test-topic-with-no-handler"), serviceResolverFactory, pipeline);
-        var callContext = TestCallContext.Create();
+        var callContext = TestServerCallContext.Create();
 
         var exception = await Assert.ThrowsAsync<RpcException>(() =>
             handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "x" }, callContext));
@@ -38,7 +38,7 @@ public class GrpcMethodHandlerTest
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
-        var callContext = TestCallContext.Create(cancellationToken: cts.Token);
+        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
 
         var exception = await Assert.ThrowsAsync<RpcException>(() =>
             handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "x" }, callContext));
@@ -54,7 +54,7 @@ public class GrpcMethodHandlerTest
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
-        var callContext = TestCallContext.Create(cancellationToken: cts.Token, deadline: DateTime.UtcNow.AddMilliseconds(-1));
+        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token, deadline: DateTime.UtcNow.AddMilliseconds(-1));
 
         var exception = await Assert.ThrowsAsync<RpcException>(() =>
             handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "x" }, callContext));
@@ -71,7 +71,7 @@ public class GrpcMethodHandlerTest
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
-        var callContext = TestCallContext.Create(cancellationToken: cts.Token);
+        var callContext = TestServerCallContext.Create(cancellationToken: cts.Token);
 
         var reply = await handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "x" }, callContext);
 
