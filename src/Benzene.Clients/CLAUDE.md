@@ -10,6 +10,11 @@ Client abstractions for calling Benzene services. Provides interfaces and base i
 - Request/response mapping for clients
 - Client builder patterns
 - Type-safe client interfaces
+- `ClientBuilder`/`IDependencyWrapper<IBenzeneMessageClient>` - decorator-chain pattern for
+  `IBenzeneMessageClient`; existing decorators: `CorrelationId/` (`WithCorrelationId()`),
+  `TraceContext/` (`WithW3CTraceContext()` - stamps `Activity.Current`'s `traceparent`/`tracestate`
+  onto outgoing headers), `HeaderBenzeneMessageClient`/`HeadersBenzeneMessageClient`,
+  `RetryBenzeneMessageClient`
 
 ## When to use this package
 - When building clients for Benzene services

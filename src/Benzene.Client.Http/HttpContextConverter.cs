@@ -27,12 +27,19 @@ public class HttpContextConverter<TRequest, TResponse> : IContextConverter<IBenz
 
     public Task<HttpSendMessageContext> CreateRequestAsync(IBenzeneClientContext<TRequest, TResponse> contextIn)
     {
-        return Task.FromResult(new HttpSendMessageContext(new HttpRequestMessage
+        var request = new HttpRequestMessage
         {
             Content = new StringContent(_serializer.Serialize(contextIn.Request.Message), Encoding.UTF8, "application/json"),
             RequestUri = new Uri(_path),
             Method = new HttpMethod(_verb)
-        }));
+        };
+
+        foreach (var header in contextIn.Request.Headers)
+        {
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return Task.FromResult(new HttpSendMessageContext(request));
     }
 
     public async Task MapResponseAsync(IBenzeneClientContext<TRequest, TResponse> contextIn, HttpSendMessageContext contextOut)

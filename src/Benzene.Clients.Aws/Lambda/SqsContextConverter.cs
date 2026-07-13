@@ -39,6 +39,17 @@ public class LambdaContextConverter<T> : IContextConverter<IBenzeneClientContext
     /// </summary>
     /// <param name="contextIn">The incoming Benzene client context.</param>
     /// <returns>A task that resolves to the built <see cref="LambdaSendMessageContext"/>.</returns>
+    /// <remarks>
+    /// <see cref="IBenzeneClientRequest{T}.Headers"/> is not forwarded here: a raw <see cref="InvokeRequest"/>
+    /// has no header-like concept comparable to HTTP/SQS/SNS/Kafka (AWS's own <c>ClientContext</c> feature
+    /// is a distinct, base64-encoded JSON blob with different semantics). A decorator like
+    /// <c>WithW3CTraceContext()</c> has no effect on a pipeline built via <c>UseAwsLambda()</c>/this
+    /// converter specifically. This does not affect the separate, more commonly used
+    /// <see cref="Benzene.Clients.Aws.Lambda.AwsLambdaBenzeneMessageClient"/> (wired via
+    /// <c>CreateAwsLambdaBenzeneMessageClient()</c>), which already embeds
+    /// <see cref="IBenzeneClientRequest{T}.Headers"/> into the <c>BenzeneMessageClientRequest</c> envelope
+    /// it invokes with.
+    /// </remarks>
     public Task<LambdaSendMessageContext> CreateRequestAsync(IBenzeneClientContext<T, Void> contextIn)
     {
         return Task.FromResult(new LambdaSendMessageContext(new InvokeRequest

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService.Model;
 using Benzene.Abstractions.Messages.BenzeneClient;
@@ -44,10 +45,17 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
     /// <returns>A task that resolves to the SNS send message context.</returns>
     public Task<SnsSendMessageContext> CreateRequestAsync(IBenzeneClientContext<T, Void> contextIn)
     {
+        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
+        foreach (var header in contextIn.Request.Headers)
+        {
+            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
+        }
+
         return Task.FromResult(new SnsSendMessageContext(new PublishRequest
         {
             TopicArn = _topicArn,
-            Message = _serializer.Serialize(contextIn.Request.Message)
+            Message = _serializer.Serialize(contextIn.Request.Message),
+            MessageAttributes = messageAttributes
         }));
     }
 

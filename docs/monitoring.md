@@ -4,6 +4,8 @@ Benzene includes built-in support for common monitoring and diagnostic patterns,
 
 ## Correlation IDs
 
+> `UseCorrelationId()` is obsolete in favor of automatic [W3C trace context](#w3c-trace-context) propagation for cross-service correlation. The header itself remains supported here as a legacy fallback.
+
 Correlation IDs allow you to trace a single request as it moves through various components of your system.
 
 ### Usage
@@ -15,7 +17,7 @@ app.UseCorrelationId();
 ```
 
 By default, this will:
-1. Look for a correlation ID in the incoming message headers (e.g., `x-correlation-id`, `correlation-id`).
+1. Look for a correlation ID in the incoming message headers: `x-correlation-id`, then `correlation-id`, then the legacy `correlationId` (matched case-insensitively, first match wins).
 2. If found, it will register an `ICorrelationId` with that value; if not, it will generate a new one (GUID).
 3. Make `ICorrelationId` resolvable via dependency injection for the rest of the request.
 
@@ -84,6 +86,8 @@ app.UseLogResult(x => x
 
 Scope properties flow to any provider that supports scopes — for the console provider enable `IncludeScopes`; Serilog's provider maps scopes to its `LogContext` automatically.
 
+For a single, portable call that covers `invocationId`/`traceId`/`spanId`/`topic`/`transport`/`handler` on every platform (rather than hand-composing the extensions above), see [`UseBenzeneEnrichment()`](common-middleware#usebenzeneenrichment).
+
 ### Autofac
 
 The Autofac integration registers fallbacks so `ILogger<T>` always resolves. To enable real logging, register a logger factory — your registration always wins over the fallback:
@@ -104,6 +108,41 @@ services.UsingBenzene(x => x.AddDatadog());
 ```
 
 ## Distributed Tracing
+
+### W3C Trace Context
+
+`Benzene.Diagnostics` can establish the correct `Activity` parent from an inbound
+[W3C `traceparent`](https://www.w3.org/TR/trace-context/) header, so distributed traces continue
+across services instead of each hop starting a new, disconnected trace. Add `UseW3CTraceContext()`
+as the **first** middleware in the pipeline:
+
+```csharp
+app.UseW3CTraceContext();
+```
+
+Every automatically-wrapped middleware span added by `AddDiagnostics()` after this point nests under
+the remote trace. When the header is missing or fails to parse, it falls back to a normal root span —
+this is always safe to add.
+
+To propagate the current trace to a downstream Benzene service, add `WithW3CTraceContext()` to an
+outbound client:
+
+```csharp
+services.UsingBenzene(x => x.AddBenzeneMessageClients(c => c
+    .CreateSqsBenzeneMessageClient("my-queue", queueUrl, resolver, client => client.WithW3CTraceContext())));
+```
+
+This stamps `Activity.Current`'s `traceparent`/`tracestate` onto outgoing message headers. It works
+today for HTTP, SQS, SNS, and Kafka outbound clients (all forward `IBenzeneClientRequest.Headers` onto
+the real request), and for AWS Lambda's `AwsLambdaBenzeneMessageClient` (which embeds headers into its
+own message envelope) — but has no effect on a client pipeline built via the lower-level
+`UseAwsLambda()`/`LambdaContextConverter` (a raw `InvokeRequest` has no header-like concept).
+
+> Inbound extraction (`UseW3CTraceContext()`) is currently wired for HTTP-based transports (ASP.NET
+> Core, Azure Functions' ASP.NET-style trigger, API Gateway) — SQS/SNS/Kafka/Event Hub inbound
+> extraction is not yet implemented, so a trace started by an HTTP request continues correctly through
+> the outbound clients above, but a queue/stream consumer won't yet pick the parent back up on the
+> receiving end.
 
 ### AWS X-Ray
 

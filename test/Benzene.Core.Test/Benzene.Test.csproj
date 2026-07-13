@@ -72,6 +72,7 @@
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Kafka.TestHelpers\Benzene.Azure.Function.Kafka.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Core\Benzene.Cache.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Cache.Redis\Benzene.Cache.Redis.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Client.Http\Benzene.Client.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Clients.HealthChecks\Benzene.Clients.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.ApiGateway\Benzene.CodeGen.ApiGateway.csproj" />

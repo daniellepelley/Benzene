@@ -47,14 +47,19 @@ public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
     /// <returns>A task that resolves to the built <see cref="SqsSendMessageContext"/>.</returns>
     public Task<SqsSendMessageContext> CreateRequestAsync(IBenzeneClientContext<T, Void> contextIn)
     {
+        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
+        foreach (var header in contextIn.Request.Headers)
+        {
+            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
+        }
+
+        messageAttributes["topic"] = new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String" };
+
         return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {
             QueueUrl = _queueUrl,
             MessageBody = _serializer.Serialize(contextIn.Request.Message),
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>
-            {
-                { "topic", new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String"} }
-            }
+            MessageAttributes = messageAttributes
         }));
     }
 

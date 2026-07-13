@@ -30,3 +30,6 @@ Core Kafka integration for Benzene. Provides abstractions and implementations fo
 - Message key for partitioning
 - Headers for metadata
 - Commit strategies configurable
+- `KafkaContextConverter` forwards `IBenzeneClientRequest.Headers` onto the outbound
+  `Message.Headers` (UTF-8 encoded, matching Confluent.Kafka's `byte[]`-valued headers) so
+  header-based decorators (correlation ID, W3C trace context) reach the wire

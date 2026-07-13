@@ -44,11 +44,23 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   per-message SQS/SNS/Kafka sub-pipeline, since `IBenzeneInvocation` isn't wired into those nested DI
   scopes today. Replaces the AWS-only `WithRequestId()`/`WithApplication()` (now `[Obsolete]`).
 
+### W3C Trace Context
+- `UseW3CTraceContext<TContext>()` (`W3CTraceContextExtensions.cs`) - reads `traceparent`/`tracestate`
+  (case-insensitively) and starts the pipeline's root `Activity` with the parsed remote context as its
+  parent, so traces continue across services instead of each hop starting a new one. Must be the FIRST
+  middleware added — everything after it inherits the correct ambient `Activity.Current` parent. Falls
+  back to a normal root span when the header is missing/invalid; never throws. Currently wired for
+  HTTP-based transports only (ASP.NET Core, Azure Functions' ASP.NET-style trigger, API Gateway) —
+  SQS/SNS/Kafka/Event Hub inbound extraction isn't implemented yet. Outbound injection is a separate
+  `WithW3CTraceContext()` `ClientBuilder` decorator in `Benzene.Clients.TraceContext`.
+
 ## When to use this package
 - Add `AddDiagnostics()` to get automatic `Activity` spans per middleware and `UseTimer("name")`
   support, on every platform (AWS, Azure, ASP.NET Core, Worker)
 - Add `UseBenzeneEnrichment()` once per pipeline for portable log/trace enrichment instead of
   hand-composing platform-specific `WithXxx()` log-context extensions
+- Add `UseW3CTraceContext()` as the first middleware on HTTP-based pipelines to continue a caller's
+  distributed trace instead of starting a new one per hop
 - Wire `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` against an OTel `TracerProviderBuilder`/
   `MeterProviderBuilder` to actually export what this package produces to a real backend
 

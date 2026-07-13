@@ -28,3 +28,10 @@ AWS client implementations for calling Benzene services in AWS. Provides clients
 - IAM-based authentication
 - Region configuration
 - ARN-based addressing
+- `SqsContextConverter`/`SnsContextConverter` forward `IBenzeneClientRequest.Headers` onto real
+  `MessageAttributes` (alongside the `topic` attribute) so header-based decorators (correlation ID,
+  W3C trace context) actually reach the wire
+- `LambdaContextConverter` (used by the lower-level `UseAwsLambda()` pipeline composition, not the
+  `AwsLambdaBenzeneMessageClient`/`CreateAwsLambdaBenzeneMessageClient()` sugar) does NOT forward
+  headers — a raw `InvokeRequest` has no header-like concept. `AwsLambdaBenzeneMessageClient` already
+  forwards headers correctly by embedding them in its own `BenzeneMessageClientRequest` envelope.
