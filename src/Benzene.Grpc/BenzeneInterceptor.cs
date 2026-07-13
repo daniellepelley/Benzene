@@ -1,3 +1,4 @@
+using Benzene.Core.Exceptions;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 
@@ -5,13 +6,13 @@ namespace Benzene.Grpc;
 
 public class BenzeneInterceptor : Interceptor
 {
-    private readonly IGrpcMethodHandlerFactory _grpcMethodHandlerFactory;
+    private readonly IGrpcMethodHandlerFactoryAccessor _grpcMethodHandlerFactoryAccessor;
     private readonly IGrpcRouteFinder _grpcRouteFinder;
 
-    public BenzeneInterceptor(IGrpcMethodHandlerFactory grpcMethodHandlerFactory, IGrpcRouteFinder grpcRouteFinder)
+    public BenzeneInterceptor(IGrpcMethodHandlerFactoryAccessor grpcMethodHandlerFactoryAccessor, IGrpcRouteFinder grpcRouteFinder)
     {
         _grpcRouteFinder = grpcRouteFinder;
-        _grpcMethodHandlerFactory = grpcMethodHandlerFactory;
+        _grpcMethodHandlerFactoryAccessor = grpcMethodHandlerFactoryAccessor;
     }
 
     public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(TRequest request, ServerCallContext context,
@@ -21,7 +22,9 @@ public class BenzeneInterceptor : Interceptor
 
         if (topic != null)
         {
-            var benzeneGrpcMethodHandler = _grpcMethodHandlerFactory.Create(topic);
+            var factory = _grpcMethodHandlerFactoryAccessor.Factory
+                ?? throw new BenzeneException("No gRPC pipeline has been configured; call UseGrpc before handling requests.");
+            var benzeneGrpcMethodHandler = factory.Create(topic);
             return base.UnaryServerHandler(request, context, benzeneGrpcMethodHandler.HandleAsync<TRequest, TResponse>);
         }
 

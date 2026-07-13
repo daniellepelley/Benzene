@@ -49,7 +49,7 @@ public class GrpcMethodPipelineTest
         services.AddLogging();
 
         var container = new MicrosoftBenzeneServiceContainer(services);
-        container.AddBenzene().AddBenzeneMessage().AddGrpc();
+        container.AddBenzene().AddBenzeneMessage().AddGrpcMessageHandlers();
 
         var pipelineBuilder = new MiddlewarePipelineBuilder<GrpcContext>(container);
         pipelineBuilder.UseMessageHandlers();
