@@ -1,11 +1,12 @@
 using Amazon.Lambda.S3Events;
+using Benzene.Abstractions.MessageHandlers;
 
 namespace Benzene.Aws.S3;
 
 /// <summary>
 /// Provides the middleware pipeline context for a single record within an S3 event notification batch.
 /// </summary>
-public class S3RecordContext
+public class S3RecordContext : IHasMessageResult
 {
     private S3RecordContext(S3Event s3Event,  S3Event.S3EventNotificationRecord s3EventNotificationRecord)
     {
@@ -33,4 +34,11 @@ public class S3RecordContext
     /// Gets the specific S3 event notification record this context represents.
     /// </summary>
     public S3Event.S3EventNotificationRecord S3EventNotificationRecord { get; }
+
+    /// <summary>
+    /// Gets or sets the result of handling this record. Set by
+    /// <see cref="S3MessageMessageHandlerResultSetter"/>. S3 events are fire-and-forget, so this is
+    /// recorded for diagnostics rather than written back to a response.
+    /// </summary>
+    public IMessageResult MessageResult { get; set; }
 }
