@@ -26,8 +26,24 @@ public class CorsSettings
     /// <remarks>
     /// These headers will be included in the Access-Control-Allow-Headers response header.
     /// Common headers include "Content-Type", "Authorization", "X-Requested-With", etc.
+    /// A preflight request that asks for a header not in this list (via
+    /// <c>Access-Control-Request-Headers</c>) is treated as not allowed. Use <c>"*"</c> to allow
+    /// any header; the middleware then echoes back whatever the preflight actually requested
+    /// (equivalent to ASP.NET Core's <c>AllowAnyHeader()</c>), since a literal <c>"*"</c> is not
+    /// honored by browsers on credentialed requests.
     /// </remarks>
     public string[] AllowedHeaders { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of response headers that browser-side JavaScript is allowed to read
+    /// (beyond the small set of CORS-safelisted headers exposed by default, e.g. Content-Type).
+    /// </summary>
+    /// <remarks>
+    /// Sent as the <c>Access-Control-Expose-Headers</c> header on actual (non-preflight)
+    /// responses. Equivalent to ASP.NET Core's <c>WithExposedHeaders(...)</c>. Leave empty/null
+    /// to expose only the default safelisted headers.
+    /// </remarks>
+    public string[] ExposedHeaders { get; set; }
 
     /// <summary>
     /// Gets or sets how long, in seconds, browsers may cache a preflight (OPTIONS) response

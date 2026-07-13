@@ -19,6 +19,7 @@ public class ApiGatewayMessageCorsTest
     private const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
     private const string AccessControlAllowCredentials = "Access-Control-Allow-Credentials";
     private const string AccessControlMaxAge = "Access-Control-Max-Age";
+    private const string AccessControlExposeHeaders = "Access-Control-Expose-Headers";
     private const string Vary = "Vary";
 
     public ApiGatewayMessageCorsTest()
@@ -38,6 +39,10 @@ public class ApiGatewayMessageCorsTest
                         AllowedHeaders = new[]
                         {
                             "X-Query-Id","X-Tenant-Id","Authorization","Content-Type","X-Api-Key"
+                        },
+                        ExposedHeaders = new[]
+                        {
+                            "X-Total-Count"
                         },
                         AllowCredentials = true,
                         MaxAgeSeconds = 600
@@ -105,6 +110,7 @@ public class ApiGatewayMessageCorsTest
         Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
         Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
         Assert.Equal("true", response.Headers[AccessControlAllowCredentials]);
+        Assert.Equal("X-Total-Count", response.Headers[AccessControlExposeHeaders]);
         Assert.Equal("Origin", response.Headers[Vary]);
         // Access-Control-Max-Age is only meaningful on preflight (OPTIONS) responses.
         Assert.False(response.Headers.ContainsKey(AccessControlMaxAge));
@@ -125,5 +131,78 @@ public class ApiGatewayMessageCorsTest
         Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
         Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
         Assert.False(response.Headers.ContainsKey(Vary));
+    }
+
+    [Fact]
+    public async Task Option_DisallowedRequestedHeader()
+    {
+        var request = HttpBuilder.Create("OPTIONS", "/example")
+            .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-headers", "X-Query-Id, X-Not-Allowed");
+        var response = await _host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.Equal(200, response.StatusCode);
+
+        // A requested header outside the configured allow-list fails the preflight, just like
+        // ASP.NET Core's CorsService - the browser will then block the actual request since no
+        // CORS headers were returned.
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowOrigin));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
+    }
+
+    [Fact]
+    public async Task Option_AllowedRequestedHeaders_Succeeds()
+    {
+        var request = HttpBuilder.Create("OPTIONS", "/example")
+            .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-headers", "X-Query-Id, Authorization");
+        var response = await _host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal("https://example.com", response.Headers[AccessControlAllowOrigin]);
+    }
+}
+
+public class ApiGatewayMessageCorsWildcardHeadersTest
+{
+    private const string AccessControlAllowHeaders = "Access-Control-Allow-Headers";
+    private const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
+    private readonly AwsLambdaBenzeneTestHost _host;
+
+    public ApiGatewayMessageCorsWildcardHeadersTest()
+    {
+        _host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .ConfigureServiceCollection()
+            )
+            .Configure(app => app
+                .UseApiGateway(apiGateway => apiGateway
+                    .UseCors(new CorsSettings
+                    {
+                        AllowedDomains = new[] { "example.com" },
+                        AllowedHeaders = new[] { "*" }
+                    })
+                    .UseMessageHandlers()
+                )
+            ).BuildHost();
+    }
+
+    [Fact]
+    public async Task Option_EchoesRequestedHeaders()
+    {
+        var request = HttpBuilder.Create("OPTIONS", "/example")
+            .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-headers", "X-Anything, X-Something-Else");
+        var response = await _host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.Equal(200, response.StatusCode);
+        Assert.Equal("https://example.com", response.Headers[AccessControlAllowOrigin]);
+        // Wildcard AllowedHeaders echoes back exactly what was requested rather than a literal
+        // "*", since browsers don't honor a literal "*" on credentialed requests.
+        Assert.Equal("X-Anything, X-Something-Else", response.Headers[AccessControlAllowHeaders]);
     }
 }

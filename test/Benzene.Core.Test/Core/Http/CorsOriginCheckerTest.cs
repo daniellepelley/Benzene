@@ -68,4 +68,29 @@ public class CorsOriginCheckerTest
         // stays valid even when Access-Control-Allow-Credentials is also set.
         Assert.Equal(origin, actual);
     }
+
+    [Theory]
+    // A config entry with an explicit scheme is an exact origin (scheme+host+port) match:
+    // it must not also allow a different scheme or port on the same host.
+    [InlineData("https://secure.example", "http://secure.example", null)]
+    [InlineData("https://secure.example", "https://secure.example:8443", null)]
+    [InlineData("https://secure.example", "https://secure.example", "https://secure.example")]
+    [InlineData("https://secure.example:8443", "https://secure.example:8443", "https://secure.example:8443")]
+    // A bare-hostname config entry is host-only (scheme/port agnostic), preserving the
+    // documented shorthand form.
+    [InlineData("secure.example", "http://secure.example", "http://secure.example")]
+    [InlineData("secure.example", "https://secure.example:8443", "https://secure.example:8443")]
+    public void ExactOriginMatch_RespectsSchemeAndPort(string allowedDomain, string origin, string expected)
+    {
+        var httpRequest = new HttpRequest
+        {
+            Headers = new Dictionary<string, string>
+            {
+                { "origin", origin }
+            }
+        };
+
+        var actual = _corsOriginChecker.MatchOrigin(new[] { allowedDomain }, httpRequest);
+        Assert.Equal(expected, actual);
+    }
 }
