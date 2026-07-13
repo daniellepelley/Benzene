@@ -46,6 +46,36 @@ an `Activity` span under that name:
 app.UseTimer("my-application");
 ```
 
+`UseTimer(name)` is a thin wrapper around the `IProcessTimer`/`IProcessTimerFactory` abstraction:
+`AddDiagnostics()` registers `ActivityProcessTimerFactory` as the default `IProcessTimerFactory`,
+which is what makes `UseTimer(name)` open an `Activity` span rather than doing nothing. `IProcessTimer`
+is kept mainly for source-compatibility with existing `UseTimer("name")` call sites that predate
+`Activity`-based tracing — new code should prefer `Activity`/`ActivitySource` directly. If no
+`IProcessTimerFactory` is registered at all (i.e. `AddDiagnostics()` was never called), `UseTimer(name)`
+silently falls back to calling `next()` with no timing. Other `IProcessTimerFactory` implementations
+ship in `Benzene.Diagnostics.Timers` if you want different behavior instead of (or alongside) `Activity`
+spans — register one explicitly to replace the default:
+
+- `LoggingProcessTimerFactory` - logs a start line and a `"{timer} took {ms}ms"` line (with any tags)
+  via `ILogger`, at `Trace` level
+- `DebugTimerFactory` - `Debug.WriteLine`-based timing, independent of `Activity`/logging
+- `CompositeProcessTimerFactory` - fans a single timer out to multiple `IProcessTimerFactory`
+  implementations at once (e.g. `Activity` spans *and* log lines)
+
+For a lower-level hook that measures raw elapsed time without going through `IProcessTimer` at all,
+there's also a callback-based overload:
+
+```csharp
+app.UseTimer((context, elapsedMilliseconds) =>
+{
+    // e.g. feed elapsedMilliseconds into your own metrics system
+});
+```
+
+This wraps `next()` in a `Stopwatch` and invokes `onTimer` once the rest of the pipeline completes
+(including on exceptions, since it runs in a `finally`) — unrelated to `Activity`/tracing and always
+active regardless of what's registered in DI.
+
 ## Logging
 
 Benzene logs through [`Microsoft.Extensions.Logging`](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging) (`ILogger<T>`). There is no Benzene-specific logger to configure: whatever logging providers your host sets up (console, Serilog, log4net, Application Insights, ...) automatically receive Benzene's framework logs and your handlers' logs alike.

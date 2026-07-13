@@ -1,8 +1,9 @@
 # Azure Functions Setup
 
-Benzene runs on the Azure Functions **isolated worker** model, using the same
-platform-neutral `BenzeneStartUp` base class as every other Benzene host. This guide starts
-from an empty folder and ends with a deployed Function App handling HTTP requests.
+Benzene runs on the Azure Functions **isolated worker** model, using the same platform-neutral
+`BenzeneStartUp` base class as every other Benzene host (AWS Lambda, ASP.NET Core). This guide
+starts from an empty folder and ends with a deployed Function App handling HTTP requests, plus
+optional Event Hub and Kafka triggers.
 
 ## Prerequisites
 
@@ -31,15 +32,16 @@ Add the Azure Functions isolated-worker properties to the `.csproj` (`OutputType
 
 ## 2. Install the NuGet packages
 
-First, the standard Microsoft packages every isolated-worker Function App needs — these
-must be referenced directly in your function app project (not just transitively) so the
-Functions SDK's build step can discover them and generate the worker's extension manifest:
+First, the standard Microsoft packages every isolated-worker Function App needs — these must be
+referenced directly in your function app project (not just transitively) so the Functions SDK's
+build step can discover them and generate the worker's extension manifest. The versions below are
+the ones Benzene itself builds and tests against (see `examples/Azure/Benzene.Example.Azure/Benzene.Example.Azure.csproj`):
 
 ```bash
-dotnet add package Microsoft.Azure.Functions.Worker
-dotnet add package Microsoft.Azure.Functions.Worker.Sdk
-dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Http
-dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore
+dotnet add package Microsoft.Azure.Functions.Worker --version 2.2.0
+dotnet add package Microsoft.Azure.Functions.Worker.Sdk --version 2.0.7
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Http --version 3.3.0
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore --version 2.1.0
 ```
 
 Then Benzene's packages, published as prerelease (`-alpha`) versions, so `--prerelease` is
@@ -50,20 +52,20 @@ dotnet add package Benzene.Azure.Function.Core --prerelease
 dotnet add package Benzene.Azure.Function.AspNet --prerelease
 ```
 
-`Benzene.Azure.Function.Core` brings in the middleware pipeline, message handler
-infrastructure, `BenzeneStartUp` base class, and the isolated-worker hosting glue,
+`Benzene.Azure.Function.Core` brings in the middleware pipeline, message handler infrastructure,
+`BenzeneStartUp` base class, and the isolated-worker hosting glue (`IHostBuilder.UseBenzene<TStartUp>()`),
 transitively. `Benzene.Azure.Function.AspNet` adds the `UseHttp` middleware for handling HTTP
-requests as ASP.NET Core `HttpRequest`/`IActionResult`. Add `Benzene.Azure.Function.EventHub`
-or `Benzene.Azure.Function.Kafka` the same way if your function also needs to handle those
-event sources (see [Supported Event Sources](#supported-event-sources) below) — each has a
+requests as ASP.NET Core `HttpRequest`/`IActionResult`. Add `Benzene.Azure.Function.EventHub` or
+`Benzene.Azure.Function.Kafka` the same way if your function also needs to handle those event
+sources (see [Event Hub and Kafka triggers](#event-hub-and-kafka-triggers) below) — each has a
 corresponding direct Microsoft package too (`Microsoft.Azure.Functions.Worker.Extensions.EventHubs`
-or `Microsoft.Azure.Functions.Worker.Extensions.Kafka`).
+version `6.5.0`, or `Microsoft.Azure.Functions.Worker.Extensions.Kafka` version `4.3.0`).
 
 ## 3. Define a message handler
 
-Business logic lives in message handlers, not in the trigger function — this keeps it
-testable and portable across hosts. See [Message Handlers](message-handlers) for the full
-picture; the minimal shape is:
+Business logic lives in message handlers, not in the trigger function — this keeps it testable
+and portable across hosts. See [Message Handlers](message-handlers) for the full picture; the
+minimal shape is:
 
 ```csharp
 using Benzene.Abstractions.MessageHandlers;
@@ -93,15 +95,26 @@ public class HelloWorldResponse
 }
 ```
 
-`[Message]` maps the handler to a topic; `[HttpEndpoint]` maps an HTTP method and path to that
-same topic. Both attributes are discovered by reflection, so there is nothing further to
-register per-handler.
+`[Message]` (from `Benzene.Core.MessageHandlers`) maps the handler to a topic; `[HttpEndpoint]`
+(from `Benzene.Http`) maps an HTTP method and path to that same topic. Both attributes are
+discovered by reflection, so there is nothing further to register per-handler.
 
 ## 4. Define your StartUp
 
-`BenzeneStartUp` is the platform-neutral application definition shared by every Benzene host —
-the same class shape you'd write for AWS Lambda, ASP.NET Core, or a console app. Configure the
-HTTP pipeline via `UseHttp`:
+`BenzeneStartUp` (from `Benzene.Microsoft.Dependencies`) is the platform-neutral application
+definition shared by every Benzene host — the same class shape you'd write for AWS Lambda or
+ASP.NET Core. It has three members to implement:
+
+```csharp
+public abstract class BenzeneStartUp
+{
+    public abstract IConfiguration GetConfiguration();
+    public abstract void ConfigureServices(IServiceCollection services, IConfiguration configuration);
+    public abstract void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration);
+}
+```
+
+Configure the HTTP pipeline via `UseHttp`:
 
 ```csharp
 using Benzene.Abstractions.Hosting;
@@ -137,6 +150,11 @@ public class StartUp : BenzeneStartUp
 }
 ```
 
+`UseHttp` on `IBenzeneApplicationBuilder` is a no-op on any host other than Azure Functions (it
+only does something when `app` is actually an `IAzureFunctionAppBuilder`), which is what lets the
+same `StartUp` shape be reused across platforms — see [ASP.NET Core Integration](asp-net-core) for
+the same `UseHttp` method used in a plain ASP.NET Core app.
+
 ## 5. Wire up the isolated worker host
 
 `Program.cs` registers `StartUp` with the isolated worker's `IHostBuilder`:
@@ -154,12 +172,13 @@ host.Run();
 ```
 
 `ConfigureFunctionsWebApplication()` turns on the ASP.NET Core integration (advanced HTTP
-features, `HttpRequest`/`IActionResult` trigger bindings); `UseBenzene<StartUp>()` runs your
-`StartUp`'s `GetConfiguration`/`ConfigureServices`/`Configure` and registers the built
-`IAzureFunctionApp` for injection into trigger functions.
+features, `HttpRequest`/`IActionResult` trigger bindings). `UseBenzene<StartUp>()` (from
+`Benzene.Azure.Function.Core`) instantiates your `StartUp`, runs `GetConfiguration()` once, then
+runs `ConfigureServices`/`Configure` inside the host's `ConfigureServices` callback and registers
+the built `IAzureFunctionApp` as a scoped service so trigger functions can inject it.
 
-Then add a single catch-all HTTP trigger function that delegates to Benzene's own routing —
-one Azure Function handles every route your message handlers define:
+Then add a single catch-all HTTP trigger function that delegates to Benzene's own routing — one
+Azure Function handles every route your message handlers define:
 
 ```csharp
 using Benzene.Azure.Function.AspNet;
@@ -186,16 +205,21 @@ public class HttpFunction
 }
 ```
 
+`HandleHttpRequest` is an extension method from `Benzene.Azure.Function.AspNet` — under the hood
+it calls the generic `IAzureFunctionApp.HandleAsync<HttpRequest, IActionResult>(req)`, which
+dispatches to whichever entry point application your `Configure` method registered for that
+request/response type pairing (here, the one `UseHttp` added).
+
 ## 6. Configuration
 
-`GetConfiguration()` runs once on cold start, before any services are registered, and its
-result is passed into both `ConfigureServices` and `Configure`. Anything built on top of
-`Microsoft.Extensions.Configuration` works here — the example above reads environment
-variables (which map to Application Settings once deployed), but `AddJsonFile(...)`, Azure App
-Configuration, or Azure Key Vault configuration providers all work the same way.
+`GetConfiguration()` runs once on cold start, before any services are registered, and its result
+is passed into both `ConfigureServices` and `Configure`. Anything built on top of
+`Microsoft.Extensions.Configuration` works here — the example above reads environment variables
+(which map to Application Settings once deployed), but `AddJsonFile(...)`, Azure App Configuration,
+or Azure Key Vault configuration providers all work the same way.
 
 For local development, add a `local.settings.json` (not checked into source control — it holds
-secrets and machine-specific values):
+secrets and machine-specific values; Benzene's own example project `.gitignore`s it too):
 
 ```json
 {
@@ -207,13 +231,18 @@ secrets and machine-specific values):
 }
 ```
 
-Run it locally with:
+## 7. Run it locally
 
 ```bash
 func start
 ```
 
-## 7. Deploy
+`GET` `http://localhost:7071/api/hello/world` to confirm the handler above responds (the `api`
+prefix is the default Azure Functions route prefix — clear it via `"routePrefix": ""` in
+`host.json`'s `extensions.http` section if you'd rather not have it, as Benzene's own example
+project does).
+
+## 8. Deploy
 
 Create the Function App resource (a Consumption-plan example; adjust SKU/plan for your needs):
 
@@ -230,22 +259,30 @@ Then publish:
 func azure functionapp publish my-function-app
 ```
 
-Once deployed, `GET` the printed URL at `/api/hello/world` to confirm the handler above
-responds (the `api` prefix is the default Azure Functions route prefix — clear it via
-`"routePrefix": ""` in `host.json`'s `extensions.http` section if you'd rather not have it).
+Once deployed, `GET` the printed URL at `/api/hello/world` (or just `/hello/world`, depending on
+your `routePrefix` setting) to confirm the handler responds.
 
-## Supported Event Sources
+## Event Hub and Kafka triggers
 
-Benzene provides specialized middleware for various Azure Functions triggers, each configured
-inside the same `Configure` method, on the same platform-neutral `app` shown in step 4 — a
-single `BenzeneStartUp` can wire up several trigger types at once, each with its own
+Benzene provides specialized middleware for two other Azure Functions trigger types, each
+configured inside the same `Configure` method, on the same platform-neutral `app` shown in step 4
+— a single `BenzeneStartUp` can wire up several trigger types at once, each with its own
 sub-pipeline, exactly as with any other Benzene host:
 
 - **HTTP**: `app.UseHttp(...)`, in `Benzene.Azure.Function.AspNet`
 - **Event Hubs**: `app.UseEventHub(...)`, in `Benzene.Azure.Function.EventHub`
-- **Kafka** (Event Hubs for Kafka): `app.UseKafka(...)`, in `Benzene.Azure.Function.Kafka`
+- **Kafka** (Event Hubs' Kafka-compatible endpoint): `app.UseKafka(...)`, in `Benzene.Azure.Function.Kafka`
+
+There is no Azure Service Bus package today — only Event Hubs (native and Kafka-compatible) and
+HTTP are supported.
 
 ### Event Hubs
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.EventHub --prerelease
+```
 
 ```csharp
 app.UseEventHub(eventHub => eventHub
@@ -253,31 +290,185 @@ app.UseEventHub(eventHub => eventHub
         .UseMessageHandlers()));
 ```
 
-Requires an Event Hubs trigger function injecting `IAzureFunctionApp` and calling
-`HandleEventHub(...)`, the same way `HttpFunction` above calls `HandleHttpRequest(...)`.
+`UseBenzeneMessage` routes an Event Hub event whose body deserializes into a Benzene message
+envelope (topic + payload) to the direct-message pipeline — this is the same envelope shape
+`MessageBuilder` produces for AWS SQS/SNS. Add a trigger function that injects `IAzureFunctionApp`
+and calls `HandleEventHub(...)`:
+
+```csharp
+using Azure.Messaging.EventHubs;
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.EventHub.Function;
+using Microsoft.Azure.Functions.Worker;
+
+public class EventHubFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public EventHubFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("event-hub")]
+    public Task Run([EventHubTrigger("my-event-hub", Connection = "EventHubConnection")] EventData[] events)
+    {
+        return _app.HandleEventHub(events);
+    }
+}
+```
 
 ### Kafka
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.Kafka --prerelease
+```
 
 ```csharp
 app.UseKafka(kafka => kafka.UseMessageHandlers());
 ```
 
-Works against Event Hubs' Kafka-compatible endpoint. The Kafka record's key/value are
-`byte[]`; Benzene decodes the value as UTF-8 JSON the same way as every other transport.
-Requires a Kafka trigger function injecting `IAzureFunctionApp` and calling
-`HandleKafkaEvents(...)`.
+Works against Event Hubs' Kafka-compatible endpoint. The Kafka record's value is `byte[]`; Benzene
+decodes it as UTF-8 JSON the same way as every other transport, and dispatches by topic via
+`[Message]`/message handler registration — there is no `UseBenzeneMessage` bridge for Kafka today
+(that only exists for Event Hubs). Add a trigger function that injects `IAzureFunctionApp` and
+calls `HandleKafkaEvents(...)`:
 
-## Notes
+```csharp
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.Kafka;
+using Microsoft.Azure.Functions.Worker;
 
-- **Hosting model**: only the isolated worker model is supported (not the legacy in-process
-  model built on `Microsoft.Azure.WebJobs`) — the isolated worker is the model Microsoft
-  recommends for all new development, and its `IHostBuilder`-based hosting matches the pattern
-  every other Benzene host uses.
-- **`IBenzeneInvocation`**: unlike AWS Lambda or ASP.NET Core, the isolated worker dispatches
-  each trigger type through its own separate pipeline, so there's no single request-flowing
-  middleware to populate `IBenzeneInvocation` from. If you need it, call
-  `app.UseBenzeneInvocation()` in `Configure` and register the worker middleware in
-  `Program.cs` via `.ConfigureFunctionsWebApplication(worker => worker.UseBenzene())`.
+public class KafkaFunction
+{
+    private readonly IAzureFunctionApp _app;
 
-See [`examples/Azure`](../examples/Azure) for a complete, runnable project covering HTTP
-routing, validation, and OpenAPI spec generation.
+    public KafkaFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("kafka")]
+    public Task Run([KafkaTrigger("BrokerList", "my-topic", ConsumerGroup = "my-consumer-group")] KafkaRecord[] events)
+    {
+        return _app.HandleKafkaEvents(events);
+    }
+}
+```
+
+(Adjust the `[KafkaTrigger]` binding attribute's parameters and connection string setting names to
+match your Event Hubs Kafka endpoint configuration — this follows the same shape as any
+`Microsoft.Azure.Functions.Worker.Extensions.Kafka` trigger.)
+
+## Correlation and tracing
+
+Every middleware in every pipeline — HTTP, Event Hub, Kafka — is automatically wrapped in a
+`System.Diagnostics.Activity` span once you call `AddDiagnostics()` in `ConfigureServices`:
+
+```csharp
+services.UsingBenzene(x => x.AddDiagnostics());
+```
+
+This is the same tracing system used across every Benzene host, not something Azure-specific. See
+[Monitoring & Diagnostics](monitoring) for the full picture, and [Correlation Ids](correlation-ids)
+for the header-based legacy alternative to W3C trace context propagation.
+
+### `IBenzeneInvocation`
+
+Unlike AWS Lambda or ASP.NET Core, the isolated worker dispatches each trigger type (HTTP, Event
+Hub, Kafka) through its own separate pipeline, so there's no single request-flowing middleware
+that can populate `IBenzeneInvocation` (the `FunctionContext.InvocationId`-backed accessor used for
+enrichment) automatically. To opt in:
+
+1. Call `app.UseBenzeneInvocation()` in `Configure`.
+2. Register the worker middleware in `Program.cs`, using `ConfigureFunctionsWebApplication`'s
+   overload that configures the worker pipeline:
+
+```csharp
+var host = new HostBuilder()
+    .ConfigureFunctionsWebApplication(worker => worker.UseBenzene())
+    .UseBenzene<StartUp>()
+    .Build();
+
+host.Run();
+```
+
+With both in place, `IBenzeneInvocation.InvocationId` resolves to the isolated worker's
+`FunctionContext.InvocationId` for the duration of each invocation, and `GetFeature<FunctionContext>()`
+returns the native `FunctionContext`.
+
+## Testing
+
+Benzene ships a unified test host (`Benzene.Testing`) that builds an in-memory app straight from
+your real `StartUp` — no need to run `func start` or hit the network. See
+[Testing Benzene](testing-benzene) for the full picture; for Azure Functions specifically:
+
+```csharp
+var app = BenzeneTestHost.Create<StartUp>()
+    .WithServices(services => services.AddScoped(_ => mockHelloWorldService.Object))
+    .BuildAzureFunctionApp();
+
+var request = HttpBuilder.Create("GET", "/hello/world").AsAspNetCoreHttpRequest();
+var response = await app.HandleHttpRequest(request) as ContentResult;
+```
+
+`BuildAzureFunctionApp()` (from `Benzene.Azure.Function.Core`) performs the same construction
+`IHostBuilder.UseBenzene<TStartUp>()` does for a real deployment, and returns an `IAzureFunctionApp`
+you can dispatch into directly. `AsAspNetCoreHttpRequest()` (from
+`Benzene.Azure.Function.AspNet.TestHelpers`) turns an `HttpBuilder` into a real `HttpRequest`.
+`HandleEventHub(...)` and `HandleKafkaEvents(...)` work the same way for those transports —
+`Benzene.Azure.Function.EventHub.TestHelpers`/`Benzene.Azure.Function.Kafka.TestHelpers` add
+`AsEventHubBenzeneMessage()`/`AsAzureKafkaEvent()` extensions on `MessageBuilder` to build the
+matching event payloads.
+
+For quick, StartUp-free pipeline tests (useful when testing a single trigger type in isolation
+rather than a whole app), `InlineAzureFunctionStartUp` (from `Benzene.Azure.Function.Core`) is a
+fluent alternative:
+
+```csharp
+var app = new InlineAzureFunctionStartUp()
+    .ConfigureServices(services => services
+        .UsingBenzene(x => x.AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly))
+        .AddSingleton(mockHelloWorldService.Object))
+    .Configure(app => app
+        .UseEventHub(eventHub => eventHub
+            .UseBenzeneMessage(direct => direct
+                .UseMessageHandlers())))
+    .Build();
+
+var request = MessageBuilder.Create("hello:world", new HelloWorldMessage { Name = "World" })
+    .AsEventHubBenzeneMessage();
+
+await app.HandleEventHub(request);
+```
+
+## Troubleshooting
+
+- **`func start` can't find the function app / "No job functions found"**: confirm `OutputType`
+  is `Exe` in the `.csproj` and that `Microsoft.Azure.Functions.Worker.Sdk` is referenced directly
+  (not just transitively) — the Functions SDK's build step needs it to generate `functions.metadata`
+  and the worker extension manifest.
+- **404 on every route locally, but the function runs**: check `host.json`'s
+  `extensions.http.routePrefix` — Azure Functions defaults to prefixing every HTTP route with
+  `/api`, so `/hello/world` needs to be requested as `/api/hello/world` unless you've cleared the
+  prefix.
+- **Handler never gets called**: confirm `[Message]`/`[HttpEndpoint]` are both present and that
+  the handler's assembly is passed to `AddMessageHandlers(typeof(SomeHandlerInThatAssembly).Assembly)`
+  — handlers are discovered by reflection over that assembly, not auto-registered globally.
+- **`IBenzeneInvocation was requested before ... UseBenzeneInvocation() populated it`**: you called
+  `app.UseBenzeneInvocation()` in `Configure` but didn't also wire
+  `ConfigureFunctionsWebApplication(worker => worker.UseBenzene())` in `Program.cs` (or vice
+  versa) — both halves are required together; see [`IBenzeneInvocation`](#ibenzeneinvocation) above.
+- **NuGet can't find the Benzene packages**: they're prerelease-only until 1.0, so
+  `dotnet add package` needs `--prerelease` (or pin an explicit `-alpha` version).
+
+## See Also
+
+- [Message Handlers](message-handlers) — the full picture on `[Message]`, `[HttpEndpoint]`, and handler discovery
+- [ASP.NET Core Integration](asp-net-core) — the same `UseHttp` pipeline, hosted outside Azure Functions
+- [Testing Benzene](testing-benzene) — `BenzeneTestHost`, including AWS Lambda and ASP.NET Core patterns
+- [Monitoring & Diagnostics](monitoring) — tracing, metrics, and W3C trace context propagation
+- [Correlation Ids](correlation-ids) — the legacy header-based correlation ID middleware
+- [`examples/Azure`](../examples/Azure) — a complete, runnable project covering HTTP routing, validation, and OpenAPI spec generation

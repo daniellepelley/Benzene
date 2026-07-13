@@ -23,17 +23,17 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 
 ### Azure
 - [Service Bus Message Handling](service-bus-handling.md) - Process Service Bus messages with Benzene
-- [Event Hub Stream Processing](event-hub-processing.md) - Handle high-throughput event streams
+- [Event Hub Stream Processing](event-hub-processing.md) - Handle high-throughput Event Hub streams, batching, and checkpointing boundaries
 - [Managed Identity for Azure Resources](managed-identity.md) - Secure access to Azure services
 
 ### Validation & Error Handling
-- [FluentValidation with Custom Rules](fluentvalidation-custom-rules.md) - Complex validation scenarios
+- [FluentValidation with Custom Rules](fluentvalidation-custom-rules.md) - Cross-field rules, async DB validation, and per-rule status overrides
 - [Global Error Handling](global-error-handling.md) - Centralized error handling and logging
 - [Request/Response Transformations](request-response-transforms.md) - Transform messages in the pipeline
 
 ### Data & Persistence
 - [Entity Framework Core Integration](entity-framework-integration.md) - Database access patterns
-- [Redis Caching](redis-caching.md) - Implement response caching with Redis
+- [Redis Caching](redis-caching.md) - Cache handler responses with Redis
 - [Outbox Pattern](outbox-pattern.md) - Reliable message publishing with transactional outbox
 
 ### Testing

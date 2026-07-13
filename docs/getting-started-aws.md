@@ -1,8 +1,8 @@
-# AWS Lambda Setup
+# Getting Started: Benzene on AWS Lambda
 
-Benzene is designed to run efficiently in AWS Lambda, supporting multiple event sources with a
-unified programming model. This guide starts from an empty folder and ends with a deployed
-Lambda function handling API Gateway requests.
+Benzene runs efficiently in AWS Lambda, supporting multiple event sources (API Gateway, SQS,
+SNS, Kafka, S3) through a single middleware pipeline. This guide starts from an empty folder
+and ends with a deployed Lambda function handling API Gateway, SQS, and SNS events.
 
 ## Prerequisites
 
@@ -29,11 +29,11 @@ dotnet add package Benzene.Aws.Lambda.ApiGateway --prerelease
 ```
 
 `Benzene.Aws.Lambda.Core` brings in the middleware pipeline, message handler infrastructure,
-and `BenzeneStartUp` base class transitively. `Benzene.Aws.Lambda.ApiGateway` adds the
-`UseApiGateway` middleware for handling HTTP requests via API Gateway. Add
-`Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Lambda.Sns`, or `Benzene.Aws.Lambda.Kafka` the same way
-if your function also needs to handle those event sources (see
-[Supported Event Sources](#supported-event-sources) below).
+and `BenzeneStartUp` base class transitively (via `Benzene.Microsoft.Dependencies`).
+`Benzene.Aws.Lambda.ApiGateway` adds the `UseApiGateway` middleware for handling HTTP requests
+via API Gateway. Add `Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Lambda.Sns`,
+`Benzene.Aws.Lambda.Kafka`, or `Benzene.Aws.Lambda.S3` the same way if your function also needs
+to handle those event sources (see [Supported Event Sources](#supported-event-sources) below).
 
 You'll also need the concrete `Microsoft.Extensions.Configuration` implementation for
 `GetConfiguration()` below (only its abstractions are referenced transitively):
@@ -79,15 +79,17 @@ public class HelloWorldResponse
 ```
 
 `[Message]` maps the handler to a topic; `[HttpEndpoint]` maps an HTTP method and path to that
-same topic. Both attributes are discovered by reflection, so there is nothing further to
-register per-handler.
+same topic — the same handler answers both a direct `{"topic": "hello:world", ...}` message
+(e.g. from SQS/SNS) and an API Gateway `GET /hello/{name}` request. Both attributes are
+discovered by reflection, so there is nothing further to register per-handler.
 
 ## 4. Define your StartUp
 
 `BenzeneStartUp` (from `Benzene.Microsoft.Dependencies`, referenced transitively) is the
 platform-neutral application definition shared by every Benzene host — the same class shape
-you'd write for Azure Functions, ASP.NET Core, or a console app. Configure the AWS-specific
-event pipeline via `UseAwsLambda`:
+you'd write for Azure Functions or the .NET generic host. Configure the AWS-specific event
+pipeline via `UseAwsLambda(...)`, which hands you an
+`IMiddlewarePipelineBuilder<AwsEventStreamContext>` to wire up event sources on:
 
 ```csharp
 using Benzene.Abstractions.Hosting;
@@ -126,6 +128,14 @@ public class StartUp : BenzeneStartUp
 }
 ```
 
+> This is the recommended, platform-neutral pattern for new projects. Benzene also has an
+> older, AWS-only `AwsLambdaStartUp` base class (still supported — see the
+> [`examples/Aws`](../examples/Aws) project, which predates this unification) whose
+> `Configure` method takes the `IMiddlewarePipelineBuilder<AwsEventStreamContext>` directly
+> instead of going through `IBenzeneApplicationBuilder`/`UseAwsLambda`. Prefer `BenzeneStartUp`
+> for anything new, since it also runs unchanged on other Benzene hosts (see
+> [Azure Functions Setup](azure-functions)).
+
 ## 5. Wire up the Lambda entry point
 
 Subclass `AwsLambdaHost<TStartUp>` — it builds the pipeline once on cold start and implements
@@ -148,7 +158,46 @@ MyFunction::MyFunction.Function::FunctionHandlerAsync
 (replace `MyFunction` with your assembly and namespace, and `Function` if you named the class
 something else)
 
-## 6. Deploy with SAM
+## 6. Test locally with BenzeneTestHost
+
+Before deploying, exercise the pipeline in-memory using the same `StartUp` class you'll deploy.
+Add the test-helper packages to your test project:
+
+```bash
+dotnet add package Benzene.Testing --prerelease
+dotnet add package Benzene.Tools --prerelease
+dotnet add package Benzene.Aws.Lambda.ApiGateway.TestHelpers --prerelease
+```
+
+`BenzeneTestHost.Create<TStartUp>().BuildAwsLambdaHost()` runs your real `GetConfiguration()`/
+`ConfigureServices()`/`Configure()` and returns the same `IAwsLambdaEntryPoint` that
+`AwsLambdaHost<TStartUp>` builds for a real deployment. Wrap it in `AwsLambdaBenzeneTestHost`
+(from `Benzene.Tools`) to send events into it and get typed responses back:
+
+```csharp
+using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
+using Benzene.Testing;
+using Benzene.Tools.Aws;
+
+var host = new AwsLambdaBenzeneTestHost(
+    BenzeneTestHost.Create<StartUp>()
+        .WithServices(services => services.AddScoped(_ => mockSomeDependency.Object))
+        .BuildAwsLambdaHost());
+
+var request = HttpBuilder.Create("GET", "/hello/world");
+var response = await host.SendApiGatewayAsync(request);
+```
+
+`WithServices(...)` runs immediately after `ConfigureServices`, so it's the standard way to
+swap in a mock or fake for a test; `WithConfiguration(...)` does the same for configuration
+values. This works for any transport your `StartUp` wires up — `SendSqsAsync`/`SendSnsAsync`
+come from the matching `Benzene.Aws.Lambda.Sqs.TestHelpers`/`Benzene.Aws.Lambda.Sns.TestHelpers`
+packages, and a topic-routed `BenzeneMessage` (no specific transport) can be sent directly via
+`SendBenzeneMessageAsync` from `Benzene.Core.MessageHandlers.TestHelpers`, if your `Configure`
+wires up `UseBenzeneMessage(...)`. See [Testing Benzene](testing-benzene) for the full pattern,
+including configuration/service overrides and the legacy `AwsLambdaStartUp` test path.
+
+## 7. Deploy with SAM
 
 Add a minimal `template.yaml` alongside your `.csproj`:
 
@@ -160,9 +209,8 @@ Globals:
   Function:
     Timeout: 30
     MemorySize: 1024
-    # .NET has no AWS-managed Lambda runtime that matches every TFM immediately -
-    # dotnet8 is the current managed runtime and works fine for a net10.0 project,
-    # since it targets a compatible Lambda ABI.
+    # .NET 10 has no AWS-managed Lambda runtime yet - dotnet8 is the current managed
+    # runtime and works fine for a net10.0 project, since it targets a compatible Lambda ABI.
     Runtime: dotnet8
     Architectures:
       - arm64
@@ -192,6 +240,9 @@ sam deploy --guided
 then remembers them in `samconfig.toml` for subsequent deploys. Once deployed, SAM prints the
 API Gateway URL — `GET` it at `/hello/world` to confirm the handler above responds.
 
+See [`examples/Aws/Benzene.Examples.Aws/template.yaml`](../examples/Aws/Benzene.Examples.Aws/template.yaml)
+for a fuller example covering SQS, SNS, and an optional MSK/Kafka event source.
+
 ## Supported Event Sources
 
 Benzene provides specialized middleware for various AWS event sources, each configured inside
@@ -201,44 +252,50 @@ can handle several event sources at once, each routed to its own sub-pipeline ba
 shape of the incoming payload:
 
 - **API Gateway**: `eventPipeline.UseApiGateway(...)`, in `Benzene.Aws.Lambda.ApiGateway`
-- **SQS**: `eventPipeline.UseSqs(...)`, in `Benzene.Aws.Lambda.Sqs`
-- **SNS**: `eventPipeline.UseSns(...)`, in `Benzene.Aws.Lambda.Sns`
-- **Kafka**: `eventPipeline.UseKafka(...)`, in `Benzene.Aws.Lambda.Kafka`
-- **S3**: `eventPipeline.UseS3(...)`, in `Benzene.Aws.Lambda.S3`
+  (REST API and HTTP API events, CORS, custom authorizers)
+- **SQS**: `eventPipeline.UseSqs(...)`, in `Benzene.Aws.Lambda.Sqs` (batch processing,
+  partial-batch-failure reporting)
+- **SNS**: `eventPipeline.UseSns(...)`, in `Benzene.Aws.Lambda.Sns` (fan-out notifications,
+  fire-and-forget)
+- **Kafka**: `eventPipeline.UseKafka(...)`, in `Benzene.Aws.Lambda.Kafka` (MSK and
+  self-managed Kafka)
+- **S3**: `eventPipeline.UseS3(...)`, in `Benzene.Aws.Lambda.S3` (object-created/removed
+  event notifications, fire-and-forget)
+
+### SQS
+
+```csharp
+eventPipeline.UseSqs(sqsApp => sqsApp
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+SQS messages are processed in batches; the message body is deserialized to your request type
+and message attributes are mapped to headers. `SqsApplication` supports reporting partial-batch
+failures back to SQS, so only the records that actually failed are retried/redriven to a
+dead-letter queue rather than the whole batch. See
+[AWS IAM Permissions](aws-iam-permissions) for the execution-role permissions the SQS event
+source mapping needs (`sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:GetQueueAttributes`).
 
 ### SNS
 
 ```csharp
 eventPipeline.UseSns(snsApp => snsApp
-    .UseCorrelationId()
     .UseMessageHandlers(router => router.UseFluentValidation())
 );
 ```
 
 SNS invokes your function via a resource-based Lambda permission — no extra
 execution-role IAM is needed to receive notifications (see
-[AWS IAM Permissions](aws-iam-permissions)). The SNS message's `topic` message
-attribute (or the raw topic ARN, depending on delivery configuration) is used to route
-to the matching message handler, same as every other transport.
-
-### S3
-
-```csharp
-eventPipeline.UseS3(s3App => s3App
-    .UseCorrelationId()
-    .UseMessageHandlers(router => router.UseFluentValidation())
-);
-```
-
-Like SNS, S3 invokes via a resource-based permission plus a bucket notification
-configuration — no extra execution-role IAM needed to receive. S3 event notifications
-are fire-and-forget: no response is written back, since S3 doesn't expect one.
+[AWS IAM Permissions](aws-iam-permissions)). The topic is resolved from a `topic` message
+attribute (or the SNS topic ARN, depending on delivery configuration) and routed to the
+matching message handler, same as every other transport. There is no response to write back —
+SNS delivery is fire-and-forget.
 
 ### Kafka
 
 ```csharp
 eventPipeline.UseKafka(kafkaApp => kafkaApp
-    .UseCorrelationId()
     .UseMessageHandlers(router => router.UseFluentValidation())
 );
 ```
@@ -248,6 +305,18 @@ message headers, and partition/offset are available on `KafkaContext`. See
 [AWS IAM Permissions](aws-iam-permissions) for the MSK-specific permissions your
 execution role needs — these are more involved than the other event sources since MSK
 event source mappings require VPC connectivity.
+
+### S3
+
+```csharp
+eventPipeline.UseS3(s3App => s3App
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+Like SNS, S3 invokes via a resource-based permission plus a bucket notification
+configuration — no extra execution-role IAM needed to receive. S3 event notifications
+are fire-and-forget: no response is written back, since S3 doesn't expect one.
 
 ## IAM Permissions
 
@@ -266,6 +335,54 @@ variables (the natural fit for Lambda, where you set configuration via the funct
 environment variables in the console, SAM template, or CDK/Terraform), but `AddJsonFile(...)`,
 AWS Systems Manager Parameter Store providers, or AWS Secrets Manager providers all work the
 same way.
+
+## Health Checks
+
+Add a health check topic so you (or a monitoring system) can confirm the function's
+dependencies are reachable, without a real request hitting your business handlers:
+
+```csharp
+var healthChecks = new IHealthCheck[] { new SimpleHealthCheck() };
+
+eventPipeline.UseApiGateway(apiGatewayApp => apiGatewayApp
+    .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
+    .UseMessageHandlers());
+```
+
+See [Health Checks](health-checks) for writing your own `IHealthCheck` (e.g. one that checks
+database connectivity) and the full set of `UseHealthCheck` overloads.
+
+## Observability
+
+- **Invocation identity**: add `.UseBenzeneInvocation()` on the outer `eventPipeline`, before
+  splitting into transports, to expose an `IBenzeneInvocation` for the duration of the
+  invocation — `InvocationId` is set to the AWS Lambda request ID, and
+  `GetFeature<ILambdaContext>()` returns the native Lambda execution context if you need it
+  (e.g. for `RemainingTime`):
+
+  ```csharp
+  app.UseAwsLambda(eventPipeline => eventPipeline
+      .UseBenzeneInvocation()
+      .UseApiGateway(apiGatewayApp => apiGatewayApp
+          .UseMessageHandlers()));
+  ```
+
+  This flows into a single-request pipeline like API Gateway, but **not** into SQS/SNS/Kafka's
+  per-message batch dispatch, since each message in a batch gets its own nested DI scope today.
+  See `Benzene.Aws.Lambda.Core.BenzeneInvocationExtensions`.
+- **Tracing**: `services.UsingBenzene(x => x.AddDiagnostics())` wraps every middleware in a
+  `System.Diagnostics.Activity` span automatically — no per-middleware opt-in needed. Add
+  `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` to export those spans (and
+  `UseBenzeneMetrics()`'s counters) to a real backend via OpenTelemetry.
+- **Cross-service correlation**: prefer `eventPipeline.UseApiGateway(a => a.UseW3CTraceContext()...)`
+  (W3C `traceparent` propagation) over the older `UseCorrelationId()`, which is `[Obsolete]`
+  but still works — see [Correlation IDs](correlation-ids).
+- **Log enrichment**: `UseBenzeneEnrichment()` attaches `invocationId`/`traceId`/`spanId`/
+  `topic`/`transport`/`handler` to the logging scope in one call, portable across every
+  Benzene host.
+
+See [Monitoring & Diagnostics](monitoring) for the full picture, including logging providers
+and named timers.
 
 ## Bare Metal Entry Point
 
@@ -303,5 +420,50 @@ public class BareMetalLambdaEntryPoint
 }
 ```
 
-See [`examples/Aws`](../examples/Aws) for a complete, runnable project covering all of the
-above, including SQS, SNS, health checks, and validation.
+## Troubleshooting
+
+**"IBenzeneInvocation was requested before the pipeline's UseBenzeneInvocation() middleware
+populated it for this invocation."** — you injected `IBenzeneInvocation` somewhere, but
+`.UseBenzeneInvocation()` was never called on a pipeline upstream of it. Add it on the outer
+`eventPipeline`, before `UseApiGateway(...)`/`UseSqs(...)`/etc. Note it doesn't reach into
+SQS/SNS/Kafka's per-message batch dispatch (each message gets its own nested DI scope), so
+don't expect it to resolve inside those handlers even after adding it upstream.
+
+**Handler never gets called / 404 from API Gateway** — check that `[HttpEndpoint("METHOD",
+"/path")]` matches exactly, including case and any route parameters (`{name}`), and that the
+handler's assembly was passed to `AddMessageHandlers(...)` (or that you called the
+no-argument `AddMessageHandlers()` overload, which scans the calling assembly).
+
+**SQS/SNS message never routes to a handler** — both transports resolve the topic from a
+message attribute (`topic` for SNS by convention, or an explicit attribute set by the
+producer), not the message body. Confirm the producer sets that attribute, and that a handler
+exists with a matching `[Message("...")]` topic.
+
+**Deployment fails or the function returns nothing** — double check the `function-handler`
+string matches `Assembly::Namespace.ClassName::FunctionHandlerAsync` exactly (including the
+namespace), and that your `Function : AwsLambdaHost<StartUp>` class has a public parameterless
+constructor (inherited automatically unless you add one of your own).
+
+**Cold starts are slow** — `AwsLambdaHost<TStartUp>`'s constructor runs `GetConfiguration()`,
+`ConfigureServices()`, and `Configure()` exactly once per execution environment, so cold-start
+cost is dominated by whatever your `ConfigureServices` does (e.g. opening a DB connection
+eagerly). Prefer lazy/on-demand initialization inside your services over eager work in
+`ConfigureServices`.
+
+**Local test host behaves differently from the deployed function** — `BuildAwsLambdaHost()`
+performs the exact same construction `AwsLambdaHost<TStartUp>` does for a real deployment
+(same `GetConfiguration`/`ConfigureServices`/`Configure` calls), so a divergence usually means
+a `WithServices`/`WithConfiguration` override in the test masked something — remove the
+override temporarily to confirm.
+
+## See Also
+
+- [Correlation IDs](correlation-ids) — the legacy `correlationId`-header approach, and why
+  W3C trace context supersedes it for cross-service correlation
+- [Monitoring & Diagnostics](monitoring) — tracing, logging, and OpenTelemetry export
+- [Health Checks](health-checks) — writing custom `IHealthCheck`s and wiring `UseHealthCheck`
+- [AWS IAM Permissions Reference](aws-iam-permissions) — minimum IAM policy per AWS package
+- [Testing Benzene](testing-benzene) — the full `BenzeneTestHost` pattern, including
+  configuration/service overrides and Azure/ASP.NET Core equivalents
+- [`examples/Aws`](../examples/Aws) — a complete, runnable project covering API Gateway, SQS,
+  SNS, Kafka, health checks, and validation

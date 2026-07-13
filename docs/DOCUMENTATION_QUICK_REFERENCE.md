@@ -145,13 +145,18 @@ app.UseAwsLambda(eventPipeline => eventPipeline
 dotnet add package Benzene.Azure.Function.Core --prerelease
 dotnet add package Benzene.Azure.Function.AspNet --prerelease
 
-// Entry point
-public class Function : AzureFunctionsHost<StartUp> { }
+// Program.cs
+var host = new HostBuilder()
+    .ConfigureFunctionsWebApplication(worker => worker.UseBenzene())
+    .Build();
+host.Run();
 
-// Configure
-app.UseAzureFunctions(app => app
-    .UseAspNet(aspNetApp => aspNetApp
-        .UseMessageHandlers()));
+// StartUp
+public class StartUp : BenzeneStartUp
+{
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration) =>
+        app.UseHttp(http => http.UseMessageHandlers());
+}
 ```
 
 ### ASP.NET Core
@@ -159,11 +164,20 @@ app.UseAzureFunctions(app => app
 // Packages
 dotnet add package Benzene.AspNet.Core --prerelease
 
-// Configure
-app.UseBenzene(benzene => benzene
-    .UseAspNet(asp => asp
-        .UseCorrelationId()
-        .UseMessageHandlers()));
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+builder.UseBenzene<StartUp>();
+var app = builder.Build();
+app.UseBenzene();
+
+// StartUp
+public class StartUp : BenzeneStartUp
+{
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration) =>
+        app.UseHttp(http => http
+            .UseCorrelationId()
+            .UseMessageHandlers());
+}
 ```
 
 ## Troubleshooting Patterns
