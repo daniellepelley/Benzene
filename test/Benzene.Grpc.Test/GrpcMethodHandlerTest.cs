@@ -1,5 +1,6 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Grpc.Test.Helpers;
