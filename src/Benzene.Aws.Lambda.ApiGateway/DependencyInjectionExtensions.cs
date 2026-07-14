@@ -8,6 +8,7 @@ using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
@@ -45,15 +46,14 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageMessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<ApiGatewayContext>,
-                MultiSerializerOptionsRequestMapper<ApiGatewayContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<ApiGatewayContext>>();
         services.AddScoped<IRequestEnricher<ApiGatewayContext>, ApiGatewayRequestEnricher>();
         services.AddScoped<IHttpRequestAdapter<ApiGatewayContext>, ApiGatewayHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<ApiGatewayContext>, ApiGatewayResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         services.AddScoped<IResponseHandler<ApiGatewayContext>, HttpStatusCodeResponseHandler<ApiGatewayContext>>();
-        services
-            .AddScoped<IResponseHandler<ApiGatewayContext>,
-                ResponseHandler<JsonSerializationResponseHandler<ApiGatewayContext>, ApiGatewayContext>>();
+        services.AddScoped<IResponseHandler<ApiGatewayContext>, SerializationResponseHandler<ApiGatewayContext>>();
+        services.AddMediaFormatNegotiation<ApiGatewayContext>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("api-gateway"));
         services.AddHttpMessageHandlers();

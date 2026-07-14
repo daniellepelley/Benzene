@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -27,9 +28,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageHeadersGetter<EventBridgeContext>, EventBridgeMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventBridgeContext>, EventBridgeMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<EventBridgeContext>, EventBridgeMessageMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<EventBridgeContext>();
         services
             .AddScoped<IRequestMapper<EventBridgeContext>,
-                MultiSerializerOptionsRequestMapper<EventBridgeContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<EventBridgeContext>>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("eventbridge"));
 

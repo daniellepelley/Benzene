@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Serialization;
@@ -6,49 +7,44 @@ using Benzene.Abstractions.Serialization;
 namespace Benzene.Core.MessageHandlers.Request;
 
 /// <summary>
-/// <see cref="IRequestMapper{TContext}"/> that selects between several registered
-/// <see cref="ISerializerOption{TContext}"/>s based on the incoming context, falling back to
-/// <typeparamref name="TDefaultSerializer"/> if none apply, then maps the body (with enrichment)
-/// using whichever serializer was selected.
+/// <see cref="IRequestMapper{TContext}"/> that asks the shared <see cref="IMediaFormatNegotiator{TContext}"/>
+/// which format applies to the incoming context (falling back to JSON if none of the registered
+/// <see cref="IMediaFormat{TContext}"/>s match), then maps the body (with enrichment) using that
+/// format's serializer.
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type requests are mapped from.</typeparam>
-/// <typeparam name="TDefaultSerializer">The serializer used when no registered <see cref="ISerializerOption{TContext}"/> matches the context.</typeparam>
 /// <remarks>
 /// The composed <see cref="RequestMapper{TContext}"/>/<see cref="EnrichingRequestMapper{TContext}"/>
 /// pair for a given resolved <see cref="ISerializer"/> is a pure function of (serializer, body getter,
 /// enrichers) - none of which change for the lifetime of this (scoped, per-message) instance - so it's
 /// built once per distinct serializer and cached, rather than reallocated on every <see cref="GetBody{TRequest}"/>
-/// call within the same message. The serializer-option applicability check itself
-/// (<see cref="ISerializerOption{TContext}.CanHandle"/>) still runs on every call, since that's a
-/// genuine per-<paramref name="context"/> decision.
+/// call within the same message.
 /// </remarks>
-public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> : IRequestMapper<TContext>
-    where TDefaultSerializer : class, ISerializer
+public class MultiSerializerOptionsRequestMapper<TContext> : IRequestMapper<TContext>
 {
-    private readonly IEnumerable<ISerializerOption<TContext>> _options;
+    private readonly IMediaFormatNegotiator<TContext> _mediaFormatNegotiator;
     private readonly IServiceResolver _serviceResolver;
     private readonly IEnumerable<IRequestEnricher<TContext>> _enrichers;
     private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
     private readonly Dictionary<ISerializer, IRequestMapper<TContext>> _mappersBySerializer = new();
-    private IRequestMapper<TContext>? _defaultMapper;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MultiSerializerOptionsRequestMapper{TContext,TDefaultSerializer}"/> class.
+    /// Initializes a new instance of the <see cref="MultiSerializerOptionsRequestMapper{TContext}"/> class.
     /// </summary>
-    /// <param name="serviceResolver">Resolver used to obtain the selected serializer and, if none match, <typeparamref name="TDefaultSerializer"/>.</param>
+    /// <param name="mediaFormatNegotiator">Selects which format to read the request body with.</param>
+    /// <param name="serviceResolver">Resolver used to obtain the negotiated format's serializer.</param>
     /// <param name="messageBodyGetter">Extracts the raw message body from the context.</param>
-    /// <param name="options">The candidate serializer options to evaluate against each context.</param>
     /// <param name="enrichers">The enrichers applied onto every mapped request.</param>
     public MultiSerializerOptionsRequestMapper(
+        IMediaFormatNegotiator<TContext> mediaFormatNegotiator,
         IServiceResolver serviceResolver,
         IMessageBodyGetter<TContext> messageBodyGetter,
-        IEnumerable<ISerializerOption<TContext>> options,
         IEnumerable<IRequestEnricher<TContext>> enrichers)
     {
+        _mediaFormatNegotiator = mediaFormatNegotiator;
+        _serviceResolver = serviceResolver;
         _messageBodyGetter = messageBodyGetter;
         _enrichers = enrichers;
-        _options = options;
-        _serviceResolver = serviceResolver;
     }
 
     /// <summary>
@@ -60,32 +56,14 @@ public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> :
     /// <returns>The mapped and enriched request.</returns>
     public TRequest? GetBody<TRequest>(TContext context) where TRequest : class
     {
-        var mapper = GetMapper(context);
-        return mapper.GetBody<TRequest>(context);
-    }
+        var serializer = _mediaFormatNegotiator.SelectRead(context).GetSerializer(_serviceResolver);
 
-    private IRequestMapper<TContext> GetMapper(TContext context)
-    {
-        var serializerOption = _options.FirstOrDefault(option => option.CanHandle.Check(context, _serviceResolver));
-        if (serializerOption == null)
-        {
-            return _defaultMapper ??= BuildMapper(_serviceResolver.GetService<TDefaultSerializer>());
-        }
-
-        var serializer = serializerOption.GetSerializer(_serviceResolver);
         if (!_mappersBySerializer.TryGetValue(serializer, out var mapper))
         {
-            mapper = BuildMapper(serializer);
+            mapper = new EnrichingRequestMapper<TContext>(new RequestMapper<TContext>(_messageBodyGetter, serializer), _enrichers);
             _mappersBySerializer[serializer] = mapper;
         }
 
-        return mapper;
-    }
-
-    private IRequestMapper<TContext> BuildMapper(ISerializer serializer)
-    {
-        return new EnrichingRequestMapper<TContext>(
-            new RequestMapper<TContext>(_messageBodyGetter, serializer),
-            _enrichers);
+        return mapper.GetBody<TRequest>(context);
     }
 }
