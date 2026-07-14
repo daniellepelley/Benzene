@@ -15,13 +15,18 @@ namespace Benzene.Integration.Test.Kafka;
 
 // Reuses the same Event Hubs emulator container as EventHubConsumerPipelineTest (it exposes a
 // Kafka-compatible endpoint on port 9092 alongside its native AMQP port) - see
-// DockerEmulatorCollection. Uses the "kafka1" entity, a separate one from "eh1", so this test's
+// DockerEmulatorCollection. Uses the "example" entity, a separate one from "eh1", so this test's
 // produce/consume doesn't cross-contaminate with the AMQP-native Event Hub test.
 [Collection(DockerEmulatorCollection.Name)]
 public class KafkaConsumerPipelineTest
 {
     private const string BootstrapServers = "localhost:9092";
-    private const string KafkaTopic = "kafka1";
+
+    // Unlike Service Bus (a dedicated "topic" application property) or the Event Hub envelope (the
+    // topic embedded in the JSON body), KafkaMessageTopicGetter routes on the literal Kafka topic
+    // name itself - so this has to be Defaults.Topic, not just any isolation-purposed name, or the
+    // message never matches ExampleMessageHandler's [Message(Defaults.Topic)] registration.
+    private const string KafkaTopic = Defaults.Topic;
 
     // The emulator's Kafka-compatible endpoint wraps the same SAS-based auth as its native AMQP
     // endpoint (see EventHubConsumerPipelineTest's ConnectionString) via SASL PLAIN, not bare

@@ -11,7 +11,7 @@
                 "ConsumerGroups": []
             },
             {
-                "Name": "kafka1",
+                "Name": "example",
                 "PartitionCount": 2,
                 "ConsumerGroups": []
             }
