@@ -259,6 +259,9 @@ shape of the incoming payload:
   fire-and-forget)
 - **EventBridge**: `eventPipeline.UseEventBridge(...)`, in `Benzene.Aws.Lambda.EventBridge`
   (event-bus rules, scheduled rules, AWS service events; fire-and-forget)
+- **DynamoDB Streams**: `eventPipeline.UseDynamoDb(...)`, in `Benzene.Aws.Lambda.DynamoDb`
+  (change-data-capture: table INSERT/MODIFY/REMOVE events, ordered, partial-batch-failure
+  checkpointing)
 - **Kafka**: `eventPipeline.UseKafka(...)`, in `Benzene.Aws.Lambda.Kafka` (MSK and
   self-managed Kafka)
 - **S3**: `eventPipeline.UseS3(...)`, in `Benzene.Aws.Lambda.S3` (object-created/removed
@@ -310,6 +313,28 @@ client (see [Clients](clients.md)) are lifted from the reserved `_benzeneHeaders
 `detail`. Like SNS, EventBridge invokes the function via a resource-based Lambda permission and
 delivery is fire-and-forget. The `aws_cloudwatch_event_rule`/target/permission wiring can be
 generated from your `[Message]` topics — see [Terraform Code Generation](terraform.md).
+
+### DynamoDB Streams
+
+```csharp
+eventPipeline.UseDynamoDb(dynamoDb => dynamoDb
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+DynamoDB Streams deliver ordered change-data-capture records when items in a table are inserted,
+modified, or removed. The topic is `"{tableName}:{eventName}"` — a handler declares
+`[Message("orders:INSERT")]` — and the body is the record's image unmarshalled from DynamoDB's
+AttributeValue format into plain JSON, so your handler deserializes an ordinary POCO
+(`NewImage` when present, falling back to `OldImage` for REMOVE events, then `Keys` for
+`KEYS_ONLY` stream views). Envelope metadata is exposed as `dynamodb-`-prefixed headers
+(`dynamodb-event-name`, `dynamodb-table`, `dynamodb-sequence-number`, ...).
+
+Because stream records within a shard are ordered, the batch is processed **sequentially and
+stops at the first failure**: the failed record's sequence number is returned as a partial batch
+failure, and (with `ReportBatchItemFailures` enabled on the event source mapping) Lambda
+checkpoints there and redelivers from that record. This is deliberately different from the SQS
+adapter's concurrent batch processing.
 
 ### Kafka
 
