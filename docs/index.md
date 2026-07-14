@@ -6,6 +6,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 
 - **General**
   - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
+  - [Benzene Specification (Draft)](specification/README) — the language-neutral portable core: concepts, wire contracts, transport bindings, porting guide
   - [Unified Hosting Model](hosting)
   - [Message Handlers](message-handlers)
   - [Message Results](message-result)

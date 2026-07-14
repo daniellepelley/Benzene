@@ -1,0 +1,186 @@
+# Wire Contracts
+
+**Status: DRAFT v0.1**
+
+Everything in this document crosses a process boundary. These are the contracts that make two
+Benzene implementations — in any two languages, on any two vendors — interoperable. From spec 1.0,
+changes here are breaking changes.
+
+All JSON field names below are camelCase unless stated otherwise. All header keys are
+case-insensitive on read and SHOULD be written lower-case.
+
+## 1. The Benzene message envelope
+
+The transport-neutral message format, used whenever a Benzene client sends to a Benzene service
+over a transport with no richer native contract (direct function invocation, queues without
+attribute support, the generic `BenzeneMessage` entry point).
+
+### 1.1 Request
+
+```json
+{
+  "topic": "order:create",
+  "headers": { "x-correlation-id": "…", "traceparent": "…" },
+  "body": "{ …serialized message… }"
+}
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `topic` | string | Required. The topic id (see core-concepts §2). Version, when used, travels as a header. |
+| `headers` | object (string→string) | Required, may be empty. Flat string map — no nested values. |
+| `body` | string | Required. The message payload, **pre-serialized as a string** (JSON by default), not an inline object. This keeps the envelope schema fixed regardless of payload schema. |
+
+*(Informative: the outbound Lambda client's envelope names the third field `message` rather than
+`body`; the inbound `BenzeneMessage` entry point reads `body`. Unifying on `body` is a pending
+pre-1.0 correction to the .NET implementation.)*
+
+### 1.2 Response
+
+```json
+{
+  "statusCode": "Ok",
+  "headers": { },
+  "body": "{ …serialized response… }"
+}
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `statusCode` | string | A status vocabulary value (§3) — the *Benzene* status, not an HTTP code. |
+| `headers` | object (string→string) | Response headers, including `content-type` when set. |
+| `body` | string | Pre-serialized response payload. |
+
+## 2. Header conventions
+
+Headers are the portable metadata channel. Every transport binding maps its native metadata
+(HTTP headers, gRPC metadata, SQS/SNS message attributes, Kafka headers, the envelope's `headers`
+field) to and from this flat string→string dictionary.
+
+| Header | Direction | Meaning |
+|---|---|---|
+| `x-correlation-id` | both | Correlation ID. On read, implementations MUST check `x-correlation-id`, then `correlation-id`, then legacy `correlationId`; on write, use `x-correlation-id`. Generated (UUID) if absent. |
+| `traceparent`, `tracestate` | both | W3C Trace Context, verbatim per the W3C spec. |
+| `topic` | inbound (queue transports) | On transports where the envelope isn't used but native attributes exist (SQS/SNS message attributes), the topic travels as an attribute named `topic`. |
+| `benzene-status` | outbound (gRPC trailer) | See §4.2. |
+| `content-type` | outbound | Response content type where the transport has no native slot for it. |
+
+Binary metadata (e.g. gRPC `-bin` keys) is excluded from the dictionary in both directions.
+Duplicate keys: last value wins.
+
+## 3. Status vocabulary
+
+The closed set of framework-defined statuses. The strings below are the wire values — they are
+**PascalCase and case-sensitive**.
+
+| Status | Success? | Meaning |
+|---|---|---|
+| `Ok` | yes | Handled successfully |
+| `Created` | yes | Resource created |
+| `Accepted` | yes | Accepted for asynchronous processing |
+| `Updated` | yes | Resource updated |
+| `Deleted` | yes | Resource deleted |
+| `Ignored` | yes | Deliberately not processed (e.g. filtered); not an error |
+| `BadRequest` | no | Malformed or invalid request |
+| `ValidationError` | no | Semantically invalid request (validation rules failed) |
+| `Unauthorized` | no | Caller not authenticated |
+| `Forbidden` | no | Caller authenticated but not permitted |
+| `NotFound` | no | Target not found (including: no handler registered for the topic) |
+| `Conflict` | no | State conflict |
+| `NotImplemented` | no | Recognized but unsupported operation |
+| `ServiceUnavailable` | no | Transient infrastructure failure; retryable. Also the mapping for uncaught handler exceptions and client-side send failures. |
+| `UnexpectedError` | no | Unclassified failure |
+
+Applications MAY use additional status strings; every mapping table below routes unknown statuses
+to its generic-error row.
+
+## 4. Per-protocol status mappings
+
+### 4.1 HTTP
+
+| Benzene status | HTTP |
+|---|---|
+| `Ok`, `Ignored` | 200 |
+| `Created` | 201 |
+| `Accepted` | 202 |
+| `Updated`, `Deleted` | 204 |
+| `BadRequest` | 400 |
+| `Unauthorized` | 401 |
+| `Forbidden` | 403 |
+| `NotFound` | 404 |
+| `Conflict` | 409 |
+| `ValidationError` | 422 |
+| `UnexpectedError`, unknown, missing | 500 |
+| `NotImplemented` | 501 |
+| `ServiceUnavailable` | 503 |
+
+Reverse (HTTP → Benzene, used by HTTP clients): 200→`Ok`, 201→`Created`, 202→`Accepted`,
+204→`Deleted`, 400→`BadRequest`, 401→`Unauthorized`, 403→`Forbidden`, 404→`NotFound`,
+409→`Conflict`, anything else→`UnexpectedError`.
+
+### 4.2 gRPC
+
+Forward (server):
+
+| Benzene status | gRPC `StatusCode` |
+|---|---|
+| `Ok`, `Ignored`, `Created`, `Accepted`, `Updated`, `Deleted` | `OK` |
+| `BadRequest`, `ValidationError` | `InvalidArgument` |
+| `Unauthorized` | `Unauthenticated` |
+| `Forbidden` | `PermissionDenied` |
+| `NotFound` | `NotFound` |
+| `Conflict` | `AlreadyExists` |
+| `NotImplemented` | `Unimplemented` |
+| `ServiceUnavailable` | `Unavailable` |
+| `UnexpectedError`, unknown, missing | `Internal` |
+
+**The `benzene-status` trailer**: because several Benzene statuses collapse to one gRPC code, a
+Benzene gRPC server MUST attach a response trailer `benzene-status` carrying the raw status string
+verbatim, on success and failure alike. A missing result maps the trailer value to `Unknown`.
+Non-`OK` outcomes are surfaced as a gRPC error with the mapped code and a detail string of the
+joined `errors` (or the raw status if `errors` is empty).
+
+Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`Ok`,
+`InvalidArgument`→`BadRequest`, `Unauthenticated`→`Unauthorized`, `PermissionDenied`→`Forbidden`,
+`NotFound`→`NotFound`, `AlreadyExists`→`Conflict`, `Unimplemented`→`NotImplemented`,
+`Unavailable`/`DeadlineExceeded`/`Cancelled`→`ServiceUnavailable`, anything else→`UnexpectedError`.
+
+**Cancellation**: a cancelled invocation maps to gRPC `DeadlineExceeded` if the call's deadline
+has passed, else `Cancelled`.
+
+## 5. Health check response
+
+Returned for the reserved topic `healthcheck` (and any app-configured alias):
+
+```json
+{
+  "isHealthy": true,
+  "healthChecks": {
+    "Database": {
+      "status": "ok",
+      "type": "Database",
+      "data": { "CanConnect": true }
+    }
+  }
+}
+```
+
+- `status` per check is one of `"ok"`, `"warning"`, `"failed"` (lower-case — note this is a
+  *different* vocabulary from §3).
+- `isHealthy` is true iff no check reports `"failed"`; `"warning"` does not flip it.
+- `healthChecks` keys are check names, deduplicated with `-2`/`-3` suffixes on collision.
+- `data` is a free-form diagnostic bag; its keys are written verbatim (no naming policy applied).
+
+gRPC hosts additionally expose the same aggregate over standard
+[grpc.health.v1](https://github.com/grpc/grpc/blob/master/doc/health-checking.md): `SERVING` iff
+no check failed (a warning maps to a degraded-but-serving state).
+
+## 6. Serialization defaults
+
+- Default payload encoding is JSON, UTF-8.
+- Writing: camelCase property names, null properties omitted.
+- Reading: property-name matching is case-insensitive.
+- gRPC payload bridging uses **protobuf's own JSON mapping**
+  ([proto3 JSON](https://protobuf.dev/programming-guides/proto3/#json)) between protobuf messages
+  and plain types — not a naive reflection round-trip — so enums, well-known types, and oneofs
+  convert per protobuf rules. Property matching is against the protobuf JSON names.
