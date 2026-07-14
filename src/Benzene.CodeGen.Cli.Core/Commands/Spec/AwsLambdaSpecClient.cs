@@ -26,7 +26,7 @@ public class AwsLambdaSpecClient
         {
             var lambdaRequest = new BenzeneMessageClientRequest("spec", new Dictionary<string, string>(), JsonConvert.SerializeObject(specRequest));
             var response = await _lambdaClient.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(lambdaRequest, _lambdaName, InvocationType.RequestResponse);
-            return response.Message;
+            return response.Body;
         }
         catch (Exception ex)
         {

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -18,8 +18,18 @@ using Benzene.Core.Middleware;
 
 namespace Benzene.Core.MessageHandlers.DI;
 
+/// <summary>
+/// Top-level DI registration extension methods for wiring up message-handler infrastructure and the
+/// <c>BenzeneMessage</c> transport-agnostic message format.
+/// </summary>
 public static class Extensions
 {
+    /// <summary>
+    /// Registers the services needed to handle messages in the <c>BenzeneMessage</c> format: message
+    /// extraction, result setting, response adaptation, and a default "direct" <see cref="ITransportInfo"/>.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddBenzeneMessage(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped<IMessageGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
@@ -28,16 +38,24 @@ public static class Extensions
         services.TryAddScoped<IMessageHeadersGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<BenzeneMessageContext>, BenzeneMessageMessageHandlerResultSetter>();
         services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
-    
+
         services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, ResponseBodyHandler<BenzeneMessageContext>>();
         services.AddScoped<IResponseHandler<BenzeneMessageContext>, DefaultResponseStatusHandler<BenzeneMessageContext>>();
         services.TryAddScoped<IResponsePayloadMapper<BenzeneMessageContext>, DefaultResponsePayloadMapper<BenzeneMessageContext>>();
-    
+
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("direct"));
-    
+
         return services;
     }
 
+    /// <summary>
+    /// Registers an <see cref="IApplicationInfo"/> with the given metadata.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <param name="name">The application's name.</param>
+    /// <param name="version">The application's version.</param>
+    /// <param name="description">The application's description.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer SetApplicationInfo(this IBenzeneServiceContainer services,
         string name, string version, string description)
     {
@@ -45,15 +63,23 @@ public static class Extensions
         return services;
     }
 
+    /// <summary>
+    /// Registers the baseline services every Benzene application needs regardless of transport:
+    /// default statuses, transport info tracking, a blank <see cref="IApplicationInfo"/> (if none is
+    /// set), version selection, the default JSON <see cref="ISerializer"/>, the service resolver, and
+    /// core middleware.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddBenzene(this IBenzeneServiceContainer services)
     {
         services.TryAddSingleton<IDefaultStatuses, DefaultStatuses>();
         services.TryAddSingleton<ITransportsInfo, TransportsInfo>();
-        
+
         services.TryAddScoped<CurrentTransportInfo>();
         services.TryAddScoped<ICurrentTransport>(x => x.GetService<CurrentTransportInfo>());
         services.TryAddScoped<ISetCurrentTransport>(x => x.GetService<CurrentTransportInfo>());
-        
+
         services.TryAddSingleton<IApplicationInfo, BlankApplicationInfo>();
         services.TryAddSingleton<IVersionSelector, VersionSelector>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
@@ -62,7 +88,14 @@ public static class Extensions
         services.AddBenzeneMiddleware();
         return services;
     }
-    
+
+    /// <summary>
+    /// Registers the per-context request/response mapping services (message getter, response payload
+    /// mapper, response handler container, JSON serialization response handler, and the default
+    /// multi-serializer JSON request mapper) as open generics, so they apply to any <c>TContext</c>.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped(typeof(IMessageGetter<>), typeof(MessageGetter<>));
@@ -75,6 +108,13 @@ public static class Extensions
     }
 
 
+    /// <summary>
+    /// Registers message-handler dispatch infrastructure, discovering handlers by reflection over the
+    /// given assemblies.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <param name="assemblies">The assemblies to scan for handler types.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         params Assembly[] assemblies)
     {
@@ -82,6 +122,14 @@ public static class Extensions
         return services.AddMessageHandlers(types);
     }
 
+    /// <summary>
+    /// Registers message-handler dispatch infrastructure without registering any reflection-based
+    /// handler discovery - only handlers registered explicitly (e.g. via the <c>AddMessageHandler</c>
+    /// extension methods on <see cref="MiddlewarePipelineExtensions"/>, or directly in DI as
+    /// <see cref="IMessageHandlerDefinition"/>) will be found.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services)
     {
         services.TryAddSingleton<MessageHandlersList>();
@@ -103,6 +151,14 @@ public static class Extensions
         return services;
     }
 
+    /// <summary>
+    /// Registers message-handler dispatch infrastructure, discovering handlers only among the given
+    /// candidate types (via a cached <see cref="ReflectionMessageHandlersFinder"/>), and eagerly
+    /// registers each discovered handler type as scoped.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <param name="types">The candidate types to inspect for handler interfaces and <see cref="MessageAttribute"/>.</param>
+    /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         Type[] types)
     {
@@ -111,7 +167,7 @@ public static class Extensions
         {
             services.AddScoped(handler.HandlerType);
         }
-    
+
         services.TryAddSingleton<MessageHandlersList>();
         services.TryAddSingleton<DependencyMessageHandlersFinder>();
         services.TryAddSingleton<IMessageHandlersList>(x => x.GetService<MessageHandlersList>());
@@ -121,7 +177,7 @@ public static class Extensions
             x.GetService<MessageHandlersList>(),
             x.GetService<DependencyMessageHandlersFinder>()
         ));
-    
+
         services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
         services.TryAddScoped<IMessageHandlerWrapper, PipelineMessageHandlerWrapper>();

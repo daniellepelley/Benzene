@@ -4,7 +4,9 @@ namespace Benzene.Clients.Aws.Lambda
 {
     /// <summary>
     /// The envelope sent to a target Lambda function, carrying the message topic, headers, and serialized
-    /// message body.
+    /// message body. Serializes to the standard Benzene message envelope
+    /// (<c>{ "topic": ..., "headers": { ... }, "body": "..." }</c>) that the receiving side's
+    /// <c>BenzeneMessageRequest</c> deserializes — see <c>docs/specification/wire-contracts.md</c>.
     /// </summary>
     public class BenzeneMessageClientRequest
     {
@@ -13,12 +15,12 @@ namespace Benzene.Clients.Aws.Lambda
         /// </summary>
         /// <param name="topic">The message topic.</param>
         /// <param name="headers">The message headers.</param>
-        /// <param name="message">The serialized message body.</param>
-        public BenzeneMessageClientRequest(string topic, IDictionary<string, string> headers, string message)
+        /// <param name="body">The serialized message body.</param>
+        public BenzeneMessageClientRequest(string topic, IDictionary<string, string> headers, string body)
         {
             Topic = topic;
             Headers = headers;
-            Message = message;
+            Body = body;
         }
 
         /// <summary>
@@ -34,6 +36,6 @@ namespace Benzene.Clients.Aws.Lambda
         /// <summary>
         /// Gets the serialized message body.
         /// </summary>
-        public string Message { get; }
+        public string Body { get; }
     }
 }

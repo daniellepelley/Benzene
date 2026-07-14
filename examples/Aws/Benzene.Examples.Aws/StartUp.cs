@@ -1,4 +1,6 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
+using Amazon.Lambda.APIGatewayEvents;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
@@ -101,7 +103,23 @@ public class StartUp : AwsLambdaStartUp
         );
 
         app.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp
-            .UseMessageHandlers<ApiGatewayCustomAuthorizerContext>()
+            .UseCustomAuthorizer(request => Task.FromResult(new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "user",
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement =
+                    [
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Effect = "Allow",
+                            Action = ["execute-api:Invoke"],
+                            Resource = [request.MethodArn]
+                        }
+                    ]
+                }
+            }))
         );
     }
 }

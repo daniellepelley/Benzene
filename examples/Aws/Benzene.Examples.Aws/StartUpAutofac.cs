@@ -1,4 +1,6 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
+using Amazon.Lambda.APIGatewayEvents;
 using Autofac;
 using Benzene.Diagnostics.Timers;
 using Benzene.HealthChecks;
@@ -121,7 +123,23 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
         );
 
         app.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp
-            .UseMessageHandlers()
+            .UseCustomAuthorizer(request => Task.FromResult(new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "user",
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement =
+                    [
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Effect = "Allow",
+                            Action = ["execute-api:Invoke"],
+                            Resource = [request.MethodArn]
+                        }
+                    ]
+                }
+            }))
         );
     }
 }
