@@ -82,15 +82,40 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                 return;
             }
 
-            var origin = _corsOriginChecker.MatchOrigin(_corsSettings.AllowedDomains, httpRequest);
+            // The response for this path differs by Origin (allowed vs. rejected, or which
+            // origin is echoed back), so caches sitting in front of this endpoint must not
+            // conflate responses for different origins.
+            _responseAdapter.SetResponseHeader(context, "Vary", "Origin");
 
-            if (origin != null)
+            var origin = _corsOriginChecker.MatchOrigin(_corsSettings.AllowedDomains, httpRequest);
+            var isAllowed = origin != null && AreRequestedHeadersAllowed(httpRequest);
+
+            if (isAllowed)
             {
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Origin", origin);
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Headers",
-                    string.Join(",", _corsSettings.AllowedHeaders));
+                    ResolveAllowedHeaders(httpRequest));
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Methods",
                     "OPTIONS," + string.Join(",", methods));
+
+                if (_corsSettings.AllowCredentials)
+                {
+                    _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Credentials", "true");
+                }
+
+                if (httpRequest.Method == "options")
+                {
+                    if (_corsSettings.MaxAgeSeconds.HasValue)
+                    {
+                        _responseAdapter.SetResponseHeader(context, "Access-Control-Max-Age",
+                            _corsSettings.MaxAgeSeconds.Value.ToString());
+                    }
+                }
+                else if (_corsSettings.ExposedHeaders is { Length: > 0 })
+                {
+                    _responseAdapter.SetResponseHeader(context, "Access-Control-Expose-Headers",
+                        string.Join(",", _corsSettings.ExposedHeaders));
+                }
             }
 
             if (httpRequest.Method == "options")
@@ -98,6 +123,44 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                 await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), BenzeneResult.Ok()));
             }
         }
+    }
+
+    private bool AreRequestedHeadersAllowed(HttpRequest httpRequest)
+    {
+        var allowedHeaders = _corsSettings.AllowedHeaders ?? Array.Empty<string>();
+
+        if (allowedHeaders.Contains("*"))
+        {
+            return true;
+        }
+
+        if (!httpRequest.Headers.TryGetValue("access-control-request-headers", out var requested) ||
+            string.IsNullOrEmpty(requested))
+        {
+            return true;
+        }
+
+        return requested
+            .Split(',')
+            .Select(header => header.Trim())
+            .All(header => allowedHeaders.Any(allowed => string.Equals(allowed, header, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private string ResolveAllowedHeaders(HttpRequest httpRequest)
+    {
+        var allowedHeaders = _corsSettings.AllowedHeaders ?? Array.Empty<string>();
+
+        if (!allowedHeaders.Contains("*"))
+        {
+            return string.Join(",", allowedHeaders);
+        }
+
+        // A literal "*" is not honored by browsers for credentialed requests, so echo back
+        // exactly what was requested instead - equivalent to ASP.NET Core's AllowAnyHeader().
+        return httpRequest.Headers.TryGetValue("access-control-request-headers", out var requested) &&
+               !string.IsNullOrEmpty(requested)
+            ? requested
+            : "*";
     }
 
     private string[] FindMethods(string path)
@@ -123,11 +186,17 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
 /// </summary>
 /// <remarks>
 /// This class checks whether the Origin header in an HTTP request matches one of the
-/// configured allowed domains. Domain matching is performed on the host portion of the
-/// URL, ignoring protocols and paths, and is case-insensitive.
+/// configured allowed domains, case-insensitively. An allowed-domain entry that specifies a
+/// scheme (e.g. <c>"https://example.com"</c>) is matched exactly on scheme, host, and port -
+/// the CORS specification defines "origin" as that whole triple, so <c>"https://example.com"</c>
+/// must not also match <c>"http://example.com"</c> or a different port. A bare hostname entry
+/// (e.g. <c>"example.com"</c>, no scheme) is matched on host only, as a more permissive
+/// shorthand that ignores scheme and port.
 /// </remarks>
 public class CorsOriginChecker
 {
+    private static readonly string[] RecognizedSchemes = { "http", "https", "ws", "wss" };
+
     /// <summary>
     /// Matches the request's Origin header against a list of allowed domains.
     /// </summary>
@@ -144,31 +213,43 @@ public class CorsOriginChecker
         {
             return null;
         }
-        
+
         var origin = httpRequest.Headers["origin"];
-        if (origin == null)
+        if (string.IsNullOrEmpty(origin))
         {
             return null;
         }
-        
-        if (allowedDomains
-            .Any(x => GetDomain(x) == GetDomain(origin)))
-        {
-            return origin;
-        }
 
-        return null;
+        return allowedDomains != null && allowedDomains.Any(allowedDomain => Matches(allowedDomain, origin))
+            ? origin
+            : null;
     }
 
-    private static string? GetDomain(string url)
+    private static bool Matches(string allowedDomain, string origin)
     {
-        try
+        if (allowedDomain == "*")
         {
-            return new Uri(url).Host.ToLowerInvariant();
+            return true;
         }
-        catch
+
+        if (TryGetOrigin(allowedDomain, out var allowedUri) && TryGetOrigin(origin, out var originUri))
         {
-            return url.Replace("/", "");
+            return string.Equals(allowedUri.Scheme, originUri.Scheme, StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(allowedUri.Host, originUri.Host, StringComparison.OrdinalIgnoreCase) &&
+                   allowedUri.Port == originUri.Port;
         }
+
+        return string.Equals(GetHost(allowedDomain), GetHost(origin), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryGetOrigin(string value, out Uri uri)
+    {
+        return Uri.TryCreate(value, UriKind.Absolute, out uri) &&
+               RecognizedSchemes.Contains(uri.Scheme, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string GetHost(string value)
+    {
+        return TryGetOrigin(value, out var uri) ? uri.Host : value.TrimEnd('/');
     }
 }

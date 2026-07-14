@@ -210,6 +210,48 @@
 > consumers yet. Verified: full solution and both example solutions
 > (`Benzene.Examples.sln`'s Azure entries, `examples/Azure/Benzene.Example.Azure.sln`)
 > build with 0 errors, 655/655 tests still passing.
+>
+> **2026-07-13 update (documentation):** A comprehensive, source-verified documentation
+> pass closed most of the remaining narrative-documentation gap this document flagged
+> as the biggest blocker behind AWS. Verified directly against current file content
+> (not agent summaries):
+> - **Getting started guides** for both Azure adapters now exist and are comprehensive:
+>   `docs/azure-functions.md` (HTTP/Event Hub/Kafka triggers, correlation and tracing,
+>   testing via `BenzeneTestHost`, a 5-item troubleshooting section) and
+>   `docs/asp-net-core.md` (health checks, validation, W3C trace context, testing).
+> - **Event Hub partition/checkpointing/consumer-group documentation**: added in depth
+>   in `docs/cookbooks/event-hub-processing.md`, including a worked `host.json` example
+>   for `maxEventBatchSize`/`minEventBatchSize`/`maxWaitTime`/`batchCheckpointFrequency`/
+>   `prefetchCount`, and an honest explainer of why Benzene's `MessageHandler.HandleAsync`
+>   already catches handler exceptions before they reach the trigger (so checkpointing
+>   advances regardless of exceptions unless a retry policy is configured), with a
+>   worked `RethrowOnServiceUnavailableMiddleware` bridge for teams that want the
+>   opposite behavior.
+> - **Dead-letter queue patterns**: Event Hubs has no native DLQ (unlike Service Bus);
+>   this is now documented honestly as a workaround pattern rather than left silent.
+> - **Event Hubs vs Kafka protocol relationship**: documented in
+>   `docs/getting-started-kafka.md`'s Azure Functions section, including a full working
+>   `KafkaTrigger` sample and the explicit callout that `KafkaMessageHeadersGetter`
+>   always returns an empty dictionary on this path (headers aren't mapped, unlike the
+>   AWS and self-hosted-worker Kafka paths).
+> - **Migration guide**: `docs/migration-alpha-to-1.0.md` now has a dedicated "Azure
+>   Functions: package rename + isolated worker rewrite" section covering both the
+>   package rename (documented above) and the in-process-worker → isolated-worker
+>   rewrite.
+> - **Functions test host documentation** (the developer-doc "Testing guide" gap):
+>   covered by `docs/azure-functions.md`'s Testing section
+>   (`BenzeneTestHost.Create<StartUp>().BuildAzureFunctionApp()`,
+>   `HttpBuilder.Create(...).AsAspNetCoreHttpRequest()`, `HandleEventHub`/
+>   `HandleKafkaEvents`, `InlineAzureFunctionStartUp`).
+> - Also fixed in passing: `Benzene.Azure.Function.Kafka`'s Issues list below still said
+>   "❌ No XML documentation," inconsistent with this document's own "100% XML docs
+>   across all 5 packages" claim (Executive Summary, verified 2026-07-12) — corrected.
+>
+> Still open, not addressed by this pass (out of scope — this was a docs-only pass, not
+> new code): ARM/Bicep/Terraform templates, Managed Identity/RBAC guidance, Application
+> Insights integration middleware, CORS middleware, Azure SDK version consistency, the
+> `Benzene.AspNet.Core` test-coverage gap, and the two known file/class name mismatches
+> (`ApiGatewayHttpRequestAdapter.cs`/`AspNetHeadersMapper.cs`).
 
 ---
 
@@ -578,10 +620,13 @@ hours remaining (dependency fix, XML docs, and TestHttpRequest relocation all do
 2. ~~⚠️ "DirectMessageLambdaHandler" name is AWS terminology, confusing in Azure
    context~~ ✅ RESOLVED 2026-07-12 (renamed to `BenzeneMessageEventHubHandler`)
 3. ⚠️ Minimal implementation - only ~5 files
-4. ⚠️ No partition key handling documented
-5. ⚠️ No checkpointing guidance
+4. ~~⚠️ No partition key handling documented~~ ✅ RESOLVED 2026-07-13 — documented in
+   `docs/cookbooks/event-hub-processing.md` with a worked `host.json` example
+5. ~~⚠️ No checkpointing guidance~~ ✅ RESOLVED 2026-07-13 — same cookbook, including why
+   checkpointing advances regardless of exceptions unless a retry policy is configured
 6. ⚠️ No Event Hubs Capture integration
-7. ⚠️ No consumer group configuration examples
+7. ~~⚠️ No consumer group configuration examples~~ ✅ RESOLVED 2026-07-13 — documented at
+   a practical/troubleshooting level in `docs/cookbooks/event-hub-processing.md`
 8. ⚠️ No scaling and partition management guidance
 9. ⚠️ No Event Hubs namespace/connection configuration
 10. ⚠️ No Managed Identity authentication example
@@ -590,19 +635,26 @@ hours remaining (dependency fix, XML docs, and TestHttpRequest relocation all do
 - [x] Add comprehensive XML documentation — done 2026-07-12
 - [x] Rename "DirectMessageLambdaHandler" to Azure-appropriate name — done 2026-07-12
   (`BenzeneMessageEventHubHandler`)
-- [ ] Document partition and checkpointing strategies
+- [x] Document partition and checkpointing strategies — done 2026-07-13, in
+  `docs/cookbooks/event-hub-processing.md`
 - [ ] Add Event Hubs Capture integration examples
-- [ ] Document consumer group patterns
+- [x] Document consumer group patterns — done 2026-07-13
 - [ ] Add Managed Identity authentication examples
 - [ ] Document scaling and throughput optimization
 - [ ] Add Schema Registry integration
-- [ ] Document Event Hubs vs Kafka protocol differences
+- [x] Document Event Hubs vs Kafka protocol differences — done 2026-07-13, in
+  `docs/getting-started-kafka.md`'s Azure Functions section
 - [ ] Add monitoring and metrics guidance
 - [ ] Document cost optimization (throughput units, partitions)
-- [ ] Add dead-letter queue patterns
+- [x] Add dead-letter queue patterns — done 2026-07-13; Event Hubs has no native DLQ,
+  documented honestly as a workaround pattern (`RethrowOnServiceUnavailableMiddleware`)
+  in `docs/cookbooks/event-hub-processing.md`
 
-**Estimated Effort:** ~~20-25 hours~~ 15-20 hours remaining (XML docs and naming fix
-done 2026-07-12; remaining scope is narrative/operational documentation, not code)
+**Estimated Effort:** ~~20-25 hours~~ ~~15-20 hours~~ 8-12 hours remaining (XML docs,
+naming fix, and narrative docs for partitioning/checkpointing/consumer groups/DLQ/
+Event-Hubs-vs-Kafka done 2026-07-12/13; remaining scope is Capture integration,
+Managed Identity examples, scaling guidance, Schema Registry, monitoring, and cost
+optimization)
 
 ---
 
@@ -623,20 +675,25 @@ done 2026-07-12; remaining scope is narrative/operational documentation, not cod
 - Consistent architecture with other adapters
 
 **Issues:**
-1. ❌ No XML documentation
+1. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12 (this line was stale/inconsistent
+   with the Executive Summary's "100% XML docs across all 5 packages" claim, which
+   already included this package — corrected 2026-07-13)
 2. ⚠️ Very minimal implementation
 3. ⚠️ No schema registry integration
 4. ⚠️ No Avro/Protobuf serialization examples
 5. ⚠️ No consumer group configuration
 6. ⚠️ No offset management strategies
-7. ⚠️ No Event Hubs Kafka endpoint configuration
+7. ~~⚠️ No Event Hubs Kafka endpoint configuration~~ ✅ RESOLVED 2026-07-13 — documented
+   in `docs/getting-started-kafka.md`'s Azure Functions section, including the
+   `KafkaMessageHeadersGetter` empty-headers limitation on this path
 8. ⚠️ No authentication examples (connection string vs Managed Identity)
 9. ⚠️ No performance optimization guidance
 10. ⚠️ No migration guide from Apache Kafka
 
 **1.0 Requirements:**
-- [ ] Add comprehensive XML documentation
-- [ ] Document Event Hubs Kafka endpoint configuration
+- [x] Add comprehensive XML documentation — done 2026-07-12
+- [x] Document Event Hubs Kafka endpoint configuration — done 2026-07-13, in
+  `docs/getting-started-kafka.md`
 - [ ] Add Managed Identity authentication examples
 - [ ] Document schema registry integration (if applicable)
 - [ ] Add Avro/Protobuf serialization support
@@ -650,7 +707,8 @@ done 2026-07-12; remaining scope is narrative/operational documentation, not cod
 
 **Recommendation:** Keep at 0.9.x-preview through 2026 to gather production feedback
 
-**Estimated Effort:** 20-25 hours
+**Estimated Effort:** ~~20-25 hours~~ 15-20 hours remaining (XML docs and endpoint
+configuration docs done 2026-07-12/13)
 
 ---
 
@@ -840,15 +898,19 @@ the remaining Managed Identity/best-practices documentation gap
      package. A repo-wide sweep confirmed no other production package still
      references `Benzene.Testing`
 
-5. **Documentation** (40-60 hours) - CRITICAL
-   - Getting started guide for each adapter
-   - ARM/Bicep deployment templates
-   - Terraform examples
-   - Azure DevOps CI/CD pipelines
-   - GitHub Actions workflows
-   - Managed Identity and RBAC guidance
-   - Application Insights integration guide
-   - Cost optimization guide
+5. ~~**Documentation** (40-60 hours) - CRITICAL~~ ✅ **MOSTLY RESOLVED 2026-07-13** —
+   getting-started guides, Event Hub/Kafka narrative docs, and migration guide now
+   exist; deployment/CI/CD/RBAC/App Insights/cost guides remain open. **~20-30 hours
+   remaining.**
+   - [x] Getting started guide for each adapter — done 2026-07-13
+     (`docs/azure-functions.md`, `docs/asp-net-core.md`)
+   - [ ] ARM/Bicep deployment templates
+   - [ ] Terraform examples
+   - [ ] Azure DevOps CI/CD pipelines
+   - [ ] GitHub Actions workflows
+   - [ ] Managed Identity and RBAC guidance
+   - [ ] Application Insights integration guide
+   - [ ] Cost optimization guide
 
 6. **Code Quality Fixes** (20-30 hours)
    - Remove commented-out code
@@ -864,7 +926,7 @@ the remaining Managed Identity/best-practices documentation gap
    - CORS middleware (Azure.AspNet)
    - Authentication/Authorization middleware
 
-**Total Estimated Effort for 1.0:** ~~245-368 hours (6-9 weeks full-time)~~ ~~~170-260
+**Total Estimated Effort for 1.0:** ~~245-368 hours (6-9 weeks full-time)~~ ~~170-260
 hours~~ **~160-250 hours remaining** (2026-07-12: dependency fix ~2h actual vs 40-50h
 estimated, XML docs fully done vs 50-70h estimated; 2026-07-14: test coverage
 re-scoped again — `Benzene.AspNet.Core`'s assumed 0% was wrong (already 81.8%), but a
@@ -1315,7 +1377,9 @@ services:
 - [ ] Terraform module documentation — confirmed still absent 2026-07-14
 - [ ] Azure DevOps CI/CD pipelines
 - [ ] GitHub Actions workflows
-- [ ] Migration guide from raw Azure Functions
+- [ ] Migration guide from raw Azure Functions (note: distinct from the Benzene
+  alpha→1.0 migration guide below, which is done; this item — migrating an existing
+  hand-rolled Azure Functions app onto Benzene — remains open)
 - [ ] Best practices guide (costs, performance, security)
 - [ ] Troubleshooting guide (common errors) — not a dedicated standalone guide, but
       partially covered: `docs/azure-functions.md` has its own "Troubleshooting"
@@ -1336,7 +1400,8 @@ services:
 - [ ] Compatibility matrix (Azure SDK versions, .NET versions, Functions runtime)
 
 **API Documentation:**
-- [ ] XML documentation for all public APIs
+- [x] XML documentation for all public APIs — done 2026-07-12, 100% across all 5
+  packages, 0 CS1591 warnings
 - [ ] Generated API docs (DocFX or similar)
 - [ ] Code examples in XML docs
 - [ ] Parameter validation documentation
@@ -1946,7 +2011,8 @@ All Azure packages reference:
    package to 48.2% overall (was 80-100h for "all packages," then wrongly re-scoped to
    a `Benzene.AspNet.Core`-shaped ~15-20h gap, now correctly ~5-8h for the real gap)
 4. ~~**Move Test Code** - TestHelpers separation (5-8h)~~ ✅ COMPLETE 2026-07-12
-5. **Getting Started Guides** - All adapters (25-30h)
+5. ~~**Getting Started Guides** - All adapters (25-30h)~~ ✅ COMPLETE 2026-07-13 —
+   `docs/azure-functions.md` and `docs/asp-net-core.md`
 6. **ARM/Bicep Templates** - Deployment examples (20-25h)
 7. **Integration Tests** - Azurite, Functions test host (30-40h)
 8. **Code Quality Fixes** - RE-SCOPED 2026-07-12: the `BenzeneMessageLambdaHandler` →
@@ -1955,7 +2021,9 @@ All Azure packages reference:
    `ApiGatewayHttpRequestAdapter.cs`/`AspNetHeadersMapper.cs` file/class mismatches
    (~10-15h, down from 20-30h)
 9. **Application Insights Integration** - Middleware (15-20h)
-10. **Migration Guide** - 0.x to 1.0 (10-12h)
+10. ~~**Migration Guide** - 0.x to 1.0 (10-12h)~~ ✅ COMPLETE 2026-07-13 —
+    `docs/migration-alpha-to-1.0.md`'s Azure Functions package-rename + isolated-worker
+    section
 
 **Total P0 Effort:** ~~155-245 hours remaining~~ **~145-235 hours remaining**
 (2026-07-12: dependency fix ~2h actual vs 40-50h estimated, XML documentation now

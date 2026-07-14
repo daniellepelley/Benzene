@@ -38,9 +38,19 @@ Provides HTTP abstractions and utilities for building HTTP-based Benzene applica
 - `DefaultHttpHeaderMappings` - Default header mappings
 
 ### CORS
-- `CorsSettings` - CORS configuration
-- `CorsMiddleware<TContext>` - CORS middleware
-- `CorsOriginChecker` - Validates CORS origins
+Behavior tracks the CORS spec the same way `Microsoft.AspNetCore.Cors` does (exact origin
+matching, credential-safe wildcards, preflight header validation, Vary caching hint).
+- `CorsSettings` - CORS configuration:
+  - `AllowedDomains` - full URLs match exactly on scheme+host+port; bare hostnames match host only
+    (any scheme/port); `"*"` allows any origin
+  - `AllowedHeaders` - explicit list, or `"*"` to allow any header (`AllowAnyHeader()` equivalent)
+  - `ExposedHeaders` - sets `Access-Control-Expose-Headers` on actual (non-preflight) responses
+  - `AllowCredentials`/`MaxAgeSeconds` - control `Access-Control-Allow-Credentials`/`Access-Control-Max-Age`
+- `CorsMiddleware<TContext>` - CORS middleware; sets `Vary: Origin` on every response it processes;
+  rejects (no CORS headers at all) a preflight whose `Access-Control-Request-Headers` includes a
+  header outside a non-wildcard `AllowedHeaders` list
+- `CorsOriginChecker` - Validates CORS origins; always echoes the actual `Origin` value (never a
+  literal `"*"`), which is what makes wildcard + credentials safe to combine
 
 ### Other
 - `HttpEndpointAttribute` - Marks HTTP endpoints

@@ -482,10 +482,32 @@ app.UseCors(new CorsSettings
 {
     AllowedDomains = new[] { "https://example.com" },
     AllowedHeaders = new[] { "Content-Type", "Authorization" },
+    ExposedHeaders = new[] { "X-Total-Count" },  // adds Access-Control-Expose-Headers
+    AllowCredentials = true,   // adds Access-Control-Allow-Credentials: true
+    MaxAgeSeconds = 600,       // adds Access-Control-Max-Age on preflight responses
 });
 ```
 
 Applies to any `TContext : IHttpContext` — ASP.NET Core, API Gateway, `Benzene.SelfHost.Http`, etc.
+Behavior tracks the CORS specification the same way `Microsoft.AspNetCore.Cors` does:
+
+- **Origin matching is exact (scheme + host + port) when you specify a full URL.**
+  `AllowedDomains = ["https://example.com"]` matches only `https://example.com` — not
+  `http://example.com` (different scheme) and not `https://example.com:8080` (different port).
+  A bare hostname entry (`"example.com"`, no scheme) is more permissive and matches that host
+  under any scheme/port, as a documented shorthand. `"*"` allows any origin; the middleware always
+  echoes back the actual `Origin` value rather than a literal `"*"`, so it's safe to combine with
+  `AllowCredentials = true` (the CORS spec forbids a literal `"*"` for Allow-Origin/Allow-Headers
+  when credentials are allowed, but permits echoing the real value).
+- **`AllowedHeaders` accepts `"*"`** to allow any header (equivalent to `AllowAnyHeader()`); like
+  origins, the middleware echoes back the requested headers instead of a literal `"*"`. With an
+  explicit list, a preflight asking for a header outside that list (via
+  `Access-Control-Request-Headers`) fails the CORS check entirely — no CORS headers are returned,
+  and the browser blocks the real request, matching `CorsService`'s behavior in ASP.NET Core.
+- **`Vary: Origin`** is set on every response the middleware processes, so caches/CDNs in front of
+  the API don't serve one origin's CORS-tailored response to another.
+- **`Access-Control-Expose-Headers`** (via `ExposedHeaders`) is sent on actual (non-preflight)
+  responses only, since it's meaningless on a preflight response.
 
 ---
 

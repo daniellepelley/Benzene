@@ -26,6 +26,45 @@ public class CorsSettings
     /// <remarks>
     /// These headers will be included in the Access-Control-Allow-Headers response header.
     /// Common headers include "Content-Type", "Authorization", "X-Requested-With", etc.
+    /// A preflight request that asks for a header not in this list (via
+    /// <c>Access-Control-Request-Headers</c>) is treated as not allowed. Use <c>"*"</c> to allow
+    /// any header; the middleware then echoes back whatever the preflight actually requested
+    /// (equivalent to ASP.NET Core's <c>AllowAnyHeader()</c>), since a literal <c>"*"</c> is not
+    /// honored by browsers on credentialed requests.
     /// </remarks>
     public string[] AllowedHeaders { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of response headers that browser-side JavaScript is allowed to read
+    /// (beyond the small set of CORS-safelisted headers exposed by default, e.g. Content-Type).
+    /// </summary>
+    /// <remarks>
+    /// Sent as the <c>Access-Control-Expose-Headers</c> header on actual (non-preflight)
+    /// responses. Equivalent to ASP.NET Core's <c>WithExposedHeaders(...)</c>. Leave empty/null
+    /// to expose only the default safelisted headers.
+    /// </remarks>
+    public string[] ExposedHeaders { get; set; }
+
+    /// <summary>
+    /// Gets or sets how long, in seconds, browsers may cache a preflight (OPTIONS) response
+    /// before sending another one.
+    /// </summary>
+    /// <remarks>
+    /// When set, this value is sent as the <c>Access-Control-Max-Age</c> header on preflight
+    /// responses for allowed origins. Leave <c>null</c> to omit the header, which means
+    /// browsers fall back to their own (usually short) default preflight cache duration.
+    /// </remarks>
+    public int? MaxAgeSeconds { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the response should include <c>Access-Control-Allow-Credentials: true</c>,
+    /// permitting cross-origin requests to include cookies or HTTP authentication.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <c>false</c>. This is safe to combine with a wildcard entry in
+    /// <see cref="AllowedDomains"/> because the middleware always echoes back the specific
+    /// request's <c>Origin</c> value rather than a literal <c>"*"</c>, which is what the CORS
+    /// specification requires when credentials are allowed.
+    /// </remarks>
+    public bool AllowCredentials { get; set; }
 }
