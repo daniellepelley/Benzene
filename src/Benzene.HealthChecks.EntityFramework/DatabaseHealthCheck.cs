@@ -33,7 +33,10 @@ public class DatabaseHealthCheck<TDbContext> : IHealthCheck where TDbContext : D
     /// includes <c>CanConnect</c>, <c>AppliedMigrations</c>, <c>TargetMigration</c>,
     /// <c>MigrationMatch</c> (whether the target migration is the last applied one - this drives the
     /// overall pass/fail), <c>MigrationContains</c> (whether it's applied at all, regardless of
-    /// position), and <c>Error</c> (the connection exception's message, if any).
+    /// position), and <c>Error</c> (the connection exception's type name, if any - not its message,
+    /// since some ADO.NET providers include connection details such as server/credentials in
+    /// exception messages, and this result can flow out to whatever calls the health check topic with
+    /// no built-in authorization).
     /// </summary>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
@@ -51,7 +54,7 @@ public class DatabaseHealthCheck<TDbContext> : IHealthCheck where TDbContext : D
                 { "TargetMigration", _targetMigration },
                 { "MigrationMatch", migrationMatch },
                 { "MigrationContains", migrationContains },
-                { "Error", canConnect.Item2?.Message }
+                { "Error", canConnect.Item2?.GetType().Name }
             });
     }
 
