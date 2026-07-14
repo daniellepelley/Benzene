@@ -16,7 +16,12 @@ already runs, not a bespoke standalone tool.
   `Unreachable` status (unreachable if the health document couldn't be fetched/deserialized,
   regardless of whether the spec endpoint responded - health is the primary "is this okay" signal);
   compares the new spec hash against the previous run's (read back via `IMeshArtifactStore`) to set
-  `ContractDrift`.
+  `ContractDrift`. The health fetch reads the response body regardless of status code (via
+  `HttpClient.GetAsync` + `response.Content.ReadAsStringAsync()`, not `GetStringAsync`) - Benzene's
+  own health-check middleware (`Benzene.HealthChecks.HealthCheckProcessor`) deliberately maps an
+  unhealthy result to HTTP 503, and `GetStringAsync` throws on any non-2xx status, which would
+  otherwise make every real unhealthy service indistinguishable from a genuinely unreachable one.
+  Only a connection-level failure or an unparseable body is treated as unreachable.
 - `MeshAggregateMessageHandler` - thin `IMessageHandler<Void, MeshManifest>` wrapper resolving
   `MeshAggregator`/`MeshServiceRegistry` from DI and calling `RunOnceAsync` - the "dogfooding" piece
   that makes the aggregator itself a real Benzene service rather than only in-process-callable.

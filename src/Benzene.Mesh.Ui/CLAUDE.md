@@ -38,7 +38,12 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   service cards (name, status badge, drift badge, links to the service's raw `specUrl`/
   `healthUrl`, and a best-effort "View Spec UI" link derived from `specUrl`). Expanding a card
   lazily fetches that service's `services/{name}.json` (resolved relative to the manifest's own
-  URL) and renders its health-check detail (type, status, dependencies, data).
+  URL, via `resolveUrl()`) and renders its health-check detail (type, status, dependencies, data).
+  `resolveUrl()` first resolves `manifestUrl` itself against `location.href` before resolving the
+  relative path against *that* - `manifestUrl` is very often relative on its own (a bare filename,
+  or root-relative like `/artifacts/manifest.json`, the common case for an aggregator host
+  self-serving its dashboard), and the `URL()` constructor's `base` argument must already be
+  absolute or it throws.
 - Loads a manifest from, in precedence order: `?url=` query param → `data-manifest-url` on the
   document root → a relative fetch of `manifest.json` (so the plain embedded page works unmodified
   when copied next to the aggregator's output, with no query param or attribute needed) → embedded

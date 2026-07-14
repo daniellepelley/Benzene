@@ -79,7 +79,15 @@ public class MeshAggregator
         HealthCheckResponse? health = null;
         try
         {
-            var healthJson = await _httpClient.GetStringAsync(entry.HealthUrl);
+            // Deliberately not GetStringAsync: Benzene's own health-check middleware maps an
+            // unhealthy aggregate result to HTTP 503 (see Benzene.HealthChecks.HealthCheckProcessor),
+            // which GetStringAsync would treat as a fetch failure indistinguishable from the
+            // service being genuinely unreachable. Reading the body regardless of status code lets
+            // a real 503-with-a-valid-unhealthy-body come through as Unhealthy instead of
+            // Unreachable - only a connection-level failure or an unparseable body should count as
+            // unreachable.
+            using var response = await _httpClient.GetAsync(entry.HealthUrl);
+            var healthJson = await response.Content.ReadAsStringAsync();
             health = JsonSerializer.Deserialize<HealthCheckResponse>(healthJson, JsonOptions);
         }
         catch (Exception ex)

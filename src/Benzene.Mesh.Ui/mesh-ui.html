@@ -373,8 +373,14 @@
     return { healthy: "b-healthy", unhealthy: "b-unhealthy", unreachable: "b-unreachable" }[status] || "b-unhealthy";
   }
   function resolveUrl(relative) {
-    try { return new URL(relative, manifestUrl || location.href).toString(); }
-    catch (e) { return relative; }
+    try {
+      // manifestUrl itself is very often relative (a bare filename, or root-relative like
+      // "/artifacts/manifest.json" - the common case when an aggregator host self-serves its own
+      // dashboard). The URL() constructor requires its base argument to already be absolute, so
+      // resolve manifestUrl against the current page first, then resolve relative against that.
+      var base = manifestUrl ? new URL(manifestUrl, location.href) : location.href;
+      return new URL(relative, base).toString();
+    } catch (e) { return relative; }
   }
   /* Best-effort: derive a Benzene.Spec.Ui link from a service's specUrl - not guaranteed to
      resolve for every hosting layout, since it assumes /spec-ui sits next to /spec on the same

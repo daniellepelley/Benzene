@@ -100,6 +100,24 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_HealthEndpointReports503Unhealthy_ManifestShowsUnhealthyNotUnreachable()
+    {
+        // Benzene.HealthChecks.HealthCheckProcessor.PerformHealthChecksAsync deliberately maps an
+        // unhealthy aggregate result to HTTP 503 (ServiceUnavailable), not 200 - a real Benzene
+        // health check reports "unhealthy" this way, not via a 200 with isHealthy:false in the
+        // body. The aggregator must still read and deserialize that body instead of treating the
+        // non-2xx status as an unreachable/fetch-failure case.
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.ServiceUnavailable, SerializeHealth(false));
+        var aggregator = new MeshAggregator(new HttpClient(handler), new FileSystemMeshArtifactStore(_rootDirectory));
+
+        var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Equal(MeshServiceStatus.Unhealthy, Assert.Single(manifest.Services).Status);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_BothEndpointsFail_ManifestShowsUnreachable_ErrorIsTypeNameOnly()
     {
         var handler = new RoutingHttpMessageHandler()
