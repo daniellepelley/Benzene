@@ -1,5 +1,5 @@
 services:
-  emulator:
+  servicebus-emulator:
     image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
     volumes:
       - ./servicebus-emulator-config.json:/ServiceBus_Emulator/ConfigFiles/Config.json

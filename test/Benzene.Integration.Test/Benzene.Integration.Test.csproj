@@ -41,19 +41,22 @@
 	</ItemGroup>
 
   <ItemGroup>
-    <None Update="Fixtures\Files\sqs-docker-compose.yaml">
+    <!-- Each fixture's compose file lives in its own subdirectory (see DockerComposeFixture's
+         class doc) so Docker Compose's directory-derived default project name can't collide
+         across fixtures. -->
+    <None Update="Fixtures\Files\Sqs\sqs-docker-compose.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Fixtures\Files\eventhub-docker-compose.yaml">
+    <None Update="Fixtures\Files\EventHub\eventhub-docker-compose.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Fixtures\Files\eventhub-emulator-config.json">
+    <None Update="Fixtures\Files\EventHub\eventhub-emulator-config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Fixtures\Files\servicebus-docker-compose.yaml">
+    <None Update="Fixtures\Files\ServiceBus\servicebus-docker-compose.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Fixtures\Files\servicebus-emulator-config.json">
+    <None Update="Fixtures\Files\ServiceBus\servicebus-emulator-config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

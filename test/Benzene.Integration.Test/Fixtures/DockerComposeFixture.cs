@@ -4,6 +4,17 @@ using Ductus.FluentDocker.Services;
 
 namespace Benzene.Integration.Test.Fixtures;
 
+/// <summary>
+/// Base class for xunit fixtures that bring up a Docker Compose stack for the duration of a test
+/// run. The compose file passed to the constructor should live in its own subdirectory under
+/// <c>Fixtures/Files/</c> (e.g. <c>"Sqs/sqs-docker-compose.yaml"</c>), one per fixture - not
+/// alongside another compose file. Docker Compose derives its default project name from the
+/// compose file's containing directory when none is set explicitly, and this project has no way to
+/// override that via FluentDocker's fluent Builder API; two compose files sharing a directory (and
+/// therefore a default project name) can silently step on each other's containers/networks,
+/// especially if they happen to reuse the same service name (as this project's Event Hub and
+/// Service Bus compose files both did before this was discovered and fixed).
+/// </summary>
 public class DockerComposeFixture : IDisposable
 {
     private ICompositeService? _compositeService;
