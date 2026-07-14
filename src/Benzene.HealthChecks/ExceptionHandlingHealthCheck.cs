@@ -4,9 +4,9 @@ namespace Benzene.HealthChecks;
 
 /// <summary>
 /// Decorates an <see cref="IHealthCheck"/> so that an exception thrown out of <see cref="ExecuteAsync"/>
-/// is caught and turned into a failed <see cref="IHealthCheckResult"/> (with the exception message in
-/// its <c>Data</c>) instead of propagating and aborting the whole health check run. Used internally by
-/// <see cref="HealthCheckProcessor"/> to wrap every check.
+/// is caught and turned into a failed <see cref="IHealthCheckResult"/> (with the exception's type name
+/// in its <c>Data</c>) instead of propagating and aborting the whole health check run. Used internally
+/// by <see cref="HealthCheckProcessor"/> to wrap every check.
 /// </summary>
 internal class ExceptionHandlingHealthCheck : IHealthCheck
 {
@@ -23,8 +23,11 @@ internal class ExceptionHandlingHealthCheck : IHealthCheck
     }
 
     /// <summary>
-    /// Runs the wrapped check. If it throws, returns a failed result containing the exception's message
-    /// instead of letting the exception propagate.
+    /// Runs the wrapped check. If it throws, returns a failed result containing the exception's type
+    /// name instead of letting the exception propagate. Deliberately reports the type name, not the
+    /// message - exception messages can carry sensitive details (e.g. connection strings for some
+    /// ADO.NET providers), and this result can flow out to whatever calls the health check topic with
+    /// no built-in authorization.
     /// </summary>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
@@ -36,7 +39,7 @@ internal class ExceptionHandlingHealthCheck : IHealthCheck
         {
             return HealthCheckResult.CreateInstance(false, _inner.Type, new Dictionary<string, object>
             {
-                { "Exception", ex.Message }
+                { "Exception", ex.GetType().Name }
             });
         }
     }

@@ -65,7 +65,7 @@ public static class Extensions
                 httpRequest.Path == path)
             {
                 var result = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
-                resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic(topic), MessageHandlerDefinition.Empty(), result));
+                await resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic(topic), MessageHandlerDefinition.Empty(), result));
             }
             else
             {
@@ -74,4 +74,81 @@ public static class Extensions
         }));
     }
 
+    /// <summary>
+    /// Adds a Kubernetes-style liveness-check endpoint at <c>GET /livez</c>, using
+    /// <see cref="Constants.DefaultLivenessTopic"/>. See
+    /// <see cref="Benzene.HealthChecks.Extensions.UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>
+    /// for the liveness/readiness distinction.
+    /// </summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, params IHealthCheck[] healthChecks)
+            where TContext : IHttpContext
+    {
+        return app.UseLivenessCheck("/livez", healthChecks);
+    }
+
+    /// <summary>Same as <see cref="UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>, at a custom <paramref name="path"/> instead of the conventional <c>/livez</c>.</summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string path, params IHealthCheck[] healthChecks)
+            where TContext : IHttpContext
+    {
+        return app.UseLivenessCheck(path, x => x.AddHealthChecks(healthChecks));
+    }
+
+    /// <summary>Same as <see cref="UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>, configuring the checks to run via <paramref name="action"/>.</summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, Action<IHealthCheckBuilder> action)
+            where TContext : IHttpContext
+    {
+        return app.UseLivenessCheck("/livez", action);
+    }
+
+    /// <summary>Same as <see cref="UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, Action{IHealthCheckBuilder})"/>, at a custom <paramref name="path"/> instead of the conventional <c>/livez</c>.</summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string path, Action<IHealthCheckBuilder> action)
+            where TContext : IHttpContext
+    {
+        var builder = app.GetHealthCheckerBuilder();
+        action(builder);
+        return app.UseHealthCheck(Constants.DefaultLivenessTopic, "GET", path, builder);
+    }
+
+    /// <summary>
+    /// Adds a Kubernetes-style readiness-check endpoint at <c>GET /readyz</c>, using
+    /// <see cref="Constants.DefaultReadinessTopic"/>. See
+    /// <see cref="Benzene.HealthChecks.Extensions.UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>
+    /// for the liveness/readiness distinction.
+    /// </summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, params IHealthCheck[] healthChecks)
+            where TContext : IHttpContext
+    {
+        return app.UseReadinessCheck("/readyz", healthChecks);
+    }
+
+    /// <summary>Same as <see cref="UseReadinessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>, at a custom <paramref name="path"/> instead of the conventional <c>/readyz</c>.</summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string path, params IHealthCheck[] healthChecks)
+            where TContext : IHttpContext
+    {
+        return app.UseReadinessCheck(path, x => x.AddHealthChecks(healthChecks));
+    }
+
+    /// <summary>Same as <see cref="UseReadinessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>, configuring the checks to run via <paramref name="action"/>.</summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, Action<IHealthCheckBuilder> action)
+            where TContext : IHttpContext
+    {
+        return app.UseReadinessCheck("/readyz", action);
+    }
+
+    /// <summary>Same as <see cref="UseReadinessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, Action{IHealthCheckBuilder})"/>, at a custom <paramref name="path"/> instead of the conventional <c>/readyz</c>.</summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, string path, Action<IHealthCheckBuilder> action)
+            where TContext : IHttpContext
+    {
+        var builder = app.GetHealthCheckerBuilder();
+        action(builder);
+        return app.UseHealthCheck(Constants.DefaultReadinessTopic, "GET", path, builder);
+    }
 }

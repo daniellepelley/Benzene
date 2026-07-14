@@ -25,7 +25,9 @@ public class DatabaseConnectionHealthCheck<TDbContext> : IHealthCheck where TDbC
     /// <summary>
     /// Checks connectivity via <c>DbContext.Database.CanConnectAsync</c>. The result's
     /// <see cref="IHealthCheckResult.Data"/> includes <c>CanConnect</c> and <c>Error</c> (the
-    /// connection exception's message, if any).
+    /// connection exception's type name, if any - not its message, since some ADO.NET providers
+    /// include connection details such as server/credentials in exception messages, and this result
+    /// can flow out to whatever calls the health check topic with no built-in authorization).
     /// </summary>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
@@ -34,7 +36,7 @@ public class DatabaseConnectionHealthCheck<TDbContext> : IHealthCheck where TDbC
         return HealthCheckResult.CreateInstance(canConnect.Item1, Type, new Dictionary<string, object>
         {
             { "CanConnect", canConnect.Item1 },
-            { "Error", canConnect.Item2?.Message }
+            { "Error", canConnect.Item2?.GetType().Name }
         });
     }
 

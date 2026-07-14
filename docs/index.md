@@ -16,7 +16,10 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Correlation Ids](correlation-ids)
   - [Testing Benzene](testing-benzene)
   - [Health Checks](health-checks)
+  - [Kubernetes Health Checks](kubernetes-health-checks)
   - [Monitoring & Diagnostics](monitoring)
+  - [Sampling Strategies](sampling-strategies)
+  - [Privacy & Data Handling](privacy-and-data-handling)
 
 - **Cloud Providers**
   - **AWS**

@@ -606,7 +606,13 @@ rewritten since this document's last update to support the cross-platform
 5. ⚠️ AspNetContext too simple - only has HttpContext property (confirmed still true 2026-07-14)
 6. ⚠️ No Azure App Service specific features
 7. ⚠️ No Azure Container Apps integration
-8. ⚠️ No AKS/Kubernetes integration guidance
+8. ⚠️ No AKS/Kubernetes integration guidance — ⚠️ **partially addressed 2026-07-14**:
+   `docs/kubernetes-health-checks.md` covers the liveness/readiness probe wiring for `Benzene.AspNet.Core`
+   specifically (the natural AKS deployment path), including a working, verified example
+   `IHttpEndpointDefinition` registration and a full `livenessProbe`/`readinessProbe` Deployment YAML
+   snippet. Still missing: AKS-specific concerns beyond health probes (ACR image push, workload
+   identity, ingress/LoadBalancer configuration, autoscaling) — this remains a real gap for a full AKS
+   guide, just no longer a total blank on the health-probe half of it
 9. ⚠️ No Application Insights middleware
 10. ⚠️ No managed identity integration
 

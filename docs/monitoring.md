@@ -190,3 +190,7 @@ using var meterProvider = Sdk.CreateMeterProviderBuilder()
 `MeterProviderBuilder` — it registers no Benzene DI services, so it composes with any exporter or
 hosting integration (`OpenTelemetry.Extensions.Hosting`'s `AddOpenTelemetry()`, the console exporter,
 etc.) the same way any other `AddSource`/`AddMeter` call would.
+
+For guidance on configuring a `Sampler` (recorded/exported trace volume), see
+[Sampling Strategies](sampling-strategies). For what data ends up in your logs/traces and how to
+avoid capturing PII, see [Privacy & Data Handling](privacy-and-data-handling).

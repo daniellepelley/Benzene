@@ -301,6 +301,38 @@ the topic-based version does. ASP.NET Core doesn't currently have an equivalent 
 already resolved via routing before it reaches this middleware, so there's no raw path left to match
 on at this point in the pipeline).
 
+### Kubernetes-style liveness/readiness: `.UseLivenessCheck()` / `.UseReadinessCheck()`
+
+`.UseHealthCheck()` runs one undifferentiated set of checks. For Kubernetes (or any platform with a
+liveness-vs-readiness distinction), `Benzene.HealthChecks` also provides two purpose-built
+convenience methods — see [Kubernetes Health Checks](kubernetes-health-checks) for the full guide,
+including which checks belong in which and example probe YAML. Short version:
+
+```csharp
+// Benzene.HealthChecks — topic-based, every transport
+app.UseLivenessCheck(x => x.AddHealthCheck<ProcessResponsiveCheck>());
+app.UseReadinessCheck(x => x.AddHealthCheckFactory(new DatabaseHealthCheckFactory<MyDbContext>("...")));
+```
+
+Unlike `.UseHealthCheck()`, these do **not** also respond to `Constants.DefaultHealthCheckTopic` —
+each only matches its own topic (`Constants.DefaultLivenessTopic`/`DefaultReadinessTopic`), so
+registering both in the same pipeline doesn't have one silently shadow the other on a shared fallback
+topic.
+
+`Benzene.SelfHost.Http` and `Benzene.Aws.Lambda.ApiGateway` additionally expose HTTP-path versions,
+defaulting to the conventional Kubernetes probe paths:
+
+```csharp
+// Benzene.SelfHost.Http / Benzene.Aws.Lambda.ApiGateway
+app.UseLivenessCheck(checks);   // GET /livez
+app.UseReadinessCheck(checks);  // GET /readyz
+app.UseLivenessCheck("/custom/live/path", checks);  // path override
+```
+
+Both variants (topic-based and HTTP-path-based) run through the same `HealthCheckProcessor`, so an
+unhealthy result maps to HTTP 503 the same way `.UseHealthCheck()`'s does — see
+[HTTP status codes](#http-status-codes) below.
+
 ### gRPC (grpc.health.v1)
 
 Package: `Benzene.Grpc.AspNet`. This one is different in kind from everything above: instead of
@@ -368,6 +400,23 @@ would camelCase `Data`'s contents as well.
 
 If a check's `status` is `ok`/`warning`, `isHealthy` stays `true`; a single `failed` check flips the
 whole response to `false` even if every other check succeeded.
+
+### HTTP status codes
+
+Over an HTTP transport, the response's HTTP status code reflects `isHealthy`, not just its body:
+`200` when healthy, `503 Service Unavailable` when not (mapped by `DefaultHttpStatusCodeMapper`,
+same as everywhere else in Benzene). This matters because most health-check consumers — a
+Kubernetes HTTP probe, a load balancer target-health check — only look at the status code, not the
+response body, so a check whose body says `"isHealthy": false` but whose status code is still `200`
+would be silently treated as healthy by those consumers. `HealthCheckProcessor.PerformHealthChecksAsync`
+handles this for every `.UseHealthCheck()`/`.UseLivenessCheck()`/`.UseReadinessCheck()` variant, over
+every transport, with no extra configuration needed.
+
+`Data["Error"]`/`Data["Exception"]` entries (populated when a check fails with an exception, or
+times out) report the exception's *type name* (e.g. `"SqlException"`), not its message — some
+ADO.NET providers embed connection details in exception messages, and this response can flow out to
+whatever calls the health check with no built-in authorization. See
+[Privacy & Data Handling](privacy-and-data-handling) for the full reasoning.
 
 ### Result naming and deduplication
 

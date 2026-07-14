@@ -22,10 +22,17 @@ public static class HealthCheckProcessor
     /// </summary>
     /// <param name="topic">The topic the health checks were run for. Currently unused by this method itself, but accepted for callers that need to correlate the run with a topic.</param>
     /// <param name="healthChecks">The checks to run.</param>
-    /// <returns>A successful <c>IBenzeneResult</c> whose value is a <c>HealthCheckResponse</c> aggregating every check's outcome.</returns>
+    /// <returns>
+    /// An <c>IBenzeneResult</c> whose value is a <c>HealthCheckResponse</c> aggregating every check's
+    /// outcome, with status <see cref="BenzeneResultStatus.Ok"/> (HTTP 200 via the standard HTTP
+    /// status code mapper) when healthy or <see cref="BenzeneResultStatus.ServiceUnavailable"/> (HTTP
+    /// 503) when not - this is what makes the result usable by any health-check consumer that only
+    /// inspects the HTTP status code rather than parsing the response body, such as a Kubernetes HTTP
+    /// liveness/readiness probe or a load balancer target-health check.
+    /// </returns>
     public static async Task<IBenzeneResult> PerformHealthChecksAsync(string topic, IHealthCheck[] healthChecks)
     {
-        var runningHealthChecks = healthChecks.Select(x => (x.Type, 
+        var runningHealthChecks = healthChecks.Select(x => (x.Type,
             new TimeOutHealthCheck(new ExceptionHandlingHealthCheck(x)).ExecuteAsync())).ToArray();
         var results = await Task.WhenAll(runningHealthChecks.Select(x => x.Item2));
         var isHealthy = results.All(x => x.Status != HealthCheckStatus.Failed);
@@ -35,6 +42,8 @@ public static class HealthCheckProcessor
             x => healthCheckNamer.GetName(x.Item2.Result.Type),
             x => new HealthCheckResult(x.Item2.Result.Status, x.Item2.Result.Type, x.Item2.Result.Data)));
 
-        return BenzeneResult.Ok(message);
+        return isHealthy
+            ? BenzeneResult.Ok(message)
+            : BenzeneResult.Set(BenzeneResultStatus.ServiceUnavailable, message);
     }
 }

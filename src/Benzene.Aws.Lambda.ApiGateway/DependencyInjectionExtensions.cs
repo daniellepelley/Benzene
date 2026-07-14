@@ -144,13 +144,111 @@ public static class DependencyInjectionExtensions
                 context.ApiGatewayProxyRequest.Path == path)
             {
                 var result = await HealthCheckProcessor.PerformHealthChecksAsync(topic, builder.GetHealthChecks(resolver));
-                resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic(topic), MessageHandlerDefinition.Empty(), result));
+                await resultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic(topic), MessageHandlerDefinition.Empty(), result));
             }
             else
             {
                 await next();
             }
         }));
+    }
+
+    /// <summary>
+    /// Adds a Kubernetes-style liveness-check endpoint at <c>GET /livez</c>, using
+    /// <see cref="HealthChecks.Constants.DefaultLivenessTopic"/>. See
+    /// <see cref="Benzene.HealthChecks.Extensions.UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>
+    /// for the liveness/readiness distinction.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="healthChecks">The health checks to run.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseLivenessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, params IHealthCheck[] healthChecks)
+    {
+        return app.UseLivenessCheck("/livez", healthChecks);
+    }
+
+    /// <summary>Same as <see cref="UseLivenessCheck(IMiddlewarePipelineBuilder{ApiGatewayContext}, IHealthCheck[])"/>, at a custom <paramref name="path"/> instead of the conventional <c>/livez</c>.</summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="path">The HTTP path to respond on.</param>
+    /// <param name="healthChecks">The health checks to run.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseLivenessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string path, params IHealthCheck[] healthChecks)
+    {
+        return app.UseLivenessCheck(path, x => x.AddHealthChecks(healthChecks));
+    }
+
+    /// <summary>Same as <see cref="UseLivenessCheck(IMiddlewarePipelineBuilder{ApiGatewayContext}, IHealthCheck[])"/>, configuring the checks to run via <paramref name="action"/>.</summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="action">Configures the health checks to register.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseLivenessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, Action<IHealthCheckBuilder> action)
+    {
+        return app.UseLivenessCheck("/livez", action);
+    }
+
+    /// <summary>Same as <see cref="UseLivenessCheck(IMiddlewarePipelineBuilder{ApiGatewayContext}, Action{IHealthCheckBuilder})"/>, at a custom <paramref name="path"/> instead of the conventional <c>/livez</c>.</summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="path">The HTTP path to respond on.</param>
+    /// <param name="action">Configures the health checks to register.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseLivenessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string path, Action<IHealthCheckBuilder> action)
+    {
+        var builder = app.GetHealthCheckerBuilder();
+        action(builder);
+        return app.UseHealthCheck(HealthChecks.Constants.DefaultLivenessTopic, "GET", path, builder);
+    }
+
+    /// <summary>
+    /// Adds a Kubernetes-style readiness-check endpoint at <c>GET /readyz</c>, using
+    /// <see cref="HealthChecks.Constants.DefaultReadinessTopic"/>. See
+    /// <see cref="Benzene.HealthChecks.Extensions.UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>
+    /// for the liveness/readiness distinction.
+    /// </summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="healthChecks">The health checks to run.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseReadinessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, params IHealthCheck[] healthChecks)
+    {
+        return app.UseReadinessCheck("/readyz", healthChecks);
+    }
+
+    /// <summary>Same as <see cref="UseReadinessCheck(IMiddlewarePipelineBuilder{ApiGatewayContext}, IHealthCheck[])"/>, at a custom <paramref name="path"/> instead of the conventional <c>/readyz</c>.</summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="path">The HTTP path to respond on.</param>
+    /// <param name="healthChecks">The health checks to run.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseReadinessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string path, params IHealthCheck[] healthChecks)
+    {
+        return app.UseReadinessCheck(path, x => x.AddHealthChecks(healthChecks));
+    }
+
+    /// <summary>Same as <see cref="UseReadinessCheck(IMiddlewarePipelineBuilder{ApiGatewayContext}, IHealthCheck[])"/>, configuring the checks to run via <paramref name="action"/>.</summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="action">Configures the health checks to register.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseReadinessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, Action<IHealthCheckBuilder> action)
+    {
+        return app.UseReadinessCheck("/readyz", action);
+    }
+
+    /// <summary>Same as <see cref="UseReadinessCheck(IMiddlewarePipelineBuilder{ApiGatewayContext}, Action{IHealthCheckBuilder})"/>, at a custom <paramref name="path"/> instead of the conventional <c>/readyz</c>.</summary>
+    /// <param name="app">The pipeline builder to add the health check to.</param>
+    /// <param name="path">The HTTP path to respond on.</param>
+    /// <param name="action">Configures the health checks to register.</param>
+    /// <returns>The pipeline builder for method chaining.</returns>
+    public static IMiddlewarePipelineBuilder<ApiGatewayContext> UseReadinessCheck(
+        this IMiddlewarePipelineBuilder<ApiGatewayContext> app, string path, Action<IHealthCheckBuilder> action)
+    {
+        var builder = app.GetHealthCheckerBuilder();
+        action(builder);
+        return app.UseHealthCheck(HealthChecks.Constants.DefaultReadinessTopic, "GET", path, builder);
     }
 }
 

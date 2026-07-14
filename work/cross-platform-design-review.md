@@ -7,7 +7,8 @@ This review assesses the current design against that goal and proposes a target 
 > **2026-07-14 audit pass** — re-verified every claim in this document against the current codebase
 > (not against the two follow-on specs, though their findings are consistent with this pass:
 > `work/phase2-startup-unification-spec.md`, `work/phase2-azure-isolated-worker-spec.md`, both marked
-> done 2026-07-14). Headline result: **far more of this review's target design has shipped than the
+> done 2026-07-14; both specs have since been deleted as resolved — references to them throughout
+> this document now point at git history). Headline result: **far more of this review's target design has shipped than the
 > original phasing implied**, including two independent tracks the review explicitly called out as
 > parallelizable (§10: "The MEL rebase and the Activity/W3C work are independent of [the StartUp
 > unification] and can proceed in parallel") that turned out to be fully done too. Section-by-section
