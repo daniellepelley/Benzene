@@ -68,10 +68,10 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
             await next();
         }
 
-        AddCorsHeaders(context, httpRequest);
+        await AddCorsHeaders(context, httpRequest);
     }
 
-    private void AddCorsHeaders(TContext context, HttpRequest httpRequest)
+    private async Task AddCorsHeaders(TContext context, HttpRequest httpRequest)
     {
         if (httpRequest.Headers.Any(header => header.Key.ToLowerInvariant() == "origin"))
         {
@@ -120,7 +120,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
 
             if (httpRequest.Method == "options")
             {
-                _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), BenzeneResult.Ok()));
+                await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), BenzeneResult.Ok()));
             }
         }
     }

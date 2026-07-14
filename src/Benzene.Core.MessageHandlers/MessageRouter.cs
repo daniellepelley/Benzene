@@ -74,7 +74,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         if (string.IsNullOrEmpty(topic?.Id))
         {
             _logger.LogWarning("Topic is missing");
-            _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set( _defaultStatuses.ValidationError, "Topic is missing")));
+            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set( _defaultStatuses.ValidationError, "Topic is missing")));
             return;
         }
 
@@ -84,7 +84,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         if (messageHandlerDefinition == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
+            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
             return;
         }
 
@@ -92,13 +92,13 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         if (handler == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
+            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
             return;
         }
 
         _logger.LogDebug("Handler mapped to topic");
 
         var result = await handler.HandlerAsync(new RequestMapperThunk<TContext>(_requestMapper, context));
-        _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, result));
+        await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, result));
     }
 }

@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Benzene.HealthChecks.Http</AssemblyName>
     <RootNamespace>Benzene.HealthChecks.Http</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -39,7 +39,7 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
 
         if (body == null)
         {
-            _messageHandlerResultSetter.SetResultAsync(context,
+            await _messageHandlerResultSetter.SetResultAsync(context,
                 new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
             return;
         }
@@ -57,7 +57,7 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
         }
         else
         {
-            _messageHandlerResultSetter.SetResultAsync(context,
+            await _messageHandlerResultSetter.SetResultAsync(context,
                 new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
         }
     }
