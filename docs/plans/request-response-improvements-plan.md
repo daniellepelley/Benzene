@@ -137,10 +137,26 @@ release posture (pre-1.0, releasable-state-not-releasing, no `[Obsolete]` shims)
 
 ---
 
-## Phase 1 — Correctness + hot-path fixes (non-breaking)
+## Phase 1 — Correctness + hot-path fixes (non-breaking) — ✅ Done 2026-07-14
 
 All in `Benzene.Core.MessageHandlers`, `Benzene.Core.Messages`, and `Benzene.Xml`; no public
 API removed or reshaped.
+
+> **Implementation note:** two constructor signatures did change —
+> `MessageHandlerDefinitionLookUp` (now takes `MessageHandlerDefinitionIndex` instead of
+> `IEnumerable<IMessageHandlersFinder>`, since the aggregation/cache had to live in a
+> DI-shared singleton to actually help — a per-message-scoped instance re-aggregating on every
+> construction wouldn't) and `JsonSerializationResponseHandler`/`XmlSerializationResponseHandler`
+> (now DI-inject their serializer per C4, rather than each constructing their own). Both are
+> resolved via DI everywhere in-repo, so this is invisible to normal usage; flagged as
+> **BREAKING** in CHANGELOG.md for anyone constructing these types directly. P4's mapper-caching
+> item was scoped down to skip the `MapOnto` lowercasing-removal sub-point after confirming the
+> four transport packages' `IRequestEnricher` implementations depend on a **different**
+> `DictionaryUtils` class (`Benzene.Core.Helper`, not `Benzene.Core.MessageHandlers.Helper`) for
+> their own dictionary building — touching the shared method's case-insensitivity contract risked
+> a cross-package regression for a benefit that only applies to `EnrichingRequestMapper`'s own,
+> already-optimized-via-fast-path accumulator; `MapOnto` still gained a one-lowercase-per-key
+> (not up to three) fix.
 
 1. **R1 media types** — add `MediaType` helper (`Benzene.Core.Messages/Helper/MediaType.cs`)
    with `Matches(string headerValue, string mediaType)`; use it in

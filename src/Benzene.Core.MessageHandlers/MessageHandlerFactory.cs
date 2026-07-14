@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Messages;
@@ -15,12 +17,16 @@ namespace Benzene.Core.MessageHandlers;
 /// </summary>
 /// <remarks>
 /// Since the definition's request/response types are only known at runtime (as <see cref="Type"/>
-/// values), <see cref="Create"/> uses reflection to invoke the generic
+/// values), <see cref="Create"/> invokes the generic
 /// <see cref="CreateMessageHandlerByType{TMessageHandler, TRequest, TResponse}"/> method with the
-/// definition's concrete type arguments.
+/// definition's concrete type arguments via a compiled delegate, cached per distinct
+/// (handler, request, response) type triple in <see cref="_dispatcherCache"/> — the reflection cost
+/// (<c>MakeGenericMethod</c> + building the delegate) is paid once per triple, not once per message,
+/// since the definition set is static after startup.
 /// </remarks>
 public class MessageHandlerFactory : IMessageHandlerFactory
 {
+    private static readonly ConcurrentDictionary<(Type HandlerType, Type RequestType, Type ResponseType), Func<MessageHandlerFactory, ITopic, IMessageHandler?>> _dispatcherCache = new();
     private readonly IMessageHandlerWrapper _messageHandlerWrapper;
     private readonly IServiceResolver _serviceResolver;
     private readonly ILoggerFactory _loggerFactory;
@@ -55,14 +61,32 @@ public class MessageHandlerFactory : IMessageHandlerFactory
 
     private IMessageHandler CreateMessageHandler(ITopic topic, Type messageHandlerType, Type requestType, Type responseType)
     {
-        var method = GetType().GetMethod("CreateMessageHandlerByType");
+        var dispatcher = _dispatcherCache.GetOrAdd((messageHandlerType, requestType, responseType), BuildDispatcher);
+        return dispatcher(this, topic);
+    }
+
+    /// <summary>
+    /// Builds a compiled delegate equivalent to
+    /// <c>(factory, topic) => factory.CreateMessageHandlerByType&lt;THandler, TRequest, TResponse&gt;(topic)</c>
+    /// for a specific type triple, so subsequent dispatches for that triple avoid repeating
+    /// <c>MakeGenericMethod</c> and reflective <c>Invoke</c>.
+    /// </summary>
+    private static Func<MessageHandlerFactory, ITopic, IMessageHandler?> BuildDispatcher(
+        (Type HandlerType, Type RequestType, Type ResponseType) key)
+    {
+        var method = typeof(MessageHandlerFactory).GetMethod(nameof(CreateMessageHandlerByType));
         if (method == null)
         {
             throw new BenzeneException("Method CreateMessageHandlerByType is missing");
         }
 
-        var genericMethod = method.MakeGenericMethod(messageHandlerType, requestType, responseType);
-        return genericMethod.Invoke(this, new object[]{ topic }) as IMessageHandler;
+        var genericMethod = method.MakeGenericMethod(key.HandlerType, key.RequestType, key.ResponseType);
+
+        var factoryParameter = Expression.Parameter(typeof(MessageHandlerFactory), "factory");
+        var topicParameter = Expression.Parameter(typeof(ITopic), "topic");
+        var call = Expression.Call(factoryParameter, genericMethod, topicParameter);
+
+        return Expression.Lambda<Func<MessageHandlerFactory, ITopic, IMessageHandler?>>(call, factoryParameter, topicParameter).Compile();
     }
 
     /// <summary>

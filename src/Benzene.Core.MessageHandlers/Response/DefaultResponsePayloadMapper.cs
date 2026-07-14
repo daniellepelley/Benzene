@@ -29,7 +29,6 @@ public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCo
     public string Map(TContext context, IMessageHandlerResult messageHandlerResult, ISerializer serializer)
     {
         if (messageHandlerResult.MessageHandlerDefinition == null)
-
         {
             return null;
         }
@@ -50,16 +49,12 @@ public class DefaultResponsePayloadMapper<TContext> : IResponsePayloadMapper<TCo
         {
             return null;
         }
-           // if (payload is IRawJsonMessage rawJsonMessage)
-            // {
-                // return CamelCaseJson(rawJsonMessage.Json);
-            // }
 
-            if (payload is IRawStringMessage rawStringMessage)
-            {
-                return rawStringMessage.Content;
-            }
+        if (payload is IRawStringMessage rawStringMessage)
+        {
+            return rawStringMessage.Content;
+        }
 
-            return serializer.Serialize(type, payload);
+        return serializer.Serialize(type, payload);
     }
 }

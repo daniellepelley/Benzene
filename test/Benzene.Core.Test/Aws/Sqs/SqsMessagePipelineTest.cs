@@ -99,6 +99,45 @@ public class SqsMessagePipelineTest
         Assert.Empty(batchResponse.BatchItemFailures);
     }
 
+    [Fact]
+    public async Task Send_Xml_WithCharsetParameter_StillSelectsXml()
+    {
+        // Regression test: a "content-type" carrying parameters (as real HTTP traffic routinely does)
+        // must still match the XML serializer option rather than silently falling back to JSON and
+        // failing to deserialize the XML body.
+        var mockExampleService = new Mock<IExampleService>();
+
+        bool? isSuccessful = null;
+
+        var host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .AddTransient<ILogger<MessageRouter<SqsMessageContext>>>(_ => NullLogger<MessageRouter<SqsMessageContext>>.Instance)
+                .AddTransient<ILogger>(_ => NullLogger.Instance)
+                .AddTransient(_ => mockExampleService.Object)
+                .UsingBenzene(x => x
+                    .AddBenzene()
+                    .AddXml()
+                    .AddSqs())
+                )
+            .Configure(app => app
+                .UseSqs(sqs => sqs
+                    .OnResponse("Check Response", context =>
+                    {
+                        isSuccessful = context.IsSuccessful;
+                    }).UseMessageHandlers()
+            )
+        ).BuildHost();
+
+        var request = MessageBuilder
+            .Create(Defaults.Topic, new ExampleRequestPayload { Name = "some-name"})
+            .WithHeader("content-type", "application/xml; charset=utf-8")
+            .AsSqs(new XmlSerializer());
+
+        SQSBatchResponse batchResponse = await host.SendSqsAsync(request);
+        Assert.True(isSuccessful);
+        Assert.Empty(batchResponse.BatchItemFailures);
+    }
+
 
     [Fact]
     public async Task Send_SerializationError()

@@ -6,21 +6,25 @@ namespace Benzene.Core.MessageHandlers.Response;
 
 /// <summary>
 /// <see cref="ISerializationResponseHandler{TContext}"/> that writes the response body as JSON
-/// (using a fresh <see cref="JsonSerializer"/>, independent of whatever <c>ISerializer</c> is
-/// registered for the request), unless a body has already been set by an earlier response handler.
+/// (using the process's shared <see cref="JsonSerializer"/> singleton, independent of whatever
+/// <c>ISerializer</c> is registered for the request), unless a body has already been set by an
+/// earlier response handler.
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type the response is written to.</typeparam>
 public class JsonSerializationResponseHandler<TContext> : ISerializationResponseHandler<TContext> where TContext : class
 {
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
+    private readonly JsonSerializer _jsonSerializer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonSerializationResponseHandler{TContext}"/> class.
     /// </summary>
     /// <param name="benzeneResponseAdapter">Reads/writes the body and content type on the transport context.</param>
-    public JsonSerializationResponseHandler(IBenzeneResponseAdapter<TContext> benzeneResponseAdapter)
+    /// <param name="jsonSerializer">The shared JSON serializer used to produce the response body.</param>
+    public JsonSerializationResponseHandler(IBenzeneResponseAdapter<TContext> benzeneResponseAdapter, JsonSerializer jsonSerializer)
     {
         _benzeneResponseAdapter = benzeneResponseAdapter;
+        _jsonSerializer = jsonSerializer;
     }
 
     /// <inheritdoc />
@@ -31,7 +35,7 @@ public class JsonSerializationResponseHandler<TContext> : ISerializationResponse
             return;
         }
 
-        _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(new JsonSerializer(), messageHandlerResult));
+        _benzeneResponseAdapter.SetBody(context, bodySerializer.Serialize(_jsonSerializer, messageHandlerResult));
         _benzeneResponseAdapter.SetContentType(context, "application/json");
     }
 }
