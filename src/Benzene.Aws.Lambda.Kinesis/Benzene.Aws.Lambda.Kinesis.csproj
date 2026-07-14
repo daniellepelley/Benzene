@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Benzene.Aws.Lambda.Kinesis</AssemblyName>
+    <RootNamespace>Benzene.Aws.Lambda.Kinesis</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -14,6 +14,12 @@ public static class MessageBuilderExtensions
     /// into AttributeValue format and placed in <c>NewImage</c> (or <c>OldImage</c> for
     /// <c>REMOVE</c> events).
     /// </summary>
+    /// <remarks>
+    /// Drive the event through <c>DynamoDbApplication</c> directly (or an
+    /// <c>AwsEventStreamContext</c> pipeline serialized with the Lambda System.Text.Json
+    /// serializer). The Newtonsoft-based <c>AwsLambdaBenzeneTestHost.SendEventAsync(object)</c>
+    /// path cannot round-trip the raw <c>JsonElement</c> images this event carries.
+    /// </remarks>
     public static DynamoDbEvent AsDynamoDb<T>(this IMessageBuilder<T> source, int numberOfRecords = 1)
     {
         var topicParts = (source.Topic ?? "benzene-test").Split(':');
@@ -41,8 +47,8 @@ public static class MessageBuilderExtensions
                     AwsRegion = "eu-west-1",
                     Dynamodb = new DynamoDbStreamData
                     {
-                        NewImage = eventName == "REMOVE" ? default : imageElement,
-                        OldImage = eventName == "REMOVE" ? imageElement : default,
+                        NewImage = eventName == "REMOVE" ? null : (JsonElement?)imageElement,
+                        OldImage = eventName == "REMOVE" ? imageElement : (JsonElement?)null,
                         SequenceNumber = sequence.ToString(),
                         StreamViewType = "NEW_AND_OLD_IMAGES"
                     }

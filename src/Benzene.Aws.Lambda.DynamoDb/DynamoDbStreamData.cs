@@ -7,28 +7,31 @@ namespace Benzene.Aws.Lambda.DynamoDb;
 /// The <c>dynamodb</c> object of a stream record. <see cref="Keys"/>, <see cref="NewImage"/>, and
 /// <see cref="OldImage"/> are kept as raw <see cref="JsonElement"/>s in DynamoDB AttributeValue
 /// format (<c>{"Id": {"N": "101"}}</c>) — <see cref="DynamoDbAttributeValueConverter"/> unmarshals
-/// them into plain JSON for handlers. An absent image has
-/// <see cref="JsonElement.ValueKind"/> == <see cref="JsonValueKind.Undefined"/>.
+/// them into plain JSON for handlers. An absent image is null (and is omitted when the event is
+/// re-serialized — an undefined <see cref="JsonElement"/> cannot be written by System.Text.Json).
 /// </summary>
 public class DynamoDbStreamData
 {
     /// <summary>The primary key attributes of the changed item, in AttributeValue format.</summary>
     [JsonPropertyName("Keys")]
-    public JsonElement Keys { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? Keys { get; set; }
 
     /// <summary>
     /// The item after the change, in AttributeValue format. Present for <c>INSERT</c>/<c>MODIFY</c>
     /// when the stream view includes new images.
     /// </summary>
     [JsonPropertyName("NewImage")]
-    public JsonElement NewImage { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? NewImage { get; set; }
 
     /// <summary>
     /// The item before the change, in AttributeValue format. Present for <c>MODIFY</c>/<c>REMOVE</c>
     /// when the stream view includes old images.
     /// </summary>
     [JsonPropertyName("OldImage")]
-    public JsonElement OldImage { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? OldImage { get; set; }
 
     /// <summary>
     /// The record's sequence number within its shard — the identifier reported back to Lambda for

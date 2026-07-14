@@ -7,6 +7,7 @@ using Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
+using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.Kafka;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
@@ -95,6 +96,15 @@ public class StartUp : AwsLambdaStartUp
             .UseTimer("kafka-application")
             .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router.UseFluentValidation())
+        );
+
+        // EventBridge routes by the event's detail-type; detail is JSON, so no XML mapping needed.
+        app.UseEventBridge(eventBridgeApp => eventBridgeApp
+            .UseTimer("event-bridge-application")
+            .UseHealthCheck(healthCheckTopic, healthChecks)
+            .UseMessageHandlers(router => router
+                .UseFluentValidation()
+            )
         );
 
         app.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp

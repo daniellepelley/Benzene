@@ -68,7 +68,7 @@ public class DynamoDbGettersTest
     {
         var record = CreateRecord();
         record.EventName = "REMOVE";
-        record.Dynamodb.NewImage = default;
+        record.Dynamodb.NewImage = null;
         record.Dynamodb.OldImage = Parse("{\"Name\":{\"S\":\"old-name\"}}");
 
         var body = new DynamoDbMessageBodyGetter().GetBody(CreateContext(record));
@@ -80,8 +80,8 @@ public class DynamoDbGettersTest
     public void Body_KeysOnlyView_FallsBackToKeys()
     {
         var record = CreateRecord();
-        record.Dynamodb.NewImage = default;
-        record.Dynamodb.OldImage = default;
+        record.Dynamodb.NewImage = null;
+        record.Dynamodb.OldImage = null;
         record.Dynamodb.StreamViewType = "KEYS_ONLY";
 
         var body = new DynamoDbMessageBodyGetter().GetBody(CreateContext(record));
