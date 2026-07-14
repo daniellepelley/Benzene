@@ -259,7 +259,8 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 
 **CONSERVATIVE APPROACH (STRONGLY RECOMMENDED):**
 Keep all Azure packages at **0.9.x-preview** until well after core 1.0 release, then:
-- Fix critical dependency issues (ASP.NET Core 2.1 on .NET 10)
+- ~~Fix critical dependency issues (ASP.NET Core 2.1 on .NET 10)~~ ✅ DONE 2026-07-12,
+  and the related Microsoft.Azure.WebJobs issue is also moot as of 2026-07-14
 - Ship Azure packages at **1.0.0** only after addressing blockers above
 - Azure is LESS mature than AWS - needs more foundational work
 - Allow core packages to stabilize first (Benzene 1.0 dependency)
@@ -1131,17 +1132,17 @@ offsets the Core coverage gap discovery)
 **Critical Priority:**
 1. ~~⚠️ ASP.NET Core 2.1.x on .NET 10 - MAJOR compatibility issue~~ ✅ RESOLVED 2026-07-12
 2. ~~⚠️ Hard-coded DLL path in Benzene.Azure.Function.AspNet.csproj~~ ✅ RESOLVED 2026-07-12
-3. ~~⚠️ TestHttpRequest in production package~~ ✅ RESOLVED 2026-07-12
-4. ⚠️ Old Microsoft.Azure.WebJobs (3.0.39)
-5. ~~⚠️ No package version for Benzene.AspNet.Core~~ ✅ RESOLVED 2026-07-12
+3. ~~⚠️ TestHttpRequest in production package~~ ✅ RESOLVED 2026-07-12 (a second instance in `Benzene.Azure.Function.Core` found and fixed 2026-07-14)
+4. ~~⚠️ Old Microsoft.Azure.WebJobs (3.0.39)~~ ✅ MOOT 2026-07-14 — package no longer used, replaced by isolated-worker `Microsoft.Azure.Functions.Worker.*`
+5. ~~⚠️ No package version for Benzene.AspNet.Core~~ ✅ RESOLVED 2026-07-12 (superseded 2026-07-14 by centralized `version.txt`)
 
 **High Priority:**
-1. Extensive commented-out code in multiple files
+1. ⚠️ Extensive commented-out code in multiple files — `BenzeneExtensions.cs` (Benzene.AspNet.Core) resolved via rewrite 2026-07-14, but `Extensions.cs` (Benzene.Azure.Function.AspNet) and `AspNetRequestMapper.cs` (Benzene.AspNet.Core, newly found 2026-07-14) still have commented-out code
 2. ~~"DirectMessageLambdaHandler" using AWS terminology in Azure package~~ ✅ RESOLVED
    2026-07-12 (renamed to `BenzeneMessageEventHubHandler`)
 3. AspNetContext implementations too simple
 4. Exception messages not actionable
-5. No test coverage at all
+5. ~~No test coverage at all~~ ❌ WRONG, corrected 2026-07-12/2026-07-14 — 5 of 6 packages have real coverage (80-91%); `Benzene.Azure.Function.Core`'s new host-builder glue at 48.2% is the one real remaining gap
 
 **Medium Priority:**
 1. Inconsistent Azure SDK versions
@@ -1923,8 +1924,9 @@ All Azure packages reference:
 
 1. ~~**Fix ASP.NET Core Dependencies** - CRITICAL (40-50h)~~ ✅ MOSTLY COMPLETE
    2026-07-12 (~2h actual — `FrameworkReference` swap, not a rewrite). Remaining:
-   Azure SDK version consistency + `Microsoft.Azure.WebJobs` bump, not part of the
-   ASP.NET Core fix itself (~5-10h)
+   Azure SDK version consistency (~5-10h); the `Microsoft.Azure.WebJobs` bump this
+   line originally flagged is moot as of 2026-07-14 — the package was removed
+   entirely, not version-bumped
 2. ~~**XML Documentation** - All packages (50-70h)~~ ✅ COMPLETE 2026-07-12
 3. **Unit Tests** - 80%+ coverage — RE-SCOPED 2026-07-14 (the 2026-07-12 re-scope was
    itself wrong): `Benzene.AspNet.Core` does NOT need this — re-measured at 81.8%
@@ -2219,11 +2221,19 @@ originally claimed, and the specific shape of the gap changed 2026-07-14:
 5. Publish first beta: Benzene.Azure.* 1.0.0-beta.1
 
 **Decision Points:**
-1. **ASP.NET Core Fix:** Framework refs OR upgrade to 8.0+ packages?
+1. ~~**ASP.NET Core Fix:** Framework refs OR upgrade to 8.0+ packages?~~ ✅ DECIDED
+   AND DONE 2026-07-12 — `FrameworkReference` to `Microsoft.AspNetCore.App`
 2. **1.0 Timing:** Ship with core 1.0 OR wait 6-9 months?
 3. **Hosting Focus:** Functions-first OR equal focus on App Service/Container Apps?
-4. **Test Strategy:** Azurite-only OR also real Azure sandbox?
-5. **Azure Services Priority:** Service Bus first OR complete Functions triggers?
+4. **Test Strategy:** Azurite-only OR also real Azure sandbox? — still open; note
+   that `BenzeneTestHost`-based in-memory testing (no emulator needed) is now
+   documented in `docs/azure-functions.md` as a third option alongside Azurite/real
+   sandbox, found 2026-07-14
+5. ~~**Azure Services Priority:** Service Bus first OR complete Functions
+   triggers?~~ ✅ ANSWERED BY EVENTS — Service Bus shipped (found 2026-07-14); the
+   remaining Functions trigger types (Blob, Queue, Cosmos DB, Event Grid, Timer) are
+   still unbuilt, so this decision point is now "which of those is next," not
+   "Service Bus vs. Functions triggers"
 
 ---
 
@@ -2234,4 +2244,15 @@ originally claimed, and the specific shape of the gap changed 2026-07-14:
 
 **Status:** DRAFT - Awaiting Approval
 
-**Key Recommendation:** Azure packages need MORE work than AWS packages before 1.0 despite having fewer packages. The critical dependency issues MUST be resolved before any 1.0 consideration. Estimate 6-9 months post-core-1.0 for Azure 1.0 release.
+**Key Recommendation:** Azure packages need MORE work than AWS packages before 1.0
+despite having fewer packages. ~~The critical dependency issues MUST be resolved
+before any 1.0 consideration.~~ The critical dependency issues (ASP.NET Core 2.1.x,
+Microsoft.Azure.WebJobs) are now both resolved as of this 2026-07-14 audit; remaining
+blockers are narrative documentation (ARM/Bicep/Terraform, Managed Identity,
+Application Insights, RBAC), the newly-found `Benzene.Azure.Function.Core` coverage
+gap, and Azurite/emulator integration tests. Estimate 6-9 months post-core-1.0 for
+Azure 1.0 release is likely still in the right range, though the gap to AWS (~97%
+ready) narrowed further than the original estimate assumed, then widened slightly again once the
+`Benzene.Azure.Function.Core` coverage gap was found — net effect is this document's
+existing timeline estimate remains reasonable, not something this audit found grounds
+to shorten or lengthen materially.

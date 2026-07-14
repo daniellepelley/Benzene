@@ -6,7 +6,9 @@
 **Status:** DRAFT for Review
 
 > **2026-07-14 changelog** — audit pass against actual code (this document was
-> written 2026-07-11, before three major commits landed). In order of
+> written 2026-07-11, before a series of major commits landed on 2026-07-12
+> and 2026-07-13 — packaging hygiene, the logging-stack replacement, and the
+> Diagnostics/OpenTelemetry "Checkpoint A-F" rework). In order of
 > significance:
 > 1. **Six of the twelve packages this roadmap tracks no longer exist.**
 >    `Benzene.Microsoft.Logging`, `Benzene.Serilog`, and `Benzene.Log4Net` were
@@ -892,35 +894,44 @@ is recommended before using this number for planning.
 
 **Goal:** Release observability packages at 1.0.0 in phases after core Benzene 1.0
 
+> **2026-07-14 audit note:** The ✅ marks throughout this month-by-month plan were originally
+> used as a bullet-list style choice for *planned* work, not as completion indicators — none of
+> this had actually happened when the document was written. Real progress has since landed
+> against some of these items out of order (e.g. OpenTelemetry modernization ahead of a
+> "Month 3" milestone; Log4Net's decision resolved without a formal "keep or deprecate" review).
+> Corrected inline below; items that are now genuinely moot (the packages they target no longer
+> exist) are struck through rather than marked complete, since "complete" would misrepresent
+> what happened (deletion, not delivery).
+
 ### Q3 2026 (Months 1-3)
 
 **Month 1: Foundation & Core**
-- ✅ Fix all missing PackageVersions
-- ✅ Fix dependency issues (XRay, OpenTelemetry)
-- ✅ Complete Benzene.Diagnostics 1.0
-- ✅ Complete Benzene.HealthChecks.Core 1.0
-- ✅ Set up comprehensive test infrastructure
-- ✅ Begin XML documentation effort
-- Deliverable: Diagnostics and HealthChecks.Core at 1.0
+- ~~Fix all missing PackageVersions~~ ✅ actually done, but via centralized versioning (2026-07-12), not a per-package fix
+- ~~Fix dependency issues (XRay, OpenTelemetry)~~ ✅ actually done — XRay deleted, OpenTelemetry updated to 1.16.0
+- ⚠️ Complete Benzene.Diagnostics 1.0 — substantial progress (Activity rewrite, W3C trace context, metrics, enrichment), but XML docs/benchmarks/sampling still open, so not "complete"
+- ⚠️ Complete Benzene.HealthChecks.Core 1.0 — largely untouched since this roadmap was written
+- ✅ Set up comprehensive test infrastructure — real, in active use
+- ⚠️ Begin XML documentation effort — done for Diagnostics' newer files and OpenTelemetry; not started for HealthChecks.Core
+- Deliverable: Diagnostics and HealthChecks.Core at 1.0 — not reached; Diagnostics is closer than HealthChecks.Core
 
 **Month 2: Logging & Health Checks**
-- ✅ Complete logging packages (Microsoft.Logging, Serilog)
-- ✅ Complete Benzene.HealthChecks implementations
-- ✅ Correlation ID integration across logging
-- ✅ Unit and integration tests
-- ✅ Documentation for logging and health checks
-- ⚠️ **DECISION:** Keep or deprecate Log4Net
-- Deliverable: Logging packages at 1.0, Health Check packages at 1.0
+- ~~Complete logging packages (Microsoft.Logging, Serilog)~~ — **not completed; deleted instead** (2026-07-12). The underlying goal (Benzene working well with Serilog/Microsoft.Logging) is arguably better served by the plain-`ILogger<T>` approach that replaced them, but no "1.0" of either package was ever shipped
+- ⚠️ Complete Benzene.HealthChecks implementations — largely untouched since this roadmap was written
+- ✅ Correlation ID integration across logging — achieved differently: `UseBenzeneEnrichment()`/`ILogger.BeginScope` provide this across all logging, not per-provider
+- ⚠️ Unit and integration tests — real coverage for Diagnostics/OpenTelemetry/core HealthChecks; none for HealthChecks.Http/.EntityFramework
+- ✅ Documentation for logging — `docs/monitoring.md` + `docs/migration-alpha-to-1.0.md` + `docs/cookbooks/structured-logging-serilog.md`, all accurate and current; health checks documentation not equivalently improved
+- ✅ **DECISION:** Keep or deprecate Log4Net — resolved by deletion (2026-07-12), more decisive than either original option
+- Deliverable: Logging packages at 1.0, Health Check packages at 1.0 — logging packages don't exist to reach 1.0; Health Check packages not reached
 
 **Month 3: Tracing & Telemetry**
-- ✅ Modernize OpenTelemetry (DI, metrics, logging)
-- ✅ Complete Datadog, Zipkin integrations
-- ✅ Improve Aws.XRay (segments, subsegments, annotations)
-- ✅ Correlation ID integration for tracing
-- ✅ Performance benchmarks for all tracing providers
-- ✅ Privacy and security documentation
-- ✅ Beta release (1.0.0-rc.1)
-- Deliverable: All tracing packages at 1.0 RC
+- ⚠️ Modernize OpenTelemetry (DI, metrics, logging) — DI and metrics done; OTel logging integration still open
+- ~~Complete Datadog, Zipkin integrations~~ — **not completed; deleted instead** (2026-07-13), superseded by OTel exporters
+- ~~Improve Aws.XRay (segments, subsegments, annotations)~~ — **not completed; deleted instead** (2026-07-13), superseded by OTel exporters (which do provide segment/annotation-equivalent capability through `Activity` tags, just not as a dedicated X-Ray package)
+- ✅ Correlation ID integration for tracing — achieved via W3C trace context propagation
+- Performance benchmarks for all tracing providers — not done, no benchmark project exists
+- Privacy and security documentation — not done
+- Beta release (1.0.0-rc.1) — not done, packages remain at 0.0.x
+- Deliverable: All tracing packages at 1.0 RC — not reached; scope is now just OpenTelemetry (the other three tracing packages no longer exist to reach any release stage)
 
 ### Q4 2026 (Months 4-6)
 
@@ -2090,26 +2101,30 @@ Disadvantage: Performance/overhead testing critical, privacy concerns unique —
 
 ## Next Steps
 
+> **2026-07-14 audit note:** Immediate Actions items 3-4 and Decision Points 1, 3 below are
+> resolved/moot as of this pass — kept visible with corrections rather than removed, per this
+> document's own historical-record convention.
+
 **Immediate Actions (Week 1):**
 1. Review this roadmap with stakeholders
 2. Prioritize P0 features
-3. **CRITICAL:** Add all missing PackageVersions to csproj files
-4. Fix XRay dependency issues (remove SQS, update System.Text.Encodings.Web)
-5. Begin XML documentation (Diagnostics, HealthChecks.Core first)
+3. ~~**CRITICAL:** Add all missing PackageVersions to csproj files~~ ✅ MOOT — centralized versioning (`Directory.Build.props` + `version.txt`), done 2026-07-12
+4. ~~Fix XRay dependency issues (remove SQS, update System.Text.Encodings.Web)~~ ✅ MOOT — `Benzene.Aws.XRay` deleted entirely 2026-07-13
+5. Begin XML documentation (Diagnostics, HealthChecks.Core first) — ⚠️ partially done for Diagnostics; not started for HealthChecks.Core
 
 **Short-Term (Month 1):**
-1. Complete all P0 items for Diagnostics and HealthChecks.Core
-2. Modernize OpenTelemetry (DI, metrics, logging)
-3. Create comprehensive test plan
-4. Start performance benchmarking
-5. Create project board with issues for all roadmap items
+1. Complete all P0 items for Diagnostics and HealthChecks.Core — significant progress on Diagnostics (Activity rewrite, W3C trace context, metrics, enrichment); HealthChecks.Core largely untouched
+2. ~~Modernize OpenTelemetry (DI, metrics, logging)~~ ✅ LARGELY DONE — DI and metrics resolved; logging integration still open
+3. Create comprehensive test plan — real tests now exist for Diagnostics/OpenTelemetry/core HealthChecks, but no evidence of a documented "test plan" as an artifact
+4. Start performance benchmarking — still not started, no benchmark project found
+5. Create project board with issues for all roadmap items — out of scope for this docs-only audit to verify
 
 **Decision Points:**
-1. **Log4Net:** Keep at 1.0 OR mark as community-supported?
-2. **Phased Release:** Ship observability with core 1.0 OR phase it (diagnostics first, then logging, then tracing)?
-3. **OpenTelemetry:** Target 1.10 OR update to latest (1.11+)?
-4. **Health Checks:** Integrate with Microsoft.Extensions.Diagnostics.HealthChecks OR remain independent?
-5. **Metrics:** Include in 1.0 OR defer to 1.1?
+1. ~~**Log4Net:** Keep at 1.0 OR mark as community-supported?~~ ✅ DECIDED AND EXECUTED — deleted outright 2026-07-12, more decisive than either original option
+2. **Phased Release:** Ship observability with core 1.0 OR phase it (diagnostics first, then logging, then tracing)? — still an open decision; the "logging" phase is now moot regardless of which option is chosen, since there's no separate logging package to phase
+3. ~~**OpenTelemetry:** Target 1.10 OR update to latest (1.11+)?~~ ✅ DECIDED AND EXECUTED — updated to 1.16.0 (current stable as of this audit)
+4. **Health Checks:** Integrate with Microsoft.Extensions.Diagnostics.HealthChecks OR remain independent? — still an open decision, unchanged
+5. **Metrics:** Include in 1.0 OR defer to 1.1? — effectively decided by implementation: real metrics support (`UseBenzeneMetrics()`) already exists in current source, so this reads as "included" rather than deferred, though no explicit 1.0-scope decision was documented
 
 ---
 
@@ -2120,4 +2135,16 @@ Disadvantage: Performance/overhead testing critical, privacy concerns unique —
 
 **Status:** DRAFT - Awaiting Approval
 
-**Key Recommendation:** Observability packages are in good foundational shape but need significant work on documentation, testing, and performance validation. Phased release approach recommended: Foundation packages (Diagnostics, HealthChecks.Core) with core 1.0, then logging packages 1-2 months later, then tracing packages 3-4 months later. This reduces risk and allows proper attention to performance, privacy, and standards compliance for each category.
+**Key Recommendation (2026-07-14 update):** Observability packages are considerably further
+along than this document's original assessment. Six of the twelve originally-tracked packages
+were deleted (not fixed) as part of a broader consolidation onto standards-based mechanisms
+(`ILogger<T>` for logging, `System.Diagnostics.Activity`/OpenTelemetry for tracing), which
+resolves most of the "phased release across diagnostics → logging → tracing" concern this
+document originally raised — there is no separate logging phase left to plan. The 6 remaining
+packages still need real work before 1.0: XML documentation (0% in the 4 HealthChecks
+packages, partial in Diagnostics), performance/overhead benchmarks (none exist anywhere),
+sampling/privacy/GDPR documentation (none exists), and test coverage specifically for
+`Benzene.HealthChecks.Http`/`.EntityFramework` (currently zero). The original phased-release
+recommendation — foundation packages (Diagnostics, HealthChecks.Core) with core 1.0, then the
+rest 1-4 months later — remains reasonable, just narrower in scope now that there's one tracing
+package instead of four and zero logging packages instead of three.
