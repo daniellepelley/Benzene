@@ -83,6 +83,7 @@ field) to and from this flat string→string dictionary.
 | `traceparent`, `tracestate` | both | W3C Trace Context, verbatim per the W3C spec. This is Benzene's cross-service correlation contract. |
 | `x-correlation-id` | outbound | Legacy correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound (the legacy inbound pickup middleware was removed pre-1.0); honoring a partner's correlation header is application middleware, not a framework contract. |
 | `topic` | inbound (queue transports) | On transports where the envelope isn't used but native attributes exist (SQS/SNS message attributes), the topic travels as an attribute named `topic`. |
+| `_benzeneHeaders` | both (EventBridge) | On transports with no native per-message attributes (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. |
 | `benzene-status` | outbound (gRPC trailer) | See §4.2. |
 | `content-type` | outbound | Response content type where the transport has no native slot for it. |
 
