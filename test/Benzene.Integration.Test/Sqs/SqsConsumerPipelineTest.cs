@@ -18,7 +18,8 @@ using Xunit;
 
 namespace Benzene.Integration.Test.Sqs;
 
-public class SqsConsumerPipelineTest : IClassFixture<SqsFixture>
+[Collection(DockerEmulatorCollection.Name)]
+public class SqsConsumerPipelineTest
 {
     [Fact]
     public async Task Send()
@@ -33,7 +34,10 @@ public class SqsConsumerPipelineTest : IClassFixture<SqsFixture>
                 ServiceURL = "http://localhost:4566",
             });
 
-        await sqsClient.CreateQueueAsync(new CreateQueueRequest("test-queue"));
+        // LocalStack takes a few seconds to become ready after the container starts; retry the
+        // initial call rather than relying on a fixed sleep (same pattern as the other
+        // emulator-backed fixtures in this project).
+        await CreateQueueWithRetryAsync(sqsClient);
 
         var sqsClientFactory = new SqsClientFactory(sqsClient);
 
@@ -77,6 +81,31 @@ public class SqsConsumerPipelineTest : IClassFixture<SqsFixture>
 
         Assert.Equal(1, list.Count);
         Assert.Contains("foo", list[0]);
+    }
+
+    private static async Task CreateQueueWithRetryAsync(AmazonSQSClient sqsClient)
+    {
+        // 180s, not 60s: on a cold CI runner this fixture's container may still be settling by
+        // the time this test's own retry window starts, since collection-fixture construction for
+        // every emulator in DockerEmulatorCollection happens up front, before any test runs.
+        var deadline = DateTime.UtcNow.AddSeconds(180);
+        Exception? lastException = null;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                await sqsClient.CreateQueueAsync(new CreateQueueRequest("test-queue"));
+                return;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        throw new TimeoutException("Timed out waiting for the LocalStack SQS emulator to become ready.", lastException);
     }
 }
 

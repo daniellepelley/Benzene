@@ -262,6 +262,23 @@ func azure functionapp publish my-function-app
 Once deployed, `GET` the printed URL at `/api/hello/world` (or just `/hello/world`, depending on
 your `routePrefix` setting) to confirm the handler responds.
 
+### Deploying with Bicep
+
+For a repeatable, declarative deployment instead of the `az` commands above, see
+[`examples/Azure/Benzene.Example.Azure/main.bicep`](../examples/Azure/Benzene.Example.Azure/main.bicep) -
+it provisions the Storage Account, workspace-based Application Insights resource, Consumption
+hosting plan, and Function App an HTTP-triggered example like this one needs:
+
+```bash
+az group create --name my-function-rg --location eastus
+az deployment group create --resource-group my-function-rg \
+  --template-file examples/Azure/Benzene.Example.Azure/main.bicep \
+  --parameters functionAppName=my-benzene-function
+```
+
+The template only covers the HTTP trigger path - add your own resources for Event Hub, Kafka, or
+Service Bus namespaces if you wire up those triggers too (see the next section).
+
 ## Event Hub, Kafka, and Service Bus triggers
 
 Benzene provides specialized middleware for other Azure Functions trigger types, each
@@ -445,6 +462,32 @@ With both in place, `IBenzeneInvocation.InvocationId` resolves to the isolated w
 `FunctionContext.InvocationId` for the duration of each invocation, and `GetFeature<FunctionContext>()`
 returns the native `FunctionContext`.
 
+### Application Insights
+
+`Microsoft.ApplicationInsights.WorkerService` plus `Microsoft.Azure.Functions.Worker.ApplicationInsights`
+(both referenced by `examples/Azure/Benzene.Example.Azure`) is the standard way to get Functions-host
+telemetry — cold starts, invocation duration, dependency calls — into Application Insights, wired in
+`Program.cs`:
+
+```csharp
+.ConfigureServices(services =>
+{
+    services.AddApplicationInsightsTelemetryWorkerService();
+    services.ConfigureFunctionsApplicationInsights();
+})
+```
+
+That alone doesn't correlate Benzene's own topic/handler/invocationId onto the logs and traces it
+collects — for that, add `AddDiagnostics()` in `ConfigureServices` and `UseBenzeneEnrichment()` in
+`Configure` (both shown wired up in the example project). Since Application Insights' `ILogger`
+provider reads `BeginScope` values into `customDimensions` automatically, no Application-Insights-specific
+code is required beyond those two calls. See
+[Logging to Application Insights](cookbooks/logging-application-insights) for the full recipe
+(including KQL queries against `customDimensions`) and
+[Distributed Tracing with OpenTelemetry](cookbooks/distributed-tracing-opentelemetry) if you'd rather
+export Benzene's `Activity` spans to Application Insights via OTLP instead of (or alongside) the
+classic SDK shown here.
+
 ## Testing
 
 Benzene ships a unified test host (`Benzene.Testing`) that builds an in-memory app straight from
@@ -490,6 +533,29 @@ var request = MessageBuilder.Create("hello:world", new HelloWorldMessage { Name 
 
 await app.HandleEventHub(request);
 ```
+
+### Real broker/emulator integration tests
+
+The tests above dispatch a hand-built event/message directly into the pipeline — fast, but they
+don't exercise the real Azure SDK client, wire protocol, or (for Event Hubs/Kafka/Service Bus)
+partitioning and delivery semantics. `test/Benzene.Integration.Test` covers that gap with a real
+produce/consume round trip against the actual Docker-emulator images for each transport, driving
+Benzene's real production pipeline on the receiving end (not a hand-built event):
+
+- **Event Hubs** (`EventHub/EventHubConsumerPipelineTest.cs`) and **Kafka**
+  (`Kafka/KafkaConsumerPipelineTest.cs`) both run against the same
+  `mcr.microsoft.com/azure-messaging/eventhubs-emulator` container — it exposes both the native
+  AMQP endpoint and a Kafka-compatible endpoint (port 9092) on the same instance. The two tests
+  share that one container via `EventHubEmulatorCollection` (an xunit collection fixture) and use
+  separate entities (`eh1` vs `kafka1`) so their events don't cross-contaminate.
+- **Service Bus** (`ServiceBus/ServiceBusConsumerPipelineTest.cs`) runs against
+  `mcr.microsoft.com/azure-messaging/servicebus-emulator`, which requires a SQL Server backend
+  container — its ports are remapped (`5673`/`5301` instead of the emulator's defaults `5672`/`5300`)
+  so it can run alongside the Event Hubs emulator without a host port conflict; the Service Bus
+  SDK's emulator connection string supports specifying that non-default port explicitly.
+
+These require a working Docker daemon and aren't run as part of the main `Benzene.Core.Test` suite
+— see the `azure-integration-tests` job in `.github/workflows/build-benzene.yml`.
 
 ## Troubleshooting
 

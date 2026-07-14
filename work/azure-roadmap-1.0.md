@@ -1,6 +1,6 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.6
+**Document Version:** 1.8
 **Last Updated:** 2026-07-14
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
@@ -74,6 +74,75 @@ Later entries supersede earlier ones where they overlap.
     already been deleted by other work merged into `main` before this pass. Verified:
     full solution and both Azure/ASP.NET example solutions build with 0 errors, 728
     tests pass (724 in `Benzene.Core.Test`, plus the gRPC and conformance suites).
+- **2026-07-14 — ARM/Bicep templates and Application Insights (this session).** Closed
+  the last two genuinely-open P0 items.
+  - **ARM/Bicep Templates:** added `examples/Azure/Benzene.Example.Azure/main.bicep`
+    (Storage Account, workspace-based Application Insights, Consumption `Microsoft.Web/serverfarms`,
+    Linux isolated-worker Function App), mirroring the AWS SAM template's pattern and
+    "hand-checked, not deployed" disclaimer — neither `az` nor `bicep` CLI is available
+    in this environment to run `az bicep build`/`what-if`. Linked from a new "Deploying
+    with Bicep" subsection in `docs/azure-functions.md`. Scoped to the HTTP trigger path
+    the example actually uses, not a template for every possible trigger type.
+  - **Application Insights Integration:** re-scoped after finding the "middleware" ask
+    was mostly already satisfied by pre-existing docs
+    (`docs/cookbooks/logging-application-insights.md`,
+    `docs/cookbooks/distributed-tracing-opentelemetry.md`'s App-Insights-via-OTLP
+    section) — another case of this document assuming a total gap where most of the
+    work already existed, same pattern as the Service Bus discovery above. Building a
+    bespoke Application-Insights-specific Benzene package was rejected as inconsistent
+    with `Benzene.OpenTelemetry`'s deliberately exporter-agnostic design (see its
+    `CLAUDE.md`). What genuinely was missing: the example project didn't demonstrate
+    correlating Benzene's own diagnostics with the Application Insights logging it
+    already references. Closed by wiring `AddDiagnostics()` (in `DependenciesBuilder.cs`)
+    and `UseBenzeneEnrichment()` (in `StartUp.cs`) into
+    `examples/Azure/Benzene.Example.Azure`, via a `ProjectReference` to the existing
+    `Benzene.Diagnostics` package (no new NuGet dependency — the App Insights packages
+    were already referenced), plus a new "Application Insights" subsection in
+    `docs/azure-functions.md` cross-linking both cookbooks.
+  - Verified: `examples/Azure/Benzene.Example.Azure.sln` and the main `Benzene.sln` both
+    build with 0 errors (pre-existing warnings only).
+  - Not attempted this pass: item #7's remaining Integration Tests scope (extending the
+    Azurite/emulator pattern to Service Bus/Kafka) — the Docker daemon was unreachable
+    in this environment (`docker ps` fails to connect), so any new Docker Compose-based
+    test could be written but not executed/verified here.
+- **2026-07-14 — Integration Tests: Service Bus and Kafka (same-day follow-up).** Closed
+  the item flagged as "not attempted this pass" above.
+  - Added `test/Benzene.Integration.Test/ServiceBus/ServiceBusConsumerPipelineTest.cs`
+    (real send/receive against `mcr.microsoft.com/azure-messaging/servicebus-emulator` +
+    its required SQL Server backend, via a new `servicebus-docker-compose.yaml`/
+    `servicebus-emulator-config.json`/`ServiceBusFixture.cs`) and
+    `test/Benzene.Integration.Test/Kafka/KafkaConsumerPipelineTest.cs` (real produce/consume
+    against the *existing* Event Hubs emulator's Kafka-compatible endpoint on port 9092 —
+    no new container needed, just a second entity, `kafka1`, added to
+    `eventhub-emulator-config.json` alongside `eh1`).
+  - Both new tests drive Benzene's real production pipeline on the receiving end
+    (`app.HandleServiceBusMessages(...)`/`app.HandleKafkaEvents(...)`), same shape as the
+    existing `EventHubConsumerPipelineTest.cs`, not a hand-built event.
+  - Added `EventHubEmulatorCollection` (an xunit `ICollectionFixture`) so the Event Hubs
+    and Kafka tests share one running emulator container instead of each spinning up their
+    own and racing to bind the same fixed host ports; converted
+    `EventHubConsumerPipelineTest` from `IClassFixture<EventHubFixture>` to this shared
+    collection as part of the same change. The Service Bus emulator's ports were remapped
+    to 5673/5301 (from its defaults 5672/5300) so it can run alongside the Event Hubs
+    emulator without colliding — confirmed via web research that the Service Bus SDK's
+    emulator connection string supports specifying a non-default port explicitly.
+  - User-approved addition of `Azure.Messaging.ServiceBus` and `Confluent.Kafka` as direct
+    `PackageReference`s to `Benzene.Integration.Test.csproj` (both already used elsewhere
+    in the repo at these exact pinned versions) before writing any test code, per the
+    NuGet policy.
+  - **Separate gap found and fixed along the way:** `Benzene.Integration.Test` was never
+    wired into any CI workflow at all (confirmed via `git log` — true since the Event Hubs
+    emulator test was first added, well before this session), unlike the parallel
+    `Benzene.Aws.Tests` project, which has its own `aws-integration-tests` CI job. Added a
+    mirrored `azure-integration-tests` job to `.github/workflows/build-benzene.yml`.
+  - **Disclosure:** this sandbox's Docker daemon is still unreachable
+    (`docker ps` fails to connect), so none of the new or existing tests in
+    `Benzene.Integration.Test` were actually executed here. Verified instead by: a clean
+    `dotnet build` of the project (0 errors), `dotnet test --list-tests` confirming all
+    four tests (including the two new ones) are discovered correctly, a full solution
+    build (0 errors), the full `Benzene.Core.Test` suite still passing (750/750), and
+    valid-YAML/valid-JSON checks on every new compose/config/workflow file. The new CI job
+    is the first place these will actually run, against a real Docker daemon.
 
 ---
 
@@ -122,12 +191,15 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - ~~Old Microsoft.Azure.WebJobs dependency~~ ✅ RESOLVED — the whole WebJobs-based model was replaced by the isolated-worker `Microsoft.Azure.Functions.Worker.*` packages (confirmed 2026-07-14, repo-wide grep returns nothing)
 - ~~Inconsistent Azure SDK versions~~ ✅ RESOLVED — re-verified 2026-07-14, all Azure
   packages already reference identical dependency versions
-- Missing deployment templates (ARM/Bicep/Terraform) — confirmed still absent 2026-07-14
-- No Application Insights integration examples — confirmed still absent 2026-07-14
+- ~~Missing deployment templates (ARM/Bicep/Terraform)~~ ⚠️ **ARM/Bicep RESOLVED
+  2026-07-14** — `examples/Azure/Benzene.Example.Azure/main.bicep`; Terraform is still
+  genuinely absent (not attempted, P1 item)
+- ~~No Application Insights integration examples~~ ✅ RESOLVED 2026-07-14 — see Document
+  History; mostly pre-existing cookbook docs plus now-demonstrated example wiring
 - Missing Azure-specific middleware (authentication, Managed Identity) — confirmed
   still absent 2026-07-14; CORS is NOT part of this gap (see Document History)
 - No performance benchmarks or cold-start metrics
-- ~~Minimal documentation (only basic ASP.NET Core guide)~~ ⚠️ PARTIALLY RESOLVED 2026-07-14 — a full `docs/azure-functions.md` getting-started guide plus `docs/cookbooks/event-hub-processing.md` and `docs/cookbooks/service-bus-handling.md` now exist; ARM/Bicep/Terraform, Managed Identity, Key Vault, Application Insights, and RBAC content is still genuinely missing from all of them
+- ~~Minimal documentation (only basic ASP.NET Core guide)~~ ⚠️ PARTIALLY RESOLVED 2026-07-14 — a full `docs/azure-functions.md` getting-started guide plus `docs/cookbooks/event-hub-processing.md` and `docs/cookbooks/service-bus-handling.md` now exist, plus a new "Application Insights" subsection and "Deploying with Bicep" subsection added this same day; Terraform, Managed Identity, and Key Vault content is still genuinely missing
 - No Azure App Service, Container Apps, or AKS integration guidance
 - Missing RBAC and Managed Identity patterns
 
@@ -1900,33 +1972,75 @@ All Azure packages reference:
 4. ~~**Move Test Code** - TestHelpers separation (5-8h)~~ ✅ COMPLETE 2026-07-12
 5. ~~**Getting Started Guides** - All adapters (25-30h)~~ ✅ COMPLETE 2026-07-13 —
    `docs/azure-functions.md` and `docs/asp-net-core.md`
-6. **ARM/Bicep Templates** - Deployment examples (20-25h)
-7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **PARTIALLY
-   COMPLETE 2026-07-14** — the Azurite/emulator half is done
-   (`EventHubConsumerPipelineTest.cs`, real Docker-based Azurite + Event Hubs
-   Emulator, real produce/consume through Benzene's own production pipeline). The
-   Functions-test-host half (running the real `func start` process) is not
-   achievable in this environment: `azure-functions-core-tools`'s post-install
-   binary download is blocked by network policy, a hard external constraint, not a
-   scoping choice. **~10-15h remaining** to extend the same pattern to
-   `Benzene.Azure.Function.ServiceBus`/`.Kafka`, or to attempt the Functions-host
-   route in an environment where Core Tools can actually install
+6. ~~**ARM/Bicep Templates** - Deployment examples (20-25h)~~ ✅ COMPLETE 2026-07-14 —
+   `examples/Azure/Benzene.Example.Azure/main.bicep` (Storage Account, workspace-based
+   Application Insights, Consumption hosting plan, Function App), linked from a new
+   "Deploying with Bicep" subsection in `docs/azure-functions.md`. Hand-checked, not run
+   through `az bicep build`/deployed (no `az`/`bicep` CLI available in this environment)
+   — same disclaimer style as the AWS SAM template. Only covers the HTTP trigger path the
+   example actually uses; Event Hub/Kafka/Service Bus resources are deliberately not
+   included (documented as a follow-up for anyone wiring those triggers)
+7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **EMULATOR HALF
+   NOW COMPLETE 2026-07-14** — extended to Service Bus and Kafka in a follow-up pass the
+   same day. `KafkaConsumerPipelineTest.cs` reuses the *same* Event Hubs emulator
+   container as `EventHubConsumerPipelineTest.cs` (it exposes a Kafka-compatible endpoint
+   on port 9092 alongside its native AMQP port) — added a `kafka1` entity to
+   `eventhub-emulator-config.json` alongside the existing `eh1`, and a shared
+   `EventHubEmulatorCollection` xunit collection fixture so both tests reuse one running
+   container instead of racing to bind the same host ports. `ServiceBusConsumerPipelineTest.cs`
+   runs against `mcr.microsoft.com/azure-messaging/servicebus-emulator` (a new
+   `servicebus-docker-compose.yaml` + `servicebus-emulator-config.json`, with a required
+   SQL Server backend container) — its host ports are remapped to 5673/5301 so it can run
+   alongside the Event Hubs emulator's default 5672/5300 without a port conflict; verified
+   via web research that the Service Bus SDK's emulator connection string supports a
+   non-default port explicitly. Required adding `Azure.Messaging.ServiceBus` and
+   `Confluent.Kafka` as direct `PackageReference`s to `Benzene.Integration.Test.csproj`
+   (both already used elsewhere in the repo at these exact pinned versions) — user-approved
+   before proceeding, per the NuGet policy. Also found and fixed a separate, real gap while
+   doing this: `Benzene.Integration.Test` was never wired into CI at all (confirmed via
+   `git log` — true since the Event Hubs emulator test was first added) unlike the
+   parallel `Benzene.Aws.Tests` project, which has its own `aws-integration-tests` CI job.
+   Added a mirrored `azure-integration-tests` job to
+   `.github/workflows/build-benzene.yml`. **Still not achievable in any environment tried
+   so far:** the Functions-test-host half (running the real `func start` process) —
+   `azure-functions-core-tools`'s post-install binary download is blocked by network
+   policy in this sandbox, a hard external constraint, not a scoping choice. **Disclosure:**
+   none of this pass's new tests were actually executed here either — this sandbox's
+   Docker daemon is unreachable (`docker ps` fails to connect), so the new Service
+   Bus/Kafka tests are verified by clean build + `dotnet test --list-tests` discovery and
+   close adherence to the already-proven `EventHubConsumerPipelineTest.cs` pattern, not by
+   a real run. The new `azure-integration-tests` CI job is the first place they'll actually
+   execute, on a GitHub-hosted runner with a real Docker daemon
 8. ~~**Code Quality Fixes**~~ ✅ COMPLETE 2026-07-14 — the `BenzeneMessageLambdaHandler`
    → `BenzeneMessageEventHubHandler` rename was done 2026-07-12; the commented-out dead
    code removal and both file/class mismatches (`ApiGatewayHttpRequestAdapter.cs` →
    `AspNetHttpRequestAdapter.cs`, `AspNetHeadersMapper.cs` →
    `AspNetMessageHeadersGetter.cs`) are done 2026-07-14
-9. **Application Insights Integration** - Middleware (15-20h)
+9. ~~**Application Insights Integration** - Middleware (15-20h)~~ ✅ COMPLETE 2026-07-14 —
+   re-scoped after finding most of the "middleware" ask already existed as documentation
+   (`docs/cookbooks/logging-application-insights.md` and
+   `docs/cookbooks/distributed-tracing-opentelemetry.md`'s Application Insights/OTLP
+   section, both pre-dating this pass). A bespoke Benzene-specific App-Insights package
+   would duplicate `Benzene.OpenTelemetry`'s deliberately exporter-agnostic design, so no
+   new package/dependency was added. What was actually missing: the example project
+   itself didn't demonstrate the wiring. Closed by adding `AddDiagnostics()` +
+   `UseBenzeneEnrichment()` to `examples/Azure/Benzene.Example.Azure` (project reference
+   to the existing `Benzene.Diagnostics` package, no new NuGet dependency — App Insights
+   packages were already referenced) alongside its existing
+   `AddApplicationInsightsTelemetryWorkerService()` wiring, plus a new "Application
+   Insights" subsection in `docs/azure-functions.md` cross-linking both cookbooks
 10. ~~**Migration Guide** - 0.x to 1.0 (10-12h)~~ ✅ COMPLETE 2026-07-13 —
     `docs/migration-alpha-to-1.0.md`'s Azure Functions package-rename + isolated-worker
     section
 
-**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ **~35-45 hours
-remaining** (2026-07-14: Unit Tests, Azure SDK consistency, and Code Quality Fixes are
-now all fully resolved; Integration Tests re-scoped from 30-40h to ~10-15h remaining
-now that the Azurite/emulator half is done — the remaining scope is #6 ARM/Bicep
-Templates, #7 Integration Tests' Functions-host-blocked remainder, and #9 Application
-Insights)
+**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ ~~35-45 hours~~
+~~10-15 hours~~ **effectively zero hours remaining that are achievable outside a
+network-unrestricted environment** (2026-07-14: ARM/Bicep Templates, Application Insights
+Integration, and the emulator half of Integration Tests — including its Service Bus/Kafka
+extension, added in a same-day follow-up — are all now resolved. The one genuinely open
+sliver, the Functions-test-host half of Integration Tests, is blocked by
+`azure-functions-core-tools`'s network-restricted post-install step in every environment
+tried so far, not by remaining scope or effort)
 
 ### Should Have for 1.0 (P1)
 

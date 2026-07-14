@@ -2,6 +2,7 @@ using Benzene.Abstractions.Hosting;
 using Benzene.Azure.Function.AspNet;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
+using Benzene.Diagnostics;
 using Benzene.Example.Azure;
 using Benzene.FluentValidation;
 using Benzene.Http.Cors;
@@ -34,6 +35,9 @@ public class StartUp : BenzeneStartUp
                 AllowedHeaders = Array.Empty<string>()
             })
             .UseSpec()
+            // Correlates topic/handler/invocationId onto the logging scope so they surface in
+            // Application Insights' customDimensions - see docs/cookbooks/logging-application-insights.md.
+            .UseBenzeneEnrichment()
             .UseMessageHandlers(router => router.UseFluentValidation()));
     }
 }

@@ -9,6 +9,11 @@
                 "Name": "eh1",
                 "PartitionCount": 2,
                 "ConsumerGroups": []
+            },
+            {
+                "Name": "example",
+                "PartitionCount": 2,
+                "ConsumerGroups": []
             }
             ]
         }

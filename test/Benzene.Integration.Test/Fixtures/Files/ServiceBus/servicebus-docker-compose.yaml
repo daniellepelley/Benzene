@@ -1,0 +1,33 @@
+services:
+  servicebus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    volumes:
+      - ./servicebus-emulator-config.json:/ServiceBus_Emulator/ConfigFiles/Config.json
+    ports:
+      # Remapped from the emulator's defaults (5672/5300) so this can run alongside the Event Hubs
+      # emulator (eventhub-docker-compose.yaml), which uses those same default ports. The Service
+      # Bus SDK's emulator connection string supports a non-default port explicitly
+      # (Endpoint=sb://localhost:5673;...UseDevelopmentEmulator=true;).
+      - 5673:5672
+      - 5301:5300
+    environment:
+      SQL_SERVER: mssql
+      MSSQL_SA_PASSWORD: Benzene_Test_Pwd1!
+      ACCEPT_EULA: Y
+    depends_on:
+      - mssql
+    networks:
+      sb-emulator:
+        aliases:
+          - sb-emulator
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: Benzene_Test_Pwd1!
+    networks:
+      sb-emulator:
+        aliases:
+          - mssql
+networks:
+  sb-emulator:
