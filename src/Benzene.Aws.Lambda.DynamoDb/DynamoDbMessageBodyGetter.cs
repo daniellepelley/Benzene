@@ -27,11 +27,11 @@ public class DynamoDbMessageBodyGetter : IMessageBodyGetter<DynamoDbRecordContex
         return image.HasValue ? DynamoDbAttributeValueConverter.ToJson(image.Value) : null;
     }
 
-    private static JsonElement? FirstObject(params JsonElement[] candidates)
+    private static JsonElement? FirstObject(params JsonElement?[] candidates)
     {
         foreach (var candidate in candidates)
         {
-            if (candidate.ValueKind == JsonValueKind.Object)
+            if (candidate.HasValue && candidate.Value.ValueKind == JsonValueKind.Object)
             {
                 return candidate;
             }
