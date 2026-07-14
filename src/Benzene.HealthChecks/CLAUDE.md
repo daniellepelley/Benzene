@@ -3,12 +3,14 @@
 ## What this package does
 Message-handler middleware that runs a registered set of `Benzene.HealthChecks.Core` health checks
 and reports the aggregated outcome. Wires into a Benzene middleware pipeline via `.UseHealthCheck(...)`
-on a matching *message topic* (e.g. `BenzeneMessage`/HTTP-over-message-handlers), not a dedicated
-ASP.NET Core route or HTTP-endpoint attribute - there is no built-in `/health` route, no HTTP status
-code mapping (200/503), and no separate readiness/liveness distinction in this package. An HTTP
-transport that maps message-handler results to HTTP responses (see e.g. `Benzene.AspNet.Core`) is
-what would turn this middleware's result into an actual HTTP response with a status code; this
-package itself only produces the result.
+(or the Kubernetes-style `.UseLivenessCheck(...)`/`.UseReadinessCheck(...)`) on a matching *message
+topic* (e.g. `BenzeneMessage`/HTTP-over-message-handlers), not a dedicated ASP.NET Core route or
+HTTP-endpoint attribute - there is no built-in `/health` route and no HTTP-endpoint-attribute
+discovery in this package itself. An HTTP transport that maps message-handler results to HTTP
+responses (see e.g. `Benzene.AspNet.Core`) is what turns this middleware's result into an actual HTTP
+response - and that mapping DOES reflect health status in the HTTP status code (200 healthy, 503
+unhealthy, via `HealthCheckProcessor`), not just the JSON body. See `docs/kubernetes-health-checks.md`
+for the full Kubernetes wiring guide.
 
 ## Key types/interfaces
 
@@ -18,6 +20,11 @@ package itself only produces the result.
   message whose topic matches `topic` or `Constants.DefaultHealthCheckTopic` ("healthcheck"), runs
   every registered check and sets the aggregated `HealthCheckResponse` as the message result; other
   topics fall through to `next()` unchanged
+- `.UseLivenessCheck(...)` / `.UseReadinessCheck(...)` - same 3 overload shapes, but respond ONLY to
+  `Constants.DefaultLivenessTopic`/`DefaultReadinessTopic` ("liveness"/"readiness") - deliberately do
+  NOT also match `DefaultHealthCheckTopic`, so registering both in one pipeline doesn't have one
+  silently shadow the other on a shared fallback topic. Share the same underlying middleware
+  (`UseHealthCheckMiddleware`, private) as `.UseHealthCheck(...)`.
 - `HealthCheckBuilder : IHealthCheckBuilder` - collects health checks (DI-resolved types, inline
   factory functions) and, via `IHealthCheckFinder`, DI-registered `IHealthCheck` implementations
 - `IHealthCheckFinder`/`HealthCheckFinder` - resolves every `IHealthCheck` registered directly in DI
@@ -52,5 +59,9 @@ package itself only produces the result.
   `HealthCheckStatus.Failed` - a `Warning` result does not make the whole response unhealthy
 - Every check gets a 10-second timeout and exception isolation automatically; individual
   `IHealthCheck` implementations don't need to implement either themselves
-- Responds to `Constants.DefaultHealthCheckTopic` ("healthcheck") in addition to whatever topic is
-  passed to `.UseHealthCheck(...)`
+- `.UseHealthCheck(topic, ...)` responds to `Constants.DefaultHealthCheckTopic` ("healthcheck") in
+  addition to whatever topic is passed; `.UseLivenessCheck`/`.UseReadinessCheck` do not
+- `HealthCheckProcessor.PerformHealthChecksAsync` maps the aggregate result to
+  `BenzeneResultStatus.Ok`/`ServiceUnavailable` (HTTP 200/503 via the standard status code mapper),
+  not just an `isHealthy` body field - this matters for any consumer (Kubernetes probes, load
+  balancer target-health checks) that only inspects the status code

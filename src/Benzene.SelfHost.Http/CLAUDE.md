@@ -10,6 +10,18 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
 - HTTP context adapter for HttpListener
 - HTTP server lifecycle management
 
+### Health checks (`Extensions.cs`)
+- `.UseHealthCheck(method, path, ...)` - matches on raw HTTP method + path (before topic resolution),
+  same shape as `Benzene.Aws.Lambda.ApiGateway`'s equivalent
+- `.UseLivenessCheck(...)` / `.UseReadinessCheck(...)` - Kubernetes-style convenience wrappers,
+  defaulting to `GET /livez`/`GET /readyz` (path overridable); see `docs/kubernetes-health-checks.md`
+- **No test coverage exists for this package** (topic-based or HTTP-path-based) - `SelfHostHttpContext`
+  wraps a real `System.Net.HttpListenerContext`, a sealed BCL type with no public constructor, so unit
+  testing it requires a real listener bound to a real port rather than a fake context object; this has
+  never been set up in this repo. The new liveness/readiness methods here are thin wrappers over the
+  pre-existing (also untested) `.UseHealthCheck(method, path, builder)` overload - verified by clean
+  compile and by direct reading, not by a runtime test.
+
 ## When to use this package
 - When you need HTTP endpoints in console apps
 - For integration testing with real HTTP without ASP.NET Core

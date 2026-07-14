@@ -30,6 +30,17 @@ AWS API Gateway Lambda integration for Benzene. Processes API Gateway events (RE
 - `ApiGatewayContextCorsMiddleware` - CORS middleware for API Gateway
 - CORS extension methods
 
+### Health checks (`DependencyInjectionExtensions.cs`)
+- `.UseHealthCheck(method, path, ...)` - matches on raw HTTP method + path, verified via
+  `ApiGatewayLivenessReadinessTest`/`ApiGatewayMessagePipelineTest`
+- `.UseLivenessCheck(...)` / `.UseReadinessCheck(...)` - Kubernetes-style convenience wrappers,
+  defaulting to `GET /livez`/`GET /readyz` (path overridable); see `docs/kubernetes-health-checks.md`.
+  Note: this package has its own local `Constants` class (with its own `DefaultHealthCheckTopic`,
+  a separate string constant from `Benzene.HealthChecks.Constants.DefaultHealthCheckTopic` that
+  happens to share the same value) - the liveness/readiness topic constants are NOT duplicated here,
+  they're referenced as `Benzene.HealthChecks.Constants.DefaultLivenessTopic`/`DefaultReadinessTopic`
+  explicitly qualified to avoid the two `Constants` types colliding.
+
 ### Other
 - `ApiGatewayRegistrations` - Registers API Gateway services
 - Extension methods for configuration

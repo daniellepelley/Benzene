@@ -681,27 +681,31 @@ test above is picked up
 
 **Issues (2026-07-14 re-verification — confirmed against current `HealthCheckProcessor.cs`/`TimeOutHealthCheck.cs`):**
 1. ~~❌ **Missing PackageVersion in csproj**~~ ✅ MOOT — centralized versioning
-2. ❌ No XML documentation — still true, 0/14 files
+2. ✅ **RESOLVED 2026-07-14** — No XML documentation — all 14 files documented, 0 CS1591 on clean rebuild
 3. ⚠️ HealthCheckProcessor.PerformHealthChecksAsync has topic parameter but doesn't use it — **still true**, verified: `topic` is accepted but never referenced in the method body
 4. ⚠️ No graceful degradation (fails if any check fails) — still true
-5. ⚠️ No separate readiness vs liveness endpoints — still true (this package's own `CLAUDE.md` describes readiness/liveness endpoints and a standard `/health` HTTP endpoint, but no such HTTP endpoint or readiness/liveness split exists in the actual source — the `CLAUDE.md` appears to be describing an aspiration, not current behavior; flagged here since it wasn't something the original roadmap authors could have known but is directly relevant to this exact 1.0 requirement)
+5. ✅ **RESOLVED 2026-07-14** — No separate readiness vs liveness endpoints. `Benzene.HealthChecks.Extensions.UseLivenessCheck`/`UseReadinessCheck` now exist (topic-based, every transport, responding only to `Constants.DefaultLivenessTopic`/`DefaultReadinessTopic`), with HTTP-path convenience wrappers in `Benzene.SelfHost.Http`/`Benzene.Aws.Lambda.ApiGateway` defaulting to the conventional `/livez`/`/readyz` paths. While implementing this, also found and fixed a real bug that would have made HTTP-based Kubernetes probes non-functional even with the split: `HealthCheckProcessor.PerformHealthChecksAsync` always returned HTTP 200 regardless of `isHealthy` — now returns 503 when unhealthy. Full guide: `docs/kubernetes-health-checks.md`. This package's `CLAUDE.md` no longer describes an aspiration — it's now accurate (also fixed the `/health` HTTP-endpoint overclaim it separately had).
 6. ⚠️ TimeOutHealthCheck has hard-coded timeout (needs documentation) — **still true**, verified: `Task.Delay(10000)` is a magic number in `TimeOutHealthCheck.cs`, not configurable (unlike the analogous `WaitTimeSeconds` fix made configurable in `Benzene.Aws.Sqs`'s `SqsConsumerConfig` per the AWS roadmap's 2026-07-12 changelog — no equivalent fix landed here)
 7. ⚠️ No caching for health check results — still true
 8. ⚠️ No progress reporting for long-running checks — still true
 
 **1.0 Requirements:**
 - [x] ~~**CRITICAL:** Add PackageVersion to csproj~~ MOOT — centralized versioning
-- [ ] Add comprehensive XML documentation
-- [ ] Fix or document unused topic parameter
+- [x] Add comprehensive XML documentation — done 2026-07-14
+- [ ] Fix or document unused topic parameter — documented (XML doc now notes it), not fixed
 - [ ] Add configurable health threshold (some failures OK)
-- [ ] Add readiness vs liveness endpoint support
-- [ ] Document timeout configuration
+- [x] Add readiness vs liveness endpoint support — done 2026-07-14, `UseLivenessCheck`/`UseReadinessCheck`
+- [ ] Document timeout configuration — the 10s hardcoded timeout is documented as non-configurable, not made configurable
 - [ ] Add health check result caching
-- [ ] Document health check best practices
-- [ ] Add examples for common patterns
-- [ ] Integration with Kubernetes health probes
+- [x] Document health check best practices — `docs/kubernetes-health-checks.md`'s liveness-vs-readiness guidance
+- [x] Add examples for common patterns — `docs/kubernetes-health-checks.md`
+- [x] Integration with Kubernetes health probes — done 2026-07-14, including verifying the HTTP status
+      code (not just the JSON body) reflects health, which is what Kubernetes' `httpGet` probe type
+      actually checks
 
-**Estimated Effort:** ~~18-22 hours~~ 17-21 hours remaining (PackageVersion item resolved; everything else unchanged, all re-verified against current source this pass)
+**Estimated Effort:** ~~18-22 hours~~ ~10-13 hours remaining (PackageVersion, XML docs, readiness/liveness,
+best-practices docs, and Kubernetes integration all resolved 2026-07-14; threshold/caching/timeout-
+configurability items remain genuinely open, unchanged)
 
 ---
 
@@ -1966,7 +1970,9 @@ All observability packages reference:
    explicit rather than inventing a Benzene-specific sampling API that doesn't exist
 3. **Async Context Flow Tests** - All scenarios (15-20h) — ⚠️ `W3CTraceContextTest` covers context propagation generally, not specifically async-boundary edge cases
 4. **Sensitive Data Filtering** - Built-in filters (20-25h) — still fully open
-5. **Health Check Enhancements** - Readiness/liveness (15-18h) — still fully open (this package's own `CLAUDE.md` describes readiness/liveness endpoints that don't exist in current source — see section 10's issue list)
+5. ~~**Health Check Enhancements** - Readiness/liveness (15-18h)~~ ✅ DONE 2026-07-14 —
+   `UseLivenessCheck`/`UseReadinessCheck`, `docs/kubernetes-health-checks.md`; see section 10's issue
+   list item 5. Configurable health threshold, result caching, and configurable timeout remain open.
 6. ~~**Log4Net Decision** - Keep or deprecate (5-8h)~~ ✅ DECIDED AND EXECUTED — `Benzene.Log4Net` deleted outright 2026-07-12 (not merely "marked community-supported")
 7. **Troubleshooting Guide** - Common issues (8-10h) — ⚠️ partial: Serilog-specific troubleshooting exists in its cookbook; no observability-wide guide
 8. ~~**Security Audit** - All packages (10-12h)~~ ✅ DONE 2026-07-14 — audited
