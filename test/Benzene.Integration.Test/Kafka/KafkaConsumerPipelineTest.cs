@@ -68,7 +68,10 @@ public class KafkaConsumerPipelineTest
 
         using var producer = new ProducerBuilder<Null, string>(producerConfig).Build();
 
-        var deadline = DateTime.UtcNow.AddSeconds(60);
+        // 180s, not 60s: on a cold CI runner this fixture's container may still be settling by
+        // the time this test's own retry window starts, since collection-fixture construction for
+        // every emulator in DockerEmulatorCollection happens up front, before any test runs.
+        var deadline = DateTime.UtcNow.AddSeconds(180);
         Exception? lastException = null;
 
         while (DateTime.UtcNow < deadline)
