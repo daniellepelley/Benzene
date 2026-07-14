@@ -46,8 +46,12 @@ Provides complete implementation of message handler infrastructure for command/q
   calls to register the default format + negotiator for a context type
 
 ### Response Handling
-- `SerializationResponseHandler<TContext>` - The single response-writing handler: asks the
-  negotiator for the write format and writes body + content type, unless a body is already set
+- `RendererResponseHandler<TContext>` - The single response-writing `IResponseHandler<TContext>`
+  every transport registers: short-circuits if a body is already set, otherwise walks registered
+  `IResponseRenderer<TContext>`s in order and delegates to the first whose `CanRender` matches
+- `SerializerResponseRenderer<TContext>` - The catch-all `IResponseRenderer<TContext>` (registered
+  last): asks the negotiator for the write format and writes body + content type; honors
+  `IRawContentMessage.ContentType` when the handler's payload implements it
 - `ResponseHandlerContainer<TContext>` - Contains response handlers
 - `DefaultResponsePayloadMapper<TContext>` - Maps response payloads
 - `ResponseIfHandledMessageHandlerResultSetter<TContext>` - Sets result if handled

@@ -119,7 +119,7 @@ public static class BenzeneResultStatus
 | `ServiceUnavailable` | 503 |
 
 `HttpStatusCodeResponseHandler<TContext>` applies this mapping to the HTTP response via
-`IBenzeneResponseAdapter<TContext>`. On success, `ResponseBodyHandler<TContext>` (see
+`IBenzeneResponseAdapter<TContext>`. On success, `SerializerResponseRenderer<TContext>` (see
 [Message Handlers](message-handlers#response-handling)) serializes `Payload`; on failure, it
 serializes an `ErrorPayload` (`{ Status, Detail }`, where `Detail` is `Errors` joined with `", "`) —
 so a `BenzeneResult.NotFound<OrderDto>("Order 123 not found")` becomes an HTTP `404` with a JSON

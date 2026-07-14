@@ -4,7 +4,7 @@ namespace Benzene.Abstractions.MessageHandlers.Response;
 
 /// <summary>
 /// Converts a message handler's result into a serialized response body using the given serializer.
-/// Used by response handlers such as <c>SerializationResponseHandler{TContext}</c> so the actual
+/// Used by response renderers such as <c>SerializerResponseRenderer{TContext}</c> so the actual
 /// serialized payload format stays independent of how the body is written onto the transport context.
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type the result was produced for.</typeparam>

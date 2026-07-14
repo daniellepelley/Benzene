@@ -42,7 +42,8 @@ public static class Extensions
         services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
 
         services.AddMediaFormatNegotiation<BenzeneMessageContext>();
-        services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, SerializationResponseHandler<BenzeneMessageContext>>();
+        services.TryAddScoped<IResponseRenderer<BenzeneMessageContext>, SerializerResponseRenderer<BenzeneMessageContext>>();
+        services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, RendererResponseHandler<BenzeneMessageContext>>();
         services.AddScoped<IResponseHandler<BenzeneMessageContext>, DefaultResponseStatusHandler<BenzeneMessageContext>>();
         services.TryAddScoped<IResponsePayloadMapper<BenzeneMessageContext>, DefaultResponsePayloadMapper<BenzeneMessageContext>>();
 

@@ -64,7 +64,8 @@ public static class AutofacDependenciesBuilder
             .AddScoped<IOrderDbClient, InMemoryOrderDbClient>()
             .AddScoped<IOrderService, OrderService>()
             // .AddScoped<ResponseMiddleware<ApiGatewayContext>>()
-            .AddScoped<IResponseHandler<ApiGatewayContext>, SerializationResponseHandler<ApiGatewayContext>>()
+            .AddScoped<IResponseRenderer<ApiGatewayContext>, SerializerResponseRenderer<ApiGatewayContext>>()
+            .AddScoped<IResponseHandler<ApiGatewayContext>, RendererResponseHandler<ApiGatewayContext>>()
             .AddScoped<IResponseHandler<ApiGatewayContext>, HttpStatusCodeResponseHandler<ApiGatewayContext>>()
             .AddScoped<IRequestEnricher<ApiGatewayContext>, ApiGatewayRequestEnricher>()
             // .AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
