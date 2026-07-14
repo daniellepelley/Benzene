@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Benzene Spec Explorer</title>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root {
+    color-scheme: light dark;
+
+    /* Indigo-biased cool neutrals — chosen, not defaulted */
+    --bg:        #eef0f6;
+    --surface:   #ffffff;
+    --surface-2: #f5f6fb;
+    --sunken:    #eceef6;
+    --ink:       #1b1d2a;
+    --ink-soft:  #4a4e63;
+    --ink-faint: #767b93;
+    --line:      #dde0ee;
+    --line-soft: #e8eaf4;
+
+    /* Accent — electric periwinkle, used structurally not decoratively */
+    --accent:      #5b54f0;
+    --accent-ink:  #ffffff;
+    --accent-tint: #ecebfe;
+    --accent-soft: #6a63f5;
+
+    /* Semantic method colors — information, kept separate from accent */
+    --m-get:    #2f6fed;  --m-get-bg:    #e6efff;
+    --m-post:   #159a6b;  --m-post-bg:   #e2f6ee;
+    --m-put:    #c47d10;  --m-put-bg:    #fbf0da;
+    --m-patch:  #0d94a8;  --m-patch-bg:  #dcf4f7;
+    --m-delete: #d6453f;  --m-delete-bg: #fce4e3;
+    --m-msg:    #6a54c9;  --m-msg-bg:    #ece7fa;   /* pure message topic */
+    --m-event:  #b0338f;  --m-event-bg:  #fbe3f2;   /* broadcast event */
+
+    /* Constraint / state */
+    --req:      #d6453f;
+    --ok:       #159a6b;
+    --chip-bg:  #eceef8;
+    --chip-ink: #414763;
+
+    --radius: 11px;
+    --radius-sm: 7px;
+    --shadow: 0 1px 2px rgba(24,27,49,.05), 0 8px 24px -14px rgba(24,27,49,.28);
+    --mono: "JetBrains Mono","SFMono-Regular","SF Mono",Menlo,Consolas,"Cascadia Code",ui-monospace,monospace;
+    --sans: ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #0e0f17;
+      --surface:   #171926;
+      --surface-2: #1c1f2e;
+      --sunken:    #12131d;
+      --ink:       #e7e8f2;
+      --ink-soft:  #a9adc6;
+      --ink-faint: #6e7391;
+      --line:      #262a3d;
+      --line-soft: #20233284;
+
+      --accent:      #8a83ff;
+      --accent-ink:  #0e0f17;
+      --accent-tint: #211f45;
+      --accent-soft: #9a93ff;
+
+      --m-get:    #6ea0ff;  --m-get-bg:    #16233f;
+      --m-post:   #46c98f;  --m-post-bg:   #133026;
+      --m-put:    #e0a848;  --m-put-bg:    #33270f;
+      --m-patch:  #3cc3d6;  --m-patch-bg:  #0f2c31;
+      --m-delete: #f4756f;  --m-delete-bg: #351b1a;
+      --m-msg:    #a693ff;  --m-msg-bg:    #221d3d;
+      --m-event:  #eb74c4;  --m-event-bg:  #331833;
+
+      --req:      #f4756f;
+      --ok:       #46c98f;
+      --chip-bg:  #232739;
+      --chip-ink: #b6bad4;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -18px rgba(0,0,0,.8);
+    }
+  }
+
+  /* Explicit theme overrides win in both directions */
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg:#eef0f6; --surface:#ffffff; --surface-2:#f5f6fb; --sunken:#eceef6;
+    --ink:#1b1d2a; --ink-soft:#4a4e63; --ink-faint:#767b93; --line:#dde0ee; --line-soft:#e8eaf4;
+    --accent:#5b54f0; --accent-ink:#ffffff; --accent-tint:#ecebfe; --accent-soft:#6a63f5;
+    --m-get:#2f6fed;--m-get-bg:#e6efff;--m-post:#159a6b;--m-post-bg:#e2f6ee;--m-put:#c47d10;--m-put-bg:#fbf0da;
+    --m-patch:#0d94a8;--m-patch-bg:#dcf4f7;--m-delete:#d6453f;--m-delete-bg:#fce4e3;
+    --m-msg:#6a54c9;--m-msg-bg:#ece7fa;--m-event:#b0338f;--m-event-bg:#fbe3f2;
+    --req:#d6453f;--ok:#159a6b;--chip-bg:#eceef8;--chip-ink:#414763;
+    --shadow:0 1px 2px rgba(24,27,49,.05),0 8px 24px -14px rgba(24,27,49,.28);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#0e0f17; --surface:#171926; --surface-2:#1c1f2e; --sunken:#12131d;
+    --ink:#e7e8f2; --ink-soft:#a9adc6; --ink-faint:#6e7391; --line:#262a3d; --line-soft:#202332;
+    --accent:#8a83ff; --accent-ink:#0e0f17; --accent-tint:#211f45; --accent-soft:#9a93ff;
+    --m-get:#6ea0ff;--m-get-bg:#16233f;--m-post:#46c98f;--m-post-bg:#133026;--m-put:#e0a848;--m-put-bg:#33270f;
+    --m-patch:#3cc3d6;--m-patch-bg:#0f2c31;--m-delete:#f4756f;--m-delete-bg:#351b1a;
+    --m-msg:#a693ff;--m-msg-bg:#221d3d;--m-event:#eb74c4;--m-event-bg:#331833;
+    --req:#f4756f;--ok:#46c98f;--chip-bg:#232739;--chip-ink:#b6bad4;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  code, .mono { font-family: var(--mono); font-feature-settings: "liga" 0; }
+
+  /* ---------- Top bar ---------- */
+  header.topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 18px;
+    padding: 12px 22px;
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand svg { display: block; flex: none; }
+  .brand .ring { color: var(--accent); }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .brand-text b { font-size: 15px; letter-spacing: -.01em; }
+  .brand-text span { font-size: 11.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .14em; }
+
+  .spec-title { margin-left: 6px; padding-left: 18px; border-left: 1px solid var(--line); min-width: 0; }
+  .spec-title .t { font-weight: 640; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spec-title .v { font-size: 12.5px; color: var(--ink-faint); font-family: var(--mono); }
+
+  .topbar .grow { flex: 1 1 auto; }
+
+  .tb-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 34px; padding: 0 13px;
+    background: var(--surface-2); color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 13px; cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .tb-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .tb-btn svg { width: 15px; height: 15px; }
+  .tb-btn:focus-visible, a:focus-visible, input:focus-visible, .op:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Shell ---------- */
+  .shell { display: grid; grid-template-columns: 288px minmax(0,1fr); align-items: start; }
+  @media (max-width: 940px) { .shell { grid-template-columns: 1fr; } aside.nav { display: none; } }
+
+  aside.nav {
+    position: sticky; top: 59px; align-self: start;
+    height: calc(100vh - 59px); overflow-y: auto;
+    padding: 18px 14px 40px;
+    border-right: 1px solid var(--line);
+  }
+  .search { position: relative; margin-bottom: 16px; }
+  .search input {
+    width: 100%; height: 36px; padding: 0 12px 0 34px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 13.5px;
+  }
+  .search input::placeholder { color: var(--ink-faint); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
+
+  .nav-group { margin-bottom: 20px; }
+  .nav-group > h4 {
+    margin: 0 0 7px; padding: 0 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-faint);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .nav-group > h4 .count {
+    margin-left: auto; font-family: var(--mono); font-weight: 600; letter-spacing: 0;
+    background: var(--sunken); color: var(--ink-faint); padding: 1px 7px; border-radius: 20px; font-size: 11px;
+  }
+  .nav-link {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 8px; border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--ink-soft); text-decoration: none;
+    font-family: var(--mono); font-size: 12.5px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link.active { background: var(--accent-tint); color: var(--accent); }
+  .nav-link .label { overflow: hidden; text-overflow: ellipsis; }
+  .nav-link.hidden { display: none; }
+
+  /* ---------- Main ---------- */
+  main { padding: 26px clamp(18px, 4vw, 44px) 90px; max-width: 1080px; }
+
+  .lede { margin-bottom: 22px; }
+  .lede h1 { margin: 0 0 6px; font-size: 25px; letter-spacing: -.02em; text-wrap: balance; }
+  .lede p { margin: 0; color: var(--ink-soft); max-width: 62ch; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 30px; }
+  .stat {
+    flex: 1 1 130px; min-width: 130px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 23px; font-weight: 680; font-family: var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); margin-top: 1px; }
+  .stat.accent .n { color: var(--accent); }
+  .stat.event .n { color: var(--m-event); }
+
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 34px 0 14px; }
+  .section-head h2 { margin: 0; font-size: 15px; letter-spacing: .02em; text-transform: uppercase; }
+  .section-head .rule { flex: 1; height: 1px; background: var(--line); }
+  .section-head .expand-all {
+    font: inherit; font-size: 12px; color: var(--ink-faint); background: none; border: none; cursor: pointer;
+    font-family: var(--mono);
+  }
+  .section-head .expand-all:hover { color: var(--accent); }
+
+  /* ---------- Operation card ---------- */
+  .op {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    margin-bottom: 11px; overflow: hidden; box-shadow: var(--shadow);
+    transition: border-color .13s;
+  }
+  .op.open { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .op-head {
+    display: flex; align-items: center; gap: 13px;
+    padding: 12px 15px; cursor: pointer; user-select: none;
+  }
+  .op-head:hover { background: var(--surface-2); }
+  .badges { display: flex; gap: 5px; flex: none; }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    padding: 3px 8px; border-radius: 5px; text-transform: uppercase; line-height: 1.35;
+  }
+  .b-get{color:var(--m-get);background:var(--m-get-bg)} .b-post{color:var(--m-post);background:var(--m-post-bg)}
+  .b-put{color:var(--m-put);background:var(--m-put-bg)} .b-patch{color:var(--m-patch);background:var(--m-patch-bg)}
+  .b-delete{color:var(--m-delete);background:var(--m-delete-bg)} .b-msg{color:var(--m-msg);background:var(--m-msg-bg)}
+  .b-event{color:var(--m-event);background:var(--m-event-bg)}
+  .op-topic { font-family: var(--mono); font-size: 14px; font-weight: 620; letter-spacing: -.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .op-io { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; color: var(--ink-faint); font-size: 12px; font-family: var(--mono); }
+  .op-io .arrow { color: var(--ink-faint); }
+  .chev { flex: none; color: var(--ink-faint); transition: transform .16s; }
+  .op.open .chev { transform: rotate(90deg); }
+  @media (max-width: 620px) { .op-io { display: none; } }
+
+  .op-body { display: none; padding: 4px 15px 17px; border-top: 1px solid var(--line-soft); }
+  .op.open .op-body { display: block; }
+
+  .http-lines { display: flex; flex-direction: column; gap: 4px; margin: 13px 0 4px; }
+  .http-line { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+
+  .io-grid { display: grid; gap: 14px; margin-top: 15px; }
+  .io-block > .io-label {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--ink-faint);
+  }
+  .io-label .tag { font-family: var(--mono); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--accent); }
+
+  /* ---------- Schema tree ---------- */
+  .schema { background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
+  .schema.empty { padding: 11px 14px; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; }
+  .prop { display: block; border-top: 1px solid var(--line-soft); }
+  .prop:first-child { border-top: none; }
+  .prop-row { display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; flex-wrap: wrap; }
+  .prop-row .pname { font-family: var(--mono); font-size: 13px; font-weight: 620; color: var(--ink); }
+  .prop-row .preq { color: var(--req); font-weight: 700; font-size: 12px; transform: translateY(-1px); }
+  .prop-row .ptype {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    cursor: default;
+  }
+  .prop-row .ptype.ref { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .prop-row .ptype.ref:hover { color: var(--accent-soft); }
+  .prop-row .pdesc { flex-basis: 100%; color: var(--ink-soft); font-size: 12.5px; margin-top: -1px; }
+
+  .chips { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 5px; background: var(--chip-bg); color: var(--chip-ink);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.5;
+  }
+  .chip b { font-weight: 700; color: var(--ink); }
+  .chip.fmt { background: var(--accent-tint); color: var(--accent); }
+  .chip.enum { background: var(--m-put-bg); color: var(--m-put); }
+  .nested { margin: 0 0 10px 14px; border-left: 2px solid var(--line); padding-left: 0; }
+  .nested .schema { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+  /* schema catalog cards */
+  .schema-def { scroll-margin-top: 72px; margin-bottom: 11px; }
+  .schema-def > .sd-head {
+    display: flex; align-items: center; gap: 10px; padding: 11px 15px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .schema-def.open > .sd-head { border-radius: var(--radius) var(--radius) 0 0; border-bottom-color: var(--line-soft); }
+  .sd-head .sd-name { font-family: var(--mono); font-weight: 640; }
+  .sd-head .sd-kind { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .schema-def > .sd-body { display: none; border: 1px solid var(--line); border-top: none; border-radius: 0 0 var(--radius) var(--radius); }
+  .schema-def.open > .sd-body { display: block; }
+  .schema-def .schema { background: var(--surface); border: none; border-radius: 0; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
+  .empty-state .mono { color: var(--ink-soft); }
+
+  /* Load dialog */
+  dialog.loader {
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow); width: min(520px, 92vw);
+  }
+  dialog.loader::backdrop { background: rgba(10,11,20,.5); backdrop-filter: blur(2px); }
+  .loader .ld-head { padding: 16px 18px 4px; }
+  .loader h3 { margin: 0 0 3px; font-size: 16px; }
+  .loader p { margin: 0; color: var(--ink-faint); font-size: 13px; }
+  .loader .ld-body { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .loader label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .loader input[type=url], .loader textarea {
+    width: 100%; font-family: var(--mono); font-size: 12.5px; color: var(--ink);
+    background: var(--sunken); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 11px;
+  }
+  .loader textarea { min-height: 120px; resize: vertical; }
+  .loader .ld-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .loader .primary { background: var(--accent); color: var(--accent-ink); border: none; }
+  .loader .primary:hover { background: var(--accent-soft); }
+  .ld-err { color: var(--req); font-size: 12.5px; font-family: var(--mono); min-height: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="ring" width="26" height="28" viewBox="0 0 26 28" fill="none" aria-hidden="true">
+      <path d="M13 1.5 24 7.9v12.2L13 26.5 2 20.1V7.9L13 1.5Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/>
+      <circle cx="13" cy="14" r="5.2" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".55"/>
+    </svg>
+    <div class="brand-text">
+      <b>Benzene</b><span>Spec Explorer</span>
+    </div>
+  </div>
+  <div class="spec-title">
+    <div class="t" id="doc-title">&nbsp;</div>
+    <div class="v" id="doc-version">&nbsp;</div>
+  </div>
+  <div class="grow"></div>
+  <button class="tb-btn" id="load-btn" title="Load a different spec">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    <span>Load spec</span>
+  </button>
+  <button class="tb-btn" id="theme-btn" title="Toggle theme" aria-label="Toggle theme">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M6 6 4.6 4.6M19.4 19.4 18 18M18 6l1.4-1.4M4.6 19.4 6 18"/></svg>
+  </button>
+</header>
+
+<div class="shell">
+  <aside class="nav">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+      <input type="search" id="filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <main>
+    <div class="lede">
+      <h1 id="lede-title">Benzene Spec Explorer</h1>
+      <p id="lede-desc"></p>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<dialog class="loader" id="loader">
+  <form method="dialog">
+    <div class="ld-head">
+      <h3>Load a Benzene spec</h3>
+      <p>Point at a running service's spec endpoint, or paste the JSON directly.</p>
+    </div>
+    <div class="ld-body">
+      <div>
+        <label for="ld-url">Fetch from URL</label>
+        <input type="url" id="ld-url" placeholder="https://your-service/spec?type=benzene" />
+      </div>
+      <div>
+        <label for="ld-json">…or paste spec JSON</label>
+        <textarea id="ld-json" spellcheck="false" placeholder='{ "openapi": "3.0.1", "requests": [ … ] }'></textarea>
+      </div>
+      <div class="ld-err" id="ld-err"></div>
+      <div class="ld-actions">
+        <button class="tb-btn" value="cancel" type="submit">Cancel</button>
+        <button class="tb-btn primary" id="ld-apply" type="button">Load</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script id="benzene-spec-data" type="application/json">
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Orders Service",
+    "version": "1.4.0",
+    "description": "Message contracts for the Orders bounded context — the topics this service handles, the events it broadcasts, and the payload shapes with their validation rules."
+  },
+  "tags": [ { "name": "order" }, { "name": "shipment" } ],
+  "requests": [
+    {
+      "topic": "order:create",
+      "httpMappings": [ { "method": "post", "path": "/orders" } ],
+      "request":  { "$ref": "#/components/schemas/CreateOrderRequest" },
+      "response": { "$ref": "#/components/schemas/Order" }
+    },
+    {
+      "topic": "order:get",
+      "httpMappings": [ { "method": "get", "path": "/orders/{orderId}" } ],
+      "request":  { "$ref": "#/components/schemas/GetOrderRequest" },
+      "response": { "$ref": "#/components/schemas/Order" }
+    },
+    {
+      "topic": "order:cancel",
+      "httpMappings": [ { "method": "post", "path": "/orders/{orderId}/cancel" } ],
+      "request":  { "$ref": "#/components/schemas/CancelOrderRequest" },
+      "response": { "$ref": "#/components/schemas/Order" }
+    },
+    {
+      "topic": "shipment:book",
+      "httpMappings": [],
+      "request":  { "$ref": "#/components/schemas/BookShipmentRequest" },
+      "response": { "$ref": "#/components/schemas/Shipment" }
+    }
+  ],
+  "events": [
+    { "topic": "order:created", "message": { "$ref": "#/components/schemas/Order" } },
+    { "topic": "order:cancelled", "message": { "$ref": "#/components/schemas/OrderCancelled" } },
+    { "topic": "shipment:dispatched", "message": { "$ref": "#/components/schemas/Shipment" } }
+  ],
+  "components": {
+    "schemas": {
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": [ "customerId", "email", "lines" ],
+        "properties": {
+          "customerId": { "type": "string", "format": "uuid", "nullable": false, "description": "Must not be empty. Must be a valid GUID" },
+          "email": { "type": "string", "format": "email", "description": "Must be a valid email address" },
+          "lines": { "type": "array", "items": { "$ref": "#/components/schemas/OrderLine" }, "description": "At least one line is required" },
+          "notes": { "type": "string", "maxLength": 500, "description": "Must be 500 characters or fewer" },
+          "priority": { "type": "string", "enum": [ "low", "standard", "high" ], "description": "Must be one of low, standard, high" }
+        }
+      },
+      "OrderLine": {
+        "type": "object",
+        "required": [ "sku", "quantity" ],
+        "properties": {
+          "sku": { "type": "string", "pattern": "^[A-Z]{3}-[0-9]{4}$", "description": "Must match SKU format AAA-0000" },
+          "quantity": { "type": "integer", "format": "int32", "minimum": 1, "maximum": 999 },
+          "unitPricePence": { "type": "integer", "format": "int64", "minimum": 0 }
+        }
+      },
+      "GetOrderRequest": {
+        "type": "object",
+        "required": [ "orderId" ],
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid", "description": "Must be a valid GUID" }
+        }
+      },
+      "CancelOrderRequest": {
+        "type": "object",
+        "required": [ "orderId", "reason" ],
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "reason": { "type": "string", "minLength": 3, "maxLength": 240, "description": "Between 3 and 240 characters" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": [ "orderId", "customerId", "status", "lines" ],
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "customerId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": [ "pending", "confirmed", "shipped", "cancelled" ] },
+          "lines": { "type": "array", "items": { "$ref": "#/components/schemas/OrderLine" } },
+          "totalPence": { "type": "integer", "format": "int64" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BookShipmentRequest": {
+        "type": "object",
+        "required": [ "orderId", "address" ],
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "address": { "$ref": "#/components/schemas/Address" },
+          "carrier": { "type": "string", "enum": [ "royal-mail", "dpd", "fedex" ] }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": [ "line1", "postcode", "country" ],
+        "properties": {
+          "line1": { "type": "string", "maxLength": 120 },
+          "line2": { "type": "string", "nullable": true, "maxLength": 120 },
+          "postcode": { "type": "string", "pattern": "^[A-Z0-9 ]{4,8}$", "description": "UK postcode" },
+          "country": { "type": "string", "minLength": 2, "maxLength": 2, "description": "ISO 3166-1 alpha-2" }
+        }
+      },
+      "Shipment": {
+        "type": "object",
+        "required": [ "shipmentId", "orderId", "carrier" ],
+        "properties": {
+          "shipmentId": { "type": "string", "format": "uuid" },
+          "orderId": { "type": "string", "format": "uuid" },
+          "carrier": { "type": "string", "enum": [ "royal-mail", "dpd", "fedex" ] },
+          "trackingCode": { "type": "string", "nullable": true },
+          "address": { "$ref": "#/components/schemas/Address" }
+        }
+      },
+      "OrderCancelled": {
+        "type": "object",
+        "required": [ "orderId", "reason", "cancelledAt" ],
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "reason": { "type": "string" },
+          "cancelledAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var spec = {};
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById("theme-btn");
+  themeBtn.addEventListener("click", function () {
+    var root = document.documentElement;
+    var current = root.getAttribute("data-theme");
+    if (!current) current = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    root.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+  });
+
+  /* ---------- helpers ---------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function schemas() { return (spec.components && spec.components.schemas) || {}; }
+  function refName(s) { return s && s.$ref ? s.$ref.split("/").pop() : null; }
+  function resolve(s) {
+    var r = refName(s);
+    if (r) return { name: r, schema: schemas()[r] || {} };
+    return { name: null, schema: s || {} };
+  }
+  function typeLabel(s) {
+    if (!s) return "any";
+    var r = refName(s);
+    if (r) return r;
+    if (s.type === "array") return "array<" + typeLabel(s.items) + ">";
+    if (s.type) return s.type;
+    if (s.properties) return "object";
+    return "any";
+  }
+  function slug(s) { return String(s).replace(/[^a-z0-9]+/gi, "-").toLowerCase(); }
+
+  /* constraint chips for a property schema */
+  function constraintChips(s) {
+    var out = [];
+    function chip(label, val, cls) {
+      var c = el("span", "chip" + (cls ? " " + cls : ""));
+      if (val === undefined) { c.textContent = label; }
+      else {
+        c.appendChild(document.createTextNode(label + " "));
+        var b = el("b", null, String(val)); c.appendChild(b);
+      }
+      out.push(c);
+    }
+    if (s.format) chip(s.format, undefined, "fmt");
+    if (s.enum && s.enum.length) {
+      var ec = el("span", "chip enum");
+      ec.appendChild(document.createTextNode("enum "));
+      ec.appendChild(el("b", null, s.enum.join(" · ")));
+      out.push(ec);
+    }
+    if (s.minLength != null && s.maxLength != null) chip("length", s.minLength + "–" + s.maxLength);
+    else { if (s.minLength != null) chip("min len", s.minLength); if (s.maxLength != null) chip("max len", s.maxLength); }
+    if (s.minimum != null && s.maximum != null) chip("range", s.minimum + "–" + s.maximum);
+    else { if (s.minimum != null) chip("≥", s.minimum); if (s.maximum != null) chip("≤", s.maximum); }
+    if (s.pattern) chip("pattern " + s.pattern);
+    if (s.nullable === true) chip("nullable");
+    if (s["default"] !== undefined) chip("default", s["default"]);
+    return out;
+  }
+
+  /* render a schema (object → property table); returns element */
+  function renderSchema(schemaOrRef, path) {
+    var res = resolve(schemaOrRef);
+    var s = res.schema;
+    path = path || [];
+
+    // array at top level → unwrap to its item schema for display
+    if (s.type === "array" && s.items) {
+      var wrap = el("div");
+      var note = el("div", "schema empty");
+      note.textContent = "array of " + typeLabel(s.items);
+      wrap.appendChild(note);
+      var itemRes = resolve(s.items);
+      if (itemRes.schema && itemRes.schema.properties) wrap.appendChild(renderSchema(s.items, path));
+      return wrap;
+    }
+
+    if (!s.properties) {
+      var e = el("div", "schema empty");
+      e.textContent = s.type ? (typeLabel(s) + (s.format ? " (" + s.format + ")" : "")) : "no schema";
+      return e;
+    }
+
+    var required = s.required || [];
+    var box = el("div", "schema");
+    Object.keys(s.properties).forEach(function (key) {
+      var p = s.properties[key];
+      var pr = el("div", "prop");
+      var row = el("div", "prop-row");
+
+      var nm = el("span", "pname", key); row.appendChild(nm);
+      if (required.indexOf(key) >= 0) { var star = el("span", "preq", "*"); star.title = "required"; row.appendChild(star); }
+
+      var isRef = !!refName(p) || (p.type === "array" && !!refName(p.items));
+      var tp = el("span", "ptype" + (isRef ? " ref" : ""), typeLabel(p));
+      row.appendChild(tp);
+
+      var cc = constraintChips(p);
+      if (cc.length) { var chips = el("span", "chips"); cc.forEach(function (c) { chips.appendChild(c); }); row.appendChild(chips); }
+
+      if (p.description) { var d = el("div", "pdesc", p.description); row.appendChild(d); }
+      pr.appendChild(row);
+
+      // nested expansion for object refs / arrays of object refs (guard against cycles)
+      var childRefName = refName(p) || (p.type === "array" ? refName(p.items) : null);
+      if (childRefName && path.indexOf(childRefName) < 0) {
+        var childRes = resolve(refName(p) ? p : p.items);
+        if (childRes.schema && childRes.schema.properties) {
+          var nested = el("div", "nested");
+          nested.style.display = "none";
+          nested.appendChild(renderSchema(refName(p) ? p : p.items, path.concat([childRefName])));
+          pr.appendChild(nested);
+          tp.addEventListener("click", function () {
+            var showing = nested.style.display !== "none";
+            nested.style.display = showing ? "none" : "block";
+            tp.textContent = (showing ? typeLabel(p) : "▾ " + typeLabel(p));
+          });
+        }
+      }
+      box.appendChild(pr);
+    });
+    return box;
+  }
+
+  function methodBadge(method) {
+    var m = String(method || "").toLowerCase();
+    var cls = ({ get: "b-get", post: "b-post", put: "b-put", patch: "b-patch", delete: "b-delete" })[m] || "b-msg";
+    var b = el("span", "badge " + cls, m.toUpperCase());
+    return b;
+  }
+
+  /* ---------- build a request/event operation card ---------- */
+  function buildOp(kind, item) {
+    var isEvent = kind === "event";
+    var topic = item.topic;
+    var op = el("article", "op");
+    op.id = "op-" + slug((isEvent ? "event-" : "") + topic);
+    op.tabIndex = 0;
+
+    var head = el("div", "op-head");
+    var badges = el("div", "badges");
+    var https = (item.httpMappings || []);
+    if (isEvent) {
+      badges.appendChild(el("span", "badge b-event", "EVENT"));
+    } else if (https.length) {
+      https.forEach(function (h) { badges.appendChild(methodBadge(h.method)); });
+    } else {
+      badges.appendChild(el("span", "badge b-msg", "MSG"));
+    }
+    head.appendChild(badges);
+    head.appendChild(el("span", "op-topic", topic));
+
+    var io = el("div", "op-io");
+    if (isEvent) {
+      io.appendChild(el("span", null, typeLabel(item.message)));
+    } else {
+      io.appendChild(el("span", null, typeLabel(item.request)));
+      var ar = el("span", "arrow", "→"); io.appendChild(ar);
+      io.appendChild(el("span", null, typeLabel(item.response)));
+    }
+    head.appendChild(io);
+
+    var chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chev.setAttribute("class", "chev"); chev.setAttribute("width", "16"); chev.setAttribute("height", "16");
+    chev.setAttribute("viewBox", "0 0 24 24"); chev.setAttribute("fill", "none");
+    chev.setAttribute("stroke", "currentColor"); chev.setAttribute("stroke-width", "2.2");
+    chev.innerHTML = '<path d="m9 6 6 6-6 6"/>';
+    head.appendChild(chev);
+    op.appendChild(head);
+
+    var body = el("div", "op-body");
+    if (https.length) {
+      var hl = el("div", "http-lines");
+      https.forEach(function (h) {
+        var line = el("div", "http-line");
+        line.appendChild(methodBadge(h.method));
+        line.appendChild(el("span", null, h.path));
+        hl.appendChild(line);
+      });
+      body.appendChild(hl);
+    }
+
+    var grid = el("div", "io-grid");
+    if (isEvent) {
+      grid.appendChild(ioBlock("Message", item.message));
+    } else {
+      grid.appendChild(ioBlock("Request", item.request));
+      grid.appendChild(ioBlock("Response", item.response));
+    }
+    body.appendChild(grid);
+    op.appendChild(body);
+
+    function toggle() { op.classList.toggle("open"); }
+    head.addEventListener("click", toggle);
+    op.addEventListener("keydown", function (e) {
+      if ((e.key === "Enter" || e.key === " ") && e.target === op) { e.preventDefault(); toggle(); }
+    });
+    return op;
+  }
+
+  function ioBlock(label, schemaRef) {
+    var block = el("div", "io-block");
+    var lab = el("div", "io-label");
+    lab.appendChild(document.createTextNode(label));
+    var nm = refName(schemaRef) || typeLabel(schemaRef);
+    if (nm) { var tag = el("span", "tag", nm); lab.appendChild(tag); }
+    block.appendChild(lab);
+    block.appendChild(renderSchema(schemaRef, []));
+    return block;
+  }
+
+  /* ---------- render everything ---------- */
+  function render() {
+    var info = spec.info || {};
+    document.getElementById("doc-title").textContent = info.title || "Untitled service";
+    document.getElementById("doc-version").textContent = info.version ? "v" + info.version : "";
+    document.getElementById("lede-title").textContent = info.title || "Benzene Spec Explorer";
+    document.getElementById("lede-desc").textContent = info.description || "";
+
+    var requests = spec.requests || [];
+    var events = spec.events || [];
+    var schemaKeys = Object.keys(schemas());
+    var httpCount = requests.filter(function (r) { return (r.httpMappings || []).length; }).length;
+
+    // stats
+    var stats = document.getElementById("stats");
+    stats.innerHTML = "";
+    [
+      ["accent", requests.length, requests.length === 1 ? "Topic" : "Topics"],
+      ["", httpCount, "HTTP-mapped"],
+      ["event", events.length, events.length === 1 ? "Event" : "Events"],
+      ["", schemaKeys.length, "Schemas"]
+    ].forEach(function (t) {
+      var c = el("div", "stat" + (t[0] ? " " + t[0] : ""));
+      c.appendChild(el("div", "n", String(t[1])));
+      c.appendChild(el("div", "l", t[2]));
+      stats.appendChild(c);
+    });
+
+    var content = document.getElementById("content");
+    content.innerHTML = "";
+    var nav = document.getElementById("nav");
+    nav.innerHTML = "";
+
+    if (!requests.length && !events.length && !schemaKeys.length) {
+      var es = el("div", "empty-state");
+      es.innerHTML = 'Nothing to show. <span class="mono">Load a Benzene spec</span> to explore its topics.';
+      content.appendChild(es);
+      return;
+    }
+
+    // Requests
+    if (requests.length) {
+      content.appendChild(sectionHead("Message topics", content));
+      var navReq = navGroup("Topics", requests.length);
+      requests.forEach(function (r) {
+        var op = buildOp("request", r);
+        content.appendChild(op);
+        navReq.body.appendChild(navLink(op.id, r.topic, (r.httpMappings || []).length ? "http" : "msg"));
+      });
+      nav.appendChild(navReq.group);
+    }
+
+    // Events
+    if (events.length) {
+      content.appendChild(sectionHead("Broadcast events", content));
+      var navEv = navGroup("Events", events.length);
+      events.forEach(function (ev) {
+        var op = buildOp("event", ev);
+        content.appendChild(op);
+        navEv.body.appendChild(navLink(op.id, ev.topic, "event"));
+      });
+      nav.appendChild(navEv.group);
+    }
+
+    // Schemas catalog
+    if (schemaKeys.length) {
+      content.appendChild(sectionHead("Schemas", content));
+      var navSc = navGroup("Schemas", schemaKeys.length);
+      schemaKeys.forEach(function (key) {
+        var def = el("section", "schema-def"); def.id = "schema-" + slug(key);
+        var h = el("div", "sd-head");
+        h.appendChild(el("span", "sd-name", key));
+        var s = schemas()[key];
+        h.appendChild(el("span", "sd-kind", typeLabel(s) + (s.properties ? " · " + Object.keys(s.properties).length + " fields" : "")));
+        var sb = el("div", "sd-body"); sb.appendChild(renderSchema({ $ref: "#/components/schemas/" + key }, [key]));
+        def.appendChild(h); def.appendChild(sb);
+        h.addEventListener("click", function () { def.classList.toggle("open"); });
+        content.appendChild(def);
+        navSc.body.appendChild(navLink(def.id, key, "schema"));
+      });
+      nav.appendChild(navSc.group);
+    }
+
+    wireNavHighlight();
+  }
+
+  function sectionHead(title, content) {
+    var h = el("div", "section-head");
+    h.appendChild(el("h2", null, title));
+    h.appendChild(el("div", "rule"));
+    var btn = el("button", "expand-all", "expand all");
+    var expanded = false;
+    btn.addEventListener("click", function () {
+      expanded = !expanded;
+      var sib = h.nextElementSibling;
+      while (sib && !sib.classList.contains("section-head")) {
+        if (sib.classList.contains("op") || sib.classList.contains("schema-def")) sib.classList.toggle("open", expanded);
+        sib = sib.nextElementSibling;
+      }
+      btn.textContent = expanded ? "collapse all" : "expand all";
+    });
+    h.appendChild(btn);
+    return h;
+  }
+
+  function navGroup(title, count) {
+    var group = el("div", "nav-group");
+    var h = el("h4"); h.appendChild(document.createTextNode(title));
+    h.appendChild(el("span", "count", String(count)));
+    group.appendChild(h);
+    var body = el("div"); group.appendChild(body);
+    return { group: group, body: body };
+  }
+  function navLink(targetId, label, kind) {
+    var a = el("a", "nav-link"); a.href = "#" + targetId; a.dataset.target = targetId;
+    var dot = { http: "b-get", msg: "b-msg", event: "b-event", schema: "b-put" }[kind] || "b-msg";
+    var d = el("span", "badge " + dot); d.style.padding = "2px 5px"; d.style.fontSize = "8px";
+    d.textContent = kind === "http" ? "≡" : kind === "event" ? "◆" : kind === "schema" ? "{}" : "·";
+    a.appendChild(d);
+    a.appendChild(el("span", "label", label));
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      var t = document.getElementById(targetId);
+      if (t) {
+        if (t.classList.contains("op") || t.classList.contains("schema-def")) t.classList.add("open");
+        t.scrollIntoView({ block: "start" });
+        history.replaceState(null, "", "#" + targetId);
+      }
+    });
+    return a;
+  }
+
+  /* ---------- filter ---------- */
+  document.getElementById("filter").addEventListener("input", function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(".nav-link").forEach(function (a) {
+      var match = a.textContent.toLowerCase().indexOf(q) >= 0;
+      a.classList.toggle("hidden", !match);
+    });
+    document.querySelectorAll(".op, .schema-def").forEach(function (card) {
+      var id = card.id;
+      var link = document.querySelector('.nav-link[data-target="' + CSS.escape(id) + '"]');
+      var text = (card.querySelector(".op-topic, .sd-name") || {}).textContent || "";
+      card.style.display = (!q || text.toLowerCase().indexOf(q) >= 0) ? "" : "none";
+    });
+  });
+
+  /* ---------- scroll spy ---------- */
+  var spyObserver;
+  function wireNavHighlight() {
+    if (spyObserver) spyObserver.disconnect();
+    var links = {};
+    document.querySelectorAll(".nav-link").forEach(function (a) { links[a.dataset.target] = a; });
+    spyObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          Object.values(links).forEach(function (l) { l.classList.remove("active"); });
+          var a = links[en.target.id]; if (a) a.classList.add("active");
+        }
+      });
+    }, { rootMargin: "-70px 0px -75% 0px", threshold: 0 });
+    document.querySelectorAll(".op, .schema-def").forEach(function (c) { spyObserver.observe(c); });
+  }
+
+  /* ---------- loader dialog ---------- */
+  var loader = document.getElementById("loader");
+  document.getElementById("load-btn").addEventListener("click", function () {
+    document.getElementById("ld-err").textContent = "";
+    if (typeof loader.showModal === "function") loader.showModal();
+  });
+  document.getElementById("ld-apply").addEventListener("click", function () {
+    var url = document.getElementById("ld-url").value.trim();
+    var json = document.getElementById("ld-json").value.trim();
+    var err = document.getElementById("ld-err");
+    err.textContent = "";
+    if (json) {
+      try { applySpec(JSON.parse(json)); loader.close(); }
+      catch (ex) { err.textContent = "Invalid JSON: " + ex.message; }
+      return;
+    }
+    if (url) {
+      fetchSpec(url).then(function () { loader.close(); }).catch(function (ex) { err.textContent = String(ex.message || ex); });
+      return;
+    }
+    err.textContent = "Enter a URL or paste JSON.";
+  });
+
+  function applySpec(obj) {
+    spec = obj || {};
+    render();
+    var first = document.querySelector(".op");
+    if (first) first.classList.add("open");
+  }
+  function fetchSpec(url) {
+    return fetch(url, { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching spec"); return r.text(); })
+      .then(function (txt) { applySpec(JSON.parse(txt)); });
+  }
+
+  /* ---------- boot: ?url= param → inline <script> data → nothing ---------- */
+  (function boot() {
+    var params = new URLSearchParams(location.search);
+    var url = params.get("url") || (document.currentScript && document.currentScript.dataset.specUrl);
+    var rootUrl = document.documentElement.getAttribute("data-spec-url");
+    url = url || rootUrl;
+    if (url) { fetchSpec(url).catch(function () { bootInline(); }); return; }
+    bootInline();
+  })();
+  function bootInline() {
+    var tag = document.getElementById("benzene-spec-data");
+    if (tag && tag.textContent.trim()) {
+      try { applySpec(JSON.parse(tag.textContent)); return; } catch (e) { /* fall through */ }
+    }
+    applySpec({});
+  }
+})();
+</script>
+</body>
+</html>
