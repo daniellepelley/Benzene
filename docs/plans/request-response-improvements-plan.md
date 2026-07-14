@@ -283,7 +283,21 @@ identical behavior — the regression that motivated D2); one `GetHeaders` call 
 across the whole negotiation (instrumented fake getter — closes P3); all four HTTP transports
 produce XML when asked (new coverage for the three that couldn't).
 
-## Phase 3 — Renderer seam (D4 + R6 + R7; breaking only for phase-2 internals)
+## Phase 3 — Renderer seam (D4 + R6 + R7; breaking only for phase-2 internals) — ✅ Done 2026-07-14
+
+> **Implementation note:** implemented as specified, no scoping deviations. `SerializerResponseRenderer.CanRender`
+> is an unconditional `true` (it's the catch-all, registered last by every transport, so by
+> construction it's only asked once nothing else has claimed the message); the "body already set"
+> short-circuit that Phase 2's `SerializationResponseHandler` did internally moved to
+> `RendererResponseHandler` (checked once, before walking renderers, rather than duplicated in every
+> renderer). `FakeHtmlRendererTest` proves all four Phase 3 acceptance points from a single renderer
+> implementation: `accept: text/html` selects it over the serializer renderer; a `TaskCompletionSource`
+> gate proves `RenderAsync` is genuinely awaited end-to-end through `RendererResponseHandler` (the
+> handler's `ValueTask` stays incomplete and no body is set until the gate is released); a failed
+> result renders its own error markup instead of `DefaultResponsePayloadMapper`'s `ErrorPayload` JSON;
+> and (via `SerializerResponseRenderer`, exercising the same `IRawContentMessage` code path a real
+> HTML package would rely on) a handler returning `IRawContentMessage` is delivered with its own
+> content type and body verbatim, bypassing the negotiated format entirely.
 
 1. `IResponseRenderer<TContext>` (R6) in `Benzene.Abstractions.MessageHandlers.Response`;
    phase 2's `SerializationResponseHandler` becomes `SerializerResponseRenderer<TContext>`

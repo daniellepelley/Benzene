@@ -30,7 +30,8 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         services.AddScoped<IHttpRequestAdapter<SelfHostHttpContext>, HttpListenerRequestAdapter>();
         services.AddScoped<IResponseHandler<SelfHostHttpContext>, HttpStatusCodeResponseHandler<SelfHostHttpContext>>();
-        services.AddScoped<IResponseHandler<SelfHostHttpContext>, SerializationResponseHandler<SelfHostHttpContext>>();
+        services.AddScoped<IResponseRenderer<SelfHostHttpContext>, SerializerResponseRenderer<SelfHostHttpContext>>();
+        services.AddScoped<IResponseHandler<SelfHostHttpContext>, RendererResponseHandler<SelfHostHttpContext>>();
         services.AddMediaFormatNegotiation<SelfHostHttpContext>();
         services.AddScoped<IBenzeneResponseAdapter<SelfHostHttpContext>, HttpContextResponseAdapter>();
 

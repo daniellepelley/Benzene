@@ -84,6 +84,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `XmlContentTypeHeaderContextPredicate` are removed (replaced by `XmlMediaFormat<TContext>`). All
   in-repo consumers (the four HTTP-ish transports, `BenzeneMessage`, six AWS event-source
   transports) go through DI and were updated to register the new types.
+- Request/response pipeline: Phase 3 of `docs/plans/request-response-improvements-plan.md` — the
+  renderer seam. Response writing is no longer serializer-only: a new `IResponseRenderer<TContext>`
+  (`CanRender`/`RenderAsync`) lets a handler's result be written in any representation, not just
+  JSON/XML. Phase 2's `SerializationResponseHandler<TContext>` becomes
+  `SerializerResponseRenderer<TContext>` (the catch-all renderer, registered last, unchanged
+  JSON/XML behavior), wrapped by a new `RendererResponseHandler<TContext>` (the actual
+  `IResponseHandler<TContext>` every transport registers) that short-circuits if a body is already
+  set, then walks registered renderers in order and delegates to the first whose `CanRender`
+  matches — a custom renderer (e.g. HTML, matched via `accept: text/html`) registers before the
+  serializer renderer and owns its own error representation instead of `ErrorPayload` JSON. New
+  `IRawContentMessage : IRawStringMessage` (`Benzene.Abstractions.Messages`) lets a handler's raw
+  payload carry its own content type, honored by `SerializerResponseRenderer` in place of the
+  negotiated format's content type. All in-repo consumers (the four HTTP-ish transports,
+  `BenzeneMessage`) go through DI and were updated to register `SerializerResponseRenderer` +
+  `RendererResponseHandler` in place of the deleted `SerializationResponseHandler`.
 
 ### Fixed
 - `EnrichingRequestMapper`'s XML docs corrected: enrichers fold onto the mapped request in

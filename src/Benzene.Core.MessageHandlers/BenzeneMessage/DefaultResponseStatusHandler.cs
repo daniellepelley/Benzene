@@ -6,7 +6,7 @@ namespace Benzene.Core.MessageHandlers.BenzeneMessage;
 /// <summary>
 /// Response handler that copies the handler's result status onto the transport response's status
 /// code via <see cref="IBenzeneResponseAdapter{TContext}.SetStatusCode"/>. Registered by
-/// <c>AddBenzeneMessage</c> alongside <see cref="Response.SerializationResponseHandler{TContext}"/> so
+/// <c>AddBenzeneMessage</c> alongside <see cref="Response.RendererResponseHandler{TContext}"/> so
 /// both body and status are written for every <c>BenzeneMessage</c> response.
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type the response is written to.</typeparam>

@@ -52,7 +52,8 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IBenzeneResponseAdapter<ApiGatewayContext>, ApiGatewayResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         services.AddScoped<IResponseHandler<ApiGatewayContext>, HttpStatusCodeResponseHandler<ApiGatewayContext>>();
-        services.AddScoped<IResponseHandler<ApiGatewayContext>, SerializationResponseHandler<ApiGatewayContext>>();
+        services.AddScoped<IResponseRenderer<ApiGatewayContext>, SerializerResponseRenderer<ApiGatewayContext>>();
+        services.AddScoped<IResponseHandler<ApiGatewayContext>, RendererResponseHandler<ApiGatewayContext>>();
         services.AddMediaFormatNegotiation<ApiGatewayContext>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("api-gateway"));

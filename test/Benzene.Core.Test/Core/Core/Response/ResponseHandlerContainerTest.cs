@@ -34,10 +34,15 @@ public class ResponseHandlerContainerTest
             new IResponseHandler<BenzeneMessageContext>[]
         {
             new DefaultResponseStatusHandler<BenzeneMessageContext> (new BenzeneMessageResponseAdapter()),
-            new SerializationResponseHandler<BenzeneMessageContext>(
+            new RendererResponseHandler<BenzeneMessageContext>(
                 new BenzeneMessageResponseAdapter(),
-                new DefaultResponsePayloadMapper<BenzeneMessageContext>(),
-                mediaFormatNegotiator,
+                new IResponseRenderer<BenzeneMessageContext>[]
+                {
+                    new SerializerResponseRenderer<BenzeneMessageContext>(
+                        new DefaultResponsePayloadMapper<BenzeneMessageContext>(),
+                        mediaFormatNegotiator,
+                        Mock.Of<IServiceResolver>())
+                },
                 Mock.Of<IServiceResolver>())
         });
 

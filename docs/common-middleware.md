@@ -477,9 +477,10 @@ Behavior tracks the CORS specification the same way `Microsoft.AspNetCore.Cors` 
 
 **Package:** `Benzene.Xml` (`Benzene.Xml.DependencyInjectionExtensions`)
 
-Registers an XML `ISerializerOption<TContext>`/response handler alongside the default JSON one, so
-the pipeline can serialize/deserialize XML payloads in addition to JSON (multi-serializer support is
-resolved per-request by the framework's serializer selection).
+Registers an XML `IMediaFormat<TContext>` (`XmlMediaFormat<TContext>`) alongside the default JSON
+one, so the pipeline can serialize/deserialize XML payloads in addition to JSON — which format
+applies to a given request/response is resolved per-message by `IMediaFormatNegotiator<TContext>`
+(`content-type` for reads, `accept` for writes).
 
 ```csharp
 public static IMiddlewarePipelineBuilder<TContext> UseXml<TContext>(

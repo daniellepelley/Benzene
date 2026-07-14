@@ -45,6 +45,9 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 ### Response Handling
 - `IResponseHandler<TContext>` - Handles response writing (single async method; the previous
   `ISyncResponseHandler`/`IAsyncResponseHandler` split was removed)
+- `IResponseRenderer<TContext>` - One representation a response can be written in (`CanRender` +
+  `RenderAsync`); `Benzene.Core.MessageHandlers`' `RendererResponseHandler<TContext>` (an
+  `IResponseHandler<TContext>`) walks registered renderers in order, first `CanRender` wins
 - `IResponseHandlerContainer<TContext>` - Contains response handlers
 - `IBenzeneResponseAdapter<TContext>` - Adapts responses to transport format
 - `IResponsePayloadMapper<TContext>` - Maps response payloads
