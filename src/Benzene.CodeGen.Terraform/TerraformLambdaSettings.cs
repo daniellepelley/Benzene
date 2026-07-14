@@ -11,4 +11,5 @@ public class TerraformLambdaSettings
     public string Domain { get; set; }
     public string SubDomain { get; set; }
     public IDictionary<string, string[]> TopicsMap { get; set; }
+    public TerraformEventBridgeRuleSettings EventBridge { get; set; }
 }

@@ -14,6 +14,7 @@ and EventBridge events natively carry a routing key (`detail-type`) plus an orig
 Scope: **inbound** (EventBridge → Lambda → Benzene handlers) and **outbound** (a Benzene message
 client publishing via `PutEvents`), plus test helpers, tests, docs, and spec updates. Terraform
 rule generation from `[Message]` topics is explicitly out of scope (future work).
+*(Since done — see `docs/plans/terraform-eventbridge-rules-plan.md`.)*
 
 ## Verified facts this plan relies on
 

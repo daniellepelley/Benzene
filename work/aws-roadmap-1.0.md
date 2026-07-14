@@ -888,12 +888,13 @@ test above is picked up
 
 ### New Event Sources (Priority Order)
 
-1. **AWS Lambda - DynamoDB Streams** (6-8 weeks)
-   - Event source adapter
-   - Change data capture patterns
-   - DynamoDB Streams-specific middleware
-   - Example: Event sourcing with DynamoDB
-   - **Effort:** 30-40 hours
+1. **AWS Lambda - DynamoDB Streams** (6-8 weeks) — ✅ **Built 2026-07-14**:
+   `Benzene.Aws.Lambda.DynamoDb` (+ `.TestHelpers`), per `docs/plans/dynamodb-streams-plan.md`.
+   Topic = `"{tableName}:{eventName}"`, body = record image unmarshalled from AttributeValue
+   format to plain JSON, ordered sequential processing with stop-at-first-failure
+   `ReportBatchItemFailures` checkpointing, zero new NuGet dependencies (own envelope POCOs).
+   ~~Event source adapter~~ / ~~Change data capture patterns~~ done; DynamoDB-specific
+   middleware (old-vs-new image diffing) and an event-sourcing example remain open as follow-up.
 
 2. **AWS Lambda - Kinesis Data Streams** (6-8 weeks)
    - Event source adapter

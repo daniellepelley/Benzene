@@ -54,6 +54,8 @@
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway.TestHelpers\Benzene.Aws.Lambda.ApiGateway.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.DynamoDb\Benzene.Aws.Lambda.DynamoDb.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.DynamoDb.TestHelpers\Benzene.Aws.Lambda.DynamoDb.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.EventBridge\Benzene.Aws.Lambda.EventBridge.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.EventBridge.TestHelpers\Benzene.Aws.Lambda.EventBridge.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
