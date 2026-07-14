@@ -29,12 +29,12 @@ public class ProtobufJsonGrpcMessageAdapter : IGrpcMessageAdapter
         PropertyNameCaseInsensitive = true
     };
 
-    public TRequest? ConvertRequest<TRequest>(object? protobufMessage) where TRequest : class
+    public TRequest? ConvertRequest<TRequest>(object? protobufMessage)
     {
         switch (protobufMessage)
         {
             case null:
-                return null;
+                return default;
             case TRequest direct:
                 return direct;
             case IMessage message:
@@ -44,7 +44,7 @@ public class ProtobufJsonGrpcMessageAdapter : IGrpcMessageAdapter
         }
     }
 
-    public TResponse ConvertResponse<TResponse>(object? payload) where TResponse : class
+    public TResponse ConvertResponse<TResponse>(object? payload)
     {
         if (payload is TResponse direct)
         {

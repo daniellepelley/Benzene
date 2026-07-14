@@ -3,7 +3,7 @@
 Benzene runs on the Azure Functions **isolated worker** model, using the same platform-neutral
 `BenzeneStartUp` base class as every other Benzene host (AWS Lambda, ASP.NET Core). This guide
 starts from an empty folder and ends with a deployed Function App handling HTTP requests, plus
-optional Event Hub and Kafka triggers.
+optional Event Hub, Kafka, and Service Bus triggers.
 
 ## Prerequisites
 
@@ -262,9 +262,9 @@ func azure functionapp publish my-function-app
 Once deployed, `GET` the printed URL at `/api/hello/world` (or just `/hello/world`, depending on
 your `routePrefix` setting) to confirm the handler responds.
 
-## Event Hub and Kafka triggers
+## Event Hub, Kafka, and Service Bus triggers
 
-Benzene provides specialized middleware for two other Azure Functions trigger types, each
+Benzene provides specialized middleware for other Azure Functions trigger types, each
 configured inside the same `Configure` method, on the same platform-neutral `app` shown in step 4
 — a single `BenzeneStartUp` can wire up several trigger types at once, each with its own
 sub-pipeline, exactly as with any other Benzene host:
@@ -272,9 +272,7 @@ sub-pipeline, exactly as with any other Benzene host:
 - **HTTP**: `app.UseHttp(...)`, in `Benzene.Azure.Function.AspNet`
 - **Event Hubs**: `app.UseEventHub(...)`, in `Benzene.Azure.Function.EventHub`
 - **Kafka** (Event Hubs' Kafka-compatible endpoint): `app.UseKafka(...)`, in `Benzene.Azure.Function.Kafka`
-
-There is no Azure Service Bus package today — only Event Hubs (native and Kafka-compatible) and
-HTTP are supported.
+- **Service Bus**: `app.UseServiceBus(...)`, in `Benzene.Azure.Function.ServiceBus`
 
 ### Event Hubs
 
@@ -362,6 +360,54 @@ public class KafkaFunction
 match your Event Hubs Kafka endpoint configuration — this follows the same shape as any
 `Microsoft.Azure.Functions.Worker.Extensions.Kafka` trigger.)
 
+### Service Bus
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.ServiceBus --prerelease
+```
+
+```csharp
+app.UseServiceBus(serviceBus => serviceBus.UseMessageHandlers());
+```
+
+Service Bus messages carry real key/value application properties, so — unlike Event Hubs — Benzene
+dispatches by topic via `[Message]`/message handler registration directly, the same way it does for
+Kafka. Since a Service Bus queue or topic/subscription isn't itself a per-message "topic" in
+Benzene's sense, set a `"topic"` application property on each message you send; that's what
+`ServiceBusMessageTopicGetter` reads to route to the matching handler. Add a trigger function that
+injects `IAzureFunctionApp` and calls `HandleServiceBusMessages(...)`:
+
+```csharp
+using Azure.Messaging.ServiceBus;
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.ServiceBus;
+using Microsoft.Azure.Functions.Worker;
+
+public class ServiceBusFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public ServiceBusFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("service-bus")]
+    public Task Run([ServiceBusTrigger("my-queue", Connection = "ServiceBusConnection")] ServiceBusReceivedMessage message)
+    {
+        return _app.HandleServiceBusMessages(message);
+    }
+}
+```
+
+(Bind a `ServiceBusReceivedMessage[]` instead of a single `ServiceBusReceivedMessage` if your
+trigger is configured with `IsBatched = true`; `HandleServiceBusMessages` accepts both via a
+`params` array. Note that message completion is a no-op in this package today — the trigger
+completes the message per its own default settings regardless of the handler's outcome; explicit
+complete/abandon/dead-letter control isn't implemented yet.)
+
 ## Correlation and tracing
 
 Every middleware in every pipeline — HTTP, Event Hub, Kafka — is automatically wrapped in a
@@ -418,10 +464,11 @@ var response = await app.HandleHttpRequest(request) as ContentResult;
 `IHostBuilder.UseBenzene<TStartUp>()` does for a real deployment, and returns an `IAzureFunctionApp`
 you can dispatch into directly. `AsAspNetCoreHttpRequest()` (from
 `Benzene.Azure.Function.AspNet.TestHelpers`) turns an `HttpBuilder` into a real `HttpRequest`.
-`HandleEventHub(...)` and `HandleKafkaEvents(...)` work the same way for those transports —
-`Benzene.Azure.Function.EventHub.TestHelpers`/`Benzene.Azure.Function.Kafka.TestHelpers` add
-`AsEventHubBenzeneMessage()`/`AsAzureKafkaEvent()` extensions on `MessageBuilder` to build the
-matching event payloads.
+`HandleEventHub(...)`, `HandleKafkaEvents(...)`, and `HandleServiceBusMessages(...)` work the same
+way for those transports —
+`Benzene.Azure.Function.EventHub.TestHelpers`/`Benzene.Azure.Function.Kafka.TestHelpers`/`Benzene.Azure.Function.ServiceBus.TestHelpers`
+add `AsEventHubBenzeneMessage()`/`AsAzureKafkaEvent()`/`AsAzureServiceBusMessage()` extensions on
+`MessageBuilder` to build the matching event payloads.
 
 For quick, StartUp-free pipeline tests (useful when testing a single trigger type in isolation
 rather than a whole app), `InlineAzureFunctionStartUp` (from `Benzene.Azure.Function.Core`) is a

@@ -1,0 +1,127 @@
+{
+  "description": "End-to-end message envelope cases (wire-contracts.md section 1) run against the canonical conformance handlers (see README.md). expected.body and expected.headers use subset matching.",
+  "cases": [
+    {
+      "name": "greet-ok",
+      "request": { "topic": "conformance:greet", "headers": {}, "body": "{\"name\":\"world\"}" },
+      "expected": {
+        "statusCode": "Ok",
+        "body": { "greeting": "Hello world" },
+        "headers": { "content-type": "application/json" }
+      }
+    },
+    {
+      "name": "unknown-topic-returns-not-found",
+      "request": { "topic": "conformance:no-such-topic", "headers": {}, "body": "{}" },
+      "expected": {
+        "statusCode": "NotFound",
+        "body": { "status": "NotFound" }
+      }
+    },
+    {
+      "name": "empty-topic-returns-validation-error",
+      "request": { "topic": "", "headers": {}, "body": "{}" },
+      "expected": {
+        "statusCode": "ValidationError",
+        "body": { "status": "ValidationError" }
+      }
+    },
+    {
+      "name": "status-created",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Created\"}" },
+      "expected": { "statusCode": "Created", "body": { "applied": "Created" } }
+    },
+    {
+      "name": "status-accepted",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Accepted\"}" },
+      "expected": { "statusCode": "Accepted", "body": { "applied": "Accepted" } }
+    },
+    {
+      "name": "status-updated",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Updated\"}" },
+      "expected": { "statusCode": "Updated", "body": { "applied": "Updated" } }
+    },
+    {
+      "name": "status-deleted",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Deleted\"}" },
+      "expected": { "statusCode": "Deleted", "body": { "applied": "Deleted" } }
+    },
+    {
+      "name": "status-ignored",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Ignored\"}" },
+      "expected": { "statusCode": "Ignored", "body": { "applied": "Ignored" } }
+    },
+    {
+      "name": "status-bad-request",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"BadRequest\",\"errors\":[\"first error\",\"second error\"]}" },
+      "expected": {
+        "statusCode": "BadRequest",
+        "body": { "status": "BadRequest", "detail": "first error, second error" }
+      }
+    },
+    {
+      "name": "status-validation-error",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ValidationError\",\"errors\":[\"first error\",\"second error\"]}" },
+      "expected": {
+        "statusCode": "ValidationError",
+        "body": { "status": "ValidationError", "detail": "first error, second error" }
+      }
+    },
+    {
+      "name": "status-unauthorized",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Unauthorized\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "Unauthorized",
+        "body": { "status": "Unauthorized", "detail": "first error" }
+      }
+    },
+    {
+      "name": "status-forbidden",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Forbidden\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "Forbidden",
+        "body": { "status": "Forbidden", "detail": "first error" }
+      }
+    },
+    {
+      "name": "status-not-found",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"NotFound\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "NotFound",
+        "body": { "status": "NotFound", "detail": "first error" }
+      }
+    },
+    {
+      "name": "status-conflict",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Conflict\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "Conflict",
+        "body": { "status": "Conflict", "detail": "first error" }
+      }
+    },
+    {
+      "name": "status-not-implemented",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"NotImplemented\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "NotImplemented",
+        "body": { "status": "NotImplemented", "detail": "first error" }
+      }
+    },
+    {
+      "name": "status-service-unavailable",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ServiceUnavailable\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "ServiceUnavailable",
+        "body": { "status": "ServiceUnavailable", "detail": "first error" }
+      }
+    },
+    {
+      "name": "status-unexpected-error",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"UnexpectedError\",\"errors\":[\"first error\"]}" },
+      "expected": {
+        "statusCode": "UnexpectedError",
+        "body": { "status": "UnexpectedError", "detail": "first error" }
+      }
+    }
+  ]
+}

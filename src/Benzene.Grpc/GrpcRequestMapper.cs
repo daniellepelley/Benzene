@@ -1,5 +1,6 @@
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Grpc.Serialization;
+using Benzene.Grpc.Streaming;
 
 namespace Benzene.Grpc;
 
@@ -14,8 +15,16 @@ public class GrpcRequestMapper : IRequestMapper<GrpcContext>
 
     public TRequest? GetBody<TRequest>(GrpcContext context) where TRequest : class
     {
-        return context.RequestAsObject is TRequest direct
-            ? direct
-            : _adapter.ConvertRequest<TRequest>(context.RequestAsObject);
+        if (context.RequestAsObject is TRequest direct)
+        {
+            return direct;
+        }
+
+        if (GrpcStreamAdapter.TryConvertStream(context.RequestAsObject, typeof(TRequest), _adapter, isResponseDirection: false, context.CancellationToken) is TRequest convertedStream)
+        {
+            return convertedStream;
+        }
+
+        return _adapter.ConvertRequest<TRequest>(context.RequestAsObject);
     }
 }

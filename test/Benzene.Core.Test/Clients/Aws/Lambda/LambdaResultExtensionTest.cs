@@ -139,4 +139,59 @@ public class LambdaResultExtensionTest
         Assert.Equal(expectedStatus, lambdaBenzeneResult.Status);
         Assert.Empty(lambdaBenzeneResult.Errors);
     }
+
+    // The BenzeneMessage envelope carries raw Benzene statuses (docs/specification/wire-contracts.md),
+    // which the client preserves verbatim - including the ones that would collapse under the numeric
+    // HTTP mapping (Updated/Deleted -> 204 -> Ok).
+    [Theory]
+    [InlineData(BenzeneResultStatus.Ok)]
+    [InlineData(BenzeneResultStatus.Created)]
+    [InlineData(BenzeneResultStatus.Accepted)]
+    [InlineData(BenzeneResultStatus.Updated)]
+    [InlineData(BenzeneResultStatus.Deleted)]
+    [InlineData(BenzeneResultStatus.Ignored)]
+    public void MapSuccessTest_RawBenzeneStatusIsPreservedVerbatim(string benzeneStatus)
+    {
+        var lambdaResponse = new BenzeneMessageClientResponse(benzeneStatus,
+            JsonConvert.SerializeObject(new ExamplePayload { Name = "some-name" }));
+
+        var lambdaBenzeneResult = lambdaResponse.AsBenzeneResult<ExamplePayload>(new JsonSerializer());
+
+        Assert.Equal(benzeneStatus, lambdaBenzeneResult.Status);
+        Assert.True(lambdaBenzeneResult.IsSuccessful);
+        Assert.Equal("some-name", lambdaBenzeneResult.Payload.Name);
+    }
+
+    [Theory]
+    [InlineData(BenzeneResultStatus.BadRequest)]
+    [InlineData(BenzeneResultStatus.ValidationError)]
+    [InlineData(BenzeneResultStatus.Unauthorized)]
+    [InlineData(BenzeneResultStatus.Forbidden)]
+    [InlineData(BenzeneResultStatus.NotFound)]
+    [InlineData(BenzeneResultStatus.Conflict)]
+    [InlineData(BenzeneResultStatus.NotImplemented)]
+    [InlineData(BenzeneResultStatus.ServiceUnavailable)]
+    [InlineData(BenzeneResultStatus.UnexpectedError)]
+    public void MapFailureTest_RawBenzeneStatusIsPreservedVerbatim(string benzeneStatus)
+    {
+        var lambdaResponse = new BenzeneMessageClientResponse(benzeneStatus,
+            JsonConvert.SerializeObject(new ProblemDetails { Detail = "some-error" }));
+
+        var lambdaBenzeneResult = lambdaResponse.AsBenzeneResult<ExamplePayload>(new JsonSerializer());
+
+        Assert.Equal(benzeneStatus, lambdaBenzeneResult.Status);
+        Assert.False(lambdaBenzeneResult.IsSuccessful);
+        Assert.Equal("some-error", lambdaBenzeneResult.Errors[0]);
+    }
+
+    [Fact]
+    public void Map_UnrecognizedStatusCode_ReturnsUnexpectedError()
+    {
+        var lambdaResponse = new BenzeneMessageClientResponse("999", null);
+
+        var lambdaBenzeneResult = lambdaResponse.AsBenzeneResult<ExamplePayload>(new JsonSerializer());
+
+        Assert.Equal(BenzeneResultStatus.UnexpectedError, lambdaBenzeneResult.Status);
+        Assert.False(lambdaBenzeneResult.IsSuccessful);
+    }
 }

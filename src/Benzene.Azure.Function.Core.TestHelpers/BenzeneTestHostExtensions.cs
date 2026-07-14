@@ -1,7 +1,8 @@
+using Benzene.Azure.Function.Core;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Testing;
 
-namespace Benzene.Azure.Function.Core;
+namespace Benzene.Azure.Function.Core.TestHelpers;
 
 /// <summary>
 /// Provides the Azure Functions bridge for <see cref="BenzeneTestHostBuilder{TStartUp}"/>.

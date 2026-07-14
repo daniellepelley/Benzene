@@ -11,20 +11,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.40.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Grpc\Benzene.Grpc.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Grpc.AspNet\Benzene.Grpc.AspNet.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Benzene.Core.Messages">
-      <HintPath>..\..\..\src\Benzene.Core.Messages\bin\Debug\net10.0\Benzene.Core.Messages.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>
