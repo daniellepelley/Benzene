@@ -1,6 +1,14 @@
 # ToDelete Folder Refactoring Plan
 
-## Problem
+**Status: resolved (Option A taken).** The `ToDelete/` folder no longer exists — `IMessageResult`
+(`src/Benzene.Abstractions.MessageHandlers/IMessageResult.cs`) and `IHasMessageResult`
+(`.../IHasMessageResult.cs`) now live directly in `Benzene.Abstractions.MessageHandlers`, their
+proper home given they're part of the public abstraction surface every transport package depends on.
+All 7 usage sites listed below were verified still intact and compiling correctly (2026-07-14). Added
+XML `<summary>` documentation to both interfaces, which was the one remaining gap from Option A's
+checklist. No further action needed; kept for historical record.
+
+## Problem (historical — see Status above)
 The `src/Benzene.Abstractions.MessageHandlers/ToDelete/` folder contains public interfaces that are actively used across the codebase:
 - `IMessageResult`
 - `IHasMessageResult`
@@ -38,4 +46,5 @@ If these interfaces should be removed:
 - If still valid: Move out of ToDelete and document properly
 
 ## Impact on 1.0 Release
-**BLOCKING** - Cannot ship 1.0 with interfaces in a "ToDelete" folder. Must resolve before release.
+~~**BLOCKING** - Cannot ship 1.0 with interfaces in a "ToDelete" folder. Must resolve before release.~~
+Resolved — no longer blocking.

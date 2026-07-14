@@ -3,7 +3,7 @@ using Benzene.Abstractions;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.Lambda.ApiGateway;
+namespace Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 
 /// <summary>
 /// Provides extension methods for building API Gateway test events from <see cref="IHttpBuilder{T}"/>.
