@@ -9,7 +9,6 @@ Core abstraction layer for Benzene. Defines fundamental interfaces for dependenc
 - `IBenzeneServiceContainer` - Container abstraction for registering dependencies
 - `IServiceResolver` - Resolves dependencies from the container
 - `IServiceResolverFactory` - Factory for creating service resolvers
-- `IDependencyInjectionAdapter<T>` - Adapter for integrating third-party DI containers
 - `IRegisterDependency` - Marker interface for registration modules
 - `BenzeneServiceContainerExtensions` - Extension methods for fluent registration
 

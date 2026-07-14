@@ -449,14 +449,11 @@ and how to send events/messages into the built host.
 `IStartUp<IServiceCollection, IConfiguration, IBenzeneApplicationBuilder>` — so the unified
 cross-platform model described above is Microsoft DI-only today.
 
-Autofac support instead extends the more general `IStartUp<TContainer, TConfiguration, TAppBuilder>`
-abstraction at the container level, independent of `BenzeneStartUp`/`IBenzeneApplicationBuilder`.
-`Benzene.Autofac` provides:
+Autofac support instead works at the container level, independent of
+`BenzeneStartUp`/`IBenzeneApplicationBuilder`. `Benzene.Autofac` provides:
 
 - `AutofacBenzeneServiceContainer` — adapts `ContainerBuilder` to `IBenzeneServiceContainer`.
 - `AutofacServiceResolverFactory` — adapts a built Autofac container to `IServiceResolverFactory`.
-- `AutofacDependencyInjectionAdapter` — implements `IDependencyInjectionAdapter<ContainerBuilder>`,
-  bundling the two adapters above so they can be supplied as a unit.
 - `ContainerBuilder.UsingBenzene()` — registers Benzene's own services against a `ContainerBuilder`
   directly, the Autofac equivalent of `IServiceCollection.UsingBenzene()`.
 
