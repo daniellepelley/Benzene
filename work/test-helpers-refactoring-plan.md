@@ -1,6 +1,29 @@
 # Test Helpers Refactoring Plan
 
-## Problem
+**Status: resolved (2026-07-14), Option B taken in practice rather than the originally-recommended
+Option A.** All 12 files originally listed below were already gone from production packages by the
+time of this audit — a per-adapter `Benzene.Xxx.TestHelpers` sibling-package convention was
+established instead of consolidating into `Benzene.Testing` (e.g. `Benzene.Aws.Lambda.Sqs.TestHelpers`,
+`Benzene.Azure.Function.Kafka.TestHelpers`, `Benzene.Grpc.TestHelpers`, and others — 15+ such packages
+exist today). This audit found and fixed 3 remaining leaks the original file list didn't name (same
+underlying problem, different files):
+- `Benzene.Aws.Lambda.ApiGateway/MessageBuilderExtensions.cs` (`AsApiGatewayRequest`/
+  `AsApiGatewayCustomAuthorizerEvent`) — moved into the already-existing
+  `Benzene.Aws.Lambda.ApiGateway.TestHelpers` package.
+- `Benzene.Aws.Lambda.Core/BenzeneTestHostExtensions.cs` — moved into a new
+  `Benzene.Aws.Lambda.Core.TestHelpers` package; this also removed a `ProjectReference` from
+  production package `Benzene.Aws.Lambda.Core` to `Benzene.Testing`, which meant every consumer of
+  the real `Benzene.Aws.Lambda.Core` NuGet package was transitively pulling in a test-only package.
+- `Benzene.Azure.Function.Core/BenzeneTestHostExtensions.cs` — same fix, new
+  `Benzene.Azure.Function.Core.TestHelpers` package, same `Benzene.Testing` reference removed from
+  the production `Benzene.Azure.Function.Core` package.
+
+A repo-wide sweep after the fix (every `src/*` production package's `ProjectReference`s and `.cs`
+files checked for `Benzene.Testing`) found no further leaks. `dotnet build Benzene.sln` and
+`dotnet test test/Benzene.Core.Test/Benzene.Test.csproj` (674 passed, 4 skipped) are both green with
+no regressions. No longer blocking for 1.0.
+
+## Problem (historical — see Status above)
 Test helper code exists in production packages, which:
 1. Pollutes the public API surface
 2. Ships unnecessary code to production users
@@ -83,4 +106,5 @@ Recommendation: **Option A** - simpler, single test package
 **Total: 6-10 hours**
 
 ## BLOCKING for 1.0
-This must be completed before 1.0 release. Test helpers in production packages is unprofessional and increases package size unnecessarily.
+~~This must be completed before 1.0 release. Test helpers in production packages is unprofessional and increases package size unnecessarily.~~
+Resolved — no longer blocking.

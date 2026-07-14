@@ -4,6 +4,46 @@
 **Reviewer:** Claude (Automated Review)
 **Goal:** Identify public APIs that are stable enough to commit to for 1.0.0 release with semver guarantees
 
+> **2026-07-14 audit pass** — re-verified every "Must Fix (Blocking)" item and both named bugs against
+> current code (this review is now 6 days old; a great deal of work has landed since, verified here
+> rather than trusted from other docs' own claims). Status:
+> 1. **ToDelete folder — ✅ resolved.** No longer exists; `IMessageResult`/`IHasMessageResult` live
+>    directly in `Benzene.Abstractions.MessageHandlers` (confirmed today, and XML-documented as part
+>    of this same audit pass — see `work/ToDelete-refactoring-plan.md`).
+> 2. **Test helpers in production packages — ✅ resolved.** All 4 files this review named
+>    (`Benzene.Core.MessageHandlers/BenzeneMessage/TestHelpers/*`, `Benzene.Aws.Lambda.Kafka/TestHelpers/*`,
+>    `Benzene.Aws.Lambda.ApiGateway/BenzeneTestHostExtensions.cs`,
+>    `Benzene.Aws.Lambda.ApiGateway/MessageBuilderExtensions.cs`) are gone from their production
+>    packages — moved into sibling `.TestHelpers` packages. A repo-wide sweep today additionally found
+>    and fixed 3 more instances of the same problem this review didn't catch (in
+>    `Benzene.Aws.Lambda.Core` and `Benzene.Azure.Function.Core`, both outside this review's original
+>    10-package scope) — see `work/test-helpers-refactoring-plan.md`.
+> 3. **Both named bugs — ✅ fixed.** `BenzeneServiceContainerExtensions.cs`'s `TryAddSingleton(Type,Type)`
+>    correctly calls `AddSingleton` now (not `AddScoped`); `Extensions.cs`'s `Split` correctly captures
+>    `newApp` in its closure (not `app`). Both verified by reading the current source directly.
+> 4. **XML documentation — ⚠️ mostly done, 2 packages still genuinely at ~0%.** Of the 5 packages this
+>    review marked "READY FOR 1.0 AFTER adding XML docs" (`Benzene.Abstractions`,
+>    `.Abstractions.Middleware`, `Benzene.Core`, `Core.Middleware`, `Benzene.Http`), a clean rebuild
+>    (`rm -rf obj bin` first, to avoid incremental-build cache masking warnings) with
+>    `GenerateDocumentationFile=true` shows **4 of 5 at 0 CS1591 warnings**; `Benzene.Core.Middleware`
+>    had 5 real gaps (`BenzeneApplicationBuilder`, added later by the cross-platform startup
+>    unification and never documented) — **fixed in this pass**, now also 0 warnings. Of the 3 AWS
+>    packages this review covered, `Benzene.Aws.Lambda.Core`, `.Kafka`, and `.ApiGateway` are all
+>    already at 0 CS1591 warnings too (documented in an earlier session). **`Benzene.Abstractions.MessageHandlers`
+>    and `Benzene.Core.MessageHandlers`** — the two packages this review marked "NEEDS WORK" — are
+>    confirmed still genuinely undocumented (3/37 and 0/67 files with any `///` comment respectively,
+>    and neither `.csproj` has `GenerateDocumentationFile` enabled at all, so there's no compiler
+>    enforcement). This is real, substantial remaining work (107+ public types across 104 files) —
+>    dispatched to two parallel background passes as part of this same audit; see the per-package
+>    sections below for the outcome once that lands (this note will be updated, or check `git log` for
+>    a same-day follow-up commit if reading this before that finishes).
+> 5. **Not attempted in this pass** (genuine judgment calls, not mechanical fixes — left for a
+>    maintainer decision, consistent with how this session has handled every other breaking-API-shaped
+>    question): reducing public API surface (marking implementation details `internal`), the naming
+>    issues (double "Message" in names, file/class mismatches, "Builder" vs "Build" inconsistency), and
+>    the 1.0 release-strategy recommendation (Option A/B/C) itself. Those remain open exactly as this
+>    review originally framed them.
+
 ---
 
 ## Executive Summary
@@ -646,10 +686,17 @@ Ship core + message handlers at 1.0, keep AWS adapters at preview.
 ## Critical Path to 1.0
 
 ### Must Fix (Blocking)
-1. ✅ Delete or relocate ToDelete folder contents
-2. ✅ Move test helpers out of production packages
-3. ✅ Fix bugs in BenzeneServiceContainerExtensions.cs:120 and Extensions.cs:174
-4. ✅ Add XML documentation to all public APIs
+1. ✅ Delete or relocate ToDelete folder contents — verified 2026-07-14, folder gone,
+   interfaces relocated and documented
+2. ✅ Move test helpers out of production packages — verified 2026-07-14; also found and
+   fixed 3 more instances beyond this review's original 4 (see 2026-07-14 note above)
+3. ✅ Fix bugs in BenzeneServiceContainerExtensions.cs:120 and Extensions.cs:174 — verified
+   2026-07-14, both read correctly in current source
+4. ⚠️ Add XML documentation to all public APIs — **was incorrectly marked done here; not
+   actually true as of 2026-07-14.** 8 of 10 packages this review covers are genuinely at
+   0 CS1591 warnings (verified via clean rebuild); `Benzene.Abstractions.MessageHandlers`
+   and `Benzene.Core.MessageHandlers` are still ~0% documented — see the 2026-07-14 note
+   at the top of this document for the in-progress fix
 
 ### Should Fix (Strongly Recommended)
 5. 🔸 Reduce public API surface by marking implementation details as internal

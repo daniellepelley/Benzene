@@ -26,6 +26,7 @@ so that:
 | [wire-contracts.md](wire-contracts.md) | Everything that crosses a process boundary: the message envelope, header conventions, the status vocabulary and its per-protocol mappings, the health check response format |
 | [transport-bindings.md](transport-bindings.md) | What a transport adapter is and the contract every binding must satisfy, with the existing bindings as worked examples |
 | [porting-guide.md](porting-guide.md) | Concept-vs-idiom mapping for implementers in other languages, and the conformance-testing approach |
+| [conformance/](conformance/README.md) | Language-neutral test fixtures (status vocabulary, mapping tables, envelope cases) that every implementation runs; the .NET reference runner is `test/Benzene.Conformance.Test/` |
 
 ## Conformance language
 

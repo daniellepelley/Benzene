@@ -5,13 +5,13 @@ on:
 
 defaults:
   run:
-    working-directory: ./Examples/Asp/Benzene.Example.Asp
+    working-directory: ./examples/Asp/Benzene.Example.Asp
 jobs:
   build:
     environment: test
     runs-on: ubuntu-latest
     env: 
-      working-directory: ./Examples/Asp/Benzene.Example.Asp
+      working-directory: ./examples/Asp/Benzene.Example.Asp
 
     steps:
     - name: Checkout code  
@@ -32,5 +32,5 @@ jobs:
       uses: Azure/functions-action@v1
       with:
         app-name: benzene-example
-        package: ./Examples/Asp/Benzene.Example.Asp/myApp
+        package: ./examples/Asp/Benzene.Example.Asp/myApp
         publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }} 

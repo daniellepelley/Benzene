@@ -31,9 +31,9 @@ attribute support, the generic `BenzeneMessage` entry point).
 | `headers` | object (string→string) | Required, may be empty. Flat string map — no nested values. |
 | `body` | string | Required. The message payload, **pre-serialized as a string** (JSON by default), not an inline object. This keeps the envelope schema fixed regardless of payload schema. |
 
-*(Informative: the outbound Lambda client's envelope names the third field `message` rather than
-`body`; the inbound `BenzeneMessage` entry point reads `body`. Unifying on `body` is a pending
-pre-1.0 correction to the .NET implementation.)*
+*(Informative: earlier .NET versions had the outbound Lambda client sending this field as
+`message` while the inbound entry point read `body` — corrected to `body` on both sides; `body`
+is normative.)*
 
 ### 1.2 Response
 
@@ -47,9 +47,30 @@ pre-1.0 correction to the .NET implementation.)*
 
 | Field | Type | Rules |
 |---|---|---|
-| `statusCode` | string | A status vocabulary value (§3) — the *Benzene* status, not an HTTP code. |
+| `statusCode` | string | A status vocabulary value (§3) — the *Benzene* status, not an HTTP code. Clients MAY additionally tolerate numeric HTTP codes here for interop with older or HTTP-shaped services, but MUST NOT write them. |
 | `headers` | object (string→string) | Response headers, including `content-type` when set. |
-| `body` | string | Pre-serialized response payload. |
+| `body` | string | Pre-serialized response payload: on success, the handler's response payload; on failure, the error payload (§1.3). |
+
+### 1.3 Error payload
+
+When a result is unsuccessful, the response `body` is the serialized error payload — a
+problem-details-shaped object:
+
+```json
+{
+  "status": "NotFound",
+  "detail": "No handler found for topic order:create"
+}
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `status` | string | The Benzene status, repeated from the envelope. |
+| `detail` | string | The result's error messages, joined with `", "`. |
+| `type`, `title`, `instance` | string? | Reserved (RFC 7807 alignment); writers MAY emit them as `null` or omit them. |
+
+Clients recover `errors` from `detail`; a missing/empty `detail` yields an error-free failed
+result.
 
 ## 2. Header conventions
 
@@ -178,7 +199,8 @@ no check failed (a warning maps to a degraded-but-serving state).
 ## 6. Serialization defaults
 
 - Default payload encoding is JSON, UTF-8.
-- Writing: camelCase property names, null properties omitted.
+- Writing: camelCase property names. Writers MAY omit null-valued properties or emit them as
+  `null`; readers MUST accept both.
 - Reading: property-name matching is case-insensitive.
 - gRPC payload bridging uses **protobuf's own JSON mapping**
   ([proto3 JSON](https://protobuf.dev/programming-guides/proto3/#json)) between protobuf messages
