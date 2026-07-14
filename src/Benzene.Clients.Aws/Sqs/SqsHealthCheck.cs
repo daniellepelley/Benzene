@@ -34,6 +34,8 @@ public class SqsHealthCheck : IHealthCheck
     /// <returns>A task that resolves to the outcome of the health check.</returns>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
+        var dependencies = new[] { new HealthCheckDependency("Queue", _queueUrl) };
+
         var delay = Task.Delay(TimeOut);
         var pingQueue = _amazonSqs.SendMessageAsync(new SendMessageRequest(_queueUrl, "{}")
         {
@@ -56,7 +58,7 @@ public class SqsHealthCheck : IHealthCheck
                 new Dictionary<string, object>
                 {
                     { "QueueUrl", _queueUrl },
-                });
+                }, dependencies);
         }
         if (delay.IsCompleted)
         {
@@ -65,13 +67,13 @@ public class SqsHealthCheck : IHealthCheck
                 {
                     { "QueueUrl", _queueUrl },
                     { "Error", $"Timed out, {TimeOut}ms" }
-                });
+                }, dependencies);
         }
         return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
         {
             { "Error", $"Returned a status of {pingQueue.Result.HttpStatusCode}" },
             { "QueueUrl", _queueUrl }
-        });
+        }, dependencies);
     }
 
     /// <summary>

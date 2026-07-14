@@ -18,6 +18,8 @@ public class CacheHealthCheck<TCacheService> : IHealthCheck where TCacheService 
 
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
+        var dependencies = new[] { new HealthCheckDependency("Cache", typeof(TCacheService).Name) };
+
         try
         {
             var canConnect = await _cacheService.CanConnectAsync();
@@ -25,7 +27,7 @@ public class CacheHealthCheck<TCacheService> : IHealthCheck where TCacheService 
             return HealthCheckResult.CreateInstance(canConnect, Type, new Dictionary<string, object>
             {
                 { "CanConnect", canConnect },
-            });
+            }, dependencies);
         }
         catch (Exception ex)
         {
@@ -33,8 +35,8 @@ public class CacheHealthCheck<TCacheService> : IHealthCheck where TCacheService 
             return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
             {
                 { "CanConnect", false },
-                { "Error", ex.Message }
-            });
+                { "Error", ex.GetType().Name }
+            }, dependencies);
         }
     }
 }

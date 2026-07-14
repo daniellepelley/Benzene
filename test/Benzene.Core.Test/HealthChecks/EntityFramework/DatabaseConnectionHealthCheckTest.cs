@@ -30,6 +30,9 @@ public class DatabaseConnectionHealthCheckTest
         Assert.Equal("DatabaseConnection", result.Type);
         Assert.Equal(true, result.Data["CanConnect"]);
         Assert.Null(result.Data["Error"]);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Database", dependency.Kind);
+        Assert.Equal(nameof(TestDbContext), dependency.Name);
     }
 
     [Fact]

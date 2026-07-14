@@ -14,6 +14,7 @@ namespace Benzene.Clients.Aws.Lambda;
 public class AwsLambdaHealthCheck : IHealthCheck
 {
     private readonly AwsLambdaBenzeneMessageClient _awsLambdaBenzeneMessageClient;
+    private readonly string _lambdaName;
     private const int TimeOut = 10000;
 
     /// <summary>
@@ -24,6 +25,7 @@ public class AwsLambdaHealthCheck : IHealthCheck
     /// <param name="logger">The logger used to record invocation outcomes and failures.</param>
     public AwsLambdaHealthCheck(string lambdaName, IAmazonLambda amazonLambda, ILogger<AwsLambdaHealthCheck> logger)
     {
+        _lambdaName = lambdaName;
         _awsLambdaBenzeneMessageClient = new AwsLambdaBenzeneMessageClient(lambdaName, amazonLambda, logger);
     }
 
@@ -39,6 +41,8 @@ public class AwsLambdaHealthCheck : IHealthCheck
     /// </remarks>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
+        var dependencies = new[] { new HealthCheckDependency("Lambda", _lambdaName) };
+
         var delay = Task.Delay(TimeOut);
         var pingLambdaTask = _awsLambdaBenzeneMessageClient.SendMessageAsync<Void, Void>("ping", null);
 
@@ -46,7 +50,7 @@ public class AwsLambdaHealthCheck : IHealthCheck
 
         if (pingLambdaTask.IsCompleted && pingLambdaTask.Result.Status == BenzeneResultStatus.Accepted)
         {
-            return HealthCheckResult.CreateInstance(true, Type);
+            return HealthCheckResult.CreateInstance(true, Type, new Dictionary<string, object>(), dependencies);
         }
 
         if (delay.IsCompleted)
@@ -55,13 +59,13 @@ public class AwsLambdaHealthCheck : IHealthCheck
                 new Dictionary<string, object>
                 {
                     { "TimeOut", TimeOut }
-                });
+                }, dependencies);
         }
 
         return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
         {
             { "Status", pingLambdaTask.Result.Status }
-        });
+        }, dependencies);
     }
 
     /// <summary>

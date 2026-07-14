@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Core.MessageHandlers.DI;
@@ -36,6 +37,24 @@ public class HealthCheckTests
 
         var healthCheckResult = result.PayloadAsObject as HealthCheckResponse;
         Assert.False(healthCheckResult.IsHealthy);
+    }
+
+    [Fact]
+    public async Task Dependencies_SurviveAggregation()
+    {
+        var dependencies = new[] { new HealthCheckDependency("Queue", "some-queue-url") };
+        var mockHealthCheck = new Mock<IHealthCheck>();
+        mockHealthCheck.Setup(x => x.ExecuteAsync())
+            .ReturnsAsync(HealthCheckResult.CreateInstance(true, "some-name", new Dictionary<string, object>(), dependencies));
+        mockHealthCheck.Setup(x => x.Type).Returns("some-name");
+
+        var result = await HealthCheckProcessor.PerformHealthChecksAsync(Defaults.HealthCheckTopic, new[] { mockHealthCheck.Object });
+
+        var healthCheckResult = result.PayloadAsObject as HealthCheckResponse;
+        var check = healthCheckResult.HealthChecks["some-name"];
+        var dependency = Assert.Single(check.Dependencies);
+        Assert.Equal("Queue", dependency.Kind);
+        Assert.Equal("some-queue-url", dependency.Name);
     }
 
     [Fact]

@@ -11,4 +11,11 @@ public interface IHealthCheckResult
 
     /// <summary>Arbitrary diagnostic details specific to the check (e.g. the URL pinged, the exception message), surfaced in the aggregated response.</summary>
     IDictionary<string, object> Data { get; }
+
+    /// <summary>
+    /// The external dependencies this check verifies (e.g. a specific queue, database, or downstream
+    /// service). A default interface member so existing implementers that don't override it stay
+    /// source- and binary-compatible, defaulting to no reported dependencies.
+    /// </summary>
+    HealthCheckDependency[] Dependencies => Array.Empty<HealthCheckDependency>();
 }

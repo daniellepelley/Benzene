@@ -39,6 +39,9 @@ public class DatabaseHealthCheckTest
         Assert.Equal("20260101000000_Initial", result.Data["TargetMigration"]);
         Assert.Equal(false, result.Data["MigrationMatch"]);
         Assert.Equal(false, result.Data["MigrationContains"]);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Database", dependency.Kind);
+        Assert.Equal(nameof(TestDbContext), dependency.Name);
     }
 
     [Fact]

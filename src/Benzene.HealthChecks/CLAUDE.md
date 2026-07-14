@@ -33,7 +33,15 @@ for the full Kubernetes wiring guide.
 ### Execution
 - `HealthCheckProcessor.PerformHealthChecksAsync` - runs every check wrapped in
   `TimeOutHealthCheck(ExceptionHandlingHealthCheck(check))` (10s hardcoded timeout, not configurable;
-  exceptions become a failed result instead of propagating) and aggregates into a `HealthCheckResponse`
+  exceptions become a failed result instead of propagating) and aggregates into a `HealthCheckResponse`.
+  Each check's `Dependencies` (see `Benzene.HealthChecks.Core`) survives this aggregation - the
+  processor explicitly rebuilds a `HealthCheckResult` per check, and threads `Dependencies` through
+  that rebuild alongside `Status`/`Type`/`Data`. Known limitation: if `TimeOutHealthCheck`/
+  `ExceptionHandlingHealthCheck` themselves have to synthesize a fallback result (a hard timeout or an
+  unhandled exception from the inner check), that fallback result has no `Dependencies` - there's no
+  result to read them from once the inner check hasn't returned one. A check's own internal
+  timeout/failure handling (e.g. `SqsHealthCheck`'s own 10s send timeout, distinct from this outer
+  wrapper) does not have this limitation, since the check still constructs its own result.
 - `TimeOutHealthCheck` - enforces the 10s timeout via `Task.WhenAny`; note the inner check keeps
   running in the background after a timeout is reported (it isn't cancelled)
 - `ExceptionHandlingHealthCheck` - catches any exception from the wrapped check and reports it as a

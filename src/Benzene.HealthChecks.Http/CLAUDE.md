@@ -10,7 +10,7 @@ package - see that package's CLAUDE.md).
 ## Key types/interfaces
 - `HttpPingHealthCheck` - GETs a fixed URL; healthy only on a 200 OK response (any other status code,
   including other 2xx codes, is reported unhealthy); result `Data` includes the checked `Url` and the
-  response's `StatusCode`
+  response's `StatusCode`; result `Dependencies` includes one `HealthCheckDependency("Http", url)`
 - `HttpPingHealthCheckFactory` - resolves an `HttpClient` from DI each time the check runs, rather
   than capturing one at registration time
 - `Extensions.AddHttpPing(builder, url)` - registration helper on `IHealthCheckBuilder`

@@ -38,6 +38,8 @@ public class StepFunctionsHealthCheck : IHealthCheck
     /// </returns>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
+        var dependencies = new[] { new HealthCheckDependency("StateMachine", _stateMachineArn) };
+
         var delay = Task.Delay(TimeOut);
         var pingState = _amazonStepFunctions.StartExecutionAsync(new StartExecutionRequest
         {
@@ -53,7 +55,7 @@ public class StepFunctionsHealthCheck : IHealthCheck
                 new Dictionary<string, object>
                 {
                     { "StateMachineArn", _stateMachineArn },
-                });
+                }, dependencies);
         }
         if (delay.IsCompleted)
         {
@@ -62,13 +64,13 @@ public class StepFunctionsHealthCheck : IHealthCheck
                 {
                     { "StateMachineArn", _stateMachineArn },
                     { "Error", $"Timed out, {TimeOut}ms" }
-                });
+                }, dependencies);
         }
         return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
         {
             { "Error", $"Returned a status of {pingState.Result.HttpStatusCode}" },
             { "StateMachineArn", _stateMachineArn }
-        });
+        }, dependencies);
     }
 
     /// <summary>

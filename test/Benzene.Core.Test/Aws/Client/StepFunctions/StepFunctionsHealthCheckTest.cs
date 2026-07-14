@@ -26,6 +26,9 @@ public class StepFunctionsHealthCheckTest
 
         Assert.Equal(HealthCheckStatus.Ok, result.Status);
         Assert.Equal("StepFunctions", healthCheck.Type);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("StateMachine", dependency.Kind);
+        Assert.Equal("some-state-machine-arn", dependency.Name);
     }
 
     [Fact]

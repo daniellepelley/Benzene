@@ -26,6 +26,9 @@ public class SqsHealthCheckTest
 
         Assert.Equal(HealthCheckStatus.Ok, result.Status);
         Assert.Equal("Sqs", healthCheck.Type);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Queue", dependency.Kind);
+        Assert.Equal("some-queue-url", dependency.Name);
     }
 
     [Fact]

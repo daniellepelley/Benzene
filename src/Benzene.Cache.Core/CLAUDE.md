@@ -27,3 +27,7 @@ Core caching abstractions and implementations for Benzene. Provides cache interf
 - Key generation strategies
 - Middleware for automatic caching
 - Provider-agnostic
+- `CacheHealthCheck<TCacheService>` - an `IHealthCheck` verifying `ICacheService.CanConnectAsync()`;
+  result `Data` includes `CanConnect` and `Error` (the exception's type name, not its message - not a
+  connection string or other secret); result `Dependencies` includes one
+  `HealthCheckDependency("Cache", typeof(TCacheService).Name)`

@@ -8,12 +8,16 @@ variant) `GetAppliedMigrationsAsync()`.
 
 ## Key types/interfaces
 - `DatabaseConnectionHealthCheck<TDbContext>` - connectivity only; result `Data` includes `CanConnect`
-  and `Error` (the connection exception's message, if any)
+  and `Error` (the connection exception's **type name**, if any - not its message; see Important
+  conventions below); result `Dependencies` includes one `HealthCheckDependency("Database",
+  typeof(TDbContext).Name)`
 - `DatabaseHealthCheck<TDbContext>` - connectivity AND schema: healthy only if the connection succeeds
   AND the configured target migration is the LAST applied migration (not merely present among applied
   migrations) - a database that's reachable but hasn't yet had a newer migration applied (or has a
   newer one than expected) reports unhealthy; result `Data` includes `CanConnect`, `AppliedMigrations`,
-  `TargetMigration`, `MigrationMatch` (drives pass/fail), `MigrationContains`, and `Error`
+  `TargetMigration`, `MigrationMatch` (drives pass/fail), `MigrationContains`, and `Error` (type name,
+  not message); result `Dependencies` includes one `HealthCheckDependency("Database",
+  typeof(TDbContext).Name)`
 - `DatabaseHealthCheckFactory<TDbContext>` - factory for `DatabaseHealthCheck<TDbContext>`, resolving
   `TDbContext` from DI each time the check runs; no equivalent factory exists for
   `DatabaseConnectionHealthCheck<TDbContext>` today (construct it directly if needed)
@@ -30,5 +34,8 @@ variant) `GetAppliedMigrationsAsync()`.
 ## Important conventions
 - No timeout of its own - relies on the aggregator's timeout wrapper if run through
   `Benzene.HealthChecks`, or the `DbContext`'s own command/connection timeout configuration
-- Connection failures are caught and reported as a failed result with the exception message in
-  `Data["Error"]`, not thrown
+- Connection failures are caught and reported as a failed result with the exception's **type name**
+  (not its message) in `Data["Error"]`, not thrown - some ADO.NET providers embed connection details
+  (server/credentials) in exception messages, and this result can flow out to whatever calls the
+  health check topic with no built-in authorization (corrected here - this file previously,
+  incorrectly, described `Error` as the exception message)

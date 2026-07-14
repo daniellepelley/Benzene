@@ -55,7 +55,8 @@ public class DatabaseHealthCheck<TDbContext> : IHealthCheck where TDbContext : D
                 { "MigrationMatch", migrationMatch },
                 { "MigrationContains", migrationContains },
                 { "Error", canConnect.Item2?.GetType().Name }
-            });
+            },
+            new[] { new HealthCheckDependency("Database", typeof(TDbContext).Name) });
     }
 
     private static async Task<(bool, Exception)> TryConnect(DbContext dbContext)

@@ -38,6 +38,16 @@ public class HealthCheckResult : IHealthCheckResult
         return new HealthCheckResult(success ? HealthCheckStatus.Ok : HealthCheckStatus.Failed, type, data);
     }
 
+    /// <summary>Creates a result with diagnostic data and dependency metadata, status <see cref="HealthCheckStatus.Ok"/> if <paramref name="success"/>, otherwise <see cref="HealthCheckStatus.Failed"/>.</summary>
+    /// <param name="success">Whether the check succeeded.</param>
+    /// <param name="type">The check's identifier.</param>
+    /// <param name="data">Diagnostic details to include in the result.</param>
+    /// <param name="dependencies">The external dependencies this check verifies.</param>
+    public static IHealthCheckResult CreateInstance(bool success, string type, IDictionary<string, object> data, HealthCheckDependency[] dependencies)
+    {
+        return new HealthCheckResult(success ? HealthCheckStatus.Ok : HealthCheckStatus.Failed, type, data, dependencies);
+    }
+
     /// <summary>Creates a <see cref="HealthCheckStatus.Warning"/> result with no diagnostic data - a degraded-but-not-failed outcome that does not flip an aggregated response's <c>IsHealthy</c> to <c>false</c>.</summary>
     /// <param name="type">The check's identifier.</param>
     public static IHealthCheckResult CreateWarning(string type)
@@ -53,15 +63,31 @@ public class HealthCheckResult : IHealthCheckResult
         return new HealthCheckResult(HealthCheckStatus.Warning, type, data);
     }
 
+    /// <summary>Creates a <see cref="HealthCheckStatus.Warning"/> result with diagnostic data and dependency metadata - a degraded-but-not-failed outcome that does not flip an aggregated response's <c>IsHealthy</c> to <c>false</c>.</summary>
+    /// <param name="type">The check's identifier.</param>
+    /// <param name="data">Diagnostic details to include in the result.</param>
+    /// <param name="dependencies">The external dependencies this check verifies.</param>
+    public static IHealthCheckResult CreateWarning(string type, IDictionary<string, object> data, HealthCheckDependency[] dependencies)
+    {
+        return new HealthCheckResult(HealthCheckStatus.Warning, type, data, dependencies);
+    }
+
     /// <summary>Initializes a new instance of the <see cref="HealthCheckResult"/> class.</summary>
     /// <param name="status">One of <see cref="HealthCheckStatus.Ok"/>, <see cref="HealthCheckStatus.Warning"/>, or <see cref="HealthCheckStatus.Failed"/>.</param>
     /// <param name="type">The check's identifier.</param>
     /// <param name="data">Diagnostic details to include in the result.</param>
-    public HealthCheckResult(string status, string type, IDictionary<string, object> data)
+    /// <param name="dependencies">The external dependencies this check verifies. Defaults to none.</param>
+    /// <remarks>
+    /// A single constructor with an optional parameter, rather than an overload, so reflection-based
+    /// deserializers (e.g. <c>Newtonsoft.Json</c>, which requires exactly one constructor to bind to
+    /// when a type has no default constructor) keep working unambiguously.
+    /// </remarks>
+    public HealthCheckResult(string status, string type, IDictionary<string, object> data, HealthCheckDependency[]? dependencies = null)
     {
         Status = status;
         Type = type;
         Data = data;
+        Dependencies = dependencies ?? Array.Empty<HealthCheckDependency>();
     }
 
     /// <inheritdoc />
@@ -72,4 +98,7 @@ public class HealthCheckResult : IHealthCheckResult
 
     /// <inheritdoc />
     public IDictionary<string, object> Data { get; }
+
+    /// <inheritdoc />
+    public HealthCheckDependency[] Dependencies { get; }
 }

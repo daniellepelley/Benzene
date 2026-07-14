@@ -23,6 +23,9 @@ public class HttpPingHealthCheckTest
         Assert.Equal("HttpPing", result.Type);
         Assert.Equal("https://example.test/ping", result.Data["Url"]);
         Assert.Equal(HttpStatusCode.OK, result.Data["StatusCode"]);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Http", dependency.Kind);
+        Assert.Equal("https://example.test/ping", dependency.Name);
     }
 
     [Theory]

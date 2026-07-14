@@ -37,7 +37,8 @@ public class DatabaseConnectionHealthCheck<TDbContext> : IHealthCheck where TDbC
         {
             { "CanConnect", canConnect.Item1 },
             { "Error", canConnect.Item2?.GetType().Name }
-        });
+        },
+        new[] { new HealthCheckDependency("Database", typeof(TDbContext).Name) });
     }
 
     private static async Task<(bool, Exception)> TryConnect(DbContext dbContext)

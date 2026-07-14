@@ -39,6 +39,9 @@ public class RedisCacheServiceTest
         Assert.Equal("ok", result.Status);
         Assert.Equal("Cache", result.Type);
         Assert.Equal(true, result.Data["CanConnect"]);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Cache", dependency.Kind);
+        Assert.Equal(nameof(TestRedisCacheService), dependency.Name);
     }
 
     [Fact]
@@ -63,7 +66,12 @@ public class RedisCacheServiceTest
         Assert.Equal("failed", result.Status);
         Assert.Equal("Cache", result.Type);
         Assert.Equal(false, result.Data["CanConnect"]);
-        Assert.Equal(TEST_ERROR_MESSAGE, result.Data["Error"]);
+        // The exception's type name, not its message - see the security fix in CacheHealthCheck
+        // (avoids leaking connection details some providers embed in exception messages).
+        Assert.Equal(nameof(Exception), result.Data["Error"]);
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Cache", dependency.Kind);
+        Assert.Equal(nameof(TestRedisCacheService), dependency.Name);
     }
 
     [Fact]

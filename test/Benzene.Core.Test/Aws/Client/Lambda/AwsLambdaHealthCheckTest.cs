@@ -37,5 +37,8 @@ public class AwsLambdaHealthCheckTest
         Assert.Equal(HealthCheckStatus.Ok, result.Status);
         mockLambdaClient.Verify(x => x.InvokeAsync(
             It.Is<InvokeRequest>(r => r.InvocationType == InvocationType.Event), default));
+        var dependency = Assert.Single(result.Dependencies);
+        Assert.Equal("Lambda", dependency.Kind);
+        Assert.Equal("some-lambda", dependency.Name);
     }
 }

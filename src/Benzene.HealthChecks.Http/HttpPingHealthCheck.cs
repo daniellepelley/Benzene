@@ -34,15 +34,17 @@ namespace Benzene.HealthChecks.Http
         /// </summary>
         public async Task<IHealthCheckResult> ExecuteAsync()
         {
+            var dependencies = new[] { new HealthCheckDependency("Http", _url) };
+
             var response = await _httpClient.GetAsync(_url);
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 return HealthCheckResult.CreateInstance(true, Type,
-                    new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } });
+                    new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } }, dependencies);
             }
 
             return HealthCheckResult.CreateInstance(false, Type,
-                new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } });
+                new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } }, dependencies);
         }
 
         /// <inheritdoc />

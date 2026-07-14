@@ -9,8 +9,15 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
 
 ## Key types/interfaces
 - `IHealthCheck` - `Type` (the check's identifier) + `ExecuteAsync()` returning an `IHealthCheckResult`
-- `IHealthCheckResult`/`HealthCheckResult` - `Status`, `Type`, `Data` (arbitrary diagnostic dictionary);
-  `HealthCheckResult` supplies `CreateInstance`/`CreateWarning` factory methods for the common cases
+- `IHealthCheckResult`/`HealthCheckResult` - `Status`, `Type`, `Data` (arbitrary diagnostic dictionary),
+  `Dependencies` (structured `HealthCheckDependency[]` describing the external resources the check
+  verifies - e.g. a specific queue, database, or downstream service; a default interface member on
+  `IHealthCheckResult`, defaulting to empty, so existing implementers stay source/binary compatible);
+  `HealthCheckResult` supplies `CreateInstance`/`CreateWarning` factory methods for the common cases,
+  each with a `Dependencies`-accepting overload
+- `HealthCheckDependency` - `Kind` (an open string category, e.g. `"Queue"`/`"Database"`/`"Http"`/
+  `"Lambda"`/`"StateMachine"`/`"Cache"` - not an enum, so new dependency kinds don't require a shared
+  type) + `Name` (the specific resource identifier - never a connection string or other secret)
 - `HealthCheckStatus` - the three actual status string constants: `Ok` ("ok"), `Warning` ("warning"),
   `Failed` ("failed") - not "Healthy/Degraded/Unhealthy"
 - `IHealthCheckResponse<T>`/`HealthCheckResponse` - the aggregated `IsHealthy` + per-check results

@@ -28,6 +28,10 @@ AWS client implementations for calling Benzene services in AWS. Provides clients
 - IAM-based authentication
 - Region configuration
 - ARN-based addressing
+- `SqsHealthCheck`/`StepFunctionsHealthCheck`/`AwsLambdaHealthCheck` (in `Sqs`/`StepFunctions`/`Lambda`)
+  report a structured `HealthCheckDependency` (`Kind` = `"Queue"`/`"StateMachine"`/`"Lambda"`,
+  `Name` = the queue URL/state machine ARN/Lambda function name) on every result they produce - see
+  `Benzene.HealthChecks.Core`'s `IHealthCheckResult.Dependencies`
 - `SqsContextConverter`/`SnsContextConverter` forward `IBenzeneClientRequest.Headers` onto real
   `MessageAttributes` (alongside the `topic` attribute) so header-based decorators (correlation ID,
   W3C trace context) actually reach the wire

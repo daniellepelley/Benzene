@@ -40,7 +40,7 @@ public static class HealthCheckProcessor
         var healthCheckNamer = new HealthCheckNamer();
         var message = new HealthCheckResponse(isHealthy, runningHealthChecks.ToDictionary(
             x => healthCheckNamer.GetName(x.Item2.Result.Type),
-            x => new HealthCheckResult(x.Item2.Result.Status, x.Item2.Result.Type, x.Item2.Result.Data)));
+            x => new HealthCheckResult(x.Item2.Result.Status, x.Item2.Result.Type, x.Item2.Result.Data, x.Item2.Result.Dependencies)));
 
         return isHealthy
             ? BenzeneResult.Ok(message)
