@@ -118,8 +118,10 @@
 >    warnings.
 > 2. **EventBridge/S3 rename** (P0 #2) — `Benzene.Aws.Lambda.EventBridge` renamed to
 >    `Benzene.Aws.Lambda.S3` (pure rename; the code was always S3 event handling, never
->    EventBridge). Real EventBridge/CloudWatch Events support remains unbuilt, tracked
->    separately (see package section 5).
+>    EventBridge). ~~Real EventBridge/CloudWatch Events support remains unbuilt~~ — **built
+>    2026-07-14**: `Benzene.Aws.Lambda.EventBridge` (inbound, topic = `detail-type`) +
+>    `Benzene.Clients.Aws/EventBridge` (outbound PutEvents client) + TestHelpers, per
+>    `docs/plans/eventbridge-plan.md`.
 > 3. **Unit Tests** (P0 #3) — all 9 packages to 90%+ coverage (up from as low as 52%).
 >    Found and fixed 3 real bugs along the way (X-Ray timer crash, SNS client resolver
 >    bug, Lambda health check status bug); found but did NOT fix a 4th
@@ -522,12 +524,14 @@ the bare-metal-to-StartUp migration guide were both found already done, 2026-07-
 > dependency for this package's actual functionality — it was never "wrong," it just
 > didn't match the old package name.
 >
-> Real EventBridge/CloudWatch Events support **does not exist** anywhere in Benzene.
-> Building it is now tracked as a distinct, unstarted future package (working name
-> `Benzene.Aws.Lambda.EventBridge`, to be created from scratch with
-> `Amazon.Lambda.CloudWatchEvents`) — see the "Post-1.0 Features" / medium-term roadmap
-> sections for the EventBridge-specific line items originally listed here, which now
-> describe that future work rather than this package.
+> ~~Real EventBridge/CloudWatch Events support **does not exist** anywhere in Benzene.~~
+> **Built 2026-07-14**: `Benzene.Aws.Lambda.EventBridge` now exists (inbound adapter — topic
+> = `detail-type`, body = `detail`, headers per the `_benzeneHeaders` convention, one
+> pipeline invocation per event; no `Amazon.Lambda.CloudWatchEvents` dependency needed — the
+> envelope is modeled as Benzene's own POCO), plus an outbound
+> `EventBridgeBenzeneMessageClient` in `Benzene.Clients.Aws` (`PutEvents`; new
+> `AWSSDK.EventBridge` dependency) and a `.TestHelpers` package. Design record:
+> `docs/plans/eventbridge-plan.md`.
 
 **Public API Surface:**
 - `S3Application`, `S3LambdaHandler`, `S3RecordContext`, `S3Registrations` — names now

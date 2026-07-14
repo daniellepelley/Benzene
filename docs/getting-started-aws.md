@@ -374,9 +374,9 @@ database connectivity) and the full set of `UseHealthCheck` overloads.
   `System.Diagnostics.Activity` span automatically — no per-middleware opt-in needed. Add
   `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` to export those spans (and
   `UseBenzeneMetrics()`'s counters) to a real backend via OpenTelemetry.
-- **Cross-service correlation**: prefer `eventPipeline.UseApiGateway(a => a.UseW3CTraceContext()...)`
-  (W3C `traceparent` propagation) over the older `UseCorrelationId()`, which is `[Obsolete]`
-  but still works — see [Correlation IDs](correlation-ids).
+- **Cross-service correlation**: `eventPipeline.UseApiGateway(a => a.UseW3CTraceContext()...)`
+  (W3C `traceparent` propagation) — see [Correlation IDs](correlation-ids). The legacy
+  `UseCorrelationId()` middleware has been removed.
 - **Log enrichment**: `UseBenzeneEnrichment()` attaches `invocationId`/`traceId`/`spanId`/
   `topic`/`transport`/`handler` to the logging scope in one call, portable across every
   Benzene host.

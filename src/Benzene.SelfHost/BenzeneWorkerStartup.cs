@@ -19,7 +19,7 @@ public abstract class BenzeneWorkerStartup :
     {
         // ReSharper disable once VirtualMemberCallInConstructor
         var configuration = GetConfiguration();
-        var app = new BenzeneWorkerStartup2(new MicrosoftBenzeneServiceContainer(services));
+        var app = new BenzeneWorkerBuilder(new MicrosoftBenzeneServiceContainer(services));
 
         // ReSharper disable once VirtualMemberCallInConstructor
         ConfigureServices(services, configuration);

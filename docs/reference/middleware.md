@@ -19,7 +19,6 @@ Benzene has two places you add middleware, and it matters which one you're on:
 ```csharp
 app.UseBenzene(benzene => benzene
     .UseHttp(http => http           // ── transport pipeline (IMiddlewarePipelineBuilder<AspNetContext>)
-        .UseCorrelationId()
         .UseBenzeneEnrichment()
         .UseMessageHandlers(router => router   // ── message router (IMessageRouterBuilder)
             .UseFluentValidation())));
@@ -77,21 +76,6 @@ matching handler, and serializes the result back. Optionally configures the mess
 
 All of these extend `IMiddlewarePipelineBuilder<TContext>` and are added before
 `UseMessageHandlers()`.
-
-### `UseCorrelationId(string? header = null)`
-
-**Package:** `Benzene.Diagnostics` (`Benzene.Diagnostics.Correlation`). Picks up a correlation
-ID from the message headers (`x-correlation-id`, `correlation-id`, then legacy `correlationId`,
-case-insensitive, first match wins) or from a specific header if you pass one. Registers
-`ICorrelationId` for injection.
-
-```csharp
-.UseCorrelationId()
-.UseCorrelationId("x-request-id")
-```
-
-> Marked obsolete in favour of automatic [W3C `traceparent`](../monitoring#w3c-trace-context)
-> propagation, but still supported as a legacy fallback. See [Correlation IDs](../correlation-ids).
 
 ### `UseW3CTraceContext()`
 

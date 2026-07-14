@@ -61,8 +61,22 @@ Azure Functions worker, a background worker loop). Hosting is attached in the ap
 
 One host (the Lambda runtime), several inner bindings selected by event shape: API Gateway
 (HTTP-like: topic from route, headers from HTTP headers), SQS / SNS / Kafka batches (topic from
-the `topic` message attribute or envelope; one scope per record), S3 events, and the raw
-`BenzeneMessage` envelope (wire-contracts §1) for direct invocation.
+the `topic` message attribute or envelope; one scope per record), S3 events, EventBridge (below),
+and the raw `BenzeneMessage` envelope (wire-contracts §1) for direct invocation.
+
+### EventBridge — `Benzene.Aws.Lambda.EventBridge`
+
+- Topic: the event's `detail-type`, verbatim — EventBridge's native routing key, so this binding
+  needs no bolted-on `topic` attribute. `source` is metadata, not part of the topic.
+- One event per invocation (EventBridge does not batch Lambda targets) → one pipeline invocation,
+  one scope; fire-and-forget (no response channel).
+- Body: the raw JSON of `detail` (the domain payload).
+- Headers: envelope metadata under `eventbridge-`-prefixed keys, plus Benzene wire headers lifted
+  from the reserved `_benzeneHeaders` object inside `detail` (wire-contracts §2) — EventBridge has
+  no native per-message attributes, so the outbound client embeds them there. Embedded headers win
+  over prefixed envelope keys.
+- Outbound: `PutEvents` with topic → `DetailType`; success requires an OK status **and** zero
+  failed entries (a `PutEvents` request can partially fail).
 
 ### Azure Functions — `Benzene.Azure.Function.*`
 

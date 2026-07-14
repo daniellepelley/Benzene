@@ -153,7 +153,7 @@ See [Monitoring & Diagnostics](../monitoring) and [Correlation IDs](../correlati
 
 | Package | What it gives you |
 |---|---|
-| `Benzene.Diagnostics` | The observability toolkit — correlation IDs (`UseCorrelationId()`), log enrichment (`UseBenzeneEnrichment()`), metrics, `Activity`-based tracing decorators, and debug timing. |
+| `Benzene.Diagnostics` | The observability toolkit — W3C trace context (`UseW3CTraceContext()`), log enrichment (`UseBenzeneEnrichment()`), metrics, `Activity`-based tracing decorators, and debug timing. |
 | `Benzene.OpenTelemetry` | Wire Benzene's diagnostics into OpenTelemetry for traces/metrics export. |
 | `Benzene.Resilience` | Retry middleware (`RetryMiddleware`) for wrapping handler/pipeline calls with retry policies. |
 

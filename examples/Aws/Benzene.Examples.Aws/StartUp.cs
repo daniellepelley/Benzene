@@ -55,7 +55,6 @@ public class StartUp : AwsLambdaStartUp
         var benzeneMessagePipeline =
             app.Create<BenzeneMessageContext>()
                 .UseTimer("benzene-message-application")
-                .UseCorrelationId()
                 .UseXml()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router
@@ -66,7 +65,6 @@ public class StartUp : AwsLambdaStartUp
 
         app.UseApiGateway(apiGatewayApp => apiGatewayApp
             .UseHttpToBenzeneMessage(benzeneMessagePipeline)
-            .UseCorrelationId()
             .UseTimer("api-gateway-application")
             .UseXml()
             .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
@@ -76,7 +74,6 @@ public class StartUp : AwsLambdaStartUp
         );
 
         app.UseSns(snsApp => snsApp
-            .UseCorrelationId()
             .UseTimer("sns-application")
             .UseXml()
             .UseHealthCheck(healthCheckTopic, healthChecks)
@@ -86,7 +83,6 @@ public class StartUp : AwsLambdaStartUp
         );
 
         app.UseSqs(sqsApp => sqsApp
-            .UseCorrelationId()
             .UseTimer("sqs-application")
             .UseXml()
             .UseHealthCheck(healthCheckTopic, healthChecks)
@@ -96,7 +92,6 @@ public class StartUp : AwsLambdaStartUp
         );
 
         app.UseKafka(kafkaApp => kafkaApp
-            .UseCorrelationId()
             .UseTimer("kafka-application")
             .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router.UseFluentValidation())

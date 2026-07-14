@@ -70,54 +70,6 @@ public static class DictionaryUtils
         return output;
     }
 
-    // public static IDictionary<TKey, TValue> Map<TKey, TValue>(IDictionary<TKey, TValue> source, IDictionary<TKey, TValue> overlayDictionary)
-    //     where TValue : class where TKey : notnull
-    // {
-    //     if (source == null)
-    //     {
-    //         return null;
-    //     }
-    //
-    //
-    //     var output = source.ToDictionary(x => x.Key, x => x.Value);
-    //
-    //     if (overlayDictionary == null)
-    //     {
-    //         return output;
-    //     }
-    //
-    //     foreach (var overlay in overlayDictionary)
-    //     {
-    //         if (!output.ContainsKey(overlay.Key))
-    //         {
-    //             output.Add(overlay.Key, overlay.Value);
-    //         }
-    //         else if (source[overlay.Key] == default(TValue))
-    //         {
-    //             output[overlay.Key] = overlay.Value;
-    //         }
-    //     }
-    //
-    //     return output;
-    // }
-
-    // public static Dictionary<string, object> JsonToDictionary(string json)
-    // {
-    //     if (string.IsNullOrEmpty(json))
-    //     {
-    //         return new Dictionary<string, object>();
-    //     }
-    //
-    //     var dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-    //     return dictionary?.ToDictionary(x => x.Key.ToLowerInvariant(), x => x.Value);
-    // }
-
-    /// <summary>
-    /// Filters and replaces keys in a source dictionary based on a filter dictionary using case-insensitive matching.
-    /// </summary>
-    /// <param name="source">The source dictionary to filter.</param>
-    /// <param name="filter">The filter dictionary mapping old keys to new keys.</param>
-    /// <returns>A new dictionary with filtered and replaced keys.</returns>
     public static IDictionary<string, string> FilterAndReplace(IDictionary<string, string> source,
         IDictionary<string, string> filter)
     {
@@ -205,8 +157,4 @@ public static class DictionaryUtils
         return source ?? Activator.CreateInstance<T>();
     }
 
-    // public class RootWrapper<T>
-    // {
-    //     public T Root { get; set; }
-    // }
 }

@@ -78,7 +78,6 @@ Add `UseLogResult(...)` (or `UseLogContext(...)` if you don't want the extra `"B
 
 ```csharp
 app.UseApiGateway(apiGatewayApp => apiGatewayApp
-    .UseCorrelationId()
     .UseLogResult(x => x
         .WithCorrelationId()
         .WithTopic()
@@ -86,7 +85,7 @@ app.UseApiGateway(apiGatewayApp => apiGatewayApp
     .UseMessageHandlers());
 ```
 
-- `WithCorrelationId()` (`Benzene.Diagnostics`, needs `.UseCorrelationId()` earlier in the pipeline to populate `ICorrelationId`) — adds `correlationId`
+- `WithCorrelationId()` (`Benzene.Diagnostics`) — adds `correlationId` (a per-invocation GUID unless your own middleware calls `ICorrelationId.Set(...)`)
 - `WithTopic()` (`Benzene.Core.MessageHandlers`) — adds `topic` (`"<missing>"` if unresolvable)
 - `WithTransport()` (`Benzene.Core.MessageHandlers`) — adds `transport`, the current `ICurrentTransport.Name`
 
@@ -146,7 +145,7 @@ To verify your own Serilog wiring end to end, run the service locally with the c
 
 ### `correlationId` is missing even though `WithCorrelationId()` is configured
 
-**Solution:** `WithCorrelationId()` reads from `ICorrelationId`, which is only populated if `.UseCorrelationId()` (or `AddCorrelationId()`) ran earlier in the same pipeline and the incoming request actually carried an `x-correlation-id`/`correlation-id`/`correlationId` header. No header, no value — `WithCorrelationId()` won't fabricate one.
+**Solution:** `WithCorrelationId()` reads from `ICorrelationId`, which self-generates a GUID per scope; to carry a value from an incoming header, call `ICorrelationId.Set(...)` from your own middleware (the legacy `UseCorrelationId()` header-pickup middleware has been removed) — see [Correlation Ids](../correlation-ids.md).
 
 ## Variations
 

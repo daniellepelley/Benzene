@@ -241,7 +241,6 @@ dotnet add package Benzene.Aws.Lambda.Kafka --prerelease
 public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     => app.UseAwsLambda(eventPipeline => eventPipeline
         .UseKafka(kafkaApp => kafkaApp
-            .UseCorrelationId()
             .UseMessageHandlers(router => router.UseFluentValidation())));
 ```
 

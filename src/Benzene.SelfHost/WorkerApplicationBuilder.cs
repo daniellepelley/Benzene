@@ -7,12 +7,12 @@ namespace Benzene.SelfHost;
 public class WorkerApplicationBuilder : BenzeneApplicationBuilder
 {
     public const string PlatformName = "Worker";
-    private readonly BenzeneWorkerStartup2 _workerStartup;
+    private readonly BenzeneWorkerBuilder _workerStartup;
 
     public WorkerApplicationBuilder(IBenzeneServiceContainer benzeneServiceContainer)
         : base(PlatformName, benzeneServiceContainer)
     {
-        _workerStartup = new BenzeneWorkerStartup2(benzeneServiceContainer);
+        _workerStartup = new BenzeneWorkerBuilder(benzeneServiceContainer);
     }
 
     public IBenzeneWorkerStartup Workers => _workerStartup;
