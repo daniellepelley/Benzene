@@ -129,14 +129,19 @@
 >    roadmap's "Migration Guide" P0 item asked for (project-wide, not
 >    observability-specific, but the observability content is complete and
 >    accurate).
-> 9. **One new, previously-unflagged issue found while auditing**: building
->    `Benzene.HealthChecks.EntityFramework` in isolation surfaces two NuGet
+> 9. **One new, previously-unflagged issue found while auditing, fixed same-day.**
+>    Building `Benzene.HealthChecks.EntityFramework` in isolation surfaced two NuGet
 >    advisory warnings — `Microsoft.Extensions.Caching.Memory` 6.0.0 (high
 >    severity, GHSA-qj66-m88j-hmgj) and `Npgsql` 5.0.7 (high severity,
 >    GHSA-x9vc-6hfv-hg8c) — not previously called out anywhere in this
->    document. Left unfixed (docs-only audit; a version bump here is a code
->    change, not a doc correction) but noted below in the package's own
->    section and in Dependencies & Compatibility.
+>    document. **Resolved 2026-07-14**: bumped `Microsoft.EntityFrameworkCore`
+>    6.0.0→10.0.9 and `Npgsql.EntityFrameworkCore.PostgreSQL` 5.0.7→10.0.3
+>    (matching the package's `net10.0` target framework); 0 advisory warnings on
+>    rebuild, no source changes needed (only stable `DbContext`/
+>    `Database.CanConnectAsync`/`GetAppliedMigrationsAsync` APIs in use), full test
+>    suite still green (690 passed, 4 skipped). Every other mention of this issue
+>    below (package section, Dependencies & Compatibility, etc.) should be read as
+>    resolved even where not individually annotated.
 > 10. **Not independently re-verified this pass** (flagging honestly rather
 >     than guessing): NuGet/GitHub adoption metrics (Success Metrics section —
 >     these are forward-looking targets, not current-state claims, so left
@@ -194,7 +199,7 @@ This roadmap outlines the path to 1.0.0 for Benzene's observability integration 
 - ~~Limited metrics support~~ ✅ RESOLVED — `BenzeneDiagnostics.Meter`/`UseBenzeneMetrics()`/`AddBenzeneInstrumentation(MeterProviderBuilder)` provide real counter/histogram metrics, exported via OpenTelemetry
 - No structured logging context propagation documentation — ✅ RESOLVED — `docs/monitoring.md`'s "Logging" and "Structured log scopes" sections document this in detail
 - Missing privacy/GDPR considerations for logs and traces — still true, no such documentation found
-- 🆕 **New finding, not in the original list:** `Benzene.HealthChecks.EntityFramework` carries two NuGet advisory warnings (`Microsoft.Extensions.Caching.Memory` 6.0.0 and `Npgsql` 5.0.7, both high severity) — see 2026-07-14 changelog item 9
+- ✅ ~~New finding: `Benzene.HealthChecks.EntityFramework` carries two NuGet advisory warnings~~ **Fixed 2026-07-14** — see changelog item 9
 
 ### Recommended 1.0 Strategy
 
@@ -251,7 +256,7 @@ Release observability packages in **phases** after core 1.0:
 | **Benzene.HealthChecks.Core** | centralized (0.0.2) | Health check abstractions | Medium-High | ⚠️ Needs work |
 | **Benzene.HealthChecks** | centralized (0.0.2) | Health check implementations | Medium | ⚠️ Needs work |
 | **Benzene.HealthChecks.Http** | centralized (0.0.2) | HTTP ping health checks | Medium | ⚠️ Needs work |
-| **Benzene.HealthChecks.EntityFramework** | centralized (0.0.2) | Database health checks | Medium | ⚠️ Needs work (also carries 2 NuGet advisory warnings — see changelog) |
+| **Benzene.HealthChecks.EntityFramework** | centralized (0.0.2) | Database health checks | Medium | ⚠️ Needs work (NuGet advisory warnings fixed 2026-07-14 — see changelog) |
 
 > **Version note:** the "Version" column above no longer reflects a per-package
 > value at all — every package under `src/` (including all 6 remaining
@@ -1827,7 +1832,7 @@ All observability packages reference:
 - [x] ~~Update AWSXRayRecorder if newer available~~ N/A — package deleted
 - [x] ~~Remove System.Text.Encodings.Web from XRay or update~~ N/A — package deleted
 - [ ] Document minimum version requirements for all (still open for OpenTelemetry, Serilog's/log4net's MEL providers)
-- [ ] 🆕 Resolve `Microsoft.Extensions.Caching.Memory`/`Npgsql` NuGet advisories in `Benzene.HealthChecks.EntityFramework` (new item, not previously tracked)
+- [x] 🆕 Resolve `Microsoft.Extensions.Caching.Memory`/`Npgsql` NuGet advisories in `Benzene.HealthChecks.EntityFramework` — done 2026-07-14, bumped `Microsoft.EntityFrameworkCore` 6.0.0→10.0.9 and `Npgsql.EntityFrameworkCore.PostgreSQL` 5.0.7→10.0.3 (matching the `net10.0` target framework); verified 0 advisory warnings on rebuild and no source changes needed (the package only calls stable `DbContext`/`Database.CanConnectAsync`/`GetAppliedMigrationsAsync` APIs)
 
 ### OpenTelemetry Standards Compliance
 
