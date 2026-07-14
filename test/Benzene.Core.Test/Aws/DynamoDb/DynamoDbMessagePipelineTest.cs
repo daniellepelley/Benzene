@@ -12,6 +12,7 @@ using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Benzene.Testing;
+using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
