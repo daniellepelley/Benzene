@@ -193,8 +193,8 @@ This roadmap outlines the path to 1.0.0 for Benzene's observability integration 
 - **Version:** ~~All at 0.0.1 (pre-release), except Benzene.OpenTelemetry (no version)~~ ✅ MOOT 2026-07-14 audit — versioning is centralized via root `Directory.Build.props` + `version.txt` (`0.0.2` currently) for every package repo-wide; there is no per-package version to be "missing" or inconsistent
 - **Target Framework:** .NET 10 (confirmed via `.csproj` `TargetFramework`)
 - **Source Files:** ~34 source files across the 6 remaining packages (24 in Diagnostics, 1 in OpenTelemetry, 9 across the 4 HealthChecks packages) — not recounted precisely against the original "~80" figure since that figure included the now-deleted packages
-- **Test Coverage:** ✅ Real, not minimal — 9 dedicated test files for Diagnostics/OpenTelemetry/HealthChecks-core in `test/Benzene.Core.Test/{Diagnostics,Core/Diagnostics,Plugins/HealthChecks}/`, plus 6 more health-check-adjacent test classes elsewhere in the suite; 37 tests pass (verified via `dotnet test ... --filter "FullyQualifiedName~Diagnostics|FullyQualifiedName~HealthCheck"`, this pass). `Benzene.HealthChecks.Http`/`.EntityFramework` still have zero dedicated tests.
-- **Documentation:** Partial, not 0% — the Checkpoint A-F files in `Benzene.Diagnostics` and all of `Benzene.OpenTelemetry` carry full XML doc comments; the rest of `Benzene.Diagnostics` and all 4 `Benzene.HealthChecks*` packages (0/29 files) remain undocumented, and none of the 6 packages have `GenerateDocumentationFile` enabled (unlike the AWS packages, which enforce 0 CS1591). CLAUDE.md files exist and are accurate/up to date for the 6 current packages.
+- **Test Coverage:** ✅ Real, not minimal — 9 dedicated test files for Diagnostics/OpenTelemetry/HealthChecks-core in `test/Benzene.Core.Test/{Diagnostics,Core/Diagnostics,Plugins/HealthChecks}/`, plus 6 more health-check-adjacent test classes elsewhere in the suite, plus `test/Benzene.Core.Test/HealthChecks/{Http,EntityFramework}/` (5 files, added in the second 2026-07-14 pass — see changelog). `Benzene.HealthChecks.Http`/`.EntityFramework` no longer have zero dedicated tests; this document's earlier "still zero" framing is stale, corrected throughout below.
+- **Documentation:** ✅ Complete for compiler-enforced purposes — as of the second 2026-07-14 pass, all 4 `Benzene.HealthChecks*` packages have `GenerateDocumentationFile=true` and 0 CS1591/CS1574 warnings (verified: every file in all 4 packages has substantive `///` coverage on its public members). `Benzene.Diagnostics`/`Benzene.OpenTelemetry` remain as described in the first changelog: the Checkpoint A-F files in `Benzene.Diagnostics` (7/24 files) and all of `Benzene.OpenTelemetry` (1/1 file) carry full XML doc comments; the rest of `Benzene.Diagnostics` does not, and neither package's `.csproj` has `GenerateDocumentationFile` enabled (unlike the 4 HealthChecks packages and the AWS packages). This document's earlier "0/29 files... none of the 6 packages have GenerateDocumentationFile" framing (first changelog, item 5) is now stale for the HealthChecks packages specifically — corrected throughout below. CLAUDE.md files exist and are accurate/up to date for the 6 current packages.
 - **Maturity:** Functional but not production-ready for 1.0 — accurate, still true
 
 ### Key Findings
@@ -210,8 +210,8 @@ This roadmap outlines the path to 1.0.0 for Benzene's observability integration 
 - ✅ **New since this roadmap was written:** real W3C `traceparent` propagation (inbound HTTP-based transports, outbound HTTP/SQS/SNS/Kafka clients), real metrics (`UseBenzeneMetrics()`), a portable `UseBenzeneEnrichment()` log/trace enrichment middleware, and a captive-dependency DI bug fix in `AddDiagnostics()` (`AddScoped` → `AddSingleton`)
 
 ❌ **Critical Blockers for 1.0:**
-- **ZERO XML documentation** — ⚠️ now only true for the 4 `Benzene.HealthChecks*` packages; `Benzene.Diagnostics`/`Benzene.OpenTelemetry` have partial coverage on their newer files (see Documentation above)
-- Minimal test coverage — ⚠️ RESOLVED for Diagnostics/OpenTelemetry/core HealthChecks (real tests exist, all passing); still true for `Benzene.HealthChecks.Http`/`.EntityFramework` specifically
+- ~~**ZERO XML documentation**~~ ✅ RESOLVED for all 4 `Benzene.HealthChecks*` packages (second 2026-07-14 pass — `GenerateDocumentationFile=true`, 0 CS1591/CS1574 each); `Benzene.Diagnostics`/`Benzene.OpenTelemetry` still have only partial coverage on their newer files (see Documentation above) — no longer a "ZERO" situation anywhere in this package set
+- ~~Minimal test coverage~~ ✅ RESOLVED for Diagnostics/OpenTelemetry/core HealthChecks (real tests exist, all passing) and, as of the second 2026-07-14 pass, `Benzene.HealthChecks.Http`/`.EntityFramework` too (5 new test files) — this is no longer an open blocker for any of the 6 current packages
 - ~~OpenTelemetry package missing PackageVersion in csproj~~ ✅ MOOT — versioning is centralized, see Current State above
 - ~~Aws.XRay has unnecessary AWSSDK.SQS dependency~~ ✅ MOOT — package deleted entirely
 - ~~Old dependency versions (System.Text.Encodings.Web 6.0.0 in XRay)~~ ✅ MOOT — package deleted entirely
@@ -302,8 +302,8 @@ Release observability packages in **phases** after core 1.0:
 - ~~✅ Zipkin integration has working tests~~ — package and tests both deleted; replaced by `BenzeneInstrumentationTest` (`Benzene.OpenTelemetry`)
 
 **Red Flags:**
-- ⚠️ **0 XML documentation comments** — now only true for all 4 `Benzene.HealthChecks*` packages (0/29 files); `Benzene.Diagnostics`/`Benzene.OpenTelemetry` have partial coverage (verified via grep for `///` across every `.cs` file in both packages, this pass)
-- ⚠️ Minimal test coverage (only ~6 test classes total) — ✅ RESOLVED for Diagnostics/OpenTelemetry/core HealthChecks (9 dedicated test files + 6 more health-check-adjacent classes, 37 tests passing); still true for `Benzene.HealthChecks.Http`/`.EntityFramework`
+- ~~⚠️ **0 XML documentation comments**~~ ✅ RESOLVED for the 4 `Benzene.HealthChecks*` packages (`GenerateDocumentationFile=true`, 0 CS1591/CS1574, second 2026-07-14 pass); `Benzene.Diagnostics`/`Benzene.OpenTelemetry` still have partial coverage only (7/24 files in Diagnostics; OpenTelemetry's single file is fully documented), no `GenerateDocumentationFile` in either csproj
+- ~~⚠️ Minimal test coverage (only ~6 test classes total)~~ ✅ RESOLVED across the board — Diagnostics/OpenTelemetry/core HealthChecks (9 dedicated test files + 6 more health-check-adjacent classes) and, as of the second 2026-07-14 pass, `Benzene.HealthChecks.Http`/`.EntityFramework` too (`test/Benzene.Core.Test/HealthChecks/{Http,EntityFramework}/`, 5 files)
 - ~~❌ OpenTelemetry package missing version in csproj~~ ✅ MOOT — centralized versioning, see table note above
 - ~~❌ Microsoft.Logging, Serilog, Log4Net packages missing version in csproj~~ ✅ MOOT — packages deleted entirely
 - ~~❌ HealthChecks packages all missing version in csproj~~ ✅ MOOT — centralized versioning, see table note above
@@ -312,7 +312,7 @@ Release observability packages in **phases** after core 1.0:
 - ❌ No performance overhead benchmarks — still true, verified no benchmark project exists anywhere in `src/`/`test/`
 - ❌ No sampling strategy documentation — still true
 - ❌ No privacy/sensitive data handling guidance — still true
-- 🆕 `Benzene.HealthChecks.EntityFramework` carries 2 NuGet high-severity advisory warnings (`Microsoft.Extensions.Caching.Memory` 6.0.0, `Npgsql` 5.0.7) — new finding, not previously listed anywhere in this document
+- ~~🆕 `Benzene.HealthChecks.EntityFramework` carries 2 NuGet high-severity advisory warnings (`Microsoft.Extensions.Caching.Memory` 6.0.0, `Npgsql` 5.0.7)~~ ✅ **Fixed 2026-07-14** — bumped to `Microsoft.EntityFrameworkCore` 10.0.9 / `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.3 (verified in current `.csproj`), 0 advisory warnings
 
 ### Dependency Analysis
 
@@ -630,7 +630,7 @@ test above is picked up
 
 **Issues (2026-07-14 re-verification — API surface above still matches current source exactly):**
 1. ~~❌ **Missing PackageVersion in csproj**~~ ✅ MOOT — centralized versioning, see Current State Assessment above
-2. ❌ No XML documentation — still true, confirmed 0/9 files in this package have any `///` comment; no `GenerateDocumentationFile` in the csproj either
+2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-14 (second pass) — `GenerateDocumentationFile=true` now set in the csproj, 0 CS1591/CS1574 on rebuild, every public member across all 9 files documented
 3. ⚠️ No timeout support in interface (implemented in Benzene.HealthChecks) — still true (`TimeOutHealthCheck` in `Benzene.HealthChecks` hard-codes a 10000ms delay, not interface-level or configurable)
 4. ⚠️ No tags/labels for health check categorization — still true
 5. ⚠️ No dependency graph for health checks — still true
@@ -639,7 +639,7 @@ test above is picked up
 
 **1.0 Requirements:**
 - [x] ~~**CRITICAL:** Add PackageVersion to csproj~~ MOOT — centralized versioning
-- [ ] Add comprehensive XML documentation
+- [x] ~~Add comprehensive XML documentation~~ done 2026-07-14 (second pass)
 - [ ] Consider adding timeout to IHealthCheck interface
 - [ ] Add tags/labels support for categorization
 - [ ] Document health check composition patterns
@@ -648,7 +648,7 @@ test above is picked up
 - [ ] Document readiness vs liveness patterns
 - [ ] Add health check dependency ordering
 
-**Estimated Effort:** ~~15-20 hours~~ 14-19 hours remaining (PackageVersion item resolved; everything else unchanged)
+**Estimated Effort:** ~~15-20 hours~~ ~10-13 hours remaining (PackageVersion and XML documentation items resolved; everything else unchanged)
 
 ---
 
@@ -659,7 +659,7 @@ test above is picked up
 
 **Public API Surface:**
 - `HealthCheckProcessor` - Runs health checks in parallel
-- `HealthCheckMessageHandler` - Message handler integration
+- ~~`HealthCheckMessageHandler` - Message handler integration~~ 🆕 **not real** — `HealthCheckMessageHandler.cs` is entirely commented-out dead code (verified: the whole file body is a `//`-commented class, not referenced anywhere else in `src/` or `test/`); it isn't part of the actual compiled API surface. Not previously flagged in this document. The equivalent live functionality is `.UseHealthCheck(...)` in `Extensions.cs`.
 - `HealthCheckBuilder` - Builder implementation
 - `SimpleHealthCheck` - Simple implementation
 - `InlineHealthCheck` - Inline lambda-based check
@@ -681,17 +681,17 @@ test above is picked up
 
 **Issues (2026-07-14 re-verification — confirmed against current `HealthCheckProcessor.cs`/`TimeOutHealthCheck.cs`):**
 1. ~~❌ **Missing PackageVersion in csproj**~~ ✅ MOOT — centralized versioning
-2. ❌ No XML documentation — still true, 0/14 files
+2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-14 (second pass) — `GenerateDocumentationFile=true`, 0 CS1591/CS1574, all 14 files documented
 3. ⚠️ HealthCheckProcessor.PerformHealthChecksAsync has topic parameter but doesn't use it — **still true**, verified: `topic` is accepted but never referenced in the method body
 4. ⚠️ No graceful degradation (fails if any check fails) — still true
-5. ⚠️ No separate readiness vs liveness endpoints — still true (this package's own `CLAUDE.md` describes readiness/liveness endpoints and a standard `/health` HTTP endpoint, but no such HTTP endpoint or readiness/liveness split exists in the actual source — the `CLAUDE.md` appears to be describing an aspiration, not current behavior; flagged here since it wasn't something the original roadmap authors could have known but is directly relevant to this exact 1.0 requirement)
+5. ⚠️ No separate readiness vs liveness endpoints — still true in source. **Correction to this document's own earlier note:** this issue used to also observe that the package's `CLAUDE.md` overclaimed a `/health` HTTP endpoint and readiness/liveness split that didn't exist — that CLAUDE.md was itself corrected as part of the second 2026-07-14 pass (verified by reading `src/Benzene.HealthChecks/CLAUDE.md` directly: it now explicitly states "there is no built-in `/health` route, no HTTP status code mapping, and no separate readiness/liveness distinction in this package"). The underlying 1.0 gap (no readiness/liveness support in source) remains open; only the documentation-accuracy complaint is resolved.
 6. ⚠️ TimeOutHealthCheck has hard-coded timeout (needs documentation) — **still true**, verified: `Task.Delay(10000)` is a magic number in `TimeOutHealthCheck.cs`, not configurable (unlike the analogous `WaitTimeSeconds` fix made configurable in `Benzene.Aws.Sqs`'s `SqsConsumerConfig` per the AWS roadmap's 2026-07-12 changelog — no equivalent fix landed here)
 7. ⚠️ No caching for health check results — still true
 8. ⚠️ No progress reporting for long-running checks — still true
 
 **1.0 Requirements:**
 - [x] ~~**CRITICAL:** Add PackageVersion to csproj~~ MOOT — centralized versioning
-- [ ] Add comprehensive XML documentation
+- [x] ~~Add comprehensive XML documentation~~ done 2026-07-14 (second pass)
 - [ ] Fix or document unused topic parameter
 - [ ] Add configurable health threshold (some failures OK)
 - [ ] Add readiness vs liveness endpoint support
@@ -701,7 +701,7 @@ test above is picked up
 - [ ] Add examples for common patterns
 - [ ] Integration with Kubernetes health probes
 
-**Estimated Effort:** ~~18-22 hours~~ 17-21 hours remaining (PackageVersion item resolved; everything else unchanged, all re-verified against current source this pass)
+**Estimated Effort:** ~~18-22 hours~~ ~12-15 hours remaining (PackageVersion and XML documentation items resolved; everything else unchanged, all re-verified against current source this pass)
 
 ---
 
@@ -722,18 +722,18 @@ test above is picked up
 
 **Issues:**
 1. ~~❌ **Missing PackageVersion in csproj**~~ ✅ MOOT — centralized versioning
-2. ❌ No XML documentation — still true, 0/3 files
+2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-14 (second pass) — `GenerateDocumentationFile=true`, 0 CS1591/CS1574, all 3 files documented
 3. ⚠️ No timeout configuration visible — still true
 4. ⚠️ No retry logic — still true
 5. ⚠️ No status code validation (200 vs 2xx vs 503) — still true
 6. ⚠️ No support for authenticated endpoints — still true
 7. ⚠️ No custom header support — still true
 8. ⚠️ No HTTP method configuration (GET vs HEAD) — still true
-9. 🆕 **No dedicated tests found anywhere in `test/`** for this package specifically (not previously called out as its own issue — it fell under the general "minimal test coverage" complaint, but is now the more precise gap since Diagnostics/HealthChecks.Core do have real tests)
+9. ~~🆕 **No dedicated tests found anywhere in `test/`**~~ ✅ RESOLVED 2026-07-14 (second pass) — `test/Benzene.Core.Test/HealthChecks/Http/HttpPingHealthCheckTest.cs` and `HttpPingHealthCheckFactoryTest.cs` now exist (verified present)
 
 **1.0 Requirements:**
 - [x] ~~**CRITICAL:** Add PackageVersion to csproj~~ MOOT — centralized versioning
-- [ ] Add comprehensive XML documentation
+- [x] ~~Add comprehensive XML documentation~~ done 2026-07-14 (second pass)
 - [ ] Add timeout configuration
 - [ ] Add retry policy support
 - [ ] Add status code validation options
@@ -742,9 +742,9 @@ test above is picked up
 - [ ] Add HTTP method configuration
 - [ ] Document security considerations (internal vs external endpoints)
 - [ ] Add circuit breaker pattern
-- [ ] Add unit tests (currently zero)
+- [x] ~~Add unit tests (currently zero)~~ done 2026-07-14 (second pass) — see issue 9 above
 
-**Estimated Effort:** ~~15-18 hours~~ 16-19 hours remaining (PackageVersion item resolved; added a test-coverage item that was previously only implicit)
+**Estimated Effort:** ~~15-18 hours~~ ~11-13 hours remaining (PackageVersion, XML documentation, and unit-test items all resolved; the remaining gaps are all feature work — timeout/retry/auth/headers/circuit-breaker)
 
 ---
 
@@ -765,19 +765,19 @@ test above is picked up
 
 **Issues:**
 1. ~~❌ **Missing PackageVersion in csproj**~~ ✅ MOOT — centralized versioning
-2. ❌ No XML documentation — still true, 0/3 files
+2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-14 (second pass) — `GenerateDocumentationFile=true`, 0 CS1591/CS1574, all 3 files documented
 3. ⚠️ EF version compatibility unclear — still true
 4. ⚠️ No query timeout configuration — still true
 5. ⚠️ No support for non-EF databases (Dapper, ADO.NET) — still true
 6. ⚠️ No custom query support (SELECT 1) — still true
 7. ⚠️ No connection pool health check — still true
 8. ⚠️ No database migration status check — still true
-9. 🆕 **Two high-severity NuGet advisory warnings**: `Microsoft.Extensions.Caching.Memory` 6.0.0 (GHSA-qj66-m88j-hmgj) and `Npgsql` 5.0.7 (GHSA-x9vc-6hfv-hg8c), surfaced by `dotnet build` on this project — new finding, not in the original roadmap
-10. 🆕 **No dedicated tests found anywhere in `test/`** for this package specifically — same gap as `Benzene.HealthChecks.Http`
+9. ~~🆕 **Two high-severity NuGet advisory warnings**: `Microsoft.Extensions.Caching.Memory` 6.0.0 (GHSA-qj66-m88j-hmgj) and `Npgsql` 5.0.7 (GHSA-x9vc-6hfv-hg8c)~~ ✅ **Fixed 2026-07-14** — bumped to `Microsoft.EntityFrameworkCore` 10.0.9 / `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.3 (verified in current `.csproj`), 0 advisory warnings, no source changes needed
+10. ~~🆕 **No dedicated tests found anywhere in `test/`**~~ ✅ RESOLVED 2026-07-14 (second pass) — `test/Benzene.Core.Test/HealthChecks/EntityFramework/{DatabaseConnectionHealthCheckTest,DatabaseHealthCheckTest,DatabaseHealthCheckFactoryTest}.cs` (+ a shared `TestDbContext.cs`) now exist (verified present)
 
 **1.0 Requirements:**
 - [x] ~~**CRITICAL:** Add PackageVersion to csproj~~ MOOT — centralized versioning
-- [ ] Add comprehensive XML documentation
+- [x] ~~Add comprehensive XML documentation~~ done 2026-07-14 (second pass)
 - [ ] Document EF Core version compatibility
 - [ ] Add query timeout configuration
 - [ ] Consider separate package for non-EF databases
@@ -786,10 +786,10 @@ test above is picked up
 - [ ] Add migration status check option
 - [ ] Document performance implications
 - [ ] Add read replica health checks
-- [ ] Update `Microsoft.Extensions.Caching.Memory`/`Npgsql` off their vulnerable pinned versions
-- [ ] Add unit tests (currently zero)
+- [x] ~~Update `Microsoft.Extensions.Caching.Memory`/`Npgsql` off their vulnerable pinned versions~~ done 2026-07-14 — see issue 9 above
+- [x] ~~Add unit tests (currently zero)~~ done 2026-07-14 (second pass) — see issue 10 above
 
-**Estimated Effort:** ~~15-18 hours~~ 18-22 hours remaining (PackageVersion item resolved, but two new items added — dependency vuln fixes and test coverage — that weren't previously tracked)
+**Estimated Effort:** ~~15-18 hours~~ ~9-12 hours remaining (PackageVersion, XML documentation, dependency vuln fixes, and unit tests all resolved; remaining gaps are all feature work — EF version compat docs, query timeout/custom query/connection-pool/migration-status/read-replica support)
 
 ---
 
@@ -805,33 +805,39 @@ test above is picked up
      EntityFramework). Microsoft.Logging, Serilog, Log4Net, and Zipkin — also named here — no
      longer exist at all (deleted 2026-07-12/13, see changelog).
 
-2. **XML Documentation** (60-80 hours) - CRITICAL — ⚠️ PARTIALLY DONE, scope reduced
+2. **XML Documentation** (60-80 hours) - CRITICAL — ⚠️ PARTIALLY DONE, scope reduced further by a second same-day pass
    - Document every public type, method, property — done for the Checkpoint A-F files in
-     `Benzene.Diagnostics` and all of `Benzene.OpenTelemetry`; **not done** for the rest of
-     `Benzene.Diagnostics` or any of the 4 `Benzene.HealthChecks*` packages (0/29 files)
-   - Add `<summary>`, `<param>`, `<returns>`, `<remarks>` — same partial state
+     `Benzene.Diagnostics` and all of `Benzene.OpenTelemetry`; **also now done for all 4
+     `Benzene.HealthChecks*` packages** (29 files, second 2026-07-14 pass — `GenerateDocumentationFile=true`,
+     0 CS1591/CS1574 on rebuild for each). **Not done** only for the rest of `Benzene.Diagnostics`
+     (17/24 files still undocumented, no `GenerateDocumentationFile` in its csproj)
+   - Add `<summary>`, `<param>`, `<returns>`, `<remarks>` — done everywhere except the remaining
+     undocumented `Benzene.Diagnostics` files
    - Include `<example>` for main entry points — not done anywhere
    - Document observability-specific concerns (overhead, sampling, privacy) — not done
-   - Original 60-80h estimate covered 12 packages; with 6 deleted, remaining scope is smaller —
-     not re-estimated as part of this docs-only audit, but plausibly 30-45h now
+   - Original 60-80h estimate covered 12 packages; with 6 deleted and the 4 HealthChecks packages
+     now fully documented, remaining scope is just the older half of `Benzene.Diagnostics` —
+     plausibly 8-12h now, not re-estimated rigorously
 
 3. ~~**Fix Dependency Issues** (8-12 hours) - BLOCKING~~ ✅ MOOT/DONE
    - ~~Remove AWSSDK.SQS from Benzene.Aws.XRay~~ MOOT — package deleted entirely
    - ~~Update System.Text.Encodings.Web to .NET 10 compatible~~ MOOT — package deleted entirely
    - ✅ Update OpenTelemetry to latest stable — done, 1.10.0 → 1.16.0
-   - 🆕 New dependency issue found this pass, not previously tracked: `Benzene.HealthChecks.EntityFramework` has 2 high-severity NuGet advisories (`Microsoft.Extensions.Caching.Memory` 6.0.0, `Npgsql` 5.0.7)
+   - ~~🆕 New dependency issue found this pass: `Benzene.HealthChecks.EntityFramework` has 2 high-severity NuGet advisories (`Microsoft.Extensions.Caching.Memory` 6.0.0, `Npgsql` 5.0.7)~~ ✅ **Fixed 2026-07-14** — bumped to 10.0.9/10.0.3, verified in current `.csproj`
 
-4. **Test Coverage** (50-70 hours) - CRITICAL — ⚠️ PARTIALLY DONE
+4. **Test Coverage** (50-70 hours) - CRITICAL — ✅ LARGELY DONE, only benchmarks/integration remain
    - Unit tests for all packages (target 80%+ coverage) — real tests now exist for Diagnostics,
-     OpenTelemetry, and core health-check logic (9 dedicated files, 37 passing tests); zero
-     dedicated tests for `Benzene.HealthChecks.Http`/`.EntityFramework`
+     OpenTelemetry, and core health-check logic (9 dedicated files, 37 passing tests), plus
+     `Benzene.HealthChecks.Http`/`.EntityFramework` (5 more files, second 2026-07-14 pass) — no
+     dedicated-test gap remains for any of the 6 current packages (no rigorous line-coverage %
+     re-measured, but the "zero tests" gap specifically is closed everywhere)
    - Integration tests for tracing providers — `BenzeneInstrumentationTest` covers the OTel
      wiring; no integration test against a real OTel Collector/backend
    - Async context flow tests — `W3CTraceContextTest` covers context propagation generally, not
      specifically async-boundary edge cases
    - Performance/overhead tests — still not done, no benchmark project found
-   - Health check scenario tests — done for core pipeline/naming/discovery logic; not done for
-     HTTP/EF-specific checks
+   - Health check scenario tests — done for core pipeline/naming/discovery logic, and now also for
+     HTTP/EF-specific checks (second 2026-07-14 pass)
 
 5. **OpenTelemetry Modernization** (20-25 hours) - HIGH PRIORITY — ✅ LARGELY DONE
    - ✅ Replace TracerProvider.Default with DI — done (the rewritten package never touches
@@ -1166,14 +1172,14 @@ is recommended before using this number for planning.
 3. ~~⚠️ All HealthChecks packages missing PackageVersion~~ ✅ MOOT — centralized versioning
 4. ~~⚠️ Aws.XRay unnecessary AWSSDK.SQS dependency~~ ✅ MOOT — package deleted entirely
 5. ~~⚠️ Old System.Text.Encodings.Web 6.0.0 in XRay~~ ✅ MOOT — package deleted entirely
-6. 🆕 `Benzene.HealthChecks.EntityFramework` has 2 high-severity NuGet advisory warnings (`Microsoft.Extensions.Caching.Memory` 6.0.0, `Npgsql` 5.0.7) — new finding this pass
+6. ~~🆕 `Benzene.HealthChecks.EntityFramework` has 2 high-severity NuGet advisory warnings (`Microsoft.Extensions.Caching.Memory` 6.0.0, `Npgsql` 5.0.7)~~ ✅ **Fixed 2026-07-14** — bumped to 10.0.9/10.0.3
 
 **High Priority:**
 1. ✅ RESOLVED: OpenTelemetry uses deprecated TracerProvider.Default — the rewritten package never touches it
 2. ~~Zipkin hard-codes service name "benzene"~~ ✅ MOOT — package deleted entirely
 3. ✅ RESOLVED: No correlation ID propagation to tracing providers — superseded by W3C `traceparent` propagation, now real and working
 4. HealthCheckProcessor unused topic parameter — **still true**, re-verified against current source this pass
-5. ⚠️ No XML documentation anywhere — now only true for the 4 `Benzene.HealthChecks*` packages; `Benzene.Diagnostics`/`Benzene.OpenTelemetry` have partial coverage
+5. ~~⚠️ No XML documentation anywhere~~ ✅ RESOLVED for the 4 `Benzene.HealthChecks*` packages (second 2026-07-14 pass); `Benzene.Diagnostics`/`Benzene.OpenTelemetry` still have only partial coverage
 
 **Medium Priority:**
 1. No performance overhead benchmarks — still true
@@ -1223,8 +1229,11 @@ is recommended before using this number for planning.
   `HealthCheckNamerTests`, `HealthCheckTests`); plus 6 health-check-adjacent classes elsewhere
   in the suite (`HealthCheckProcessorTest`, `HealthCheckTest`, `AwsLambdaHealthCheckTest`,
   `SqsHealthCheckTest`, `StepFunctionsHealthCheckTest`, `BenzeneHealthCheckBridgeTest`). All 37
-  matching tests pass (verified this pass). `Benzene.HealthChecks.Http`/`.EntityFramework` still
-  have zero dedicated tests.
+  matching tests pass (verified this pass, first audit). As of the second same-day pass,
+  `Benzene.HealthChecks.Http`/`.EntityFramework` no longer have zero dedicated tests either —
+  `test/Benzene.Core.Test/HealthChecks/{Http,EntityFramework}/` adds 5 more files
+  (`HttpPingHealthCheckTest`, `HttpPingHealthCheckFactoryTest`, `DatabaseConnectionHealthCheckTest`,
+  `DatabaseHealthCheckTest`, `DatabaseHealthCheckFactoryTest`, plus a shared `TestDbContext` helper).
 - ~~Zipkin has integration tests (good!)~~ — package and its `ZipkinPipelineTest` both deleted 2026-07-13; `BenzeneInstrumentationTest` is the closest current analogue (exercises real `TracerProviderBuilder`/`MeterProviderBuilder` wiring)
 - ✅ HealthCheckNamerTests exists (good!) — confirmed, still present and passing
 - ~~BenzeneLoggerTests exists (basic)~~ — `IBenzeneLogger` and its tests were deleted 2026-07-12 along with the custom logging stack; logging is tested via `FakeLoggerFactory`-based scope tests instead (e.g. `test/Benzene.Core.Test/Core/Core/Logging/UseLogContextTest.cs`, outside this document's original package scope)
@@ -1963,10 +1972,10 @@ All observability packages reference:
 2. **Sampling Strategies** - Implementation and docs (20-25h) — still fully open
 3. **Async Context Flow Tests** - All scenarios (15-20h) — ⚠️ `W3CTraceContextTest` covers context propagation generally, not specifically async-boundary edge cases
 4. **Sensitive Data Filtering** - Built-in filters (20-25h) — still fully open
-5. **Health Check Enhancements** - Readiness/liveness (15-18h) — still fully open (this package's own `CLAUDE.md` describes readiness/liveness endpoints that don't exist in current source — see section 10's issue list)
+5. **Health Check Enhancements** - Readiness/liveness (15-18h) — still fully open in source (see section 10's issue 5). This document previously also flagged the package's `CLAUDE.md` as overclaiming readiness/liveness support that didn't exist; that CLAUDE.md was corrected as part of the second 2026-07-14 pass and now accurately states no such support exists — the documentation-accuracy complaint is resolved, the underlying feature gap is not
 6. ~~**Log4Net Decision** - Keep or deprecate (5-8h)~~ ✅ DECIDED AND EXECUTED — `Benzene.Log4Net` deleted outright 2026-07-12 (not merely "marked community-supported")
 7. **Troubleshooting Guide** - Common issues (8-10h) — ⚠️ partial: Serilog-specific troubleshooting exists in its cookbook; no observability-wide guide
-8. **Security Audit** - All packages (10-12h) — not done; new finding this pass (EF package NuGet advisories) suggests this is still valuable
+8. **Security Audit** - All packages (10-12h) — not done; the EF package NuGet advisories found this pass were fixed same-day (see changelog item 9), but that was a dependency-version fix, not a full security audit — this item is still valuable and open
 
 **Total P1 Effort:** ~~123-158 hours~~ not re-estimated; item 6 is done, others are partial-to-fully-open
 
@@ -2077,23 +2086,24 @@ Per `work/1.0.0-release-status.md`:
 7. ✅ Working examples
 
 **Observability Packages Current Status:**
-1. ⚠️ 0% XML documentation — now inaccurate; partial coverage in Diagnostics/OpenTelemetry, still 0% in the 4 HealthChecks packages
+1. ~~⚠️ 0% XML documentation~~ ✅ RESOLVED — full coverage in OpenTelemetry and all 4 HealthChecks packages (`GenerateDocumentationFile=true`, 0 CS1591/CS1574 each, second 2026-07-14 pass); still partial (7/24 files) in the older half of `Benzene.Diagnostics`
 2. ✅ No test code in production packages
-3. ⚠️ Some critical issues (missing versions, XRay dependencies) — both named issues resolved/moot (centralized versioning; XRay package deleted); one new issue found this pass (`Benzene.HealthChecks.EntityFramework` NuGet advisories)
+3. ⚠️ Some critical issues (missing versions, XRay dependencies) — both named issues resolved/moot (centralized versioning; XRay package deleted); the `Benzene.HealthChecks.EntityFramework` NuGet advisories found this pass were also fixed same-day
 4. ✅ Versioning policy applies
-5. ⚠️ Minimal test coverage (~10%) — real coverage now exists for Diagnostics/OpenTelemetry/core HealthChecks (37 passing tests); still ~0% for HealthChecks.Http/.EntityFramework specifically, so "minimal" is still roughly fair as an overall characterization but no longer accurate package-by-package
+5. ~~⚠️ Minimal test coverage (~10%)~~ ✅ RESOLVED — real coverage now exists for Diagnostics/OpenTelemetry/core HealthChecks (37 passing tests) and, as of the second 2026-07-14 pass, `Benzene.HealthChecks.Http`/`.EntityFramework` too; no dedicated-test gap remains for any of the 6 current packages
 6. ⚠️ CLAUDE.md exists but needs user docs — CLAUDE.md files are accurate and current; `docs/monitoring.md` is a substantial, accurate user doc that didn't exist in this form when this line was written
 7. ⚠️ Some examples (Zipkin) but need more — Zipkin example is gone (package deleted); replaced by a considerably more complete `examples/OpenTelemetry/` (web UI + Grafana LGTM stack)
 
 **Gap Analysis:**
 ~~Observability packages are ~20-25% toward 1.0 readiness.~~ Meaningfully further along than
 20-25% now, driven by: 6 of 12 originally-tracked packages no longer needing any 1.0 work at all
-(deleted, not fixed); real test coverage and partial XML docs for the two remaining
-tracing/diagnostics packages; a working end-to-end example; and a complete migration guide.
-Remaining primary gaps, largely unchanged in kind: XML Documentation (now scoped to
-HealthChecks packages + the older half of Diagnostics), performance/overhead benchmarks,
-sampling/privacy documentation, and test coverage for HealthChecks.Http/.EntityFramework
-specifically.
+(deleted, not fixed); real test coverage and full/partial XML docs across all 6 remaining
+packages; a working end-to-end example; and a complete migration guide. A second same-day pass
+closed two gaps this same audit had just found (XML documentation and test coverage for
+`Benzene.HealthChecks.Http`/`.EntityFramework`), narrowing the remaining primary gaps to:
+XML Documentation (now scoped to just the older half of `Benzene.Diagnostics`, 17/24 files),
+performance/overhead benchmarks (none exist), and sampling/privacy/GDPR documentation (none
+exists).
 
 **Comparison with AWS/Azure:**
 - AWS packages: ~30% toward 1.0 (178-262h estimated) — see `work/aws-roadmap-1.0.md`'s own
@@ -2170,10 +2180,12 @@ were deleted (not fixed) as part of a broader consolidation onto standards-based
 (`ILogger<T>` for logging, `System.Diagnostics.Activity`/OpenTelemetry for tracing), which
 resolves most of the "phased release across diagnostics → logging → tracing" concern this
 document originally raised — there is no separate logging phase left to plan. The 6 remaining
-packages still need real work before 1.0: XML documentation (0% in the 4 HealthChecks
-packages, partial in Diagnostics), performance/overhead benchmarks (none exist anywhere),
-sampling/privacy/GDPR documentation (none exists), and test coverage specifically for
-`Benzene.HealthChecks.Http`/`.EntityFramework` (currently zero). The original phased-release
+packages still need real work before 1.0: performance/overhead benchmarks (none exist anywhere)
+and sampling/privacy/GDPR documentation (none exists) remain fully open. XML documentation and
+test coverage for `Benzene.HealthChecks.Http`/`.EntityFramework` — flagged as gaps earlier in
+this same audit — were both closed in a second same-day pass (see the 2026-07-14 follow-up
+changelog above); the remaining documentation gap is scoped to the older half of
+`Benzene.Diagnostics` only. The original phased-release
 recommendation — foundation packages (Diagnostics, HealthChecks.Core) with core 1.0, then the
 rest 1-4 months later — remains reasonable, just narrower in scope now that there's one tracing
 package instead of four and zero logging packages instead of three.

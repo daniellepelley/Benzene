@@ -1,9 +1,57 @@
 # Benzene AWS Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.8
-**Last Updated:** 2026-07-13
+**Document Version:** 1.9
+**Last Updated:** 2026-07-14
 **Owner:** AWS Product Team
 **Status:** DRAFT for Review
+
+> **2026-07-14 changelog** — CORS parity + full audit pass, in order of significance:
+> 1. **CORS was stale, not missing.** Every mention below of `ApiGatewayContextCorsMiddleware`
+>    (in `src/Benzene.Aws.Lambda.ApiGateway/Cors/`) as the current CORS implementation was
+>    wrong — that class and its `Extensions.cs` were deleted (the `Cors/` directory no
+>    longer exists in that package). CORS is provided by the portable, generic
+>    `Benzene.Http.Cors.CorsMiddleware<TContext>` (works identically across AWS API
+>    Gateway, Azure Functions, and ASP.NET Core), registered via
+>    `.UseCors(new CorsSettings {...})`. This session brought it to full parity with
+>    `Microsoft.AspNetCore.Cors`: exact scheme+host+port origin matching, `Access-Control-
+>    Expose-Headers` (new `CorsSettings.ExposedHeaders`), `Access-Control-Max-Age`
+>    (`MaxAgeSeconds`), `Access-Control-Allow-Credentials` (`AllowCredentials`), a working
+>    `AllowAnyHeader()`-equivalent wildcard for `AllowedHeaders`, `Vary: Origin`, and
+>    preflight header validation (a requested header outside a non-wildcard allow-list now
+>    fails the check). Fully documented in `docs/common-middleware.md`'s `UseCors` section.
+>    Every "CORS not documented" / "Document CORS setup" item below is now resolved.
+> 2. **Version corrected**: repo-root `version.txt` (the single centralized version source
+>    per `Directory.Build.props`) reads `0.0.2`, not `0.0.1` as this document claimed
+>    throughout.
+> 3. **Source file count recounted**: 131 AWS-related `.cs` files across all 8 production +
+>    5 TestHelper packages (`src/Benzene.Aws.*`, `src/Benzene.Clients.Aws`) — the previous
+>    "~179" figure could not be reproduced and appears stale. (`src/Benzene.Aws.XRay/` still
+>    exists as a directory but contains only stale `obj`/`bin` build artifacts, no source or
+>    project file — consistent with the 2026-07-13 deletion claim below.)
+> 4. **Unified hosting model found, previously undocumented here**: `AwsLambdaHost<TStartUp>`
+>    plus a platform-neutral `BenzeneStartUp`/`IBenzeneApplicationBuilder` (shared across
+>    AWS/Azure/ASP.NET Core, one `StartUp` class runs on any of them) already exists in
+>    `Benzene.Aws.Lambda.Core` — tested
+>    (`test/Benzene.Core.Test/Hosting/UnifiedStartUpTest.cs`), documented (`docs/hosting.md`,
+>    `docs/getting-started-aws.md`, `docs/migration-alpha-to-1.0.md`), and additive (the
+>    pre-1.0 `AwsLambdaStartUp` path still works unchanged). This resolves section 1's
+>    "Create migration guide from bare-metal to StartUp pattern" item —
+>    `docs/migration-alpha-to-1.0.md`'s "Unified hosting" section covers exactly that,
+>    including a per-platform host-entry-point table.
+> 5. **New cookbook found**: `docs/cookbooks/lambda-cold-start-optimization.md` — resolves
+>    section 1's "Document cold-start best practices" item (source-generated handler
+>    registration via `Benzene.CodeGen.SourceGenerators`, arm64/memory tuning, ReadyToRun,
+>    lazy initialization, provisioned concurrency guidance). Actual benchmarks and Native AOT
+>    package support remain unbuilt — see Performance & Optimization section, unchanged.
+> 6. **Checked and confirmed NOT resolved** (flagging so this isn't overclaimed):
+>    `docs/cookbooks/README.md` links to `api-gateway-authorizers.md` and
+>    `s3-event-processing.md`, but neither file exists in `docs/cookbooks/`. The "Document
+>    custom authorizer patterns" / IAM-policy-for-authorizers / S3-image-pipeline-example
+>    items below remain genuinely open despite the dangling README reference suggesting
+>    otherwise.
+>
+> Everything else in the 2026-07-12/2026-07-13 changelogs below remains accurate and
+> unchanged by this pass.
 
 > **2026-07-13 changelog** — audit pass ticking off work completed since the
 > 2026-07-12 update, in order of significance:
@@ -124,9 +172,9 @@ This roadmap outlines the path to 1.0.0 for Benzene's AWS integration packages a
 
 ### Current State
 - **Package Count:** 8 AWS production packages, 5 TestHelpers (`Benzene.Aws.XRay` deleted 2026-07-13, superseded by OpenTelemetry — see changelog)
-- **Version:** All at 0.0.1 (pre-release)
+- **Version:** All at 0.0.2 (pre-release; centralized via repo-root `version.txt`, corrected 2026-07-14 — this document previously claimed 0.0.1)
 - **Target Framework:** .NET 10
-- **Source Files:** ~179 AWS-related source files (pre-XRay-deletion count; not yet recounted)
+- **Source Files:** 131 AWS-related `.cs` source files across all 8 production + 5 TestHelper packages, recounted 2026-07-14 — the previous "~179" figure could not be reproduced and appears stale
 - **Test Coverage:** ✅ 90%+ unit test coverage across all 8 remaining packages, plus LocalStack integration tests passing in CI (both completed 2026-07-12)
 - **Documentation:** ✅ 100% XML documentation (completed 2026-07-12; regressed to 3 missing summaries on `AwsLambdaHost<TStartUp>` when that class was added afterward, found and fixed 2026-07-13 — see changelog), basic CLAUDE.md files exist
 - **Maturity:** Functional but not production-ready for 1.0
@@ -272,6 +320,10 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 - `AwsLambdaMiddlewareRouter` - Event routing
 - `IAwsEntryPointBuilder` - Builder abstraction
 - BenzeneMessage integration (DirectMessageLambdaHandler)
+- `AwsLambdaHost<TStartUp>` / `AwsLambdaApplicationBuilder` - unified, platform-neutral
+  `BenzeneStartUp` hosting model shared with Azure Functions and ASP.NET Core (found
+  2026-07-14 — was already tracked indirectly via a doc-coverage regression note on
+  2026-07-13, but not listed here; see `docs/hosting.md`)
 
 **Strengths:**
 - Clean startup pattern similar to ASP.NET Core
@@ -290,12 +342,20 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 - [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Improve error messages with actionable guidance
 - [ ] Add startup time logging
-- [ ] Document cold-start best practices
+- [x] Document cold-start best practices (found 2026-07-14 —
+      `docs/cookbooks/lambda-cold-start-optimization.md` covers source-generated handler
+      registration, arm64/memory tuning, ReadyToRun, lazy initialization, and provisioned
+      concurrency; actual benchmarks remain unbuilt, see Performance & Optimization section)
 - [ ] Add Lambda runtime initialization hooks
-- [ ] Create migration guide from bare-metal to StartUp pattern
+- [x] Create migration guide from bare-metal to StartUp pattern (found 2026-07-14 —
+      `docs/migration-alpha-to-1.0.md`'s "Unified hosting" section documents migrating to
+      `AwsLambdaHost<TStartUp>`/`BenzeneStartUp`, including a per-platform host-entry-point
+      table; the pre-1.0 `AwsLambdaStartUp` path is explicitly called out as still working,
+      not a forced migration)
 - [ ] Add examples of custom IAwsEntryPointBuilder implementations
 
-**Estimated Effort:** 15-20 hours
+**Estimated Effort:** 8-12 hours remaining (down from 15-20 — cold-start documentation and
+the bare-metal-to-StartUp migration guide were both found already done, 2026-07-14)
 
 ---
 
@@ -312,13 +372,18 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 - `ApiGatewayResponseAdapter` - Response builder
 - Message handlers (BodyGetter, HeadersGetter, TopicGetter, ResultSetter)
 - `ApiGatewayRequestEnricher` - Request enrichment
-- **CORS:** `ApiGatewayContextCorsMiddleware` + extensions
+- ~~**CORS:** `ApiGatewayContextCorsMiddleware` + extensions~~ ❌ WRONG, corrected 2026-07-14 —
+  that class and its `Extensions.cs` were deleted; `src/Benzene.Aws.Lambda.ApiGateway/Cors/`
+  no longer exists. CORS is now provided by the portable `Benzene.Http.Cors.CorsMiddleware<TContext>`
+  (generic over `IHttpContext`, shared with Azure Functions and ASP.NET Core), wired up the
+  same way here via `.UseCors(new CorsSettings {...})` — see changelog
 - **Custom Authorizer:** Full custom authorizer support
 - Various registration and extension classes
 
 **Strengths:**
 - Most feature-complete AWS adapter
-- CORS support built-in
+- ~~CORS support built-in~~ CORS support built-in via the shared `Benzene.Http.Cors.CorsMiddleware<TContext>`
+  (corrected 2026-07-14 — not an AWS-specific implementation as previously described)
 - Custom authorizer implementation
 - Clean HTTP abstraction mapping
 - Supports both REST API and HTTP API formats
@@ -328,15 +393,20 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 2. ❌ ApiGatewayContext (line 6) is too simple - missing request/response properties
 3. ⚠️ No guidance on binary content handling (base64)
 4. ⚠️ No multi-value header/query string examples
-5. ⚠️ CORS configuration not documented
+5. ~~⚠️ CORS configuration not documented~~ ✅ RESOLVED 2026-07-14 — `docs/common-middleware.md`'s
+   `UseCors` section fully documents `CorsSettings`/`CorsMiddleware<TContext>` (origin matching,
+   exposed headers, max-age, credentials, wildcard headers, preflight validation)
 6. ⚠️ Custom authorizer IAM policy generation not documented
 7. ⚠️ No OpenAPI/Swagger integration examples
 
 **1.0 Requirements:**
 - [x] Add comprehensive XML documentation (completed 2026-07-12, part of the AWS-wide documentation pass)
 - [ ] Expand ApiGatewayContext with convenience properties
-- [ ] Document CORS setup with examples
-- [ ] Document custom authorizer patterns
+- [x] Document CORS setup with examples (✅ RESOLVED 2026-07-14 — see `docs/common-middleware.md`'s
+      `UseCors` section; this was never an AWS-specific gap once `ApiGatewayContextCorsMiddleware`
+      was deleted, since CORS moved to the shared `Benzene.Http` package, see changelog)
+- [ ] Document custom authorizer patterns (checked 2026-07-14: `docs/cookbooks/README.md`
+      links to a not-yet-written `api-gateway-authorizers.md` — genuinely still open)
 - [ ] Add binary content handling guide
 - [ ] Add OpenAPI integration example
 - [ ] Document API Gateway request/response limits
@@ -344,7 +414,8 @@ AWSXRayRecorder.Handlers.AwsSdk        2.11.0
 - [ ] Performance testing for cold starts
 - [ ] Document differences between REST API v1 and HTTP API v2
 
-**Estimated Effort:** 20-25 hours
+**Estimated Effort:** 18-22 hours (down from 20-25 — CORS documentation item resolved
+2026-07-14, see changelog)
 
 ---
 
@@ -1403,7 +1474,11 @@ public async Task Sqs_BatchProcessing_100Messages()
 - [ ] Request/response validation
 - [ ] Throttling configuration
 - [ ] API keys and usage plans
-- [ ] CORS configuration security
+- [x] CORS configuration security (✅ RESOLVED 2026-07-14 — `docs/common-middleware.md`'s
+      `UseCors` section documents the security-relevant behavior directly: exact
+      scheme+host+port origin matching, why a literal `"*"` is never echoed back for
+      credentialed requests, preflight header validation, and `Vary: Origin` cache
+      correctness; see `Benzene.Http.Cors.CorsMiddleware<TContext>`)
 - [ ] CloudFront integration
 - [ ] WAF integration patterns
 

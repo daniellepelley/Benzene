@@ -1,5 +1,12 @@
 # Overnight autonomous session — progress report (2026-07-14)
 
+> **2026-07-14 later-same-day update:** every PR listed below as "Synced with fixed main; CI
+> re-running" has since **merged**. Verified via `mcp__github__list_pull_requests` (state: all):
+> PR #5 merged 06:44:54Z, PR #4 merged 06:53:14Z, PR #2 merged 06:54:45Z (plus PR #1 merged
+> 2026-07-12, and PR #6/#7 — later work, not mentioned below — merged 10:42:23Z/10:51:04Z). No open
+> PRs remain from this session. The "Suggested order when you're back" section is fully actioned;
+> nothing here is still pending.
+
 Context: you asked me to work ~8 hours on the implementation plans in `work/` with authority
 to make my own decisions. This is what I did and, more importantly, what you should look at first.
 
@@ -21,8 +28,8 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 | # | What | Branch | State |
 |---|------|--------|-------|
 | PR #5 | **Fix the `main` build** — 6 gRPC test import/ambiguity errors | `claude/fix-grpc-test-build` | ✅ **MERGED** to main (squash `d0604c6`); closed #3 |
-| PR #4 | 1.0 API-readiness review + delete 9 fully-commented dead source files | `claude/1.0-api-readiness` | Synced with fixed main; CI re-running |
-| PR #2 | docs + S3 routing + custom authorizer + schema-compat + streaming P1/P2 | `claude/md-docs-website-scope-gyhgh6` | Synced with fixed main; CI re-running |
+| PR #4 | 1.0 API-readiness review + delete 9 fully-commented dead source files | `claude/1.0-api-readiness` | ✅ **MERGED** 2026-07-14T06:53:14Z |
+| PR #2 | docs + S3 routing + custom authorizer + schema-compat + streaming P1/P2 | `claude/md-docs-website-scope-gyhgh6` | ✅ **MERGED** 2026-07-14T06:54:45Z |
 | Issue #3 | The gRPC build break | — | ✅ **Closed** |
 
 ## Decisions I made (and why)
@@ -63,6 +70,8 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 
 ## Suggested order when you're back
 
-1. Glance at PR #5's CI. If green, merge it → `main` builds, #3 closes, PR #2/#4 go green on re-run.
-2. Skim `work/1.0-api-readiness-review-2026-07-14.md` and make the two judgment calls in it.
-3. Review PR #2 (the big one) and PR #4 on their now-green builds.
+1. ~~Glance at PR #5's CI. If green, merge it → `main` builds, #3 closes, PR #2/#4 go green on
+   re-run.~~ ✅ done — PR #5 merged, `main` builds.
+2. Skim `work/1.0-api-readiness-review-2026-07-14.md` and make the two judgment calls in it —
+   still open (§1b `BenzeneWorkerStartup2` rename, §2a `[Obsolete]` ship/remove decision).
+3. ~~Review PR #2 (the big one) and PR #4 on their now-green builds.~~ ✅ done — both merged.

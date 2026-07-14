@@ -62,6 +62,39 @@
 >    actually defines `BenzeneMessageGetter`, and root `BenzeneMessageContext.cs` actually defines
 >    `MessageHandlerContext<TRequest, TResponse>` (the real `BenzeneMessageContext` lives in
 >    `Benzene.Core.Messages`) — both noted in `<remarks>` on the affected types rather than renamed.
+>
+> **2026-07-14, later the same day — follow-up pass verifying this review against current `src/`**
+> (the pass above predates both items below; re-verified by reading actual current source, not by
+> trusting this document's own narrative):
+> 7. **CORS brought to full `Microsoft.AspNetCore.Cors` parity.** `CorsSettings`
+>    (`src/Benzene.Http/Cors/CorsSettings.cs`) gained three new public properties —
+>    `ExposedHeaders`, `AllowCredentials`, `MaxAgeSeconds` — and `CorsOriginChecker.MatchOrigin`
+>    (`src/Benzene.Http/Cors/CorsMiddleware.cs`) now matches exact scheme+host+port when an
+>    `AllowedDomains` entry is a full URL (previously host-only for every entry, full URL or not);
+>    `AllowedHeaders` now also accepts a `"*"` wildcard, echoing back the actual requested headers
+>    (an `AllowAnyHeader()` equivalent, since a literal `"*"` isn't honored by browsers on
+>    credentialed requests). These are pure additions — no existing member changed shape — but
+>    they're exactly the kind of new public surface this document exists to catalog before 1.0
+>    locks semver. Section 7 (`Benzene.Http`) below has been updated accordingly. Independently
+>    corroborated by `work/azure-roadmap-1.0.md`'s own 2026-07-14 "CORS, SDK-consistency, and
+>    code-quality follow-up" entry, which describes the same work from the Azure side.
+> 8. **Logging abstraction the original 2026-07-14 audit pass (above) missed entirely:**
+>    `IBenzeneLogger`, `IBenzeneLogContext`, `IBenzeneLogAppender`, and `BenzeneLogLevel` no longer
+>    exist anywhere in `src/` — grepping the full source tree (excluding build artifacts) for all
+>    four names returns zero matches. Commit `3f3b25d` ("Replace IBenzeneLogger stack with
+>    Microsoft.Extensions.Logging", **2026-07-12** — two days before even this document's original
+>    audit pass) deleted the whole custom logging stack in favor of plain
+>    `Microsoft.Extensions.Logging.ILogger<T>` throughout the framework (e.g.
+>    `MessageRouter<TContext>` now takes an `ILogger<MessageRouter<TContext>>`). This document's
+>    Section 1 (`Benzene.Abstractions`) and Section 4 (`Benzene.Core`) still listed the deleted
+>    types as current public surface as of this morning's audit pass; both are corrected below.
+>    Independently corroborated by `work/observability-roadmap-1.0.md`, which documents the same
+>    commit and additionally notes it made three provider-adapter packages
+>    (`Benzene.Microsoft.Logging`, `Benzene.Serilog`, `Benzene.Log4Net`) redundant and they were
+>    deleted too. Since this is a removal of previously-public types (not an addition), it is the
+>    single most significant finding of this follow-up pass for a document whose purpose is
+>    cataloging the public surface before 1.0 semver lock — flagged prominently rather than buried
+>    in a bullet list.
 
 ---
 
@@ -82,7 +115,10 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 
 **Public API Surface:**
 - **DI abstractions:** `IBenzeneServiceContainer`, `IServiceResolver`, `IServiceResolverFactory`, `IDependencyInjectionAdapter<T>`, `IRegisterDependency`
-- **Logging:** `IBenzeneLogger`, `IBenzeneLogContext`, `IBenzeneLogAppender`, `ILogContextBuilder<T>`, `BenzeneLogLevel` (enum)
+- **Logging:** ~~`IBenzeneLogger`, `IBenzeneLogContext`, `IBenzeneLogAppender`, `BenzeneLogLevel` (enum)`~~
+  **removed 2026-07-12** (commit `3f3b25d`) — replaced by plain `Microsoft.Extensions.Logging.ILogger<T>`
+  throughout the framework; see the 2026-07-14 follow-up note at top. Only `ILogContextBuilder<T>`
+  remains from the original logging surface.
 - **Serialization:** `ISerializer`
 - **Results:** `IBenzeneResult`, `IBenzeneResult<T>`, `Void` class
 - **Builders:** `IHttpBuilder<T>`, `IMessageBuilder<T>`, `IBenzeneTestHost`
@@ -95,10 +131,14 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 
 **Concerns:**
 
-1. **Missing XML documentation** - CRITICAL for 1.0
+1. ~~**Missing XML documentation** - CRITICAL for 1.0~~ **✅ resolved** — see 2026-07-14 audit-pass
+   note at top (0 CS1591 warnings on a clean rebuild); spot-checked directly for this follow-up
+   pass too — `IBenzeneServiceContainer.cs` alone now carries 46 `<summary>`-tagged doc comments.
+   Also note: `IBenzeneLogger.cs` below no longer exists at all (see point 8 of the 2026-07-14
+   follow-up note at top — the whole `IBenzeneLogger` stack was deleted 2026-07-12).
    - File: `IBenzeneServiceContainer.cs:1` - No XML docs on any method
    - File: `IServiceResolver.cs:1` - No XML docs
-   - File: `IBenzeneLogger.cs:1` - No XML docs
+   - ~~File: `IBenzeneLogger.cs:1` - No XML docs~~ (file deleted 2026-07-12, see above)
    - File: `ISerializer.cs:1` - No XML docs
    - **ALL public interfaces lack XML documentation**
 
@@ -111,9 +151,10 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
    - `IHttpBuilder<T>` and `IMessageBuilder<T>` - Purpose unclear without documentation
 
 **Recommendation:** READY FOR 1.0 AFTER:
-1. Adding comprehensive XML documentation to all public types
-2. Fixing the bug at BenzeneServiceContainerExtensions.cs:120
-3. Clarifying naming of AddScoped vs TryAddScoped at line 46
+1. ✅ Adding comprehensive XML documentation to all public types — done, see 2026-07-14 note at top
+2. ✅ Fixing the bug at BenzeneServiceContainerExtensions.cs:120 — done, see 2026-07-14 note at top
+   (verified: `TryAddSingleton(Type, Type)` now calls `AddSingleton` correctly)
+3. 🔸 Clarifying naming of AddScoped vs TryAddScoped at line 46 — still open, maintainer call
 
 ---
 
@@ -137,7 +178,8 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 
 **Concerns:**
 
-1. **Missing XML documentation** - CRITICAL
+1. ~~**Missing XML documentation** - CRITICAL~~ **✅ resolved** — see 2026-07-14 audit-pass note
+   at top; spot-checked directly — `IMiddleware.cs` now has 6 `<summary>`-tagged doc comments.
    - File: `IMiddleware.cs:1` - No XML docs
    - File: `IMiddlewarePipelineBuilder.cs:1` - No XML docs
    - All interfaces lack documentation
@@ -149,7 +191,7 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 3. **Generic constraints:**
    - `IMiddleware<in TContext>` uses contravariant `in` - this is correct but should be documented why
 
-**Recommendation:** READY FOR 1.0 AFTER adding XML documentation
+**Recommendation:** ✅ READY FOR 1.0 — XML documentation added, see 2026-07-14 note at top
 
 ---
 
@@ -214,10 +256,16 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 ### 4. Benzene.Core ✅ READY FOR 1.0
 
 **Public API Surface:**
-- **Logging:** `BenzeneLogger`, `NullBenzeneLogger`, `NullBenzeneLogContext`, `NullDisposable`, `LogContextBuilder<TContext>`, `ContextDictionaryBuilder<TContext>`, `IContextDictionaryBuilder<TContext>`
+- **Logging:** ~~`BenzeneLogger`, `NullBenzeneLogger`, `NullBenzeneLogContext`, `NullDisposable`~~
+  **removed 2026-07-12** (commit `3f3b25d`, same removal as `Benzene.Abstractions`'s `IBenzeneLogger`
+  stack — see the 2026-07-14 follow-up note at top). What remains: `LogContextBuilder<TContext>`,
+  `ContextDictionaryBuilder<TContext>`, `IContextDictionaryBuilder<TContext>`
 - **DI:** `IRegistrations`, `IRegistrationCheck`, `RegistrationCheck`, `RegistrationsBase`, `RegistrationRecorder`, `RegistrationMatch`
 - **Exceptions:** `BenzeneException`
-- **Utilities:** Various extension methods in `LogContextExtensions`, `LoggerExtensions`, `DictionaryUtils`, `Utils`
+- **Utilities:** Various extension methods in `ContextDictionaryBuilderExtensions` (this review's
+  original "`LogContextExtensions`" name doesn't match any current type — corrected here),
+  `DictionaryUtils`, `Utils`. Note `LoggerExtensions` (the `UseLogResult` middleware extension) has
+  since moved to `Benzene.Core.Middleware`, not this package.
 - **Constants:** `Constants` class
 
 **Strengths:**
@@ -227,7 +275,9 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 
 **Concerns:**
 
-1. **Missing XML documentation** - CRITICAL
+1. ~~**Missing XML documentation** - CRITICAL~~ **✅ resolved** — see 2026-07-14 audit-pass note at
+   top; spot-checked directly — `Constants.cs` and `Helper/Utils.cs` each now carry 8 `<summary>`-tagged
+   doc comments.
    - No XML docs on any public type
 
 2. **Naming concerns:**
@@ -242,8 +292,8 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
    - File: `Constants.cs` - What constants? Need to review actual content
 
 **Recommendation:** READY FOR 1.0 AFTER:
-1. Adding XML documentation
-2. Reviewing and potentially renaming vague utility classes
+1. ✅ Adding XML documentation — done, see 2026-07-14 note at top
+2. 🔸 Reviewing and potentially renaming vague utility classes — still open, maintainer call
 
 ---
 
@@ -267,11 +317,13 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 
 **Concerns:**
 
-1. **Missing XML documentation** - CRITICAL
+1. ~~**Missing XML documentation** - CRITICAL~~ **✅ resolved** — see 2026-07-14 audit-pass note at
+   top; spot-checked directly — `Extensions.cs` now carries 48 `<summary>`-tagged doc comments.
    - File: `Extensions.cs:6` - 20+ extension methods with no XML docs
    - No XML docs on any public type
 
-2. **Extension method concerns:**
+2. ~~**Extension method concerns:**~~ **✅ bug fixed** — see 2026-07-14 audit-pass note at top;
+   verified directly: the `Split` overloads now read `await newApp.Build().HandleAsync(...)`, not `app`.
    - File: `Extensions.cs:151-168` - `Split` method has a bug: line 174 calls `builder(app)` instead of `builder(newApp)`
    - Multiple overloads might be confusing without good documentation
 
@@ -283,9 +335,10 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
    - `InlineContextConverter` - Is this meant to be public or is it an implementation detail?
 
 **Recommendation:** READY FOR 1.0 AFTER:
-1. Adding comprehensive XML documentation, especially for extension methods
-2. Fixing the bug in Split method at line 174
-3. Consider renaming `MiddlewareMultiApplication` to something clearer
+1. ✅ Adding comprehensive XML documentation, especially for extension methods — done, see
+   2026-07-14 note at top
+2. ✅ Fixing the bug in Split method at line 174 — done, see 2026-07-14 note at top
+3. 🔸 Consider renaming `MiddlewareMultiApplication` to something clearer — still open, maintainer call
 
 ---
 
@@ -376,7 +429,11 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 - **Routing implementations:** `ReflectionHttpEndpointFinder`, `CacheHttpEndpointFinder`, `CompositeHttpEndpointFinder`, `DependencyHttpEndpointFinder`, `ListHttpEndpointFinder`
 - **Status codes:** `IHttpStatusCodeMapper`, `DefaultHttpStatusCodeMapper`, `HttpStatusCodeResponseHandler<TContext>`
 - **Headers:** `IHttpHeaderMappings`, `HttpHeaderMappings`, `DefaultHttpHeaderMappings`
-- **CORS:** `CorsSettings`, `CorsMiddleware<TContext>`, `CorsOriginChecker`
+- **CORS:** `CorsSettings`, `CorsMiddleware<TContext>`, `CorsOriginChecker` — **grew later on
+  2026-07-14** (after this morning's audit pass; see point 7 of the 2026-07-14 follow-up note at
+  top): `CorsSettings` gained three new public properties, `ExposedHeaders`, `AllowCredentials`,
+  and `MaxAgeSeconds`, bringing it to full `Microsoft.AspNetCore.Cors` parity. This is new public
+  surface added since this document's own audit pass and needs to be tracked before 1.0 semver locks.
 - **Attributes:** `HttpEndpointAttribute`
 - **Registrations:** `HttpRegistrations`
 - **Extensions:** Extension methods in `Extensions.cs`, `Cors/Extensions.cs`
@@ -389,16 +446,24 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
 
 **Concerns:**
 
-1. **Missing XML documentation** - CRITICAL
+1. ~~**Missing XML documentation** - CRITICAL~~ **✅ resolved** — see 2026-07-14 audit-pass note at
+   top; spot-checked directly — `HttpRequest.cs` now carries 8 `<summary>`-tagged doc comments, and
+   `CorsSettings.cs`/`CorsMiddleware.cs` (including the 3 new CORS properties, see above) are fully
+   documented too.
    - No XML docs on any public type
 
 2. **Naming issues:**
-   - File: `Routing/ListMessageHandlerFinder.cs:4` - Class is named `ListHttpEndpointFinder` but file is named `ListMessageHandlerFinder` - confusing
+   - File: `Routing/ListMessageHandlerFinder.cs:4` - Class is named `ListHttpEndpointFinder` but file is named `ListMessageHandlerFinder` - confusing (re-verified 2026-07-14, still unchanged)
    - `HttpTopicRoute` - "Topic" seems like messaging terminology in HTTP context
 
 3. **CORS implementation:**
    - File: `Cors/CorsMiddleware.cs:93` - `CorsOriginChecker` is public but seems like implementation detail
-   - CORS middleware might need more configuration options for production use
+   - ~~CORS middleware might need more configuration options for production use~~ **✅ largely
+     addressed 2026-07-14** — `CorsSettings` now also exposes `ExposedHeaders`, `AllowCredentials`,
+     and `MaxAgeSeconds`, and `CorsOriginChecker` now matches exact scheme+host+port (not just host)
+     when an `AllowedDomains` entry is a full URL, plus `AllowedHeaders` supports a `"*"` wildcard.
+     This is full parity with `Microsoft.AspNetCore.Cors`'s configuration surface; see point 7 of
+     the 2026-07-14 follow-up note at top.
 
 4. **API design questions:**
    - File: `HttpRequest.cs:3` - Simple class, does it need to be public or should it be internal?
@@ -408,10 +473,14 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
    - File: `DefaultHttpStatusCodeMapper.cs:5` - Implementation details not documented, what's the default mapping?
 
 **Recommendation:** READY FOR 1.0 AFTER:
-1. Adding comprehensive XML documentation
-2. Fixing filename/classname mismatch
-3. Reviewing what should be public vs internal (especially CorsOriginChecker, UrlMatcher)
-4. Documenting CORS configuration options and limitations
+1. ✅ Adding comprehensive XML documentation — done, see 2026-07-14 note at top
+2. 🔸 Fixing filename/classname mismatch (`ListMessageHandlerFinder.cs` defines
+   `ListHttpEndpointFinder`) — still open, re-verified 2026-07-14, unchanged
+3. 🔸 Reviewing what should be public vs internal (especially CorsOriginChecker, UrlMatcher) — still
+   open, maintainer call
+4. ✅ Documenting CORS configuration options and limitations — done via XML docs on `CorsSettings`;
+   also note the configuration surface itself grew (see CORS bullet above) — this document's own
+   "might need more configuration options" concern is now largely satisfied
 
 ---
 

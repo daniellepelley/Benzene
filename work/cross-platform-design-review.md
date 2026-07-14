@@ -46,7 +46,19 @@ This review assesses the current design against that goal and proposes a target 
 >   `Benzene.Azure.Function.Core.TestHelpers`); no `BuildWorkerHost`/ASP.NET equivalent yet. The
 >   `Benzene.Testing`/`Benzene.Tools` `MessageBuilder`/`HttpBuilder` duplication is resolved — the
 >   `Benzene.Tools` copies are commented out in favor of `Benzene.Testing`'s. `docs/testing-benzene.md`
->   is now platform-neutral (AWS + Azure examples).
+>   is now platform-neutral (AWS + Azure examples). **Later same day (10:26 UTC, after this audit
+>   pass), separately from `BenzeneTestHost`:** `test/Benzene.Integration.Test/EventHub/EventHubConsumerPipelineTest.cs`
+>   was added — a real, Docker-based Azure integration test mirroring the pre-existing SQS/LocalStack
+>   pattern already in that project (`Sqs/SqsConsumerPipelineTest.cs`, `Fixtures/SqsFixture.cs`). It
+>   spins up the Azure Event Hubs Emulator + Azurite via Docker Compose, sends a real event through the
+>   raw `EventHubProducerClient`, reads it back via `EventHubConsumerClient`, and feeds the actual
+>   received `EventData` into Benzene's real production pipeline (`InlineAzureFunctionStartUp` wired
+>   with `UseEventHub(...).UseBenzeneMessage(...).UseMessageHandlers()`) — not a synthetic/mocked
+>   event. This meaningfully narrows the "AWS has Docker-backed integration coverage, Azure doesn't"
+>   gap. It does **not** close it fully: the real Azure Functions Worker host (`func start`) still
+>   can't be run here (`azure-functions-core-tools`'s binary download is blocked by network policy),
+>   so only the emulator/Azurite half is exercised, not a deployed-function-host round trip; and it
+>   isn't wired into CI (§8).
 > - **§8 Packaging/CI** — `Directory.Build.props` (root + `src/`) now provides the single version
 >   source (`version.txt`) and centralized package metadata; no hardcoded per-csproj `PackageVersion`
 >   remains; `VERSIONING.md` is rewritten. Deviation: the review proposed gating `IsPackable=false` for
@@ -67,12 +79,28 @@ This review assesses the current design against that goal and proposes a target 
 >   Worker Services, Kafka, and gRPC (`docs/azure-functions.md`, `docs/asp-net-core.md`,
 >   `docs/getting-started-worker.md`, `docs/getting-started-kafka.md`, `docs/getting-started-grpc.md`),
 >   plus a new `docs/hosting.md` documenting the unified StartUp model directly. `docs/index.md` no
->   longer lists Azure Functions as "Coming Soon" — only "Client SDKs" still is. `dotnet new` templates
->   were **not** built (no `/templates` directory, no template NuGet packages). The "Kakfa" typo is
->   **still present** throughout `examples/Kafka/Benzene.Examples.Kakfa*` and even leaked into
+>   longer has **any** "Coming Soon" markers — this audit's own claim that "Client SDKs" still was one
+>   is corrected below (it was already gone the evening before this audit ran; the audit missed it).
+>   `dotnet new` templates were **not** built (no `/templates` directory, no template NuGet packages).
+>   The "Kakfa" typo is **still present** throughout `examples/Kafka/Benzene.Examples.Kakfa*` and even leaked into
 >   `docs/getting-started-kafka.md`/`docs/getting-started-worker.md`/`CHANGELOG.md`.
 >
 > Detailed per-section notes and roadmap-table updates are inline below.
+>
+> **Later-2026-07-14 follow-up (this pass)** — the audit above was taken at 05:59 UTC; three things
+> changed in the same repo on the same day *after* that timestamp and needed re-verification:
+> (1) a real Docker-based Azure integration test landed at 10:26 UTC
+> (`test/Benzene.Integration.Test/EventHub/EventHubConsumerPipelineTest.cs`, commit `0cad770`) —
+> see the updated §7/§8 notes below; (2) `src/Benzene.Tools/CLAUDE.md`, which the 05:59 audit itself
+> had just flagged as stale, was fixed at 06:04 UTC (commit `3a78375`) — §9 below is corrected, since
+> the original audit pass's text quoting it as "still stale" was already inaccurate one pass later;
+> (3) re-checking `docs/index.md`'s "Client SDKs (Coming Soon)" claim found it was **already wrong at
+> the time of the 05:59 audit** — the "(Coming Soon)" marker was removed, and `docs/client-sdks.md`
+> added, by commit `9d01774` the *previous* evening (2026-07-13 21:43 UTC); this wasn't a same-day
+> regression, just something the audit missed, and is corrected below. CORS middleware
+> (`src/Benzene.Http/Cors/`) was also hardened to full `Microsoft.AspNetCore.Cors` parity today, but
+> this document contains no CORS claims to reconcile — noted here only so a reader doesn't wonder
+> why it's unmentioned.
 
 ---
 
@@ -534,7 +562,12 @@ var http   = await host.SendHttpAsync(h => h.Post("/orders").WithJsonBody(...));
 > `.Messages`, `.Middleware`, `.Pipelines`, `.Validation` and `Benzene.Core.MessageHandlers`, `.Messages`,
 > `.Middleware` are all still separate packages). CI is unchanged: `build-benzene.yml` still only runs
 > `test/Benzene.Core.Test` and `test/Benzene.Aws.Tests`; `Benzene.Integration.Test`, the new
-> `Benzene.Grpc.Test`, and every `examples/*.Test` project are still not run by any workflow.
+> `Benzene.Grpc.Test`, and every `examples/*.Test` project are still not run by any workflow. **Later
+> the same day (after this audit pass):** `Benzene.Integration.Test` gained a second Docker-based
+> suite alongside its existing SQS/LocalStack one — `EventHub/EventHubConsumerPipelineTest.cs`, a real
+> Azure Event Hubs Emulator + Azurite test (see §7) — which raises the stakes on this gap slightly
+> (there are now two real Docker-backed suites sitting entirely outside CI, not one), but doesn't
+> change the "not run by any workflow" verdict.
 > `deploy-azure-example.yml` no longer exists at all (removed, not fixed); `deploy-asp-example.yml`
 > still exists and still deploys via `Azure/functions-action@v1` for what is an ASP.NET Core app
 > (an architectural question left for a maintainer decision), but its `./Examples/Asp/...`
@@ -563,27 +596,32 @@ var http   = await host.SendHttpAsync(h => h.Post("/orders").WithJsonBody(...));
 ## 9. Docs and templates
 
 > **Status 2026-07-14: docs coverage substantially improved; `dotnet new` templates not built; CLAUDE.md
-> drift is fixed in some packages but not others.** `docs/` now has real getting-started pages for
+> drift is now fixed everywhere this review flagged it.** `docs/` now has real getting-started pages for
 > Azure Functions (`azure-functions.md`), ASP.NET Core (`asp-net-core.md`), Worker Services
 > (`getting-started-worker.md`), Kafka (`getting-started-kafka.md`), and gRPC (`getting-started-grpc.md`)
 > — closing the "only for AWS" / "nothing for console/worker" / "no gRPC/Kafka pages" gaps. A new
 > `docs/hosting.md` documents the unified `BenzeneStartUp` model directly (see §2). `docs/index.md`
 > no longer lists Azure Functions as "Coming Soon" (it links `azure-functions.md` directly under a
-> real "Azure" subsection); **"Client SDKs (Coming Soon)" is still there**, unresolved. There's still
-> no dedicated Kubernetes-hosting page (ASP.NET Core/Worker docs cover the underlying hosting models
-> Kubernetes would use, but nothing K8s-specific — manifests, probes, graceful shutdown). There is
-> **still no documentation for the `benzene` dotnet CLI tool** — confirmed no CLI reference doc exists
-> anywhere under `docs/`. `docs/testing-benzene.md` is now platform-neutral (§7). CLAUDE.md drift is
-> **partially fixed**: `src/Benzene.JsonSchema/CLAUDE.md` no longer claims "draft 7" (now correctly
-> says "draft 2020-12"); `src/Benzene.OpenTelemetry/CLAUDE.md` no longer claims "metrics collection"
-> it doesn't do (accurately scoped to `AddSource`/`AddMeter` registration only). **But
-> `src/Benzene.Tools/CLAUDE.md` is still stale** — it still describes the package as providing "CLI
-> commands for scaffolding, code generation, project analysis" and "CLI scaffolding commands," which
-> doesn't match what's actually in `src/Benzene.Tools/` today (test-host helpers:
-> `AwsLambdaBenzeneTestHost`, `MessageBuilder`, `HttpBuilder`, `InlineStartUp` — no scaffolding CLI
-> code at all). This is a real, still-open documentation-drift bug this review correctly flagged that
-> didn't get swept up in whatever pass fixed the other two. `dotnet new` templates (`Benzene.Templates`)
-> were not built — no `/templates` directory, no template package.
+> real "Azure" subsection), **and "Client SDKs (Coming Soon)" is gone too** — a real `docs/client-sdks.md`
+> page exists, backed by a genuine `Benzene.CodeGen.Client` package (`MessageClientSdkBuilder`, not a
+> stub). **Correction to this document's own 05:59 UTC audit pass:** the line above originally read
+> "'Client SDKs (Coming Soon)' is still there, unresolved" — that was wrong even at the time it was
+> written; commit `9d01774` had already removed the marker and added the page the *previous evening*
+> (2026-07-13 21:43 UTC). Re-verified in a later same-day pass. There's still no dedicated
+> Kubernetes-hosting page (ASP.NET Core/Worker docs cover the underlying hosting models Kubernetes
+> would use, but nothing K8s-specific — manifests, probes, graceful shutdown). There is **still no
+> documentation for the `benzene` dotnet CLI tool** — confirmed no CLI reference doc exists anywhere
+> under `docs/`. `docs/testing-benzene.md` is now platform-neutral (§7). CLAUDE.md drift: `src/Benzene.JsonSchema/CLAUDE.md`
+> no longer claims "draft 7" (now correctly says "draft 2020-12"); `src/Benzene.OpenTelemetry/CLAUDE.md`
+> no longer claims "metrics collection" it doesn't do (accurately scoped to `AddSource`/`AddMeter`
+> registration only). **`src/Benzene.Tools/CLAUDE.md` — flagged by this review's 05:59 audit as still
+> stale — was itself fixed at 06:04 UTC the same day** (commit `3a78375`, five minutes later): it no
+> longer describes the package as providing "CLI commands for scaffolding, code generation, project
+> analysis," and now correctly documents it as AWS Lambda test-host helpers
+> (`AwsLambdaBenzeneTestHost`, `ThreadSafeTestLambdaLogger`, the commented-out `MessageBuilder`/
+> `HttpBuilder` copies) built on `Benzene.Testing`. Re-read and confirmed current as of this pass — all
+> three CLAUDE.md drift items this review originally raised are now resolved. `dotnet new` templates
+> (`Benzene.Templates`) were not built — no `/templates` directory, no template package.
 
 ### Current state
 
@@ -592,7 +630,7 @@ var http   = await host.SendHttpAsync(h => h.Post("/orders").WithJsonBody(...));
 ### Target design
 
 - **`Benzene.Templates`** (`dotnet new install Benzene.Templates`): `benzene-aws`, `benzene-azure`, `benzene-worker`, `benzene-web`. Each template = the north-star `Program` shim + the *identical* `StartUp` + one sample handler + validator + a test project using `BenzeneTestHost`, plus platform deploy scaffolding (SAM/terraform snippet, `host.json`, Dockerfile). — ❌ not built.
-- **Docs as a matrix:** one shared "core concepts" section (handlers, pipeline, logging, tracing, testing, spec) plus four near-identical getting-started pages whose diff is literally `Program.cs`. Kill "Coming Soon"; add a CLI reference; rewrite `testing-benzene.md` platform-neutral; fix the CLAUDE.md drift. — ✅ four near-identical getting-started pages now exist and `testing-benzene.md` is platform-neutral; ❌ no CLI reference doc; "Coming Soon" reduced to just Client SDKs; CLAUDE.md drift fixed for `Benzene.JsonSchema`/`Benzene.OpenTelemetry` but **not** `Benzene.Tools` (still stale — see status note above).
+- **Docs as a matrix:** one shared "core concepts" section (handlers, pipeline, logging, tracing, testing, spec) plus four near-identical getting-started pages whose diff is literally `Program.cs`. Kill "Coming Soon"; add a CLI reference; rewrite `testing-benzene.md` platform-neutral; fix the CLAUDE.md drift. — ✅ four near-identical getting-started pages now exist and `testing-benzene.md` is platform-neutral; ✅ "Coming Soon" fully killed (no markers left in `docs/index.md`, including Client SDKs — see status note above); ✅ CLAUDE.md drift fixed for `Benzene.JsonSchema`, `Benzene.OpenTelemetry`, **and** `Benzene.Tools` (fixed same-day, see status note above); ❌ no CLI reference doc still.
 
 ---
 
@@ -641,7 +679,7 @@ Sequencing note: Phase 2's StartUp unification must land before the unified test
 | `dotnet new` templates ×4 with test projects | M | new `/templates` | ❌ Not started. |
 | Minimal-API-style `MapMessage`/`MapHttp` | M | `src/Benzene.Core.MessageHandlers/` | ❌ Not started. |
 | Source generator default in meta-packages; BENZ002/003 | M | `src/Benzene.CodeGen.SourceGenerators/` | ⚠️ **Partial** — `BENZ001` shipped in Phase 1 instead (see above); `BENZ002`/`BENZ003` and "default in meta-packages" (no meta-packages exist yet) both ❌ not started. |
-| Docs parity matrix + CLI docs + platform-neutral testing doc | M | `/docs` | ⚠️ **Partial** — 4 near-identical getting-started pages ✅ shipped, `testing-benzene.md` ✅ platform-neutral; CLI docs ❌ still missing; "Coming Soon" reduced to just Client SDKs (Azure Functions resolved) — see §9. |
+| Docs parity matrix + CLI docs + platform-neutral testing doc | M | `/docs` | ⚠️ **Partial** — 4 near-identical getting-started pages ✅ shipped, `testing-benzene.md` ✅ platform-neutral, "Coming Soon" fully killed (Azure Functions and Client SDKs both resolved) ✅; CLI docs ❌ still missing — see §9. |
 | STJ-first serialization; mirrored Newtonsoft settings | M | `src/Benzene.Core.MessageHandlers/Serialization/`, `src/Benzene.NewtonsoftJson/` | ❌ Not started — Newtonsoft read/write asymmetry unchanged, see §8. |
 
 ---

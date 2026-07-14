@@ -239,8 +239,13 @@ not accepted as a pragmatic compromise — this area already has enough of those
 - [`docs/spec.md`](../docs/spec.md) — the `UseSpec` middleware that publishes a
   service's topics and JSON schemas (AsyncAPI/OpenAPI/Benzene format), which
   `Benzene.CodeGen.Client` consumes to generate the typed clients described in §2.5
-- `docs/client-sdks.md` — listed in `docs/index.md` as "Coming Soon"; once §2.5's
-  generated-client story is designed in full, that's the natural home for documenting
-  it for end users, separate from this internal vision document
+- [`docs/client-sdks.md`](../docs/client-sdks.md) — **2026-07-14 correction:** this file now
+  exists (added by commit `9d01774`, 2026-07-13 21:43 UTC, before this document was even written)
+  and `docs/index.md` no longer marks it "Coming Soon" — the note below describing it as
+  not-yet-written was already stale at authoring time. It documents `Benzene.CodeGen.Client`'s
+  generated-client story for end users, separate from this internal vision document; still worth
+  revisiting once/if §2.5's outbound-routing redesign lands, since the generated client's method
+  bodies still call the `IBenzeneMessageClientFactory` mechanism this document argues needs
+  replacing (see §1 above)
 - [`work/aws-roadmap-1.0.md`](aws-roadmap-1.0.md) — records the `AddLambdaClients` DI
   bug (2026-07-12 changelog) that prompted the architecture audit behind this document
