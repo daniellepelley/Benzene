@@ -6,7 +6,7 @@ namespace Benzene.Integration.Test.Fixtures;
 
 public class DockerComposeFixture : IDisposable
 {
-    private static ICompositeService? _compositeService;
+    private ICompositeService? _compositeService;
     private readonly string _fileName;
 
     public DockerComposeFixture(string fileName)

@@ -15,9 +15,9 @@ namespace Benzene.Integration.Test.Kafka;
 
 // Reuses the same Event Hubs emulator container as EventHubConsumerPipelineTest (it exposes a
 // Kafka-compatible endpoint on port 9092 alongside its native AMQP port) - see
-// EventHubEmulatorCollection. Uses the "kafka1" entity, a separate one from "eh1", so this test's
+// DockerEmulatorCollection. Uses the "kafka1" entity, a separate one from "eh1", so this test's
 // produce/consume doesn't cross-contaminate with the AMQP-native Event Hub test.
-[Collection(EventHubEmulatorCollection.Name)]
+[Collection(DockerEmulatorCollection.Name)]
 public class KafkaConsumerPipelineTest
 {
     private const string BootstrapServers = "localhost:9092";
@@ -60,6 +60,10 @@ public class KafkaConsumerPipelineTest
         {
             BootstrapServers = BootstrapServers,
             SecurityProtocol = SecurityProtocol.Plaintext,
+            // Confluent.Kafka's default MessageTimeoutMs is 5 minutes, which would swallow this
+            // method's whole 60-second retry loop on the first attempt while the emulator is still
+            // starting up. Fail each attempt fast instead so the loop can actually retry.
+            MessageTimeoutMs = 5000,
         };
 
         using var producer = new ProducerBuilder<Null, string>(producerConfig).Build();

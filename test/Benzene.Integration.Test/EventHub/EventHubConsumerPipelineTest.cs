@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Benzene.Integration.Test.EventHub;
 
-[Collection(EventHubEmulatorCollection.Name)]
+[Collection(DockerEmulatorCollection.Name)]
 public class EventHubConsumerPipelineTest
 {
     private const string ConnectionString =

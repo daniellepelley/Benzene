@@ -11,7 +11,8 @@ using Xunit;
 
 namespace Benzene.Integration.Test.ServiceBus;
 
-public class ServiceBusConsumerPipelineTest : IClassFixture<ServiceBusFixture>
+[Collection(DockerEmulatorCollection.Name)]
+public class ServiceBusConsumerPipelineTest
 {
     private const string ConnectionString =
         "Endpoint=sb://localhost:5673;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;";
