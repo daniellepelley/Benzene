@@ -1,0 +1,34 @@
+{
+  "description": "Benzene<->HTTP status mapping (wire-contracts.md section 4.1). Forward: server mapping a result status to an HTTP response code. Reverse: client mapping an HTTP response code back to a result status.",
+  "forward": [
+    { "from": "Ok", "to": "200" },
+    { "from": "Ignored", "to": "200" },
+    { "from": "Created", "to": "201" },
+    { "from": "Accepted", "to": "202" },
+    { "from": "Updated", "to": "204" },
+    { "from": "Deleted", "to": "204" },
+    { "from": "BadRequest", "to": "400" },
+    { "from": "Unauthorized", "to": "401" },
+    { "from": "Forbidden", "to": "403" },
+    { "from": "NotFound", "to": "404" },
+    { "from": "Conflict", "to": "409" },
+    { "from": "ValidationError", "to": "422" },
+    { "from": "UnexpectedError", "to": "500" },
+    { "from": "NotImplemented", "to": "501" },
+    { "from": "ServiceUnavailable", "to": "503" },
+    { "from": "<unknown>", "to": "500" }
+  ],
+  "reverse": [
+    { "from": "200", "to": "Ok" },
+    { "from": "201", "to": "Created" },
+    { "from": "202", "to": "Accepted" },
+    { "from": "204", "to": "Deleted" },
+    { "from": "400", "to": "BadRequest" },
+    { "from": "401", "to": "Unauthorized" },
+    { "from": "403", "to": "Forbidden" },
+    { "from": "404", "to": "NotFound" },
+    { "from": "409", "to": "Conflict" },
+    { "from": "500", "to": "UnexpectedError" },
+    { "from": "418", "to": "UnexpectedError" }
+  ]
+}
