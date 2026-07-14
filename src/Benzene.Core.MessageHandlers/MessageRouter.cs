@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
@@ -8,6 +8,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Benzene.Core.MessageHandlers;
 
+/// <summary>
+/// The pipeline entry point for message-handler dispatch: extracts the topic from the incoming
+/// context, looks up and creates the matching handler, invokes it, and hands the resulting
+/// <see cref="IMessageHandlerResult"/> to the registered <see cref="IMessageHandlerResultSetter{TContext}"/>.
+/// Registered as middleware via the <c>UseMessageHandlers</c> extension methods on <see cref="MiddlewarePipelineExtensions"/>.
+/// </summary>
+/// <typeparam name="TContext">The transport-specific pipeline context type.</typeparam>
+/// <remarks>
+/// If the topic is missing, no matching handler definition is found, or the factory can't create a
+/// handler instance, the router short-circuits with an appropriate error result (validation error or
+/// not-found, per <see cref="IDefaultStatuses"/>) instead of calling <c>next</c> in
+/// <see cref="HandleAsync"/> — in all of these cases <c>next</c> is never invoked, so this middleware
+/// is always the terminal step for message-handler dispatch.
+/// </remarks>
 public class MessageRouter<TContext> : IMiddleware<TContext>
 {
     private readonly ILogger<MessageRouter<TContext>> _logger;
@@ -18,6 +32,16 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
     private readonly IDefaultStatuses _defaultStatuses;
     private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MessageRouter{TContext}"/> class.
+    /// </summary>
+    /// <param name="messageHandlerFactory">Creates the invocable handler for a resolved definition.</param>
+    /// <param name="messageGetter">Extracts the topic (and other message data) from the context.</param>
+    /// <param name="messageHandlerDefinitionLookUpUp">Resolves the handler definition registered for a topic.</param>
+    /// <param name="requestMapper">Maps the context into the handler's request type.</param>
+    /// <param name="messageHandlerResultSetter">Writes the outcome of dispatch back onto the context.</param>
+    /// <param name="defaultStatuses">Supplies the status codes used for routing failures (missing topic, no handler found).</param>
+    /// <param name="logger">Logger used to record routing decisions and failures.</param>
     public MessageRouter(IMessageHandlerFactory messageHandlerFactory,
         IMessageGetter<TContext> messageGetter,
         IMessageHandlerDefinitionLookUp messageHandlerDefinitionLookUpUp,
@@ -35,8 +59,15 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         _messageHandlerFactory = messageHandlerFactory;
     }
 
+    /// <inheritdoc />
     public string Name => "MessageRouter";
 
+    /// <summary>
+    /// Extracts the topic from <paramref name="context"/>, resolves and invokes the matching handler,
+    /// and writes the result back via the registered <see cref="IMessageHandlerResultSetter{TContext}"/>.
+    /// </summary>
+    /// <param name="context">The current pipeline context.</param>
+    /// <param name="next">Unused - this middleware never calls the rest of the pipeline (see remarks).</param>
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
         var topic = _messageGetter.GetTopic(context);
@@ -61,7 +92,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         if (handler == null)
         {
             _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}"))); 
+            _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
             return;
         }
 
