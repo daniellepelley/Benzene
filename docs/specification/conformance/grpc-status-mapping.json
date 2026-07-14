@@ -1,0 +1,35 @@
+{
+  "description": "Benzene<->gRPC status mapping (wire-contracts.md section 4.2). Forward: server mapping a result status to a gRPC StatusCode. Reverse: client mapping a gRPC StatusCode back to a result status when no benzene-status trailer is present (a trailer, when present, wins verbatim - covered by implementation tests, not these tables).",
+  "forward": [
+    { "from": "Ok", "to": "OK" },
+    { "from": "Ignored", "to": "OK" },
+    { "from": "Created", "to": "OK" },
+    { "from": "Accepted", "to": "OK" },
+    { "from": "Updated", "to": "OK" },
+    { "from": "Deleted", "to": "OK" },
+    { "from": "BadRequest", "to": "InvalidArgument" },
+    { "from": "ValidationError", "to": "InvalidArgument" },
+    { "from": "Unauthorized", "to": "Unauthenticated" },
+    { "from": "Forbidden", "to": "PermissionDenied" },
+    { "from": "NotFound", "to": "NotFound" },
+    { "from": "Conflict", "to": "AlreadyExists" },
+    { "from": "NotImplemented", "to": "Unimplemented" },
+    { "from": "ServiceUnavailable", "to": "Unavailable" },
+    { "from": "UnexpectedError", "to": "Internal" },
+    { "from": "<unknown>", "to": "Internal" }
+  ],
+  "reverse": [
+    { "from": "OK", "to": "Ok" },
+    { "from": "InvalidArgument", "to": "BadRequest" },
+    { "from": "Unauthenticated", "to": "Unauthorized" },
+    { "from": "PermissionDenied", "to": "Forbidden" },
+    { "from": "NotFound", "to": "NotFound" },
+    { "from": "AlreadyExists", "to": "Conflict" },
+    { "from": "Unimplemented", "to": "NotImplemented" },
+    { "from": "Unavailable", "to": "ServiceUnavailable" },
+    { "from": "DeadlineExceeded", "to": "ServiceUnavailable" },
+    { "from": "Cancelled", "to": "ServiceUnavailable" },
+    { "from": "DataLoss", "to": "UnexpectedError" },
+    { "from": "Internal", "to": "UnexpectedError" }
+  ]
+}
