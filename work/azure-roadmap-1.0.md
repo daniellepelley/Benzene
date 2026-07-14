@@ -723,8 +723,20 @@ the remaining Managed Identity/best-practices documentation gap
    - [x] ~~Unit tests for Benzene.AspNet.Core~~ — not needed, already 81.8% covered
    - [x] ~~Unit tests for `Benzene.Azure.Function.Core`'s host-builder glue~~ — done
          same-day 2026-07-14, `AzureUnifiedStartUpTest.cs`, now 95.2% covered
-   - [ ] Integration tests with Azurite/emulators
-   - [ ] End-to-end Azure Functions examples
+   - [x] Integration tests with Azurite/emulators — done 2026-07-14:
+         `test/Benzene.Integration.Test/EventHub/EventHubConsumerPipelineTest.cs`
+         runs a real Azure Event Hubs Emulator + Azurite via Docker Compose
+         (mirroring the existing SQS/LocalStack pattern), sends a real event via the
+         raw `EventHubProducerClient`, receives it back via `EventHubConsumerClient`,
+         and feeds the real received `EventData` into Benzene's actual production
+         `EventHubApplication`/`BenzeneMessageEventHubHandler` pipeline. Note: running
+         the real Azure Functions Worker host itself (`func start`) is not possible in
+         this environment — `azure-functions-core-tools`'s post-install binary
+         download is blocked by network policy — so this test exercises everything
+         downstream of physical message delivery, not the Functions host process
+         itself.
+   - [ ] End-to-end Azure Functions examples (via the real Functions host - blocked,
+         see above)
    - [ ] Performance benchmarks
 
 4. ~~**Move Test Code** (5-8 hours) - BLOCKING~~ ✅ RESOLVED 2026-07-12, with one more
@@ -1126,12 +1138,25 @@ was already removed in the prior pass since that package already shipped)
 - ~~No unit tests~~ ❌ WRONG — unit tests exist for all 6 production packages (5
   Azure-Functions-specific + AspNet.Core), coverage ranging 48.2%-88.6% (see
   Executive Summary for the current per-package breakdown)
-- No integration tests (with Azurite/Functions test host specifically — this part is still accurate)
+- ~~No integration tests (with Azurite/Functions test host specifically)~~ ⚠️
+  **PARTIALLY RESOLVED 2026-07-14** — a real Azurite + Azure Event Hubs Emulator
+  Docker Compose integration test now exists
+  (`test/Benzene.Integration.Test/EventHub/EventHubConsumerPipelineTest.cs`), sending
+  a real event and feeding the real received `EventData` into Benzene's production
+  `EventHubApplication` pipeline. Running the real Azure Functions Worker host itself
+  is still not covered — that requires `azure-functions-core-tools`, whose binary
+  download is blocked by this environment's network policy
 - No performance benchmarks
 - No load tests
-- ~~Complete absence of testing infrastructure~~ ❌ WRONG — `dotnet test --collect:"XPlat Code Coverage"` and the standard xUnit + coverlet setup already work; what's missing is Azurite/Functions-emulator-based *integration* testing specifically, not testing infrastructure in general
+- ~~Complete absence of testing infrastructure~~ ❌ WRONG — `dotnet test --collect:"XPlat Code Coverage"` and the standard xUnit + coverlet setup already work; what's missing is Functions-emulator-based (real Functions host) integration testing specifically, not testing infrastructure in general
 
 ### Target Testing Strategy
+
+> **Note:** the checklists below (Unit/Integration/Performance/Load/Chaos Tests, hour
+> estimates) are an aspirational plan template, not verified status — most items
+> marked ✅ here have not been independently confirmed and should not be read as
+> "done." Treat this section as a planning skeleton; see "Current State" above and the
+> Executive Summary for what's actually verified complete.
 
 **Unit Tests (Target: 80%+ coverage) - HIGHEST PRIORITY**
 - ✅ Every public method tested
@@ -1202,7 +1227,10 @@ services:
 ### Testing Checklist for Each Package
 
 - [ ] Unit test coverage ≥80%
-- [ ] Integration tests with Azurite/emulators
+- [ ] Integration tests with Azurite/emulators — pattern established 2026-07-14
+      (`EventHubConsumerPipelineTest.cs`, real Azurite + Event Hubs Emulator via
+      Docker Compose); only implemented for `Benzene.Azure.Function.EventHub` so far,
+      not yet extended to `Benzene.Azure.Function.ServiceBus` or `.Kafka`
 - [ ] Performance benchmark baseline
 - [ ] Load test (1000 events/sec minimum)
 - [ ] Error scenario coverage
@@ -1867,7 +1895,16 @@ All Azure packages reference:
 5. ~~**Getting Started Guides** - All adapters (25-30h)~~ ✅ COMPLETE 2026-07-13 —
    `docs/azure-functions.md` and `docs/asp-net-core.md`
 6. **ARM/Bicep Templates** - Deployment examples (20-25h)
-7. **Integration Tests** - Azurite, Functions test host (30-40h)
+7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **PARTIALLY
+   COMPLETE 2026-07-14** — the Azurite/emulator half is done
+   (`EventHubConsumerPipelineTest.cs`, real Docker-based Azurite + Event Hubs
+   Emulator, real produce/consume through Benzene's own production pipeline). The
+   Functions-test-host half (running the real `func start` process) is not
+   achievable in this environment: `azure-functions-core-tools`'s post-install
+   binary download is blocked by network policy, a hard external constraint, not a
+   scoping choice. **~10-15h remaining** to extend the same pattern to
+   `Benzene.Azure.Function.ServiceBus`/`.Kafka`, or to attempt the Functions-host
+   route in an environment where Core Tools can actually install
 8. ~~**Code Quality Fixes**~~ ✅ COMPLETE 2026-07-14 — the `BenzeneMessageLambdaHandler`
    → `BenzeneMessageEventHubHandler` rename was done 2026-07-12; the commented-out dead
    code removal and both file/class mismatches (`ApiGatewayHttpRequestAdapter.cs` →
@@ -1878,10 +1915,12 @@ All Azure packages reference:
     `docs/migration-alpha-to-1.0.md`'s Azure Functions package-rename + isolated-worker
     section
 
-**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ **~50-65 hours remaining**
-(2026-07-14: Unit Tests, Azure SDK consistency, and Code Quality Fixes are now all
-fully resolved — the only two items with any remaining scope are #6 ARM/Bicep
-Templates and #7 Integration Tests, plus #9 Application Insights)
+**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ **~35-45 hours
+remaining** (2026-07-14: Unit Tests, Azure SDK consistency, and Code Quality Fixes are
+now all fully resolved; Integration Tests re-scoped from 30-40h to ~10-15h remaining
+now that the Azurite/emulator half is done — the remaining scope is #6 ARM/Bicep
+Templates, #7 Integration Tests' Functions-host-blocked remainder, and #9 Application
+Insights)
 
 ### Should Have for 1.0 (P1)
 
