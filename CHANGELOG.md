@@ -99,6 +99,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   negotiated format's content type. All in-repo consumers (the four HTTP-ish transports,
   `BenzeneMessage`) go through DI and were updated to register `SerializerResponseRenderer` +
   `RendererResponseHandler` in place of the deleted `SerializationResponseHandler`.
+- Request/response pipeline: Phase 4 of `docs/plans/request-response-improvements-plan.md` —
+  byte-oriented serialization (additive, no breaking changes). New `IPayloadSerializer : ISerializer`
+  (`Benzene.Abstractions.Serialization`) adds `Serialize(Type, object, IBufferWriter<byte>)` and
+  `Deserialize(Type, ReadOnlySpan<byte>)`; `Benzene.Core.MessageHandlers.Serialization.JsonSerializer`
+  now implements it via `Utf8JsonWriter`/`Utf8JsonReader` (byte-path and string-path output are
+  byte-identical). New optional `IMessageBodyBytesGetter<TContext>`
+  (`Benzene.Abstractions.Messages.Mappers`) lets a transport expose its body as bytes;
+  `RequestMapper<TContext>` prefers deserializing straight from those bytes (skipping the
+  intermediate string) when the selected serializer implements `IPayloadSerializer` and the getter
+  is registered, otherwise the string path is unchanged. `IBenzeneResponseAdapter<TContext>` gains
+  a default-interface `SetBody(TContext, ReadOnlyMemory<byte>)` member (UTF-8-decodes and delegates
+  to the string overload by default, so every existing adapter keeps compiling and behaving
+  identically without any changes). `BenzeneMessageContext` is wired as the reference transport
+  (`BenzeneMessageGetter` now also implements `IMessageBodyBytesGetter`); converting the other
+  transports' body getters, a binary format package (Protobuf/MessagePack), and a byte-oriented
+  response-writing path are explicitly deferred to future work once a consumer needs them.
 
 ### Fixed
 - `EnrichingRequestMapper`'s XML docs corrected: enrichers fold onto the mapped request in

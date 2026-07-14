@@ -317,7 +317,25 @@ produce XML when asked (new coverage for the three that couldn't).
    rewritten around formats + renderers; spec (`docs/specification/`) amended if it prescribes
    response-format selection (verify; the HTTP binding section mentions content types).
 
-## Phase 4 — Byte-oriented serialization (D1 + P7; additive)
+## Phase 4 — Byte-oriented serialization (D1 + P7; additive) — ✅ Done 2026-07-14
+
+> **Implementation note:** `SerializerResponseRenderer` does **not** mirror the byte path on the
+> write side in this pass, despite point 3 below describing it. `IBenzeneResponseAdapter.SetBody(TContext,
+> ReadOnlyMemory<byte>)` was still added exactly as specified (a default-interface member, additive,
+> zero changes required to existing adapters) - the extension point exists for any renderer that
+> wants to use it. But wiring `SerializerResponseRenderer` to actually call it requires a
+> byte-returning counterpart to `IResponsePayloadMapper.Map` (which today only returns `string`, and
+> owns the `IRawStringMessage` passthrough / `ErrorPayload` serialization logic): either reshaping
+> that interface (a breaking change this phase doesn't need) or duplicating its logic for the byte
+> case (a second implementation to keep in sync, serving no concrete consumer yet - the reference
+> transport's `BenzeneMessageResponseAdapter` stores the body as a `string` internally regardless, so
+> a byte-oriented write for it would just re-encode to a string one call later). Given P7's own
+> framing is additive/proof-of-concept and explicitly defers "converting the other transports'
+> body getters" and "any binary format package" to follow-up work, deferring the write-side mirror
+> alongside them - until a real byte-native response adapter exists to motivate it - avoids adding an
+> unused parallel code path. The **read** side (point 3's `RequestMapper` half) is implemented in
+> full: `RequestMapper<TContext>` prefers the byte path per the spec below, verified end-to-end
+> through `BenzeneMessageContext` (`RequestMapperThunkTest.GetsRequest_BenzeneMessageContext_IsWiredForTheBytePath`).
 
 1. `IPayloadSerializer` (R8) in `Benzene.Abstractions.Serialization`;
    `IMessageBodyBytesGetter<TContext>` in `Benzene.Abstractions.Messages.Mappers`.

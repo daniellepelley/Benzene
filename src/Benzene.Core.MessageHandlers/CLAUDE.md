@@ -28,7 +28,11 @@ Provides complete implementation of message handler infrastructure for command/q
 - `MessageHandlerDefinitionLookUp` - Looks up handlers by topic
 
 ### Request Mapping
-- `RequestMapper<TContext>` - Maps transport context to request
+- `RequestMapper<TContext>` - Maps transport context to request; prefers the byte-oriented path
+  (deserializing straight from an `IMessageBodyBytesGetter<TContext>`'s bytes) when the selected
+  `ISerializer` implements `IPayloadSerializer` and that getter is registered for `TContext`,
+  otherwise falls back to the string path unchanged. `BenzeneMessageContext` is the reference
+  transport wired for this (`BenzeneMessageGetter` implements `IMessageBodyBytesGetter`).
 - `MultiSerializerOptionsRequestMapper<TContext>` - Negotiator-driven request mapper; asks the
   registered `IMediaFormatNegotiator<TContext>` which format to read with, then caches the
   resulting `EnrichingRequestMapper`/`RequestMapper` pair per distinct `ISerializer`
@@ -59,8 +63,9 @@ Provides complete implementation of message handler infrastructure for command/q
 - `DefaultMessageMessageHandlerResultSetterBase` - Default result setter base
 
 ### Serialization
-- `JsonSerializer` - System.Text.Json implementation
-- `PayloadSerializer` - Serializes payloads
+- `JsonSerializer` - System.Text.Json implementation of `ISerializer`; also implements
+  `IPayloadSerializer` (byte-oriented, via `Utf8JsonWriter`/`Utf8JsonReader`), so it's used on the
+  byte path whenever an `IMessageBodyBytesGetter<TContext>` is registered for the context
 
 ### BenzeneMessage (Transport-Agnostic)
 - `BenzeneMessageApplication` - Application for BenzeneMessage

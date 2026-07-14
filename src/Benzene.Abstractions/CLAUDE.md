@@ -22,6 +22,7 @@ Benzene-specific logger interface. What remains here is the scope-enrichment bui
 
 ### Serialization
 - `ISerializer` - Abstraction for serializing/deserializing objects
+- `IPayloadSerializer : ISerializer` - Additive byte-oriented extension (`Serialize(Type, object, IBufferWriter<byte>)` / `Deserialize(Type, ReadOnlySpan<byte>)`), avoiding an intermediate string allocation when both the serializer and the transport's body getter support bytes
 
 ### Results
 - `IBenzeneResult` - Marker interface for result types

@@ -14,16 +14,27 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
 {
     private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
     private readonly ISerializer _serializer;
+    private readonly IMessageBodyBytesGetter<TContext>? _messageBodyBytesGetter;
+    private readonly IPayloadSerializer? _payloadSerializer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RequestMapper{TContext}"/> class.
     /// </summary>
     /// <param name="messageBodyGetter">Extracts the raw message body from the context.</param>
     /// <param name="serializer">Deserializes the raw body into the requested type.</param>
-    public RequestMapper(IMessageBodyGetter<TContext> messageBodyGetter, ISerializer serializer)
+    /// <param name="messageBodyBytesGetter">
+    /// Optional byte-oriented companion to <paramref name="messageBodyGetter"/>. When this is
+    /// non-null and <paramref name="serializer"/> implements <see cref="IPayloadSerializer"/>,
+    /// <see cref="GetBody{TRequest}"/> deserializes directly from bytes instead of via an
+    /// intermediate string.
+    /// </param>
+    public RequestMapper(IMessageBodyGetter<TContext> messageBodyGetter, ISerializer serializer,
+        IMessageBodyBytesGetter<TContext>? messageBodyBytesGetter = null)
     {
         _serializer = serializer;
         _messageBodyGetter = messageBodyGetter;
+        _messageBodyBytesGetter = messageBodyBytesGetter;
+        _payloadSerializer = serializer as IPayloadSerializer;
     }
 
     /// <summary>
@@ -49,6 +60,15 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
         if (context is IRequestContext<TRequest> requestContext)
         {
             return requestContext.Request;
+        }
+
+        if (_payloadSerializer != null && _messageBodyBytesGetter != null)
+        {
+            var bodyAsBytes = _messageBodyBytesGetter.GetBodyBytes(context);
+
+            return !bodyAsBytes.IsEmpty
+                ? (TRequest?)_payloadSerializer.Deserialize(typeof(TRequest), bodyAsBytes.Span)
+                : Activator.CreateInstance<TRequest>();
         }
 
         var bodyAsString = _messageBodyGetter.GetBody(context);
