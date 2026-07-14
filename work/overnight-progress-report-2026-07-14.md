@@ -8,9 +8,10 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 - **Nothing I wrote broke the build.** CI compiled all of my new code (streaming operators,
   schema-compatibility engine, S3, custom authorizer, docs). Every open PR of mine was red for
   exactly one reason: the **pre-existing gRPC test break on `main`** (the 6 errors I filed as #3).
-- I turned that handoff into a **CI-verified, ready-to-merge fix**: **PR #5 — build is GREEN.**
-  Its `build` job (compile + unit tests, gRPC tests included) passes. Merging it makes `main`
-  build again and clears the red on PR #2 and PR #4 too, and closes #3.
+- I turned that handoff into a **CI-verified, ready-to-merge fix**: **PR #5 — fully GREEN**
+  (both `build` and `aws-integration-tests` pass; compile + unit tests + integration tests, gRPC
+  tests included). Merging it makes `main` build again and clears the red on PR #2 and PR #4 too,
+  and closes #3.
 - I did **not** merge it. Merging to `main` overnight goes beyond what you directed (you chose to
   hand the gRPC fix off, and the standing rule is no pushes to `main` without your say-so), and a
   parallel gRPC effort owns those files. It's a one-click merge for you when you're back.
@@ -21,7 +22,7 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 
 | # | What | Branch | State |
 |---|------|--------|-------|
-| PR #5 | **Fix the `main` build** — 6 gRPC test import/ambiguity errors | `claude/fix-grpc-test-build` | **Review first** — unblocks everything |
+| PR #5 | **Fix the `main` build** — 6 gRPC test import/ambiguity errors | `claude/fix-grpc-test-build` | **Fully GREEN — merge first** (unblocks everything, closes #3) |
 | PR #4 | 1.0 API-readiness review + delete 9 fully-commented dead source files | `claude/1.0-api-readiness` | Red only from #3; green once #5 merges |
 | PR #2 | docs + S3 routing + custom authorizer + schema-compat + streaming P1/P2 | `claude/md-docs-website-scope-gyhgh6` | Red only from #3; green once #5 merges |
 | Issue #3 | The gRPC build break (now fixed by PR #5) | — | Closes on #5 merge |
