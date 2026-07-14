@@ -262,6 +262,23 @@ func azure functionapp publish my-function-app
 Once deployed, `GET` the printed URL at `/api/hello/world` (or just `/hello/world`, depending on
 your `routePrefix` setting) to confirm the handler responds.
 
+### Deploying with Bicep
+
+For a repeatable, declarative deployment instead of the `az` commands above, see
+[`examples/Azure/Benzene.Example.Azure/main.bicep`](../examples/Azure/Benzene.Example.Azure/main.bicep) -
+it provisions the Storage Account, workspace-based Application Insights resource, Consumption
+hosting plan, and Function App an HTTP-triggered example like this one needs:
+
+```bash
+az group create --name my-function-rg --location eastus
+az deployment group create --resource-group my-function-rg \
+  --template-file examples/Azure/Benzene.Example.Azure/main.bicep \
+  --parameters functionAppName=my-benzene-function
+```
+
+The template only covers the HTTP trigger path - add your own resources for Event Hub, Kafka, or
+Service Bus namespaces if you wire up those triggers too (see the next section).
+
 ## Event Hub, Kafka, and Service Bus triggers
 
 Benzene provides specialized middleware for other Azure Functions trigger types, each
@@ -444,6 +461,32 @@ host.Run();
 With both in place, `IBenzeneInvocation.InvocationId` resolves to the isolated worker's
 `FunctionContext.InvocationId` for the duration of each invocation, and `GetFeature<FunctionContext>()`
 returns the native `FunctionContext`.
+
+### Application Insights
+
+`Microsoft.ApplicationInsights.WorkerService` plus `Microsoft.Azure.Functions.Worker.ApplicationInsights`
+(both referenced by `examples/Azure/Benzene.Example.Azure`) is the standard way to get Functions-host
+telemetry — cold starts, invocation duration, dependency calls — into Application Insights, wired in
+`Program.cs`:
+
+```csharp
+.ConfigureServices(services =>
+{
+    services.AddApplicationInsightsTelemetryWorkerService();
+    services.ConfigureFunctionsApplicationInsights();
+})
+```
+
+That alone doesn't correlate Benzene's own topic/handler/invocationId onto the logs and traces it
+collects — for that, add `AddDiagnostics()` in `ConfigureServices` and `UseBenzeneEnrichment()` in
+`Configure` (both shown wired up in the example project). Since Application Insights' `ILogger`
+provider reads `BeginScope` values into `customDimensions` automatically, no Application-Insights-specific
+code is required beyond those two calls. See
+[Logging to Application Insights](cookbooks/logging-application-insights) for the full recipe
+(including KQL queries against `customDimensions`) and
+[Distributed Tracing with OpenTelemetry](cookbooks/distributed-tracing-opentelemetry) if you'd rather
+export Benzene's `Activity` spans to Application Insights via OTLP instead of (or alongside) the
+classic SDK shown here.
 
 ## Testing
 

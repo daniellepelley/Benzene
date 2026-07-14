@@ -1,6 +1,6 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.6
+**Document Version:** 1.7
 **Last Updated:** 2026-07-14
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
@@ -74,6 +74,37 @@ Later entries supersede earlier ones where they overlap.
     already been deleted by other work merged into `main` before this pass. Verified:
     full solution and both Azure/ASP.NET example solutions build with 0 errors, 728
     tests pass (724 in `Benzene.Core.Test`, plus the gRPC and conformance suites).
+- **2026-07-14 — ARM/Bicep templates and Application Insights (this session).** Closed
+  the last two genuinely-open P0 items.
+  - **ARM/Bicep Templates:** added `examples/Azure/Benzene.Example.Azure/main.bicep`
+    (Storage Account, workspace-based Application Insights, Consumption `Microsoft.Web/serverfarms`,
+    Linux isolated-worker Function App), mirroring the AWS SAM template's pattern and
+    "hand-checked, not deployed" disclaimer — neither `az` nor `bicep` CLI is available
+    in this environment to run `az bicep build`/`what-if`. Linked from a new "Deploying
+    with Bicep" subsection in `docs/azure-functions.md`. Scoped to the HTTP trigger path
+    the example actually uses, not a template for every possible trigger type.
+  - **Application Insights Integration:** re-scoped after finding the "middleware" ask
+    was mostly already satisfied by pre-existing docs
+    (`docs/cookbooks/logging-application-insights.md`,
+    `docs/cookbooks/distributed-tracing-opentelemetry.md`'s App-Insights-via-OTLP
+    section) — another case of this document assuming a total gap where most of the
+    work already existed, same pattern as the Service Bus discovery above. Building a
+    bespoke Application-Insights-specific Benzene package was rejected as inconsistent
+    with `Benzene.OpenTelemetry`'s deliberately exporter-agnostic design (see its
+    `CLAUDE.md`). What genuinely was missing: the example project didn't demonstrate
+    correlating Benzene's own diagnostics with the Application Insights logging it
+    already references. Closed by wiring `AddDiagnostics()` (in `DependenciesBuilder.cs`)
+    and `UseBenzeneEnrichment()` (in `StartUp.cs`) into
+    `examples/Azure/Benzene.Example.Azure`, via a `ProjectReference` to the existing
+    `Benzene.Diagnostics` package (no new NuGet dependency — the App Insights packages
+    were already referenced), plus a new "Application Insights" subsection in
+    `docs/azure-functions.md` cross-linking both cookbooks.
+  - Verified: `examples/Azure/Benzene.Example.Azure.sln` and the main `Benzene.sln` both
+    build with 0 errors (pre-existing warnings only).
+  - Not attempted this pass: item #7's remaining Integration Tests scope (extending the
+    Azurite/emulator pattern to Service Bus/Kafka) — the Docker daemon was unreachable
+    in this environment (`docker ps` fails to connect), so any new Docker Compose-based
+    test could be written but not executed/verified here.
 
 ---
 
@@ -122,12 +153,15 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - ~~Old Microsoft.Azure.WebJobs dependency~~ ✅ RESOLVED — the whole WebJobs-based model was replaced by the isolated-worker `Microsoft.Azure.Functions.Worker.*` packages (confirmed 2026-07-14, repo-wide grep returns nothing)
 - ~~Inconsistent Azure SDK versions~~ ✅ RESOLVED — re-verified 2026-07-14, all Azure
   packages already reference identical dependency versions
-- Missing deployment templates (ARM/Bicep/Terraform) — confirmed still absent 2026-07-14
-- No Application Insights integration examples — confirmed still absent 2026-07-14
+- ~~Missing deployment templates (ARM/Bicep/Terraform)~~ ⚠️ **ARM/Bicep RESOLVED
+  2026-07-14** — `examples/Azure/Benzene.Example.Azure/main.bicep`; Terraform is still
+  genuinely absent (not attempted, P1 item)
+- ~~No Application Insights integration examples~~ ✅ RESOLVED 2026-07-14 — see Document
+  History; mostly pre-existing cookbook docs plus now-demonstrated example wiring
 - Missing Azure-specific middleware (authentication, Managed Identity) — confirmed
   still absent 2026-07-14; CORS is NOT part of this gap (see Document History)
 - No performance benchmarks or cold-start metrics
-- ~~Minimal documentation (only basic ASP.NET Core guide)~~ ⚠️ PARTIALLY RESOLVED 2026-07-14 — a full `docs/azure-functions.md` getting-started guide plus `docs/cookbooks/event-hub-processing.md` and `docs/cookbooks/service-bus-handling.md` now exist; ARM/Bicep/Terraform, Managed Identity, Key Vault, Application Insights, and RBAC content is still genuinely missing from all of them
+- ~~Minimal documentation (only basic ASP.NET Core guide)~~ ⚠️ PARTIALLY RESOLVED 2026-07-14 — a full `docs/azure-functions.md` getting-started guide plus `docs/cookbooks/event-hub-processing.md` and `docs/cookbooks/service-bus-handling.md` now exist, plus a new "Application Insights" subsection and "Deploying with Bicep" subsection added this same day; Terraform, Managed Identity, and Key Vault content is still genuinely missing
 - No Azure App Service, Container Apps, or AKS integration guidance
 - Missing RBAC and Managed Identity patterns
 
@@ -1900,7 +1934,14 @@ All Azure packages reference:
 4. ~~**Move Test Code** - TestHelpers separation (5-8h)~~ ✅ COMPLETE 2026-07-12
 5. ~~**Getting Started Guides** - All adapters (25-30h)~~ ✅ COMPLETE 2026-07-13 —
    `docs/azure-functions.md` and `docs/asp-net-core.md`
-6. **ARM/Bicep Templates** - Deployment examples (20-25h)
+6. ~~**ARM/Bicep Templates** - Deployment examples (20-25h)~~ ✅ COMPLETE 2026-07-14 —
+   `examples/Azure/Benzene.Example.Azure/main.bicep` (Storage Account, workspace-based
+   Application Insights, Consumption hosting plan, Function App), linked from a new
+   "Deploying with Bicep" subsection in `docs/azure-functions.md`. Hand-checked, not run
+   through `az bicep build`/deployed (no `az`/`bicep` CLI available in this environment)
+   — same disclaimer style as the AWS SAM template. Only covers the HTTP trigger path the
+   example actually uses; Event Hub/Kafka/Service Bus resources are deliberately not
+   included (documented as a follow-up for anyone wiring those triggers)
 7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **PARTIALLY
    COMPLETE 2026-07-14** — the Azurite/emulator half is done
    (`EventHubConsumerPipelineTest.cs`, real Docker-based Azurite + Event Hubs
@@ -1910,23 +1951,37 @@ All Azure packages reference:
    binary download is blocked by network policy, a hard external constraint, not a
    scoping choice. **~10-15h remaining** to extend the same pattern to
    `Benzene.Azure.Function.ServiceBus`/`.Kafka`, or to attempt the Functions-host
-   route in an environment where Core Tools can actually install
+   route in an environment where Core Tools can actually install. Note: the Docker
+   daemon itself was also unreachable in the environment used for the 2026-07-14
+   ARM/Bicep and Application Insights work (`docker ps` fails to connect), so this
+   item couldn't be picked up in the same pass even though it was considered
 8. ~~**Code Quality Fixes**~~ ✅ COMPLETE 2026-07-14 — the `BenzeneMessageLambdaHandler`
    → `BenzeneMessageEventHubHandler` rename was done 2026-07-12; the commented-out dead
    code removal and both file/class mismatches (`ApiGatewayHttpRequestAdapter.cs` →
    `AspNetHttpRequestAdapter.cs`, `AspNetHeadersMapper.cs` →
    `AspNetMessageHeadersGetter.cs`) are done 2026-07-14
-9. **Application Insights Integration** - Middleware (15-20h)
+9. ~~**Application Insights Integration** - Middleware (15-20h)~~ ✅ COMPLETE 2026-07-14 —
+   re-scoped after finding most of the "middleware" ask already existed as documentation
+   (`docs/cookbooks/logging-application-insights.md` and
+   `docs/cookbooks/distributed-tracing-opentelemetry.md`'s Application Insights/OTLP
+   section, both pre-dating this pass). A bespoke Benzene-specific App-Insights package
+   would duplicate `Benzene.OpenTelemetry`'s deliberately exporter-agnostic design, so no
+   new package/dependency was added. What was actually missing: the example project
+   itself didn't demonstrate the wiring. Closed by adding `AddDiagnostics()` +
+   `UseBenzeneEnrichment()` to `examples/Azure/Benzene.Example.Azure` (project reference
+   to the existing `Benzene.Diagnostics` package, no new NuGet dependency — App Insights
+   packages were already referenced) alongside its existing
+   `AddApplicationInsightsTelemetryWorkerService()` wiring, plus a new "Application
+   Insights" subsection in `docs/azure-functions.md` cross-linking both cookbooks
 10. ~~**Migration Guide** - 0.x to 1.0 (10-12h)~~ ✅ COMPLETE 2026-07-13 —
     `docs/migration-alpha-to-1.0.md`'s Azure Functions package-rename + isolated-worker
     section
 
-**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ **~35-45 hours
-remaining** (2026-07-14: Unit Tests, Azure SDK consistency, and Code Quality Fixes are
-now all fully resolved; Integration Tests re-scoped from 30-40h to ~10-15h remaining
-now that the Azurite/emulator half is done — the remaining scope is #6 ARM/Bicep
-Templates, #7 Integration Tests' Functions-host-blocked remainder, and #9 Application
-Insights)
+**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ ~~35-45 hours~~
+**~10-15 hours remaining** (2026-07-14: ARM/Bicep Templates and Application Insights
+Integration are now both resolved — the former via a new Bicep template, the latter via
+example wiring plus pre-existing cookbook docs; the only P0 item still open is #7
+Integration Tests' Functions-host-blocked remainder)
 
 ### Should Have for 1.0 (P1)
 
