@@ -107,7 +107,6 @@ app.UseApiGateway(apiGatewayApp => apiGatewayApp
         context.ApiGatewayProxyResponse.Body = JsonSerializer.Serialize(
             new ErrorPayload(BenzeneResultStatus.UnexpectedError, new[] { "An unexpected error occurred." }));
     })
-    .UseCorrelationId()
     .UseMessageHandlers());
 ```
 
@@ -126,7 +125,6 @@ app.UseSqs(sqsApp => sqsApp
     {
         context.IsSuccessful = false;
     })
-    .UseCorrelationId()
     .UseMessageHandlers());
 ```
 
@@ -204,7 +202,7 @@ For the SQS-specific fallback behavior (what happens with *no* `UseExceptionHand
 
 ### Exceptions thrown before `UseExceptionHandler` aren't caught
 
-**Solution:** `UseExceptionHandler` only wraps middleware registered *after* it in the same pipeline builder chain. Move it to be one of the first calls (right after transport-level concerns like `.UseCorrelationId()` if you want correlation IDs on file for the error, but before `.UseMessageHandlers()` and anything else you want protected).
+**Solution:** `UseExceptionHandler` only wraps middleware registered *after* it in the same pipeline builder chain. Move it to be one of the first calls (right after transport-level concerns like `.UseW3CTraceContext()` if you want trace context on file for the error, but before `.UseMessageHandlers()` and anything else you want protected).
 
 ### The exception isn't logged
 

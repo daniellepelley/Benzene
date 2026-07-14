@@ -350,7 +350,7 @@ public interface IBenzeneWorkerStartup : IRegisterDependency
 
 `WorkerApplicationBuilder` (`Benzene.SelfHost`) bridges the two: it's an `IBenzeneApplicationBuilder`
 (`Platform => "Worker"`) that *exposes* an `IBenzeneWorkerStartup` through its `Workers` property,
-backed internally by a private `BenzeneWorkerStartup2` instance. `UseWorker` (Part A) just reaches
+backed internally by a private `BenzeneWorkerBuilder` instance. `UseWorker` (Part A) just reaches
 through to that same `Workers` property:
 
 ```csharp
@@ -365,7 +365,7 @@ public static IBenzeneApplicationBuilder UseWorker(this IBenzeneApplicationBuild
 }
 ```
 
-`BenzeneWorkerStartup` (Part B's base class) builds its own separate `BenzeneWorkerStartup2` and
+`BenzeneWorkerStartup` (Part B's base class) builds its own separate `BenzeneWorkerBuilder` and
 passes it directly as the `app` parameter of `Configure(IBenzeneWorkerStartup app, ...)` — so both
 paths ultimately register workers against the same underlying type, just reached differently.
 `Benzene.Kafka.Core.Extensions.UseKafka` and `Benzene.SelfHost.Http.Extensions.UseHttp` were written

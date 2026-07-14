@@ -166,8 +166,9 @@ These features are defined purely in terms of sections 2–8 and the header conv
 [wire-contracts.md §2](wire-contracts.md#2-header-conventions), so they MUST behave identically on
 every transport and every vendor:
 
-- **Correlation ID** — read from headers (fallback chain per wire-contracts), generate if absent,
-  expose to handlers, forward on outbound clients.
-- **W3C trace context** — continue a trace from `traceparent`/`tracestate` headers.
+- **W3C trace context** — continue a trace from `traceparent`/`tracestate` headers. This is the
+  cross-service correlation mechanism. (A per-invocation correlation value settable by application
+  middleware and forwardable on outbound clients MAY additionally be offered, but inbound pickup of
+  legacy correlation headers is not a framework contract.)
 - **Health checks** — intercept the reserved `healthcheck` topic (plus an app-chosen alias), run
   registered checks, respond with the standard response format.

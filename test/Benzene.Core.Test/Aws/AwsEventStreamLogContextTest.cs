@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Amazon.Lambda.TestUtilities;
 using Benzene.Abstractions.Logging;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
@@ -63,35 +62,4 @@ public class AwsEventStreamLogContextTest
         VerifyExists("correlationId");
     }
 
-    [Fact]
-    public async Task LambdaContext()
-    {
-        SetUp(x => x
-            .WithApplication()
-            .WithRequestId()
-        );
-
-        await _host.SendEventAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()), new TestLambdaContext
-        {
-            FunctionName = "foo::bar",
-            AwsRequestId = "some-id"
-        });
-
-        Verify("application", "foo");
-        Verify("requestId", "some-id");
-    }
-
-    [Fact]
-    public async Task LambdaContext_Empty()
-    {
-        SetUp(x => x
-            .WithApplication()
-            .WithRequestId()
-        );
-
-        await _host.SendEventAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()), new TestLambdaContext());
-
-        VerifyDoesNotExists("application");
-        VerifyDoesNotExists("requestId");
-    }
 }

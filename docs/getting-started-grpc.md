@@ -295,22 +295,21 @@ in step 5 (via a shared internal helper regardless of shape), then:
    carrying the *original*, more specific status even when several statuses map to the same
    `StatusCode` (e.g. `Created`/`Accepted`/`Updated` all map to `OK`).
 
-## 7. Metadata and correlation IDs (D5)
+## 7. Metadata and trace context (D5)
 
 Inbound gRPC metadata is mapped onto Benzene's own header abstraction, so header-driven middleware
-(`UseCorrelationId()`, `UseW3CTraceContext()`, ...) works unchanged over gRPC:
+(`UseW3CTraceContext()`, custom header middleware, ...) works unchanged over gRPC:
 
 ```csharp
 app.UseGrpc(grpc => grpc
-    .UseCorrelationId()
+    .UseW3CTraceContext()
     .UseMessageHandlers());
 ```
 
-Send `x-correlation-id` (or whatever header your correlation middleware reads) as call metadata
-from the client:
+Send `traceparent` (or whatever header your middleware reads) as call metadata from the client:
 
 ```csharp
-var headers = new Metadata { { "x-correlation-id", Guid.NewGuid().ToString() } };
+var headers = new Metadata { { "traceparent", Activity.Current?.Id ?? "" } };
 var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" }, headers);
 ```
 

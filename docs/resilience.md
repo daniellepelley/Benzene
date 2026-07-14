@@ -44,7 +44,6 @@ Add `.UseRetry()` at the point in the pipeline you want retried. Everything afte
 
 ```csharp
 app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
-    .UseCorrelationId()
     .UseRetry(numberOfRetries: 3)
     .UseMessageHandlers());
 ```

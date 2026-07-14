@@ -109,7 +109,6 @@ A typical AWS Lambda `StartUp.Configure` composes several pipelines, one per tra
 public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
 {
     var benzeneMessagePipeline = app.Create<BenzeneMessageContext>()
-        .UseCorrelationId()
         .UseTimer("benzene-message-application")
         .UseHealthCheck("healthcheck", healthChecks)
         .UseMessageHandlers(router => router
@@ -118,7 +117,6 @@ public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext>
     app.UseBenzeneMessage(benzeneMessagePipeline);
 
     app.UseSqs(sqsApp => sqsApp
-        .UseCorrelationId()
         .UseTimer("sqs-application")
         .UseMessageHandlers(router => router.UseFluentValidation()));
 }

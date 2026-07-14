@@ -72,56 +72,6 @@ public static class DictionaryUtils
         return output;
     }
 
-    // public static IDictionary<TKey, TValue> Map<TKey, TValue>(IDictionary<TKey, TValue> source, IDictionary<TKey, TValue> overlayDictionary)
-    //     where TValue : class where TKey : notnull
-    // {
-    //     if (source == null)
-    //     {
-    //         return null;
-    //     }
-    //
-    //
-    //     var output = source.ToDictionary(x => x.Key, x => x.Value);
-    //
-    //     if (overlayDictionary == null)
-    //     {
-    //         return output;
-    //     }
-    //
-    //     foreach (var overlay in overlayDictionary)
-    //     {
-    //         if (!output.ContainsKey(overlay.Key))
-    //         {
-    //             output.Add(overlay.Key, overlay.Value);
-    //         }
-    //         else if (source[overlay.Key] == default(TValue))
-    //         {
-    //             output[overlay.Key] = overlay.Value;
-    //         }
-    //     }
-    //
-    //     return output;
-    // }
-
-    // public static Dictionary<string, object> JsonToDictionary(string json)
-    // {
-    //     if (string.IsNullOrEmpty(json))
-    //     {
-    //         return new Dictionary<string, object>();
-    //     }
-    //
-    //     var dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-    //     return dictionary?.ToDictionary(x => x.Key.ToLowerInvariant(), x => x.Value);
-    // }
-
-    /// <summary>
-    /// Renames and filters <paramref name="source"/>'s entries using <paramref name="filter"/> as a
-    /// key-rename map: only entries whose key exists in <paramref name="filter"/> are kept, renamed to
-    /// <paramref name="filter"/>'s value for that key.
-    /// </summary>
-    /// <param name="source">The dictionary to filter and rename entries from.</param>
-    /// <param name="filter">Maps source keys (case-insensitive) to the output key to rename them to.</param>
-    /// <returns>A new dictionary containing only the renamed, matched entries.</returns>
     public static IDictionary<string, string> FilterAndReplace(IDictionary<string, string> source,
         IDictionary<string, string> filter)
     {

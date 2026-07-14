@@ -29,7 +29,7 @@ public class InlineSelfHostedStartUp : IBenzeneWorkerBuilder
     public IBenzeneWorker Build()
     {
         var services = new ServiceCollection();
-        var app = new BenzeneWorkerStartup2(new MicrosoftBenzeneServiceContainer(services));
+        var app = new BenzeneWorkerBuilder(new MicrosoftBenzeneServiceContainer(services));
 
         _appAction(app);
         _servicesAction(services);

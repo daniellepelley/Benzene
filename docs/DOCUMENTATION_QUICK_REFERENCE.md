@@ -33,7 +33,6 @@ public class MyHandler : IMessageHandler<TRequest, TResponse>
 // Middleware registration
 app.UseAwsLambda(eventPipeline => eventPipeline
     .UseApiGateway(apiGatewayApp => apiGatewayApp
-        .UseCorrelationId()
         .UseMessageHandlers()));
 ```
 
@@ -60,7 +59,6 @@ services.UsingBenzene(x => x
 
 ```csharp
 // Observability
-.UseCorrelationId()                    // Legacy correlation (prefer W3C)
 .UseW3CTraceContext()                  // W3C distributed tracing
 .UseBenzeneEnrichment()                // Portable log enrichment
 .UseTimer("name")                      // Named timer spans
@@ -175,7 +173,6 @@ public class StartUp : BenzeneStartUp
 {
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration) =>
         app.UseHttp(http => http
-            .UseCorrelationId()
             .UseMessageHandlers());
 }
 ```
@@ -198,7 +195,7 @@ public class StartUp : BenzeneStartUp
 - Ensure `IncludeScopes = true` for structured logs
 
 ### Correlation Not Working
-- Add `UseCorrelationId()` or `UseW3CTraceContext()`
+- Add `UseW3CTraceContext()`
 - Check header names match
 - Verify middleware order (should be early)
 

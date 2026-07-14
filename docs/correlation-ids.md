@@ -1,19 +1,39 @@
 # Correlation Ids
 
-> `UseCorrelationId()` is obsolete in favor of automatic [W3C `traceparent` propagation](monitoring#w3c-trace-context) for cross-service correlation. The `correlationId`-style header remains supported here as a legacy fallback and is still emitted to log scopes via `WithCorrelationId()`.
+> **The legacy `UseCorrelationId()` middleware has been removed.** Cross-service correlation is
+> handled by automatic [W3C `traceparent` propagation](monitoring#w3c-trace-context)
+> (`UseW3CTraceContext()`), which continues a distributed trace from the incoming
+> `traceparent`/`tracestate` headers on every transport. If you previously called
+> `.UseCorrelationId()` in a pipeline, delete the call and use `UseW3CTraceContext()` — see the
+> [migration guide](migration-alpha-to-1.0#correlation-id-usecorrelationid-removed).
 
-This will create a correlation Id for the current request, either copying from the message headers if a correlation Id has been passed in, or by creating a new correlation Id if there is not an existing correlation Id.
+## What remains
 
-```csharp
-app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
-   .UseCorrelationId()
-);
-```
-
-By default this checks `x-correlation-id`, then `correlation-id`, then the legacy `correlationId` header (matched case-insensitively, first match wins). Pass an explicit header name to check only that one instead: `.UseCorrelationId("my-header")`.
-
-The Correlation Id can be added to the logging scope (via `ILogger.BeginScope`) using the following.
+`ICorrelationId` and its log-scope enrichment are still available. `WithCorrelationId()` attaches a
+`correlationId` value to the logging scope (via `ILogger.BeginScope`):
 
 ```csharp
 .UseLogResult(x => x.WithCorrelationId());
 ```
+
+With nothing populating it, `ICorrelationId` self-generates a GUID per scope — useful as a
+per-invocation marker in logs. To populate it from a custom source (e.g. a partner's proprietary
+header), register `AddCorrelationId()` and call `ICorrelationId.Set(...)` from your own middleware:
+
+```csharp
+app.Use("PartnerCorrelation", resolver => async (context, next) =>
+{
+    var headers = resolver.GetService<IMessageHeadersGetter<MyContext>>();
+    resolver.GetService<ICorrelationId>().Set(headers.GetHeader(context, "x-partner-request-id"));
+    await next();
+});
+```
+
+Outbound clients can still forward the value: the `WithCorrelationId()` client decorator (see
+[Clients](clients)) stamps the current `ICorrelationId` onto the outgoing request's
+`x-correlation-id` header.
+
+## See Also
+
+- [Monitoring & Diagnostics — W3C Trace Context](monitoring#w3c-trace-context)
+- [Request Correlation cookbook](cookbooks/request-correlation)

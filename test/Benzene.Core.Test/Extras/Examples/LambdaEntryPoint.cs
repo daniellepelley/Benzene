@@ -21,10 +21,7 @@ namespace Benzene.Test.Elements.Examples
     {
         public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
         {
-            app.UseLogResult(x => x
-                    .WithApplication()
-                    .WithRequestId()
-                )
+            app
                 // .HandleExceptions()
                 .UseTimer("aws-stream-application");
 
@@ -34,7 +31,6 @@ namespace Benzene.Test.Elements.Examples
             const string healthCheckTopic = "hello:world:healthcheck";
 
             app.UseBenzeneMessage(directMessageApp => directMessageApp
-                .UseCorrelationId()
                 .UseTimer("direct-message-application")
                 .UseLogResult(x => x
                     .WithTopic()
@@ -49,7 +45,6 @@ namespace Benzene.Test.Elements.Examples
             );
 
             app.UseSns(snsApp => snsApp
-                .UseCorrelationId()
                 .UseTimer("sns-application")
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
@@ -58,7 +53,6 @@ namespace Benzene.Test.Elements.Examples
             );
 
             app.UseSqs(sqsApp => sqsApp
-                .UseCorrelationId()
                 .UseTimer("sqs-application")
                 .UseHealthCheck(healthCheckTopic, healthCheckBuilder)
                 .UseMessageHandlers(x => x
@@ -67,7 +61,6 @@ namespace Benzene.Test.Elements.Examples
             );
 
             app.UseApiGateway(apiGatewayApp => apiGatewayApp
-                .UseCorrelationId()
                 .UseTimer("api-gateway-pipeline")
                 .UseHealthCheck(healthCheckTopic, "POST", "/healthcheck", healthCheckBuilder)
                 .UseMessageHandlers(x => x

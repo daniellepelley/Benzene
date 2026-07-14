@@ -143,7 +143,6 @@ Important: by default, `RetryMiddleware` only retries when the pipeline **throws
 using Benzene.Resilience;
 
 app.UseSqs(sqs => sqs
-    .UseCorrelationId()
     .UseRetry<SqsMessageContext>(
         numberOfRetries: 3,
         initialDelay: TimeSpan.FromMilliseconds(200),

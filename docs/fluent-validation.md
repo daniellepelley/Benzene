@@ -141,7 +141,6 @@ You can supply a custom `IValidationStatusMapper` implementation instead of the 
 
 ```csharp
 app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
-    .UseCorrelationId()
     .UseTimer("benzene-message")
     .UseLogResult(x => x.WithCorrelationId())
     .UseMessageHandlers(router => router

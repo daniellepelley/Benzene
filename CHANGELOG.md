@@ -16,13 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so wrapped exceptions preserve proper `.InnerException` chaining instead of being
   stringified into the message text
 
+### Removed
+- **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound
+  correlation-header pickup middleware, previously `[Obsolete]`. Use `UseW3CTraceContext()` for
+  cross-service correlation; `ICorrelationId`/`AddCorrelationId()`/`WithCorrelationId()` and the
+  outbound `WithCorrelationId()` client decorator remain. See the migration guide.
+- **BREAKING:** `WithRequestId()`/`WithApplication()` (`Benzene.Aws.Lambda.Core.LogContextBuilderExtensions`),
+  previously `[Obsolete]` — use the portable `UseBenzeneEnrichment()` instead. (The
+  transport-agnostic `WithApplication()` in `Benzene.Core.MessageHandlers` is unaffected.)
+
 ### Changed
 - Updated to .NET 10
 - IContextConverter is now async
 - Cleaned up namespaces across AWS Lambda packages
 - Renamed AWS Lambda projects for better clarity
+- **BREAKING:** Renamed `BenzeneWorkerStartup2` (`Benzene.SelfHost`) to `BenzeneWorkerBuilder`,
+  matching its file name and removing the versioned-name smell flagged in the 1.0 API review
 
 ### Fixed
+- `KafkaClientMiddleware` no longer silently swallows produce exceptions — failures now propagate
+  (mapped to `ServiceUnavailable` by `KafkaBenzeneMessageClient`), and `KafkaContextConverter`
+  maps the delivery result's `PersistenceStatus` (`Persisted` → `Accepted`, anything else →
+  `ServiceUnavailable`) instead of unconditionally reporting success
 - **CRITICAL:** Fixed bug in `BenzeneServiceContainerExtensions.TryAddSingleton(Type)` that was incorrectly calling `AddScoped` instead of `AddSingleton`
 - **CRITICAL:** Fixed bug in `Extensions.Split()` method that was passing wrong variable to builder
 - Fixed Kafka package compatibility with examples
