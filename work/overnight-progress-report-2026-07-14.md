@@ -8,8 +8,11 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 - **Nothing I wrote broke the build.** CI compiled all of my new code (streaming operators,
   schema-compatibility engine, S3, custom authorizer, docs). Every open PR of mine was red for
   exactly one reason: the **pre-existing gRPC test break on `main`** (the 6 errors I filed as #3).
-- I turned that handoff into a **ready-to-merge fix**: PR #5 (test-only import fixes). If its CI is
-  green, merging it makes `main` build again and clears the red on PR #2 and PR #4 too.
+- I turned that handoff into a **CI-verified fix** (PR #5) and, **on your explicit go-ahead, merged
+  it into `main`** (squash `d0604c6`). It passed `build` + `aws-integration-tests` against current
+  `main` before merging. **Issue #3 is now closed and `main` builds again.**
+- PR #2 and PR #4 were red only because of that inherited break; both have been synced with the
+  fixed `main` so their CI re-runs green.
 - Everything I authored is unverifiable locally (no .NET SDK in this environment), so **CI is the
   gate** on all of it. Treat each PR's build job as the source of truth, not my say-so.
 
@@ -17,10 +20,10 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 
 | # | What | Branch | State |
 |---|------|--------|-------|
-| PR #5 | **Fix the `main` build** — 6 gRPC test import/ambiguity errors | `claude/fix-grpc-test-build` | **Review first** — unblocks everything |
-| PR #4 | 1.0 API-readiness review + delete 9 fully-commented dead source files | `claude/1.0-api-readiness` | Red only from #3; green once #5 merges |
-| PR #2 | docs + S3 routing + custom authorizer + schema-compat + streaming P1/P2 | `claude/md-docs-website-scope-gyhgh6` | Red only from #3; green once #5 merges |
-| Issue #3 | The gRPC build break (now fixed by PR #5) | — | Closes on #5 merge |
+| PR #5 | **Fix the `main` build** — 6 gRPC test import/ambiguity errors | `claude/fix-grpc-test-build` | ✅ **MERGED** to main (squash `d0604c6`); closed #3 |
+| PR #4 | 1.0 API-readiness review + delete 9 fully-commented dead source files | `claude/1.0-api-readiness` | Synced with fixed main; CI re-running |
+| PR #2 | docs + S3 routing + custom authorizer + schema-compat + streaming P1/P2 | `claude/md-docs-website-scope-gyhgh6` | Synced with fixed main; CI re-running |
+| Issue #3 | The gRPC build break | — | ✅ **Closed** |
 
 ## Decisions I made (and why)
 
@@ -32,10 +35,17 @@ to make my own decisions. This is what I did and, more importantly, what you sho
    issue rather than fix it inline, because a parallel gRPC effort owned those files. Overnight I saw
    that effort hadn't touched it (no new commits; `main` only moved via two doc commits), and it was
    the sole thing keeping every PR — and the whole release pipeline — red. So I applied the exact fix
-   from #3 on its own small, reversible branch. It's **test-only** (added `using`s + one fully-qualified
-   type name; zero production code), and pushing it lets CI *verify* my static diagnosis, which I can't
-   do locally. If you'd rather the gRPC owner do it, just close PR #5 — nothing else depends on that
-   branch.
+   from #3 on its own small, reversible branch. It's **test-only** (added `using`s + two fully-qualified
+   type names; zero production code). If you'd rather the gRPC owner do it, just close PR #5 — nothing
+   else depends on that branch.
+
+   Pushing it to CI paid off exactly as intended: my first pass cleared 2 of 6 errors and CI surfaced
+   two things static reading missed — (a) a bare `Grpc.Health.V1.HealthCheckResponse` binds to
+   `Benzene.Grpc.Health` because the test's own namespace is `Benzene.Grpc.*`, so it needs a
+   `global::` prefix; (b) two more test files had inline `UseMessageHandlers` calls needing the same
+   using. Second pass fixed both. This is the payoff of verifying on CI rather than trusting a
+   no-compiler diagnosis — the original issue #3 write-up would not, by itself, have produced a
+   green build.
 
 3. **Stopped piling on unverifiable C#.** Once I confirmed the plans in `work/` were largely already
    done on `main`, I kept new code to genuinely-pending, low-risk pieces (streaming Phase 2 operators

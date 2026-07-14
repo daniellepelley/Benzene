@@ -51,6 +51,28 @@ public class ApiGatewayCustomAuthorizerMessagePipelineTest
     }
 
     [Fact]
+    public async Task Send_UseCustomAuthorizer()
+    {
+        var services = new ServiceCollection();
+        services.UsingBenzene(x => x.AddBenzene());
+
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+
+        var pipeline = new MiddlewarePipelineBuilder<ApiGatewayCustomAuthorizerContext>(new MicrosoftBenzeneServiceContainer(services))
+            .UseCustomAuthorizer(_ => Task.FromResult(new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "some-id"
+            }));
+
+        var aws = new ApiGatewayCustomAuthorizerApplication(pipeline.Build());
+
+        var response = await aws.HandleAsync(CreateRequest(), serviceResolverFactory);
+
+        Assert.NotNull(response);
+        Assert.Equal("some-id", response.PrincipalID);
+    }
+
+    [Fact]
     public async Task Send_FromStream()
     {
         ApiGatewayCustomAuthorizerContext apiGatewayCustomAuthorizerContext = null;
