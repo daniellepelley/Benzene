@@ -128,12 +128,12 @@ public class StartUp : BenzeneStartUp
 }
 ```
 
-> This is the recommended, platform-neutral pattern for new projects. Benzene also has an
-> older, AWS-only `AwsLambdaStartUp` base class (still supported — see the
-> [`examples/Aws`](../examples/Aws) project, which predates this unification) whose
+> This is the recommended, platform-neutral pattern. Benzene also has an older, AWS-only
+> `AwsLambdaStartUp` base class — now **`[Obsolete]`/deprecated** (see the
+> [`examples/Aws`](../examples/Aws) project, which predates this unification) — whose
 > `Configure` method takes the `IMiddlewarePipelineBuilder<AwsEventStreamContext>` directly
-> instead of going through `IBenzeneApplicationBuilder`/`UseAwsLambda`. Prefer `BenzeneStartUp`
-> for anything new, since it also runs unchanged on other Benzene hosts (see
+> instead of going through `IBenzeneApplicationBuilder`/`UseAwsLambda`. Use `BenzeneStartUp` for
+> everything, since it also runs unchanged on other Benzene hosts (see
 > [Azure Functions Setup](azure-functions)).
 
 ## 5. Wire up the Lambda entry point
@@ -453,8 +453,7 @@ database connectivity) and the full set of `UseHealthCheck` overloads.
   `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` to export those spans (and
   `UseBenzeneMetrics()`'s counters) to a real backend via OpenTelemetry.
 - **Cross-service correlation**: `eventPipeline.UseApiGateway(a => a.UseW3CTraceContext()...)`
-  (W3C `traceparent` propagation) — see [Correlation IDs](correlation-ids). The legacy
-  `UseCorrelationId()` middleware has been removed.
+  (W3C `traceparent` propagation) — see [Correlation IDs](correlation-ids).
 - **Log enrichment**: `UseBenzeneEnrichment()` attaches `invocationId`/`traceId`/`spanId`/
   `topic`/`transport`/`handler` to the logging scope in one call, portable across every
   Benzene host.

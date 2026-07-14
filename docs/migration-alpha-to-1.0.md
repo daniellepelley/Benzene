@@ -134,10 +134,14 @@ public class StartUp : BenzeneStartUp
 | Generic Worker (`Microsoft.Extensions.Hosting`) | `hostBuilder.UseBenzene<StartUp>()` (`Benzene.HostedService`) |
 | ASP.NET Core | `builder.UseBenzene<StartUp>()` + `app.UseBenzene()` (`Benzene.AspNet.Core`) |
 
-This is **additive**, not a forced migration: the pre-1.0 `AwsLambdaStartUp`
-/ `AwsLambdaBenzeneTestStartUp<TStartUp>` path and its existing tests keep
-working unchanged. `BenzeneStartUp` is the recommended path for new services
-and the only way to share one StartUp across multiple hosts.
+The pre-1.0 host-specific startup base classes — `AwsLambdaStartUp` /
+`AwsLambdaStartUp<TContainer>` (AWS) and `BenzeneWorkerStartup` /
+`BenzeneHostedServiceStartup` (worker) — are now **`[Obsolete]`**: they still
+compile and run, but emit a deprecation warning. Migrate to `BenzeneStartUp`
+(whose `Configure` takes `IBenzeneApplicationBuilder`) hosted via
+`AwsLambdaHost<TStartUp>` / `IHostBuilder.UseBenzene<TStartUp>()`. `BenzeneStartUp`
+is the recommended path for all services and the only way to share one StartUp
+across multiple hosts.
 
 Testing gets a matching unified entry point — see
 [`BenzeneTestHost`](#new-unified-test-host-benzenetesthost) below.
@@ -237,19 +241,18 @@ shared representation of a trace span, superseding the old
 | `TimerMiddleware`/`TimerMiddlewareWrapper` (as the auto-wrap-every-middleware mechanism) | `ActivityMiddlewareWrapper`/`ActivityProcessTimer`, registered by `AddDiagnostics()` |
 | `Benzene.OpenTelemetry.AddOpenTelemetry()` | `TracerProviderBuilder`/`MeterProviderBuilder.AddBenzeneInstrumentation()` |
 
-## Correlation ID: `UseCorrelationId()` removed
+## Correlation IDs
 
-`UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) has been **removed**
-(it was briefly `[Obsolete]` first). Cross-service correlation is handled by
-automatic W3C `traceparent` propagation — `UseW3CTraceContext()`, below.
+The old inbound correlation-header middleware (`Benzene.Diagnostics.Correlation`)
+has been **removed**. Cross-service correlation is handled by automatic W3C
+`traceparent` propagation — `UseW3CTraceContext()`, below.
 
-Migration: delete `.UseCorrelationId(...)` calls and add `UseW3CTraceContext()`
-(first in the pipeline). If you were using it to honor a partner's proprietary
-correlation header, populate `ICorrelationId` from a small middleware of your
-own instead — `ICorrelationId`, `AddCorrelationId()`, the `WithCorrelationId()`
-log-scope extension, and the outbound `WithCorrelationId()` client decorator
-all remain; only the inbound header-pickup middleware is gone. See the
-[Request Correlation cookbook](cookbooks/request-correlation) for the pattern.
+Migration: add `UseW3CTraceContext()` (first in the pipeline). If you were honoring
+a partner's proprietary correlation header, populate `ICorrelationId` from a small
+middleware of your own instead — `ICorrelationId`, `AddCorrelationId()`, the
+`WithCorrelationId()` log-scope extension, and the outbound `WithCorrelationId()`
+client decorator all remain; only the inbound header-pickup middleware is gone. See
+the [Request Correlation cookbook](cookbooks/request-correlation) for the pattern.
 
 ## New: `UseBenzeneEnrichment()`, `UseBenzeneMetrics()`, W3C trace context
 

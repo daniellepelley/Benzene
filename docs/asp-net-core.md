@@ -260,8 +260,7 @@ On ASP.NET Core, `IBenzeneInvocation.InvocationId` is populated from `HttpContex
 `HttpContext` if you need to drop down to it.
 
 For cross-service correlation see [Correlation IDs](correlation-ids) — this rides on the W3C
-trace context propagation described next (the legacy `UseCorrelationId()` middleware has been
-removed).
+trace context propagation described next.
 
 ### W3C trace context
 

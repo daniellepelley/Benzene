@@ -145,7 +145,7 @@ To verify your own Serilog wiring end to end, run the service locally with the c
 
 ### `correlationId` is missing even though `WithCorrelationId()` is configured
 
-**Solution:** `WithCorrelationId()` reads from `ICorrelationId`, which self-generates a GUID per scope; to carry a value from an incoming header, call `ICorrelationId.Set(...)` from your own middleware (the legacy `UseCorrelationId()` header-pickup middleware has been removed) — see [Correlation Ids](../correlation-ids.md).
+**Solution:** `WithCorrelationId()` reads from `ICorrelationId`, which self-generates a GUID per scope; to carry a value from an incoming header, call `ICorrelationId.Set(...)` from your own middleware — see [Correlation Ids](../correlation-ids.md).
 
 ## Variations
 

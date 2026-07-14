@@ -147,7 +147,7 @@ Rewrite `GrpcMethodHandler.HandleAsync`:
 5. If buffered `ResponseHeaders` non-empty → `WriteResponseHeadersAsync`.
 6. Return `_adapter.ConvertResponse<TResponse>(...)`.
 
-Tests: `[Theory]` covering every `BenzeneResultStatus` constant in the mapper; `GrpcMethodHandlerTest` using a hand-rolled `TestCallContext : ServerCallContext` in `test/Benzene.Grpc.Test/Helpers/` (do NOT add the Grpc.Core.Testing package): headers reach `IMessageHeadersGetter`; NotFound result → `RpcException(NotFound)` + trailer; cancelled token → `RpcException(Cancelled)`; handler observes token via `IGrpcServerCallAccessor`. Integration: `UseCorrelationId` picks up `x-correlation-id` sent as metadata.
+Tests: `[Theory]` covering every `BenzeneResultStatus` constant in the mapper; `GrpcMethodHandlerTest` using a hand-rolled `TestCallContext : ServerCallContext` in `test/Benzene.Grpc.Test/Helpers/` (do NOT add the Grpc.Core.Testing package): headers reach `IMessageHeadersGetter`; NotFound result → `RpcException(NotFound)` + trailer; cancelled token → `RpcException(Cancelled)`; handler observes token via `IGrpcServerCallAccessor`. Integration: `UseW3CTraceContext()` continues a distributed trace from the incoming `traceparent` metadata.
 
 ## Phase 5 — Streaming (D1)
 

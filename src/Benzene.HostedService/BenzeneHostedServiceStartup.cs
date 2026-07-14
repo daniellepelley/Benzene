@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Benzene.HostedService;
 
+[System.Obsolete("Superseded by the platform-neutral BenzeneStartUp hosted via IHostBuilder.UseBenzene<TStartUp>(), whose Configure takes IBenzeneApplicationBuilder. See docs/migration-alpha-to-1.0.md.")]
 public abstract class BenzeneHostedServiceStartup : BenzeneWorkerStartup, IHostedService;
 
 
