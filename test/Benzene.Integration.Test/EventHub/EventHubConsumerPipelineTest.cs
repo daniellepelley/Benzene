@@ -14,7 +14,8 @@ using Xunit;
 
 namespace Benzene.Integration.Test.EventHub;
 
-public class EventHubConsumerPipelineTest : IClassFixture<EventHubFixture>
+[Collection(EventHubEmulatorCollection.Name)]
+public class EventHubConsumerPipelineTest
 {
     private const string ConnectionString =
         "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;";

@@ -1,6 +1,6 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.7
+**Document Version:** 1.8
 **Last Updated:** 2026-07-14
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
@@ -105,6 +105,44 @@ Later entries supersede earlier ones where they overlap.
     Azurite/emulator pattern to Service Bus/Kafka) — the Docker daemon was unreachable
     in this environment (`docker ps` fails to connect), so any new Docker Compose-based
     test could be written but not executed/verified here.
+- **2026-07-14 — Integration Tests: Service Bus and Kafka (same-day follow-up).** Closed
+  the item flagged as "not attempted this pass" above.
+  - Added `test/Benzene.Integration.Test/ServiceBus/ServiceBusConsumerPipelineTest.cs`
+    (real send/receive against `mcr.microsoft.com/azure-messaging/servicebus-emulator` +
+    its required SQL Server backend, via a new `servicebus-docker-compose.yaml`/
+    `servicebus-emulator-config.json`/`ServiceBusFixture.cs`) and
+    `test/Benzene.Integration.Test/Kafka/KafkaConsumerPipelineTest.cs` (real produce/consume
+    against the *existing* Event Hubs emulator's Kafka-compatible endpoint on port 9092 —
+    no new container needed, just a second entity, `kafka1`, added to
+    `eventhub-emulator-config.json` alongside `eh1`).
+  - Both new tests drive Benzene's real production pipeline on the receiving end
+    (`app.HandleServiceBusMessages(...)`/`app.HandleKafkaEvents(...)`), same shape as the
+    existing `EventHubConsumerPipelineTest.cs`, not a hand-built event.
+  - Added `EventHubEmulatorCollection` (an xunit `ICollectionFixture`) so the Event Hubs
+    and Kafka tests share one running emulator container instead of each spinning up their
+    own and racing to bind the same fixed host ports; converted
+    `EventHubConsumerPipelineTest` from `IClassFixture<EventHubFixture>` to this shared
+    collection as part of the same change. The Service Bus emulator's ports were remapped
+    to 5673/5301 (from its defaults 5672/5300) so it can run alongside the Event Hubs
+    emulator without colliding — confirmed via web research that the Service Bus SDK's
+    emulator connection string supports specifying a non-default port explicitly.
+  - User-approved addition of `Azure.Messaging.ServiceBus` and `Confluent.Kafka` as direct
+    `PackageReference`s to `Benzene.Integration.Test.csproj` (both already used elsewhere
+    in the repo at these exact pinned versions) before writing any test code, per the
+    NuGet policy.
+  - **Separate gap found and fixed along the way:** `Benzene.Integration.Test` was never
+    wired into any CI workflow at all (confirmed via `git log` — true since the Event Hubs
+    emulator test was first added, well before this session), unlike the parallel
+    `Benzene.Aws.Tests` project, which has its own `aws-integration-tests` CI job. Added a
+    mirrored `azure-integration-tests` job to `.github/workflows/build-benzene.yml`.
+  - **Disclosure:** this sandbox's Docker daemon is still unreachable
+    (`docker ps` fails to connect), so none of the new or existing tests in
+    `Benzene.Integration.Test` were actually executed here. Verified instead by: a clean
+    `dotnet build` of the project (0 errors), `dotnet test --list-tests` confirming all
+    four tests (including the two new ones) are discovered correctly, a full solution
+    build (0 errors), the full `Benzene.Core.Test` suite still passing (750/750), and
+    valid-YAML/valid-JSON checks on every new compose/config/workflow file. The new CI job
+    is the first place these will actually run, against a real Docker daemon.
 
 ---
 
@@ -1942,19 +1980,37 @@ All Azure packages reference:
    — same disclaimer style as the AWS SAM template. Only covers the HTTP trigger path the
    example actually uses; Event Hub/Kafka/Service Bus resources are deliberately not
    included (documented as a follow-up for anyone wiring those triggers)
-7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **PARTIALLY
-   COMPLETE 2026-07-14** — the Azurite/emulator half is done
-   (`EventHubConsumerPipelineTest.cs`, real Docker-based Azurite + Event Hubs
-   Emulator, real produce/consume through Benzene's own production pipeline). The
-   Functions-test-host half (running the real `func start` process) is not
-   achievable in this environment: `azure-functions-core-tools`'s post-install
-   binary download is blocked by network policy, a hard external constraint, not a
-   scoping choice. **~10-15h remaining** to extend the same pattern to
-   `Benzene.Azure.Function.ServiceBus`/`.Kafka`, or to attempt the Functions-host
-   route in an environment where Core Tools can actually install. Note: the Docker
-   daemon itself was also unreachable in the environment used for the 2026-07-14
-   ARM/Bicep and Application Insights work (`docker ps` fails to connect), so this
-   item couldn't be picked up in the same pass even though it was considered
+7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **EMULATOR HALF
+   NOW COMPLETE 2026-07-14** — extended to Service Bus and Kafka in a follow-up pass the
+   same day. `KafkaConsumerPipelineTest.cs` reuses the *same* Event Hubs emulator
+   container as `EventHubConsumerPipelineTest.cs` (it exposes a Kafka-compatible endpoint
+   on port 9092 alongside its native AMQP port) — added a `kafka1` entity to
+   `eventhub-emulator-config.json` alongside the existing `eh1`, and a shared
+   `EventHubEmulatorCollection` xunit collection fixture so both tests reuse one running
+   container instead of racing to bind the same host ports. `ServiceBusConsumerPipelineTest.cs`
+   runs against `mcr.microsoft.com/azure-messaging/servicebus-emulator` (a new
+   `servicebus-docker-compose.yaml` + `servicebus-emulator-config.json`, with a required
+   SQL Server backend container) — its host ports are remapped to 5673/5301 so it can run
+   alongside the Event Hubs emulator's default 5672/5300 without a port conflict; verified
+   via web research that the Service Bus SDK's emulator connection string supports a
+   non-default port explicitly. Required adding `Azure.Messaging.ServiceBus` and
+   `Confluent.Kafka` as direct `PackageReference`s to `Benzene.Integration.Test.csproj`
+   (both already used elsewhere in the repo at these exact pinned versions) — user-approved
+   before proceeding, per the NuGet policy. Also found and fixed a separate, real gap while
+   doing this: `Benzene.Integration.Test` was never wired into CI at all (confirmed via
+   `git log` — true since the Event Hubs emulator test was first added) unlike the
+   parallel `Benzene.Aws.Tests` project, which has its own `aws-integration-tests` CI job.
+   Added a mirrored `azure-integration-tests` job to
+   `.github/workflows/build-benzene.yml`. **Still not achievable in any environment tried
+   so far:** the Functions-test-host half (running the real `func start` process) —
+   `azure-functions-core-tools`'s post-install binary download is blocked by network
+   policy in this sandbox, a hard external constraint, not a scoping choice. **Disclosure:**
+   none of this pass's new tests were actually executed here either — this sandbox's
+   Docker daemon is unreachable (`docker ps` fails to connect), so the new Service
+   Bus/Kafka tests are verified by clean build + `dotnet test --list-tests` discovery and
+   close adherence to the already-proven `EventHubConsumerPipelineTest.cs` pattern, not by
+   a real run. The new `azure-integration-tests` CI job is the first place they'll actually
+   execute, on a GitHub-hosted runner with a real Docker daemon
 8. ~~**Code Quality Fixes**~~ ✅ COMPLETE 2026-07-14 — the `BenzeneMessageLambdaHandler`
    → `BenzeneMessageEventHubHandler` rename was done 2026-07-12; the commented-out dead
    code removal and both file/class mismatches (`ApiGatewayHttpRequestAdapter.cs` →
@@ -1978,10 +2034,13 @@ All Azure packages reference:
     section
 
 **Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ ~~35-45 hours~~
-**~10-15 hours remaining** (2026-07-14: ARM/Bicep Templates and Application Insights
-Integration are now both resolved — the former via a new Bicep template, the latter via
-example wiring plus pre-existing cookbook docs; the only P0 item still open is #7
-Integration Tests' Functions-host-blocked remainder)
+~~10-15 hours~~ **effectively zero hours remaining that are achievable outside a
+network-unrestricted environment** (2026-07-14: ARM/Bicep Templates, Application Insights
+Integration, and the emulator half of Integration Tests — including its Service Bus/Kafka
+extension, added in a same-day follow-up — are all now resolved. The one genuinely open
+sliver, the Functions-test-host half of Integration Tests, is blocked by
+`azure-functions-core-tools`'s network-restricted post-install step in every environment
+tried so far, not by remaining scope or effort)
 
 ### Should Have for 1.0 (P1)
 

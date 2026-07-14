@@ -534,6 +534,29 @@ var request = MessageBuilder.Create("hello:world", new HelloWorldMessage { Name 
 await app.HandleEventHub(request);
 ```
 
+### Real broker/emulator integration tests
+
+The tests above dispatch a hand-built event/message directly into the pipeline — fast, but they
+don't exercise the real Azure SDK client, wire protocol, or (for Event Hubs/Kafka/Service Bus)
+partitioning and delivery semantics. `test/Benzene.Integration.Test` covers that gap with a real
+produce/consume round trip against the actual Docker-emulator images for each transport, driving
+Benzene's real production pipeline on the receiving end (not a hand-built event):
+
+- **Event Hubs** (`EventHub/EventHubConsumerPipelineTest.cs`) and **Kafka**
+  (`Kafka/KafkaConsumerPipelineTest.cs`) both run against the same
+  `mcr.microsoft.com/azure-messaging/eventhubs-emulator` container — it exposes both the native
+  AMQP endpoint and a Kafka-compatible endpoint (port 9092) on the same instance. The two tests
+  share that one container via `EventHubEmulatorCollection` (an xunit collection fixture) and use
+  separate entities (`eh1` vs `kafka1`) so their events don't cross-contaminate.
+- **Service Bus** (`ServiceBus/ServiceBusConsumerPipelineTest.cs`) runs against
+  `mcr.microsoft.com/azure-messaging/servicebus-emulator`, which requires a SQL Server backend
+  container — its ports are remapped (`5673`/`5301` instead of the emulator's defaults `5672`/`5300`)
+  so it can run alongside the Event Hubs emulator without a host port conflict; the Service Bus
+  SDK's emulator connection string supports specifying that non-default port explicitly.
+
+These require a working Docker daemon and aren't run as part of the main `Benzene.Core.Test` suite
+— see the `azure-integration-tests` job in `.github/workflows/build-benzene.yml`.
+
 ## Troubleshooting
 
 - **`func start` can't find the function app / "No job functions found"**: confirm `OutputType`

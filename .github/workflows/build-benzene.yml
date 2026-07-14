@@ -57,3 +57,28 @@ jobs:
       run: dotnet build test/Benzene.Aws.Tests/Benzene.Aws.Tests.csproj --no-restore
     - name: Test
       run: dotnet test test/Benzene.Aws.Tests/Benzene.Aws.Tests.csproj --no-build --verbosity normal
+
+  azure-integration-tests:
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Ensure docker-compose CLI is resolvable (FluentDocker looks for this binary name; ubuntu-latest only ships the "docker compose" v2 plugin)
+      run: |
+        if ! command -v docker-compose >/dev/null 2>&1; then
+          printf '#!/usr/bin/env bash\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
+          sudo chmod +x /usr/local/bin/docker-compose
+        fi
+        docker-compose version
+    - name: Restore dependencies
+      run: dotnet restore Benzene.sln
+    - name: Build
+      run: dotnet build test/Benzene.Integration.Test/Benzene.Integration.Test.csproj --no-restore
+    - name: Test
+      run: dotnet test test/Benzene.Integration.Test/Benzene.Integration.Test.csproj --no-build --verbosity normal

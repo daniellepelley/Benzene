@@ -9,6 +9,11 @@
                 "Name": "eh1",
                 "PartitionCount": 2,
                 "ConsumerGroups": []
+            },
+            {
+                "Name": "kafka1",
+                "PartitionCount": 2,
+                "ConsumerGroups": []
             }
             ]
         }
