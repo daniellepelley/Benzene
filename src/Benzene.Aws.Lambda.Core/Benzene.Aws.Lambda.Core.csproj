@@ -18,7 +18,6 @@
 	  <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
 	  <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
 	  <ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
-	  <ProjectReference Include="..\Benzene.Testing\Benzene.Testing.csproj" />
 	</ItemGroup>
 
 </Project>

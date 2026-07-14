@@ -1,9 +1,10 @@
+using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Testing;
 
-namespace Benzene.Aws.Lambda.Core;
+namespace Benzene.Aws.Lambda.Core.TestHelpers;
 
 /// <summary>
 /// Provides the AWS Lambda bridge for <see cref="BenzeneTestHostBuilder{TStartUp}"/>.

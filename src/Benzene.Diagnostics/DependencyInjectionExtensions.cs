@@ -10,14 +10,14 @@ namespace Benzene.Diagnostics
         {
             if (!services.IsTypeRegistered<DebugMiddlewareWrapper>())
             {
-                services.AddScoped<DebugMiddlewareWrapper>();
-                services.AddScoped<IMiddlewareWrapper, DebugMiddlewareWrapper>();
+                services.AddSingleton<DebugMiddlewareWrapper>();
+                services.AddSingleton<IMiddlewareWrapper, DebugMiddlewareWrapper>();
             }
 
             if (!services.IsTypeRegistered<ActivityMiddlewareWrapper>())
             {
-                services.AddScoped<ActivityMiddlewareWrapper>();
-                services.AddScoped<IMiddlewareWrapper, ActivityMiddlewareWrapper>();
+                services.AddSingleton<ActivityMiddlewareWrapper>();
+                services.AddSingleton<IMiddlewareWrapper, ActivityMiddlewareWrapper>();
             }
 
             if (!services.IsTypeRegistered<ActivityProcessTimerFactory>())

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+option csharp_namespace = "Benzene.Grpc.Test.Protos";
+
+package benzene.test;
+
+// Test service used to exercise Benzene.Grpc across all four RPC shapes.
+service TestService {
+  rpc Echo (EchoRequest) returns (EchoReply);
+  rpc Subscribe (SubscribeRequest) returns (stream SubscribeReply);
+  rpc Upload (stream UploadItem) returns (UploadSummary);
+  rpc Chat (stream ChatMessage) returns (stream ChatMessage);
+}
+
+message EchoRequest {
+  string name = 1;
+}
+
+message EchoReply {
+  string message = 1;
+}
+
+message SubscribeRequest {
+  string topic = 1;
+}
+
+message SubscribeReply {
+  string item = 1;
+}
+
+message UploadItem {
+  int32 value = 1;
+}
+
+message UploadSummary {
+  int32 total = 1;
+}
+
+message ChatMessage {
+  string text = 1;
+}

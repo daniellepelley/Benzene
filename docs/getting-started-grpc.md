@@ -1,14 +1,13 @@
 # gRPC Setup
 
-`Benzene.Grpc` lets a `Grpc.AspNetCore` service's unary methods be implemented by ordinary Benzene
-message handlers instead of hand-written service method bodies. It's an early integration: **only
-unary calls are supported today** (no server-streaming, client-streaming, or bidirectional streaming,
-despite what the package's own internal notes say elsewhere), and it isn't wired into the
-platform-neutral `BenzeneStartUp`/`IBenzeneApplicationBuilder` model the way HTTP, AWS Lambda, and
-Azure Functions are — there's no `UseGrpc(this IBenzeneApplicationBuilder ...)` extension, so you
-wire it up by hand in `Program.cs`, on top of a normal ASP.NET Core + `Grpc.AspNetCore` project.
-This guide walks through exactly that wiring, matching
-[`examples/Grpc`](../examples/Grpc), the only currently-compiling reference for this package.
+`Benzene.Grpc` lets a `Grpc.AspNetCore` service's methods — unary, server-streaming,
+client-streaming, and bidirectional — be implemented by ordinary Benzene message handlers instead
+of hand-written service method bodies, wired into the same platform-neutral
+`BenzeneStartUp`/`IBenzeneApplicationBuilder` model as HTTP, AWS Lambda, and Azure Functions (see
+[Unified Hosting Model](hosting)). This guide walks through the whole surface: routing, both
+handler styles (protobuf-direct and POCO), all four RPC shapes, metadata, status codes,
+cancellation, health checks/reflection, and the outbound client — matching
+[`examples/Grpc`](../examples/Grpc), the fully worked reference for this package.
 
 ## Prerequisites
 
@@ -31,15 +30,18 @@ generated service class) — Benzene adds to it rather than replacing it.
 ## 2. Install the NuGet packages
 
 ```bash
-dotnet add package Grpc.AspNetCore
-dotnet add package Benzene.Grpc --prerelease
-dotnet add package Benzene.AspNet.Core --prerelease
+dotnet add package Benzene.Grpc.AspNet --prerelease
 dotnet add package Benzene.Microsoft.Dependencies --prerelease
 ```
 
+`Benzene.Grpc.AspNet` pulls in `Benzene.Grpc` and `Grpc.AspNetCore` transitively — you don't need
+to reference either directly for a hosted service. Add `Benzene.Grpc.Client` separately if this
+service also calls other gRPC services (see [step 11](#11-calling-other-grpc-services)), and
+`Benzene.Grpc.TestHelpers` in your test project (see [step 12](#12-testing)).
+
 ## 3. Define your `.proto` and generated service
 
-Nothing Benzene-specific here — a standard unary RPC:
+All four RPC shapes, so there's one example of each to build handlers against:
 
 ```proto
 syntax = "proto3";
@@ -50,6 +52,9 @@ package greet;
 
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
+  rpc SayHelloServerStream (HelloRequest) returns (stream HelloReply);
+  rpc SayHelloClientStream (stream HelloRequest) returns (HelloReply);
+  rpc SayHelloBidiStream (stream HelloRequest) returns (stream HelloReply);
 }
 
 message HelloRequest {
@@ -67,31 +72,33 @@ message HelloReply {
 </ItemGroup>
 ```
 
-You still need a real service class deriving from the generated `Greeter.GreeterBase` and
-overriding `SayHello` — `app.MapGrpcService<GreeterService>()` requires one to exist so gRPC's own
-routing/reflection has somewhere to point. Once Benzene's interceptor takes over a given method
-(step 6), **this override's body never runs for that method** — keep it minimal. If your service
-has other RPC methods with no matching `[GrpcMethod]`-tagged handler, those methods' overrides
-*do* still run normally — only routes Benzene has claimed are replaced:
+You still need a real service class deriving from the generated `Greeter.GreeterBase` —
+`app.MapGrpcService<GreeterService>()` requires one to exist so gRPC's own routing/reflection has
+somewhere to point. You do **not** need to override every method: any method left unoverridden
+returns `Unimplemented` by default, which is exactly what you want once `BenzeneInterceptor` claims
+it via a matching `[GrpcMethod]`-tagged handler (step 4) — that override's body would never run for
+that method anyway. Only override methods you intend to keep as native gRPC code with no Benzene
+handler:
 
 ```csharp
 public class GreeterService : Greeter.GreeterBase
 {
-    public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
-    {
-        // Unreachable once BenzeneInterceptor routes "/greet.Greeter/SayHello" to a message
-        // handler (step 4) — kept only so MapGrpcService<GreeterService>() has a class to bind.
-        throw new NotImplementedException();
-    }
+    // No overrides needed here if every method has a matching [GrpcMethod] handler.
 }
 ```
 
-## 4. Define a message handler
+## 4. Define message handlers
 
 Business logic lives in a message handler, tagged with `[GrpcMethod]` giving the **full gRPC
 method route** (`/<package>.<Service>/<Method>`, exactly as it appears in the generated client) —
 this is what `BenzeneInterceptor` matches against the incoming call to decide whether to redirect
-it to your handler instead of the generated service class:
+it to your handler instead of the generated service class — plus `[Message("topic")]`, which is
+how the middleware pipeline routes internally (nothing outside this package reads it as a gRPC
+concept).
+
+### Style 1: protobuf-direct (zero-copy)
+
+Declare the generated protobuf types directly and there's no serialization step at all:
 
 ```csharp
 using Benzene.Abstractions.MessageHandlers;
@@ -102,158 +109,341 @@ using Benzene.Results;
 
 [GrpcMethod("/greet.Greeter/SayHello")]
 [Message("say_hello")]
+public class SayHelloMessageHandler : IMessageHandler<HelloRequest, HelloReply>
+{
+    public Task<IBenzeneResult<HelloReply>> HandleAsync(HelloRequest request)
+    {
+        return BenzeneResult.Ok(new HelloReply { Message = $"Hello {request.Name}" }).AsTask();
+    }
+}
+```
+
+### Style 2: POCO (JSON-bridged)
+
+Declare your own plain classes instead, and `IGrpcMessageAdapter` bridges them via protobuf's own
+JSON representation, matching properties by name (`Message`, not `message` — the generated C#
+property names, not the `.proto` field names):
+
+```csharp
+[GrpcMethod("/greet.Greeter/SayHello")]
+[Message("say_hello")]
 public class SayHelloMessageHandler : IMessageHandler<SayHelloRequest, SayHelloReply>
 {
     public Task<IBenzeneResult<SayHelloReply>> HandleAsync(SayHelloRequest request)
     {
-        return BenzeneResult.Ok(new SayHelloReply
-        {
-            Message = "Hello " + request.Name
-        }).AsTask();
+        return BenzeneResult.Ok(new SayHelloReply { Message = $"Hello {request.Name}" }).AsTask();
     }
 }
 
-public class SayHelloRequest
+public class SayHelloRequest { public string Name { get; set; } = ""; }
+public class SayHelloReply { public string Message { get; set; } = ""; }
+```
+
+Pick whichever style fits the handler — nothing else in the pipeline cares, and the two styles can
+be mixed freely across handlers in the same service, or even across the two sides of one handler
+(protobuf request in, POCO response out, or vice versa).
+
+### Streaming handlers (D1)
+
+Streaming handlers are ordinary message handlers whose request and/or response type is
+`IAsyncEnumerable<T>` — `T` can be the protobuf item type or a POCO, independently, same rule as
+above:
+
+```csharp
+// Server-streaming: IMessageHandler<TRequest, IAsyncEnumerable<TResponseItem>>
+[GrpcMethod("/greet.Greeter/SayHelloServerStream")]
+[Message("say_hello_server_stream")]
+public class SayHelloServerStreamMessageHandler : IMessageHandler<HelloRequest, IAsyncEnumerable<HelloReply>>
 {
-    public string Name { get; set; }
+    public Task<IBenzeneResult<IAsyncEnumerable<HelloReply>>> HandleAsync(HelloRequest request)
+    {
+        return BenzeneResult.Ok(Produce(request.Name)).AsTask();
+    }
+
+    private static async IAsyncEnumerable<HelloReply> Produce(string name)
+    {
+        foreach (var salutation in new[] { "Hello", "Hi", "Hey" })
+        {
+            yield return new HelloReply { Message = $"{salutation} {name}" };
+        }
+    }
 }
 
-public class SayHelloReply
+// Client-streaming: IMessageHandler<IAsyncEnumerable<TRequestItem>, TResponse>
+[GrpcMethod("/greet.Greeter/SayHelloClientStream")]
+[Message("say_hello_client_stream")]
+public class SayHelloClientStreamMessageHandler : IMessageHandler<IAsyncEnumerable<HelloRequest>, HelloReply>
 {
-    public string Message { get; set; }
+    public async Task<IBenzeneResult<HelloReply>> HandleAsync(IAsyncEnumerable<HelloRequest> request)
+    {
+        var names = new List<string>();
+        await foreach (var item in request)
+        {
+            names.Add(item.Name);
+        }
+        return BenzeneResult.Ok(new HelloReply { Message = $"Hello {string.Join(", ", names)}" });
+    }
+}
+
+// Bidirectional: IMessageHandler<IAsyncEnumerable<TRequestItem>, IAsyncEnumerable<TResponseItem>>
+[GrpcMethod("/greet.Greeter/SayHelloBidiStream")]
+[Message("say_hello_bidi_stream")]
+public class SayHelloBidiStreamMessageHandler : IMessageHandler<IAsyncEnumerable<HelloRequest>, IAsyncEnumerable<HelloReply>>
+{
+    public Task<IBenzeneResult<IAsyncEnumerable<HelloReply>>> HandleAsync(IAsyncEnumerable<HelloRequest> request)
+    {
+        return BenzeneResult.Ok(Produce(request)).AsTask();
+    }
+
+    private static async IAsyncEnumerable<HelloReply> Produce(IAsyncEnumerable<HelloRequest> source)
+    {
+        await foreach (var item in source)
+        {
+            yield return new HelloReply { Message = $"Hello {item.Name}" };
+        }
+    }
 }
 ```
 
-Your handler's request/response types are **plain POCOs, not the generated protobuf
-`HelloRequest`/`HelloReply` types** — Benzene bridges between them with a JSON round-trip (see
-"How it works" below), matching properties by name. `[Message("...")]` still needs a value (it's
-how the middleware pipeline routes internally) but nothing outside this package reads it as a
-transport topic for gRPC.
+One middleware pipeline invocation happens per RPC call, not per stream item — a middleware you add
+via `UseGrpc` (step 5) sees exactly one `HandleAsync` for a whole `SayHelloServerStream` call,
+regardless of how many items the handler yields. Per-item concerns (throttling, per-item auth,
+...) belong inside the handler itself, not the pipeline.
 
-## 5. Wire it up in `Program.cs`
+## 5. Wire it up
 
-Unlike the other getting-started guides, there's no `BenzeneStartUp` here — you construct the
-`GrpcMethodHandlerFactory` and interceptor registration directly against `WebApplicationBuilder`,
-matching `examples/Grpc/Benzene.Example.Grpc/Program.cs`:
+`Benzene.Grpc.AspNet` fits into the same `BenzeneStartUp` your other transports use — see
+[Unified Hosting Model](hosting) if this is your first Benzene transport:
 
 ```csharp
-using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Hosting;
 using Benzene.Core.MessageHandlers.DI;
-using Benzene.Core.Middleware;
-using Benzene.Grpc;
+using Benzene.Grpc.AspNet;
 using Benzene.Microsoft.Dependencies;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
+public class StartUp : BenzeneStartUp
+{
+    public override IConfiguration GetConfiguration() => new ConfigurationBuilder().Build();
+
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddBenzeneGrpc();
+        services.UsingBenzene(x => x
+            .AddBenzene()
+            .AddBenzeneMessage()
+            .AddMessageHandlers(typeof(SayHelloMessageHandler).Assembly)
+            .AddGrpcMessageHandlers());
+    }
+
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
+        => app.UseGrpc(grpc => grpc.UseMessageHandlers());
+}
+```
+
+```csharp
 var builder = WebApplication.CreateBuilder(args);
-
-// Register BenzeneInterceptor as a gRPC server interceptor - this is what redirects
-// matched calls away from the generated service class to a message handler.
-builder.Services.AddGrpc(x => x.Interceptors.Add(typeof(BenzeneInterceptor)));
-
-var benzeneServiceContainer = new MicrosoftBenzeneServiceContainer(builder.Services);
-builder.Services.AddScoped<IBenzeneServiceContainer>(_ => benzeneServiceContainer);
-
-// Build the GrpcContext middleware pipeline once, up front - unlike AWS/Azure/ASP.NET Core,
-// there's no per-request pipeline construction path here.
-var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<GrpcContext>(benzeneServiceContainer);
-var grpcMethodHandlerFactory = new GrpcMethodHandlerFactory(
-    benzeneServiceContainer,
-    Greeter.Descriptor,
-    middlewarePipelineBuilder.UseMessageHandlers().Build());
-builder.Services.AddScoped<IGrpcMethodHandlerFactory>(_ => grpcMethodHandlerFactory);
-
-builder.Services.UsingBenzene(x => x
-    .AddBenzene()
-    .AddBenzeneMessage()
-    .AddMessageHandlers(typeof(SayHelloMessageHandler).Assembly)
-    .AddGrpc());
+builder.UseBenzene<StartUp>();
 
 var app = builder.Build();
 app.MapGrpcService<GreeterService>();
-app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client.");
-
+app.UseBenzene();
 app.Run();
 ```
 
-`Greeter.Descriptor` is the generated `ServiceDescriptor` for your `.proto`'s service — swap it for
-your own service's descriptor. `GrpcMethodHandlerFactory` needs it to look up each response
-message's field layout when converting your handler's JSON-serialized POCO response back into the
-generated protobuf type (see below).
+Two things that are easy to get wrong because gRPC's hosting model differs from Benzene's other
+transports (see [Unified Hosting Model — gRPC on ASP.NET Core](hosting#grpc-on-aspnet-core)
+for why):
+
+- **`AddBenzeneGrpc()` in `ConfigureServices` is required**, in addition to `UsingBenzene(...)` —
+  it registers ASP.NET Core's own gRPC services and `BenzeneInterceptor` as a server interceptor.
+- **Handler types must be discoverable from `ConfigureServices`.** `AddMessageHandlers(assembly)`
+  (assembly-scan) or an explicit `AddMessageHandlers(typeof(SayHelloMessageHandler), ...)` type list
+  both work, because `BenzeneInterceptor`'s route table is built from ASP.NET Core's own
+  per-request DI, populated during `ConfigureServices` — not from whatever you pass to
+  `UseGrpc(grpc => grpc.UseMessageHandlers(...))` alone.
+- **You still need `app.MapGrpcService<GreeterService>()`.**
 
 ## 6. How it works
 
-`BenzeneInterceptor` overrides `Interceptor.UnaryServerHandler`. On every unary call it asks
-`IGrpcRouteFinder` (built by reflecting over `[GrpcMethod]` attributes across your discovered
+`BenzeneInterceptor` overrides `Interceptor.UnaryServerHandler`/`ClientStreamingServerHandler`/
+`ServerStreamingServerHandler`/`DuplexStreamingServerHandler` — one per RPC shape. On every call it
+asks `IGrpcRouteFinder` (built by reflecting over `[GrpcMethod]` attributes across your discovered
 message handlers) whether the call's method route has a registered handler:
 
-- **No match** — falls through to `base.UnaryServerHandler(request, context, continuation)`, i.e.
-  the generated `GreeterService` method runs as normal.
-- **Match** — calls `base.UnaryServerHandler(request, context, benzeneGrpcMethodHandler.HandleAsync)`,
-  substituting your message handler's `HandleAsync` as the continuation. The generated service
-  class's method is **never invoked** for that route.
+- **No match** — falls through to `base.XxxServerHandler(..., continuation)`, i.e. the generated
+  service class's method runs as normal.
+- **Match** — substitutes the corresponding `IGrpcMethodHandler` method (`HandleAsync`/
+  `ServerStreamingAsync`/`ClientStreamingAsync`/`DuplexStreamingAsync`) as the continuation instead.
+  The generated service class's method is **never invoked** for that route.
 
-Inside that substituted call, `GrpcMethodHandler.HandleAsync<TRequest, TResponse>` (where
-`TRequest`/`TResponse` are the *generated protobuf* types, inferred from the gRPC method's own
-signature) does the actual bridging:
+Inside that substituted call, `GrpcMethodHandler` runs the `GrpcContext` middleware pipeline built
+in step 5 (via a shared internal helper regardless of shape), then:
 
-1. Wraps the incoming protobuf request in a `GrpcContext<TRequest, TResponse>` and runs it through
-   the `GrpcContext` middleware pipeline built in step 5.
-2. `GrpcMessageBodyGetter` serializes the protobuf request object to JSON with
-   `System.Text.Json` — this JSON is then deserialized into your handler's own POCO request type
-   (`SayHelloRequest` above) by the normal message-handler request-mapping pipeline, matching
-   properties by name.
-3. Your handler runs and returns its own POCO response type.
-4. `GrpcMessageMessageHandlerResultSetter` serializes that POCO to JSON, then
-   `GrpcContext<TRequest, TResponse>.ResponseAsObject`'s setter deserializes it into the generated
-   protobuf response type, completing the round trip back to a real `TResponse`.
+1. **Request mapping (D2)** — `GrpcRequestMapper` hands the handler's declared request type
+   (`TRequest`) to `IGrpcMessageAdapter`: pass through untouched if it already *is* the incoming
+   protobuf type (or, for a streaming request, the item type matches); otherwise convert via
+   protobuf's own JSON representation (`JsonFormatter`/`JsonParser`, not a raw `System.Text.Json`
+   round trip — this handles protobuf-specific constructs like enums and well-known types
+   correctly).
+2. **Handler execution** — your `HandleAsync` runs and returns an `IBenzeneResult<TResponse>`.
+3. **Response mapping** — the reverse of step 1: pass through if the payload already is the
+   protobuf response type, otherwise convert via the same JSON bridge.
+4. **Status/trailer mapping (D4)** — the handler's `IBenzeneResult.Status` is mapped to a gRPC
+   `StatusCode` (see the table below) and always added as a `benzene-status` response trailer,
+   carrying the *original*, more specific status even when several statuses map to the same
+   `StatusCode` (e.g. `Created`/`Accepted`/`Updated` all map to `OK`).
 
-Because of this JSON round trip, your POCO's property names need to match the protobuf message's
-generated C# property names (`Message`, not `message`) for values to survive the trip.
+## 7. Metadata and correlation IDs (D5)
 
-## 7. Run it locally
-
-```bash
-dotnet run
-```
-
-Call it with a generated client, same as any gRPC service (see
-`examples/Grpc/Benzene.Example.Grpc.Client` for a minimal console client against `greet.proto`):
+Inbound gRPC metadata is mapped onto Benzene's own header abstraction, so header-driven middleware
+(`UseCorrelationId()`, `UseW3CTraceContext()`, ...) works unchanged over gRPC:
 
 ```csharp
-using var channel = GrpcChannel.ForAddress("https://localhost:7268");
-var client = new Greeter.GreeterClient(channel);
-var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" });
-Console.WriteLine(reply.Message); // "Hello World" - from SayHelloMessageHandler, not GreeterService
+app.UseGrpc(grpc => grpc
+    .UseCorrelationId()
+    .UseMessageHandlers());
 ```
 
-## 8. Testing
+Send `x-correlation-id` (or whatever header your correlation middleware reads) as call metadata
+from the client:
 
-There's no `BenzeneTestHost` support for gRPC — `Benzene.Testing` has no `Build*`/`Send*Async`
-extension for it, and no test project for this package exists anywhere in the repository today.
-Test it the way you'd test any ASP.NET Core gRPC service: spin up the app (e.g. via
-`WebApplicationFactory`, same as [ASP.NET Core Integration](asp-net-core#testing) or a real Kestrel
-instance for a full integration test) and call it through a real `GrpcChannel`/generated client —
-there's no shortcut that bypasses the interceptor and pipeline described above.
+```csharp
+var headers = new Metadata { { "x-correlation-id", Guid.NewGuid().ToString() } };
+var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" }, headers);
+```
+
+Binary metadata entries (keys ending in `-bin`) are skipped, matching gRPC's own convention that
+they aren't accessible as plain strings. Outbound: set `GrpcContext.ResponseHeaders` from a handler
+or middleware to flush custom response headers before the first response message; `ResponseTrailers`
+is a direct pass-through to `ServerCallContext.ResponseTrailers` (this is where `benzene-status`
+gets added).
+
+## 8. Status codes (D4)
+
+| `BenzeneResultStatus` | gRPC `StatusCode` |
+|---|---|
+| `Ok`, `Ignored`, `Created`, `Accepted`, `Updated`, `Deleted` | `OK` |
+| `BadRequest`, `ValidationError` | `InvalidArgument` |
+| `Unauthorized` | `Unauthenticated` |
+| `Forbidden` | `PermissionDenied` |
+| `NotFound` | `NotFound` |
+| `Conflict` | `AlreadyExists` |
+| `NotImplemented` | `Unimplemented` |
+| `ServiceUnavailable` | `Unavailable` |
+| `UnexpectedError` / anything unrecognized | `Internal` |
+
+A non-OK status throws `RpcException(new Status(mappedCode, detail))` — `detail` is the joined
+`IBenzeneResult.Errors` if present, otherwise the raw status string. The `benzene-status` trailer
+(see step 6) is added regardless of whether the call succeeded, so a client that also happens to be
+a Benzene.Grpc client can recover the original status precisely (see
+[Clients — gRPC](clients#grpc)) even where several statuses collapse to the same `StatusCode`.
+
+## 9. Deadlines and cancellation (D6)
+
+`GrpcContext.CancellationToken` (from the call's `ServerCallContext`) is available to any pipeline
+middleware directly. Inside a handler, inject the scoped `IGrpcServerCallAccessor` instead — it
+mirrors ASP.NET Core's `IHttpContextAccessor`:
+
+```csharp
+public class SayHelloMessageHandler : IMessageHandler<HelloRequest, HelloReply>
+{
+    private readonly IGrpcServerCallAccessor _accessor;
+
+    public SayHelloMessageHandler(IGrpcServerCallAccessor accessor) => _accessor = accessor;
+
+    public async Task<IBenzeneResult<HelloReply>> HandleAsync(HelloRequest request)
+    {
+        _accessor.CancellationToken.ThrowIfCancellationRequested();
+        // ...
+    }
+}
+```
+
+A pipeline (not handler-level, per `MessageHandler<TRequest,TResponse>`'s own exception handling)
+`OperationCanceledException` is translated to `RpcException(DeadlineExceeded)` if the call's
+deadline has already passed, or `RpcException(Cancelled)` otherwise.
+
+## 10. Health checks and reflection (D8)
+
+Both off by default — each is real extra surface area (grpc.health.v1, grpc.reflection.v1alpha) a
+service should opt into deliberately:
+
+```csharp
+services.AddBenzeneGrpc(o =>
+{
+    o.EnableHealthChecks = true;
+    o.EnableReflection = true;
+});
+services.AddScoped<Benzene.HealthChecks.Core.IHealthCheck, DatabaseHealthCheck>();
+```
+
+```csharp
+app.MapGrpcService<GreeterService>();
+app.MapBenzeneGrpcHealthService();
+app.MapBenzeneGrpcReflectionService();
+```
+
+See [Health Checks — gRPC](health-checks#grpc-grpchealthv1) for how `BenzeneHealthCheckBridge`
+aggregates Benzene health checks onto the standard grpc.health.v1 protocol.
+
+## 11. Calling other gRPC services
+
+Package: `Benzene.Grpc.Client`. See [Clients — gRPC](clients#grpc) for the full guide;
+`GrpcBenzeneMessageClient : IBenzeneMessageClient` sends unary calls through a Benzene middleware
+pipeline over a `GrpcChannel` you own, with the same POCO-or-protobuf-direct choice on both sides
+as the server, and status mapping symmetric to step 8.
+
+## 12. Testing
+
+Package: `Benzene.Grpc.TestHelpers`.
+
+```csharp
+using var host = BenzeneTestHost.Create<StartUp>()
+    .BuildGrpcHost(endpoints => endpoints.MapGrpcService<GreeterService>());
+var client = new Greeter.GreeterClient(host.CreateChannel());
+
+var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" });
+```
+
+`BuildGrpcHost` extends `Benzene.Testing`'s `BenzeneTestHostBuilder<TStartUp>`, running your
+`StartUp`'s `ConfigureServices`/`Configure` against a real in-process ASP.NET Core `TestServer` —
+`BenzeneInterceptor` routing, the middleware pipeline, and serialization all run exactly as they
+would in production; nothing is bypassed. `WithServices`/`WithConfiguration` (from
+`BenzeneTestHostBuilder`) work the same way they do for every other platform's test host — see
+[Testing Benzene](testing-benzene).
+
+For unit-testing a `GrpcMethodHandler`/pipeline directly, without a host, `TestServerCallContext`
+(also in `Benzene.Grpc.TestHelpers`) is a minimal hand-rolled `ServerCallContext` —
+`TestServerCallContext.Create(method: ..., requestHeaders: ..., cancellationToken: ..., deadline: ...)`.
+`Grpc.Core.Testing` is deliberately not a dependency anywhere in the Benzene.Grpc family.
 
 ## Troubleshooting
 
-- **My `GreeterService.SayHello` override's changes aren't showing up** — if a message handler
-  carries a matching `[GrpcMethod("/greet.Greeter/SayHello")]`, `BenzeneInterceptor` always wins;
-  the generated service class's method body only runs for routes with no matching handler.
-- **Response fields are always empty/null** — check your POCO response's property names match the
-  protobuf message's generated property names exactly; the JSON round trip matches by name, not by
-  field position.
+- **My `GreeterService` override's changes aren't showing up** — if a message handler carries a
+  matching `[GrpcMethod("/greet.Greeter/SayHello")]`, `BenzeneInterceptor` always wins; the
+  generated service class's method body only runs for routes with no matching handler.
+- **Response fields are always empty/null (POCO handlers)** — check your POCO's property names
+  match the protobuf message's generated C# property names exactly; the JSON bridge matches by
+  name, not by field position or `.proto` field name.
 - **"has been assigned to more than one message handler"** — `ReflectionGrpcMethodFinder` throws a
   `BenzeneException` at startup if two message handlers declare the same `[GrpcMethod("...")]`
   route; each gRPC method route may map to exactly one handler.
-- **Only unary calls work** — this is the current state of the package, not a misconfiguration;
-  `BenzeneInterceptor` only overrides `UnaryServerHandler`, so streaming RPCs always fall through to
-  your generated service class unmodified.
-- **Headers aren't available in the handler** — `GrpcMessageHeadersGetter` always returns an empty
-  dictionary today; gRPC metadata isn't bridged into Benzene message headers yet.
+- **A streaming call never routes to my handler / falls through to `Unimplemented`** — confirm the
+  handler type is registered in `ConfigureServices` (not only inside `UseGrpc`'s configuration
+  action) — see step 5.
+- **Headers aren't available in the handler** — confirm `AddBenzeneGrpc()` ran in
+  `ConfigureServices`; also check for a `-bin`-suffixed key, which is intentionally skipped.
+- **My client can't tell `Created` from `Accepted` from `Ok`** — all three map to `StatusCode.OK`;
+  read the `benzene-status` trailer instead, or use `Benzene.Grpc.Client`'s
+  `IGrpcStatusReverseMapper`, which already prefers it.
 
 ## See Also
 
 - [Unified Hosting Model](hosting)
+- [Clients](clients)
+- [Health Checks](health-checks)
 - [Testing Benzene](testing-benzene)
 - [ASP.NET Core Integration](asp-net-core)
 - [Message Handlers](message-handlers)
