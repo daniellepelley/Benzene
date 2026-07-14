@@ -7,18 +7,17 @@ your worker has to do:
 
 | You want... | Use |
 |---|---|
-| A custom background loop (polling a database, a timer, a queue you talk to yourself), with the same `BenzeneStartUp` shape used by AWS/Azure/ASP.NET Core | **Part A** — `BenzeneStartUp` + `Benzene.HostedService` |
-| A Kafka consumer (`Benzene.Kafka.Core`) or a bare `HttpListener`-based HTTP endpoint (`Benzene.SelfHost.Http`) as part of the same process | **Part B** — `BenzeneWorkerStartup`/`BenzeneHostedServiceStartup` |
+| A custom background loop (polling a database, a timer, a queue you talk to yourself), with the same `BenzeneStartUp` shape used by AWS/Azure/ASP.NET Core | **Part A** — `BenzeneStartUp` + `worker.Add(...)` |
+| A Kafka consumer (`Benzene.Kafka.Core`) or a bare `HttpListener`-based HTTP endpoint (`Benzene.SelfHost.Http`) as part of the same process | **Part B** — `BenzeneStartUp` + `worker.UseKafka(...)`/`worker.UseHttp(...)` |
 
-Part A is the modern, recommended shape — it's the one exercised by
+Both use the same `BenzeneStartUp` shape — the one exercised by
 `test/Benzene.Core.Test/Hosting/UnifiedStartUpTest.cs` and documented in
-[Unified Hosting Model](hosting). Part B exists because `Benzene.Kafka.Core.UseKafka` and
-`Benzene.SelfHost.Http.UseHttp` were written against an older, worker-specific startup interface
-that predates the unified model and haven't been ported to it — see
-[Why two startup shapes?](#why-two-startup-shapes) below for exactly why. The Part B base classes
-(`BenzeneWorkerStartup`/`BenzeneHostedServiceStartup`) are now **`[Obsolete]`** — they still work
-(warning only) and remain the way to host a Kafka or `SelfHost.Http` worker until those transports
-move to the unified model.
+[Unified Hosting Model](hosting). They differ only in what you register inside `UseWorker(...)`:
+Part A adds a worker class you wrote yourself, while Part B calls the built-in
+`Benzene.Kafka.Core.UseKafka`/`Benzene.SelfHost.Http.UseHttp` extensions. Those built-in extensions
+hang off the `IBenzeneWorkerStartup` builder that `UseWorker(...)` hands you — see
+[How `UseWorker` composes the built-in workers](#how-useworker-composes-the-built-in-workers) below
+for exactly how the two builders relate.
 
 ## Prerequisites
 
@@ -255,17 +254,16 @@ await worker.StartAsync(CancellationToken.None);
 ```
 
 Note this bypasses `BenzeneStartUp`/`IBenzeneApplicationBuilder` entirely — `Configure` here
-receives an `IBenzeneWorkerStartup` directly (the same interface Part B's `Configure` method
-receives), so it's really a lighter-weight variant of Part B's shape rather than of Part A's.
+receives an `IBenzeneWorkerStartup` directly (the same builder `UseWorker(...)` hands you), so it's
+a lighter-weight way to register a worker without going through the generic host.
 
 ## Part B: adding Kafka or a bare HTTP listener
 
-`Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka)) and `Benzene.SelfHost.Http` both
-predate the unified `BenzeneStartUp`/`IBenzeneApplicationBuilder` model, and their `UseKafka`/`UseHttp`
-extensions only target `IBenzeneWorkerStartup` — the older, worker-specific application builder
-interface — not `IBenzeneApplicationBuilder`. If you need either of them, derive from
-`Benzene.HostedService.BenzeneHostedServiceStartup` (or its base, `Benzene.SelfHost.BenzeneWorkerStartup`,
-if you don't need it registered as an `IHostedService` directly) instead of `BenzeneStartUp`:
+`Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka)) and `Benzene.SelfHost.Http` ship
+built-in workers rather than asking you to write your own. Their `UseKafka`/`UseHttp` extensions
+target `IBenzeneWorkerStartup` — the worker-specific builder that `UseWorker(...)` hands you — so you
+wire them up from the same `BenzeneStartUp` shape as Part A, just calling the built-in extensions
+inside `UseWorker(...)` instead of `worker.Add(...)`:
 
 ```bash
 dotnet add package Benzene.HostedService --prerelease
@@ -273,13 +271,14 @@ dotnet add package Benzene.SelfHost.Http --prerelease
 ```
 
 ```csharp
+using Benzene.Abstractions.Hosting;
 using Benzene.Core.MessageHandlers.DI;
-using Benzene.HostedService;
 using Benzene.HealthChecks;
+using Benzene.Microsoft.Dependencies;
 using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
 
-public class StartUp : BenzeneHostedServiceStartup
+public class StartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration()
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
@@ -289,15 +288,15 @@ public class StartUp : BenzeneHostedServiceStartup
             .AddBenzene()
             .AddMessageHandlers(typeof(HeartbeatMessageHandler).Assembly));
 
-    public override void Configure(IBenzeneWorkerStartup app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
-        app.UseHttp(new BenzeneHttpConfig
+        app.UseWorker(worker => worker.UseHttp(new BenzeneHttpConfig
         {
             Url = "http://localhost:5151/",
             ConcurrentRequests = 10
         }, http => http
             .UseHealthCheck("get", "healthcheck", x => x.AddHealthCheck("live", resolver => true))
-            .UseMessageHandlers());
+            .UseMessageHandlers()));
     }
 }
 ```
@@ -305,36 +304,40 @@ public class StartUp : BenzeneHostedServiceStartup
 `BenzeneHttpWorker` (registered by `.UseHttp(...)`) runs a `System.Net.HttpListener` loop internally
 — genuinely a bare HTTP server with no ASP.NET Core/Kestrel underneath, suitable for a lightweight
 health/metrics endpoint alongside a worker, but not a general ASP.NET Core replacement (no routing
-conventions, model binding, or middleware ecosystem beyond what Benzene itself provides). Because
-`BenzeneHostedServiceStartup` already implements `IHostedService` itself, registering it is a
-one-liner in `Program.cs`, without `Benzene.HostedService.HostBuilderExtensions.UseBenzene<TStartUp>()`:
+conventions, model binding, or middleware ecosystem beyond what Benzene itself provides). Host it
+exactly like Part A, with `Benzene.HostedService`'s `UseBenzene<StartUp>()`, which registers the
+worker as an `IHostedService`:
 
 ```csharp
+using Benzene.HostedService;
+using Microsoft.Extensions.Hosting;
+
 IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services => services.AddHostedService<StartUp>())
+    .UseBenzene<StartUp>()
     .Build();
 
 await host.RunAsync();
 ```
 
-Add Kafka consumption the same way, in the same `Configure` method, via
-`Benzene.Kafka.Core`'s `app.UseKafka<TKey, TValue>(kafkaConfig, kafka => kafka.UseMessageHandlers())` —
+Add Kafka consumption the same way, inside the same `UseWorker(...)`, via
+`Benzene.Kafka.Core`'s `worker.UseKafka<TKey, TValue>(kafkaConfig, kafka => kafka.UseMessageHandlers())` —
 see [Kafka Setup](getting-started-kafka#1-self-hosted-kafka-worker-benzenekafkacore) for the full
 walkthrough; `examples/Kafka/Benzene.Examples.Kakfa` combines exactly this Kafka-plus-HTTP shape in
 one worker.
 
 ### Testing
 
-The integration test pattern for this shape is the same as [Kafka Setup](getting-started-kafka#17-testing)
-describes: construct and start a real `StartUp` instance directly (`new StartUp()`, then
-`await startUp.StartAsync(...)`) on a background thread, drive it with real input (an HTTP call, a
-published Kafka message), and poll for the observable effect — there's no `BenzeneTestHost` shortcut
-for this startup shape either.
+A worker built this way isn't request/response-shaped, so there's no `BenzeneTestHost` shortcut —
+drive it exactly as in [Part A's testing section](#8-testing): build the real host with
+`new HostBuilder().UseBenzene<StartUp>().Build()`, start its `IHostedService`s, drive it with real
+input (an HTTP call, a published Kafka message), poll for the observable effect, then stop them. The
+Kafka integration-test flow in [Kafka Setup](getting-started-kafka#17-testing) follows the same shape
+against a live broker.
 
-## Why two startup shapes?
+## How `UseWorker` composes the built-in workers
 
-`IBenzeneApplicationBuilder` (Part A) and `IBenzeneWorkerStartup` (Part B) are different interfaces
-with different capabilities:
+`IBenzeneApplicationBuilder` (the builder `Configure` receives) and `IBenzeneWorkerStartup` (the
+builder `UseWorker(...)` hands you) are different interfaces with different capabilities:
 
 ```csharp
 public interface IBenzeneApplicationBuilder : IRegisterDependency
@@ -368,16 +371,12 @@ public static IBenzeneApplicationBuilder UseWorker(this IBenzeneApplicationBuild
 }
 ```
 
-`BenzeneWorkerStartup` (Part B's base class) builds its own separate `BenzeneWorkerBuilder` and
-passes it directly as the `app` parameter of `Configure(IBenzeneWorkerStartup app, ...)` — so both
-paths ultimately register workers against the same underlying type, just reached differently.
-`Benzene.Kafka.Core.Extensions.UseKafka` and `Benzene.SelfHost.Http.Extensions.UseHttp` were written
+`Benzene.Kafka.Core.Extensions.UseKafka` and `Benzene.SelfHost.Http.Extensions.UseHttp` are written
 directly against `IBenzeneWorkerStartup` (calling `.Add(...)` to register the built-in
-`BenzeneKafkaWorker`/`BenzeneHttpWorker`), before `IBenzeneApplicationBuilder`/`UseWorker` existed —
-so today they only compile against Part B's `Configure(IBenzeneWorkerStartup app, ...)` signature,
-not Part A's `Configure(IBenzeneApplicationBuilder app, ...)`. If you write your own `IBenzeneWorker`
-from scratch, you don't need either package, and Part A's unified shape is simpler and consistent
-with every other Benzene host.
+`BenzeneKafkaWorker`/`BenzeneHttpWorker`), so you call them on the `worker` builder that
+`UseWorker(...)` hands you — not on `IBenzeneApplicationBuilder` directly. If you write your own
+`IBenzeneWorker` from scratch (Part A), you don't need either package; you register it with the same
+`worker.Add(...)` those extensions call under the hood.
 
 ## Troubleshooting
 
@@ -391,9 +390,9 @@ with every other Benzene host.
 - **Wrong `UseBenzene<TStartUp>()` resolves** — if a project references both `Benzene.HostedService`
   and `Benzene.Azure.Function.Core`, make sure the `using` in scope is the one you intend; both
   declare an identically-shaped extension method on `IHostBuilder`.
-- **Can't call `.UseKafka(...)`/`.UseHttp(...)` inside `Configure(IBenzeneApplicationBuilder app, ...)`** —
-  these extend `IBenzeneWorkerStartup`, not `IBenzeneApplicationBuilder`; switch to
-  `BenzeneWorkerStartup`/`BenzeneHostedServiceStartup` (Part B) if you need them.
+- **Can't call `.UseKafka(...)`/`.UseHttp(...)` directly on `IBenzeneApplicationBuilder`** —
+  these extend `IBenzeneWorkerStartup`, not `IBenzeneApplicationBuilder`; call them on the `worker`
+  builder inside `app.UseWorker(worker => worker.UseKafka(...))` (Part B).
 - **Host exits immediately** — make sure `Program.cs` calls `await host.RunAsync()` (or `host.Run()`),
   not just `host.Build()`; the generic host only starts registered `IHostedService`s once run.
 

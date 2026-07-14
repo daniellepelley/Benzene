@@ -128,13 +128,10 @@ public class StartUp : BenzeneStartUp
 }
 ```
 
-> This is the recommended, platform-neutral pattern. Benzene also has an older, AWS-only
-> `AwsLambdaStartUp` base class — now **`[Obsolete]`/deprecated** (see the
-> [`examples/Aws`](../examples/Aws) project, which predates this unification) — whose
-> `Configure` method takes the `IMiddlewarePipelineBuilder<AwsEventStreamContext>` directly
-> instead of going through `IBenzeneApplicationBuilder`/`UseAwsLambda`. Use `BenzeneStartUp` for
-> everything, since it also runs unchanged on other Benzene hosts (see
-> [Azure Functions Setup](azure-functions)).
+> This is the platform-neutral pattern used by every Benzene host — the
+> [`examples/Aws`](../examples/Aws) project follows exactly this shape. Only the AWS-specific event
+> wiring lives inside `UseAwsLambda(...)`; the same `StartUp` runs unchanged on other Benzene hosts
+> (see [Azure Functions Setup](azure-functions)).
 
 ## 5. Wire up the Lambda entry point
 
@@ -195,7 +192,7 @@ come from the matching `Benzene.Aws.Lambda.Sqs.TestHelpers`/`Benzene.Aws.Lambda.
 packages, and a topic-routed `BenzeneMessage` (no specific transport) can be sent directly via
 `SendBenzeneMessageAsync` from `Benzene.Core.MessageHandlers.TestHelpers`, if your `Configure`
 wires up `UseBenzeneMessage(...)`. See [Testing Benzene](testing-benzene) for the full pattern,
-including configuration/service overrides and the legacy `AwsLambdaStartUp` test path.
+including configuration/service overrides.
 
 ## 7. Deploy with SAM
 

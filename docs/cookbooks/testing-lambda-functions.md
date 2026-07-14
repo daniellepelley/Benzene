@@ -390,14 +390,6 @@ override to confirm, per
 
 ## Variations
 
-### Testing the legacy `AwsLambdaStartUp`
-
-If your function still uses the older, AWS-only `AwsLambdaStartUp` base class instead of the
-platform-neutral `BenzeneStartUp` used above, use `AwsLambdaBenzeneTestStartUp<TStartUp>` instead of
-`BenzeneTestHost` — see
-[Testing Benzene: Testing a legacy `AwsLambdaStartUp`-based app](../testing-benzene.md#testing-a-legacy-awslambdastartup-based-app)
-for the equivalent pattern.
-
 ### Asserting on invocation identity
 
 If your pipeline adds `.UseBenzeneInvocation()` on the outer `eventPipeline` (see

@@ -19,7 +19,7 @@ complete diff of every alpha release.
 | `UseMessageRouter(...)` | `UseMessageHandlers(...)` |
 | `IServiceResult<T>` / `HandlerResult` | `IBenzeneResult<T>` / `BenzeneResult` (static factory: `BenzeneResult.Ok(...)`, `.NotFound<T>()`, etc.) |
 | `UseElementsLogContext()` | `UseLogResult(x => x.WithCorrelationId())` or `UseLogContext(...)` |
-| `TestAwsLambdaStartUp<TStartUp>` | `AwsLambdaBenzeneTestStartUp<TStartUp>` |
+| `TestAwsLambdaStartUp<TStartUp>` | `BenzeneTestHost.Create<TStartUp>()` |
 | `testHost.SendEventAsync<T>(...)` | `testHost.SendBenzeneMessageAsync(...)` (built via `MessageBuilder.Create(topic, message)`) |
 | `Benzene.Core.MiddlewareBuilder` (namespace) | `Benzene.Core.Middleware` |
 | `AwsEventStreamPipelineBuilder` | `MiddlewarePipelineBuilder<AwsEventStreamContext>` |
@@ -136,12 +136,15 @@ public class StartUp : BenzeneStartUp
 
 The pre-1.0 host-specific startup base classes — `AwsLambdaStartUp` /
 `AwsLambdaStartUp<TContainer>` (AWS) and `BenzeneWorkerStartup` /
-`BenzeneHostedServiceStartup` (worker) — are now **`[Obsolete]`**: they still
-compile and run, but emit a deprecation warning. Migrate to `BenzeneStartUp`
-(whose `Configure` takes `IBenzeneApplicationBuilder`) hosted via
-`AwsLambdaHost<TStartUp>` / `IHostBuilder.UseBenzene<TStartUp>()`. `BenzeneStartUp`
-is the recommended path for all services and the only way to share one StartUp
-across multiple hosts.
+`BenzeneHostedServiceStartup` (worker) — **have been removed**. Migrate to
+`BenzeneStartUp` (whose `Configure` takes `IBenzeneApplicationBuilder`) hosted via
+`AwsLambdaHost<TStartUp>` for AWS or `IHostBuilder.UseBenzene<TStartUp>()` for
+workers. `BenzeneStartUp` is the path for all services and the only way to share one
+StartUp across multiple hosts. On AWS, the built pipeline is now a separate
+`public class Function : AwsLambdaHost<StartUp> { }` entry point (point the Lambda
+handler at `<Assembly>::<Namespace>.Function::FunctionHandlerAsync`); the worker
+transports (Kafka, `SelfHost.Http`, the SQS polling consumer) move inside
+`app.UseWorker(worker => worker.UseKafka(...))`.
 
 Testing gets a matching unified entry point — see
 [`BenzeneTestHost`](#new-unified-test-host-benzenetesthost) below.
@@ -309,11 +312,10 @@ per-platform test wiring for `BenzeneStartUp`-based apps: it runs
 `GetConfiguration` → applies `WithConfiguration(...)` overrides →
 `ConfigureServices` → applies `WithServices(...)` overrides, then hands off
 to a platform-specific `Build*()` bridge (`BuildAwsLambdaHost()`,
-`BuildAzureFunctionApp()`, ...). This is purely additive — the pre-1.0,
-`AwsLambdaStartUp`-specific `AwsLambdaBenzeneTestStartUp<TStartUp>` keeps
-working and is documented as the "legacy" path in
-[Testing Benzene](testing-benzene) for the many existing tests/examples still
-built on it.
+`BuildAzureFunctionApp()`, ...). It is now the standard test-host entry point for a
+`BenzeneStartUp`; the pre-1.0, `AwsLambdaStartUp`-specific test helpers targeted the
+removed startup classes, so services now test through `BenzeneTestHost` instead. See
+[Testing Benzene](testing-benzene) for the full guide.
 
 ## Other notable behavior changes
 
