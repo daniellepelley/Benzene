@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Benzene Mesh Explorer</title>
+<style>
+  /* ---------- Design tokens (mirrors Benzene.Spec.Ui's spec-ui.html verbatim, for visual
+     consistency across Benzene's UI family) ---------- */
+  :root {
+    color-scheme: light dark;
+
+    --bg:        #eef0f6;
+    --surface:   #ffffff;
+    --surface-2: #f5f6fb;
+    --sunken:    #eceef6;
+    --ink:       #1b1d2a;
+    --ink-soft:  #4a4e63;
+    --ink-faint: #767b93;
+    --line:      #dde0ee;
+    --line-soft: #e8eaf4;
+
+    --accent:      #5b54f0;
+    --accent-ink:  #ffffff;
+    --accent-tint: #ecebfe;
+    --accent-soft: #6a63f5;
+
+    --m-get:    #2f6fed;  --m-get-bg:    #e6efff;
+    --m-post:   #159a6b;  --m-post-bg:   #e2f6ee;
+    --m-put:    #c47d10;  --m-put-bg:    #fbf0da;
+    --m-patch:  #0d94a8;  --m-patch-bg:  #dcf4f7;
+    --m-delete: #d6453f;  --m-delete-bg: #fce4e3;
+    --m-msg:    #6a54c9;  --m-msg-bg:    #ece7fa;
+    --m-event:  #b0338f;  --m-event-bg:  #fbe3f2;
+
+    --req:      #d6453f;
+    --ok:       #159a6b;
+    --chip-bg:  #eceef8;
+    --chip-ink: #414763;
+
+    --radius: 11px;
+    --radius-sm: 7px;
+    --shadow: 0 1px 2px rgba(24,27,49,.05), 0 8px 24px -14px rgba(24,27,49,.28);
+    --mono: "JetBrains Mono","SFMono-Regular","SF Mono",Menlo,Consolas,"Cascadia Code",ui-monospace,monospace;
+    --sans: ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #0e0f17;
+      --surface:   #171926;
+      --surface-2: #1c1f2e;
+      --sunken:    #12131d;
+      --ink:       #e7e8f2;
+      --ink-soft:  #a9adc6;
+      --ink-faint: #6e7391;
+      --line:      #262a3d;
+      --line-soft: #20233284;
+
+      --accent:      #8a83ff;
+      --accent-ink:  #0e0f17;
+      --accent-tint: #211f45;
+      --accent-soft: #9a93ff;
+
+      --m-get:    #6ea0ff;  --m-get-bg:    #16233f;
+      --m-post:   #46c98f;  --m-post-bg:   #133026;
+      --m-put:    #e0a848;  --m-put-bg:    #33270f;
+      --m-patch:  #3cc3d6;  --m-patch-bg:  #0f2c31;
+      --m-delete: #f4756f;  --m-delete-bg: #351b1a;
+      --m-msg:    #a693ff;  --m-msg-bg:    #221d3d;
+      --m-event:  #eb74c4;  --m-event-bg:  #331833;
+
+      --req:      #f4756f;
+      --ok:       #46c98f;
+      --chip-bg:  #232739;
+      --chip-ink: #b6bad4;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -18px rgba(0,0,0,.8);
+    }
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg:#eef0f6; --surface:#ffffff; --surface-2:#f5f6fb; --sunken:#eceef6;
+    --ink:#1b1d2a; --ink-soft:#4a4e63; --ink-faint:#767b93; --line:#dde0ee; --line-soft:#e8eaf4;
+    --accent:#5b54f0; --accent-ink:#ffffff; --accent-tint:#ecebfe; --accent-soft:#6a63f5;
+    --m-get:#2f6fed;--m-get-bg:#e6efff;--m-post:#159a6b;--m-post-bg:#e2f6ee;--m-put:#c47d10;--m-put-bg:#fbf0da;
+    --m-patch:#0d94a8;--m-patch-bg:#dcf4f7;--m-delete:#d6453f;--m-delete-bg:#fce4e3;
+    --m-msg:#6a54c9;--m-msg-bg:#ece7fa;--m-event:#b0338f;--m-event-bg:#fbe3f2;
+    --req:#d6453f;--ok:#159a6b;--chip-bg:#eceef8;--chip-ink:#414763;
+    --shadow:0 1px 2px rgba(24,27,49,.05),0 8px 24px -14px rgba(24,27,49,.28);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#0e0f17; --surface:#171926; --surface-2:#1c1f2e; --sunken:#12131d;
+    --ink:#e7e8f2; --ink-soft:#a9adc6; --ink-faint:#6e7391; --line:#262a3d; --line-soft:#202332;
+    --accent:#8a83ff; --accent-ink:#0e0f17; --accent-tint:#211f45; --accent-soft:#9a93ff;
+    --m-get:#6ea0ff;--m-get-bg:#16233f;--m-post:#46c98f;--m-post-bg:#133026;--m-put:#e0a848;--m-put-bg:#33270f;
+    --m-patch:#3cc3d6;--m-patch-bg:#0f2c31;--m-delete:#f4756f;--m-delete-bg:#351b1a;
+    --m-msg:#a693ff;--m-msg-bg:#221d3d;--m-event:#eb74c4;--m-event-bg:#331833;
+    --req:#f4756f;--ok:#46c98f;--chip-bg:#232739;--chip-ink:#b6bad4;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  code, .mono { font-family: var(--mono); font-feature-settings: "liga" 0; }
+
+  /* ---------- Top bar ---------- */
+  header.topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 18px;
+    padding: 12px 22px;
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand svg { display: block; flex: none; }
+  .brand .ring { color: var(--accent); }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .brand-text b { font-size: 15px; letter-spacing: -.01em; }
+  .brand-text span { font-size: 11.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .14em; }
+
+  .doc-meta { margin-left: 6px; padding-left: 18px; border-left: 1px solid var(--line); min-width: 0; }
+  .doc-meta .t { font-weight: 640; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-meta .v { font-size: 12.5px; color: var(--ink-faint); font-family: var(--mono); }
+
+  .topbar .grow { flex: 1 1 auto; }
+
+  .tb-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 34px; padding: 0 13px;
+    background: var(--surface-2); color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 13px; cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .tb-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .tb-btn svg { width: 15px; height: 15px; }
+  .tb-btn:focus-visible, a:focus-visible, input:focus-visible, .svc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Main ---------- */
+  main { padding: 26px clamp(18px, 4vw, 44px) 90px; max-width: 1080px; margin: 0 auto; }
+
+  .lede { margin-bottom: 22px; }
+  .lede h1 { margin: 0 0 6px; font-size: 25px; letter-spacing: -.02em; text-wrap: balance; }
+  .lede p { margin: 0; color: var(--ink-soft); max-width: 62ch; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 24px; }
+  .stat {
+    flex: 1 1 130px; min-width: 130px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 23px; font-weight: 680; font-family: var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); margin-top: 1px; }
+  .stat.accent .n { color: var(--accent); }
+  .stat.ok .n { color: var(--ok); }
+  .stat.warn .n { color: var(--m-put); }
+  .stat.req .n { color: var(--req); }
+
+  .search { position: relative; margin-bottom: 20px; max-width: 360px; }
+  .search input {
+    width: 100%; height: 36px; padding: 0 12px 0 34px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 13.5px;
+  }
+  .search input::placeholder { color: var(--ink-faint); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
+
+  /* ---------- Service card ---------- */
+  .svc {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    margin-bottom: 11px; overflow: hidden; box-shadow: var(--shadow);
+    transition: border-color .13s;
+  }
+  .svc.open { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .svc-head {
+    display: flex; align-items: center; gap: 13px; flex-wrap: wrap;
+    padding: 13px 15px; cursor: pointer; user-select: none;
+  }
+  .svc-head:hover { background: var(--surface-2); }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    padding: 3px 8px; border-radius: 5px; text-transform: uppercase; line-height: 1.35;
+  }
+  .b-healthy { color: var(--ok); background: var(--m-post-bg); }
+  .b-unhealthy { color: var(--m-put); background: var(--m-put-bg); }
+  .b-unreachable { color: var(--req); background: var(--m-delete-bg); }
+  .b-drift { color: var(--m-event); background: var(--m-event-bg); }
+  .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 620; letter-spacing: -.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .svc-links { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; font-size: 12px; }
+  .svc-links a { color: var(--accent); text-decoration: none; }
+  .svc-links a:hover { text-decoration: underline; }
+  .chev { flex: none; color: var(--ink-faint); transition: transform .16s; }
+  .svc.open .chev { transform: rotate(90deg); }
+
+  .svc-body { display: none; padding: 4px 15px 17px; border-top: 1px solid var(--line-soft); }
+  .svc.open .svc-body { display: block; }
+  .svc-body .loading, .svc-body .error { color: var(--ink-faint); font-size: 12.5px; font-family: var(--mono); padding: 10px 0; }
+  .svc-body .error { color: var(--req); }
+
+  .check {
+    display: block; border-top: 1px solid var(--line-soft); padding: 10px 0;
+  }
+  .check:first-child { border-top: none; }
+  .check-row { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .check-row .cname { font-family: var(--mono); font-size: 13px; font-weight: 620; color: var(--ink); }
+  .check-row .ctype { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .chips { display: inline-flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 5px; background: var(--chip-bg); color: var(--chip-ink);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.5;
+  }
+  .chip b { font-weight: 700; color: var(--ink); }
+  .chip.dep { background: var(--accent-tint); color: var(--accent); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
+  .empty-state .mono { color: var(--ink-soft); }
+
+  /* Load dialog */
+  dialog.loader {
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow); width: min(520px, 92vw);
+  }
+  dialog.loader::backdrop { background: rgba(10,11,20,.5); backdrop-filter: blur(2px); }
+  .loader .ld-head { padding: 16px 18px 4px; }
+  .loader h3 { margin: 0 0 3px; font-size: 16px; }
+  .loader p { margin: 0; color: var(--ink-faint); font-size: 13px; }
+  .loader .ld-body { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .loader label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .loader input[type=url], .loader textarea {
+    width: 100%; font-family: var(--mono); font-size: 12.5px; color: var(--ink);
+    background: var(--sunken); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 11px;
+  }
+  .loader textarea { min-height: 120px; resize: vertical; }
+  .loader .ld-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .loader .primary { background: var(--accent); color: var(--accent-ink); border: none; }
+  .loader .primary:hover { background: var(--accent-soft); }
+  .ld-err { color: var(--req); font-size: 12.5px; font-family: var(--mono); min-height: 16px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="ring" width="26" height="28" viewBox="0 0 26 28" fill="none" aria-hidden="true">
+      <path d="M13 1.5 24 7.9v12.2L13 26.5 2 20.1V7.9L13 1.5Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/>
+      <circle cx="13" cy="14" r="5.2" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".55"/>
+    </svg>
+    <div class="brand-text">
+      <b>Benzene</b><span>Mesh Explorer</span>
+    </div>
+  </div>
+  <div class="doc-meta">
+    <div class="t" id="doc-title">&nbsp;</div>
+    <div class="v" id="doc-generated">&nbsp;</div>
+  </div>
+  <div class="grow"></div>
+  <button class="tb-btn" id="load-btn" title="Load a different manifest">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    <span>Load manifest</span>
+  </button>
+  <button class="tb-btn" id="theme-btn" title="Toggle theme" aria-label="Toggle theme">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M6 6 4.6 4.6M19.4 19.4 18 18M18 6l1.4-1.4M4.6 19.4 6 18"/></svg>
+  </button>
+</header>
+
+<main>
+  <div class="lede">
+    <h1 id="lede-title">Benzene Mesh Explorer</h1>
+    <p id="lede-desc">Every service's health status and contract-drift state, in one place.</p>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+    <input type="search" id="filter" placeholder="Filter services…" autocomplete="off" spellcheck="false" />
+  </div>
+  <div id="content"></div>
+</main>
+
+<dialog class="loader" id="loader">
+  <form method="dialog">
+    <div class="ld-head">
+      <h3>Load a mesh manifest</h3>
+      <p>Point at a published manifest.json, or paste the JSON directly.</p>
+    </div>
+    <div class="ld-body">
+      <div>
+        <label for="ld-url">Fetch from URL</label>
+        <input type="url" id="ld-url" placeholder="https://your-mesh/manifest.json" />
+      </div>
+      <div>
+        <label for="ld-json">…or paste manifest JSON</label>
+        <textarea id="ld-json" spellcheck="false" placeholder='{ "generatedAtUtc": "...", "services": [ … ] }'></textarea>
+      </div>
+      <div class="ld-err" id="ld-err"></div>
+      <div class="ld-actions">
+        <button class="tb-btn" value="cancel" type="submit">Cancel</button>
+        <button class="tb-btn primary" id="ld-apply" type="button">Load</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script id="benzene-mesh-data" type="application/json">
+{
+  "generatedAtUtc": "2026-07-14T12:00:00Z",
+  "services": [
+    {
+      "name": "orders-api",
+      "status": "healthy",
+      "contractDrift": false,
+      "specUrl": "https://orders-api.example/spec?type=benzene",
+      "healthUrl": "https://orders-api.example/healthcheck"
+    },
+    {
+      "name": "payments-api",
+      "status": "unhealthy",
+      "contractDrift": true,
+      "specUrl": "https://payments-api.example/spec?type=benzene",
+      "healthUrl": "https://payments-api.example/healthcheck"
+    },
+    {
+      "name": "shipping-api",
+      "status": "unreachable",
+      "contractDrift": false,
+      "specUrl": "https://shipping-api.example/spec?type=benzene",
+      "healthUrl": "https://shipping-api.example/healthcheck"
+    }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var manifest = {};
+  var manifestUrl = null;
+  var detailCache = {};
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById("theme-btn");
+  themeBtn.addEventListener("click", function () {
+    var root = document.documentElement;
+    var current = root.getAttribute("data-theme");
+    if (!current) current = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    root.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+  });
+
+  /* ---------- helpers ---------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function statusBadgeClass(status) {
+    return { healthy: "b-healthy", unhealthy: "b-unhealthy", unreachable: "b-unreachable" }[status] || "b-unhealthy";
+  }
+  function resolveUrl(relative) {
+    try { return new URL(relative, manifestUrl || location.href).toString(); }
+    catch (e) { return relative; }
+  }
+  /* Best-effort: derive a Benzene.Spec.Ui link from a service's specUrl - not guaranteed to
+     resolve for every hosting layout, since it assumes /spec-ui sits next to /spec on the same
+     host. */
+  function specUiLink(specUrl) {
+    try {
+      var u = new URL(specUrl, location.href);
+      var specUiPath = u.pathname.replace(/\/spec$/, "/spec-ui");
+      if (specUiPath === u.pathname) return null;
+      return u.origin + specUiPath + "?url=" + encodeURIComponent(specUrl);
+    } catch (e) { return null; }
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    var services = manifest.services || [];
+    document.getElementById("doc-title").textContent = "Service Mesh";
+    document.getElementById("doc-generated").textContent = manifest.generatedAtUtc
+      ? "generated " + manifest.generatedAtUtc : "";
+
+    var counts = { healthy: 0, unhealthy: 0, unreachable: 0, drift: 0 };
+    services.forEach(function (s) {
+      if (s.status === "healthy") counts.healthy++;
+      else if (s.status === "unreachable") counts.unreachable++;
+      else counts.unhealthy++;
+      if (s.contractDrift) counts.drift++;
+    });
+
+    var stats = document.getElementById("stats");
+    stats.innerHTML = "";
+    [
+      ["accent", services.length, services.length === 1 ? "Service" : "Services"],
+      ["ok", counts.healthy, "Healthy"],
+      ["warn", counts.unhealthy, "Unhealthy"],
+      ["req", counts.unreachable, "Unreachable"],
+      ["warn", counts.drift, "Contract drift"]
+    ].forEach(function (t) {
+      var c = el("div", "stat" + (t[0] ? " " + t[0] : ""));
+      c.appendChild(el("div", "n", String(t[1])));
+      c.appendChild(el("div", "l", t[2]));
+      stats.appendChild(c);
+    });
+
+    var content = document.getElementById("content");
+    content.innerHTML = "";
+
+    if (!services.length) {
+      var es = el("div", "empty-state");
+      es.innerHTML = 'Nothing to show. <span class="mono">Load a mesh manifest</span> to see registered services.';
+      content.appendChild(es);
+      return;
+    }
+
+    services.forEach(function (s) { content.appendChild(buildServiceCard(s)); });
+  }
+
+  function buildServiceCard(svc) {
+    var card = el("article", "svc");
+    card.tabIndex = 0;
+
+    var head = el("div", "svc-head");
+    head.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
+    if (svc.contractDrift) head.appendChild(el("span", "badge b-drift", "drift"));
+    head.appendChild(el("span", "svc-name", svc.name));
+
+    var links = el("div", "svc-links");
+    if (svc.specUrl) { var a1 = el("a", null, "spec"); a1.href = svc.specUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
+    if (svc.healthUrl) { var a2 = el("a", null, "health"); a2.href = svc.healthUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
+    var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
+    if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; a3.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a3); }
+    head.appendChild(links);
+
+    var chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chev.setAttribute("class", "chev"); chev.setAttribute("width", "16"); chev.setAttribute("height", "16");
+    chev.setAttribute("viewBox", "0 0 24 24"); chev.setAttribute("fill", "none");
+    chev.setAttribute("stroke", "currentColor"); chev.setAttribute("stroke-width", "2.2");
+    chev.innerHTML = '<path d="m9 6 6 6-6 6"/>';
+    head.appendChild(chev);
+    card.appendChild(head);
+
+    var body = el("div", "svc-body");
+    card.appendChild(body);
+
+    var loaded = false;
+    function toggle() {
+      card.classList.toggle("open");
+      if (card.classList.contains("open") && !loaded) {
+        loaded = true;
+        loadDetail(svc, body);
+      }
+    }
+    head.addEventListener("click", toggle);
+    card.addEventListener("keydown", function (e) {
+      if ((e.key === "Enter" || e.key === " ") && e.target === card) { e.preventDefault(); toggle(); }
+    });
+
+    return card;
+  }
+
+  function loadDetail(svc, body) {
+    body.innerHTML = "";
+    body.appendChild(el("div", "loading", "Loading health check detail…"));
+
+    var cached = detailCache[svc.name];
+    var promise = cached || fetch(resolveUrl("services/" + encodeURIComponent(svc.name) + ".json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+    detailCache[svc.name] = promise;
+
+    promise.then(function (snapshot) {
+      body.innerHTML = "";
+      if (snapshot.error) {
+        body.appendChild(el("div", "error", "Last fetch error: " + snapshot.error));
+      }
+      var checks = (snapshot.health && snapshot.health.healthChecks) || {};
+      var keys = Object.keys(checks);
+      if (!keys.length) {
+        body.appendChild(el("div", "loading", "No health check detail available."));
+        return;
+      }
+      keys.forEach(function (key) {
+        var c = checks[key];
+        var row = el("div", "check");
+        var head = el("div", "check-row");
+        head.appendChild(el("span", "cname", key));
+        head.appendChild(el("span", "ctype", c.type || ""));
+        head.appendChild(el("span", "badge " + statusBadgeClass(c.status === "ok" ? "healthy" : c.status === "failed" ? "unreachable" : "unhealthy"), c.status || ""));
+        row.appendChild(head);
+
+        var chips = el("div", "chips");
+        (c.dependencies || []).forEach(function (d) {
+          var chip = el("span", "chip dep");
+          chip.appendChild(document.createTextNode(d.kind + " "));
+          chip.appendChild(el("b", null, d.name));
+          chips.appendChild(chip);
+        });
+        if (chips.childNodes.length) row.appendChild(chips);
+        body.appendChild(row);
+      });
+    }).catch(function (ex) {
+      body.innerHTML = "";
+      body.appendChild(el("div", "error", "Could not load detail: " + (ex.message || ex)));
+    });
+  }
+
+  /* ---------- filter ---------- */
+  document.getElementById("filter").addEventListener("input", function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(".svc").forEach(function (card) {
+      var name = (card.querySelector(".svc-name") || {}).textContent || "";
+      card.style.display = (!q || name.toLowerCase().indexOf(q) >= 0) ? "" : "none";
+    });
+  });
+
+  /* ---------- loader dialog ---------- */
+  var loader = document.getElementById("loader");
+  document.getElementById("load-btn").addEventListener("click", function () {
+    document.getElementById("ld-err").textContent = "";
+    if (typeof loader.showModal === "function") loader.showModal();
+  });
+  document.getElementById("ld-apply").addEventListener("click", function () {
+    var url = document.getElementById("ld-url").value.trim();
+    var json = document.getElementById("ld-json").value.trim();
+    var err = document.getElementById("ld-err");
+    err.textContent = "";
+    if (json) {
+      try { applyManifest(JSON.parse(json), null); loader.close(); }
+      catch (ex) { err.textContent = "Invalid JSON: " + ex.message; }
+      return;
+    }
+    if (url) {
+      fetchManifest(url).then(function () { loader.close(); }).catch(function (ex) { err.textContent = String(ex.message || ex); });
+      return;
+    }
+    err.textContent = "Enter a URL or paste JSON.";
+  });
+
+  function applyManifest(obj, url) {
+    manifest = obj || {};
+    manifestUrl = url;
+    detailCache = {};
+    render();
+  }
+  function fetchManifest(url) {
+    return fetch(url, { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching manifest"); return r.text(); })
+      .then(function (txt) { applyManifest(JSON.parse(txt), url); });
+  }
+
+  /* ---------- boot: ?url= param -> data-manifest-url attribute -> ./manifest.json -> embedded sample ---------- */
+  (function boot() {
+    var params = new URLSearchParams(location.search);
+    var url = params.get("url") || (document.currentScript && document.currentScript.dataset.manifestUrl);
+    var rootUrl = document.documentElement.getAttribute("data-manifest-url");
+    url = url || rootUrl;
+    if (url) { fetchManifest(url).catch(function () { bootInline(); }); return; }
+    // Neither an explicit URL nor a baked-in attribute - try the conventional relative path, since
+    // the realistic static-hosting deployment is this page sitting right next to the aggregator's
+    // published manifest.json with no query param or build step at all.
+    fetchManifest("manifest.json").catch(function () { bootInline(); });
+  })();
+  function bootInline() {
+    var tag = document.getElementById("benzene-mesh-data");
+    if (tag && tag.textContent.trim()) {
+      try { applyManifest(JSON.parse(tag.textContent), null); return; } catch (e) { /* fall through */ }
+    }
+    applyManifest({}, null);
+  }
+})();
+</script>
+</body>
+</html>

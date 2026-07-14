@@ -1,7 +1,50 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
-**Status:** DRAFT — design fleshed out per 2026-07-14 direction (Tempo chosen as the first
-trace backend; full design requested before any code lands), still nothing implemented
+**Status:** IN PROGRESS.
+> **2026-07-14 implementation update:** Phase 0 (§4.1, structured `HealthCheckDependency`) is
+> done and on `main`. Phase 1 is **partially** done, as `Benzene.Mesh.Contracts` +
+> `Benzene.Mesh.Aggregator`, with some deliberate deviations from this document's original
+> sketch, flagged here rather than silently diverging:
+> - The aggregator polls each registered service's live `/spec` + `/health` endpoint (per §4.2's
+>   "simpler" recommendation) and publishes to **local disk** only (`IMeshArtifactStore` port +
+>   `FileSystemMeshArtifactStore`) — no S3/Azure Blob adapter yet, though the interface is
+>   designed so one is a drop-in addition, not a rewrite.
+> - `services/{name}.json` stores the raw spec JSON **verbatim as an opaque string**, not
+>   deserialized into `EventServiceDocument` — §7.2's proposed shape assumed structural parsing,
+>   but contract-drift detection only needs a hash of the raw text, so `Benzene.Mesh.Contracts`
+>   takes no dependency on `Benzene.Schema.OpenApi` (a deviation from §8's package table).
+> - **Contract drift detection (the first half of Phase 2) is already done**, not just Phase 1 —
+>   the aggregator hashes each fetch and compares against the previous run's hash
+>   (`MeshHashing`, deliberately reimplementing rather than depending on
+>   `Benzene.CodeGen.Core.CodeGenHelpers.GenerateHash`'s identical algorithm, to keep a runtime
+>   aggregator's dependency graph clean — a cross-check test keeps the two in sync).
+> - `topology.json`/edge derivation is **not built** — deliberately deferred, since the
+>   "structural edges from generated `CodeGen.Client`s" idea in §4.6 isn't observable at runtime
+>   by an HTTP-polling aggregator (it's a compile-time/source fact); a workable alternative
+>   (matching `HealthCheckDependency` entries against other registered services' identifiers)
+>   is a real design question of its own, not yet done.
+> - Per an explicit "dogfood Benzene" steer: the aggregator is exposed as a genuine Benzene
+>   message handler (`[Message("mesh:aggregate")]`/`[HttpEndpoint("POST", "/mesh/aggregate")]`),
+>   not a bare service class or standalone CLI — a design choice this document didn't
+>   anticipate.
+> - **The Mesh UI is now built** (`Benzene.Mesh.Ui`), closing "Phase 2: surfaced in the UI." It
+>   mirrors `Benzene.Spec.Ui`'s exact shape (`MeshUiPage`/`MeshUiMiddleware`/`MeshUiExtensions`,
+>   same embedded-HTML/theming/boot-precedence pattern), but its *primary* deployment target is a
+>   plain static file host serving `mesh-ui.html` alongside the aggregator's generated
+>   `manifest.json`/`services/*.json` — unlike Spec.Ui, there's usually no single live service to
+>   serve it from, since the aggregator's output is meant to be published somewhere and read from
+>   wherever it lands. The `UseMeshUi` middleware exists as a secondary convenience (local demo,
+>   or an aggregator host self-serving its own dashboard), not the main path. Scope: service
+>   catalog (health status + contract-drift badges), expandable per-service health-check detail
+>   (lazy `fetch` of `services/{name}.json`), search/filter, theme toggle, a "load a different
+>   manifest" dialog, and a best-effort link out to each service's own `/spec-ui` derived from its
+>   `specUrl`. **No topology/graph rendering** — `topology.json` doesn't exist yet (see above);
+>   this is catalog/health/drift only, matching the roadmap's own observation that "Phases 1-2
+>   alone already deliver most of what was asked... the smallest useful v1."
+>
+> **Phase 0, Phase 1's data-pipeline half, and Phase 2 are now complete** by this reading. Phase
+> 1's `topology.json`/edge-derivation gap and Phase 3 (live Tempo trace overlay) remain open, as
+> does Phase 4 (field-level contract compatibility) and Phase 5 (polish).
 **Owner:** unassigned
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who
