@@ -263,6 +263,8 @@ shape of the incoming payload:
   self-managed Kafka)
 - **S3**: `eventPipeline.UseS3(...)`, in `Benzene.Aws.Lambda.S3` (object-created/removed
   event notifications, fire-and-forget)
+- **Kinesis**: `eventPipeline.UseKinesisStream(...)`, in `Benzene.Aws.Lambda.Kinesis` (Data
+  Streams; the whole batch is processed as one ordered *stream*, not fanned out per record)
 
 ### SQS
 
@@ -336,6 +338,38 @@ eventPipeline.UseS3(s3App => s3App
 Like SNS, S3 invokes via a resource-based permission plus a bucket notification
 configuration — no extra execution-role IAM needed to receive. S3 event notifications
 are fire-and-forget: no response is written back, since S3 doesn't expect one.
+
+### Kinesis (streaming)
+
+Kinesis is different from the transports above: it's a **streaming** source, so the whole batch
+is handed to your pipeline as one ordered stream rather than fanned out into a handler per record.
+This preserves per-shard ordering and lets you window and aggregate — the things a fan-out model
+throws away.
+
+```csharp
+eventPipeline.UseKinesisStream(kinesis => kinesis
+    .UseStream<KinesisEventRecord>(async (records, ct) =>
+    {
+        // records within a partition key are in shard order
+        await foreach (var partition in records.PartitionBy(r => r.Kinesis.PartitionKey, ct))
+        {
+            foreach (var record in partition.Value)
+            {
+                var payload = record.Kinesis.GetDataAsString();
+                // ... process
+            }
+        }
+    }));
+```
+
+The handler receives an `IAsyncEnumerable<KinesisEventRecord>` — pull records lazily (backpressure),
+decode each with `record.Kinesis.GetData()` / `GetDataAsString()`, and use the stream operators
+`PartitionBy(...)` (restore per-shard order the poller batched together) and `Window(n)` (fixed-size
+batches). Processing is fire-and-forget; the Lambda poller checkpoints the shard on success. This is
+the AWS counterpart to the Azure Event Hubs streaming binding. See
+[AWS IAM Permissions](aws-iam-permissions) for the stream-consumer permissions the event source
+mapping needs (`kinesis:GetRecords`, `kinesis:GetShardIterator`, `kinesis:DescribeStream`,
+`kinesis:ListShards`).
 
 ## IAM Permissions
 
