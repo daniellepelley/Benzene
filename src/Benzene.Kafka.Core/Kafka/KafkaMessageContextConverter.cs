@@ -45,10 +45,8 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
             return Task.CompletedTask;
         }
 
-        _messageHandlerResultSetter.SetResultAsync(contextIn,
+        return _messageHandlerResultSetter.SetResultAsync(contextIn,
             new MessageHandlerResult(new Topic(contextOut.Topic),
                 MessageHandlerDefinition.Empty(), BenzeneResult.Set("Ok")));
-
-        return Task.CompletedTask;
     }
 }

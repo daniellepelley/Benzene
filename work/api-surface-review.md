@@ -21,28 +21,47 @@
 > 3. **Both named bugs — ✅ fixed.** `BenzeneServiceContainerExtensions.cs`'s `TryAddSingleton(Type,Type)`
 >    correctly calls `AddSingleton` now (not `AddScoped`); `Extensions.cs`'s `Split` correctly captures
 >    `newApp` in its closure (not `app`). Both verified by reading the current source directly.
-> 4. **XML documentation — ⚠️ mostly done, 2 packages still genuinely at ~0%.** Of the 5 packages this
->    review marked "READY FOR 1.0 AFTER adding XML docs" (`Benzene.Abstractions`,
->    `.Abstractions.Middleware`, `Benzene.Core`, `Core.Middleware`, `Benzene.Http`), a clean rebuild
->    (`rm -rf obj bin` first, to avoid incremental-build cache masking warnings) with
->    `GenerateDocumentationFile=true` shows **4 of 5 at 0 CS1591 warnings**; `Benzene.Core.Middleware`
->    had 5 real gaps (`BenzeneApplicationBuilder`, added later by the cross-platform startup
->    unification and never documented) — **fixed in this pass**, now also 0 warnings. Of the 3 AWS
->    packages this review covered, `Benzene.Aws.Lambda.Core`, `.Kafka`, and `.ApiGateway` are all
->    already at 0 CS1591 warnings too (documented in an earlier session). **`Benzene.Abstractions.MessageHandlers`
->    and `Benzene.Core.MessageHandlers`** — the two packages this review marked "NEEDS WORK" — are
->    confirmed still genuinely undocumented (3/37 and 0/67 files with any `///` comment respectively,
->    and neither `.csproj` has `GenerateDocumentationFile` enabled at all, so there's no compiler
->    enforcement). This is real, substantial remaining work (107+ public types across 104 files) —
->    dispatched to two parallel background passes as part of this same audit; see the per-package
->    sections below for the outcome once that lands (this note will be updated, or check `git log` for
->    a same-day follow-up commit if reading this before that finishes).
-> 5. **Not attempted in this pass** (genuine judgment calls, not mechanical fixes — left for a
+> 4. **XML documentation — ✅ now complete for all 10 packages this review covers.** All 5 packages
+>    marked "READY FOR 1.0 AFTER adding XML docs" (`Benzene.Abstractions`, `.Abstractions.Middleware`,
+>    `Benzene.Core`, `Core.Middleware`, `Benzene.Http`) plus the 3 AWS packages are confirmed at 0
+>    CS1591 warnings on a clean rebuild (`Benzene.Core.Middleware` had 5 real gaps —
+>    `BenzeneApplicationBuilder`, added later by the cross-platform startup unification and never
+>    documented — fixed in this pass). The two packages this review marked "NEEDS WORK"
+>    (`Benzene.Abstractions.MessageHandlers`: 47 types/37 files; `Benzene.Core.MessageHandlers`: 60+
+>    types/66 files) were fully documented via two parallel background passes as part of this audit,
+>    both independently re-verified by a fresh clean rebuild (0 CS1591, 0 CS1574) and full test suite
+>    (713 passed, 4 skipped, matching baseline exactly — docs-only, no behavior change). Both `.csproj`
+>    files now have `GenerateDocumentationFile=true` for ongoing compiler enforcement.
+> 5. **New bug found and fixed while documenting `MessageRouter<TContext>`: missing `await` on
+>    `IMessageHandlerResultSetter.SetResultAsync` in 4 call sites** (`src/Benzene.Core.MessageHandlers/MessageRouter.cs`).
+>    `MessageRouter` is the terminal middleware for message-handler dispatch on every transport
+>    (`.UseMessageHandlers()`), and `SetResultAsync`'s job is to actually write the outbound
+>    response/result (confirmed: `ResponseMessageMessageHandlerResultSetterBase.SetResultAsync` awaits
+>    an `IResponseHandlerContainer.HandleAsync` call that builds status/headers/body). Firing it
+>    without `await` meant the pipeline could return before the response was fully written whenever a
+>    response handler did genuine async I/O, and any exception thrown inside it would go unobserved
+>    instead of surfacing. The same pattern (found via a repo-wide grep for
+>    `_messageHandlerResultSetter.SetResultAsync(` calls not preceded by `await`) existed in 3 more
+>    places, all fixed the same way: `src/Benzene.JsonSchema/JsonSchemaMiddleware.cs` (2 call sites),
+>    `src/Benzene.Kafka.Core/Kafka/KafkaMessageContextConverter.cs` (returned `Task.CompletedTask`
+>    while the real work ran unobserved — changed to return the actual task), and
+>    `src/Benzene.Http/Cors/CorsMiddleware.cs` (the call was inside a `private void` helper — made it
+>    `async Task` and awaited it from `HandleAsync`). Verified via full solution build (0 errors) and
+>    full test suite (713 passed, 4 skipped) after the fix — not a behavior change under test, since
+>    the existing tests apparently don't exercise a genuinely-async response handler, which is exactly
+>    how this went unnoticed; worth a maintainer follow-up to add a test that would have caught it
+>    (e.g. a response handler with an artificial `await Task.Yield()` to force non-synchronous
+>    completion).
+> 6. **Not attempted in this pass** (genuine judgment calls, not mechanical fixes — left for a
 >    maintainer decision, consistent with how this session has handled every other breaking-API-shaped
 >    question): reducing public API surface (marking implementation details `internal`), the naming
 >    issues (double "Message" in names, file/class mismatches, "Builder" vs "Build" inconsistency), and
 >    the 1.0 release-strategy recommendation (Option A/B/C) itself. Those remain open exactly as this
->    review originally framed them.
+>    review originally framed them. Two more filename/classname mismatches were newly found while
+>    documenting (beyond the ones this review already knew about): `BenzeneMessage/BenzeneBodyMapper.cs`
+>    actually defines `BenzeneMessageGetter`, and root `BenzeneMessageContext.cs` actually defines
+>    `MessageHandlerContext<TRequest, TResponse>` (the real `BenzeneMessageContext` lives in
+>    `Benzene.Core.Messages`) — both noted in `<remarks>` on the affected types rather than renamed.
 
 ---
 
@@ -182,11 +201,13 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
    - `IMessageHandlerResultSetter` - "Setter" implies mutation, is this the right abstraction?
 
 **Recommendation:** NOT READY FOR 1.0 UNTIL:
-1. Remove or relocate everything in ToDelete folder
-2. Add comprehensive XML documentation
-3. Consider reducing API surface by making some types internal
-4. Rename confusing types like `IRequestMapperThunk`
-5. Document the distinction between `IMessageHandlerBase` and `IMessageHandler`
+1. ✅ Remove or relocate everything in ToDelete folder — done, see 2026-07-14 note at top
+2. ✅ Add comprehensive XML documentation — done, see 2026-07-14 note at top (also
+   documents the `IMessageHandlerBase`/`IMessageHandler` distinction and clarifies
+   `IRequestMapperThunk`'s role in-place rather than renaming it)
+3. 🔸 Consider reducing API surface by making some types internal — still open, maintainer call
+4. 🔸 Rename confusing types like `IRequestMapperThunk` — still open, maintainer call (now documented instead)
+5. ✅ Document the distinction between `IMessageHandlerBase` and `IMessageHandler` — done
 
 ---
 
@@ -331,12 +352,18 @@ This review examined 10 core packages intended for the 1.0.0 release. The analys
    - `DefaultMessageMessageHandlerResultSetterBase` - Also has "Message" twice
 
 **Recommendation:** NOT READY FOR 1.0 UNTIL:
-1. Move test helpers to separate package or mark internal
-2. Add comprehensive XML documentation
-3. Significantly reduce public API surface by marking implementation details as internal
-4. Fix naming issues (double "Message", inconsistent conventions)
-5. Document serialization dependencies
-6. Consider splitting into multiple packages
+1. ✅ Move test helpers to separate package or mark internal — done, see 2026-07-14 note at top
+2. ✅ Add comprehensive XML documentation — done, see 2026-07-14 note at top; also caught
+   and fixed a real bug in the process (missing `await` on `SetResultAsync` in
+   `MessageRouter<TContext>` — see point 5 in the 2026-07-14 note)
+3. 🔸 Significantly reduce public API surface by marking implementation details as internal — still open, maintainer call
+4. 🔸 Fix naming issues (double "Message", inconsistent conventions) — still open, maintainer
+   call; the "double Message" names are now explicitly documented as intentional (not typos)
+   rather than renamed, and 2 more filename/classname mismatches were found (`BenzeneBodyMapper.cs`
+   defines `BenzeneMessageGetter`; root `BenzeneMessageContext.cs` defines `MessageHandlerContext<,>`)
+5. 🔸 Document serialization dependencies — partially done (XML docs now note the
+   `System.Text.Json` dependency on `JsonSerializer`); a dedicated docs page is still open
+6. 🔸 Consider splitting into multiple packages — still open, maintainer call
 
 ---
 
@@ -692,11 +719,9 @@ Ship core + message handlers at 1.0, keep AWS adapters at preview.
    fixed 3 more instances beyond this review's original 4 (see 2026-07-14 note above)
 3. ✅ Fix bugs in BenzeneServiceContainerExtensions.cs:120 and Extensions.cs:174 — verified
    2026-07-14, both read correctly in current source
-4. ⚠️ Add XML documentation to all public APIs — **was incorrectly marked done here; not
-   actually true as of 2026-07-14.** 8 of 10 packages this review covers are genuinely at
-   0 CS1591 warnings (verified via clean rebuild); `Benzene.Abstractions.MessageHandlers`
-   and `Benzene.Core.MessageHandlers` are still ~0% documented — see the 2026-07-14 note
-   at the top of this document for the in-progress fix
+4. ✅ Add XML documentation to all public APIs — genuinely true as of 2026-07-14 for all
+   10 packages this review covers (0 CS1591 warnings on a clean rebuild, verified for
+   each package individually); see the 2026-07-14 note at the top of this document
 
 ### Should Fix (Strongly Recommended)
 5. 🔸 Reduce public API surface by marking implementation details as internal
