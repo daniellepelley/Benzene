@@ -1,6 +1,6 @@
 # Benzene Observability Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Last Updated:** 2026-07-14
 **Owner:** Observability Product Team
 **Status:** DRAFT for Review
@@ -89,7 +89,10 @@
 >    `CorrelationId.cs`, most of `Timers/*`, the decorator/wrapper classes) and
 >    **all four `Benzene.HealthChecks*` packages (0 of 29 files have any `///`
 >    comment)** remain fully undocumented. Verified by grepping every `.cs`
->    file in each package for `///`.
+>    file in each package for `///`. **Superseded same day:** the second
+>    2026-07-14 follow-up below closed this exact gap for all 4 HealthChecks
+>    packages (`GenerateDocumentationFile=true`, 0 CS1591/CS1574 each) —
+>    `Benzene.Diagnostics`'s older files are the only documentation gap left.
 > 6. **Test coverage is real now, not "~6 test classes total across all
 >    observability packages."** `test/Benzene.Core.Test/Diagnostics/` +
 >    `Core/Diagnostics/` contain 6 test classes (`ActivityMiddlewareTest`,
