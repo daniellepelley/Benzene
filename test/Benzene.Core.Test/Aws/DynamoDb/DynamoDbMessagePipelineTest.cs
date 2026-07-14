@@ -1,18 +1,15 @@
 using System.Threading.Tasks;
-using Benzene.Abstractions;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Results;
-using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.DynamoDb;
 using Benzene.Aws.Lambda.DynamoDb.TestHelpers;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
+using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -31,35 +28,34 @@ public class ExampleOrderInsertedHandler : IMessageHandler<ExampleRequestPayload
 
 public class DynamoDbMessagePipelineTest
 {
-    private static IBenzeneTestHost BuildHost(System.Action<DynamoDbRecordContext> onResponse)
+    private static (DynamoDbApplication Application, MicrosoftServiceResolverFactory Factory) BuildApplication(
+        System.Action<DynamoDbRecordContext> onResponse)
     {
-        return new InlineAwsLambdaStartUp()
-            .ConfigureServices(services => services
-                .AddTransient<ILogger<MessageRouter<DynamoDbRecordContext>>>(_ => NullLogger<MessageRouter<DynamoDbRecordContext>>.Instance)
-                .AddTransient<ILogger>(_ => NullLogger.Instance)
-                .UsingBenzene(x => x
-                    .AddBenzene()
-                    .AddDynamoDb())
-            )
-            .Configure(app => app
-                .UseDynamoDb(dynamoDb => dynamoDb
-                    .OnResponse("Check Response", onResponse)
-                    .UseMessageHandlers()
-                )
-            ).BuildHost();
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<DynamoDbRecordContext>>>(_ => NullLogger<MessageRouter<DynamoDbRecordContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .UsingBenzene(x => x.AddDynamoDb());
+
+        var pipeline = new MiddlewarePipelineBuilder<DynamoDbRecordContext>(new MicrosoftBenzeneServiceContainer(services));
+        pipeline
+            .OnResponse("Check Response", onResponse)
+            .UseMessageHandlers();
+
+        return (new DynamoDbApplication(pipeline.Build()), new MicrosoftServiceResolverFactory(services));
     }
 
     [Fact]
     public async Task Send()
     {
         bool? isSuccessful = null;
-        var host = BuildHost(context => isSuccessful = context.IsSuccessful);
+        var (application, factory) = BuildApplication(context => isSuccessful = context.IsSuccessful);
 
         var request = MessageBuilder
             .Create("example-orders:INSERT", new ExampleRequestPayload { Name = "some-name" })
             .AsDynamoDb();
 
-        var batchResponse = await host.SendDynamoDbAsync(request);
+        var batchResponse = await application.HandleAsync(request, factory);
 
         Assert.True(isSuccessful);
         Assert.Empty(batchResponse.BatchItemFailures);
@@ -69,13 +65,13 @@ public class DynamoDbMessagePipelineTest
     public async Task Send_UnknownTopic_ReportsSequenceNumberAsBatchFailure()
     {
         bool? isSuccessful = null;
-        var host = BuildHost(context => isSuccessful = context.IsSuccessful);
+        var (application, factory) = BuildApplication(context => isSuccessful = context.IsSuccessful);
 
         var request = MessageBuilder
             .Create("example-orders:UNKNOWN", new ExampleRequestPayload { Name = "some-name" })
             .AsDynamoDb();
 
-        var batchResponse = await host.SendDynamoDbAsync(request);
+        var batchResponse = await application.HandleAsync(request, factory);
 
         Assert.False(isSuccessful);
         var failure = Assert.Single(batchResponse.BatchItemFailures);
