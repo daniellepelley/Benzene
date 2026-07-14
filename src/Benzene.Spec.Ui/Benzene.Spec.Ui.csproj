@@ -10,11 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <EmbeddedResource Include="spec-ui.html" LogicalName="Benzene.Spec.Ui.spec-ui.html" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="spec-ui.html" LogicalName="Benzene.Spec.Ui.spec-ui.html" />
+    <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
   </ItemGroup>
 
 </Project>

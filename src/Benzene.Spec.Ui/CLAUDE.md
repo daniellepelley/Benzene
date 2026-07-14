@@ -14,8 +14,20 @@ This package renders the spec; it does **not** generate it. Generation lives in
   - `GetHtml()` — the page as-is (falls back to an embedded sample spec, or a `?url=` query param).
   - `GetHtml(string specUrl)` — injects a `data-spec-url` onto the document root so the page fetches
     and renders that spec on load.
-- `SpecUiExtensions.UseBenzeneSpecUi(this IApplicationBuilder, path = "/spec-ui", specUrl = "/spec?type=benzene")`
-  — ASP.NET Core wiring that serves the page with `text/html` at `path`.
+- `SpecUiMiddleware<TContext> : IMiddleware<TContext> where TContext : IHttpContext` — transport-
+  agnostic HTTP middleware. On a GET/HEAD to its path it writes the page as `text/html` and
+  short-circuits; otherwise it calls `next`.
+- `SpecUiExtensions.UseSpecUi<TContext>(this IMiddlewarePipelineBuilder<TContext>, path = "/spec-ui", specUrl = "/spec?type=benzene")`
+  — registers the middleware on any Benzene HTTP pipeline.
+
+## Why it isn't ASP.NET-specific
+Most Benzene services run serverless (Lambda / Azure Functions), so serving must not bind to
+ASP.NET. `SpecUiMiddleware` emits the response by driving `IBenzeneResponseAdapter<TContext>`
+directly — `SetStatusCode("200")` → `SetContentType("text/html")` → `SetBody(html)` →
+`FinalizeAsync(context)` — and deliberately does **not** route through the message-result path
+(`IMessageHandlerResultSetter.SetResultAsync`), because that path's body handler forces
+`application/json` on ASP.NET. This is the same short-circuit shape as `CorsMiddleware<TContext>`
+and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-host.
 
 ## The viewer (`spec-ui.html`)
 - A single self-contained HTML file (inline CSS + vanilla JS, no external requests) embedded as a
@@ -28,12 +40,13 @@ This package renders the spec; it does **not** generate it. Generation lives in
 
 ## When to use this package
 - To give a running Benzene service a browsable spec page, alongside its `spec` endpoint.
-- Any HTTP transport can serve `SpecUiPage.GetHtml(...)` directly; `UseBenzeneSpecUi` is the
-  turnkey path for ASP.NET Core.
+- `UseSpecUi` is the turnkey path on any HTTP transport (Lambda, Functions, ASP.NET, self-host).
+  Any transport can also serve `SpecUiPage.GetHtml(...)` directly.
 
 ## Dependencies
-- `Microsoft.AspNetCore.App` (framework reference) — for the `UseBenzeneSpecUi` `IApplicationBuilder`
-  extension. `SpecUiPage` itself has no Benzene or ASP.NET dependencies.
+- `Benzene.Http` (project reference) — for the transport-agnostic HTTP abstractions
+  (`IHttpContext`, `IHttpRequestAdapter`, `IBenzeneResponseAdapter`, the middleware pipeline). No
+  ASP.NET / web-framework dependency. `SpecUiPage` alone has no Benzene dependencies at all.
 
 ## Conventions
 - Point the UI at the `benzene` spec type (`/spec?type=benzene`) — it is designed around the

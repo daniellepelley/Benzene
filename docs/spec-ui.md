@@ -15,26 +15,32 @@ around message **topics** rather than URL paths.
   length and numeric range, `pattern`, and `nullable` — shown as inline constraint chips, sourced
   from the same validation metadata the `benzene` spec projects onto each schema.
 
-## Serving it (ASP.NET Core)
+## Serving it
 
-Expose a spec endpoint with `UseSpec` and serve the UI alongside it:
+`UseSpecUi` is a transport-agnostic Benzene HTTP middleware — it works on **any** HTTP pipeline
+(AWS Lambda API Gateway, Azure Functions, ASP.NET Core, or the self-host server), which matters
+because most Benzene services run serverless. It has no ASP.NET dependency; it writes the page
+straight through Benzene's response adapter with `text/html`.
+
+Add it to your HTTP pipeline, before the message handlers, alongside a `spec` endpoint:
 
 ```csharp
-using Benzene.Spec.Ui;
+using Benzene.Schema.OpenApi;   // UseSpec
+using Benzene.Spec.Ui;          // UseSpecUi
 
-// The Benzene message pipeline exposes the spec on the "spec" topic,
-// mapped to GET /spec (see docs/spec.md).
-app.UseBenzene(benzene => benzene
-    .UseHttp(http => http
-        .UseSpec()
-        .UseMessageHandlers(x => x.UseFluentValidation())
-    )
+// AWS Lambda API Gateway (the same call works on Azure Functions, ASP.NET, self-host).
+app.UseApiGateway(http => http
+    .UseSpecUi()                                   // serves GET /spec-ui
+    .UseSpec()                                     // serves the spec on GET /spec (see docs/spec.md)
+    .UseMessageHandlers(router => router.UseFluentValidation())
 );
 
-// Serve the viewer at /spec-ui, pointed at the benzene-format spec.
-app.UseBenzeneSpecUi();                       // defaults: "/spec-ui", "/spec?type=benzene"
-// or customise:
-app.UseBenzeneSpecUi("/docs", "/spec?type=benzene");
+// Customise the path and/or the spec URL it fetches:
+app.UseApiGateway(http => http
+    .UseSpecUi("/docs", "/spec?type=benzene")
+    .UseSpec()
+    .UseMessageHandlers(router => router)
+);
 ```
 
 Browse to `/spec-ui`. The page fetches `/spec?type=benzene` and renders it.
@@ -42,14 +48,14 @@ Browse to `/spec-ui`. The page fetches `/spec?type=benzene` and renders it.
 > Use the **`benzene`** spec type — the UI is designed around its topic/payload/validation shape,
 > not `openapi`/`asyncapi`.
 
-## Other transports
+## Serving it yourself
 
-The viewer is a single self-contained HTML file with no external requests, so any transport can
-serve it. Get the markup from `SpecUiPage`:
+The viewer is a single self-contained HTML file with no external requests. If you aren't using the
+middleware, get the markup from `SpecUiPage` and write it to any HTTP response:
 
 ```csharp
-var html = SpecUiPage.GetHtml("/spec?type=benzene"); // inject the spec URL
-// write `html` to your HTTP response with content-type "text/html"
+var html = SpecUiPage.GetHtml("/spec?type=benzene"); // inject the spec URL onto the page
+// write `html` with content-type "text/html"
 ```
 
 ## Loading a spec without wiring
