@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BenzeneException(string message, Exception innerException)` constructor overload,
   so wrapped exceptions preserve proper `.InnerException` chaining instead of being
   stringified into the message text
+- Amazon EventBridge integration: inbound Lambda adapter (`Benzene.Aws.Lambda.EventBridge` —
+  `detail-type` is the topic, `detail` is the body) and outbound `PutEvents` client
+  (`EventBridgeBenzeneMessageClient` in `Benzene.Clients.Aws`), with test helpers
+  (`AsEventBridge()`)
+- Terraform EventBridge rule generation (`TerraformEventBridgeRuleBuilder` in
+  `Benzene.CodeGen.Terraform`): `aws_cloudwatch_event_rule`/target/permission generated from a
+  service's `[Message]` topics, discoverable via `ReflectionMessageHandlersFinder`
 
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound

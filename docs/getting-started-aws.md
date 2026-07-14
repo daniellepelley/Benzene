@@ -257,6 +257,8 @@ shape of the incoming payload:
   partial-batch-failure reporting)
 - **SNS**: `eventPipeline.UseSns(...)`, in `Benzene.Aws.Lambda.Sns` (fan-out notifications,
   fire-and-forget)
+- **EventBridge**: `eventPipeline.UseEventBridge(...)`, in `Benzene.Aws.Lambda.EventBridge`
+  (event-bus rules, scheduled rules, AWS service events; fire-and-forget)
 - **Kafka**: `eventPipeline.UseKafka(...)`, in `Benzene.Aws.Lambda.Kafka` (MSK and
   self-managed Kafka)
 - **S3**: `eventPipeline.UseS3(...)`, in `Benzene.Aws.Lambda.S3` (object-created/removed
@@ -291,6 +293,23 @@ execution-role IAM is needed to receive notifications (see
 attribute (or the SNS topic ARN, depending on delivery configuration) and routed to the
 matching message handler, same as every other transport. There is no response to write back —
 SNS delivery is fire-and-forget.
+
+### EventBridge
+
+```csharp
+eventPipeline.UseEventBridge(eventBridgeApp => eventBridgeApp
+    .UseMessageHandlers(router => router.UseFluentValidation())
+);
+```
+
+The event's `detail-type` is the message topic — EventBridge's native routing key, so
+`[Message("order.created")]` handles events published with that detail-type — and `detail` is
+the message body. Envelope metadata (`source`, `id`, `account`, `region`, `time`) is exposed as
+`eventbridge-`-prefixed headers, and Benzene wire headers embedded by the outbound EventBridge
+client (see [Clients](clients.md)) are lifted from the reserved `_benzeneHeaders` key inside
+`detail`. Like SNS, EventBridge invokes the function via a resource-based Lambda permission and
+delivery is fire-and-forget. The `aws_cloudwatch_event_rule`/target/permission wiring can be
+generated from your `[Message]` topics — see [Terraform Code Generation](terraform.md).
 
 ### Kafka
 
