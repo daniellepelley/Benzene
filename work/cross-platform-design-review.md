@@ -57,8 +57,12 @@ This review assesses the current design against that goal and proposes a target 
 >   only because Datadog/Zipkin/XRay were deleted). CI still only runs `Benzene.Core.Test` and
 >   `Benzene.Aws.Tests`; `Benzene.Integration.Test`, `Benzene.Grpc.Test`, and example test projects are
 >   still not exercised in any workflow. `deploy-asp-example.yml` still deploys an ASP.NET app via the
->   Azure Functions action and still uses the wrong `./Examples/Asp/...` path casing (there is no
->   Azure-specific deploy workflow at all now — `deploy-azure-example.yml` doesn't exist).
+>   Azure Functions action (there is no Azure-specific deploy workflow at all now —
+>   `deploy-azure-example.yml` doesn't exist) — the "deploying an ASP.NET app via Azure Functions
+>   action" architectural question is left as-is (a maintainer decision, not a mechanical fix), but
+>   its `./Examples/Asp/...` path-casing bug **was fixed 2026-07-14** (corrected to `./examples/Asp/...`,
+>   matching the actual lowercase directory — this workflow is `workflow_dispatch`-only so the bug
+>   never surfaced in routine CI, only on an actual manual deploy attempt).
 > - **§9 Docs/templates** — real getting-started docs now exist for Azure Functions, ASP.NET Core,
 >   Worker Services, Kafka, and gRPC (`docs/azure-functions.md`, `docs/asp-net-core.md`,
 >   `docs/getting-started-worker.md`, `docs/getting-started-kafka.md`, `docs/getting-started-grpc.md`),
@@ -532,9 +536,10 @@ var http   = await host.SendHttpAsync(h => h.Post("/orders").WithJsonBody(...));
 > `test/Benzene.Core.Test` and `test/Benzene.Aws.Tests`; `Benzene.Integration.Test`, the new
 > `Benzene.Grpc.Test`, and every `examples/*.Test` project are still not run by any workflow.
 > `deploy-azure-example.yml` no longer exists at all (removed, not fixed); `deploy-asp-example.yml`
-> still exists, still deploys via `Azure/functions-action@v1` for what is an ASP.NET Core app, and
-> **still has the `./Examples/Asp/...` path-casing bug** this section called out (working-directory
-> and package path both use the wrong case, which would break on a case-sensitive Linux runner).
+> still exists and still deploys via `Azure/functions-action@v1` for what is an ASP.NET Core app
+> (an architectural question left for a maintainer decision), but its `./Examples/Asp/...`
+> path-casing bug (working-directory and package path both used the wrong case, which would break
+> on a case-sensitive Linux runner) **was fixed 2026-07-14**, corrected to `./examples/Asp/...`.
 > Serialization asymmetry is unchanged: `Benzene.NewtonsoftJson/JsonSerializer.cs` still writes with
 > `CamelCasePropertyNamesContractResolver` but deserializes with a bare `new JsonSerializerSettings()`.
 
