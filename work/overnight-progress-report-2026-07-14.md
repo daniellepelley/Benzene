@@ -8,8 +8,12 @@ to make my own decisions. This is what I did and, more importantly, what you sho
 - **Nothing I wrote broke the build.** CI compiled all of my new code (streaming operators,
   schema-compatibility engine, S3, custom authorizer, docs). Every open PR of mine was red for
   exactly one reason: the **pre-existing gRPC test break on `main`** (the 6 errors I filed as #3).
-- I turned that handoff into a **ready-to-merge fix**: PR #5 (test-only import fixes). If its CI is
-  green, merging it makes `main` build again and clears the red on PR #2 and PR #4 too.
+- I turned that handoff into a **CI-verified, ready-to-merge fix**: **PR #5 — build is GREEN.**
+  Its `build` job (compile + unit tests, gRPC tests included) passes. Merging it makes `main`
+  build again and clears the red on PR #2 and PR #4 too, and closes #3.
+- I did **not** merge it. Merging to `main` overnight goes beyond what you directed (you chose to
+  hand the gRPC fix off, and the standing rule is no pushes to `main` without your say-so), and a
+  parallel gRPC effort owns those files. It's a one-click merge for you when you're back.
 - Everything I authored is unverifiable locally (no .NET SDK in this environment), so **CI is the
   gate** on all of it. Treat each PR's build job as the source of truth, not my say-so.
 
