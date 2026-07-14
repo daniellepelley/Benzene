@@ -29,11 +29,12 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   want plain log-line timers instead of `Activity` spans); not vendor backends, not deprecated
 
 ### Correlation
-- `ICorrelationId`/`CorrelationId`, `WithCorrelationId()` - `correlationId`-header-based cross-service
-  correlation; `UseCorrelationId()` is `[Obsolete]` (superseded by W3C `traceparent` propagation) but
-  still supported as a legacy fallback and still emitted to log scopes via `WithCorrelationId()`.
-  Default header lookup checks `x-correlation-id`, `correlation-id`, then legacy `correlationId`,
-  case-insensitively, first match wins.
+- `ICorrelationId`/`CorrelationId`, `AddCorrelationId()`, `WithCorrelationId()` - a per-invocation
+  correlation value for log scopes. `ICorrelationId` self-generates a GUID; application middleware
+  may `Set(...)` it (e.g. from a partner's proprietary header). The legacy inbound header-pickup
+  middleware `UseCorrelationId()` has been REMOVED - cross-service correlation is W3C `traceparent`
+  propagation (below). The `GetHeader` extensions in `Correlation/Extensions.cs` remain and are used
+  by the W3C middleware.
 
 ### Enrichment
 - `UseBenzeneEnrichment<TContext>()` (`EnrichmentExtensions.cs`) - one portable, explicit-opt-in
@@ -42,7 +43,7 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   `Activity` with `benzene.invocationId`. Each key degrades gracefully (simply omitted) when its
   backing service isn't registered for that pipeline scope — e.g. `invocationId` is omitted inside a
   per-message SQS/SNS/Kafka sub-pipeline, since `IBenzeneInvocation` isn't wired into those nested DI
-  scopes today. Replaces the AWS-only `WithRequestId()`/`WithApplication()` (now `[Obsolete]`).
+  scopes today. Replaced the AWS-only `WithRequestId()`/`WithApplication()`, which have been removed.
 
 ### W3C Trace Context
 - `UseW3CTraceContext<TContext>()` (`W3CTraceContextExtensions.cs`) - reads `traceparent`/`tracestate`

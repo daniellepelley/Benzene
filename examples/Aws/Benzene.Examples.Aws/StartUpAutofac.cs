@@ -27,7 +27,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
     {
         return new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            // .AddJsonFile("config.json")
             .AddEnvironmentVariables()
             .Build();
     }
@@ -41,35 +40,18 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
     {
         app
             .UseSerilog()
-            // .UseLogApplication()
             .UseTimer("aws-stream-application");
 
         var healthChecks = new IHealthCheck[]
         {
             new SimpleHealthCheck()
-            // new MessageSchemaHealthCheck(),
-            // new DatabaseHealthCheck<DataContext>("20220809094008_V8"),
         };
 
         const string healthCheckTopic = "healthcheck";
 
         app.UseApiGateway(apiGatewayApp => apiGatewayApp
-            // .Use<ApiGatewayContext, AdminBenzeneMessageMiddleware>()
-            .UseCorrelationId()
             .UseTimer("api-gateway-application")
-            // .UseLogContext()
             .UseHealthCheck("healthcheck", "POST", "/healthcheck", new SimpleHealthCheck())
-            // .AsHttp(http => http.UseRequestMapping(x => x
-            //         .Use<XmlHttpMessageBodyMapperOption>()
-            //         .UseDefault<JsonHttpMessageBodyMapper>()
-            //     // .Use(new MessageBodyMapperOption<ApiGatewayContext, JsonApiGatewayMessageBodyMapper>(context => true))
-            // ))
-            // .AsBenzeneMessage(x => x.UseRequestMapping(x => x
-            //         .Use<XmlBenzeneMessageBodyMapperOption>()
-            //         .UseDefault<JsonBenzeneMessageBodyMapper>()
-            //     // .Use(new MessageBodyMapperOption<ApiGatewayContext, JsonApiGatewayMessageBodyMapper>(context => true))
-            // ))
-            // .UseBroadcastResult()
             .UseMessageHandlers(router => router
                 .UseFluentValidation()
             )
@@ -77,8 +59,6 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
 
         app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
             .UseTimer("benzene-message-application")
-            .UseCorrelationId()
-            // .UseLogContext()
             .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router
                 .UseFluentValidation()
@@ -86,12 +66,7 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
         );
 
         app.UseSns(snsApp => snsApp
-            .UseCorrelationId()
             .UseTimer<SnsRecordContext>("sns-application")
-            // .UseTestLogger()
-            // .UseLogContext()
-            // .UseBroadcastResult()
-            // .UseProcessResponseSns()
             .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router
                 .UseFluentValidation()
@@ -99,12 +74,7 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
         );
 
         app.UseSqs(sqsApp => sqsApp
-            .UseCorrelationId()
             .UseTimer<SqsMessageContext>("sqs-application")
-            // .UseTestLogger()
-            // .UseLogContext()
-            // .UseBroadcastResult()
-            // .UseProcessResponseSqs()
             .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router
                 .UseFluentValidation()
@@ -112,12 +82,7 @@ public class StartUpAutofac : AutofacAwsStartUp, IStartUp<ContainerBuilder, ICon
         );
 
         app.UseKafka(kafkaApp => kafkaApp
-            .UseCorrelationId()
             .UseTimer("kafka-application")
-            // .UseLogContext()
-            // .UseLogResult()
-            // .UseProcessResponseSqs()
-            // .UseHealthCheck(healthCheckTopic, healthChecks)
             .UseMessageHandlers(router => router.UseFluentValidation()
             )
         );

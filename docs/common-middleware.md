@@ -12,7 +12,6 @@ links out for the full story.
 
 ## Table of contents
 
-- [UseCorrelationId](#usecorrelationid) — obsolete
 - [UseTimer](#usetimer)
 - [UseBenzeneEnrichment](#usebenzeneenrichment)
 - [UseBenzeneMetrics](#usebenzenemetrics)
@@ -28,38 +27,6 @@ links out for the full story.
 - [UseRetry](#useretry)
 - [UseCors](#usecors)
 - [UseXml](#usexml)
-
----
-
-## UseCorrelationId
-
-> **`[Obsolete]`** — superseded by automatic [W3C `traceparent` propagation](#usew3ctracecontext)
-> for cross-service correlation. Still fully supported as a legacy fallback.
-
-**Package:** `Benzene.Diagnostics` (`Benzene.Diagnostics.Correlation.Extensions`)
-
-Picks up a correlation ID from the incoming message headers — checking `x-correlation-id`, then
-`correlation-id`, then the legacy `correlationId` (matched case-insensitively, first match wins) —
-or a single specific header if you pass one in. Registers an `ICorrelationId` for the duration of
-the request so it can be injected anywhere, and its value can be added to structured logs via
-`.WithCorrelationId()`.
-
-```csharp
-public static IMiddlewarePipelineBuilder<TContext> UseCorrelationId<TContext>(
-    this IMiddlewarePipelineBuilder<TContext> app, string? header = null)
-```
-
-```csharp
-app.UseCorrelationId();
-// or check only one specific header:
-app.UseCorrelationId("x-request-id");
-```
-
-**When to use it:** only if you're integrating with an existing system that already relies on a
-`correlationId`-style header. For new cross-service correlation, prefer
-[`UseW3CTraceContext()`](#usew3ctracecontext), which is the standards-based replacement.
-
-See also: [Correlation IDs](correlation-ids) and the [Monitoring](monitoring#correlation-ids) guide.
 
 ---
 
@@ -116,9 +83,8 @@ public static IMiddlewarePipelineBuilder<TContext> UseBenzeneEnrichment<TContext
 app.UseBenzeneEnrichment();
 ```
 
-**When to use it:** on every platform, in place of hand-composing the AWS-only
-`WithRequestId()`/`WithApplication()` log-context extensions (see below) — those are now
-`[Obsolete]` in favor of this one call.
+**When to use it:** on every platform. It replaced the AWS-only
+`WithRequestId()`/`WithApplication()` log-context extensions, which have been removed.
 
 ---
 
@@ -397,19 +363,15 @@ These configure what `UseLogResult`/`UseLogContext` attach to the scope:
 | `WithTransport()` | `Benzene.Core.MessageHandlers` | the current `ICurrentTransport.Name`, keyed `transport` |
 | `WithHeaders(params string[] headers)` | `Benzene.Core.MessageHandlers` | the named request headers, each keyed by its own header name |
 
-> **`WithRequestId()` and `WithApplication()`** in `Benzene.Aws.Lambda.Core.LogContextBuilderExtensions`
-> are now **`[Obsolete]`** — superseded by [`UseBenzeneEnrichment()`](#usebenzeneenrichment), which
-> attaches the equivalent `invocationId` key on every platform, not just AWS Lambda. (A separate,
-> still-current `WithApplication()` also exists in `Benzene.Core.MessageHandlers` — that one is
-> `IApplicationInfo`-based and transport-agnostic, and is unaffected by the AWS-only one's
-> deprecation.)
+> The AWS-only **`WithRequestId()` and `WithApplication()`** log-context extensions
+> (`Benzene.Aws.Lambda.Core.LogContextBuilderExtensions`) have been **removed** — use
+> [`UseBenzeneEnrichment()`](#usebenzeneenrichment), which attaches the equivalent `invocationId`
+> key on every platform, not just AWS Lambda. (The still-current `WithApplication()` in
+> `Benzene.Core.MessageHandlers` is `IApplicationInfo`-based and transport-agnostic, and is a
+> different method — it remains.)
 
 ```csharp
-// prefer this, portable across platforms:
 app.UseBenzeneEnrichment();
-
-// instead of the AWS-only, now-obsolete pattern:
-app.UseLogResult(x => x.WithRequestId().WithApplication()); // [Obsolete]
 ```
 
 See also: [Monitoring — Logging](monitoring#logging).

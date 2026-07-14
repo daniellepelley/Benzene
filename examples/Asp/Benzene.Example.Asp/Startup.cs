@@ -82,7 +82,6 @@ public class Startup
 
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
-                .UseCorrelationId()
                 .UseSpec()
                 .UseSpecUi()          // browse the spec at GET /spec-ui (fetches /spec?type=benzene)
                 // .UseCors(new CorsSettings

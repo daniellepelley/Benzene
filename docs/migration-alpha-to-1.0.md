@@ -46,7 +46,8 @@ always resolve — configure providers the standard .NET way.
 The packages `Benzene.Microsoft.Logging`, `Benzene.Serilog` and `Benzene.Log4Net`
 no longer exist. `UseLogResult(...)`/`UseLogContext(...)` and the enrichment
 extensions (`WithCorrelationId`, `WithTopic`, `WithTransport`, `WithHeaders`,
-`WithRequestId`, `WithApplication`, `WithHttp`) are source-compatible.
+`WithHttp`) are source-compatible. (The AWS-only `WithRequestId`/`WithApplication`
+were subsequently removed — see below.)
 
 ## Message results
 
@@ -121,7 +122,7 @@ public class StartUp : BenzeneStartUp
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
-        app.UseHttp(httpApp => httpApp.UseCorrelationId().UseMessageHandlers());
+        app.UseHttp(httpApp => httpApp.UseW3CTraceContext().UseMessageHandlers());
     }
 }
 ```
@@ -236,19 +237,19 @@ shared representation of a trace span, superseding the old
 | `TimerMiddleware`/`TimerMiddlewareWrapper` (as the auto-wrap-every-middleware mechanism) | `ActivityMiddlewareWrapper`/`ActivityProcessTimer`, registered by `AddDiagnostics()` |
 | `Benzene.OpenTelemetry.AddOpenTelemetry()` | `TracerProviderBuilder`/`MeterProviderBuilder.AddBenzeneInstrumentation()` |
 
-## Correlation ID: `UseCorrelationId()` obsoleted, default header bug fixed
+## Correlation ID: `UseCorrelationId()` removed
 
-`UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) is now marked
-`[Obsolete]` — it's superseded by automatic W3C `traceparent` propagation
-(`UseW3CTraceContext()`, below) for cross-service correlation — but it's
-still fully functional and not going away.
+`UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) has been **removed**
+(it was briefly `[Obsolete]` first). Cross-service correlation is handled by
+automatic W3C `traceparent` propagation — `UseW3CTraceContext()`, below.
 
-Along the way, a real default-header bug was fixed: the no-argument overload
-previously checked for the literal header key `"correlationId"` only. It now
-checks, case-insensitively, in order: `x-correlation-id`, `correlation-id`,
-then `correlationId` (kept last as a legacy fallback). If you were sending
-`X-Correlation-Id` and it was silently ignored before, it will now be picked
-up.
+Migration: delete `.UseCorrelationId(...)` calls and add `UseW3CTraceContext()`
+(first in the pipeline). If you were using it to honor a partner's proprietary
+correlation header, populate `ICorrelationId` from a small middleware of your
+own instead — `ICorrelationId`, `AddCorrelationId()`, the `WithCorrelationId()`
+log-scope extension, and the outbound `WithCorrelationId()` client decorator
+all remain; only the inbound header-pickup middleware is gone. See the
+[Request Correlation cookbook](cookbooks/request-correlation) for the pattern.
 
 ## New: `UseBenzeneEnrichment()`, `UseBenzeneMetrics()`, W3C trace context
 
@@ -274,12 +275,15 @@ and `Benzene.Clients`:
   matching outbound `ClientBuilder` decorator, stamping `Activity.Current`'s
   `traceparent`/`tracestate` onto outgoing requests.
 
-## Obsolete: AWS-only `WithRequestId()`/`WithApplication()` log-context extensions
+## Removed: AWS-only `WithRequestId()`/`WithApplication()` log-context extensions
 
 `Benzene.Aws.Lambda.Core.LogContextBuilderExtensions.WithRequestId()` and
-`WithApplication()` are now `[Obsolete]`, superseded by the portable
-`UseBenzeneEnrichment()` (above), which covers the same information on every
-platform instead of just AWS Lambda. Both still work.
+`WithApplication()` have been **removed** (briefly `[Obsolete]` first),
+superseded by the portable `UseBenzeneEnrichment()` (above), which covers the
+same information on every platform instead of just AWS Lambda. Migration:
+replace `.UseLogResult(x => x.WithRequestId().WithApplication())` with
+`.UseBenzeneEnrichment()`. (The transport-agnostic `WithApplication()` in
+`Benzene.Core.MessageHandlers` is a different method and remains.)
 
 ## Bug fix: outbound client header forwarding
 

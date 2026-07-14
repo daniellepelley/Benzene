@@ -39,7 +39,9 @@ public class KafkaContextConverter<T> : IContextConverter<IBenzeneClientContext<
 
     public Task MapResponseAsync(IBenzeneClientContext<T, Abstractions.Results.Void> contextIn, KafkaSendMessageContext contextOut)
     {
-        contextIn.Response = BenzeneResult.Ok<Abstractions.Results.Void>();
+        contextIn.Response = contextOut.Response?.Status == PersistenceStatus.Persisted
+            ? BenzeneResult.Accepted<Abstractions.Results.Void>()
+            : BenzeneResult.ServiceUnavailable<Abstractions.Results.Void>("Kafka message was not persisted");
         return Task.CompletedTask;
     }
 }

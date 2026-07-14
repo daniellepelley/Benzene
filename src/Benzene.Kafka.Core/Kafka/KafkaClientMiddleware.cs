@@ -16,13 +16,6 @@ public class KafkaClientMiddleware : IMiddleware<KafkaSendMessageContext>
 
     public async Task HandleAsync(KafkaSendMessageContext context, Func<Task> next)
     {
-        try
-        {
-            context.Response = await _producer.ProduceAsync(context.Topic, context.Message);
-        }
-        catch (Exception ex)
-        {
-
-        }
+        context.Response = await _producer.ProduceAsync(context.Topic, context.Message);
     }
 }

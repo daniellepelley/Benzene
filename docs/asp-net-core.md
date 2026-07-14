@@ -259,9 +259,9 @@ On ASP.NET Core, `IBenzeneInvocation.InvocationId` is populated from `HttpContex
 `Platform` is `"AspNet"`, and `GetFeature<HttpContext>()` returns the current request's native
 `HttpContext` if you need to drop down to it.
 
-For cross-service correlation via a header rather than a per-process identifier, see
-[Correlation IDs](correlation-ids) — note that `UseCorrelationId()` is obsolete in favor of the W3C
-trace context propagation described next.
+For cross-service correlation see [Correlation IDs](correlation-ids) — this rides on the W3C
+trace context propagation described next (the legacy `UseCorrelationId()` middleware has been
+removed).
 
 ### W3C trace context
 

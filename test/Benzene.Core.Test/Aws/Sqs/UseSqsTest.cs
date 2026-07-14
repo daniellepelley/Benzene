@@ -17,7 +17,7 @@ public class UseSqsTest
     {
         var services = new ServiceCollection();
         var container = new MicrosoftBenzeneServiceContainer(services);
-        IBenzeneWorkerStartup app = new BenzeneWorkerStartup2(container);
+        IBenzeneWorkerStartup app = new BenzeneWorkerBuilder(container);
 
         var mockSqsClientFactory = new Mock<ISqsClientFactory>();
         var config = new SqsConsumerConfig { QueueUrl = "some-url", MaxNumberOfMessages = 10 };

@@ -66,7 +66,6 @@ Every property on the request is checked (`validateAllProperties: true`), includ
 
 ```csharp
 app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
-    .UseCorrelationId()
     .UseTimer("benzene-message")
     .UseLogResult(x => x.WithCorrelationId())
     .UseMessageHandlers(router => router

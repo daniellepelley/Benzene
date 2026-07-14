@@ -4,24 +4,16 @@ Benzene includes built-in support for common monitoring and diagnostic patterns,
 
 ## Correlation IDs
 
-> `UseCorrelationId()` is obsolete in favor of automatic [W3C trace context](#w3c-trace-context) propagation for cross-service correlation. The header itself remains supported here as a legacy fallback.
+> The legacy `UseCorrelationId()` middleware has been **removed**. Cross-service correlation is
+> handled by automatic [W3C trace context](#w3c-trace-context) propagation.
 
-Correlation IDs allow you to trace a single request as it moves through various components of your system.
+Correlation IDs allow you to trace a single request as it moves through various components of your
+system. In Benzene this rides on the W3C `traceparent`/`tracestate` headers via
+`UseW3CTraceContext()` — see [W3C trace context](#w3c-trace-context) below.
 
-### Usage
-
-To enable correlation IDs in your pipeline, use the `UseCorrelationId()` middleware.
-
-```csharp
-app.UseCorrelationId();
-```
-
-By default, this will:
-1. Look for a correlation ID in the incoming message headers: `x-correlation-id`, then `correlation-id`, then the legacy `correlationId` (matched case-insensitively, first match wins).
-2. If found, it will register an `ICorrelationId` with that value; if not, it will generate a new one (GUID).
-3. Make `ICorrelationId` resolvable via dependency injection for the rest of the request.
-
-To also add the correlation ID to structured logs, see [Common Middleware](common-middleware) — `.UseLogResult(x => x.WithCorrelationId())`.
+A per-invocation `ICorrelationId` (self-generated GUID, settable from your own middleware) remains
+available for log-scope enrichment — see [Correlation Ids](correlation-ids) and
+`.UseLogResult(x => x.WithCorrelationId())` in [Common Middleware](common-middleware).
 
 ## Tracing
 
