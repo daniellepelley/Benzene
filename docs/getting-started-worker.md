@@ -15,7 +15,10 @@ Part A is the modern, recommended shape — it's the one exercised by
 [Unified Hosting Model](hosting). Part B exists because `Benzene.Kafka.Core.UseKafka` and
 `Benzene.SelfHost.Http.UseHttp` were written against an older, worker-specific startup interface
 that predates the unified model and haven't been ported to it — see
-[Why two startup shapes?](#why-two-startup-shapes) below for exactly why.
+[Why two startup shapes?](#why-two-startup-shapes) below for exactly why. The Part B base classes
+(`BenzeneWorkerStartup`/`BenzeneHostedServiceStartup`) are now **`[Obsolete]`** — they still work
+(warning only) and remain the way to host a Kafka or `SelfHost.Http` worker until those transports
+move to the unified model.
 
 ## Prerequisites
 

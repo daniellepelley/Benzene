@@ -31,10 +31,10 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
 ### Correlation
 - `ICorrelationId`/`CorrelationId`, `AddCorrelationId()`, `WithCorrelationId()` - a per-invocation
   correlation value for log scopes. `ICorrelationId` self-generates a GUID; application middleware
-  may `Set(...)` it (e.g. from a partner's proprietary header). The legacy inbound header-pickup
-  middleware `UseCorrelationId()` has been REMOVED - cross-service correlation is W3C `traceparent`
-  propagation (below). The `GetHeader` extensions in `Correlation/Extensions.cs` remain and are used
-  by the W3C middleware.
+  may `Set(...)` it (e.g. from a partner's proprietary header). There is no inbound
+  correlation-header middleware - cross-service correlation is W3C `traceparent` propagation
+  (below). The `GetHeader` extensions in `Correlation/Extensions.cs` remain and are used by the
+  W3C middleware.
 
 ### Enrichment
 - `UseBenzeneEnrichment<TContext>()` (`EnrichmentExtensions.cs`) - one portable, explicit-opt-in

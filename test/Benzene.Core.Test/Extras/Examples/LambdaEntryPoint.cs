@@ -15,6 +15,7 @@ using Benzene.HealthChecks.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+#pragma warning disable CS0618 // deliberately exercises the obsolete AwsLambdaStartUp model
 namespace Benzene.Test.Elements.Examples
 {
     public class LambdaEntryPoint : AwsLambdaStartUp

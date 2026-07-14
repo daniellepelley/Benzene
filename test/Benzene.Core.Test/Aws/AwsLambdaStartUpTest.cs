@@ -12,6 +12,7 @@ using Benzene.Test.Examples;
 using Benzene.Tools.Aws;
 using Xunit;
 
+#pragma warning disable CS0618 // deliberately exercises the obsolete AwsLambdaStartUp model
 namespace Benzene.Test.Aws;
 
 public class AwsLambdaStartUpTest

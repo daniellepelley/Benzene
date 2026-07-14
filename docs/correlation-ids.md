@@ -1,11 +1,9 @@
 # Correlation Ids
 
-> **The legacy `UseCorrelationId()` middleware has been removed.** Cross-service correlation is
-> handled by automatic [W3C `traceparent` propagation](monitoring#w3c-trace-context)
+> Cross-service correlation is handled by automatic [W3C `traceparent` propagation](monitoring#w3c-trace-context)
 > (`UseW3CTraceContext()`), which continues a distributed trace from the incoming
-> `traceparent`/`tracestate` headers on every transport. If you previously called
-> `.UseCorrelationId()` in a pipeline, delete the call and use `UseW3CTraceContext()` — see the
-> [migration guide](migration-alpha-to-1.0#correlation-id-usecorrelationid-removed).
+> `traceparent`/`tracestate` headers on every transport — see the
+> [migration guide](migration-alpha-to-1.0#correlation-ids).
 
 ## What remains
 

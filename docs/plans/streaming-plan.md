@@ -96,7 +96,7 @@ New `IMiddleware<StreamContext<TItem>>` steps, composed on the same builder as e
 | `UseCheckpointAfterEach()` / `UseCheckpointPerWindow()` | Explicit checkpoint control. |
 
 These are ordinary middleware — they wrap `next()` and transform/observe `context.Items` — so they
-compose with the existing solutions (`UseCorrelationId`, `UseBenzeneMetrics`, `UseExceptionHandler`)
+compose with the existing solutions (`UseBenzeneMetrics`, `UseExceptionHandler`)
 with no special-casing.
 
 ### 4. Optional: bridge to message handlers (ergonomics, not a requirement)

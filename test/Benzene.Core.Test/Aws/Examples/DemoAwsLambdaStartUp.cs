@@ -9,6 +9,7 @@ using Benzene.Test.Examples;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+#pragma warning disable CS0618 // deliberately exercises the obsolete AwsLambdaStartUp model
 namespace Benzene.Test.Aws.Examples;
 
 public class DemoAwsLambdaStartUp : AwsLambdaStartUp

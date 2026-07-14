@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Benzene.Examples.Aws;
 
+[Obsolete("Superseded by the platform-neutral BenzeneStartUp hosted via AwsLambdaHost<TStartUp> (use Autofac through the container adapter). See docs/migration-alpha-to-1.0.md.")]
 public abstract class AutofacAwsStartUp : IStartUp<ContainerBuilder, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
 {
     private readonly AwsLambdaEntryPoint _awsLambdaEntryPoint;

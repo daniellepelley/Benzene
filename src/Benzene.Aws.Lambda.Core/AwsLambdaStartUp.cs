@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
@@ -22,6 +23,7 @@ namespace Benzene.Aws.Lambda.Core;
 /// <c>function-handler</c> configuration at <c>YourAssembly::YourNamespace.YourStartUp::FunctionHandlerAsync</c>,
 /// with no separate entry point class required.
 /// </remarks>
+[Obsolete("Superseded by the platform-neutral BenzeneStartUp hosted via AwsLambdaHost<TStartUp>, whose Configure takes IBenzeneApplicationBuilder (use UseAwsLambda(...) to wire the event pipeline). See docs/migration-alpha-to-1.0.md.")]
 public abstract class AwsLambdaStartUp : AwsLambdaStartUp<IServiceCollection>
 {
     /// <summary>
@@ -43,6 +45,7 @@ public abstract class AwsLambdaStartUp : AwsLambdaStartUp<IServiceCollection>
 /// and <see cref="Configure"/> (in that order) to build the middleware pipeline once, then reuses it
 /// for every subsequent invocation via <see cref="FunctionHandlerAsync"/>.
 /// </remarks>
+[Obsolete("Superseded by the platform-neutral BenzeneStartUp hosted via AwsLambdaHost<TStartUp>, whose Configure takes IBenzeneApplicationBuilder (use UseAwsLambda(...) to wire the event pipeline). See docs/migration-alpha-to-1.0.md.")]
 public abstract class AwsLambdaStartUp<TContainer> : IStartUp<TContainer, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
 {
     private readonly AwsLambdaEntryPoint _awsLambdaEntryPoint;

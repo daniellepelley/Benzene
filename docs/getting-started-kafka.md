@@ -92,7 +92,8 @@ transport on the same handler.
 Kafka consumption is wired up through `Benzene.SelfHost`'s **worker-specific** startup shape —
 `BenzeneWorkerStartup` (or its `IHostedService`-ready subclass, `BenzeneHostedServiceStartup`, from
 `Benzene.HostedService`) — not the platform-neutral `BenzeneStartUp` used by AWS/Azure/ASP.NET
-Core. This matters because `Benzene.Kafka.Core.Extensions.UseKafka<TKey, TValue>` only extends
+Core. These base classes are now **`[Obsolete]`** (warning only — still functional); they remain the
+Kafka-worker path until `UseKafka` is ported to the unified `BenzeneStartUp` model. This matters because `Benzene.Kafka.Core.Extensions.UseKafka<TKey, TValue>` only extends
 `IBenzeneWorkerStartup`, the interface `Configure` receives on this base class:
 
 ```csharp

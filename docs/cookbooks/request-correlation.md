@@ -2,9 +2,8 @@
 
 Track a single request as it moves through multiple Benzene services.
 
-> The legacy `UseCorrelationId()` header-pickup middleware has been **removed** — W3C trace context
-> is Benzene's correlation mechanism. If you're migrating from it, see
-> [the migration guide](../migration-alpha-to-1.0.md) and the
+> W3C trace context is Benzene's cross-service correlation mechanism. If you're migrating from an
+> older header-pickup approach, see [the migration guide](../migration-alpha-to-1.0.md) and the
 > [partner-header variation](#variation-honoring-a-partners-correlation-header) below for the one
 > use case that needs replacing by hand.
 

@@ -4,8 +4,8 @@ Benzene includes built-in support for common monitoring and diagnostic patterns,
 
 ## Correlation IDs
 
-> The legacy `UseCorrelationId()` middleware has been **removed**. Cross-service correlation is
-> handled by automatic [W3C trace context](#w3c-trace-context) propagation.
+> Cross-service correlation is handled by automatic [W3C trace context](#w3c-trace-context)
+> propagation.
 
 Correlation IDs allow you to trace a single request as it moves through various components of your
 system. In Benzene this rides on the W3C `traceparent`/`tracestate` headers via
