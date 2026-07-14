@@ -3,6 +3,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Aws.Sqs.Consumer;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -31,9 +32,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageHeadersGetter<SqsConsumerMessageContext>, SqsConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsConsumerMessageContext>, SqsConsumerMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SqsConsumerMessageContext>, SqsConsumerMessageMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<SqsConsumerMessageContext>();
         services
             .AddScoped<IRequestMapper<SqsConsumerMessageContext>,
-                MultiSerializerOptionsRequestMapper<SqsConsumerMessageContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<SqsConsumerMessageContext>>();
 
         return services;
     }

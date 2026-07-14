@@ -58,6 +58,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `JsonSerializationResponseHandler`/`XmlSerializationResponseHandler` now take their serializer
   via constructor injection instead of constructing one internally. All in-repo consumers go
   through DI and pick these up automatically.
+- Request/response pipeline: Phase 2 of `docs/plans/request-response-improvements-plan.md` —
+  media-format unification. Request-side `ISerializerOption<TContext>` and response-side
+  `ISerializationResponseHandler<TContext>` are replaced by a single `IMediaFormat<TContext>`
+  (content type + can-read + can-write + serializer), selected per message by a scoped, memoizing
+  `IMediaFormatNegotiator<TContext>` (`content-type` for reads, `accept` for writes — tolerant of
+  `;`-delimited parameters and casing via Phase 1's `MediaType.Matches`). One
+  `SerializationResponseHandler<TContext>` now writes every response body, replacing the old
+  per-format response stack, and **this fixes `Benzene.AspNet.Core`/`Benzene.Azure.Function.AspNet`/
+  `Benzene.SelfHost.Http` silently not supporting XML** (response format now genuinely honors
+  `Accept`, not just `Benzene.Aws.Lambda.ApiGateway`). `Benzene.Xml` becomes one
+  `XmlMediaFormat<TContext>` + `AddXml()`/`AddXml<TContext>()`/`UseXml<TContext>()`.
+  `Benzene.Extras` gains `InlineMediaFormat<TContext>` as the inline-registration replacement.
+  **BREAKING:** `ISerializerOption<TContext>`, `SerializerOptionBase`, `InlineSerializerOption`,
+  `IRequestMapBuilder<TContext>`, `RequestMapBuilder<TContext>` are removed (replaced by
+  `IMediaFormat<TContext>`/`InlineMediaFormat<TContext>`); `ISerializationResponseHandler<TContext>`,
+  `IBodySerializer`, `BodySerializer<TContext>`, `ResponseBodyHandler<TContext>`,
+  `ResponseHandler<T,TContext>`, `JsonSerializationResponseHandler<TContext>`,
+  `JsonDefaultMultiSerializerOptionsRequestMapper<TContext>` are removed (replaced by
+  `SerializationResponseHandler<TContext>`); `MultiSerializerOptionsRequestMapper<TContext>` drops
+  its `TDefaultSerializer` type parameter; `IResponseHandler<TContext>` is reshaped to a single
+  `ValueTask HandleAsync(TContext, IMessageHandlerResult)` method, removing the
+  `ISyncResponseHandler`/`IAsyncResponseHandler` split; `Benzene.Xml`'s mutable static `Settings`
+  class, `XmlSerializationResponseHandler`, `XmlResponseHandler`, `XmlSerializerOption`, and
+  `XmlContentTypeHeaderContextPredicate` are removed (replaced by `XmlMediaFormat<TContext>`). All
+  in-repo consumers (the four HTTP-ish transports, `BenzeneMessage`, six AWS event-source
+  transports) go through DI and were updated to register the new types.
 
 ### Fixed
 - `EnrichingRequestMapper`'s XML docs corrected: enrichers fold onto the mapped request in

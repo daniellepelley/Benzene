@@ -13,6 +13,7 @@ using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Examples.App.Data;
@@ -58,16 +59,12 @@ public static class AutofacDependenciesBuilder
         containerBuilder.UsingBenzene(x => x
             .AddBenzene()
             .AddXml()
+            .AddMediaFormatNegotiation<ApiGatewayContext>()
             .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
             .AddScoped<IOrderDbClient, InMemoryOrderDbClient>()
             .AddScoped<IOrderService, OrderService>()
             // .AddScoped<ResponseMiddleware<ApiGatewayContext>>()
-            .AddScoped<IResponseHandler<ApiGatewayContext>,
-                ResponseHandler<JsonSerializationResponseHandler<ApiGatewayContext>, ApiGatewayContext>>()
-            .AddScoped<IResponseHandler<ApiGatewayContext>,
-                ResponseHandler<XmlSerializationResponseHandler<ApiGatewayContext>, ApiGatewayContext>>()
-            .AddScoped<JsonSerializationResponseHandler<ApiGatewayContext>>()
-            .AddScoped<XmlSerializationResponseHandler<ApiGatewayContext>>()
+            .AddScoped<IResponseHandler<ApiGatewayContext>, SerializationResponseHandler<ApiGatewayContext>>()
             .AddScoped<IResponseHandler<ApiGatewayContext>, HttpStatusCodeResponseHandler<ApiGatewayContext>>()
             .AddScoped<IRequestEnricher<ApiGatewayContext>, ApiGatewayRequestEnricher>()
             // .AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(

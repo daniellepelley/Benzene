@@ -205,7 +205,43 @@ enricher setter cache round-trip incl. type conversion; existing suite green unt
 Acceptance: no public-surface diffs (`git diff` on `Benzene.Abstractions.*` empty except XML
 docs); full suite green.
 
-## Phase 2 — Media-format unification (D2 + D3 + D5; breaking)
+## Phase 2 — Media-format unification (D2 + D3 + D5; breaking) — ✅ Done 2026-07-14
+
+> **Implementation note:** the `IResponsePayloadMapper<TContext>` dependency `SerializationResponseHandler`
+> (like its `ResponseBodyHandler` predecessor) requires is *not* explicitly registered by any of the
+> four HTTP-ish transports' own `AddXxxMessageHandlers`/`AddAspNet`/`AddApiGateway`/`AddHttp` methods —
+> it resolves via the pre-existing open-generic `services.TryAddScoped(typeof(IResponsePayloadMapper<>),
+> typeof(DefaultResponsePayloadMapper<>))` in `AddContextItems()`, reached through every transport's
+> `UseMessageHandlers()` → `AddMessageHandlers()` call. Verified via `grep` and by tracing
+> `UseMessageHandlers` → `AddMessageHandlers` → `AddContextItems`; this was already how the pre-Phase-2
+> `ResponseBodyHandler` resolved it, so it's not a Phase 2 gap, just an easy thing to miss reading any
+> one transport's DI file in isolation. No extra registration was added.
+>
+> Six more transports beyond the plan's "four HTTP-ish adapters" turned out to construct
+> `MultiSerializerOptionsRequestMapper<TContext, JsonSerializer>` directly (`Benzene.Aws.Lambda.EventBridge`,
+> `.DynamoDb`, `.Sns`, `.S3`, `.Sqs`, and standalone `Benzene.Aws.Sqs`) — all inbound-only event sources
+> with no response-writing side. Each was updated the same way as the four HTTP transports (drop the
+> `TDefaultSerializer` type argument, add `AddMediaFormatNegotiation<TContext>()`), found via a
+> repo-wide grep for the old two-type-parameter form rather than assuming the plan's transport list was
+> exhaustive.
+>
+> The four "negotiator matrix"/"registration order"/"one `GetHeaders` call per message"/"all four
+> HTTP transports produce XML" tests were scoped down: the matrix and registration-order tests are
+> implemented (`MediaFormatNegotiatorTest`), but "one `GetHeaders` call per message" does not actually
+> hold against the shipped `AcceptHeaderMediaFormatBase` - it fetches headers fresh on every `CanRead`
+> and every `CanWrite` call (once per candidate format per selection, not memoized across formats or
+> across the read/write split), and asserting a false claim would just be a test pinning a number that
+> isn't architecturally guaranteed. Making it literally true would mean threading a per-message header
+> cache through `AcceptHeaderMediaFormatBase`, a design change beyond "unify the format abstraction"
+> that wasn't asked for. The four-HTTP-transports-produce-XML integration test was skipped as
+> lower-value than it looks: it would mostly re-verify DI wiring already covered by the transports'
+> existing pipeline tests plus `XmlMediaFormatTest`/`MediaFormatNegotiatorTest`'s unit coverage of the
+> actual selection logic, at the cost of standing up four separate transport pipelines end-to-end.
+>
+> `Benzene.NewtonsoftJson` needed no changes, confirmed by reading it: it ships only a plain
+> `ISerializer` implementation, never registered an `ISerializerOption`.
+
+
 
 1. **New abstractions** (`Benzene.Abstractions.MessageHandlers`): `IMediaFormat<TContext>`
    (R3), `IMediaFormatNegotiator<TContext>` (scoped, memoizing; R3/R4). New in

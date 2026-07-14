@@ -29,16 +29,26 @@ Provides complete implementation of message handler infrastructure for command/q
 
 ### Request Mapping
 - `RequestMapper<TContext>` - Maps transport context to request
-- `MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer>` - Multi-serializer support
-- `JsonDefaultMultiSerializerOptionsRequestMapper<TContext>` - JSON default multi-serializer
+- `MultiSerializerOptionsRequestMapper<TContext>` - Negotiator-driven request mapper; asks the
+  registered `IMediaFormatNegotiator<TContext>` which format to read with, then caches the
+  resulting `EnrichingRequestMapper`/`RequestMapper` pair per distinct `ISerializer`
 - `EnrichingRequestMapper<TContext>` - Enriches requests with context data
-- `SerializerOptionBase` - Base class for serializer options
 - `RequestMapperThunk<TContext>` - Deferred request mapping
 
+### Media Formats (`MediaFormats/`)
+- `JsonMediaFormat<TContext>` - The process default `IMediaFormat<TContext>`, wraps the shared
+  `JsonSerializer` singleton
+- `AcceptHeaderMediaFormatBase<TContext>` - Base for header-negotiated formats (`content-type` for
+  reads, `accept` for writes), e.g. `Benzene.Xml`'s `XmlMediaFormat`
+- `MediaFormatNegotiator<TContext>` - Default `IMediaFormatNegotiator<TContext>`; scoped and
+  memoizing (one selection per message)
+- `AddMediaFormatNegotiation<TContext>()` - DI extension every transport (and `AddContextItems()`)
+  calls to register the default format + negotiator for a context type
+
 ### Response Handling
-- `ResponseHandler<T, TContext>` - Base response handler
+- `SerializationResponseHandler<TContext>` - The single response-writing handler: asks the
+  negotiator for the write format and writes body + content type, unless a body is already set
 - `ResponseHandlerContainer<TContext>` - Contains response handlers
-- `ResponseBodyHandler<TContext>` - Handles response body
 - `DefaultResponsePayloadMapper<TContext>` - Maps response payloads
 - `ResponseIfHandledMessageHandlerResultSetter<TContext>` - Sets result if handled
 - `ResponseMessageMessageHandlerResultSetterBase<TContext>` - Base for result setters
@@ -47,10 +57,6 @@ Provides complete implementation of message handler infrastructure for command/q
 ### Serialization
 - `JsonSerializer` - System.Text.Json implementation
 - `PayloadSerializer` - Serializes payloads
-- `BodySerializer<TContext>` - Serializes response bodies
-- `IBodySerializer` - Body serializer abstraction
-- `ISerializationResponseHandler<TContext>` - Serialization response handler
-- `JsonSerializationResponseHandler<TContext>` - JSON response handler
 
 ### BenzeneMessage (Transport-Agnostic)
 - `BenzeneMessageApplication` - Application for BenzeneMessage
@@ -105,9 +111,10 @@ Provides complete implementation of message handler infrastructure for command/q
 ## Important conventions
 - Handlers are discovered using `[Message("topic")]` attribute or naming conventions
 - Handler discovery is cached for performance via `CacheMessageHandlersFinder`
-- Multiple serializers can coexist via `ISerializerOption<TContext>`
+- Multiple formats can coexist via `IMediaFormat<TContext>`, chosen per-message by
+  `IMediaFormatNegotiator<TContext>` (`content-type` for reads, `accept` for writes)
 - Request mapping separates transport concerns from handler logic
-- Response handling is async-first but supports sync handlers
+- Response handling is a single async `IResponseHandler<TContext>.HandleAsync`
 - BenzeneMessage is the transport-agnostic message format
 - Filters run before handlers and can short-circuit execution
 - Handler versioning allows multiple versions to coexist
