@@ -1,26 +1,29 @@
 # Benzene.HealthChecks.Http
 
 ## What this package does
-HTTP endpoint health check implementation for Benzene. Provides health checks for external HTTP dependencies, verifying availability of downstream services and APIs.
+A single `IHealthCheck` implementation (`HttpPingHealthCheck`) that verifies a downstream HTTP
+dependency by issuing a GET request. Deliberately minimal: no built-in retry, and no timeout of its
+own beyond whatever the injected `HttpClient` is configured with (`Benzene.HealthChecks`'s
+`TimeOutHealthCheck` decorator applies a 10s timeout at the aggregation level regardless of this
+package - see that package's CLAUDE.md).
 
 ## Key types/interfaces
-
-### HTTP Health Checks
-- HTTP endpoint connectivity check
-- Response status validation
-- Timeout and retry support
+- `HttpPingHealthCheck` - GETs a fixed URL; healthy only on a 200 OK response (any other status code,
+  including other 2xx codes, is reported unhealthy); result `Data` includes the checked `Url` and the
+  response's `StatusCode`
+- `HttpPingHealthCheckFactory` - resolves an `HttpClient` from DI each time the check runs, rather
+  than capturing one at registration time
+- `Extensions.AddHttpPing(builder, url)` - registration helper on `IHealthCheckBuilder`
 
 ## When to use this package
-- When verifying downstream HTTP services
-- For checking external API availability
-- To monitor service dependencies
-- For startup dependency validation
+- Verifying a downstream HTTP service/API is reachable, as one check among others in a
+  `Benzene.HealthChecks`-driven aggregate
 
 ## Dependencies on other Benzene packages
 - **Benzene.HealthChecks.Core** - Health check core
 
 ## Important conventions
-- Checks HTTP endpoint availability
-- Validates response status codes
-- Configurable timeout
-- Can check multiple endpoints
+- No retry logic - a single GET, once
+- No independent timeout - relies on the injected `HttpClient`'s own configuration (or the
+  aggregator's timeout wrapper, if run through `Benzene.HealthChecks`)
+- Only a 200 OK exact match counts as healthy - a 204 No Content or 3xx redirect is reported unhealthy

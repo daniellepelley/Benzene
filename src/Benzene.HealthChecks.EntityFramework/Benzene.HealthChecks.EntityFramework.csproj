@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Benzene.HealthChecks.EntityFramework</AssemblyName>
     <RootNamespace>Benzene.HealthChecks.EntityFramework</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
