@@ -8,6 +8,7 @@ using Benzene.Aws.Lambda.DynamoDb.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
+using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
 using Benzene.Testing;
