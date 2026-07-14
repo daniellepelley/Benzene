@@ -324,6 +324,28 @@ services.UsingBenzene(x => x.AddBenzeneMessageClients(clients => clients
 
 `KafkaContextConverter<T>` forwards `IBenzeneClientRequest.Headers` onto the outbound `Message.Headers` (UTF-8 encoded, matching Confluent.Kafka's `byte[]`-valued headers). A send is treated as accepted when the resulting `PersistenceStatus` is `Persisted`; anything else maps to `BenzeneResult.UnexpectedError<TResponse>()`.
 
+### EventBridge
+
+Package: `Benzene.Clients.Aws` (`Benzene.Clients.Aws.EventBridge`).
+
+`EventBridgeBenzeneMessageClient` publishes messages as EventBridge events via `PutEvents`: the request's topic becomes the event's `detail-type` (EventBridge's native routing key — this is what a receiving `Benzene.Aws.Lambda.EventBridge` service routes on), the serialized message becomes `detail`, and the client is configured with a fixed `source` and optional event bus name (default bus when omitted). Like Kafka and SNS, there's no `ClientsBuilder` sugar extension yet — wire it with `ClientBuilder`:
+
+```csharp
+var clientBuilder = new ClientBuilder(resolver =>
+    new EventBridgeBenzeneMessageClient("com.mycompany.orders",
+        resolver.GetService<IAmazonEventBridge>(),
+        resolver.GetService<ILogger<EventBridgeBenzeneMessageClient>>(),
+        new NullServiceResolver(),
+        eventBusName: "my-bus"));
+
+clientBuilder.WithCorrelationId().WithW3CTraceContext();
+
+services.UsingBenzene(x => x.AddBenzeneMessageClients(clients => clients
+    .WithMessageClient("orders-events", clientBuilder.Build)));
+```
+
+EventBridge has no native per-message attributes, so headers are embedded into `detail` under the reserved `_benzeneHeaders` key (only when there are headers to send and the payload is a JSON object); the inbound EventBridge binding lifts them back out, so correlation/trace decorators propagate end to end. Publishing is fire-and-forget: success maps to `Accepted`. `PutEvents` can succeed at the HTTP level while individual entries fail, so the mapper also checks `FailedEntryCount` — a failed entry maps to `ServiceUnavailable` carrying the entry's error code and message.
+
 ### gRPC
 
 Package: `Benzene.Grpc.Client`. Like Kafka and SNS, there's no `ClientsBuilder` sugar extension yet — wire `GrpcBenzeneMessageClient` with `ClientBuilder` directly, over a `GrpcChannel` the application owns:
@@ -392,6 +414,7 @@ Every built-in decorator (`WithCorrelationId()`, `WithW3CTraceContext()`, `Heade
 - **SQS** — `SqsContextConverter` copies `Headers` onto `SendMessageRequest.MessageAttributes` (alongside `topic`).
 - **SNS** — `SnsContextConverter` copies `Headers` onto `PublishRequest.MessageAttributes`.
 - **Kafka** — `KafkaContextConverter` copies `Headers` onto `Message.Headers` (UTF-8 encoded).
+- **EventBridge** — `EventBridgeContextConverter` embeds `Headers` into the event's `detail` under the reserved `_benzeneHeaders` key (EventBridge has no native per-message attributes); the inbound binding lifts them back out.
 - **gRPC** — `GrpcClientRoute` copies `Headers` onto the outbound `CallOptions.Headers` (a `Metadata`).
 - **AWS Lambda** (`AwsLambdaBenzeneMessageClient`) — embeds `Headers` directly into its own `BenzeneMessageClientRequest` envelope, which is what actually gets invoked as the payload.
 

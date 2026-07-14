@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AWSSDK.EventBridge" Version="3.7.301.4" />
         <PackageReference Include="AWSSDK.Lambda" Version="3.7.303.2" />
         <PackageReference Include="AWSSDK.SQS" Version="3.7.502.57" />
         <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.301.4" />
