@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>Benzene.Aws.Lambda.DynamoDb.TestHelpers</AssemblyName>
+		<RootNamespace>Benzene.Aws.Lambda.DynamoDb.TestHelpers</RootNamespace>
+		<Description>Test helpers for Benzene.Aws.Lambda.DynamoDb - for testing purposes only</Description>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Aws.Lambda.DynamoDb\Benzene.Aws.Lambda.DynamoDb.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+	</ItemGroup>
+
+</Project>

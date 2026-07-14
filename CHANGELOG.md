@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Terraform EventBridge rule generation (`TerraformEventBridgeRuleBuilder` in
   `Benzene.CodeGen.Terraform`): `aws_cloudwatch_event_rule`/target/permission generated from a
   service's `[Message]` topics, discoverable via `ReflectionMessageHandlersFinder`
+- DynamoDB Streams integration (`Benzene.Aws.Lambda.DynamoDb`): change-data-capture Lambda
+  adapter — topic is `"{tableName}:{eventName}"`, body is the record image unmarshalled from
+  AttributeValue format to plain JSON; ordered sequential processing with stop-at-first-failure
+  partial-batch checkpointing; test helpers (`AsDynamoDb()`); no new NuGet dependencies
 
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound

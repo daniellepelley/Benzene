@@ -78,6 +78,21 @@ and the raw `BenzeneMessage` envelope (wire-contracts §1) for direct invocation
 - Outbound: `PutEvents` with topic → `DetailType`; success requires an OK status **and** zero
   failed entries (a `PutEvents` request can partially fail).
 
+### DynamoDB Streams — `Benzene.Aws.Lambda.DynamoDb`
+
+- Topic: `"{tableName}:{eventName}"` (e.g. `orders:INSERT`) — the table parsed from the stream
+  ARN plus the change type (`INSERT`/`MODIFY`/`REMOVE`). The two things that identify a CDC event.
+- Body: the record's image unmarshalled from DynamoDB AttributeValue format into plain JSON
+  (`NewImage`, else `OldImage`, else `Keys` — the most complete state available), so handlers
+  deserialize ordinary POCOs.
+- Headers: envelope metadata under `dynamodb-`-prefixed keys. **No** `_benzeneHeaders`
+  convention: these events originate from table writes, not a Benzene publisher, so there is no
+  producer side to embed wire headers.
+- Batching: records are ordered CDC within a shard → processed **sequentially, stopping at the
+  first failure**, whose `SequenceNumber` is reported as the partial batch failure (Lambda
+  checkpoints there and redelivers). Deliberately not the SQS binding's concurrent fan-out.
+- Outbound: none — writing to the table is the publish operation; the stream is read-only.
+
 ### Azure Functions — `Benzene.Azure.Function.*`
 
 Same shape as Lambda from the model's perspective: one isolated-worker host, inner bindings for

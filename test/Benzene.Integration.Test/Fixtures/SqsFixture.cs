@@ -3,6 +3,6 @@
 public class SqsFixture : DockerComposeFixture
 {
     public SqsFixture()
-        : base("sqs-docker-compose.yaml")
+        : base("Sqs/sqs-docker-compose.yaml")
     { }
 }

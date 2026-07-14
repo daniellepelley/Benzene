@@ -1,0 +1,39 @@
+namespace Benzene.Mesh.Contracts;
+
+/// <summary>
+/// One row in a <see cref="MeshManifest"/> - a summary of one service's latest snapshot, denormalized
+/// so a catalog view can render service status without fetching every service's full
+/// <see cref="MeshServiceSnapshot"/>.
+/// </summary>
+public class MeshManifestEntry
+{
+    /// <summary>Initializes a new instance of the <see cref="MeshManifestEntry"/> class.</summary>
+    /// <param name="name">The service's name.</param>
+    /// <param name="status">One of <see cref="MeshServiceStatus"/>.</param>
+    /// <param name="contractDrift">Whether this service's spec changed since the previous run.</param>
+    /// <param name="specUrl">The URL the spec was fetched from.</param>
+    /// <param name="healthUrl">The URL the health check response was fetched from.</param>
+    public MeshManifestEntry(string name, string status, bool contractDrift, string specUrl, string healthUrl)
+    {
+        Name = name;
+        Status = status;
+        ContractDrift = contractDrift;
+        SpecUrl = specUrl;
+        HealthUrl = healthUrl;
+    }
+
+    /// <summary>The service's name.</summary>
+    public string Name { get; }
+
+    /// <summary>One of <see cref="MeshServiceStatus"/>.</summary>
+    public string Status { get; }
+
+    /// <summary>Whether this service's spec changed since the previous run.</summary>
+    public bool ContractDrift { get; }
+
+    /// <summary>The URL the spec was fetched from.</summary>
+    public string SpecUrl { get; }
+
+    /// <summary>The URL the health check response was fetched from.</summary>
+    public string HealthUrl { get; }
+}
