@@ -12,6 +12,14 @@ public class MessageHandlersList : IMessageHandlersFinder, IMessageHandlersList
 {
     private readonly List<IMessageHandlerDefinition> _list = new();
 
+    /// <summary>
+    /// A monotonically increasing stamp, incremented on every <see cref="Add"/>. Consulted by
+    /// <see cref="MessageHandlerDefinitionIndex"/> to detect runtime additions that should invalidate
+    /// its cached index - not part of <see cref="IMessageHandlersList"/> since it's an internal
+    /// implementation detail of that caching, not a public list operation.
+    /// </summary>
+    public int Version { get; private set; }
+
     /// <inheritdoc />
     public IMessageHandlerDefinition[] FindDefinitions()
     {
@@ -25,5 +33,6 @@ public class MessageHandlersList : IMessageHandlersFinder, IMessageHandlersList
     public void Add(IMessageHandlerDefinition messageHandlerDefinition)
     {
         _list.Add(messageHandlerDefinition);
+        Version++;
     }
 }

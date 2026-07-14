@@ -140,6 +140,7 @@ public static class Extensions
                 x.GetService<MessageHandlersList>(),
                 x.GetService<DependencyMessageHandlersFinder>()
             ));
+        services.TryAddSingleton<MessageHandlerDefinitionIndex>();
 
         services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
@@ -177,6 +178,7 @@ public static class Extensions
             x.GetService<MessageHandlersList>(),
             x.GetService<DependencyMessageHandlersFinder>()
         ));
+        services.TryAddSingleton<MessageHandlerDefinitionIndex>();
 
         services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();

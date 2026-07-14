@@ -2,7 +2,7 @@
 
 namespace Benzene.Xml;
 
-public class XmlContentTypeHeaderContextPredicate<TContext> : HeaderContextPredicate<TContext>
+public class XmlContentTypeHeaderContextPredicate<TContext> : MediaTypeHeaderContextPredicate<TContext>
 {
     public XmlContentTypeHeaderContextPredicate()
         : base(Settings.ContentTypeKey, Settings.ContentTypeValue)

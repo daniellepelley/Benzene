@@ -4,24 +4,29 @@ using Benzene.Abstractions.Messages;
 namespace Benzene.Core.MessageHandlers;
 
 /// <summary>
-/// Default <see cref="IMessageHandlerDefinitionLookUp"/> implementation that aggregates every
-/// registered <see cref="IMessageHandlersFinder"/>, de-duplicates definitions by topic id/version,
-/// and resolves the requested version via <see cref="IVersionSelector"/>.
+/// Default <see cref="IMessageHandlerDefinitionLookUp"/> implementation that resolves the requested
+/// version via <see cref="IVersionSelector"/> against the shared <see cref="MessageHandlerDefinitionIndex"/>.
 /// </summary>
+/// <remarks>
+/// This type is constructed fresh per message (scoped DI lifetime), matching every other per-message
+/// pipeline collaborator; the aggregation and de-duplication over every registered
+/// <see cref="IMessageHandlersFinder"/> is done once, in the singleton <see cref="MessageHandlerDefinitionIndex"/>,
+/// not repeated per instance.
+/// </remarks>
 public class MessageHandlerDefinitionLookUp : IMessageHandlerDefinitionLookUp
 {
-    private readonly IEnumerable<IMessageHandlersFinder> _messageHandlersFinder;
+    private readonly MessageHandlerDefinitionIndex _index;
     private readonly IVersionSelector _versionSelector;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageHandlerDefinitionLookUp"/> class.
     /// </summary>
-    /// <param name="messageHandlersFinder">Every registered handler finder to aggregate definitions from.</param>
+    /// <param name="index">The shared index over every registered handler finder's definitions.</param>
     /// <param name="versionSelector">Resolves which version of a handler to use when several are registered for the same topic.</param>
-    public MessageHandlerDefinitionLookUp(IEnumerable<IMessageHandlersFinder> messageHandlersFinder, IVersionSelector versionSelector)
+    public MessageHandlerDefinitionLookUp(MessageHandlerDefinitionIndex index, IVersionSelector versionSelector)
     {
+        _index = index;
         _versionSelector = versionSelector;
-        _messageHandlersFinder = messageHandlersFinder;
     }
 
     /// <summary>
@@ -32,9 +37,11 @@ public class MessageHandlerDefinitionLookUp : IMessageHandlerDefinitionLookUp
     /// <returns>The matching handler definition, or <c>null</c>/default if none is registered for the topic id.</returns>
     public IMessageHandlerDefinition FindHandler(ITopic topic)
     {
-        var handlers = GetMessageHandlers()
-            .Where(x => x.Topic.Id == topic.Id)
-            .ToArray();
+        var handlers = _index.GetByTopicId(topic.Id);
+        if (handlers.Length == 0)
+        {
+            return null;
+        }
 
         return handlers.FirstOrDefault(x =>
             x.Topic.Version == _versionSelector.Select(topic.Version, handlers
@@ -47,15 +54,6 @@ public class MessageHandlerDefinitionLookUp : IMessageHandlerDefinitionLookUp
     /// <returns>All registered handler definitions.</returns>
     public IMessageHandlerDefinition[] GetAllHandlers()
     {
-        return GetMessageHandlers();
-    }
-
-    private IMessageHandlerDefinition[] GetMessageHandlers()
-    {
-        return _messageHandlersFinder
-            .SelectMany(x => x.FindDefinitions())
-            .GroupBy(x => new {x.Topic.Id, x.Topic.Version})
-            .Select(x => x.First())
-            .ToArray();
+        return _index.GetAll();
     }
 }

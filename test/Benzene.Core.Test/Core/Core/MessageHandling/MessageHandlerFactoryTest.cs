@@ -27,7 +27,8 @@ public class MessageHandlerFactoryTest
         var services = ServiceResolverMother.CreateServiceCollection();
         var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
 
-        var messageHandlerLookup = new MessageHandlerDefinitionLookUp(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) }, new VersionSelector());
+        var messageHandlerIndex = new MessageHandlerDefinitionIndex(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) });
+        var messageHandlerLookup = new MessageHandlerDefinitionLookUp(messageHandlerIndex, new VersionSelector());
         var messageHandlerFactory = new MessageHandlerFactory(serviceResolver, new PipelineMessageHandlerWrapper(
             new HandlerPipelineBuilder(Array.Empty<IHandlerMiddlewareBuilder>()),
              serviceResolver), NullLoggerFactory.Instance, new DefaultStatuses());
@@ -36,5 +37,64 @@ public class MessageHandlerFactoryTest
 
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.Ok, result.Status);
+    }
+
+    [Fact]
+    public async Task Create_DistinctDefinitions_EachDispatchToItsOwnHandlerType()
+    {
+        // Proves the per-(handler,request,response)-triple compiled dispatcher cache differentiates
+        // correctly: v1 and v2 share a topic id and request type but differ in handler type and
+        // response type, so a cache keyed incorrectly would cross-wire them.
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
+            .Returns(new ExampleRequestPayload { Name = Defaults.Name });
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+
+        var messageHandlerIndex = new MessageHandlerDefinitionIndex(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) });
+        var messageHandlerLookup = new MessageHandlerDefinitionLookUp(messageHandlerIndex, new VersionSelector());
+        var messageHandlerFactory = new MessageHandlerFactory(serviceResolver, new PipelineMessageHandlerWrapper(
+            new HandlerPipelineBuilder(Array.Empty<IHandlerMiddlewareBuilder>()),
+             serviceResolver), NullLoggerFactory.Instance, new DefaultStatuses());
+
+        var v1Handler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic, "")));
+        var v2Handler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic, "2.0")));
+
+        var v1Result = await v1Handler.HandlerAsync(mockRequestFactory.Object);
+        var v2Result = await v2Handler.HandlerAsync(mockRequestFactory.Object);
+
+        Assert.Equal(BenzeneResultStatus.Ok, v1Result.Status);
+        Assert.Equal(BenzeneResultStatus.Deleted, v2Result.Status);
+    }
+
+    [Fact]
+    public async Task Create_RepeatedCallsForSameDefinition_ProduceIndependentlyResolvedHandlers()
+    {
+        // Proves the cached dispatcher delegate re-resolves the handler instance (and its
+        // dependencies) from the factory's own resolver on every call, rather than reusing a stale
+        // closed-over instance from the first build.
+        var services = ServiceResolverMother.CreateServiceCollection();
+        var serviceResolver = new MicrosoftServiceResolverFactory(services).CreateScope();
+
+        var messageHandlerIndex = new MessageHandlerDefinitionIndex(new[] { new ReflectionMessageHandlersFinder(typeof(ExampleRequestPayload).Assembly) });
+        var messageHandlerLookup = new MessageHandlerDefinitionLookUp(messageHandlerIndex, new VersionSelector());
+        var messageHandlerFactory = new MessageHandlerFactory(serviceResolver, new PipelineMessageHandlerWrapper(
+            new HandlerPipelineBuilder(Array.Empty<IHandlerMiddlewareBuilder>()),
+             serviceResolver), NullLoggerFactory.Instance, new DefaultStatuses());
+
+        var definition = messageHandlerLookup.FindHandler(new Topic(Defaults.Topic));
+
+        var first = messageHandlerFactory.Create(definition);
+        var second = messageHandlerFactory.Create(definition);
+
+        Assert.NotSame(first, second);
+
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
+            .Returns(new ExampleRequestPayload { Name = Defaults.Name });
+
+        Assert.Equal(BenzeneResultStatus.Ok, (await first.HandlerAsync(mockRequestFactory.Object)).Status);
+        Assert.Equal(BenzeneResultStatus.Ok, (await second.HandlerAsync(mockRequestFactory.Object)).Status);
     }
 }
