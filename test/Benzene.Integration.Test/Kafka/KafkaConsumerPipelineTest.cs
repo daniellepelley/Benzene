@@ -23,6 +23,14 @@ public class KafkaConsumerPipelineTest
     private const string BootstrapServers = "localhost:9092";
     private const string KafkaTopic = "kafka1";
 
+    // The emulator's Kafka-compatible endpoint wraps the same SAS-based auth as its native AMQP
+    // endpoint (see EventHubConsumerPipelineTest's ConnectionString) via SASL PLAIN, not bare
+    // PLAINTEXT with no auth - a plain PLAINTEXT connection gets accepted at the TCP level but then
+    // immediately disconnected ("broker might require SASL authentication").
+    private const string SaslUsername = "$ConnectionString";
+    private const string SaslPassword =
+        "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;";
+
     [Fact]
     public async Task Send()
     {
@@ -59,7 +67,10 @@ public class KafkaConsumerPipelineTest
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = BootstrapServers,
-            SecurityProtocol = SecurityProtocol.Plaintext,
+            SecurityProtocol = SecurityProtocol.SaslPlaintext,
+            SaslMechanism = SaslMechanism.Plain,
+            SaslUsername = SaslUsername,
+            SaslPassword = SaslPassword,
             // Confluent.Kafka's default MessageTimeoutMs is 5 minutes, which would swallow this
             // method's whole 60-second retry loop on the first attempt while the emulator is still
             // starting up. Fail each attempt fast instead so the loop can actually retry.
@@ -96,7 +107,10 @@ public class KafkaConsumerPipelineTest
         var consumerConfig = new ConsumerConfig
         {
             BootstrapServers = BootstrapServers,
-            SecurityProtocol = SecurityProtocol.Plaintext,
+            SecurityProtocol = SecurityProtocol.SaslPlaintext,
+            SaslMechanism = SaslMechanism.Plain,
+            SaslUsername = SaslUsername,
+            SaslPassword = SaslPassword,
             GroupId = $"benzene-integration-test-{Guid.NewGuid()}",
             AutoOffsetReset = AutoOffsetReset.Earliest,
         };

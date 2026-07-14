@@ -1,6 +1,11 @@
 services:
   localstack:
-    image: localstack/localstack:latest
+    # Pinned, not :latest: as of LocalStack's 2026.03.0 release, even the free/community edition
+    # requires an account and LOCALSTACK_AUTH_TOKEN just to start - :latest silently fails to open
+    # port 4566 at all (confirmed via CI: "Connection refused" for the test's entire retry window,
+    # regardless of how long that window is), which is why this had never actually worked in CI.
+    # 4.14.0 is the last version that starts without an auth token.
+    image: localstack/localstack:4.14.0
     environment:
       - SERVICES=sqs
     ports:
