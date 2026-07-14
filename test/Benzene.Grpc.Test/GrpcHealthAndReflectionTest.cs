@@ -1,3 +1,5 @@
+using Benzene.AspNet.Core;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Grpc.AspNet;
 using Benzene.Grpc.Test.Handlers;
@@ -34,7 +36,7 @@ public class GrpcHealthAndReflectionTest
 
         var response = await client.CheckAsync(new HealthCheckRequest());
 
-        Assert.Equal(HealthCheckResponse.Types.ServingStatus.Serving, response.Status);
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.Serving, response.Status);
     }
 
     [Fact]
@@ -45,7 +47,7 @@ public class GrpcHealthAndReflectionTest
 
         var response = await client.CheckAsync(new HealthCheckRequest());
 
-        Assert.Equal(HealthCheckResponse.Types.ServingStatus.NotServing, response.Status);
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.NotServing, response.Status);
     }
 
     [Fact]
