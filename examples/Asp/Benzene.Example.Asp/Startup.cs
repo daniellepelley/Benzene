@@ -23,6 +23,7 @@ using Benzene.Diagnostics.Correlation;
 using Benzene.FluentValidation;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
+using Benzene.Spec.Ui;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Benzene.Example.Asp;
@@ -83,6 +84,7 @@ public class Startup
             .UseHttp(asp => asp
                 .UseCorrelationId()
                 .UseSpec()
+                .UseSpecUi()          // browse the spec at GET /spec-ui (fetches /spec?type=benzene)
                 // .UseCors(new CorsSettings
                 // {
                     // AllowedDomains = ["https://editor-next.swagger.io"],

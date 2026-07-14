@@ -1,257 +1,79 @@
 # Benzene Azure Packages - Roadmap to 1.0.0 and Beyond
 
-**Document Version:** 1.5
+**Document Version:** 1.6
 **Last Updated:** 2026-07-14
 **Owner:** Azure Product Team
 **Status:** DRAFT for Review
 
-> **2026-07-14 audit pass** — every claim in this document was re-checked against
-> actual code (not trusted from the document's own narrative), mirroring the AWS
-> roadmap's 2026-07-13 audit. In order of significance:
-> 1. **Azure Service Bus support now exists.** `src/Benzene.Azure.Function.ServiceBus/`
->    and `src/Benzene.Azure.Function.ServiceBus.TestHelpers/` are fully implemented
->    (`ServiceBusApplication`, `ServiceBusContext`, message getters/setter,
->    `DependencyInjectionExtensions`, `.UseServiceBus()`), with tests in
->    `test/Benzene.Core.Test/Azure/ServiceBusPipelineTest.cs` and
->    `test/Benzene.Core.Test/Azure/ServiceBus/*` (88.6%/83.3% measured coverage — see
->    item 3) and a full cookbook at `docs/cookbooks/service-bus-handling.md`. Every
->    place this document listed Service Bus as a P3/medium-term "not yet built" item
->    has been corrected — it's shipped, not a gap. **Production package count is now
->    6** (`Benzene.Azure.Function.Core`, `.AspNet`, `.EventHub`, `.Kafka`,
->    `.ServiceBus`, plus `Benzene.AspNet.Core`), **TestHelper package count is now 5**
->    (one per Azure-Functions-specific production package, including a new
->    `Benzene.Azure.Function.Core.TestHelpers` — see item 4).
-> 2. **The Azure Functions isolated-worker rewrite is complete.** All five
->    Azure-Functions-specific packages now reference only `Microsoft.Azure.Functions.Worker.*`
->    NuGet packages (verified via each `.csproj` and a repo-wide
->    `grep -rl "Microsoft.Azure.WebJobs" src/`, which returns nothing). The old
->    `Microsoft.Azure.WebJobs 3.0.39` dependency this document repeatedly flagged as
->    "should update to latest 3.0.x" no longer exists at all — there's nothing to
->    update, the whole WebJobs-based (in-process) model was replaced. Every "in-process
->    vs. isolated worker" open question in this document is resolved: isolated worker
->    only, running the platform-neutral `BenzeneStartUp` base class via
->    `IHostBuilder.UseBenzene<TStartUp>()`.
-> 3. **The cross-platform `BenzeneStartUp`/`IBenzeneApplicationBuilder` unification is
->    fully implemented and merged** — including the ASP.NET `UseHttp` adapter and the
->    `IBenzeneInvocation` feature bag. This is a bigger deal than a documentation fix;
->    it changes two hard numbers this document repeated throughout:
->    - **`Benzene.AspNet.Core` is NOT 0% test-covered.** Measured via
->      `dotnet test --collect:"XPlat Code Coverage"` against the full
->      `test/Benzene.Core.Test` suite (674 passed, 4 skipped): **81.8% line coverage**,
->      exercised by `test/Benzene.Core.Test/Hosting/AspNetUnifiedStartUpTest.cs`
->      (tests `AspApplicationBuilder`, `UseHttp`, `BenzeneStartUp` end-to-end over a
->      real ASP.NET Core request pipeline). The "single-package 0% gap" framing this
->      document used throughout (Executive Summary, Critical Blockers, package
->      section 5, Roadmap to 1.0, Prioritized Feature List, Appendix B) was wrong —
->      corrected everywhere it appeared. Note: a separate, fully-commented-out dead
->      test file (`test/Benzene.Core.Test/Asp/AspNetPipelineTest.cs`, referencing the
->      *old* pre-unification `AspNetApplication`/`AspNetContext` shape) still exists
->      alongside the real, working `AspNetUnifiedStartUpTest.cs` — left as-is since
->      this is a docs-only pass, but worth cleaning up.
->    - **`Benzene.Azure.Function.Core` dropped from the previously-measured 82.8% to
->      48.2%.** Not a regression in the sense of a broken test — it's new,
->      *untested* surface area: `HostBuilderExtensions.cs` (`IHostBuilder.UseBenzene<TStartUp>()`),
->      `AzureFunctionAppBuilderExtensions.cs` (`UseBenzeneInvocation()`), and one of two
->      `FunctionsWorkerApplicationBuilderExtensions.cs` members (the isolated-worker
->      middleware itself) are all at 0% coverage — the cross-platform unification
->      added this Azure-specific glue code after the previous coverage measurement,
->      and nothing exercises it: no unit test references any of these three types, and
->      the `examples/Azure` project doesn't use them either (verified via grep). This
->      is a real, newly-discovered gap, not a stale claim — flagged as a new P0 item
->      below rather than silently left in the old "82.8%, all good" framing.
->      **Fixed same-day (2026-07-14)**: added `test/Benzene.Core.Test/Hosting/AzureUnifiedStartUpTest.cs`
->      covering all three previously-untested types — `IHostBuilder.UseBenzene<TStartUp>()` end-to-end
->      (builds a real `IAzureFunctionApp` via the production entry point, not the separate
->      `Benzene.Testing`/`BuildAzureFunctionApp()` test-host path, and dispatches a real HTTP request
->      through it), `UseBenzeneInvocation()`'s DI registration, and the isolated-worker middleware
->      itself (via `Moq` against `IFunctionsWorkerApplicationBuilder`/`FunctionContext`, decompiled
->      against the real `Microsoft.Azure.Functions.Worker.Core` SDK to confirm the exact
->      `Func<FunctionExecutionDelegate,FunctionExecutionDelegate>` wrapping shape rather than guessing
->      at it). Re-measured coverage: **95.2%** (up from 48.2%). Every other mention of "48.2%"/this
->      gap elsewhere in this document should be read as resolved even where not individually annotated.
->    All other package coverage numbers were re-measured and are consistent with the
->    2026-07-12 figures within measurement noise: `Benzene.Azure.Function.AspNet`
->    84.2% (was 81.0%), `.EventHub` 80.5% (was 86.3%), `.Kafka` 84.4% (was 90.7%).
->    `.ServiceBus` (new) 88.6%, `.ServiceBus.TestHelpers` 83.3%.
-> 4. **Today's (2026-07-14) test-helpers-refactoring pass** (commit `90c0ae8`)
->    extracted `BenzeneTestHostExtensions.cs` out of the production
->    `Benzene.Azure.Function.Core` package into a new
->    `Benzene.Azure.Function.Core.TestHelpers` package, removing
->    `Benzene.Azure.Function.Core`'s previous `ProjectReference` to `Benzene.Testing`.
->    This resolves the "no test code in production packages" criterion for the one
->    Azure package that still had a leak (see Appendix B) and brings the TestHelpers
->    package count to 5.
-> 5. **Substantial new narrative documentation exists that this document didn't know
->    about**, resolving several previously-open items: `docs/azure-functions.md`
->    (521 lines) is a full getting-started guide covering project setup, `BenzeneStartUp`,
->    the isolated-worker host wiring, HTTP/Event Hub/Kafka/Service Bus triggers,
->    `IBenzeneInvocation`, testing, troubleshooting, and deployment (`func azure
->    functionapp publish` only — no ARM/Bicep/Terraform, that gap is real and still
->    open). `docs/cookbooks/event-hub-processing.md` (537 lines) and
->    `docs/cookbooks/service-bus-handling.md` (320 lines) are dedicated Azure cookbooks.
->    Checked specifically and confirmed still absent: Managed Identity, Key Vault,
->    Application Insights, RBAC, and ARM/Bicep/Terraform content — those documentation
->    gaps are real and unchanged.
-> 6. **Version is 0.0.2, not 0.0.1.** Versioning was centralized into a repo-root
->    `version.txt` (read by `Directory.Build.props`) since this document's last check;
->    every package (Azure and otherwise) now shares that single version rather than a
->    per-`.csproj` `<PackageVersion>`. Every "All at 0.0.1" reference below is stale.
-> 7. **AWS comparison numbers moved.** `aws-roadmap-1.0.md` now measures AWS readiness
->    at ~97% (was ~93% when this document last cited it) — updated everywhere this
->    document compares itself to AWS.
-> 8. **One pre-existing claim re-verified and still accurate, with a caveat**: the two
->    file/class name mismatches this document already knew about
->    (`ApiGatewayHttpRequestAdapter.cs` actually contains `AspNetHttpRequestAdapter`;
->    `AspNetHeadersMapper.cs` actually contains `AspNetMessageHeadersGetter`) are both
->    still present, unfixed — consistent with this being a docs-only pass each time.
->    The commented-out health-check code in `Benzene.Azure.Function.AspNet/Extensions.cs`
->    (now lines 22-36) is also still present. However, the "extensive commented-out
->    code (lines 12-49 of BenzeneExtensions.cs)" issue for `Benzene.AspNet.Core` is
->    gone — that file was substantially rewritten as part of the cross-platform
->    unification and now has zero commented-out code (it does contain the new
->    `UseHttp`/`UseBenzene<TStartUp>` cross-platform wiring described in item 3). A
->    *different* file, `Benzene.AspNet.Core/AspNetRequestMapper.cs`, was found to
->    contain a fully commented-out class — the same underlying "commented-out dead
->    code" problem, just not the file this document previously named.
-> 9. **The full `Benzene.sln` does not currently build 100% clean.** `test/Benzene.Grpc.Test`
->    has 6 compile errors (missing `UseBenzene`/`UseMessageHandlers` extension methods,
->    an ambiguous `HealthCheckResponse` reference) — this is unrelated, in-progress
->    gRPC work (commits `551a79f`/`a0dca47`/`988c69a`/`aba35e7`, none of which touch
->    Azure code) and out of scope for this audit, but it means the "full solution
->    builds clean" claims elsewhere in this document's earlier changelog entries no
->    longer hold repo-wide. `test/Benzene.Core.Test` (which contains every Azure test)
->    builds and runs cleanly on its own (674 passed, 4 skipped, 0 failed) and was used
->    for all coverage numbers above.
+## Document History
 
-> **2026-07-12 update:** Two of this document's core claims were verified against actual
-> code and found stale — corrected here rather than trusted at face value (the AWS
-> roadmap had the same problem before its own update pass):
-> - **XML Documentation** (P0 #2): now 100% across all 5 packages (Benzene.Azure.Function.Core,
->   .AspNet, .EventHub, .Kafka, Benzene.AspNet.Core), 0 CS1591 warnings. Full solution
->   and the Azure example solution both build clean; full test suite still green
->   (655/655).
-> - **Test Coverage** (P0 #3): the "ZERO test files, complete absence of tests" claim
->   was wrong. Real coverage, measured via `dotnet test --collect:"XPlat Code
->   Coverage"`: Benzene.Azure.Function.Core 82.8%, Benzene.Azure.Function.AspNet 81.0%,
->   Benzene.Azure.Function.EventHub 86.3%, Benzene.Azure.Function.Kafka 90.7%. Only **Benzene.AspNet.Core**
->   is genuinely 0% covered. This is a much smaller gap than the original 80-100h
->   estimate assumed — re-scope before starting that work.
-> - **ASP.NET Core 2.1.x on .NET 10** (P0 #1) was also re-checked: the dependency really
->   is that old (confirmed in `Benzene.Azure.Function.AspNet.csproj` and
->   `Benzene.AspNet.Core.csproj`), and there's a hard-coded Windows-only `HintPath`
->   pointing at a `netcoreapp3.1` reference assembly in `Benzene.Azure.Function.AspNet.csproj`
->   that can't resolve on non-Windows machines — but despite both issues, **both
->   packages currently build successfully with 0 errors**. The "CRITICAL — likely
->   causes runtime failures" framing is overstated for the current state; treat this as
->   real technical debt worth fixing, not a currently-broken build.
->
-> Discovered along the way, not yet fixed: two file/class name mismatches
-> (`ApiGatewayHttpRequestAdapter.cs` in `Benzene.Azure.Function.AspNet` actually contains
-> `AspNetHttpRequestAdapter`; `AspNetHeadersMapper.cs` in `Benzene.AspNet.Core` actually
-> contains `AspNetMessageHeadersGetter`) — consistent with similar mismatches found and
-> left as-is during the AWS documentation pass, not fixed here either since this was a
-> docs-only pass. `AspNetResponseAdapter.cs` (Benzene.AspNet.Core) also has a
-> non-obvious default: if `SetStatusCode` is never called, the response defaults to
-> `404` rather than `200` — now called out explicitly in its XML doc comment since it's
-> easy to miss.
->
-> **2026-07-12 update (dependency fix):** P0 #1 (ASP.NET Core 2.1.x on .NET 10) is now
-> **RESOLVED**. `Benzene.Azure.Function.AspNet.csproj` and `Benzene.AspNet.Core.csproj` no longer
-> reference the EOL `Microsoft.AspNetCore.Mvc.Core` 2.1.38 / `Microsoft.AspNetCore.Routing`
-> 2.1.1 / `Microsoft.AspNetCore.Http.Abstractions` 2.1.1 NuGet packages, and the
-> hard-coded Windows-only `HintPath` to a `netcoreapp3.1` reference assembly is gone.
-> Both now use `<FrameworkReference Include="Microsoft.AspNetCore.App" />`, the correct
-> way to reference ASP.NET Core types from a plain `Microsoft.NET.Sdk` project targeting
-> .NET Core 3.0+ (the old packages are legacy/empty shims from the 2.x era — this was
-> never really a valid dependency, just one that happened to still compile). Also
-> removed a now-redundant `Microsoft.Extensions.DependencyInjection.Abstractions`
-> `PackageReference` from `Benzene.AspNet.Core.csproj` (flagged by NuGet's NU1510
-> "will not be pruned" warning, already supplied transitively by the framework
-> reference and not directly used in the package's own code), and added the
-> previously-missing `<PackageVersion>0.0.1</PackageVersion>` to that same csproj.
-> Verified: both packages build with 0 errors; full `Benzene.sln` builds clean; full
-> test suite still 655/655 passing; `examples/Azure/Benzene.Example.Azure.sln` builds
-> clean. Side effect: warning count rose in both packages (22→99 in
-> `Benzene.Azure.Function.AspNet`) because the real, nullable-annotated ASP.NET Core reference
-> assemblies surface nullability warnings (CS8602/8603/8604/etc.) and analyzer warnings
-> (ASP0019) the old, unannotated 2.1.x packages never triggered — a more accurate
-> picture of the code, not a regression, left for a future code-quality pass rather than
-> fixed here since this was scoped as a dependency-only fix.
->
-> **2026-07-12 update (code quality):** Two more P0/high-priority items resolved.
-> (1) `TestHttpRequest.cs` and `HttpBuilderExtensions.cs` — both pure test
-> infrastructure (a settable fake `HttpRequest` and the builder extension that produces
-> it from `IHttpBuilder<T>`, used only by `AspNetPipelineTest`) — moved out of the
-> production `Benzene.Azure.Function.AspNet` package into a new
-> `Benzene.Azure.Function.AspNet.TestHelpers` package, mirroring the existing
-> `Benzene.Azure.Function.EventHub.TestHelpers`/`Benzene.Azure.Function.Kafka.TestHelpers` pattern. Added
-> to `Benzene.sln` and referenced from `Benzene.Test.csproj`. (2) The Event Hub
-> package's message router class was literally named `BenzeneMessageLambdaHandler`
-> (copy-pasted from the AWS Lambda equivalent in `Benzene.Aws.Lambda.Core`) despite
-> having nothing to do with AWS Lambda — renamed to `BenzeneMessageEventHubHandler`,
-> and its file (previously mismatched as `DirectMessageLambdaHandler.cs`) renamed to
-> match. Both are breaking API changes but pre-1.0 with no external consumers yet.
-> Verified: all affected packages build with 0 errors, full solution and Azure example
-> solution build clean, 655/655 tests still passing (including the moved
-> `AspNetPipelineTest`, run in isolation to confirm the relocation works).
->
-> **2026-07-12 update (package rename, user-requested):** All four Azure-Functions-
-> specific production packages, plus their three `.TestHelpers` packages, renamed for
-> consistency with the AWS `Benzene.Aws.Lambda.<Transport>` convention:
-> `Benzene.Azure.Core` → `Benzene.Azure.Function.Core`, `Benzene.Azure.AspNet` →
-> `Benzene.Azure.Function.AspNet`, `Benzene.Azure.EventHub` →
-> `Benzene.Azure.Function.EventHub`, `Benzene.Azure.Kafka` →
-> `Benzene.Azure.Function.Kafka`, and the matching `.TestHelpers` packages. Directory,
-> `.csproj` filename, `AssemblyName`, `RootNamespace`, and every `namespace`/`using`
-> reference across the whole repo (including `Benzene.sln`, `Benzene.Examples.sln`, the
-> `examples/Azure` project and solution, `README.md`, and this document) were updated to
-> match. `Benzene.AspNet.Core` was deliberately left untouched — it isn't
-> Azure-Functions-specific. This is a breaking rename but pre-1.0 with no external
-> consumers yet. Verified: full solution and both example solutions
-> (`Benzene.Examples.sln`'s Azure entries, `examples/Azure/Benzene.Example.Azure.sln`)
-> build with 0 errors, 655/655 tests still passing.
->
-> **2026-07-13 update (documentation):** A comprehensive, source-verified documentation
-> pass closed most of the remaining narrative-documentation gap this document flagged
-> as the biggest blocker behind AWS. Verified directly against current file content
-> (not agent summaries):
-> - **Getting started guides** for both Azure adapters now exist and are comprehensive:
->   `docs/azure-functions.md` (HTTP/Event Hub/Kafka triggers, correlation and tracing,
->   testing via `BenzeneTestHost`, a 5-item troubleshooting section) and
->   `docs/asp-net-core.md` (health checks, validation, W3C trace context, testing).
-> - **Event Hub partition/checkpointing/consumer-group documentation**: added in depth
->   in `docs/cookbooks/event-hub-processing.md`, including a worked `host.json` example
->   for `maxEventBatchSize`/`minEventBatchSize`/`maxWaitTime`/`batchCheckpointFrequency`/
->   `prefetchCount`, and an honest explainer of why Benzene's `MessageHandler.HandleAsync`
->   already catches handler exceptions before they reach the trigger (so checkpointing
->   advances regardless of exceptions unless a retry policy is configured), with a
->   worked `RethrowOnServiceUnavailableMiddleware` bridge for teams that want the
->   opposite behavior.
-> - **Dead-letter queue patterns**: Event Hubs has no native DLQ (unlike Service Bus);
->   this is now documented honestly as a workaround pattern rather than left silent.
-> - **Event Hubs vs Kafka protocol relationship**: documented in
->   `docs/getting-started-kafka.md`'s Azure Functions section, including a full working
->   `KafkaTrigger` sample and the explicit callout that `KafkaMessageHeadersGetter`
->   always returns an empty dictionary on this path (headers aren't mapped, unlike the
->   AWS and self-hosted-worker Kafka paths).
-> - **Migration guide**: `docs/migration-alpha-to-1.0.md` now has a dedicated "Azure
->   Functions: package rename + isolated worker rewrite" section covering both the
->   package rename (documented above) and the in-process-worker → isolated-worker
->   rewrite.
-> - **Functions test host documentation** (the developer-doc "Testing guide" gap):
->   covered by `docs/azure-functions.md`'s Testing section
->   (`BenzeneTestHost.Create<StartUp>().BuildAzureFunctionApp()`,
->   `HttpBuilder.Create(...).AsAspNetCoreHttpRequest()`, `HandleEventHub`/
->   `HandleKafkaEvents`, `InlineAzureFunctionStartUp`).
-> - Also fixed in passing: `Benzene.Azure.Function.Kafka`'s Issues list below still said
->   "❌ No XML documentation," inconsistent with this document's own "100% XML docs
->   across all 5 packages" claim (Executive Summary, verified 2026-07-12) — corrected.
->
-> Still open, not addressed by this pass (out of scope — this was a docs-only pass, not
-> new code): ARM/Bicep/Terraform templates, Managed Identity/RBAC guidance, Application
-> Insights integration middleware, CORS middleware, Azure SDK version consistency, the
-> `Benzene.AspNet.Core` test-coverage gap, and the two known file/class name mismatches
-> (`ApiGatewayHttpRequestAdapter.cs`/`AspNetHeadersMapper.cs`).
+This section replaces a much longer, repeatedly-self-corrected changelog (the full
+narrative is preserved in git history) with a condensed timeline of verified facts.
+Later entries supersede earlier ones where they overlap.
+
+- **2026-07-12** — Fixed the ASP.NET Core 2.1.x-on-.NET-10 dependency crisis
+  (`FrameworkReference` to `Microsoft.AspNetCore.App`, replacing EOL 2.1.x packages and
+  a Windows-only hard-coded `HintPath`). Added 100% XML documentation across all
+  packages (0 CS1591 warnings). Corrected the "zero tests" claim — real coverage was
+  82.8-90.7% across four packages; only `Benzene.AspNet.Core` was genuinely untested at
+  the time. Moved `TestHttpRequest`/`HttpBuilderExtensions` out of production code into
+  `Benzene.Azure.Function.AspNet.TestHelpers`. Renamed `BenzeneMessageLambdaHandler` →
+  `BenzeneMessageEventHubHandler` (was AWS terminology in an Azure package). Renamed the
+  four Azure-Functions-specific packages for AWS-convention consistency:
+  `Benzene.Azure.Core` → `Benzene.Azure.Function.Core`, `.AspNet` → `.Function.AspNet`,
+  `.EventHub` → `.Function.EventHub`, `.Kafka` → `.Function.Kafka`.
+- **2026-07-13** — Comprehensive documentation pass: added `docs/azure-functions.md`
+  and `docs/asp-net-core.md` getting-started guides, Event Hub
+  partition/checkpointing/consumer-group/DLQ documentation in
+  `docs/cookbooks/event-hub-processing.md`, Event-Hubs-vs-Kafka protocol coverage in
+  `docs/getting-started-kafka.md`, and an Azure migration section in
+  `docs/migration-alpha-to-1.0.md`.
+- **2026-07-14 — cross-platform unification audit.** The `BenzeneStartUp`/
+  `IBenzeneApplicationBuilder` unification (built elsewhere in the repo) landed and
+  changed two numbers this document had repeated: `Benzene.AspNet.Core` is **81.8%**
+  test-covered via `AspNetUnifiedStartUpTest.cs`, not 0% as previously claimed. In
+  exchange, the unification's new Azure-specific host-builder glue
+  (`HostBuilderExtensions`, `AzureFunctionAppBuilderExtensions`, part of
+  `FunctionsWorkerApplicationBuilderExtensions`) was itself untested, dropping
+  `Benzene.Azure.Function.Core` to 48.2% — **fixed same-day** with
+  `AzureUnifiedStartUpTest.cs`, re-measured at **95.2%**. All Azure Functions packages
+  are confirmed isolated-worker only (`Microsoft.Azure.WebJobs` no longer appears
+  anywhere in `src/`). **Azure Service Bus support was found already shipped**
+  (`Benzene.Azure.Function.ServiceBus` + `.TestHelpers`, 88.6%/83.3% coverage,
+  `docs/cookbooks/service-bus-handling.md`) — every place this document listed it as
+  unbuilt future work was wrong. A second test-code-in-production leak was found and
+  fixed (`BenzeneTestHostExtensions.cs` extracted to
+  `Benzene.Azure.Function.Core.TestHelpers`). Versioning is centralized via repo-root
+  `version.txt` at **0.0.2**, not per-csproj 0.0.1. Package count: **6 production, 5
+  TestHelpers**.
+- **2026-07-14 — CORS, SDK-consistency, and code-quality follow-up (this session).**
+  - **CORS was already fully implemented; every "no CORS support" / "missing CORS
+    middleware" mention below was wrong.** `Benzene.Http.Cors.CorsMiddleware<TContext>`
+    is generic over `IHttpContext` and was already wired into
+    `Benzene.Azure.Function.AspNet` (as well as AWS API Gateway and ASP.NET Core). This
+    session brought it to full parity with `Microsoft.AspNetCore.Cors`: exact
+    scheme+host+port origin matching, `Access-Control-Expose-Headers`,
+    `Access-Control-Max-Age`, `Access-Control-Allow-Credentials`, a working
+    `AllowAnyHeader()`-equivalent wildcard, `Vary: Origin` caching correctness, and
+    preflight header validation. See `docs/common-middleware.md`'s `UseCors` section.
+  - **Azure SDK version consistency, re-verified: not actually a problem.** Checked
+    every Azure package's `.csproj` directly — `Azure.Identity` 1.11.4,
+    `Microsoft.Azure.Functions.Worker`/`.Sdk` 2.2.0/2.0.7,
+    `Azure.Messaging.EventHubs`/`.Processor` 5.11.5, `Azure.Messaging.ServiceBus`
+    7.18.2, and `Microsoft.Azure.Functions.Worker.Extensions.Kafka` 4.3.0 are each
+    identical everywhere they're referenced, including the example project. This P0
+    line item is resolved by inspection, not by changing anything.
+  - **Code Quality Fixes — the remaining scope is done.** Removed the commented-out,
+    superseded `UseHealthCheck` block from
+    `Benzene.Azure.Function.AspNet/Extensions.cs` (the portable `Benzene.HealthChecks`
+    package's generic `UseHealthCheck<TContext>()` already covers this). Renamed both
+    known file/class mismatches: `ApiGatewayHttpRequestAdapter.cs` →
+    `AspNetHttpRequestAdapter.cs` (Azure.Function.AspNet) and
+    `AspNetHeadersMapper.cs` → `AspNetMessageHeadersGetter.cs` (AspNet.Core).
+    `AspNetRequestMapper.cs`'s fully-commented-out class (Benzene.AspNet.Core) had
+    already been deleted by other work merged into `main` before this pass. Verified:
+    full solution and both Azure/ASP.NET example solutions build with 0 errors, 728
+    tests pass (724 in `Benzene.Core.Test`, plus the gRPC and conformance suites).
 
 ---
 
@@ -264,10 +86,10 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 - **Version:** All at 0.0.2 (pre-release; centralized via repo-root `version.txt`, corrected 2026-07-14 — was 0.0.1 when this document last checked)
 - **Target Framework:** .NET 10
 - **Source Files:** 65 Azure-related `.cs` source files across all 10 Azure/AspNet.Core packages (50 Azure.*, 15 AspNet.Core), recounted 2026-07-14 — the previous "~117" figure could not be reproduced and appears stale
-- **Test Coverage:** ✅ good across the board, re-measured 2026-07-14 against the full `test/Benzene.Core.Test` suite (693 passed after this pass's own new tests): Azure.AspNet 84.2%, Azure.EventHub 80.5%, Azure.Kafka 84.4%, Azure.ServiceBus 88.6% (new), **Benzene.AspNet.Core 81.8%** (was wrongly claimed 0% throughout this document — see 2026-07-14 changelog item 3), and **Azure.Function.Core 95.2%** (had dropped to 48.2% on new, untested host-builder glue — fixed same-day with `AzureUnifiedStartUpTest.cs`, see changelog item 3)
+- **Test Coverage:** ✅ good across the board, re-measured 2026-07-14 against the full `test/Benzene.Core.Test` suite: Azure.AspNet 84.2%, Azure.EventHub 80.5%, Azure.Kafka 84.4%, Azure.ServiceBus 88.6% (new), **Benzene.AspNet.Core 81.8%** (was wrongly claimed 0% throughout this document — see Document History), and **Azure.Function.Core 95.2%** (had briefly dropped to 48.2% on new, untested host-builder glue — fixed same-day with `AzureUnifiedStartUpTest.cs`)
 - **Documentation:** ✅ 100% XML documentation across all packages (completed 2026-07-12, still true), basic CLAUDE.md files exist (some stale — see package sections), plus a full `docs/azure-functions.md` getting-started guide and two Azure cookbooks (`event-hub-processing.md`, `service-bus-handling.md`) found 2026-07-14 that this document didn't previously know about
-- **Dependencies:** ✅ ASP.NET Core 2.1.x issue resolved (2026-07-12) — `Benzene.Azure.Function.AspNet` and `Benzene.AspNet.Core` now use `FrameworkReference` to `Microsoft.AspNetCore.App` instead of EOL 2.1.x NuGet packages; hard-coded Windows-only `HintPath` removed. ✅ Also confirmed 2026-07-14: `Microsoft.Azure.WebJobs` no longer exists anywhere in the repo — all Azure Functions packages moved to the isolated-worker `Microsoft.Azure.Functions.Worker.*` model
-- **Maturity:** Functional; test/doc gap with AWS is much smaller than originally assessed; the dependency blocker is now fixed; Service Bus shipped; one new coverage gap found in `Benzene.Azure.Function.Core`
+- **Dependencies:** ✅ ASP.NET Core 2.1.x issue resolved (2026-07-12) — `Benzene.Azure.Function.AspNet` and `Benzene.AspNet.Core` now use `FrameworkReference` to `Microsoft.AspNetCore.App` instead of EOL 2.1.x NuGet packages; hard-coded Windows-only `HintPath` removed. ✅ Also confirmed 2026-07-14: `Microsoft.Azure.WebJobs` no longer exists anywhere in the repo — all Azure Functions packages moved to the isolated-worker `Microsoft.Azure.Functions.Worker.*` model. ✅ Azure SDK version consistency re-verified 2026-07-14 — not actually inconsistent
+- **Maturity:** Functional; test/doc gap with AWS is much smaller than originally assessed; the dependency blocker is fixed; Service Bus shipped; CORS already built and now spec-hardened; the `Benzene.Azure.Function.Core` coverage gap and both known code-quality items are resolved
 
 ### Key Findings
 ✅ **Strengths:**
@@ -293,15 +115,17 @@ This roadmap outlines the path to 1.0.0 for Benzene's Azure integration packages
 ❌ **Critical Blockers for 1.0:**
 - ~~ZERO XML documentation on any public API~~ ✅ RESOLVED 2026-07-12
 - ~~Benzene.AspNet.Core has 0% test coverage~~ ❌ **WRONG CLAIM, corrected 2026-07-14** —
-  actually 81.8% covered. The real coverage gap is **`Benzene.Azure.Function.Core`
-  at 48.2%** (new, untested host-builder/isolated-worker glue code — see changelog
-  item 3), not `Benzene.AspNet.Core`
+  actually 81.8% covered. The coverage gap this uncovered instead
+  (`Benzene.Azure.Function.Core`'s new host-builder/isolated-worker glue, briefly at
+  48.2%) was itself fixed same-day — see Document History — and is now at 95.2%
 - ~~Very old ASP.NET Core dependencies (2.1.x on .NET 10 project - major compatibility issue)~~ ✅ RESOLVED 2026-07-12
 - ~~Old Microsoft.Azure.WebJobs dependency~~ ✅ RESOLVED — the whole WebJobs-based model was replaced by the isolated-worker `Microsoft.Azure.Functions.Worker.*` packages (confirmed 2026-07-14, repo-wide grep returns nothing)
-- Inconsistent Azure SDK versions
+- ~~Inconsistent Azure SDK versions~~ ✅ RESOLVED — re-verified 2026-07-14, all Azure
+  packages already reference identical dependency versions
 - Missing deployment templates (ARM/Bicep/Terraform) — confirmed still absent 2026-07-14
 - No Application Insights integration examples — confirmed still absent 2026-07-14
-- Missing Azure-specific middleware (authentication, authorization, managed identity) — confirmed still absent 2026-07-14
+- Missing Azure-specific middleware (authentication, Managed Identity) — confirmed
+  still absent 2026-07-14; CORS is NOT part of this gap (see Document History)
 - No performance benchmarks or cold-start metrics
 - ~~Minimal documentation (only basic ASP.NET Core guide)~~ ⚠️ PARTIALLY RESOLVED 2026-07-14 — a full `docs/azure-functions.md` getting-started guide plus `docs/cookbooks/event-hub-processing.md` and `docs/cookbooks/service-bus-handling.md` now exist; ARM/Bicep/Terraform, Managed Identity, Key Vault, Application Insights, and RBAC content is still genuinely missing from all of them
 - No Azure App Service, Container Apps, or AKS integration guidance
@@ -382,10 +206,15 @@ Keep all Azure packages at **0.9.x-preview** until well after core 1.0 release, 
 - ~~❌ **ZERO test files** found - complete absence of tests~~ ✅ WRONG — corrected 2026-07-12, re-verified 2026-07-14: 674 tests pass in `test/Benzene.Core.Test`
 - ~~❌ **CRITICAL DEPENDENCY ISSUE**: ASP.NET Core 2.1.x packages on .NET 10 project~~ ✅ RESOLVED 2026-07-12 (now `FrameworkReference` to `Microsoft.AspNetCore.App`)
 - ~~❌ Old Microsoft.Azure.WebJobs (3.0.39) - should be 3.0.40+~~ ✅ RESOLVED — confirmed 2026-07-14 that `Microsoft.Azure.WebJobs` no longer appears anywhere in `src/`; replaced entirely by the isolated-worker `Microsoft.Azure.Functions.Worker.*` packages
-- ❌ Inconsistent Azure SDK versions
+- ~~❌ Inconsistent Azure SDK versions~~ ✅ RESOLVED — re-verified 2026-07-14, all Azure
+  packages already reference identical versions of shared dependencies
+  (`Azure.Identity`, `Microsoft.Azure.Functions.Worker`/`.Sdk`, etc.)
 - ❌ No ARM/Bicep/Terraform deployment templates — confirmed still true 2026-07-14
 - ❌ No Application Insights integration — confirmed still true 2026-07-14
-- ❌ Missing Azure authentication/authorization middleware — confirmed still true 2026-07-14 (no `Cors`/Managed Identity code found in `Benzene.Azure.Function.AspNet` or anywhere in `src/`)
+- ⚠️ Missing Azure authentication/authorization middleware (Managed Identity) — still
+  true 2026-07-14. CORS is NOT part of this gap — `Benzene.Azure.Function.AspNet`
+  already gets CORS via the portable `Benzene.Http.Cors.CorsMiddleware<TContext>`, now
+  spec-hardened (see Document History)
 - ❌ No performance benchmarks or metrics
 - ⚠️ **NEW (2026-07-14):** `Benzene.Azure.Function.Core`'s new isolated-worker host-builder
   glue (`HostBuilderExtensions.UseBenzene<TStartUp>()`, `AzureFunctionAppBuilderExtensions.UseBenzeneInvocation()`,
@@ -568,13 +397,21 @@ plus ~5-8 hours newly added 2026-07-14 for testing the host-builder glue
 2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-12
 3. ~~❌ TestHttpRequest should be in TestHelpers package~~ ✅ RESOLVED 2026-07-12 (moved
    to new `Benzene.Azure.Function.AspNet.TestHelpers` package, along with `HttpBuilderExtensions`)
-4. ⚠️ Commented-out health check code (lines 14-28 of Extensions.cs)
+4. ~~⚠️ Commented-out health check code (lines 14-28 of Extensions.cs)~~ ✅ RESOLVED
+   2026-07-14 — removed outright; the portable `Benzene.HealthChecks` package's generic
+   `UseHealthCheck<TContext>()` already covers this case
 5. ⚠️ AspNetContext too simple - only has HttpRequest and ContentResult
-6. ⚠️ No CORS support
-7. ⚠️ No authentication/authorization middleware
+6. ~~⚠️ No CORS support~~ ❌ **WRONG CLAIM** — this package already gets CORS via the
+   portable `Benzene.Http.Cors.CorsMiddleware<TContext>` (generic over `IHttpContext`),
+   now spec-hardened to full parity with `Microsoft.AspNetCore.Cors` (see Document
+   History)
+7. ⚠️ No authentication/authorization middleware (Managed Identity)
 8. ⚠️ No OpenAPI/Swagger integration
 9. ⚠️ No API Management integration patterns
 10. ⚠️ Package naming confusing (Azure.AspNet for Functions HTTP trigger)
+
+**Also fixed 2026-07-14:** the file/class mismatch where `ApiGatewayHttpRequestAdapter.cs`
+actually contained `AspNetHttpRequestAdapter` — file renamed to match.
 
 **1.0 Requirements:**
 - [x] **CRITICAL**: Fix ASP.NET Core dependencies (use framework references or update to 8.0+) — done 2026-07-12
@@ -582,18 +419,20 @@ plus ~5-8 hours newly added 2026-07-14 for testing the host-builder glue
 - [x] **CRITICAL**: Move TestHttpRequest to TestHelpers — done 2026-07-12
 - [x] Add comprehensive XML documentation — done 2026-07-12
 - [ ] Expand AspNetContext with convenience properties
-- [ ] Add CORS middleware
+- [x] ~~Add CORS middleware~~ — not needed; already present via `Benzene.Http.Cors`,
+  hardened to spec parity 2026-07-14
 - [ ] Add authentication/authorization middleware
 - [ ] Document API Management integration
 - [ ] Add OpenAPI integration examples
-- [ ] Remove or document commented code
+- [x] Remove or document commented code — done 2026-07-14 (health-check block removed)
 - [ ] Document differences from ASP.NET Core hosted apps
 - [ ] Add custom domain and SSL configuration guidance
 - [ ] Document scaling considerations
 
-**Estimated Effort:** ~~30-40 hours (includes fixing critical dependency issues)~~ 3-6
-hours remaining (dependency fix, XML docs, and TestHttpRequest relocation all done
-2026-07-12; remaining scope is CORS/auth middleware and OpenAPI examples)
+**Estimated Effort:** ~~30-40 hours (includes fixing critical dependency issues)~~ ~~3-6
+hours~~ **2-4 hours remaining** (dependency fix, XML docs, TestHttpRequest relocation,
+CORS, and commented-code cleanup all done; remaining scope is auth middleware and
+OpenAPI examples)
 
 ---
 
@@ -857,11 +696,12 @@ the remaining Managed Identity/best-practices documentation gap
 **Must Have Before 1.0:**
 
 1. ~~**Fix Critical Dependency Issues** (40-50 hours) - HIGHEST PRIORITY~~
-   ✅ **MOSTLY RESOLVED 2026-07-12** (~2 hours actual, far under the original estimate —
+   ✅ **RESOLVED 2026-07-12/14** (~2 hours actual, far under the original estimate —
    the fix was a one-line `FrameworkReference` swap, not a rewrite):
    - [x] Fix ASP.NET Core 2.1.x references on .NET 10 — done, via `FrameworkReference`
    - [x] Remove hard-coded DLL paths — done
-   - [ ] Update all Azure SDK packages to consistent versions — not yet done
+   - [x] ~~Update all Azure SDK packages to consistent versions~~ — re-verified
+     2026-07-14, not actually inconsistent (see Document History)
    - [x] ~~Update Microsoft.Azure.WebJobs to latest~~ — moot 2026-07-14: the package
      no longer exists anywhere in the repo, replaced entirely by the isolated-worker
      `Microsoft.Azure.Functions.Worker.*` model
@@ -874,17 +714,30 @@ the remaining Managed Identity/best-practices documentation gap
    2026-07-12 framing ("only `Benzene.AspNet.Core` is genuinely 0%") was itself wrong:
    re-measured against the full `test/Benzene.Core.Test` suite (674 tests),
    `Benzene.AspNet.Core` is actually **81.8%** covered via
-   `AspNetUnifiedStartUpTest.cs`. The real gap is **`Benzene.Azure.Function.Core` at
-   48.2%** — new isolated-worker host-builder glue (`HostBuilderExtensions`,
-   `AzureFunctionAppBuilderExtensions`, part of `FunctionsWorkerApplicationBuilderExtensions`)
-   added by the cross-platform unification has zero tests. Everything else is fine:
-   AspNet 84.2%, EventHub 80.5%, Kafka 84.4%, ServiceBus (new) 88.6%.
+   `AspNetUnifiedStartUpTest.cs`. The gap this uncovered instead —
+   **`Benzene.Azure.Function.Core`** briefly at 48.2% for its new isolated-worker
+   host-builder glue (`HostBuilderExtensions`, `AzureFunctionAppBuilderExtensions`,
+   part of `FunctionsWorkerApplicationBuilderExtensions`) — was fixed same-day. Every
+   package is now well-covered: AspNet 84.2%, EventHub 80.5%, Kafka 84.4%, ServiceBus
+   88.6%, Core 95.2%.
    - [x] ~~Unit tests for Benzene.AspNet.Core~~ — not needed, already 81.8% covered
-   - [ ] **Unit tests for `Benzene.Azure.Function.Core`'s host-builder glue** (new
-         2026-07-14 item, ~5-8 hours) — this is the one real remaining coverage gap
-   - Integration tests with Azurite/emulators
-   - End-to-end Azure Functions examples
-   - Performance benchmarks
+   - [x] ~~Unit tests for `Benzene.Azure.Function.Core`'s host-builder glue~~ — done
+         same-day 2026-07-14, `AzureUnifiedStartUpTest.cs`, now 95.2% covered
+   - [x] Integration tests with Azurite/emulators — done 2026-07-14:
+         `test/Benzene.Integration.Test/EventHub/EventHubConsumerPipelineTest.cs`
+         runs a real Azure Event Hubs Emulator + Azurite via Docker Compose
+         (mirroring the existing SQS/LocalStack pattern), sends a real event via the
+         raw `EventHubProducerClient`, receives it back via `EventHubConsumerClient`,
+         and feeds the real received `EventData` into Benzene's actual production
+         `EventHubApplication`/`BenzeneMessageEventHubHandler` pipeline. Note: running
+         the real Azure Functions Worker host itself (`func start`) is not possible in
+         this environment — `azure-functions-core-tools`'s post-install binary
+         download is blocked by network policy — so this test exercises everything
+         downstream of physical message delivery, not the Functions host process
+         itself.
+   - [ ] End-to-end Azure Functions examples (via the real Functions host - blocked,
+         see above)
+   - [ ] Performance benchmarks
 
 4. ~~**Move Test Code** (5-8 hours) - BLOCKING~~ ✅ RESOLVED 2026-07-12, with one more
    instance found and fixed 2026-07-14
@@ -912,29 +765,30 @@ the remaining Managed Identity/best-practices documentation gap
    - [ ] Application Insights integration guide
    - [ ] Cost optimization guide
 
-6. **Code Quality Fixes** (20-30 hours)
-   - Remove commented-out code
-   - Improve error messages
-   - Add missing error handling
-   - Add configuration options
-   - Consistent naming (remove "Lambda" terminology)
+6. ~~**Code Quality Fixes** (20-30 hours)~~ ✅ **RESOLVED 2026-07-14** — removed the
+   commented-out `UseHealthCheck` block from `Extensions.cs`, fixed both known
+   file/class name mismatches (`ApiGatewayHttpRequestAdapter.cs` →
+   `AspNetHttpRequestAdapter.cs`, `AspNetHeadersMapper.cs` →
+   `AspNetMessageHeadersGetter.cs`), and the "Lambda" naming issue was already fixed
+   2026-07-12 (`BenzeneMessageEventHubHandler`). Remaining, smaller-scope items
+   (improve error messages, add missing error handling, add configuration options)
+   are not blockers and can move to a later phase.
 
-7. **Azure-Specific Features** (30-40 hours)
+7. **Azure-Specific Features** (30-40 hours) — **re-scoped 2026-07-14: CORS removed**,
+   it already existed and is now spec-hardened (see Document History)
    - Application Insights integration
    - Managed Identity support
    - Key Vault integration
-   - CORS middleware (Azure.AspNet)
    - Authentication/Authorization middleware
 
 **Total Estimated Effort for 1.0:** ~~245-368 hours (6-9 weeks full-time)~~ ~~170-260
-hours~~ **~160-250 hours remaining** (2026-07-12: dependency fix ~2h actual vs 40-50h
-estimated, XML docs fully done vs 50-70h estimated; 2026-07-14: test coverage
-re-scoped again — `Benzene.AspNet.Core`'s assumed 0% was wrong (already 81.8%), but a
-new, previously-unknown gap in `Benzene.Azure.Function.Core`'s host-builder glue
-(~5-8h) replaces it; Service Bus's ~40-50h "New Event Sources" line item is removed
-entirely since that package already shipped — net effect is roughly a wash versus the
-2026-07-12 estimate, not a further reduction, because the Service Bus discovery
-offsets the Core coverage gap discovery)
+hours~~ ~~160-250 hours~~ **~120-190 hours remaining** (2026-07-12: dependency fix ~2h
+actual vs 40-50h estimated, XML docs fully done vs 50-70h estimated; 2026-07-14: test
+coverage fully resolved same-day (Core host-builder glue fixed, ~5-8h saved), Azure SDK
+version consistency resolved by inspection (~5-10h saved), Code Quality Fixes' blocking
+scope resolved (~10-15h saved), and CORS removed from Azure-Specific Features since it
+was already built (~8-10h saved); Service Bus's ~40-50h "New Event Sources" line item
+was already removed in the prior pass since that package already shipped)
 
 ### Phased Approach
 
@@ -955,7 +809,7 @@ offsets the Core coverage gap discovery)
 **Phase 3: Azure Features (Weeks 7-8) - 50-70 hours**
 - Application Insights integration
 - Managed Identity support
-- CORS and authentication middleware
+- Authentication middleware (CORS already done — see Document History)
 - Key Vault integration examples
 - Performance benchmarking
 
@@ -976,6 +830,13 @@ offsets the Core coverage gap discovery)
 ---
 
 ## Short-Term Roadmap (3-6 Months)
+
+> **Note:** the month-by-month checkmarks below are an aspirational plan template, not
+> independently verified status — several items marked ✅ here (e.g. Application
+> Insights, Managed Identity, ARM/Bicep templates) are confirmed still **not** done
+> elsewhere in this document. Treat this section as a planning skeleton, not a status
+> report; the Executive Summary and Document History are the source of truth for what's
+> actually complete.
 
 **Goal:** Release Azure packages at 1.0.0 after core Benzene 1.0 is stable AND critical issues resolved
 
@@ -1013,7 +874,7 @@ offsets the Core coverage gap discovery)
 - 🔄 Community beta testing
 - 🔄 Add authentication/authorization middleware
 - 🔄 Key Vault integration examples
-- 🔄 CORS support for Azure.AspNet
+- ✅ CORS support for Azure.AspNet — already done, hardened to spec parity 2026-07-14
 - 🔄 Address beta feedback
 - Deliverable: Beta feedback report, enhanced features
 
@@ -1209,7 +1070,12 @@ offsets the Core coverage gap discovery)
 5. ~~⚠️ No package version for Benzene.AspNet.Core~~ ✅ RESOLVED 2026-07-12 (superseded 2026-07-14 by centralized `version.txt`)
 
 **High Priority:**
-1. ⚠️ Extensive commented-out code in multiple files — `BenzeneExtensions.cs` (Benzene.AspNet.Core) resolved via rewrite 2026-07-14, but `Extensions.cs` (Benzene.Azure.Function.AspNet) and `AspNetRequestMapper.cs` (Benzene.AspNet.Core, newly found 2026-07-14) still have commented-out code
+1. ~~⚠️ Extensive commented-out code in multiple files~~ ✅ RESOLVED — `BenzeneExtensions.cs`
+   (Benzene.AspNet.Core) resolved via rewrite 2026-07-14; `AspNetRequestMapper.cs`'s
+   fully-commented-out class (Benzene.AspNet.Core) was deleted by other work merged
+   into `main`; `Extensions.cs` (Benzene.Azure.Function.AspNet)'s commented-out
+   `UseHealthCheck` block was removed 2026-07-14 (superseded by the portable
+   `Benzene.HealthChecks` package)
 2. ~~"DirectMessageLambdaHandler" using AWS terminology in Azure package~~ ✅ RESOLVED
    2026-07-12 (renamed to `BenzeneMessageEventHubHandler`)
 3. AspNetContext implementations too simple
@@ -1217,11 +1083,13 @@ offsets the Core coverage gap discovery)
 5. ~~No test coverage at all~~ ❌ WRONG, corrected 2026-07-12/2026-07-14 — all 6 packages now have real coverage (80-95%); `Benzene.Azure.Function.Core`'s new host-builder glue, which had dropped to 48.2%, was covered same-day and is now at 95.2%
 
 **Medium Priority:**
-1. Inconsistent Azure SDK versions
+1. ~~Inconsistent Azure SDK versions~~ ✅ RESOLVED — re-verified 2026-07-14, not
+   actually inconsistent
 2. No Application Insights integration
 3. No Managed Identity support
 4. Missing authentication/authorization middleware
-5. No CORS support in Azure.AspNet
+5. ~~No CORS support in Azure.AspNet~~ ❌ **WRONG CLAIM** — already present via
+   `Benzene.Http.Cors`, now spec-hardened (see Document History)
 
 **Low Priority:**
 1. Code duplication across message getters/setters
@@ -1270,12 +1138,25 @@ offsets the Core coverage gap discovery)
 - ~~No unit tests~~ ❌ WRONG — unit tests exist for all 6 production packages (5
   Azure-Functions-specific + AspNet.Core), coverage ranging 48.2%-88.6% (see
   Executive Summary for the current per-package breakdown)
-- No integration tests (with Azurite/Functions test host specifically — this part is still accurate)
+- ~~No integration tests (with Azurite/Functions test host specifically)~~ ⚠️
+  **PARTIALLY RESOLVED 2026-07-14** — a real Azurite + Azure Event Hubs Emulator
+  Docker Compose integration test now exists
+  (`test/Benzene.Integration.Test/EventHub/EventHubConsumerPipelineTest.cs`), sending
+  a real event and feeding the real received `EventData` into Benzene's production
+  `EventHubApplication` pipeline. Running the real Azure Functions Worker host itself
+  is still not covered — that requires `azure-functions-core-tools`, whose binary
+  download is blocked by this environment's network policy
 - No performance benchmarks
 - No load tests
-- ~~Complete absence of testing infrastructure~~ ❌ WRONG — `dotnet test --collect:"XPlat Code Coverage"` and the standard xUnit + coverlet setup already work; what's missing is Azurite/Functions-emulator-based *integration* testing specifically, not testing infrastructure in general
+- ~~Complete absence of testing infrastructure~~ ❌ WRONG — `dotnet test --collect:"XPlat Code Coverage"` and the standard xUnit + coverlet setup already work; what's missing is Functions-emulator-based (real Functions host) integration testing specifically, not testing infrastructure in general
 
 ### Target Testing Strategy
+
+> **Note:** the checklists below (Unit/Integration/Performance/Load/Chaos Tests, hour
+> estimates) are an aspirational plan template, not verified status — most items
+> marked ✅ here have not been independently confirmed and should not be read as
+> "done." Treat this section as a planning skeleton; see "Current State" above and the
+> Executive Summary for what's actually verified complete.
 
 **Unit Tests (Target: 80%+ coverage) - HIGHEST PRIORITY**
 - ✅ Every public method tested
@@ -1346,7 +1227,10 @@ services:
 ### Testing Checklist for Each Package
 
 - [ ] Unit test coverage ≥80%
-- [ ] Integration tests with Azurite/emulators
+- [ ] Integration tests with Azurite/emulators — pattern established 2026-07-14
+      (`EventHubConsumerPipelineTest.cs`, real Azurite + Event Hubs Emulator via
+      Docker Compose); only implemented for `Benzene.Azure.Function.EventHub` so far,
+      not yet extended to `Benzene.Azure.Function.ServiceBus` or `.Kafka`
 - [ ] Performance benchmark baseline
 - [ ] Load test (1000 events/sec minimum)
 - [ ] Error scenario coverage
@@ -1997,44 +1881,46 @@ All Azure packages reference:
 
 ### Must Have for 1.0 (P0)
 
-1. ~~**Fix ASP.NET Core Dependencies** - CRITICAL (40-50h)~~ ✅ MOSTLY COMPLETE
-   2026-07-12 (~2h actual — `FrameworkReference` swap, not a rewrite). Remaining:
-   Azure SDK version consistency (~5-10h); the `Microsoft.Azure.WebJobs` bump this
-   line originally flagged is moot as of 2026-07-14 — the package was removed
-   entirely, not version-bumped
+1. ~~**Fix ASP.NET Core Dependencies** - CRITICAL (40-50h)~~ ✅ COMPLETE
+   2026-07-12/14 (~2h actual — `FrameworkReference` swap, not a rewrite). Azure SDK
+   version consistency, re-verified 2026-07-14: not actually inconsistent. The
+   `Microsoft.Azure.WebJobs` bump this line originally flagged is moot as of
+   2026-07-14 — the package was removed entirely, not version-bumped
 2. ~~**XML Documentation** - All packages (50-70h)~~ ✅ COMPLETE 2026-07-12
-3. **Unit Tests** - 80%+ coverage — RE-SCOPED 2026-07-14 (the 2026-07-12 re-scope was
-   itself wrong): `Benzene.AspNet.Core` does NOT need this — re-measured at 81.8%
-   covered. The actual gap is **`Benzene.Azure.Function.Core`'s new host-builder glue**
-   (`HostBuilderExtensions`, `AzureFunctionAppBuilderExtensions`,
-   `FunctionsWorkerApplicationBuilderExtensions`), at 0% coverage, dragging that
-   package to 48.2% overall (was 80-100h for "all packages," then wrongly re-scoped to
-   a `Benzene.AspNet.Core`-shaped ~15-20h gap, now correctly ~5-8h for the real gap)
+3. ~~**Unit Tests** - 80%+ coverage~~ ✅ COMPLETE 2026-07-14 — the 2026-07-12 re-scope
+   was itself wrong (`Benzene.AspNet.Core` didn't need this, already 81.8% covered);
+   the real gap, `Benzene.Azure.Function.Core`'s new host-builder glue at 48.2%, was
+   fixed same-day with `AzureUnifiedStartUpTest.cs`, now 95.2% covered
 4. ~~**Move Test Code** - TestHelpers separation (5-8h)~~ ✅ COMPLETE 2026-07-12
 5. ~~**Getting Started Guides** - All adapters (25-30h)~~ ✅ COMPLETE 2026-07-13 —
    `docs/azure-functions.md` and `docs/asp-net-core.md`
 6. **ARM/Bicep Templates** - Deployment examples (20-25h)
-7. **Integration Tests** - Azurite, Functions test host (30-40h)
-8. **Code Quality Fixes** - RE-SCOPED 2026-07-12: the `BenzeneMessageLambdaHandler` →
-   `BenzeneMessageEventHubHandler` rename (one of the two file/class mismatches found)
-   is done; remaining scope is removing commented-out dead code and the
-   `ApiGatewayHttpRequestAdapter.cs`/`AspNetHeadersMapper.cs` file/class mismatches
-   (~10-15h, down from 20-30h)
+7. ~~**Integration Tests** - Azurite, Functions test host (30-40h)~~ ⚠️ **PARTIALLY
+   COMPLETE 2026-07-14** — the Azurite/emulator half is done
+   (`EventHubConsumerPipelineTest.cs`, real Docker-based Azurite + Event Hubs
+   Emulator, real produce/consume through Benzene's own production pipeline). The
+   Functions-test-host half (running the real `func start` process) is not
+   achievable in this environment: `azure-functions-core-tools`'s post-install
+   binary download is blocked by network policy, a hard external constraint, not a
+   scoping choice. **~10-15h remaining** to extend the same pattern to
+   `Benzene.Azure.Function.ServiceBus`/`.Kafka`, or to attempt the Functions-host
+   route in an environment where Core Tools can actually install
+8. ~~**Code Quality Fixes**~~ ✅ COMPLETE 2026-07-14 — the `BenzeneMessageLambdaHandler`
+   → `BenzeneMessageEventHubHandler` rename was done 2026-07-12; the commented-out dead
+   code removal and both file/class mismatches (`ApiGatewayHttpRequestAdapter.cs` →
+   `AspNetHttpRequestAdapter.cs`, `AspNetHeadersMapper.cs` →
+   `AspNetMessageHeadersGetter.cs`) are done 2026-07-14
 9. **Application Insights Integration** - Middleware (15-20h)
 10. ~~**Migration Guide** - 0.x to 1.0 (10-12h)~~ ✅ COMPLETE 2026-07-13 —
     `docs/migration-alpha-to-1.0.md`'s Azure Functions package-rename + isolated-worker
     section
 
-**Total P0 Effort:** ~~155-245 hours remaining~~ **~145-235 hours remaining**
-(2026-07-12: dependency fix ~2h actual vs 40-50h estimated, XML documentation now
-fully complete vs 50-70h estimated; 2026-07-14: Unit Tests re-scoped a second time —
-the 2026-07-12 estimate assumed `Benzene.AspNet.Core` needed ~15-20h of new tests, but
-it's actually already 81.8% covered, while a previously-unknown ~5-8h gap in
-`Benzene.Azure.Function.Core`'s host-builder glue was found instead — net ~10h
-reduction; Move Test Code was "complete" per 2026-07-12 but one more instance (the
-`Benzene.Testing` leak in `Benzene.Azure.Function.Core`) was found and fixed
-2026-07-14, ~0h remaining now that it's actually done; Code Quality Fixes unchanged at
-~10-15h)
+**Total P0 Effort:** ~~155-245 hours~~ ~~145-235 hours~~ ~~50-65 hours~~ **~35-45 hours
+remaining** (2026-07-14: Unit Tests, Azure SDK consistency, and Code Quality Fixes are
+now all fully resolved; Integration Tests re-scoped from 30-40h to ~10-15h remaining
+now that the Azurite/emulator half is done — the remaining scope is #6 ARM/Bicep
+Templates, #7 Integration Tests' Functions-host-blocked remainder, and #9 Application
+Insights)
 
 ### Should Have for 1.0 (P1)
 
@@ -2047,9 +1933,11 @@ reduction; Move Test Code was "complete" per 2026-07-12 but one more instance (t
 7. **Cost Optimization Guide** - All services (15-20h)
 8. **Load Tests** - Throughput validation (20-25h)
 9. **Security Audit** - Best practices (15-20h)
-10. **CORS Middleware** - Azure.AspNet (8-10h)
+10. ~~**CORS Middleware** - Azure.AspNet (8-10h)~~ ✅ **REMOVED 2026-07-14** — already
+    built, now hardened to full spec parity with `Microsoft.AspNetCore.Cors` (see
+    Document History); this was never actually a P1 gap
 
-**Total P1 Effort:** 155-205 hours
+**Total P1 Effort:** ~~155-205 hours~~ **147-195 hours** (CORS Middleware removed, ~8-10h)
 
 ### Nice to Have for 1.0 (P2)
 

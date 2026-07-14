@@ -7,8 +7,9 @@
   </PropertyGroup>
 
 	<ItemGroup>
+    <PackageReference Include="Azure.Messaging.EventHubs.Processor" Version="5.11.5" />
     <PackageReference Include="Ductus.FluentDocker" Version="2.10.59" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="9.0.2" />
     <PackageReference Include="Moq" Version="4.18.4" />
@@ -23,13 +24,24 @@
 	  <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Sqs.TestHelpers\Benzene.Aws.Lambda.Sqs.TestHelpers.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub\Benzene.Azure.Function.EventHub.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub.TestHelpers\Benzene.Azure.Function.EventHub.TestHelpers.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
 	</ItemGroup>
 
   <ItemGroup>
     <None Update="Fixtures\Files\sqs-docker-compose.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Fixtures\Files\eventhub-docker-compose.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Fixtures\Files\eventhub-emulator-config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
