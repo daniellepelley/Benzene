@@ -26,9 +26,10 @@
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="2.0.0" />
     <PackageReference Include="FluentValidation" Version="11.8.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.1.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
 
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageReference Include="Moq" Version="4.18.4" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
@@ -96,6 +97,7 @@
     <ProjectReference Include="..\..\src\Benzene.Extras\Benzene.Extras.csproj" />
     <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.HealthChecks.EntityFramework\Benzene.HealthChecks.EntityFramework.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Http\Benzene.HealthChecks.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.JsonSchema\Benzene.JsonSchema.csproj" />
