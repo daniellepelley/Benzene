@@ -66,4 +66,73 @@ public static class BenzeneResultHttpMapper
     {
         return Map<T>(Convert.ToInt32(httpStatusCode).ToString());
     }
+
+    private static readonly string[] SuccessStatuses =
+    {
+        BenzeneResultStatus.Ok,
+        BenzeneResultStatus.Created,
+        BenzeneResultStatus.Accepted,
+        BenzeneResultStatus.Updated,
+        BenzeneResultStatus.Deleted,
+        BenzeneResultStatus.Ignored
+    };
+
+    private static readonly string[] FailureStatuses =
+    {
+        BenzeneResultStatus.BadRequest,
+        BenzeneResultStatus.ValidationError,
+        BenzeneResultStatus.Unauthorized,
+        BenzeneResultStatus.Forbidden,
+        BenzeneResultStatus.NotFound,
+        BenzeneResultStatus.Conflict,
+        BenzeneResultStatus.NotImplemented,
+        BenzeneResultStatus.ServiceUnavailable,
+        BenzeneResultStatus.UnexpectedError
+    };
+
+    /// <summary>
+    /// Normalizes a response's status code to a Benzene result status. A raw Benzene status (the
+    /// standard envelope contract - what <c>BenzeneMessageResponse.StatusCode</c> carries) passes
+    /// through verbatim, preserving distinctions like <c>Updated</c> vs <c>Ok</c>; a numeric HTTP
+    /// status code (older or HTTP-shaped services) is mapped via <see cref="MapBenzeneResultStatus"/>.
+    /// Returns <c>null</c> for anything unrecognized.
+    /// </summary>
+    public static string? NormalizeStatus(string? statusCode)
+    {
+        if (string.IsNullOrEmpty(statusCode))
+        {
+            return null;
+        }
+
+        if (SuccessStatuses.Contains(statusCode) || FailureStatuses.Contains(statusCode))
+        {
+            return statusCode;
+        }
+
+        switch (statusCode)
+        {
+            case "200":
+            case "201":
+            case "202":
+            case "204":
+            case "400":
+            case "401":
+            case "403":
+            case "404":
+            case "409":
+            case "422":
+            case "500":
+            case "501":
+            case "503":
+                return MapBenzeneResultStatus(statusCode);
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>Whether a (normalized) Benzene result status is a success status.</summary>
+    public static bool IsSuccessStatus(string status)
+    {
+        return SuccessStatuses.Contains(status);
+    }
 }
