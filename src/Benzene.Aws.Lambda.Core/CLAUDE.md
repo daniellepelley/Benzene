@@ -10,7 +10,7 @@ Core AWS Lambda integration for Benzene. Provides base classes and abstractions 
 - `AwsLambdaEntryPoint` - Base entry point implementation
 - `IAwsEntryPointBuilder` - Builds Lambda entry points
 - `InlineAwsLambdaStartUp` - Inline startup configuration
-- `AwsLambdaStartUp` - Base class for startup configuration
+- `AwsLambdaHost<TStartUp>` - Hosts a platform-neutral `BenzeneStartUp` as a Lambda entry point
 
 ### Context & Routing
 - `AwsEventStreamContext` - AWS event stream context

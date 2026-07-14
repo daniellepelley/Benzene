@@ -6,7 +6,9 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.Aws.Tests.Helpers;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Testing;
 using Benzene.Tools.Aws;
 using Xunit;
 using ThreadSafeTestLambdaLogger = Benzene.Examples.Aws.Tests.Helpers.ThreadSafeTestLambdaLogger;
@@ -21,7 +23,7 @@ public class HealthCheckTest : InMemoryOrdersTestBase
     private readonly Guid _id = Guid.Parse(Defaults.Order.Id);
 
     public HealthCheckTest()
-        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
+        :base(BenzeneTestHost.Create<StartUp>().BuildAwsLambdaHost())
     { }
     
     [Fact]

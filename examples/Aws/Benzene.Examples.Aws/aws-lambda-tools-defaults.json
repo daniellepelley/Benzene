@@ -13,7 +13,7 @@
     "function-runtime" : "dotnet6",
     "function-memory-size" : 1024,
     "function-timeout"     : 30,
-    "function-handler"     : "Benzene.Examples.Aws::Benzene.Examples.Aws.StartUp::FunctionHandlerAsync",
+    "function-handler"     : "Benzene.Examples.Aws::Benzene.Examples.Aws.Function::FunctionHandlerAsync",
     "function-name"        : "benzene-demo",
     "package-type"         : "Zip",
     "function-role"        : "arn:aws:iam::616937467218:role/lambda-test-AspNetCoreFunctionRole-1MKGJMZI6OA09",

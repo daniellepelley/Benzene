@@ -59,7 +59,7 @@ Resources:
       BuildMethod: dotnet8
     Properties:
       FunctionName: benzene-example
-      Handler: Benzene.Examples.Aws::Benzene.Examples.Aws.StartUp::FunctionHandlerAsync
+      Handler: Benzene.Examples.Aws::Benzene.Examples.Aws.Function::FunctionHandlerAsync
       CodeUri: ./
       Policies:
         # SAM policy template - grants exactly the SQS actions documented under

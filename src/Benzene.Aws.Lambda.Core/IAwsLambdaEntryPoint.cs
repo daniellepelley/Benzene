@@ -9,8 +9,8 @@ namespace Benzene.Aws.Lambda.Core;
 /// Represents the entry point AWS Lambda invokes for each function invocation.
 /// </summary>
 /// <remarks>
-/// Implemented by <see cref="AwsLambdaEntryPoint"/> and by <see cref="AwsLambdaStartUp{TContainer}"/>
-/// (which is itself a valid Lambda entry point — see its remarks for details).
+/// Implemented by <see cref="AwsLambdaEntryPoint"/>, which is hosted by
+/// <see cref="AwsLambdaHost{TStartUp}"/> for the platform-neutral <c>BenzeneStartUp</c> model.
 /// </remarks>
 public interface IAwsLambdaEntryPoint : IDisposable
 {

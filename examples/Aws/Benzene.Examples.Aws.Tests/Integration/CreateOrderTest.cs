@@ -10,7 +10,9 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Testing;
 using Benzene.Results;
 using Benzene.Tools.Aws;
 using Benzene.Xml;
@@ -27,7 +29,7 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     private const string CreateOrder = MessageTopicNames.OrderCreate;
 
     public CreateOrderTest()
-        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
+        :base(BenzeneTestHost.Create<StartUp>().BuildAwsLambdaHost())
     { }
     
     private static CreateOrderMessage CreateCreateOrderMessage()
