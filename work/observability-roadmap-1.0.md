@@ -158,6 +158,30 @@
 > targets) was reviewed but found to still be forward-looking/aspirational
 > content rather than a claim about current state, and is left unchanged.
 
+> **2026-07-14 follow-up (same day, second pass)** — closed the "HealthChecks packages still 0%"
+> gap this document repeatedly flagged (Executive Summary, P0 items 2 and 4, package sections 11-12,
+> Appendix B, Next Steps). All four HealthChecks packages (`Benzene.HealthChecks.Core`,
+> `Benzene.HealthChecks`, `Benzene.HealthChecks.Http`, `Benzene.HealthChecks.EntityFramework` — 29
+> files total) now have complete XML documentation, verified via `GenerateDocumentationFile=true` and
+> a clean rebuild showing 0 CS1591/CS1574 warnings on each. `Benzene.HealthChecks.Http` and
+> `.EntityFramework` — the two packages this document specifically called out as having zero dedicated
+> tests — now have real test coverage (`test/Benzene.Core.Test/HealthChecks/{Http,EntityFramework}/`,
+> 10 new tests). Two real bugs were found and fixed while documenting: `DatabaseConnectionHealthCheck`
+> stored a whole `(bool, Exception)` tuple instead of just the bool in its result's diagnostic data
+> (copy-paste omission vs. its sibling `DatabaseHealthCheck`), and `Benzene.HealthChecks/Extensions.cs`'s
+> `UseHealthCheck` middleware fired `SetResultAsync` without awaiting it (same missing-`await` pattern
+> found and fixed elsewhere in the codebase this session). Also corrected 4 overclaiming CLAUDE.md
+> files across the HealthChecks packages (claims of a dedicated HTTP `/health` endpoint with 200/503
+> status mapping, readiness/liveness endpoints, "Healthy/Degraded/Unhealthy" status values, and
+> configurable timeout/retry support — none of which exist; the actual status values are
+> `Ok`/`Warning`/`Failed`, and timeout/exception handling is a 10-second hardcoded decorator applied
+> only by `Benzene.HealthChecks`'s aggregator, not by the individual check implementations).
+> `dotnet test test/Benzene.Core.Test/Benzene.Test.csproj` is green (738 passed, 4 skipped).
+> **Genuinely still open** (not touched this pass): performance benchmarks, privacy/GDPR docs,
+> sensitive-data filtering, sampling-strategy docs, a dedicated security audit, and the readiness/
+> liveness distinction this document's own vision called for (confirmed via this pass: doesn't exist
+> anywhere in the current HealthChecks packages, not just under-documented).
+
 ---
 
 ## Executive Summary
@@ -1921,9 +1945,9 @@ All observability packages reference:
 > (6 packages instead of 12).
 
 1. ~~**Add PackageVersion to csproj** - All missing packages (4-6h)~~ ✅ MOOT — centralized versioning
-2. **XML Documentation** - All packages (60-80h) — ⚠️ partially done (Diagnostics/OpenTelemetry newer files); HealthChecks packages still 0%
+2. ~~**XML Documentation** - All packages (60-80h)~~ ✅ COMPLETE 2026-07-14 — Diagnostics/OpenTelemetry done earlier; all 4 HealthChecks packages (29 files) done same-day follow-up, 0 CS1591/CS1574 on clean rebuild for every package this roadmap tracks
 3. ~~**Fix Dependency Issues** - XRay, OpenTelemetry (8-12h)~~ ✅ DONE/MOOT — XRay deleted, OpenTelemetry updated to 1.16.0; new item found: EF package NuGet advisories (unscoped, small)
-4. **Unit Tests** - 80%+ coverage (60-80h) — ⚠️ largely done for Diagnostics/OpenTelemetry/core HealthChecks; still open for HealthChecks.Http/.EntityFramework
+4. **Unit Tests** - 80%+ coverage (60-80h) — ✅ largely done for Diagnostics/OpenTelemetry/core HealthChecks; `HealthChecks.Http`/`.EntityFramework` gap closed 2026-07-14 (10 new tests); no rigorous line-coverage % re-measured for this pass, but the "zero dedicated tests" gap specifically is resolved
 5. ~~**OpenTelemetry Modernization** - DI, metrics, logs (20-25h)~~ ✅ LARGELY DONE — DI/TracerProvider.Default and metrics resolved; logs integration still open
 6. ~~**Correlation ID Integration** - All providers (15-20h)~~ ✅ RESOLVED, superseded by W3C trace context propagation
 7. **Performance Benchmarks** - All packages (20-25h) — still fully open, no benchmark project exists
