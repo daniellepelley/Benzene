@@ -1,9 +1,21 @@
 # Work spec: Phase 2 — Azure Functions isolated-worker rewrite on BenzeneStartUp
 
-**Status: blocked on dependency approval — do not start implementation until a maintainer approves
-the new NuGet package references listed in "Required new dependencies" below.** Per CLAUDE.md, new
-NuGet dependencies require explicit approval separately from the "breaking changes are fine"
-direction that authorized the rest of this cross-platform unification effort.
+**Status: implemented and merged to `main`** (verified 2026-07-14). All four `src/Benzene.Azure.Function.*`
+packages (`Core`, `AspNet`, `EventHub`, `Kafka`) now reference only isolated-worker packages
+(`Microsoft.Azure.Functions.Worker`, `.Worker.Sdk`, `.Worker.Extensions.Http`/`.Http.AspNetCore`,
+`.Worker.Extensions.EventHubs`, `.Worker.Extensions.Kafka`) — a repo-wide `grep -rl
+"Microsoft.Azure.WebJobs"` under `src/` returns no results, confirming the legacy in-process model is
+fully gone, not running side-by-side. `AzureFunctionAppBuilder : BenzeneApplicationBuilder,
+IAzureFunctionAppBuilder` wires Azure into the shared `IBenzeneApplicationBuilder`/`BenzeneStartUp`
+unification from `work/phase2-startup-unification-spec.md`, matching the naming/base-class pattern of
+the other three adapters as this spec's guardrails required. `examples/Azure/Benzene.Example.Azure/Program.cs`
+is pure isolated-worker (`ConfigureFunctionsWebApplication()` + `.UseBenzene<StartUp>()`, no
+`ConfigureWebJobs`/`FunctionsStartup` remnants). D4 (Kafka isolated-worker support) resolved
+affirmatively: `Microsoft.Azure.Functions.Worker.Extensions.Kafka` 4.3.0 is referenced and used, so
+Kafka did not need to stay on the in-process exception path. `dotnet test
+test/Benzene.Core.Test/Benzene.Test.csproj` is green (674 passed, 4 skipped) with no regressions. This
+document is kept for historical/design record only — the dependency-approval blocker below was
+evidently resolved and the rewrite completed by a later session; no further action needed.
 
 This is the last unimplemented adapter from the startup-unification arc (see
 `work/cross-platform-design-review.md` §2 and the completed `AwsLambdaHost<TStartUp>` /

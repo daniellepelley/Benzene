@@ -1,5 +1,17 @@
 # Work spec: Phase 2 slice 1 — platform-neutral StartUp (additive)
 
+**Status: implemented and merged to `main` — every type below exists exactly as specified**
+(verified 2026-07-14: `IBenzeneApplicationBuilder`, `BenzeneApplicationBuilder`, `BenzeneStartUp`,
+`AwsLambdaHost<TStartUp>`, `AwsLambdaApplicationBuilder`/`UseAwsLambda`, `WorkerApplicationBuilder`/
+`UseWorker`, `IHostBuilder.UseBenzene<TStartUp>()` all present with the signatures specified below;
+`test/Benzene.Core.Test/Hosting/UnifiedStartUpTest.cs` covers the shared-StartUp/cross-platform-no-op
+scenarios this spec called for). `dotnet test test/Benzene.Core.Test/Benzene.Test.csproj` is green
+(674 passed, 4 skipped). The three "follow-up slices (do NOT start)" listed at the bottom of this
+document have **also** since shipped — see `work/phase2-azure-isolated-worker-spec.md` (Azure
+isolated-worker rewrite, done) and `test/Benzene.Core.Test/Hosting/AspNetUnifiedStartUpTest.cs` /
+`BenzeneInvocationTest.cs` (ASP.NET `UseHttp` adapter and the `IBenzeneInvocation` feature bag, both
+done). This document is kept for historical/design record only; no further action needed.
+
 Executable work order for the first slice of the startup unification described in
 `work/cross-platform-design-review.md` §2. All research is done; this document contains
 every signature and decision needed. **Everything in this slice is additive — do not
