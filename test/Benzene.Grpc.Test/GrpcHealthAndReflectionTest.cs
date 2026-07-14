@@ -36,7 +36,7 @@ public class GrpcHealthAndReflectionTest
 
         var response = await client.CheckAsync(new HealthCheckRequest());
 
-        Assert.Equal(Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.Serving, response.Status);
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.Serving, response.Status);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class GrpcHealthAndReflectionTest
 
         var response = await client.CheckAsync(new HealthCheckRequest());
 
-        Assert.Equal(Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.NotServing, response.Status);
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.NotServing, response.Status);
     }
 
     [Fact]

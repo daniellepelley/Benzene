@@ -1,5 +1,6 @@
 using Benzene.AspNet.Core;
 using Benzene.Clients;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Grpc.AspNet;
