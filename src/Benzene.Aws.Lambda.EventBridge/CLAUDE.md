@@ -37,3 +37,6 @@ the message body. See `docs/plans/eventbridge-plan.md` for the design decisions 
   (`eventbridge-source` header), not part of the topic.
 - Embedded `_benzeneHeaders` win over prefixed envelope keys on collision; string values only.
 - Transport name: `"eventbridge"`.
+- The `aws_cloudwatch_event_rule`/target/permission Terraform for a consuming Lambda can be
+  generated from its `[Message]` topics — see `Benzene.CodeGen.Terraform`
+  (`TerraformEventBridgeRuleBuilder`).

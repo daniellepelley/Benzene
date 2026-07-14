@@ -22,7 +22,13 @@ public class TerraformLambdaBuilder : ICodeBuilder<TerraformLambdaSettings>
             });
             list.AddRange(permissionsCodeFiles);
         }
-        
+
+        if (settings.EventBridge != null)
+        {
+            settings.EventBridge.LambdaName ??= settings.Name;
+            list.AddRange(new TerraformEventBridgeRuleBuilder().BuildCodeFiles(settings.EventBridge));
+        }
+
         return list.ToArray();
     }
 
