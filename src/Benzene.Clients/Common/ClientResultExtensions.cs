@@ -6,83 +6,60 @@ namespace Benzene.Clients.Common
 {
     public static class BenzeneResultExtensions
     {
+        /// <summary>
+        /// Maps a <see cref="BenzeneMessageClientResponse"/> to an <see cref="IBenzeneResult{T}"/>.
+        /// The response's status code may be a raw Benzene result status (the standard envelope
+        /// contract, preserved verbatim) or a numeric HTTP status code (older or HTTP-shaped
+        /// services, mapped to its Benzene equivalent). Failure bodies are read as the standard
+        /// error payload (<c>{ "status": ..., "detail": ... }</c>).
+        /// </summary>
         public static IBenzeneResult<T> AsBenzeneResult<T>(this BenzeneMessageClientResponse source, ISerializer serializer)
         {
-            if (source.Message == null) return ReturnNullResult<T>(source);
+            var status = BenzeneResultHttpMapper.NormalizeStatus(source.StatusCode);
+            if (status == null)
+            {
+                return BenzeneResult.UnexpectedError<T>("Status code {statusCode} not mapped", source.StatusCode);
+            }
+
+            if (source.Body == null)
+            {
+                return BenzeneResult.Set<T>(status, BenzeneResultHttpMapper.IsSuccessStatus(status));
+            }
 
             return typeof(T) == typeof(Guid)
-                ? ReturnGuidResult<T>(source, serializer)
-                : ReturnObjectResult<T>(source, serializer);
+                ? ReturnGuidResult<T>(status, source.Body, serializer)
+                : ReturnObjectResult<T>(status, source.Body, serializer);
         }
 
-        private static IBenzeneResult<T> ReturnObjectResult<T>(BenzeneMessageClientResponse source, ISerializer serializer)
+        private static IBenzeneResult<T> ReturnObjectResult<T>(string status, string body, ISerializer serializer)
         {
-            var clientStatusCode = BenzeneResultHttpMapper.MapBenzeneResultStatus(source.StatusCode);
-            switch (source.StatusCode)
+            if (BenzeneResultHttpMapper.IsSuccessStatus(status))
             {
-                case "200":
-                case "201":
-                case "202":
-                case "204":
-                    return source.Message == null 
-                        ? BenzeneResult.Set<T>(clientStatusCode, true)
-                        : BenzeneResult.Set(clientStatusCode, serializer.Deserialize<T>(source.Message));
-                case "400":
-                case "401":
-                case "403":
-                case "404":
-                case "409":
-                case "422":
-                case "501":
-                case "503":
-                    return source.Message == null
-                        ? BenzeneResult.Set<T>(clientStatusCode, false)
-                        : BenzeneResult.Set<T>(clientStatusCode, serializer.Deserialize<ErrorPayload>(source.Message).Detail);
-                default:
-                    return BenzeneResult.UnexpectedError<T>("Status code {statusCode} not mapped", source.StatusCode);
+                return BenzeneResult.Set(status, serializer.Deserialize<T>(body));
             }
+
+            var errorPayload = serializer.Deserialize<ErrorPayload>(body);
+            return string.IsNullOrEmpty(errorPayload?.Detail)
+                ? BenzeneResult.Set<T>(status, false)
+                : BenzeneResult.Set<T>(status, errorPayload.Detail);
         }
 
-        private static IBenzeneResult<T> ReturnGuidResult<T>(BenzeneMessageClientResponse source, ISerializer serializer)
+        private static IBenzeneResult<T> ReturnGuidResult<T>(string status, string body, ISerializer serializer)
         {
-            var clientStatusCode = BenzeneResultHttpMapper.MapBenzeneResultStatus(source.StatusCode);
-            switch (source.StatusCode)
+            if (BenzeneResultHttpMapper.IsSuccessStatus(status))
             {
-                case "200":
-                case "201":
-                case "202":
-                case "204":
-                    return (IBenzeneResult<T>)BenzeneResult.Set(clientStatusCode, ParseGuid(source.Message, serializer));
-                case "400":
-                case "401":
-                case "403":
-                case "404":
-                case "409":
-                case "422":
-                case "501":
-                case "503":
-                    var errorPayload =  serializer.Deserialize<ErrorPayload>(source.Message);
-
-                    if (!string.IsNullOrEmpty(errorPayload?.Detail))
-                    {
-                        return BenzeneResult.Set<T>(clientStatusCode, errorPayload.Detail);
-                    }
-                    
-                    return BenzeneResult.Set<T>(clientStatusCode);
-                default:
-                    return BenzeneResult.ServiceUnavailable<T>("Status code {statusCode} not mapped",
-                        source.StatusCode);
+                return (IBenzeneResult<T>)BenzeneResult.Set(status, ParseGuid(body, serializer));
             }
+
+            var errorPayload = serializer.Deserialize<ErrorPayload>(body);
+            return string.IsNullOrEmpty(errorPayload?.Detail)
+                ? BenzeneResult.Set<T>(status, false)
+                : BenzeneResult.Set<T>(status, errorPayload.Detail);
         }
 
-        private static IBenzeneResult<T> ReturnNullResult<T>(BenzeneMessageClientResponse source)
+        private static Guid ParseGuid(string body, ISerializer serializer)
         {
-            return BenzeneResultHttpMapper.Map<T>(source.StatusCode);
-        }
-
-        private static Guid ParseGuid(string message, ISerializer serializer)
-        {
-            var successfullyParsed = Guid.TryParse(serializer.Deserialize<string>(message), out var parsedGuid);
+            var successfullyParsed = Guid.TryParse(serializer.Deserialize<string>(body), out var parsedGuid);
 
             if (!successfullyParsed)
             {

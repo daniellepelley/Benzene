@@ -39,14 +39,15 @@ language.
 
 ## 3. Conformance testing
 
-The goal is a language-neutral test suite that every implementation runs:
+A language-neutral test suite that every implementation runs:
 
-- **Fixture form**: JSON files of (input envelope/native-event facsimile, registered handler
-  behavior, expected status/headers/body). The existing .NET xUnit suites are behavior-shaped and
-  are the source to extract these from.
-- **Interop form**: a docker-composed pair — reference .NET service + candidate implementation —
-  exercising envelope round-trips, correlation/trace propagation, the `benzene-status` trailer,
-  and every row of the status mapping tables in both directions.
+- **Fixture form** (exists — see [conformance/](conformance/README.md)): JSON fixtures for the
+  status vocabulary, the HTTP/gRPC mapping tables in both directions, and end-to-end envelope
+  cases run against a canonical handler set. The .NET reference runner is
+  `test/Benzene.Conformance.Test/`; a port writes its own runner over the same files.
+- **Interop form** (future): a docker-composed pair — reference .NET service + candidate
+  implementation — exercising envelope round-trips, correlation/trace propagation, and the
+  `benzene-status` trailer over real transports.
 - A port is "Benzene" when it passes both; API shape is explicitly not part of conformance.
 
 ## 4. Known .NET-isms that must NOT leak into the spec
@@ -57,8 +58,9 @@ Recorded so they don't get accidentally specified:
 - PascalCase status strings are a wire contract (keep), but PascalCase keys inside health check
   `data` bags are incidental (each check writes verbatim keys — specified as "verbatim", not as
   "PascalCase").
-- The `message` vs `body` envelope field inconsistency (wire-contracts §1.1 note) — resolve in
-  .NET before 1.0 rather than specifying the inconsistency.
+- ~~The `message` vs `body` envelope field inconsistency~~ — resolved: both sides now use `body`
+  (wire-contracts §1.1); the client also tolerates numeric HTTP status codes on read for
+  compatibility with older services, which a fresh port need not replicate.
 - Attribute-based gRPC route declaration — the spec form is an explicit (route → topic) record.
 - The reopened-container / accessor-instance tricks in ASP.NET Core hosting — pure host plumbing;
   no equivalent should be required of a port whose platform doesn't have the same DI split.

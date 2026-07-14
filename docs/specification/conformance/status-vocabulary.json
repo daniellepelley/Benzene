@@ -1,0 +1,20 @@
+{
+  "description": "The Benzene status vocabulary (wire-contracts.md section 3). Statuses are case-sensitive wire strings.",
+  "statuses": [
+    { "status": "Ok", "isSuccess": true },
+    { "status": "Created", "isSuccess": true },
+    { "status": "Accepted", "isSuccess": true },
+    { "status": "Updated", "isSuccess": true },
+    { "status": "Deleted", "isSuccess": true },
+    { "status": "Ignored", "isSuccess": true },
+    { "status": "BadRequest", "isSuccess": false },
+    { "status": "ValidationError", "isSuccess": false },
+    { "status": "Unauthorized", "isSuccess": false },
+    { "status": "Forbidden", "isSuccess": false },
+    { "status": "NotFound", "isSuccess": false },
+    { "status": "Conflict", "isSuccess": false },
+    { "status": "NotImplemented", "isSuccess": false },
+    { "status": "ServiceUnavailable", "isSuccess": false },
+    { "status": "UnexpectedError", "isSuccess": false }
+  ]
+}
