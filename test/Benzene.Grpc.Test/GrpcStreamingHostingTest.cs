@@ -1,3 +1,4 @@
+using Benzene.AspNet.Core;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Grpc.AspNet;
 using Benzene.Grpc.Test.Handlers;
