@@ -30,6 +30,20 @@ public interface IBenzeneResponseAdapter<TContext>
     /// <param name="body">The serialized response body.</param>
     void SetBody(TContext context, string body);
 
+    /// <summary>
+    /// Sets the body of the outgoing response from raw bytes, for byte-oriented serialization
+    /// (see <see cref="Benzene.Abstractions.Serialization.IPayloadSerializer"/>). The default
+    /// implementation decodes as UTF-8 and delegates to <see cref="SetBody(TContext, string)"/>, so
+    /// every existing adapter keeps compiling and behaving as before without overriding this member;
+    /// an adapter that can genuinely accept bytes (avoiding the decode) may override it.
+    /// </summary>
+    /// <param name="context">The transport-specific context to write to.</param>
+    /// <param name="body">The serialized response body, as UTF-8 bytes.</param>
+    void SetBody(TContext context, ReadOnlyMemory<byte> body)
+    {
+        SetBody(context, System.Text.Encoding.UTF8.GetString(body.Span));
+    }
+
     /// <summary>Gets the body currently set on the outgoing response.</summary>
     /// <param name="context">The transport-specific context to read from.</param>
     /// <returns>The currently-set response body.</returns>

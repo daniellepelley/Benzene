@@ -26,13 +26,17 @@ public class MultiSerializerOptionsRequestMapper<TContext> : IRequestMapper<TCon
     private readonly IServiceResolver _serviceResolver;
     private readonly IEnumerable<IRequestEnricher<TContext>> _enrichers;
     private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly IMessageBodyBytesGetter<TContext>? _messageBodyBytesGetter;
     private readonly Dictionary<ISerializer, IRequestMapper<TContext>> _mappersBySerializer = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MultiSerializerOptionsRequestMapper{TContext}"/> class.
     /// </summary>
     /// <param name="mediaFormatNegotiator">Selects which format to read the request body with.</param>
-    /// <param name="serviceResolver">Resolver used to obtain the negotiated format's serializer.</param>
+    /// <param name="serviceResolver">
+    /// Resolver used to obtain the negotiated format's serializer, and to look up an optional
+    /// <see cref="IMessageBodyBytesGetter{TContext}"/> for the byte-oriented mapping path.
+    /// </param>
     /// <param name="messageBodyGetter">Extracts the raw message body from the context.</param>
     /// <param name="enrichers">The enrichers applied onto every mapped request.</param>
     public MultiSerializerOptionsRequestMapper(
@@ -45,6 +49,7 @@ public class MultiSerializerOptionsRequestMapper<TContext> : IRequestMapper<TCon
         _serviceResolver = serviceResolver;
         _messageBodyGetter = messageBodyGetter;
         _enrichers = enrichers;
+        _messageBodyBytesGetter = serviceResolver.TryGetService<IMessageBodyBytesGetter<TContext>>();
     }
 
     /// <summary>
@@ -60,7 +65,8 @@ public class MultiSerializerOptionsRequestMapper<TContext> : IRequestMapper<TCon
 
         if (!_mappersBySerializer.TryGetValue(serializer, out var mapper))
         {
-            mapper = new EnrichingRequestMapper<TContext>(new RequestMapper<TContext>(_messageBodyGetter, serializer), _enrichers);
+            mapper = new EnrichingRequestMapper<TContext>(
+                new RequestMapper<TContext>(_messageBodyGetter, serializer, _messageBodyBytesGetter), _enrichers);
             _mappersBySerializer[serializer] = mapper;
         }
 

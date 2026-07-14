@@ -137,4 +137,33 @@ public class RequestMapperThunkTest
 
         Assert.Equal("some-name", request!.Name);
     }
+
+    [Fact]
+    public void GetsRequest_BenzeneMessageContext_IsWiredForTheBytePath()
+    {
+        var serializer = new JsonSerializer();
+        var body = serializer.Serialize(new ExampleRequestPayload { Name = "some-name" });
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Body = body });
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services.UsingBenzene(x => x.AddBenzeneMessage());
+
+        var serviceResolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+
+        // Phase 4's reference transport: BenzeneMessageContext registers IMessageBodyBytesGetter,
+        // and JsonSerializer implements IPayloadSerializer, so MultiSerializerOptionsRequestMapper
+        // resolves both and prefers the byte path.
+        var bytesGetter = serviceResolver.GetService<IMessageBodyBytesGetter<BenzeneMessageContext>>();
+        Assert.Equal(body, System.Text.Encoding.UTF8.GetString(bytesGetter.GetBodyBytes(context).Span));
+
+        var mediaFormatNegotiator = serviceResolver.GetService<IMediaFormatNegotiator<BenzeneMessageContext>>();
+        var requestMapper = new MultiSerializerOptionsRequestMapper<BenzeneMessageContext>(
+            mediaFormatNegotiator, serviceResolver, new BenzeneMessageGetter(),
+            Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
+
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var request = requestFactory.GetRequest<ExampleRequestPayload>();
+
+        Assert.Equal("some-name", request!.Name);
+    }
 }
