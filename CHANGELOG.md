@@ -43,8 +43,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed AWS Lambda projects for better clarity
 - **BREAKING:** Renamed `BenzeneWorkerStartup2` (`Benzene.SelfHost`) to `BenzeneWorkerBuilder`,
   matching its file name and removing the versioned-name smell flagged in the 1.0 API review
+- Request/response pipeline: Phase 1 of `docs/plans/request-response-improvements-plan.md` —
+  correctness and hot-path performance fixes with no reshaping of the request/response design.
+  Content-type matching (`ISerializerOption`/XML response selection) now tolerates `;`-delimited
+  parameters and casing (`application/xml; charset=utf-8` now correctly selects XML instead of
+  silently falling back to JSON) via a new `MediaType.Matches`/`MediaTypeHeaderContextPredicate`
+  (`Benzene.Core.Messages`). `MessageHandlerFactory` dispatch, handler-definition lookup
+  (new `MessageHandlerDefinitionIndex`, singleton-cached, topic-id-keyed), and
+  `MultiSerializerOptionsRequestMapper`'s composed mapper no longer repeat reflection/allocation
+  work on every message. `Benzene.Xml.XmlSerializer` caches its underlying
+  `System.Xml.Serialization.XmlSerializer` per type instead of constructing one per call.
+  **BREAKING:** `MessageHandlerDefinitionLookUp`'s constructor now takes a
+  `MessageHandlerDefinitionIndex` instead of `IEnumerable<IMessageHandlersFinder>`;
+  `JsonSerializationResponseHandler`/`XmlSerializationResponseHandler` now take their serializer
+  via constructor injection instead of constructing one internally. All in-repo consumers go
+  through DI and pick these up automatically.
 
 ### Fixed
+- `EnrichingRequestMapper`'s XML docs corrected: enrichers fold onto the mapped request in
+  registration order with earlier enrichers taking precedence (a later enricher can only fill in
+  a property no earlier one has set) — the docs previously claimed the opposite
 - `KafkaClientMiddleware` no longer silently swallows produce exceptions — failures now propagate
   (mapped to `ServiceUnavailable` by `KafkaBenzeneMessageClient`), and `KafkaContextConverter`
   maps the delivery result's `PersistenceStatus` (`Persisted` → `Accepted`, anything else →

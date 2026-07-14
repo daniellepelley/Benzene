@@ -13,6 +13,15 @@ namespace Benzene.Core.MessageHandlers.Request;
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type requests are mapped from.</typeparam>
 /// <typeparam name="TDefaultSerializer">The serializer used when no registered <see cref="ISerializerOption{TContext}"/> matches the context.</typeparam>
+/// <remarks>
+/// The composed <see cref="RequestMapper{TContext}"/>/<see cref="EnrichingRequestMapper{TContext}"/>
+/// pair for a given resolved <see cref="ISerializer"/> is a pure function of (serializer, body getter,
+/// enrichers) - none of which change for the lifetime of this (scoped, per-message) instance - so it's
+/// built once per distinct serializer and cached, rather than reallocated on every <see cref="GetBody{TRequest}"/>
+/// call within the same message. The serializer-option applicability check itself
+/// (<see cref="ISerializerOption{TContext}.CanHandle"/>) still runs on every call, since that's a
+/// genuine per-<paramref name="context"/> decision.
+/// </remarks>
 public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> : IRequestMapper<TContext>
     where TDefaultSerializer : class, ISerializer
 {
@@ -20,6 +29,8 @@ public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> :
     private readonly IServiceResolver _serviceResolver;
     private readonly IEnumerable<IRequestEnricher<TContext>> _enrichers;
     private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly Dictionary<ISerializer, IRequestMapper<TContext>> _mappersBySerializer = new();
+    private IRequestMapper<TContext>? _defaultMapper;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MultiSerializerOptionsRequestMapper{TContext,TDefaultSerializer}"/> class.
@@ -56,12 +67,25 @@ public class MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer> :
     private IRequestMapper<TContext> GetMapper(TContext context)
     {
         var serializerOption = _options.FirstOrDefault(option => option.CanHandle.Check(context, _serviceResolver));
-        var serializer = serializerOption != null
-            ? serializerOption.GetSerializer(_serviceResolver)
-            : _serviceResolver.GetService<TDefaultSerializer>();
+        if (serializerOption == null)
+        {
+            return _defaultMapper ??= BuildMapper(_serviceResolver.GetService<TDefaultSerializer>());
+        }
 
+        var serializer = serializerOption.GetSerializer(_serviceResolver);
+        if (!_mappersBySerializer.TryGetValue(serializer, out var mapper))
+        {
+            mapper = BuildMapper(serializer);
+            _mappersBySerializer[serializer] = mapper;
+        }
+
+        return mapper;
+    }
+
+    private IRequestMapper<TContext> BuildMapper(ISerializer serializer)
+    {
         return new EnrichingRequestMapper<TContext>(
-                        new RequestMapper<TContext>(_messageBodyGetter, serializer),
-                        _enrichers);
+            new RequestMapper<TContext>(_messageBodyGetter, serializer),
+            _enrichers);
     }
 }

@@ -12,12 +12,14 @@ namespace Benzene.Core.MessageHandlers.Request;
 /// <typeparam name="TContext">The transport-specific context type requests are mapped from.</typeparam>
 /// <remarks>
 /// If the inner mapper returns <c>null</c>, enrichment is skipped and <c>null</c> is returned - there
-/// is no request object to enrich. Enrichers are applied in registration order; later enrichers can
-/// overwrite values set by earlier ones for the same property.
+/// is no request object to enrich. Enrichers are folded onto an accumulator dictionary in registration
+/// order, and a fold step only fills in a key that is still missing or default - so it's <b>earlier</b>
+/// enrichers that take precedence for a given property; a later enricher can only supply a value for a
+/// property no earlier enricher has already set.
 /// </remarks>
 public class EnrichingRequestMapper<TContext> : IRequestMapper<TContext>
 {
-    private readonly IEnumerable<IRequestEnricher<TContext>> _enrichers;
+    private readonly IRequestEnricher<TContext>[] _enrichers;
     private readonly IRequestMapper<TContext> _requestMapper;
 
     /// <summary>
@@ -27,7 +29,7 @@ public class EnrichingRequestMapper<TContext> : IRequestMapper<TContext>
     /// <param name="enrichers">The enrichers to apply onto the mapped request, in order.</param>
     public EnrichingRequestMapper(IRequestMapper<TContext> requestMapper, IEnumerable<IRequestEnricher<TContext>> enrichers)
     {
-        _enrichers = enrichers;
+        _enrichers = enrichers as IRequestEnricher<TContext>[] ?? enrichers.ToArray();
         _requestMapper = requestMapper;
     }
 
@@ -42,9 +44,9 @@ public class EnrichingRequestMapper<TContext> : IRequestMapper<TContext>
     {
         var request = _requestMapper.GetBody<TRequest>(context);
 
-        if (request == null)
+        if (request == null || _enrichers.Length == 0)
         {
-            return null;
+            return request;
         }
 
         var dictionary = _enrichers.Aggregate(new Dictionary<string, object>() as IDictionary<string, object>, (current, enricher) =>

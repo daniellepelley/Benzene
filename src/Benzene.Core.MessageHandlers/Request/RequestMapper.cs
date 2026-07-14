@@ -32,6 +32,15 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
     /// <typeparamref name="TRequest"/>; otherwise deserializes the raw message body, or returns a new
     /// default instance of <typeparamref name="TRequest"/> if the body is empty.
     /// </summary>
+    /// <remarks>
+    /// The empty-body fallback is intentional and load-bearing, not just a convenience default: bodyless
+    /// requests (e.g. an HTTP GET) have no serialized payload to deserialize at all, and rely entirely on
+    /// <see cref="Benzene.Core.MessageHandlers.Request.EnrichingRequestMapper{TContext}"/> (route
+    /// parameters, query string, etc. via <see cref="IRequestEnricher{TContext}"/>) to populate the
+    /// resulting instance's properties afterwards. Returning <c>null</c> here instead would skip
+    /// enrichment entirely, since <see cref="Benzene.Core.MessageHandlers.Request.EnrichingRequestMapper{TContext}"/>
+    /// treats a <c>null</c> inner-mapper result as "nothing to enrich".
+    /// </remarks>
     /// <typeparam name="TRequest">The request type to map the body into.</typeparam>
     /// <param name="context">The transport-specific context for the incoming message.</param>
     /// <returns>The mapped request.</returns>

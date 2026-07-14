@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 namespace Benzene.Core.MessageHandlers.Helper;
 
 /// <summary>
@@ -36,13 +38,15 @@ public static class DictionaryUtils
 
         foreach (var overlay in overlayDictionary)
         {
-            if (!source.ContainsKey(overlay.Key.ToLowerInvariant()))
+            var key = overlay.Key.ToLowerInvariant();
+
+            if (!source.TryGetValue(key, out var existingValue))
             {
-                source.Add(overlay.Key.ToLowerInvariant(), overlay.Value);
+                source.Add(key, overlay.Value);
             }
-            else if (source[overlay.Key.ToLowerInvariant()] == default)
+            else if (existingValue == default)
             {
-                source[overlay.Key.ToLowerInvariant()] = overlay.Value;
+                source[key] = overlay.Value;
             }
         }
 
@@ -144,16 +148,33 @@ public static class DictionaryUtils
     /// <returns>The enriched object (a new instance if <paramref name="source"/> was <c>null</c>).</returns>
     public static T Enrich<T>(T source, IDictionary<string, object> dictionary)
     {
-        foreach (var propertyInfo in typeof(T).GetProperties())
+        if (dictionary.Count == 0)
         {
-            var fields = dictionary.Where(x =>
-                x.Key.Equals(propertyInfo.Name, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+            return source;
+        }
 
-            if (fields.Any())
+        var setters = PropertySetterCache<T>.Setters;
+        if (setters.Count == 0)
+        {
+            return source;
+        }
+
+        // Build one case-insensitive lookup over the caller's dictionary up front (O(dictionary size)),
+        // instead of the previous per-property linear .Where() scan (O(properties x dictionary size)).
+        // TryAdd (not the case-insensitive-dictionary copy constructor) so two differently-cased keys
+        // in the source don't throw - the first one wins, matching the original .First() semantics.
+        var caseInsensitiveValues = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in dictionary)
+        {
+            caseInsensitiveValues.TryAdd(entry.Key, entry.Value);
+        }
+
+        foreach (var (propertyName, setter) in setters)
+        {
+            if (caseInsensitiveValues.TryGetValue(propertyName, out var value))
             {
                 source = EnsureNotNull(source);
-                var value = GetValue(fields.First().Value, propertyInfo.PropertyType);
-                propertyInfo.SetValue(source, value);
+                setter.Set(source, GetValue(value, setter.PropertyType));
             }
         }
 
@@ -173,5 +194,43 @@ public static class DictionaryUtils
         }
 
         return originalValue;
+    }
+
+    /// <summary>
+    /// Caches a compiled setter delegate per writable public instance property of <typeparamref name="T"/>,
+    /// built once (via <see cref="System.Linq.Expressions"/>) the first time <typeparamref name="T"/> is
+    /// enriched, so repeated <see cref="Enrich{T}"/> calls for the same request type avoid re-reflecting
+    /// over <see cref="Type.GetProperties()"/> and calling <c>PropertyInfo.SetValue</c> per property, per
+    /// message. Non-writable properties are silently excluded (rather than replicating the reflective
+    /// path's <c>ArgumentException</c> if such a property happened to match a dictionary key - an
+    /// unencountered edge case in practice, since enrichment targets are always plain settable DTOs).
+    /// </summary>
+    private static class PropertySetterCache<T>
+    {
+        public static readonly IReadOnlyDictionary<string, (Type PropertyType, Action<T, object> Set)> Setters = Build();
+
+        private static Dictionary<string, (Type, Action<T, object>)> Build()
+        {
+            var setters = new Dictionary<string, (Type, Action<T, object>)>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var property in typeof(T).GetProperties())
+            {
+                var setMethod = property.GetSetMethod();
+                if (setMethod == null)
+                {
+                    continue;
+                }
+
+                var instanceParameter = Expression.Parameter(typeof(T), "instance");
+                var valueParameter = Expression.Parameter(typeof(object), "value");
+                var convertedValue = Expression.Convert(valueParameter, property.PropertyType);
+                var call = Expression.Call(instanceParameter, setMethod, convertedValue);
+                var compiled = Expression.Lambda<Action<T, object>>(call, instanceParameter, valueParameter).Compile();
+
+                setters[property.Name] = (property.PropertyType, compiled);
+            }
+
+            return setters;
+        }
     }
 }
