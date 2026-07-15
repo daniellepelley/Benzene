@@ -72,8 +72,7 @@ internal static class MarketingContent
         ("Google Cloud", "Cloud Functions, Cloud Run"),
         ("Cloudflare", "Containers"),
         ("Kubernetes", "Any container host, with liveness/readiness health checks"),
-        ("Virtual machines / self-hosted", "Long-running worker - consumes Kafka, HTTP, or any custom transport"),
-        ("ASP.NET Core", "Embedded in any existing host"),
+        ("Virtual machines / self-hosted", "ASP.NET Core or a long-running worker - consumes Kafka, HTTP, or any custom transport"),
     ];
 
     public const string InstallCommand = "dotnet add package Benzene.AspNet.Core --prerelease";
