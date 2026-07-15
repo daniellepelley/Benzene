@@ -2,6 +2,7 @@ using Benzene.AspNet.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Mesh.Aggregator;
 using Benzene.Mesh.Contracts;
+using Benzene.Mesh.Tracing.Tempo;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;
@@ -25,7 +26,11 @@ public class Startup
         services.AddControllers();
 
         Directory.CreateDirectory(ArtifactDirectory);
-        services.UsingBenzene(x => x.AddMeshAggregator(Registry, ArtifactDirectory));
+        services.UsingBenzene(x => x
+            .AddMeshAggregator(Registry, ArtifactDirectory)
+            // Queries the fake Prometheus endpoint below instead of a real Tempo/Prometheus stack,
+            // so this example stays self-contained (no Docker, no network egress) - see FakePrometheus.cs.
+            .AddTempoTopology(new TempoTopologyOptions("http://localhost:5300/fake-prometheus/api/v1/query")));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -47,6 +52,8 @@ public class Startup
             )
         );
 
-        app.UseEndpoints(endpoints => { });
+        // A fake Prometheus-compatible endpoint standing in for a real Tempo/Prometheus stack -
+        // see FakePrometheus.cs.
+        app.UseEndpoints(endpoints => { endpoints.MapGet("/fake-prometheus/api/v1/query", FakePrometheus.Handle); });
     }
 }

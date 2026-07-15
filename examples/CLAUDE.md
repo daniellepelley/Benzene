@@ -36,8 +36,10 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
 - **`OpenTelemetry/`** — observability demo (`Benzene.OpenTelemetry`, traces/metrics); has its own
   `README.md` and a `wwwroot/` message-sender page. Does **not** use the shared `App` domain.
 - **`Mesh/`** — service-mesh visibility demo: three tiny demo services plus an aggregator app that
-  dogfoods `Benzene.Mesh.Aggregator`/`Benzene.Mesh.Ui` (self-serves the dashboard via `UseMeshUi`);
-  has its own `README.md` and `run.sh`. Does **not** use the shared `App` domain.
+  dogfoods `Benzene.Mesh.Aggregator`/`Benzene.Mesh.Tracing.Tempo`/`Benzene.Mesh.Ui` (self-serves the
+  dashboard via `UseMeshUi`; Tempo integration is demonstrated against a bundled fake Prometheus
+  endpoint, not a real Tempo stack — see `FakePrometheus.cs`); has its own `README.md` and `run.sh`.
+  Does **not** use the shared `App` domain.
 
 ## How these build (important)
 - Examples build via **`Benzene.Examples.sln`** at the repo root — **not** the main `Benzene.sln`.

@@ -62,10 +62,14 @@ wait_for "http://localhost:5311/spec?type=benzene" || true
 echo "Running second mesh aggregation (payments spec now differs -> drift)..."
 curl -sf -X POST http://localhost:5300/mesh/aggregate >/dev/null || true
 
+echo "Running mesh topology query (mocked Tempo/Prometheus service-graph data)..."
+curl -sf -X POST http://localhost:5300/mesh/topology >/dev/null || true
+
 cat <<'EOF'
 
 Mesh Explorer:   http://localhost:5300/mesh-ui
 Manifest JSON:   http://localhost:5300/artifacts/manifest.json
+Topology JSON:   http://localhost:5300/artifacts/topology.json
 Orders spec:     http://localhost:5310/spec?type=benzene
 Payments spec:   http://localhost:5311/spec?type=benzene
 
@@ -73,6 +77,10 @@ The dashboard now shows every state at once:
   - orders-api    healthy    (Postgres/Redis/SQS checks, each with a dependency chip)
   - payments-api  unhealthy + drift (failed gateway, warning fraud-engine, ok database)
   - shipping-api  unreachable (nothing is listening on port 5312)
+
+The dashboard's Topology table (mocked Tempo/Prometheus data) shows an orders-api -> shipping-api
+edge with clean traffic even though shipping-api is currently unreachable - topology data is an
+independent signal from live health, not a replacement for it.
 
 shipping-api is intentionally NOT started. Start it yourself in another terminal to watch it
 flip to healthy on the next aggregation run:
