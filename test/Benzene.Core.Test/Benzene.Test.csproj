@@ -102,6 +102,7 @@
     <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Extras\Benzene.Extras.csproj" />
     <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.GoogleCloud.Functions.Http\Benzene.GoogleCloud.Functions.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.EntityFramework\Benzene.HealthChecks.EntityFramework.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Http\Benzene.HealthChecks.Http.csproj" />
