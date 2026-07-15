@@ -14,9 +14,19 @@ data types - no HTTP, no file I/O, no execution logic.
   `SourceOptions` is an untyped `IReadOnlyDictionary<string, string>?` for source-specific config
   (e.g. an AWS Lambda function name/region) - deliberately untyped so this package doesn't need to
   know what every adapter package requires, keeping it dependency-light (see Important conventions).
-- `MeshServiceSource` - string constants for known `Source` values (`Http`, the only one this
-  package defines); adapter packages' constants get added here too, matching `TopologyEdgeSource`'s
-  existing "known names live in Contracts" convention.
+- `MeshServiceSource` - string constants for known `Source` values (`Http`, `AwsLambdaInvoke`);
+  adapter packages' constants get added here too, matching `TopologyEdgeSource`'s existing "known
+  names live in Contracts" convention.
+- `MeshServiceReport`/`IMeshReportPublisher` - the push/self-report shapes (Phase C). `MeshServiceReport`
+  is a narrower cousin of `MeshServiceSnapshot` (no `SpecHash`/`PreviousSpecHash`/`ContractDrift` -
+  a reporter shouldn't compute those itself, whatever receives the report does, so pulled and
+  pushed snapshots compute drift identically). `IMeshReportPublisher` is a **zero-I/O port**
+  (`PublishAsync(MeshServiceReport)`) - a deliberate, small widening of this package's role beyond
+  "pure data shapes," so a lightweight reporting client (`Benzene.Mesh.Reporting`) depends on just
+  this package, not the whole `Benzene.Mesh.Aggregator`. Two implementations ship elsewhere:
+  `Benzene.Mesh.Aggregator.ArtifactStoreMeshReportPublisher` (direct store write) and
+  `Benzene.Mesh.Reporting.HttpMeshReportPublisher` (HTTP ingestion) - both swappable behind this one
+  port, per an explicit maintainer request for both to exist rather than just one.
 - `MeshServiceSnapshot` - the full per-service artifact (`services/{name}.json`): raw spec JSON
   (opaque, not deserialized), its hash, the previous run's hash, a `ContractDrift` flag, the
   service's `HealthCheckResponse` (from `Benzene.HealthChecks.Core`, reused as-is - no parallel type),

@@ -52,10 +52,21 @@ already runs, not a bespoke standalone tool.
   only implementation this package ships (local disk). A blob-storage adapter (S3/Azure Blob) is a
   natural follow-up package implementing the same interface, not built here.
 - `Extensions.AddMeshAggregator(registry, artifactRootDirectory)` - registers the registry, store,
-  `HttpClient`, the default `HttpMeshServiceSource` (as `IMeshServiceSource`), and `MeshAggregator`
-  against an `IBenzeneServiceContainer`. Handler discovery for `MeshAggregateMessageHandler` itself
-  is left to the consuming app's own `.AddMessageHandlers()` call, same as any other Benzene message
-  handler.
+  `HttpClient`, the default `HttpMeshServiceSource` (as `IMeshServiceSource`), the default
+  `ArtifactStoreMeshReportPublisher` (as `IMeshReportPublisher`), and `MeshAggregator` against an
+  `IBenzeneServiceContainer`. Handler discovery for `MeshAggregateMessageHandler`/
+  `MeshReportMessageHandler` itself is left to the consuming app's own `.AddMessageHandlers()` call,
+  same as any other Benzene message handler.
+- **Push/self-report ingestion (Phase C):** `ArtifactStoreMeshReportPublisher : IMeshReportPublisher`
+  turns a self-reported `Benzene.Mesh.Contracts.MeshServiceReport` into a full `MeshServiceSnapshot`
+  (via `MeshSnapshotBuilder`, same as a pulled fetch) and writes it straight into the shared
+  `IMeshArtifactStore` - fits a reporter colocated with the aggregator's own storage (e.g. a shared
+  mounted volume). `MeshReportMessageHandler` (`[HttpEndpoint("POST", "/mesh/report")]`/
+  `[Message("mesh:report")]`) is the ingestion endpoint - a thin wrapper resolving whichever
+  `IMeshReportPublisher` is registered and calling it, only reachable if the host's own
+  `.AddMessageHandlers()` discovers it (opt-in, same as every other Benzene handler - an aggregator
+  deployment that never wires this up has no write surface at all). A reporter that isn't colocated
+  posts here via `Benzene.Mesh.Reporting.HttpMeshReportPublisher` instead of writing directly.
 
 ## Breaking change (pre-1.0, flagged per repo convention)
 `MeshAggregator`'s constructor changed from `(HttpClient httpClient, IMeshArtifactStore store,

@@ -289,10 +289,14 @@ Product owners are living documents that evolve with the product:
 - **gRPC**: Improve gRPC client/server patterns
 
 ### Mesh PO
-- **Multi-transport data collection**: ✅ Phase A (`IMeshServiceSource` port) and Phase B
-  (`Benzene.Mesh.Aws.Lambda`, wrapping the pre-existing `IAwsLambdaClient`) landed. Phase C
-  (`Benzene.Mesh.Reporting` push path) and Phase D (`deploy/Mesh/Benzene.Mesh.Host` Docker/Compose
-  deployable) are in progress — see `work/service-mesh-roadmap-1.0.md`'s 2026-07-15 updates
+- **Multi-transport data collection**: ✅ Phase A (`IMeshServiceSource` port), Phase B
+  (`Benzene.Mesh.Aws.Lambda`), and Phase C (`Benzene.Mesh.Reporting` push path — opportunistic
+  self-report, two swappable `IMeshReportPublisher`s) landed. Phase D
+  (`deploy/Mesh/Benzene.Mesh.Host` Docker/Compose deployable) is in progress — see
+  `work/service-mesh-roadmap-1.0.md`'s 2026-07-15 updates
+- **Staleness representation**: flagged by Phase C — an opportunistically self-reporting service's
+  entry has no way to signal "this is old data," since `MeshServiceStatus` has no `Stale` value —
+  still open
 - **Live Tempo verification**: Phase 3's PromQL/metric-name assumptions (`traces_service_graph_request_total`/`..._failed_total`/`..._request_server_seconds_bucket`, `client`/`server` labels) are documented convention, not confirmed against a real Tempo + Prometheus instance (blocked by this dev environment's network egress policy so far) — still open
 - **Structural edge derivation**: Phase 1's `TopologyEdgeSource.Structural` gap — deriving "designed to call" edges (e.g. from generated `CodeGen.Client`s, or matching `HealthCheckDependency` entries against other registered services) is a real, still-open design question, not started
 - **Topology graph visualization**: Mesh UI now renders `topology.json` as a sortable table (v1) — a full interactive node-link graph is a natural next step, not yet built
