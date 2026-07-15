@@ -96,6 +96,7 @@ the worker-specific builder that `UseWorker(...)` hands you — so you wire Kafk
 
 ```csharp
 using Benzene.Abstractions.Hosting;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Kafka.Core;
 using Benzene.Microsoft.Dependencies;

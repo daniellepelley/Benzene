@@ -26,8 +26,11 @@ Core without rewriting any of it.**
 
 ## Quickstart
 
+Benzene's packages are published as prerelease (`-alpha`) versions until 1.0, so
+`--prerelease` is required:
+
 ```bash
-dotnet add package Benzene.AspNet.Core
+dotnet add package Benzene.AspNet.Core --prerelease
 ```
 
 A message handler, mapped to a topic:
@@ -38,34 +41,32 @@ public class HelloWorldMessageHandler : IMessageHandler<HelloWorldMessage, Hello
 {
     public Task<IBenzeneResult<HelloWorldResponse>> HandleAsync(HelloWorldMessage message)
     {
-        return BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}" }).AsTask();
+        return Task.FromResult(BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}" }));
     }
 }
 ```
 
-Wired into an ASP.NET Core host (in `Startup.cs`):
+Wired into an ASP.NET Core host (in `Program.cs`):
 
 ```csharp
-public void ConfigureServices(IServiceCollection services)
-{
-    services.AddControllers();
-    services.UsingBenzene(x => x.AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
-}
+var builder = WebApplication.CreateBuilder(args);
 
-public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-{
-    app.UseRouting();
-    app.UseBenzene(benzene => benzene
-        .UseHttp(asp => asp
-            .UseCorrelationId()
-            .UseMessageHandlers(router => router.UseFluentValidation())
-        )
-    );
-    app.UseEndpoints(endpoints => endpoints.MapControllers());
-}
+builder.Services.UsingBenzene(x => x
+    .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
+
+var app = builder.Build();
+
+app.UseBenzene(benzene => benzene
+    .UseHttp(http => http
+        .UseMessageHandlers()));
+
+app.Run();
 ```
 
-See [`examples/`](./examples) for complete, runnable sample projects covering AWS Lambda, Azure Functions, ASP.NET Core, Kafka, and more.
+See [Getting Started](docs/getting-started.md) for the full five-minute walkthrough (including
+the request/response message types omitted above for brevity), and [`examples/`](./examples) for
+complete, runnable sample projects covering AWS Lambda, Azure Functions, ASP.NET Core, Kafka, and
+more.
 
 ## How it fits into hexagonal architecture
 
@@ -100,7 +101,7 @@ Full documentation is available in [`docs/`](./docs), including:
 ## Installation
 
 ```bash
-dotnet add package Benzene.Core
+dotnet add package Benzene.Core --prerelease
 ```
 
 Plus whichever transport and integration packages your service needs

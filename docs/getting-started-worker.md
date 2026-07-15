@@ -139,8 +139,10 @@ extension that's a no-op on every platform except this one:
 
 ```csharp
 using Benzene.Abstractions.Hosting;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Benzene.SelfHost;
 using Microsoft.Extensions.Configuration;
@@ -272,6 +274,7 @@ dotnet add package Benzene.SelfHost.Http --prerelease
 
 ```csharp
 using Benzene.Abstractions.Hosting;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.HealthChecks;
 using Benzene.Microsoft.Dependencies;

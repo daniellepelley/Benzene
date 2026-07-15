@@ -117,6 +117,7 @@ Replace the generated `Program.cs` with this:
 
 ```csharp
 using Benzene.AspNet.Core;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Microsoft.Dependencies;
 using HelloBenzene;
