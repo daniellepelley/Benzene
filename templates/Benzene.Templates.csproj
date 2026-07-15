@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Own, independent version line - this pack's "correctness" (does it generate valid, current
+         Benzene code) changes on a different cadence than the library's own version.txt-driven
+         releases, the same way Microsoft.Azure.Functions.Worker.ProjectTemplates versions
+         independently of Microsoft.Azure.Functions.Worker itself. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+    <IsPackable>true</IsPackable>
+    <PackageType>Template</PackageType>
+    <PackageId>Benzene.Templates</PackageId>
+    <Title>Benzene Project Templates</Title>
+    <Description>dotnet new starter project templates for Benzene: ASP.NET Core, AWS Lambda (API Gateway, SQS, SNS), Azure Functions, and a self-hosted Kafka worker.</Description>
+    <PackageTags>dotnet-new;templates;benzene;aws;azure;kafka</PackageTags>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <!-- NU5128: "no lib/ref assemblies" - expected and correct for a template pack, which ships
+         only content, never a compiled assembly. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The .cs/.csproj files under content/ are template CONTENT to be packed verbatim, never
+         compiled/built as part of this pack project itself - excluding them from Compile/ProjectReference
+         globbing is required, otherwise the SDK's default globs would try to build them here too. -->
+    <Compile Remove="**\*.cs" />
+    <Content Include="content\**\*" Exclude="content\**\bin\**;content\**\obj\**" />
+  </ItemGroup>
+
+</Project>

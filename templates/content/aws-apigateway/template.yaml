@@ -1,0 +1,28 @@
+# Hand-checked against the AWS SAM template shape in docs/getting-started-aws.md, but not run
+# through `sam validate` or deployed from the Benzene repo itself - review before production use,
+# and rename the FunctionName/Handler below if you rename the project.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    # .NET 10 has no AWS-managed Lambda runtime yet - dotnet8 is the current managed
+    # runtime and works fine for a net10.0 project, since it targets a compatible Lambda ABI.
+    Runtime: dotnet8
+    Architectures:
+      - arm64
+
+Resources:
+  BenzeneStarterFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+    Properties:
+      FunctionName: benzene-starter
+      Handler: BenzeneStarter::BenzeneStarter.Function::FunctionHandlerAsync
+      CodeUri: ./
+      Events:
+        HttpApi:
+          Type: HttpApi

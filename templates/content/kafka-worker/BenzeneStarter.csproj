@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
+         published version (including prereleases) on every restore, matching what `--prerelease`
+         means when you run `dotnet add package` yourself. Confluent.Kafka comes in transitively
+         from Benzene.Kafka.Core. -->
+    <PackageReference Include="Benzene.Kafka.Core" Version="*-*" />
+    <PackageReference Include="Benzene.HostedService" Version="*-*" />
+    <PackageReference Include="Benzene.SelfHost" Version="*-*" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "Azure", "Serverless"],
+  "identity": "Benzene.Templates.Azure.Http",
+  "name": "Benzene Azure Functions (HTTP trigger)",
+  "description": "A Benzene service on Azure Functions (isolated worker), triggered by HTTP requests.",
+  "shortName": "benzene.azure.http",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

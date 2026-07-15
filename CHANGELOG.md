@@ -41,6 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cost vs. warmed-cache steady state). Included in `Benzene.sln` so CI compile-checks it, but not
   run as part of CI — see `benchmarks/Benzene.Benchmarks/README.md`. New NuGet dependency:
   `BenchmarkDotNet` 0.15.8. No recorded baseline numbers yet — this is the first-ever suite
+- `templates/Benzene.Templates`: the repo's first `dotnet new` project-template pack, with six
+  starter templates — `benzene.asp`, `benzene.aws.apigateway`, `benzene.aws.sqs`, `benzene.aws.sns`,
+  `benzene.azure.http`, `benzene.kafka.worker` — each generating a complete, buildable project
+  wired around the same `HelloWorldMessageHandler` demo handler (the Kafka worker's is a
+  fire-and-forget variant by necessity). Generated projects reference Benzene packages with a
+  floating `Version="*-*"` rather than a pinned version, so they always restore the latest
+  published (prerelease) package. Verified by a new `.github/workflows/build-templates.yml` (packs,
+  installs, generates, and builds every template — plus a daily schedule run, since a floating
+  version can break a template with zero content changes to this repo). Not yet published to
+  nuget.org — see `templates/README.md` and
+  [Project Templates](docs/getting-started-templates.md) for building/installing a local copy.
+  No new library dependency — the pack project uses only `PackageType=Template`/`IncludeContentInPack`,
+  the standard `dotnet pack` mechanism for a template pack, no extra tooling package
 
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound

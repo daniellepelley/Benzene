@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "AWS", "Serverless"],
+  "identity": "Benzene.Templates.Aws.ApiGateway",
+  "name": "Benzene AWS Lambda (API Gateway)",
+  "description": "A Benzene service on AWS Lambda, triggered by API Gateway HTTP requests, deployable with AWS SAM.",
+  "shortName": "benzene.aws.apigateway",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}
