@@ -301,3 +301,6 @@ appsettings.*.json
 
 # BenchmarkDotNet run output (benchmarks/Benzene.Benchmarks)
 BenchmarkDotNet.Artifacts/
+
+# Generated static site output (website/generator)
+website/dist/

@@ -20,6 +20,8 @@ representing external boundaries — DB, HTTP, queues, etc).
   `Benzene.sln`/`Benzene.Examples.sln` — see `deploy/Mesh/README.md`
 - `examples/` — sample usage projects
 - `docs/` — documentation
+- `website/` — static marketing + docs site generator (deploys `docs/`/`README.md` to S3), its
+  own standalone project, not part of `Benzene.sln` — see `website/README.md`
 - `Benzene.sln` — main library solution
 - `Benzene.Examples.sln` — examples solution
 - `.github/workflows/` — CI
