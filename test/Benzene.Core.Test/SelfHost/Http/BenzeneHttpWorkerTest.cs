@@ -8,6 +8,7 @@ using Benzene.Core.MessageHandlers;
 using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Benzene.Test.SelfHost.Http;
@@ -21,6 +22,34 @@ namespace Benzene.Test.SelfHost.Http;
 /// </summary>
 public class BenzeneHttpWorkerTest
 {
+    /// <summary>
+    /// Captures the last exception logged via <see cref="ILogger{TCategoryName}"/> so a hung/failed
+    /// request can report the real cause instead of just "the client timed out" - per-request
+    /// exceptions in <c>BoundedConcurrentDispatcher</c>'s consumer loop are caught and logged, not
+    /// rethrown, so they'd otherwise be invisible to the test.
+    /// </summary>
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public Exception? LastException { get; private set; }
+
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (exception != null)
+            {
+                LastException = exception;
+            }
+        }
+
+        private sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+            public void Dispose() { }
+        }
+    }
+
     private static int GetFreeTcpPort()
     {
         var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -30,7 +59,7 @@ public class BenzeneHttpWorkerTest
         return port;
     }
 
-    private static async Task<HttpResponseMessage> PollUntilRespondingAsync(HttpClient httpClient, string url)
+    private static async Task<HttpResponseMessage> PollUntilRespondingAsync(HttpClient httpClient, string url, CapturingLogger<BenzeneHttpWorker> logger)
     {
         // BenzeneHttpWorker.StartAsync kicks off the accept loop on a background task and returns
         // immediately (by design - see its own doc comment), so the listener may not have called
@@ -42,14 +71,19 @@ public class BenzeneHttpWorkerTest
             {
                 return await httpClient.GetAsync(url);
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
                 lastException = ex;
+                if (logger.LastException != null)
+                {
+                    break;
+                }
                 await Task.Delay(50);
             }
         }
 
-        throw new TimeoutException("Server never started responding.", lastException);
+        throw new TimeoutException(
+            $"Server never responded. Last logged server-side exception: {logger.LastException}", lastException);
     }
 
     [Fact]
@@ -61,9 +95,12 @@ public class BenzeneHttpWorkerTest
             Url = $"http://127.0.0.1:{port}/",
             ConcurrentRequests = 4
         };
+        var capturingLogger = new CapturingLogger<BenzeneHttpWorker>();
 
         var worker = new InlineSelfHostedStartUp()
-            .ConfigureServices(services => services.AddLogging())
+            .ConfigureServices(services => services
+                .AddLogging()
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger))
             .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
             .Build();
 
@@ -71,7 +108,7 @@ public class BenzeneHttpWorkerTest
         try
         {
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-            var response = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez");
+            var response = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez", capturingLogger);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -90,9 +127,12 @@ public class BenzeneHttpWorkerTest
             Url = $"http://127.0.0.1:{port}/",
             ConcurrentRequests = 4
         };
+        var capturingLogger = new CapturingLogger<BenzeneHttpWorker>();
 
         var worker = new InlineSelfHostedStartUp()
-            .ConfigureServices(services => services.AddLogging())
+            .ConfigureServices(services => services
+                .AddLogging()
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger))
             .Configure(app => app.UseHttp(config, pipeline => pipeline
                 .UseLivenessCheck()
                 .UseMessageHandlers()))
@@ -106,7 +146,7 @@ public class BenzeneHttpWorkerTest
             // check middleware into UseMessageHandlers, which has no handler for it and no topic
             // header set, so it resolves to the router's "missing topic" validation error rather than
             // ever reaching a handler.
-            var response = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/not-a-real-path");
+            var response = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/not-a-real-path", capturingLogger);
 
             Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
         }
@@ -126,15 +166,18 @@ public class BenzeneHttpWorkerTest
             ConcurrentRequests = 4,
             DrainTimeout = TimeSpan.FromSeconds(5)
         };
+        var capturingLogger = new CapturingLogger<BenzeneHttpWorker>();
 
         var worker = new InlineSelfHostedStartUp()
-            .ConfigureServices(services => services.AddLogging())
+            .ConfigureServices(services => services
+                .AddLogging()
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger))
             .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
             .Build();
 
         await worker.StartAsync(CancellationToken.None);
         using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var firstResponse = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez");
+        var firstResponse = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez", capturingLogger);
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
         await worker.StopAsync(CancellationToken.None);
