@@ -47,3 +47,17 @@ format into plain JSON, so handlers receive ordinary POCOs. See
 - `Benzene.Aws.Lambda.DynamoDb.TestHelpers` has the reverse marshaller
   (`DynamoDbAttributeValueMarshaller`) and `AsDynamoDb()` (topic parsed as `"table:EVENT"`,
   bare table defaults to `INSERT`).
+
+## Tests
+Coverage here is already comprehensive as of the 2026-07 overnight test-coverage pass (verified,
+not just assumed, before moving on to other packages) - `test/Benzene.Core.Test/Aws/DynamoDb/`:
+- `DynamoDbAttributeValueConverterTest.cs` - every AttributeValue descriptor type (S/N/BOOL/NULL/M/L/SS/NS/B),
+  unknown-descriptor passthrough, and a full marshal/unmarshal round trip.
+- `DynamoDbGettersTest.cs` - topic (ARN parsing including the colon-containing stream timestamp,
+  and the missing-ARN fallback), body (`NewImage` → `OldImage` → `Keys` precedence), headers, and
+  `DynamoDbUtils.GetTableName`'s non-table-ARN/malformed/null cases.
+- `DynamoDbLambdaHandlerTest.cs` - claim-vs-fall-through routing, plus `DynamoDbApplication`'s
+  sequential stop-at-first-failure batching and exception-caught-and-reported-as-failure paths.
+- `DynamoDbMessagePipelineTest.cs` - full DI-wired pipeline (`AddDynamoDb()` +
+  `UseMessageHandlers()`), proving `DynamoDbMessageMessageHandlerResultSetter` correctly reflects
+  both success and failure (including the unknown-topic case) onto the context Lambda reads back.
