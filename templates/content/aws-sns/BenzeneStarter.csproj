@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
+         published version (including prereleases) on every restore, matching what `--prerelease`
+         means when you run `dotnet add package` yourself. -->
+    <PackageReference Include="Benzene.Aws.Lambda.Core" Version="*-*" />
+    <PackageReference Include="Benzene.Aws.Lambda.Sns" Version="*-*" />
+    <!-- Only Benzene's own GetConfiguration() needs a concrete Microsoft.Extensions.Configuration
+         implementation - only its abstractions come in transitively via Benzene. -->
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

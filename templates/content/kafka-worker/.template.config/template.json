@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "Kafka", "Worker"],
+  "identity": "Benzene.Templates.Kafka.Worker",
+  "name": "Benzene Kafka Worker",
+  "description": "A self-hosted Benzene worker that consumes a Kafka topic directly (Confluent.Kafka).",
+  "shortName": "benzene.kafka.worker",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

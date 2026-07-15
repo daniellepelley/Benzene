@@ -1,0 +1,66 @@
+# Verifies the Benzene.Templates dotnet-new template pack: packs it, installs the freshly-built
+# package (not the published NuGet version - this catches template-authoring breakage before a
+# release), generates a project from every template, and builds each generated output. Also runs
+# on a daily schedule so a floating Version="*-*" Benzene package release can't silently break a
+# template with zero changes to this repo going unnoticed - see templates/README.md.
+
+name: Build Templates
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'templates/**'
+      - '.github/workflows/build-templates.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'templates/**'
+      - '.github/workflows/build-templates.yml'
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  build-templates:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Check shared HelloWorldMessageHandler.cs hasn't drifted
+      run: |
+        set -euo pipefail
+        canonical="templates/content/asp/HelloWorldMessageHandler.cs"
+        for dir in aws-apigateway aws-sqs aws-sns azure-http; do
+          if ! diff -u "$canonical" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
+            echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical"
+            exit 1
+          fi
+        done
+
+    - name: Pack Benzene.Templates
+      run: dotnet pack templates/Benzene.Templates.csproj -c Release -o ./templates-pack
+
+    - name: Install the freshly-packed template pack
+      run: dotnet new install ./templates-pack/Benzene.Templates.*.nupkg
+
+    - name: Generate and build every template
+      run: |
+        set -euo pipefail
+        for shortname in benzene.asp benzene.aws.apigateway benzene.aws.sqs benzene.aws.sns benzene.azure.http benzene.kafka.worker; do
+          out="/tmp/generated/${shortname}"
+          echo "::group::${shortname}"
+          dotnet new "$shortname" -n Sample -o "$out"
+          dotnet build "$out" --verbosity minimal
+          echo "::endgroup::"
+        done
+
+    - name: Uninstall the template pack
+      if: always()
+      run: dotnet new uninstall Benzene.Templates || true

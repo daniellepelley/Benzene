@@ -6,6 +6,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 
 - **General**
   - [Getting Started](getting-started) — build and run your first Benzene service in 5 minutes
+  - [Project Templates](getting-started-templates) — `dotnet new` starter projects for every host, consumable from Visual Studio and Rider
   - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
   - [Benzene Specification (Draft)](specification/README) — the language-neutral portable core: concepts, wire contracts, transport bindings, porting guide
   - [Unified Hosting Model](hosting)

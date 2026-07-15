@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "AWS", "Serverless"],
+  "identity": "Benzene.Templates.Aws.Sns",
+  "name": "Benzene AWS Lambda (SNS)",
+  "description": "A Benzene service on AWS Lambda, triggered by an SNS topic notification.",
+  "shortName": "benzene.aws.sns",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

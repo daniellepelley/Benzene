@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "AWS", "Serverless"],
+  "identity": "Benzene.Templates.Aws.Sqs",
+  "name": "Benzene AWS Lambda (SQS)",
+  "description": "A Benzene service on AWS Lambda, triggered by an SQS queue.",
+  "shortName": "benzene.aws.sqs",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

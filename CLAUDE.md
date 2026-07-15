@@ -11,6 +11,9 @@ representing external boundaries — DB, HTTP, queues, etc).
 - `test/` — unit/integration tests
 - `benchmarks/` — BenchmarkDotNet micro-benchmarks (compile-checked via `Benzene.sln`, but not run
   as part of CI — see `benchmarks/Benzene.Benchmarks/README.md`)
+- `templates/` — `dotnet new` starter-project templates, packaged as one NuGet template pack
+  (`Benzene.Templates`); own `templates/Benzene.Templates.sln` for local dev, verified by
+  `.github/workflows/build-templates.yml`, not part of `Benzene.sln` — see `templates/README.md`
 - `examples/` — sample usage projects
 - `docs/` — documentation
 - `Benzene.sln` — main library solution
