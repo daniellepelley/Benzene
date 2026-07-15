@@ -3,6 +3,7 @@ using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
@@ -28,7 +29,8 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.AddScoped<IMessageTopicGetter<SqsMessageContext>, SqsMessageTopicGetter>();
+        services.AddScoped<IMessageTopicGetter<SqsMessageContext>>(_ =>
+            new PresetTopicMessageTopicGetter<SqsMessageContext>(new SqsMessageTopicGetter()));
         services.AddScoped<IMessageHeadersGetter<SqsMessageContext>, SqsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsMessageContext>, SqsMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SqsMessageContext>, SqsMessageMessageHandlerResultSetter>();

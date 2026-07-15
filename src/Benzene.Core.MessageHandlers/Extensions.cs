@@ -3,6 +3,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.Messages;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 
@@ -152,6 +153,27 @@ public static class MiddlewarePipelineExtensions
             routePipelineBuilder.Add(builder.GetBuilders());
             return resolver.GetService<MessageRouter<TContext>>();
         });
+    }
+
+    /// <summary>
+    /// Sets a fixed topic on every message that flows through this pipeline, via
+    /// <see cref="PresetTopicMiddleware{TContext}"/>, so <c>UseMessageHandlers</c> routes on it
+    /// regardless of what (if anything) the underlying transport message itself carries. Intended
+    /// for a queue/subscription whose producer doesn't set Benzene's usual topic attribute/property -
+    /// call this before <c>UseMessageHandlers</c> in that specific pipeline only; a queue that does
+    /// send a proper topic just omits it.
+    /// </summary>
+    /// <typeparam name="TContext">The pipeline's context type, which must be able to carry a preset topic.</typeparam>
+    /// <param name="app">The pipeline builder to add the preset topic to.</param>
+    /// <param name="topicId">The topic id every message on this pipeline should route to.</param>
+    /// <param name="version">The optional topic version. Defaults to an empty string (unversioned).</param>
+    /// <returns>The same builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<TContext> UsePresetTopic<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+        string topicId, string version = "")
+        where TContext : IHasPresetTopic
+    {
+        var presetTopic = new Topic(topicId, version);
+        return app.Use(_ => new PresetTopicMiddleware<TContext>(presetTopic));
     }
 
     /// <summary>

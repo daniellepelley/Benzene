@@ -15,8 +15,12 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 ### Message Handling
 - `SqsMessageBodyGetter` - Extracts message body from SQS event
 - `SqsMessageHeadersGetter` - Extracts message attributes as headers
-- `SqsMessageTopicGetter` - Extracts topic from message attributes
+- `SqsMessageTopicGetter` - Extracts topic from the `topic` message attribute
 - `SqsMessageMessageHandlerResultSetter` - Sets result on context
+- `SqsMessageContext` also implements `IHasPresetTopic` - if the queue's producer never sets a
+  `topic` message attribute (e.g. a raw SQS send, not a Benzene client), call
+  `.UsePresetTopic("some-topic")` before `.UseMessageHandlers()` in that queue's pipeline
+  (`Benzene.Core.MessageHandlers`) to route every message on it to a fixed topic instead
 
 ### Other
 - `SqsRegistrations` - Registers SQS services
@@ -38,7 +42,8 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 ## Important conventions
 - Processes SQS messages in batches
 - Message attributes mapped to headers
-- Topic determined from message attribute or queue name
+- Topic determined from the `topic` message attribute by default, or a fixed preset topic per
+  queue if configured via `.UsePresetTopic(...)` (see "Message Handling" above)
 - Failed messages can be retried via SQS dead-letter queue
 - Partial batch failures supported
 - Message body deserialized to request object

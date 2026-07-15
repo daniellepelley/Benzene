@@ -83,6 +83,20 @@ Provides complete implementation of message handler infrastructure for command/q
 - `MessageRouterBuilder` - Builds message routing
 - `HandlerPipelineBuilder` - Builds handler pipelines
 - `VersionSelector` - Selects handler versions
+- `PresetTopicMessageTopicGetter<TContext>` - Decorates a transport's real
+  `IMessageTopicGetter<TContext>`, preferring `IHasPresetTopic.PresetTopic` when set on the context
+  and falling back to the transport's own extraction otherwise. Every transport that supports
+  preset topics (`Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Sqs`, `Benzene.Azure.Function.ServiceBus`)
+  registers this wrapping its real getter as the default `IMessageTopicGetter<TContext>`, so a
+  pipeline that never opts in behaves exactly as before this type existed
+- `PresetTopicMiddleware<TContext>` - Sets a fixed `ITopic` on the context before calling `next`, so
+  `PresetTopicMessageTopicGetter<TContext>` picks it up. Added via `UsePresetTopic<TContext>()`
+- `MiddlewarePipelineExtensions.UsePresetTopic<TContext>(topicId, version)` - Pipeline-builder
+  extension for one queue/subscription: call it before `UseMessageHandlers()` so every message on
+  that pipeline routes to `topicId` regardless of what (if anything) the transport message itself
+  carries. Solves the case where a queue's producer isn't a Benzene client and never sets a topic
+  attribute/property at all - see each transport's own docs for the attribute/property name it
+  otherwise reads
 
 ### Transport Info
 - `ApplicationInfo` - Application metadata

@@ -64,6 +64,40 @@ public class SqsMessagePipelineTest
     }
 
     [Fact]
+    public async Task Send_NoTopicAttribute_WithPresetTopic_RoutesToPresetTopic()
+    {
+        var mockExampleService = new Mock<IExampleService>();
+
+        bool? isSuccessful = null;
+
+        var host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .AddTransient<ILogger<MessageRouter<SqsMessageContext>>>(_ => NullLogger<MessageRouter<SqsMessageContext>>.Instance)
+                .AddTransient<ILogger>(_ => NullLogger.Instance)
+                .AddTransient(_ => mockExampleService.Object)
+                .UsingBenzene(x => x
+                    .AddBenzene()
+                    .AddSqs())
+                )
+            .Configure(app => app
+                .UseSqs(sqs => sqs
+                    .UsePresetTopic(Defaults.Topic)
+                    .OnResponse("Check Response", context =>
+                    {
+                        isSuccessful = context.IsSuccessful;
+                    }).UseMessageHandlers()
+            )
+        ).BuildHost();
+
+        // No topic passed to MessageBuilder.Create - the queue's producer sets no topic attribute at all.
+        var request = MessageBuilder.Create(null, Defaults.MessageAsObject).AsSqs();
+
+        SQSBatchResponse batchResponse = await host.SendSqsAsync(request);
+        Assert.True(isSuccessful);
+        Assert.Empty(batchResponse.BatchItemFailures);
+    }
+
+    [Fact]
     public async Task Send_Xml()
     {
         var mockExampleService = new Mock<IExampleService>();
