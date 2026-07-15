@@ -127,8 +127,9 @@ backpressure/batch-failure correctness) across every package.
 
 **Key Responsibilities:**
 - Review changes for per-request/per-message cost, not just correctness
-- Push for measured benchmarks over "should be faster" reasoning (no
-  BenchmarkDotNet project exists yet — establishing one is a standing priority)
+- Push for measured benchmarks over "should be faster" reasoning
+  (`benchmarks/Benzene.Benchmarks` covers the middleware pipeline and request
+  mapping; expanding coverage to other hot paths is a standing priority)
 - Ensure anything that calls out to something slow/unreliable has an explicit
   timeout and failure isolation (the `TimeOutHealthCheck`/
   `ExceptionHandlingHealthCheck` pattern is the reference)
@@ -141,7 +142,7 @@ backpressure/batch-failure correctness) across every package.
 - New serializer/client packages, to check for avoidable allocation or
   round-tripping (e.g. string round-trips a byte-native format didn't need)
 - Reliability review before a release: timeouts, cleanup, degradation behavior
-- Benchmarking a specific path, or standing up benchmark infrastructure
+- Benchmarking a specific path, or extending `benchmarks/Benzene.Benchmarks`
 
 **Note:** This role reviews and advises across every product owner's domain —
 it does not override a PO's design call. A performance win that conflicts with
@@ -269,18 +270,21 @@ Product owners are living documents that evolve with the product:
 - **gRPC**: Improve gRPC client/server patterns
 
 ### Performance & Reliability Champion
-- **Benchmark infrastructure**: No BenchmarkDotNet project exists yet — stand
-  one up covering the middleware pipeline, request mapping, and serialization
-  hot paths, so future perf claims are measured, not estimated
-- **Middleware pipeline audit**: Systematic allocation/latency review of
-  `MiddlewarePipeline`/`MiddlewarePipelineBuilder` and handler dispatch,
-  building on Phase 1 of `docs/plans/request-response-improvements-plan.md`
-- **Reliability sweep**: Confirm every call to something that can be slow or
-  down has an explicit timeout and failure isolation, matching the
-  `TimeOutHealthCheck`/`ExceptionHandlingHealthCheck` pattern
-- **Serialization cost**: Audit new/existing serializer packages for avoidable
-  round-trips (e.g. a byte-native format forced through a string) against the
-  Phase 4 byte-oriented path (`IPayloadSerializer`)
+- **Benchmark infrastructure**: ✅ `benchmarks/Benzene.Benchmarks` covers the
+  middleware pipeline and request mapping (no recorded baseline numbers yet —
+  see its README). Serialization packages and other hot paths are still
+  unbenchmarked — expanding coverage there is the next step
+- **Middleware pipeline audit**: ✅ done — found and fixed a resource leak in
+  `MicrosoftServiceResolverAdapter`/`AutofacServiceResolverAdapter` (DI scopes
+  were never disposed) and a dead cache field in `MiddlewarePipeline`
+- **Reliability sweep**: partially done — `Benzene.Mesh.Aggregator` fixed
+  (concurrent polling + explicit timeout, matching the
+  `TimeOutHealthCheck`/`ExceptionHandlingHealthCheck` pattern). Confirming
+  every other call to something that can be slow or down has the same
+  explicit timeout/isolation is still open
+- **Serialization cost**: still open — audit new/existing serializer packages
+  for avoidable round-trips (e.g. a byte-native format forced through a
+  string) against the Phase 4 byte-oriented path (`IPayloadSerializer`)
 
 ---
 

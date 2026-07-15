@@ -246,6 +246,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.GoogleCloud.Functio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.GoogleCloud.Functions.Http.TestHelpers", "src\Benzene.GoogleCloud.Functions.Http.TestHelpers\Benzene.GoogleCloud.Functions.Http.TestHelpers.csproj", "{617AEF30-C820-421E-87DB-65FCEDDC0C4E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmarks", "Benchmarks", "{B59A2C32-9F38-410C-8C5C-4FC91099FC3F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Benchmarks", "benchmarks\Benzene.Benchmarks\Benzene.Benchmarks.csproj", "{185664C1-386D-4031-A012-3B4498076229}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1456,6 +1460,18 @@ Global
 		{617AEF30-C820-421E-87DB-65FCEDDC0C4E}.Release|x64.Build.0 = Release|Any CPU
 		{617AEF30-C820-421E-87DB-65FCEDDC0C4E}.Release|x86.ActiveCfg = Release|Any CPU
 		{617AEF30-C820-421E-87DB-65FCEDDC0C4E}.Release|x86.Build.0 = Release|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Debug|x64.Build.0 = Debug|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Debug|x86.Build.0 = Debug|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Release|Any CPU.Build.0 = Release|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Release|x64.ActiveCfg = Release|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Release|x64.Build.0 = Release|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Release|x86.ActiveCfg = Release|Any CPU
+		{185664C1-386D-4031-A012-3B4498076229}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1560,6 +1576,7 @@ Global
 		{3878B939-0108-401E-9C24-B2C5DDA41109} = {4B90DC9D-2A0D-6CA7-FA5D-F7C8B1A0C622}
 		{122C66EC-2592-4E8A-A961-FF7339D9C023} = {4B90DC9D-2A0D-6CA7-FA5D-F7C8B1A0C622}
 		{617AEF30-C820-421E-87DB-65FCEDDC0C4E} = {4B90DC9D-2A0D-6CA7-FA5D-F7C8B1A0C622}
+		{185664C1-386D-4031-A012-3B4498076229} = {B59A2C32-9F38-410C-8C5C-4FC91099FC3F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

@@ -9,6 +9,8 @@ representing external boundaries — DB, HTTP, queues, etc).
 ## Structure
 - `src/` — library source
 - `test/` — unit/integration tests
+- `benchmarks/` — BenchmarkDotNet micro-benchmarks (compile-checked via `Benzene.sln`, but not run
+  as part of CI — see `benchmarks/Benzene.Benchmarks/README.md`)
 - `examples/` — sample usage projects
 - `docs/` — documentation
 - `Benzene.sln` — main library solution

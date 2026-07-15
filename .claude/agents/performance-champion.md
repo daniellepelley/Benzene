@@ -85,13 +85,19 @@ Read the actual hot path before opinining — don't guess at costs:
 
 ## Benchmarking discipline
 
-There is currently **no BenchmarkDotNet project in this repo** — perf claims
-so far have been "hot-path fixes" reasoned from code inspection (see
-`docs/plans/request-response-improvements-plan.md` Phase 1), not measured.
-Treat establishing real benchmark coverage of the middleware pipeline as a
-standing priority, not a one-off: propose it, and when you do implement
-benchmarks, follow existing repo conventions (check `test/` structure first,
-same as `test-writer` does) rather than inventing a new layout unasked.
+`benchmarks/Benzene.Benchmarks` is the first (and, as of this writing, only)
+BenchmarkDotNet suite in this repo, covering `MiddlewarePipeline<TContext>.HandleAsync`
+and `MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>`. Before this,
+perf claims were "hot-path fixes" reasoned from code inspection (see
+`docs/plans/request-response-improvements-plan.md` Phase 1), not measured —
+that gap is now partially closed, not fully: this suite has no recorded
+baseline numbers yet (see its README), and it covers exactly two hot paths,
+not every package. Treat expanding benchmark coverage to other hot paths
+(serialization packages, DI adapters, transport-specific dispatch) as a
+standing priority, not a one-off: when you add to it, follow the existing
+suite's own conventions (see `benchmarks/Benzene.Benchmarks/README.md` —
+isolate what each benchmark measures rather than conflating costs, prefer
+`[Params]` over one-off magic numbers) rather than inventing a new layout.
 
 Before claiming a change is faster:
 1. Prefer a measured benchmark over a plausible-sounding allocation argument.
