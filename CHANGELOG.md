@@ -106,6 +106,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   No new library dependency — the pack project uses only `PackageType=Template`/`IncludeContentInPack`,
   the standard `dotnet pack` mechanism for a template pack, no extra tooling package
 
+### Fixed
+- `Benzene.SelfHost.Http`: fixed the self-hosted HTTP transport never actually finishing a response.
+  Its `IMessageHandlerResultSetter<SelfHostHttpContext>` (previously named `KafkaMessageHandlerResultSetter`
+  — an apparent copy-paste artifact from `Benzene.Kafka.Core`) unconditionally forced
+  `Response.StatusCode = 200` regardless of the real result and never ran the registered
+  `IResponseHandler<SelfHostHttpContext>` chain, so response bodies were never written and the
+  underlying `HttpListenerResponse` was never closed/finalized. Discovered while adding the package's
+  first real end-to-end test coverage (`test/Benzene.Core.Test/SelfHost/Http/BenzeneHttpWorkerTest.cs`,
+  a real `HttpListener` bound to a loopback port, driven by a real `HttpClient`). **BREAKING:**
+  `KafkaMessageHandlerResultSetter` renamed to `HttpListenerMessageHandlerResultSetter` and now
+  inherits `ResponseMessageMessageHandlerResultSetterBase<SelfHostHttpContext>` (same pattern as
+  `AspMessageMessageHandlerResultSetter`/`ApiGatewayMessageMessageHandlerResultSetter`) — only affects
+  code that referenced the old class name directly, not normal `AddHttp()`/`UseHttp()` usage. HTTP
+  status codes returned by this transport now correctly reflect the actual handler result instead of
+  always being 200.
+
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound
   correlation-header pickup middleware, previously `[Obsolete]`. Use `UseW3CTraceContext()` for

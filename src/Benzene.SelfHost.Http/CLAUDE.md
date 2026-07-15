@@ -25,15 +25,27 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
   same shape as `Benzene.Aws.Lambda.ApiGateway`'s equivalent
 - `.UseLivenessCheck(...)` / `.UseReadinessCheck(...)` - Kubernetes-style convenience wrappers,
   defaulting to `GET /livez`/`GET /readyz` (path overridable); see `docs/kubernetes-health-checks.md`
-- **No test coverage exists for `BenzeneHttpWorker`/`SelfHostHttpContext` itself** (topic-based or
-  HTTP-path-based) - `SelfHostHttpContext` wraps a real `System.Net.HttpListenerContext`, a sealed
-  BCL type with no public constructor, so unit testing it requires a real listener bound to a real
-  port rather than a fake context object; this has never been set up in this repo. The new
-  liveness/readiness methods here are thin wrappers over the pre-existing (also untested)
-  `.UseHealthCheck(method, path, builder)` overload - verified by clean compile and by direct
-  reading, not by a runtime test. The concurrency/drain behavior `BenzeneHttpWorker` relies on
-  *is* unit-tested in isolation, though, via `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`'s
-  own test suite (`test/Benzene.Core.Test/Hosting/BoundedConcurrentDispatcherTest.cs`).
+- `HttpListenerMessageHandlerResultSetter` - the `IMessageHandlerResultSetter<SelfHostHttpContext>`
+  every response (health check or routed handler) is written through; runs the registered
+  `IResponseHandler<SelfHostHttpContext>` chain via `ResponseMessageMessageHandlerResultSetterBase`,
+  same pattern as `AspMessageMessageHandlerResultSetter`/`ApiGatewayMessageMessageHandlerResultSetter`.
+  **Fixed a real bug** (previously misnamed `KafkaMessageHandlerResultSetter`, apparently copy-pasted
+  from `Benzene.Kafka.Core`): it unconditionally forced `Response.StatusCode = 200` regardless of the
+  actual result, and never invoked `IResponseHandlerContainer`/`HttpContextResponseAdapter.FinalizeAsync`
+  at all - so response bodies were never written and `HttpListenerResponse` was never closed. `AddHttp()`
+  now also registers the open-generic `IResponseHandlerContainer<>` (previously only available when
+  `.UseMessageHandlers()`/`.AddMessageHandlers()` was also called, since `AddContextItems()` isn't
+  otherwise reachable from `AddHttp()` alone) so this works for a self-host app that only wires health
+  checks, with no message handlers.
+- Now covered end to end by `test/Benzene.Core.Test/SelfHost/Http/BenzeneHttpWorkerTest.cs` - binds a
+  real `HttpListener` to a free loopback port via `BenzeneHttpWorker` and drives it with a real
+  `HttpClient` (`SelfHostHttpContext` wraps a sealed, constructor-less `HttpListenerContext`, so a fake
+  context object isn't an option here). Covers: a matched liveness check returning 200, an unmatched
+  path falling through to `MessageRouter`'s "missing topic" validation error (non-200, proving the
+  status-code bug above is actually fixed), and `StopAsync` actually closing the listener (a further
+  request fails to connect rather than hanging). The concurrency/drain behavior `BenzeneHttpWorker`
+  relies on is separately unit-tested via `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`'s own test
+  suite (`test/Benzene.Core.Test/Hosting/BoundedConcurrentDispatcherTest.cs`).
 
 ## When to use this package
 - When you need HTTP endpoints in console apps
