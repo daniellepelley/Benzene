@@ -1,0 +1,43 @@
+# Compiles deploy/Mesh/Benzene.Mesh.Host.sln - this deployable is a production-ready primitive
+# (a real tool developers run against real services), not an example/demo, so unlike examples/ it
+# gets real CI coverage rather than being left to build only when someone remembers to.
+
+name: Build Mesh Host
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'deploy/Mesh/**'
+      - 'src/Benzene.Mesh.Aggregator/**'
+      - 'src/Benzene.Mesh.Aws.Lambda/**'
+      - 'src/Benzene.Mesh.Contracts/**'
+      - 'src/Benzene.Mesh.Ui/**'
+      - '.github/workflows/build-mesh-host.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'deploy/Mesh/**'
+      - 'src/Benzene.Mesh.Aggregator/**'
+      - 'src/Benzene.Mesh.Aws.Lambda/**'
+      - 'src/Benzene.Mesh.Contracts/**'
+      - 'src/Benzene.Mesh.Ui/**'
+      - '.github/workflows/build-mesh-host.yml'
+  workflow_dispatch:
+
+jobs:
+  build-mesh-host:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore deploy/Mesh/Benzene.Mesh.Host.sln
+    - name: Build
+      run: dotnet build deploy/Mesh/Benzene.Mesh.Host.sln --no-restore

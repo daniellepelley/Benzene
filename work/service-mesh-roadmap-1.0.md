@@ -164,6 +164,28 @@
 > explicitly-flagged gap**: an idle self-reporting service's entry just ages with no signal that
 > it's stale - `MeshServiceStatus` has no `Stale` value yet; not solved by this phase. Phase D
 > (`deploy/Mesh/Benzene.Mesh.Host`) remains open.
+>
+> **2026-07-15 Phase D landed - all four multi-transport phases complete:** `deploy/Mesh/Benzene.Mesh.Host`,
+> a config-driven, Docker/Compose-deployable Mesh Aggregator+UI - for a developer to run against
+> their own real services in local dev, distinct from `examples/Mesh/`'s fake-data demo. Reads
+> `mesh.json` (bind-mounted, `MESH_CONFIG_PATH`) via `IConfiguration.Get<MeshHostConfig>()` - this
+> repo's first binding of a *list* of config objects, genuinely new territory, not an established
+> Benzene pattern being reused. Wires `AddMeshAggregator` + `AddMeshLambdaSource` (both v1 pull
+> sources), and adds a new `MeshPollBackgroundService` (`BackgroundService` on a timer) since a bare
+> Compose deployment has no external scheduler - local to this Host app only, doesn't change
+> `MeshAggregateMessageHandler`'s existing invocation-triggered contract. Own `Benzene.Mesh.Host.sln`
+> (not part of `Benzene.sln`/`Benzene.Examples.sln`, mirroring `templates/Benzene.Templates.sln`'s
+> precedent), own CI (`build-mesh-host.yml` compiles on every push/PR - real coverage, unlike
+> `examples/`) and publish workflow (`deploy-mesh-host.yml`, GHCR, manual `workflow_dispatch` - the
+> **first Docker image publish anywhere in this repo**). Two deliberate scope cuts from the original
+> sketch, flagged in `deploy/Mesh/Benzene.Mesh.Host/CLAUDE.md`: no `selfReportIngestion.enabled`
+> config toggle (reflection-based handler discovery makes `/mesh/report` unavoidably reachable once
+> `Benzene.Mesh.Aggregator` is referenced at all, which this Host always does - gating it would need
+> an explicit handler allow-list, judged not worth it for v1), and no Tempo wiring (a separable
+> follow-up). This closes out the multi-transport data collection epic (Phases A-D) - remaining open
+> items are the pre-existing ones tracked in `.claude/PRODUCT_OWNERS.md`'s Mesh PO priorities (live
+> Tempo verification, structural edges, topology graph visualization, staleness representation,
+> Phase 4/5 of the original roadmap).
 **Owner:** `mesh-product-owner` (`.claude/agents/mesh-product-owner.md`)
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who

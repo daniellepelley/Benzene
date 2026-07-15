@@ -289,11 +289,12 @@ Product owners are living documents that evolve with the product:
 - **gRPC**: Improve gRPC client/server patterns
 
 ### Mesh PO
-- **Multi-transport data collection**: ✅ Phase A (`IMeshServiceSource` port), Phase B
-  (`Benzene.Mesh.Aws.Lambda`), and Phase C (`Benzene.Mesh.Reporting` push path — opportunistic
-  self-report, two swappable `IMeshReportPublisher`s) landed. Phase D
-  (`deploy/Mesh/Benzene.Mesh.Host` Docker/Compose deployable) is in progress — see
-  `work/service-mesh-roadmap-1.0.md`'s 2026-07-15 updates
+- **Multi-transport data collection**: ✅ Complete — all four phases landed. Phase A
+  (`IMeshServiceSource` port), Phase B (`Benzene.Mesh.Aws.Lambda`), Phase C
+  (`Benzene.Mesh.Reporting` push path — opportunistic self-report, two swappable
+  `IMeshReportPublisher`s), Phase D (`deploy/Mesh/Benzene.Mesh.Host`, a config-driven
+  Docker/Compose-deployable Mesh Aggregator+UI, published to GHCR) — see
+  `work/service-mesh-roadmap-1.0.md`'s 2026-07-15 updates for the full history
 - **Staleness representation**: flagged by Phase C — an opportunistically self-reporting service's
   entry has no way to signal "this is old data," since `MeshServiceStatus` has no `Stale` value —
   still open

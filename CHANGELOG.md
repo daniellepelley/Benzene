@@ -38,6 +38,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reporting in v1, since that would defeat serverless on-demand billing. Spec/health are supplied
   as delegates, so this package stays free of a dependency on `Benzene.Schema.OpenApi`/
   `Benzene.HealthChecks`.
+- `deploy/Mesh/Benzene.Mesh.Host`: new config-driven, Docker/Compose-deployable Benzene Mesh
+  Aggregator+UI - for running the mesh dashboard against real services in local dev (distinct from
+  `examples/Mesh/`'s fake-data demo). Reads `mesh.json` (bind-mounted, `MESH_CONFIG_PATH`) via
+  `IConfiguration.Get<MeshHostConfig>()` - this repo's first binding of a list of config objects.
+  Wires `AddMeshAggregator` + `AddMeshLambdaSource`, plus a new `MeshPollBackgroundService`
+  (timer-triggered aggregation, since bare Compose has no external scheduler - local to this Host
+  only). Own `Benzene.Mesh.Host.sln`, not part of `Benzene.sln`/`Benzene.Examples.sln`. New CI:
+  `build-mesh-host.yml` (compiles on every push/PR) and `deploy-mesh-host.yml` (manual
+  `workflow_dispatch`, publishes to GHCR - the first Docker image publish in this repo). Completes
+  the four-phase multi-transport mesh data collection epic (Phases A-D) - see
+  `work/service-mesh-roadmap-1.0.md`.
 - RetryMiddleware component for exponential backoff retry logic
 - FluentValidation extensions
 - Source generators for message handlers
