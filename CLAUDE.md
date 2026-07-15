@@ -21,6 +21,7 @@ representing external boundaries — DB, HTTP, queues, etc).
   conventions) rather than inventing a new style.
 - Check `test/` for the existing test conventions (framework,
   naming, arrange/act/assert style) before writing new tests.
+- Rebase from `main` before making any changes.
 
 ## Conventions (verify against actual code, then keep this updated)
 - Language: C#, target framework(s) — confirm from .csproj files
