@@ -17,6 +17,7 @@ using Benzene.Results;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using Constants = Benzene.Core.MessageHandlers.Constants;
 
 namespace Benzene.Test.Plugins.MessagePack;
 
