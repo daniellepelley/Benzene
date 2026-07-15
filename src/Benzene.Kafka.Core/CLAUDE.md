@@ -46,6 +46,12 @@ producer support. This is one of the "self-hosted worker" startup modes document
   broker - now unit-tested directly in `test/Benzene.Core.Test/Kafka/KafkaCoreMappersTest.cs`
   (previously untested, unlike `KafkaContextConverter`'s header-forwarding, which was already
   covered by `test/Benzene.Core.Test/Clients/OutboundHeaderForwardingTest.cs`).
+- `KafkaBenzeneMessageClient` - like `SqsBenzeneMessageClient`/`SnsBenzeneMessageClient`, its second
+  constructor accepts an already-built `IMiddlewarePipeline<KafkaSendMessageContext>` directly, so
+  `SendMessageAsync`'s status mapping (`Persisted` → `Accepted`, anything else → `UnexpectedError`,
+  a thrown exception → `ServiceUnavailable`) is unit-testable against a mocked
+  `IProducer<string,string>` with no live broker - see
+  `test/Benzene.Core.Test/Kafka/KafkaBenzeneMessageClientTest.cs`.
 
 ## When to use this package
 - When building Kafka-based applications
