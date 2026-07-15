@@ -1,0 +1,62 @@
+# Publishes the Benzene.Templates dotnet-new template pack to NuGet.
+# Separate from deploy-benzene.yml because Benzene.Templates isn't part of Benzene.sln and
+# versions independently of version.txt (see templates/Benzene.Templates.csproj) - manual
+# workflow_dispatch only, same as the main library's own deploy workflow.
+
+name: Deploy Benzene Templates
+
+on:
+  workflow_dispatch:
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Determine version
+      id: version
+      run: |
+        set -euo pipefail
+        BASE_VERSION="$(sed -n 's/.*<VersionPrefix>\(.*\)<\/VersionPrefix>.*/\1/p' templates/Benzene.Templates.csproj | head -1)"
+        PACKAGE_ID="benzene.templates"
+
+        HTTP_STATUS=$(curl -s -o /tmp/nuget-versions.json -w '%{http_code}' \
+          "https://api.nuget.org/v3-flatcontainer/${PACKAGE_ID}/index.json")
+
+        LAST_BUILD=0
+        if [ "$HTTP_STATUS" = "200" ]; then
+          ESCAPED_BASE_VERSION=$(printf '%s' "$BASE_VERSION" | sed 's/\./\\./g')
+          while IFS= read -r BUILD; do
+            if [ "$BUILD" -gt "$LAST_BUILD" ]; then
+              LAST_BUILD="$BUILD"
+            fi
+          done < <(jq -r '.versions[]' /tmp/nuget-versions.json \
+            | grep -E "^${ESCAPED_BASE_VERSION}\.[0-9]+-alpha$" \
+            | sed -E "s/^${ESCAPED_BASE_VERSION}\.([0-9]+)-alpha$/\1/")
+        fi
+
+        FULL_VERSION="${BASE_VERSION}.$((LAST_BUILD + 1))-alpha"
+        echo "Resolved version: ${FULL_VERSION}"
+        echo "full_version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
+    - name: Restore dependencies
+      run: dotnet restore templates/Benzene.Templates.csproj
+    - name: Pack
+      run: dotnet pack templates/Benzene.Templates.csproj -c Release -p:PackageVersion=${{ steps.version.outputs.full_version }} -o ./templates-pack
+    - name: NuGet login
+      if: startsWith(github.ref, 'refs/heads/main')
+      id: nuget-login
+      uses: NuGet/login@v1
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    - name: Publish
+      if: startsWith(github.ref, 'refs/heads/main')
+      run: dotnet nuget push ./templates-pack/*.nupkg --source 'https://api.nuget.org/v3/index.json' --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}

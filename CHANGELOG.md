@@ -49,9 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   floating `Version="*-*"` rather than a pinned version, so they always restore the latest
   published (prerelease) package. Verified by a new `.github/workflows/build-templates.yml` (packs,
   installs, generates, and builds every template — plus a daily schedule run, since a floating
-  version can break a template with zero content changes to this repo). Not yet published to
-  nuget.org — see `templates/README.md` and
-  [Project Templates](docs/getting-started-templates.md) for building/installing a local copy.
+  version can break a template with zero content changes to this repo). Published to nuget.org via
+  a new manual `.github/workflows/deploy-templates.yml` (separate from `deploy-benzene.yml` since
+  `Benzene.Templates` isn't part of `Benzene.sln` and versions independently) — see
+  `templates/README.md` and [Project Templates](docs/getting-started-templates.md) for
+  installing/generating a project with `dotnet new`.
   No new library dependency — the pack project uses only `PackageType=Template`/`IncludeContentInPack`,
   the standard `dotnet pack` mechanism for a template pack, no extra tooling package
 
