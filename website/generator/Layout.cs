@@ -39,7 +39,7 @@ internal static class Layout
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>Benzene &mdash; one middleware pipeline, every cloud</title>
-              <meta name="description" content="A hexagonal (ports-and-adapters) framework for C# built around a shared middleware pipeline. Write your message handlers once, run them on AWS, Azure, Google Cloud, Cloudflare, Kafka, or ASP.NET Core.">
+              <meta name="description" content="A hexagonal (ports-and-adapters) framework for C# built around a shared middleware pipeline. Write your message handlers once, run them on AWS, Azure, Google Cloud, Cloudflare, Kubernetes, or ASP.NET Core, and swap transports with minimal reconfiguration.">
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -92,6 +92,12 @@ internal static class Layout
 
                 <section class="section">
                   <h2>Runs everywhere you need it to</h2>
+                  <p class="section-lede">
+                    And that's only half of it: wherever it runs, the same handler can be
+                    reached over HTTP, Lambda events, SQS, SNS, Kafka, EventBridge, Event Hub,
+                    Service Bus, or gRPC &mdash; swap between them with minimal reconfiguration,
+                    not a rewrite.
+                  </p>
                   <div class="platform-grid">
                     {platforms}
                   </div>
