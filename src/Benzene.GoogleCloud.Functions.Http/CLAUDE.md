@@ -33,7 +33,13 @@ Cloud Functions Gen2 deployment target.
 Functions Gen2** - write it once (e.g. `app.UseHttp(asp => asp.UseMessageHandlers())`), host it on
 Cloud Run via `WebApplicationBuilder.UseBenzene<Startup>()` or on Cloud Functions Gen2 via `class
 Function : GoogleCloudFunctionHost<Startup> { }`. See `examples/Google` for the concrete
-demonstration.
+demonstration (not CI-gated - see `examples/CLAUDE.md`), and
+`test/Benzene.Core.Test/Hosting/GoogleCloudFunctionHostTest.cs` for a CI-gated unit test proving the
+same exact claim: it reuses `AspNetSharedStartUp`/`PingHandler`
+(`Hosting/AspNetUnifiedStartUpTest.cs`) - the same `BenzeneStartUp` already proven to work over a
+real ASP.NET Core host - unchanged, through `GoogleCloudFunctionHost<AspNetSharedStartUp>` instead.
+That test file also covers `GoogleCloudFunctionApplicationBuilder.Build`'s guard clause (throws
+`InvalidOperationException` if `Configure` never calls `UseHttp(...)`).
 
 ## When to use this package
 - Deploying a Benzene HTTP service to Cloud Functions Gen2 specifically. If Cloud Run is your
