@@ -51,5 +51,15 @@ and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-ho
 ## Conventions
 - Point the UI at the `benzene` spec type (`/spec?type=benzene`) — it is designed around the
   topic/payload/validation shape of that format, not `openapi`/`asyncapi`.
+
+## Tests
+- `test/Benzene.Core.Test/SpecUi/SpecUiPageTest.cs` — `GetHtml()`/`GetHtml(specUrl)`: embedded
+  resource loads, `data-spec-url` injection and HTML-encoding, null/whitespace fallback.
+- `test/Benzene.Core.Test/SpecUi/SpecUiMiddlewareTest.cs` — GET/HEAD-to-matching-path
+  short-circuits (writes the page via `IBenzeneResponseAdapter`, never calls `next`); any other
+  method or path falls through to `next`; path normalization (case, leading/trailing slash).
+  Uses a trivial `FakeHttpContext : IHttpContext` (the interface is a pure marker) with Moq'd
+  `IHttpRequestAdapter`/`IBenzeneResponseAdapter` — no real transport needed, unlike
+  `Benzene.SelfHost.Http`'s tests.
 - Keep the viewer dependency-free and self-contained (no CDN/webfont/script references) so it works
   offline and behind strict CSPs, and can be embedded as a single resource.

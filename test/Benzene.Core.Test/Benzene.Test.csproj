@@ -117,6 +117,7 @@
     <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\src\Benzene.SelfHost\Benzene.SelfHost.csproj" />
     <ProjectReference Include="..\..\src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Spec.Ui\Benzene.Spec.Ui.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
   </ItemGroup>
