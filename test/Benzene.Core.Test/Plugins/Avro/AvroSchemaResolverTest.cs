@@ -33,7 +33,10 @@ public class AvroSchemaResolverTest
         var record = (RecordSchema)resolver.GetSchema(typeof(SampleOrderDto));
         var tags = record.Fields.First(f => f.Name == "Tags");
 
-        Assert.Equal(global::Avro.Schema.Type.Array, tags.Schema.Tag);
+        // Tags is a reference-typed collection, so it maps to a ["null", array] union whose non-null
+        // branch is the Avro array.
+        var union = Assert.IsType<UnionSchema>(tags.Schema);
+        Assert.Contains(union.Schemas, s => s.Tag == global::Avro.Schema.Type.Array);
     }
 
     [Fact]
