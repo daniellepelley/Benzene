@@ -14,6 +14,13 @@
     <PackageReference Include="Benzene.Kafka.Core" Version="*-*" />
     <PackageReference Include="Benzene.HostedService" Version="*-*" />
     <PackageReference Include="Benzene.SelfHost" Version="*-*" />
+    <!-- Benzene.HostedService/Benzene.SelfHost only bring in the .Abstractions packages
+         transitively - the concrete Host.CreateDefaultBuilder/ConfigurationBuilder
+         implementations used in Program.cs/StartUp.cs need these referenced directly, the same
+         way `dotnet new worker` itself references Microsoft.Extensions.Hosting. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
   </ItemGroup>
 
 </Project>
