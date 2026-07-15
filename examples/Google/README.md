@@ -49,7 +49,7 @@ gcloud run deploy benzene-google-example --image benzene-google-example --port 8
 cd examples/Google/Benzene.Examples.Google
 gcloud functions deploy benzene-google-example \
   --gen2 \
-  --runtime=dotnet8 \
+  --runtime=dotnet10 \
   --entry-point=Benzene.Examples.Google.Function \
   --trigger-http \
   --allow-unauthenticated

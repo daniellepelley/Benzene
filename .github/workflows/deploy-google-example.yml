@@ -1,0 +1,79 @@
+name: Deploy Google Cloud Run Example
+
+# Mirrors the AWS example deploy workflow, for the Google Cloud target. Cloud Run is the
+# recommended target from work/google-cloud-roadmap-1.0.md (a plain .NET 10 container — no Functions
+# Framework needed). Trigger manually from the Actions tab: "Run workflow".
+#
+# ONE-TIME GCP SETUP (the analog of the AWS example's account/role/credentials):
+#   1. A GCP project.                    -> repo VARIABLE  GCP_PROJECT  = its project id
+#   2. A region, e.g. europe-west1.      -> repo VARIABLE  GCP_REGION   = that region
+#   3. An Artifact Registry Docker repo in that region:
+#        gcloud artifacts repositories create benzene \
+#          --repository-format=docker --location=$GCP_REGION
+#                                        -> repo VARIABLE  GCP_AR_REPO  = its name (e.g. benzene)
+#   4. A service account with roles: roles/run.admin, roles/iam.serviceAccountUser,
+#      roles/artifactregistry.writer. Create a JSON key and store it as
+#                                         repo SECRET     GCP_SA_KEY   = the key JSON
+#   5. Enable APIs: run.googleapis.com, artifactregistry.googleapis.com, cloudbuild.googleapis.com.
+#
+# (Workload Identity Federation is the more secure, keyless alternative to the JSON key in step 4 —
+#  swap the auth step's `credentials_json` for `workload_identity_provider`/`service_account`.)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    environment: test
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_AR_REPO: ${{ vars.GCP_AR_REPO }}
+      SERVICE: benzene-google-example
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+    - name: Build image
+      # Build context is the repo root — the example references sibling src/ projects by relative
+      # path, so the whole repo has to be in the build context (see the Dockerfile's own comment).
+      run: |
+        IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${GCP_AR_REPO}/${SERVICE}:${GITHUB_SHA::7}"
+        echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+        docker build -f examples/Google/Benzene.Examples.Google/Dockerfile -t "$IMAGE" .
+
+    - name: Push image
+      run: docker push "$IMAGE"
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy "$SERVICE" \
+          --image "$IMAGE" \
+          --project "$GCP_PROJECT" \
+          --region "$GCP_REGION" \
+          --platform managed \
+          --port 8080 \
+          --allow-unauthenticated \
+          --quiet
+
+    # Best-effort "is it alive?" check: hit the deployed service's GET /orders endpoint and print
+    # the response. continue-on-error so a hiccup here never fails the deploy itself.
+    - name: Smoke test — GET /orders
+      continue-on-error: true
+      run: |
+        URL="$(gcloud run services describe "$SERVICE" --project "$GCP_PROJECT" --region "$GCP_REGION" --format 'value(status.url)')"
+        echo "Service URL: $URL"
+        curl -fsS "$URL/orders" && echo
