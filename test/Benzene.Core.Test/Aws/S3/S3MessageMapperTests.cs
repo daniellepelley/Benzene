@@ -38,4 +38,25 @@ public class S3MessageMapperTests
 
         Assert.Equal("ObjectCreated:Put", headers["eventName"]);
     }
+
+    [Fact]
+    public void GetHeaders_NoS3Entity_OmitsBucketAndKeyHeaders()
+    {
+        // The record's S3 property (bucket/object metadata) is null unless explicitly populated -
+        // GetHeaders chains through it with null-conditional access, so this proves it degrades to
+        // omitting those headers rather than throwing.
+        var headers = new S3MessageHeadersGetter().GetHeaders(CreateContext("ObjectCreated:Put"));
+
+        Assert.False(headers.ContainsKey("bucketName"));
+        Assert.False(headers.ContainsKey("key"));
+    }
+
+    [Fact]
+    public void GetBody_NoS3Entity_SerializesWithoutThrowing()
+    {
+        var body = new S3MessageBodyGetter().GetBody(CreateContext("ObjectCreated:Put"));
+
+        Assert.Contains("\"bucketName\":null", body);
+        Assert.Contains("\"key\":null", body);
+    }
 }
