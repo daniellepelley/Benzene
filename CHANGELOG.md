@@ -25,6 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MeshServiceSource.AwsLambdaInvoke` constant. `AddMeshLambdaSource()` registers it alongside
   `AddMeshAggregator(...)`. No new external NuGet dependency (`AWSSDK.Lambda` already flows in
   transitively via `Benzene.Clients.Aws`).
+- `Benzene.Mesh.Contracts`: `MeshServiceReport`/`IMeshReportPublisher` - the push/self-report shapes
+  for services with no synchronous entry point at all (e.g. SQS/SNS/EventBridge-only Lambdas), a
+  deliberate small widening of this package's role to "data shapes + zero-I/O port interfaces."
+- `Benzene.Mesh.Aggregator`: `ArtifactStoreMeshReportPublisher` (direct-write `IMeshReportPublisher`)
+  and `MeshReportMessageHandler` (`[HttpEndpoint("POST", "/mesh/report")]`/`[Message("mesh:report")]`,
+  opt-in ingestion endpoint, not auto-registered by any existing wiring beyond the default publisher).
+- `Benzene.Mesh.Reporting`: new lightweight package (depends on `Benzene.Mesh.Contracts` only) for
+  services that self-report. `HttpMeshReportPublisher` posts to an ingestion endpoint;
+  `MeshSelfReportMiddleware<TContext>` publishes opportunistically as a side effect of real
+  requests/messages (throttled, never blocking, never propagating a failure) - no scheduled/cron
+  reporting in v1, since that would defeat serverless on-demand billing. Spec/health are supplied
+  as delegates, so this package stays free of a dependency on `Benzene.Schema.OpenApi`/
+  `Benzene.HealthChecks`.
 - RetryMiddleware component for exponential backoff retry logic
 - FluentValidation extensions
 - Source generators for message handlers
