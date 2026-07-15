@@ -37,7 +37,9 @@ public class SpecUiPageTest
     {
         var html = SpecUiPage.GetHtml(specUrl);
 
+        // The embedded page's own JS references the literal string "data-spec-url" (it reads the
+        // attribute at runtime), so it's always present in the markup — only the equality check
+        // against the parameterless overload proves no attribute was injected.
         Assert.Equal(SpecUiPage.GetHtml(), html);
-        Assert.DoesNotContain("data-spec-url", html);
     }
 }
