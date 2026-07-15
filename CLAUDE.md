@@ -16,6 +16,8 @@ representing external boundaries — DB, HTTP, queues, etc).
   `.github/workflows/build-templates.yml`, not part of `Benzene.sln` — see `templates/README.md`
 - `examples/` — sample usage projects
 - `docs/` — documentation
+- `website/` — static marketing + docs site generator (deploys `docs/`/`README.md` to S3), its
+  own standalone project, not part of `Benzene.sln` — see `website/README.md`
 - `Benzene.sln` — main library solution
 - `Benzene.Examples.sln` — examples solution
 - `.github/workflows/` — CI
