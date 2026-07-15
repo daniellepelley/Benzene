@@ -51,6 +51,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Avro\Benzene.Avro.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway.TestHelpers\Benzene.Aws.Lambda.ApiGateway.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
