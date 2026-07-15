@@ -1,11 +1,10 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
-using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Hosting;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 using Benzene.Aws.Lambda.Core;
-using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.Kafka;
@@ -13,19 +12,23 @@ using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages.BenzeneMessage;
-using Benzene.Diagnostics.Correlation;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.Aws.Logging;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
+using Benzene.Microsoft.Dependencies;
 using Benzene.Xml;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Examples.Aws;
 
-public class StartUp : AwsLambdaStartUp
+/// <summary>
+/// Platform-neutral application definition, hosted as an AWS Lambda entry point by
+/// <see cref="Function"/>. All AWS event sources are wired inside <c>app.UseAwsLambda(...)</c>.
+/// </summary>
+public class StartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration()
     {
@@ -40,91 +43,100 @@ public class StartUp : AwsLambdaStartUp
         DependenciesBuilder.Register(services, configuration);
     }
 
-    public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
-        app
-            .UseSerilog()
-            .UseTimer("aws-stream-application");
-
-        var healthChecks = new IHealthCheck[]
+        app.UseAwsLambda(aws =>
         {
-            new SimpleHealthCheck()
-        };
+            aws
+                .UseSerilog()
+                .UseTimer("aws-stream-application");
 
-        const string healthCheckTopic = "healthcheck";
-        
-        var benzeneMessagePipeline =
-            app.Create<BenzeneMessageContext>()
-                .UseTimer("benzene-message-application")
+            var healthChecks = new IHealthCheck[]
+            {
+                new SimpleHealthCheck()
+            };
+
+            const string healthCheckTopic = "healthcheck";
+
+            var benzeneMessagePipeline =
+                aws.Create<BenzeneMessageContext>()
+                    .UseTimer("benzene-message-application")
+                    .UseXml()
+                    .UseHealthCheck(healthCheckTopic, healthChecks)
+                    .UseMessageHandlers(router => router
+                        .UseFluentValidation()
+                    );
+
+            aws.UseBenzeneMessage(benzeneMessagePipeline);
+
+            aws.UseApiGateway(apiGatewayApp => apiGatewayApp
+                .UseHttpToBenzeneMessage(benzeneMessagePipeline)
+                .UseTimer("api-gateway-application")
+                .UseXml()
+                .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
+                .UseMessageHandlers(router => router
+                    .UseFluentValidation()
+                )
+            );
+
+            aws.UseSns(snsApp => snsApp
+                .UseTimer("sns-application")
                 .UseXml()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router
                     .UseFluentValidation()
-                );
-        
-        app.UseBenzeneMessage(benzeneMessagePipeline);
+                )
+            );
 
-        app.UseApiGateway(apiGatewayApp => apiGatewayApp
-            .UseHttpToBenzeneMessage(benzeneMessagePipeline)
-            .UseTimer("api-gateway-application")
-            .UseXml()
-            .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
-            .UseMessageHandlers(router => router
-                .UseFluentValidation()
-            )
-        );
+            aws.UseSqs(sqsApp => sqsApp
+                .UseTimer("sqs-application")
+                .UseXml()
+                .UseHealthCheck(healthCheckTopic, healthChecks)
+                .UseMessageHandlers(router => router
+                    .UseFluentValidation()
+                )
+            );
 
-        app.UseSns(snsApp => snsApp
-            .UseTimer("sns-application")
-            .UseXml()
-            .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageHandlers(router => router
-                .UseFluentValidation()
-            )
-        );
+            aws.UseKafka(kafkaApp => kafkaApp
+                .UseTimer("kafka-application")
+                .UseHealthCheck(healthCheckTopic, healthChecks)
+                .UseMessageHandlers(router => router.UseFluentValidation())
+            );
 
-        app.UseSqs(sqsApp => sqsApp
-            .UseTimer("sqs-application")
-            .UseXml()
-            .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageHandlers(router => router
-                .UseFluentValidation()
-            )
-        );
+            // EventBridge routes by the event's detail-type; detail is JSON, so no XML mapping needed.
+            aws.UseEventBridge(eventBridgeApp => eventBridgeApp
+                .UseTimer("event-bridge-application")
+                .UseHealthCheck(healthCheckTopic, healthChecks)
+                .UseMessageHandlers(router => router
+                    .UseFluentValidation()
+                )
+            );
 
-        app.UseKafka(kafkaApp => kafkaApp
-            .UseTimer("kafka-application")
-            .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageHandlers(router => router.UseFluentValidation())
-        );
-
-        // EventBridge routes by the event's detail-type; detail is JSON, so no XML mapping needed.
-        app.UseEventBridge(eventBridgeApp => eventBridgeApp
-            .UseTimer("event-bridge-application")
-            .UseHealthCheck(healthCheckTopic, healthChecks)
-            .UseMessageHandlers(router => router
-                .UseFluentValidation()
-            )
-        );
-
-        app.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp
-            .UseCustomAuthorizer(request => Task.FromResult(new APIGatewayCustomAuthorizerResponse
-            {
-                PrincipalID = "user",
-                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+            aws.UseApiGatewayCustomAuthorizer(authorizerApp => authorizerApp
+                .UseCustomAuthorizer(request => Task.FromResult(new APIGatewayCustomAuthorizerResponse
                 {
-                    Version = "2012-10-17",
-                    Statement =
-                    [
-                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
-                        {
-                            Effect = "Allow",
-                            Action = ["execute-api:Invoke"],
-                            Resource = [request.MethodArn]
-                        }
-                    ]
-                }
-            }))
-        );
+                    PrincipalID = "user",
+                    PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                    {
+                        Version = "2012-10-17",
+                        Statement =
+                        [
+                            new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                            {
+                                Effect = "Allow",
+                                Action = ["execute-api:Invoke"],
+                                Resource = [request.MethodArn]
+                            }
+                        ]
+                    }
+                }))
+            );
+        });
     }
 }
+
+/// <summary>
+/// AWS Lambda entry point hosting <see cref="StartUp"/>. Point the function-handler setting at
+/// <c>Benzene.Examples.Aws::Benzene.Examples.Aws.Function::FunctionHandlerAsync</c>.
+/// </summary>
+public class Function : AwsLambdaHost<StartUp>;

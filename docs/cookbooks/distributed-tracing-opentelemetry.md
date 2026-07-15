@@ -198,12 +198,12 @@ using Benzene.Aws.Sqs;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics;
-using Benzene.HostedService;
+using Benzene.Microsoft.Dependencies;
 using Benzene.SelfHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-public class WorkerStartUp : BenzeneHostedServiceStartup
+public class WorkerStartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration()
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
@@ -216,28 +216,29 @@ public class WorkerStartUp : BenzeneHostedServiceStartup
             .AddMessageHandlers(typeof(ProcessOrderMessageHandler).Assembly));
     }
 
-    public override void Configure(IBenzeneWorkerStartup app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
         var sqsClient = new AmazonSQSClient();
         var sqsClientFactory = new SqsClientFactory(sqsClient);
 
-        app.UseSqs(new SqsConsumerConfig
+        app.UseWorker(worker => worker.UseSqs(new SqsConsumerConfig
         {
             QueueUrl = configuration["ORDERS_QUEUE_URL"],
             MaxNumberOfMessages = 10
         },
         sqsClientFactory,
-        sqsApp => sqsApp.UseMessageHandlers());
+        sqsApp => sqsApp.UseMessageHandlers()));
     }
 }
 ```
 
 ```csharp
 // Program.cs
+using Benzene.HostedService;
 using Microsoft.Extensions.Hosting;
 
 IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services => services.AddHostedService<WorkerStartUp>())
+    .UseBenzene<WorkerStartUp>()
     .Build();
 
 await host.RunAsync();

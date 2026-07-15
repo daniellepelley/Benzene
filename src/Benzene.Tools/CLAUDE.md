@@ -17,10 +17,11 @@ Lambda entry-point wrapper that Lambda stream events can be sent into.
   `AWSXRayRecorder` test segment around each invocation — an AWS SDK requirement for
   some client calls to work under test, unrelated to the deleted `Benzene.Aws.XRay`
   tracing package.
-- `AwsLambdaBenzeneTestHostExtensions.BuildHost(...)` - builds an
-  `AwsLambdaBenzeneTestHost` from the **older** `IStartUp<TContainer,...>` /
-  `IAwsEntryPointBuilder` pattern (pre-`BenzeneStartUp` unification; see
-  `AwsLambdaBenzeneTestStartUp<TStartUp, TContainer>`).
+- `AwsLambdaBenzeneTestHostExtensions.BuildHost(this IAwsEntryPointBuilder)` - wraps an
+  inline-built entry point (e.g. from `InlineAwsLambdaStartUp`) in an
+  `AwsLambdaBenzeneTestHost`. (The old `IStartUp<TContainer,...>` overload and its
+  `AwsLambdaBenzeneTestStartUp<TStartUp, TContainer>` receiver were removed along with
+  the pre-`BenzeneStartUp` startup model.)
 - `ThreadSafeTestLambdaLogger : ILambdaLogger` - buffers log lines for assertions
   instead of writing only to the console.
 
@@ -28,12 +29,6 @@ Lambda entry-point wrapper that Lambda stream events can be sent into.
 - `InlineStartUp<TContext>` - fluent `ConfigureServices`/`Configure`/`Build` builder
   for constructing an `IEntryPointMiddlewareApplication<TRequest, TResponse>` inline
   in a test, without a named `StartUp` class.
-
-### Dead code (do not use, do not extend)
-- `MessageBuilder.cs`, `MessageBuilderExtensions.cs`, `HttpBuilder.cs` are **entirely
-  commented out**. The duplication between these and `Benzene.Testing`'s
-  `MessageBuilder`/`HttpBuilder` was resolved in favor of `Benzene.Testing`'s copies;
-  these files were left as commented-out historical record rather than deleted.
 
 ## When to use this package
 - Writing AWS Lambda tests that need to drive a real `Stream`/`ILambdaContext`

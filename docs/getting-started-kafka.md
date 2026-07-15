@@ -89,22 +89,22 @@ transport on the same handler.
 
 ### 1.4 Define your StartUp
 
-Kafka consumption is wired up through `Benzene.SelfHost`'s **worker-specific** startup shape —
-`BenzeneWorkerStartup` (or its `IHostedService`-ready subclass, `BenzeneHostedServiceStartup`, from
-`Benzene.HostedService`) — not the platform-neutral `BenzeneStartUp` used by AWS/Azure/ASP.NET
-Core. These base classes are now **`[Obsolete]`** (warning only — still functional); they remain the
-Kafka-worker path until `UseKafka` is ported to the unified `BenzeneStartUp` model. This matters because `Benzene.Kafka.Core.Extensions.UseKafka<TKey, TValue>` only extends
-`IBenzeneWorkerStartup`, the interface `Configure` receives on this base class:
+Kafka consumption uses the same platform-neutral `BenzeneStartUp` as AWS/Azure/ASP.NET Core. The
+`Benzene.Kafka.Core.Extensions.UseKafka<TKey, TValue>` extension targets `IBenzeneWorkerStartup` —
+the worker-specific builder that `UseWorker(...)` hands you — so you wire Kafka up inside
+`app.UseWorker(worker => worker.UseKafka(...))`:
 
 ```csharp
+using Benzene.Abstractions.Hosting;
 using Benzene.Core.MessageHandlers.DI;
-using Benzene.HostedService;
 using Benzene.Kafka.Core;
+using Benzene.Microsoft.Dependencies;
+using Benzene.SelfHost;
 using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-public class StartUp : BenzeneHostedServiceStartup
+public class StartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration()
     {
@@ -120,7 +120,7 @@ public class StartUp : BenzeneHostedServiceStartup
             .AddKafka<Ignore, string>());
     }
 
-    public override void Configure(IBenzeneWorkerStartup app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
         var kafkaConfig = new BenzeneKafkaConfig
         {
@@ -135,7 +135,8 @@ public class StartUp : BenzeneHostedServiceStartup
             ConcurrentRequests = 5
         };
 
-        app.UseKafka<Ignore, string>(kafkaConfig, kafka => kafka.UseMessageHandlers());
+        app.UseWorker(worker =>
+            worker.UseKafka<Ignore, string>(kafkaConfig, kafka => kafka.UseMessageHandlers()));
     }
 }
 ```
@@ -153,12 +154,14 @@ public class StartUp : BenzeneHostedServiceStartup
 
 ### 1.5 Wire up `Program.cs`
 
-`BenzeneHostedServiceStartup` already *is* an `IHostedService` (its constructor builds the whole
-pipeline), so registering it is a one-liner:
+`Benzene.HostedService`'s `UseBenzene<StartUp>()` registers the Kafka worker as an `IHostedService`,
+so it starts and stops with the host:
 
 ```csharp
+using Benzene.HostedService;
+
 IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services => services.AddHostedService<StartUp>())
+    .UseBenzene<StartUp>()
     .Build();
 
 await host.RunAsync();

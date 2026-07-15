@@ -60,9 +60,16 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
   renaming a project touches its `.csproj`, every `.sln` that lists it, and every `ProjectReference` to it.
 - **`Kakfa` typo:** `examples/Kafka/Benzene.Examples.Kakfa` and `…Kakfa.Producer` are misspelled. Same
   caution — a rename is a multi-file `.sln`/reference change, not a casual fix.
-- **`Aws/` uses the older `AwsLambdaStartUp`** base class (it predates the `BenzeneStartUp`/`UseAwsLambda`
-  unification). That's intentional — it's the back-compat example. New guidance/docs should point at
-  `BenzeneStartUp` (see `docs/getting-started-aws.md`), but don't rewrite this example to it without asking.
+
+## Startup model
+All host examples use the platform-neutral `BenzeneStartUp` (`Configure(IBenzeneApplicationBuilder app, …)`),
+wired onto a transport inside `app.UseAwsLambda(…)` / `app.UseWorker(…)` etc. The old host-specific
+startup base classes (`AwsLambdaStartUp`, `BenzeneWorkerStartup`, `BenzeneHostedServiceStartup`, and the
+example-local `AutofacAwsStartUp`) have been removed.
+- **`Aws/`** — `StartUp : BenzeneStartUp` hosted by `Function : AwsLambdaHost<StartUp>` (the Lambda handler
+  entry point). Tests build the host with `BenzeneTestHost.Create<StartUp>().BuildAwsLambdaHost()`.
+- **`Kafka/`** — `StartUp : BenzeneStartUp` run via `Host…UseBenzene<StartUp>()` (registers the worker as an
+  `IHostedService`).
 
 ## Do NOT
 - Do not modify `Benzene.Examples.sln` / the per-folder `.sln` structure without explicit approval.

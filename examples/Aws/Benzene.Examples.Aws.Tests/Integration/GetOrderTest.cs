@@ -9,7 +9,9 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
+using Benzene.Testing;
 using Benzene.Results;
 using Benzene.Tools.Aws;
 using Benzene.Xml;
@@ -26,7 +28,7 @@ public class GetOrderTest : InMemoryOrdersTestBase
     private readonly Guid _id = Guid.Parse(Defaults.Order.Id);
 
     public GetOrderTest()
-        :base(new AwsLambdaBenzeneTestStartUp<StartUp>().Build())
+        :base(BenzeneTestHost.Create<StartUp>().BuildAwsLambdaHost())
     { }
     
     private GetOrderMessage GetOrderMessage()

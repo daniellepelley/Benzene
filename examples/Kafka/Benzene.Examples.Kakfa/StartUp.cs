@@ -1,9 +1,10 @@
+using Benzene.Abstractions.Hosting;
 using Benzene.Core.MessageHandlers;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
-using Benzene.HostedService;
 using Benzene.Http.Cors;
 using Benzene.Kafka.Core;
+using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
 using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
@@ -12,7 +13,7 @@ using Confluent.Kafka;
 
 namespace Benzene.Examples.Kakfa;
 
-public class StartUp : BenzeneHostedServiceStartup
+public class StartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration()
     {
@@ -24,7 +25,7 @@ public class StartUp : BenzeneHostedServiceStartup
         DependenciesBuilder.Register(services, configuration);
     }
 
-    public override void Configure(IBenzeneWorkerStartup app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
         var benzeneKafkaConfig = new BenzeneKafkaConfig
         {
@@ -39,7 +40,7 @@ public class StartUp : BenzeneHostedServiceStartup
             Topics = new[] { "order_create" }
         };
 
-        app
+        app.UseWorker(worker => worker
             .UseKafka<Ignore, string>(benzeneKafkaConfig, x =>
                 x.UseMessageHandlers())
             .UseHttp(new BenzeneHttpConfig
@@ -55,6 +56,6 @@ public class StartUp : BenzeneHostedServiceStartup
                     AllowedDomains = new[] { "editor-next.swagger.io" },
                     AllowedHeaders = Array.Empty<string>()
                 })
-                .UseMessageHandlers(x => x.UseFluentValidation()));
+                .UseMessageHandlers(x => x.UseFluentValidation())));
     }
 }

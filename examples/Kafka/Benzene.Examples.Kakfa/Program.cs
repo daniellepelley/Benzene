@@ -1,10 +1,8 @@
 using Benzene.Examples.Kakfa;
+using Benzene.HostedService;
 
 IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
-    {
-        services.AddHostedService<StartUp>();
-    })
+    .UseBenzene<StartUp>()
     .Build();
 
 await host.RunAsync();

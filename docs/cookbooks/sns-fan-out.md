@@ -102,12 +102,14 @@ Each subscriber is a completely separate Lambda function/deployment. Wire `UseSn
 **Lambda 1 — sends the customer a notification email:**
 
 ```csharp
-using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Abstractions.Hosting;
+using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Core.MessageHandlers;
 using Benzene.FluentValidation;
+using Benzene.Microsoft.Dependencies;
 
-public class NotificationStartUp : AwsLambdaStartUp
+public class NotificationStartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration() => /* ... */;
 
@@ -118,12 +120,15 @@ public class NotificationStartUp : AwsLambdaStartUp
             .AddMessageHandlers(typeof(SendOrderConfirmationEmailHandler).Assembly));
     }
 
-    public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
-        app.UseSns(snsApp => snsApp
-            .UseMessageHandlers(router => router.UseFluentValidation()));
+        app.UseAwsLambda(eventPipeline => eventPipeline
+            .UseSns(snsApp => snsApp
+                .UseMessageHandlers(router => router.UseFluentValidation())));
     }
 }
+
+public class NotificationFunction : AwsLambdaHost<NotificationStartUp> { }
 
 [Message("order:created")]
 public class SendOrderConfirmationEmailHandler : IMessageHandler<OrderCreatedMessage, Void>
@@ -139,16 +144,19 @@ public class SendOrderConfirmationEmailHandler : IMessageHandler<OrderCreatedMes
 **Lambda 2 — a completely separate deployable, updates analytics from the same event:**
 
 ```csharp
-public class AnalyticsStartUp : AwsLambdaStartUp
+public class AnalyticsStartUp : BenzeneStartUp
 {
     // ...same shape, different assembly of handlers...
 
-    public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
-        app.UseSns(snsApp => snsApp
-            .UseMessageHandlers());
+        app.UseAwsLambda(eventPipeline => eventPipeline
+            .UseSns(snsApp => snsApp
+                .UseMessageHandlers()));
     }
 }
+
+public class AnalyticsFunction : AwsLambdaHost<AnalyticsStartUp> { }
 
 [Message("order:created")]
 public class RecordOrderAnalyticsHandler : IMessageHandler<OrderCreatedMessage, Void>
@@ -182,7 +190,7 @@ var terraformBuilder = new TerraformLambdaBuilder();
 var codeFiles = terraformBuilder.BuildCodeFiles(new TerraformLambdaSettings
 {
     Name = "order-notification-func",
-    EntryPoint = "OrderNotification::OrderNotification.NotificationStartUp::FunctionHandlerAsync",
+    EntryPoint = "OrderNotification::OrderNotification.NotificationFunction::FunctionHandlerAsync",
     Domain = "orders",
     SubDomain = "notifications",
     TopicsMap = new Dictionary<string, string[]>

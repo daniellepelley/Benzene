@@ -449,62 +449,17 @@ and how to send events/messages into the built host.
 `IStartUp<IServiceCollection, IConfiguration, IBenzeneApplicationBuilder>` — so the unified
 cross-platform model described above is Microsoft DI-only today.
 
-Autofac support instead extends the more general `IStartUp<TContainer, TConfiguration, TAppBuilder>`
-abstraction at the container level, independent of `BenzeneStartUp`/`IBenzeneApplicationBuilder`.
-`Benzene.Autofac` provides:
+Autofac support instead works at the container level, independent of
+`BenzeneStartUp`/`IBenzeneApplicationBuilder`. `Benzene.Autofac` provides:
 
 - `AutofacBenzeneServiceContainer` — adapts `ContainerBuilder` to `IBenzeneServiceContainer`.
 - `AutofacServiceResolverFactory` — adapts a built Autofac container to `IServiceResolverFactory`.
-- `AutofacDependencyInjectionAdapter` — implements `IDependencyInjectionAdapter<ContainerBuilder>`,
-  bundling the two adapters above so they can be supplied as a unit.
 - `ContainerBuilder.UsingBenzene()` — registers Benzene's own services against a `ContainerBuilder`
   directly, the Autofac equivalent of `IServiceCollection.UsingBenzene()`.
 
-Today, this plugs into the AWS-specific, pre-unified `AwsLambdaStartUp<TContainer>` base class
-(`Benzene.Aws.Lambda.Core`) rather than `BenzeneStartUp`/`IBenzeneApplicationBuilder` — its
-`TAppBuilder` is fixed to `IMiddlewarePipelineBuilder<AwsEventStreamContext>`, so it predates and
-sits alongside the unified model rather than participating in it:
-
-```csharp
-public abstract class AwsLambdaStartUp<TContainer>
-    : IStartUp<TContainer, IConfiguration, IMiddlewarePipelineBuilder<AwsEventStreamContext>>, IAwsLambdaEntryPoint
-{
-    protected AwsLambdaStartUp(IDependencyInjectionAdapter<TContainer> dependencyInjectionAdapter) { /* ... */ }
-    // GetConfiguration / ConfigureServices(TContainer, IConfiguration) / Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext>, IConfiguration)
-}
-```
-
-```csharp
-using Autofac;
-using Benzene.Autofac;
-using Benzene.Aws.Lambda.Core;
-
-public class StartUp : AwsLambdaStartUp<ContainerBuilder>
-{
-    public StartUp() : base(new AutofacDependencyInjectionAdapter()) { }
-
-    public override IConfiguration GetConfiguration() => new ConfigurationBuilder()
-        .AddEnvironmentVariables().Build();
-
-    public override void ConfigureServices(ContainerBuilder services, IConfiguration configuration)
-        => services.UsingBenzene(x => x.AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
-
-    public override void Configure(IMiddlewarePipelineBuilder<AwsEventStreamContext> app, IConfiguration configuration)
-        => app.UseApiGateway(apiGatewayApp => apiGatewayApp.UseMessageHandlers());
-}
-```
-
-`examples/Aws/Benzene.Examples.Aws/StartUpAutofac.cs` and its sibling `AutofacAwsStartUp.cs` show
-a fully worked, hand-rolled variant of the same shape (built directly against
-`AutofacBenzeneServiceContainer`/`AutofacServiceResolverFactory` rather than through
-`AwsLambdaStartUp<TContainer>`), including a full set of AWS event sources.
-
-For testing an Autofac-based `AwsLambdaStartUp<TContainer>`, see the "Testing a legacy
-`AwsLambdaStartUp`-based app" section of [Testing Benzene](testing-benzene) —
-`AwsLambdaBenzeneTestStartUp<TStartUp, TContainer>` takes an
-`IDependencyInjectionAdapter<TContainer>` constructor argument the same way `AwsLambdaStartUp<TContainer>`
-does, so `new AwsLambdaBenzeneTestStartUp<StartUp, ContainerBuilder>(new AutofacDependencyInjectionAdapter())`
-is the Autofac equivalent of the Microsoft-DI-only `BenzeneTestHost`.
+Use these adapters wherever you build the container yourself and wire Benzene against it directly.
+Because `BenzeneStartUp`/`IBenzeneApplicationBuilder` are fixed to `IServiceCollection`, the unified
+hosts — including AWS Lambda via `AwsLambdaHost<TStartUp>` — run on Microsoft DI only.
 
 ## See Also
 
