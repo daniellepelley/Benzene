@@ -298,3 +298,6 @@ __pycache__/
 appsettings.*.json
 /test/ias-vatfilerrunquery-func.Tests/Properties/launchSettings.json
 /src/ias-vatfilerrunquery-func/dev.gitignore.json
+
+# BenchmarkDotNet run output (benchmarks/Benzene.Benchmarks)
+BenchmarkDotNet.Artifacts/

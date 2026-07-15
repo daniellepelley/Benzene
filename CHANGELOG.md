@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   throwing from its string members, so it works unchanged through every existing transport's
   request/response pipeline while still exercising Phase 4's byte-oriented path on
   `BenzeneMessageContext`
+- `benchmarks/Benzene.Benchmarks`: the repo's first BenchmarkDotNet suite, covering
+  `MiddlewarePipeline<TContext>.HandleAsync` (chain-construction cost, isolated from and combined
+  with DI scope creation, at 1/5/20 middlewares) and
+  `MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>` (first-call negotiation/cache-build
+  cost vs. warmed-cache steady state). Included in `Benzene.sln` so CI compile-checks it, but not
+  run as part of CI — see `benchmarks/Benzene.Benchmarks/README.md`. New NuGet dependency:
+  `BenchmarkDotNet` 0.15.8. No recorded baseline numbers yet — this is the first-ever suite
 
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound
