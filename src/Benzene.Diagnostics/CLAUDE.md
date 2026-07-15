@@ -26,7 +26,11 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   `UseTimer("name")` call sites — new code should prefer `Activity`/`ActivitySource` directly.**
 - `LoggingProcessTimer(Factory)`/`DebugProcessTimer`/`DebugTimerFactory`/`CompositeProcessTimer(Factory)` -
   generic `IProcessTimerFactory` implementations still available to register explicitly (e.g. if you
-  want plain log-line timers instead of `Activity` spans); not vendor backends, not deprecated
+  want plain log-line timers instead of `Activity` spans); not vendor backends, not deprecated.
+  `LoggingProcessTimer`'s start/complete log lines and tag-composition, and `CompositeProcessTimer`/
+  `CompositeProcessTimerFactory`'s fan-out to every inner timer/factory, are unit-tested in
+  `test/Benzene.Core.Test/Diagnostics/LoggingProcessTimerTest.cs` and
+  `CompositeProcessTimerTest.cs`.
 
 ### Correlation
 - `ICorrelationId`/`CorrelationId`, `AddCorrelationId()`, `WithCorrelationId()` - a per-invocation
@@ -34,7 +38,9 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   may `Set(...)` it (e.g. from a partner's proprietary header). There is no inbound
   correlation-header middleware - cross-service correlation is W3C `traceparent` propagation
   (below). The `GetHeader` extensions in `Correlation/Extensions.cs` remain and are used by the
-  W3C middleware.
+  W3C middleware. `CorrelationId`'s self-generation/`Set` guard and `GetHeader`'s
+  case-insensitive/multi-key-fallback lookup are unit-tested in
+  `test/Benzene.Core.Test/Diagnostics/CorrelationIdTest.cs`/`CorrelationExtensionsTest.cs`.
 
 ### Enrichment
 - `UseBenzeneEnrichment<TContext>()` (`EnrichmentExtensions.cs`) - one portable, explicit-opt-in
