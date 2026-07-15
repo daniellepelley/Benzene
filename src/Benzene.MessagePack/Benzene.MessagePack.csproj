@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Benzene.MessagePack</AssemblyName>
+        <RootNamespace>Benzene.MessagePack</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MessagePack" Version="3.1.8" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+      <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+      <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
+    </ItemGroup>
+</Project>

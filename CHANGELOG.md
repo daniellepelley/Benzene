@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   adapter — topic is `"{tableName}:{eventName}"`, body is the record image unmarshalled from
   AttributeValue format to plain JSON; ordered sequential processing with stop-at-first-failure
   partial-batch checkpointing; test helpers (`AsDynamoDb()`); no new NuGet dependencies
+- `Benzene.MessagePack`: MessagePack support (`MessagePackMediaFormat<TContext>` +
+  `AddMessagePack()`/`AddMessagePack<TContext>()`/`UseMessagePack<TContext>()`), the deferred
+  binary-format follow-up named in Phase 4 of `docs/plans/request-response-improvements-plan.md`.
+  New NuGet dependency: `MessagePack` (MessagePack-CSharp) 3.1.8. Since every Benzene transport's
+  body is a `string` today, `MessagePackSerializer` Base64-armors the msgpack bytes rather than
+  throwing from its string members, so it works unchanged through every existing transport's
+  request/response pipeline while still exercising Phase 4's byte-oriented path on
+  `BenzeneMessageContext`
 
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound
