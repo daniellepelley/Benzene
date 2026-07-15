@@ -5,6 +5,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.DI;
+using Benzene.Microsoft.Dependencies;
 using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -132,7 +134,8 @@ public class BenzeneHttpWorkerTest
         var worker = new InlineSelfHostedStartUp()
             .ConfigureServices(services => services
                 .AddLogging()
-                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger))
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger)
+                .UsingBenzene(x => x.AddBenzene()))
             .Configure(app => app.UseHttp(config, pipeline => pipeline
                 .UseLivenessCheck()
                 .UseMessageHandlers()))
@@ -176,15 +179,19 @@ public class BenzeneHttpWorkerTest
             .Build();
 
         await worker.StartAsync(CancellationToken.None);
-        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var firstResponse = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez", capturingLogger);
-        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) })
+        {
+            var firstResponse = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez", capturingLogger);
+            Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        }
 
         await worker.StopAsync(CancellationToken.None);
 
-        // The listener is closed after StopAsync returns - a further request must fail to connect
-        // rather than hang or succeed, proving the accept loop actually stopped.
+        // A fresh HttpClient (so this can't ride an already-open keep-alive connection from the
+        // request above) attempting a new connection after StopAsync has returned must fail rather
+        // than hang or succeed, proving the accept loop actually stopped.
+        using var freshHttpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         await Assert.ThrowsAnyAsync<HttpRequestException>(() =>
-            httpClient.GetAsync($"http://127.0.0.1:{port}/livez"));
+            freshHttpClient.GetAsync($"http://127.0.0.1:{port}/livez"));
     }
 }
