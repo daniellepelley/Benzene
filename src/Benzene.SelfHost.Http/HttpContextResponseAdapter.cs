@@ -36,6 +36,11 @@ public class HttpContextResponseAdapter : IBenzeneResponseAdapter<SelfHostHttpCo
         if (context.HttpListenerContext.Response.StatusCode != 204)
         {
             var bytes = Encoding.UTF8.GetBytes(_body);
+            // Unlike the Windows http.sys-backed HttpListener, .NET's cross-platform managed
+            // implementation does not infer Content-Length from what's written - without it (or
+            // SendChunked), a keep-alive client has no way to know where the body ends and hangs
+            // waiting for more data that never comes.
+            context.HttpListenerContext.Response.ContentLength64 = bytes.LongLength;
             await context.HttpListenerContext.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
         }
 
