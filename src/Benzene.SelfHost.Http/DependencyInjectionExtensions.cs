@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
@@ -23,7 +24,10 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, HttpListenerMessageHandlerResultSetter>();
-        services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
+        // Registers IResponseHandlerContainer<>, IResponsePayloadMapper<>, IMessageGetter<>, etc. -
+        // otherwise only available when .UseMessageHandlers()/.AddMessageHandlers() is also called,
+        // which isn't guaranteed for an app that only wires health checks via UseHttp().
+        services.AddContextItems();
         services
             .AddScoped<IRequestMapper<SelfHostHttpContext>,
                 MultiSerializerOptionsRequestMapper<SelfHostHttpContext>>();

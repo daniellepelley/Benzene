@@ -29,14 +29,19 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
   every response (health check or routed handler) is written through; runs the registered
   `IResponseHandler<SelfHostHttpContext>` chain via `ResponseMessageMessageHandlerResultSetterBase`,
   same pattern as `AspMessageMessageHandlerResultSetter`/`ApiGatewayMessageMessageHandlerResultSetter`.
-  **Fixed a real bug** (previously misnamed `KafkaMessageHandlerResultSetter`, apparently copy-pasted
-  from `Benzene.Kafka.Core`): it unconditionally forced `Response.StatusCode = 200` regardless of the
-  actual result, and never invoked `IResponseHandlerContainer`/`HttpContextResponseAdapter.FinalizeAsync`
-  at all - so response bodies were never written and `HttpListenerResponse` was never closed. `AddHttp()`
-  now also registers the open-generic `IResponseHandlerContainer<>` (previously only available when
-  `.UseMessageHandlers()`/`.AddMessageHandlers()` was also called, since `AddContextItems()` isn't
-  otherwise reachable from `AddHttp()` alone) so this works for a self-host app that only wires health
-  checks, with no message handlers.
+  **Fixed real bugs, found by writing the package's first real end-to-end test** (previously misnamed
+  `KafkaMessageHandlerResultSetter`, apparently copy-pasted from `Benzene.Kafka.Core`): it unconditionally
+  forced `Response.StatusCode = 200` regardless of the actual result and never invoked
+  `IResponseHandlerContainer`/`HttpContextResponseAdapter.FinalizeAsync` at all, so response bodies were
+  never written and `HttpListenerResponse` was never closed. `AddHttp()` now also calls `AddContextItems()`
+  (registers `IResponseHandlerContainer<>`, `IResponsePayloadMapper<>`, `IMessageGetter<>`, etc. as open
+  generics) - previously only reachable via `.UseMessageHandlers()`/`.AddMessageHandlers()`, which isn't
+  guaranteed for an app that only wires health checks via `UseHttp()`. A second, stacked bug only became
+  reachable once responses started actually finalizing: `HttpContextResponseAdapter.FinalizeAsync` writes
+  the body then closes the response without ever setting `ContentLength64`/`SendChunked` - .NET's
+  cross-platform managed `HttpListener` (unlike the old Windows http.sys-backed one) doesn't infer
+  Content-Length from what was written, so a keep-alive client had no signal for where the body ends and
+  would hang until its own timeout. Both are fixed now.
 - Now covered end to end by `test/Benzene.Core.Test/SelfHost/Http/BenzeneHttpWorkerTest.cs` - binds a
   real `HttpListener` to a free loopback port via `BenzeneHttpWorker` and drives it with a real
   `HttpClient` (`SelfHostHttpContext` wraps a sealed, constructor-less `HttpListenerContext`, so a fake
