@@ -1,18 +1,26 @@
 # Benzene website
 
 The source for [benzene](https://github.com/daniellepelley/Benzene)'s marketing + documentation
-site: a small .NET console app (`generator/`) that reads the repo's own `README.md` and `docs/`
-tree and produces a plain static HTML site — no server runtime, no Node/Ruby toolchain, deployable
-by copying the output to any static file host (an `aws s3 sync` in this repo's case).
+site: a small .NET console app (`generator/`) that produces a plain static HTML site — no server
+runtime, no Node/Ruby toolchain, deployable by copying the output to any static file host (an
+`aws s3 sync` in this repo's case).
 
 ## How it works
 
-The generator (`website/generator`, see its own `CLAUDE.md`) crawls markdown links starting from
-`README.md` (the marketing home page) and `docs/index.md` (the docs home page, whose nested link
-list also becomes the site's sidebar navigation), converts every reachable `.md` file to HTML with
-[Markdig](https://github.com/xoofx/markdig), and wraps each page in a shared layout
-(`Layout.cs`) styled by `generator/assets/site.css`. It isn't part of `Benzene.sln` — same as
-`templates/` and `benchmarks/`, it's its own standalone project.
+The generator (`website/generator`, see its own `CLAUDE.md`) builds two kinds of pages:
+
+- **The marketing home page** (`index.html`) is hand-authored from `MarketingContent.cs` (hero
+  tagline, feature cards, quickstart snippets, platform list) and `ArchitectureDiagram.cs` (the
+  hexagon-with-six-adapters SVG diagram) — a card/hero layout isn't something plain markdown can
+  express well, so this isn't derived from README.md.
+- **Docs pages** are crawled from `docs/index.md` (whose nested link list also becomes the site's
+  sidebar navigation) and converted from Markdown to HTML with
+  [Markdig](https://github.com/xoofx/markdig).
+
+Both page types share a layout (`Layout.cs`) styled by `generator/assets/site.css`, and the same
+hexagon-with-inscribed-ring logo (`Logo.cs`) as favicon, header icon, and hero graphic. The
+project isn't part of `Benzene.sln` — same as `templates/` and `benchmarks/`, it's its own
+standalone project.
 
 ## Building locally
 
