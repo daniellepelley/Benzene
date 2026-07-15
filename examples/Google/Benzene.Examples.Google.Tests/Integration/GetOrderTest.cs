@@ -5,6 +5,7 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Google.Tests.Helpers;
 using Benzene.Examples.Google.Tests.Helpers.Builders;
+using Benzene.GoogleCloud.Functions.Http.TestHelpers;
 using Xunit;
 
 namespace Benzene.Examples.Google.Tests.Integration

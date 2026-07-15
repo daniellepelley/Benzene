@@ -3,7 +3,55 @@
 **Document Version:** 1.0
 **Last Updated:** 2026-07-15
 **Owner:** unassigned
-**Status:** DRAFT — planning only, no code changes made alongside this document
+**Status:** Phase 0 done
+
+> **2026-07-15 implementation update:** Phase 0 is done. Three of §6's open questions were decided
+> and implemented, not left open:
+> - **Package naming (open question 1): `Benzene.GoogleCloud.*`**, not `Benzene.Google.*` as this
+>   document originally used throughout §4's table and prose — "Google" alone read as ambiguous
+>   outside a cloud-provider context, same reasoning the question itself raised. Read `Benzene.Google.*`
+>   in §4/§6 below as superseded by this name.
+> - **Cloud Run is the primary documented deploy target (open question 2)**, Cloud Functions Gen2
+>   the secondary/alternative — exactly the recommendation §6 made.
+> - **`examples/Google` was replaced outright (open question 5)**, not kept alongside the new
+>   packages — the prior effort to keep it merely compiling (`work/1.0.0-release-status.md`) is
+>   superseded, not preserved; there was no reason found to keep the old hand-rolled pipeline once
+>   real packages existed.
+>
+> What was actually built, vs. §4's proposed layout:
+> - **`Benzene.GoogleCloud.Functions.Core`** — `GoogleCloudStartUpRunner.Bootstrap<TStartUp>()`,
+>   mirroring `Benzene.Aws.Lambda.Core`'s role as shared bootstrap plumbing. No Google-specific NuGet
+>   dependency, exactly as §4 proposed.
+> - **`Benzene.GoogleCloud.Functions.Http`** — `GoogleCloudFunctionHost<TStartUp> : IHttpFunction` +
+>   `GoogleCloudFunctionApplicationBuilder : BenzeneApplicationBuilder, IAspApplicationBuilder`. The
+>   design goes one step further than §4 anticipated: because `Benzene.AspNet.Core`'s `IAspApplicationBuilder`
+>   has no inherent dependency on a live ASP.NET Core `IApplicationBuilder` (only its existing
+>   `AspApplicationBuilder` implementation does), implementing that interface here — instead of
+>   hand-rolling a parallel HTTP pipeline the way the old example did — means **the exact same
+>   `Startup : BenzeneStartUp` class runs unchanged on both Cloud Run and Cloud Functions Gen2**. See
+>   the package's own `CLAUDE.md` for the full mechanism.
+> - **`Benzene.GoogleCloud.Functions.Http.TestHelpers`** — `BuildGoogleCloudFunctionHost<TStartUp>()` +
+>   `SendHttpAsync(IHttpFunction, HttpContext)`, mirroring the AWS/Azure `.TestHelpers` shape exactly,
+>   plus a promoted/generalized `HttpContextBuilder` (System.Text.Json-based, not the old example's
+>   Newtonsoft.Json one, to avoid a new NuGet dependency).
+> - **Cloud Run needed no new package**, exactly as §4/§6 said — `examples/Google/Benzene.Examples.Google/Program.cs`
+>   uses `Benzene.AspNet.Core`'s existing `WebApplicationBuilder.UseBenzene<Startup>()` directly,
+>   binding Kestrel to the `PORT` env var Cloud Run injects.
+> - `examples/Google` was rewritten around one shared `Startup.cs`, with `Program.cs` (Cloud Run) and
+>   `Function.cs` (Cloud Functions Gen2, `class Function : GoogleCloudFunctionHost<Startup> { }` —
+>   the same one-line deploy-entry-point convention `AwsLambdaHost<TStartUp>` uses) as the two thin
+>   host-specific files, plus a real `Dockerfile` (the roadmap's §1 flagged this as entirely
+>   missing). `Benzene.Examples.Google.Tests`' 10 tests were rewired onto `BuildGoogleCloudFunctionHost<Startup>()`
+>   and pass, dispatching real `HttpContext`s through the full pipeline — genuine end-to-end
+>   verification of the new package, not just a compile check.
+> - **Not built in this phase** (unchanged from §5's phasing): Phase 1's `Benzene.GoogleCloud.Functions.PubSub`
+>   push adapter (the old `PubSubFunction.cs` stub is simply gone, not replaced — Pub/Sub remains
+>   0% per §1's original assessment), and everything in Phases 2-5.
+> - **Not verified**: an actual live deployment to Cloud Run or Cloud Functions Gen2 — this sandbox
+>   has no live GCP project or credentials. What *is* verified: the full test suite dispatching real
+>   requests through `GoogleCloudFunctionApplicationBuilder`'s built pipeline, and a direct in-process
+>   `HandleAsync` round-trip through `Function` itself (not just the test-helper reconstruction) — see
+>   `examples/Google/README.md`'s Notes section for what that leaves open.
 
 ## Purpose
 

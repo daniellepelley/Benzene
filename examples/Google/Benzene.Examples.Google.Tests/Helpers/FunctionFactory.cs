@@ -1,12 +1,14 @@
-using System;
+using Benzene.Examples.Google;
+using Benzene.GoogleCloud.Functions.Http.TestHelpers;
+using Benzene.Testing;
+using Google.Cloud.Functions.Framework;
 
 namespace Benzene.Examples.Google.Tests.Helpers;
 
 public static class FunctionFactory
 {
-    public static HttpFunction Create()
+    public static IHttpFunction Create()
     {
-        Environment.SetEnvironmentVariable("FT_SERVICE_LIVE", "TRUE");
-        return new HttpFunction();
+        return BenzeneTestHost.Create<Startup>().BuildGoogleCloudFunctionHost();
     }
 }

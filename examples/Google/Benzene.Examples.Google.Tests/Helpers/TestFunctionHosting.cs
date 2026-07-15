@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
+using Benzene.GoogleCloud.Functions.Http.TestHelpers;
 using Microsoft.AspNetCore.Http;
 
 namespace Benzene.Examples.Google.Tests.Helpers;
 
 public static class TestFunctionHosting
 {
-    public static async Task SendHttpContextAsync(HttpContext httpContext)
+    public static Task SendHttpContextAsync(HttpContext httpContext)
     {
-        var entryPoint = FunctionFactory.Create();
-        await entryPoint.HandleAsync(httpContext);
+        var function = FunctionFactory.Create();
+        return function.SendHttpAsync(httpContext);
     }
 }
