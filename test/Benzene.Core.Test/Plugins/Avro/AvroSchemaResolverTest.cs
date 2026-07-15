@@ -33,7 +33,7 @@ public class AvroSchemaResolverTest
         var record = (RecordSchema)resolver.GetSchema(typeof(SampleOrderDto));
         var tags = record.Fields.First(f => f.Name == "Tags");
 
-        Assert.Equal(Schema.Type.Array, tags.Schema.Tag);
+        Assert.Equal(Avro.Schema.Type.Array, tags.Schema.Tag);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class AvroSchemaResolverTest
         var optional = record.Fields.First(f => f.Name == "OptionalCount");
 
         var union = Assert.IsType<UnionSchema>(optional.Schema);
-        Assert.Contains(union.Schemas, s => s.Tag == Schema.Type.Null);
+        Assert.Contains(union.Schemas, s => s.Tag == Avro.Schema.Type.Null);
     }
 
     [Fact]
