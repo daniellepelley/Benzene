@@ -2,6 +2,7 @@
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Kafka.Core.KafkaMessage;
 using Benzene.SelfHost;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Kafka.Core;
 
@@ -16,9 +17,14 @@ public static class Extensions
         var middlewarePipelineBuilder = app.Create<KafkaRecordContext<TKey, TValue>>();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
-        
+
         var kafkaApplication = new KafkaApplication<TKey, TValue>(pipeline);
-        app.Add(serviceResolverFactory => new BenzeneKafkaWorker<TKey, TValue>(serviceResolverFactory, kafkaApplication, benzeneKafkaConfig));
+        app.Add(serviceResolverFactory =>
+        {
+            using var scope = serviceResolverFactory.CreateScope();
+            var logger = scope.GetService<ILogger<BenzeneKafkaWorker<TKey, TValue>>>();
+            return new BenzeneKafkaWorker<TKey, TValue>(serviceResolverFactory, kafkaApplication, benzeneKafkaConfig, logger);
+        });
         return app;
     }
 }

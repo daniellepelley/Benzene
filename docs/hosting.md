@@ -3,6 +3,37 @@
 Benzene's hosting model lets you write one `BenzeneStartUp` class and run it, unchanged, on AWS
 Lambda, Azure Functions, the .NET generic host (as a background worker), or ASP.NET Core.
 
+## Three ways Benzene starts
+
+Every host below falls into one of three fundamentally different execution models. Which one
+you're in determines who owns the process, whether anything is listening or polling, and - for
+the third model only - how many events Benzene processes at once.
+
+**1. Triggered (serverless)** - AWS Lambda, Azure Functions. Nothing is running until the
+platform invokes your code for a single event. There is no Benzene-owned process, and nothing
+polls - the platform's own infrastructure (API Gateway, an SQS/Event Hub/Service Bus trigger, ...)
+calls into a cold or warm instance per invocation, and the instance can be frozen or torn down
+between calls. See [AWS Lambda](#aws-lambda--awslambdahosttstartup) and
+[Azure Functions](#azure-functions-isolated-worker-and-the-generic-worker-host--ihostbuilderusebenzenetstartup)
+below. Batches (SQS records, an Event Hub/Kafka/Service Bus trigger's message batch) are dispatched
+in parallel via an uncapped `Task.WhenAll` today - a separate, currently-unaddressed concern from
+the worker model's own bounded concurrency described below.
+
+**2. Embedded in an existing host** - ASP.NET Core, including gRPC. A pre-existing,
+already-long-running listener (Kestrel) owns the process and its own concurrency model: one
+incoming request is one async call, and Kestrel's own thread pool and connection handling decide
+how many run at once. Benzene is just middleware inside that pipeline; it never starts, stops, or
+paces anything about the host process itself. See
+[ASP.NET Core](#aspnet-core--webapplicationbuilderusebenzenetstartup--iapplicationbuilderusebenzene).
+
+**3. Self-hosted worker** - `Benzene.HostedService` + `Benzene.SelfHost.Http`/`Benzene.Kafka.Core`.
+Here, Benzene itself owns a long-running loop that actively polls for work (an HTTP
+`HttpListener.GetContextAsync()` accept loop, or a Kafka consumer's `Consume()` poll) and is
+responsible for keeping the process alive - there is no external infrastructure invoking you, and
+no separate host already listening. This is the one mode where how many events Benzene processes
+*at once* is Benzene's own decision, not the platform's - see
+[Worker concurrency](#worker-concurrency) below for exactly how that's bounded and configured.
+
 ## Overview
 
 Every platform-specific getting-started guide ([AWS Lambda](getting-started-aws),
@@ -266,6 +297,32 @@ host.Run();
 Use `UseWorker(w => w.Add(resolverFactory => new MyWorker()))` in `Configure` to register one or
 more `IBenzeneWorker`s (each with `StartAsync`/`StopAsync`) against the `WorkerApplicationBuilder`
 this host passes in.
+
+#### Worker concurrency
+
+The two built-in self-hosted workers - `Benzene.Kafka.Core.BenzeneKafkaWorker<TKey,TValue>` (a
+Kafka consumer) and `Benzene.SelfHost.Http.BenzeneHttpWorker` (an `HttpListener` accept loop) - are
+where mode 3 above ("Benzene decides how many events at once") actually matters. Both are built on
+`Benzene.SelfHost.BoundedConcurrentDispatcher<T>`, a shared primitive on top of
+`System.Threading.Channels` (part of the BCL - no new NuGet dependency):
+
+- **`ConcurrentRequests`** (on `BenzeneKafkaConfig`/`BenzeneHttpConfig`) caps the maximum number of
+  messages/requests handled concurrently.
+- **`PreserveOrderPerPartition`** (`BenzeneKafkaConfig` only, default `true`) - Kafka only ever
+  promises order within a partition, so by default messages from the same partition are routed to
+  the same dispatcher lane and handled strictly in order, while different partitions still run
+  concurrently up to `ConcurrentRequests`. Set to `false` for unordered round-robin dispatch when
+  throughput matters more than per-partition order. `BenzeneHttpWorker` has no equivalent ordering
+  key - requests always round-robin across lanes.
+- **`DrainTimeout`** (default 30 seconds on both configs) - how long `StopAsync` waits for
+  in-flight work to finish before abandoning it and closing the consumer/listener. Both workers'
+  `StopAsync` signals shutdown and awaits this drain, rather than closing the consumer/listener out
+  from under in-flight handlers the way an earlier, simpler implementation did.
+
+This is a separate, smaller concern from the *serverless* batch adapters (SQS in
+`Benzene.Aws.Lambda.Sqs`; Event Hubs/Kafka/Service Bus triggers in the `Benzene.Azure.Function.*`
+packages), which today dispatch an entire batch via an uncapped `Task.WhenAll` - see
+`work/performance-roadmap-1.0.md` for that as a tracked follow-up.
 
 ### ASP.NET Core — `WebApplicationBuilder.UseBenzene<TStartUp>()` / `IApplicationBuilder.UseBenzene()`
 

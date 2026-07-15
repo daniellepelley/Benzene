@@ -6,6 +6,7 @@ using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Microsoft.Extensions.Logging;
 using Constants = Benzene.HealthChecks.Constants;
 
 namespace Benzene.SelfHost.Http;
@@ -20,7 +21,12 @@ public static class Extensions
         var pipeline = middlewarePipelineBuilder.Build();
 
         var httpApplication = new HttpListenerApplication(pipeline);
-        app.Add(serviceResolverFactory => new BenzeneHttpWorker(serviceResolverFactory, httpApplication, benzeneHttpConfig));
+        app.Add(serviceResolverFactory =>
+        {
+            using var scope = serviceResolverFactory.CreateScope();
+            var logger = scope.GetService<ILogger<BenzeneHttpWorker>>();
+            return new BenzeneHttpWorker(serviceResolverFactory, httpApplication, benzeneHttpConfig, logger);
+        });
         return app;
     }
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
