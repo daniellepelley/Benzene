@@ -162,3 +162,106 @@ reasoning from code inspection alone.
 - Benchmark numbers for the new dispatcher (Phase 3, not yet built) — no throughput/latency claim in
   this document should be read as measured; it's reasoned from the design and the unit tests' pass/
   fail behavior, not a load test.
+
+## 8. 2026-07-15 follow-up: rest-of-package audit of `Benzene.Kafka.Core`
+
+A second pass over the rest of `src/Benzene.Kafka.Core/` (producer/client side, consumer-side
+getters, DI wiring) and a fresh, skeptical re-review of `BenzeneKafkaWorker`/
+`BoundedConcurrentDispatcher<T>` from §3, done by the performance-champion agent, not re-litigating
+§2-§7 above. All findings verified by reading the actual code (and, where noted, confirmed by
+building/testing), not assumed.
+
+### Highest-priority finding - NOT fixed here, needs `core-product-owner`
+
+**`Benzene.Core.Middleware.MiddlewareApplication<TEvent,TContext>`/`<TEvent,TContext,TResult>`
+(`src/Benzene.Core.Middleware/MiddlewareApplication.cs:28-33,56-60`) create a DI scope per
+event/message via `serviceResolverFactory.CreateScope()` and never dispose it.** `IServiceResolver`
+is `IDisposable` (`src/Benzene.Abstractions/DI/IServiceResolver.cs`), and `MiddlewarePipeline<TContext>.HandleAsync`
+(`src/Benzene.Core.Middleware/MiddlewarePipeline.cs:33`) takes the resolver as a parameter and never
+disposes it either - by design, every other call site of `CreateScope()` in the codebase (`SqsApplication`,
+`MiddlewareMultiApplication`, `DynamoDbApplication`, `Benzene.Grpc`'s `GrpcMethodHandler`, both
+`Kafka.Core`'s and `SelfHost.Http`'s own `Extensions.cs`, `AwsLambdaEntryPoint`) wraps it in
+`using`. `MiddlewareApplication<TEvent,TContext>` is the one exception, and `KafkaApplication<TKey,TValue>`
+(`src/Benzene.Kafka.Core/KafkaMessage/KafkaApplication.cs`) inherits from exactly that overload - so
+every single Kafka message processed by `BenzeneKafkaWorker` leaks a DI scope (and any scoped
+`IDisposable` resolved inside it - DbContext, per-scope HttpClient handler, etc.) forever, in a
+process that by definition runs indefinitely (the self-hosted worker mode this whole document is
+about). This predates this session's dispatcher rework - it is not a regression introduced by it -
+but it's a live, standing leak today, and the impact is directly proportional to message throughput.
+Blast radius is much wider than Kafka: every AWS Lambda handler, Azure Function adapter, ASP.NET
+Core's `AspNetApplication`, `BenzeneMessageApplication`, and `Benzene.SelfHost.Http`'s
+`HttpListenerApplication` all go through the same two `MiddlewareApplication<...>` overloads.
+Given the blast radius and that the fix lives in `Benzene.Core.Middleware` (core-product-owner's
+file), this is flagged, not patched, here - recommend an urgent, carefully-tested fix (wrap in
+`using`/`try`-`finally`, verified across a representative sample of the adapters listed above, not
+just Kafka) rather than a unilateral one-line change from this review.
+
+### Fixed directly in this pass (rebuilt `Benzene.Kafka.Core.csproj`, 0 warnings from this package,
+### all affected tests passing)
+
+- **`BenzeneKafkaWorker<TKey,TValue>`'s `ConsumeException` retry loop had no backoff** (flagged as a
+  known caveat in §3, not fixed there) - confirmed real: a persistently failing broker/connection
+  (not just one bad message) would spin `Consume`/catch/retry as fast as it can fail, burning CPU
+  and spamming the log. Fixed with a new `BenzeneKafkaConfig.ConsumeExceptionRetryDelay` (default
+  1s), awaited with the loop's own cancellation token so shutdown stays responsive during the delay.
+- **The consumer was `Close()`d but never `Dispose()`d** - `IConsumer<TKey,TValue>` is `IDisposable`;
+  `Close()` alone unsubscribes/commits offsets but doesn't release the underlying native librdkafka
+  handle. Fixed: `_consumer.Dispose()` now runs alongside `Close()`.
+- **Only `ConsumeException`/`OperationCanceledException` were caught** - any other exception (a
+  fatal, non-`ConsumeException` `KafkaException`, or a `ConsumerBuilder`/`Subscribe`/dispatcher
+  construction failure, none of which were inside the original `try`) would fault `_runTask` with no
+  logging at all and skip drain/close entirely - worse than the old bare `catch (Exception)` this
+  session's rework replaced. Fixed: the whole loop body is now wrapped in `try`/`catch(Exception)`
+  (logs at `Critical`)/`finally` (always drains + closes + disposes the consumer, guarded against a
+  `null` consumer/dispatcher if setup itself failed).
+- **`KafkaMessageContextConverter<TContext>.CreateRequestAsync`'s 2 pre-existing nullable warnings**
+  (`Kafka/KafkaMessageContextConverter.cs:32,35`) - `IMessageTopicGetter<TContext>.GetTopic` can
+  legitimately return `null`; that was being dereferenced unchecked, so a topic-less context would
+  NRE with no useful message. Fixed with an explicit `InvalidOperationException` instead. The other
+  warning (assigning `IMessageBodyGetter.GetBody`'s nullable `string?` into `Message<string,string>.Value`)
+  is suppressed with `!`, not worked around, since a `null` value is legitimate Kafka semantics
+  (a tombstone record on a compacted topic) - this is a real value, not a bug.
+- **`BenzeneKafkaConfig.ConsumerConfig`/`Topics`' 2 pre-existing non-nullable-without-default
+  warnings** - both are always set at construction in every real usage (`docs/getting-started-kafka.md`,
+  `examples/Kafka/Benzene.Examples.Kakfa`); marked `required` instead of leaving them silently
+  nullable-unsafe.
+- **`KafkaBenzeneMessageClient.SendMessageAsync` allocated `new KafkaContextConverter<TRequest>(new JsonSerializer())`
+  on every single send** - `JsonSerializer()` constructs a fresh `JsonSerializerOptions` per call,
+  which defeats System.Text.Json's per-`JsonSerializerOptions` converter/metadata cache on every
+  outbound message, not just a small allocation. Fixed: a single shared `static readonly ISerializer`
+  is reused across calls (System.Text.Json's serializer is documented thread-safe once its options
+  aren't being mutated). The `KafkaContextConverter<TRequest>` wrapper object itself is still
+  allocated per call (it's generic over the per-call `TRequest`, so it can't be cached the same way)
+  - a smaller, lower-priority follow-up, not fixed here.
+- **Test coverage gap**: none of `Benzene.Kafka.Core`'s pure getters/converters/middleware
+  (`KafkaMessageBodyGetter`, `KafkaMessageHeadersGetter`, `KafkaMessageTopicGetter`,
+  `KafkaMessageHandlerResultSetter`, `KafkaSendMessageBodyGetter`/`HeadersGetter`/`TopicGetter`,
+  `KafkaMessageContextConverter`, `KafkaClientMiddleware`) had any unit test, despite none of them
+  needing a live broker (unlike `BenzeneKafkaWorker` itself, or the existing
+  `test/Benzene.Integration.Test/Kafka/KafkaConsumerPipelineTest.cs`, which does). Added
+  `test/Benzene.Core.Test/Kafka/KafkaCoreMappersTest.cs` (12 tests, all passing) covering all of the
+  above, including the new topic-getter-returns-null guard above.
+
+### Checked, confirmed not a bug
+
+- `KafkaClientMiddleware`/`KafkaBenzeneMessageClient` don't dispose the `IProducer<string,string>`
+  they're given - correct, since it's caller-provided/injected (`docs/clients.md:315`,
+  `docs/getting-started-kafka.md:191`), not owned or constructed by this package; ownership and
+  disposal are the registering application's responsibility, same as any other injected dependency.
+- `IMiddleware<TContext>.HandleAsync` (and so `KafkaClientMiddleware.HandleAsync`) has no
+  `CancellationToken` parameter to thread through to `producer.ProduceAsync(...)` - confirmed this is
+  the shared middleware interface's shape (`Benzene.Abstractions.Middleware`), not something
+  `Benzene.Kafka.Core` can unilaterally add; `ProduceAsync`'s effective timeout today is entirely
+  governed by the caller's `ProducerConfig.MessageTimeoutMs` (Confluent.Kafka default 300000ms/5min).
+  Worth a documentation note (an explicit `MessageTimeoutMs` recommendation in
+  `docs/getting-started-kafka.md`) rather than a code change here.
+- DI registrations in `Kafka/DependencyInjectionExtensions.cs`/`DependencyInjectionExtensions.cs` are
+  all `Scoped`, matching every other transport's convention - no unnecessary singleton/transient
+  churn found.
+
+### Filed, not fixed (follow-ups)
+
+1. **`MiddlewareApplication<TEvent,TContext>` DI scope leak** (above) - route to `core-product-owner`.
+2. **`KafkaContextConverter<TRequest>` per-send allocation** - minor, not fixed (see above).
+3. **`docs/getting-started-kafka.md` `MessageTimeoutMs` guidance** - minor documentation gap, not a
+   code change.

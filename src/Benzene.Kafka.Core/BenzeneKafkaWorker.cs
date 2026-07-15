@@ -40,21 +40,23 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
 
         _runTask = Task.Run(async () =>
         {
-            _consumer = new ConsumerBuilder<TKey, TValue>(_benzeneKafkaConfig.ConsumerConfig).Build();
-            _consumer.Subscribe(_benzeneKafkaConfig.Topics);
-
-            Func<ConsumeResult<TKey, TValue>, int>? keySelector = _benzeneKafkaConfig.PreserveOrderPerPartition
-                ? consumeResult => consumeResult.Partition.Value
-                : null;
-
-            var dispatcher = new BoundedConcurrentDispatcher<ConsumeResult<TKey, TValue>>(
-                _benzeneKafkaConfig.ConcurrentRequests,
-                (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory),
-                _logger,
-                keySelector);
+            BoundedConcurrentDispatcher<ConsumeResult<TKey, TValue>>? dispatcher = null;
 
             try
             {
+                _consumer = new ConsumerBuilder<TKey, TValue>(_benzeneKafkaConfig.ConsumerConfig).Build();
+                _consumer.Subscribe(_benzeneKafkaConfig.Topics);
+
+                Func<ConsumeResult<TKey, TValue>, int>? keySelector = _benzeneKafkaConfig.PreserveOrderPerPartition
+                    ? consumeResult => consumeResult.Partition.Value
+                    : null;
+
+                dispatcher = new BoundedConcurrentDispatcher<ConsumeResult<TKey, TValue>>(
+                    _benzeneKafkaConfig.ConcurrentRequests,
+                    (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory),
+                    _logger,
+                    keySelector);
+
                 while (!runToken.IsCancellationRequested)
                 {
                     try
@@ -65,6 +67,11 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                     catch (ConsumeException e)
                     {
                         _logger.LogError(e, "Kafka consume error: {Reason}", e.Error.Reason);
+
+                        // A single bad message aside, a persistently failing broker/connection would
+                        // otherwise spin this loop as fast as it can fail - back off before retrying.
+                        // Cancellable via runToken so shutdown stays responsive during the delay.
+                        await Task.Delay(_benzeneKafkaConfig.ConsumeExceptionRetryDelay, runToken);
                     }
                 }
             }
@@ -72,9 +79,24 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
             {
                 // Expected on shutdown - fall through to drain and close below.
             }
+            catch (Exception ex)
+            {
+                // Anything unexpected here - including consumer/subscribe setup failures, and any
+                // KafkaException other than ConsumeException - is logged so the loop's death is
+                // visible, rather than leaving the worker silently dead with a faulted, unobserved
+                // _runTask. Cleanup below still runs on this path.
+                _logger.LogCritical(ex, "Unhandled exception in Kafka consume loop; worker is stopping.");
+            }
+            finally
+            {
+                if (dispatcher != null)
+                {
+                    await dispatcher.DrainAsync(_benzeneKafkaConfig.DrainTimeout);
+                }
 
-            await dispatcher.DrainAsync(_benzeneKafkaConfig.DrainTimeout);
-            _consumer.Close();
+                _consumer?.Close();
+                _consumer?.Dispose();
+            }
         }, CancellationToken.None);
 
         return Task.CompletedTask;

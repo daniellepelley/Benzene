@@ -28,11 +28,16 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
 
     public Task<KafkaSendMessageContext> CreateRequestAsync(TContext contextIn)
     {
+        var topic = _messageTopicGetter.GetTopic(contextIn)
+            ?? throw new InvalidOperationException($"{typeof(IMessageTopicGetter<TContext>)} returned no topic for {typeof(TContext)}; a Kafka message cannot be produced without one.");
+
         return Task.FromResult(new KafkaSendMessageContext(
-            _messageTopicGetter.GetTopic(contextIn).Id,
+            topic.Id,
             new Message<string, string>
             {
-                Value = _messageBodyGetter.GetBody(contextIn)
+                // A null body is a legitimate Kafka value (e.g. a tombstone record on a
+                // compacted topic), so this is intentionally not defaulted to string.Empty.
+                Value = _messageBodyGetter.GetBody(contextIn)!
             }
         ));
     }
