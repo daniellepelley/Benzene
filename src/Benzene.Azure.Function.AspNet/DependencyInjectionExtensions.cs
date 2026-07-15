@@ -6,6 +6,7 @@ using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Http;
 
@@ -66,8 +67,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
 
-        services.AddScoped<IResponseHandler<AspNetContext>, ResponseBodyHandler<AspNetContext>>();
+        services.AddScoped<IResponseRenderer<AspNetContext>, SerializerResponseRenderer<AspNetContext>>();
+        services.AddScoped<IResponseHandler<AspNetContext>, RendererResponseHandler<AspNetContext>>();
         services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
+        services.AddMediaFormatNegotiation<AspNetContext>();
 
         // services.AddScoped<ResponseMiddleware<AspNetContext>>();
         services.AddScoped<IRequestEnricher<AspNetContext>, AspNetContextRequestEnricher>();

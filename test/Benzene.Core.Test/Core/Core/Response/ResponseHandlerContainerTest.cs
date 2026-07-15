@@ -1,13 +1,18 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Messages;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Results;
 using Benzene.Test.Examples;
+using Moq;
 using Xunit;
 using Constants = Benzene.Core.MessageHandlers.Constants;
 
@@ -20,14 +25,25 @@ public class ResponseHandlerContainerTest
     {
         var messageHandlerDefinition = Mother.CreateMessageHandlerDefinitionV2();
 
+        var mediaFormatNegotiator = new MediaFormatNegotiator<BenzeneMessageContext>(
+            Array.Empty<IMediaFormat<BenzeneMessageContext>>(),
+            new JsonMediaFormat<BenzeneMessageContext>(new JsonSerializer()),
+            Mock.Of<IServiceResolver>());
+
         var messageHandlerFactory = new ResponseHandlerContainer<BenzeneMessageContext>(new BenzeneMessageResponseAdapter(),
-            new ISyncResponseHandler<BenzeneMessageContext>[]
+            new IResponseHandler<BenzeneMessageContext>[]
         {
             new DefaultResponseStatusHandler<BenzeneMessageContext> (new BenzeneMessageResponseAdapter()),
-            new ResponseBodyHandler<BenzeneMessageContext>(
+            new RendererResponseHandler<BenzeneMessageContext>(
                 new BenzeneMessageResponseAdapter(),
-                new DefaultResponsePayloadMapper<BenzeneMessageContext>(),
-                new JsonSerializer())
+                new IResponseRenderer<BenzeneMessageContext>[]
+                {
+                    new SerializerResponseRenderer<BenzeneMessageContext>(
+                        new DefaultResponsePayloadMapper<BenzeneMessageContext>(),
+                        mediaFormatNegotiator,
+                        Mock.Of<IServiceResolver>())
+                },
+                Mock.Of<IServiceResolver>())
         });
 
         var request = Mother.CreateRequest();

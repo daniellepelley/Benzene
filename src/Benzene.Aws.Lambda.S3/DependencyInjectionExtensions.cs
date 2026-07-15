@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -32,9 +33,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageHeadersGetter<S3RecordContext>, S3MessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<S3RecordContext>, S3MessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<S3RecordContext>, S3MessageMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<S3RecordContext>();
         services
             .AddScoped<IRequestMapper<S3RecordContext>,
-                MultiSerializerOptionsRequestMapper<S3RecordContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<S3RecordContext>>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("s3"));
 

@@ -5,9 +5,8 @@ namespace Benzene.Core.MessageHandlers.Response;
 
 /// <summary>
 /// Default <see cref="IResponseHandlerContainer{TContext}"/> implementation: runs every registered
-/// <see cref="IResponseHandler{TContext}"/> (dispatching sync vs. async ones appropriately, in
-/// registration order) against the handler's result, then finalizes the response via
-/// <see cref="IBenzeneResponseAdapter{TContext}"/>.
+/// <see cref="IResponseHandler{TContext}"/> in registration order against the handler's result, then
+/// finalizes the response via <see cref="IBenzeneResponseAdapter{TContext}"/>.
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type the response is written to.</typeparam>
 public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TContext>
@@ -32,15 +31,7 @@ public class ResponseHandlerContainer<TContext> : IResponseHandlerContainer<TCon
     {
         foreach (var responseHandler in _responseHandlers)
         {
-            switch (responseHandler)
-            {
-                case ISyncResponseHandler<TContext> syncResponseHandler:
-                    syncResponseHandler.HandleAsync(context, messageHandlerResult);
-                    break;
-                case IAsyncResponseHandler<TContext> asyncResponseHandler:
-                    await asyncResponseHandler.HandleAsync(context, messageHandlerResult);
-                    break;
-            }
+            await responseHandler.HandleAsync(context, messageHandlerResult);
         }
 
         await _responseAdapter.FinalizeAsync(context);

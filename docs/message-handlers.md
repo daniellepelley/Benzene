@@ -211,8 +211,8 @@ public interface IRequestMapper<in TContext>
 }
 ```
 
-`RequestMapper<TContext>` (the default implementation, registered via `AddContextItems()` as
-`JsonDefaultMultiSerializerOptionsRequestMapper<TContext>`) resolves the request body two ways:
+`RequestMapper<TContext>` (the low-level implementation, given an explicit `ISerializer`) resolves
+the request body two ways:
 
 - If the context already implements `IRequestContext<TRequest>` (some contexts carry an
   already-deserialized/typed request), that's returned directly.
@@ -220,11 +220,37 @@ public interface IRequestMapper<in TContext>
   `ISerializer` — falling back to `Activator.CreateInstance<TRequest>()` (an empty instance) if the
   body is empty, rather than passing `null` to your handler.
 
-`MultiSerializerOptionsRequestMapper<TContext, TDefaultSerializer>` extends this to pick a different
-`ISerializer` per request based on `ISerializerOption<TContext>` (e.g. content negotiation between
-JSON and [XML](common-middleware) bodies) instead of always using the one default serializer.
-`EnrichingRequestMapper<TContext>` layers on `IRequestEnricher<TContext>` to merge extra
-context-derived fields into the deserialized request object.
+The default registered via `AddContextItems()`, `MultiSerializerOptionsRequestMapper<TContext>`,
+picks which `ISerializer` to use per request by asking the scoped `IMediaFormatNegotiator<TContext>`
+which registered `IMediaFormat<TContext>` applies (typically decided from the request's
+`content-type` header — e.g. negotiating between JSON and [XML](common-middleware) bodies) instead of
+always using the one default serializer. `EnrichingRequestMapper<TContext>` layers on
+`IRequestEnricher<TContext>` to merge extra context-derived fields into the deserialized request
+object.
+
+### Content negotiation (`IMediaFormat<TContext>` / `IMediaFormatNegotiator<TContext>`)
+
+A single `IMediaFormat<TContext>` registration describes one wire format for *both* directions:
+
+```csharp
+public interface IMediaFormat<TContext>
+{
+    string ContentType { get; }
+    bool CanRead(TContext context, IServiceResolver serviceResolver);
+    bool CanWrite(TContext context, IServiceResolver serviceResolver);
+    ISerializer GetSerializer(IServiceResolver serviceResolver);
+}
+```
+
+The scoped, memoizing `IMediaFormatNegotiator<TContext>` (`MediaFormatNegotiator<TContext>`) picks
+the format to read the request with (`SelectRead` — first registered format whose `CanRead` matches,
+typically via `content-type`, falling back to the process default, JSON) and to write the response
+with (`SelectWrite` — first format whose `CanWrite` matches, typically via `accept`, falling back to
+whatever `SelectRead` picked). `AcceptHeaderMediaFormatBase<TContext>` (`Benzene.Core.MessageHandlers`)
+is the base class for this header-negotiated shape — `Benzene.Xml`'s `XmlMediaFormat<TContext>` is the
+only built-in example beyond the JSON default. Every transport calls
+`services.AddMediaFormatNegotiation<TContext>()` to register the negotiator and the default JSON
+format for its context type.
 
 ## Response handling
 
@@ -232,9 +258,19 @@ Once your handler returns an `IBenzeneResult<TResponse>`, a chain of `IResponseH
 (registered via `AddContextItems()`/`AddBenzeneMessage()`) turns it into whatever the transport
 needs:
 
-- **`ResponseBodyHandler<TContext>`** — serializes the payload (success) or an `ErrorPayload`
-  (failure) into the response body string, via `IResponsePayloadMapper<TContext>`
-  (`DefaultResponsePayloadMapper<TContext>`).
+- **`RendererResponseHandler<TContext>`** — short-circuits if a body has already been set, otherwise
+  walks the registered `IResponseRenderer<TContext>`s in order and delegates to the first whose
+  `CanRender` matches. Every transport registers exactly one built-in renderer,
+  `SerializerResponseRenderer<TContext>` (the catch-all, registered last): it asks
+  `IMediaFormatNegotiator<TContext>.SelectWrite` for the format, then serializes the payload
+  (success) or an `ErrorPayload` (failure) via `IResponsePayloadMapper<TContext>`
+  (`DefaultResponsePayloadMapper<TContext>`). A handler whose payload implements
+  `IRawContentMessage` (`Benzene.Abstractions.Messages`) is delivered as-is, with the response
+  content type taken from `IRawContentMessage.ContentType` instead of the negotiated format —
+  useful for a handler that renders its own body (e.g. pre-built HTML) and wants it delivered
+  verbatim. A custom `IResponseRenderer<TContext>` (e.g. an HTML templating renderer, matched via
+  `accept: text/html`) registers *before* the serializer renderer and owns its own error
+  representation instead of `ErrorPayload` JSON.
 - **`DefaultResponseStatusHandler<TContext>`** / transport-specific status handlers — map the
   `IBenzeneResult.Status` string onto the transport's native status/acknowledgement concept (HTTP
   status code, SQS batch-item-failure, etc. — see [Message Results](message-result#transport-mapping)

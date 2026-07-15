@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -31,9 +32,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageHeadersGetter<SqsMessageContext>, SqsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsMessageContext>, SqsMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SqsMessageContext>, SqsMessageMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<SqsMessageContext>();
         services
             .AddScoped<IRequestMapper<SqsMessageContext>,
-                MultiSerializerOptionsRequestMapper<SqsMessageContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<SqsMessageContext>>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("sqs"));
         return services;

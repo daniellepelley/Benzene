@@ -7,9 +7,11 @@ using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Serialization;
+using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
@@ -36,10 +38,13 @@ public static class Extensions
         services.TryAddScoped<IMessageBodyGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
         services.TryAddScoped<IMessageTopicGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
         services.TryAddScoped<IMessageHeadersGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
+        services.TryAddScoped<IMessageBodyBytesGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<BenzeneMessageContext>, BenzeneMessageMessageHandlerResultSetter>();
         services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
 
-        services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, ResponseBodyHandler<BenzeneMessageContext>>();
+        services.AddMediaFormatNegotiation<BenzeneMessageContext>();
+        services.TryAddScoped<IResponseRenderer<BenzeneMessageContext>, SerializerResponseRenderer<BenzeneMessageContext>>();
+        services.TryAddScoped<IResponseHandler<BenzeneMessageContext>, RendererResponseHandler<BenzeneMessageContext>>();
         services.AddScoped<IResponseHandler<BenzeneMessageContext>, DefaultResponseStatusHandler<BenzeneMessageContext>>();
         services.TryAddScoped<IResponsePayloadMapper<BenzeneMessageContext>, DefaultResponsePayloadMapper<BenzeneMessageContext>>();
 
@@ -91,8 +96,8 @@ public static class Extensions
 
     /// <summary>
     /// Registers the per-context request/response mapping services (message getter, response payload
-    /// mapper, response handler container, JSON serialization response handler, and the default
-    /// multi-serializer JSON request mapper) as open generics, so they apply to any <c>TContext</c>.
+    /// mapper, response handler container, media-format negotiation, and the negotiator-driven request
+    /// mapper) as open generics, so they apply to any <c>TContext</c>.
     /// </summary>
     /// <param name="services">The service container to register into.</param>
     /// <returns>The same container, for chaining.</returns>
@@ -101,9 +106,10 @@ public static class Extensions
         services.TryAddScoped(typeof(IMessageGetter<>), typeof(MessageGetter<>));
         services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
         services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));
-        services.TryAddScoped(typeof(JsonSerializationResponseHandler<>));
+        services.TryAddScoped(typeof(JsonMediaFormat<>));
+        services.TryAddScoped(typeof(IMediaFormatNegotiator<>), typeof(MediaFormatNegotiator<>));
 
-        services.TryAddScoped(typeof(IRequestMapper<>), typeof(JsonDefaultMultiSerializerOptionsRequestMapper<>));
+        services.TryAddScoped(typeof(IRequestMapper<>), typeof(MultiSerializerOptionsRequestMapper<>));
         return services;
     }
 

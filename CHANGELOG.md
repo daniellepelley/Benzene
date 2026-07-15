@@ -58,6 +58,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `JsonSerializationResponseHandler`/`XmlSerializationResponseHandler` now take their serializer
   via constructor injection instead of constructing one internally. All in-repo consumers go
   through DI and pick these up automatically.
+- Request/response pipeline: Phase 2 of `docs/plans/request-response-improvements-plan.md` —
+  media-format unification. Request-side `ISerializerOption<TContext>` and response-side
+  `ISerializationResponseHandler<TContext>` are replaced by a single `IMediaFormat<TContext>`
+  (content type + can-read + can-write + serializer), selected per message by a scoped, memoizing
+  `IMediaFormatNegotiator<TContext>` (`content-type` for reads, `accept` for writes — tolerant of
+  `;`-delimited parameters and casing via Phase 1's `MediaType.Matches`). One
+  `SerializationResponseHandler<TContext>` now writes every response body, replacing the old
+  per-format response stack, and **this fixes `Benzene.AspNet.Core`/`Benzene.Azure.Function.AspNet`/
+  `Benzene.SelfHost.Http` silently not supporting XML** (response format now genuinely honors
+  `Accept`, not just `Benzene.Aws.Lambda.ApiGateway`). `Benzene.Xml` becomes one
+  `XmlMediaFormat<TContext>` + `AddXml()`/`AddXml<TContext>()`/`UseXml<TContext>()`.
+  `Benzene.Extras` gains `InlineMediaFormat<TContext>` as the inline-registration replacement.
+  **BREAKING:** `ISerializerOption<TContext>`, `SerializerOptionBase`, `InlineSerializerOption`,
+  `IRequestMapBuilder<TContext>`, `RequestMapBuilder<TContext>` are removed (replaced by
+  `IMediaFormat<TContext>`/`InlineMediaFormat<TContext>`); `ISerializationResponseHandler<TContext>`,
+  `IBodySerializer`, `BodySerializer<TContext>`, `ResponseBodyHandler<TContext>`,
+  `ResponseHandler<T,TContext>`, `JsonSerializationResponseHandler<TContext>`,
+  `JsonDefaultMultiSerializerOptionsRequestMapper<TContext>` are removed (replaced by
+  `SerializationResponseHandler<TContext>`); `MultiSerializerOptionsRequestMapper<TContext>` drops
+  its `TDefaultSerializer` type parameter; `IResponseHandler<TContext>` is reshaped to a single
+  `ValueTask HandleAsync(TContext, IMessageHandlerResult)` method, removing the
+  `ISyncResponseHandler`/`IAsyncResponseHandler` split; `Benzene.Xml`'s mutable static `Settings`
+  class, `XmlSerializationResponseHandler`, `XmlResponseHandler`, `XmlSerializerOption`, and
+  `XmlContentTypeHeaderContextPredicate` are removed (replaced by `XmlMediaFormat<TContext>`). All
+  in-repo consumers (the four HTTP-ish transports, `BenzeneMessage`, six AWS event-source
+  transports) go through DI and were updated to register the new types.
+- Request/response pipeline: Phase 3 of `docs/plans/request-response-improvements-plan.md` — the
+  renderer seam. Response writing is no longer serializer-only: a new `IResponseRenderer<TContext>`
+  (`CanRender`/`RenderAsync`) lets a handler's result be written in any representation, not just
+  JSON/XML. Phase 2's `SerializationResponseHandler<TContext>` becomes
+  `SerializerResponseRenderer<TContext>` (the catch-all renderer, registered last, unchanged
+  JSON/XML behavior), wrapped by a new `RendererResponseHandler<TContext>` (the actual
+  `IResponseHandler<TContext>` every transport registers) that short-circuits if a body is already
+  set, then walks registered renderers in order and delegates to the first whose `CanRender`
+  matches — a custom renderer (e.g. HTML, matched via `accept: text/html`) registers before the
+  serializer renderer and owns its own error representation instead of `ErrorPayload` JSON. New
+  `IRawContentMessage : IRawStringMessage` (`Benzene.Abstractions.Messages`) lets a handler's raw
+  payload carry its own content type, honored by `SerializerResponseRenderer` in place of the
+  negotiated format's content type. All in-repo consumers (the four HTTP-ish transports,
+  `BenzeneMessage`) go through DI and were updated to register `SerializerResponseRenderer` +
+  `RendererResponseHandler` in place of the deleted `SerializationResponseHandler`.
+- Request/response pipeline: Phase 4 of `docs/plans/request-response-improvements-plan.md` —
+  byte-oriented serialization (additive, no breaking changes). New `IPayloadSerializer : ISerializer`
+  (`Benzene.Abstractions.Serialization`) adds `Serialize(Type, object, IBufferWriter<byte>)` and
+  `Deserialize(Type, ReadOnlySpan<byte>)`; `Benzene.Core.MessageHandlers.Serialization.JsonSerializer`
+  now implements it via `Utf8JsonWriter`/`Utf8JsonReader` (byte-path and string-path output are
+  byte-identical). New optional `IMessageBodyBytesGetter<TContext>`
+  (`Benzene.Abstractions.Messages.Mappers`) lets a transport expose its body as bytes;
+  `RequestMapper<TContext>` prefers deserializing straight from those bytes (skipping the
+  intermediate string) when the selected serializer implements `IPayloadSerializer` and the getter
+  is registered, otherwise the string path is unchanged. `IBenzeneResponseAdapter<TContext>` gains
+  a default-interface `SetBody(TContext, ReadOnlyMemory<byte>)` member (UTF-8-decodes and delegates
+  to the string overload by default, so every existing adapter keeps compiling and behaving
+  identically without any changes). `BenzeneMessageContext` is wired as the reference transport
+  (`BenzeneMessageGetter` now also implements `IMessageBodyBytesGetter`); converting the other
+  transports' body getters, a binary format package (Protobuf/MessagePack), and a byte-oriented
+  response-writing path are explicitly deferred to future work once a consumer needs them.
 
 ### Fixed
 - `EnrichingRequestMapper`'s XML docs corrected: enrichers fold onto the mapped request in

@@ -1,7 +1,11 @@
 using System;
+using System.Linq;
+using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Serialization;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Extras.Request;
@@ -46,15 +50,39 @@ public class MultiSerializerOptionsRequestMapperTest
         }
     }
 
+    // Unlike the real MediaFormatNegotiator (scoped/memoizing - one selection per message), this
+    // re-evaluates every call, so a single instance can be reused across multiple simulated
+    // "messages" (contexts) within one test without an earlier selection leaking into a later one.
+    private class RoutingMediaFormatNegotiator : IMediaFormatNegotiator<TestContext>
+    {
+        private readonly IMediaFormat<TestContext>[] _formats;
+        private readonly IServiceResolver _serviceResolver;
+
+        public RoutingMediaFormatNegotiator(IMediaFormat<TestContext>[] formats, IServiceResolver serviceResolver)
+        {
+            _formats = formats;
+            _serviceResolver = serviceResolver;
+        }
+
+        public IMediaFormat<TestContext> SelectRead(TestContext context) =>
+            _formats.First(format => format.CanRead(context, _serviceResolver));
+
+        public IMediaFormat<TestContext> SelectWrite(TestContext context) => SelectRead(context);
+    }
+
     [Fact]
     public void GetBody_NoOptionMatches_UsesDefaultSerializer()
     {
         var resolver = ServiceResolverMother.CreateServiceResolver();
+        var mediaFormatNegotiator = new MediaFormatNegotiator<TestContext>(
+            Array.Empty<IMediaFormat<TestContext>>(),
+            new JsonMediaFormat<TestContext>(new JsonSerializer()),
+            resolver);
 
-        var mapper = new MultiSerializerOptionsRequestMapper<TestContext, JsonSerializer>(
+        var mapper = new MultiSerializerOptionsRequestMapper<TestContext>(
+            mediaFormatNegotiator,
             resolver,
             new TestBodyGetter(),
-            Array.Empty<ISerializerOption<TestContext>>(),
             Array.Empty<IRequestEnricher<TestContext>>());
 
         var context = new TestContext { Body = "{\"name\":\"foo\"}" };
@@ -67,13 +95,15 @@ public class MultiSerializerOptionsRequestMapperTest
     public void GetBody_RepeatedCallsForSameSelectedSerializer_ReuseTheSameUnderlyingSerializer()
     {
         var customSerializer = new CountingSerializer();
-        var option = new InlineSerializerOption<TestContext>(context => context.SerializerKind == "custom", customSerializer);
+        var format = new InlineMediaFormat<TestContext>("application/custom", customSerializer,
+            context => context.SerializerKind == "custom");
         var resolver = ServiceResolverMother.CreateServiceResolver();
+        var mediaFormatNegotiator = new RoutingMediaFormatNegotiator(new IMediaFormat<TestContext>[] { format }, resolver);
 
-        var mapper = new MultiSerializerOptionsRequestMapper<TestContext, JsonSerializer>(
+        var mapper = new MultiSerializerOptionsRequestMapper<TestContext>(
+            mediaFormatNegotiator,
             resolver,
             new TestBodyGetter(),
-            new ISerializerOption<TestContext>[] { option },
             Array.Empty<IRequestEnricher<TestContext>>());
 
         var context = new TestContext { SerializerKind = "custom", Body = "one" };
@@ -92,14 +122,18 @@ public class MultiSerializerOptionsRequestMapperTest
         var firstSerializer = new CountingSerializer();
         var secondSerializer = new CountingSerializer();
 
-        var firstOption = new InlineSerializerOption<TestContext>(context => context.SerializerKind == "first", firstSerializer);
-        var secondOption = new InlineSerializerOption<TestContext>(context => context.SerializerKind == "second", secondSerializer);
+        var firstFormat = new InlineMediaFormat<TestContext>("application/first", firstSerializer,
+            context => context.SerializerKind == "first");
+        var secondFormat = new InlineMediaFormat<TestContext>("application/second", secondSerializer,
+            context => context.SerializerKind == "second");
         var resolver = ServiceResolverMother.CreateServiceResolver();
+        var mediaFormatNegotiator = new RoutingMediaFormatNegotiator(
+            new IMediaFormat<TestContext>[] { firstFormat, secondFormat }, resolver);
 
-        var mapper = new MultiSerializerOptionsRequestMapper<TestContext, JsonSerializer>(
+        var mapper = new MultiSerializerOptionsRequestMapper<TestContext>(
+            mediaFormatNegotiator,
             resolver,
             new TestBodyGetter(),
-            new ISerializerOption<TestContext>[] { firstOption, secondOption },
             Array.Empty<IRequestEnricher<TestContext>>());
 
         mapper.GetBody<ExampleRequestPayload>(new TestContext { SerializerKind = "first", Body = "a" });

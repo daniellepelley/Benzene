@@ -8,6 +8,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Serialization;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
@@ -40,11 +41,13 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspMessageMessageHandlerResultSetter>();
         services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
-        services.AddScoped<IResponseHandler<AspNetContext>, ResponseBodyHandler<AspNetContext>>();
+        services.AddScoped<IResponseRenderer<AspNetContext>, SerializerResponseRenderer<AspNetContext>>();
+        services.AddScoped<IResponseHandler<AspNetContext>, RendererResponseHandler<AspNetContext>>();
         services.AddScoped<MessageRouter<AspNetContext>>();
+        services.AddMediaFormatNegotiation<AspNetContext>();
         services
             .AddScoped<IRequestMapper<AspNetContext>,
-                MultiSerializerOptionsRequestMapper<AspNetContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<AspNetContext>>();
         services.AddScoped<IRequestEnricher<AspNetContext>, AspNetRequestEnricher>();
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();

@@ -1,4 +1,4 @@
-﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Response;
 
 namespace Benzene.Http;
@@ -13,7 +13,7 @@ namespace Benzene.Http;
 /// a response adapter. It should be registered in the response handler pipeline to ensure
 /// that HTTP responses have appropriate status codes based on the handler's result.
 /// </remarks>
-public class HttpStatusCodeResponseHandler<TContext> : ISyncResponseHandler<TContext> where TContext : class
+public class HttpStatusCodeResponseHandler<TContext> : IResponseHandler<TContext> where TContext : class
 {
     private readonly IHttpStatusCodeMapper _httpStatusCodeMapper;
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
@@ -34,8 +34,9 @@ public class HttpStatusCodeResponseHandler<TContext> : ISyncResponseHandler<TCon
     /// </summary>
     /// <param name="context">The HTTP context.</param>
     /// <param name="messageHandlerResult">The result from the message handler execution.</param>
-    public void HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
+    public ValueTask HandleAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
         _benzeneResponseAdapter.SetStatusCode(context, _httpStatusCodeMapper.Map(messageHandlerResult.BenzeneResult.Status));
+        return default;
     }
 }

@@ -5,6 +5,7 @@ using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
@@ -24,15 +25,16 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, KafkaMessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<SelfHostHttpContext>,
-                MultiSerializerOptionsRequestMapper<SelfHostHttpContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<SelfHostHttpContext>>();
         services.AddScoped<IRequestEnricher<SelfHostHttpContext>, HttpListenerRequestEnricher>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
         services.AddScoped<IHttpRequestAdapter<SelfHostHttpContext>, HttpListenerRequestAdapter>();
         services.AddScoped<IResponseHandler<SelfHostHttpContext>, HttpStatusCodeResponseHandler<SelfHostHttpContext>>();
-        services.AddScoped<IResponseHandler<SelfHostHttpContext>,
-                ResponseHandler<JsonSerializationResponseHandler<SelfHostHttpContext>, SelfHostHttpContext>>();
+        services.AddScoped<IResponseRenderer<SelfHostHttpContext>, SerializerResponseRenderer<SelfHostHttpContext>>();
+        services.AddScoped<IResponseHandler<SelfHostHttpContext>, RendererResponseHandler<SelfHostHttpContext>>();
+        services.AddMediaFormatNegotiation<SelfHostHttpContext>();
         services.AddScoped<IBenzeneResponseAdapter<SelfHostHttpContext>, HttpContextResponseAdapter>();
-        
+
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("http"));
         services.AddHttpMessageHandlers();
 

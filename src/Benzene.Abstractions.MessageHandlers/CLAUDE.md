@@ -31,16 +31,23 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 
 ### Request Mapping
 - `IRequestMapper<TContext>` - Maps transport context to request objects
-- `IRequestMapBuilder<TContext>` - Builds request mapping configuration
 - `IRequestEnricher<TContext>` - Enriches requests with context data
 - `IRequestContext<TRequest>` - Provides typed request from context
-- `ISerializerOption<TContext>` - Selects serializer based on context
 - `IRequestMapperThunk<TContext>` - Deferred request mapper execution
 
+### Media Formats (`MediaFormats/`)
+- `IMediaFormat<TContext>` - A registrable request/response format: content type, whether it can
+  read/write for the current context, and its `ISerializer` (replaces the pre-Phase-2 split of
+  `ISerializerOption<TContext>`/`ISerializationResponseHandler<TContext>`)
+- `IMediaFormatNegotiator<TContext>` - Scoped, memoizing selector that picks the `IMediaFormat<TContext>`
+  to read a request with and to write a response with
+
 ### Response Handling
-- `IResponseHandler<TContext>` - Handles response writing
-- `IAsyncResponseHandler<TContext>` - Async response handling
-- `ISyncResponseHandler<TContext>` - Sync response handling
+- `IResponseHandler<TContext>` - Handles response writing (single async method; the previous
+  `ISyncResponseHandler`/`IAsyncResponseHandler` split was removed)
+- `IResponseRenderer<TContext>` - One representation a response can be written in (`CanRender` +
+  `RenderAsync`); `Benzene.Core.MessageHandlers`' `RendererResponseHandler<TContext>` (an
+  `IResponseHandler<TContext>`) walks registered renderers in order, first `CanRender` wins
 - `IResponseHandlerContainer<TContext>` - Contains response handlers
 - `IBenzeneResponseAdapter<TContext>` - Adapts responses to transport format
 - `IResponsePayloadMapper<TContext>` - Maps response payloads
@@ -79,7 +86,7 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 ## Important conventions
 - Handler topic/routing is determined by `IMessageHandlerDefinition`
 - Request mapping separates transport concerns from handler logic
-- Response handling is split into sync/async for flexibility
+- Response handling is a single async `IResponseHandler<TContext>.HandleAsync` (no sync/async split)
 - Handlers are discovered via `IMessageHandlersFinder` (reflection, DI, caching)
 - Multiple finders can be composed for layered discovery
 - Version selection allows multiple handler versions to coexist

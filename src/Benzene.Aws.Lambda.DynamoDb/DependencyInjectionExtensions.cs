@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -31,9 +32,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageHeadersGetter<DynamoDbRecordContext>, DynamoDbMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<DynamoDbRecordContext>, DynamoDbMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<DynamoDbRecordContext>, DynamoDbMessageMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<DynamoDbRecordContext>();
         services
             .AddScoped<IRequestMapper<DynamoDbRecordContext>,
-                MultiSerializerOptionsRequestMapper<DynamoDbRecordContext, JsonSerializer>>();
+                MultiSerializerOptionsRequestMapper<DynamoDbRecordContext>>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("dynamodb"));
         return services;
