@@ -494,6 +494,30 @@ app.UseXml();
 
 ---
 
+## UseMessagePack
+
+**Package:** `Benzene.MessagePack` (`Benzene.MessagePack.DependencyInjectionExtensions`)
+
+Registers a MessagePack `IMediaFormat<TContext>` (`MessagePackMediaFormat<TContext>`) alongside
+the default JSON one (and XML, if `UseXml()` is also called) — same per-message negotiation as
+`UseXml()`, via `content-type`/`accept: application/msgpack`. MessagePack is a genuinely binary
+format, but every Benzene transport's body is a `string`; `MessagePackSerializer` Base64-armors the
+msgpack bytes so it works unchanged through the existing string-based pipeline (see
+`Benzene.MessagePack`'s `CLAUDE.md` for the full rationale) — a client sending/receiving MessagePack
+must Base64-decode/encode the body accordingly.
+
+```csharp
+public static IMiddlewarePipelineBuilder<TContext> UseMessagePack<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> source)
+    where TContext : class
+```
+
+```csharp
+app.UseMessagePack();
+```
+
+---
+
 ## A note on removed packages
 
 `Benzene.Datadog`, `Benzene.Zipkin`, and `Benzene.Aws.XRay` have been removed. Their vendor-specific
