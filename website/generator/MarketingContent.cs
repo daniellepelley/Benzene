@@ -9,26 +9,28 @@ namespace Benzene.Website.Generator;
 internal static class MarketingContent
 {
     public const string Tagline =
-        "One middleware pipeline. Every cloud. Write your message handlers once, then run the " +
-        "same service behind AWS Lambda, Azure Functions, Cloudflare, Kafka, or a plain ASP.NET " +
-        "Core host &mdash; without rewriting any of it.";
+        "One codebase. Every cloud. Every transport. Write your message handlers once, then run " +
+        "the same service on AWS, Azure, Google Cloud, Cloudflare, Kubernetes, or a plain " +
+        "ASP.NET Core host &mdash; and swap between HTTP, Lambda, SQS, Kafka, and more with " +
+        "minimal reconfiguration, not a rewrite.";
 
     public sealed record Feature(string Title, string Body);
 
     public static readonly Feature[] Features =
     [
-        new("Write once, deploy anywhere",
-            "A message handler is plain C# against a topic. Swap the transport &mdash; HTTP, " +
-            "Lambda, SQS, Kafka &mdash; without touching handler code."),
+        new("Swap transports, not code",
+            "A message handler is plain C# against a topic. Move it from HTTP to Lambda to SQS " +
+            "to Kafka with a hosting/wiring change &mdash; minimal reconfiguration, never a " +
+            "rewrite of the handler itself."),
         new("Cross-cutting concerns, once",
             "Correlation IDs, logging, validation, and health checks live in composable " +
             "middleware, not scattered across every handler."),
         new("No routing tables to maintain",
             "Handlers are discovered automatically by reflection and mapped to their topic and " +
             "HTTP route by attribute, so there's nothing to wire up by hand."),
-        new("Multi-cloud by design",
-            "The same handlers run on AWS, Azure, Google Cloud, Cloudflare, or a plain ASP.NET " +
-            "Core host &mdash; pick per-service, change your mind later."),
+        new("Runs anywhere you need it to",
+            "The same handlers run on AWS, Azure, Google Cloud, Cloudflare, Kubernetes, a plain " +
+            "VM, or ASP.NET Core &mdash; pick per-service, change your mind later."),
     ];
 
     public sealed record CodeStep(string Label, string Code);
@@ -69,7 +71,8 @@ internal static class MarketingContent
         ("Azure", "Functions (isolated worker), Event Hub, Service Bus"),
         ("Google Cloud", "Cloud Functions, Cloud Run"),
         ("Cloudflare", "Containers"),
-        ("Kafka", "Self-hosted worker, ordered per partition"),
+        ("Kubernetes", "Any container host, with liveness/readiness health checks"),
+        ("Virtual machines / self-hosted", "Long-running worker - consumes Kafka, HTTP, or any custom transport"),
         ("ASP.NET Core", "Embedded in any existing host"),
     ];
 
