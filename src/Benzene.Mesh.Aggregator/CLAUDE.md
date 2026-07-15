@@ -14,18 +14,37 @@ already runs, not a bespoke standalone tool.
   every registered service is polled concurrently (`Task.WhenAll`, mirroring
   `Benzene.HealthChecks.HealthCheckProcessor`'s pattern), and each service's spec/health fetch is
   independently bounded by a 10-second `PerServiceFetchTimeout` (matching
-  `Benzene.HealthChecks.TimeOutHealthCheck`'s convention) rather than relying solely on the
-  injected `HttpClient`'s own (much longer) `Timeout` - one slow/hung service can't stall the
+  `Benzene.HealthChecks.TimeOutHealthCheck`'s convention) - one slow/hung service can't stall the
   whole run, and one service's failure never prevents the rest from being published; determines `Healthy`/`Unhealthy`/
   `Unreachable` status (unreachable if the health document couldn't be fetched/deserialized,
   regardless of whether the spec endpoint responded - health is the primary "is this okay" signal);
   compares the new spec hash against the previous run's (read back via `IMeshArtifactStore`) to set
-  `ContractDrift`. The health fetch reads the response body regardless of status code (via
-  `HttpClient.GetAsync` + `response.Content.ReadAsStringAsync()`, not `GetStringAsync`) - Benzene's
-  own health-check middleware (`Benzene.HealthChecks.HealthCheckProcessor`) deliberately maps an
-  unhealthy result to HTTP 503, and `GetStringAsync` throws on any non-2xx status, which would
-  otherwise make every real unhealthy service indistinguishable from a genuinely unreachable one.
-  Only a connection-level failure or an unparseable body is treated as unreachable.
+  `ContractDrift`. **The actual fetch is delegated to `IMeshServiceSource`** (see below) - the
+  timeout, error-type-name-only recording, and status/drift logic all live in `MeshAggregator`
+  itself, uniform across every source.
+- `IMeshServiceSource` - the fetch port `MeshAggregator` depends on instead of an `HttpClient`
+  directly: `FetchSpecAsync`/`FetchHealthAsync(MeshServiceRegistryEntry, CancellationToken)`, each
+  returning raw JSON text (or throwing on failure - `MeshAggregator` catches and records the
+  exception's type name, same as before). `MeshAggregator`'s constructor takes
+  `IEnumerable<IMeshServiceSource>`, keyed by each source's `Key` (matched against
+  `MeshServiceRegistryEntry.Source`, case-insensitively) - an entry whose `Source` has no matching
+  registered source resolves to `UnknownMeshServiceSource` (internal), which throws from both fetch
+  methods so a misconfigured single entry surfaces as that service's own `Unreachable`/error result
+  rather than crashing the whole run.
+  - `HttpMeshServiceSource` - the only source this package ships, `Key = MeshServiceSource.Http`
+    (the default). This is `MeshAggregator`'s original (pre-`IMeshServiceSource`) HTTP behavior,
+    moved here unchanged - including the "read the health response body regardless of status code"
+    handling (`HttpClient.GetAsync` + `response.Content.ReadAsStringAsync()`, not `GetStringAsync`)
+    needed because `Benzene.HealthChecks.HealthCheckProcessor` maps an unhealthy result to HTTP
+    503, which `GetStringAsync` would otherwise treat as a fetch failure indistinguishable from a
+    genuinely unreachable service.
+  - Other transports (e.g. an AWS Lambda Invoke source) ship as their own adapter package
+    registering an additional `IMeshServiceSource`, the same way `Benzene.Mesh.Tracing.Tempo` adds
+    a topology source without `Benzene.Mesh.Aggregator` needing to know about it.
+- `MeshSnapshotBuilder` (internal) - the shared hash-and-drift-diff step (`MeshHashing.ComputeHash`
+  + comparing against the previous run's hash read back via `IMeshArtifactStore`) extracted out of
+  `MeshAggregator.BuildSnapshotAsync` so a future push/self-report ingestion path can build a
+  `MeshServiceSnapshot` from a pushed report identically, instead of a second copy of this logic.
 - `MeshAggregateMessageHandler` - thin `IMessageHandler<Void, MeshManifest>` wrapper resolving
   `MeshAggregator`/`MeshServiceRegistry` from DI and calling `RunOnceAsync` - the "dogfooding" piece
   that makes the aggregator itself a real Benzene service rather than only in-process-callable.
@@ -33,9 +52,21 @@ already runs, not a bespoke standalone tool.
   only implementation this package ships (local disk). A blob-storage adapter (S3/Azure Blob) is a
   natural follow-up package implementing the same interface, not built here.
 - `Extensions.AddMeshAggregator(registry, artifactRootDirectory)` - registers the registry, store,
-  `HttpClient`, and `MeshAggregator` against an `IBenzeneServiceContainer`. Handler discovery for
-  `MeshAggregateMessageHandler` itself is left to the consuming app's own `.AddMessageHandlers()`
-  call, same as any other Benzene message handler.
+  `HttpClient`, the default `HttpMeshServiceSource` (as `IMeshServiceSource`), and `MeshAggregator`
+  against an `IBenzeneServiceContainer`. Handler discovery for `MeshAggregateMessageHandler` itself
+  is left to the consuming app's own `.AddMessageHandlers()` call, same as any other Benzene message
+  handler.
+
+## Breaking change (pre-1.0, flagged per repo convention)
+`MeshAggregator`'s constructor changed from `(HttpClient httpClient, IMeshArtifactStore store,
+Func<DateTimeOffset>? clock = null)` to `(IEnumerable<IMeshServiceSource> sources, IMeshArtifactStore
+store, Func<DateTimeOffset>? clock = null)`. A second overload keeping the old `HttpClient`
+signature was deliberately **not** added - `MeshAggregator` is resolved via automatic
+constructor-injection (`services.AddSingleton<MeshAggregator>()`), and two constructors both
+satisfiable by registered services risks ambiguous/non-deterministic resolution depending on the
+underlying DI container. Anyone constructing `MeshAggregator` directly (not through
+`AddMeshAggregator`) needs to pass `new[] { new HttpMeshServiceSource(httpClient) }` instead of a
+bare `HttpClient`. `AddMeshAggregator`'s own public signature is unchanged.
 
 ## When to use this package
 - Any Benzene solution that wants a generated catalog of its services' contracts and health,

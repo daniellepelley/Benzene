@@ -8,7 +8,15 @@ data types - no HTTP, no file I/O, no execution logic.
 
 ## Key types/interfaces
 - `MeshServiceRegistryEntry`/`MeshServiceRegistry` - the `mesh.json` shape: `Name`, `SpecUrl`,
-  `HealthUrl` per service. Human-edited, not generated.
+  `HealthUrl`, plus additive `Source`/`SourceOptions` per service. Human-edited, not generated.
+  `Source` (defaults to `MeshServiceSource.Http` via the original 3-arg constructor, still present
+  and unchanged) selects which `Benzene.Mesh.Aggregator.IMeshServiceSource` fetches this entry;
+  `SourceOptions` is an untyped `IReadOnlyDictionary<string, string>?` for source-specific config
+  (e.g. an AWS Lambda function name/region) - deliberately untyped so this package doesn't need to
+  know what every adapter package requires, keeping it dependency-light (see Important conventions).
+- `MeshServiceSource` - string constants for known `Source` values (`Http`, the only one this
+  package defines); adapter packages' constants get added here too, matching `TopologyEdgeSource`'s
+  existing "known names live in Contracts" convention.
 - `MeshServiceSnapshot` - the full per-service artifact (`services/{name}.json`): raw spec JSON
   (opaque, not deserialized), its hash, the previous run's hash, a `ContractDrift` flag, the
   service's `HealthCheckResponse` (from `Benzene.HealthChecks.Core`, reused as-is - no parallel type),

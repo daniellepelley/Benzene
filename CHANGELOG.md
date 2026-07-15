@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Mesh.Aggregator`: `IMeshServiceSource` port - the aggregator's spec/health fetch is no
+  longer inlined HTTP; it's delegated per-`MeshServiceRegistryEntry.Source` (new additive field,
+  defaults to `"Http"`) to a registered `IMeshServiceSource`. `HttpMeshServiceSource` (the original
+  behavior, moved not rewritten) ships as the default. `MeshServiceRegistryEntry` also gains an
+  additive `SourceOptions` (untyped string dictionary) for source-specific config. Foundation for
+  upcoming non-HTTP sources (AWS Lambda Invoke) and a push/self-report ingestion path. **BREAKING:**
+  `MeshAggregator`'s constructor changed from `(HttpClient, IMeshArtifactStore, Func<DateTimeOffset>?)`
+  to `(IEnumerable<IMeshServiceSource>, IMeshArtifactStore, Func<DateTimeOffset>?)` - direct
+  construction outside `AddMeshAggregator` (whose own signature is unchanged) needs
+  `new[] { new HttpMeshServiceSource(httpClient) }` instead of a bare `HttpClient`.
 - RetryMiddleware component for exponential backoff retry logic
 - FluentValidation extensions
 - Source generators for message handlers

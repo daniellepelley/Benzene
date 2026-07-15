@@ -45,7 +45,7 @@ public class MeshAggregatorTest : IDisposable
         var handler = new RoutingHttpMessageHandler()
             .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
             .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
-        var aggregator = new MeshAggregator(new HttpClient(handler), new FileSystemMeshArtifactStore(_rootDirectory));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory));
 
         var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
 
@@ -61,7 +61,7 @@ public class MeshAggregatorTest : IDisposable
             .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
             .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
         var store = new FileSystemMeshArtifactStore(_rootDirectory);
-        var aggregator = new MeshAggregator(new HttpClient(handler), store);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
 
         await aggregator.RunOnceAsync(SingleServiceRegistry());
         var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
@@ -76,7 +76,7 @@ public class MeshAggregatorTest : IDisposable
             .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
             .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
         var store = new FileSystemMeshArtifactStore(_rootDirectory);
-        var aggregator = new MeshAggregator(new HttpClient(handler), store);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
 
         await aggregator.RunOnceAsync(SingleServiceRegistry());
 
@@ -92,7 +92,7 @@ public class MeshAggregatorTest : IDisposable
         var handler = new RoutingHttpMessageHandler()
             .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
             .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(false));
-        var aggregator = new MeshAggregator(new HttpClient(handler), new FileSystemMeshArtifactStore(_rootDirectory));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory));
 
         var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
 
@@ -110,7 +110,7 @@ public class MeshAggregatorTest : IDisposable
         var handler = new RoutingHttpMessageHandler()
             .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
             .MapGet(HealthUrl, HttpStatusCode.ServiceUnavailable, SerializeHealth(false));
-        var aggregator = new MeshAggregator(new HttpClient(handler), new FileSystemMeshArtifactStore(_rootDirectory));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory));
 
         var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
 
@@ -124,7 +124,7 @@ public class MeshAggregatorTest : IDisposable
             .MapGet(SpecUrl, HttpStatusCode.InternalServerError, "connection string: secret-value")
             .MapGet(HealthUrl, HttpStatusCode.InternalServerError, "connection string: secret-value");
         var store = new FileSystemMeshArtifactStore(_rootDirectory);
-        var aggregator = new MeshAggregator(new HttpClient(handler), store);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
 
         var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
 
@@ -155,13 +155,61 @@ public class MeshAggregatorTest : IDisposable
             new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
             new MeshServiceRegistryEntry("payments-api", otherSpecUrl, otherHealthUrl),
         });
-        var aggregator = new MeshAggregator(new HttpClient(handler), new FileSystemMeshArtifactStore(_rootDirectory));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory));
 
         var manifest = await aggregator.RunOnceAsync(registry);
 
         Assert.Equal(2, manifest.Services.Length);
         Assert.Equal(MeshServiceStatus.Unreachable, manifest.Services.Single(x => x.Name == "orders-api").Status);
         Assert.Equal(MeshServiceStatus.Healthy, manifest.Services.Single(x => x.Name == "payments-api").Status);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_EntryUsesNonHttpSource_ResolvesFromRegisteredSource_NotHttpClient()
+    {
+        // Proves the IMeshServiceSource seam is real: an entry with Source="fake" is fetched via
+        // FakeMeshServiceSource below, never touching the HttpClient-backed HttpMeshServiceSource
+        // also registered here - if MeshAggregator still had the fetch inlined, this would fail
+        // (no stub configured for the fake entry's SpecUrl/HealthUrl on the HTTP handler).
+        var handler = new RoutingHttpMessageHandler();
+        var fakeSource = new FakeMeshServiceSource(
+            "{\"info\":{\"title\":\"orders-api\"}}", SerializeHealth(true));
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)), fakeSource },
+            new FileSystemMeshArtifactStore(_rootDirectory));
+
+        var registry = new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl, "fake", null),
+        });
+
+        var manifest = await aggregator.RunOnceAsync(registry);
+
+        Assert.Equal(MeshServiceStatus.Healthy, Assert.Single(manifest.Services).Status);
+        Assert.True(fakeSource.WasCalled);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_EntryUsesUnregisteredSource_ManifestShowsUnreachable_DoesNotCrashOtherServices()
+    {
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) },
+            new FileSystemMeshArtifactStore(_rootDirectory));
+
+        var registry = new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("payments-fn", "n/a", "n/a", "AwsLambdaInvoke", null),
+        });
+
+        var manifest = await aggregator.RunOnceAsync(registry);
+
+        Assert.Equal(2, manifest.Services.Length);
+        Assert.Equal(MeshServiceStatus.Healthy, manifest.Services.Single(x => x.Name == "orders-api").Status);
+        Assert.Equal(MeshServiceStatus.Unreachable, manifest.Services.Single(x => x.Name == "payments-fn").Status);
     }
 
     public void Dispose()
@@ -197,6 +245,33 @@ public class MeshAggregatorTest : IDisposable
             }
 
             return Task.FromResult(message);
+        }
+    }
+
+    private class FakeMeshServiceSource : IMeshServiceSource
+    {
+        private readonly string _specJson;
+        private readonly string _healthJson;
+
+        public FakeMeshServiceSource(string specJson, string healthJson)
+        {
+            _specJson = specJson;
+            _healthJson = healthJson;
+        }
+
+        public string Key => "fake";
+
+        public bool WasCalled { get; private set; }
+
+        public Task<string> FetchSpecAsync(MeshServiceRegistryEntry entry, CancellationToken cancellationToken)
+        {
+            WasCalled = true;
+            return Task.FromResult(_specJson);
+        }
+
+        public Task<string> FetchHealthAsync(MeshServiceRegistryEntry entry, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_healthJson);
         }
     }
 }
