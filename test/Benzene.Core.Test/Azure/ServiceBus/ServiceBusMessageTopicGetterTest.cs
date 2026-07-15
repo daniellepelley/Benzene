@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Azure.Messaging.ServiceBus;
 using Benzene.Azure.Function.ServiceBus;
 using Benzene.Core;
-using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
 using Xunit;
 
@@ -45,7 +44,7 @@ public class ServiceBusMessageTopicGetterTest
             properties: new Dictionary<string, object>());
         var context = new ServiceBusContext(message) { PresetTopic = new Topic("preset-topic") };
 
-        var getter = new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter());
+        var getter = new Benzene.Core.MessageHandlers.PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter());
 
         var topic = getter.GetTopic(context);
 
