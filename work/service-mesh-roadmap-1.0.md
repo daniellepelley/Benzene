@@ -110,6 +110,28 @@
 >   (`.claude/agents/mesh-product-owner.md`, registered in `.claude/PRODUCT_OWNERS.md`) and tracks
 >   the real remaining phases: live Tempo verification, structural edge derivation, full graph
 >   visualization, Phase 4 (field-level contract compatibility), and Phase 5 (polish).
+>
+> **2026-07-15 multi-transport collection design (Phase A of 4 landed, B-D in progress):** Raised
+> by the maintainer: the aggregator's HTTP-only fetch can't reach services with no public HTTP
+> surface (AWS Lambda, reachable only via `Invoke`) or services with no synchronous response
+> channel at all (SQS/SNS/EventBridge-only Lambdas). Resolved via `mesh-product-owner` design
+> passes plus maintainer decisions: pull (via HTTP or a synchronous AWS Lambda `Invoke`) remains
+> correct for any service with *some* synchronous entry point - invoking a Lambda causes a cold
+> start rather than requiring one already be warm, the same characteristic as an HTTP health
+> endpoint on a Lambda. Push is only structurally required for the narrower "zero synchronous
+> entry point" case, and ships as **two** swappable client-side implementations (direct
+> `IMeshArtifactStore` write, and an HTTP ingestion endpoint) rather than just one, per explicit
+> maintainer request. Self-reporting is opportunistic only (piggybacks on real invocations) - no
+> scheduled/cron reporting in v1, since that would defeat serverless on-demand billing; a cron
+> option is parked, not built. A new config-driven, Docker/Compose-deployable host
+> (`deploy/Mesh/Benzene.Mesh.Host`) is also planned, for running the Aggregator + Mesh UI against a
+> developer's own real services during local development. Full design and phasing in
+> `/root/.claude/plans/the-benzene-grpc-package-serialized-pond.md` (Phases A-D) - **Phase A**
+> (the `IMeshServiceSource` seam, additive `MeshServiceRegistryEntry.Source`/`SourceOptions`) is
+> landed; **Phase B** (`Benzene.Mesh.Aws.Lambda`, wrapping the already-existing
+> `Benzene.Clients.Aws.Lambda.IAwsLambdaClient` rather than reimplementing Lambda invocation),
+> **Phase C** (`Benzene.Mesh.Reporting`, `IMeshReportPublisher`/`MeshServiceReport` in
+> `Benzene.Mesh.Contracts`), and **Phase D** (`deploy/Mesh/Benzene.Mesh.Host`) remain open.
 **Owner:** `mesh-product-owner` (`.claude/agents/mesh-product-owner.md`)
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who

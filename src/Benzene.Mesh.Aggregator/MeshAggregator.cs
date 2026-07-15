@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Threading;
 using Benzene.HealthChecks.Core;
 using Benzene.Mesh.Contracts;
 
@@ -19,21 +18,26 @@ public class MeshAggregator
     };
 
     // Matches Benzene.HealthChecks.TimeOutHealthCheck's 10-second convention: an explicit,
-    // documented bound on each fetch rather than relying solely on the injected HttpClient's own
-    // (much longer, 100s-default) Timeout - one slow/hung service shouldn't be able to stall a run.
+    // documented bound on each fetch rather than relying solely on a source's own (potentially much
+    // longer) defaults - one slow/hung service shouldn't be able to stall a run.
     private static readonly TimeSpan PerServiceFetchTimeout = TimeSpan.FromSeconds(10);
 
-    private readonly HttpClient _httpClient;
+    private readonly IReadOnlyDictionary<string, IMeshServiceSource> _sources;
     private readonly IMeshArtifactStore _store;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Initializes a new instance of the <see cref="MeshAggregator"/> class.</summary>
-    /// <param name="httpClient">The client used to fetch each service's spec and health documents.</param>
+    /// <param name="sources">
+    /// Every registered <see cref="IMeshServiceSource"/>, keyed by <see cref="IMeshServiceSource.Key"/>
+    /// (case-insensitive) to resolve each entry's <see cref="MeshServiceRegistryEntry.Source"/>
+    /// against. An entry whose <c>Source</c> has no matching source here is recorded as that
+    /// service's own fetch error, not a run-wide failure.
+    /// </param>
     /// <param name="store">Where generated catalog artifacts are published (and, for contract-drift comparison, read back from).</param>
     /// <param name="clock">Supplies the current time; defaults to <see cref="DateTimeOffset.UtcNow"/>. Overridable for deterministic tests.</param>
-    public MeshAggregator(HttpClient httpClient, IMeshArtifactStore store, Func<DateTimeOffset>? clock = null)
+    public MeshAggregator(IEnumerable<IMeshServiceSource> sources, IMeshArtifactStore store, Func<DateTimeOffset>? clock = null)
     {
-        _httpClient = httpClient;
+        _sources = sources.ToDictionary(source => source.Key, StringComparer.OrdinalIgnoreCase);
         _store = store;
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
     }
@@ -72,15 +76,15 @@ public class MeshAggregator
 
     private async Task<MeshServiceSnapshot> BuildSnapshotAsync(MeshServiceRegistryEntry entry)
     {
+        var source = ResolveSource(entry.Source);
+
         string? specJson = null;
-        string? specHash = null;
         string? error = null;
 
         try
         {
             using var specTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
-            specJson = await _httpClient.GetStringAsync(entry.SpecUrl, specTimeout.Token);
-            specHash = MeshHashing.ComputeHash(specJson);
+            specJson = await source.FetchSpecAsync(entry, specTimeout.Token);
         }
         catch (Exception ex)
         {
@@ -94,16 +98,8 @@ public class MeshAggregator
         HealthCheckResponse? health = null;
         try
         {
-            // Deliberately not GetStringAsync: Benzene's own health-check middleware maps an
-            // unhealthy aggregate result to HTTP 503 (see Benzene.HealthChecks.HealthCheckProcessor),
-            // which GetStringAsync would treat as a fetch failure indistinguishable from the
-            // service being genuinely unreachable. Reading the body regardless of status code lets
-            // a real 503-with-a-valid-unhealthy-body come through as Unhealthy instead of
-            // Unreachable - only a connection-level failure or an unparseable body should count as
-            // unreachable.
             using var healthTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
-            using var response = await _httpClient.GetAsync(entry.HealthUrl, healthTimeout.Token);
-            var healthJson = await response.Content.ReadAsStringAsync(healthTimeout.Token);
+            var healthJson = await source.FetchHealthAsync(entry, healthTimeout.Token);
             health = JsonSerializer.Deserialize<HealthCheckResponse>(healthJson, JsonOptions);
         }
         catch (Exception ex)
@@ -111,28 +107,12 @@ public class MeshAggregator
             error ??= ex.GetType().Name;
         }
 
-        var previousSpecHash = await TryGetPreviousSpecHashAsync(entry.Name);
-        var contractDrift = specHash != null && previousSpecHash != null && previousSpecHash != specHash;
-
-        return new MeshServiceSnapshot(entry.Name, _clock(), specJson, specHash, previousSpecHash, contractDrift, health, error);
+        return await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
     }
 
-    private async Task<string?> TryGetPreviousSpecHashAsync(string serviceName)
+    private IMeshServiceSource ResolveSource(string sourceKey)
     {
-        var previousJson = await _store.TryReadAsync($"services/{serviceName}.json");
-        if (previousJson == null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<MeshServiceSnapshot>(previousJson, JsonOptions)?.SpecHash;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return _sources.TryGetValue(sourceKey, out var source) ? source : new UnknownMeshServiceSource(sourceKey);
     }
 
     /// <summary>
