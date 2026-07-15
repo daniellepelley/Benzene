@@ -5,6 +5,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -28,7 +29,8 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.AddScoped<IMessageTopicGetter<ServiceBusContext>, ServiceBusMessageTopicGetter>();
+        services.AddScoped<IMessageTopicGetter<ServiceBusContext>>(_ =>
+            new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter()));
         services.AddScoped<IMessageHeadersGetter<ServiceBusContext>, ServiceBusMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusContext>, ServiceBusMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<ServiceBusContext>, ServiceBusMessageMessageHandlerResultSetter>();
