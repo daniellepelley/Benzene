@@ -63,6 +63,15 @@ for f in templates/content/aws-apigateway templates/content/aws-sqs templates/co
 done
 ```
 
+## Publishing
+
+`.github/workflows/deploy-templates.yml` (manual `workflow_dispatch`, same trigger style as the
+main library's `deploy-benzene.yml`) packs `Benzene.Templates.csproj` and pushes it to nuget.org.
+It's a separate workflow from `deploy-benzene.yml` because this package isn't part of `Benzene.sln`
+and versions independently (`VersionPrefix`/`VersionSuffix` above, not `version.txt`) — running it
+resolves the next `0.1.0.N-alpha` build number against nuget.org the same way `deploy-benzene.yml`
+does for `Benzene.Core`.
+
 ## Why this isn't in `Benzene.sln`
 
 A template pack's build verb is `dotnet pack` + generate-and-build the *output*, not `dotnet

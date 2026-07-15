@@ -6,10 +6,6 @@ self-hosted Kafka worker. Each one generates a complete, buildable project with 
 handler (`HelloWorldMessageHandler`) wired end to end — the fastest way to get a real Benzene
 service running before you write a line of your own code.
 
-> **Not yet published to nuget.org.** This page documents the template pack once it is; until
-> then, see [`templates/README.md`](../templates/README.md) for building and installing a local
-> copy from source.
-
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
