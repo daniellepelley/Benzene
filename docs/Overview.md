@@ -14,6 +14,8 @@ Run the same service on any of the following.
   - AKS
 - Google Cloud
   - Function
+- Cloudflare
+  - Containers
 - Kubernetes
 - IIS
 

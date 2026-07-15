@@ -27,6 +27,10 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
 - **`Grpc/`** — gRPC host (+ a client project).
 - **`Kafka/`** — Kafka consumer and producer.
 - **`Google/`** — Google Cloud host (built on `Benzene.AspNet.Core` + `Benzene.Http`).
+- **`Cloudflare/`** — ASP.NET Core host deployed via Cloudflare Containers (a Worker proxies HTTP
+  into a Docker container running this project); has its own `README.md`, `Dockerfile`, and
+  `worker/` (wrangler.toml + TypeScript Worker). Built on `Benzene.AspNet.Core` +
+  `Benzene.HealthChecks`, same as `Asp/`/`Google/` — no Cloudflare-specific Benzene package.
 - **`CodeGen/`** — client code generation from a spec (`Benzene.CodeGen.Client`, `Benzene.Schema.OpenApi`);
   does **not** use the shared `App` domain.
 - **`OpenTelemetry/`** — observability demo (`Benzene.OpenTelemetry`, traces/metrics); has its own
