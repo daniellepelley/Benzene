@@ -105,6 +105,7 @@
     <ProjectReference Include="..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.EntityFramework\Benzene.HealthChecks.EntityFramework.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Http\Benzene.HealthChecks.Http.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.JsonSchema\Benzene.JsonSchema.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
@@ -114,6 +115,7 @@
     <ProjectReference Include="..\..\src\Benzene.Resilience\Benzene.Resilience.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\src\Benzene.SelfHost\Benzene.SelfHost.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
   </ItemGroup>
