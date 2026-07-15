@@ -11,6 +11,7 @@ using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Extras.Request;
+using Benzene.MessagePack;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Xml;
@@ -122,6 +123,34 @@ public class RequestMapperThunkTest
 
         var services = ServiceResolverMother.CreateServiceCollection();
         services.UsingBenzene(x => x.AddBenzeneMessage().AddXml());
+
+        var serviceResolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+        var mediaFormatNegotiator = serviceResolver.GetService<IMediaFormatNegotiator<BenzeneMessageContext>>();
+
+        var requestMapper = new MultiSerializerOptionsRequestMapper<BenzeneMessageContext>(
+                mediaFormatNegotiator,
+                serviceResolver,
+                new BenzeneMessageGetter(),
+                Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
+
+        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var request = requestFactory.GetRequest<ExampleRequestPayload>();
+
+        Assert.Equal("some-name", request!.Name);
+    }
+
+    [Fact]
+    public void GetsRequest_Multi_MessagePack()
+    {
+        var serializer = new MessagePackSerializer();
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest
+        {
+            Headers = new Dictionary<string, string> { { "content-type", "application/msgpack" }},
+            Body = serializer.Serialize(new ExampleRequestPayload { Name = "some-name"})
+        });
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services.UsingBenzene(x => x.AddBenzeneMessage().AddMessagePack());
 
         var serviceResolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
         var mediaFormatNegotiator = serviceResolver.GetService<IMediaFormatNegotiator<BenzeneMessageContext>>();
