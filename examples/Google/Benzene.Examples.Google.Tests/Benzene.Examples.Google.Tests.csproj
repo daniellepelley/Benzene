@@ -34,5 +34,6 @@
     <ProjectReference Include="..\Benzene.Examples.Google\Benzene.Examples.Google.csproj" />
     <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.GoogleCloud.Functions.Http.TestHelpers\Benzene.GoogleCloud.Functions.Http.TestHelpers.csproj" />
   </ItemGroup>
 </Project>

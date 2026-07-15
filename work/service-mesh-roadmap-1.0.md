@@ -45,6 +45,49 @@
 > **Phase 0, Phase 1's data-pipeline half, and Phase 2 are now complete** by this reading. Phase
 > 1's `topology.json`/edge-derivation gap and Phase 3 (live Tempo trace overlay) remain open, as
 > does Phase 4 (field-level contract compatibility) and Phase 5 (polish).
+>
+> **2026-07-14 Phase 3 update:** `Benzene.Mesh.Tracing.Tempo` is built - the PromQL/Prometheus
+> adapter §4.6.1 designed, publishing `topology.json` (§7.3) with tempo-sourced edges. Also
+> dogfooded (`[Message("mesh:topology")]`/`[HttpEndpoint("POST", "/mesh/topology")]`, same shape
+> as `MeshAggregateMessageHandler`). Notes and deviations:
+> - `TopologyEdge`/`MeshTopology` live in `Benzene.Mesh.Contracts` (shared shapes, matching §8's
+>   original intent), but the new package also references `Benzene.Mesh.Aggregator` for
+>   `IMeshArtifactStore` - a deliberate deviation from §8's package table (which had this package
+>   depending only on `Contracts`), since that port ended up living in `Aggregator` during Phase 1a
+>   rather than `Contracts`, and relocating it now purely for dependency-graph tidiness wasn't
+>   judged worth the churn to already-shipped code.
+> - `AddTempoTopology(options)` deliberately does not register its own `IMeshArtifactStore` -
+>   it requires `AddMeshAggregator(...)` to already be registered in the same container, so
+>   `topology.json` publishes alongside `manifest.json`/`services/*.json` in the same directory
+>   rather than risking two artifact stores pointed at different places.
+> - Adds p50/p99 latency alongside the §7.3 sample's `p95LatencyMs` - free from the same
+>   histogram query, judged a worthwhile enrichment rather than a shape change.
+> - Error rate is computed client-side (`failedPerMinute / requestsPerMinute`, not a 6th PromQL
+>   query), sidestepping Prometheus's own NaN-on-zero-division semantics.
+> - **Live verification against a real Tempo + Prometheus stack was attempted but blocked by this
+>   environment's own network egress policy** (Docker Hub image pulls and direct GitHub release
+>   downloads both returned `403`/`Forbidden` from the sandbox's proxy - not a Benzene-side
+>   problem, and not something to route around). So the original open caveat - "exact label/metric
+>   names should be confirmed against the specific Tempo/Grafana version in use" - **remains open**,
+>   same as before this pass. What ships instead is thorough mocked-HTTP test coverage against the
+>   documented Prometheus API response shape and the 3 named metrics, which is real coverage of
+>   this package's own parsing/joining logic, just not proof that a live Tempo's actual metric
+>   names/labels match what's assumed here. Worth a real follow-up the next time this is picked up
+>   somewhere with registry access.
+> - **No Mesh UI rendering of `topology.json`** in this pass - deliberate, matching how Phase 2
+>   itself deferred all graph/topology rendering; the data is real and published, not yet surfaced
+>   visually.
+> - The checked-in `examples/Mesh/` example was **not** extended with real inter-service tracing
+>   or a bundled Tempo+Prometheus stack - the 3 demo services don't currently call each other, so
+>   there's no real traffic to generate a topology from without first building that (a separable,
+>   larger follow-up).
+>
+> **Phase 3's adapter + data pipeline is built and thoroughly unit-tested**, but not confirmed
+> against a real Tempo instance (environment-blocked, see above) - a real, not just cosmetic,
+> caveat worth resolving before leaning on this in production. Phase 1's `topology.json`
+> *structural*-edge gap remains open (Tempo covers the *observed* half only), as does Phase 4
+> (field-level contract compatibility), Phase 5 (polish), and Mesh UI topology rendering (not
+> phased explicitly, but a natural next step once structural edges exist too).
 **Owner:** unassigned
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who
