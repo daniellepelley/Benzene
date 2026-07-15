@@ -69,9 +69,14 @@ internal sealed class SiteBuilder
             File.WriteAllText(diskPath, html);
         }
 
+        // The marketing home page is hand-authored (MarketingContent/Layout), not derived from
+        // README.md's markdown - a card/hero layout isn't something plain markdown can express.
+        File.WriteAllText(Path.Combine(_outDir, "index.html"), Layout.RenderMarketingPage("index.html"));
+
         CopyStaticAssets(assetsToCopy);
 
-        var brokenLinks = SelfCheck(pages.Values.Select(p => p.OutputPath));
+        var outputPaths = pages.Values.Select(p => p.OutputPath).Append("index.html");
+        var brokenLinks = SelfCheck(outputPaths);
         if (brokenLinks.Count > 0)
         {
             Console.Error.WriteLine($"Generation failed: {brokenLinks.Count} broken internal link(s):");
@@ -82,24 +87,21 @@ internal sealed class SiteBuilder
             return 1;
         }
 
-        Console.WriteLine($"Generated {pages.Count} pages to {_outDir}");
+        Console.WriteLine($"Generated {pages.Count + 1} pages to {_outDir}");
         return 0;
     }
 
     private List<string> DiscoverSourcePaths()
     {
         var docsRootDisk = Path.Combine(_repoRoot, "docs");
-        var mdFiles = Directory.EnumerateFiles(docsRootDisk, "*.md", SearchOption.AllDirectories)
+        return Directory.EnumerateFiles(docsRootDisk, "*.md", SearchOption.AllDirectories)
             .Select(p => RepoPaths.Normalize(Path.GetRelativePath(_repoRoot, p)))
             .Where(rel => !ExcludedFiles.Contains(rel) && !ExcludedDirPrefixes.Any(rel.StartsWith))
             .OrderBy(x => x, StringComparer.Ordinal)
             .ToList();
-        mdFiles.Add("README.md");
-        return mdFiles;
     }
 
-    private static string ComputeOutputPath(string sourcePath) =>
-        sourcePath == "README.md" ? "index.html" : sourcePath[..^".md".Length] + ".html";
+    private static string ComputeOutputPath(string sourcePath) => sourcePath[..^".md".Length] + ".html";
 
     private static void ResolveNavHrefs(NavNode node, string navSourcePath, Dictionary<string, Page> pages)
     {
@@ -208,9 +210,7 @@ internal sealed class SiteBuilder
         renderer.Render(page.Document);
         var bodyHtml = writer.ToString();
 
-        return page.SourcePath == "README.md"
-            ? Layout.RenderMarketingPage(page.Title, bodyHtml, page.OutputPath)
-            : Layout.RenderDocsPage(page.Title, bodyHtml, nav, page.OutputPath);
+        return Layout.RenderDocsPage(page.Title, bodyHtml, nav, page.OutputPath);
     }
 
     private void CopyStaticAssets(HashSet<string> crawledAssets)

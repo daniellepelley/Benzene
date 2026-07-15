@@ -1,19 +1,28 @@
 # website
 
 ## What this does
-Generates Benzene's static marketing + documentation website from the repo's own `README.md` and
-`docs/*.md` tree, for deployment to S3 as plain static files (no server runtime). Not part of
-`Benzene.sln` — same precedent as `templates/` and `benchmarks/`, it's a standalone project with
-its own build/run flow, documented in `website/README.md`.
+Generates Benzene's static marketing + documentation website: a hand-built landing page plus one
+page per `docs/*.md` file, for deployment to S3 as plain static files (no server runtime). Not
+part of `Benzene.sln` — same precedent as `templates/` and `benchmarks/`, it's a standalone
+project with its own build/run flow, documented in `website/README.md`.
 
 ## Key types (`generator/`)
-- `SiteBuilder` - the orchestrator. Discovers pages, builds the nav, rewrites links, renders, and
-  runs a self-check. See its `Run()` method for the full pipeline in order.
-- **Page discovery is not a hardcoded list**: every `*.md` under `docs/` is included, except
+- `SiteBuilder` - the orchestrator. Discovers docs pages, builds the nav, rewrites links, renders
+  (docs pages + the separately hand-built marketing home), and runs a self-check. See its `Run()`
+  method for the full pipeline in order.
+- **The marketing home page (`index.html`) is hand-authored**, not derived from README.md's
+  markdown - `MarketingContent` holds the copy (hero tagline, feature cards, quickstart snippets,
+  platform list, loosely kept in sync with README.md's messaging by hand), `ArchitectureDiagram`
+  draws the hexagon-with-six-adapters SVG diagram, and `Layout.RenderMarketingPage` assembles the
+  hero/features/code/diagram/platforms sections. A card/hero layout isn't something plain markdown
+  can express well, so README.md itself is no longer crawled or rendered as a page at all.
+- `Logo` - the brand mark: a hexagon with an inscribed ring, the standard chemistry shorthand for
+  an aromatic ring (benzene's own structure) - used identically as the favicon, header icon, and
+  hero graphic, via `currentColor` so it themes with light/dark mode.
+- **Docs page discovery is not a hardcoded list**: every `*.md` under `docs/` is included, except
   `docs/plans/` (internal roadmap docs) and `docs/DOCUMENTATION_QUICK_REFERENCE.md` (contributor
-  cheat-sheet) - plus root `README.md` as the marketing home. `docs/specification/conformance/*`
-  is naturally excluded too, since only `*.md` files are picked up and the fixtures there are
-  `.json`.
+  cheat-sheet). `docs/specification/conformance/*.json` is naturally excluded too, since only
+  `*.md` files are picked up.
 - **Navigation comes from `docs/index.md` itself** (`NavTreeBuilder.BuildFromIndexPage`) - it
   parses index.md's own nested bullet list via Markdig's AST (not regex), so index.md stays the
   single source of truth for both docs-home content and the sidebar. Any crawled docs page not
