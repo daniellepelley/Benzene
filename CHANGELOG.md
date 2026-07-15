@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to `(IEnumerable<IMeshServiceSource>, IMeshArtifactStore, Func<DateTimeOffset>?)` - direct
   construction outside `AddMeshAggregator` (whose own signature is unchanged) needs
   `new[] { new HttpMeshServiceSource(httpClient) }` instead of a bare `HttpClient`.
+- `Benzene.Mesh.Aws.Lambda`: `LambdaMeshServiceSource`, a second `IMeshServiceSource` for services
+  reachable only via a synchronous AWS Lambda `Invoke` (no public HTTP surface) - sends a
+  `"spec"`/`"healthcheck"` topic message to `SourceOptions["functionName"]` via the existing
+  `Benzene.Clients.Aws.Lambda.IAwsLambdaClient`, no new Lambda-invocation plumbing. New
+  `MeshServiceSource.AwsLambdaInvoke` constant. `AddMeshLambdaSource()` registers it alongside
+  `AddMeshAggregator(...)`. No new external NuGet dependency (`AWSSDK.Lambda` already flows in
+  transitively via `Benzene.Clients.Aws`).
 - RetryMiddleware component for exponential backoff retry logic
 - FluentValidation extensions
 - Source generators for message handlers

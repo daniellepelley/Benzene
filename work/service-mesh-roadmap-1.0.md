@@ -132,6 +132,16 @@
 > `Benzene.Clients.Aws.Lambda.IAwsLambdaClient` rather than reimplementing Lambda invocation),
 > **Phase C** (`Benzene.Mesh.Reporting`, `IMeshReportPublisher`/`MeshServiceReport` in
 > `Benzene.Mesh.Contracts`), and **Phase D** (`deploy/Mesh/Benzene.Mesh.Host`) remain open.
+>
+> **2026-07-15 Phase B landed:** `Benzene.Mesh.Aws.Lambda`'s `LambdaMeshServiceSource` sends a
+> `"spec"`/`"healthcheck"` topic message to `SourceOptions["functionName"]` via the pre-existing
+> `Benzene.Clients.Aws.Lambda.IAwsLambdaClient` (`InvocationType.RequestResponse`) - confirmed the
+> receiving side needs zero changes, since `Benzene.Aws.Lambda.Core.BenzeneMessage.BenzeneMessageLambdaHandler`
+> already routes a raw Lambda invoke carrying either topic to the normal BenzeneMessage pipeline
+> for any service already wired with `.UseSpec()`/`.UseHealthCheck(...)`. `MeshServiceSource.AwsLambdaInvoke`
+> added to `Benzene.Mesh.Contracts`. Cross-check tests pin the adapter's hardcoded topic literals
+> against `Benzene.Schema.OpenApi.Constants.DefaultSpecTopic`/`Benzene.HealthChecks.Constants.DefaultHealthCheckTopic`
+> directly. Phases C and D remain open.
 **Owner:** `mesh-product-owner` (`.claude/agents/mesh-product-owner.md`)
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who

@@ -12,4 +12,10 @@ public static class MeshServiceSource
 {
     /// <summary>Fetch over HTTP, using <see cref="MeshServiceRegistryEntry.SpecUrl"/>/<see cref="MeshServiceRegistryEntry.HealthUrl"/> - the default.</summary>
     public const string Http = "Http";
+
+    /// <summary>
+    /// Fetch via a synchronous AWS Lambda <c>Invoke</c> (<c>Benzene.Mesh.Aws.Lambda</c>), for
+    /// services with no public HTTP surface. Requires <c>SourceOptions["functionName"]</c>.
+    /// </summary>
+    public const string AwsLambdaInvoke = "AwsLambdaInvoke";
 }
