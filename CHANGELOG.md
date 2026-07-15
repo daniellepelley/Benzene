@@ -121,6 +121,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   code that referenced the old class name directly, not normal `AddHttp()`/`UseHttp()` usage. HTTP
   status codes returned by this transport now correctly reflect the actual handler result instead of
   always being 200.
+- `Benzene.CodeGen.Cli.Core`: `HelpCommand` (`benzene help <command>`) threw a
+  `NullReferenceException` instead of a usage error when given an unrecognized command name,
+  discovered while adding test coverage for the CLI's help/routing/payload-mapping glue
+  (`CommandRouter`, `CommandBase<TPayload>`, `PayloadMapper`, `HelpGenerator`). Now writes
+  `Command <name> not found` to `Console.Error`, matching `CommandRouter`'s existing behavior for an
+  unrecognized top-level command name.
 
 ### Removed
 - **BREAKING:** `UseCorrelationId()` (`Benzene.Diagnostics.Correlation`) — the legacy inbound

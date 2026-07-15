@@ -33,7 +33,14 @@ public class HelpCommand : ICommand
         else
         {
             var command = _commands.FirstOrDefault(x => x.Name == commandArguments.Value);
-            Console.WriteLine(command.GetHelp());
+            if (command == null)
+            {
+                Console.Error.WriteLine($"Command {commandArguments.Value} not found");
+            }
+            else
+            {
+                Console.WriteLine(command.GetHelp());
+            }
         }
 
         return Task.CompletedTask;
