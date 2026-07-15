@@ -118,6 +118,37 @@ This document describes the product ownership structure for the Benzene library.
 
 ---
 
+### Performance & Reliability Champion
+**Agent**: `performance-champion`
+**Focus**: Cross-cutting — not a package owner. Hot-path latency/allocations in the
+middleware pipeline, serialization, and handler dispatch; benchmarking discipline;
+and load-bearing reliability (timeouts, failure isolation, resource cleanup,
+backpressure/batch-failure correctness) across every package.
+
+**Key Responsibilities:**
+- Review changes for per-request/per-message cost, not just correctness
+- Push for measured benchmarks over "should be faster" reasoning (no
+  BenchmarkDotNet project exists yet — establishing one is a standing priority)
+- Ensure anything that calls out to something slow/unreliable has an explicit
+  timeout and failure isolation (the `TimeOutHealthCheck`/
+  `ExceptionHandlingHealthCheck` pattern is the reference)
+- Flag cascading-failure and resource-leak risks other reviewers may miss
+  because they're scoped to one package
+
+**Contact for:**
+- Any change to the middleware pipeline, request mapping, or response
+  rendering hot path
+- New serializer/client packages, to check for avoidable allocation or
+  round-tripping (e.g. string round-trips a byte-native format didn't need)
+- Reliability review before a release: timeouts, cleanup, degradation behavior
+- Benchmarking a specific path, or standing up benchmark infrastructure
+
+**Note:** This role reviews and advises across every product owner's domain —
+it does not override a PO's design call. A performance win that conflicts with
+a PO's abstraction needs that PO's sign-off (see Escalation, below).
+
+---
+
 ## How to Work with Product Owners
 
 ### For Feature Requests
@@ -182,6 +213,9 @@ Some features span multiple domains. Coordinate with multiple product owners:
 - `core-product-owner`: Review middleware abstraction
 - `aws-product-owner`: Validate AWS-specific retry patterns
 - `infrastructure-product-owner`: Ensure resilience patterns are consistent
+- `performance-champion`: Confirm retry/backoff can't cascade into a request
+  storm and that the added middleware's per-invocation cost is measured, not
+  assumed
 
 ### Escalation
 
@@ -234,6 +268,20 @@ Product owners are living documents that evolve with the product:
 - **Redis**: RedisJSON and Redis Streams support
 - **gRPC**: Improve gRPC client/server patterns
 
+### Performance & Reliability Champion
+- **Benchmark infrastructure**: No BenchmarkDotNet project exists yet — stand
+  one up covering the middleware pipeline, request mapping, and serialization
+  hot paths, so future perf claims are measured, not estimated
+- **Middleware pipeline audit**: Systematic allocation/latency review of
+  `MiddlewarePipeline`/`MiddlewarePipelineBuilder` and handler dispatch,
+  building on Phase 1 of `docs/plans/request-response-improvements-plan.md`
+- **Reliability sweep**: Confirm every call to something that can be slow or
+  down has an explicit timeout and failure isolation, matching the
+  `TimeOutHealthCheck`/`ExceptionHandlingHealthCheck` pattern
+- **Serialization cost**: Audit new/existing serializer packages for avoidable
+  round-trips (e.g. a byte-native format forced through a string) against the
+  Phase 4 byte-oriented path (`IPayloadSerializer`)
+
 ---
 
 ## Quick Reference: Which PO for Which Package?
@@ -265,7 +313,11 @@ Product owners are living documents that evolve with the product:
 | Benzene.Kafka.* | Infrastructure |
 | Benzene.SelfHost.* | Infrastructure |
 
+`performance-champion` has no row here by design — it's cross-cutting, not
+package-scoped. Loop it in on any hot-path or reliability-sensitive change
+regardless of which package it lands in.
+
 ---
 
-**Last Updated**: 2026-07-10
-**Version**: 1.0
+**Last Updated**: 2026-07-15
+**Version**: 1.1
