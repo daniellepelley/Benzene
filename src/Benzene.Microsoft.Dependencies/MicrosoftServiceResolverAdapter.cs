@@ -8,10 +8,24 @@ namespace Benzene.Microsoft.Dependencies;
 public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScope? _scope;
 
     public MicrosoftServiceResolverAdapter(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
+    }
+
+    /// <summary>
+    /// Wraps a scope created via <see cref="MicrosoftServiceResolverFactory.CreateScope"/>. Unlike
+    /// the <see cref="IServiceProvider"/> constructor - where the provider's lifetime is owned by
+    /// whoever passed it in (e.g. Microsoft.Extensions.DependencyInjection's own scope management,
+    /// or ASP.NET Core's per-request provider) - this adapter owns <paramref name="scope"/> and
+    /// disposes it, so the scoped services resolved through it are actually released.
+    /// </summary>
+    public MicrosoftServiceResolverAdapter(IServiceScope scope)
+    {
+        _scope = scope;
+        _serviceProvider = scope.ServiceProvider;
     }
 
     public T GetService<T>() where T : class
@@ -57,5 +71,6 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
 
     public void Dispose()
     {
+        _scope?.Dispose();
     }
 }

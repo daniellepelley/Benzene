@@ -151,6 +151,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NullBenzeneServiceContainer`'s registration methods now throw
   `NotImplementedException` with a message explaining it's an intentional
   null-object placeholder, instead of the bare, contextless default message
+- **Resource leak:** `MicrosoftServiceResolverAdapter`/`AutofacServiceResolverAdapter` now actually
+  dispose the DI scope created by `IServiceResolverFactory.CreateScope()` — previously `Dispose()`
+  was a no-op on both adapters, so every ASP.NET Core request, Lambda invocation, and SQS/DynamoDB
+  batch record leaked its scope's `IDisposable`/`IAsyncDisposable` scoped services (DB
+  connections/contexts, etc.), regardless of calling code correctly doing
+  `using var scope = serviceResolverFactory.CreateScope();`
+- `MiddlewarePipeline<TContext>` no longer re-reverses its middleware array on every single
+  `HandleAsync` call — the order is precomputed once at construction instead. The `_cachedChain`
+  field this replaces was dead code (declared and read but never assigned, so the "cache" branch
+  was unreachable)
+- `Benzene.Mesh.Aggregator.MeshAggregator.RunOnceAsync` now polls every registered service
+  concurrently instead of one at a time (mirroring `HealthCheckProcessor.PerformHealthChecksAsync`),
+  and each service's spec/health fetch is bounded by an explicit 10-second timeout instead of
+  relying solely on the injected `HttpClient`'s own (much longer) default — a single slow/hung
+  service could previously stall the whole run
 
 ### Removed
 - Removed ToDelete folder - `IMessageResult` and `IHasMessageResult` moved to proper location in `Benzene.Abstractions.MessageHandlers`
