@@ -1,0 +1,14 @@
+{
+  "name": "benzene-example-cloudflare-worker",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.15"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

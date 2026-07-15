@@ -1,0 +1,26 @@
+# Cloudflare-side config for routing traffic into the Benzene.Example.Cloudflare container.
+#
+# Authored against current Cloudflare Containers documentation, but NOT run through
+# `wrangler deploy` and not validated against a live Cloudflare account from this environment -
+# review it (and check current docs) before relying on it in production. See
+# docs/getting-started-cloudflare.md and ../README.md for the full walkthrough and the same caveat.
+
+name = "benzene-example-cloudflare"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+
+[[containers]]
+class_name = "BenzeneContainer"
+image = "../Dockerfile"
+max_instances = 5
+
+[containers.configuration]
+instance_type = "basic"
+
+[[durable_objects.bindings]]
+name = "BENZENE_CONTAINER"
+class_name = "BenzeneContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BenzeneContainer"]
