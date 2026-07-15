@@ -12,6 +12,10 @@
          when you run `dotnet add package` yourself. -->
     <PackageReference Include="Benzene.Aws.Lambda.Core" Version="*-*" />
     <PackageReference Include="Benzene.Aws.Lambda.Sns" Version="*-*" />
+    <!-- Not pulled in transitively by Benzene.Aws.Lambda.Sns (SNS doesn't need HTTP routing) -
+         referenced explicitly because the starter handler's [HttpEndpoint] attribute needs it
+         (harmless/unused on this transport - see HelloWorldMessageHandler.cs). -->
+    <PackageReference Include="Benzene.Http" Version="*-*" />
     <!-- Only Benzene's own GetConfiguration() needs a concrete Microsoft.Extensions.Configuration
          implementation - only its abstractions come in transitively via Benzene. -->
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
