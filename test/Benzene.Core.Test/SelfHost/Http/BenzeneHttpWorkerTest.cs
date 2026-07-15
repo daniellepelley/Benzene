@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Benzene.Core.MessageHandlers;
 using Benzene.SelfHost;
 using Benzene.SelfHost.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Benzene.Test.SelfHost.Http;
@@ -62,6 +63,7 @@ public class BenzeneHttpWorkerTest
         };
 
         var worker = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services.AddLogging())
             .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
             .Build();
 
@@ -90,6 +92,7 @@ public class BenzeneHttpWorkerTest
         };
 
         var worker = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services.AddLogging())
             .Configure(app => app.UseHttp(config, pipeline => pipeline
                 .UseLivenessCheck()
                 .UseMessageHandlers()))
@@ -125,6 +128,7 @@ public class BenzeneHttpWorkerTest
         };
 
         var worker = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services.AddLogging())
             .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
             .Build();
 
