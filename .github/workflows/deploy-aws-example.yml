@@ -5,31 +5,41 @@ on:
 
 defaults:
   run:
-    working-directory: examples/Aws/
+    working-directory: examples/Aws/Benzene.Examples.Aws
+
 jobs:
-  build:
+  deploy:
     environment: test
     runs-on: ubuntu-latest
-    env: 
-      working-directory: examples/Aws/
+    env:
       AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: eu-west-1
+      AWS_REGION: eu-west-1
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-      
+      uses: actions/checkout@v4
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
-        
-    - name: AWS CLI
-      run: dotnet tool install -g Amazon.Lambda.Tools
-      
+
+    - name: Install Amazon.Lambda.Tools
+      run: |
+        dotnet tool install -g Amazon.Lambda.Tools
+        echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
     - name: Build
-      run: dotnet build Benzene.Examples.Aws/Benzene.Examples.Aws.csproj
-      
+      run: dotnet build -c Release
+
     - name: Deploy to Lambda
-      run: dotnet lambda deploy-function -cfg Benzene.Examples.Aws/aws-lambda-tools-defaults.json
+      run: dotnet lambda deploy-function -cfg aws-lambda-tools-defaults.json
+
+    # Best-effort "is it alive?" check: invoke the deployed function with a BenzeneMessage
+    # for the "healthcheck" topic and print the response. continue-on-error so a hiccup here
+    # never fails the deploy itself.
+    - name: Smoke test — invoke the health check
+      continue-on-error: true
+      run: dotnet lambda invoke-function benzene-demo --payload '{"Topic":"healthcheck","Headers":{},"Body":""}'

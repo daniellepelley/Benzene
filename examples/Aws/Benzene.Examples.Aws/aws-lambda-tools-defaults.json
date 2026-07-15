@@ -6,11 +6,10 @@
         "dotnet lambda help",
         "All the command line options for the Lambda command can be specified in this file."
     ],
-    "profile"     : "golambda",
     "region"      : "eu-west-1",
     "configuration" : "Release",
-    "framework"     : "net8.0",
-    "function-runtime" : "dotnet6",
+    "framework"     : "net10.0",
+    "function-runtime" : "dotnet10",
     "function-memory-size" : 1024,
     "function-timeout"     : 30,
     "function-handler"     : "Benzene.Examples.Aws::Benzene.Examples.Aws.Function::FunctionHandlerAsync",

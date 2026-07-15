@@ -28,10 +28,9 @@ Globals:
   Function:
     Timeout: 30
     MemorySize: 1024
-    # .NET 10 has no AWS-managed Lambda runtime yet (see work/aws-roadmap-1.0.md) -
-    # dotnet8 is the current managed runtime and works fine for this .NET 10 project
-    # since it targets a compatible Lambda ABI.
-    Runtime: dotnet8
+    # AWS added a managed .NET 10 Lambda runtime in Jan 2026 (built on provided.al2023),
+    # so this net10.0 project runs on the matching managed runtime directly.
+    Runtime: dotnet10
     Architectures:
       - arm64
     Tracing: Active # enables X-Ray; SAM grants the execution role the necessary
@@ -56,7 +55,7 @@ Resources:
   BenzeneFunction:
     Type: AWS::Serverless::Function
     Metadata:
-      BuildMethod: dotnet8
+      BuildMethod: dotnet10
     Properties:
       FunctionName: benzene-example
       Handler: Benzene.Examples.Aws::Benzene.Examples.Aws.Function::FunctionHandlerAsync
