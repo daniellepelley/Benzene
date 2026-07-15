@@ -9,7 +9,9 @@ namespace Benzene.Test.SpecUi;
 
 public class SpecUiMiddlewareTest
 {
-    private class FakeHttpContext : IHttpContext
+    // Public (not private) because Moq needs to build a dynamic proxy for IHttpRequestAdapter<FakeHttpContext>/
+    // IBenzeneResponseAdapter<FakeHttpContext>, which requires the type argument to be accessible.
+    public class FakeHttpContext : IHttpContext
     {
     }
 
