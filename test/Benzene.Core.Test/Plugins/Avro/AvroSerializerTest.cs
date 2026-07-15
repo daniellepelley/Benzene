@@ -85,18 +85,42 @@ public class AvroSerializerTest
     }
 
     [Fact]
-    public void BytePath_IsSmallerThanBase64StringPath()
+    public void BytePathAndStringPath_ProduceTheSameBase64Text()
     {
         var serializer = new AvroSerializer();
         var sample = CreateSample();
 
+        var expected = serializer.Serialize(sample);
+
         var buffer = new ArrayBufferWriter<byte>();
         serializer.Serialize(typeof(SampleOrderDto), sample, buffer);
+        var actual = System.Text.Encoding.UTF8.GetString(buffer.WrittenSpan);
 
-        var base64 = serializer.Serialize(sample);
+        // The byte path is the UTF-8 bytes of the same Base64 text the string path returns.
+        Assert.Equal(expected, actual);
+    }
 
-        // Base64 inflates the binary by ~4/3, so the raw byte path is always smaller.
-        Assert.True(buffer.WrittenCount < base64.Length);
+    [Fact]
+    public void Serialize_ProducesBase64Text_DecodableToRealAvroBytes()
+    {
+        var serializer = new AvroSerializer();
+
+        var base64 = serializer.Serialize(CreateSample());
+        var avroBytes = Convert.FromBase64String(base64);
+
+        Assert.NotEmpty(avroBytes);
+    }
+
+    [Fact]
+    public void Serialize_NullPayload_ReturnsEmptyString()
+    {
+        Assert.Equal(string.Empty, new AvroSerializer().Serialize<SampleOrderDto>(null!));
+    }
+
+    [Fact]
+    public void Deserialize_EmptyPayload_ReturnsNull()
+    {
+        Assert.Null(new AvroSerializer().Deserialize<SampleOrderDto>(string.Empty));
     }
 
     [Fact]

@@ -8,12 +8,14 @@ request/response content-negotiation pipeline and, because Avro is binary, is th
 the byte-oriented `IPayloadSerializer` path (Phase 4).
 
 ## Key types
-- `AvroSerializer : ISerializer, IPayloadSerializer` — real Avro binary on the byte-oriented members
-  (`Serialize(Type, object, IBufferWriter<byte>)` / `Deserialize(Type, ReadOnlySpan<byte>)`), which is
-  the path `RequestMapper` takes when a transport registers `IMessageBodyBytesGetter`. The string
-  `ISerializer` members Base64-encode the same Avro bytes (rather than throwing, the contract
-  `IPayloadSerializer` permits for binary formats), so Avro also works over string-only bodies and the
-  current string-based response path.
+- `AvroSerializer : ISerializer, IPayloadSerializer` — the wire form is genuine Avro binary, but (like
+  `Benzene.MessagePack`) it is Base64-armored because no Benzene transport carries true arbitrary binary
+  today (even `BenzeneMessageContext`'s byte getter is "UTF-8 bytes of the string body"). So the string
+  members (`Serialize(Type, object)`) return Base64 text and the byte members
+  (`Serialize(Type, object, IBufferWriter<byte>)` / `Deserialize(Type, ReadOnlySpan<byte>)`) carry the
+  UTF-8 bytes of that same Base64 text — consistent across both paths, working over every string
+  pipeline, while still exercising the byte-oriented `RequestMapper` path wherever
+  `IMessageBodyBytesGetter` is registered.
 - `AvroMediaFormat<TContext> : AcceptHeaderMediaFormatBase<TContext>` — `application/avro`, negotiated
   by `content-type` (read) / `accept` (write) like every other format.
 - `AvroOptions` — schema configuration (see below).
