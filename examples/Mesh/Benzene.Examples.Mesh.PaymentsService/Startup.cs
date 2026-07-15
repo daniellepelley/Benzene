@@ -46,7 +46,7 @@ public class Startup
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
                 .UseSpec()
-                .UseHealthCheck("healthcheck", new PaymentsGatewayHealthCheck())
+                .UseHealthCheck("healthcheck", new PaymentsGatewayHealthCheck(), new PaymentsDatabaseHealthCheck(), new FraudEngineHealthCheck())
                 .UseMessageHandlers()
             )
         );

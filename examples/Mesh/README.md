@@ -6,22 +6,34 @@ a catalog, and a dashboard that renders it.
 
 ## What this shows
 
-- `Benzene.Mesh.Aggregator.MeshAggregator` polling each demo service's `/spec`
-  and `/healthcheck` endpoints, hashing each spec to detect **contract drift**
-  against the previous run, and publishing `manifest.json`/`services/*.json`
+A single `./run.sh` drives the dashboard into **every state, badge, stat, and
+per-check status at once** - no manual steps needed to see them:
+
+- `orders-api` **healthy**, with three real health checks
+  (`PostgresDatabase`, `RedisCache`, `SqsQueue`), each carrying a
+  `Benzene.HealthChecks.Core.HealthCheckDependency` that renders as a
+  dependency chip in the expanded detail view.
+- `payments-api` **unhealthy AND contract-drift** - its `PaymentsGateway`
+  check reports **failed** (gateway down) by default, a `FraudEngine` check
+  reports a **warning** (degraded, amber badge), and a `PostgresDatabase`
+  check reports **ok** - so the drill-down shows all three per-check statuses
+  and their dependency chips side by side. `run.sh` also restarts it with a
+  changed spec between two aggregation runs, so it earns a **drift** badge.
+- `shipping-api` **unreachable** - deliberately never started, so it shows an
+  `error` line instead of health-check detail.
+
+Behind the dashboard:
+
+- `Benzene.Mesh.Aggregator.MeshAggregator` polls each demo service's `/spec`
+  and `/healthcheck` endpoints, hashes each spec to detect **contract drift**
+  against the previous run, and publishes `manifest.json`/`services/*.json`
   to disk (`Benzene.Mesh.Aggregator.FileSystemMeshArtifactStore`).
 - The aggregator is a **real, dogfooded Benzene app** - triggering a run is
   `POST /mesh/aggregate`, a `[Message("mesh:aggregate")]`/`[HttpEndpoint("POST",
   "/mesh/aggregate")]` handler like any other, not a bespoke CLI tool.
-- `Benzene.Mesh.Ui.UseMeshUi()` serving the dashboard directly from the
+- `Benzene.Mesh.Ui.UseMeshUi()` serves the dashboard directly from the
   aggregator host - the "aggregator self-serves its own dashboard" case
   described in `Benzene.Mesh.Ui`'s own `CLAUDE.md`.
-- The four states the dashboard renders: **healthy**, **unhealthy**,
-  **unreachable**, and **contract drift** - all reachable from this example
-  without faking any data.
-- `Benzene.HealthChecks.Core.HealthCheckDependency` (health-check result
-  metadata) rendering as a dependency chip in the dashboard's expanded
-  per-service detail view.
 
 See [`work/service-mesh-roadmap-1.0.md`](../../work/service-mesh-roadmap-1.0.md)
 for the full design.
@@ -34,9 +46,10 @@ cd examples/Mesh
 ```
 
 `run.sh` starts `Benzene.Examples.Mesh.OrdersService` (port 5310),
-`Benzene.Examples.Mesh.PaymentsService` (port 5311), and
-`Benzene.Examples.Mesh.Aggregator` (port 5300) in the background, waits for
-them to come up, triggers one aggregation run, and prints the URLs below.
+`Benzene.Examples.Mesh.PaymentsService` (port 5311, **unhealthy by default**),
+and `Benzene.Examples.Mesh.Aggregator` (port 5300) in the background, waits for
+them to come up, then runs **two** aggregation passes to make contract drift
+visible automatically (see below). It prints the URLs at the end.
 `Benzene.Examples.Mesh.ShippingService` (port 5312) is **deliberately not
 started** - see [Try it](#try-it).
 
@@ -45,13 +58,27 @@ started** - see [Try it](#try-it).
 - Orders spec: http://localhost:5310/spec?type=benzene
 - Payments spec: http://localhost:5311/spec?type=benzene
 
-Press Ctrl+C to stop everything `run.sh` started.
+Readiness polling targets `/spec?type=benzene` (which always returns 200), not
+`/healthcheck` - payments-api is unhealthy by default and its `/healthcheck`
+returns HTTP 503, which `curl -f` treats as a failure.
+
+**How the two-run drift automation works:** `run.sh` aggregates once for a
+baseline, then kills payments-api, waits for its port to stop responding,
+restarts it with `DEMO_ADD_ENDPOINT=true` (which adds a `GET
+/payments/{id}/refunds` operation to its spec), waits for it to come back, and
+aggregates a second time. The spec's hash now differs from the baseline run's,
+so `payments-api` earns a genuine - not simulated - drift badge on that second
+pass. Drift always compares against the immediately preceding run.
+
+Press Ctrl+C to stop everything `run.sh` started (including the restarted
+payments-api process).
 
 ## Try it
 
 Open the dashboard (http://localhost:5300/mesh-ui) after running `./run.sh`.
-You'll see `orders-api` and `payments-api` healthy, and `shipping-api`
-unreachable (nothing is listening on port 5312 yet). From there:
+Out of the box you'll see `orders-api` healthy, `payments-api` unhealthy with a
+drift badge, and `shipping-api` unreachable. Expand each card to see its
+health-check detail. From there:
 
 **See "unreachable" become "healthy"** - start the missing service, then
 re-trigger a run:
@@ -62,37 +89,28 @@ curl -X POST http://localhost:5300/mesh/aggregate
 ```
 
 Reload the dashboard (or click into the manifest URL again) to see
-`shipping-api` flip to healthy.
+`shipping-api` flip to healthy, with `CarrierApi` and `SqsQueue` checks and
+their `fedex-api`/`shipment-events` dependency chips.
 
-**See "unhealthy"** - stop Payments (Ctrl+C in whichever terminal it's
-running in, or kill its process), then restart it with `DEMO_UNHEALTHY=true`:
+**See "unhealthy" become "healthy"** - stop Payments (Ctrl+C in whichever
+terminal it's running in, or kill its process), then restart it with
+`DEMO_PAYMENTS_HEALTHY=true`:
 
 ```bash
-DEMO_UNHEALTHY=true dotnet run --project Benzene.Examples.Mesh.PaymentsService --urls http://localhost:5311
+DEMO_PAYMENTS_HEALTHY=true dotnet run --project Benzene.Examples.Mesh.PaymentsService --urls http://localhost:5311
 curl -X POST http://localhost:5300/mesh/aggregate
 ```
 
-`payments-api` now reports unhealthy, with a `payments-gateway` dependency
-chip visible in its expanded detail view either way (see
-`PaymentsGatewayHealthCheck`).
+`payments-api` now reports healthy - the `PaymentsGateway` check flips to ok,
+the `FraudEngine` warning and `PostgresDatabase` ok checks stay as they were,
+and the `stripe-gateway` dependency chip is visible in its expanded detail view
+either way (see `PaymentsGatewayHealthCheck`).
 
-**See "contract drift"** - stop Payments again and restart it with
-`DEMO_ADD_ENDPOINT=true` instead, which adds a `GET /payments/{id}/refunds`
-operation to its spec:
-
-```bash
-DEMO_ADD_ENDPOINT=true dotnet run --project Benzene.Examples.Mesh.PaymentsService --urls http://localhost:5311
-curl -X POST http://localhost:5300/mesh/aggregate
-```
-
-The spec's hash now differs from the previous run's, so `payments-api` shows
-a "drift" badge - a genuine, not simulated, contract change. Drift always
-compares against the immediately preceding run, so:
-- Re-aggregate again *without* restarting Payments (spec unchanged since the
-  last run) and the badge clears.
-- Restart Payments again *without* `DEMO_ADD_ENDPOINT` and re-aggregate: the
-  spec changes back, so drift reappears for that one run, then clears again
-  on the next unchanged run.
+**Re-run the drift demo by hand** - stop Payments and restart it *without*
+`DEMO_ADD_ENDPOINT` and re-aggregate: the spec changes back, so drift reappears
+for that one run, then clears again on the next unchanged run. Drift always
+compares against the immediately preceding run, so re-aggregating without
+restarting Payments (spec unchanged since the last run) clears the badge.
 
 ## What to look for
 
@@ -100,12 +118,21 @@ compares against the immediately preceding run, so:
   `services/{name}.json`'s `health.healthChecks` map (with `dependencies`) -
   this is exactly what `Benzene.Mesh.Ui`'s `mesh-ui.html` fetches and renders,
   nothing hidden behind extra transformation.
+- `Benzene.Examples.Mesh.OrdersService/HealthChecks/OrdersHealthChecks.cs` for
+  three healthy `IHealthCheck`s, each reporting a distinct dependency kind
+  (`Database`/`Cache`/`Queue`).
 - `Benzene.Examples.Mesh.PaymentsService/HealthChecks/PaymentsGatewayHealthCheck.cs`
-  for a minimal real `IHealthCheck` reporting a dependency.
+  (failed by default, ok when `DEMO_PAYMENTS_HEALTHY=true`) and
+  `.../HealthChecks/PaymentsHealthChecks.cs` (`PaymentsDatabaseHealthCheck` ok,
+  `FraudEngineHealthCheck` a `CreateWarning` degraded check) - together they
+  exercise all three per-check statuses in one service.
   `Benzene.Examples.Mesh.PaymentsService/Startup.cs` for the manual,
-  env-var-gated `IHttpEndpointDefinition` registration that drives the
-  contract-drift demo (mirrors how `SpecMessageHandler` itself is registered,
-  since reflection-based handler discovery can't be toggled off at runtime).
+  env-var-gated `IHttpEndpointDefinition` registration (`DEMO_ADD_ENDPOINT`)
+  that drives the contract-drift demo (mirrors how `SpecMessageHandler` itself
+  is registered, since reflection-based handler discovery can't be toggled off
+  at runtime).
+- `Benzene.Examples.Mesh.ShippingService/HealthChecks/ShippingHealthChecks.cs`
+  for the checks it would report if you started it manually.
 - `Benzene.Examples.Mesh.Aggregator/Startup.cs` for the whole wiring: three
   lines (`AddMeshAggregator`, a static-file mount at `/artifacts`, and
   `UseMeshUi`) turn a plain ASP.NET Core app into a self-serving mesh

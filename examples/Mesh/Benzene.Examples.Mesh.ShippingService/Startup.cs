@@ -2,6 +2,7 @@ using Benzene.Abstractions.MessageHandlers;
 using Benzene.AspNet.Core;
 using Benzene.Core.Messages;
 using Benzene.Core.MessageHandlers;
+using Benzene.Examples.Mesh.ShippingService.HealthChecks;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http.Routing;
@@ -34,7 +35,7 @@ public class Startup
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
                 .UseSpec()
-                .UseHealthCheck("healthcheck", new SimpleHealthCheck())
+                .UseHealthCheck("healthcheck", new ShippingCarrierApiHealthCheck(), new ShippingQueueHealthCheck())
                 .UseMessageHandlers()
             )
         );
