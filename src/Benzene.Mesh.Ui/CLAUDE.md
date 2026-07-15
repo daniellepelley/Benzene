@@ -48,6 +48,12 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   document root → a relative fetch of `manifest.json` (so the plain embedded page works unmodified
   when copied next to the aggregator's output, with no query param or attribute needed) → embedded
   sample. Theme-aware (light/dark), with a "Load manifest" dialog.
+- After every manifest load, also fetches `topology.json` via the same `resolveUrl()` precedence
+  (relative to `manifestUrl`) and renders it as a sortable table (client, server, source badge,
+  req/min, error rate, p50/p95/p99 latency) below the service list. Any fetch failure - 404,
+  network error, malformed JSON - just hides the section silently rather than showing an error,
+  since a missing `topology.json` is the expected common case (any deployment that hasn't wired up
+  `Benzene.Mesh.Tracing.Tempo` or another topology source).
 
 ## When to use this package
 - To give a service mesh a browsable catalog dashboard alongside the aggregator's generated JSON.
@@ -61,5 +67,6 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
 ## Conventions
 - Keep the viewer dependency-free and self-contained (no CDN/webfont/script references) so it
   works offline and behind strict CSPs, matching `Benzene.Spec.Ui`'s convention.
-- No topology/graph rendering in this pass - `topology.json` doesn't exist yet (see
-  `work/service-mesh-roadmap-1.0.md`); this page is catalog/health/drift only.
+- Topology rendering is a flat sortable edge table, not a node-link graph - full interactive graph
+  visualization is a documented follow-up (see `mesh-product-owner`'s priorities in
+  `.claude/PRODUCT_OWNERS.md` and `work/service-mesh-roadmap-1.0.md`), not built here.

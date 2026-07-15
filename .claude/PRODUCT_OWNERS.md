@@ -118,6 +118,25 @@ This document describes the product ownership structure for the Benzene library.
 
 ---
 
+### Mesh Product Owner
+**Agent**: `mesh-product-owner`
+**Focus**: Cross-service catalog, health rollup, contract-drift, and topology visibility
+**Packages**: Benzene.Mesh.Contracts, Benzene.Mesh.Aggregator, Benzene.Mesh.Tracing.Tempo, Benzene.Mesh.Ui
+
+**Key Responsibilities:**
+- Own `work/service-mesh-roadmap-1.0.md` as the living design/roadmap doc
+- Drive Phase 3's remaining gap (live verification against a real Tempo instance) and Phase 1's structural-edge-derivation gap forward
+- Prioritize Mesh UI capability growth (topology visualization, contract compatibility surfacing) — this feature family is a significant adoption differentiator, treat it with matching product weight
+- Keep the `examples/Mesh` demo and each package's `CLAUDE.md` honest about what's real vs. mocked/unverified
+
+**Contact for:**
+- New service-mesh visibility features (catalog, topology, contract testing)
+- Changes to `Benzene.Mesh.*` package boundaries or dependencies
+- Mesh UI feature requests
+- Roadmap prioritization for the mesh feature family
+
+---
+
 ### Performance & Reliability Champion
 **Agent**: `performance-champion`
 **Focus**: Cross-cutting — not a package owner. Hot-path latency/allocations in the
@@ -269,6 +288,13 @@ Product owners are living documents that evolve with the product:
 - **Redis**: RedisJSON and Redis Streams support
 - **gRPC**: Improve gRPC client/server patterns
 
+### Mesh PO
+- **Live Tempo verification**: Phase 3's PromQL/metric-name assumptions (`traces_service_graph_request_total`/`..._failed_total`/`..._request_server_seconds_bucket`, `client`/`server` labels) are documented convention, not confirmed against a real Tempo + Prometheus instance (blocked by this dev environment's network egress policy so far) — still open
+- **Structural edge derivation**: Phase 1's `TopologyEdgeSource.Structural` gap — deriving "designed to call" edges (e.g. from generated `CodeGen.Client`s, or matching `HealthCheckDependency` entries against other registered services) is a real, still-open design question, not started
+- **Topology graph visualization**: Mesh UI now renders `topology.json` as a sortable table (v1) — a full interactive node-link graph is a natural next step, not yet built
+- **Phase 4 — field-level contract compatibility**: structural per-field schema diffing between a caller's expectation and a callee's current contract; worth checking whether `Benzene.Schema.OpenApi/Compatibility` already covers this before building from scratch
+- **Phase 5 — polish**: mesh-level health rollup, historical trend storage, alerting — unstarted
+
 ### Performance & Reliability Champion
 - **Benchmark infrastructure**: ✅ `benchmarks/Benzene.Benchmarks` covers the
   middleware pipeline and request mapping (no recorded baseline numbers yet —
@@ -316,6 +342,7 @@ Product owners are living documents that evolve with the product:
 | Benzene.Grpc | Infrastructure |
 | Benzene.Kafka.* | Infrastructure |
 | Benzene.SelfHost.* | Infrastructure |
+| Benzene.Mesh.* | Mesh |
 
 `performance-champion` has no row here by design — it's cross-cutting, not
 package-scoped. Loop it in on any hot-path or reliability-sensitive change
@@ -324,4 +351,4 @@ regardless of which package it lands in.
 ---
 
 **Last Updated**: 2026-07-15
-**Version**: 1.1
+**Version**: 1.2

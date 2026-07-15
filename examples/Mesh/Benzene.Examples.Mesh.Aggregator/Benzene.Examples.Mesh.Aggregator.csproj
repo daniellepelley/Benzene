@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Tracing.Tempo\Benzene.Mesh.Tracing.Tempo.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
   </ItemGroup>

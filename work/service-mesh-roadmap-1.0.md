@@ -88,7 +88,29 @@
 > *structural*-edge gap remains open (Tempo covers the *observed* half only), as does Phase 4
 > (field-level contract compatibility), Phase 5 (polish), and Mesh UI topology rendering (not
 > phased explicitly, but a natural next step once structural edges exist too).
-**Owner:** unassigned
+>
+> **2026-07-15 examples/UI update:** Closes the two gaps the previous update flagged as open at
+> the demo/UI layer (does **not** resolve the live-Tempo-verification caveat itself - see below).
+> - `examples/Mesh` now demonstrates the Tempo integration end to end via a bundled fake
+>   Prometheus endpoint (`Benzene.Examples.Mesh.Aggregator/FakePrometheus.cs`,
+>   `/fake-prometheus/api/v1/query`) rather than a real Tempo+Prometheus stack - deliberate, since
+>   standing up real infrastructure hits the same network-egress-blocked sandbox problem noted in
+>   the Phase 3 update above. `./run.sh` remains fully self-contained (no Docker, no external
+>   network calls). This is mocked-HTTP coverage of the same shape at the example layer, not proof
+>   against a live Tempo instance - the "verify against a real Tempo/Prometheus deployment" caveat
+>   from the Phase 3 update **still stands, unchanged**.
+> - `Benzene.Mesh.Ui`'s `mesh-ui.html` now renders `topology.json` as a sortable
+>   client/server/source/req-per-min/error-rate/p50-p95-p99 table, fetched via the same
+>   `resolveUrl()` precedence as `services/{name}.json` and hidden gracefully (no error state) when
+>   `topology.json` is absent - closes the "No Mesh UI rendering of `topology.json`" gap the Phase
+>   3 update flagged. Deliberately scoped as a table, not a graph: full node-link topology
+>   visualization remains open, now tracked as a `mesh-product-owner` priority (see
+>   `.claude/PRODUCT_OWNERS.md`).
+> - A new `mesh-product-owner` Claude agent now owns this feature family
+>   (`.claude/agents/mesh-product-owner.md`, registered in `.claude/PRODUCT_OWNERS.md`) and tracks
+>   the real remaining phases: live Tempo verification, structural edge derivation, full graph
+>   visualization, Phase 4 (field-level contract compatibility), and Phase 5 (polish).
+**Owner:** `mesh-product-owner` (`.claude/agents/mesh-product-owner.md`)
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who
 talks to whom, and a bridge into real trace data — built on top of Benzene's existing

@@ -253,6 +253,31 @@
   .loader .primary { background: var(--accent); color: var(--accent-ink); border: none; }
   .loader .primary:hover { background: var(--accent-soft); }
   .ld-err { color: var(--req); font-size: 12.5px; font-family: var(--mono); min-height: 16px; }
+
+  /* ---------- Topology table ---------- */
+  .topo-head { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; }
+  .topo-head h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+  .topo-generated { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .topo-table-wrap {
+    overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .topo-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .topo-table th {
+    text-align: left; padding: 10px 13px; cursor: pointer; user-select: none;
+    color: var(--ink-faint); font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    font-weight: 700; white-space: nowrap; transition: color .12s;
+  }
+  .topo-table th:hover { color: var(--ink); }
+  .topo-table th.sorted { color: var(--accent); }
+  .topo-table td {
+    padding: 10px 13px; border-top: 1px solid var(--line-soft);
+    font-family: var(--mono); white-space: nowrap;
+  }
+  .topo-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .topo-table tr:hover td { background: var(--surface-2); }
+  .b-source-tempo { color: var(--accent); background: var(--accent-tint); }
+  .b-source-structural { color: var(--chip-ink); background: var(--chip-bg); }
 </style>
 </head>
 <body>
@@ -291,6 +316,30 @@
     <input type="search" id="filter" placeholder="Filter services…" autocomplete="off" spellcheck="false" />
   </div>
   <div id="content"></div>
+
+  <section id="topology-section" style="display:none">
+    <div class="topo-head">
+      <h2>Topology</h2>
+      <span class="topo-generated" id="topology-generated"></span>
+    </div>
+    <div class="topo-table-wrap">
+      <table class="topo-table" id="topology-table">
+        <thead>
+          <tr>
+            <th data-key="client">Client</th>
+            <th data-key="server">Server</th>
+            <th data-key="source">Source</th>
+            <th data-key="requestsPerMinute">Req/min</th>
+            <th data-key="errorRate">Error rate</th>
+            <th data-key="p50LatencyMs">p50</th>
+            <th data-key="p95LatencyMs">p95</th>
+            <th data-key="p99LatencyMs">p99</th>
+          </tr>
+        </thead>
+        <tbody id="topology-tbody"></tbody>
+      </table>
+    </div>
+  </section>
 </main>
 
 <dialog class="loader" id="loader">
@@ -352,6 +401,9 @@
   var manifest = {};
   var manifestUrl = null;
   var detailCache = {};
+  var currentEdges = [];
+  var topoSortKey = "requestsPerMinute";
+  var topoSortDir = -1;
 
   /* ---------- theme ---------- */
   var themeBtn = document.getElementById("theme-btn");
@@ -562,7 +614,75 @@
     manifestUrl = url;
     detailCache = {};
     render();
+    loadTopology();
   }
+
+  /* ---------- topology ---------- */
+  function loadTopology() {
+    fetch(resolveUrl("topology.json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (topo) { renderTopology(topo); })
+      .catch(function () { document.getElementById("topology-section").style.display = "none"; });
+  }
+  function renderTopology(topo) {
+    var edges = (topo && topo.edges) || [];
+    var section = document.getElementById("topology-section");
+    if (!edges.length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    document.getElementById("topology-generated").textContent = topo.generatedAtUtc
+      ? "generated " + topo.generatedAtUtc : "";
+    currentEdges = edges;
+    sortAndRenderEdges();
+  }
+  function fmtNum(value, digits, suffix) {
+    return value == null ? "–" : Number(value).toFixed(digits) + (suffix || "");
+  }
+  function sortAndRenderEdges() {
+    var key = topoSortKey;
+    var dir = topoSortDir;
+    var sorted = currentEdges.slice().sort(function (a, b) {
+      var av = a[key], bv = b[key];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+
+    document.querySelectorAll("#topology-table th").forEach(function (th) {
+      th.classList.toggle("sorted", th.dataset.key === key);
+    });
+
+    var tbody = document.getElementById("topology-tbody");
+    tbody.innerHTML = "";
+    sorted.forEach(function (edge) {
+      var tr = document.createElement("tr");
+      tr.appendChild(el("td", "mono", edge.client));
+      tr.appendChild(el("td", "mono", edge.server));
+      var sourceTd = el("td");
+      sourceTd.appendChild(el("span", "badge b-source-" + edge.source, edge.source));
+      tr.appendChild(sourceTd);
+      tr.appendChild(el("td", "num", fmtNum(edge.requestsPerMinute, 1)));
+      tr.appendChild(el("td", "num", edge.errorRate == null ? "–" : (edge.errorRate * 100).toFixed(2) + "%"));
+      tr.appendChild(el("td", "num", fmtNum(edge.p50LatencyMs, 0, "ms")));
+      tr.appendChild(el("td", "num", fmtNum(edge.p95LatencyMs, 0, "ms")));
+      tr.appendChild(el("td", "num", fmtNum(edge.p99LatencyMs, 0, "ms")));
+      tbody.appendChild(tr);
+    });
+  }
+  document.querySelectorAll("#topology-table th").forEach(function (th) {
+    th.addEventListener("click", function () {
+      var key = th.dataset.key;
+      if (topoSortKey === key) {
+        topoSortDir *= -1;
+      } else {
+        topoSortKey = key;
+        topoSortDir = (key === "client" || key === "server" || key === "source") ? 1 : -1;
+      }
+      sortAndRenderEdges();
+    });
+  });
   function fetchManifest(url) {
     return fetch(url, { headers: { accept: "application/json" } })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching manifest"); return r.text(); })

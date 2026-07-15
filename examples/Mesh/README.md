@@ -34,6 +34,27 @@ Behind the dashboard:
 - `Benzene.Mesh.Ui.UseMeshUi()` serves the dashboard directly from the
   aggregator host - the "aggregator self-serves its own dashboard" case
   described in `Benzene.Mesh.Ui`'s own `CLAUDE.md`.
+- `Benzene.Mesh.Tracing.Tempo.AddTempoTopology()` queries a **bundled fake
+  Prometheus endpoint** (`/fake-prometheus/api/v1/query`, implemented in
+  `Benzene.Examples.Mesh.Aggregator/FakePrometheus.cs`) instead of a real
+  Tempo/Prometheus stack, publishing `topology.json` alongside
+  `manifest.json`/`services/*.json`. This is deliberate: a real Tempo +
+  Prometheus stack needs Docker and network egress this environment doesn't
+  reliably have (see `work/service-mesh-roadmap-1.0.md`'s Phase 3 notes), and
+  it keeps `./run.sh` fully self-contained - the same reason the rest of this
+  example already fakes health/spec data deterministically rather than
+  calling real external services. The Mesh UI renders `topology.json` as a
+  sortable edge table (client, server, source, req/min, error rate,
+  p50/p95/p99 latency) - see `Benzene.Mesh.Ui/CLAUDE.md`.
+
+  `FakePrometheus.cs` returns canned data for three edges, each illustrating
+  something different:
+
+  | Edge | Req/min | Error rate | Latency (p50/p95/p99) | What it shows |
+  |---|---|---|---|---|
+  | orders-api → payments-api | 86.4 | 18% | 45/420/890ms | High traffic, elevated errors and latency - **echoes payments-api's `unhealthy` badge**, the same story confirmed two different ways (health check + observed traffic). |
+  | orders-api → shipping-api | 24.1 | 0.4% | 12/35/58ms | Healthy-looking traffic to a service that's **unreachable right now** (shipping-api isn't started by default) - topology data is an independent signal from live health, not a replacement for it. |
+  | payments-api → shipping-api | 6.2 | 0% (no failed sample at all) | 8/15/22ms | Low, clean traffic. The failed-request sample is omitted entirely rather than reported as `0` - real Prometheus never emits a `rate()` sample for a metric that's never incremented. |
 
 See [`work/service-mesh-roadmap-1.0.md`](../../work/service-mesh-roadmap-1.0.md)
 for the full design.
@@ -55,6 +76,7 @@ started** - see [Try it](#try-it).
 
 - Mesh Explorer dashboard: http://localhost:5300/mesh-ui
 - Raw manifest: http://localhost:5300/artifacts/manifest.json
+- Raw topology: http://localhost:5300/artifacts/topology.json
 - Orders spec: http://localhost:5310/spec?type=benzene
 - Payments spec: http://localhost:5311/spec?type=benzene
 
@@ -118,6 +140,10 @@ restarting Payments (spec unchanged since the last run) clears the badge.
   `services/{name}.json`'s `health.healthChecks` map (with `dependencies`) -
   this is exactly what `Benzene.Mesh.Ui`'s `mesh-ui.html` fetches and renders,
   nothing hidden behind extra transformation.
+- `topology.json`'s `edges[]` (client, server, source, requestsPerMinute,
+  errorRate, p50/p95/p99LatencyMs) - published by `TempoTopologyMessageHandler`
+  from the canned data in `Benzene.Examples.Mesh.Aggregator/FakePrometheus.cs`,
+  rendered as the Mesh UI's sortable Topology table.
 - `Benzene.Examples.Mesh.OrdersService/HealthChecks/OrdersHealthChecks.cs` for
   three healthy `IHealthCheck`s, each reporting a distinct dependency kind
   (`Database`/`Cache`/`Queue`).
