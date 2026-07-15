@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
-         published version (including prereleases) on every restore, matching what `--prerelease`
-         means when you run `dotnet add package` yourself. -->
+         published version (including prereleases) on every restore, matching what the prerelease flag means
+         when you run `dotnet add package` yourself. -->
     <PackageReference Include="Benzene.Aws.Lambda.Core" Version="*-*" />
     <PackageReference Include="Benzene.Aws.Lambda.ApiGateway" Version="*-*" />
     <!-- Only Benzene's own GetConfiguration() needs a concrete Microsoft.Extensions.Configuration

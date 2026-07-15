@@ -19,8 +19,8 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
     <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
-         published version (including prereleases) on every restore, matching what `--prerelease`
-         means when you run `dotnet add package` yourself. -->
+         published version (including prereleases) on every restore, matching what the prerelease flag means
+         when you run `dotnet add package` yourself. -->
     <PackageReference Include="Benzene.Azure.Function.Core" Version="*-*" />
     <PackageReference Include="Benzene.Azure.Function.AspNet" Version="*-*" />
   </ItemGroup>

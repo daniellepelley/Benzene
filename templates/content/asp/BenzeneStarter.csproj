@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
-         published version (including prereleases) on every restore, matching what `--prerelease`
-         means when you run `dotnet add package` yourself. See README.md in this project for details. -->
+         published version (including prereleases) on every restore, matching what the prerelease flag means
+         when you run `dotnet add package` yourself. See README.md in this project for details. -->
     <PackageReference Include="Benzene.AspNet.Core" Version="*-*" />
   </ItemGroup>
 
