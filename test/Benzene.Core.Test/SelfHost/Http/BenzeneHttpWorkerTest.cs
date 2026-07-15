@@ -70,7 +70,7 @@ public class BenzeneHttpWorkerTest
         await worker.StartAsync(CancellationToken.None);
         try
         {
-            using var httpClient = new HttpClient();
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             var response = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez");
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -101,7 +101,7 @@ public class BenzeneHttpWorkerTest
         await worker.StartAsync(CancellationToken.None);
         try
         {
-            using var httpClient = new HttpClient();
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             // /livez only matches GET - a request for an unregistered path falls through the health
             // check middleware into UseMessageHandlers, which has no handler for it and no topic
             // header set, so it resolves to the router's "missing topic" validation error rather than
@@ -133,7 +133,7 @@ public class BenzeneHttpWorkerTest
             .Build();
 
         await worker.StartAsync(CancellationToken.None);
-        using var httpClient = new HttpClient();
+        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         var firstResponse = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez");
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
