@@ -23,6 +23,6 @@ public class MicrosoftServiceResolverFactory : IServiceResolverFactory
 
     public IServiceResolver CreateScope()
     {
-        return new MicrosoftServiceResolverAdapter(_serviceProvider.CreateScope().ServiceProvider);
+        return new MicrosoftServiceResolverAdapter(_serviceProvider.CreateScope());
     }
 }

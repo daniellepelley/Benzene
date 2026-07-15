@@ -10,9 +10,13 @@ application: `MeshAggregateMessageHandler` exposes a run as a `[Message("mesh:ag
 already runs, not a bespoke standalone tool.
 
 ## Key types/interfaces
-- `MeshAggregator.RunOnceAsync(MeshServiceRegistry)` - the core, directly unit-testable logic: for
-  each registered service, fetches its spec (hashes it) and health document independently, so one
-  service's failure never prevents the rest from being published; determines `Healthy`/`Unhealthy`/
+- `MeshAggregator.RunOnceAsync(MeshServiceRegistry)` - the core, directly unit-testable logic:
+  every registered service is polled concurrently (`Task.WhenAll`, mirroring
+  `Benzene.HealthChecks.HealthCheckProcessor`'s pattern), and each service's spec/health fetch is
+  independently bounded by a 10-second `PerServiceFetchTimeout` (matching
+  `Benzene.HealthChecks.TimeOutHealthCheck`'s convention) rather than relying solely on the
+  injected `HttpClient`'s own (much longer) `Timeout` - one slow/hung service can't stall the
+  whole run, and one service's failure never prevents the rest from being published; determines `Healthy`/`Unhealthy`/
   `Unreachable` status (unreachable if the health document couldn't be fetched/deserialized,
   regardless of whether the spec endpoint responded - health is the primary "is this okay" signal);
   compares the new spec hash against the previous run's (read back via `IMeshArtifactStore`) to set

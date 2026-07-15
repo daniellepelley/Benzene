@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading;
 using Benzene.HealthChecks.Core;
 using Benzene.Mesh.Contracts;
 
@@ -16,6 +17,11 @@ public class MeshAggregator
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
     };
+
+    // Matches Benzene.HealthChecks.TimeOutHealthCheck's 10-second convention: an explicit,
+    // documented bound on each fetch rather than relying solely on the injected HttpClient's own
+    // (much longer, 100s-default) Timeout - one slow/hung service shouldn't be able to stall a run.
+    private static readonly TimeSpan PerServiceFetchTimeout = TimeSpan.FromSeconds(10);
 
     private readonly HttpClient _httpClient;
     private readonly IMeshArtifactStore _store;
@@ -35,17 +41,24 @@ public class MeshAggregator
     /// <summary>
     /// Polls every registered service once, publishing a <c>services/{name}.json</c> snapshot per
     /// service and a top-level <c>manifest.json</c> summarizing all of them. A single service's
-    /// spec/health fetch failing does not prevent the rest from being processed and published.
+    /// spec/health fetch failing (or timing out - see <c>PerServiceFetchTimeout</c>) does not
+    /// prevent the rest from being processed and published. Services are polled concurrently, not
+    /// one at a time, so one slow service adds to the run's total time only up to its own timeout,
+    /// not to every other service's fetch time as well - the same shape as
+    /// <c>Benzene.HealthChecks.HealthCheckProcessor.PerformHealthChecksAsync</c>.
     /// </summary>
     /// <param name="registry">The services to poll.</param>
     /// <returns>The published manifest.</returns>
     public async Task<MeshManifest> RunOnceAsync(MeshServiceRegistry registry)
     {
-        var manifestEntries = new List<MeshManifestEntry>();
+        var entries = registry.Services;
+        var snapshots = await Task.WhenAll(entries.Select(BuildSnapshotAsync));
 
-        foreach (var entry in registry.Services)
+        var manifestEntries = new List<MeshManifestEntry>(entries.Length);
+        for (var i = 0; i < entries.Length; i++)
         {
-            var snapshot = await BuildSnapshotAsync(entry);
+            var entry = entries[i];
+            var snapshot = snapshots[i];
             await _store.PublishAsync($"services/{entry.Name}.json", JsonSerializer.Serialize(snapshot, JsonOptions));
 
             manifestEntries.Add(new MeshManifestEntry(
@@ -65,14 +78,16 @@ public class MeshAggregator
 
         try
         {
-            specJson = await _httpClient.GetStringAsync(entry.SpecUrl);
+            using var specTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
+            specJson = await _httpClient.GetStringAsync(entry.SpecUrl, specTimeout.Token);
             specHash = MeshHashing.ComputeHash(specJson);
         }
         catch (Exception ex)
         {
             // Type name only, never the message - this artifact aggregates across services into
             // something with broader visibility than one service's own health endpoint (same
-            // posture as the Data["Error"] fix across the HealthChecks family).
+            // posture as the Data["Error"] fix across the HealthChecks family). A timeout surfaces
+            // here as TaskCanceledException, same as any other fetch failure.
             error = ex.GetType().Name;
         }
 
@@ -86,8 +101,9 @@ public class MeshAggregator
             // a real 503-with-a-valid-unhealthy-body come through as Unhealthy instead of
             // Unreachable - only a connection-level failure or an unparseable body should count as
             // unreachable.
-            using var response = await _httpClient.GetAsync(entry.HealthUrl);
-            var healthJson = await response.Content.ReadAsStringAsync();
+            using var healthTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
+            using var response = await _httpClient.GetAsync(entry.HealthUrl, healthTimeout.Token);
+            var healthJson = await response.Content.ReadAsStringAsync(healthTimeout.Token);
             health = JsonSerializer.Deserialize<HealthCheckResponse>(healthJson, JsonOptions);
         }
         catch (Exception ex)
