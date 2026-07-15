@@ -64,4 +64,34 @@ public class CommonTest
         result.ShouldHaveValidationErrorFor(x => x.IsNumbersAndSymbols);
         result.ShouldHaveValidationErrorFor(x => x.IsNumeric);
     }
+
+    [Fact]
+    public void EmptyValues_BypassEachFormatValidator()
+    {
+        // Every Common/*Validator treats null/empty as valid (format checks only apply once there's
+        // a value) - IsAlphaNumericAndSymbols is the exception here since TestValidator also chains
+        // .NotEmpty().NotNull() onto it.
+        var obj = new TestValidationObject
+        {
+            IsOneOf = "",
+            IsBoolean = "",
+            IsDoubleGuid = "",
+            IsGuid = "",
+            IsJson = "",
+            IsLettersAndSymbols = "",
+            IsNumbersAndSymbols = "",
+            IsNumeric = "",
+        };
+        var result = _validator.TestValidate(obj);
+
+        result.ShouldNotHaveValidationErrorFor(x => x.IsOneOf);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsBoolean);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsDoubleGuid);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsGuid);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsJson);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsLettersAndSymbols);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsNumbersAndSymbols);
+        result.ShouldNotHaveValidationErrorFor(x => x.IsNumeric);
+        result.ShouldHaveValidationErrorFor(x => x.IsAlphaNumericAndSymbols);
+    }
 }
