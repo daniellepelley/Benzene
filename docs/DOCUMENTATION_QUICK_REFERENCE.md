@@ -204,7 +204,6 @@ public class StartUp : BenzeneStartUp
 ```
 docs/
 ├── index.md                          # Main index
-├── Overview.md                       # High-level overview
 │
 ├── getting-started-aws.md            # Platform guides
 ├── azure-functions.md

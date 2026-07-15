@@ -17,35 +17,35 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 ### AWS
 - [Handling SQS Message Failures](handling-sqs-failures.md) - Implement retry and DLQ patterns for SQS
 - [SNS Fan-Out Pattern](sns-fan-out.md) - Broadcast events to multiple Lambda functions
-- [S3 Event Processing](s3-event-processing.md) - React to S3 object creation/deletion
-- [API Gateway Custom Authorizers](api-gateway-authorizers.md) - Secure your API with custom auth
+- [S3 Event Processing](../getting-started-aws.md) - React to S3 object creation/deletion via `Benzene.Aws.Lambda.S3` (see the "S3" section)
+- API Gateway Custom Authorizers *(planned - `Benzene.Aws.Lambda.ApiGateway`'s `ApiGatewayCustomAuthorizer` support exists in source but isn't cookbook-documented yet)*
 - [Lambda Cold Start Optimization](lambda-cold-start-optimization.md) - Reduce cold start times
 
 ### Azure
 - [Service Bus Message Handling](service-bus-handling.md) - Process Service Bus messages with Benzene
 - [Event Hub Stream Processing](event-hub-processing.md) - Handle high-throughput Event Hub streams, batching, and checkpointing boundaries
-- [Managed Identity for Azure Resources](managed-identity.md) - Secure access to Azure services
+- Managed Identity for Azure Resources *(planned)*
 
 ### Validation & Error Handling
 - [FluentValidation with Custom Rules](fluentvalidation-custom-rules.md) - Cross-field rules, async DB validation, and per-rule status overrides
 - [Global Error Handling](global-error-handling.md) - Centralized error handling and logging
-- [Request/Response Transformations](request-response-transforms.md) - Transform messages in the pipeline
+- [Request/Response Transformations](../middleware.md) - Transform messages in the pipeline via `.Convert()` / `ContextConverterMiddleware`
 
 ### Data & Persistence
 - [Entity Framework Core Integration](entity-framework-integration.md) - Database access patterns
 - [Redis Caching](redis-caching.md) - Cache handler responses with Redis
-- [Outbox Pattern](outbox-pattern.md) - Reliable message publishing with transactional outbox
+- Outbox Pattern *(planned)*
 
 ### Testing
 - [Integration Testing Lambda Functions](testing-lambda-functions.md) - Test Lambda handlers end-to-end
 - [Mocking External Dependencies](mocking-dependencies.md) - Test message handlers in isolation
-- [Contract Testing](contract-testing.md) - Verify message contracts between services
+- [Contract Testing](../specification/porting-guide.md) - Verify message contracts between services via the conformance-testing approach
 
 ### Cross-Cutting Concerns
 - [Request Correlation Across Services](request-correlation.md) - Track requests through distributed systems
-- [Rate Limiting](rate-limiting.md) - Protect your services from overload
-- [Circuit Breaker Pattern](circuit-breaker.md) - Handle downstream failures gracefully
-- [Request Authentication & Authorization](auth-patterns.md) - Common auth patterns
+- Rate Limiting *(planned)*
+- Circuit Breaker Pattern *(planned - `Benzene.Resilience` currently implements retry-with-backoff only; see [Resilience](../resilience.md))*
+- Request Authentication & Authorization *(planned)*
 
 ## Cookbook Structure
 
@@ -68,4 +68,4 @@ Don't see a cookbook for your use case? [Open an issue](https://github.com/danie
 
 ## Contributing
 
-Want to contribute a cookbook? Check our [contribution guidelines](../../CONTRIBUTING.md) and submit a PR following the cookbook template.
+Want to contribute a cookbook? Check the [Contributing](../../README.md#contributing) section of the main README and submit a PR following the cookbook template.

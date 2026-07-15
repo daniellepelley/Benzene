@@ -57,7 +57,7 @@ internal static class Layout
                 <div class="hero-badges">
                   <a href="https://github.com/daniellepelley/Benzene/actions"><img src="https://github.com/daniellepelley/Benzene/actions/workflows/build-benzene.yml/badge.svg" alt="Build Status"></a>
                   <a href="https://codecov.io/gh/daniellepelley/Benzene"><img src="https://codecov.io/gh/daniellepelley/Benzene/graph/badge.svg" alt="codecov"></a>
-                  <a href="https://www.nuget.org/packages/Benzene/"><img src="https://img.shields.io/nuget/v/Benzene.svg" alt="NuGet"></a>
+                  <a href="https://www.nuget.org/packages/Benzene.AspNet.Core/"><img src="https://img.shields.io/nuget/v/Benzene.AspNet.Core.svg" alt="NuGet"></a>
                   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
                 </div>
               </section>
@@ -127,7 +127,7 @@ internal static class Layout
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>{Html(title)} - Benzene</title>
+              <title>{(title == "Benzene" ? "Benzene Docs" : $"{Html(title)} - Benzene")}</title>
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -177,7 +177,7 @@ internal static class Layout
                 <a href="{home}"{(activeSection == "home" ? " class=\"active\"" : "")}>Home</a>
                 <a href="{docs}"{(activeSection == "docs" ? " class=\"active\"" : "")}>Docs</a>
                 <a href="https://github.com/daniellepelley/Benzene">GitHub</a>
-                <a href="https://www.nuget.org/packages/Benzene/">NuGet</a>
+                <a href="https://www.nuget.org/packages/Benzene.AspNet.Core/">NuGet</a>
               </nav>
             </header>
             """;

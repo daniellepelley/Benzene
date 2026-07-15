@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/daniellepelley/Benzene/actions/workflows/build-benzene.yml/badge.svg)](https://github.com/daniellepelley/Benzene/actions)
 [![codecov](https://codecov.io/gh/daniellepelley/Benzene/graph/badge.svg)](https://codecov.io/gh/daniellepelley/Benzene)
-[![NuGet](https://img.shields.io/nuget/v/Benzene.svg)](https://www.nuget.org/packages/Benzene/)
+[![NuGet](https://img.shields.io/nuget/v/Benzene.AspNet.Core.svg)](https://www.nuget.org/packages/Benzene.AspNet.Core/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Benzene is a hexagonal (ports-and-adapters) framework for C# built

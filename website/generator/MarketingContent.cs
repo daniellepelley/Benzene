@@ -40,9 +40,10 @@ internal static class MarketingContent
         new("A message handler, mapped to a topic",
             """
             [Message("hello:world")]
-            public class HelloWorldMessageHandler : IMessageHandler&lt;HelloWorldMessage, HelloWorldResponse&gt;
+            [HttpEndpoint("GET", "/hello/{name}")]
+            public class HelloWorldMessageHandler : IMessageHandler&lt;HelloWorldRequest, HelloWorldResponse&gt;
             {
-                public Task&lt;IBenzeneResult&lt;HelloWorldResponse&gt;&gt; HandleAsync(HelloWorldMessage message)
+                public Task&lt;IBenzeneResult&lt;HelloWorldResponse&gt;&gt; HandleAsync(HelloWorldRequest message)
                 {
                     return Task.FromResult(BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}" }));
                 }
