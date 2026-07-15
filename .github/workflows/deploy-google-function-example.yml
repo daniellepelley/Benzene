@@ -1,0 +1,72 @@
+name: Deploy Google Cloud Functions (Gen2) Example
+
+# The Cloud Functions Gen2 counterpart to deploy-google-example.yml (Cloud Run). Both deploy the
+# SAME Benzene.Examples.Google Startup; the only difference is the host — this one uses the .NET
+# Functions Framework entry point (examples/Google/.../Function.cs, `class Function :
+# GoogleCloudFunctionHost<Startup>`) and Google's source-based buildpack deploy. Cloud Run is the
+# recommended target (see work/google-cloud-roadmap-1.0.md); this variant exists for parity.
+#
+# ONE-TIME GCP SETUP (reuses the Cloud Run workflow's project/region/credentials):
+#   1. repo VARIABLE  GCP_PROJECT  = your project id
+#   2. repo VARIABLE  GCP_REGION   = your region (e.g. europe-west1)
+#   3. repo SECRET     GCP_SA_KEY  = a service-account JSON key. The SA needs:
+#        roles/cloudfunctions.admin, roles/run.admin, roles/iam.serviceAccountUser,
+#        roles/artifactregistry.writer, roles/cloudbuild.builds.editor
+#      (Gen2 functions are built by Cloud Build and run on Cloud Run under the hood.)
+#   4. Enable APIs: cloudfunctions.googleapis.com, run.googleapis.com, cloudbuild.googleapis.com,
+#      artifactregistry.googleapis.com.
+#
+# NOTE ON BUILD CONTEXT: the example references sibling src/ projects by relative path, so the
+# source must be the whole repo (--source=.) with GOOGLE_BUILDABLE pointing the .NET buildpack at
+# the function project inside it. If a Gen2 source build ever can't resolve the monorepo layout,
+# the Cloud Run workflow (a repo-root Dockerfile) is the guaranteed path.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    environment: test
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      SERVICE: benzene-google-function-example
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Deploy to Cloud Functions (Gen2)
+      # --source is the repo root so the buildpack sees the sibling src/ projects; GOOGLE_BUILDABLE
+      # points it at the function project within the repo; --entry-point is the IHttpFunction type
+      # (Function.cs). gcloud respects .gitignore, so bin/obj aren't uploaded.
+      run: |
+        gcloud functions deploy "$SERVICE" \
+          --gen2 \
+          --project "$GCP_PROJECT" \
+          --region "$GCP_REGION" \
+          --runtime dotnet10 \
+          --source . \
+          --set-build-env-vars GOOGLE_BUILDABLE=examples/Google/Benzene.Examples.Google \
+          --entry-point Benzene.Examples.Google.Function \
+          --trigger-http \
+          --allow-unauthenticated \
+          --quiet
+
+    # Best-effort "is it alive?" check: hit the deployed function's GET /orders endpoint.
+    # continue-on-error so a hiccup here never fails the deploy itself.
+    - name: Smoke test — GET /orders
+      continue-on-error: true
+      run: |
+        URL="$(gcloud functions describe "$SERVICE" --gen2 --project "$GCP_PROJECT" --region "$GCP_REGION" --format 'value(serviceConfig.uri)')"
+        echo "Function URL: $URL"
+        curl -fsS "$URL/orders" && echo
