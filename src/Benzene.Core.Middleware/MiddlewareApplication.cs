@@ -12,6 +12,10 @@ namespace Benzene.Core.Middleware;
 /// <remarks>
 /// This application serves as an adapter between external events and the middleware pipeline,
 /// mapping events to contexts, executing the pipeline, and extracting results from the processed context.
+/// Creates one new DI scope per <see cref="HandleAsync"/> call and disposes it once the pipeline
+/// finishes (and <paramref name="resultMapper"/> has extracted the result) - a scoped
+/// <see cref="IDisposable"/> resolved during this event's pipeline is released before the next event
+/// gets a fresh scope, not held open for the process's lifetime.
 /// </remarks>
 public class MiddlewareApplication<TEvent, TContext, TResult>(
     IMiddlewarePipeline<TContext> pipeline,
@@ -28,7 +32,8 @@ public class MiddlewareApplication<TEvent, TContext, TResult>(
     public async Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var context = mapper(@event);
-        await pipeline.HandleAsync(context, serviceResolverFactory.CreateScope());
+        using var serviceResolver = serviceResolverFactory.CreateScope();
+        await pipeline.HandleAsync(context, serviceResolver);
         return resultMapper(context);
     }
 }
@@ -40,7 +45,10 @@ public class MiddlewareApplication<TEvent, TContext, TResult>(
 /// <typeparam name="TContext">The type of context created from the event.</typeparam>
 /// <remarks>
 /// This application serves as an adapter between external events and the middleware pipeline,
-/// mapping events to contexts and executing the pipeline.
+/// mapping events to contexts and executing the pipeline. Creates one new DI scope per
+/// <see cref="HandleAsync"/> call and disposes it once the pipeline finishes - a scoped
+/// <see cref="IDisposable"/> resolved during this event's pipeline is released before the next
+/// event gets a fresh scope, not held open for the process's lifetime.
 /// </remarks>
 public class MiddlewareApplication<TEvent, TContext>(
     IMiddlewarePipeline<TContext> pipeline,
@@ -56,6 +64,7 @@ public class MiddlewareApplication<TEvent, TContext>(
     public async Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
         var context = mapper(@event);
-        await pipeline.HandleAsync(context, serviceResolverFactory.CreateScope());
+        using var serviceResolver = serviceResolverFactory.CreateScope();
+        await pipeline.HandleAsync(context, serviceResolver);
     }
 }

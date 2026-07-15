@@ -261,7 +261,52 @@ just Kafka) rather than a unilateral one-line change from this review.
 
 ### Filed, not fixed (follow-ups)
 
-1. **`MiddlewareApplication<TEvent,TContext>` DI scope leak** (above) - route to `core-product-owner`.
+1. ~~**`MiddlewareApplication<TEvent,TContext>` DI scope leak** (above) - route to `core-product-owner`.~~
+   **Fixed - see §9 below.**
 2. **`KafkaContextConverter<TRequest>` per-send allocation** - minor, not fixed (see above).
 3. **`docs/getting-started-kafka.md` `MessageTimeoutMs` guidance** - minor documentation gap, not a
    code change.
+
+## 9. 2026-07-15 follow-up: fixed the `MiddlewareApplication<TEvent,TContext>` DI scope leak
+
+The highest-priority finding from §8 - `Benzene.Core.Middleware.MiddlewareApplication<TEvent,TContext>`/
+`<TEvent,TContext,TResult>` (`src/Benzene.Core.Middleware/MiddlewareApplication.cs`) creating a DI
+scope per event via `serviceResolverFactory.CreateScope()` and never disposing it - is now fixed:
+both `HandleAsync` overloads wrap the created scope in `using`, so it's disposed once the pipeline
+(and, for the `TResult` overload, `resultMapper`) finishes.
+
+**Blast radius, confirmed by reading every concrete usage** (not assumed): `MiddlewareApplication<...>`
+is the base class for `Benzene.AspNet.Core.AspNetApplication` (mainstream ASP.NET Core HTTP -
+likely the single highest-traffic path in the framework), `Benzene.Azure.Function.AspNet.AspNetApplication`
+(Azure Functions isolated-worker HTTP trigger), `Benzene.Kafka.Core.KafkaMessage.KafkaApplication<TKey,TValue>`
+(the Kafka worker rewired in §3), `Benzene.SelfHost.Http.HttpListenerApplication`, and
+`Benzene.Core.MessageHandlers.BenzeneMessage.BenzeneMessageApplication` (used by AWS Lambda's
+`DirectMessageLambdaHandler` and Azure Event Hub's `BenzeneMessageEventHubHandler`).
+`MiddlewareMultiApplication<...>` (the batch-oriented sibling used by SQS/Event Hub/Kafka/Service
+Bus triggers) already disposed its per-record scopes correctly via `using` and was not affected.
+
+**Safety of disposing immediately verified per call site**, not assumed: `Benzene.AspNet.Core.AspNetApplication`
+and `Benzene.SelfHost.Http.HttpListenerApplication` both write directly into a live, externally-owned
+response object (`HttpContext.Response`, `HttpListenerContext.Response`) *during* `pipeline.HandleAsync`,
+so nothing needs the scope once it returns. `Benzene.Azure.Function.AspNet.AspNetApplication`'s
+`resultMapper` (`context => context.ContentResult`) and `BenzeneMessageApplication`'s
+(`context => context.BenzeneMessageResponse`) both extract a plain, already-fully-populated data DTO
+(`Microsoft.AspNetCore.Mvc.ContentResult`, `IBenzeneMessageResponse` - just `StatusCode`/`Headers`/`Body`
+strings) that holds no live reference to a Benzene-scoped service, so disposing the scope right as
+`HandleAsync` returns can't invalidate anything the caller still needs.
+
+This pairs with an earlier fix (already on `main` before this entry - see
+`test/Benzene.Core.Test/Core/Core/DI/ServiceResolverScopeDisposalTest.cs`) to
+`MicrosoftServiceResolverAdapter`/`AutofacServiceResolverAdapter`, whose own `Dispose()` used to be a
+no-op: that fix ensured disposing a scope actually works; this one ensures it actually gets called.
+Together they close the leak end to end.
+
+**Verification**: new regression tests in
+`test/Benzene.Core.Test/Core/Middleware/MiddlewareApplicationScopeDisposalTest.cs` (both `HandleAsync`
+overloads, using a fake pipeline resolving a tracked `IDisposable` and asserting it's disposed after
+`HandleAsync` returns) - confirmed these fail against the pre-fix code by temporarily reverting the
+fix and re-running them, not just written and assumed correct. Full `Benzene.sln` test suite (925/928
+in `Benzene.Test.dll`, plus Conformance/Mesh/Grpc all green) and `Benzene.Examples.sln` both pass with
+no regressions; `examples/Google`'s 11 end-to-end tests (which dispatch real HTTP requests through
+`AspNetApplication` via `GoogleCloudFunctionApplicationBuilder`) also pass, giving genuine
+end-to-end confidence beyond the unit-level regression test alone.

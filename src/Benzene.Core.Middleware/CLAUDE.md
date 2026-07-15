@@ -18,6 +18,22 @@ Provides concrete implementations of Benzene's middleware pipeline system. Inclu
 - `EntryPointMiddlewareApplication<TEvent>` - Entry point wrapper
 - `EntryPointMiddlewareApplication<TEvent, TResult>` - Entry point wrapper with result
 
+**Both `MiddlewareApplication<...>` overloads create one new DI scope per `HandleAsync` call
+(`serviceResolverFactory.CreateScope()`) and dispose it in a `using` once the pipeline finishes**
+(fixed - previously the created scope was never disposed, leaking one scope, and any scoped
+`IDisposable` resolved inside it, per event/message, forever - a real, standing resource leak
+affecting every concrete subclass: `AspNetApplication` (both `Benzene.AspNet.Core`'s and
+`Benzene.Azure.Function.AspNet`'s), `Benzene.Kafka.Core.KafkaApplication<TKey,TValue>`,
+`Benzene.SelfHost.Http.HttpListenerApplication`, and `BenzeneMessageApplication`, which in turn is
+used by AWS Lambda's `DirectMessageLambdaHandler` and Azure Event Hub's
+`BenzeneMessageEventHubHandler`). `MiddlewareMultiApplication<...>` (the batch-oriented sibling)
+already disposed its per-record scopes correctly and was not affected. Regression coverage:
+`test/Benzene.Core.Test/Core/Middleware/MiddlewareApplicationScopeDisposalTest.cs`. This pairs with
+the earlier fix to `MicrosoftServiceResolverAdapter`/`AutofacServiceResolverAdapter` (both adapters'
+own `Dispose()` used to be a no-op - see
+`test/Benzene.Core.Test/Core/Core/DI/ServiceResolverScopeDisposalTest.cs`) to close the leak
+end to end: the scope is both disposed now, and disposing it actually releases scoped services.
+
 ### Middleware Components
 - `FuncWrapperMiddleware<TContext>` - Wraps Func as middleware
 - `ContextConverterMiddleware<TContext, TContextOut>` - Converts context types

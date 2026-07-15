@@ -29,13 +29,11 @@ producer support. This is one of the "self-hosted worker" startup modes document
   abandoning them), `ConsumeExceptionRetryDelay` (default 1s - backoff between retries after a
   `ConsumeException`).
 - `KafkaApplication<TKey,TValue>` - wraps the built middleware pipeline; `HandleAsync` is what the
-  dispatcher calls per message. Note: its base `MiddlewareApplication<TEvent,TContext>.HandleAsync`
-  (`Benzene.Core.Middleware`) creates a DI scope per message via
-  `serviceResolverFactory.CreateScope()` but never disposes it - a real per-message resource leak,
-  not specific to Kafka (every `MiddlewareApplication<...>`-based adapter has the same gap). This is
-  `Benzene.Core.Middleware`'s file/API, so it wasn't changed here; see
-  `work/performance-roadmap-1.0.md`'s 2026-07-15 follow-up entry and loop in
-  `core-product-owner` before fixing it.
+  dispatcher calls per message, via its base `MiddlewareApplication<TEvent,TContext>` (`Benzene.Core.Middleware`),
+  which creates a new DI scope per message and disposes it once the pipeline finishes - previously a
+  real per-message resource leak (not specific to Kafka; every `MiddlewareApplication<...>`-based
+  adapter had the same gap), fixed in `Benzene.Core.Middleware` itself - see that package's
+  `CLAUDE.md` and `work/performance-roadmap-1.0.md`'s 2026-07-15 follow-up entry.
 - `KafkaContextConverter` forwards `IBenzeneClientRequest.Headers` onto the outbound
   `Message.Headers` (UTF-8 encoded, matching Confluent.Kafka's `byte[]`-valued headers) so
   header-based decorators (correlation ID, W3C trace context) reach the wire.
