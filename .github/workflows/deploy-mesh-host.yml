@@ -1,0 +1,55 @@
+# Publishes the Benzene.Mesh.Host Docker image to GHCR (ghcr.io/<owner>/benzene-mesh).
+# The first Docker image publish anywhere in this repo - flagged explicitly, even though the
+# trigger pattern (manual workflow_dispatch, nothing auto-publishes) matches every other deploy
+# workflow already in this repo (deploy-benzene.yml, deploy-templates.yml).
+#
+# Uses the built-in GITHUB_TOKEN for GHCR auth (no separate secret needed, unlike the AWS/GCP
+# example deploy workflows) - requires the "packages: write" permission below.
+
+name: Deploy Mesh Host
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Log in to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Determine image tags
+      id: tags
+      run: |
+        IMAGE="ghcr.io/${{ github.repository_owner }}/benzene-mesh"
+        echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+        echo "sha_tag=$IMAGE:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        echo "latest_tag=$IMAGE:latest" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        # Build context is the repo root - Benzene.Mesh.Host references sibling src/ projects by
+        # relative path, so the whole repo has to be in the build context (see the Dockerfile's
+        # own comment).
+        context: .
+        file: deploy/Mesh/Benzene.Mesh.Host/Dockerfile
+        push: true
+        tags: |
+          ${{ steps.tags.outputs.sha_tag }}
+          ${{ steps.tags.outputs.latest_tag }}

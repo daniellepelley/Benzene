@@ -4,6 +4,10 @@ Demonstrates Benzene's service-mesh visibility feature end to end: three small
 demo services, a real Benzene app that aggregates their specs and health into
 a catalog, and a dashboard that renders it.
 
+This is a demo with fake/canned data, meant for exploring the feature. For a config-driven version
+you can run via Docker Compose against your own real services, see
+[`deploy/Mesh/`](../../deploy/Mesh).
+
 ## What this shows
 
 A single `./run.sh` drives the dashboard into **every state, badge, stat, and

@@ -14,6 +14,10 @@ representing external boundaries — DB, HTTP, queues, etc).
 - `templates/` — `dotnet new` starter-project templates, packaged as one NuGet template pack
   (`Benzene.Templates`); own `templates/Benzene.Templates.sln` for local dev, verified by
   `.github/workflows/build-templates.yml`, not part of `Benzene.sln` — see `templates/README.md`
+- `deploy/` — independently-versioned, independently-built deployable artifacts (Docker-packaged,
+  not NuGet-packaged) with their own release lifecycle — e.g. `deploy/Mesh/Benzene.Mesh.Host`, a
+  config-driven Mesh Aggregator+UI for `docker-compose`; own `.sln` per artifact, not part of
+  `Benzene.sln`/`Benzene.Examples.sln` — see `deploy/Mesh/README.md`
 - `examples/` — sample usage projects
 - `docs/` — documentation
 - `Benzene.sln` — main library solution

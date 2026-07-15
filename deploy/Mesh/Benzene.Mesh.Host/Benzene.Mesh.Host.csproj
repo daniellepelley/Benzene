@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Independent version line, matching templates/Benzene.Templates.csproj's precedent - this
+         host's own "correctness" changes on a different cadence than the library's version.txt. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aws.Lambda\Benzene.Mesh.Aws.Lambda.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
+  </ItemGroup>
+
+</Project>
