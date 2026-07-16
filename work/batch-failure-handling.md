@@ -1,7 +1,11 @@
 # Configurable Batch/Retry Failure Handling — Design Note (2026-07-16)
 
-**Status:** Implemented for `Benzene.Aws.Lambda.Sqs` and `Benzene.Aws.Lambda.Sns`. Documented here
-as the convention for the other transports listed below, not yet implemented for them.
+**Status:** Implemented for `Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Lambda.Sns`,
+`Benzene.Kafka.Core` (the dispatcher's catch/continue toggle only, not outcome-gated offset
+commit), `Benzene.Azure.Function.Kafka`, `Benzene.Azure.Function.ServiceBus` (the
+catch/escalate toggle only, not true per-message `ServiceBusMessageActions` partial-ack), and
+`Benzene.Aws.Sqs`'s polling `SqsConsumer`. `Benzene.Aws.Lambda.Kinesis` and Kafka.Core's
+outcome-gated offset commit remain deliberately deferred - see their entries below for why.
 
 ## Context
 
@@ -57,18 +61,22 @@ per-message value handed from one middleware to a later one in the *same* pipeli
 policy decided once at wiring time and consumed by the `Application` class that sits above the
 pipeline).
 
-## Surveyed, not yet implemented
+## Shipped, beyond the original SQS/SNS pair
 
-None of these have a runtime toggle today. Listed with what would need to change, using the same
-two-knob vocabulary:
+| Transport | Shape | What shipped |
+|---|---|---|
+| `Kafka.Core` (`BoundedConcurrentDispatcher`, shared with `Benzene.SelfHost.Http`) | Single message, bounded-concurrent poll loop | `BenzeneKafkaConfig.CatchHandlerExceptions` (default `true`, unchanged behavior) - `false` rethrows after logging, which ends that lane; `BenzeneKafkaWorker` wires the dispatcher's new `onFault` callback to stop the whole worker (a dead lane's channel otherwise silently deadlocks `EnqueueAsync` for that key once it fills). Outcome-gated offset commit is explicitly **not** part of this - see "Deliberately deferred" below. |
+| `Azure.Function.Kafka` (`KafkaApplication`/new `KafkaBatchApplication`) | Batch, concurrent fan-out | `KafkaOptions.CatchExceptions`/`RaiseOnFailureStatus` (both default `false`, unchanged behavior), same shape as `SnsOptions`. No platform partial-ack exists for Kafka triggers (confirmed: no companion action type in the isolated-worker SDK), so containment here means swallow-vs-cascade, not report-a-subset. `KafkaMessageMessageHandlerResultSetter` was upgraded from a true no-op to actually recording `MessageResult`, so `RaiseOnFailureStatus` has something to read. |
+| `Azure.Function.ServiceBus` (`ServiceBusApplication`/new `ServiceBusBatchApplication`) | Batch, concurrent fan-out (`IsBatched` optional) | Same `CatchExceptions`/`RaiseOnFailureStatus` shape as Kafka above (`ServiceBusOptions`), same no-op-to-real upgrade for `ServiceBusMessageMessageHandlerResultSetter`. True per-message `ServiceBusMessageActions` completion (the SDK does support this, via `AutoCompleteMessages = false` plus a bound `ServiceBusMessageActions` parameter) is **not** part of this - it needs an additive change to the trigger function's own signature, which is a distinct, larger unit of work than this toggle. |
+| `Aws.Sqs/Consumer/SqsConsumer` (poll-based, distinct from Lambda-triggered SQS) | Batch per poll, whole-batch ack | `SqsConsumerOptions.AckMode` (`WholeBatch` default, unchanged behavior, vs `PerMessage`). Required three things together: a bespoke per-message try/catch loop in `SqsConsumerApplication` (replacing the no-try/catch `MiddlewareMultiApplication` base), `SqsConsumerMessageContext` gaining `IHasMessageResult` (it had no result concept at all before), and `SqsConsumerMessageMessageHandlerResultSetter` upgraded from a no-op to real - `PerMessage` mode calls `DeleteMessageBatchAsync` with only the successful subset instead of `WholeBatch`'s all-or-nothing. |
 
-| Transport | Shape | Containment today | Escalation today | What a fix would touch |
-|---|---|---|---|---|
-| `Aws.Lambda.Kinesis` (`KinesisStreamApplication`) | Batch, but fans **in** to one `StreamContext`/one pipeline run, not per-record | Whole-invocation throw on any exception; no `KinesisBatchResponse`-equivalent exists in the AWS SDK surface Benzene targets | Not observable — `StreamContext<TItem>` has no result concept at all | Would need a genuine per-record result-tracking design first (bigger lift than SQS/SNS - there's no existing capture point to escalate from) |
-| `Aws.Lambda.EventBridge` (`EventBridgeApplication`) | Single event, not a batch | Whole-invocation throw (only outcome possible for a single event) | Captured on `EventBridgeContext.MessageResult` but never read — the void `MiddlewareApplication.HandleAsync` doesn't check it | Add the same escalation-only knob SNS got (no containment knob needed - there's only one item) |
-| `Kafka.Core` (`BoundedConcurrentDispatcher`) | Single message, bounded-concurrent poll loop | Hardcoded catch-log-continue per message at the dispatcher; offset auto-commits on a timer regardless of outcome | Captured on `KafkaRecordContext.MessageResult` but never read | Both knobs apply; escalation is complicated by decoupled auto-commit — making offset advancement actually depend on the outcome is a bigger, separate change from just adding a toggle |
-| `Azure.Function.Kafka` / `Azure.Function.ServiceBus` (`MiddlewareMultiApplication`-based) | Batch, concurrent fan-out (Kafka always; Service Bus optional via `IsBatched`) | Exception in one record cascades to fail the whole trigger invocation via `Task.WhenAll`; no Azure-Functions-equivalent of `batchItemFailures` wired up | Result setters are explicit, documented no-ops | Both knobs apply; Azure's own per-message ack idioms (`ServiceBusMessageActions.CompleteMessageAsync`/`AbandonMessageAsync`) would need wiring up for true containment, not just a rethrow/no-rethrow toggle |
-| `Aws.Sqs/Consumer/SqsConsumer` (poll-based, distinct from Lambda-triggered SQS) | Batch per poll, whole-batch ack | Whole batch left un-deleted (not partially) if `HandleAsync` throws; deletes the **entire** batch unconditionally on non-throw, ignoring failure-status entirely | N/A — deletion happens regardless of result | Both knobs apply; would need per-message `DeleteMessageAsync` instead of `DeleteMessageBatchAsync` for real containment, which is a bigger structural change than SQS Lambda's already-per-record model |
+## Deliberately deferred
+
+| Transport | Why |
+|---|---|
+| `Aws.Lambda.Kinesis` (`KinesisStreamApplication`) | Confirmed **not** a small change on investigation: it fans the entire batch into one `StreamContext`/one pipeline run (fan-in, by design, for windowing/aggregation) - there is no per-record dispatch loop anywhere in Benzene's streaming code to hook a result into, and `StreamContext<TItem>` carries no result concept at all. AWS's Kinesis event source mapping does support `ReportBatchItemFailures`, but Benzene has zero scaffolding toward it (no `KinesisBatchResponse`, no `Amazon.Lambda.KinesisEvents` dependency - `KinesisEventRecord` is hand-rolled). Doing this properly means redesigning the streaming abstraction's per-item identity tracking first (`StreamContext`, `StreamOperators.Window`/`PartitionBy`, `KinesisStreamApplication`'s whole shape) - 5-7 files and a real design decision, not an add-on. |
+| `Kafka.Core` outcome-gated offset commit | Separate from the dispatcher toggle above, and confirmed to be a genuinely bigger feature on investigation: needs manual commit control (`EnableAutoCommit = false`, `StoreOffset`/`Commit`), a per-partition contiguous-offset watermark tracker (concurrent lanes can complete out of order, especially with `PreserveOrderPerPartition = false`), serialized commit calls against the single non-thread-safe-for-concurrent-commit `IConsumer` handle, and - with no existing analog anywhere in this codebase - an actual retry/skip/dead-letter policy for a stuck failed offset blocking the watermark. Worth its own design doc later, not a follow-on to the dispatcher toggle. |
+| `Azure.Function.ServiceBus` true `ServiceBusMessageActions` partial-ack | See the shipped-toggle row above - reachable (the SDK supports it), additive (existing trigger signatures keep working), but requires new `HandleServiceBusMessages` overloads and threading `ServiceBusMessageActions` into `ServiceBusContext`/the result setter - a distinct unit of work from the catch/escalate toggle that shipped. |
 
 `Aws.Lambda.DynamoDb`'s `DynamoDbApplication` (sequential, stop-at-first-failure,
 checkpoint-and-redeliver-from-here) is a third, deliberately different shape from a prior design
@@ -77,9 +85,14 @@ the whole point there.
 
 ## Why this wasn't built as one shared abstraction
 
-Only two transports need this today. Per the project's own "no premature abstraction" convention
-(`AGENTS.md`), the two implementations are independent, transport-local `XOptions` classes with
-transport-local exception types (`SqsBatchProcessingException`, `SnsMessageProcessingException`)
-rather than a shared interface/base class. This note is the placeholder for that shared shape,
-written down once there are enough real implementations to justify factoring it out — likely once
-2-3 of the transports above pick it up.
+Six transports now implement some form of this (SQS Lambda, SNS Lambda, Kafka.Core's dispatcher,
+Azure Kafka, Azure Service Bus, the SQS poll consumer). Per the project's own "no premature
+abstraction" convention (`AGENTS.md`), each is still an independent, transport-local `XOptions`
+class with a transport-local exception type (`SqsBatchProcessingException`,
+`SnsMessageProcessingException`, `KafkaMessageProcessingException`,
+`ServiceBusMessageProcessingException`) rather than a shared interface/base class - the concrete
+shapes differ enough (an enum for SQS's single containment knob; two independent bools for the
+transports with both knobs; a constructor bool + callback for the dispatcher, since it's shared
+infrastructure rather than an `XOptions`-wired transport) that a forced common interface would add
+ceremony without removing real duplication. If a seventh transport picks up the same shape, that's
+the point to revisit factoring out a shared abstraction.

@@ -1,11 +1,12 @@
 using Amazon.SQS.Model;
+using Benzene.Abstractions.MessageHandlers;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
 /// <summary>
 /// Provides the middleware pipeline context for a single SQS message received by the polling consumer.
 /// </summary>
-public class SqsConsumerMessageContext
+public class SqsConsumerMessageContext : IHasMessageResult
 {
     private SqsConsumerMessageContext(Message message)
     {
@@ -26,4 +27,11 @@ public class SqsConsumerMessageContext
     /// Gets the received SQS message.
     /// </summary>
     public Message Message { get; }
+
+    /// <summary>
+    /// Gets or sets the result of handling this message. Set by
+    /// <see cref="SqsConsumerMessageMessageHandlerResultSetter"/>; read by <see cref="SqsConsumerApplication"/>
+    /// to support <see cref="SqsConsumerAckMode.PerMessage"/>.
+    /// </summary>
+    public IMessageResult MessageResult { get; set; }
 }

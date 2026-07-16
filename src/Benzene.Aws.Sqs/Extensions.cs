@@ -23,8 +23,13 @@ public static class Extensions
     /// <param name="sqsConsumerConfig">The queue URL and batch size to poll with.</param>
     /// <param name="sqsClientFactory">The factory used to create the underlying <c>IAmazonSQS</c> client.</param>
     /// <param name="action">The action that configures the inner SQS message pipeline.</param>
+    /// <param name="configure">
+    /// Optionally configures <see cref="SqsConsumerOptions"/> - e.g. set <see cref="SqsConsumerOptions.AckMode"/>
+    /// to <see cref="SqsConsumerAckMode.PerMessage"/> to delete only the messages that succeeded in a
+    /// poll batch instead of the default all-or-nothing whole-batch deletion.
+    /// </param>
     /// <returns>The worker startup for method chaining.</returns>
-    public static IBenzeneWorkerStartup UseSqs(this IBenzeneWorkerStartup app, SqsConsumerConfig sqsConsumerConfig, ISqsClientFactory sqsClientFactory, Action<IMiddlewarePipelineBuilder<SqsConsumerMessageContext>> action)
+    public static IBenzeneWorkerStartup UseSqs(this IBenzeneWorkerStartup app, SqsConsumerConfig sqsConsumerConfig, ISqsClientFactory sqsClientFactory, Action<IMiddlewarePipelineBuilder<SqsConsumerMessageContext>> action, Action<SqsConsumerOptions> configure = null)
     {
         app.Register(x => x
             .AddBenzeneMessage()
@@ -34,8 +39,11 @@ public static class Extensions
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 
-        var kafkaApplication = new SqsConsumerApplication(pipeline);
-        app.Add(serviceResolverFactory => new SqsConsumer(serviceResolverFactory, kafkaApplication, sqsConsumerConfig, sqsClientFactory));
+        var options = new SqsConsumerOptions();
+        configure?.Invoke(options);
+
+        var sqsConsumerApplication = new SqsConsumerApplication(pipeline, options);
+        app.Add(serviceResolverFactory => new SqsConsumer(serviceResolverFactory, sqsConsumerApplication, sqsConsumerConfig, sqsClientFactory, options));
         return app;
     }
 }
