@@ -1,0 +1,44 @@
+{
+  "description": "TraceEvent behavior (mesh.md section 3). traceparent rows: valid=true means the trace middleware adopts traceId/parentSpanId from the header; valid=false means it must start a fresh trace (a new 32-hex trace id, no parent). invocations rows run against the canonical conformance handlers plus conformance:panic (see README.md) with the trace middleware installed; expectedEvent uses subset matching against the single event exported for the invocation.",
+  "traceparent": [
+    {
+      "name": "valid-header-joins-the-trace",
+      "header": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "valid": true,
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "parentSpanId": "00f067aa0ba902b7"
+    },
+    { "name": "absent-header-starts-fresh", "header": "", "valid": false },
+    { "name": "wrong-segment-count", "header": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7", "valid": false },
+    { "name": "version-wrong-length", "header": "0-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "valid": false },
+    { "name": "trace-id-wrong-length", "header": "00-4bf92f35-00f067aa0ba902b7-01", "valid": false },
+    { "name": "parent-id-wrong-length", "header": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa-01", "valid": false },
+    { "name": "flags-wrong-length", "header": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-011", "valid": false },
+    { "name": "non-hex-trace-id", "header": "00-zzf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "valid": false },
+    { "name": "non-hex-parent-id", "header": "00-4bf92f3577b34da6a3ce929d0e0e4736-zzf067aa0ba902b7-01", "valid": false },
+    { "name": "all-zero-trace-id-invalid-per-w3c", "header": "00-00000000000000000000000000000000-00f067aa0ba902b7-01", "valid": false },
+    { "name": "all-zero-parent-id-invalid-per-w3c", "header": "00-4bf92f3577b34da6a3ce929d0e0e4736-0000000000000000-01", "valid": false }
+  ],
+  "invocations": [
+    {
+      "name": "success-is-traced-with-the-semantic-status",
+      "request": { "topic": "conformance:greet", "headers": { "x-correlation-id": "corr-1" }, "body": "{\"name\":\"world\"}" },
+      "expectedEvent": { "topic": "conformance:greet", "status": "Ok", "correlationId": "corr-1" }
+    },
+    {
+      "name": "application-status-travels-verbatim",
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ValidationError\",\"errors\":[\"bad\"]}" },
+      "expectedEvent": { "topic": "conformance:status", "status": "ValidationError" }
+    },
+    {
+      "name": "missing-handler-is-traced-as-notfound",
+      "request": { "topic": "conformance:no-such-topic", "headers": {}, "body": "{}" },
+      "expectedEvent": { "topic": "conformance:no-such-topic", "status": "NotFound" }
+    },
+    {
+      "name": "handler-panic-is-traced-as-serviceunavailable",
+      "request": { "topic": "conformance:panic", "headers": {}, "body": "{}" },
+      "expectedEvent": { "topic": "conformance:panic", "status": "ServiceUnavailable" }
+    }
+  ]
+}

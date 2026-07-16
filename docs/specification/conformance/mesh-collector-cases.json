@@ -1,0 +1,173 @@
+{
+  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts.",
+  "cases": [
+    {
+      "name": "register-then-fleet-shows-a-reduced-catalog-entry",
+      "steps": [
+        {
+          "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}" },
+          "expected": { "statusCode": "Ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "Ok",
+            "body": {
+              "services": [
+                { "service": "orders", "topics": 1, "health": "unknown", "missingFeeds": ["health", "traces"] }
+              ],
+              "topics": [
+                { "topic": "order:create", "providers": ["orders"], "invocations": 0 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ingest-validation",
+      "steps": [
+        {
+          "request": { "topic": "mesh:register", "headers": {}, "body": "{\"topics\":[]}" },
+          "expected": { "statusCode": "BadRequest" }
+        },
+        {
+          "request": { "topic": "mesh:heartbeat", "headers": {}, "body": "{\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}" },
+          "expected": { "statusCode": "BadRequest" }
+        },
+        {
+          "request": { "topic": "mesh:traces", "headers": {}, "body": "{\"events\":[]}" },
+          "expected": { "statusCode": "Ok", "body": { "accepted": 0 } }
+        }
+      ]
+    },
+    {
+      "name": "query-validation-and-unknowns",
+      "steps": [
+        {
+          "request": { "topic": "mesh:query:service", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "BadRequest" }
+        },
+        {
+          "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "BadRequest" }
+        },
+        {
+          "request": { "topic": "mesh:query:trace", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "BadRequest" }
+        },
+        {
+          "request": { "topic": "mesh:query:service", "headers": {}, "body": "{\"service\":\"ghost\"}" },
+          "expected": { "statusCode": "NotFound" }
+        },
+        {
+          "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{\"topic\":\"no:such\"}" },
+          "expected": { "statusCode": "NotFound" }
+        },
+        {
+          "request": { "topic": "mesh:query:trace", "headers": {}, "body": "{\"traceId\":\"feed0000feed0000\"}" },
+          "expected": { "statusCode": "NotFound" }
+        }
+      ]
+    },
+    {
+      "name": "heartbeats-drive-health-and-hash-mismatch-is-surfaced",
+      "steps": [
+        {
+          "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"descriptorHash\":\"sha256:aaaa\",\"topics\":[{\"id\":\"order:create\"}]}" },
+          "expected": { "statusCode": "Ok" }
+        },
+        {
+          "request": { "topic": "mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-1\",\"descriptorHash\":\"sha256:aaaa\",\"sentAt\":\"2026-07-16T09:00:00Z\",\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}" },
+          "expected": { "statusCode": "Ok" }
+        },
+        {
+          "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "Ok", "body": { "services": [ { "service": "orders", "health": "healthy", "instances": 1 } ] } }
+        },
+        {
+          "request": { "topic": "mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-2\",\"descriptorHash\":\"sha256:bbbb\",\"sentAt\":\"2026-07-16T09:00:05Z\",\"health\":{\"isHealthy\":false,\"healthChecks\":{}}}" },
+          "expected": { "statusCode": "Ok" }
+        },
+        {
+          "request": { "topic": "mesh:query:service", "headers": {}, "body": "{\"service\":\"orders\"}" },
+          "expected": {
+            "statusCode": "Ok",
+            "body": {
+              "service": "orders",
+              "health": "degraded",
+              "instances": [
+                { "instanceId": "orders-1", "healthy": true, "hashMatches": true },
+                { "instanceId": "orders-2", "healthy": false, "hashMatches": false }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "traces-derive-stats-consumers-and-anonymous-services",
+      "steps": [
+        {
+          "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"greeter\",\"topics\":[{\"id\":\"greet\"}]}" },
+          "expected": { "statusCode": "Ok" }
+        },
+        {
+          "request": { "topic": "mesh:traces", "headers": {}, "body": "{\"events\":[{\"traceId\":\"trace0000000000000000000000000001\",\"spanId\":\"span00000000000f\",\"service\":\"frontdoor\",\"topic\":\"welcome\",\"status\":\"Ok\",\"durationMs\":20,\"startedAt\":\"2026-07-16T09:00:00Z\"},{\"traceId\":\"trace0000000000000000000000000001\",\"spanId\":\"span00000000001f\",\"parentSpanId\":\"span00000000000f\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"Ok\",\"durationMs\":10,\"startedAt\":\"2026-07-16T09:00:00.005Z\"},{\"traceId\":\"trace0000000000000000000000000002\",\"spanId\":\"span00000000002f\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"ServiceUnavailable\",\"durationMs\":30,\"startedAt\":\"2026-07-16T09:00:01Z\"}]}" },
+          "expected": { "statusCode": "Ok", "body": { "accepted": 3 } }
+        },
+        {
+          "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{\"topic\":\"greet\"}" },
+          "expected": {
+            "statusCode": "Ok",
+            "body": {
+              "topic": "greet",
+              "providers": ["greeter"],
+              "consumers": ["frontdoor"],
+              "invocations": 2,
+              "errors": 1,
+              "statusCounts": { "Ok": 1, "ServiceUnavailable": 1 }
+            }
+          }
+        },
+        {
+          "request": { "topic": "mesh:query:service", "headers": {}, "body": "{\"service\":\"frontdoor\"}" },
+          "expected": {
+            "statusCode": "Ok",
+            "body": { "service": "frontdoor", "invocations": 1, "missingFeeds": ["descriptor", "health"] }
+          }
+        },
+        {
+          "request": { "topic": "mesh:query:trace", "headers": {}, "body": "{\"traceId\":\"trace0000000000000000000000000001\"}" },
+          "expected": {
+            "statusCode": "Ok",
+            "body": {
+              "traceId": "trace0000000000000000000000000001",
+              "events": [
+                { "spanId": "span00000000000f", "service": "frontdoor" },
+                { "spanId": "span00000000001f", "service": "greeter" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "reregistration-replaces-provider-edges",
+      "steps": [
+        {
+          "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}" },
+          "expected": { "statusCode": "Ok" }
+        },
+        {
+          "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:cancel\"}]}" },
+          "expected": { "statusCode": "Ok" }
+        },
+        {
+          "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{\"topic\":\"order:create\"}" },
+          "expected": { "statusCode": "Ok", "body": { "topic": "order:create", "providers": [] } }
+        }
+      ]
+    }
+  ]
+}

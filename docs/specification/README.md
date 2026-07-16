@@ -25,6 +25,7 @@ so that:
 | [core-concepts.md](core-concepts.md) | The abstract model: pipeline, context, message handler, topic, result, lifecycle, registration |
 | [wire-contracts.md](wire-contracts.md) | Everything that crosses a process boundary: the message envelope, header conventions, the status vocabulary and its per-protocol mappings, the health check response format |
 | [transport-bindings.md](transport-bindings.md) | What a transport adapter is and the contract every binding must satisfy, with the existing bindings as worked examples |
+| [mesh.md](mesh.md) | The optional mesh module's wire contracts: service self-description (descriptor + derived payload schemas + contract hash), semantic trace events, collector topics, heartbeats, and the normative degradation rules. Reference implementation: the Go port's `mesh`/`meshd` packages |
 | [porting-guide.md](porting-guide.md) | Concept-vs-idiom mapping for implementers in other languages, and the conformance-testing approach |
 | [conformance/](conformance/README.md) | Language-neutral test fixtures (status vocabulary, mapping tables, envelope cases) that every implementation runs; the .NET reference runner is `test/Benzene.Conformance.Test/` |
 

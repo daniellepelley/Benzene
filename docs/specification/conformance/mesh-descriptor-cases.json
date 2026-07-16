@@ -1,0 +1,51 @@
+{
+  "description": "ServiceDescriptor derivation (mesh.md section 2): given the canonical conformance handlers and the serviceInfo below, every port must derive the expectedDescriptor (subset matching; arrays compare by exact length and per-element subset) and a descriptorHash with the stated properties. runtime and descriptorHash values are per-port and deliberately not pinned.",
+  "serviceInfo": {
+    "service": "conformance",
+    "serviceVersion": "1.0.0",
+    "placement": { "cloud": "self-hosted" }
+  },
+  "expectedDescriptor": {
+    "service": "conformance",
+    "serviceVersion": "1.0.0",
+    "placement": { "cloud": "self-hosted" },
+    "topics": [
+      {
+        "id": "conformance:greet",
+        "requestSchema": {
+          "type": "object",
+          "properties": { "name": { "type": "string" } },
+          "required": ["name"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": { "greeting": { "type": "string" } },
+          "required": ["greeting"]
+        }
+      },
+      {
+        "id": "conformance:status",
+        "requestSchema": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string" },
+            "errors": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["status"]
+        },
+        "responseSchema": {
+          "type": "object",
+          "properties": { "applied": { "type": "string" } },
+          "required": ["applied"]
+        }
+      }
+    ]
+  },
+  "hash": {
+    "prefix": "sha256:",
+    "hexLength": 64,
+    "invariantToInstanceId": true,
+    "sensitiveToServiceVersion": true,
+    "sensitiveToTopics": true
+  }
+}
