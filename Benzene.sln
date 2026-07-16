@@ -256,6 +256,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Benchmarks", "bench
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Mesh.Wire", "src\Benzene.Mesh.Wire\Benzene.Mesh.Wire.csproj", "{F959D9C2-52CB-4249-806D-F00D7894C330}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Mesh.Collector", "src\Benzene.Mesh.Collector\Benzene.Mesh.Collector.csproj", "{19813B54-EA64-4D33-AD31-317112C66F99}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1514,6 +1516,18 @@ Global
 		{F959D9C2-52CB-4249-806D-F00D7894C330}.Release|x64.Build.0 = Release|Any CPU
 		{F959D9C2-52CB-4249-806D-F00D7894C330}.Release|x86.ActiveCfg = Release|Any CPU
 		{F959D9C2-52CB-4249-806D-F00D7894C330}.Release|x86.Build.0 = Release|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Debug|x64.Build.0 = Debug|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Debug|x86.Build.0 = Debug|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Release|x64.ActiveCfg = Release|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Release|x64.Build.0 = Release|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Release|x86.ActiveCfg = Release|Any CPU
+		{19813B54-EA64-4D33-AD31-317112C66F99}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1622,6 +1636,7 @@ Global
 		{617AEF30-C820-421E-87DB-65FCEDDC0C4E} = {4B90DC9D-2A0D-6CA7-FA5D-F7C8B1A0C622}
 		{185664C1-386D-4031-A012-3B4498076229} = {B59A2C32-9F38-410C-8C5C-4FC91099FC3F}
 		{F959D9C2-52CB-4249-806D-F00D7894C330} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{19813B54-EA64-4D33-AD31-317112C66F99} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Benzene.Mesh.Collector\Benzene.Mesh.Collector.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />

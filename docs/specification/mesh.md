@@ -1,14 +1,17 @@
 # Mesh Contracts
 
 **Status: DRAFT v0.1 — promoted from
-[benzene-go](https://github.com/daniellepelley/benzene-go)'s `docs/design/mesh.md`. Unusually for
-this spec, the Go port is the reference implementation for this document (its `mesh/` and `meshd/`
-packages). The .NET service-side wire layer is implemented by `Benzene.Mesh.Wire` (descriptor,
-reserved topic, trace feed — passing this spec's descriptor and trace fixtures, and verified
-cross-language against the Go reference collector). The pre-existing `Benzene.Mesh.*` visibility
-packages (developed independently against `work/service-mesh-roadmap-1.0.md`) remain the .NET
-collector idiom; §9 maps the two — the aggregator adopting the §4 ingest topics is the remaining
-open item on the .NET side.**
+[benzene-go](https://github.com/daniellepelley/benzene-go)'s `docs/design/mesh.md`. The .NET
+implementation is the primary implementation of this document and covers the full contract:
+`Benzene.Mesh.Wire` (descriptor, reserved topic, trace feed) and `Benzene.Mesh.Collector` (the
+§4–§6 collector), together passing all three conformance fixture files via
+`test/Benzene.Conformance.Test`. The Go port (its `mesh`/`meshd` packages) is a fully conforming
+implementation — this contract was originally extracted from it — and the two have hosted each
+other's services in live cross-language fleets, in both directions (see
+`work/service-mesh-roadmap-1.0.md`'s 2026-07-16 updates). The pre-existing `Benzene.Mesh.*`
+visibility packages (aggregator/UI/Tempo, developed independently against the roadmap) are
+collector-side idiom this contract doesn't constrain; §9 maps them, and bridging the aggregator's
+artifact pipeline to `Benzene.Mesh.Collector` is the natural integration follow-up.**
 
 Benzene Mesh is the *application-level* mesh: every service self-describes (its topics, versions,
 and payload schemas, derived from its handler registry), reports health, and emits one semantic
