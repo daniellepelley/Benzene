@@ -136,14 +136,22 @@ which tells SQS to retry (or dead-letter, per your queue's redrive policy) only 
 successfully-handled records in the same batch are not reprocessed. This means any non-`Ok`/`Created`/
 etc. result (anything with `IsSuccessful == false`, e.g. `ValidationError`, `NotFound`,
 `ServiceUnavailable`) causes that message to be retried by SQS, exactly like an unhandled exception
-would.
+would. This partial-batch-failure behavior is itself configurable — see
+`Benzene.Aws.Lambda.Sqs`'s `SqsOptions.BatchFailureMode`
+([Handling SQS Message Failures](cookbooks/handling-sqs-failures#opting-into-whole-batch-failure-instead)),
+which can flip a batch to whole-batch failure semantics if a single record fails.
 
 ### AWS SNS
 
 SNS delivers one notification per Lambda invocation rather than a batch, so there's no per-record
 acknowledgement API to report back to — `SnsMessageMessageHandlerResultSetter` records the result
-onto the context's `MessageResult` for logging/diagnostics purposes, but retry behavior for SNS is
-governed by whether the Lambda invocation itself throws, not by the `IBenzeneResult.Status`.
+onto the context's `MessageResult`, and by default retry behavior for SNS is governed by whether the
+Lambda invocation itself throws, not by the `IBenzeneResult.Status`. Both halves of that are
+configurable via `Benzene.Aws.Lambda.Sns`'s `SnsOptions`: `CatchExceptions` (default `false`)
+controls whether a thrown exception cascades to fail the invocation (triggering SNS's subscription
+retry policy) or is caught and logged instead, and `RaiseOnFailureStatus` (default `false`) controls
+whether a non-exception failure result is escalated into a thrown exception so SNS retries it too —
+see [SNS Fan-Out Pattern](cookbooks/sns-fan-out#configuring-exception-and-retry-behavior-with-snsoptions).
 
 ## See also
 

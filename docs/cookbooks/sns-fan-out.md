@@ -172,9 +172,33 @@ public class RecordOrderAnalyticsHandler : IMessageHandler<OrderCreatedMessage, 
 Both handlers key off the same `[Message("order:created")]` topic — because they live in separate Lambda functions with separate SNS subscriptions, each function receives its own independent copy of the message from SNS and runs it through its own pipeline. This is fan-out: the publisher sent one message; both Lambdas received and processed it, each doing something different.
 
 A few things to know about `Benzene.Aws.Lambda.Sns` from reading `SnsLambdaHandler`/`SnsApplication` directly:
-- **It's fire-and-forget.** `SnsApplication : MiddlewareMultiApplication<SNSEvent, SnsRecordContext>` has no return value — unlike SQS's `SqsApplication`, there is no `BatchItemFailures`-style partial-failure reporting for SNS. A handler exception here does not get individually reported back per-record the way it does for SQS.
+- **It's fire-and-forget.** `SnsApplication.HandleAsync` has no return value — unlike SQS's `SqsApplication`, there is no `BatchItemFailures`-style partial-failure reporting for SNS (SNS-to-Lambda doesn't have an equivalent AWS mechanism). Whether a handler's exception or failure result surfaces to SNS at all is governed by `SnsOptions` — see below.
 - **Routing is by the `topic` message attribute**, extracted by `SnsMessageTopicGetter` (`SnsUtils.GetFromAttributes(context, "topic")`) — set by whatever publishes to the topic (as shown in step 1).
 - Each record in a batch runs through `TransportMiddlewarePipeline<SnsRecordContext>("sns", pipeline)`, so `ICurrentTransport` reports `"sns"` inside your handler if you need transport-specific behavior.
+
+### Configuring exception and retry behavior with `SnsOptions`
+
+By default, a handler exception cascades out of the Lambda invocation entirely (Lambda reports the invocation as failed, so SNS's own subscription retry policy applies), while a handler that returns a non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) is silently accepted — the invocation reports success, and SNS never retries it. This is the AWS best-practice default: genuine exceptions usually mean something transient and worth retrying, while a deliberate failure status usually means a permanent/business-logic failure that retrying won't fix.
+
+Both halves of that behavior are independently configurable via a second, optional argument to `UseSns`:
+
+```csharp
+using Benzene.Aws.Lambda.Sns;
+
+app.UseAwsLambda(eventPipeline => eventPipeline
+    .UseSns(snsApp => snsApp
+            .UseMessageHandlers(),
+        options =>
+        {
+            // Catch handler exceptions instead of letting them fail the invocation (no SNS retry).
+            options.CatchExceptions = true;
+            // Escalate a non-exception failure result into a thrown exception too, so SNS retries it
+            // the same way it would an unhandled exception.
+            options.RaiseOnFailureStatus = true;
+        }));
+```
+
+Both default to `false`, reproducing today's implicit behavior exactly — this is purely opt-in. `RaiseOnFailureStatus` and `CatchExceptions` compose: if both are `true`, a failure result is escalated into an `SnsMessageProcessingException` and then immediately caught and logged (no SNS retry either) — useful if you want failure results logged consistently with exceptions but still don't want SNS retrying business failures.
 
 ### 3. Subscribe both Lambdas to the same SNS topic
 
@@ -263,7 +287,11 @@ Check the `filter_policy` on its `aws_sns_topic_subscription` — if it's filter
 
 ### A handler exception in one subscriber doesn't show up anywhere useful
 
-Unlike SQS, `SnsApplication` has no partial-batch-failure reporting — check your Lambda's own logs/CloudWatch, and note that SNS itself has a separate, subscription-level retry policy (`RedrivePolicy` on the `aws_sns_topic_subscription`, distinct from an SQS queue's redrive policy) if you need SNS to retry delivery to a misbehaving Lambda endpoint.
+Unlike SQS, `SnsApplication` has no partial-batch-failure reporting — check your Lambda's own logs/CloudWatch, and note that SNS itself has a separate, subscription-level retry policy (`RedrivePolicy` on the `aws_sns_topic_subscription`, distinct from an SQS queue's redrive policy) if you need SNS to retry delivery to a misbehaving Lambda endpoint. If you've set `SnsOptions.CatchExceptions = true`, remember that means the exception is caught and logged but never reaches SNS at all — check `ILogger<SnsApplication>`'s output rather than expecting a retry.
+
+### A failure result isn't triggering an SNS retry
+
+This is the default: `SnsOptions.RaiseOnFailureStatus` defaults to `false`, so a handler returning a non-exception failure result is silently accepted by Lambda and SNS never retries it. Set `RaiseOnFailureStatus = true` if you want failure results treated the same as exceptions for retry purposes.
 
 ### Subscription stuck in "pending confirmation"
 
@@ -278,6 +306,10 @@ If a subscriber needs message durability/backpressure (rather than raw SNS-to-La
 ### Filtering multiple message topics through one SNS subscription
 
 `TopicsMap`'s value is a `string[]`, so a single Lambda/subscription pair can filter on several Benzene message topics from the same SNS topic ARN — pass all the topics that Lambda's handlers care about and let the generated `filter_policy` do the routing before the message ever reaches your Lambda.
+
+### Swallow exceptions entirely for a best-effort subscriber
+
+If a subscriber is genuinely optional (e.g. it only updates a non-critical dashboard) and you'd rather log-and-move-on than have SNS retry a misbehaving downstream repeatedly, set `SnsOptions.CatchExceptions = true` with `RaiseOnFailureStatus` left at its `false` default. Every failure - thrown or returned - is then logged via `ILogger<SnsApplication>` and never propagates, so SNS always sees the invocation as successful.
 
 ## Further Reading
 

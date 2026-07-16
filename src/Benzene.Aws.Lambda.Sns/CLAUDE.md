@@ -43,3 +43,10 @@ AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda trigger
 - SNS wraps message body - unwrapped automatically
 - Subscription confirmation handled separately
 - No response expected - fire-and-forget pattern
+- Exception/failure-status handling is configurable via `SnsOptions` (`UseSns(..., configure)`),
+  defaulting to today's implicit behavior: a handler exception cascades out of the invocation
+  (SNS's own subscription retry policy applies) and a non-exception failure result is silently
+  accepted (no retry). Set `SnsOptions.CatchExceptions = true` to catch and log exceptions instead
+  of cascading them; set `SnsOptions.RaiseOnFailureStatus = true` to escalate a non-exception
+  failure result into a thrown `SnsMessageProcessingException` so SNS retries it too. Both default
+  to `false` (purely additive/opt-in) - see `docs/cookbooks/sns-fan-out.md`
