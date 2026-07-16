@@ -30,7 +30,21 @@ producer support. This is one of the "self-hosted worker" startup modes document
   `ConsumeException`), `CatchHandlerExceptions` (default `true` - a message handler's unhandled
   exception is logged and that lane keeps consuming; set `false` to instead stop the whole worker
   on the first unhandled handler exception, wired via `BoundedConcurrentDispatcher`'s `onFault`
-  callback calling this worker's own `StopAsync`-equivalent cancellation).
+  callback calling this worker's own `StopAsync`-equivalent cancellation), `CommitOnlyOnSuccess`
+  (default `false` - Confluent.Kafka's own default of auto-storing an offset as soon as `Consume`
+  returns it, before it's actually been handled; set `true` for at-least-once processing, so a
+  message whose handler fails - or whose worker crashes mid-handling - is redelivered instead of
+  silently skipped). `CommitOnlyOnSuccess` sets `ConsumerConfig.EnableAutoOffsetStore = false` at
+  worker startup and instead calls `IConsumer.StoreOffset` itself, only after
+  `KafkaApplication.HandleAsync` returns successfully - `BenzeneKafkaWorker.StartAsync` throws
+  `InvalidOperationException` at startup if `CommitOnlyOnSuccess = true` is combined with either
+  `CatchHandlerExceptions = true` or `PreserveOrderPerPartition = false`. Both are load-bearing:
+  `StoreOffset` is a last-write-wins watermark with **no gap tracking** (confirmed against
+  librdkafka's C source - storing offset N+5 after skipping N+2..N+4 silently commits past the
+  skipped messages), so a caught-and-swallowed handler exception would let a later, successful
+  message on the same partition advance the watermark past the failed one before its offset was
+  ever stored, and out-of-order handling (`PreserveOrderPerPartition = false`) has the same failure
+  mode even without any exception involved.
 - `KafkaApplication<TKey,TValue>` - wraps the built middleware pipeline; `HandleAsync` is what the
   dispatcher calls per message, via its base `MiddlewareApplication<TEvent,TContext>` (`Benzene.Core.Middleware`),
   which creates a new DI scope per message and disposes it once the pipeline finishes - previously a
@@ -76,11 +90,19 @@ producer support. This is one of the "self-hosted worker" startup modes document
 - Message key for partitioning
 - Headers for metadata
 - Commit strategies configurable
-- **No test coverage exists for `BenzeneKafkaWorker` itself** - `IConsumer<TKey,TValue>` needs a
-  live broker to exercise for real, so this has never been unit tested directly (same situation as
-  `Benzene.SelfHost.Http`'s `BenzeneHttpWorker`). The concurrency/ordering/drain behavior it relies
-  on is unit-tested in isolation instead, via `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`'s
-  own test suite (`test/Benzene.Core.Test/Hosting/BoundedConcurrentDispatcherTest.cs`). Everything
-  else in this package that doesn't need a broker (getters, converters, `KafkaClientMiddleware`) is
-  unit-tested in `test/Benzene.Core.Test/Kafka/KafkaCoreMappersTest.cs` plus
+- **No test coverage exists for `BenzeneKafkaWorker`'s actual consume loop** - `IConsumer<TKey,TValue>`
+  needs a live broker to exercise for real, so the loop itself has never been unit tested directly
+  (same situation as `Benzene.SelfHost.Http`'s `BenzeneHttpWorker`). The concurrency/ordering/drain
+  behavior it relies on is unit-tested in isolation instead, via
+  `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`'s own test suite
+  (`test/Benzene.Core.Test/Hosting/BoundedConcurrentDispatcherTest.cs`).
+  `test/Benzene.Core.Test/Kafka/BenzeneKafkaWorkerTest.cs` covers the one part of
+  `BenzeneKafkaWorker.StartAsync` that *is* synchronous and broker-independent: the
+  `CommitOnlyOnSuccess` startup validation (throws for the two disallowed combinations) and the
+  `ConsumerConfig.EnableAutoOffsetStore` wiring, using a `ConsumerConfig` with an unreachable
+  `BootstrapServers` - `Build()`/`Subscribe()` don't require a live connection, and the loop's
+  `Consume` call honors cancellation without one, so `StartAsync`/`StopAsync` round-trip cleanly in
+  a unit test despite spinning up a real `IConsumer`. Everything else in this package that doesn't
+  need a broker (getters, converters, `KafkaClientMiddleware`) is unit-tested in
+  `test/Benzene.Core.Test/Kafka/KafkaCoreMappersTest.cs` plus
   `test/Benzene.Core.Test/Clients/OutboundHeaderForwardingTest.cs`.

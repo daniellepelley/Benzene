@@ -129,6 +129,7 @@ Configures the Kafka consumer/client.
 | `DrainTimeout` | `30s` | How long `StopAsync` waits for in-flight handlers before abandoning them. |
 | `ConsumeExceptionRetryDelay` | `1s` | Backoff between retries after a `ConsumeException`. |
 | `CatchHandlerExceptions` | `true` | Whether an unhandled handler exception is caught and logged (that lane keeps consuming) or left to stop the whole worker. |
+| `CommitOnlyOnSuccess` | `false` | Whether an offset is only stored after its handler succeeds (at-least-once, redelivers on failure/crash) instead of being auto-stored as soon as it's consumed. Requires `CatchHandlerExceptions = false` and `PreserveOrderPerPartition = true`. |
 
 ### `BenzeneHttpConfig` — `Benzene.SelfHost.Http`
 
