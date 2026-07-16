@@ -20,6 +20,7 @@ links out for the full story.
 - [UseHealthCheck](#usehealthcheck)
 - [UseSpec](#usespec)
 - [UseMessageHandlers](#usemessagehandlers)
+- [UsePresetTopic](#usepresettopic)
 - [UseFluentValidation](#usefluentvalidation)
 - [UseJsonSchema](#usejsonschema)
 - [UseLogResult / UseLogContext](#uselogresult--uselogcontext)
@@ -272,6 +273,46 @@ app.UseMessageHandlers(router => router
 ```
 
 See also: [Message Handlers](message-handlers).
+
+---
+
+## UsePresetTopic
+
+**Package:** `Benzene.Core.MessageHandlers` (`Benzene.Core.MessageHandlers.MiddlewarePipelineExtensions`)
+
+Routes **every** message on this one pipeline to a fixed topic, regardless of what (if anything)
+the transport message itself carries. For a queue or subscription whose producer isn't a Benzene
+client and never sets the usual `topic` message attribute/property (a raw SQS send, a Service Bus
+topic fed by another system, etc.) — call it before `UseMessageHandlers()`, on that specific
+pipeline only. A queue whose producer does send a proper topic just omits it and is unaffected.
+
+```csharp
+public static IMiddlewarePipelineBuilder<TContext> UsePresetTopic<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> app, string topicId, string version = "")
+```
+
+```csharp
+// A queue whose producer never sets a topic attribute at all:
+app.UseSqs(sqs => sqs
+    .UsePresetTopic("orders.created")
+    .UseMessageHandlers());
+
+// A second queue in the same app whose producer DOES send a proper topic just omits it:
+app.UseSqs(otherQueueConfig, sqs => sqs
+    .UseMessageHandlers());
+```
+
+Once set, the preset topic always wins for that pipeline's messages — even if a message happens to
+carry a stray `topic` attribute — so there's no separate "fallback vs. override" mode to configure.
+
+Implementation note for anyone extending Benzene with a new transport: the preset topic is carried
+in a small scoped (per-message) DI service, not a property on the transport context — a context
+type stays a pure description of the transport message, per this repo's context-purity convention.
+`UsePresetTopic<TContext>` has no constraints on `TContext` at all, so any transport gets this for
+free by registering `PresetTopicMessageTopicGetter<TContext>` (decorating its own real topic
+getter) as the default `IMessageTopicGetter<TContext>`, alongside a
+`services.TryAddScoped<PresetTopicHolder>()` call — no context changes required. `Benzene.Aws.Lambda.Sqs`,
+`Benzene.Aws.Sqs`, and `Benzene.Azure.Function.ServiceBus` are the reference implementations.
 
 ---
 

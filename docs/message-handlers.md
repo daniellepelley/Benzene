@@ -289,6 +289,9 @@ handlers (and diagnostics, e.g. `ActivityMiddlewareDecorator`'s `benzene.handler
   middleware (like FluentValidation) are built on.
 - [Common Middleware](common-middleware#usemessagehandlers) — `.UseMessageHandlers(...)` and
   `.UseFluentValidation()` as ready-made pipeline middleware.
+- [Common Middleware: UsePresetTopic](common-middleware#usepresettopic) — route every message on
+  one specific queue/subscription's pipeline to a fixed topic, for producers that never set the
+  usual topic attribute/property.
 - [Fluent Validation](fluent-validation) — request validation before a handler is invoked.
 - [Spec](spec) — generating OpenAPI/AsyncAPI documentation from `[Message]`/`[HttpEndpoint]`
   metadata.
