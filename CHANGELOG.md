@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for previously-supported shapes is unchanged.
 
 ### Added
+- `Benzene.CodeGen.Core`: `CodeGenHelpers.GenerateHash(EventServiceDocument)` — computes the
+  contract hash over a normalized document with the non-contract decoration stripped (generated
+  `example` payloads, `messageEndpoint`). Both the handler-array overload and
+  `Benzene.CodeGen.Client`'s baked-in SDK `HashCode` now go through it, so contract hashes are
+  **unchanged** by the new spec examples and existing deployed client SDKs don't falsely report
+  contract drift against upgraded services.
 - `Benzene.CodeGen.LambdaTestTool` (renamed from `Benzene.CodeGen.MockLambdaTool`, whose package
   name was out of sync with its `Benzene.CodeGen.LambdaTestTool` namespace — **breaking** for
   anyone referencing the old package id): productized test-payload-file generation.
