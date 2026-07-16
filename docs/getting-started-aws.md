@@ -281,6 +281,12 @@ dead-letter queue rather than the whole batch. See
 [AWS IAM Permissions](aws-iam-permissions) for the execution-role permissions the SQS event
 source mapping needs (`sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:GetQueueAttributes`).
 
+The topic is normally read from a `topic` message attribute, set by a Benzene client. If a
+queue's producer isn't a Benzene client and never sets one (a raw SQS send, a queue fed by
+another system), call `.UsePresetTopic("orders.created")` before `.UseMessageHandlers()` in that
+queue's pipeline to route every message on it to a fixed topic instead — see
+[Common Middleware: UsePresetTopic](common-middleware#usepresettopic).
+
 ### SNS
 
 ```csharp

@@ -393,7 +393,11 @@ Service Bus messages carry real key/value application properties, so — unlike 
 dispatches by topic via `[Message]`/message handler registration directly, the same way it does for
 Kafka. Since a Service Bus queue or topic/subscription isn't itself a per-message "topic" in
 Benzene's sense, set a `"topic"` application property on each message you send; that's what
-`ServiceBusMessageTopicGetter` reads to route to the matching handler. Add a trigger function that
+`ServiceBusMessageTopicGetter` reads to route to the matching handler. If a subscription's producer
+isn't a Benzene client and never sets that property at all, call `.UsePresetTopic("orders.created")`
+before `.UseMessageHandlers()` in that subscription's pipeline to route every message on it to a
+fixed topic instead — see [Common Middleware: UsePresetTopic](common-middleware#usepresettopic).
+Add a trigger function that
 injects `IAzureFunctionApp` and calls `HandleServiceBusMessages(...)`:
 
 ```csharp
