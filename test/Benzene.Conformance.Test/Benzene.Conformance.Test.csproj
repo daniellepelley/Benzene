@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\Benzene.Grpc\Benzene.Grpc.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Grpc.Client\Benzene.Grpc.Client.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Mesh.Collector\Benzene.Mesh.Collector.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Wire\Benzene.Mesh.Wire.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Results\Benzene.Results.csproj" />

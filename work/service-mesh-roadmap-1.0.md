@@ -1,6 +1,25 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-16 full-contract update: the .NET implementation is now the primary, complete
+> implementation of `docs/specification/mesh.md`.** The previously open item 3 is done:
+> `Benzene.Mesh.Collector` implements the spec collector (§4-§6) as dogfooded message handlers
+> over an in-memory store - register/heartbeat/traces ingest with validation, provider edges
+> replaced wholesale on re-registration, consumer edges derived from trace parentage at query
+> time, per-instance health with descriptor-hash mismatch surfacing, missing-feed markers per
+> service, and a bounded trace ring (cumulative stats outlive it; unit-pinned in
+> `Benzene.Mesh.Test/MeshCollectorStoreTest`). `Benzene.Conformance.Test` now runs
+> `mesh-collector-cases.json` too - **all three mesh fixture files pass (115 conformance tests
+> green)**, making .NET the first implementation to cover the full contract in one codebase.
+> The reversed cross-language demo also ran for real: the .NET collector (hosted behind a
+> plain wire-envelope HTTP endpoint) ingested a GO service's registration/heartbeat/traces
+> alongside the C# dotnet-orders service and derived the go-greeter↔dotnet-orders fleet -
+> providers, consumers, health, and joined flows - across languages, mirroring the earlier
+> demo against the Go collector. Remaining integration follow-ups (not contract gaps):
+> bridging the aggregator's artifact/UI pipeline to `Benzene.Mesh.Collector` (e.g. the
+> collector as an `IMeshServiceSource`, or the aggregator publishing collector state), and
+> surfacing the collector's read models in the Mesh UI.
+
 > **2026-07-16 .NET wire-layer update:** items 1, 2, and 4 of the spec-promotion update below
 > are now DONE, as the new `Benzene.Mesh.Wire` package (see its CLAUDE.md):
 > - Descriptor derivation (spec §2) from `IMessageHandlerDefinitionLookUp` with the §2.1
