@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   advertises as a new optional top-level `messageEndpoint` field (additive; round-tripped by
   `EventServiceDocumentDeserializer`). Replaces the ad-hoc `UseHttpToBenzeneMessage` prototype in
   `examples/Aws`.
+- `Benzene.Spec.Ui`: "Try it" panel — when the loaded spec advertises `messageEndpoint`, every
+  topic/event card gains an editable payload (pre-filled from the spec `example`), a headers
+  editor, and a Send/Dispatch button that POSTs the BenzeneMessage envelope and renders the
+  response envelope inline (HTTP + Benzene status chips, headers, pretty-printed body, duration).
+  The page stays fully self-contained (vanilla JS, no external requests) and degrades to the
+  read-only viewer when no `messageEndpoint` is present.
 - `Benzene.Schema.OpenApi`: the `benzene` spec format now carries a generated `example` payload on
   every request topic and broadcast event, produced during `EventServiceDocumentBuilder.Build()` by
   the hardened `ExamplePayloadBuilder` (deterministic, validation-aware — see the Changed entry).

@@ -17,6 +17,13 @@ around message **topics** rather than URL paths.
 - **Example payloads** — the generated `example` the `benzene` spec carries per topic and event
   (see [Spec](spec.md)), pretty-printed with a one-click **copy** button, ready to paste into a
   test invocation.
+- **Try it** — when the spec advertises a message endpoint (`messageEndpoint`, exposed by
+  `UseBenzeneMessage` — see [Payload Testing](payload-testing.md)), every topic and event card
+  gains an editable payload (pre-filled from the example), a headers editor, and a
+  **Send**/**Dispatch** button. The response envelope renders inline: HTTP status and Benzene
+  status chips, response headers, pretty-printed body, and round-trip time. Without a
+  `messageEndpoint` in the spec the page stays a read-only viewer — capability is gated by the
+  service, not the page.
 
 ## Serving it
 
