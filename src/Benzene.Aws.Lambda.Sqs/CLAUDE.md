@@ -48,6 +48,11 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 - Topic determined from the `topic` message attribute by default, or a fixed preset topic per
   queue if configured via `.UsePresetTopic(...)` (see "Message Handling" above)
 - Failed messages can be retried via SQS dead-letter queue
-- Partial batch failures supported
+- Partial batch failures supported by default (`SqsBatchFailureMode.PartialBatchFailure` - only
+  the messages that actually failed are reported via `SQSBatchResponse.BatchItemFailures`, so SQS
+  redrives just those). `UseSqs(..., configure)` takes an optional `SqsOptions` delegate; set
+  `BatchFailureMode = SqsBatchFailureMode.FailWholeBatch` to instead throw `SqsBatchProcessingException`
+  on any failure, failing the whole invocation so SQS retries every message in the batch. Purely
+  additive/opt-in - see `docs/cookbooks/handling-sqs-failures.md`
 - Message body deserialized to request object
 - Receipt handle available in context for manual acknowledgment

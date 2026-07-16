@@ -62,6 +62,20 @@ Either way, only the specific `MessageId`s that failed go into `SQSBatchResponse
 
 This is native AWS Lambda SQS event source mapping behavior (`ReportBatchItemFailures` / `functionResponseTypes`); Benzene's contribution is populating the response correctly per-record so you get it without writing the batch-reconciliation logic yourself.
 
+### Opting into whole-batch failure instead
+
+Partial-batch-failure reporting is the default and the AWS best practice, but it isn't always what you want — e.g. when messages in a batch aren't independent of each other (strict per-partition ordering), or when you haven't configured `ReportBatchItemFailures` on the event source mapping and would rather have Benzene fail loudly and obviously (via a thrown exception) than have AWS silently ignore the partial response. `UseSqs` takes an optional `SqsOptions` configure delegate for this:
+
+```csharp
+using Benzene.Aws.Lambda.Sqs;
+
+app.UseSqs(sqs => sqs
+        .UseMessageHandlers(),
+    options => options.BatchFailureMode = SqsBatchFailureMode.FailWholeBatch);
+```
+
+With `SqsBatchFailureMode.FailWholeBatch`, every message in the batch still runs (nothing is skipped or cancelled early), but if *any* message failed, `SqsApplication` throws an `SqsBatchProcessingException` (listing the failed message IDs) instead of returning a partial `SQSBatchResponse`. Because the Lambda invocation itself fails, SQS retries/redrives **every** message in the batch — including the ones that actually succeeded — the same as if `ReportBatchItemFailures` weren't configured at all. The default (`SqsBatchFailureMode.PartialBatchFailure`) reproduces today's behavior exactly; this is purely opt-in.
+
 ## Step-by-Step Implementation
 
 ### 1. Write a handler that can fail

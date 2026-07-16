@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Aws.Lambda.Sqs`: `SqsOptions.BatchFailureMode` (via a new `Action<SqsOptions>? configure`
+  parameter on `UseSqs`) - defaults to `SqsBatchFailureMode.PartialBatchFailure`, reproducing
+  today's per-message `SQSBatchResponse.BatchItemFailures` reporting exactly. Set to
+  `SqsBatchFailureMode.FailWholeBatch` to instead throw the new `SqsBatchProcessingException` when
+  any message in the batch fails, so SQS retries the whole batch instead of just the failed
+  messages. Purely additive.
+- `Benzene.Aws.Lambda.Sns`: `SnsOptions.CatchExceptions` and `SnsOptions.RaiseOnFailureStatus` (via
+  a new `Action<SnsOptions>? configure` parameter on `UseSns`) - both default to `false`,
+  reproducing today's implicit behavior exactly (a handler exception cascades to fail the Lambda
+  invocation, triggering SNS's own subscription retry policy; a non-exception failure result is
+  silently accepted, no retry). `CatchExceptions = true` catches and logs exceptions instead of
+  cascading them; `RaiseOnFailureStatus = true` escalates a non-exception failure result into the
+  new `SnsMessageProcessingException`, so SNS retries it too - `CatchExceptions` governs both real
+  and escalated exceptions uniformly. Purely additive. See `work/batch-failure-handling.md` for the
+  general containment/escalation vocabulary this establishes for other batch/event transports
+  (Kinesis, EventBridge, Kafka, Azure Functions Kafka/Service Bus, the polling SQS consumer), none
+  of which are changed by this entry.
 - `Benzene.Core.MessageHandlers`: `UsePresetTopic<TContext>(topicId, version)` pipeline extension,
   `PresetTopicMiddleware<TContext>`, and `PresetTopicMessageTopicGetter<TContext>` - lets a specific
   SQS queue or Service Bus subscription route every message to one fixed topic, for producers that
