@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Core.MessageHandlers;
@@ -32,6 +33,7 @@ public class SnsFailureHandlingTest
     {
         var mockLogger = new Mock<ILogger<SnsApplication>>();
         var mockResolver = new Mock<IServiceResolver>();
+        mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
         mockResolver.Setup(x => x.GetService<ILogger<SnsApplication>>()).Returns(mockLogger.Object);
         var mockResolverFactory = new Mock<IServiceResolverFactory>();
         mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
