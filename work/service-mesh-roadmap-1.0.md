@@ -1,6 +1,42 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-16 spec-promotion update:** the Go port's mesh (benzene-go `mesh`/`meshd`, designed
+> in its `docs/design/mesh.md`) has been promoted into this repo's spec as
+> [`docs/specification/mesh.md`](../docs/specification/mesh.md), with three conformance fixture
+> files (`mesh-descriptor-cases.json`, `mesh-trace-cases.json`, `mesh-collector-cases.json`)
+> that the Go port passes as the reference implementation. That contract and this roadmap's
+> packages evolved independently and overlap: spec §9 maps `Benzene.Mesh.*` onto the promoted
+> wire shapes. The short version — nothing here is discarded (pull aggregation, OpenAPI
+> artifacts, Tempo topology, and the UI are collector-side idioms the spec deliberately doesn't
+> constrain), and three of this roadmap's own open items are solved by adopting the wire layer:
+> the `topology.json` edge-derivation gap (spec §3–4: edges from native trace parentage, no
+> Tempo/Prometheus required), the staleness gap flagged by `Benzene.Mesh.Reporting` (spec §5
+> heartbeats), and the hand-maintained `mesh.json` (spec §2: derived descriptors; the registry
+> remains as a pull-mode bootstrap for unmeshed services).
+>
+> **What .NET conformance requires** (spec §7 — mesh is optional, but implementing it means
+> implementing it compatibly):
+> 1. Descriptor derivation (§2) from registration + the §2.1 CLR→schema mapping + the §2.2
+>    hash, served on the reserved `mesh` topic (§1) → pass `mesh-descriptor-cases.json`.
+> 2. A trace middleware emitting §3 TraceEvents (W3C traceparent join; missing handler /
+>    conversion failure / handler exception all traced via their result statuses) → pass
+>    `mesh-trace-cases.json`.
+> 3. Optionally, the aggregator gains the three ingest topics (`mesh:register`,
+>    `mesh:heartbeat`, `mesh:traces`) as additional sources beside HTTP-poll and
+>    Lambda-invoke → pass `mesh-collector-cases.json`; consumer edges from trace parentage
+>    become a new `TopologyEdgeSource` alongside Tempo.
+> 4. Cross-language fleet demo: a C# service and a Go service in one collector's view (either
+>    collector — Go `meshd` or this aggregator — since both would speak the same envelopes).
+>
+> **Blocked in the authoring environment, explicitly:** none of the above C# work is started
+> here — this sandbox has no .NET SDK and its egress policy 403s the SDK download (the same
+> constraint that blocked Phase 3's live Tempo verification). Writing untested C# against a
+> freshly promoted contract was judged worse than scoping it precisely for the next pass with
+> a real toolchain. The Go side of the demo is ready: benzene-go's `examples/mesh-helloworld`
+> runs the collector + a reduced-feed service today, and its conformance suite pins the wire
+> shapes a C# implementation must match.
+
 > **2026-07-14 implementation update:** Phase 0 (§4.1, structured `HealthCheckDependency`) is
 > done and on `main`. Phase 1 is **partially** done, as `Benzene.Mesh.Contracts` +
 > `Benzene.Mesh.Aggregator`, with some deliberate deviations from this document's original

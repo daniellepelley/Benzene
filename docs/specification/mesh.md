@@ -3,8 +3,10 @@
 **Status: DRAFT v0.1 — promoted from
 [benzene-go](https://github.com/daniellepelley/benzene-go)'s `docs/design/mesh.md`. Unusually for
 this spec, the Go port is the reference implementation for this document (its `mesh/` and `meshd/`
-packages); the .NET implementation has not yet implemented mesh and will be brought up to this
-contract.**
+packages). The .NET implementation ships its own mesh *visibility* feature (the `Benzene.Mesh.*`
+packages, developed independently against `work/service-mesh-roadmap-1.0.md`) whose shapes predate
+this contract and do not yet speak it — §9 maps the two and names the convergence path; the
+roadmap file carries the .NET-side plan.**
 
 Benzene Mesh is the *application-level* mesh: every service self-describes (its topics, versions,
 and payload schemas, derived from its handler registry), reports health, and emits one semantic
@@ -224,3 +226,37 @@ and the canonical mesh handlers are documented there. A port that implements mes
 collector MUST pass `mesh-collector-cases.json`. A port that implements neither is unaffected —
 mesh is an optional module, and this spec creates no obligation to implement it, only the
 obligation to implement it *compatibly*.
+
+## 8. Conformance language note
+
+Per the repository's one design rule, everything in §§1–6 is a Benzene *concept* — wire shapes
+and cross-process behavior. How a port derives its descriptor (attribute scanning vs explicit
+registration), how a collector stores state, and what a view renders are *idioms* and stay out
+of this document.
+
+## 9. Relationship to the existing .NET mesh packages *(informative)*
+
+The `Benzene.Mesh.*` packages implement a mesh visibility pipeline that predates this contract:
+a human-maintained `mesh.json` registry, an aggregator that polls each service's OpenAPI `/spec`
+and `/health` endpoints (or receives opportunistic `MeshServiceReport` self-reports), raw-spec
+hashing for contract drift (`MeshHashing`, HMAC-SHA256), Tempo/Prometheus-derived
+`topology.json` edges, and a static Mesh UI. The two designs solve the same problem from
+opposite ends, and several of the .NET roadmap's own open gaps are exactly what this contract
+provides:
+
+| `Benzene.Mesh.*` today | This contract | Convergence |
+|---|---|---|
+| `mesh.json` registry, human-edited | catalog derived from `mesh:register` + heartbeats | registry remains a pull-mode bootstrap for unmeshed services; meshed services need no entry |
+| `MeshServiceReport` (name, reportedAt, opaque OpenAPI `SpecJson`, health, error) | ServiceDescriptor (§2, topics + derived schemas) + Heartbeat (§5) | the self-report is register+heartbeat in one; the descriptor replaces the opaque spec for wire purposes — the OpenAPI artifact can remain as an enrichment |
+| `MeshHashing` (HMAC-SHA256 of raw spec text) | `descriptorHash` (§2.2, SHA-256 of canonical descriptor JSON) | .NET adopts §2.2 on the wire; `MeshHashing` stays internal to its OpenAPI-artifact drift feature |
+| `TopologyEdge` from Tempo/Prometheus (client/server + rates/latencies) | consumer edges derived from TraceEvent parentage (§3–4) | the native trace feed yields edges with no external tracing stack; Tempo remains an optional additional `TopologyEdgeSource` |
+| `MeshSelfReportMiddleware` (opportunistic, throttled, never blocks) | trace middleware + heartbeat, same never-affect-the-service rule (§6) | the ethos is already shared; the shapes converge |
+| aggregator + `manifest.json`/`services/*.json` + Mesh UI | a collector (§4) with its own read models and view | the aggregator becomes a conformant collector by also accepting the three ingest topics alongside its pull sources |
+| known staleness gap (no `Stale` status) | heartbeats give last-seen; missing feeds are rendered as reduced (§6) | solved by adopting §5 |
+| health: `HealthCheckResponse` | the same wire-contracts §5 shape, reused verbatim | already shared — no change |
+
+Nothing in the existing packages needs to be discarded: pull-based aggregation, the OpenAPI
+artifacts, Tempo topology, and the UI are collector-side idioms this contract deliberately does
+not constrain. Conformance for the .NET port means adding the wire layer: descriptor derivation
+(§2) with the reserved topic (§1), the trace feed (§3), and — for the aggregator — the ingest
+topics (§4). The concrete plan lives in `work/service-mesh-roadmap-1.0.md`.
