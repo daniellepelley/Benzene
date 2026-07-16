@@ -79,6 +79,26 @@ Registering the endpoint also registers an `IBenzeneMessageHttpEndpointInfo`, an
 spec advertises it as a top-level `messageEndpoint` field. Consumers — the Spec UI's *Try it*
 panel in particular — feature-detect send capability on that field: no field, no send button.
 
+## Generating test payload files (AWS Lambda Test Tool)
+
+For firing payloads from tooling rather than the browser, the `benzene` CLI can generate
+per-topic test payload files from a service's spec — one JSON file per topic per transport
+(`<topic>-benzene-message.json`, `<topic>-sns.json`, `<topic>-sqs.json`, and
+`<topic>-api-gateway.json` for HTTP-mapped topics), ready to paste into the AWS Lambda Test Tool
+or send with `curl`:
+
+```bash
+# from a running lambda
+benzene lambda-test-tool -profile my-aws-profile -lambda-name my-service -directory ./test-payloads
+
+# or from a spec JSON file on disk
+benzene lambda-test-tool -file ./spec.json -directory ./test-payloads
+```
+
+The generation lives in `Benzene.CodeGen.LambdaTestTool` (`LambdaTestFilesBuilder` +
+`DefaultExampleBuilders`), and the payload bodies come from the same spec-driven example
+generator as everything else on this page.
+
 ## ⚠ Security
 
 The endpoint dispatches **every topic the pipeline routes**, including topics that have no HTTP

@@ -11,6 +11,8 @@ public static class Constants
     public const string OutputDescription = "The build output, either 'client', 'message-handlers' or 'readme'";
     public const string Directory = "directory";
     public const string DirectoryDescription = "The destination directory for the code. Leave empty for current directory.";
+    public const string File = "file";
+    public const string FileDescription = "Path to a benzene spec JSON file to read instead of fetching the spec from a lambda";
     public const string ConfluenceUser = "confluence-user";
     public const string ConfluenceUserDescription = "The username for the Confluence account";
     public const string ConfluenceApiToken = "confluence-api-token";

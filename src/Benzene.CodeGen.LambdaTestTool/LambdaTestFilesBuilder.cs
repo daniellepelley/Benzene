@@ -9,6 +9,10 @@ public class LambdaTestFilesBuilder : ICodeBuilder<EventServiceDocument>
 {
     private readonly IExampleBuilder[] _exampleBuilders;
 
+    public LambdaTestFilesBuilder()
+        : this(DefaultExampleBuilders.Create())
+    { }
+
     public LambdaTestFilesBuilder(IExampleBuilder[] exampleBuilders)
     {
         _exampleBuilders = exampleBuilders;

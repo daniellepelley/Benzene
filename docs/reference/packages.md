@@ -188,7 +188,7 @@ topics. See [Terraform](../terraform) and [OpenAPI Specification](../spec).
 | `Benzene.CodeGen.ApiGateway` | Generate AWS API Gateway definitions from HTTP endpoints. |
 | `Benzene.CodeGen.Terraform` | Generate Terraform for Lambda functions and event-bus permissions. |
 | `Benzene.CodeGen.Markdown` | Generate Markdown documentation for a service and its messages. |
-| `Benzene.CodeGen.MockLambdaTool` | Generate saved-request test files for the AWS Lambda mock test tool. |
+| `Benzene.CodeGen.LambdaTestTool` | Generate per-topic test payload files (BenzeneMessage envelope, SNS, SQS, API Gateway) for the AWS Lambda Test Tool — see [Payload Testing](../payload-testing). |
 | `Benzene.CodeGen.SourceGenerators` | Roslyn source generator that discovers message handlers at compile time (an alternative to runtime reflection). |
 | `Benzene.CodeGen.Cli` / `Benzene.CodeGen.Cli.Core` | The `benzene` code-generation command-line tool and its core. |
 | `Benzene.Extras` | Additional/optional middleware — event broadcasting and JSON-patch (`PATCH`) support. |

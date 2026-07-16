@@ -71,4 +71,19 @@ public class LambdaTestToolBuilderTest
         Assert.Equal(3, codeFiles.Length);
     }
 
+    [Fact]
+    public void DefaultExampleBuilders_Test()
+    {
+        var messageHandlerDefinition = MessageHandlerDefinition.CreateInstance("tenant:create",
+            typeof(InternalDto),
+            typeof(Inner));
+
+        var httpEndpointDefinition = HttpEndpointDefinition.CreateInstance("POST", "/tenants", "tenant:create");
+
+        var eventServiceDocument = httpEndpointDefinition.ToEventServiceDocument(messageHandlerDefinition);
+
+        var codeFiles = new LambdaTestFilesBuilder().BuildCodeFiles(eventServiceDocument);
+
+        Assert.Equal(4, codeFiles.Length);
+    }
 }

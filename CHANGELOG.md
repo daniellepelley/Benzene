@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for previously-supported shapes is unchanged.
 
 ### Added
+- `Benzene.CodeGen.LambdaTestTool` (renamed from `Benzene.CodeGen.MockLambdaTool`, whose package
+  name was out of sync with its `Benzene.CodeGen.LambdaTestTool` namespace — **breaking** for
+  anyone referencing the old package id): productized test-payload-file generation.
+  `DefaultExampleBuilders` provides the standard per-transport set (BenzeneMessage envelope, SNS,
+  SQS, API Gateway), `LambdaTestFilesBuilder` gains a parameterless constructor using it, and the
+  CodeGen CLI gains a `lambda-test-tool` command (`-profile`/`-lambda-name` to fetch the spec
+  from a Lambda, or `-file` to read it from disk; `-directory` for output). See
+  `docs/payload-testing.md`.
 - `Benzene.Http`: BenzeneMessage-over-HTTP endpoint — `UseBenzeneMessage` (namespace
   `Benzene.Http.BenzeneMessage`) mounts a `BenzeneMessageHttpMiddleware<TContext>` on any Benzene
   HTTP pipeline (API Gateway, Azure Functions, ASP.NET Core, self-host): POST a

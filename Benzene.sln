@@ -60,7 +60,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.CodeGen.Core", "src
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.CodeGen.Terraform", "src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj", "{97259CC5-8BDE-433A-B4D9-09F2B899A4D0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.CodeGen.MockLambdaTool", "src\Benzene.CodeGen.MockLambdaTool\Benzene.CodeGen.MockLambdaTool.csproj", "{D3A05883-0617-4463-A94A-D2831B6EEB9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.CodeGen.LambdaTestTool", "src\Benzene.CodeGen.LambdaTestTool\Benzene.CodeGen.LambdaTestTool.csproj", "{D3A05883-0617-4463-A94A-D2831B6EEB9D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Azure", "Azure", "{CDFA0948-0562-4FA5-B007-D38BEAFFA391}"
 EndProject

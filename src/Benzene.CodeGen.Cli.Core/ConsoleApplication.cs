@@ -1,6 +1,7 @@
 ﻿using Benzene.CodeGen.Cli.Core.Commands.Build;
 using Benzene.CodeGen.Cli.Core.Commands.Confluence;
 using Benzene.CodeGen.Cli.Core.Commands.HealthCheck;
+using Benzene.CodeGen.Cli.Core.Commands.LambdaTestTool;
 using Benzene.CodeGen.Cli.Core.Commands.Spec;
 using Benzene.CodeGen.Cli.Core.Parsing;
 
@@ -18,6 +19,7 @@ public class ConsoleApplication
             new BuildCommand(),
             new HealthCheckCommand(),
             new SpecCommand(),
+            new LambdaTestToolCommand(),
             new ConfluenceCommand()
             );
     }
