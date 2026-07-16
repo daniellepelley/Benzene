@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 using Benzene.Aws.Lambda.Core;
-using Benzene.Core.MessageHandlers.DI;
-using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Core.MessageHandlers;
 using Benzene.Http.BenzeneMessage;
 using Benzene.Test.Examples;
 using Benzene.Testing;

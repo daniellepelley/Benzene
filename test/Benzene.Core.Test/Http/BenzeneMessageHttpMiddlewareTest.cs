@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
@@ -23,6 +24,13 @@ public class BenzeneMessageHttpMiddlewareTest
     {
     }
 
+    private class FakeSetCurrentTransport : ISetCurrentTransport
+    {
+        public void SetTransport(string transport)
+        {
+        }
+    }
+
     private class FakeServiceResolver : IServiceResolver
     {
         public void Dispose()
@@ -34,6 +42,11 @@ public class BenzeneMessageHttpMiddlewareTest
             if (typeof(T) == typeof(IServiceResolverFactory))
             {
                 return (T)(object)new FakeServiceResolverFactory(this);
+            }
+
+            if (typeof(T) == typeof(ISetCurrentTransport))
+            {
+                return (T)(object)new FakeSetCurrentTransport();
             }
 
             throw new InvalidOperationException($"No service registered for {typeof(T).Name}");

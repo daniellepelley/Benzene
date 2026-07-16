@@ -144,11 +144,9 @@ public class BenzeneMessageHttpMiddleware<TContext> : IMiddleware<TContext> wher
         {
             StatusCode = statusCode,
             Headers = new Dictionary<string, string>(),
-            Body = Serializer.Serialize(new ErrorMessage(message))
+            Body = Serializer.Serialize(new Dictionary<string, string> { ["message"] = message })
         };
     }
-
-    private record ErrorMessage(string Message);
 
     private static string NormalizePath(string? path)
     {
