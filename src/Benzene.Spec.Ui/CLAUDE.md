@@ -35,6 +35,9 @@ and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-ho
 - Resolves `$ref`s into `components.schemas`; renders each topic as an expandable "operation" with
   its request/response payload tables, required-field emphasis, and validation constraint chips
   (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`).
+- Renders the per-topic/per-event `example` payload the `benzene` spec carries (generated
+  server-side by `Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder` during spec build),
+  pretty-printed with a copy button (`navigator.clipboard` with an `execCommand` fallback).
 - Loads a spec from, in precedence order: `?url=` query param → `data-spec-url` on the document root
   → embedded sample. Theme-aware (light/dark), with a search filter and a "Load spec" dialog.
 

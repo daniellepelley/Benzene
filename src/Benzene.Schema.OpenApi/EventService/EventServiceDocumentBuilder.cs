@@ -3,7 +3,9 @@ using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Messages;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.Abstractions;
+using Benzene.Schema.OpenApi.Examples;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 
@@ -34,16 +36,55 @@ namespace Benzene.Schema.OpenApi.EventService
 
         public EventServiceDocument Build()
         {
+            var components = new OpenApiComponents
+            {
+                Schemas = _schemaBuilder.Build()
+            };
+
+            AddGeneratedExamples(components.Schemas);
+
             return new EventServiceDocument(
                 _openApiInfo,
                 _tags.ToArray(),
                 _requests.ToArray(),
                 _events.ToArray(),
-                new OpenApiComponents
-                {
-                    Schemas = _schemaBuilder.Build()
-                }
+                components
             );
+        }
+
+        /// <summary>
+        /// Populates each request/event with a deterministic example payload generated from its
+        /// schema (see <see cref="ExamplePayloadBuilder"/>), unless an example was already
+        /// supplied. Generation failures never fail the spec build — the example is simply
+        /// omitted for that topic.
+        /// </summary>
+        private void AddGeneratedExamples(IDictionary<string, OpenApiSchema> schemas)
+        {
+            var schemaGetter = new SchemaGetter(schemas);
+            var examplePayloadBuilder = new ExamplePayloadBuilder();
+
+            foreach (var request in _requests.Where(x => x.Example == null && x.Request != null))
+            {
+                request.Example = TryBuildExample(examplePayloadBuilder, request.Request, schemaGetter);
+            }
+
+            foreach (var @event in _events.Where(x => x.Example == null && x.Message != null))
+            {
+                @event.Example = TryBuildExample(examplePayloadBuilder, @event.Message, schemaGetter);
+            }
+        }
+
+        private static IOpenApiAny? TryBuildExample(IExamplePayloadBuilder examplePayloadBuilder,
+            OpenApiSchema schema, ISchemaGetter schemaGetter)
+        {
+            try
+            {
+                return OpenApiAnyConverter.ToOpenApiAny(examplePayloadBuilder.Build(schema, schemaGetter));
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public Dictionary<string, OpenApiSchema> GetSchemas()

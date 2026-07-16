@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for previously-supported shapes is unchanged.
 
 ### Added
+- `Benzene.Schema.OpenApi`: the `benzene` spec format now carries a generated `example` payload on
+  every request topic and broadcast event, produced during `EventServiceDocumentBuilder.Build()` by
+  the hardened `ExamplePayloadBuilder` (deterministic, validation-aware — see the Changed entry).
+  `RequestResponse.Example`/`Event.Example` are new optional members; the field is additive, and
+  `EventServiceDocumentDeserializer` round-trips it. `Benzene.Spec.Ui` renders the example per
+  topic/event with a copy button. See `docs/spec.md` / `docs/spec-ui.md`.
 - `Benzene.Core.MessageHandlers`: `UsePresetTopic<TContext>(topicId, version)` pipeline extension,
   `PresetTopicMiddleware<TContext>`, and `PresetTopicMessageTopicGetter<TContext>` - lets a specific
   SQS queue or Service Bus subscription route every message to one fixed topic, for producers that
