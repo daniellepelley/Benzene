@@ -48,6 +48,10 @@ already runs, not a bespoke standalone tool.
 - `MeshAggregateMessageHandler` - thin `IMessageHandler<Void, MeshManifest>` wrapper resolving
   `MeshAggregator`/`MeshServiceRegistry` from DI and calling `RunOnceAsync` - the "dogfooding" piece
   that makes the aggregator itself a real Benzene service rather than only in-process-callable.
+  Its own delegation is unit-tested directly in `test/Benzene.Mesh.Test/MeshAggregateMessageHandlerTest.cs`
+  (mirroring `MeshReportMessageHandlerTest.cs`'s style); `RunOnceAsync`'s own behavior (concurrency,
+  per-service timeout, status/drift determination, unreachable/unknown-source handling) is covered
+  exhaustively by `MeshAggregatorTest.cs` instead.
 - `IMeshArtifactStore` - `PublishAsync`/`TryReadAsync` port; `FileSystemMeshArtifactStore` is the
   only implementation this package ships (local disk). A blob-storage adapter (S3/Azure Blob) is a
   natural follow-up package implementing the same interface, not built here.
