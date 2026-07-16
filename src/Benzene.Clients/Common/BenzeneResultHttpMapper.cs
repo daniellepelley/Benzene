@@ -19,16 +19,21 @@ public static class BenzeneResultHttpMapper
             case "401":
             case "403":
             case "404":
+            case "408":
             case "409":
             case "422":
+            case "429":
+            case "500":
             case "501":
+            case "502":
             case "503":
+            case "504":
                 return BenzeneResult.Set<T>(MapBenzeneResultStatus(statusCode), false);
             default:
-                return BenzeneResult.UnexpectedError<T>("Status code {statusCode} not mapped", statusCode);
+                return BenzeneResult.UnexpectedError<T>($"Status code {statusCode} not mapped");
         }
     }
-    
+
     public static string MapBenzeneResultStatus(string statusCode)
     {
         switch (statusCode)
@@ -48,14 +53,22 @@ public static class BenzeneResultHttpMapper
                 return BenzeneResultStatus.Forbidden;
             case "404":
                 return BenzeneResultStatus.NotFound;
+            case "408":
+                return BenzeneResultStatus.Timeout;
             case "409":
                 return BenzeneResultStatus.Conflict;
             case "422":
                 return BenzeneResultStatus.ValidationError;
+            case "429":
+                return BenzeneResultStatus.TooManyRequests;
             case "501":
                 return BenzeneResultStatus.NotImplemented;
+            case "502":
+                return BenzeneResultStatus.ServiceUnavailable;
             case "503":
                 return BenzeneResultStatus.ServiceUnavailable;
+            case "504":
+                return BenzeneResultStatus.Timeout;
             default:
                 return BenzeneResultStatus.UnexpectedError;
         }
@@ -66,29 +79,6 @@ public static class BenzeneResultHttpMapper
     {
         return Map<T>(Convert.ToInt32(httpStatusCode).ToString());
     }
-
-    private static readonly string[] SuccessStatuses =
-    {
-        BenzeneResultStatus.Ok,
-        BenzeneResultStatus.Created,
-        BenzeneResultStatus.Accepted,
-        BenzeneResultStatus.Updated,
-        BenzeneResultStatus.Deleted,
-        BenzeneResultStatus.Ignored
-    };
-
-    private static readonly string[] FailureStatuses =
-    {
-        BenzeneResultStatus.BadRequest,
-        BenzeneResultStatus.ValidationError,
-        BenzeneResultStatus.Unauthorized,
-        BenzeneResultStatus.Forbidden,
-        BenzeneResultStatus.NotFound,
-        BenzeneResultStatus.Conflict,
-        BenzeneResultStatus.NotImplemented,
-        BenzeneResultStatus.ServiceUnavailable,
-        BenzeneResultStatus.UnexpectedError
-    };
 
     /// <summary>
     /// Normalizes a response's status code to a Benzene result status. A raw Benzene status (the
@@ -104,7 +94,7 @@ public static class BenzeneResultHttpMapper
             return null;
         }
 
-        if (SuccessStatuses.Contains(statusCode) || FailureStatuses.Contains(statusCode))
+        if (BenzeneResultStatus.IsKnown(statusCode))
         {
             return statusCode;
         }
@@ -119,20 +109,27 @@ public static class BenzeneResultHttpMapper
             case "401":
             case "403":
             case "404":
+            case "408":
             case "409":
             case "422":
+            case "429":
             case "500":
             case "501":
+            case "502":
             case "503":
+            case "504":
                 return MapBenzeneResultStatus(statusCode);
             default:
                 return null;
         }
     }
 
-    /// <summary>Whether a (normalized) Benzene result status is a success status.</summary>
+    /// <summary>
+    /// Whether a (normalized) Benzene result status is a success status. Delegates to
+    /// <see cref="BenzeneResultStatus.IsSuccess"/> — the single owner of status classification.
+    /// </summary>
     public static bool IsSuccessStatus(string status)
     {
-        return SuccessStatuses.Contains(status);
+        return BenzeneResultStatus.IsSuccess(status);
     }
 }

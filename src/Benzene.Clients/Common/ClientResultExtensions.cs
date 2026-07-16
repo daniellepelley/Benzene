@@ -18,7 +18,7 @@ namespace Benzene.Clients.Common
             var status = BenzeneResultHttpMapper.NormalizeStatus(source.StatusCode);
             if (status == null)
             {
-                return BenzeneResult.UnexpectedError<T>("Status code {statusCode} not mapped", source.StatusCode);
+                return BenzeneResult.UnexpectedError<T>($"Status code {source.StatusCode} not mapped");
             }
 
             if (source.Body == null)

@@ -22,6 +22,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for previously-supported shapes is unchanged.
 
 ### Added
+- `Benzene.Results`: two new statuses — `TooManyRequests` (throttled/rate limited; HTTP 429, gRPC
+  `ResourceExhausted`) and `Timeout` (downstream deadline elapsed; HTTP 504, gRPC
+  `DeadlineExceeded`) — with the full complement of factories (`BenzeneResult.TooManyRequests`/
+  `Timeout`) and extensions (`IsTooManyRequests()`/`IsTimeout()`). `BenzeneResultStatus` becomes
+  the single owner of status classification: new `IsSuccess`/`IsFailure`/`IsKnown`/`IsTransient`
+  helpers, with `BenzeneResultHttpMapper`, the conformance status handler, and
+  `RetryBenzeneMessageClient` rewired onto them. HTTP reverse mapping gains explicit
+  408/422/429/500/501/502/503/504 rows in both `BenzeneResultHttpMapper` and
+  `Convert(HttpStatusCode)` (422/501/503 previously fell to `UnexpectedError` through the
+  latter). The portable spec (`wire-contracts.md` §3/§4) and its conformance fixtures are
+  updated in lockstep. **Behavioral changes:** `BenzeneResult.Set(status)`/`Set(status, payload)`
+  now derive `IsSuccessful` from the status class (a known failure status yields an unsuccessful
+  result; application-defined statuses keep the successful default; `Set<T>(status, bool)` stays
+  explicit, and a new `Set<T>(status, payload, isSuccessful)` overload covers
+  failure-status-with-payload-body results — `HealthCheckProcessor` uses it to keep the
+  unhealthy 503 + report-body behavior); `RetryBenzeneMessageClient` also retries `TooManyRequests` (not `Timeout` — retrying
+  a possibly-applied operation is only safe when idempotent; opt in via the new `shouldRetry`
+  constructor parameter) and returns the last inner result after exhausting retries instead of a
+  synthesized `ServiceUnavailable`; gRPC reverse mapping `DeadlineExceeded` now yields `Timeout`
+  (was `ServiceUnavailable`). Fixes two missing-`$` interpolation bugs in the unmapped-status
+  error messages. See `docs/plans/results-taxonomy-plan.md` and `docs/reference/results.md`.
 - `Benzene.CodeGen.Core`: `CodeGenHelpers.GenerateHash(EventServiceDocument)` — computes the
   contract hash over a normalized document with the non-contract decoration stripped (generated
   `example` payloads, `messageEndpoint`). Both the handler-array overload and

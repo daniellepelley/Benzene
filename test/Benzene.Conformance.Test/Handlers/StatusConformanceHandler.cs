@@ -24,19 +24,9 @@ public class StatusReply
 [Message("conformance:status")]
 public class StatusConformanceHandler : IMessageHandler<StatusRequest, StatusReply>
 {
-    private static readonly string[] SuccessStatuses =
-    {
-        BenzeneResultStatus.Ok,
-        BenzeneResultStatus.Created,
-        BenzeneResultStatus.Accepted,
-        BenzeneResultStatus.Updated,
-        BenzeneResultStatus.Deleted,
-        BenzeneResultStatus.Ignored
-    };
-
     public Task<IBenzeneResult<StatusReply>> HandleAsync(StatusRequest request)
     {
-        var result = SuccessStatuses.Contains(request.Status)
+        var result = BenzeneResultStatus.IsSuccess(request.Status)
             ? BenzeneResult.Set(request.Status, new StatusReply { Applied = request.Status })
             : BenzeneResult.Set<StatusReply>(request.Status, request.Errors ?? Array.Empty<string>());
 

@@ -31,9 +31,11 @@ public class DefaultHttpStatusCodeMapper : IHttpStatusCodeMapper
     /// <item><description>NotFound → 404 (Not Found)</description></item>
     /// <item><description>Conflict → 409 (Conflict)</description></item>
     /// <item><description>ValidationError → 422 (Unprocessable Entity)</description></item>
+    /// <item><description>TooManyRequests → 429 (Too Many Requests)</description></item>
     /// <item><description>UnexpectedError → 500 (Internal Server Error)</description></item>
     /// <item><description>NotImplemented → 501 (Not Implemented)</description></item>
     /// <item><description>ServiceUnavailable → 503 (Service Unavailable)</description></item>
+    /// <item><description>Timeout → 504 (Gateway Timeout)</description></item>
     /// </list>
     /// </remarks>
     public DefaultHttpStatusCodeMapper()
@@ -52,9 +54,11 @@ public class DefaultHttpStatusCodeMapper : IHttpStatusCodeMapper
             { BenzeneResultStatus.NotFound, "404"},
             { BenzeneResultStatus.Conflict, "409"},
             { BenzeneResultStatus.ValidationError, "422"},
+            { BenzeneResultStatus.TooManyRequests, "429"},
             { BenzeneResultStatus.UnexpectedError, "500"},
             { BenzeneResultStatus.NotImplemented, "501"},
-            { BenzeneResultStatus.ServiceUnavailable, "503"}
+            { BenzeneResultStatus.ServiceUnavailable, "503"},
+            { BenzeneResultStatus.Timeout, "504"}
         };
     }
 

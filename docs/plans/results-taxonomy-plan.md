@@ -121,8 +121,12 @@ holes in the HTTP mappers.
   **unknown/application-defined statuses stay `true`** (the historical default — the spec
   leaves extension statuses' success class to the application, and repo tests pass numeric
   strings through `Set` relying on it). `Set<T>(status, bool)` remains the explicit escape
-  hatch. Behavioral change, CHANGELOG'd: `Set("NotFound")` and the gRPC
-  failure-trailer-with-OK edge now correctly report failure.
+  hatch, joined by a new `Set<T>(status, payload, isSuccessful)` overload: implementation
+  surfaced one legitimate "failure status + payload, rendered as payload" pattern — the health
+  check flow returns `ServiceUnavailable` (so HTTP probes see a 503) with the health report as
+  the body, which requires the result to stay successful for the body renderer to serialize the
+  payload; `HealthCheckProcessor` now states that explicitly. Behavioral change, CHANGELOG'd:
+  `Set("NotFound")` and the gRPC failure-trailer-with-OK edge now correctly report failure.
 - **D4 — Retry policy: transient minus `Timeout`, pluggable.** `RetryBenzeneMessageClient`
   retries `ServiceUnavailable` and `TooManyRequests` by default. `Timeout` is deliberately
   **not** retried by default: a timed-out operation may have been applied, so blind retry is

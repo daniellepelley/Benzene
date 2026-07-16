@@ -27,7 +27,8 @@ public class DefaultGrpcStatusReverseMapper : IGrpcStatusReverseMapper
             { StatusCode.AlreadyExists, BenzeneResultStatus.Conflict },
             { StatusCode.Unimplemented, BenzeneResultStatus.NotImplemented },
             { StatusCode.Unavailable, BenzeneResultStatus.ServiceUnavailable },
-            { StatusCode.DeadlineExceeded, BenzeneResultStatus.ServiceUnavailable },
+            { StatusCode.ResourceExhausted, BenzeneResultStatus.TooManyRequests },
+            { StatusCode.DeadlineExceeded, BenzeneResultStatus.Timeout },
             { StatusCode.Cancelled, BenzeneResultStatus.ServiceUnavailable },
         };
     }
