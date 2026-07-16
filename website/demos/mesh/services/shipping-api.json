@@ -1,0 +1,10 @@
+{
+  "name": "shipping-api",
+  "fetchedAtUtc": "2026-07-16T09:15:00Z",
+  "specJson": null,
+  "specHash": null,
+  "previousSpecHash": null,
+  "contractDrift": false,
+  "health": null,
+  "error": "HttpRequestException: Connection refused (shipping-api.example:443)"
+}

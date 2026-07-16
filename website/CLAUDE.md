@@ -42,6 +42,26 @@ project with its own build/run flow, documented in `website/README.md`.
   JS framework, no Node/npm build step) for both the marketing home page and docs pages.
 - **Self-check**: after generation, every internal `href` the tool emitted is checked against the
   actual output tree; a broken one is a non-zero exit, not a silent gap.
+- **Live UI demos (`website/demos/`)**: `SiteBuilder.CopyDemos()` copies this directory verbatim
+  into `<out>/demos/**` - it is pre-built static HTML + JSON, not markdown, so it bypasses the
+  docs-page renderer entirely (unlike `WebAssetExtensions`, which only vendors images actually
+  linked from a crawled doc page). `ResolveDemoAsset` lets both `docs/index.md`'s nav tree and
+  regular markdown links resolve an href like `../demos/mesh/index.html` to a real published path
+  without that path existing as a docs page.
+  - `website/demos/mesh/` - a copy of `src/Benzene.Mesh.Ui/mesh-ui.html` (as `index.html`) plus
+    hand-authored `manifest.json`/`services/*.json`/`topology.json` fixtures, schema-matched to
+    `Benzene.Mesh.Contracts` and modeled on `examples/Mesh`'s three-service demo (healthy /
+    unhealthy+contract-drift / unreachable, plus the `FakePrometheus`-driven topology edges) - see
+    `examples/Mesh/README.md` for what each fixture value is illustrating. The page finds these by
+    its own default boot sequence (`./manifest.json`, then `services/{name}.json`/`topology.json`
+    resolved relative to that), so no query param or build step is needed.
+  - `website/demos/spec/` - a copy of `src/Benzene.Spec.Ui/spec-ui.html` only, no fixture JSON -
+    it renders its own built-in embedded sample spec when opened with no `?url=`.
+  - **These fixtures do not auto-refresh.** They were hand-authored (no local .NET SDK was
+    available to actually run `examples/Mesh/run.sh` and capture its real output) against the
+    exact contract types and demo-service source at the time of writing. If `Benzene.Mesh.Contracts`'
+    shape or the `examples/Mesh` demo's health checks/topology data change, this directory needs a
+    manual refresh to match - it is not verified against them by any test or build step.
 
 ## When to use this package
 - Never referenced by any Benzene library or example - it only reads `README.md`/`docs/` and

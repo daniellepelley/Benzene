@@ -10,6 +10,8 @@ internal static class Layout
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
         var docsHome = RepoPaths.RelativeHref(outputPath, "docs/index.html");
         var gettingStarted = RepoPaths.RelativeHref(outputPath, "docs/getting-started.html");
+        var meshDemo = RepoPaths.RelativeHref(outputPath, "demos/mesh/index.html");
+        var specDemo = RepoPaths.RelativeHref(outputPath, "demos/spec/index.html");
 
         var features = string.Join("\n", MarketingContent.Features.Select(f => $"""
             <div class="feature-card">
@@ -100,6 +102,32 @@ internal static class Layout
                   </p>
                   <div class="platform-grid">
                     {platforms}
+                  </div>
+                </section>
+
+                <section class="section">
+                  <h2>Try it live</h2>
+                  <p class="section-lede">
+                    No sign-up, no install &mdash; these are the same self-contained dashboard
+                    pages your own Benzene services would serve, running here against sample data.
+                  </p>
+                  <div class="feature-grid">
+                    <div class="feature-card">
+                      <h3>Mesh UI</h3>
+                      <p>
+                        A service-mesh dashboard over sample health checks, contract drift, and
+                        cross-service traffic.
+                      </p>
+                      <p><a href="{meshDemo}">Open the demo &rarr;</a></p>
+                    </div>
+                    <div class="feature-card">
+                      <h3>Spec UI</h3>
+                      <p>
+                        A Swagger-UI-style browser for a sample Benzene message spec &mdash;
+                        topics, payloads, and validation rules.
+                      </p>
+                      <p><a href="{specDemo}">Open the demo &rarr;</a></p>
+                    </div>
                   </div>
                 </section>
 

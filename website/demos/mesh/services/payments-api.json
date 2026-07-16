@@ -1,0 +1,32 @@
+{
+  "name": "payments-api",
+  "fetchedAtUtc": "2026-07-16T09:15:00Z",
+  "specJson": "{\"type\":\"benzene\",\"topics\":{\"payments:get\":{\"http\":{\"method\":\"GET\",\"path\":\"/payments/{id}\"},\"request\":\"GetPaymentMessage\",\"response\":\"PaymentDto\"},\"payments:get-refunds\":{\"http\":{\"method\":\"GET\",\"path\":\"/payments/{id}/refunds\"},\"request\":\"GetPaymentMessage\",\"response\":\"RefundDto[]\"}}}",
+  "specHash": "b9b30797f97418c327a228780f6719fb138012364a364343bfa618a772fb21",
+  "previousSpecHash": "5feaedb410bf1b007d5e681f1ff3066d03788f1b4b1b6a6865dc00efb6502e3",
+  "contractDrift": true,
+  "health": {
+    "isHealthy": false,
+    "healthChecks": {
+      "PaymentsGateway": {
+        "status": "failed",
+        "type": "PaymentsGateway",
+        "data": { "reason": "gateway timeout" },
+        "dependencies": [{ "kind": "Http", "name": "stripe-gateway" }]
+      },
+      "PostgresDatabase": {
+        "status": "ok",
+        "type": "PostgresDatabase",
+        "data": { "latencyMs": 6 },
+        "dependencies": [{ "kind": "Database", "name": "payments-db" }]
+      },
+      "FraudEngine": {
+        "status": "warning",
+        "type": "FraudEngine",
+        "data": { "p99Ms": 850, "note": "elevated latency" },
+        "dependencies": [{ "kind": "Http", "name": "fraud-engine" }]
+      }
+    }
+  },
+  "error": null
+}
