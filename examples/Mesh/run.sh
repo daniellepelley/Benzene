@@ -61,10 +61,10 @@ wait_for "http://localhost:5311/spec?type=benzene" || true
 
 echo "Generating meshed traffic (checkout calls payments-api with a propagated trace)..."
 for i in 1 2 3 4 5; do
-  curl -sf -X POST http://localhost:5310/invoke \
+  curl -sf -X POST http://localhost:5310/benzene/invoke \
     -d "{\"topic\":\"orders:checkout\",\"headers\":{},\"body\":\"{\\\"orderId\\\":\\\"ord-$i\\\"}\"}" >/dev/null || true
 done
-curl -sf -X POST http://localhost:5310/invoke \
+curl -sf -X POST http://localhost:5310/benzene/invoke \
   -d '{"topic":"orders:get-all","headers":{},"body":"{}"}' >/dev/null || true
 
 echo "Running second mesh aggregation (payments spec now differs -> drift)..."
@@ -76,13 +76,13 @@ curl -sf -X POST http://localhost:5300/mesh/topology >/dev/null || true
 cat <<'EOF'
 
 Mesh Explorer:   http://localhost:5300/mesh-ui
-Fleet view NEW:  http://localhost:5300/fleet-ui
+Fleet view NEW:  http://localhost:5300/benzene/fleet-ui
 Manifest JSON:   http://localhost:5300/artifacts/manifest.json
 Topology JSON:   http://localhost:5300/artifacts/topology.json
 Orders spec:     http://localhost:5310/spec?type=benzene
 Payments spec:   http://localhost:5311/spec?type=benzene
 
-The NEW Fleet view (http://localhost:5300/fleet-ui) is the live collector - everything on it
+The NEW Fleet view (http://localhost:5300/benzene/fleet-ui) is the live collector - everything on it
 is derived from what the services themselves emit (docs/specification/mesh.md), nothing declared:
   - orders-api and payments-api registered their derived descriptors and heartbeat every 10s
     (payments-api heartbeats unhealthy -> "degraded"; restart it with DEMO_PAYMENTS_HEALTHY=true

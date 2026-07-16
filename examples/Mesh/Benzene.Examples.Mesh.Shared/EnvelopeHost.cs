@@ -69,7 +69,7 @@ public sealed class EnvelopeHost
     }
 
     /// <summary>Adapts an ASP.NET request to the envelope pipeline. Map it with
-    /// <c>endpoints.MapPost("/invoke", host.HandleAsync)</c>.</summary>
+    /// <c>endpoints.MapPost("/benzene/invoke", host.HandleAsync)</c>.</summary>
     public async Task HandleAsync(HttpContext context)
     {
         using var reader = new StreamReader(context.Request.Body);

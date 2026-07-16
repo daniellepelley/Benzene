@@ -45,8 +45,8 @@ public class Startup
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         // The collector's wire-envelope endpoint - branched before UseBenzene so the HTTP
-        // pipeline never sees it (the Fleet view at /fleet-ui polls it).
-        app.Map("/invoke", branch => branch.Run(Collector.HandleAsync));
+        // pipeline never sees it (the Fleet view at /benzene/fleet-ui polls it).
+        app.Map("/benzene/invoke", branch => branch.Run(Collector.HandleAsync));
 
         app.UseRouting();
 
@@ -61,8 +61,8 @@ public class Startup
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
                 .UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json")
-                // The NEW Fleet view: live derived fleet from the collector, polled through /invoke.
-                .UseMeshFleetUi(path: "/fleet-ui", envelopeUrl: "/invoke")
+                // The NEW Fleet view: live derived fleet from the collector, polled through /benzene/invoke.
+                .UseMeshFleetUi(path: "/benzene/fleet-ui", envelopeUrl: "/benzene/invoke")
                 .UseMessageHandlers()
             )
         );

@@ -45,7 +45,7 @@ public class Startup
         // topics service-to-service, with the reserved mesh descriptor topic and the trace feed.
         // Branched before UseBenzene so the HTTP pipeline never sees it; StartAnnouncing
         // registers + heartbeats with the collector, log-and-continue.
-        app.Map("/invoke", branch => branch.Run(Benzene.Examples.Mesh.PaymentsService.MeshHost.Instance.HandleAsync));
+        app.Map("/benzene/invoke", branch => branch.Run(Benzene.Examples.Mesh.PaymentsService.MeshHost.Instance.HandleAsync));
         Benzene.Examples.Mesh.PaymentsService.MeshHost.Instance.StartAnnouncing();
 
         app.UseRouting();

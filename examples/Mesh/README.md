@@ -2,7 +2,7 @@
 
 Demonstrates Benzene's mesh end to end, both halves of it:
 
-- **The live Fleet view (NEW - http://localhost:5300/fleet-ui)**: the spec mesh
+- **The live Fleet view (NEW - http://localhost:5300/benzene/fleet-ui)**: the spec mesh
   (`docs/specification/mesh.md`) running for real. The services register their *derived*
   descriptors with a `Benzene.Mesh.Collector`, heartbeat every 10s, and trace every
   wire-envelope invocation; the checkout handler calls payments-api forwarding its mesh span, so

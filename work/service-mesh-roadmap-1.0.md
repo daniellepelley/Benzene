@@ -1,6 +1,22 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-16 design-principles update:** the "opinionated but optional" strategy is now spec:
+> `docs/specification/design-principles.md` records the adoption ladder (message handlers are the
+> steer but optional, like controllers in ASP.NET - middleware-only and in-process pipelines are
+> first-class), the capability matrix (what needs handlers vs. what works without, with mesh §6
+> degradation as the worked example), the extension-point catalog (every wire convention
+> overridable on BOTH producer and consumer sides - SQS's `topic` message attribute with its
+> swappable topic getter and `ISqsClient` is the worked pair; string statuses exist precisely so
+> users can add their own), and the **default service standard**: well-known HTTP surfaces under
+> a `/benzene/` prefix (`/benzene/invoke`, `/benzene/spec`, `/benzene/health`, the UIs) so
+> framework infrastructure is visibly not a domain endpoint and can be gateway-ruled as one
+> group. Applied to the defaults new enough to change compatibly: `UseMeshFleetUi` now defaults
+> to `/benzene/fleet-ui` polling `/benzene/invoke`, and examples/Mesh moved with it (the mentions
+> of `/invoke`/`/fleet-ui` in the block below are the pre-standard paths of that day). The
+> pre-existing `/mesh-ui`/`/spec-ui` defaults are unchanged - migration candidates for the 1.0
+> release checklist.
+
 > **2026-07-16 Fleet view update:** the collector now has its UI, and `examples/Mesh/run.sh`
 > shows it. `Benzene.Mesh.Ui` gains `MeshFleetUiPage`/`MeshFleetUiMiddleware`/`UseMeshFleetUi`
 > (same embedded-HTML pattern as the existing explorer): the **Fleet view** polls a

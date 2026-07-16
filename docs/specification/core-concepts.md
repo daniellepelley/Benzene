@@ -16,6 +16,12 @@ exactly once, and convert the handler's **result** back into a native response. 
 handlers and middleware — is transport-neutral and vendor-neutral; only the adapter at the edge
 knows what the transport is.
 
+That paragraph describes the *steer*, not the minimum: message handlers are Benzene's
+recommended shape, but a pipeline with no handlers at all, or one invoked in process behind no
+transport, is still a conforming Benzene application. Which capabilities each part unlocks —
+and how the ones that need handlers degrade without them — is defined in
+[design-principles.md](design-principles.md).
+
 ## 2. Topic
 
 A topic identifies a message type and routes it to a handler.

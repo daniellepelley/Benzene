@@ -22,6 +22,7 @@ so that:
 
 | Document | Contents |
 |---|---|
+| [design-principles.md](design-principles.md) | The "opinionated but optional" strategy: the adoption ladder (middleware-only and in-process use are first-class), what each capability requires and how it degrades, the extension-point catalog (every convention overridable on both sides of the wire), and the default service standard (`/benzene/`-prefixed well-known surfaces) |
 | [core-concepts.md](core-concepts.md) | The abstract model: pipeline, context, message handler, topic, result, lifecycle, registration |
 | [wire-contracts.md](wire-contracts.md) | Everything that crosses a process boundary: the message envelope, header conventions, the status vocabulary and its per-protocol mappings, the health check response format |
 | [transport-bindings.md](transport-bindings.md) | What a transport adapter is and the contract every binding must satisfy, with the existing bindings as worked examples |

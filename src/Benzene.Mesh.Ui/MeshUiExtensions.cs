@@ -54,11 +54,13 @@ public static class MeshUiExtensions
         return app.Use<TContext, MeshUiMiddleware<TContext>>();
     }
 
-    /// <summary>The default path the Fleet view is served on.</summary>
-    public const string DefaultFleetPath = "/fleet-ui";
+    /// <summary>The default path the Fleet view is served on, following the default service
+    /// standard's <c>/benzene/</c> prefix (docs/specification/design-principles.md §5).</summary>
+    public const string DefaultFleetPath = "/benzene/fleet-ui";
 
-    /// <summary>The default wire-envelope endpoint the Fleet view polls.</summary>
-    public const string DefaultEnvelopeUrl = "/invoke";
+    /// <summary>The default wire-envelope endpoint the Fleet view polls, following the default
+    /// service standard (docs/specification/design-principles.md §5).</summary>
+    public const string DefaultEnvelopeUrl = "/benzene/invoke";
 
     /// <summary>
     /// Serves the Fleet view (<see cref="MeshFleetUiPage"/>) at <paramref name="path"/>: the live

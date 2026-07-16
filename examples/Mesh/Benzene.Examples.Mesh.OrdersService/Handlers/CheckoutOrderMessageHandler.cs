@@ -29,7 +29,7 @@ public class CheckoutReply
 public class CheckoutOrderMessageHandler : IMessageHandler<CheckoutRequest, CheckoutReply>
 {
     private static readonly string PaymentsEnvelopeUrl =
-        Environment.GetEnvironmentVariable("PAYMENTS_ENVELOPE_URL") ?? "http://localhost:5311/invoke";
+        Environment.GetEnvironmentVariable("PAYMENTS_ENVELOPE_URL") ?? "http://localhost:5311/benzene/invoke";
 
     public async Task<IBenzeneResult<CheckoutReply>> HandleAsync(CheckoutRequest request)
     {

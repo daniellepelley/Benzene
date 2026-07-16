@@ -20,6 +20,6 @@ public static class MeshHost
         meshInfo: new MeshServiceInfo("payments-api", "1.0.0", "payments-api-1", "http",
             new MeshPlacement { Cloud = "self-hosted" }),
         collectorEnvelopeUrl: Environment.GetEnvironmentVariable("MESH_COLLECTOR_ENVELOPE_URL")
-                              ?? "http://localhost:5300/invoke",
+                              ?? "http://localhost:5300/benzene/invoke",
         healthy: () => Environment.GetEnvironmentVariable("DEMO_PAYMENTS_HEALTHY") == "true");
 }
