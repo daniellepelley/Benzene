@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Benzene.SelfHost.BoundedConcurrentDispatcher<T>` as new optional `catchExceptions`/`onFault`
   constructor parameters (both back-compatible defaults, so `Benzene.SelfHost.Http.BenzeneHttpWorker`
   is unaffected). Purely additive.
+- `Benzene.Kafka.Core`: `BenzeneKafkaConfig.CommitOnlyOnSuccess` (default `false`, reproducing
+  Confluent.Kafka's own default of auto-storing an offset as soon as it's consumed) - set `true` for
+  at-least-once processing, so a message whose handler fails (or whose worker crashes mid-handling)
+  is redelivered instead of silently skipped. Sets `ConsumerConfig.EnableAutoOffsetStore = false` and
+  calls `IConsumer.StoreOffset` only after the handler succeeds. Requires
+  `CatchHandlerExceptions = false` and `PreserveOrderPerPartition = true` - `BenzeneKafkaWorker`
+  throws `InvalidOperationException` at startup otherwise, since `StoreOffset` is a last-write-wins
+  watermark with no gap tracking and either combination could silently commit past a failed message.
+  Purely additive.
 - `Benzene.Azure.Function.Kafka`: `KafkaOptions.CatchExceptions`/`RaiseOnFailureStatus` (via a new
   `Action<KafkaOptions>? configure` parameter on `UseKafka`) - same shape and defaults as
   `Benzene.Aws.Lambda.Sns`'s `SnsOptions`; `RaiseOnFailureStatus` escalates into a new

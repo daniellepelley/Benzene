@@ -35,6 +35,30 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
     /// </summary>
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        if (_benzeneKafkaConfig.CommitOnlyOnSuccess)
+        {
+            if (_benzeneKafkaConfig.CatchHandlerExceptions)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(BenzeneKafkaConfig.CommitOnlyOnSuccess)} requires " +
+                    $"{nameof(BenzeneKafkaConfig.CatchHandlerExceptions)} = false - otherwise a handler " +
+                    "exception is swallowed and the message's offset would never be stored, but later, " +
+                    "successful messages on the same partition would still advance the commit watermark " +
+                    "past it.");
+            }
+
+            if (!_benzeneKafkaConfig.PreserveOrderPerPartition)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(BenzeneKafkaConfig.CommitOnlyOnSuccess)} requires " +
+                    $"{nameof(BenzeneKafkaConfig.PreserveOrderPerPartition)} = true - otherwise a " +
+                    "partition's messages can be handled out of order, and storing a later message's " +
+                    "offset first would advance the commit watermark past an earlier one still in flight.");
+            }
+
+            _benzeneKafkaConfig.ConsumerConfig.EnableAutoOffsetStore = false;
+        }
+
         _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _stoppingCts.Token);
         var runToken = _linkedCts.Token;
 
@@ -51,9 +75,17 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                     ? consumeResult => consumeResult.Partition.Value
                     : null;
 
+                Func<ConsumeResult<TKey, TValue>, CancellationToken, Task> handle = _benzeneKafkaConfig.CommitOnlyOnSuccess
+                    ? async (consumeResult, _) =>
+                    {
+                        await _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory);
+                        _consumer!.StoreOffset(consumeResult);
+                    }
+                    : (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory);
+
                 dispatcher = new BoundedConcurrentDispatcher<ConsumeResult<TKey, TValue>>(
                     _benzeneKafkaConfig.ConcurrentRequests,
-                    (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory),
+                    handle,
                     _logger,
                     keySelector,
                     _benzeneKafkaConfig.CatchHandlerExceptions,
