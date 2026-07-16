@@ -27,7 +27,10 @@ producer support. This is one of the "self-hosted worker" startup modes document
   partition; set `false` for unordered round-robin dispatch when throughput matters more than
   order), `DrainTimeout` (default 30s - how long `StopAsync` waits for in-flight messages before
   abandoning them), `ConsumeExceptionRetryDelay` (default 1s - backoff between retries after a
-  `ConsumeException`).
+  `ConsumeException`), `CatchHandlerExceptions` (default `true` - a message handler's unhandled
+  exception is logged and that lane keeps consuming; set `false` to instead stop the whole worker
+  on the first unhandled handler exception, wired via `BoundedConcurrentDispatcher`'s `onFault`
+  callback calling this worker's own `StopAsync`-equivalent cancellation).
 - `KafkaApplication<TKey,TValue>` - wraps the built middleware pipeline; `HandleAsync` is what the
   dispatcher calls per message, via its base `MiddlewareApplication<TEvent,TContext>` (`Benzene.Core.Middleware`),
   which creates a new DI scope per message and disposes it once the pipeline finishes - previously a

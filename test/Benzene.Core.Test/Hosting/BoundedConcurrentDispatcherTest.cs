@@ -146,6 +146,34 @@ public class BoundedConcurrentDispatcherTest
     }
 
     [Fact]
+    public async Task Dispatch_CatchExceptionsFalse_ExceptionPropagatesAndInvokesOnFault_LaneStopsConsuming()
+    {
+        var logger = CreateLogger(out var collector);
+        var secondItemRan = false;
+        Exception faultSeen = null;
+
+        var dispatcher = new BoundedConcurrentDispatcher<int>(laneCount: 1, (item, ct) =>
+        {
+            if (item == 1)
+            {
+                throw new InvalidOperationException("boom");
+            }
+
+            secondItemRan = true;
+            return Task.CompletedTask;
+        }, logger, catchExceptions: false, onFault: ex => faultSeen = ex);
+
+        await dispatcher.EnqueueAsync(1, CancellationToken.None);
+        await dispatcher.EnqueueAsync(2, CancellationToken.None);
+
+        await dispatcher.DrainAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(secondItemRan, "The lane should have stopped consuming after the fault.");
+        Assert.IsType<InvalidOperationException>(faultSeen);
+        Assert.Contains(collector.Entries, e => e.Level == LogLevel.Error && e.Exception is InvalidOperationException);
+    }
+
+    [Fact]
     public async Task DrainAsync_WaitsForInFlightWorkToFinish()
     {
         var logger = CreateLogger(out _);

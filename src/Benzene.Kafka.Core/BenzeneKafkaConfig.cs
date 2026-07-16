@@ -32,4 +32,14 @@ public class BenzeneKafkaConfig
     /// iteration retry loop - logging and burning CPU on every failed attempt.
     /// </summary>
     public TimeSpan ConsumeExceptionRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Gets or sets whether an unhandled exception from a message handler is caught (logged, that
+    /// lane keeps consuming) or left to stop the worker entirely. Defaults to <c>true</c> (catch) -
+    /// a single bad message shouldn't take down the whole consumer. Set to <c>false</c> to instead
+    /// stop the worker on the first unhandled handler exception (the same effect as calling
+    /// <c>StopAsync</c>) - useful when a handler exception should be treated as fatal rather than
+    /// silently logged and skipped.
+    /// </summary>
+    public bool CatchHandlerExceptions { get; set; } = true;
 }

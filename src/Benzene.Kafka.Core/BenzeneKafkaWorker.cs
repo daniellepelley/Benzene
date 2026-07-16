@@ -55,7 +55,9 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                     _benzeneKafkaConfig.ConcurrentRequests,
                     (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory),
                     _logger,
-                    keySelector);
+                    keySelector,
+                    _benzeneKafkaConfig.CatchHandlerExceptions,
+                    onFault: _ => _stoppingCts.Cancel());
 
                 while (!runToken.IsCancellationRequested)
                 {

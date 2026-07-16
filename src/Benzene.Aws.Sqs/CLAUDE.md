@@ -27,3 +27,19 @@ AWS SQS client utilities for Benzene. Provides abstractions and implementations 
 - Batch sending supported for efficiency
 - Message deduplication supported
 - FIFO queue support included
+
+## `Consumer/` — standalone polling worker (`SqsConsumer`/`UseSqs` on `IBenzeneWorkerStartup`)
+Distinct from the message-publishing client above - a long-running worker that polls a queue
+directly (for `Benzene.HostedService`/`Benzene.SelfHost`, not Lambda). `SqsConsumerOptions.AckMode`
+(via `UseSqs(config, clientFactory, action, configure)`'s optional `configure` parameter) controls
+how a poll batch is acknowledged:
+- `SqsConsumerAckMode.WholeBatch` (default, unchanged from prior behavior) - the whole batch is
+  deleted together, only once every message has run without throwing; any thrown exception leaves
+  the entire batch on the queue.
+- `SqsConsumerAckMode.PerMessage` - only the messages that actually succeeded (no thrown exception,
+  and no unsuccessful `IBenzeneResult`) are deleted; failed messages are left on the queue
+  individually, and one message's exception no longer aborts the whole poll iteration.
+`SqsConsumerMessageMessageHandlerResultSetter` now records the outcome onto
+`SqsConsumerMessageContext.MessageResult` (previously a no-op, since deletion never used to depend
+on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
+(`SuccessfulMessages`/`FailedMessages`) that `SqsConsumer` uses to decide what to delete.

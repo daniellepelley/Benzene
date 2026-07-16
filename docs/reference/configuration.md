@@ -125,6 +125,10 @@ Configures the Kafka consumer/client.
 | `ConsumerConfig` | — | The underlying Confluent `ConsumerConfig` (brokers, group ID, etc.). |
 | `Topics` | — | Topics to subscribe to. |
 | `ConcurrentRequests` | `5` | Number of records processed concurrently. |
+| `PreserveOrderPerPartition` | `true` | Routes same-partition messages to the same dispatcher lane so they're handled in order. |
+| `DrainTimeout` | `30s` | How long `StopAsync` waits for in-flight handlers before abandoning them. |
+| `ConsumeExceptionRetryDelay` | `1s` | Backoff between retries after a `ConsumeException`. |
+| `CatchHandlerExceptions` | `true` | Whether an unhandled handler exception is caught and logged (that lane keeps consuming) or left to stop the whole worker. |
 
 ### `BenzeneHttpConfig` — `Benzene.SelfHost.Http`
 

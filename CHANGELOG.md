@@ -22,9 +22,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cascading them; `RaiseOnFailureStatus = true` escalates a non-exception failure result into the
   new `SnsMessageProcessingException`, so SNS retries it too - `CatchExceptions` governs both real
   and escalated exceptions uniformly. Purely additive. See `work/batch-failure-handling.md` for the
-  general containment/escalation vocabulary this establishes for other batch/event transports
-  (Kinesis, EventBridge, Kafka, Azure Functions Kafka/Service Bus, the polling SQS consumer), none
-  of which are changed by this entry.
+  general containment/escalation vocabulary this establishes for other batch/event transports.
+- `Benzene.Kafka.Core`: `BenzeneKafkaConfig.CatchHandlerExceptions` (default `true`, reproducing
+  today's catch-log-continue behavior exactly) - set `false` to instead stop the whole worker on
+  the first unhandled handler exception. Implemented in the shared
+  `Benzene.SelfHost.BoundedConcurrentDispatcher<T>` as new optional `catchExceptions`/`onFault`
+  constructor parameters (both back-compatible defaults, so `Benzene.SelfHost.Http.BenzeneHttpWorker`
+  is unaffected). Purely additive.
+- `Benzene.Azure.Function.Kafka`: `KafkaOptions.CatchExceptions`/`RaiseOnFailureStatus` (via a new
+  `Action<KafkaOptions>? configure` parameter on `UseKafka`) - same shape and defaults as
+  `Benzene.Aws.Lambda.Sns`'s `SnsOptions`; `RaiseOnFailureStatus` escalates into a new
+  `KafkaMessageProcessingException`. `KafkaMessageMessageHandlerResultSetter` now records the
+  outcome onto `KafkaContext.MessageResult` (previously a true no-op) so `RaiseOnFailureStatus` has
+  something to read. Purely additive.
+- `Benzene.Azure.Function.ServiceBus`: `ServiceBusOptions.CatchExceptions`/`RaiseOnFailureStatus`
+  (via a new `Action<ServiceBusOptions>? configure` parameter on `UseServiceBus`) - same shape as
+  the Kafka entry above, escalates into a new `ServiceBusMessageProcessingException`.
+  `ServiceBusMessageMessageHandlerResultSetter` likewise upgraded from a no-op to a real setter.
+  Still not true per-message `ServiceBusMessageActions` completion (a larger, separate follow-up -
+  see `work/batch-failure-handling.md`). Purely additive.
+- `Benzene.Aws.Sqs`: `SqsConsumerOptions.AckMode` (via a new `Action<SqsConsumerOptions>? configure`
+  parameter on `UseSqs`) for the standalone polling `SqsConsumer` - defaults to
+  `SqsConsumerAckMode.WholeBatch`, reproducing today's all-or-nothing batch deletion exactly. Set to
+  `SqsConsumerAckMode.PerMessage` to delete only the messages that actually succeeded instead.
+  Required `SqsConsumerMessageContext` to gain `IHasMessageResult` (it had no result concept before)
+  and `SqsConsumerMessageMessageHandlerResultSetter` to become a real setter instead of a no-op.
+  Purely additive.
 - `Benzene.Core.MessageHandlers`: `UsePresetTopic<TContext>(topicId, version)` pipeline extension,
   `PresetTopicMiddleware<TContext>`, and `PresetTopicMessageTopicGetter<TContext>` - lets a specific
   SQS queue or Service Bus subscription route every message to one fixed topic, for producers that

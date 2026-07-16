@@ -15,11 +15,15 @@ namespace Benzene.Aws.Sqs.Consumer;
 /// </summary>
 /// <remarks>
 /// Uses long polling (<see cref="SqsConsumerConfig.WaitTimeSeconds"/>) in a loop until
-/// <see cref="StartAsync"/>'s cancellation token is signaled. Messages are only deleted after the whole
-/// batch has been processed; if processing throws, the messages are left on the queue to be retried
-/// (subject to the queue's visibility timeout and redrive policy). A poll iteration that throws for a
-/// reason other than cancellation (e.g. a transient AWS error) is logged and the loop continues, rather
-/// than the exception propagating out and permanently ending the worker.
+/// <see cref="StartAsync"/>'s cancellation token is signaled. By default
+/// (<see cref="SqsConsumerAckMode.WholeBatch"/>), messages are only deleted after the whole batch has
+/// been processed; if any message's handler throws, none of the batch's messages are deleted - they're
+/// all left on the queue to be retried (subject to the queue's visibility timeout and redrive policy).
+/// Pass <see cref="SqsConsumerOptions"/> with <see cref="SqsConsumerAckMode.PerMessage"/> to instead
+/// delete only the messages that actually succeeded, regardless of any others in the same batch
+/// failing. A poll iteration that throws for a reason other than cancellation (e.g. a transient AWS
+/// error) is logged and the loop continues, rather than the exception propagating out and permanently
+/// ending the worker.
 /// </remarks>
 public class SqsConsumer : IBenzeneWorker
 {
@@ -27,6 +31,7 @@ public class SqsConsumer : IBenzeneWorker
     private readonly SqsConsumerApplication _sqsConsumerApplication;
     private readonly SqsConsumerConfig _sqsConsumerConfig;
     private readonly ISqsClientFactory _sqsClientFactory;
+    private readonly SqsConsumerOptions _options;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqsConsumer"/> class.
@@ -35,13 +40,19 @@ public class SqsConsumer : IBenzeneWorker
     /// <param name="sqsConsumerApplication">The application that runs each batch of messages through the middleware pipeline.</param>
     /// <param name="sqsConsumerConfig">The queue URL and batch size to poll with.</param>
     /// <param name="sqsClientFactory">The factory used to create the underlying SQS client.</param>
+    /// <param name="options">
+    /// Configures how the batch is acknowledged. Defaults to a new <see cref="SqsConsumerOptions"/>
+    /// instance (<see cref="SqsConsumerAckMode.WholeBatch"/>) if omitted.
+    /// </param>
     public SqsConsumer(IServiceResolverFactory serviceResolverFactory,
-        SqsConsumerApplication sqsConsumerApplication, SqsConsumerConfig sqsConsumerConfig, ISqsClientFactory sqsClientFactory)
+        SqsConsumerApplication sqsConsumerApplication, SqsConsumerConfig sqsConsumerConfig, ISqsClientFactory sqsClientFactory,
+        SqsConsumerOptions options = null)
     {
         _sqsClientFactory = sqsClientFactory;
         _sqsConsumerConfig = sqsConsumerConfig;
         _sqsConsumerApplication = sqsConsumerApplication;
         _serviceResolverFactory = serviceResolverFactory;
+        _options = options ?? new SqsConsumerOptions();
     }
 
     /// <summary>
@@ -66,15 +77,27 @@ public class SqsConsumer : IBenzeneWorker
 
                 if (result.Messages.Any())
                 {
-                    await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory);
+                    var batchResult = await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory);
 
-                    await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
+                    // Under WholeBatch (the default), a thrown exception above already skipped this
+                    // whole block via the outer catch, so reaching here means every message
+                    // succeeded (or failed only via a non-throwing result, which WholeBatch still
+                    // deletes along with the rest, unchanged from prior behavior) - delete everything.
+                    // Under PerMessage, delete only what actually succeeded.
+                    var messagesToDelete = _options.AckMode == SqsConsumerAckMode.PerMessage
+                        ? batchResult.SuccessfulMessages
+                        : result.Messages;
+
+                    if (messagesToDelete.Count > 0)
                     {
-                        QueueUrl = _sqsConsumerConfig.QueueUrl,
-                        Entries = result.Messages
-                            .Select(x => new DeleteMessageBatchRequestEntry(x.MessageId, x.ReceiptHandle))
-                            .ToList()
-                    }, cancellationToken);
+                        await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
+                        {
+                            QueueUrl = _sqsConsumerConfig.QueueUrl,
+                            Entries = messagesToDelete
+                                .Select(x => new DeleteMessageBatchRequestEntry(x.MessageId, x.ReceiptHandle))
+                                .ToList()
+                        }, cancellationToken);
+                    }
                 }
             }
             catch (OperationCanceledException)

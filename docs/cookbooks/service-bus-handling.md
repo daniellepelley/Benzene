@@ -184,21 +184,32 @@ Kafka — no envelope deserialization step, unlike `Benzene.Azure.Function.Event
 ### 5. What Benzene does *not* do: message completion
 
 This is the part worth being precise about, since Service Bus (unlike Event Hubs) has native
-dead-lettering, and it would be easy to assume Benzene wires into it. It doesn't.
-`ServiceBusMessageMessageHandlerResultSetter` is a no-op:
+dead-lettering, and it would be easy to assume Benzene wires into it. It doesn't - not in the sense
+of completing/abandoning/dead-lettering the underlying message, anyway.
+`ServiceBusMessageMessageHandlerResultSetter` **does** record the outcome now:
 
 ```csharp
-public class ServiceBusMessageMessageHandlerResultSetter : DefaultMessageMessageHandlerResultSetterBase<ServiceBusContext>;
+public class ServiceBusMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<ServiceBusContext>;
 ```
 
-Whatever your handler returns — `Ok`, `ServiceUnavailable` from an unhandled exception (see
-`MessageHandler.HandleAsync` in `src/Benzene.Core.MessageHandlers/MessageHandler.cs`), anything —
-has **no effect on the Service Bus message itself**. The Azure Functions Service Bus trigger
-completes the message automatically on its own default settings once your trigger function returns
-without throwing, exactly as it would for any handler outcome. There is no `ServiceBusMessageActions`
-binding, no explicit `CompleteMessageAsync`/`AbandonMessageAsync`/`DeadLetterMessageAsync` call
-anywhere in this package. Session handling (`ServiceBusSessionMessageActions`, ordered per-session
-processing) is likewise not implemented.
+(it used to be a genuine no-op; it isn't anymore - see below) - but recording the outcome onto
+`ServiceBusContext.MessageResult` is not the same as *acting* on it. Whatever your handler returns
+— `Ok`, `ServiceUnavailable` from an unhandled exception (see `MessageHandler.HandleAsync` in
+`src/Benzene.Core.MessageHandlers/MessageHandler.cs`), anything — still has **no effect on the
+Service Bus message itself** by default. The Azure Functions Service Bus trigger completes the
+message automatically on its own default settings once your trigger function returns without
+throwing. There is still no `ServiceBusMessageActions` binding, no explicit
+`CompleteMessageAsync`/`AbandonMessageAsync`/`DeadLetterMessageAsync` call anywhere in this
+package. Session handling (`ServiceBusSessionMessageActions`, ordered per-session processing) is
+likewise not implemented.
+
+What the recorded outcome *is* used for: `ServiceBusOptions.CatchExceptions`/`RaiseOnFailureStatus`
+(`UseServiceBus(..., configure)`, both default `false`) control whether a handler's exception
+cascades to fail the whole trigger invocation (today's default, unchanged) or is caught and logged
+instead, and whether a non-exception failure result is escalated into a thrown
+`ServiceBusMessageProcessingException` so it's treated the same as an exception. This changes
+whether the *whole invocation* is reported as failed to the Functions host - it still isn't
+per-message completion control.
 
 If you need real dead-lettering behavior tied to handler failure, you have to bridge that gap
 yourself, the same pattern used for [Event Hub's poison-event handling](event-hub-processing.md#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events):
