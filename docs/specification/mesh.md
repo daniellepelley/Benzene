@@ -3,10 +3,12 @@
 **Status: DRAFT v0.1 — promoted from
 [benzene-go](https://github.com/daniellepelley/benzene-go)'s `docs/design/mesh.md`. Unusually for
 this spec, the Go port is the reference implementation for this document (its `mesh/` and `meshd/`
-packages). The .NET implementation ships its own mesh *visibility* feature (the `Benzene.Mesh.*`
-packages, developed independently against `work/service-mesh-roadmap-1.0.md`) whose shapes predate
-this contract and do not yet speak it — §9 maps the two and names the convergence path; the
-roadmap file carries the .NET-side plan.**
+packages). The .NET service-side wire layer is implemented by `Benzene.Mesh.Wire` (descriptor,
+reserved topic, trace feed — passing this spec's descriptor and trace fixtures, and verified
+cross-language against the Go reference collector). The pre-existing `Benzene.Mesh.*` visibility
+packages (developed independently against `work/service-mesh-roadmap-1.0.md`) remain the .NET
+collector idiom; §9 maps the two — the aggregator adopting the §4 ingest topics is the remaining
+open item on the .NET side.**
 
 Benzene Mesh is the *application-level* mesh: every service self-describes (its topics, versions,
 and payload schemas, derived from its handler registry), reports health, and emits one semantic

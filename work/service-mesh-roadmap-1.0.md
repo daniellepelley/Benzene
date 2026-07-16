@@ -1,6 +1,32 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-16 .NET wire-layer update:** items 1, 2, and 4 of the spec-promotion update below
+> are now DONE, as the new `Benzene.Mesh.Wire` package (see its CLAUDE.md):
+> - Descriptor derivation (spec §2) from `IMessageHandlerDefinitionLookUp` with the §2.1
+>   CLR→schema mapping and §2.2 hash, served on the reserved `mesh` topic via
+>   `UseMeshDescriptor` (same interception pattern as `UseHealthCheck`).
+> - Trace middleware (spec §3) via `UseMeshTrace`: W3C traceparent join/reject,
+>   `MeshSpan.Current` propagation for outbound calls, per-transport status read-back through
+>   the new `IMeshStatusReader<TContext>` mapper (BenzeneMessage reader included), and
+>   `HttpMeshTraceExporter` with the §4 lossy/non-blocking sender rules.
+> - `Benzene.Conformance.Test` now runs `mesh-descriptor-cases.json` and
+>   `mesh-trace-cases.json` (plus the new canonical `conformance:panic` handler) - all green
+>   alongside the existing envelope/status fixtures (109 tests).
+> - **The cross-language fleet demo ran for real**: a C# service (`dotnet-orders`) registered,
+>   heartbeated, and traced into the GO reference collector (benzene-go's `meshd`) while
+>   calling the Go greeter with a propagated traceparent - the collector's fleet view showed
+>   the C# and Go services side by side (runtime `dotnet` vs `go`, both healthy) and derived
+>   the `greet` consumers as `dotnet-orders, frontdoor, legacy-portal`: a consumer edge joined
+>   across languages purely from trace parentage. Verified locally in this pass (Go + .NET
+>   toolchains in one environment); the demo program is a few dozen lines over
+>   `Benzene.Mesh.Wire` + raw envelope POSTs and is worth productizing into `examples/Mesh`
+>   as a follow-up.
+> - Item 3 (the aggregator gaining the `mesh:register`/`mesh:heartbeat`/`mesh:traces` ingest
+>   topics as sources beside HTTP-poll and Lambda-invoke, passing
+>   `mesh-collector-cases.json`) remains OPEN - it is optional per spec §7 and a natural next
+>   pass for whoever picks up the aggregator.
+
 > **2026-07-16 spec-promotion update:** the Go port's mesh (benzene-go `mesh`/`meshd`, designed
 > in its `docs/design/mesh.md`) has been promoted into this repo's spec as
 > [`docs/specification/mesh.md`](../docs/specification/mesh.md), with three conformance fixture
