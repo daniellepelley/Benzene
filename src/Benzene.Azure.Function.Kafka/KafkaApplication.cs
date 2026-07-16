@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.Middleware;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 

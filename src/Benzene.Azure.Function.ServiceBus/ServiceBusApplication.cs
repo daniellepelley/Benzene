@@ -5,6 +5,7 @@ using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Azure.Function.ServiceBus;
