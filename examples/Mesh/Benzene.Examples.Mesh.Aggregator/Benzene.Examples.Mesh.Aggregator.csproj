@@ -12,6 +12,8 @@
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Tracing.Tempo\Benzene.Mesh.Tracing.Tempo.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Collector\Benzene.Mesh.Collector.csproj" />
+    <ProjectReference Include="..\Benzene.Examples.Mesh.Shared\Benzene.Examples.Mesh.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,8 +1,15 @@
 # Benzene Service Mesh Example
 
-Demonstrates Benzene's service-mesh visibility feature end to end: three small
-demo services, a real Benzene app that aggregates their specs and health into
-a catalog, and a dashboard that renders it.
+Demonstrates Benzene's mesh end to end, both halves of it:
+
+- **The live Fleet view (NEW - http://localhost:5300/fleet-ui)**: the spec mesh
+  (`docs/specification/mesh.md`) running for real. The services register their *derived*
+  descriptors with a `Benzene.Mesh.Collector`, heartbeat every 10s, and trace every
+  wire-envelope invocation; the checkout handler calls payments-api forwarding its mesh span, so
+  the collector derives the `payments:get -> consumers: orders-api` edge and joins both
+  services' events into one flow. Nothing on that page is declared anywhere.
+- **The artifact pipeline**: three small demo services, a real Benzene app that aggregates their
+  specs and health into a catalog, and the classic dashboard (`/mesh-ui`) that renders it.
 
 This is a demo with fake/canned data, meant for exploring the feature. For a config-driven version
 you can run via Docker Compose against your own real services, see

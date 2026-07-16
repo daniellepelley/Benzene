@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benzene Mesh — Fleet</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb;
+    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
+    --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19;
+      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 18px 48px; }
+  h1 { font-size: 19px; margin: 0; }
+  .sub { color: var(--ink-2); font-size: 12.5px; margin: 3px 0 16px; }
+  .sub .err { color: var(--crit); }
+  h2 { font-size: 13.5px; margin: 24px 0 8px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 10px 14px; }
+  .tile .k { color: var(--ink-2); font-size: 12px; }
+  .tile .v { font-size: 22px; font-weight: 650; }
+  .tablewrap { overflow-x: auto; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 11px; border-bottom: 1px solid var(--grid);
+           font-size: 12.5px; white-space: nowrap; }
+  th { color: var(--muted); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .h-healthy { color: var(--good); }
+  .h-degraded { color: var(--serious); }
+  .h-unknown, .missing { color: var(--muted); }
+  .failed { color: var(--crit); }
+  .empty { color: var(--muted); padding: 12px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Benzene Mesh — Fleet</h1>
+  <p class="sub">Derived live from registered descriptors, heartbeats and traces - nothing declared.
+    <span id="status" class="err"></span></p>
+
+  <section class="tiles">
+    <div class="tile"><div class="k">Services</div><div class="v" id="t-services">-</div></div>
+    <div class="tile"><div class="k">Topics</div><div class="v" id="t-topics">-</div></div>
+    <div class="tile"><div class="k">Invocations</div><div class="v" id="t-invocations">-</div></div>
+    <div class="tile"><div class="k">Errors</div><div class="v" id="t-errors">-</div></div>
+    <div class="tile"><div class="k">Unhealthy</div><div class="v" id="t-unhealthy">-</div></div>
+  </section>
+
+  <h2>Services</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Service</th><th>Health</th><th>Runtime</th><th>Cloud</th><th>Binding</th>
+      <th>Topics</th><th>Instances</th><th>Invocations</th><th>Errors</th><th>Reduced feeds</th></tr></thead>
+    <tbody id="services"></tbody>
+  </table></div>
+
+  <h2>Topic catalog</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Topic</th><th>Providers</th><th>Consumers (observed)</th>
+      <th>Invocations</th><th>Errors</th><th>Avg ms</th><th>Statuses</th></tr></thead>
+    <tbody id="topics"></tbody>
+  </table></div>
+
+  <h2>Recent flows</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Trace</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
+    <tbody id="traces"></tbody>
+  </table></div>
+</div>
+
+<script>
+  var ENVELOPE_URL = document.documentElement.getAttribute("data-envelope-url") || "/invoke";
+
+  function cell(row, text, className) {
+    var td = document.createElement("td");
+    td.textContent = text === undefined || text === null || text === "" ? "-" : String(text);
+    if (className) td.className = className;
+    row.appendChild(td);
+    return td;
+  }
+
+  function fill(tbody, rows, build, columns) {
+    tbody.textContent = "";
+    if (!rows || rows.length === 0) {
+      var tr = document.createElement("tr");
+      var td = cell(tr, "nothing reported yet", "empty");
+      td.colSpan = columns;
+      tbody.appendChild(tr);
+      return;
+    }
+    rows.forEach(function (item) {
+      var tr = document.createElement("tr");
+      build(tr, item);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function render(fleet) {
+    var services = fleet.services || [], topics = fleet.topics || [], traces = fleet.traces || [];
+    var invocations = 0, errors = 0, unhealthy = 0;
+    services.forEach(function (s) {
+      invocations += s.invocations; errors += s.errors;
+      if (s.health === "degraded") unhealthy++;
+    });
+    document.getElementById("t-services").textContent = services.length;
+    document.getElementById("t-topics").textContent = topics.length;
+    document.getElementById("t-invocations").textContent = invocations;
+    document.getElementById("t-errors").textContent = errors;
+    document.getElementById("t-unhealthy").textContent = unhealthy;
+
+    fill(document.getElementById("services"), services, function (tr, s) {
+      cell(tr, s.service);
+      var marks = { healthy: "✓ healthy", degraded: "▲ degraded", unknown: "◌ unknown" };
+      cell(tr, marks[s.health] || s.health, "h-" + s.health);
+      cell(tr, s.runtime);
+      cell(tr, (s.placement || {}).cloud);
+      cell(tr, s.binding);
+      cell(tr, s.topics, "num");
+      cell(tr, s.instances, "num");
+      cell(tr, s.invocations, "num");
+      cell(tr, s.errors, "num" + (s.errors > 0 ? " failed" : ""));
+      cell(tr, (s.missingFeeds || []).join(", "), "missing");
+    }, 10);
+
+    fill(document.getElementById("topics"), topics, function (tr, t) {
+      cell(tr, t.topic + (t.version ? "@" + t.version : ""), "mono");
+      cell(tr, (t.providers || []).join(", "));
+      cell(tr, (t.consumers || []).join(", "));
+      cell(tr, t.invocations, "num");
+      cell(tr, t.errors, "num" + (t.errors > 0 ? " failed" : ""));
+      cell(tr, t.avgDurationMs ? t.avgDurationMs.toFixed(1) : "0.0", "num");
+      var statuses = Object.keys(t.statusCounts || {}).sort().map(function (k) {
+        return (k || "(none)") + " " + t.statusCounts[k];
+      }).join(" · ");
+      cell(tr, statuses);
+    }, 7);
+
+    fill(document.getElementById("traces"), traces, function (tr, f) {
+      cell(tr, f.traceId.slice(0, 16), "mono");
+      cell(tr, (f.services || []).join(" → "));
+      cell(tr, f.events, "num");
+      cell(tr, f.durationMs.toFixed(1), "num");
+      cell(tr, f.failed ? "✕ failed" : "✓ ok", f.failed ? "failed" : "h-healthy");
+    }, 5);
+  }
+
+  function refresh() {
+    fetch(ENVELOPE_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ topic: "mesh:query:fleet", headers: {}, body: "{}" })
+    }).then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    }).then(function (envelope) {
+      if (envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+      render(JSON.parse(envelope.body));
+      document.getElementById("status").textContent = "";
+    }).catch(function (err) {
+      document.getElementById("status").textContent = "collector unreachable (" + err.message + ") - retrying";
+    });
+  }
+
+  refresh();
+  setInterval(refresh, 2000);
+</script>
+</body>
+</html>

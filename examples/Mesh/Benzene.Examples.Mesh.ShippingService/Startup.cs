@@ -30,6 +30,13 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        // The meshed wire-envelope endpoint (docs/specification/mesh.md): serves this service's
+        // topics service-to-service, with the reserved mesh descriptor topic and the trace feed.
+        // Branched before UseBenzene so the HTTP pipeline never sees it; StartAnnouncing
+        // registers + heartbeats with the collector, log-and-continue.
+        app.Map("/invoke", branch => branch.Run(Benzene.Examples.Mesh.ShippingService.MeshHost.Instance.HandleAsync));
+        Benzene.Examples.Mesh.ShippingService.MeshHost.Instance.StartAnnouncing();
+
         app.UseRouting();
 
         app.UseBenzene(benzene => benzene

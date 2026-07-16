@@ -1,5 +1,13 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-16:** this package now ships a second page: `MeshFleetUiPage`/`MeshFleetUiMiddleware`/
+> `UseMeshFleetUi(path, envelopeUrl)` - the **Fleet view**, the live counterpart to the
+> artifact-driven explorer below. It polls a `Benzene.Mesh.Collector`'s `mesh:query:fleet` topic
+> through a wire-envelope endpoint and renders the derived fleet (services with health and
+> reduced-feed markers, topic catalog with observed consumers, recent flows). Same embedded-HTML
+> pattern (`mesh-fleet-ui.html`, attribute-injected config, no JS framework); see
+> `examples/Mesh/run.sh` for it running against live services.
+
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
 `manifest.json`/`services/{name}.json` artifacts produced by `Benzene.Mesh.Aggregator`. It shows

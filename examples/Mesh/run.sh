@@ -59,6 +59,14 @@ DEMO_ADD_ENDPOINT=true dotnet run --project Benzene.Examples.Mesh.PaymentsServic
 payments_pid="$!"
 wait_for "http://localhost:5311/spec?type=benzene" || true
 
+echo "Generating meshed traffic (checkout calls payments-api with a propagated trace)..."
+for i in 1 2 3 4 5; do
+  curl -sf -X POST http://localhost:5310/invoke \
+    -d "{\"topic\":\"orders:checkout\",\"headers\":{},\"body\":\"{\\\"orderId\\\":\\\"ord-$i\\\"}\"}" >/dev/null || true
+done
+curl -sf -X POST http://localhost:5310/invoke \
+  -d '{"topic":"orders:get-all","headers":{},"body":"{}"}' >/dev/null || true
+
 echo "Running second mesh aggregation (payments spec now differs -> drift)..."
 curl -sf -X POST http://localhost:5300/mesh/aggregate >/dev/null || true
 
@@ -68,12 +76,25 @@ curl -sf -X POST http://localhost:5300/mesh/topology >/dev/null || true
 cat <<'EOF'
 
 Mesh Explorer:   http://localhost:5300/mesh-ui
+Fleet view NEW:  http://localhost:5300/fleet-ui
 Manifest JSON:   http://localhost:5300/artifacts/manifest.json
 Topology JSON:   http://localhost:5300/artifacts/topology.json
 Orders spec:     http://localhost:5310/spec?type=benzene
 Payments spec:   http://localhost:5311/spec?type=benzene
 
-The dashboard now shows every state at once:
+The NEW Fleet view (http://localhost:5300/fleet-ui) is the live collector - everything on it
+is derived from what the services themselves emit (docs/specification/mesh.md), nothing declared:
+  - orders-api and payments-api registered their derived descriptors and heartbeat every 10s
+    (payments-api heartbeats unhealthy -> "degraded"; restart it with DEMO_PAYMENTS_HEALTHY=true
+    to watch it flip)
+  - the payments:get topic shows "consumers: orders-api" - derived purely from the traceparent
+    the checkout handler propagated, and the recent flows join both services' events
+  - shipping-api has NO row: it never started, so it never registered - start it and watch it
+    appear
+  - payments-api's restart with DEMO_ADD_ENDPOINT=true changed its descriptor hash - the same
+    contract-drift story the aggregation dashboard tells, from live data
+
+The classic dashboard (http://localhost:5300/mesh-ui) shows every state at once:
   - orders-api    healthy    (Postgres/Redis/SQS checks, each with a dependency chip)
   - payments-api  unhealthy + drift (failed gateway, warning fraud-engine, ok database)
   - shipping-api  unreachable (nothing is listening on port 5312)

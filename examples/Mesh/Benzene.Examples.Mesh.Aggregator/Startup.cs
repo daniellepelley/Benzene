@@ -1,7 +1,9 @@
 using Benzene.AspNet.Core;
+using Benzene.Examples.Mesh.Shared;
 using Benzene.Core.MessageHandlers;
 using Benzene.Mesh.Aggregator;
 using Benzene.Mesh.Contracts;
+using Benzene.Mesh.Collector;
 using Benzene.Mesh.Tracing.Tempo;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
@@ -13,6 +15,13 @@ using Microsoft.Extensions.FileProviders;
 public class Startup
 {
     private static readonly string ArtifactDirectory = Path.Combine(AppContext.BaseDirectory, "mesh-artifacts");
+
+    // The live spec collector (Benzene.Mesh.Collector) behind a wire-envelope endpoint: services
+    // register, heartbeat, and push traces here, and the Fleet view below renders what it derives.
+    private static readonly MeshCollectorStore CollectorStore = new();
+    private static readonly EnvelopeHost Collector = new(
+        MeshCollectorHandlers.All,
+        configureServices: services => services.AddSingleton(CollectorStore));
 
     private static readonly MeshServiceRegistry Registry = new(new[]
     {
@@ -35,6 +44,10 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        // The collector's wire-envelope endpoint - branched before UseBenzene so the HTTP
+        // pipeline never sees it (the Fleet view at /fleet-ui polls it).
+        app.Map("/invoke", branch => branch.Run(Collector.HandleAsync));
+
         app.UseRouting();
 
         // Serves the aggregator's own generated manifest.json/services/*.json - the real,
@@ -48,6 +61,8 @@ public class Startup
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
                 .UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json")
+                // The NEW Fleet view: live derived fleet from the collector, polled through /invoke.
+                .UseMeshFleetUi(path: "/fleet-ui", envelopeUrl: "/invoke")
                 .UseMessageHandlers()
             )
         );

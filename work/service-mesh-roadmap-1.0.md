@@ -1,6 +1,21 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-16 Fleet view update:** the collector now has its UI, and `examples/Mesh/run.sh`
+> shows it. `Benzene.Mesh.Ui` gains `MeshFleetUiPage`/`MeshFleetUiMiddleware`/`UseMeshFleetUi`
+> (same embedded-HTML pattern as the existing explorer): the **Fleet view** polls a
+> `Benzene.Mesh.Collector`'s `mesh:query:fleet` through a wire-envelope endpoint and renders the
+> derived fleet - services with health and reduced-feed markers, topic catalog with observed
+> consumers, recent flows. examples/Mesh is now a two-halves demo: the services carry meshed
+> wire-envelope hosts (`Benzene.Examples.Mesh.Shared.EnvelopeHost`: descriptor + trace feed +
+> register/heartbeat announcing, log-and-continue), the aggregator hosts the collector at
+> `/invoke` and the Fleet view at `/fleet-ui`, and the checkout handler's traceparent propagation
+> produces a live `payments:get -> consumers: orders-api` edge. Verified by running run.sh:
+> payments-api renders degraded from its heartbeat (DEMO_PAYMENTS_HEALTHY flips it), shipping-api
+> has no row until it starts, and the DEMO_ADD_ENDPOINT restart changes the descriptor hash -
+> the drift story from live data. Remaining polish: surfacing per-service drill-downs
+> (mesh:query:service/topic/trace) in the page, and the aggregator/artifact bridging noted below.
+
 > **2026-07-16 full-contract update: the .NET implementation is now the primary, complete
 > implementation of `docs/specification/mesh.md`.** The previously open item 3 is done:
 > `Benzene.Mesh.Collector` implements the spec collector (§4-§6) as dogfooded message handlers
