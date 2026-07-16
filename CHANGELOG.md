@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING:** `Benzene.CodeGen.Core`'s example payload generation moved to
+  `Benzene.Schema.OpenApi` so examples can be generated at runtime during spec builds, not just at
+  codegen time: `IPayloadBuilder`/`PayloadBuilder` are now
+  `Benzene.Schema.OpenApi.Examples.IExamplePayloadBuilder`/`ExamplePayloadBuilder`, and
+  `ISchemaGetter`/`SchemaGetter` moved namespace to `Benzene.Schema.OpenApi.Examples` (same names).
+  `BuildAsJson`/`Build(Type)` extensions moved with them. The generator is also hardened: it now
+  honours schema `example`/`default`/`enum` values, the `date`/`email`/`uri` formats, sizes strings
+  within `minLength`/`maxLength`, clamps numbers into `minimum`/`maximum`, accepts known values
+  keyed by property path (`order.customer.email`) as well as bare name, expands non-cyclic nested
+  `$ref`s fully (previously any second-level object reference collapsed to `{}`), and terminates
+  reference cycles — direct or mutual — as `{}`/`[]` with a maximum reference depth of 8. Output
+  for previously-supported shapes is unchanged.
+
 ### Added
 - `Benzene.Core.MessageHandlers`: `UsePresetTopic<TContext>(topicId, version)` pipeline extension,
   `PresetTopicMiddleware<TContext>`, and `PresetTopicMessageTopicGetter<TContext>` - lets a specific

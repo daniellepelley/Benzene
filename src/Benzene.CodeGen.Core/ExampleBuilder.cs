@@ -1,5 +1,6 @@
 ﻿using Benzene.CodeGen.Core.Writers;
 using Benzene.Schema.OpenApi.EventService;
+using Benzene.Schema.OpenApi.Examples;
 using Newtonsoft.Json;
 
 namespace Benzene.CodeGen.Core;
@@ -19,9 +20,9 @@ public class ExampleBuilder : IExampleBuilder
     public void BuildExample(RequestResponse requestResponse, ISchemaGetter schemaGetter,
         ILineWriter lineWriter)
     {
-        var jsonPayloadBuilder = new PayloadBuilder(_knownValues);
+        var examplePayloadBuilder = new ExamplePayloadBuilder(_knownValues);
 
-        var message = _messageBuilder(requestResponse.Topic, jsonPayloadBuilder.Build(schemaGetter.GetOpenApiSchema(requestResponse.Request), schemaGetter));
+        var message = _messageBuilder(requestResponse.Topic, examplePayloadBuilder.Build(schemaGetter.GetOpenApiSchema(requestResponse.Request), schemaGetter));
 
         var json = JsonConvert.SerializeObject(message,
             new JsonSerializerSettings { Formatting = Formatting.Indented });

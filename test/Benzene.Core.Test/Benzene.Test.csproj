@@ -174,19 +174,19 @@
     <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserGet.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\AllFieldTypesMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\AllFieldTypesMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\CreateClientMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\CreateClientMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\UserDto.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\UserDto.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\CreateUserMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\CreateUserMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\CreateTenantMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\CreateTenantMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Autogen\CodeGen\Core\Examples\document1-expected1.tf">
