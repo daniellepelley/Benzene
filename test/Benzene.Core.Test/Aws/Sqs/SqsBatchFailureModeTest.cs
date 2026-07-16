@@ -5,6 +5,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Sqs;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -31,8 +32,8 @@ public class SqsBatchFailureModeTest
 
         var mockResolver = new Mock<IServiceResolver>();
         mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
-        mockResolver.Setup(x => x.GetService<Microsoft.Extensions.Logging.ILogger<SqsApplication>>())
-            .Returns(Mock.Of<Microsoft.Extensions.Logging.ILogger<SqsApplication>>());
+        mockResolver.Setup(x => x.GetService<ILogger<SqsApplication>>())
+            .Returns(Mock.Of<ILogger<SqsApplication>>());
 
         var mockResolverFactory = new Mock<IServiceResolverFactory>();
         mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
