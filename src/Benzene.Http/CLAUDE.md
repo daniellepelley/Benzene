@@ -37,6 +37,29 @@ Provides HTTP abstractions and utilities for building HTTP-based Benzene applica
 - `HttpHeaderMappings` - Header mapping implementation
 - `DefaultHttpHeaderMappings` - Default header mappings
 
+### BenzeneMessage over HTTP (`BenzeneMessage/`)
+The HTTP equivalent of the direct AWS Lambda invoke path — same `UseBenzeneMessage` name and
+overload shapes (inline `Action<IMiddlewarePipelineBuilder<BenzeneMessageContext>>` or a shared
+pre-built builder).
+- `BenzeneMessageHttpMiddleware<TContext> where TContext : IHttpContext` - on POST to its path,
+  deserializes a `BenzeneMessageRequest` envelope from the body (via `IMessageBodyGetter<TContext>`),
+  runs it through a `BenzeneMessageApplication` (the `"benzene"` transport — routing, validation,
+  middleware, handler), and writes the response envelope as `application/json` with the HTTP status
+  mapped via `IHttpStatusCodeMapper`; anything else falls through to `next`. Same short-circuit
+  shape as `CorsMiddleware`/`SpecUiMiddleware`, so it works on every HTTP transport. The envelope
+  is always read/written with Benzene's default JSON serialization, independent of the app's own
+  negotiated payload formats.
+- `BenzeneMessageHttpOptions` - `Path` (default `/benzene-message`) and optional `TopicFilter`
+  allowlist predicate (rejected topic → `NotFound` envelope, 404).
+- `IBenzeneMessageHttpEndpointInfo` - registered by `UseBenzeneMessage` so the `benzene` spec
+  builder (`Benzene.Schema.OpenApi`) can advertise the endpoint as the top-level `messageEndpoint`
+  field, which the Spec UI's try-it panel feature-detects.
+- **Security posture:** the endpoint exposes every routed topic (including ones with no HTTP
+  mapping) — strictly opt-in, intended for local dev/admin environments; compose auth middleware
+  in front and/or use `TopicFilter`. See `docs/payload-testing.md`.
+- Tests: `test/Benzene.Core.Test/Http/BenzeneMessageHttpMiddlewareTest.cs` (unit, Moq'd adapters)
+  and `BenzeneMessageHttpPipelineTest.cs` (end-to-end through an API Gateway test host).
+
 ### CORS
 Behavior tracks the CORS spec the same way `Microsoft.AspNetCore.Cors` does (exact origin
 matching, credential-safe wildcards, preflight header validation, Vary caching hint).

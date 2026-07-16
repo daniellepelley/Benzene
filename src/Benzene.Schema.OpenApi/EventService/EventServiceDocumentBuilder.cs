@@ -17,6 +17,7 @@ namespace Benzene.Schema.OpenApi.EventService
         IConsumesMessageSenderDefinitions<EventServiceDocumentBuilder>,
         IConsumesApplicationInfo<EventServiceDocumentBuilder>,
         IConsumesHttpEndpointDefinitions<EventServiceDocumentBuilder>,
+        IConsumesMessageEndpoint<EventServiceDocumentBuilder>,
         IProducesJson,
         IProducesYaml
     {
@@ -25,6 +26,7 @@ namespace Benzene.Schema.OpenApi.EventService
         private readonly ISchemaBuilder _schemaBuilder = new SchemaBuilder();
         private OpenApiInfo _openApiInfo = new();
         private readonly List<OpenApiTag> _tags = new();
+        private string? _messageEndpoint;
 
         public EventServiceDocumentBuilder(ISchemaBuilder? schemaBuilder = null)
         {
@@ -49,7 +51,21 @@ namespace Benzene.Schema.OpenApi.EventService
                 _requests.ToArray(),
                 _events.ToArray(),
                 components
-            );
+            )
+            {
+                MessageEndpoint = _messageEndpoint
+            };
+        }
+
+        /// <summary>
+        /// Advertises the service's BenzeneMessage-over-HTTP endpoint as the document's top-level
+        /// <c>messageEndpoint</c> field, so spec consumers (e.g. the Spec UI's try-it panel) can
+        /// discover where to POST message envelopes.
+        /// </summary>
+        public EventServiceDocumentBuilder AddMessageEndpoint(string path)
+        {
+            _messageEndpoint = path;
+            return this;
         }
 
         /// <summary>

@@ -22,6 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for previously-supported shapes is unchanged.
 
 ### Added
+- `Benzene.Http`: BenzeneMessage-over-HTTP endpoint — `UseBenzeneMessage` (namespace
+  `Benzene.Http.BenzeneMessage`) mounts a `BenzeneMessageHttpMiddleware<TContext>` on any Benzene
+  HTTP pipeline (API Gateway, Azure Functions, ASP.NET Core, self-host): POST a
+  `{ topic, headers, body }` envelope and it dispatches through the BenzeneMessage pipeline (the
+  same `"benzene"` transport as direct Lambda invoke) and returns the response envelope as JSON
+  with the HTTP status mapped from the envelope status. Same name and overload shapes as the
+  Lambda adapter (inline pipeline action or shared pre-built builder), plus
+  `BenzeneMessageHttpOptions` (`Path`, default `/benzene-message`; `TopicFilter` allowlist).
+  Strictly opt-in — it exposes every routed topic over HTTP, so see `docs/payload-testing.md` for
+  the security posture. Registers `IBenzeneMessageHttpEndpointInfo`, which the `benzene` spec
+  advertises as a new optional top-level `messageEndpoint` field (additive; round-tripped by
+  `EventServiceDocumentDeserializer`). Replaces the ad-hoc `UseHttpToBenzeneMessage` prototype in
+  `examples/Aws`.
 - `Benzene.Schema.OpenApi`: the `benzene` spec format now carries a generated `example` payload on
   every request topic and broadcast event, produced during `EventServiceDocumentBuilder.Build()` by
   the hardened `ExamplePayloadBuilder` (deterministic, validation-aware — see the Changed entry).

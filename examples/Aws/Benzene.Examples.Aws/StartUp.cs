@@ -17,6 +17,7 @@ using Benzene.Examples.Aws.Logging;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
+using Benzene.Http.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Xml;
 using Microsoft.Extensions.Configuration;
@@ -70,7 +71,7 @@ public class StartUp : BenzeneStartUp
             aws.UseBenzeneMessage(benzeneMessagePipeline);
 
             aws.UseApiGateway(apiGatewayApp => apiGatewayApp
-                .UseHttpToBenzeneMessage(benzeneMessagePipeline)
+                .UseBenzeneMessage(benzeneMessagePipeline)
                 .UseTimer("api-gateway-application")
                 .UseXml()
                 .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)

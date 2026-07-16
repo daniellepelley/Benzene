@@ -25,6 +25,7 @@ public class EventServiceDocumentDeserializer
         var doc = _eventServiceDocumentBuilder.Build();
         doc.Info = GetInfo(jObject);
         doc.Tags = GetTags(jObject);
+        doc.MessageEndpoint = jObject["messageEndpoint"]?.Value<string>();
         doc.Events = GetEvents(jObject);
         doc.Requests = GetRequests(jObject);
         return doc;

@@ -47,3 +47,16 @@ Consumers — the [Spec UI](spec-ui.md), code generators, or anyone with `curl` 
 example as-is to send a test message to the service. Generation lives in
 `Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder`.
 
+## Message endpoint advertisement
+
+When the service exposes a BenzeneMessage-over-HTTP endpoint (`UseBenzeneMessage` — see
+[Payload Testing](payload-testing.md)), the `benzene` format advertises it as an optional
+top-level `messageEndpoint` field:
+
+```json
+{ "openapi": "3.0.1", "info": { }, "messageEndpoint": "/benzene-message", "requests": [ ] }
+```
+
+Consumers feature-detect send capability on this field — no field means the service accepts
+messages only through its normal transports.
+
