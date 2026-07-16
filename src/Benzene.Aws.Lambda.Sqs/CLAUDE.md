@@ -17,10 +17,13 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 - `SqsMessageHeadersGetter` - Extracts message attributes as headers
 - `SqsMessageTopicGetter` - Extracts topic from the `topic` message attribute
 - `SqsMessageMessageHandlerResultSetter` - Sets result on context
-- `SqsMessageContext` also implements `IHasPresetTopic` - if the queue's producer never sets a
-  `topic` message attribute (e.g. a raw SQS send, not a Benzene client), call
-  `.UsePresetTopic("some-topic")` before `.UseMessageHandlers()` in that queue's pipeline
-  (`Benzene.Core.MessageHandlers`) to route every message on it to a fixed topic instead
+- Preset topic override - if the queue's producer never sets a `topic` message attribute (e.g. a
+  raw SQS send, not a Benzene client), call `.UsePresetTopic("some-topic")` before
+  `.UseMessageHandlers()` in that queue's pipeline (`Benzene.Core.MessageHandlers`) to route every
+  message on it to a fixed topic instead. This is scoped DI state
+  (`Benzene.Core.MessageHandlers.PresetTopicHolder`), not a capability of `SqsMessageContext`
+  itself - the context stays a plain description of the SQS record, per this repo's context-purity
+  convention (`Benzene.Abstractions.Middleware/CLAUDE.md`)
 
 ### Other
 - `SqsRegistrations` - Registers SQS services

@@ -28,9 +28,10 @@ public static class DependencyInjectionExtensions
     public static IBenzeneServiceContainer AddAzureServiceBus(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped<JsonSerializer>();
+        services.TryAddScoped<PresetTopicHolder>();
 
-        services.AddScoped<IMessageTopicGetter<ServiceBusContext>>(_ =>
-            new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter()));
+        services.AddScoped<IMessageTopicGetter<ServiceBusContext>>(resolver =>
+            new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageHeadersGetter<ServiceBusContext>, ServiceBusMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusContext>, ServiceBusMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<ServiceBusContext>, ServiceBusMessageMessageHandlerResultSetter>();

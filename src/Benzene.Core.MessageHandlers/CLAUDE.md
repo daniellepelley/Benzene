@@ -83,20 +83,31 @@ Provides complete implementation of message handler infrastructure for command/q
 - `MessageRouterBuilder` - Builds message routing
 - `HandlerPipelineBuilder` - Builds handler pipelines
 - `VersionSelector` - Selects handler versions
+- `PresetTopicHolder` - scoped (one instance per message), carries the current message's preset
+  `ITopic`, or `null` if none was set. **Not on the context** - a context type describes a
+  transport message's shape; it shouldn't accumulate optional, cross-cutting routing overrides
+  that only some pipelines opt into. This is the concrete example of the "scoped DI state, not
+  context" pattern documented in `Benzene.Abstractions.Middleware/CLAUDE.md` - follow it for any
+  future per-pipeline override, not context mutation
 - `PresetTopicMessageTopicGetter<TContext>` - Decorates a transport's real
-  `IMessageTopicGetter<TContext>`, preferring `IHasPresetTopic.PresetTopic` when set on the context
-  and falling back to the transport's own extraction otherwise. Every transport that supports
-  preset topics (`Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Sqs`, `Benzene.Azure.Function.ServiceBus`)
-  registers this wrapping its real getter as the default `IMessageTopicGetter<TContext>`, so a
-  pipeline that never opts in behaves exactly as before this type existed
-- `PresetTopicMiddleware<TContext>` - Sets a fixed `ITopic` on the context before calling `next`, so
-  `PresetTopicMessageTopicGetter<TContext>` picks it up. Added via `UsePresetTopic<TContext>()`
+  `IMessageTopicGetter<TContext>`, preferring `PresetTopicHolder.PresetTopic` (resolved from the
+  same DI scope) when set and falling back to the transport's own extraction otherwise. Every
+  transport that supports preset topics (`Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Sqs`,
+  `Benzene.Azure.Function.ServiceBus`) registers this wrapping its real getter as the default
+  `IMessageTopicGetter<TContext>`, and registers `PresetTopicHolder` itself
+  (`services.TryAddScoped<PresetTopicHolder>()`), so a pipeline that never opts in behaves exactly
+  as before this type existed
+- `PresetTopicMiddleware<TContext>` - Resolves the current message's `PresetTopicHolder` and sets
+  its `PresetTopic` before calling `next`, so `PresetTopicMessageTopicGetter<TContext>` (reading
+  the same holder from the same scope) picks it up. Added via `UsePresetTopic<TContext>()`. Not
+  generic-constrained on `TContext` at all - it never touches the context
 - `MiddlewarePipelineExtensions.UsePresetTopic<TContext>(topicId, version)` - Pipeline-builder
   extension for one queue/subscription: call it before `UseMessageHandlers()` so every message on
   that pipeline routes to `topicId` regardless of what (if anything) the transport message itself
   carries. Solves the case where a queue's producer isn't a Benzene client and never sets a topic
   attribute/property at all - see each transport's own docs for the attribute/property name it
-  otherwise reads
+  otherwise reads. Works for ANY `TContext`, with zero changes required to that context type -
+  a transport adopting this only needs the two DI-registration lines above
 
 ### Transport Info
 - `ApplicationInfo` - Application metadata

@@ -163,17 +163,16 @@ public static class MiddlewarePipelineExtensions
     /// call this before <c>UseMessageHandlers</c> in that specific pipeline only; a queue that does
     /// send a proper topic just omits it.
     /// </summary>
-    /// <typeparam name="TContext">The pipeline's context type, which must be able to carry a preset topic.</typeparam>
+    /// <typeparam name="TContext">The pipeline's context type. No special shape is required - the preset topic is carried in scoped DI state, not on the context.</typeparam>
     /// <param name="app">The pipeline builder to add the preset topic to.</param>
     /// <param name="topicId">The topic id every message on this pipeline should route to.</param>
     /// <param name="version">The optional topic version. Defaults to an empty string (unversioned).</param>
     /// <returns>The same builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<TContext> UsePresetTopic<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
         string topicId, string version = "")
-        where TContext : IHasPresetTopic
     {
         var presetTopic = new Topic(topicId, version);
-        return app.Use(_ => new PresetTopicMiddleware<TContext>(presetTopic));
+        return app.Use(resolver => new PresetTopicMiddleware<TContext>(resolver.GetService<PresetTopicHolder>(), presetTopic));
     }
 
     /// <summary>

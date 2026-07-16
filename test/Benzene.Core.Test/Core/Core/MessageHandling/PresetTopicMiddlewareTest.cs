@@ -1,6 +1,4 @@
 using System.Threading.Tasks;
-using Benzene.Abstractions.MessageHandlers.Mappers;
-using Benzene.Abstractions.Messages;
 using Benzene.Core.Messages;
 using Benzene.Core.MessageHandlers;
 using Xunit;
@@ -9,25 +7,24 @@ namespace Benzene.Test.Core.Core.MessageHandling;
 
 public class PresetTopicMiddlewareTest
 {
-    private class TestContext : IHasPresetTopic
+    private class TestContext
     {
-        public ITopic? PresetTopic { get; set; }
     }
 
     [Fact]
-    public async Task HandleAsync_SetsPresetTopicOnContext_ThenCallsNext()
+    public async Task HandleAsync_SetsPresetTopicOnTheHolder_ThenCallsNext()
     {
-        var context = new TestContext();
+        var holder = new PresetTopicHolder();
         var nextCalled = false;
-        var middleware = new PresetTopicMiddleware<TestContext>(new Topic("preset-topic"));
+        var middleware = new PresetTopicMiddleware<TestContext>(holder, new Topic("preset-topic"));
 
-        await middleware.HandleAsync(context, () =>
+        await middleware.HandleAsync(new TestContext(), () =>
         {
             nextCalled = true;
             return Task.CompletedTask;
         });
 
-        Assert.Equal("preset-topic", context.PresetTopic?.Id);
+        Assert.Equal("preset-topic", holder.PresetTopic?.Id);
         Assert.True(nextCalled);
     }
 }

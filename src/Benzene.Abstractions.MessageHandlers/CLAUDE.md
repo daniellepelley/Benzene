@@ -60,11 +60,12 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 ### Message Extraction
 - `IMessageGetter<TContext>` - Extracts message from transport context
 - `IMessageTopicGetter<TContext>` - Extracts topic/routing key from context
-- `IHasPresetTopic` - A transport context that can carry a preset `ITopic`, set by
-  `Benzene.Core.MessageHandlers`' `PresetTopicMiddleware<TContext>` (via the `UsePresetTopic`
-  pipeline extension) to force routing for a whole queue/subscription regardless of what the
-  message itself carries. Implemented by `SqsMessageContext`, `SqsConsumerMessageContext`,
-  `ServiceBusContext`
+- Preset-topic override (forcing a whole queue/subscription to route on a fixed topic regardless
+  of what the message itself carries) is **not** a context capability - it's
+  `Benzene.Core.MessageHandlers`' scoped `PresetTopicHolder`, set by `PresetTopicMiddleware<TContext>`
+  (via `UsePresetTopic`) and read back by `PresetTopicMessageTopicGetter<TContext>`. No context
+  type needs to implement anything for this. See that package's `CLAUDE.md` and
+  `Benzene.Abstractions.Middleware/CLAUDE.md`'s "Context purity" convention for why.
 
 ### Transport Info
 - `ITransportsInfo` - Information about available transports

@@ -8,9 +8,9 @@ Service Bus message (or batch, if the trigger is configured with `IsBatched = tr
 as they do for HTTP, Event Hubs, and Kafka.
 
 ## Key types/interfaces
-- `ServiceBusContext` - wraps a single `Azure.Messaging.ServiceBus.ServiceBusReceivedMessage`; also
-  implements `IHasPresetTopic` (`Benzene.Abstractions.MessageHandlers.Mappers`) so a
-  subscription can be given a fixed preset topic - see "Important conventions" below
+- `ServiceBusContext` - wraps a single `Azure.Messaging.ServiceBus.ServiceBusReceivedMessage`; a
+  plain description of the message only - preset-topic override (see "Important conventions"
+  below) is scoped DI state, not a context capability
 - `ServiceBusMessageTopicGetter` - reads the topic from the message's `"topic"` application property
 - `ServiceBusMessageBodyGetter` - reads the message body as a string (`message.Body.ToString()`)
 - `ServiceBusMessageHeadersGetter` - exposes the message's string-typed application properties as headers
@@ -39,7 +39,8 @@ as they do for HTTP, Event Hubs, and Kafka.
 - **Preset topic override**: if a subscription's producer isn't a Benzene client and never sets a
   `"topic"` application property at all, call `.UsePresetTopic("some-topic")`
   (`Benzene.Core.MessageHandlers`) before `.UseMessageHandlers()` in that subscription's pipeline to
-  route every message on it to a fixed topic instead of relying on the property.
+  route every message on it to a fixed topic instead of relying on the property. Carried via scoped
+  DI state (`PresetTopicHolder`), not a property on `ServiceBusContext`.
 - **Result handling is a no-op**: unlike some other Benzene transports, this package does not complete,
   abandon, or dead-letter the message based on the handler's outcome. The Azure Functions Service Bus
   trigger auto-completes the message on its own default settings when the trigger function returns

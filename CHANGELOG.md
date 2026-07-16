@@ -11,11 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Benzene.Core.MessageHandlers`: `UsePresetTopic<TContext>(topicId, version)` pipeline extension,
   `PresetTopicMiddleware<TContext>`, and `PresetTopicMessageTopicGetter<TContext>` - lets a specific
   SQS queue or Service Bus subscription route every message to one fixed topic, for producers that
-  aren't Benzene clients and never set the usual `topic` message attribute/property. New
-  `Benzene.Abstractions.MessageHandlers.Mappers.IHasPresetTopic` marker interface, implemented by
-  `SqsMessageContext` (`Benzene.Aws.Lambda.Sqs`), `SqsConsumerMessageContext` (`Benzene.Aws.Sqs`),
-  and `ServiceBusContext` (`Benzene.Azure.Function.ServiceBus`). Purely additive - a pipeline that
-  never calls `UsePresetTopic` behaves exactly as before.
+  aren't Benzene clients and never set the usual `topic` message attribute/property. The preset
+  topic is carried in a new scoped `PresetTopicHolder` (one per message), resolved from the same DI
+  scope by the middleware that sets it and the getter that reads it back - deliberately not a
+  property on the transport context, so `SqsMessageContext` (`Benzene.Aws.Lambda.Sqs`),
+  `SqsConsumerMessageContext` (`Benzene.Aws.Sqs`), and `ServiceBusContext`
+  (`Benzene.Azure.Function.ServiceBus`) stay plain descriptions of their transport message with no
+  new interface to implement. See `Benzene.Abstractions.Middleware/CLAUDE.md`'s "Context purity"
+  convention for the general pattern. Purely additive - a pipeline that never calls
+  `UsePresetTopic` behaves exactly as before.
 - `Benzene.Mesh.Aggregator`: `IMeshServiceSource` port - the aggregator's spec/health fetch is no
   longer inlined HTTP; it's delegated per-`MeshServiceRegistryEntry.Source` (new additive field,
   defaults to `"Http"`) to a registered `IMeshServiceSource`. `HttpMeshServiceSource` (the original
