@@ -53,6 +53,7 @@ internal sealed class SiteBuilder
         var nav = NavTreeBuilder.BuildFromIndexPage(docsIndexPage.Document);
         ResolveNavHrefs(nav, "docs/index.md", pages);
         AppendOrphanedDocsPages(nav, pages);
+        CopyDemos();
 
         var assetsToCopy = new HashSet<string>(StringComparer.Ordinal);
         foreach (var page in pages.Values)
@@ -103,12 +104,12 @@ internal sealed class SiteBuilder
 
     private static string ComputeOutputPath(string sourcePath) => sourcePath[..^".md".Length] + ".html";
 
-    private static void ResolveNavHrefs(NavNode node, string navSourcePath, Dictionary<string, Page> pages)
+    private void ResolveNavHrefs(NavNode node, string navSourcePath, Dictionary<string, Page> pages)
     {
         if (node.Href != null)
         {
             var target = ResolveLinkTarget(navSourcePath, node.Href, pages);
-            node.OutputHref = target?.OutputPath;
+            node.OutputHref = target?.OutputPath ?? ResolveDemoAsset(navSourcePath, node.Href);
         }
         foreach (var child in node.Children)
         {
@@ -171,6 +172,15 @@ internal sealed class SiteBuilder
                 continue;
             }
 
+            var demoPath = ResolveDemoAsset(page.SourcePath, pathPart);
+            if (demoPath != null)
+            {
+                // Copied verbatim by CopyDemos(), not into assetsToCopy - the whole website/demos/
+                // tree is vendored wholesale regardless of which docs pages happen to link to it.
+                link.Url = RepoPaths.RelativeHref(page.OutputPath, demoPath) + suffix;
+                continue;
+            }
+
             Console.WriteLine($"warning: unresolved link '{link.Url}' in {page.SourcePath}");
         }
     }
@@ -199,6 +209,17 @@ internal sealed class SiteBuilder
         var combined = RepoPaths.CombineRepoRelative(currentSourcePath, hrefPathPart);
         if (!WebAssetExtensions.Contains(Path.GetExtension(combined))) return null;
         var disk = RepoPaths.ToDiskPath(_repoRoot, combined);
+        return File.Exists(disk) ? combined : null;
+    }
+
+    // website/demos/** are pre-built, self-contained static pages (a copy of a UI package's own
+    // *.html viewer plus static JSON fixtures) - copied verbatim by CopyDemos() and published at
+    // the site root as "demos/...", not crawled/rendered as docs pages the way docs/*.md is.
+    private string? ResolveDemoAsset(string currentSourcePath, string hrefPathPart)
+    {
+        var combined = RepoPaths.CombineRepoRelative(currentSourcePath, hrefPathPart);
+        if (!combined.StartsWith("demos/", StringComparison.Ordinal)) return null;
+        var disk = RepoPaths.ToDiskPath(Path.Combine(_repoRoot, "website"), combined);
         return File.Exists(disk) ? combined : null;
     }
 
@@ -232,6 +253,25 @@ internal sealed class SiteBuilder
             var dst = RepoPaths.ToDiskPath(_outDir, asset);
             Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
             File.Copy(src, dst, overwrite: true);
+        }
+    }
+
+    // Copies website/demos/** verbatim into <out>/demos/** - unlike CopyStaticAssets (which only
+    // vendors images actually linked from a crawled docs page), the whole demos tree is published
+    // wholesale, files and all extensions, since these pages fetch their own JSON fixtures by
+    // relative path at runtime rather than being discovered via markdown links.
+    private void CopyDemos()
+    {
+        var demosSourceDir = Path.Combine(_repoRoot, "website", "demos");
+        if (!Directory.Exists(demosSourceDir)) return;
+
+        var demosOutDir = Path.Combine(_outDir, "demos");
+        foreach (var file in Directory.EnumerateFiles(demosSourceDir, "*", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(demosSourceDir, file);
+            var dst = Path.Combine(demosOutDir, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
+            File.Copy(file, dst, overwrite: true);
         }
     }
 

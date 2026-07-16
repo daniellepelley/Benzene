@@ -62,3 +62,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 - **Cookbooks**
   - [Cookbook Index](cookbooks/README)
   - [Logging to Application Insights](cookbooks/logging-application-insights)
+
+- **Live Demos**
+  - [Mesh UI](../demos/mesh/index.html) — a running dashboard over sample service health, contract drift, and cross-service traffic
+  - [Spec UI](../demos/spec/index.html) — browse a sample Benzene message spec, Swagger-UI style

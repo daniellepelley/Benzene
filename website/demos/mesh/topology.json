@@ -1,0 +1,35 @@
+{
+  "generatedAtUtc": "2026-07-16T09:15:00Z",
+  "edges": [
+    {
+      "client": "orders-api",
+      "server": "payments-api",
+      "source": "tempo",
+      "requestsPerMinute": 86.4,
+      "errorRate": 0.17997685185185185,
+      "p50LatencyMs": 45,
+      "p95LatencyMs": 420,
+      "p99LatencyMs": 890
+    },
+    {
+      "client": "orders-api",
+      "server": "shipping-api",
+      "source": "tempo",
+      "requestsPerMinute": 24.1,
+      "errorRate": 0.003983402489626556,
+      "p50LatencyMs": 12,
+      "p95LatencyMs": 35,
+      "p99LatencyMs": 58
+    },
+    {
+      "client": "payments-api",
+      "server": "shipping-api",
+      "source": "tempo",
+      "requestsPerMinute": 6.2,
+      "errorRate": null,
+      "p50LatencyMs": 8,
+      "p95LatencyMs": 15,
+      "p99LatencyMs": 22
+    }
+  ]
+}
