@@ -50,7 +50,10 @@ public class BenzeneKafkaWorkerTest
         var config = CreateConfig(commitOnlyOnSuccess: true, catchHandlerExceptions: true, preserveOrderPerPartition: true);
         var worker = CreateWorker(config);
 
-        Assert.Throws<InvalidOperationException>(() => worker.StartAsync(CancellationToken.None));
+        // StartAsync throws synchronously (before any Task is created) for this combination, so
+        // the assertion must wrap it as an Action, not a Func<Task> - otherwise xunit treats it as
+        // async and requires ThrowsAsync instead.
+        Assert.Throws<InvalidOperationException>(() => { worker.StartAsync(CancellationToken.None); });
     }
 
     [Fact]
@@ -59,7 +62,7 @@ public class BenzeneKafkaWorkerTest
         var config = CreateConfig(commitOnlyOnSuccess: true, catchHandlerExceptions: false, preserveOrderPerPartition: false);
         var worker = CreateWorker(config);
 
-        Assert.Throws<InvalidOperationException>(() => worker.StartAsync(CancellationToken.None));
+        Assert.Throws<InvalidOperationException>(() => { worker.StartAsync(CancellationToken.None); });
     }
 
     [Fact]
