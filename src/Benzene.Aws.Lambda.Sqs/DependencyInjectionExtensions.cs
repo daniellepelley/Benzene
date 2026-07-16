@@ -28,9 +28,10 @@ public static class DependencyInjectionExtensions
     public static IBenzeneServiceContainer AddSqs(this IBenzeneServiceContainer services)
     {
         services.TryAddScoped<JsonSerializer>();
+        services.TryAddScoped<PresetTopicHolder>();
 
-        services.AddScoped<IMessageTopicGetter<SqsMessageContext>>(_ =>
-            new PresetTopicMessageTopicGetter<SqsMessageContext>(new SqsMessageTopicGetter()));
+        services.AddScoped<IMessageTopicGetter<SqsMessageContext>>(resolver =>
+            new PresetTopicMessageTopicGetter<SqsMessageContext>(new SqsMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageHeadersGetter<SqsMessageContext>, SqsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsMessageContext>, SqsMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SqsMessageContext>, SqsMessageMessageHandlerResultSetter>();

@@ -41,9 +41,10 @@ public class ServiceBusMessageTopicGetterTest
         var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
             body: new BinaryData("some-message"),
             properties: new Dictionary<string, object>());
-        var context = new ServiceBusContext(message) { PresetTopic = new Benzene.Core.Messages.Topic("preset-topic") };
+        var context = new ServiceBusContext(message);
+        var holder = new Benzene.Core.MessageHandlers.PresetTopicHolder { PresetTopic = new Benzene.Core.Messages.Topic("preset-topic") };
 
-        var getter = new Benzene.Core.MessageHandlers.PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter());
+        var getter = new Benzene.Core.MessageHandlers.PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter(), holder);
 
         var topic = getter.GetTopic(context);
 

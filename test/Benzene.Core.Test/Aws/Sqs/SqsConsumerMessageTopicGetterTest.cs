@@ -30,9 +30,9 @@ public class SqsConsumerMessageTopicGetterTest
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>()
         });
-        context.PresetTopic = new Topic("preset-topic");
+        var holder = new PresetTopicHolder { PresetTopic = new Topic("preset-topic") };
 
-        var getter = new PresetTopicMessageTopicGetter<SqsConsumerMessageContext>(new SqsConsumerMessageTopicGetter());
+        var getter = new PresetTopicMessageTopicGetter<SqsConsumerMessageContext>(new SqsConsumerMessageTopicGetter(), holder);
 
         var topic = getter.GetTopic(context);
 

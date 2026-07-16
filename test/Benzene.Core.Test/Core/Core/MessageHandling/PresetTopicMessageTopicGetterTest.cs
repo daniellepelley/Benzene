@@ -8,9 +8,8 @@ namespace Benzene.Test.Core.Core.MessageHandling;
 
 public class PresetTopicMessageTopicGetterTest
 {
-    private class TestContext : IHasPresetTopic
+    private class TestContext
     {
-        public ITopic? PresetTopic { get; set; }
     }
 
     private class FixedMessageTopicGetter : IMessageTopicGetter<TestContext>
@@ -28,10 +27,10 @@ public class PresetTopicMessageTopicGetterTest
     [Fact]
     public void GetTopic_PresetTopicSet_ReturnsPresetTopic_EvenWhenInnerHasARealTopic()
     {
-        var context = new TestContext { PresetTopic = new Topic("preset-topic") };
-        var getter = new PresetTopicMessageTopicGetter<TestContext>(new FixedMessageTopicGetter(new Topic("sender-topic")));
+        var holder = new PresetTopicHolder { PresetTopic = new Topic("preset-topic") };
+        var getter = new PresetTopicMessageTopicGetter<TestContext>(new FixedMessageTopicGetter(new Topic("sender-topic")), holder);
 
-        var topic = getter.GetTopic(context);
+        var topic = getter.GetTopic(new TestContext());
 
         Assert.Equal("preset-topic", topic.Id);
     }
@@ -39,10 +38,10 @@ public class PresetTopicMessageTopicGetterTest
     [Fact]
     public void GetTopic_NoPresetTopic_FallsBackToInner()
     {
-        var context = new TestContext();
-        var getter = new PresetTopicMessageTopicGetter<TestContext>(new FixedMessageTopicGetter(new Topic("sender-topic")));
+        var holder = new PresetTopicHolder();
+        var getter = new PresetTopicMessageTopicGetter<TestContext>(new FixedMessageTopicGetter(new Topic("sender-topic")), holder);
 
-        var topic = getter.GetTopic(context);
+        var topic = getter.GetTopic(new TestContext());
 
         Assert.Equal("sender-topic", topic.Id);
     }
@@ -50,10 +49,10 @@ public class PresetTopicMessageTopicGetterTest
     [Fact]
     public void GetTopic_NoPresetTopicAndInnerHasNone_ReturnsInnerResultUnchanged()
     {
-        var context = new TestContext();
-        var getter = new PresetTopicMessageTopicGetter<TestContext>(new FixedMessageTopicGetter(null));
+        var holder = new PresetTopicHolder();
+        var getter = new PresetTopicMessageTopicGetter<TestContext>(new FixedMessageTopicGetter(null), holder);
 
-        var topic = getter.GetTopic(context);
+        var topic = getter.GetTopic(new TestContext());
 
         Assert.Null(topic);
     }

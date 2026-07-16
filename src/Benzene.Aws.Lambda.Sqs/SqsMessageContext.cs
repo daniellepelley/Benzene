@@ -1,13 +1,11 @@
 using Amazon.Lambda.SQSEvents;
-using Benzene.Abstractions.MessageHandlers.Mappers;
-using Benzene.Abstractions.Messages;
 
 namespace Benzene.Aws.Lambda.Sqs;
 
 /// <summary>
 /// Provides the middleware pipeline context for a single record within an SQS batch event.
 /// </summary>
-public class SqsMessageContext : IHasPresetTopic
+public class SqsMessageContext
 {
     private SqsMessageContext(SQSEvent sqsEvent, SQSEvent.SQSMessage sqsMessage)
     {
@@ -41,11 +39,4 @@ public class SqsMessageContext : IHasPresetTopic
     /// <see cref="SqsMessageMessageHandlerResultSetter"/>; null if no result has been set yet.
     /// </summary>
     public bool? IsSuccessful { get; set; }
-
-    /// <summary>
-    /// Gets or sets the preset topic for this context, set by <c>PresetTopicMiddleware</c> (via the
-    /// <c>UsePresetTopic</c> pipeline extension) when this queue routes every message to one fixed
-    /// topic regardless of its <c>topic</c> message attribute. Null unless that's configured.
-    /// </summary>
-    public ITopic? PresetTopic { get; set; }
 }

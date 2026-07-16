@@ -40,6 +40,12 @@ representing external boundaries — DB, HTTP, queues, etc).
 - Async/await used throughout for I/O-bound operations
 - Middleware components follow a consistent interface for
   wrapping port calls in the pipeline
+- Context types (`TContext`) stay pure — describe the transport message's
+  shape only. For a middleware-to-later-step handoff scoped to one specific
+  pipeline (e.g. a per-queue override), use a small scoped DI-registered
+  holder instead of adding a marker interface/property to the context — see
+  `src/Benzene.Abstractions.Middleware/CLAUDE.md`'s "Context purity" section
+  and the `PresetTopicHolder` example in `Benzene.Core.MessageHandlers`
 
 ## Do NOT
 - Do not modify `Benzene.sln` / `Benzene.Examples.sln` structure
