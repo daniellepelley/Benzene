@@ -1,3 +1,4 @@
+using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -8,6 +9,7 @@ using Benzene.Azure.Function.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Serialization;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Azure.Function.ServiceBus;
 
@@ -61,7 +63,15 @@ public static class DependencyInjectionExtensions
         action(pipeline);
         var options = new ServiceBusOptions();
         configure?.Invoke(options);
-        app.Add(serviceResolverFactory => new ServiceBusApplication(pipeline.Build(), serviceResolverFactory, options));
+
+        // One ServiceBusBatchApplication instance (it holds no per-invocation state - only the
+        // fixed pipeline/options), wrapped by two entry points so a trigger function can call
+        // whichever HandleServiceBusMessages overload it needs (with or without
+        // ServiceBusMessageActions) - see ServiceBusTriggerBatch's own doc comment for why this is
+        // a second registration rather than a parameter on the existing one.
+        var batchApplication = new ServiceBusBatchApplication(pipeline.Build(), options);
+        app.Add(serviceResolverFactory => new EntryPointMiddlewareApplication<ServiceBusReceivedMessage[]>(batchApplication, serviceResolverFactory));
+        app.Add(serviceResolverFactory => new EntryPointMiddlewareApplication<ServiceBusTriggerBatch>(batchApplication, serviceResolverFactory));
         return app;
     }
 

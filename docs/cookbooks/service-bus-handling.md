@@ -13,9 +13,9 @@ things the [Azure Functions getting-started guide](../azure-functions.md) only i
 - Where the "topic" used for handler routing actually comes from, since a Service Bus queue or
   topic/subscription is a routing *destination*, not a per-message topic field.
 - How headers reach your handler, and what values get filtered out.
-- What Benzene does — and, importantly, does **not** do — when a handler fails: there's no
-  automatic complete/abandon/dead-letter behavior tied to the handler's result, even though Service
-  Bus itself supports dead-lettering natively.
+- What Benzene does when a handler fails: by default, still nothing tied to message completion
+  (the Functions host auto-completes on its own), but real per-message complete/abandon control is
+  now available if you opt in - see step 5.
 - How to process a single message vs. a batch (`IsBatched = true`).
 
 This cookbook works through a realistic handler and answers each of those honestly, citing the
@@ -181,41 +181,66 @@ public class CreateOrderResponse
 This is invoked through the same generic `.UseMessageHandlers()` topic-routing pipeline as HTTP and
 Kafka — no envelope deserialization step, unlike `Benzene.Azure.Function.EventHub`.
 
-### 5. What Benzene does *not* do: message completion
+### 5. Message completion: the default, and real per-message control
 
 This is the part worth being precise about, since Service Bus (unlike Event Hubs) has native
-dead-lettering, and it would be easy to assume Benzene wires into it. It doesn't - not in the sense
-of completing/abandoning/dead-lettering the underlying message, anyway.
-`ServiceBusMessageMessageHandlerResultSetter` **does** record the outcome now:
+dead-lettering, and it would be easy to assume Benzene always wires into it.
+`ServiceBusMessageMessageHandlerResultSetter` **does** record the outcome:
 
 ```csharp
 public class ServiceBusMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<ServiceBusContext>;
 ```
 
-(it used to be a genuine no-op; it isn't anymore - see below) - but recording the outcome onto
-`ServiceBusContext.MessageResult` is not the same as *acting* on it. Whatever your handler returns
-— `Ok`, `ServiceUnavailable` from an unhandled exception (see `MessageHandler.HandleAsync` in
-`src/Benzene.Core.MessageHandlers/MessageHandler.cs`), anything — still has **no effect on the
-Service Bus message itself** by default. The Azure Functions Service Bus trigger completes the
-message automatically on its own default settings once your trigger function returns without
-throwing. There is still no `ServiceBusMessageActions` binding, no explicit
-`CompleteMessageAsync`/`AbandonMessageAsync`/`DeadLetterMessageAsync` call anywhere in this
-package. Session handling (`ServiceBusSessionMessageActions`, ordered per-session processing) is
-likewise not implemented.
+(it used to be a genuine no-op; it isn't anymore) - but recording the outcome onto
+`ServiceBusContext.MessageResult` is not automatically the same as *acting* on it.
 
-What the recorded outcome *is* used for: `ServiceBusOptions.CatchExceptions`/`RaiseOnFailureStatus`
-(`UseServiceBus(..., configure)`, both default `false`) control whether a handler's exception
-cascades to fail the whole trigger invocation (today's default, unchanged) or is caught and logged
-instead, and whether a non-exception failure result is escalated into a thrown
-`ServiceBusMessageProcessingException` so it's treated the same as an exception. This changes
-whether the *whole invocation* is reported as failed to the Functions host - it still isn't
-per-message completion control.
+**By default** (`ServiceBusOptions.AckMode = ServiceBusAckMode.AutoComplete`, unchanged from before
+this option existed), whatever your handler returns has no effect on the Service Bus message
+itself — the Azure Functions Service Bus trigger completes the message automatically on its own
+default settings once your trigger function returns without throwing.
 
-If you need real dead-lettering behavior tied to handler failure, you have to bridge that gap
-yourself, the same pattern used for [Event Hub's poison-event handling](event-hub-processing.md#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events):
-bind `ServiceBusMessageActions` alongside the message in your own trigger function, inspect the
-handler's result, and call `DeadLetterMessageAsync` yourself when appropriate — Benzene gives you
-the raw `ServiceBusReceivedMessage` (`context.Message`) to build this on, it doesn't ship it.
+**Set `AckMode = ServiceBusAckMode.Explicit`** for real per-message
+`CompleteMessageAsync`/`AbandonMessageAsync` control tied to the handler's outcome. This needs two
+things together:
+
+1. Your `[ServiceBusTrigger]` attribute must set `AutoCompleteMessages = false` — a Functions-runtime
+   setting Benzene can't set for you.
+2. Your trigger function must bind `ServiceBusMessageActions` and call the overload that accepts it:
+
+```csharp
+using Microsoft.Azure.Functions.Worker;
+
+app.UseServiceBus(serviceBus => serviceBus.UseMessageHandlers(),
+    configure: options => options.AckMode = ServiceBusAckMode.Explicit);
+```
+
+```csharp
+[Function("order-queue")]
+public Task Run(
+    [ServiceBusTrigger("orders", Connection = "ServiceBusConnection", AutoCompleteMessages = false)] ServiceBusReceivedMessage message,
+    ServiceBusMessageActions messageActions)
+{
+    return _app.HandleServiceBusMessages(messageActions, message);
+}
+```
+
+With this wired up: a handler that returns `Ok` (or any successful result) completes the message;
+a handler that returns a non-exception failure result, or throws, abandons it (returned to the
+queue, respecting the queue's own max-delivery-count before Service Bus's native auto-dead-letter
+kicks in). The plain `HandleServiceBusMessages(IAzureFunctionApp, params
+ServiceBusReceivedMessage[])` overload (no `ServiceBusMessageActions`) has nothing to act on, so
+`AckMode = Explicit` has no effect through it even if set — you have to use the
+`ServiceBusMessageActions`-accepting overload for explicit ack to actually happen.
+
+`ServiceBusOptions.CatchExceptions`/`RaiseOnFailureStatus` still control something different -
+whether a handler's exception/escalated failure cascades to fail the *whole trigger invocation*
+(reported to the Functions host), independent of whether that one message gets completed or
+abandoned. All four combinations of `AckMode` × `CatchExceptions` are independently valid; see
+`ServiceBusFailureHandlingTest.cs` for the exact behavior of each.
+
+Session handling (`ServiceBusSessionMessageActions`, ordered per-session processing) is still not
+implemented — if you need it, you have to bridge that gap yourself, the same pattern used for
+[Event Hub's poison-event handling](event-hub-processing.md#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events).
 
 ## Testing
 
@@ -277,6 +302,24 @@ var app = new InlineAzureFunctionStartUp()
     .Build();
 ```
 
+Testing `AckMode = ServiceBusAckMode.Explicit`'s complete/abandon behavior needs a
+`ServiceBusMessageActions` test double - it's mockable directly with Moq (non-sealed, virtual
+methods, a protected constructor Moq's proxy can call):
+
+```csharp
+using Microsoft.Azure.Functions.Worker;
+
+var mockActions = new Mock<ServiceBusMessageActions>();
+var message = MessageBuilder.Create("order:create", new CreateOrderRequest { OrderId = "o-123" }).AsAzureServiceBusMessage();
+
+await app.HandleServiceBusMessages(mockActions.Object, message);
+
+mockActions.Verify(x => x.CompleteMessageAsync(message, It.IsAny<CancellationToken>()));
+```
+
+See `test/Benzene.Core.Test/Azure/ServiceBusFailureHandlingTest.cs` for the full set of
+`AckMode`/`CatchExceptions`/`RaiseOnFailureStatus` combinations tested this way.
+
 ## Troubleshooting
 
 ### Message never reaches a handler
@@ -284,19 +327,24 @@ var app = new InlineAzureFunctionStartUp()
 If the `"topic"` application property is missing or isn't a string, `ServiceBusMessageTopicGetter`
 returns a topic with `Id == "<missing>"`. `MessageRouter` then returns a validation-error result
 instead of dispatching to any handler — unlike Event Hub's silent-drop behavior for a malformed
-envelope, this is at least a visible result, but per [step 5](#5-what-benzene-does-not-do-message-completion)
-that result has no effect on the underlying Service Bus message: the trigger still completes it on
-its own default settings. Confirm your sender is actually setting the `"topic"` property (step 2) —
-a missing property is easy to miss since nothing about the send call itself fails.
+envelope, this is at least a visible result. With the default `AckMode = AutoComplete` this result
+has no effect on the underlying Service Bus message: the trigger still completes it on its own
+default settings. With `AckMode = Explicit` (see [step 5](#5-message-completion-the-default-and-real-per-message-control)),
+a validation-error result is a non-exception failure result, so the message is abandoned instead —
+either way, confirm your sender is actually setting the `"topic"` property (step 2), since a
+missing property is easy to miss when nothing about the send call itself fails.
 
 ### Handler runs but the message keeps redelivering, or never does
 
-This isn't a Benzene concern at all — completion/abandon/redelivery/dead-lettering is entirely
-governed by the Service Bus trigger's own configuration (`maxAutoLockRenewalDuration`,
-`maxConcurrentCalls`/`maxConcurrentSessions` in `host.json`) and, per step 5, is completely
-disconnected from whatever your handler returns. If you need redelivery to depend on handler
-success/failure, you must bind `ServiceBusMessageActions` and call
-complete/abandon/dead-letter explicitly yourself.
+With the default `AckMode = AutoComplete`, this isn't a Benzene concern — completion/abandon/
+redelivery/dead-lettering is entirely governed by the Service Bus trigger's own configuration
+(`maxAutoLockRenewalDuration`, `maxConcurrentCalls`/`maxConcurrentSessions` in `host.json`) and is
+completely disconnected from whatever your handler returns. If you need redelivery to depend on
+handler success/failure, set `AckMode = ServiceBusAckMode.Explicit` (step 5) instead of bridging
+`ServiceBusMessageActions` yourself. If you've already set `AckMode = Explicit` and redelivery still
+looks wrong, confirm `AutoCompleteMessages = false` is actually set on the `[ServiceBusTrigger]`
+attribute — without it, the Functions host completes the message before Benzene's explicit
+completion ever runs, silently defeating `AckMode = Explicit`.
 
 ### NuGet can't find the Benzene package
 
