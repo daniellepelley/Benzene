@@ -5,6 +5,7 @@ using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Xunit;
@@ -55,6 +56,33 @@ public class EventServiceDocumentBuilderTest
         var json2 = doc2.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
 
         Assert.Equal(json, json2);
+    }
+
+    [Fact]
+    public void Build_GeneratesExamplesForRequestsAndEvents()
+    {
+        var messageHandlerDefinition = MessageHandlerDefinition.CreateInstance("tenant:create",
+            typeof(Example),
+            typeof(Inner));
+
+        var broadcastEventDefinition = new BroadcastEventDefinition("tenant:created", typeof(Inner));
+
+        var doc = new EventServiceDocumentBuilder(new SchemaBuilder())
+            .AddMessageHandlerDefinitions(new[] { messageHandlerDefinition })
+            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .Build();
+
+        var requestExample = Assert.IsType<OpenApiObject>(doc.Requests[0].Example);
+        Assert.Equal("value", Assert.IsType<OpenApiString>(requestExample["title"]).Value);
+        var innerArray = Assert.IsType<OpenApiArray>(requestExample["inner"]);
+        var innerExample = Assert.IsType<OpenApiObject>(innerArray[0]);
+        Assert.Equal("2023-01-01T12:00:00.000Z", Assert.IsType<OpenApiString>(innerExample["date"]).Value);
+
+        var eventExample = Assert.IsType<OpenApiObject>(doc.Events[0].Example);
+        Assert.Equal("value", Assert.IsType<OpenApiString>(eventExample["title"]).Value);
+
+        var json = doc.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+        Assert.Contains("\"example\"", json);
     }
 }
 

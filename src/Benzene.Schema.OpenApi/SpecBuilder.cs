@@ -3,6 +3,7 @@ using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Validation;
+using Benzene.Http.BenzeneMessage;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi.Abstractions;
 using Benzene.Schema.OpenApi.AsyncApi;
@@ -71,6 +72,14 @@ public class SpecBuilder
             if (messageFinder != null)
             {
                 consumesBroadcastEventsDefinitions.AddBroadcastEventDefinitions(messageFinder.FindDefinitions());
+            }
+        }
+        if (builder is IConsumesMessageEndpoint<TBuilder> consumesMessageEndpoint)
+        {
+            var messageEndpointInfo = resolver.TryGetService<IBenzeneMessageHttpEndpointInfo>();
+            if (messageEndpointInfo != null)
+            {
+                consumesMessageEndpoint.AddMessageEndpoint(messageEndpointInfo.Path);
             }
         }
 

@@ -32,6 +32,8 @@ public class DefaultGrpcStatusCodeMapper : IGrpcStatusCodeMapper
             { BenzeneResultStatus.Conflict, StatusCode.AlreadyExists },
             { BenzeneResultStatus.NotImplemented, StatusCode.Unimplemented },
             { BenzeneResultStatus.ServiceUnavailable, StatusCode.Unavailable },
+            { BenzeneResultStatus.TooManyRequests, StatusCode.ResourceExhausted },
+            { BenzeneResultStatus.Timeout, StatusCode.DeadlineExceeded },
             { BenzeneResultStatus.UnexpectedError, StatusCode.Internal }
         };
     }

@@ -16,6 +16,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Common Middleware](common-middleware)
   - [Correlation Ids](correlation-ids)
   - [Testing Benzene](testing-benzene)
+  - [Payload Testing](payload-testing) — construct demo payloads and send them into a running service by topic
   - [Health Checks](health-checks)
   - [Kubernetes Health Checks](kubernetes-health-checks)
   - [Monitoring & Diagnostics](monitoring)

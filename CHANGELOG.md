@@ -7,7 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING:** `Benzene.CodeGen.Core`'s example payload generation moved to
+  `Benzene.Schema.OpenApi` so examples can be generated at runtime during spec builds, not just at
+  codegen time: `IPayloadBuilder`/`PayloadBuilder` are now
+  `Benzene.Schema.OpenApi.Examples.IExamplePayloadBuilder`/`ExamplePayloadBuilder`, and
+  `ISchemaGetter`/`SchemaGetter` moved namespace to `Benzene.Schema.OpenApi.Examples` (same names).
+  `BuildAsJson`/`Build(Type)` extensions moved with them. The generator is also hardened: it now
+  honours schema `example`/`default`/`enum` values, the `date`/`email`/`uri` formats, sizes strings
+  within `minLength`/`maxLength`, clamps numbers into `minimum`/`maximum`, accepts known values
+  keyed by property path (`order.customer.email`) as well as bare name, expands non-cyclic nested
+  `$ref`s fully (previously any second-level object reference collapsed to `{}`), and terminates
+  reference cycles — direct or mutual — as `{}`/`[]` with a maximum reference depth of 8. Output
+  for previously-supported shapes is unchanged.
+
 ### Added
+- `Benzene.Results`: two new statuses — `TooManyRequests` (throttled/rate limited; HTTP 429, gRPC
+  `ResourceExhausted`) and `Timeout` (downstream deadline elapsed; HTTP 504, gRPC
+  `DeadlineExceeded`) — with the full complement of factories (`BenzeneResult.TooManyRequests`/
+  `Timeout`) and extensions (`IsTooManyRequests()`/`IsTimeout()`). `BenzeneResultStatus` becomes
+  the single owner of status classification: new `IsSuccess`/`IsFailure`/`IsKnown`/`IsTransient`
+  helpers, with `BenzeneResultHttpMapper`, the conformance status handler, and
+  `RetryBenzeneMessageClient` rewired onto them. HTTP reverse mapping gains explicit
+  408/422/429/500/501/502/503/504 rows in both `BenzeneResultHttpMapper` and
+  `Convert(HttpStatusCode)` (422/501/503 previously fell to `UnexpectedError` through the
+  latter). The portable spec (`wire-contracts.md` §3/§4) and its conformance fixtures are
+  updated in lockstep. **Behavioral changes:** `BenzeneResult.Set(status)`/`Set(status, payload)`
+  now derive `IsSuccessful` from the status class (a known failure status yields an unsuccessful
+  result; application-defined statuses keep the successful default; `Set<T>(status, bool)` stays
+  explicit, and a new `Set<T>(status, payload, isSuccessful)` overload covers
+  failure-status-with-payload-body results — `HealthCheckProcessor` uses it to keep the
+  unhealthy 503 + report-body behavior); `RetryBenzeneMessageClient` also retries `TooManyRequests` (not `Timeout` — retrying
+  a possibly-applied operation is only safe when idempotent; opt in via the new `shouldRetry`
+  constructor parameter) and returns the last inner result after exhausting retries instead of a
+  synthesized `ServiceUnavailable`; gRPC reverse mapping `DeadlineExceeded` now yields `Timeout`
+  (was `ServiceUnavailable`). Fixes two missing-`$` interpolation bugs in the unmapped-status
+  error messages. See `docs/plans/results-taxonomy-plan.md` and `docs/reference/results.md`.
+- `Benzene.CodeGen.Core`: `CodeGenHelpers.GenerateHash(EventServiceDocument)` — computes the
+  contract hash over a normalized document with the non-contract decoration stripped (generated
+  `example` payloads, `messageEndpoint`). Both the handler-array overload and
+  `Benzene.CodeGen.Client`'s baked-in SDK `HashCode` now go through it, so contract hashes are
+  **unchanged** by the new spec examples and existing deployed client SDKs don't falsely report
+  contract drift against upgraded services.
+- `Benzene.CodeGen.LambdaTestTool` (renamed from `Benzene.CodeGen.MockLambdaTool`, whose package
+  name was out of sync with its `Benzene.CodeGen.LambdaTestTool` namespace — **breaking** for
+  anyone referencing the old package id): productized test-payload-file generation.
+  `DefaultExampleBuilders` provides the standard per-transport set (BenzeneMessage envelope, SNS,
+  SQS, API Gateway), `LambdaTestFilesBuilder` gains a parameterless constructor using it, and the
+  CodeGen CLI gains a `lambda-test-tool` command (`-profile`/`-lambda-name` to fetch the spec
+  from a Lambda, or `-file` to read it from disk; `-directory` for output). See
+  `docs/payload-testing.md`.
+- `Benzene.Http`: BenzeneMessage-over-HTTP endpoint — `UseBenzeneMessage` (namespace
+  `Benzene.Http.BenzeneMessage`) mounts a `BenzeneMessageHttpMiddleware<TContext>` on any Benzene
+  HTTP pipeline (API Gateway, Azure Functions, ASP.NET Core, self-host): POST a
+  `{ topic, headers, body }` envelope and it dispatches through the BenzeneMessage pipeline (the
+  same `"benzene"` transport as direct Lambda invoke) and returns the response envelope as JSON
+  with the HTTP status mapped from the envelope status. Same name and overload shapes as the
+  Lambda adapter (inline pipeline action or shared pre-built builder), plus
+  `BenzeneMessageHttpOptions` (`Path`, default `/benzene-message`; `TopicFilter` allowlist).
+  Strictly opt-in — it exposes every routed topic over HTTP, so see `docs/payload-testing.md` for
+  the security posture. Registers `IBenzeneMessageHttpEndpointInfo`, which the `benzene` spec
+  advertises as a new optional top-level `messageEndpoint` field (additive; round-tripped by
+  `EventServiceDocumentDeserializer`). Replaces the ad-hoc `UseHttpToBenzeneMessage` prototype in
+  `examples/Aws`.
+- `Benzene.Spec.Ui`: "Try it" panel — when the loaded spec advertises `messageEndpoint`, every
+  topic/event card gains an editable payload (pre-filled from the spec `example`), a headers
+  editor, and a Send/Dispatch button that POSTs the BenzeneMessage envelope and renders the
+  response envelope inline (HTTP + Benzene status chips, headers, pretty-printed body, duration).
+  The page stays fully self-contained (vanilla JS, no external requests) and degrades to the
+  read-only viewer when no `messageEndpoint` is present.
+- `Benzene.Schema.OpenApi`: the `benzene` spec format now carries a generated `example` payload on
+  every request topic and broadcast event, produced during `EventServiceDocumentBuilder.Build()` by
+  the hardened `ExamplePayloadBuilder` (deterministic, validation-aware — see the Changed entry).
+  `RequestResponse.Example`/`Event.Example` are new optional members; the field is additive, and
+  `EventServiceDocumentDeserializer` round-trips it. `Benzene.Spec.Ui` renders the example per
+  topic/event with a copy button. See `docs/spec.md` / `docs/spec-ui.md`.
 - `Benzene.Aws.Lambda.Sqs`: `SqsOptions.BatchFailureMode` (via a new `Action<SqsOptions>? configure`
   parameter on `UseSqs`) - defaults to `SqsBatchFailureMode.PartialBatchFailure`, reproducing
   today's per-message `SQSBatchResponse.BatchItemFailures` reporting exactly. Set to

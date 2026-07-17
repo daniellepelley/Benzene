@@ -131,5 +131,8 @@ public class StatusVocabularyConformanceTest
     public void Vocabulary_SuccessClassificationMatches(string status, bool isSuccess)
     {
         Assert.Equal(isSuccess, BenzeneResultHttpMapper.IsSuccessStatus(status));
+        Assert.Equal(isSuccess, BenzeneResultStatus.IsSuccess(status));
+        Assert.Equal(!isSuccess, BenzeneResultStatus.IsFailure(status));
+        Assert.True(BenzeneResultStatus.IsKnown(status));
     }
 }

@@ -42,8 +42,10 @@ public static class HealthCheckProcessor
             x => healthCheckNamer.GetName(x.Item2.Result.Type),
             x => new HealthCheckResult(x.Item2.Result.Status, x.Item2.Result.Type, x.Item2.Result.Data, x.Item2.Result.Dependencies)));
 
+        // Unhealthy: ServiceUnavailable so HTTP probes see a 503, but explicitly successful so
+        // the response body renders the health report payload rather than an error payload.
         return isHealthy
             ? BenzeneResult.Ok(message)
-            : BenzeneResult.Set(BenzeneResultStatus.ServiceUnavailable, message);
+            : BenzeneResult.Set(BenzeneResultStatus.ServiceUnavailable, message, true);
     }
 }

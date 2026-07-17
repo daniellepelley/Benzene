@@ -4,6 +4,7 @@ using System.IO;
 using Benzene.CodeGen.Core;
 using Benzene.CodeGen.Core.Writers;
 using Benzene.CodeGen.Markdown;
+using Benzene.Schema.OpenApi.Examples;
 using Benzene.Test.Autogen.CodeGen.Helpers;
 using Benzene.Test.Autogen.CodeGen.Model;
 using Xunit;

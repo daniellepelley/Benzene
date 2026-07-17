@@ -266,6 +266,59 @@
   }
   .io-label .tag { font-family: var(--mono); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--accent); }
 
+  /* ---------- Example payload ---------- */
+  .io-label .copy-btn {
+    margin-left: auto;
+    font: inherit; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: none;
+    color: var(--ink-faint); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 5px; padding: 2px 9px; cursor: pointer;
+    transition: color .12s, border-color .12s;
+  }
+  .io-label .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .example-json {
+    margin: 0; padding: 11px 14px; overflow-x: auto;
+    background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--ink-soft);
+    tab-size: 2; white-space: pre;
+  }
+
+  /* ---------- Try it ---------- */
+  .try-block textarea {
+    width: 100%; min-height: 120px; resize: vertical; display: block;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--ink);
+    background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+    padding: 11px 14px; tab-size: 2;
+  }
+  .try-block textarea.headers { min-height: 40px; margin-top: 8px; }
+  .try-block textarea::placeholder { color: var(--ink-faint); }
+  .try-actions { display: flex; align-items: center; gap: 9px; margin-top: 9px; flex-wrap: wrap; }
+  .try-actions .send-btn {
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink);
+    border: none; border-radius: var(--radius-sm); height: 32px; padding: 0 16px;
+  }
+  .try-actions .send-btn:hover { background: var(--accent-soft); }
+  .try-actions .send-btn:disabled { opacity: .55; cursor: default; }
+  .try-actions .reset-btn {
+    font: inherit; font-family: var(--mono); font-size: 11.5px; cursor: pointer;
+    background: var(--surface-2); color: var(--ink-faint);
+    border: 1px solid var(--line); border-radius: var(--radius-sm); height: 32px; padding: 0 12px;
+  }
+  .try-actions .reset-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .try-actions .try-err { color: var(--req); font-family: var(--mono); font-size: 12px; }
+  .try-result { margin-top: 10px; }
+  .try-result .result-line {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+  }
+  .status-chip { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px; }
+  .status-chip.ok { color: var(--ok); background: var(--m-post-bg); }
+  .status-chip.fail { color: var(--req); background: var(--m-delete-bg); }
+  .try-result .headers-line {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
+    margin-bottom: 6px; overflow-wrap: anywhere;
+  }
+
   /* ---------- Schema tree ---------- */
   .schema { background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
   .schema.empty { padding: 11px 14px; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; }
@@ -409,36 +462,80 @@
     "description": "Message contracts for the Orders bounded context — the topics this service handles, the events it broadcasts, and the payload shapes with their validation rules."
   },
   "tags": [ { "name": "order" }, { "name": "shipment" } ],
+  "messageEndpoint": "/benzene-message",
   "requests": [
     {
       "topic": "order:create",
       "httpMappings": [ { "method": "post", "path": "/orders" } ],
       "request":  { "$ref": "#/components/schemas/CreateOrderRequest" },
-      "response": { "$ref": "#/components/schemas/Order" }
+      "response": { "$ref": "#/components/schemas/Order" },
+      "example": {
+        "customerId": "11111111-1111-1111-1111-111111111111",
+        "email": "user@example.com",
+        "lines": [ { "sku": "ABC-0001", "quantity": 1, "unitPricePence": 0 } ],
+        "notes": "value",
+        "priority": "low"
+      }
     },
     {
       "topic": "order:get",
       "httpMappings": [ { "method": "get", "path": "/orders/{orderId}" } ],
       "request":  { "$ref": "#/components/schemas/GetOrderRequest" },
-      "response": { "$ref": "#/components/schemas/Order" }
+      "response": { "$ref": "#/components/schemas/Order" },
+      "example": { "orderId": "11111111-1111-1111-1111-111111111111" }
     },
     {
       "topic": "order:cancel",
       "httpMappings": [ { "method": "post", "path": "/orders/{orderId}/cancel" } ],
       "request":  { "$ref": "#/components/schemas/CancelOrderRequest" },
-      "response": { "$ref": "#/components/schemas/Order" }
+      "response": { "$ref": "#/components/schemas/Order" },
+      "example": { "orderId": "11111111-1111-1111-1111-111111111111", "reason": "value" }
     },
     {
       "topic": "shipment:book",
       "httpMappings": [],
       "request":  { "$ref": "#/components/schemas/BookShipmentRequest" },
-      "response": { "$ref": "#/components/schemas/Shipment" }
+      "response": { "$ref": "#/components/schemas/Shipment" },
+      "example": {
+        "orderId": "11111111-1111-1111-1111-111111111111",
+        "address": { "line1": "value", "line2": "value", "postcode": "AB12 3CD", "country": "GB" },
+        "carrier": "royal-mail"
+      }
     }
   ],
   "events": [
-    { "topic": "order:created", "message": { "$ref": "#/components/schemas/Order" } },
-    { "topic": "order:cancelled", "message": { "$ref": "#/components/schemas/OrderCancelled" } },
-    { "topic": "shipment:dispatched", "message": { "$ref": "#/components/schemas/Shipment" } }
+    {
+      "topic": "order:created",
+      "message": { "$ref": "#/components/schemas/Order" },
+      "example": {
+        "orderId": "11111111-1111-1111-1111-111111111111",
+        "customerId": "11111111-1111-1111-1111-111111111111",
+        "status": "pending",
+        "lines": [ { "sku": "ABC-0001", "quantity": 1, "unitPricePence": 0 } ],
+        "totalPence": 42,
+        "createdAt": "2023-01-01T12:00:00.000Z"
+      }
+    },
+    {
+      "topic": "order:cancelled",
+      "message": { "$ref": "#/components/schemas/OrderCancelled" },
+      "example": {
+        "orderId": "11111111-1111-1111-1111-111111111111",
+        "reason": "value",
+        "cancelledAt": "2023-01-01T12:00:00.000Z"
+      }
+    },
+    {
+      "topic": "shipment:dispatched",
+      "message": { "$ref": "#/components/schemas/Shipment" },
+      "example": {
+        "shipmentId": "11111111-1111-1111-1111-111111111111",
+        "orderId": "11111111-1111-1111-1111-111111111111",
+        "carrier": "royal-mail",
+        "trackingCode": "value",
+        "address": { "line1": "value", "line2": "value", "postcode": "AB12 3CD", "country": "GB" }
+      }
+    }
   ],
   "components": {
     "schemas": {
@@ -537,6 +634,7 @@
 (function () {
   "use strict";
   var spec = {};
+  var currentSpecUrl = null;
 
   /* ---------- theme ---------- */
   var themeBtn = document.getElementById("theme-btn");
@@ -730,6 +828,12 @@
       grid.appendChild(ioBlock("Request", item.request));
       grid.appendChild(ioBlock("Response", item.response));
     }
+    if (item.example !== undefined) {
+      grid.appendChild(exampleBlock(isEvent ? "Example message" : "Example request", item.example));
+    }
+    if (typeof spec.messageEndpoint === "string" && spec.messageEndpoint) {
+      grid.appendChild(tryItBlock(topic, item, isEvent));
+    }
     body.appendChild(grid);
     op.appendChild(body);
 
@@ -750,6 +854,171 @@
     block.appendChild(lab);
     block.appendChild(renderSchema(schemaRef, []));
     return block;
+  }
+
+  function exampleBlock(label, example) {
+    var json = JSON.stringify(example, null, 2);
+    var block = el("div", "io-block");
+    var lab = el("div", "io-label");
+    lab.appendChild(document.createTextNode(label));
+    var btn = el("button", "copy-btn", "copy");
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      copyText(json, btn);
+    });
+    lab.appendChild(btn);
+    block.appendChild(lab);
+    block.appendChild(el("pre", "example-json", json));
+    return block;
+  }
+
+  function copyText(text, btn) {
+    var done = function () {
+      btn.textContent = "copied";
+      setTimeout(function () { btn.textContent = "copy"; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else {
+      fallbackCopy(text); done();
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* best effort */ }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- try it: send an envelope to the service's message endpoint ---------- */
+  function resolveMessageEndpoint() {
+    try { return new URL(spec.messageEndpoint, currentSpecUrl || location.href).toString(); }
+    catch (e) { return spec.messageEndpoint; }
+  }
+
+  function tryItBlock(topic, item, isEvent) {
+    var block = el("div", "io-block try-block");
+    var lab = el("div", "io-label");
+    lab.appendChild(document.createTextNode("Try it"));
+    lab.appendChild(el("span", "tag", topic));
+    block.appendChild(lab);
+
+    var initial = item.example !== undefined ? JSON.stringify(item.example, null, 2) : "{}";
+    var payload = document.createElement("textarea");
+    payload.value = initial;
+    payload.spellcheck = false;
+    payload.setAttribute("aria-label", "Payload for " + topic);
+    block.appendChild(payload);
+
+    var headers = document.createElement("textarea");
+    headers.className = "headers";
+    headers.placeholder = "headers — one per line, e.g.  x-correlation-id: 1234";
+    headers.spellcheck = false;
+    headers.setAttribute("aria-label", "Headers for " + topic);
+    block.appendChild(headers);
+
+    var actions = el("div", "try-actions");
+    var send = el("button", "send-btn", isEvent ? "Dispatch" : "Send");
+    var reset = el("button", "reset-btn", "reset to example");
+    var err = el("span", "try-err", "");
+    actions.appendChild(send);
+    actions.appendChild(reset);
+    actions.appendChild(err);
+    block.appendChild(actions);
+
+    var result = el("div", "try-result");
+    result.style.display = "none";
+    block.appendChild(result);
+
+    reset.addEventListener("click", function () {
+      payload.value = initial;
+      err.textContent = "";
+      result.style.display = "none";
+    });
+
+    send.addEventListener("click", function () {
+      err.textContent = "";
+      var payloadText = payload.value.trim();
+      if (payloadText) {
+        try { JSON.parse(payloadText); }
+        catch (ex) { err.textContent = "payload is not valid JSON: " + ex.message; return; }
+      }
+      var envelope = { topic: topic, headers: parseHeaders(headers.value), body: payloadText };
+      send.disabled = true;
+      var started = performance.now();
+      fetch(resolveMessageEndpoint(), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(envelope)
+      }).then(function (r) {
+        return r.text().then(function (text) {
+          renderTryResult(result, r.status, text, performance.now() - started);
+        });
+      }).catch(function (ex) {
+        renderTryError(result, String((ex && ex.message) || ex));
+      }).then(function () { send.disabled = false; });
+    });
+
+    return block;
+  }
+
+  function parseHeaders(text) {
+    var out = {};
+    String(text || "").split("\n").forEach(function (line) {
+      var i = line.indexOf(":");
+      if (i > 0) {
+        var key = line.slice(0, i).trim();
+        var value = line.slice(i + 1).trim();
+        if (key) out[key] = value;
+      }
+    });
+    return out;
+  }
+
+  function renderTryResult(result, httpStatus, text, ms) {
+    result.innerHTML = "";
+    result.style.display = "";
+
+    var ok = httpStatus >= 200 && httpStatus < 300;
+    var line = el("div", "result-line");
+    line.appendChild(el("span", "status-chip " + (ok ? "ok" : "fail"), "HTTP " + httpStatus));
+
+    var envelope = null;
+    try { envelope = JSON.parse(text); } catch (e) { /* not an envelope */ }
+    if (envelope && envelope.statusCode) {
+      line.appendChild(el("span", "status-chip " + (ok ? "ok" : "fail"), String(envelope.statusCode)));
+    }
+    line.appendChild(el("span", null, Math.round(ms) + " ms"));
+    result.appendChild(line);
+
+    if (envelope && envelope.headers && Object.keys(envelope.headers).length) {
+      result.appendChild(el("div", "headers-line", Object.keys(envelope.headers).map(function (key) {
+        return key + ": " + envelope.headers[key];
+      }).join("  ·  ")));
+    }
+
+    var bodyText = text;
+    if (envelope && typeof envelope.body === "string") {
+      try { bodyText = JSON.stringify(JSON.parse(envelope.body), null, 2); }
+      catch (e) { bodyText = envelope.body; }
+    } else if (envelope) {
+      bodyText = JSON.stringify(envelope, null, 2);
+    }
+    result.appendChild(el("pre", "example-json", bodyText || "(empty response)"));
+  }
+
+  function renderTryError(result, message) {
+    result.innerHTML = "";
+    result.style.display = "";
+    var line = el("div", "result-line");
+    line.appendChild(el("span", "status-chip fail", "network error"));
+    result.appendChild(line);
+    result.appendChild(el("pre", "example-json", message));
   }
 
   /* ---------- render everything ---------- */
@@ -928,7 +1197,12 @@
     var err = document.getElementById("ld-err");
     err.textContent = "";
     if (json) {
-      try { applySpec(JSON.parse(json)); loader.close(); }
+      try {
+        var parsed = JSON.parse(json);
+        currentSpecUrl = null;
+        applySpec(parsed);
+        loader.close();
+      }
       catch (ex) { err.textContent = "Invalid JSON: " + ex.message; }
       return;
     }
@@ -948,7 +1222,11 @@
   function fetchSpec(url) {
     return fetch(url, { headers: { accept: "application/json" } })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching spec"); return r.text(); })
-      .then(function (txt) { applySpec(JSON.parse(txt)); });
+      .then(function (txt) {
+        var parsed = JSON.parse(txt);
+        try { currentSpecUrl = new URL(url, location.href).toString(); } catch (e) { currentSpecUrl = null; }
+        applySpec(parsed);
+      });
   }
 
   /* ---------- boot: ?url= param → inline <script> data → nothing ---------- */

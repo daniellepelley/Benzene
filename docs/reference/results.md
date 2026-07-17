@@ -46,9 +46,11 @@ the HTTP status code HTTP transports map it to (via `DefaultHttpStatusCodeMapper
 | `BenzeneResult.NotFound<T>()` | `NotFound` | `404` | Resource does not exist. |
 | `BenzeneResult.Conflict()` | `Conflict` | `409` | Conflicts with current state. |
 | `BenzeneResult.ValidationError(message)` | `ValidationError` | `422` | Request failed validation. Returned automatically by [validation middleware](middleware#message-router-middleware). |
+| `BenzeneResult.TooManyRequests()` | `TooManyRequests` | `429` | Throttled / rate limited; transient — back off and retry. |
 | `BenzeneResult.UnexpectedError(message)` | `UnexpectedError` | `500` | Unhandled/unexpected failure. |
 | `BenzeneResult.NotImplemented()` | `NotImplemented` | `501` | Operation not implemented. |
 | `BenzeneResult.ServiceUnavailable()` | `ServiceUnavailable` | `503` | A dependency is unavailable; safe to retry. |
+| `BenzeneResult.Timeout()` | `Timeout` | `504` | A downstream deadline elapsed; transient, but the operation may or may not have been applied — retry only if idempotent. |
 
 > Any status not in the map — or a `null` status — falls back to **HTTP 500**.
 
@@ -80,9 +82,32 @@ BenzeneResult.BadRequest("Invalid request");
 | Member | Purpose |
 |---|---|
 | `BenzeneResult.Set(status, isSuccess)` / `Set<T>(...)` | Build a result with an explicit status string and success flag — the escape hatch for custom statuses. |
+| `BenzeneResult.Set(status, payload, isSuccess)` | Explicit status *and* payload *and* success flag — for results whose success class shouldn't be derived from the status (e.g. an unhealthy health check: `ServiceUnavailable` for the HTTP 503, successful so the report payload renders as the body). |
 | `BenzeneResult.IsSuccess(result)` | True when the result's status is a success status. |
 | `BenzeneResult.IsAccepted(result)` | True when the result is `Accepted`. |
 | `*Internal` factories (`OkInternal`, `NotFoundInternal`, …) | Variants used for internal/inter-service results — e.g. results returned across a Benzene [message client](packages#outbound-messaging-clients) rather than mapped straight to an HTTP response. |
+
+## Classifying statuses
+
+`BenzeneResultStatus` is the single owner of what each status *means* — the transport mappers,
+clients, and `IsSuccessful` all derive from it:
+
+| Member | Purpose |
+|---|---|
+| `BenzeneResultStatus.IsSuccess(status)` | True for the six success statuses. |
+| `BenzeneResultStatus.IsFailure(status)` | True for the known failure statuses. Application-defined statuses are neither. |
+| `BenzeneResultStatus.IsKnown(status)` | True for any framework-defined status. |
+| `BenzeneResultStatus.IsTransient(status)` | True for `ServiceUnavailable`, `TooManyRequests`, and `Timeout` — a later retry may succeed. |
+| `result.IsTransient()` | Extension form of the above. |
+
+`IsSuccessful` on a result built with `BenzeneResult.Set(status)` / `Set(status, payload)` is
+derived from the status class: known failure statuses produce `IsSuccessful == false`;
+application-defined statuses default to successful (use `Set<T>(status, bool)` to be explicit).
+
+**Retrying:** `RetryBenzeneMessageClient` (`Benzene.Clients`) retries `ServiceUnavailable` and
+`TooManyRequests` by default. `Timeout` is transient but *not* retried by default — a timed-out
+operation may have been applied, so blind retries are only safe for idempotent calls; opt in via
+its `shouldRetry` constructor parameter (e.g. `r => BenzeneResultStatus.IsTransient(r.Status)`).
 
 ## Mapping in both directions
 

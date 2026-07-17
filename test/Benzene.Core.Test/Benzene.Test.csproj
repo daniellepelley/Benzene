@@ -90,7 +90,7 @@
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Core\Benzene.CodeGen.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.CodeGen.MockLambdaTool\Benzene.CodeGen.MockLambdaTool.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CodeGen.LambdaTestTool\Benzene.CodeGen.LambdaTestTool.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.SourceGenerators\Benzene.CodeGen.SourceGenerators.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
@@ -174,19 +174,19 @@
     <None Update="Autogen\CodeGen\Client\Examples\LambdaService_UserGet.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\AllFieldTypesMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\AllFieldTypesMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\CreateClientMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\CreateClientMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\UserDto.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\UserDto.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\CreateUserMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\CreateUserMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Autogen\CodeGen\Core\Examples\CreateTenantMessage.json">
+    <None Update="Autogen\Schema\OpenApi\Examples\CreateTenantMessage.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Autogen\CodeGen\Core\Examples\document1-expected1.tf">

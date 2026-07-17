@@ -69,12 +69,39 @@ namespace Benzene.CodeGen.Core
 
         public static string GenerateHash(IMessageHandlerDefinition[] handlers)
         {
-            var json = new EventServiceDocumentBuilder(new SchemaBuilder())
+            var document = new EventServiceDocumentBuilder(new SchemaBuilder())
                 .AddMessageHandlerDefinitions(handlers)
-                .Build()
-                .SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+                .Build();
 
-            return GenerateHash(json);
+            return GenerateHash(document);
+        }
+
+        /// <summary>
+        /// Computes the contract hash of a spec document: the hash of its serialized form with the
+        /// non-contract decoration stripped — generated <c>example</c> payloads and the
+        /// <c>messageEndpoint</c> advertisement. Examples are derived from the schemas and the
+        /// endpoint is transport plumbing, so neither changes what the service's message contract
+        /// *is* — and excluding them keeps this hash identical to the hashes baked into client SDKs
+        /// generated before examples existed, so upgrading a service doesn't trip the
+        /// client-vs-service contract-drift check (<c>Benzene.Clients.HealthChecks</c>) falsely.
+        /// </summary>
+        public static string GenerateHash(EventServiceDocument document)
+        {
+            var normalized = new EventServiceDocument(
+                document.Info,
+                document.Tags,
+                document.Requests.Select(x => new RequestResponse
+                {
+                    Topic = x.Topic,
+                    Version = x.Version,
+                    HttpMappings = x.HttpMappings,
+                    Request = x.Request,
+                    Response = x.Response
+                }).ToArray(),
+                document.Events.Select(x => new Event(x.Topic, x.Message)).ToArray(),
+                document.Components);
+
+            return GenerateHash(normalized.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0));
         }
 
         private static string GeneratorBase64(string json)

@@ -19,7 +19,7 @@ responsible for validation, schema generation, and developer productivity tools.
 - Benzene.CodeGen.Cli
 - Benzene.CodeGen.Cli.Core
 - Benzene.CodeGen.Markdown
-- Benzene.CodeGen.MockLambdaTool
+- Benzene.CodeGen.LambdaTestTool
 - Benzene.CodeGen.Terraform
 - Benzene.CodeGen.SourceGenerators
 

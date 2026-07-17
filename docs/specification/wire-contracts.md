@@ -109,6 +109,8 @@ The closed set of framework-defined statuses. The strings below are the wire val
 | `Forbidden` | no | Caller authenticated but not permitted |
 | `NotFound` | no | Target not found (including: no handler registered for the topic) |
 | `Conflict` | no | State conflict |
+| `TooManyRequests` | no | Throttled / rate limited; transient — back off and retry |
+| `Timeout` | no | A downstream deadline elapsed; transient, but the operation may or may not have been applied, so blind retries are only safe for idempotent operations |
 | `NotImplemented` | no | Recognized but unsupported operation |
 | `ServiceUnavailable` | no | Transient infrastructure failure; retryable. Also the mapping for uncaught handler exceptions and client-side send failures. |
 | `UnexpectedError` | no | Unclassified failure |
@@ -132,13 +134,17 @@ to its generic-error row.
 | `NotFound` | 404 |
 | `Conflict` | 409 |
 | `ValidationError` | 422 |
+| `TooManyRequests` | 429 |
 | `UnexpectedError`, unknown, missing | 500 |
 | `NotImplemented` | 501 |
 | `ServiceUnavailable` | 503 |
+| `Timeout` | 504 |
 
 Reverse (HTTP → Benzene, used by HTTP clients): 200→`Ok`, 201→`Created`, 202→`Accepted`,
 204→`Deleted`, 400→`BadRequest`, 401→`Unauthorized`, 403→`Forbidden`, 404→`NotFound`,
-409→`Conflict`, anything else→`UnexpectedError`.
+408→`Timeout`, 409→`Conflict`, 422→`ValidationError`, 429→`TooManyRequests`,
+501→`NotImplemented`, 502→`ServiceUnavailable`, 503→`ServiceUnavailable`, 504→`Timeout`,
+anything else→`UnexpectedError`.
 
 ### 4.2 gRPC
 
@@ -154,6 +160,8 @@ Forward (server):
 | `Conflict` | `AlreadyExists` |
 | `NotImplemented` | `Unimplemented` |
 | `ServiceUnavailable` | `Unavailable` |
+| `TooManyRequests` | `ResourceExhausted` |
+| `Timeout` | `DeadlineExceeded` |
 | `UnexpectedError`, unknown, missing | `Internal` |
 
 **The `benzene-status` trailer**: because several Benzene statuses collapse to one gRPC code, a
@@ -165,7 +173,8 @@ joined `errors` (or the raw status if `errors` is empty).
 Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`Ok`,
 `InvalidArgument`→`BadRequest`, `Unauthenticated`→`Unauthorized`, `PermissionDenied`→`Forbidden`,
 `NotFound`→`NotFound`, `AlreadyExists`→`Conflict`, `Unimplemented`→`NotImplemented`,
-`Unavailable`/`DeadlineExceeded`/`Cancelled`→`ServiceUnavailable`, anything else→`UnexpectedError`.
+`Unavailable`/`Cancelled`→`ServiceUnavailable`, `ResourceExhausted`→`TooManyRequests`,
+`DeadlineExceeded`→`Timeout`, anything else→`UnexpectedError`.
 
 **Cancellation**: a cancelled invocation maps to gRPC `DeadlineExceeded` if the call's deadline
 has passed, else `Cancelled`.

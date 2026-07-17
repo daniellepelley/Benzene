@@ -70,6 +70,24 @@ public static class BenzeneResultExtensions
     {
         return serviceBenzeneResult.Status == BenzeneResultStatus.Unauthorized;
     }
+    public static bool IsTooManyRequests(this IBenzeneResult serviceBenzeneResult)
+    {
+        return serviceBenzeneResult.Status == BenzeneResultStatus.TooManyRequests;
+    }
+    public static bool IsTimeout(this IBenzeneResult serviceBenzeneResult)
+    {
+        return serviceBenzeneResult.Status == BenzeneResultStatus.Timeout;
+    }
+
+    /// <summary>
+    /// True when the result's status describes a transient condition — one where a later retry
+    /// may succeed. See <see cref="BenzeneResultStatus.IsTransient"/> for the retry-safety caveat
+    /// on <see cref="BenzeneResultStatus.Timeout"/>.
+    /// </summary>
+    public static bool IsTransient(this IBenzeneResult serviceBenzeneResult)
+    {
+        return BenzeneResultStatus.IsTransient(serviceBenzeneResult.Status);
+    }
 
     public static IBenzeneResult<TOutput> As<T, TOutput>(this IBenzeneResult<T> serviceBenzeneResult)
     {
@@ -140,10 +158,17 @@ public static class BenzeneResultExtensions
             HttpStatusCode.Conflict => BenzeneResult.Conflict(),
             HttpStatusCode.Forbidden => BenzeneResult.Forbidden(),
             HttpStatusCode.Unauthorized => BenzeneResult.Unauthorized(),
+            HttpStatusCode.UnprocessableEntity => BenzeneResult.ValidationError(),
+            HttpStatusCode.TooManyRequests => BenzeneResult.TooManyRequests(),
+            HttpStatusCode.RequestTimeout => BenzeneResult.Timeout(),
+            HttpStatusCode.GatewayTimeout => BenzeneResult.Timeout(),
+            HttpStatusCode.NotImplemented => BenzeneResult.NotImplemented(),
+            HttpStatusCode.BadGateway => BenzeneResult.ServiceUnavailable(),
+            HttpStatusCode.ServiceUnavailable => BenzeneResult.ServiceUnavailable(),
             _ => BenzeneResult.UnexpectedError()
         };
     }
-    
+
     public static IBenzeneResult<T> Convert<T>(this HttpStatusCode httpStatusCode, T payload)
     {
         return httpStatusCode switch
@@ -157,6 +182,13 @@ public static class BenzeneResultExtensions
             HttpStatusCode.Conflict => BenzeneResult.Conflict<T>(),
             HttpStatusCode.Forbidden => BenzeneResult.Forbidden<T>(),
             HttpStatusCode.Unauthorized => BenzeneResult.Unauthorized<T>(),
+            HttpStatusCode.UnprocessableEntity => BenzeneResult.ValidationError<T>(),
+            HttpStatusCode.TooManyRequests => BenzeneResult.TooManyRequests<T>(),
+            HttpStatusCode.RequestTimeout => BenzeneResult.Timeout<T>(),
+            HttpStatusCode.GatewayTimeout => BenzeneResult.Timeout<T>(),
+            HttpStatusCode.NotImplemented => BenzeneResult.NotImplemented<T>(),
+            HttpStatusCode.BadGateway => BenzeneResult.ServiceUnavailable<T>(),
+            HttpStatusCode.ServiceUnavailable => BenzeneResult.ServiceUnavailable<T>(),
             _ => BenzeneResult.UnexpectedError<T>()
         };
     }
@@ -174,6 +206,13 @@ public static class BenzeneResultExtensions
             HttpStatusCode.Conflict => BenzeneResult.Conflict<T>(),
             HttpStatusCode.Forbidden => BenzeneResult.Forbidden<T>(),
             HttpStatusCode.Unauthorized => BenzeneResult.Unauthorized<T>(),
+            HttpStatusCode.UnprocessableEntity => BenzeneResult.ValidationError<T>(),
+            HttpStatusCode.TooManyRequests => BenzeneResult.TooManyRequests<T>(),
+            HttpStatusCode.RequestTimeout => BenzeneResult.Timeout<T>(),
+            HttpStatusCode.GatewayTimeout => BenzeneResult.Timeout<T>(),
+            HttpStatusCode.NotImplemented => BenzeneResult.NotImplemented<T>(),
+            HttpStatusCode.BadGateway => BenzeneResult.ServiceUnavailable<T>(),
+            HttpStatusCode.ServiceUnavailable => BenzeneResult.ServiceUnavailable<T>(),
             _ => BenzeneResult.UnexpectedError<T>()
         };
     }

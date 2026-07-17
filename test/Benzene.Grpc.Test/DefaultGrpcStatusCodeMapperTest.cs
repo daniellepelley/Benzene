@@ -22,6 +22,8 @@ public class DefaultGrpcStatusCodeMapperTest
         yield return new object[] { BenzeneResultStatus.Conflict, StatusCode.AlreadyExists };
         yield return new object[] { BenzeneResultStatus.NotImplemented, StatusCode.Unimplemented };
         yield return new object[] { BenzeneResultStatus.ServiceUnavailable, StatusCode.Unavailable };
+        yield return new object[] { BenzeneResultStatus.TooManyRequests, StatusCode.ResourceExhausted };
+        yield return new object[] { BenzeneResultStatus.Timeout, StatusCode.DeadlineExceeded };
         yield return new object[] { BenzeneResultStatus.UnexpectedError, StatusCode.Internal };
     }
 

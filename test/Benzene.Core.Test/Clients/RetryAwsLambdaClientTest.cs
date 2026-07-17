@@ -41,4 +41,56 @@ public class RetryAwsLambdaClientTest
 
         mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()), Times.Exactly(3));
     }
+
+    [Fact]
+    public async Task Retries_TooManyRequests_AndReturnsTheLastResult_Test()
+    {
+        var mockAwsLambdaClient = new Mock<IBenzeneMessageClient>();
+
+        mockAwsLambdaClient.Setup(x =>
+                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()))
+            .ReturnsAsync(BenzeneResult.TooManyRequests<ExamplePayload>("throttled"));
+
+        using var retryClient = new RetryBenzeneMessageClient(mockAwsLambdaClient.Object);
+
+        var result = await retryClient.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, new ExamplePayload(), new Dictionary<string, string>());
+
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()), Times.Exactly(3));
+        Assert.True(result.IsTooManyRequests());
+        Assert.Contains("throttled", result.Errors);
+    }
+
+    [Fact]
+    public async Task DoesNotRetry_Timeout_ByDefault_Test()
+    {
+        var mockAwsLambdaClient = new Mock<IBenzeneMessageClient>();
+
+        mockAwsLambdaClient.Setup(x =>
+                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()))
+            .ReturnsAsync(BenzeneResult.Timeout<ExamplePayload>());
+
+        using var retryClient = new RetryBenzeneMessageClient(mockAwsLambdaClient.Object);
+
+        var result = await retryClient.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, new ExamplePayload(), new Dictionary<string, string>());
+
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()), Times.Exactly(1));
+        Assert.True(result.IsTimeout());
+    }
+
+    [Fact]
+    public async Task Retries_Timeout_WhenShouldRetryOptsIn_Test()
+    {
+        var mockAwsLambdaClient = new Mock<IBenzeneMessageClient>();
+
+        mockAwsLambdaClient.Setup(x =>
+                x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()))
+            .ReturnsAsync(BenzeneResult.Timeout<ExamplePayload>());
+
+        using var retryClient = new RetryBenzeneMessageClient(mockAwsLambdaClient.Object, 3,
+            x => BenzeneResultStatus.IsTransient(x.Status));
+
+        await retryClient.SendMessageAsync<ExamplePayload, ExamplePayload>(Topic, new ExamplePayload(), new Dictionary<string, string>());
+
+        mockAwsLambdaClient.Verify(x => x.SendMessageAsync<ExamplePayload, ExamplePayload>(It.IsAny<IBenzeneClientRequest<ExamplePayload>>()), Times.Exactly(3));
+    }
 }

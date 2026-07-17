@@ -1,4 +1,5 @@
 ﻿using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using Newtonsoft.Json;
@@ -10,16 +11,21 @@ public class EventServiceDocumentDeserializer
 {
     private readonly EventServiceDocumentBuilder _eventServiceDocumentBuilder = new();
     private readonly OpenApiStringReader _openApiStringReader = new();
-    
+
     public EventServiceDocument Deserialize(string json)
     {
-        var jObject = JObject.Parse(json);
+        // DateParseHandling.None keeps ISO-date-looking strings (e.g. example payload values) as
+        // strings, so they round-trip through serialize → deserialize → serialize unchanged.
+        using var stringReader = new StringReader(json);
+        using var jsonReader = new JsonTextReader(stringReader) { DateParseHandling = DateParseHandling.None };
+        var jObject = JObject.Load(jsonReader);
 
         AddSchema(jObject);
 
         var doc = _eventServiceDocumentBuilder.Build();
         doc.Info = GetInfo(jObject);
         doc.Tags = GetTags(jObject);
+        doc.MessageEndpoint = jObject["messageEndpoint"]?.Value<string>();
         doc.Events = GetEvents(jObject);
         doc.Requests = GetRequests(jObject);
         return doc;
@@ -84,7 +90,10 @@ public class EventServiceDocumentDeserializer
     {
         var @event = JsonConvert.DeserializeObject<Event>(jToken.ToString(Formatting.Indented));
 
-        return new Event(@event.Topic, GetSchema(jToken, "message"));
+        return new Event(@event.Topic, GetSchema(jToken, "message"))
+        {
+            Example = GetExample(jToken)
+        };
     }
 
     private RequestResponse GetRequest(JToken jToken)
@@ -93,7 +102,8 @@ public class EventServiceDocumentDeserializer
 
         request!.Request = GetSchema(jToken, "request");
         request.Response = GetSchema(jToken, "response");
-        
+        request.Example = GetExample(jToken);
+
         return request;
     }
 
@@ -101,5 +111,44 @@ public class EventServiceDocumentDeserializer
     {
         var json = jToken[path].ToString();
         return _openApiStringReader.ReadFragment<OpenApiSchema>(json, OpenApiSpecVersion.OpenApi3_0, out _);
+    }
+
+    private static IOpenApiAny? GetExample(JToken jToken)
+    {
+        var example = jToken["example"];
+        return example == null ? null : ToOpenApiAny(example);
+    }
+
+    private static IOpenApiAny ToOpenApiAny(JToken token)
+    {
+        switch (token.Type)
+        {
+            case JTokenType.Object:
+                var openApiObject = new OpenApiObject();
+                foreach (var property in ((JObject)token).Properties())
+                {
+                    openApiObject[property.Name] = ToOpenApiAny(property.Value);
+                }
+
+                return openApiObject;
+            case JTokenType.Array:
+                var openApiArray = new OpenApiArray();
+                foreach (var item in (JArray)token)
+                {
+                    openApiArray.Add(ToOpenApiAny(item));
+                }
+
+                return openApiArray;
+            case JTokenType.Integer:
+                return new OpenApiLong(token.Value<long>());
+            case JTokenType.Float:
+                return new OpenApiDouble(token.Value<double>());
+            case JTokenType.Boolean:
+                return new OpenApiBoolean(token.Value<bool>());
+            case JTokenType.Null:
+                return new OpenApiNull();
+            default:
+                return new OpenApiString(token.Value<string>() ?? string.Empty);
+        }
     }
 }

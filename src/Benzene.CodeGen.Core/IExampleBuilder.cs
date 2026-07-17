@@ -1,5 +1,6 @@
 ﻿using Benzene.CodeGen.Core.Writers;
 using Benzene.Schema.OpenApi.EventService;
+using Benzene.Schema.OpenApi.Examples;
 
 namespace Benzene.CodeGen.Core;
 

@@ -35,6 +35,18 @@ and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-ho
 - Resolves `$ref`s into `components.schemas`; renders each topic as an expandable "operation" with
   its request/response payload tables, required-field emphasis, and validation constraint chips
   (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`).
+- Renders the per-topic/per-event `example` payload the `benzene` spec carries (generated
+  server-side by `Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder` during spec build),
+  pretty-printed with a copy button (`navigator.clipboard` with an `execCommand` fallback).
+- "Try it" panel per topic/event card — shown only when the loaded spec advertises a top-level
+  `messageEndpoint` (written by `UseSpec` when `Benzene.Http.BenzeneMessage`'s `UseBenzeneMessage`
+  is registered; see `docs/payload-testing.md`). Payload textarea pre-filled from the spec
+  `example`, `Key: Value`-per-line headers textarea, Send (Dispatch on event cards) POSTs the
+  `{topic, headers, body}` envelope (payload JSON is validated client-side first; `body` is the
+  payload as a string), and the response envelope renders inline (HTTP + Benzene status chips,
+  headers, pretty-printed body, duration). The endpoint path resolves against the spec's URL
+  origin when the spec was fetched, else against the page origin. Capability gating is
+  server-side: no `messageEndpoint`, no panel — the page degrades to the read-only viewer.
 - Loads a spec from, in precedence order: `?url=` query param → `data-spec-url` on the document root
   → embedded sample. Theme-aware (light/dark), with a search filter and a "Load spec" dialog.
 

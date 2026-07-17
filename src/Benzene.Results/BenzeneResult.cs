@@ -20,6 +20,17 @@ public static class BenzeneResult
         return ServiceBenzeneResultInternal<T>.Internal(status, payload);
     }
 
+    /// <summary>
+    /// Builds a result with an explicit status, payload, and success flag — for the cases where
+    /// the success class shouldn't be derived from the status. Example: a health check reports
+    /// <c>ServiceUnavailable</c> (so HTTP probes see a 503) but stays successful so the response
+    /// body renders the health report payload rather than an error payload.
+    /// </summary>
+    public static IBenzeneResult<T> Set<T>(string status, T payload, bool isSuccessful)
+    {
+        return ServiceBenzeneResultInternal<T>.Internal(status, payload, isSuccessful);
+    }
+
     public static IBenzeneResult Set(string status, params string[] errors)
     {
         return Set<Void>(status, errors);
@@ -205,6 +216,26 @@ public static class BenzeneResult
         return ServiceBenzeneResultInternal<Void>.UnauthorizedInternal(errors);
     }
 
+    public static IBenzeneResult<T> TooManyRequests<T>(params string[] errors)
+    {
+        return ServiceBenzeneResultInternal<T>.Internal(BenzeneResultStatus.TooManyRequests, errors);
+    }
+
+    public static IBenzeneResult TooManyRequests(params string[] errors)
+    {
+        return ServiceBenzeneResultInternal<Void>.Internal(BenzeneResultStatus.TooManyRequests, errors);
+    }
+
+    public static IBenzeneResult<T> Timeout<T>(params string[] errors)
+    {
+        return ServiceBenzeneResultInternal<T>.Internal(BenzeneResultStatus.Timeout, errors);
+    }
+
+    public static IBenzeneResult Timeout(params string[] errors)
+    {
+        return ServiceBenzeneResultInternal<Void>.Internal(BenzeneResultStatus.Timeout, errors);
+    }
+
     private class ServiceBenzeneResultInternal<T> : IBenzeneResult<T>
     {
         private ServiceBenzeneResultInternal(string status, bool isSuccessful)
@@ -214,8 +245,17 @@ public static class BenzeneResult
             Errors = [];
         }
 
+        // IsSuccessful is derived from the status class (see core-concepts.md: "Derived from
+        // status class"): a known failure status yields an unsuccessful result even when a
+        // payload is supplied. Unknown/application-defined statuses keep the historical
+        // successful default — the framework doesn't assume an extension status is a failure.
         private ServiceBenzeneResultInternal(string status, T payload)
-            : this(status, true)
+            : this(status, payload, !BenzeneResultStatus.IsFailure(status))
+        {
+        }
+
+        private ServiceBenzeneResultInternal(string status, T payload, bool isSuccessful)
+            : this(status, isSuccessful)
         {
             Payload = payload;
         }
@@ -242,6 +282,11 @@ public static class BenzeneResult
         public static IBenzeneResult<T> Internal(string status, T payload)
         {
             return new ServiceBenzeneResultInternal<T>(status, payload);
+        }
+
+        public static IBenzeneResult<T> Internal(string status, T payload, bool isSuccessful)
+        {
+            return new ServiceBenzeneResultInternal<T>(status, payload, isSuccessful);
         }
 
         public static IBenzeneResult<T> Internal(string status, params string[] errors)

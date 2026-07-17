@@ -17,7 +17,8 @@ public class DefaultGrpcStatusReverseMapperTest
         yield return new object[] { StatusCode.AlreadyExists, BenzeneResultStatus.Conflict };
         yield return new object[] { StatusCode.Unimplemented, BenzeneResultStatus.NotImplemented };
         yield return new object[] { StatusCode.Unavailable, BenzeneResultStatus.ServiceUnavailable };
-        yield return new object[] { StatusCode.DeadlineExceeded, BenzeneResultStatus.ServiceUnavailable };
+        yield return new object[] { StatusCode.ResourceExhausted, BenzeneResultStatus.TooManyRequests };
+        yield return new object[] { StatusCode.DeadlineExceeded, BenzeneResultStatus.Timeout };
         yield return new object[] { StatusCode.Cancelled, BenzeneResultStatus.ServiceUnavailable };
     }
 

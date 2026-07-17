@@ -98,7 +98,7 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
 
     private void AddHashCode(EventServiceDocument eventServiceDocument, LineWriter lineWriter)
     {
-        var hashCode = CodeGenHelpers.GenerateHash(eventServiceDocument.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0));
+        var hashCode = CodeGenHelpers.GenerateHash(eventServiceDocument);
         lineWriter.WriteLine($@"public string HashCode => ""{hashCode}"";", 2);
         lineWriter.WriteLine();
     }

@@ -13,6 +13,8 @@
     { "status": "Forbidden", "isSuccess": false },
     { "status": "NotFound", "isSuccess": false },
     { "status": "Conflict", "isSuccess": false },
+    { "status": "TooManyRequests", "isSuccess": false },
+    { "status": "Timeout", "isSuccess": false },
     { "status": "NotImplemented", "isSuccess": false },
     { "status": "ServiceUnavailable", "isSuccess": false },
     { "status": "UnexpectedError", "isSuccess": false }

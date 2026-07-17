@@ -13,9 +13,11 @@
     { "from": "NotFound", "to": "404" },
     { "from": "Conflict", "to": "409" },
     { "from": "ValidationError", "to": "422" },
+    { "from": "TooManyRequests", "to": "429" },
     { "from": "UnexpectedError", "to": "500" },
     { "from": "NotImplemented", "to": "501" },
     { "from": "ServiceUnavailable", "to": "503" },
+    { "from": "Timeout", "to": "504" },
     { "from": "<unknown>", "to": "500" }
   ],
   "reverse": [
@@ -28,7 +30,14 @@
     { "from": "403", "to": "Forbidden" },
     { "from": "404", "to": "NotFound" },
     { "from": "409", "to": "Conflict" },
+    { "from": "408", "to": "Timeout" },
+    { "from": "422", "to": "ValidationError" },
+    { "from": "429", "to": "TooManyRequests" },
     { "from": "500", "to": "UnexpectedError" },
+    { "from": "501", "to": "NotImplemented" },
+    { "from": "502", "to": "ServiceUnavailable" },
+    { "from": "503", "to": "ServiceUnavailable" },
+    { "from": "504", "to": "Timeout" },
     { "from": "418", "to": "UnexpectedError" }
   ]
 }
