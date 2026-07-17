@@ -77,5 +77,6 @@ public class EventHubConsumerApplicationTest
 
         Assert.Equal(1, config.CheckpointInterval);
         Assert.True(config.CatchHandlerExceptions);
+        Assert.Null(config.DefaultStartingPosition);
     }
 }

@@ -37,10 +37,6 @@ public class BenzeneServiceBusWorkerLiveTest
             .Setup(x => x.Register(It.IsAny<string>()))
             .Callback(() => received.TrySetResult());
 
-        // Sending first (with its own readiness retry) means the emulator is known-reachable
-        // before the worker's processor starts, so the worker itself needs no retry loop here.
-        await SendAsync();
-
         var config = new BenzeneServiceBusConfig { QueueName = QueueName };
         await using var client = new ServiceBusClient(ConnectionString);
 
@@ -56,10 +52,16 @@ public class BenzeneServiceBusWorkerLiveTest
                 services.AddHostedService(_ => inlineSelfHostedStartUp.BuildHostedService()))
             .Build();
 
+        // Start the processor first, then send: StartProcessingAsync only returns once the
+        // receive link is established, so the message is delivered live to an already-listening
+        // processor. (Sending first and relying on the emulator to serve a pre-existing message
+        // to a freshly-claimed link was unreliable under CI container contention.)
         await host.StartAsync();
         try
         {
-            var completedTask = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(60)));
+            await SendAsync();
+
+            var completedTask = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(120)));
             Assert.Same(received.Task, completedTask);
         }
         finally

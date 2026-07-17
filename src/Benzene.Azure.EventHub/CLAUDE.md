@@ -23,6 +23,14 @@ Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
   successfully handled events, via `args.UpdateCheckpointAsync()`. A failed event is never itself
   checkpointed. The per-partition counter is race-free because the processor invokes the handler
   one event at a time per partition (`ConcurrentDictionary` only for cross-partition access).
+- `BenzeneEventHubConfig.DefaultStartingPosition` (`EventPosition?`, default `null`) - where a
+  partition with **no stored checkpoint** starts reading. `null` leaves the SDK default
+  (`EventPosition.Latest` - only events enqueued after the processor claims the partition);
+  set `EventPosition.Earliest` to process the retained backlog on first run. A checkpointed
+  partition always resumes from its checkpoint regardless. Wired via the processor's
+  `PartitionInitializingAsync` event only when set. Kafka analog: `ConsumerConfig.AutoOffsetReset`.
+  (This is why a send-before-start event is invisible by default - the live test sets `Earliest`,
+  matching the Kafka worker test's `AutoOffsetReset.Earliest`.)
 - `BenzeneEventHubConfig.CatchHandlerExceptions` - default `true`: a handler exception is logged
   and the partition keeps going; since Event Hubs is a stream with no per-event retry/dead-letter,
   the failed event is effectively skipped once a later event checkpoints past it (the same

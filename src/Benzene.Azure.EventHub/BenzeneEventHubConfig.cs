@@ -1,3 +1,5 @@
+using Azure.Messaging.EventHubs.Consumer;
+
 namespace Benzene.Azure.EventHub;
 
 /// <summary>
@@ -8,6 +10,18 @@ namespace Benzene.Azure.EventHub;
 /// </summary>
 public class BenzeneEventHubConfig
 {
+    /// <summary>
+    /// Gets or sets where a partition starts reading when it has <em>no stored checkpoint</em> yet
+    /// (a fresh consumer group, or a partition never checkpointed before). Defaults to <c>null</c>,
+    /// which leaves the <c>EventProcessorClient</c>'s own default of reading from the <em>end</em> of
+    /// the partition (<see cref="EventPosition.Latest"/>) - so only events enqueued after the
+    /// processor claims the partition are seen. Set to <see cref="EventPosition.Earliest"/> to
+    /// instead process the full retained backlog on first run. Once a partition has a checkpoint,
+    /// that checkpoint always wins and this value is ignored - it only governs the very first read.
+    /// The Kafka equivalent is <c>ConsumerConfig.AutoOffsetReset</c>.
+    /// </summary>
+    public EventPosition? DefaultStartingPosition { get; set; }
+
     /// <summary>
     /// Gets or sets how many successfully handled events a partition accumulates before its
     /// checkpoint is updated. Defaults to 1 - checkpoint after every event, the safest setting.

@@ -53,7 +53,12 @@ public class BenzeneEventHubWorkerLiveTest
             .ConfigureServices(services => services
                 .ConfigureServiceCollection()
                 .AddSingleton(mockExampleService.Object))
-            .Configure(app => app.UseEventHub(new BenzeneEventHubConfig(),
+            // Earliest: the event is produced before the processor claims its partition, and with
+            // no prior checkpoint the EventProcessorClient would otherwise start from the end of
+            // the partition and never see it (the same reason KafkaConsumerConfig uses
+            // AutoOffsetReset.Earliest and the pipeline test reads startReadingAtEarliestEvent).
+            .Configure(app => app.UseEventHub(
+                new BenzeneEventHubConfig { DefaultStartingPosition = EventPosition.Earliest },
                 new EventProcessorClientFactory(processorClient),
                 eventHub => eventHub.UseMessageHandlers()));
 

@@ -66,6 +66,11 @@ public class BenzeneEventHubWorker : IBenzeneWorker
         _processor.ProcessEventAsync += OnProcessEventAsync;
         _processor.ProcessErrorAsync += OnProcessErrorAsync;
 
+        if (_config.DefaultStartingPosition.HasValue)
+        {
+            _processor.PartitionInitializingAsync += OnPartitionInitializingAsync;
+        }
+
         await _processor.StartProcessingAsync(cancellationToken);
     }
 
@@ -127,6 +132,15 @@ public class BenzeneEventHubWorker : IBenzeneWorker
             await args.UpdateCheckpointAsync(args.CancellationToken);
             _uncheckpointedCounts[args.Partition.PartitionId] = 0;
         }
+    }
+
+    private Task OnPartitionInitializingAsync(PartitionInitializingEventArgs args)
+    {
+        // Only ever consulted by the SDK for a partition with no stored checkpoint; a checkpointed
+        // partition resumes from its checkpoint regardless. Guarded by the HasValue check at
+        // subscription time, so DefaultStartingPosition is non-null here.
+        args.DefaultStartingPosition = _config.DefaultStartingPosition!.Value;
+        return Task.CompletedTask;
     }
 
     private Task OnProcessErrorAsync(ProcessErrorEventArgs args)
