@@ -17,59 +17,6 @@ namespace Benzene.Clients.Aws;
 public static class Extensions
 {
     /// <summary>
-    /// Registers a set of named Benzene message clients using a <see cref="ClientsBuilder"/>.
-    /// </summary>
-    /// <param name="services">The service container to register clients with.</param>
-    /// <param name="builder">The action that configures the clients builder (e.g. by calling
-    /// <c>CreateSqsBenzeneMessageClient</c> or <c>CreateAwsLambdaBenzeneMessageClient</c>).</param>
-    /// <returns>The service container for method chaining.</returns>
-    [Obsolete("Use AddOutboundRouting(...) instead - see work/benzene-clients-redesign-plan.md")]
-    public static IBenzeneServiceContainer AddBenzeneMessageClients(this IBenzeneServiceContainer services, Action<ClientsBuilder> builder)
-    {
-        var clientsBuilder = new ClientsBuilder(services);
-        builder(clientsBuilder);
-        // clientsBuilder.Register(services);
-        return services;
-    }
-
-    /// <summary>
-    /// Registers a single Benzene message client using a <see cref="SingleClientsBuilder"/>.
-    /// </summary>
-    /// <param name="services">The service container to register the client with.</param>
-    /// <param name="builder">The action that configures the client builder.</param>
-    /// <returns>The service container for method chaining.</returns>
-    [Obsolete("Use AddOutboundRouting(...) instead - see work/benzene-clients-redesign-plan.md")]
-    public static IBenzeneServiceContainer AddBenzeneMessageClient(this IBenzeneServiceContainer services, Action<SingleClientsBuilder> builder)
-    {
-        var clientsBuilder = new SingleClientsBuilder();
-        builder(clientsBuilder);
-        clientsBuilder.Register(services);
-        return services;
-    }
-
-    /// <summary>
-    /// Registers the services required to send messages via AWS Lambda invocation, including retry and
-    /// sender-header decoration.
-    /// </summary>
-    /// <param name="services">The service container to register services with.</param>
-    /// <param name="sender">The sender name added as a header to every outgoing message.</param>
-    /// <returns>The service container for method chaining.</returns>
-    [Obsolete("Use IBenzeneMessageSender/OutboundRoutingBuilder instead - see work/benzene-clients-redesign-plan.md")]
-    public static IBenzeneServiceContainer AddLambdaClients(this IBenzeneServiceContainer services, string sender)
-    {
-        services.AddScoped<AwsLambdaBenzeneMessageClient>();
-        services.AddScoped(x => new RetryBenzeneMessageClient(x.GetService<AwsLambdaBenzeneMessageClient>()));
-        services.AddScoped(x =>
-            new HeaderBenzeneMessageClient(x.GetService<RetryBenzeneMessageClient>(), "sender", sender));
-        services.AddScoped<IBenzeneMessageClient>(x =>
-            new HeadersBenzeneMessageClient(x.GetService<HeaderBenzeneMessageClient>(), x.GetService<IClientHeaders>()));
-        services.AddScoped<IBenzeneMessageClientFactory, AwsLambdaBenzeneMessageClientFactory>();
-        services.AddScoped<IAwsLambdaClient, AwsLambdaClient>();
-        services.AddScoped<IClientHeaders, ClientHeaders>();
-        return services;
-    }
-
-    /// <summary>
     /// Adds a health check that pings an SQS queue.
     /// </summary>
     /// <param name="builder">The health check builder to add the check to.</param>

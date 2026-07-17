@@ -4,18 +4,11 @@ using Benzene.Abstractions.Middleware;
 namespace Benzene.Clients.CorrelationId;
 
 /// <summary>
-/// Provides the <see cref="WithCorrelationId"/> extension for <see cref="ClientBuilder"/> (the
-/// obsolete decorator-chain mechanism), and <see cref="UseCorrelationId"/> for an outbound
-/// <see cref="OutboundContext"/> pipeline (the current mechanism - see
-/// <c>work/benzene-clients-redesign-plan.md</c>).
+/// Provides <see cref="UseCorrelationId"/> for an outbound <see cref="OutboundContext"/> pipeline -
+/// see <c>work/benzene-clients-redesign-plan.md</c>.
 /// </summary>
 public static class Extensions
 {
-    public static ClientBuilder WithCorrelationId(this ClientBuilder source)
-    {
-        return source.WithDependencyWrapper(new CorrelationIdBenzeneMessageClientWrapper());
-    }
-
     /// <summary>
     /// Adds <see cref="CorrelationIdMiddleware"/> to an outbound route pipeline, so every send
     /// through it carries the current correlation ID.

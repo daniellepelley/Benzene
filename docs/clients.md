@@ -1,5 +1,20 @@
 # Clients
 
+> **This page describes the alpha-era outbound client mechanism, which has been removed as of
+> 2026-07-17** (`ClientBuilder`, `ClientsBuilder`/`SingleClientsBuilder`, `IBenzeneMessageClientFactory`,
+> and the `With...()` decorator chain covered below no longer exist). The current mechanism is
+> `IBenzeneMessageSender`/`OutboundRoutingBuilder`/`AddOutboundRouting(...)` with ordinary
+> `IMiddleware<OutboundContext>` for cross-cutting concerns (`.UseRetry(...)`,
+> `.UseCorrelationId(...)`, `.UseW3CTraceContext()`, `.UseSqs(...)`, `.UseSns(...)`) - see
+> `src/Benzene.Clients/CLAUDE.md` and `src/Benzene.Clients.Aws/CLAUDE.md` for the shipped shape, and
+> `docs/migration-alpha-to-1.0.md`'s "Breaking: removed the `ClientBuilder`-based outbound client
+> mechanism" section for the full old→new mapping. This page needs a full rewrite against the new
+> mechanism - not yet done; treat everything below as historical reference only, not current API.
+> `IBenzeneMessageClient` itself and the concrete transport clients (`AwsLambdaBenzeneMessageClient`,
+> `SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`, `KafkaBenzeneMessageClient`,
+> `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`) are unaffected and still work as
+> described.
+
 Benzene clients let one Benzene service call another — over AWS Lambda, SQS, SNS, Kafka, or HTTP — through a single `IBenzeneMessageClient` interface, decorated with cross-cutting behavior like correlation IDs, W3C trace propagation, and retries.
 
 ## Overview
