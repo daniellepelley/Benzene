@@ -27,9 +27,9 @@ app.Use("PartnerCorrelation", resolver => async (context, next) =>
 });
 ```
 
-Outbound clients can still forward the value: the `WithCorrelationId()` client decorator (see
-[Clients](clients)) stamps the current `ICorrelationId` onto the outgoing request's
-`x-correlation-id` header.
+Outbound clients can still forward the value: `.UseCorrelationId()` on an outbound route pipeline
+(see [Clients — Outbound middleware](clients#outbound-middleware)) stamps the current
+`ICorrelationId` onto the outgoing request's `x-correlation-id` header.
 
 ## See Also
 

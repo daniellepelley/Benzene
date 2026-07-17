@@ -104,31 +104,28 @@ public class StartUp : BenzeneStartUp
 
 Everything added after `UseW3CTraceContext()` inherits its `Activity` as the ambient `Activity.Current` parent, so every automatically-wrapped middleware span from `AddDiagnostics()` nests correctly under the remote trace. It falls back to a normal root span when the header is missing or fails to parse, so it's always safe to add — including here, even though (see the [ASP.NET Core Integration](../asp-net-core.md#w3c-trace-context) guide) ASP.NET Core's own hosting layer usually already extracts `traceparent` before your middleware runs. Keeping it explicit makes the same `StartUp` class behave identically if this handler is later also exposed through API Gateway or an Azure Functions HTTP trigger, neither of which have that built-in extraction.
 
-### 4. Propagate the trace to the SQS worker: `WithW3CTraceContext()`
+### 4. Propagate the trace to the SQS worker: `.UseW3CTraceContext()`
 
-The API service's handler doesn't call the worker directly — it puts a message on an SQS queue via `Benzene.Clients`. Register the outbound client with `WithW3CTraceContext()`, which stamps `Activity.Current`'s `traceparent`/`tracestate` onto the outgoing message's headers:
+The API service's handler doesn't call the worker directly — it puts a message on an SQS queue via `Benzene.Clients`. Add `.UseW3CTraceContext()` to the outbound route, which stamps `Activity.Current`'s `traceparent`/`tracestate` onto the outgoing message's headers:
 
 ```csharp
 using Amazon.SQS;
-using Benzene.Clients.Aws;
+using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Clients.TraceContext;
-using Benzene.Core.Middleware;
 
 services.AddSingleton<IAmazonSQS>(new AmazonSQSClient());
 
 services.UsingBenzene(x => x
     .AddDiagnostics()
-    .AddBenzeneMessageClients(c => c
-        .CreateSqsBenzeneMessageClient(
-            "orders",
-            configuration["ORDERS_QUEUE_URL"],
-            new NullServiceResolver(),
-            client => client.WithW3CTraceContext()))
+    .AddOutboundRouting(routing => routing
+        .Route("order:process", pipeline => pipeline
+            .UseW3CTraceContext()
+            .UseSqs(configuration["ORDERS_QUEUE_URL"])))
     .AddMessageHandlers(typeof(CreateOrderMessageHandler).Assembly));
 ```
 
-`SqsContextConverter` forwards `IBenzeneClientRequest.Headers` onto the real SQS message's `MessageAttributes` (alongside the `topic` attribute), so `traceparent`/`tracestate` genuinely go out on the wire, not just in Benzene's in-memory request object. The `NullServiceResolver` here (`Benzene.Core.Middleware`) is the client's own internal pipeline resolver, unrelated to per-request DI — it's what the test suite itself uses to construct a `SqsBenzeneMessageClient` outside of a request scope.
+`OutboundSqsContextConverter` forwards `OutboundContext.Headers` onto the real SQS message's `MessageAttributes` (alongside the `topic` attribute), so `traceparent`/`tracestate` genuinely go out on the wire, not just in Benzene's in-memory request object.
 
 The handler itself is an ordinary message handler that forwards the incoming HTTP request onto the queue:
 
@@ -145,23 +142,20 @@ using Void = Benzene.Abstractions.Results.Void;
 [Message("order:create")]
 public class CreateOrderMessageHandler : IMessageHandler<CreateOrderRequest, CreateOrderResponse>
 {
-    private readonly IBenzeneMessageClientFactory _clientFactory;
+    private readonly IBenzeneMessageSender _sender;
 
-    public CreateOrderMessageHandler(IBenzeneMessageClientFactory clientFactory)
+    public CreateOrderMessageHandler(IBenzeneMessageSender sender)
     {
-        _clientFactory = clientFactory;
+        _sender = sender;
     }
 
     public async Task<IBenzeneResult<CreateOrderResponse>> HandleAsync(CreateOrderRequest request)
     {
         var orderId = Guid.NewGuid().ToString();
-        var client = _clientFactory.Create();
 
-        var result = await client.SendMessageAsync<ProcessOrderMessage, Void>(
-            new BenzeneClientRequest<ProcessOrderMessage>(
-                "order:process",
-                new ProcessOrderMessage { OrderId = orderId, CustomerId = request.CustomerId },
-                new Dictionary<string, string>()));
+        var result = await _sender.SendAsync<ProcessOrderMessage, Void>(
+            "order:process",
+            new ProcessOrderMessage { OrderId = orderId, CustomerId = request.CustomerId });
 
         return result.IsSuccessful
             ? BenzeneResult.Ok(new CreateOrderResponse { OrderId = orderId })
@@ -292,7 +286,7 @@ public class ProcessOrderMessage
 
 ### Two separate traces instead of one continuous trace across both services
 
-- If both services are HTTP-based, confirm `UseW3CTraceContext()` is the **first** middleware added, and that `WithW3CTraceContext()` is on the outbound client used to call the second service.
+- If both services are HTTP-based, confirm `UseW3CTraceContext()` is the **first** middleware added, and that `.UseW3CTraceContext()` is on the outbound route used to call the second service.
 - If the downstream service is SQS/SNS/Kafka/Event Hub-based, this is the documented current limitation above, not a misconfiguration — there's nothing further to wire up until inbound extraction lands for that transport.
 
 ### `UseW3CTraceContext()` throws or the pipeline fails to resolve
@@ -318,7 +312,7 @@ using var meterProvider = Sdk.CreateMeterProviderBuilder()
 
 ### Routing to Application Insights instead of Jaeger
 
-Application Insights accepts OTLP directly — point `AddOtlpExporter()`'s endpoint at your Application Insights OTLP ingestion endpoint instead of standing up Jaeger/a collector, or use Azure Monitor's own OpenTelemetry exporter package if you'd rather authenticate via connection string. Everything upstream of the exporter (`AddDiagnostics()`, `UseW3CTraceContext()`, `WithW3CTraceContext()`) is unchanged. See also [Logging to Application Insights](logging-application-insights.md) for the logging side of this same backend.
+Application Insights accepts OTLP directly — point `AddOtlpExporter()`'s endpoint at your Application Insights OTLP ingestion endpoint instead of standing up Jaeger/a collector, or use Azure Monitor's own OpenTelemetry exporter package if you'd rather authenticate via connection string. Everything upstream of the exporter (`AddDiagnostics()`, `UseW3CTraceContext()`, `.UseW3CTraceContext()` on an outbound route) is unchanged. See also [Logging to Application Insights](logging-application-insights.md) for the logging side of this same backend.
 
 ## Further Reading
 

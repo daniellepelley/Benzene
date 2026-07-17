@@ -13,18 +13,22 @@ Because it's a normal Benzene middleware (`IMiddleware<TContext>`), `UseRetry(..
 - **An exception was thrown** by `next()` — checked with a `shouldRetry` predicate (default: retry everything except `OperationCanceledException`).
 - **`next()` completed without throwing, but the context still represents a failure** — checked with a `shouldRetryContext` predicate you supply (default: never retry a non-throwing completion). This is useful because many Benzene pipelines represent failure as a result on the context object rather than as a thrown exception.
 
-### This is not the same thing as `RetryBenzeneMessageClient` / `.WithRetry(n)`
+### Outbound client retry uses this same middleware
 
-Benzene also has a retry mechanism in `Benzene.Clients` — `RetryBenzeneMessageClient`, wired up via `ClientBuilder.WithRetry(int numberOfRetries)`. It is a **separate, unrelated implementation** that solves a different problem:
+Retrying an outbound call — e.g. a `Benzene.Clients` route that returns `ServiceUnavailable` — is not
+a separate mechanism. `.UseRetry(...)` works on `OutboundContext` unmodified, since `RetryMiddleware<TContext>`
+is fully generic:
 
-| | `Benzene.Resilience` (`UseRetry`) | `Benzene.Clients` (`WithRetry`) |
-| --- | --- | --- |
-| Applies to | A middleware pipeline stage (server-side, inbound) | An outbound `IBenzeneMessageClient` (client-side, calling another service) |
-| Retries on | Thrown exceptions and/or a custom context predicate | A `ServiceUnavailable` result status specifically |
-| Backoff | Exponential, configurable (`initialDelay`, `backoffFactor`) | None — retries immediately in a loop |
-| Retry count semantics | `numberOfRetries` *additional* attempts after the first (default 3 → up to 4 total calls) | `numberOfRetries` *total* attempts (default 3) |
+```csharp
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:create", pipeline => pipeline
+        .UseSqs(queueUrl)
+        .UseRetry(3, shouldRetryContext: ctx => ((IBenzeneResult)ctx.Response).IsServiceUnavailable()))));
+```
 
-Don't reach for `Benzene.Resilience` if you're just retrying an outbound client call that returns `ServiceUnavailable` — use `.WithRetry(n)` on the `ClientBuilder` for that. Use `Benzene.Resilience` when you want retry behavior *inside* a pipeline, with backoff, driven by exceptions and/or your own notion of "did this actually succeed."
+Put `.UseRetry(...)` *after* the transport middleware in the pipeline (outermost in the chain) so a
+failed attempt retries the whole send beneath it, including any header-stamping middleware. See
+[Clients — Outbound middleware](clients#outbound-middleware) for the full reference.
 
 ## Prerequisites
 

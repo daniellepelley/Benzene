@@ -27,9 +27,9 @@ app.UseW3CTraceContext();
 ```
 
 ```csharp
-// On an outbound client — stamps Activity.Current's traceparent/tracestate onto outgoing headers
-services.UsingBenzene(x => x.AddBenzeneMessageClients(c => c
-    .CreateSqsBenzeneMessageClient("orders", queueUrl, resolver, client => client.WithW3CTraceContext())));
+// On an outbound route — stamps Activity.Current's traceparent/tracestate onto outgoing headers
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:process", pipeline => pipeline.UseW3CTraceContext().UseSqs(queueUrl))));
 ```
 
 Rather than a single opaque ID you grep for, you get a real `System.Diagnostics.Activity` per
@@ -64,13 +64,13 @@ app.UseLogResult(x => x.WithCorrelationId());
 ```
 
 ```csharp
-// 3. Forward it downstream (stamps the current ICorrelationId onto the outgoing x-correlation-id header)
-services.UsingBenzene(x => x.AddBenzeneMessageClients(c => c
-    .CreateSqsBenzeneMessageClient("orders", queueUrl, resolver, client => client.WithCorrelationId())));
+// 3. Forward it downstream (stamps the current ICorrelationId onto the outgoing correlationId header)
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:process", pipeline => pipeline.UseCorrelationId().UseSqs(queueUrl))));
 ```
 
 With nothing calling `Set(...)`, `ICorrelationId` self-generates a GUID per invocation — so
-`WithCorrelationId()` on its own still gives you a per-invocation marker in logs.
+`.UseCorrelationId()` on its own still gives you a per-invocation marker in logs.
 
 Run this alongside `UseW3CTraceContext()` freely (echo the partner's header at the edge, trace
 internally via W3C) — just add `UseW3CTraceContext()` first, since it establishes the root
@@ -94,16 +94,18 @@ the receiving service's logs if forwarded.
 
 ### Correlation ID is different on each service
 
-- Confirm the outbound client has `WithCorrelationId()` — without it, nothing forwards the value
+- Confirm the outbound route has `.UseCorrelationId()` — without it, nothing forwards the value
   and each service's `ICorrelationId` self-generates its own GUID.
 - Confirm the receiving service's populating middleware reads the same header the sender writes
-  (`x-correlation-id` for the built-in client decorator).
+  (`correlationId` by default — pass a different `correlationKey` to `.UseCorrelationId(...)` on
+  both sides if you've customized it).
 
 ## Further Reading
 
 - [Distributed Tracing with OpenTelemetry](distributed-tracing-opentelemetry.md) — the full worked
   example for W3C trace context, including the current SQS/SNS/Kafka/Event Hub inbound limitation
 - [Correlation Ids](../correlation-ids.md) — reference for `ICorrelationId`/`WithCorrelationId()`
+- [Clients — Outbound middleware](../clients.md#outbound-middleware) — `.UseCorrelationId()` reference
 - [Monitoring & Diagnostics](../monitoring.md) — the full picture of tracing, timers, logging, and OpenTelemetry
 - [Logging to Application Insights](logging-application-insights.md) — querying logs by correlation ID
 - [Common Middleware](../common-middleware.md) — `UseLogResult`/`UseBenzeneEnrichment` reference
