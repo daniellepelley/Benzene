@@ -39,7 +39,8 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 ### Testing
 - [Integration Testing Lambda Functions](testing-lambda-functions.md) - Test Lambda handlers end-to-end
 - [Mocking External Dependencies](mocking-dependencies.md) - Test message handlers in isolation
-- [Contract Testing](../specification/porting-guide.md) - Verify message contracts between services via the conformance-testing approach
+- [Contract Testing (schema compatibility)](contract-testing.md) - Catch breaking contract changes before they reach consumers, at runtime (schema-hash drift check) and in CI (backward-compatibility gate)
+- [Contract Testing (conformance)](../specification/porting-guide.md) - Verify message contracts between services via the conformance-testing approach
 
 ### Cross-Cutting Concerns
 - [Request Correlation Across Services](request-correlation.md) - Track requests through distributed systems
