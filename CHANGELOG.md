@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Clients`: `IBenzeneMessageSender`/`OutboundRoutingBuilder`/`AddOutboundRouting(...)` -
+  Step 1 of the outbound redesign in `work/benzene-clients-redesign-plan.md`. A single topic-keyed
+  `SendAsync<TRequest,TResponse>(topic, request)` call replaces resolving a client by service
+  name/topic first; `AddOutboundRouting(routing => routing.Route("order:create", pipeline => ...))`
+  builds one `IMiddlewarePipeline<OutboundContext>` per topic. New `DuplicateOutboundRouteException`
+  (a repeated topic) and `UnroutedTopicException` (a topic with no registered route) replace the
+  previous bare `ArgumentException`/`InvalidOperationException`. Purely additive - the previous
+  `ClientsBuilder`/`SingleClientsBuilder`/`IBenzeneMessageClientFactory`/`IClientMessageRouter`/
+  `IDependencyWrapper<T>`/`DependencyWrapperFactory<T>` mechanism is marked `[Obsolete]` (warning,
+  not an error) but not yet removed - still fully functional. `Benzene.CodeGen.Client`'s generated
+  clients and `Benzene.Clients.Aws`'s transport wiring still use the old mechanism; migrating them
+  onto the new one is Steps 2-3 of the plan, with the old mechanism's removal as Step 4.
 - `Benzene.Aws.Lambda.Kinesis`: real per-batch checkpointing and failure containment for the
   Kinesis event source mapping's `ReportBatchItemFailures`. `KinesisStreamApplication`'s
   `StreamContext<KinesisEventRecord>` now carries a real `KinesisStreamCheckpointer` (a new

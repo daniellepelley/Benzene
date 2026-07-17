@@ -7,6 +7,13 @@ namespace Benzene.Abstractions;
 /// This interface enables the decorator pattern for cross-cutting concerns in the middleware pipeline.
 /// </summary>
 /// <typeparam name="T">The type of dependency to wrap.</typeparam>
+/// <remarks>
+/// Superseded, for its one real consumer (<c>Benzene.Clients</c>'s outbound decorator chain), by
+/// ordinary outbound middleware on an <c>OutboundRoutingBuilder.Route</c> pipeline - the framework's
+/// own middleware pipeline replaces this parallel decorator mechanism. See
+/// <c>work/benzene-clients-redesign-plan.md</c> §2.4.
+/// </remarks>
+[Obsolete("Use ordinary IMiddleware<TContext> outbound middleware instead - see work/benzene-clients-redesign-plan.md")]
 public interface IDependencyWrapper<T>
 {
     /// <summary>
