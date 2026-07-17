@@ -43,3 +43,14 @@ AWS Kafka Lambda integration for Benzene (MSK and self-managed Kafka). Processes
 - Failed records can trigger batch reprocessing
 - Message key available in context
 - Supports both MSK and self-managed Kafka
+
+## Tests
+- `test/Benzene.Core.Test/Aws/Kafka/KafkaGettersTest.cs` — the three getters directly: body
+  (UTF-8 decode), topic, and headers (empty-header-batch case returning `{}`, plus the positive
+  case asserting both the decoded header value and the injected `topic` entry).
+- `test/Benzene.Core.Test/Aws/Kafka/KafkaMessagePipelineTest.cs` — end-to-end sends (JSON, XML,
+  unprocessable-entity, Kafka-in/SNS-out fan-out), `CanHandle` routing (`Send_FromStream` for the
+  matching `aws:kafka` event source, `Send_FromStream_NonKafkaEvent_DoesNotRoute` for a mismatched
+  one), and `MultiplePartitionsAndRecords_AllRecordsAreProcessed` pinning down
+  `KafkaApplication`'s per-topic-partition flattening (`Records.Values.SelectMany(...)`) across
+  more than one partition and more than one record per partition.
