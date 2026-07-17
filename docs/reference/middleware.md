@@ -231,6 +231,27 @@ as XML in addition to JSON.
 .UseXml()
 ```
 
+### `UseAvro(Action<AvroOptions>? configure = null)`
+
+**Package:** `Benzene.Avro`. Adds Apache Avro binary serialization (`application/avro`) so
+requests/responses can be handled as Avro in addition to JSON — schemas are inferred by
+reflection by default, or registered explicitly per type via `configure`. See
+[Package Reference](packages#serialization).
+
+```csharp
+.UseAvro()
+```
+
+### `UseMessagePack()`
+
+**Package:** `Benzene.MessagePack`. Adds MessagePack binary serialization
+(`application/msgpack`) so requests/responses can be handled as MessagePack in addition to JSON.
+See [Package Reference](packages#serialization).
+
+```csharp
+.UseMessagePack()
+```
+
 ---
 
 ## Message-router middleware

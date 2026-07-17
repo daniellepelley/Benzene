@@ -31,6 +31,8 @@ links out for the full story.
 - [UseBasicAuth](#usebasicauth)
 - [RequireScope](#requirescope)
 - [UseXml](#usexml)
+- [UseAvro](#useavro)
+- [UseMessagePack](#usemessagepack)
 
 ---
 
@@ -644,6 +646,35 @@ public static IMiddlewarePipelineBuilder<TContext> UseXml<TContext>(
 
 ```csharp
 app.UseXml();
+```
+
+---
+
+## UseAvro
+
+**Package:** `Benzene.Avro` (`Benzene.Avro.DependencyInjectionExtensions`)
+
+Registers an Apache Avro `IMediaFormat<TContext>` (`AvroMediaFormat<TContext>`) alongside the
+default JSON one (and XML/MessagePack, if also registered) — same per-message negotiation as
+`UseXml()`, via `content-type`/`accept: application/avro`. Avro is schema-based: by default
+schemas are inferred by reflection from a type's public properties, or you can register explicit
+`.avsc` schemas per type via the `configure` callback (see `Benzene.Avro`'s `CLAUDE.md` for the
+full reflection-mapping/schema rules). Like `UseMessagePack()`, the wire form is Base64-armored
+since every Benzene transport's body is a `string`.
+
+```csharp
+public static IMiddlewarePipelineBuilder<TContext> UseAvro<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> source,
+    Action<AvroOptions>? configure = null)
+    where TContext : class
+```
+
+```csharp
+// reflection-inferred schemas (default)
+app.UseAvro();
+
+// or with explicit per-type schemas
+app.UseAvro(o => o.RegisterSchema<OrderDto>(orderAvsc));
 ```
 
 ---

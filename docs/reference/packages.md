@@ -159,6 +159,8 @@ to override that.
 |---|---|
 | `Benzene.NewtonsoftJson` | Use Newtonsoft.Json (`Json.NET`) as the serializer instead of `System.Text.Json`. |
 | `Benzene.Xml` | XML serialization support — an `XmlSerializer` and serializer option for XML request/response bodies. |
+| `Benzene.Avro` | Apache Avro binary serialization — an `IMediaFormat` (`application/avro`) for compact, schema-evolving payloads, popular in finance/data streaming (Kafka). |
+| `Benzene.MessagePack` | MessagePack binary serialization — an `IMediaFormat` backed by MessagePack-CSharp, for compact encoding in high-throughput domains where JSON's text overhead matters. |
 
 ## Observability & resilience
 
