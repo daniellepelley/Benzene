@@ -121,5 +121,36 @@ namespace Benzene.Test.Core.Versioning.Schemas.V3
         public decimal? Discount { get; set; }
         public string Currency { get; set; }
         public string Reference { get; set; }
+
+        // Not part of the real schema - only present so tests can observe which registered caster
+        // actually produced a given V3 instance (see SchemaCastDefinitionsExpanderTest's
+        // shortcut-preference coverage).
+        public string Route { get; set; }
+    }
+}
+
+namespace Benzene.Test.Core.Versioning.Schemas.V4
+{
+    public class OrderPayload
+    {
+        public string Id { get; set; }
+        public int Quantity { get; set; }
+        public decimal? Discount { get; set; }
+        public string Currency { get; set; }
+        public string Reference { get; set; }
+        public string Route { get; set; }
+    }
+}
+
+namespace Benzene.Test.Core.Versioning.Schemas.V5
+{
+    public class OrderPayload
+    {
+        public string Id { get; set; }
+        public int Quantity { get; set; }
+        public decimal? Discount { get; set; }
+        public string Currency { get; set; }
+        public string Reference { get; set; }
+        public string Route { get; set; }
     }
 }

@@ -44,14 +44,27 @@ generalizing beyond the JSON-only source project.
 
 | Transport shape | Carrier | Notes |
 |---|---|---|
-| HTTP | A route parameter, conventionally named `version` (e.g. `/v{version}/orders/{id}`, mirroring the existing `/orders/{id}` route-parameter mechanism — transport-bindings.md §2 HTTP, `HttpTopicRoute.Parameters`) | Falls back to the header below if the matched route declares no `version` parameter, so a service can support both a path-versioned and a header-versioned surface for the same topic without duplicating routes. |
-| Every other transport (queues, gRPC, direct invocation, the `BenzeneMessage` envelope) | A header named **`benzene-version`** in the flat header dictionary (wire-contracts.md §2) | Same case-insensitive-on-read, lower-case-on-write rule as every other header in that table. |
+| HTTP | A route parameter, conventionally named `version` (e.g. `/v{version}/orders/{id}`, mirroring the existing `/orders/{id}` route-parameter mechanism — transport-bindings.md §2 HTTP, `HttpTopicRoute.Parameters`) | Falls back to the header fallback list below if the matched route declares no `version` parameter, so a service can support both a path-versioned and a header-versioned surface for the same topic without duplicating routes. |
+| Every other transport (queues, gRPC, direct invocation, the `BenzeneMessage` envelope) | A header, resolved from an **ordered, configurable fallback list of header names** — default `benzene-version`, then `version`, then `x-version`; the first of these present in the header dictionary wins | Same case-insensitive-on-read, lower-case-on-write rule as every other header in that table. |
+
+Why a fallback list rather than one fixed name: `benzene-version` is the unambiguous, collision-free
+default (same reasoning as the `/benzene/` HTTP prefix, design-principles.md §5.1), but plenty of
+producers already emit a plain `version`/`x-version` header for their own purposes (API/client SDK
+version, not payload schema version) before ever adopting Benzene — the fallback list lets a
+service opt into recognizing those without forcing every producer to rename a header first. Because
+that is also exactly how it can go wrong — a pre-existing `version` header meaning something else
+entirely would be silently misread as the payload schema version — **the fallback list MUST be
+configurable**: an application with its own conflicting use of `version` restricts the list to
+`["benzene-version"]` only, and one with a different existing convention entirely (say
+`schema-version`) replaces the list wholesale. This is the same "default steer, always overridable"
+shape as everything else in design-principles.md §4, applied to the list contents rather than to the
+getter as a whole — see §2.3.
 
 This adds one row to wire-contracts.md §2's header table:
 
 | Header | Direction | Meaning |
 |---|---|---|
-| `benzene-version` | inbound (request), outbound (response) | The payload schema version. Absent means "the topic's default version" — see §2.2. |
+| `benzene-version` | inbound (request), outbound (response) | The payload schema version. Absent (and no configured fallback header present either) means "the topic's default version" — see §2.2. `version`/`x-version` are recognized fallback names by default (§2.1), not separate headers with distinct meaning. |
 
 ### 2.2 Default version and absence
 
@@ -81,8 +94,20 @@ public interface IMessageVersionGetter<TContext>
 This is deliberately the same shape as the already-shipped `IMessageTopicGetter<TContext>`
 (`Benzene.Abstractions.Messages.Mappers`) — same namespace, same one-method extraction contract,
 same "null means absent, not an error" rule. Every transport binding registers a default
-implementation (HTTP: route parameter then header; every other transport: header only), replaceable
-exactly like a topic getter is.
+implementation (HTTP: route parameter then the header fallback list; every other transport: the
+header fallback list only), replaceable exactly like a topic getter is.
+
+The header fallback list (§2.1) is a constructor/options parameter on the default implementation —
+e.g. `new HeaderMessageVersionGetter<TContext>(headersGetter, headerNames: ["benzene-version",
+"version", "x-version"])` — not a hard-coded scan order, so an application can narrow, reorder, or
+fully replace it via its own DI registration without writing a new `IMessageVersionGetter<TContext>`
+from scratch, while still being free to replace the whole getter (e.g. for a version signal that
+isn't a header/route parameter at all) exactly as any other extension point permits. Because every
+transport already registers an `IMessageHeadersGetter<TContext>` mapping its native metadata onto
+the flat header dictionary (wire-contracts.md §2), one generic `HeaderMessageVersionGetter<TContext>`
+built against that (not the native transport type) can serve as the default for every transport
+except HTTP — which layers the route-parameter check in front of the same generic header fallback,
+rather than needing its own from-scratch header scan.
 
 **This closes a real gap in the current implementation, independent of which mechanism (§3 or §4)
 a service adopts**: every existing `IMessageTopicGetter<TContext>` implementation constructs
@@ -173,6 +198,34 @@ mapper is a **decorator** around the existing one:
 5. Invoke the caster (`ICaster<TFrom,TTo>.Cast`, dispatched via reflection the same way the
    existing `PayloadDeserializer`/`SchemaCastDefinitionsExpander` already do) to upcast into
    `TRequest`, and return that.
+
+#### 4.1.1 Long-lived version back-catalogs and shortcut casters
+
+A service supporting many still-live versions (e.g. currently on V5 but still accepting producers
+as old as V1) does not need a direct V1→V5 caster registered, and does not always chain step by
+step through every intervening version either. `ISchemaCasters.GetSchemaCaster(...)` is backed by
+`SchemaCastDefinitionsExpander`, already shipped and unchanged by this proposal (§4.4), which
+resolves any requested `(from, to, topic)` pair by:
+
+1. Reusing a directly-registered caster for that exact pair if one exists.
+2. Otherwise, finding the shortest path (fewest composed casters) between the two versions over
+   whatever casters *are* registered for the topic, via breadth-first search
+   (`SchemaCastDefinitionsExpander.GetChain`), and composing them with `CompositeCaster<TFrom,
+   TIntermediate,TTo>`.
+
+Because it is breadth-first, a **shortcut caster is automatically preferred over a longer chain
+through intermediate versions whenever both exist** — exactly the "V1→V3 direct, so use V1→V3,
+V3→V4, V4→V5 instead of V1→V2→V3→V4→V4→V5" scenario this design needs to support: if V1→V2,
+V2→V3, V3→V4, V4→V5, **and** V1→V3 are all registered, resolving V1→V5 composes `[V1→V3 (direct),
+V3→V4, V4→V5]` (3 casters), never revisiting V3 via the longer V1→V2→V3 route, because BFS marks a
+version visited — and therefore never reconsiders it — the first time any edge reaches it, which
+for V3 happens on the direct edge in the same BFS layer the V1→V2 edge is explored (both are
+one hop from V1). **No change is needed for this to work — it is already exhaustively covered by
+the existing `SchemaCastDefinitionsExpanderTest` shortcut-preference test.** Registering fewer
+shortcut casters still works (the full step-by-step chain is the fallback), and registering *more*
+shortcuts only ever shortens future chains — there is no scenario where adding a shortcut caster
+makes an existing resolution worse or ambiguous, since exact-pair reuse (step 1 above) and shortest-
+path composition (step 2) are both deterministic given a fixed set of registered casters.
 
 ### 4.2 Response path
 
