@@ -48,6 +48,17 @@ public class OAuth2BearerOptions
     public TimeSpan ClockSkew { get; set; } = TimeSpan.FromMinutes(2);
 
     /// <summary>
+    /// Whether <see cref="Authority"/>/<see cref="JwksUri"/> must be fetched over HTTPS. Defaults
+    /// to <c>true</c> - fetching the document that establishes trust (the JWKS) over plain HTTP is
+    /// vulnerable to a man-in-the-middle substituting a different signing key, so every real
+    /// identity provider serves this over HTTPS and this stays required by default. Set to
+    /// <c>false</c> only for local development/testing against a plain-HTTP fake JWKS endpoint -
+    /// the same escape hatch ASP.NET Core's own <c>JwtBearerOptions.RequireHttpsMetadata</c>
+    /// provides for the identical reason. Never set this <c>false</c> in production.
+    /// </summary>
+    public bool RequireHttpsMetadata { get; set; } = true;
+
+    /// <summary>
     /// Validates this instance, throwing <see cref="ArgumentException"/> for any wire-up mistake
     /// that would otherwise silently under-validate every token this middleware sees. Called by
     /// <see cref="Extensions.UseOAuth2Bearer{TContext}"/> at pipeline wire-up time - fail fast,

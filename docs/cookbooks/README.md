@@ -45,7 +45,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Request Correlation Across Services](request-correlation.md) - Track requests through distributed systems
 - Rate Limiting *(planned)*
 - Circuit Breaker Pattern *(planned - `Benzene.Resilience` currently implements retry-with-backoff only; see [Resilience](../resilience.md))*
-- Request Authentication & Authorization *(planned)*
+- [Request Authentication & Authorization](auth-patterns.md) - OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
 
 ## Cookbook Structure
 

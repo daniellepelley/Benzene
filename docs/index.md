@@ -63,6 +63,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 - **Cookbooks**
   - [Cookbook Index](cookbooks/README)
   - [Logging to Application Insights](cookbooks/logging-application-insights)
+  - [Authentication Patterns](cookbooks/auth-patterns) — OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
 
 - **Live Demos**
   - [Mesh UI](../demos/mesh/index.html) — a running dashboard over sample service health, contract drift, and cross-service traffic

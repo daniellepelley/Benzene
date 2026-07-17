@@ -1,4 +1,6 @@
 using Benzene.AspNet.Core;
+using Benzene.Auth.OAuth2;
+using Benzene.Example.Asp.DemoAuth;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Logging;
 using Benzene.Examples.App.Services;
@@ -62,6 +64,10 @@ public class Startup
         services.AddScoped<SpecMessageHandler>();
         services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
 
+        // Demo-only fake identity provider (docs/cookbooks/auth-patterns.md) - see DemoAuth/.
+        // A real service points OAuth2BearerOptions at a real identity provider instead.
+        services.AddSingleton<DemoJwtIssuer>();
+
         services.UsingBenzene();
 
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
@@ -92,6 +98,38 @@ public class Startup
                 .UseMessageHandlers(x => x.UseFluentValidation())
             )
         );
+
+        // A protected route (docs/cookbooks/auth-patterns.md), isolated with app.Map so it never
+        // reaches the public pipeline above: Benzene's message router is unconditionally terminal
+        // for any request it sees (it always answers, even NotFound, and never falls through to a
+        // sibling UseHttp pipeline) - so branching by URL prefix BEFORE Benzene's own pipeline runs,
+        // via plain ASP.NET Core Map, is what actually isolates a protected route from a public one
+        // in the same app. UseOAuth2Bearer validates the caller's bearer token against the demo
+        // identity provider's JWKS (DemoAuthController), and RequireScope("orders:read") then
+        // requires that specific scope. Try it:
+        //   curl http://localhost:5000/demo-token?scope=orders:read      # mint a token
+        //   curl -H "Authorization: Bearer <token>" http://localhost:5000/protected/ping
+        app.Map("/protected", protectedApp =>
+        {
+            protectedApp.UseRouting();
+            protectedApp.UseBenzene(benzene => benzene
+                .UseHttp(asp => asp
+                    .UseOAuth2Bearer(new OAuth2BearerOptions
+                    {
+                        JwksUri = $"{DemoJwtIssuer.Issuer}.well-known/jwks.json",
+                        ValidIssuers = new[] { DemoJwtIssuer.Issuer },
+                        ValidAudiences = new[] { DemoJwtIssuer.Audience },
+                        ValidAlgorithms = new[] { "RS256" },
+                        // The demo identity provider above is this same app, over plain HTTP - never
+                        // do this against a real identity provider (see OAuth2BearerOptions.RequireHttpsMetadata).
+                        RequireHttpsMetadata = false
+                    })
+                    .RequireScope("orders:read")
+                    .UseMessageHandlers(typeof(ProtectedPingMessageHandler))
+                )
+            );
+            protectedApp.UseEndpoints(endpoints => { });
+        });
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }

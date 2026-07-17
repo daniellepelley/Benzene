@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Auth.Core\Benzene.Auth.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Auth.OAuth2\Benzene.Auth.OAuth2.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />

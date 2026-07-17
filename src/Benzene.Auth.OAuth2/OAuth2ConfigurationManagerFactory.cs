@@ -20,7 +20,7 @@ internal static class OAuth2ConfigurationManagerFactory
     /// </summary>
     public static ConfigurationManager<OpenIdConnectConfiguration> Create(OAuth2BearerOptions options)
     {
-        var documentRetriever = new HttpDocumentRetriever();
+        var documentRetriever = new HttpDocumentRetriever { RequireHttps = options.RequireHttpsMetadata };
 
         return !string.IsNullOrWhiteSpace(options.Authority)
             ? new ConfigurationManager<OpenIdConnectConfiguration>(options.Authority, new OpenIdConnectConfigurationRetriever(), documentRetriever)

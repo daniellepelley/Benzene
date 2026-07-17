@@ -27,6 +27,9 @@ links out for the full story.
 - [UseExceptionHandler](#useexceptionhandler)
 - [UseRetry](#useretry)
 - [UseCors](#usecors)
+- [UseOAuth2Bearer](#useoauth2bearer)
+- [UseBasicAuth](#usebasicauth)
+- [RequireScope](#requirescope)
 - [UseXml](#usexml)
 
 ---
@@ -511,6 +514,116 @@ Behavior tracks the CORS specification the same way `Microsoft.AspNetCore.Cors` 
   the API don't serve one origin's CORS-tailored response to another.
 - **`Access-Control-Expose-Headers`** (via `ExposedHeaders`) is sent on actual (non-preflight)
   responses only, since it's meaningless on a preflight response.
+
+---
+
+## UseOAuth2Bearer
+
+**Package:** `Benzene.Auth.OAuth2` (`Benzene.Auth.OAuth2.Extensions`)
+
+OAuth2 bearer token (JWT) validation for services that have no security-terminating gateway (API
+Gateway, a load balancer with auth, etc.) in front of them. Reads `Authorization: Bearer <token>`,
+validates it against a JWKS endpoint (via OIDC discovery or a bare JWKS URI), and either
+short-circuits with `Unauthorized` or sets the authenticated caller for later pipeline steps. See
+the [Authentication Patterns cookbook](cookbooks/auth-patterns.md) for a full worked example.
+
+```csharp
+public static IMiddlewarePipelineBuilder<TContext> UseOAuth2Bearer<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> app, OAuth2BearerOptions options)
+    where TContext : IHttpContext
+```
+
+```csharp
+app.UseOAuth2Bearer(new OAuth2BearerOptions
+{
+    Authority = "https://your-tenant.auth0.com/.well-known/openid-configuration",
+    ValidIssuers = new[] { "https://your-tenant.auth0.com/" },
+    ValidAudiences = new[] { "your-api-identifier" },
+    ValidAlgorithms = new[] { "RS256" },
+});
+```
+
+Applies to any `TContext : IHttpContext`. `Authority`/`JwksUri`, `ValidIssuers`, `ValidAudiences`,
+and `ValidAlgorithms` are all required — an empty allowlist would silently under-validate every
+token, so `UseOAuth2Bearer` throws at wire-up time rather than accepting tokens from any
+issuer/audience/algorithm. `ValidAlgorithms` in particular has no permissive default: a validator
+that trusted whatever `alg` a token claimed would be open to algorithm-confusion attacks (RFC 8725
+§3.1). A failed validation always returns a generic `Unauthorized` detail — the real reason (bad
+signature, expired, wrong issuer/audience) is never echoed back to the caller, only logged
+server-side. On success, the validated claims are available to `RequireScope` (below) and to your
+own handlers via `Benzene.Auth.Core.AuthenticationHolder`.
+
+---
+
+## UseBasicAuth
+
+**Package:** `Benzene.Auth.Basic` (`Benzene.Auth.Basic.Extensions`)
+
+RFC 7617 HTTP Basic authentication — the simplest option when you just need a username/password
+gate (a single service account, an internal admin surface) rather than full OAuth2. Validates the
+decoded credentials against your own `IBasicAuthCredentialValidator`; ships no default
+implementation, so there's no hardcoded-credential footgun to accidentally deploy.
+
+```csharp
+public static IMiddlewarePipelineBuilder<TContext> UseBasicAuth<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> app,
+    IBasicAuthCredentialValidator validator, string realm = "Benzene")
+    where TContext : IHttpContext
+```
+
+```csharp
+public class ServiceAccountValidator : IBasicAuthCredentialValidator
+{
+    public Task<ClaimsPrincipal?> ValidateAsync(string username, string password)
+    {
+        var expected = Environment.GetEnvironmentVariable("SERVICE_ACCOUNT_PASSWORD");
+        if (username != "service-account" || password != expected)
+        {
+            return Task.FromResult<ClaimsPrincipal?>(null);
+        }
+        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) });
+        return Task.FromResult<ClaimsPrincipal?>(new ClaimsPrincipal(identity));
+    }
+}
+
+app.UseBasicAuth(new ServiceAccountValidator());
+```
+
+Applies to any `TContext : IHttpContext`. A missing/malformed header or a validator returning
+`null` short-circuits with `Unauthorized` and a `WWW-Authenticate: Basic realm="..."` challenge
+header (per RFC 7617, so browsers/HTTP clients actually prompt for credentials). Credentials are
+split on the *first* `:` only — a password containing `:` is preserved intact, not truncated.
+
+---
+
+## RequireScope
+
+**Package:** `Benzene.Auth.OAuth2` (`Benzene.Auth.OAuth2.Extensions`)
+
+Basic scope-based authorization: requires the caller authenticated by `UseOAuth2Bearer`, earlier in
+the pipeline, to hold at least one of the given scopes. Reads both the `scope` claim (RFC 8693,
+space-delimited) and the `scp` claim (Azure AD's convention — a space-delimited string or a JSON
+array, depending on issuer). This is intentionally the ceiling of Benzene's built-in authorization
+— roles, resource-based policies, and RBAC are application concerns layered on top of the
+`ClaimsPrincipal` this middleware exposes, not something Benzene provides itself.
+
+```csharp
+public static IMiddlewarePipelineBuilder<TContext> RequireScope<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> app, params string[] anyOfScopes)
+    where TContext : IHttpContext
+```
+
+```csharp
+app.UseOAuth2Bearer(oauth2Options)
+   .RequireScope("orders:write");   // any one of the given scopes is sufficient
+```
+
+Applies to any `TContext : IHttpContext`, chained after `UseOAuth2Bearer`. No authenticated caller
+at all (no auth middleware ran, or it ran and failed) short-circuits with `Unauthorized` — a
+caller present but missing every requested scope short-circuits with `Forbidden` instead. These
+are deliberately distinct statuses (`Unauthorized` = not authenticated, `Forbidden` = authenticated
+but not permitted); collapsing them would leave API consumers unable to tell the two apart from a
+403 alone.
 
 ---
 

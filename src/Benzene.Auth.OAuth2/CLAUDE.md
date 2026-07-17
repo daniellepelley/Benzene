@@ -16,8 +16,9 @@ gRPC, Kafka, not only ASP.NET Core).
 - `OAuth2BearerOptions` - `Authority`/`JwksUri` (mutually exclusive; `Authority` is the full OIDC
   discovery URL, not just the issuer root - `Validate()` throws `ArgumentException` if both or
   neither are set), `ValidIssuers`/`ValidAudiences`/`ValidAlgorithms` (all required, no default -
-  `Validate()` throws on an empty array), `ClockSkew` (default 2 minutes). `Validate()` runs at
-  wire-up time (`UseOAuth2Bearer`), not on the first request - a misconfigured pipeline fails fast.
+  `Validate()` throws on an empty array), `ClockSkew` (default 2 minutes),
+  `RequireHttpsMetadata` (default `true` - see below). `Validate()` runs at wire-up time
+  (`UseOAuth2Bearer`), not on the first request - a misconfigured pipeline fails fast.
 - `Extensions.UseOAuth2Bearer<TContext>(options)` - builds the shared, long-lived
   `JsonWebTokenHandler` + `TokenValidationParameters` + JWKS-caching
   `ConfigurationManager<OpenIdConnectConfiguration>` **once**, at wire-up time (not per request),
@@ -64,6 +65,17 @@ produces the same generic `"Invalid bearer token"` `Unauthorized` detail to the 
 `"Benzene.Auth.OAuth2"`), never returned. Distinguishable failure reasons in the response body are
 an oracle an attacker can use to probe token shapes (design doc §3.3/§6) - don't add a more specific
 detail message here, no matter how useful it seems for debugging; use server-side logs for that.
+
+## RequireHttpsMetadata (test/local-dev escape hatch, defaults safe)
+`OAuth2ConfigurationManagerFactory.Create` sets `HttpDocumentRetriever.RequireHttps` from
+`OAuth2BearerOptions.RequireHttpsMetadata` (default `true`). Fetching the JWKS/OIDC discovery
+document - the thing that establishes which keys are trusted - over plain HTTP is a
+man-in-the-middle vector (a MITM in front of that fetch can substitute their own signing key), so
+every real identity provider serves it over HTTPS and this stays required by default. The only
+legitimate reason to set it `false` is a local-only fake JWKS endpoint in tests/dev (see
+`test/Benzene.Core.Test/Auth/OAuth2BearerTest.cs`'s `FakeJwksServer`) - the same purpose ASP.NET
+Core's own `JwtBearerOptions.RequireHttpsMetadata` serves. Never flip this in production; if you're
+tempted to, the JWKS endpoint should be serving HTTPS instead.
 
 ## Dependencies on other Benzene packages
 Auth.Core (`AuthenticationHolder`, `AuthResults`), Core.Middleware (`Use<TContext,TMiddleware>()`,
