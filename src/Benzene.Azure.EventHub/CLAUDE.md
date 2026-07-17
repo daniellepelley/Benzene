@@ -51,7 +51,15 @@ Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
   scope per event via the base class.
 - Mappers (`EventHubConsumerMessage{TopicGetter,HeadersGetter,BodyGetter}`) - topic from the
   event's `"topic"` property (wrapped in `PresetTopicMessageTopicGetter`/`PresetTopicHolder`),
-  headers from string-typed properties, body as string. Note this differs from
+  headers from string-typed properties, body as string.
+- **`AddEventHubConsumer` must register, per context type, everything `.UseMessageHandlers()`
+  resolves** - besides the four getters above, that means `IMessageVersionGetter<EventHubConsumerContext>`
+  (`HeaderMessageVersionGetter`), `AddMediaFormatNegotiation<EventHubConsumerContext>()`, and
+  `IRequestMapper<EventHubConsumerContext>` (`MultiSerializerOptionsRequestMapper`). None has an
+  open-generic default, so omitting them makes the router throw at resolve time - and because the
+  worker catches handler faults (`CatchHandlerExceptions`, default `true`) that surfaces only as
+  events never being handled. Mirrors `AddSqsConsumer`. Covered by `EventHubConsumerRealPipelineTest`
+  (real DI + `.UseMessageHandlers()`, no emulator) since the mapper unit tests mock the pipeline. Note this differs from
   `Benzene.Azure.Function.EventHub`, which has no mappers of its own and instead routes
   BenzeneMessage-envelope bodies via `UseBenzeneMessage` - this package follows the worker-mode
   convention (`Benzene.Kafka.Core`, `Benzene.Aws.Sqs`) of full first-class mappers, so
@@ -82,8 +90,10 @@ Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 - No Azure Functions dependency - deliberately does not reference
   `Microsoft.Azure.Functions.Worker.*`
 - Test coverage: mappers and the application are unit-tested in
-  `test/Benzene.Core.Test/Azure/EventHubWorker/` (hand-built `EventData`, no live hub); the
-  worker's real processor-consume-checkpoint path is covered end to end against the Event Hubs
-  emulator + azurite checkpoint store in
+  `test/Benzene.Core.Test/Azure/EventHubWorker/` (hand-built `EventData`, no live hub);
+  `EventHubConsumerRealPipelineTest` there additionally drives the real DI +
+  `.UseMessageHandlers()` routing (no emulator) so a missing registration can't slip past the
+  mocked-pipeline tests; the worker's real processor-consume-checkpoint path is covered end to end
+  against the Event Hubs emulator + azurite checkpoint store in
   `test/Benzene.Integration.Test/EventHub/BenzeneEventHubWorkerLiveTest.cs` (own entity, `eh2`,
   so it doesn't cross-read the trigger-pipeline test's events on `eh1`)

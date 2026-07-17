@@ -42,6 +42,17 @@ process. For Service Bus messages delivered by an Azure Functions trigger, use
   as `Benzene.Azure.Function.ServiceBus`: topic from the `"topic"` application property (wrapped
   in `PresetTopicMessageTopicGetter`/`PresetTopicHolder` for per-pipeline presets), headers from
   string-typed application properties, body as string.
+- **`AddServiceBusConsumer` must register, per context type, everything `.UseMessageHandlers()`
+  resolves** - besides the four getters above, that means `IMessageVersionGetter<ServiceBusConsumerContext>`
+  (`HeaderMessageVersionGetter`), `AddMediaFormatNegotiation<ServiceBusConsumerContext>()`, and
+  `IRequestMapper<ServiceBusConsumerContext>` (`MultiSerializerOptionsRequestMapper`). None of
+  these has an open-generic default (only `BenzeneMessageContext` is pre-registered by
+  `AddBenzeneMessage`), so omitting them makes the message-handler router throw at resolve time -
+  which, since the worker swallows handler faults (AutoComplete logs via the processor's error
+  handler), surfaces only as messages never being handled. This mirrors `AddSqsConsumer` exactly.
+  Because the mapper-level unit tests mock `IMiddlewarePipeline`, the registration completeness is
+  covered separately by `ServiceBusConsumerRealPipelineTest` (real DI + real `.UseMessageHandlers()`
+  routing, no emulator).
 - `IServiceBusClientFactory` / `ServiceBusClientFactory` - like `ISqsClientFactory`: the caller
   builds the `ServiceBusClient` (connection string, Managed Identity, emulator...), the worker
   disposes it on stop.
@@ -68,7 +79,9 @@ process. For Service Bus messages delivered by an Azure Functions trigger, use
   configuration; abandoning just releases the message for redelivery
 - Test coverage: mappers, application, ack-mode settlement decisions, and config validation are
   unit-tested in `test/Benzene.Core.Test/Azure/ServiceBusWorker/` (using
-  `ServiceBusModelFactory`-built messages, no live bus); the worker's real
+  `ServiceBusModelFactory`-built messages, no live bus); `ServiceBusConsumerRealPipelineTest` there
+  additionally drives the real DI + `.UseMessageHandlers()` routing (no emulator) so a missing
+  registration can't slip past the mocked-pipeline tests; the worker's real
   processor-consume-dispatch path is covered end to end against the Service Bus emulator in
   `test/Benzene.Integration.Test/ServiceBus/BenzeneServiceBusWorkerLiveTest.cs` (own queue,
   `benzene-worker-queue`, so it doesn't compete with the trigger-pipeline test's queue)

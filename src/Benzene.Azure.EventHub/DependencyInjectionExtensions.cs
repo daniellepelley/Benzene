@@ -1,7 +1,10 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.MediaFormats;
+using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Azure.EventHub;
@@ -29,9 +32,12 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<EventHubConsumerContext>>(resolver =>
             new PresetTopicMessageTopicGetter<EventHubConsumerContext>(new EventHubConsumerMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+        services.AddScoped<IMessageVersionGetter<EventHubConsumerContext>, HeaderMessageVersionGetter<EventHubConsumerContext>>();
         services.AddScoped<IMessageHeadersGetter<EventHubConsumerContext>, EventHubConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventHubConsumerContext>, EventHubConsumerMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<EventHubConsumerContext>, EventHubConsumerMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<EventHubConsumerContext>();
+        services.AddScoped<IRequestMapper<EventHubConsumerContext>, MultiSerializerOptionsRequestMapper<EventHubConsumerContext>>();
 
         return services;
     }

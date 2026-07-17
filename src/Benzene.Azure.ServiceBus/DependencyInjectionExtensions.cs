@@ -1,7 +1,10 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.MediaFormats;
+using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Azure.ServiceBus;
@@ -29,9 +32,12 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<ServiceBusConsumerContext>>(resolver =>
             new PresetTopicMessageTopicGetter<ServiceBusConsumerContext>(new ServiceBusConsumerMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+        services.AddScoped<IMessageVersionGetter<ServiceBusConsumerContext>, HeaderMessageVersionGetter<ServiceBusConsumerContext>>();
         services.AddScoped<IMessageHeadersGetter<ServiceBusConsumerContext>, ServiceBusConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusConsumerContext>, ServiceBusConsumerMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<ServiceBusConsumerContext>, ServiceBusConsumerMessageHandlerResultSetter>();
+        services.AddMediaFormatNegotiation<ServiceBusConsumerContext>();
+        services.AddScoped<IRequestMapper<ServiceBusConsumerContext>, MultiSerializerOptionsRequestMapper<ServiceBusConsumerContext>>();
 
         return services;
     }
