@@ -86,6 +86,7 @@ field) to and from this flat string→string dictionary.
 | `_benzeneHeaders` | both (EventBridge) | On transports with no native per-message attributes (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. |
 | `benzene-status` | outbound (gRPC trailer) | See §4.2. |
 | `content-type` | outbound | Response content type where the transport has no native slot for it. |
+| `benzene-version` | both | **Draft, not yet implemented** — the request/response payload's schema version, for topics using payload versioning. See [versioning.md](versioning.md). |
 
 Binary metadata (e.g. gRPC `-bin` keys) is excluded from the dictionary in both directions.
 Duplicate keys: last value wins.

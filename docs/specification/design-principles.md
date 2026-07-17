@@ -124,6 +124,7 @@ The catalog of extension points every transport binding carries (see
 | Status readers (mesh) | Read the transport's Benzene status field | Implement the status-reader interface for your context type |
 | DI container | The implementation's first-party or platform container | The container abstraction ([core-concepts.md](core-concepts.md) §8) — bring your own |
 | Handler discovery | Attribute/reflection scanning where idiomatic | Explicit registration is the concept; scanning is sugar ([README](README.md), "the one design rule") |
+| Version getter (per transport) *(draft, not yet implemented)* | Transport-specific well-known location (HTTP: `version` route parameter, else header; every other transport: `benzene-version` header — [versioning.md](versioning.md) §2) | Replace the version-getter registration for that context type |
 
 Rules for feature authors:
 

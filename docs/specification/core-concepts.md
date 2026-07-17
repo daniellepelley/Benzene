@@ -39,6 +39,11 @@ A topic identifies a message type and routes it to a handler.
 Topic ids SHOULD be lower-case with `:` or `_` separators (e.g. `order:create`, `say_hello`);
 this is a convention, not a requirement.
 
+A topic's version (this section) selects between **handler implementations** registered for the
+same topic id. This is a distinct concept from a request/response **payload's schema version**
+(transparently upcast/downcast without a second handler) — see
+[versioning.md](versioning.md) (draft) for both, and how they relate.
+
 ## 3. Message handler
 
 A handler is a function from a request to a result:
