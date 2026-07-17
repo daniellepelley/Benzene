@@ -1,7 +1,7 @@
 # Benzene Cloud Service Profile
 
-**Status: DRAFT v0.1 — new document; terminology ("profile", requirement ids) is settling and
-may be renamed before 1.0.**
+**Status: DRAFT v0.1 — the level names ("Benzene Core", "Benzene Cloud Service Profile") are
+settled; requirement ids (R1–R8) may still be reorganized while in draft.**
 
 ## 1. Purpose
 
@@ -21,7 +21,28 @@ The profile defines **no new wire contracts**. Everything it requires is already
 the core documents — this document only changes the RFC 2119 requirement level (SHOULD/MAY →
 MUST) of existing, individually-optional capabilities, for services that claim the profile.
 
-### 1.1 The two conformance levels
+### 1.1 The bargain *(informative)*
+
+The profile is opt-in in both directions, and each side of the bargain is unconditional:
+
+- **Meet all of it, get all of it.** A service that satisfies every requirement in §2 gets the
+  full mesh and visibility offering — it appears in the fleet view with live health, its derived
+  spec and schemas, its topology edges, and every tool works against it with no per-service
+  setup. Within the profile, the requirements are MUSTs precisely so this promise never comes
+  with an asterisk.
+- **Skip it, lose only dashboard.** A service that doesn't claim the profile still runs, still
+  interoperates over the wire contracts, and still shows up in the mesh to whatever extent its
+  feeds allow ([mesh.md](mesh.md) §6) — it just has missing bits of dashboard: no schemas
+  without a descriptor, unknown health without heartbeats, no edges without traces. Nothing
+  breaks; the picture is simply reduced.
+
+This makes the profile the recommended shape for **domain services running in a cloud** — the
+services a team operates as a fleet and wants full visibility over — while Benzene itself
+remains fully usable off-profile, in whichever way fits, for everything that isn't that: an
+in-process pipeline inside a larger app, a middleware-only edge, a deliberate out-of-spec
+deployment.
+
+### 1.2 The two conformance levels
 
 | Level | Claim | What it means |
 |---|---|---|
