@@ -144,6 +144,29 @@ Later entries supersede earlier ones where they overlap.
     valid-YAML/valid-JSON checks on every new compose/config/workflow file. The new CI job
     is the first place these will actually run, against a real Docker daemon.
 
+- **2026-07-17 — Self-hosted (non-Functions) Service Bus and Event Hubs consumers.** Closed the
+  gap that Azure messages could only be consumed via Azure Functions triggers, unlike AWS
+  (`Benzene.Aws.Sqs`'s standalone `SqsConsumer`) and Kafka (`Benzene.Kafka.Core`'s
+  `BenzeneKafkaWorker`). Two new production packages, both `IBenzeneWorkerStartup`-wired
+  self-hosted workers (see `docs/hosting.md`'s mode 3): **`Benzene.Azure.ServiceBus`**
+  (`BenzeneServiceBusWorker` on `ServiceBusProcessor` - queue or topic/subscription,
+  `MaxConcurrentCalls`, `AutoComplete`/`Explicit` ack modes mirroring the Function package's
+  enum) and **`Benzene.Azure.EventHub`** (`BenzeneEventHubWorker` on `EventProcessorClient` -
+  consumer groups, partition load balancing, per-partition blob checkpointing every
+  `CheckpointInterval` successful events, `CatchHandlerExceptions` skip-vs-stop semantics).
+  No new NuGet dependencies - both reuse the exact SDK versions already pinned by the Function
+  packages (`Azure.Messaging.ServiceBus` 7.18.2, `Azure.Messaging.EventHubs.Processor` 5.11.5),
+  and neither references `Microsoft.Azure.Functions.Worker.*`. Unit tests (mappers, applications,
+  ack/config validation - 21 tests) in `test/Benzene.Core.Test/Azure/{ServiceBusWorker,EventHubWorker}/`;
+  live end-to-end tests against the existing emulators in
+  `test/Benzene.Integration.Test/{ServiceBus,EventHub}/Benzene*WorkerLiveTest.cs` (new
+  `benzene-worker-queue` and `eh2` entities so they don't contend with the trigger-pipeline
+  tests; azurite's blob port 10000 newly exposed for the checkpoint store). Same disclosure as
+  prior sessions: this sandbox's Docker daemon is unreachable, so the two new live tests were
+  verified by build + `--list-tests` discovery only and will first actually run in CI's
+  `azure-integration-tests` job. Full `Benzene.sln` build 0 errors; `Benzene.Core.Test`
+  1252/1252 passing. Package count: **8 production, 5 TestHelpers**.
+
 ---
 
 ## Executive Summary

@@ -26,9 +26,11 @@ how many run at once. Benzene is just middleware inside that pipeline; it never 
 paces anything about the host process itself. See
 [ASP.NET Core](#aspnet-core--webapplicationbuilderusebenzenetstartup--iapplicationbuilderusebenzene).
 
-**3. Self-hosted worker** - `Benzene.HostedService` + `Benzene.SelfHost.Http`/`Benzene.Kafka.Core`.
-Here, Benzene itself owns a long-running loop that actively polls for work (an HTTP
-`HttpListener.GetContextAsync()` accept loop, or a Kafka consumer's `Consume()` poll) and is
+**3. Self-hosted worker** - `Benzene.HostedService` + `Benzene.SelfHost.Http`/`Benzene.Kafka.Core`/
+`Benzene.Aws.Sqs`/`Benzene.Azure.ServiceBus`/`Benzene.Azure.EventHub`.
+Here, Benzene itself owns a long-running consumer that actively receives work (an HTTP
+`HttpListener.GetContextAsync()` accept loop, a Kafka consumer's `Consume()` poll, an SQS
+long-poll loop, or a running Service Bus/Event Hubs SDK processor) and is
 responsible for keeping the process alive - there is no external infrastructure invoking you, and
 no separate host already listening. This is the one mode where how many events Benzene processes
 *at once* is Benzene's own decision, not the platform's - see
@@ -300,8 +302,8 @@ this host passes in.
 
 #### Worker concurrency
 
-The two built-in self-hosted workers - `Benzene.Kafka.Core.BenzeneKafkaWorker<TKey,TValue>` (a
-Kafka consumer) and `Benzene.SelfHost.Http.BenzeneHttpWorker` (an `HttpListener` accept loop) - are
+The two dispatcher-based self-hosted workers - `Benzene.Kafka.Core.BenzeneKafkaWorker<TKey,TValue>`
+(a Kafka consumer) and `Benzene.SelfHost.Http.BenzeneHttpWorker` (an `HttpListener` accept loop) - are
 where mode 3 above ("Benzene decides how many events at once") actually matters. Both are built on
 `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`, a shared primitive on top of
 `System.Threading.Channels` (part of the BCL - no new NuGet dependency):
@@ -318,6 +320,18 @@ where mode 3 above ("Benzene decides how many events at once") actually matters.
   in-flight work to finish before abandoning it and closing the consumer/listener. Both workers'
   `StopAsync` signals shutdown and awaits this drain, rather than closing the consumer/listener out
   from under in-flight handlers the way an earlier, simpler implementation did.
+
+The Azure self-hosted workers - `Benzene.Azure.ServiceBus.BenzeneServiceBusWorker` (a
+`ServiceBusProcessor` consuming a queue/subscription) and
+`Benzene.Azure.EventHub.BenzeneEventHubWorker` (an `EventProcessorClient` consuming a hub with
+blob-checkpointed offsets) - are mode 3 too, but don't use `BoundedConcurrentDispatcher<T>`:
+their SDK processors already own bounded concurrency natively. Service Bus concurrency is capped
+by `BenzeneServiceBusConfig.MaxConcurrentCalls` (the processor's own `MaxConcurrentCalls`);
+Event Hubs processes partitions concurrently with strictly one event at a time per partition
+(the same ordering promise as `PreserveOrderPerPartition = true`, with no unordered opt-out).
+`StopAsync` on both delegates to the processor's own stop, which waits for in-flight handlers.
+The same is true of `Benzene.Aws.Sqs`'s `SqsConsumer`, whose "concurrency" is simply the poll
+batch (`MaxNumberOfMessages`) dispatched per iteration.
 
 This is a separate, smaller concern from the *serverless* batch adapters (SQS in
 `Benzene.Aws.Lambda.Sqs`; Event Hubs/Kafka/Service Bus triggers in the `Benzene.Azure.Function.*`

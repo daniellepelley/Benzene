@@ -19,6 +19,10 @@ services:
           - eventhubs-emulator
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
+    ports:
+      # Blob endpoint exposed to the host for BenzeneEventHubWorkerLiveTest's
+      # EventProcessorClient checkpoint store ("UseDevelopmentStorage=true" -> 127.0.0.1:10000).
+      - 10000:10000
     networks:
       eh-emulator:
         aliases:
