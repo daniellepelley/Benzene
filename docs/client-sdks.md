@@ -76,8 +76,8 @@ public class HelloWorldServiceClient : IHelloWorldServiceClient
 ```
 
 The generator also emits a sibling `HelloWorldServiceClientRouting.RequiredTopics` array, for
-`ValidateOutboundRouting()`'s startup check — see [Registering and routing
-clients](clients.md#registering-and-routing-clients).
+`ValidateOutboundRouting()`'s startup check — see [Validating routes at
+startup](clients.md#validating-routes-at-startup-validateoutboundrouting).
 
 Configure the underlying transport by routing each of the client's topics via
 `AddOutboundRouting(...)` — for example `.UseSqs(...)`/`.UseSns(...)` from `Benzene.Clients.Aws` to

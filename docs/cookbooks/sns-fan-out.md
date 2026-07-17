@@ -33,67 +33,34 @@ dotnet add package Benzene.Aws.Lambda.Sns
 
 ### 1. Publish to SNS
 
-`Benzene.Clients.Aws.Sns.SnsBenzeneMessageClient` is the class that actually publishes — verified directly from `src/Benzene.Clients.Aws/Sns/SnsBenzeneMessageClient.cs`. It implements the same `IBenzeneMessageClient` interface as every other Benzene client:
+Route the topic through `.UseSns(topicArn)` on an outbound route, then send via `IBenzeneMessageSender` — see [Clients — SNS](../clients.md#sns) for the full reference:
 
 ```csharp
-public class SnsBenzeneMessageClient : IBenzeneMessageClient
-{
-    public SnsBenzeneMessageClient(string topicArn, IAmazonSimpleNotificationService amazonSnsClient, ILogger<SnsBenzeneMessageClient> logger, IServiceResolver serviceResolver) { /* ... */ }
+services.UsingBenzene(x => x
+    .AddOutboundRouting(routing => routing
+        .Route("order:created", pipeline => pipeline.UseSns(configuration["ORDER_EVENTS_TOPIC_ARN"]))));
+```
 
-    public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request) { /* ... */ }
+```csharp
+public class OrderPublisher
+{
+    private readonly IBenzeneMessageSender _sender;
+
+    public OrderPublisher(IBenzeneMessageSender sender)
+    {
+        _sender = sender;
+    }
+
+    public Task<IBenzeneResult<Void>> PublishOrderCreatedAsync(Order order)
+    {
+        return _sender.SendAsync<OrderCreatedMessage, Void>(
+            "order:created",
+            new OrderCreatedMessage { OrderId = order.Id, Total = order.Total });
+    }
 }
 ```
 
-One important gap to call out up front: **`Benzene.Clients.Aws.Sqs` and `Benzene.Clients.Aws.Lambda` both have `ClientsBuilder` registration sugar** (`CreateSqsBenzeneMessageClient(...)`, `CreateAwsLambdaBenzeneMessageClient(...)`) that build the client and register it on a `ClientsBuilder` in one call. **`Benzene.Clients.Aws.Sns` does not have an equivalent `CreateSnsBenzeneMessageClient` extension** — `src/Benzene.Clients.Aws/Sns/` only contains the client, its middleware (`SnsClientMiddleware`), and pipeline-level `UseSnsClient`/`UseSns<T>` extensions for building a raw send pipeline, not a `ClientsBuilder`-registration helper. If you want the equivalent convenience for SNS you either construct `SnsBenzeneMessageClient` directly, or wire it onto a `ClientsBuilder`/`SingleClientsBuilder` by hand.
-
-**Direct construction** (simplest, and exactly what `test/Benzene.Core.Test/Clients/Aws/Sqs/SqsBenzeneMessageClientTest.cs` does for the SQS equivalent):
-
-```csharp
-using Amazon.SimpleNotificationService;
-using Benzene.Clients.Aws.Sns;
-using Benzene.Core.Messages.MessageSender;
-using Microsoft.Extensions.Logging;
-
-var client = new SnsBenzeneMessageClient(
-    topicArn: "arn:aws:sns:eu-west-2:123456789012:order-events",
-    amazonSnsClient: new AmazonSimpleNotificationServiceClient(),
-    logger: loggerFactory.CreateLogger<SnsBenzeneMessageClient>(),
-    serviceResolver: serviceResolver);
-
-var result = await client.SendMessageAsync<OrderCreatedMessage, Benzene.Abstractions.Results.Void>(
-    new BenzeneClientRequest<OrderCreatedMessage>(
-        topic: "order:created",
-        message: new OrderCreatedMessage { OrderId = order.Id, Total = order.Total },
-        headers: new Dictionary<string, string>()));
-```
-
-`SnsContextConverter` (used internally by the client) puts your `topic` onto the SNS message's `topic` message attribute — this is what each subscriber's `SnsMessageTopicGetter` reads to route to the right handler on the way in.
-
-**Registering it for DI**, since there's no `CreateSnsBenzeneMessageClient` sugar, use `ClientsBuilder.WithMessageClient` (the same building block the SQS/Lambda sugar methods use internally) directly:
-
-```csharp
-services.UsingBenzene(x => x
-    .AddBenzeneMessageClients(clients => clients
-        .WithMessageClient("order-events", resolver =>
-            new SnsBenzeneMessageClient(
-                configuration["ORDER_EVENTS_TOPIC_ARN"],
-                resolver.GetService<IAmazonSimpleNotificationService>(),
-                resolver.GetService<ILogger<SnsBenzeneMessageClient>>(),
-                resolver))));
-```
-
-or, if you only ever publish to this one topic, the simpler `SingleClientsBuilder` via `AddBenzeneMessageClient`:
-
-```csharp
-services.UsingBenzene(x => x
-    .AddBenzeneMessageClient(clients => clients
-        .WithMessageClient(resolver =>
-            new SnsBenzeneMessageClient(
-                configuration["ORDER_EVENTS_TOPIC_ARN"],
-                resolver.GetService<IAmazonSimpleNotificationService>(),
-                resolver.GetService<ILogger<SnsBenzeneMessageClient>>(),
-                resolver))));
-```
+`OutboundSnsContextConverter` (used internally by `.UseSns(...)`) puts your topic onto the SNS message's `topic` message attribute — this is what each subscriber's `SnsMessageTopicGetter` reads to route to the right handler on the way in. **SNS has no request/response semantics beyond a send acknowledgement**, so `order:created` must be sent via `SendAsync<TRequest, Void>` as above — see [Clients — SNS](../clients.md#sns) for the `Void`-only constraint.
 
 ### 2. Give each consuming Lambda its own SNS-triggered pipeline
 
@@ -316,5 +283,5 @@ If a subscriber is genuinely optional (e.g. it only updates a non-critical dashb
 - [Terraform Code Generation](../terraform.md) — `TerraformLambdaBuilder`/`TerraformLambdaSettings` in full
 - [Handling SQS Message Failures](handling-sqs-failures.md) — partial batch failures and DLQs for SQS-based subscribers
 - [Message Handlers](../message-handlers.md) — `[Message]` topic routing
-- [Clients](../clients.md) — `IBenzeneMessageClient`, `ClientsBuilder`, and the client decorator chain
+- [Clients](../clients.md) — `IBenzeneMessageSender`, `AddOutboundRouting(...)`, and outbound middleware
 - [AWS SNS message filtering](https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html)

@@ -141,7 +141,7 @@ from `AddDiagnostics()` correctly nests under the remote trace.
 
 Only wired for HTTP-based transports today (ASP.NET Core, Azure Functions' ASP.NET-style trigger,
 API Gateway) — SQS/SNS/Kafka/Event Hub inbound extraction is not yet implemented. To propagate a
-trace to a downstream Benzene service, see the `WithW3CTraceContext()` client decorator described in
+trace to a downstream Benzene service, see `.UseW3CTraceContext()` on an outbound route, described in
 [Monitoring — Distributed Tracing](monitoring#distributed-tracing).
 
 ---

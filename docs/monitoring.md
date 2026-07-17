@@ -138,19 +138,20 @@ Every automatically-wrapped middleware span added by `AddDiagnostics()` after th
 the remote trace. When the header is missing or fails to parse, it falls back to a normal root span —
 this is always safe to add.
 
-To propagate the current trace to a downstream Benzene service, add `WithW3CTraceContext()` to an
-outbound client:
+To propagate the current trace to a downstream Benzene service, add `.UseW3CTraceContext()` to an
+outbound route:
 
 ```csharp
-services.UsingBenzene(x => x.AddBenzeneMessageClients(c => c
-    .CreateSqsBenzeneMessageClient("my-queue", queueUrl, resolver, client => client.WithW3CTraceContext())));
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:process", pipeline => pipeline.UseW3CTraceContext().UseSqs(queueUrl))));
 ```
 
 This stamps `Activity.Current`'s `traceparent`/`tracestate` onto outgoing message headers. It works
-today for HTTP, SQS, SNS, and Kafka outbound clients (all forward `IBenzeneClientRequest.Headers` onto
-the real request), and for AWS Lambda's `AwsLambdaBenzeneMessageClient` (which embeds headers into its
-own message envelope) — but has no effect on a client pipeline built via the lower-level
-`UseAwsLambda()`/`LambdaContextConverter` (a raw `InvokeRequest` has no header-like concept).
+today for HTTP, SQS, SNS, and Kafka (all forward headers onto the real request), and for AWS Lambda's
+`AwsLambdaBenzeneMessageClient` (which embeds headers into its own message envelope) — but has no
+effect on a client pipeline built via the lower-level `UseAwsLambda()`/`LambdaContextConverter` (a raw
+`InvokeRequest` has no header-like concept). See [Clients — Header forwarding](clients#header-forwarding)
+for the full per-transport breakdown.
 
 > Inbound extraction (`UseW3CTraceContext()`) is currently wired for HTTP-based transports (ASP.NET
 > Core, Azure Functions' ASP.NET-style trigger, API Gateway) — SQS/SNS/Kafka/Event Hub inbound
