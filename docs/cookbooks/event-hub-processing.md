@@ -524,6 +524,34 @@ correlation identifier that spans the whole triggered batch (rather than per-eve
 to generate and thread it through yourself, e.g. via a middleware ahead of the per-event fan-out
 that stashes a batch ID somewhere your per-event middleware can pick up.
 
+### Consuming without Azure Functions (self-hosted worker)
+
+This whole cookbook assumes an Azure Functions Event Hub *trigger*, where — as step 5 stresses —
+batching and checkpointing are **entirely the runtime's job**. If you want to consume an event hub
+from a long-running process you own instead, use `Benzene.Azure.EventHub` (not
+`Benzene.Azure.Function.EventHub`). It's a self-hosted
+[worker](../getting-started-worker.md#azure-event-hubs-benzeneazureeventhub):
+`worker.UseEventHub(config, clientFactory, eh => eh.UseMessageHandlers())` runs the SDK's
+`EventProcessorClient` and dispatches each event through the same `[Message]`/topic model (from the
+event's `"topic"` property).
+
+The key inversion from the trigger: **here Benzene owns what the runtime owned above.**
+
+- **Checkpointing is Benzene's**, not `host.json`'s — `BenzeneEventHubConfig.CheckpointInterval`
+  controls how many successfully handled events a partition accumulates before it checkpoints (via
+  `EventProcessorClient`'s blob store). Step 5's "the runtime checkpoints the whole batch regardless
+  of exceptions" no longer applies; a failed event is never itself checkpointed.
+- **Poison-event behaviour is a config toggle, not a workaround.** `CatchHandlerExceptions` (default
+  `true`) skips-and-continues like the runtime does; set it `false` to stop the worker without
+  checkpointing the failure, so a restart redelivers it (at-least-once) — the self-hosted answer to
+  the honest "Benzene can't help with poison events under the trigger" of step 6.
+- **Starting position is yours.** `DefaultStartingPosition` (e.g. `EventPosition.Earliest`) sets
+  where a fresh consumer group with no checkpoint begins — the `EventProcessorClient` default is the
+  *end* of the partition.
+
+See [Worker Service Setup, Part B](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub)
+for the full host wiring.
+
 ## Further Reading
 
 - [Azure Functions Setup](../azure-functions.md) — project setup, HTTP routing, and the Event
@@ -534,4 +562,6 @@ that stashes a batch ID somewhere your per-event middleware can pick up.
   the Event Hub pipeline
 - [Correlation Ids](../correlation-ids.md) — the header-based legacy correlation alternative
 - [Testing Benzene](../testing-benzene.md) — `BenzeneTestHost`, `InlineAzureFunctionStartUp`
+- [Worker Service Setup](../getting-started-worker.md) — consuming Event Hubs in-process, without
+  Azure Functions, via `Benzene.Azure.EventHub` (see "Consuming without Azure Functions" above)
 - [Microsoft.Azure.Functions.Worker.Extensions.EventHubs host.json reference](https://learn.microsoft.com/azure/azure-functions/functions-bindings-event-hubs) — the runtime-side batching/checkpointing settings this cookbook references

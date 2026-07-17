@@ -366,12 +366,39 @@ identically from Benzene's perspective — a topic/subscription pair and a queue
 `ServiceBusApplication` a `ServiceBusReceivedMessage`/`ServiceBusReceivedMessage[]`; nothing in this
 package distinguishes between the two.
 
+### Consuming without Azure Functions (self-hosted worker)
+
+Everything above assumes an Azure Functions Service Bus *trigger* — the runtime receives the
+message and hands it to your function. If you'd rather consume Service Bus from a long-running
+process you own (a console app, a container, an AKS pod, an App Service WebJob) with no Functions
+runtime at all, use `Benzene.Azure.ServiceBus` instead of `Benzene.Azure.Function.ServiceBus`.
+
+It's a self-hosted [worker](../getting-started-worker.md#azure-service-bus-benzeneazureservicebus):
+`worker.UseServiceBus(config, clientFactory, sb => sb.UseMessageHandlers())` runs the SDK's
+`ServiceBusProcessor` and dispatches each message through the *same* `[Message]`/topic-routing model
+(the `"topic"` application property, exactly as in step 2). The differences from the trigger:
+
+- **You own the process and the concurrency.** `MaxConcurrentCalls` on `BenzeneServiceBusConfig` is
+  the processor's own cap; there's no `host.json` and no Functions scale controller.
+- **Settlement is a first-class option, not a workaround.** `ServiceBusConsumerAckMode.AutoComplete`
+  (default) mirrors the trigger's auto-complete; `Explicit` makes Benzene complete/abandon each
+  message itself from the handler's outcome (including a non-exception failure result) — the
+  self-hosted equivalent of the per-message control described in step 5, but without the
+  `AutoCompleteMessages = false` trigger wiring.
+- **You build the `ServiceBusClient`**, so authentication (connection string, managed identity, or
+  the local emulator) is entirely yours.
+
+See [Worker Service Setup, Part B](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub)
+for the full host wiring.
+
 ## Further Reading
 
 - [Azure Functions Setup](../azure-functions.md) — project setup, HTTP routing, and the
   Event Hub/Kafka/Service Bus trigger basics this cookbook builds on
 - [Event Hub Stream Processing](event-hub-processing.md) — the analogous cookbook for Event Hubs,
   including a worked example of bridging handler failure to the runtime's retry/dead-letter behavior
+- [Worker Service Setup](../getting-started-worker.md) — consuming Service Bus in-process, without
+  Azure Functions, via `Benzene.Azure.ServiceBus` (see "Consuming without Azure Functions" above)
 - [Message Handlers](../message-handlers.md) — `[Message]` and handler discovery
 - [Monitoring & Diagnostics](../monitoring.md) — `AddDiagnostics()`, tracing every middleware in the
   Service Bus pipeline

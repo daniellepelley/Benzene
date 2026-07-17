@@ -8,13 +8,13 @@ your worker has to do:
 | You want... | Use |
 |---|---|
 | A custom background loop (polling a database, a timer, a queue you talk to yourself), with the same `BenzeneStartUp` shape used by AWS/Azure/ASP.NET Core | **Part A** — `BenzeneStartUp` + `worker.Add(...)` |
-| A Kafka consumer (`Benzene.Kafka.Core`) or a bare `HttpListener`-based HTTP endpoint (`Benzene.SelfHost.Http`) as part of the same process | **Part B** — `BenzeneStartUp` + `worker.UseKafka(...)`/`worker.UseHttp(...)` |
+| A built-in consumer — Kafka (`Benzene.Kafka.Core`), a bare `HttpListener` endpoint (`Benzene.SelfHost.Http`), Azure Service Bus (`Benzene.Azure.ServiceBus`), or Azure Event Hubs (`Benzene.Azure.EventHub`) — as part of the same process | **Part B** — `BenzeneStartUp` + `worker.UseKafka(...)`/`worker.UseHttp(...)`/`worker.UseServiceBus(...)`/`worker.UseEventHub(...)` |
 
 Both use the same `BenzeneStartUp` shape — the one exercised by
 `test/Benzene.Core.Test/Hosting/UnifiedStartUpTest.cs` and documented in
 [Unified Hosting Model](hosting). They differ only in what you register inside `UseWorker(...)`:
-Part A adds a worker class you wrote yourself, while Part B calls the built-in
-`Benzene.Kafka.Core.UseKafka`/`Benzene.SelfHost.Http.UseHttp` extensions. Those built-in extensions
+Part A adds a worker class you wrote yourself, while Part B calls a built-in
+`UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub` extension. Those built-in extensions
 hang off the `IBenzeneWorkerStartup` builder that `UseWorker(...)` hands you — see
 [How `UseWorker` composes the built-in workers](#how-useworker-composes-the-built-in-workers) below
 for exactly how the two builders relate.
@@ -259,10 +259,11 @@ Note this bypasses `BenzeneStartUp`/`IBenzeneApplicationBuilder` entirely — `C
 receives an `IBenzeneWorkerStartup` directly (the same builder `UseWorker(...)` hands you), so it's
 a lighter-weight way to register a worker without going through the generic host.
 
-## Part B: adding Kafka or a bare HTTP listener
+## Part B: built-in workers (Kafka, HTTP, Service Bus, Event Hub)
 
-`Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka)) and `Benzene.SelfHost.Http` ship
-built-in workers rather than asking you to write your own. Their `UseKafka`/`UseHttp` extensions
+`Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka)), `Benzene.SelfHost.Http`,
+`Benzene.Azure.ServiceBus`, and `Benzene.Azure.EventHub` ship built-in workers rather than asking
+you to write your own. Their `UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub` extensions
 target `IBenzeneWorkerStartup` — the worker-specific builder that `UseWorker(...)` hands you — so you
 wire them up from the same `BenzeneStartUp` shape as Part A, just calling the built-in extensions
 inside `UseWorker(...)` instead of `worker.Add(...)`:
@@ -328,6 +329,101 @@ see [Kafka Setup](getting-started-kafka#1-self-hosted-kafka-worker-benzenekafkac
 walkthrough; `examples/Kafka/Benzene.Examples.Kakfa` combines exactly this Kafka-plus-HTTP shape in
 one worker.
 
+### Azure Service Bus (`Benzene.Azure.ServiceBus`)
+
+Consume a Service Bus queue or topic/subscription in-process — the self-hosted counterpart of the
+[Service Bus *trigger*](cookbooks/service-bus-handling) in Azure Functions. The worker runs the
+SDK's `ServiceBusProcessor`, so receiving, message-lock renewal, and bounded concurrency
+(`MaxConcurrentCalls`) are the processor's job; you just supply the client and the pipeline. The
+caller builds the `ServiceBusClient` (connection string, managed identity, or emulator), so
+Benzene never prescribes how you authenticate.
+
+```bash
+dotnet add package Benzene.HostedService --prerelease
+dotnet add package Benzene.Azure.ServiceBus --prerelease
+```
+
+```csharp
+using Azure.Messaging.ServiceBus;
+using Benzene.Azure.ServiceBus;
+using Benzene.Core.MessageHandlers;
+
+public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
+{
+    var client = new ServiceBusClient(configuration["ServiceBus:ConnectionString"]);
+
+    app.UseWorker(worker => worker.UseServiceBus(
+        new BenzeneServiceBusConfig
+        {
+            QueueName = "orders",              // or TopicName + SubscriptionName
+            MaxConcurrentCalls = 5,
+            AckMode = ServiceBusConsumerAckMode.AutoComplete,
+        },
+        new ServiceBusClientFactory(client),
+        serviceBus => serviceBus.UseMessageHandlers()));
+}
+```
+
+The topic used for handler routing comes from the message's `"topic"` application property, exactly
+as in the Functions trigger — see the cookbook's [Where the topic comes from](cookbooks/service-bus-handling#2-where-the-topic-comes-from).
+`AckMode` controls settlement: `AutoComplete` (default) lets the processor complete on success and
+abandon when the handler throws; `Explicit` makes Benzene complete/abandon each message itself from
+the handler's outcome, including a non-exception failure result.
+
+### Azure Event Hubs (`Benzene.Azure.EventHub`)
+
+Consume an event hub in-process — the self-hosted counterpart of the
+[Event Hub *trigger*](cookbooks/event-hub-processing) in Azure Functions. The worker runs the SDK's
+`EventProcessorClient`, so consumer groups, partition load balancing across worker instances, and
+blob-checkpointed offsets are the processor's job. Unlike the Functions trigger — where batching and
+checkpointing are entirely the runtime's — here **Benzene owns checkpointing** (per partition, every
+`CheckpointInterval` successfully handled events) and the starting position for a fresh consumer
+group.
+
+```bash
+dotnet add package Benzene.HostedService --prerelease
+dotnet add package Benzene.Azure.EventHub --prerelease
+```
+
+```csharp
+using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Consumer;
+using Azure.Storage.Blobs;
+using Benzene.Azure.EventHub;
+using Benzene.Core.MessageHandlers;
+
+public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
+{
+    // The processor client decides the hub, consumer group, checkpoint container, and auth.
+    // The blob container must already exist — EventProcessorClient does not create it.
+    var checkpointStore = new BlobContainerClient(
+        configuration["Storage:ConnectionString"], "eventhub-checkpoints");
+    var processorClient = new EventProcessorClient(
+        checkpointStore,
+        EventHubConsumerClient.DefaultConsumerGroupName,
+        configuration["EventHub:ConnectionString"],
+        "telemetry");
+
+    app.UseWorker(worker => worker.UseEventHub(
+        new BenzeneEventHubConfig
+        {
+            CheckpointInterval = 100,
+            // Fresh consumer group with no checkpoint: process the retained backlog rather than
+            // only new events (the EventProcessorClient default). Kafka analog: AutoOffsetReset.
+            DefaultStartingPosition = EventPosition.Earliest,
+        },
+        new EventProcessorClientFactory(processorClient),
+        eventHub => eventHub.UseMessageHandlers()));
+}
+```
+
+The topic comes from each event's `"topic"` property. Event Hubs has no per-event dead-letter, so
+`CatchHandlerExceptions` (default `true`) decides what happens to a failing event: logged and the
+partition keeps going (the failed event is effectively skipped once a later one checkpoints past
+it), or set `false` to stop the worker without checkpointing the failure so a restart redelivers it
+(at-least-once). See the cookbook's [checkpointing on failure](cookbooks/event-hub-processing#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events)
+for the trade-off.
+
 ### Testing
 
 A worker built this way isn't request/response-shaped, so there's no `BenzeneTestHost` shortcut —
@@ -374,12 +470,13 @@ public static IBenzeneApplicationBuilder UseWorker(this IBenzeneApplicationBuild
 }
 ```
 
-`Benzene.Kafka.Core.Extensions.UseKafka` and `Benzene.SelfHost.Http.Extensions.UseHttp` are written
-directly against `IBenzeneWorkerStartup` (calling `.Add(...)` to register the built-in
-`BenzeneKafkaWorker`/`BenzeneHttpWorker`), so you call them on the `worker` builder that
-`UseWorker(...)` hands you — not on `IBenzeneApplicationBuilder` directly. If you write your own
-`IBenzeneWorker` from scratch (Part A), you don't need either package; you register it with the same
-`worker.Add(...)` those extensions call under the hood.
+`Benzene.Kafka.Core.Extensions.UseKafka`, `Benzene.SelfHost.Http.Extensions.UseHttp`,
+`Benzene.Azure.ServiceBus.Extensions.UseServiceBus`, and `Benzene.Azure.EventHub.Extensions.UseEventHub`
+are all written directly against `IBenzeneWorkerStartup` (calling `.Add(...)` to register the built-in
+`BenzeneKafkaWorker`/`BenzeneHttpWorker`/`BenzeneServiceBusWorker`/`BenzeneEventHubWorker`), so you
+call them on the `worker` builder that `UseWorker(...)` hands you — not on `IBenzeneApplicationBuilder`
+directly. If you write your own `IBenzeneWorker` from scratch (Part A), you don't need any of those
+packages; you register it with the same `worker.Add(...)` those extensions call under the hood.
 
 ## Troubleshooting
 
@@ -393,9 +490,15 @@ directly against `IBenzeneWorkerStartup` (calling `.Add(...)` to register the bu
 - **Wrong `UseBenzene<TStartUp>()` resolves** — if a project references both `Benzene.HostedService`
   and `Benzene.Azure.Function.Core`, make sure the `using` in scope is the one you intend; both
   declare an identically-shaped extension method on `IHostBuilder`.
-- **Can't call `.UseKafka(...)`/`.UseHttp(...)` directly on `IBenzeneApplicationBuilder`** —
-  these extend `IBenzeneWorkerStartup`, not `IBenzeneApplicationBuilder`; call them on the `worker`
-  builder inside `app.UseWorker(worker => worker.UseKafka(...))` (Part B).
+- **Can't call `.UseKafka(...)`/`.UseHttp(...)`/`.UseServiceBus(...)`/`.UseEventHub(...)` directly on
+  `IBenzeneApplicationBuilder`** — these extend `IBenzeneWorkerStartup`, not `IBenzeneApplicationBuilder`;
+  call them on the `worker` builder inside `app.UseWorker(worker => worker.UseKafka(...))` (Part B).
+- **Azure worker consumes nothing, no error** — the message-handler router needs a full set of
+  per-context services; `UseServiceBus`/`UseEventHub` register them for you, but if you hand-roll
+  the registration make sure `AddServiceBusConsumer()`/`AddEventHubConsumer()` ran (they add the
+  version getter, media-format negotiation, and request mapper alongside the topic/body/headers
+  getters). A missing one makes the router throw at resolve time, which the worker logs and
+  swallows — so it surfaces only as messages never being handled.
 - **Host exits immediately** — make sure `Program.cs` calls `await host.RunAsync()` (or `host.Run()`),
   not just `host.Build()`; the generic host only starts registered `IHostedService`s once run.
 

@@ -103,6 +103,19 @@ See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 
 See [Azure Functions Setup](../azure-functions).
 
+### Azure (self-hosted / worker)
+
+Consume Azure messaging in a long-running process you own (console app, container, AKS, App
+Service WebJob) via `Benzene.HostedService`/`Benzene.SelfHost` — no Azure Functions trigger. These
+are the Azure counterparts of `Benzene.Kafka.Core`'s and `Benzene.Aws.Sqs`'s standalone consumers.
+
+| Package | What it gives you |
+|---|---|
+| `Benzene.Azure.ServiceBus` | A self-hosted Service Bus consumer (`BenzeneServiceBusWorker`, `worker.UseServiceBus(...)`) that runs a `ServiceBusProcessor` over a queue or topic/subscription and dispatches each message through the middleware pipeline — distinct from `Benzene.Azure.Function.ServiceBus`, which handles Service Bus *as a Functions trigger*. |
+| `Benzene.Azure.EventHub` | A self-hosted Event Hubs consumer (`BenzeneEventHubWorker`, `worker.UseEventHub(...)`) that runs an `EventProcessorClient` (consumer groups, partition load balancing, blob checkpointing) and dispatches each event through the middleware pipeline — distinct from `Benzene.Azure.Function.EventHub`, which handles Event Hubs *as a Functions trigger*. |
+
+See [Worker Service Setup](../getting-started-worker#part-b-built-in-workers-kafka-http-service-bus-event-hub).
+
 ### Other hosts
 
 | Package | What it gives you |
