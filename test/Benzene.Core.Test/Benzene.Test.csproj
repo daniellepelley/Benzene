@@ -119,6 +119,7 @@
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Http\Benzene.HealthChecks.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Idempotency\Benzene.Idempotency.csproj" />
     <ProjectReference Include="..\..\src\Benzene.JsonSchema\Benzene.JsonSchema.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.MessagePack\Benzene.MessagePack.csproj" />

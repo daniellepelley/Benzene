@@ -121,12 +121,23 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
 
 - **Requirement.** A redelivered message (the norm on SQS/Service Bus/Event Hubs/Kafka) must not
   apply its effect twice.
-- **Current state.** None. Ack modes added this cycle control *redelivery*, not *dedup*.
-- **Proposed work.** Idempotency-key middleware (key from a header/property or a deterministic
+- **Current state.** **Shipped** (`Benzene.Idempotency`). `IdempotencyMiddleware<TContext>` derives a
+  key (default: `idempotency-key` header, else a deterministic SHA-256 of topic+body — swap via
+  `IIdempotencyKeyStrategy<TContext>`), atomically claims it in a pluggable `IIdempotencyStore`, and
+  invokes the handler only on the first sighting. Duplicates of a completed key short-circuit and
+  replay a successful result so the transport acks them. A handler that throws or reports failure
+  releases the claim so the redelivery reprocesses — a transient failure is never permanently
+  swallowed. `InMemoryIdempotencyStore` ships as the single-instance/test default; a shared store
+  (worked Redis `SET NX` example in the cookbook) is a three-method implementation. 20 unit tests.
+- **Original proposal.** Idempotency-key middleware (key from a header/property or a deterministic
   topic+body hash) + a **pluggable** store contract; ship a Redis adapter over the existing
   `Benzene.Cache.Redis`, leave DynamoDb/SQL to the user. Duplicate keys short-circuit and replay the
   recorded outcome. **No bespoke DB layer** — Benzene owns the middleware + contract, not storage.
+  (Delivered as designed; the Redis adapter is documented as a copy-paste `IIdempotencyStore` rather
+  than a separate package, since the cache abstraction doesn't expose the atomic `SET NX` the claim
+  needs and there is no Redis in CI to integration-test a shipped adapter.)
 - **Vision fit.** Cross-cutting → shared pipeline; transport-agnostic reliability primitive.
+- **Docs.** `src/Benzene.Idempotency/CLAUDE.md`; cookbook `docs/cookbooks/idempotency.md`.
 
 ### A.4 — Authorization depth (extend `Benzene.Auth`)
 
@@ -231,7 +242,7 @@ decision, and revisiting after A.1.
 |----|------|----------|---------|--------|
 | A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | **Shipped** — engine + tests + example (v1: in-process, engine-only; see `saga-design.md` §7 fast-follows) |
 | A.2 | Contract testing / CI gate | Build | `Benzene.HealthChecks.Schema` + `Clients.HealthChecks` + `Schema.OpenApi.Compatibility` | **Shipped** — A.2a runtime drift check (provider `SchemaHealthCheck` + hardened consumer processor) and A.2b CI gate (`SchemaCompatibility.EnsureBackwardCompatible`); cookbook `docs/cookbooks/contract-testing.md` |
-| A.3 | Idempotency | Build | `Benzene.Idempotency` (+ Redis adapter) | Not started |
+| A.3 | Idempotency | Build | `Benzene.Idempotency` | **Shipped** — `IdempotencyMiddleware<TContext>` + pluggable `IIdempotencyStore` + in-memory store + header/body-hash key strategy; 20 tests; cookbook `docs/cookbooks/idempotency.md` (Redis store as copy-paste `SET NX`) |
 | A.4 | Authorization depth | Build | extend `Benzene.Auth` | Not started |
 | A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.*` | Not started |
 | A.6 | Schema registry | Build | `Benzene.SchemaRegistry.*` | Not started |
