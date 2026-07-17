@@ -77,6 +77,7 @@
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.AspNet.TestHelpers\Benzene.Azure.Function.AspNet.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.EventHub\Benzene.Azure.EventHub.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Function.CosmosDb\Benzene.Azure.Function.CosmosDb.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Core.TestHelpers\Benzene.Azure.Function.Core.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub\Benzene.Azure.Function.EventHub.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub.TestHelpers\Benzene.Azure.Function.EventHub.TestHelpers.csproj" />

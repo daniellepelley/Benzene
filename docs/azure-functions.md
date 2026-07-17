@@ -3,7 +3,7 @@
 Benzene runs on the Azure Functions **isolated worker** model, using the same platform-neutral
 `BenzeneStartUp` base class as every other Benzene host (AWS Lambda, ASP.NET Core). This guide
 starts from an empty folder and ends with a deployed Function App handling HTTP requests, plus
-optional Event Hub, Kafka, and Service Bus triggers.
+optional Event Hub, Kafka, Service Bus, and Cosmos DB Change Feed triggers.
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ dotnet add package Benzene.Azure.Function.AspNet --prerelease
 transitively. `Benzene.Azure.Function.AspNet` adds the `UseHttp` middleware for handling HTTP
 requests as ASP.NET Core `HttpRequest`/`IActionResult`. Add `Benzene.Azure.Function.EventHub` or
 `Benzene.Azure.Function.Kafka` the same way if your function also needs to handle those event
-sources (see [Event Hub and Kafka triggers](#event-hub-and-kafka-triggers) below) — each has a
+sources (see [Event Hub, Kafka, Service Bus, and Cosmos DB triggers](#event-hub-kafka-service-bus-and-cosmos-db-triggers) below) — each has a
 corresponding direct Microsoft package too (`Microsoft.Azure.Functions.Worker.Extensions.EventHubs`
 version `6.5.0`, or `Microsoft.Azure.Functions.Worker.Extensions.Kafka` version `4.3.0`).
 
@@ -279,7 +279,7 @@ az deployment group create --resource-group my-function-rg \
 The template only covers the HTTP trigger path - add your own resources for Event Hub, Kafka, or
 Service Bus namespaces if you wire up those triggers too (see the next section).
 
-## Event Hub, Kafka, and Service Bus triggers
+## Event Hub, Kafka, Service Bus, and Cosmos DB triggers
 
 Benzene provides specialized middleware for other Azure Functions trigger types, each
 configured inside the same `Configure` method, on the same platform-neutral `app` shown in step 4
@@ -290,6 +290,7 @@ sub-pipeline, exactly as with any other Benzene host:
 - **Event Hubs**: `app.UseEventHub(...)`, in `Benzene.Azure.Function.EventHub`
 - **Kafka** (Event Hubs' Kafka-compatible endpoint): `app.UseKafka(...)`, in `Benzene.Azure.Function.Kafka`
 - **Service Bus**: `app.UseServiceBus(...)`, in `Benzene.Azure.Function.ServiceBus`
+- **Cosmos DB Change Feed**: `app.UseCosmosDbChangeFeed<TDocument>(...)`, in `Benzene.Azure.Function.CosmosDb`
 
 ### Event Hubs
 
@@ -428,6 +429,72 @@ trigger is configured with `IsBatched = true`; `HandleServiceBusMessages` accept
 `params` array. Note that message completion is a no-op in this package today — the trigger
 completes the message per its own default settings regardless of the handler's outcome; explicit
 complete/abandon/dead-letter control isn't implemented yet.)
+
+### Cosmos DB Change Feed
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.CosmosDb --prerelease
+```
+
+```csharp
+app.UseCosmosDbChangeFeed<OrderDocument>(feed => feed
+    .UseStream<OrderDocument>(async (documents, cancellationToken) =>
+    {
+        await foreach (var document in documents)
+        {
+            // documents arrive in change feed order for their partition key range
+        }
+    }));
+```
+
+Cosmos DB is different from the other triggers in two ways. First, the trigger delivers
+**already-deserialized documents** of a concrete type you choose, not opaque payloads — so the
+pipeline is generic over your document type, and there is no topic-based `UseMessageHandlers()`
+dispatch (a changed document has no message envelope to route on). Second, changes arrive as an
+**ordered batch per partition key range**, so Benzene presents the whole batch to one pipeline run
+as a single `StreamContext<TDocument>` (fan-in) — the same streaming shape as `UseEventHubStream`
+— rather than fanning it out into isolated per-document contexts. See
+[Cosmos DB Change Feed Processing](cookbooks/cosmos-change-feed-processing) for the full
+walkthrough.
+
+`Benzene.Azure.Function.CosmosDb` deliberately has no Azure SDK dependency; your function app
+project supplies the trigger binding by referencing
+`Microsoft.Azure.Functions.Worker.Extensions.CosmosDB` directly. Add a trigger function that
+injects `IAzureFunctionApp` and calls `HandleCosmosDbChanges(...)`:
+
+```csharp
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.CosmosDb;
+using Microsoft.Azure.Functions.Worker;
+
+public class CosmosDbFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public CosmosDbFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("orders-change-feed")]
+    public Task Run([CosmosDBTrigger(
+        databaseName: "my-database",
+        containerName: "orders",
+        Connection = "CosmosDbConnection",
+        LeaseContainerName = "leases",
+        CreateLeaseContainerIfNotExists = true)] IReadOnlyList<OrderDocument> documents)
+    {
+        return _app.HandleCosmosDbChanges(documents);
+    }
+}
+```
+
+(The trigger checkpoints its lease automatically when the invocation returns successfully. If the
+pipeline throws, the exception propagates, the lease is not advanced, and the runtime redelivers
+the whole batch — there is no per-document resume point in the change feed, so design handlers to
+be idempotent across batch redelivery.)
 
 ## Correlation and tracing
 

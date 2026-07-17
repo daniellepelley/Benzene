@@ -2458,3 +2458,43 @@ that entry and this one.
 - **No code changes made this pass.** Prioritized worklist (Cosmos DB Change Feed items called out
   explicitly, in priority order) was handed off directly as the deliverable rather than duplicated
   here — see the task/PR this addendum was written for.
+
+## Document History Addendum — 2026-07-17 (later same day): Cosmos DB Change Feed Functions Trigger Shipped
+
+First half of the two-phase sequencing recommended by the evaluation above: the **Azure Functions
+`CosmosDBTrigger` adapter** is built; the self-hosted `BenzeneCosmosChangeFeedWorker`
+(`Benzene.Azure.CosmosDb`, on `Microsoft.Azure.Cosmos`'s Change Feed Processor) remains the
+planned fast-follow — deliberately not attempted this pass because it requires the
+`Microsoft.Azure.Cosmos` NuGet package, which needs explicit approval per the repo's dependency
+policy.
+
+- **New production package `Benzene.Azure.Function.CosmosDb`** (in `Benzene.sln`): fan-in
+  `StreamContext<TDocument>` shape exactly as evaluated — `UseCosmosDbChangeFeed<TDocument>(...)`
+  (on both `IAzureFunctionAppBuilder` and the platform-neutral `IBenzeneApplicationBuilder`,
+  no-op off-Azure, mirroring `UseEventHubStream`) plus a `HandleCosmosDbChanges<TDocument>(...)`
+  dispatch helper matching on `IReadOnlyList<TDocument>`. Both design deviations flagged by the
+  evaluation were implemented as flagged: generic over `TDocument` (first Azure package to be),
+  and fan-in streaming (no `UseMessageHandlers()` — changed documents carry no routable
+  envelope). Checkpointing is the trigger's own auto-advance-on-success; the default
+  `NullStreamCheckpointer` is used, and pipeline exceptions propagate so the lease stays put.
+- **Zero new dependencies:** the package references only `Benzene.Azure.Function.Core` +
+  `Benzene.Core.Middleware` — no Cosmos SDK, no Functions extension package (the trigger
+  delivers plain POCOs; consumers reference
+  `Microsoft.Azure.Functions.Worker.Extensions.CosmosDB` themselves for the attribute). Same
+  dependency-free approach as `Benzene.Aws.Lambda.Kinesis`, and it keeps this pass inside the
+  no-new-NuGet policy without needing approval.
+- **Tests:** `test/Benzene.Core.Test/Azure/CosmosDbChangeFeedPipelineTest.cs` — 7 tests
+  (fan-in ordering/single-run, empty and null batches, two document types routing independently,
+  exception propagation, platform-neutral no-op, unregistered-type dispatch failure). Full
+  `Benzene.sln` build 0 errors; `Benzene.Core.Test` 1397/1397 passing (3 pre-existing skips).
+  No live/emulator integration test: the Cosmos DB Linux emulator is heavyweight and this
+  sandbox's Docker daemon is unreachable anyway; the unit seam (documents in, pipeline behavior
+  out) covers everything the adapter itself owns, since it deliberately contains no Cosmos SDK
+  code to exercise.
+- **Docs:** new `docs/cookbooks/cosmos-change-feed-processing.md` (fan-in rationale,
+  generic-`TDocument` rationale, responsibility split table, no-DLQ/poison-batch honesty,
+  idempotency-under-redelivery guidance), a "Cosmos DB Change Feed" subsection + trigger example
+  in `docs/azure-functions.md` (section retitled to include Cosmos DB; the pre-existing broken
+  `#event-hub-and-kafka-triggers` anchor link fixed as part of the retitle), rows in
+  `docs/reference/packages.md` and `docs/cookbooks/README.md`, and a type-specific `CLAUDE.md`
+  in the new package. Package count: **9 production, 5 TestHelpers**.
