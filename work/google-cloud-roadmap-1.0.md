@@ -1,9 +1,44 @@
 # Benzene Google Cloud Packages — Roadmap to a Real Integration
 
-**Document Version:** 1.0
-**Last Updated:** 2026-07-15
+**Document Version:** 1.1
+**Last Updated:** 2026-07-17
 **Owner:** unassigned
-**Status:** Phase 0 done
+**Status:** Phase 1 done
+
+> **2026-07-17 implementation update:** Phase 1 (the Pub/Sub push adapter) is done, per §5's
+> phasing table and the priority recommendation in §7. What was built, vs. §4's proposed layout:
+> - **`Benzene.GoogleCloud.Functions.PubSub`** - `GooglePubSubFunctionHost<TStartUp> :
+>   ICloudEventFunction<MessagePublishedData>` (mirrors `GoogleCloudFunctionHost<TStartUp>`'s exact
+>   bootstrap shape for the CloudEvent trigger type instead of HTTP), `PubSubContext`/getters/setter
+>   wired through `UseMessageHandlers()`, and `PubSubOptions` (`CatchExceptions`/
+>   `RaiseOnFailureStatus`) reusing the same containment/escalation vocabulary
+>   `work/batch-failure-handling.md` established for Kafka/ServiceBus. Cloud Functions delivers
+>   exactly one Pub/Sub message per invocation (not a batch), so there's no fan-out loop here at
+>   all - structurally closer to a single HTTP request than to the batch-oriented AWS/Azure
+>   triggers.
+> - **`Benzene.GoogleCloud.Functions.PubSub.TestHelpers`** - `BuildGooglePubSubFunctionHost<TStartUp>()` +
+>   `SendPubSubAsync(...)`, mirroring the HTTP package's TestHelpers shape, plus
+>   `MessageBuilderExtensions.AsPubSubEvent<T>()` bridging the same shared `IMessageBuilder<T>` test
+>   abstraction every other transport's test helpers already extend.
+> - **Topic convention decided**: the `"topic"` message attribute, matching
+>   `Benzene.Aws.Sqs`/`Benzene.Aws.Lambda.Sqs`/`Benzene.Aws.Lambda.Sns`/
+>   `Benzene.Azure.Function.ServiceBus`'s existing "topic in a custom attribute/property"
+>   convention exactly - no new convention invented.
+> - **Not built in this phase** (unchanged from §5's phasing): preset-topic override
+>   (`UsePresetTopic`-equivalent wiring - a small, additive follow-up, not done here to keep scope
+>   tight), and everything in Phases 2-5 (pull-subscription worker + outbound publish client,
+>   `IBenzeneInvocation`/W3C trace-context wiring, Cloud Tasks/Firestore/GCS secondary adapters,
+>   `examples/Google` Pub/Sub wiring + `docs/getting-started-google-cloud.md`).
+> - **Not verified**: an actual live Pub/Sub subscription delivering a real CloudEvent to a deployed
+>   function - this sandbox has no live GCP project or credentials, same caveat as Phase 0. What
+>   *is* verified: the full test suite dispatching a real `MessagePublishedData` through
+>   `GooglePubSubFunctionApplicationBuilder`'s built pipeline via `Benzene.Testing`'s in-memory test
+>   host, plus direct unit coverage of the getters and `PubSubOptions`' failure-handling
+>   combinations. The exact shape of `Google.Events.Protobuf.Cloud.PubSub.V1.PubsubMessage`/
+>   `MessagePublishedData` (property names, settability) was reconstructed from this repo's own git
+>   history (the Phase-0-era `PubSubFunction.cs` stub, since deleted) rather than verified against a
+>   live-restored NuGet package, since this sandbox has no network access to nuget.org - flagged as
+>   the one thing most worth double-checking against a real `dotnet build` before deploying.
 
 > **2026-07-15 implementation update:** Phase 0 is done. Three of §6's open questions were decided
 > and implemented, not left open:

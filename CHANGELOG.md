@@ -265,6 +265,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transport-agnostic `WithApplication()` in `Benzene.Core.MessageHandlers` is unaffected.)
 
 ### Added
+- `Benzene.GoogleCloud.Functions.PubSub` (+ `.TestHelpers`) — real Pub/Sub push adapter for Google
+  Cloud Functions Gen2, Phase 1 of `work/google-cloud-roadmap-1.0.md`. Replaces the old,
+  non-functional `examples/Google` Pub/Sub stub with `GooglePubSubFunctionHost<TStartUp>` wired
+  through `UseMessageHandlers()`, using the same `"topic"` message-attribute convention already
+  established by `Benzene.Aws.Sqs`/`Benzene.Aws.Lambda.Sqs`/`Benzene.Aws.Lambda.Sns`/
+  `Benzene.Azure.Function.ServiceBus`. `PubSubOptions.CatchExceptions`/`RaiseOnFailureStatus`
+  (both default `false`) reuse the same containment/escalation shape as
+  `Benzene.Azure.Function.Kafka`/`Benzene.Azure.Function.ServiceBus`'s options. Cloud Functions
+  delivers exactly one Pub/Sub message per invocation, so there's no batch/fan-out loop involved.
+  Preset-topic override and `examples/Google` wiring are deliberately not part of this pass — see
+  the package's own `CLAUDE.md` and the roadmap doc's Phase 1 update note.
 - `CONTRIBUTING.md` — dev setup, a pointer to `AGENTS.md`/package `CLAUDE.md` files, and PR
   expectations for external contributors. `README.md`'s inline "Contributing" section now points
   to it instead of duplicating a shorter version of the same content.
