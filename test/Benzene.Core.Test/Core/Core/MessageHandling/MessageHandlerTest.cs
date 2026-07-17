@@ -93,7 +93,37 @@ public class MessageHandlerTest
         var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
-                
+
+    private class CustomDefaultStatuses : IDefaultStatuses
+    {
+        public string ValidationError => BenzeneResultStatus.ValidationError;
+        public string NotFound => BenzeneResultStatus.NotFound;
+        public string BadRequest => BenzeneResultStatus.BadRequest;
+        public string UnhandledException => "CustomUnhandledException";
+    }
+
+    [Fact]
+    public async Task HandlersMessage_HandlerError_UsesOverriddenIDefaultStatuses()
+    {
+        // The top-level override point for uncaught exceptions - not a per-handler status.
+        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
+            .Returns(new ExampleRequestPayload
+            {
+                Name = Defaults.Name
+            });
+
+        var mockMessageHandler = new Mock<IMessageHandler<ExampleRequestPayload, ExampleResponsePayload>>();
+        mockMessageHandler.Setup(x => x.HandleAsync(It.IsAny<ExampleRequestPayload>()))
+            .Throws(new Exception("some-error"));
+
+        var messageHandler =
+            new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, NullLogger.Instance, new CustomDefaultStatuses());
+
+        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        Assert.Equal("CustomUnhandledException", result.Status);
+    }
+
     [Fact]
     public async Task HandlersMessage_SerializationError()
     {

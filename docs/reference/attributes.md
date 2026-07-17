@@ -79,29 +79,6 @@ public GrpcMethodAttribute(string method)
 public class SayHelloHandler : IMessageHandler<HelloRequest, HelloResponse> { /* … */ }
 ```
 
-## `[ValidationStatus]`
-
-**Package:** `Benzene.Abstractions.Validation` · **Namespace:** `Benzene.Abstractions.Validation` ·
-**Target:** class or method
-
-Overrides the result status returned when validation fails for the annotated request type or
-handler — use it to control how a validation failure is surfaced (e.g. a specific status code).
-
-```csharp
-public ValidationStatusAttribute(string status)
-```
-
-| Property | Purpose |
-|---|---|
-| `Status` | The result status to return on validation failure. |
-
-```csharp
-[ValidationStatus("BadRequest")]
-public class CreateOrderRequest { /* … */ }
-```
-
-See [Fluent Validation](../fluent-validation) and [Data Annotations](../data-annotations).
-
 ---
 
 > **Tooling note:** `[Arg]` (`Benzene.CodeGen.Cli.Core`) configures arguments for the

@@ -20,6 +20,7 @@
 		<ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
 		<ProjectReference Include="..\Benzene.Abstractions.Validation\Benzene.Abstractions.Validation.csproj" />
 		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
 		<ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
 	</ItemGroup>
 

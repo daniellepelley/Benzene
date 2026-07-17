@@ -28,6 +28,12 @@ public interface IDefaultStatuses
     /// handler's request type.
     /// </summary>
     public string BadRequest { get; }
+
+    /// <summary>
+    /// Gets the status used when a message handler throws an exception other than
+    /// <see cref="ArgumentException"/>.
+    /// </summary>
+    public string UnhandledException { get; }
 }
 
 /// <summary>

@@ -19,8 +19,8 @@ namespace Benzene.Core.MessageHandlers;
 /// This is the last piece of adaptation before a handler is invoked by <see cref="MessageRouter{TContext}"/>:
 /// deserialization failures become a <see cref="IDefaultStatuses.BadRequest"/> result,
 /// <see cref="ArgumentException"/>s thrown by the handler become a <see cref="IDefaultStatuses.ValidationError"/>
-/// result, and any other exception becomes a service-unavailable result. A <c>null</c> result from the
-/// inner handler is treated as an accepted no-content response.
+/// result, and any other exception becomes a <see cref="IDefaultStatuses.UnhandledException"/> result.
+/// A <c>null</c> result from the inner handler is treated as an accepted no-content response.
 /// </remarks>
 public class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequest : class
 {
@@ -49,8 +49,8 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
     /// <param name="requestMapperThunk">Supplies the deserialized <typeparamref name="TRequest"/> for the current message.</param>
     /// <returns>
     /// The handler's result; a bad-request result if the message could not be deserialized; a
-    /// validation-error result if the handler threw an <see cref="ArgumentException"/>; or a
-    /// service-unavailable result for any other unhandled exception.
+    /// validation-error result if the handler threw an <see cref="ArgumentException"/>; or an
+    /// <see cref="IDefaultStatuses.UnhandledException"/> result for any other unhandled exception.
     /// </returns>
     public async Task<IBenzeneResult> HandlerAsync(IRequestMapperThunk requestMapperThunk)
     {
@@ -86,7 +86,7 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
         {
             Debug.WriteLine($"Message handler threw an exception: {ex}");
             _logger.LogError(ex, "Message handler threw an exception");
-            return BenzeneResult.ServiceUnavailable("Message handler threw an exception", ex.Message);
+            return BenzeneResult.Set(_defaultStatuses.UnhandledException, "Message handler threw an exception", ex.Message);
         }
     }
 }

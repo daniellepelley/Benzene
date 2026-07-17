@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Results;
-using Benzene.Abstractions.Validation;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.DI;
@@ -32,7 +31,6 @@ public class EnhancedFluentValidationTest
         }
     }
 
-    [ValidationStatus(BenzeneResultStatus.Forbidden)]
     public class SampleHandler : IMessageHandler<SampleRequest, string>
     {
         public Task<IBenzeneResult<string>> HandleAsync(SampleRequest request)
@@ -79,8 +77,10 @@ public class EnhancedFluentValidationTest
     }
 
     [Fact]
-    public async Task ValidationWithStatusFromHandlerAttribute()
+    public async Task ValidationWithNoExplicitStatus_UsesIDefaultStatusesValidationError()
     {
+        // No per-rule WithStatus and no per-handler override: the framework-wide default from
+        // IDefaultStatuses governs, not a handler-specific value.
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();
         serviceCollection.UsingBenzene(x => x.AddBenzeneMessage());
         serviceCollection.AddTransient<SampleHandler>();
@@ -104,6 +104,48 @@ public class EnhancedFluentValidationTest
 
         var response = await app.HandleAsync(request, new MicrosoftServiceResolverFactory(serviceCollection.BuildServiceProvider()));
 
-        Assert.Equal(BenzeneResultStatus.Forbidden, response.StatusCode);
+        Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
+    }
+
+    private class CustomDefaultStatuses : IDefaultStatuses
+    {
+        public string ValidationError => "CustomValidationError";
+        public string NotFound => BenzeneResultStatus.NotFound;
+        public string BadRequest => BenzeneResultStatus.BadRequest;
+        public string UnhandledException => BenzeneResultStatus.ServiceUnavailable;
+    }
+
+    [Fact]
+    public async Task ValidationWithNoExplicitStatus_OverriddenIDefaultStatuses_AppliesAcrossThePipeline()
+    {
+        // ServiceResolverMother.CreateServiceCollection() already ran AddBenzene()'s
+        // TryAddSingleton<IDefaultStatuses, DefaultStatuses>(); registering a second IDefaultStatuses
+        // on top of it (the last registration wins) is exactly the top-level override the framework
+        // supports - not a per-handler attribute.
+        var serviceCollection = ServiceResolverMother.CreateServiceCollection();
+        serviceCollection.AddSingleton<IDefaultStatuses>(new CustomDefaultStatuses());
+        serviceCollection.UsingBenzene(x => x.AddBenzeneMessage());
+        serviceCollection.AddTransient<SampleHandler>();
+        serviceCollection.AddTransient<IValidator<SampleRequest>, HandlerLevelValidator>();
+
+        var container = new MicrosoftBenzeneServiceContainer(serviceCollection);
+        container.AddFluentValidation(new[] { typeof(HandlerLevelValidator) });
+
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
+        pipeline.UseMessageHandlers(x => x
+            .UseFluentValidation()
+            .AddMessageHandler<SampleHandler, SampleRequest, string>("test")
+        );
+
+        var app = new BenzeneMessageApplication(pipeline.Build());
+        var request = new BenzeneMessageRequest
+        {
+            Topic = "test",
+            Body = "{\"Name\":\"\"}"
+        };
+
+        var response = await app.HandleAsync(request, new MicrosoftServiceResolverFactory(serviceCollection.BuildServiceProvider()));
+
+        Assert.Equal("CustomValidationError", response.StatusCode);
     }
 }

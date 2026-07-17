@@ -1,4 +1,4 @@
-using Benzene.Abstractions.Validation;
+using Benzene.Core.MessageHandlers;
 using Benzene.FluentValidation;
 using Benzene.Results;
 using FluentValidation.Results;
@@ -8,55 +8,32 @@ namespace Benzene.Test.Plugins.FluentValidation;
 
 public class DefaultValidationStatusMapperTest
 {
-    [ValidationStatus(BenzeneResultStatus.Forbidden)]
-    private class HandlerWithStatusAttribute
+    private class CustomDefaultStatuses : IDefaultStatuses
     {
-    }
-
-    private class HandlerWithoutStatusAttribute
-    {
+        public string ValidationError => "CustomValidationError";
+        public string NotFound => BenzeneResultStatus.NotFound;
+        public string BadRequest => BenzeneResultStatus.BadRequest;
+        public string UnhandledException => BenzeneResultStatus.ServiceUnavailable;
     }
 
     [Fact]
     public void GetStatus_ValidationResultHasACustomStateFailure_ReturnsItsStatus()
     {
-        var mapper = new DefaultValidationStatusMapper();
+        var mapper = new DefaultValidationStatusMapper(new DefaultStatuses());
         var result = new ValidationResult(new[]
         {
             new ValidationFailure("Name", "is required") { CustomState = new BenzeneValidationState { Status = BenzeneResultStatus.BadRequest } }
         });
 
-        var status = mapper.GetStatus(typeof(HandlerWithStatusAttribute), typeof(object), result);
+        var status = mapper.GetStatus(null, typeof(object), result);
 
         Assert.Equal(BenzeneResultStatus.BadRequest, status);
     }
 
     [Fact]
-    public void GetStatus_NoCustomStateFailure_HandlerHasValidationStatusAttribute_ReturnsAttributeStatus()
+    public void GetStatus_NoCustomStateFailure_ReturnsDefaultStatusesValidationError()
     {
-        var mapper = new DefaultValidationStatusMapper();
-        var result = new ValidationResult(new[] { new ValidationFailure("Name", "is required") });
-
-        var status = mapper.GetStatus(typeof(HandlerWithStatusAttribute), typeof(object), result);
-
-        Assert.Equal(BenzeneResultStatus.Forbidden, status);
-    }
-
-    [Fact]
-    public void GetStatus_NoCustomStateFailure_HandlerHasNoAttribute_ReturnsDefaultValidationError()
-    {
-        var mapper = new DefaultValidationStatusMapper();
-        var result = new ValidationResult(new[] { new ValidationFailure("Name", "is required") });
-
-        var status = mapper.GetStatus(typeof(HandlerWithoutStatusAttribute), typeof(object), result);
-
-        Assert.Equal(BenzeneResultStatus.ValidationError, status);
-    }
-
-    [Fact]
-    public void GetStatus_HandlerTypeIsNull_ReturnsDefaultValidationError()
-    {
-        var mapper = new DefaultValidationStatusMapper();
+        var mapper = new DefaultValidationStatusMapper(new DefaultStatuses());
         var result = new ValidationResult(new[] { new ValidationFailure("Name", "is required") });
 
         var status = mapper.GetStatus(null, typeof(object), result);
@@ -65,12 +42,25 @@ public class DefaultValidationStatusMapperTest
     }
 
     [Fact]
-    public void GetStatus_ResultIsNotAValidationResult_FallsThroughToHandlerAttributeOrDefault()
+    public void GetStatus_ResultIsNotAValidationResult_ReturnsDefaultStatusesValidationError()
     {
-        var mapper = new DefaultValidationStatusMapper();
+        var mapper = new DefaultValidationStatusMapper(new DefaultStatuses());
 
-        var status = mapper.GetStatus(typeof(HandlerWithStatusAttribute), typeof(object), "not a validation result");
+        var status = mapper.GetStatus(null, typeof(object), "not a validation result");
 
-        Assert.Equal(BenzeneResultStatus.Forbidden, status);
+        Assert.Equal(BenzeneResultStatus.ValidationError, status);
+    }
+
+    [Fact]
+    public void GetStatus_NoCustomStateFailure_UsesOverriddenIDefaultStatuses()
+    {
+        // The top-level override point: registering a different IDefaultStatuses changes what every
+        // FluentValidation failure returns, with no per-handler variation possible.
+        var mapper = new DefaultValidationStatusMapper(new CustomDefaultStatuses());
+        var result = new ValidationResult(new[] { new ValidationFailure("Name", "is required") });
+
+        var status = mapper.GetStatus(null, typeof(object), result);
+
+        Assert.Equal("CustomValidationError", status);
     }
 }

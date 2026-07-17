@@ -30,6 +30,15 @@ FluentValidation integration for Benzene. Provides middleware and adapters for v
 - Validation errors mapped to response
 - Validators discovered by type convention
 - Async validation supported
+- Failure status resolution (`DefaultValidationStatusMapper`) has exactly two branches: a per-rule
+  `BenzeneValidationState.Status` (set via `.WithStatus(...)`, an explicit, deliberate override in
+  application validator code), then `IDefaultStatuses.ValidationError` (`Benzene.Core.MessageHandlers`)
+  as the default. There is deliberately **no per-handler or attribute-based override** — a
+  framework-provided way for one handler to return a different status than another for the same
+  kind of failure would make validation failures inconsistent across the platform. This package
+  therefore takes a `ProjectReference` on `Benzene.Core.MessageHandlers` (mirroring
+  `Benzene.JsonSchema`'s existing dependency on it for the same interface) purely to consume
+  `IDefaultStatuses` in `DefaultValidationStatusMapper`'s constructor.
 
 ## Tests
 - `Common/*Validator` (`IsGuid`, `IsBoolean`, `IsDoubleGuid`, `IsJson`, `IsNumeric`, `IsOneOf`,
@@ -40,10 +49,10 @@ FluentValidation integration for Benzene. Provides middleware and adapters for v
   validator's null/empty-bypasses-the-format-check contract (format validators only apply once
   there's a value; `.NotEmpty()`/`.NotNull()` must be chained explicitly, as `TestValidator` does
   for `IsAlphaNumericAndSymbols`).
-- `DefaultValidationStatusMapper` - all three status-resolution branches (per-failure
-  `BenzeneValidationState.Status`, then handler-level `[ValidationStatus]`, then the
-  `BenzeneResultStatus.ValidationError` default) are unit-tested directly in
-  `DefaultValidationStatusMapperTest.cs`, in addition to the two branches already covered
-  end-to-end via a real pipeline in `EnhancedFluentValidationTest.cs`.
+- `DefaultValidationStatusMapper` - both status-resolution branches (per-failure
+  `BenzeneValidationState.Status`, then the injected `IDefaultStatuses.ValidationError` default,
+  including with an overridden `IDefaultStatuses`) are unit-tested directly in
+  `DefaultValidationStatusMapperTest.cs`, in addition to end-to-end coverage via a real pipeline
+  in `EnhancedFluentValidationTest.cs`.
 - `Utils.GetAllTypes`/`GetAssemblies` (assembly/type discovery for auto-registering validators) -
   `UtilsTest.cs`.

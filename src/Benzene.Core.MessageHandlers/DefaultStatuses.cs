@@ -16,4 +16,7 @@ public class DefaultStatuses : IDefaultStatuses
 
     /// <inheritdoc />
     public string BadRequest => BenzeneResultStatus.BadRequest;
+
+    /// <inheritdoc />
+    public string UnhandledException => BenzeneResultStatus.ServiceUnavailable;
 }

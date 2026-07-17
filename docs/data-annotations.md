@@ -86,11 +86,11 @@ Because it runs for every request that reaches a handler, adding it once here va
 | Opt-in per request type | Yes — only runs if an `IValidator<TRequest>` is registered/discovered for that type | No — always runs `Validator.TryValidateObject` on every request that reaches the middleware |
 | DI / registration required | Yes — validators discovered from assemblies/types and registered via `TryAddSingleton` | No — no services are registered |
 | Null request | `ValidationError`, message `"Request is null"` | `ValidationError`, message `"Request is null"` |
-| Failure status | Configurable — defaults to `ValidationError`, but can be overridden per-rule (`.WithStatus(...)`) or per-handler (`[ValidationStatus(...)]`) via `IValidationStatusMapper` | Always `BenzeneResultStatus.ValidationError` — no override mechanism |
+| Failure status | Configurable — defaults to `IDefaultStatuses.ValidationError`, and can be overridden per-rule (`.WithStatus(...)`) via `IValidationStatusMapper` | Always `BenzeneResultStatus.ValidationError` — no override mechanism |
 | Schema/OpenAPI generation | Yes — `IValidationSchemaBuilder` (`FluentValidationSchemaBuilder`) reflects over rules | Not provided by this package |
 | Complex/cross-property rules | Yes — full fluent rule composition | Limited to what a single `ValidationAttribute` can express (or a custom attribute / `IValidatableObject`) |
 
-If you need to vary the returned status per rule or per handler, or need schema generation for documentation, use `Benzene.FluentValidation` instead. If your request types are simple and already carry (or can easily carry) standard attributes, `Benzene.DataAnnotations` avoids the extra validator classes and registration.
+If you need to vary the returned status per rule, or need schema generation for documentation, use `Benzene.FluentValidation` instead. If your request types are simple and already carry (or can easily carry) standard attributes, `Benzene.DataAnnotations` avoids the extra validator classes and registration.
 
 ## Custom validation attributes
 

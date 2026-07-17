@@ -401,8 +401,8 @@ between them.
 ### Client-side validation always returns `ValidationError`, ignoring `.WithStatus(...)`
 
 This is expected, not a bug: `ValidationClientMiddleware` (used for outgoing Benzene client calls)
-always maps failures to `BenzeneResultStatus.ValidationError`. The per-rule/per-handler status
-mapping described here only applies to `ValidationMiddleware` on the incoming handler side — see
+always maps failures to `BenzeneResultStatus.ValidationError`. The per-rule status mapping
+described here only applies to `ValidationMiddleware` on the incoming handler side — see
 [Client-side validation](../fluent-validation.md#client-side-validation).
 
 ## Variations

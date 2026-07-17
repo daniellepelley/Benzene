@@ -61,6 +61,13 @@ hatch, `BenzeneResult.Set(status, ...)`, for a custom status string that isn't o
 — used internally (e.g. `MessageRouter<TContext>` sets `ValidationError`/`NotFound` results this way
 when a topic is missing or unmatched).
 
+The statuses the message-handler pipeline itself picks for validation failures, not-found routes,
+malformed requests, and unhandled exceptions all come from one place — `IDefaultStatuses`
+(`Benzene.Core.MessageHandlers`), registered via `AddBenzene()`'s `TryAddSingleton<IDefaultStatuses, DefaultStatuses>()`.
+Register your own implementation to change what status any of these map to platform-wide, without
+touching individual handlers — see [Fluent Validation § Overriding the default status
+platform-wide](fluent-validation#overriding-the-default-status-platform-wide) for a worked example.
+
 ### `BenzeneResultExtensions`
 
 `Benzene.Results.BenzeneResultExtensions` adds `Is*()` checks (`IsOk`, `IsCreated`, `IsNotFound`,

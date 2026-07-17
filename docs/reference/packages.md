@@ -42,7 +42,7 @@ depend on the abstractions without pulling in an implementation.
 | `Benzene.Abstractions.Messages` | Client/message-sending contracts (`IBenzeneClientContext`, `IBenzeneClientRequest`, `IMessageSenderBuilder`) for outbound messaging. |
 | `Benzene.Abstractions.Middleware` | The middleware pipeline contracts — `IMiddleware`, `IMiddlewarePipeline`, `IMiddlewarePipelineBuilder`, `IMiddlewareApplication`. |
 | `Benzene.Abstractions.Pipelines` | Application/host contracts — `IBenzeneApplicationBuilder`, `IStartUp`, `IClientHeaders`. |
-| `Benzene.Abstractions.Validation` | Validation contracts — `IValidationSchemaBuilder`, `ValidationStatusAttribute`. |
+| `Benzene.Abstractions.Validation` | Validation contracts — `IValidationSchemaBuilder`, `IValidationStatusMapper`. |
 
 ## Foundation — Core
 

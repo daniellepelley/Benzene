@@ -91,11 +91,21 @@ services.UsingBenzene(x => x
 
 ## Failure status mapping
 
-By default, a failed validation maps to `BenzeneResultStatus.ValidationError`. This is resolved by `IValidationStatusMapper.GetStatus(handlerType, requestType, validationResult)`, implemented by `DefaultValidationStatusMapper`, which checks — in order:
+By default, a failed validation maps to `IDefaultStatuses.ValidationError` — the same top-level
+status every other validation failure in the pipeline uses (see [Handler Result](message-result)).
+This is resolved by `IValidationStatusMapper.GetStatus(handlerType, requestType, validationResult)`,
+implemented by `DefaultValidationStatusMapper`, which checks — in order:
 
 1. **Per-rule status** — if any `ValidationFailure.CustomState` is a `BenzeneValidationState` (set via `.WithStatus(...)` on a rule), that status is used.
-2. **Per-handler status** — if the handler class (or method) carries a `[ValidationStatus("...")]` attribute, that status is used.
-3. **Default** — falls back to `BenzeneResultStatus.ValidationError`.
+2. **Default** — falls back to `IDefaultStatuses.ValidationError`.
+
+Deliberately, there is no per-handler or attribute-based override: a blanket, framework-provided
+way for one handler to return a different status than another for the same kind of failure would
+mean validation failures are inconsistent across the platform depending on which handler happened
+to be hit. If you genuinely need one handler to behave differently, do it explicitly in that
+handler's own code (return the status yourself, or add bespoke middleware) — see
+[Overriding the default status platform-wide](#overriding-the-default-status-platform-wide) for the
+sanctioned way to change what "the default" means everywhere at once.
 
 ### Overriding the status from a rule
 
@@ -115,25 +125,33 @@ public class SampleValidator : AbstractValidator<SampleRequest>
 
 A failure on this rule returns `BenzeneResultStatus.BadRequest` instead of `ValidationError`.
 
-### Overriding the status from the handler
+### Overriding the default status platform-wide
+
+`IDefaultStatuses` is the single, top-level place to change what status a validation failure (or a
+not-found, bad-request, or unhandled-exception result) maps to across every handler and every
+pipeline — register your own implementation before `AddBenzene()`'s `TryAddSingleton` runs
+(or via `services.AddSingleton<IDefaultStatuses>(...)`, since the last registration wins) and every
+handler that doesn't set a per-rule `.WithStatus(...)` picks it up:
 
 ```csharp
-using Benzene.Abstractions.Validation;
+using Benzene.Core.MessageHandlers;
 using Benzene.Results;
 
-[ValidationStatus(BenzeneResultStatus.Forbidden)]
-public class SampleHandler : IMessageHandler<SampleRequest, string>
+public class CustomDefaultStatuses : IDefaultStatuses
 {
-    public Task<IBenzeneResult<string>> HandleAsync(SampleRequest request)
-    {
-        return Task.FromResult(BenzeneResult.Ok("Success"));
-    }
+    public string ValidationError => BenzeneResultStatus.Forbidden;
+    public string NotFound => BenzeneResultStatus.NotFound;
+    public string BadRequest => BenzeneResultStatus.BadRequest;
+    public string UnhandledException => BenzeneResultStatus.ServiceUnavailable;
 }
+
+services.AddSingleton<IDefaultStatuses, CustomDefaultStatuses>();
+services.UsingBenzene(x => x.AddBenzene() /* ... */);
 ```
 
-Any failing rule on `SampleRequest` (that doesn't itself specify `.WithStatus(...)`) returns `BenzeneResultStatus.Forbidden` for this handler.
-
-You can supply a custom `IValidationStatusMapper` implementation instead of the default by registering it before calling `.UseFluentValidation()` (registration uses `TryAddSingleton`, so the first one registered wins).
+You can also supply a custom `IValidationStatusMapper` implementation entirely, instead of
+`DefaultValidationStatusMapper`, by registering it before calling `.UseFluentValidation()`
+(registration uses `TryAddSingleton`, so the first one registered wins).
 
 ## Composing inside `.UseMessageHandlers()`
 
