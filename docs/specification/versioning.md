@@ -168,8 +168,8 @@ a cookbook (`docs/cookbooks/`) rather than framework code once implemented.
 
 ## 4. Mechanism B — transparent payload casting (single handler)
 
-**Status: §4.4's redesign is done; the request/response casting decorators (§4.1/§4.2) are design
-only.** One handler serves a topic, written
+**Status: implemented** (`Benzene.Core.Versioning`, opt-in per transport via
+`UsePayloadVersionCasting<TContext>()`). One handler serves a topic, written
 against the **latest** schema version. Producers on older (or newer) versions are transparently
 upcast (or downcast) at the edges of the pipeline; the handler never sees any version but its own.
 
@@ -244,9 +244,35 @@ Symmetric, and hooks into `IResponsePayloadMapper<TContext>`
    producer always gets a V1 response back without needing a separate "Accept-Version" negotiation.
    This default MUST be overridable (design-principles.md §4's rule) for services that want
    asymmetric negotiation; the override point is replacing this decorator's registration.
-4. Downcast the canonical payload via `ISchemaCasters.GetSchemaCaster(canonicalVersion,
-   requestedVersion, topic)` (reverse direction from §4.1) and serialize the result as
+4. Downcast the canonical payload via `ISchemaCasters.TryGetSchemaCaster(topic, canonicalType,
+   requestedVersion, out caster)` (reverse direction from §4.1) and serialize the result as
    `caster.ToType` with the negotiated `ISerializer` — again format-agnostic.
+
+#### 4.2.1 As implemented *(informative, .NET)*
+
+- **Opt-in per transport**: `services.UsePayloadVersionCasting<TContext>()` wraps that context's
+  `IRequestMapper<TContext>`/`IResponsePayloadMapper<TContext>` with `CastingRequestMapper<TContext>`
+  / `CastingResponsePayloadMapper<TContext>`. Call it **after** the transport's own registration
+  (`UseHttp`/`AddSqs`/… + `AddMessageHandlers`), so the closed decorator registrations win, and pair
+  it with `RegisterSchemaCastDefinitions` + `RegisterPayloadSchemaVersions`.
+- **Type-keyed lookup, not a version-string pair**: neither decorator ever knows both version
+  strings — the request side has `(topic, incomingVersion, TRequest)`, the response side
+  `(topic, ResponseType, requestedVersion)`. Two `TryGetSchemaCaster` overloads on `ISchemaCasters`
+  match on one version string + one CLR `Type`, backed by O(1) indexes built once on the singleton.
+  This is also what resolves the "multiple canonical versions per topic" open question below:
+  matching by the handler's actual request/response `Type` sidesteps ever needing a canonical
+  version string.
+- **Register both directions.** The upcast (request) and downcast (response) are *different* casters:
+  V1→V2 does not give you V2→V1. `RegisterPayloadSchemaVersions`'s expander only generates the
+  `FromSchemas → ToSchemas` direction, so **symmetric response casting requires the reverse pairs to
+  exist too** — the simplest way is to list every live version in *both* `FromSchemas` and
+  `ToSchemas` (the expander then composes every needed pair, up and down, reusing direct casters and
+  chaining where none exists). A topic that only ever upcasts requests and doesn't downcast responses
+  needs only the forward direction.
+- **Known limitation**: the request decorator wraps the framework-default
+  `MultiSerializerOptionsRequestMapper<TContext>`; a transport that registers a bespoke request
+  mapper (e.g. gRPC's protobuf-JSON one) is not wrapped on the request side. The response side wraps
+  the universal `DefaultResponsePayloadMapper<TContext>` and is unaffected.
 
 ### 4.3 Degradation
 
@@ -285,7 +311,7 @@ before this mechanism can be wired up generally:
 
 | | §3 Handler-version dispatch | §3.1 Casting-handler sugar | §4 Transparent casting |
 |---|---|---|---|
-| New framework code required | None (already shipped) | None (application-level) | Request/response mapper decorators + §4.4 redesign |
+| New framework code required | None (already shipped) | None (application-level) | Request/response mapper decorators + §4.4 redesign (both shipped) |
 | Handler code duplication | Real, per version | One thin forwarding handler per retired version | None — one handler, always the latest |
 | Where casting logic lives | N/A (no casting) | Explicit, in the forwarding handler | Implicit, in registered `ISchemaCaster`s |
 | Good fit when | Versions genuinely behave differently, not just shaped differently | A quick bridge for one or two retired versions | Many long-lived producer versions, pure data-shape drift, want zero per-version handler code |
