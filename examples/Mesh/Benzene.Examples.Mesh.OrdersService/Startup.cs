@@ -1,13 +1,7 @@
-using Benzene.Abstractions.MessageHandlers;
 using Benzene.AspNet.Core;
-using Benzene.Core.Messages;
-using Benzene.Core.MessageHandlers;
+using Benzene.CloudService;
 using Benzene.Examples.Mesh.OrdersService.HealthChecks;
-using Benzene.HealthChecks;
-using Benzene.HealthChecks.Core;
-using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Schema.OpenApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,33 +11,34 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-
-        services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage),
-                typeof(SpecMessageHandler)));
-        services.AddScoped<SpecMessageHandler>();
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/healthcheck", "healthcheck"));
-
         services.UsingBenzene();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // The meshed wire-envelope endpoint (docs/specification/mesh.md): serves this service's
-        // topics service-to-service, with the reserved mesh descriptor topic and the trace feed.
-        // Branched before UseBenzene so the HTTP pipeline never sees it; StartAnnouncing
-        // registers + heartbeats with the collector, log-and-continue.
-        app.Map("/benzene/invoke", branch => branch.Run(Benzene.Examples.Mesh.OrdersService.MeshHost.Instance.HandleAsync));
-        Benzene.Examples.Mesh.OrdersService.MeshHost.Instance.StartAnnouncing();
-
         app.UseRouting();
 
+        // Benzene Cloud Service setup (docs/specification/cloud-service-profile.md): this one call
+        // replaces the old hand-wired /benzene/invoke branch + StartAnnouncing() (MeshHost.cs,
+        // deleted) with the wire-envelope endpoint, health checks (reserved topic + HTTP), the
+        // derived spec, message handlers via the registry, and the mesh service-side feeds
+        // (descriptor, registration, heartbeats, trace) - all pre-wired in the right order. Handler
+        // discovery stays attribute-based ([Message]/[HttpEndpoint] on GetOrdersMessageHandler /
+        // CheckoutOrderMessageHandler), same idiom as before. Spec/health stay at this demo's
+        // pre-existing /spec and /healthcheck paths (relocated from the /benzene/ defaults) so the
+        // aggregator's polling and run.sh keep working unchanged - the profile report honestly
+        // flags R7 for that deliberate relocation.
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
-                .UseSpec()
-                .UseHealthCheck("healthcheck", new OrdersDatabaseHealthCheck(), new OrdersCacheHealthCheck(), new OrdersQueueHealthCheck())
-                .UseMessageHandlers()
+                .UseBenzeneCloudService("orders-api", cloud => cloud
+                    .WithServiceVersion("1.0.0")
+                    .WithInstanceId("orders-api-1")
+                    .WithHealthChecks(new OrdersDatabaseHealthCheck(), new OrdersCacheHealthCheck(), new OrdersQueueHealthCheck())
+                    .WithCollector(Environment.GetEnvironmentVariable("MESH_COLLECTOR_ENVELOPE_URL")
+                        ?? "http://localhost:5300/benzene/invoke")
+                    .WithSpecPath("/spec")
+                    .WithHealthPath("/healthcheck")
+                )
             )
         );
 

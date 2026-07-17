@@ -173,10 +173,20 @@ questions, and both stay in force:
 - **Benzene Cloud Service** (profile support): additionally pass `mesh-descriptor-cases.json`
   and `mesh-trace-cases.json`. (`mesh-collector-cases.json` remains collector-only and is not
   part of the profile.)
-- A per-requirement (R1–R8) machine-checkable profile checklist — assertable against a running
-  service rather than a runner — is planned; until it exists, R3–R7's observable surfaces
-  (health response shape, envelope round-trip, spec and descriptor presence, default paths) are
-  verified in the live-interop form described in
+- A per-requirement (R1–R8) machine-checkable **self-check** exists for the .NET port: wiring a
+  service with `UseBenzeneCloudService` (`Benzene.CloudService`) produces a
+  `CloudServiceProfileReport` that evaluates the wiring against R1–R8 and is carried on the
+  descriptor's `profile` field ([mesh.md §2](mesh.md#2-servicedescriptor)), so any tool that can
+  reach the reserved `mesh` topic can ask a running service whether it claims the profile and, if
+  not, exactly which requirements it's missing. This is a build-time/wiring-time self-assessment
+  of what the service's setup call actually provisioned — not a runtime probe — so it never
+  changes in response to runtime degradation (§4): an unreachable collector doesn't make a
+  conformant service stop claiming the profile. Other ports MAY offer the same shape; nothing in
+  the wire contract requires it (the `profile` field is optional, per mesh.md §2).
+- An *external* live-probe checker — asserting R1–R8's observable surfaces from outside a running
+  service (health response shape, envelope round-trip, spec and descriptor presence, default
+  paths) without relying on that service's own self-check — remains future work; until it exists,
+  use the live-interop form described in
   [porting-guide.md §3](porting-guide.md#3-conformance-testing).
 
 ## 6. Relationship to the adoption ladder *(informative)*

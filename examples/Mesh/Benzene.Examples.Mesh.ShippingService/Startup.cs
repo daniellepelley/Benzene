@@ -1,13 +1,7 @@
-using Benzene.Abstractions.MessageHandlers;
 using Benzene.AspNet.Core;
-using Benzene.Core.Messages;
-using Benzene.Core.MessageHandlers;
+using Benzene.CloudService;
 using Benzene.Examples.Mesh.ShippingService.HealthChecks;
-using Benzene.HealthChecks;
-using Benzene.HealthChecks.Core;
-using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Schema.OpenApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,33 +11,30 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-
-        services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage),
-                typeof(SpecMessageHandler)));
-        services.AddScoped<SpecMessageHandler>();
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/healthcheck", "healthcheck"));
-
         services.UsingBenzene();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // The meshed wire-envelope endpoint (docs/specification/mesh.md): serves this service's
-        // topics service-to-service, with the reserved mesh descriptor topic and the trace feed.
-        // Branched before UseBenzene so the HTTP pipeline never sees it; StartAnnouncing
-        // registers + heartbeats with the collector, log-and-continue.
-        app.Map("/benzene/invoke", branch => branch.Run(Benzene.Examples.Mesh.ShippingService.MeshHost.Instance.HandleAsync));
-        Benzene.Examples.Mesh.ShippingService.MeshHost.Instance.StartAnnouncing();
-
         app.UseRouting();
 
+        // Benzene Cloud Service setup (docs/specification/cloud-service-profile.md) - see
+        // OrdersService/Startup.cs for the full before/after story this replaces (MeshHost.cs,
+        // deleted). Not started by default (run.sh leaves shipping-api down), so the Fleet view
+        // demonstrates its absence honestly: no row until it starts and registers. Spec/health
+        // stay at the demo's pre-existing /spec and /healthcheck paths (relocated from the
+        // /benzene/ defaults), flagged as R7 in the report.
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
-                .UseSpec()
-                .UseHealthCheck("healthcheck", new ShippingCarrierApiHealthCheck(), new ShippingQueueHealthCheck())
-                .UseMessageHandlers()
+                .UseBenzeneCloudService("shipping-api", cloud => cloud
+                    .WithServiceVersion("1.0.0")
+                    .WithInstanceId("shipping-api-1")
+                    .WithHealthChecks(new ShippingCarrierApiHealthCheck(), new ShippingQueueHealthCheck())
+                    .WithCollector(Environment.GetEnvironmentVariable("MESH_COLLECTOR_ENVELOPE_URL")
+                        ?? "http://localhost:5300/benzene/invoke")
+                    .WithSpecPath("/spec")
+                    .WithHealthPath("/healthcheck")
+                )
             )
         );
 

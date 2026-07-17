@@ -1,14 +1,12 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.AspNet.Core;
-using Benzene.Core.Messages;
+using Benzene.CloudService;
 using Benzene.Core.MessageHandlers;
 using Benzene.Examples.Mesh.PaymentsService.HealthChecks;
 using Benzene.Examples.Mesh.PaymentsService.Handlers;
 using Benzene.Examples.Mesh.PaymentsService.Model;
-using Benzene.HealthChecks;
 using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Schema.OpenApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,15 +17,12 @@ public class Startup
     {
         services.AddControllers();
 
-        services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage),
-                typeof(SpecMessageHandler)));
-        services.AddScoped<SpecMessageHandler>();
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/healthcheck", "healthcheck"));
-
         if (Environment.GetEnvironmentVariable("DEMO_ADD_ENDPOINT") == "true")
         {
+            // Not attribute-discoverable by design (see GetPaymentRefundsMessageHandler's own
+            // doc comment) - manually registered here so it can be toggled at runtime to drive
+            // the contract-drift demo. UseBenzeneCloudService's handler registry (below) picks
+            // this DI registration up the same way it picks up attribute-discovered handlers.
             services.AddSingleton<IMessageHandlerDefinition>(_ =>
                 MessageHandlerDefinition.CreateInstance("payments:get-refunds", "", typeof(GetPaymentMessage),
                     typeof(RefundDto[]), typeof(GetPaymentRefundsMessageHandler)));
@@ -41,20 +36,28 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // The meshed wire-envelope endpoint (docs/specification/mesh.md): serves this service's
-        // topics service-to-service, with the reserved mesh descriptor topic and the trace feed.
-        // Branched before UseBenzene so the HTTP pipeline never sees it; StartAnnouncing
-        // registers + heartbeats with the collector, log-and-continue.
-        app.Map("/benzene/invoke", branch => branch.Run(Benzene.Examples.Mesh.PaymentsService.MeshHost.Instance.HandleAsync));
-        Benzene.Examples.Mesh.PaymentsService.MeshHost.Instance.StartAnnouncing();
-
         app.UseRouting();
 
+        // Benzene Cloud Service setup (docs/specification/cloud-service-profile.md) - see
+        // OrdersService/Startup.cs for the full before/after story this replaces (MeshHost.cs,
+        // deleted). DEMO_ADD_ENDPOINT changes the derived descriptor (and so its hash) exactly as
+        // it changes the OpenAPI spec - the same contract-drift story the aggregator demo tells,
+        // visible on the Fleet view as a hash mismatch until the restarted instance re-registers.
+        // DEMO_PAYMENTS_HEALTHY drives the health check below, so the Fleet view mirrors the
+        // dashboard's unhealthy badge. Spec/health stay at the demo's pre-existing /spec and
+        // /healthcheck paths (relocated from the /benzene/ defaults), flagged as R7 in the report.
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
-                .UseSpec()
-                .UseHealthCheck("healthcheck", new PaymentsGatewayHealthCheck(), new PaymentsDatabaseHealthCheck(), new FraudEngineHealthCheck())
-                .UseMessageHandlers()
+                .UseBenzeneCloudService("payments-api", cloud => cloud
+                    .WithServiceVersion("1.0.0")
+                    .WithInstanceId("payments-api-1")
+                    .WithHealthChecks(
+                        new PaymentsGatewayHealthCheck(), new PaymentsDatabaseHealthCheck(), new FraudEngineHealthCheck())
+                    .WithCollector(Environment.GetEnvironmentVariable("MESH_COLLECTOR_ENVELOPE_URL")
+                        ?? "http://localhost:5300/benzene/invoke")
+                    .WithSpecPath("/spec")
+                    .WithHealthPath("/healthcheck")
+                )
             )
         );
 

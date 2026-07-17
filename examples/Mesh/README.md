@@ -174,15 +174,41 @@ restarting Payments (spec unchanged since the last run) clears the badge.
   lines (`AddMeshAggregator`, a static-file mount at `/artifacts`, and
   `UseMeshUi`) turn a plain ASP.NET Core app into a self-serving mesh
   dashboard.
+- `Benzene.Examples.Mesh.OrdersService/Startup.cs` (and Payments/Shipping's,
+  identically shaped) for the **Benzene Cloud Service** setup
+  (`docs/specification/cloud-service-profile.md`): one
+  `UseBenzeneCloudService("orders-api", cloud => ...)` call replaces the old
+  hand-rolled `/benzene/invoke` branch + `StartAnnouncing()` pair
+  (`MeshHost.cs`, now deleted - `Benzene.CloudService` generalizes what it
+  used to do) with the wire-envelope endpoint, health checks, the derived
+  spec, message handlers via the registry, and all four mesh service-side
+  feeds, pre-wired in the right order and fully overridable.
 
 ## Notes
 
-- Every demo service's `/spec` and `/healthcheck` are registered manually via
-  `IHttpEndpointDefinition`/`IMessageHandlerDefinition` (the same pattern
-  `examples/Asp/Benzene.Example.Asp/Startup.cs` uses for `/spec`) - neither
-  `SpecMessageHandler` nor the health-check middleware carry `[HttpEndpoint]`
-  attributes, so they aren't picked up by reflection-based discovery on their
-  own.
+- Each demo service's `/spec` and `/healthcheck` are relocated from
+  `UseBenzeneCloudService`'s `/benzene/spec`/`/benzene/health` defaults back
+  to this demo's original `/spec`/`/healthcheck` paths (`WithSpecPath`/
+  `WithHealthPath`), purely so the aggregator's hardcoded polling URLs above
+  and `run.sh` keep working unchanged - a real deployment would just keep the
+  defaults. The service's `CloudServiceProfileReport` (carried on its
+  descriptor's `profile` field, visible via the Fleet view) honestly flags
+  requirement R7 for that deliberate relocation.
+- `SpecMessageHandler` and the health-check middleware don't carry
+  `[HttpEndpoint]` attributes, so reflection-based discovery never picks them
+  up on its own; `UseBenzeneCloudService` (like the old manual
+  `IHttpEndpointDefinition` registration it replaces) wires them explicitly.
+- `Benzene.Examples.Mesh.PaymentsService/Startup.cs` still registers
+  `GetPaymentRefundsMessageHandler` manually, gated on `DEMO_ADD_ENDPOINT`
+  (mirroring how `SpecMessageHandler` itself is registered) - reflection-based
+  discovery can't be toggled off at runtime, and `UseBenzeneCloudService`'s
+  handler registry picks up that DI registration the same way it picks up
+  attribute-discovered handlers.
+- `Benzene.Examples.Mesh.Shared/EnvelopeHost.cs`'s `EnvelopeHost` class is
+  still used directly by the aggregator (as the collector's own envelope
+  host) and its `EnvelopeClient` by `CheckoutOrderMessageHandler` for the
+  orders→payments cross-service call; only each demo service's own
+  now-superseded `MeshHost.cs` was removed.
 - The aggregator's artifact directory (`mesh-artifacts/`, next to its build
   output) is created on first run and persists between runs, which is what
   makes contract-drift detection meaningful - it's always comparing against

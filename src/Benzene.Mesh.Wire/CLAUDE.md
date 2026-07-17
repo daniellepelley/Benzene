@@ -23,8 +23,13 @@ pull-based collector idiom and can adopt these shapes as ingest sources (roadmap
   reflection). "required" = properties the marshaler always emits: nullable-annotated (NRT or
   `Nullable<T>`) and ignore-when-null properties are optional. Recursion cut with `{}`.
 - `MeshDescriptorHashing` - §2.2: SHA-256 over canonical camelCase JSON with `instanceId`/
-  `degraded`/`descriptorHash` blanked. NOT the same thing as `Benzene.Mesh.Contracts.MeshHashing`
-  (HMAC over raw OpenAPI text for the aggregator's artifact drift) - do not merge them.
+  `degraded`/`profile`/`descriptorHash` blanked. NOT the same thing as
+  `Benzene.Mesh.Contracts.MeshHashing` (HMAC over raw OpenAPI text for the aggregator's artifact
+  drift) - do not merge them.
+- `MeshServiceDescriptor.Profile` (`MeshProfile`: `Name` + `Missing`) - the optional §2 `profile`
+  field, a named conformance-profile self-assessment (e.g. `Benzene.CloudService`'s Cloud Service
+  Profile report). Self-description like `Degraded`, so excluded from the hash above; this
+  package only carries the shape; `Benzene.CloudService` is what stamps it.
 - `Extensions.UseMeshDescriptor(descriptor, aliases...)` - reserved-topic interception, same
   pattern as `UseHealthCheck`. `Extensions.UseMeshTrace(info, exporter, statusReader)` - wire it
   **outermost**; per-invocation TraceEvent with traceparent join, `MeshSpan.Current` set across

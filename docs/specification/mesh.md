@@ -58,7 +58,8 @@ hand-maintained. Also the body of a `mesh:register` message (§4).
     }
   ],
   "descriptorHash": "sha256:…",
-  "degraded": ["registry"]
+  "degraded": ["registry"],
+  "profile": { "name": "cloud-service", "missing": ["R6"] }
 }
 ```
 
@@ -75,6 +76,13 @@ hand-maintained. Also the body of a `mesh:register` message (§4).
   this field is its projection.
 - `degraded` — names the feeds that were unavailable when the descriptor was built (currently
   only `"registry"`), so a reduced descriptor is distinguishable from a service with no topics.
+- `profile` — OPTIONAL: a named conformance-profile self-assessment, when the service claims one
+  (e.g. the [Cloud Service Profile](cloud-service-profile.md)'s `"cloud-service"`).
+  `profile.name` identifies the profile; `profile.missing` lists the requirement ids the service's
+  own wiring knows it does not satisfy, omitted (not empty) when fully conformant. Like
+  `degraded`, this is self-description rather than contract — it MUST NOT participate in the
+  `descriptorHash` (§2.2) — and it reflects provisioning at wire-up, not runtime health: a
+  service's `profile` claim does not change because of runtime degradation (§6).
 
 ### 2.1 Schema derivation
 
@@ -116,7 +124,7 @@ is pinned by `conformance/mesh-descriptor-cases.json`.
 ### 2.2 descriptorHash
 
 `"sha256:" + lowercase-hex(sha256(canonicalJSON(descriptor)))`, where the hashed descriptor has
-`instanceId`, `degraded`, and `descriptorHash` itself blanked. The hash covers the *contract*
+`instanceId`, `degraded`, `profile`, and `descriptorHash` itself blanked. The hash covers the *contract*
 (identity, placement, topics, schemas):
 
 - Two instances of the same build MUST hash identically (`instanceId` excluded).

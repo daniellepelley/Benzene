@@ -74,7 +74,8 @@ public static class MeshDescriptorHashing
             Placement = descriptor.Placement,
             Topics = descriptor.Topics,
             DescriptorHash = null,
-            Degraded = null
+            Degraded = null,
+            Profile = null
         };
         var json = MeshJson.Serialize(canonical);
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
