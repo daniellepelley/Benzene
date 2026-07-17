@@ -5,7 +5,8 @@
 `Benzene.Azure.Function.Kafka`, `Benzene.Azure.Function.ServiceBus` (the
 catch/escalate toggle only, not true per-message `ServiceBusMessageActions` partial-ack), and
 `Benzene.Aws.Sqs`'s polling `SqsConsumer`. `Benzene.Aws.Lambda.Kinesis` remains deliberately
-deferred - see its entry below for why.
+deferred - a concrete design now exists (`work/kinesis-batch-failure-handling-design.md`,
+2026-07-17) but is not yet implemented - see its entry below.
 
 ## Context
 
@@ -74,7 +75,7 @@ pipeline).
 
 | Transport | Why |
 |---|---|
-| `Aws.Lambda.Kinesis` (`KinesisStreamApplication`) | Confirmed **not** a small change on investigation: it fans the entire batch into one `StreamContext`/one pipeline run (fan-in, by design, for windowing/aggregation) - there is no per-record dispatch loop anywhere in Benzene's streaming code to hook a result into, and `StreamContext<TItem>` carries no result concept at all. AWS's Kinesis event source mapping does support `ReportBatchItemFailures`, but Benzene has zero scaffolding toward it (no `KinesisBatchResponse`, no `Amazon.Lambda.KinesisEvents` dependency - `KinesisEventRecord` is hand-rolled). Doing this properly means redesigning the streaming abstraction's per-item identity tracking first (`StreamContext`, `StreamOperators.Window`/`PartitionBy`, `KinesisStreamApplication`'s whole shape) - 5-7 files and a real design decision, not an add-on. |
+| `Aws.Lambda.Kinesis` (`KinesisStreamApplication`) | **2026-07-17 correction:** the original "5-7 files, needs redesigning the streaming abstraction" estimate below was made without accounting for `IStreamCheckpointer<TItem>` already existing in `Benzene.Core.Middleware.Streaming` - `Benzene.Aws.Lambda.Kinesis/CLAUDE.md` already flagged this as planned "streaming Phase 2" work. A concrete, much smaller design now exists at `work/kinesis-batch-failure-handling-design.md` (a `KinesisBatchResponse` type + a `KinesisStreamCheckpointer : IStreamCheckpointer<KinesisEventRecord>` + one new response-producing `StreamMiddlewareApplication<TEvent,TItem,TResult>` core sibling - 4 files, no redesign of `StreamContext`/the stream operators). Still deferred - this is a design proposal, not yet implemented - but the "not a small change" framing below is superseded. ~~Confirmed **not** a small change on investigation: it fans the entire batch into one `StreamContext`/one pipeline run (fan-in, by design, for windowing/aggregation) - there is no per-record dispatch loop anywhere in Benzene's streaming code to hook a result into, and `StreamContext<TItem>` carries no result concept at all. AWS's Kinesis event source mapping does support `ReportBatchItemFailures`, but Benzene has zero scaffolding toward it (no `KinesisBatchResponse`, no `Amazon.Lambda.KinesisEvents` dependency - `KinesisEventRecord` is hand-rolled). Doing this properly means redesigning the streaming abstraction's per-item identity tracking first (`StreamContext`, `StreamOperators.Window`/`PartitionBy`, `KinesisStreamApplication`'s whole shape) - 5-7 files and a real design decision, not an add-on.~~ |
 | `Azure.Function.ServiceBus` true `ServiceBusMessageActions` partial-ack | See the shipped-toggle row above - reachable (the SDK supports it), additive (existing trigger signatures keep working), but requires new `HandleServiceBusMessages` overloads and threading `ServiceBusMessageActions` into `ServiceBusContext`/the result setter - a distinct unit of work from the catch/escalate toggle that shipped. |
 
 `Aws.Lambda.DynamoDb`'s `DynamoDbApplication` (sequential, stop-at-first-failure,
