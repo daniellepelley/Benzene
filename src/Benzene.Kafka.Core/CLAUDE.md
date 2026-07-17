@@ -8,6 +8,19 @@ producer support. This is one of the "self-hosted worker" startup modes document
 (triggered by infrastructure) or ASP.NET Core (embedded in an existing listener).
 
 ## Key types/interfaces
+- `IKafkaConsumerFactory<TKey,TValue>` / `KafkaConsumerFactory<TKey,TValue>` (2026-07-17,
+  additive public API) - the seam through which the worker creates its `IConsumer`, mirroring the
+  Azure workers' client-factory seams (`IEventProcessorClientFactory` etc.). `Create(ConsumerConfig)`
+  receives the worker's own `ConsumerConfig` *after* worker adjustments (`CommitOnlyOnSuccess`'s
+  `EnableAutoOffsetStore = false`) - build from the passed config, not a captured copy. The
+  default factory takes an optional `Action<ConsumerBuilder<TKey,TValue>>` for builder
+  configuration plain `ConsumerConfig` can't express - deserializers, handlers, and notably
+  `SetOAuthBearerTokenRefreshHandler` for secretless Entra ID managed identity against Event Hubs'
+  Kafka endpoint (see `docs/cookbooks/managed-identity.md`'s Kafka section). Passed as an optional
+  last parameter on `UseKafka<TKey,TValue>(...)` and the worker ctor; omitted = the original
+  build-straight-from-config behavior, unchanged. Tests:
+  `test/Benzene.Core.Test/Kafka/KafkaConsumerFactoryTest.cs` (factory receives the adjusted
+  config instance; worker subscribes/closes/disposes the created consumer; configure action runs).
 - `BenzeneKafkaWorker<TKey,TValue> : IBenzeneWorker` - runs `IConsumer<TKey,TValue>.Consume(...)`
   in a loop on a background task and dispatches each `ConsumeResult` through
   `Benzene.SelfHost.BoundedConcurrentDispatcher<T>` (see that package's `CLAUDE.md`) instead of a
