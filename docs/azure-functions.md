@@ -325,10 +325,11 @@ dotnet add package Benzene.Azure.Function.EventHub --prerelease
 dotnet add package Microsoft.Azure.Functions.Worker.Extensions.EventHubs --version 6.5.0
 ```
 
-The Microsoft extension package must be referenced directly by your function app project — it
-supplies the `[EventHubTrigger]` attribute, and without it the Functions SDK's build step never
-registers the trigger (the project still compiles; the failure only shows up at `func start` as
-"No job functions found").
+The Microsoft extension package must be referenced **directly** by your function app project.
+`Benzene.Azure.Function.EventHub` already references it, so the `[EventHubTrigger]` attribute
+compiles either way — but the Functions SDK's build step only discovers extensions your project
+references directly, and without the direct reference the trigger is never registered (the
+failure shows up only at `func start` as "No job functions found").
 
 ```csharp
 app.UseEventHub(eventHub => eventHub
@@ -386,8 +387,9 @@ dotnet add package Benzene.Azure.Function.Kafka --prerelease
 dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Kafka --version 4.3.0
 ```
 
-(As with every trigger: the Microsoft extension package must be referenced directly — it
-supplies the `[KafkaTrigger]` attribute and the trigger registration.)
+(As with every trigger, reference the Microsoft extension package directly — the
+`[KafkaTrigger]` attribute compiles transitively via the Benzene package, but the Functions
+SDK's build step only registers extensions your project references directly.)
 
 ```csharp
 app.UseKafka(kafka => kafka.UseMessageHandlers());
@@ -434,8 +436,9 @@ dotnet add package Benzene.Azure.Function.ServiceBus --prerelease
 dotnet add package Microsoft.Azure.Functions.Worker.Extensions.ServiceBus --version 5.22.0
 ```
 
-(As with every trigger: the Microsoft extension package must be referenced directly — it
-supplies the `[ServiceBusTrigger]` attribute and the trigger registration.)
+(As with every trigger, reference the Microsoft extension package directly — the
+`[ServiceBusTrigger]` attribute compiles transitively via the Benzene package, but the Functions
+SDK's build step only registers extensions your project references directly.)
 
 ```csharp
 app.UseServiceBus(serviceBus => serviceBus.UseMessageHandlers());
@@ -934,7 +937,15 @@ These require a working Docker daemon and aren't run as part of the main `Benzen
 - **`func start` can't find the function app / "No job functions found"**: confirm `OutputType`
   is `Exe` in the `.csproj` and that `Microsoft.Azure.Functions.Worker.Sdk` is referenced directly
   (not just transitively) — the Functions SDK's build step needs it to generate `functions.metadata`
-  and the worker extension manifest.
+  and the worker extension manifest. The same applies per trigger: each
+  `Microsoft.Azure.Functions.Worker.Extensions.*` package must be a direct reference (see the
+  install block in each trigger's section above).
+- **A non-HTTP trigger never fires locally**: every trigger except HTTP needs
+  `AzureWebJobsStorage` to be a real connection — the empty string in step 6's
+  `local.settings.json` is enough for HTTP only. Run [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite)
+  and set `"AzureWebJobsStorage": "UseDevelopmentStorage=true"` (a Queue Storage trigger then also
+  reads its queue from Azurite), plus the trigger's own connection setting
+  (`ServiceBusConnection`, `EventHubConnection`, ...) pointing at a real namespace or emulator.
 - **404 on every route locally, but the function runs**: check `host.json`'s
   `extensions.http.routePrefix` — Azure Functions defaults to prefixing every HTTP route with
   `/api`, so `/hello/world` needs to be requested as `/api/hello/world` unless you've cleared the
@@ -956,4 +967,4 @@ These require a working Docker daemon and aren't run as part of the main `Benzen
 - [Testing Benzene](testing-benzene) — `BenzeneTestHost`, including AWS Lambda and ASP.NET Core patterns
 - [Monitoring & Diagnostics](monitoring) — tracing, metrics, and W3C trace context propagation
 - [Correlation Ids](correlation-ids) — the legacy header-based correlation ID middleware
-- [`examples/Azure`](../examples/Azure) — a complete, runnable project covering HTTP routing, validation, and OpenAPI spec generation
+- [`examples/Azure`](../examples/Azure) — a complete, runnable project covering HTTP routing, validation, OpenAPI spec generation, and Service Bus + Queue Storage triggers dispatching into the same handlers

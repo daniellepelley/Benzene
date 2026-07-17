@@ -8,7 +8,7 @@ namespace Benzene.Example.Azure;
 
 /// <summary>
 /// Service Bus trigger dispatching into the same message handlers as the HTTP function: the
-/// message routes by its <c>"topic"</c> application property (e.g. <c>order.create</c>) and its
+/// message routes by its <c>"topic"</c> application property (e.g. <c>order_create</c>) and its
 /// body is the payload - see docs/cookbooks/service-bus-handling.md. Requires a
 /// <c>ServiceBusConnection</c> app setting (connection string, or
 /// <c>ServiceBusConnection__fullyQualifiedNamespace</c> for managed identity - see
