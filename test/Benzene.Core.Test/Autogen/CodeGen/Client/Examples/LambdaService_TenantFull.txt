@@ -12,11 +12,11 @@ namespace Benzene.Service.Clients.Tenant
     [ExcludeFromCodeCoverage]
     public class TenantServiceClient : ITenantServiceClient
     {
-        private readonly IBenzeneMessageClientFactory _clientFactory;
+        private readonly IBenzeneMessageSender _sender;
 
-        public TenantServiceClient(IBenzeneMessageClientFactory clientFactory)
+        public TenantServiceClient(IBenzeneMessageSender sender)
         {
-            _clientFactory = clientFactory;
+            _sender = sender;
         }
 
         public string HashCode => "f7666334812315507767d314287501a0eb240dd2ebb58e6dc3731c9906eca6dd";
@@ -26,12 +26,9 @@ namespace Benzene.Service.Clients.Tenant
             return GetTenantAsync(message, null);
         }
 
-        public async Task<IBenzeneResult<TenantDto>> GetTenantAsync(GetTenantMessage message, IDictionary<string, string> headers)
+        public Task<IBenzeneResult<TenantDto>> GetTenantAsync(GetTenantMessage message, IDictionary<string, string> headers)
         {
-            using (var client = _clientFactory.Create("Tenant", "tenant:get"))
-            {
-                return await client.SendMessageAsync<GetTenantMessage, TenantDto>("tenant:get", message, headers);
-            }
+            return _sender.SendAsync<GetTenantMessage, TenantDto>("tenant:get", message, headers);
         }
 
         public Task<IBenzeneResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message)
@@ -39,23 +36,22 @@ namespace Benzene.Service.Clients.Tenant
             return CreateTenantAsync(message, null);
         }
 
-        public async Task<IBenzeneResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message, IDictionary<string, string> headers)
+        public Task<IBenzeneResult<TenantDto>> CreateTenantAsync(CreateTenantMessage message, IDictionary<string, string> headers)
         {
-            using (var client = _clientFactory.Create("Tenant", "tenant:create"))
-            {
-                return await client.SendMessageAsync<CreateTenantMessage, TenantDto>("tenant:create", message, headers);
-            }
+            return _sender.SendAsync<CreateTenantMessage, TenantDto>("tenant:create", message, headers);
         }
 
         public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()
         {
-            using (var client = _clientFactory.Create("Tenant", "healthcheck"))
-            {
-                var benzeneResult = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
-                return benzeneResult.Status != BenzeneResultStatus.Ok
-                    ? benzeneResult
-                    : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
-            }
+            var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload());
+            return benzeneResult.Status != BenzeneResultStatus.Ok
+                ? benzeneResult
+                : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
         }
+    }
+
+    public static class TenantServiceClientRouting
+    {
+        public static readonly string[] RequiredTopics = { "tenant:get", "tenant:create", "healthcheck" };
     }
 }

@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.CodeGen.Client` / `Benzene.Clients`: Step 2 of the outbound redesign
+  (`work/benzene-clients-redesign-plan.md`) - generated `{Service}ServiceClient`s now target
+  `IBenzeneMessageSender` instead of `IBenzeneMessageClientFactory`: the constructor takes
+  `IBenzeneMessageSender sender`, and each generated method body is
+  `_sender.SendAsync<TRequest,TResponse>("topic", message, headers)` - no more per-call
+  `_clientFactory.Create(...)`. Each generated client also now emits a sibling
+  `{Service}ServiceClientRouting.RequiredTopics` array. New `ValidateOutboundRouting()` (on
+  `IServiceResolver`) reflects over every loaded assembly's `*Routing.RequiredTopics` and throws
+  `MissingOutboundRoutesException` for anything unrouted - an opt-in startup safety net for a
+  missing `OutboundRoutingBuilder.Route` call, catching it before the first real send. Also widens
+  `IBenzeneMessageSender.SendAsync` with an optional third `headers` parameter (a correction to
+  Step 1's design, discovered while migrating the generated client - see the design doc's dated
+  update) so per-call headers, a real feature of the previous generated client, aren't silently
+  dropped. The generated *interface* is unchanged; this is purely a generated-class-body and
+  `IBenzeneMessageSender`-shape change. `Benzene.Clients.Aws`'s transport wiring still uses the old
+  mechanism - Step 3.
 - `Benzene.Clients`: `IBenzeneMessageSender`/`OutboundRoutingBuilder`/`AddOutboundRouting(...)` -
   Step 1 of the outbound redesign in `work/benzene-clients-redesign-plan.md`. A single topic-keyed
   `SendAsync<TRequest,TResponse>(topic, request)` call replaces resolving a client by service

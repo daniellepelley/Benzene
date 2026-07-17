@@ -28,6 +28,7 @@ public static class DependencyInjectionExtensions
         var routes = builder.Build();
 
         services.AddScoped<IBenzeneMessageSender>(resolver => new DefaultBenzeneMessageSender(routes, resolver));
+        services.AddSingleton(new OutboundRoutingTopics(routes.Keys));
 
         return services;
     }

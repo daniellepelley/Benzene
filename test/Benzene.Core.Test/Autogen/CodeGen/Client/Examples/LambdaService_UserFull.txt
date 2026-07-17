@@ -12,11 +12,11 @@ namespace Benzene.Service.Clients.User
     [ExcludeFromCodeCoverage]
     public class UserServiceClient : IUserServiceClient
     {
-        private readonly IBenzeneMessageClientFactory _clientFactory;
+        private readonly IBenzeneMessageSender _sender;
 
-        public UserServiceClient(IBenzeneMessageClientFactory clientFactory)
+        public UserServiceClient(IBenzeneMessageSender sender)
         {
-            _clientFactory = clientFactory;
+            _sender = sender;
         }
 
         public string HashCode => "819704d1f5276a20cd4cac80d9c75a2dd7f3ec96496380b5891692ecffdd346a";
@@ -26,12 +26,9 @@ namespace Benzene.Service.Clients.User
             return GetUserAsync(message, null);
         }
 
-        public async Task<IBenzeneResult<UserDto>> GetUserAsync(GetUserMessage message, IDictionary<string, string> headers)
+        public Task<IBenzeneResult<UserDto>> GetUserAsync(GetUserMessage message, IDictionary<string, string> headers)
         {
-            using (var client = _clientFactory.Create("User", "user:get"))
-            {
-                return await client.SendMessageAsync<GetUserMessage, UserDto>("user:get", message, headers);
-            }
+            return _sender.SendAsync<GetUserMessage, UserDto>("user:get", message, headers);
         }
 
         public Task<IBenzeneResult<string>> CreateUserAsync(CreateUserMessage message)
@@ -39,23 +36,22 @@ namespace Benzene.Service.Clients.User
             return CreateUserAsync(message, null);
         }
 
-        public async Task<IBenzeneResult<string>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers)
+        public Task<IBenzeneResult<string>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers)
         {
-            using (var client = _clientFactory.Create("User", "user:create"))
-            {
-                return await client.SendMessageAsync<CreateUserMessage, string>("user:create", message, headers);
-            }
+            return _sender.SendAsync<CreateUserMessage, string>("user:create", message, headers);
         }
 
         public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()
         {
-            using (var client = _clientFactory.Create("User", "healthcheck"))
-            {
-                var benzeneResult = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
-                return benzeneResult.Status != BenzeneResultStatus.Ok
-                    ? benzeneResult
-                    : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
-            }
+            var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload());
+            return benzeneResult.Status != BenzeneResultStatus.Ok
+                ? benzeneResult
+                : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
         }
+    }
+
+    public static class UserServiceClientRouting
+    {
+        public static readonly string[] RequiredTopics = { "user:get", "user:create", "healthcheck" };
     }
 }

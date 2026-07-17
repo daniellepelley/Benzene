@@ -14,10 +14,13 @@ public class OutboundContext
     /// </summary>
     /// <param name="topic">The topic being sent on.</param>
     /// <param name="request">The request payload.</param>
-    public OutboundContext(string topic, object request)
+    /// <param name="headers">Per-call headers supplied by the caller (see
+    /// <see cref="IBenzeneMessageSender.SendAsync{TRequest,TResponse}"/>); never null.</param>
+    public OutboundContext(string topic, object request, IDictionary<string, string>? headers = null)
     {
         Topic = topic;
         Request = request;
+        Headers = headers ?? new Dictionary<string, string>();
     }
 
     /// <summary>Gets the topic this send was routed to.</summary>
@@ -25,6 +28,9 @@ public class OutboundContext
 
     /// <summary>Gets the request payload being sent.</summary>
     public object Request { get; }
+
+    /// <summary>Gets the per-call headers supplied by the caller.</summary>
+    public IDictionary<string, string> Headers { get; }
 
     /// <summary>
     /// Gets or sets the response, set by the outbound pipeline's transport middleware (e.g.
