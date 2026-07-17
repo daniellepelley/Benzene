@@ -47,6 +47,9 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Schema Registry Integration](schema-registry.md) - Register event payload schemas centrally, frame messages with the Confluent wire format for cross-consumer interop, and gate schema evolution at deploy time (with copy-paste Confluent / Azure adapters)
 - [Contract Testing (conformance)](../specification/porting-guide.md) - Verify message contracts between services via the conformance-testing approach
 
+### Orchestration
+- [Sagas (distributed transactions that roll back cleanly)](sagas.md) - Run a multi-service operation as all-or-nothing: each step carries a compensation, and any failure rolls the whole thing back in reverse (LIFO) order, leaving no orphaned records
+
 ### Cross-Cutting Concerns
 - [Request Correlation Across Services](request-correlation.md) - Track requests through distributed systems
 - [Idempotency (de-duplicating redelivered messages)](idempotency.md) - Ensure a handler's side effect runs at most once per message on at-least-once transports (SQS, Service Bus, Event Hubs, Kafka), with a pluggable store
