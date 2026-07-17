@@ -233,6 +233,8 @@ all Benzene wiring stay exactly as they are; only the app settings change:
 | Service Bus | `ServiceBusConnection` | `ServiceBusConnection__fullyQualifiedNamespace` = `my-namespace.servicebus.windows.net` |
 | Event Hubs | `EventHubConnection` | `EventHubConnection__fullyQualifiedNamespace` = `my-namespace.servicebus.windows.net` |
 | Cosmos DB | `CosmosDbConnection` | `CosmosDbConnection__accountEndpoint` = `https://my-account.documents.azure.com:443/` |
+| Queue Storage | `StorageConnection` | `StorageConnection__queueServiceUri` = `https://mystorageacct.queue.core.windows.net` |
+| Blob Storage | `StorageConnection` | `StorageConnection__blobServiceUri` = `https://mystorageacct.blob.core.windows.net` **and** `StorageConnection__queueServiceUri` (the blob trigger also uses an internal poison queue) |
 | Functions host storage | `AzureWebJobsStorage` | `AzureWebJobsStorage__accountName` = `mystorageacct` |
 
 To use a user-assigned identity for a connection, add `X__credential` = `managedidentity` and
@@ -246,6 +248,8 @@ roles of its own on top of the per-trigger roles:
 | Service Bus trigger | Azure Service Bus Data Receiver |
 | Event Hubs trigger | Azure Event Hubs Data Receiver + **Storage Blob Data Owner** on the `AzureWebJobsStorage` account (the host stores Event Hubs checkpoints there) |
 | Cosmos DB trigger | Cosmos DB Built-in Data Contributor (data-plane — see above; the trigger writes leases) |
+| Queue Storage trigger | Storage Queue Data Contributor (it deletes handled messages and writes poison messages) |
+| Blob Storage trigger | Storage Blob Data Owner (blob receipts) + Storage Queue Data Contributor (its internal poison queue) |
 | `AzureWebJobsStorage__accountName` | Storage Blob Data Owner (plus Storage Queue Data Contributor / Storage Table Data Contributor if you use queue/Durable features) |
 
 > **Consumption-plan caveat, honestly:** on the classic Linux Consumption (Y1) plan, the

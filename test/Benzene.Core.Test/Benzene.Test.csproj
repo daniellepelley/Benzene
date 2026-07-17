@@ -80,7 +80,9 @@
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.CosmosDb\Benzene.Azure.Function.CosmosDb.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Core.TestHelpers\Benzene.Azure.Function.Core.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Function.BlobStorage\Benzene.Azure.Function.BlobStorage.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub\Benzene.Azure.Function.EventHub.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Function.QueueStorage\Benzene.Azure.Function.QueueStorage.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.EventHub.TestHelpers\Benzene.Azure.Function.EventHub.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Kafka\Benzene.Azure.Function.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Azure.Function.Kafka.TestHelpers\Benzene.Azure.Function.Kafka.TestHelpers.csproj" />

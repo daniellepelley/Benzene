@@ -2588,3 +2588,44 @@ was demonstration, which is what shipped:
   authentication for HTTP functions (validating Entra ID JWTs) was already covered generically
   by `Benzene.Auth.OAuth2` + `docs/cookbooks/auth-patterns.md` and is not Azure-specific work;
   the old "Azure authentication middleware" checklist items conflated the two.
+
+## Document History Addendum — 2026-07-17 (fifth entry): Queue Storage and Blob Storage Functions Triggers Shipped
+
+Closes the "two of the most commonly used Functions trigger types, both still absent" gap
+(re-confirmed by the 2026-07-17 gap scan). Two new production packages, both **zero-dependency**
+(no storage SDK, no Functions extension package — consumers reference
+`Microsoft.Azure.Functions.Worker.Extensions.Storage.{Queues,Blobs}` themselves for the trigger
+attributes, same policy-preserving approach as the Cosmos trigger adapter):
+
+- **`Benzene.Azure.Function.QueueStorage`** — fan-out message adapter. The design pivot: a Queue
+  Storage message has **no properties/attributes** (unlike Service Bus/SQS), so the transport
+  topic getter is honestly null and routing comes from exactly two places, both shipped: a
+  Benzene envelope in the body (`UseBenzeneMessage` via `BenzeneMessageQueueStorageHandler`,
+  mirroring the Event Hub bridge) or a fixed per-queue topic
+  (`UsePresetTopic(...).UseMessageHandlers()`, with the full mapper set registered by
+  `AddAzureQueueStorage` so the router resolves cleanly — proven by test, not assumed).
+  `QueueStorageMessage` is Benzene's own dependency-free model (`MessageText` +
+  optional `MessageId`/`DequeueCount`/`InsertedOn` for `QueueMessage` binders). No options
+  class: the host's retry/`<queue>-poison` machinery *is* the failure story, so pipeline
+  exceptions deliberately propagate. Transport tag `"queue-storage"`.
+- **`Benzene.Azure.Function.BlobStorage`** — non-routed adapter (the second one, after Cosmos):
+  a blob is a file, not an envelope, and one trigger function watches one container path, so
+  there's no routing dimension. `BlobTriggerEvent` (`Name`, `Content`, UTF-8 helper),
+  `UseBlobStorage(...)` + `UseBlob(...)` terminal sugar, `HandleBlob(name, byte[]/string)`.
+  Transport tag `"blob-storage"`. Host retry/poison-queue and polling-latency realities
+  documented rather than wrapped.
+- **No TestHelpers packages for either** — deliberate and recorded in both CLAUDE.md files: the
+  queue message is a plain string (`Core.Messages.TestHelpers`' `AsBenzeneMessage` already
+  covers envelope building) and the blob dispatch surface is primitives.
+- **Tests:** 9 new tests in `test/Benzene.Core.Test/Azure/`
+  (`QueueStoragePipelineTest` — envelope routing, preset-topic routing, non-envelope deferral,
+  exception propagation, metadata flow; `BlobStoragePipelineTest` — delivery, UTF-8 round-trip,
+  exception propagation, platform-neutral no-op). Full `Benzene.sln` build 0 errors; full
+  `Benzene.Core.Test` suite green.
+- **Docs:** the azure-functions.md trigger section retitled to "Non-HTTP triggers" (fixing the
+  increasingly unwieldy title and its anchor) with full Queue Storage and Blob Storage
+  subsections + trigger examples; two `docs/reference/packages.md` rows; managed-identity
+  cookbook's Functions tables extended with the queue/blob identity-based connection settings
+  (`__queueServiceUri`/`__blobServiceUri`) and their storage roles; type-specific `CLAUDE.md` in
+  both packages. Package count: **12 production, 5 TestHelpers**. Remaining unbuilt trigger
+  types from the original list: Event Grid and Timer.

@@ -101,6 +101,8 @@ See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 | `Benzene.Azure.Function.EventHub` | Handle Event Hub stream events. |
 | `Benzene.Azure.Function.Kafka` | Handle Kafka-triggered functions. |
 | `Benzene.Azure.Function.CosmosDb` | Handle Cosmos DB Change Feed triggers as a fan-in document stream — `UseCosmosDbChangeFeed<TDocument>(...)`. |
+| `Benzene.Azure.Function.QueueStorage` | Handle Queue Storage triggers — `UseQueueStorage(...)`, routing via a Benzene message envelope (`UseBenzeneMessage`) or a fixed per-queue topic (`UsePresetTopic`). |
+| `Benzene.Azure.Function.BlobStorage` | Handle Blob Storage triggers — `UseBlobStorage(...)` + `UseBlob(...)`, delivering the blob's name and content to a non-routed pipeline. |
 
 See [Azure Functions Setup](../azure-functions).
 
