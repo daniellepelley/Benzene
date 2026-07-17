@@ -2669,3 +2669,32 @@ the previous four:
   pass: Terraform template (P1), the `Benzene.Kafka.Core` consumer-builder hook for secretless
   OAUTHBEARER (public-API change, flagged in the fourth entry), performance benchmarks (needs
   real deployed Azure), and Durable Functions (explicitly long-term, never scoped).
+
+## Document History Addendum — 2026-07-17 (seventh entry): Terraform Template Shipped
+
+Closes the P1 "Terraform: still absent" item (open since the Bicep template shipped 2026-07-14
+without an equivalent).
+
+- **`examples/Azure/Benzene.Example.Azure/main.tf`** — resource-for-resource equivalent of the
+  sibling `main.bicep` on the `azurerm` provider (~> 4.0): Storage Account (Standard_LRS,
+  TLS 1.2, no public blob access), workspace-based Application Insights + Log Analytics
+  workspace, Consumption (`Y1`, parameterized) Linux service plan, and a
+  `azurerm_linux_function_app` with system-assigned managed identity (+ `principal_id` output
+  and a sketched `azurerm_role_assignment` for identity-based trigger connections, cross-linked
+  to the managed-identity cookbook). Same deliberate choices as the Bicep: key-based
+  `AzureWebJobsStorage` (Consumption content-share caveat, with the
+  `storage_uses_managed_identity` upgrade path noted for Premium/Dedicated/Flex) and the
+  .NET-10-runtime-identifier caveat carried onto `application_stack.dotnet_version` (the
+  azurerm provider validates that value against a fixed list per release — called out in the
+  template header). One documented divergence: Terraform creates/manages the resource group
+  itself, per Terraform convention, where the Bicep flow deploys into an `az group create`d one.
+- **Disclosure, same as the Bicep:** no Terraform CLI exists in this authoring environment, so
+  the template is hand-checked against provider docs, not `terraform validate`/`plan`-verified —
+  stated in the template header and in the new docs subsection.
+- **Docs:** new "Deploying with Terraform" subsection in `docs/azure-functions.md` beside the
+  Bicep one (whose "add your own resources" line was also refreshed to name the current trigger
+  set instead of the pre-2026-07-17 three). Note `docs/terraform.md` is a different thing
+  entirely (`Benzene.CodeGen.Terraform`, AWS Lambda `.tf` *generation*) and was left alone.
+- No code changes; `Benzene.sln` untouched. Package count unchanged: **14 production, 5
+  TestHelpers**. Remaining major items: Kafka consumer-builder hook (public-API change awaiting
+  sign-off), performance benchmarks (needs real Azure), Durable Functions (long-term).
