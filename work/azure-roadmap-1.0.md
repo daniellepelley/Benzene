@@ -2732,3 +2732,45 @@ proceeding with the flagged public-API addition.
 - With this, **every Azure roadmap item actionable from this environment is closed.** Remaining:
   performance benchmarks / cold-start metrics (needs real deployed Azure resources) and Durable
   Functions (long-term, unscoped).
+
+## Document History Addendum — 2026-07-17 (ninth entry): DX Audit Remediation (Findings 1–8)
+
+A dx-champion audit of the Azure adoption journey (walked and compile-verified end to end)
+produced 12 ranked findings; the user directed fixing the top eight. All eight applied:
+
+1. **azure-functions.md's false Service Bus claim fixed** — the "completion is a no-op /
+   explicit control isn't implemented" parenthetical (stale since `ServiceBusAckMode.Explicit`
+   shipped) replaced with an accurate `AckMode` summary + deep link to the cookbook's step 5.
+2. **Four dead "Part B" anchors fixed** (`docs/reference/packages.md`, both the Service Bus and
+   Event Hub cookbooks, the Worker example README) — all now use the post-Cosmos-rename anchor.
+3. **Every trigger subsection's install block now lists the Microsoft extension package**
+   (EventHubs 6.5.0, Kafka 4.3.0, ServiceBus 5.22.0 — repo-pinned versions; CosmosDB unpinned
+   with the why), with a note that omitting it fails only at `func start` ("No job functions
+   found"), not at compile time. Previously the Service Bus section never mentioned it at all.
+4. **Stale "`UseBenzeneMessage` only exists for Event Hubs" corrected** (it exists for Queue
+   Storage too).
+5. **The Functions example now demonstrates messaging triggers**: `ServiceBusFunction` +
+   `QueueFunction` added to `examples/Azure/Benzene.Example.Azure`, wired in `StartUp.Configure`
+   alongside HTTP (`UseServiceBus` + `UseQueueStorage`/`UseBenzeneMessage`, both with
+   enrichment + FluentValidation, dispatching into the shared `Benzene.Examples.App` handlers);
+   `Microsoft.Azure.Functions.Worker.Extensions.{ServiceBus 5.22.0, Storage.Queues 5.5.4}` added
+   to the example csproj (5.5.4 verified latest stable on the live feed). Example solution
+   builds clean.
+6. **New `azure-example-build` CI job** in `build-benzene.yml`: compiles
+   `Benzene.Example.Azure.sln` + the Worker example on every push — closing the "Azure examples
+   are compile-checked by nothing" gap that produced finding 1's drift. Build-only by design; a
+   real deploy workflow needs an Azure subscription (still open, product decision).
+7. **Discoverability**: `docs/index.md`'s Azure section grown from one link to five (guide with
+   trigger enumeration, self-hosted workers deep link, managed identity, three Azure cookbooks);
+   README tagline now names the Azure trigger set instead of just "Azure Functions"; and a
+   missing `Benzene.Azure.Function.ServiceBus` row was discovered and added to
+   `docs/reference/packages.md`'s Azure Functions table (audit-adjacent find).
+8. **The message-envelope wire shape is now shown as JSON** in azure-functions.md's Event Hubs
+   `UseBenzeneMessage` section (`{"topic", "headers", "body"}` with body-is-a-string called
+   out, verified against `BenzeneMessageRequest`), and the Queue Storage section references it.
+
+Not fixed from the audit (out of the directed 1–8 scope): the "Cannot handle this kind of
+request" error message (roadmap item of long standing), the four stale legacy CLAUDE.md files
+(flagged in the 2026-07-17 gap scan), the Worker example's absence from the per-folder `.sln`
+(solution-structure change requiring explicit approval), and the guide's filename breaking the
+`getting-started-*` family (rename would break inbound links; needs a decision).

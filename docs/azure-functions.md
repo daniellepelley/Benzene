@@ -322,7 +322,13 @@ Install the package and add the pipeline in `Configure`:
 
 ```bash
 dotnet add package Benzene.Azure.Function.EventHub --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.EventHubs --version 6.5.0
 ```
+
+The Microsoft extension package must be referenced directly by your function app project — it
+supplies the `[EventHubTrigger]` attribute, and without it the Functions SDK's build step never
+registers the trigger (the project still compiles; the failure only shows up at `func start` as
+"No job functions found").
 
 ```csharp
 app.UseEventHub(eventHub => eventHub
@@ -330,10 +336,23 @@ app.UseEventHub(eventHub => eventHub
         .UseMessageHandlers()));
 ```
 
-`UseBenzeneMessage` routes an Event Hub event whose body deserializes into a Benzene message
-envelope (topic + payload) to the direct-message pipeline — this is the same envelope shape
-`MessageBuilder` produces for AWS SQS/SNS. Add a trigger function that injects `IAzureFunctionApp`
-and calls `HandleEventHub(...)`:
+`UseBenzeneMessage` routes an Event Hub event whose body deserializes into a **Benzene message
+envelope** to the direct-message pipeline. The envelope is a small JSON wrapper any producer — a
+Benzene client, or anything else — can send; on the wire it looks like this (note `body` is the
+serialized payload *as a string*, and `topic` is what routes to the matching `[Message]` handler):
+
+```json
+{
+  "topic": "orders.created",
+  "headers": { "correlation-id": "abc-123" },
+  "body": "{\"name\":\"some-name\"}"
+}
+```
+
+This is the same envelope shape `MessageBuilder` produces for AWS SQS/SNS (and the same one the
+Queue Storage trigger's `UseBenzeneMessage` reads — see that section below). An event whose body
+*isn't* an envelope is simply deferred to the next middleware in the pipeline, not failed. Add a
+trigger function that injects `IAzureFunctionApp` and calls `HandleEventHub(...)`:
 
 ```csharp
 using Azure.Messaging.EventHubs;
@@ -364,7 +383,11 @@ Install the package and add the pipeline in `Configure`:
 
 ```bash
 dotnet add package Benzene.Azure.Function.Kafka --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Kafka --version 4.3.0
 ```
+
+(As with every trigger: the Microsoft extension package must be referenced directly — it
+supplies the `[KafkaTrigger]` attribute and the trigger registration.)
 
 ```csharp
 app.UseKafka(kafka => kafka.UseMessageHandlers());
@@ -373,8 +396,8 @@ app.UseKafka(kafka => kafka.UseMessageHandlers());
 Works against Event Hubs' Kafka-compatible endpoint. The Kafka record's value is `byte[]`; Benzene
 decodes it as UTF-8 JSON the same way as every other transport, and dispatches by topic via
 `[Message]`/message handler registration — there is no `UseBenzeneMessage` bridge for Kafka today
-(that only exists for Event Hubs). Add a trigger function that injects `IAzureFunctionApp` and
-calls `HandleKafkaEvents(...)`:
+(that exists for Event Hubs and Queue Storage, whose messages carry no routable topic of their
+own). Add a trigger function that injects `IAzureFunctionApp` and calls `HandleKafkaEvents(...)`:
 
 ```csharp
 using Benzene.Azure.Function.Core;
@@ -408,7 +431,11 @@ Install the package and add the pipeline in `Configure`:
 
 ```bash
 dotnet add package Benzene.Azure.Function.ServiceBus --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.ServiceBus --version 5.22.0
 ```
+
+(As with every trigger: the Microsoft extension package must be referenced directly — it
+supplies the `[ServiceBusTrigger]` attribute and the trigger registration.)
 
 ```csharp
 app.UseServiceBus(serviceBus => serviceBus.UseMessageHandlers());
@@ -450,9 +477,17 @@ public class ServiceBusFunction
 
 (Bind a `ServiceBusReceivedMessage[]` instead of a single `ServiceBusReceivedMessage` if your
 trigger is configured with `IsBatched = true`; `HandleServiceBusMessages` accepts both via a
-`params` array. Note that message completion is a no-op in this package today — the trigger
-completes the message per its own default settings regardless of the handler's outcome; explicit
-complete/abandon/dead-letter control isn't implemented yet.)
+`params` array.)
+
+By default the trigger completes each message automatically when the invocation returns —
+whatever your handler returned. For **real per-message complete/abandon control tied to the
+handler's outcome**, set `ServiceBusOptions.AckMode = ServiceBusAckMode.Explicit`, add
+`AutoCompleteMessages = false` to the trigger attribute, bind `ServiceBusMessageActions`, and pass
+it to `HandleServiceBusMessages(messageActions, message)` — a successful result completes the
+message, a failure result or exception abandons it (respecting the queue's max delivery count
+before Service Bus's native dead-lettering kicks in). The full walkthrough, including how
+`CatchExceptions`/`RaiseOnFailureStatus` interact with it, is in
+[Service Bus Message Handling, step 5](cookbooks/service-bus-handling#5-message-completion-the-default-and-real-per-message-control).
 
 ### Cosmos DB Change Feed
 
@@ -460,7 +495,12 @@ Install the package and add the pipeline in `Configure`:
 
 ```bash
 dotnet add package Benzene.Azure.Function.CosmosDb --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.CosmosDB
 ```
+
+(As with every trigger: the Microsoft extension package must be referenced directly — it
+supplies the `[CosmosDBTrigger]` attribute and the trigger registration. Benzene doesn't pin its
+version because `Benzene.Azure.Function.CosmosDb` deliberately has no dependency on it.)
 
 ```csharp
 app.UseCosmosDbChangeFeed<OrderDocument>(feed => feed
@@ -530,10 +570,10 @@ dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues
 ```
 
 A Queue Storage message has no properties or attributes — the body is the entire message — so
-there are two routing modes. If the producer is a Benzene client sending the usual message
-envelope (topic + payload), use the `UseBenzeneMessage` bridge; if the queue carries raw payloads
-from a non-Benzene producer, give the queue a fixed topic (a queue usually carries one message
-type anyway):
+there are two routing modes. If the producer sends the Benzene message envelope (the
+`{"topic": ..., "headers": ..., "body": ...}` JSON shown in the Event Hubs section above), use
+the `UseBenzeneMessage` bridge; if the queue carries raw payloads from a non-Benzene producer,
+give the queue a fixed topic (a queue usually carries one message type anyway):
 
 ```csharp
 // Envelope-routed (Benzene producer):

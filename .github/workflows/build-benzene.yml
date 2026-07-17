@@ -64,6 +64,26 @@ jobs:
     - name: Test
       run: dotnet test test/Benzene.Aws.Tests/Benzene.Aws.Tests.csproj --no-build --verbosity normal
 
+  # Compile gate for the Azure examples - they are not part of Benzene.sln, so without this job
+  # an Azure library change could break them without CI noticing (docs snippets and the example
+  # drifting from the real API is exactly the failure mode this guards). Build-only: deploying
+  # them needs an Azure subscription this repo doesn't have wired up.
+  azure-example-build:
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Build Azure Functions example
+      run: dotnet build examples/Azure/Benzene.Example.Azure.sln
+    - name: Build Azure worker example
+      run: dotnet build examples/Azure/Benzene.Example.Azure.Worker/Benzene.Example.Azure.Worker.csproj
+
   azure-integration-tests:
 
     runs-on: ubuntu-latest

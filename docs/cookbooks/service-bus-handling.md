@@ -388,7 +388,7 @@ It's a self-hosted [worker](../getting-started-worker.md#azure-service-bus-benze
 - **You build the `ServiceBusClient`**, so authentication (connection string, managed identity, or
   the local emulator) is entirely yours.
 
-See [Worker Service Setup, Part B](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub)
+See [Worker Service Setup, Part B](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db)
 for the full host wiring.
 
 ## Further Reading

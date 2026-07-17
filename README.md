@@ -9,8 +9,9 @@
 around a shared middleware pipeline — write your message handlers and
 cross-cutting concerns (logging, correlation IDs, validation, health
 checks) once, then run the same service behind AWS Lambda (API
-Gateway, SQS, SNS, Kafka, EventBridge), Azure Functions, or ASP.NET
-Core without rewriting any of it.**
+Gateway, SQS, SNS, Kafka, EventBridge), Azure Functions (HTTP, Event
+Hubs, Service Bus, Cosmos DB Change Feed, Queue/Blob Storage, Event
+Grid, Timer), or ASP.NET Core without rewriting any of it.**
 
 ## Why Benzene?
 
