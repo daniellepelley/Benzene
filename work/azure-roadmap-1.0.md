@@ -2365,3 +2365,96 @@ ready) narrowed further than the original estimate assumed, then widened slightl
 `Benzene.Azure.Function.Core` coverage gap was found — net effect is this document's
 existing timeline estimate remains reasonable, not something this audit found grounds
 to shorten or lengthen materially.
+
+---
+
+## Document History Addendum — 2026-07-17: Fresh-Pass Review + Cosmos DB Change Feed Evaluation
+
+Research/prioritization-only pass (no code changes) by the Azure Product Owner, appended per
+request rather than inserted into the top Document History section, so it doesn't get lost among
+2300+ lines of earlier, partially-superseded narrative. Confirms current package count still **8
+production** (`Benzene.Azure.Function.{Core,AspNet,EventHub,Kafka,ServiceBus}`,
+`Benzene.AspNet.Core`, `Benzene.Azure.{ServiceBus,EventHub}` self-hosted workers) **+ 5
+TestHelpers**, matching the 2026-07-17 self-hosted-worker entry above — nothing shipped between
+that entry and this one.
+
+- **Streaming precedent reviewed.** `Benzene.Core.Middleware/Streaming/` (`StreamContext<TItem>`,
+  `IStreamCheckpointer<TItem>`, `StreamMiddlewareApplication`) is the established fan-**in**
+  pattern for batch/stream transports, as opposed to the fan-**out**
+  `MiddlewareMultiApplication`/`IMiddlewareApplication` pattern every other Azure adapter uses
+  today. Two existing consumers confirm the pattern is production-ready: `Benzene.Aws.Lambda.Kinesis`
+  (`KinesisStreamApplication` + a **real** `KinesisStreamCheckpointer` with true per-record
+  sequence-number resume, shipped 2026-07-17 same-day as this pass per its own `CLAUDE.md`) and
+  `Benzene.Azure.Function.EventHub/Function/StreamingExtensions.cs`'s `UseEventHubStream` (an
+  opt-in fan-in alternative to the default fan-out `UseEventHub`, already shipped, batch-level only
+  — no per-item checkpoint control, since the Functions Event Hub trigger checkpoints the whole
+  batch on successful return).
+
+- **Cosmos DB Change Feed evaluated as a candidate package.** Repo-wide grep for "cosmos" (src/,
+  docs/, work/) confirms zero prior footprint — the only mention anywhere is this document's own
+  generic, unelaborated "Cosmos DB (8-10 weeks) — Change Feed trigger adapter" bullet in the
+  Medium-Term Roadmap (line ~1036), never designed in any depth. Findings:
+  - Change Feed Processor SDK (`Microsoft.Azure.Cosmos`) delivers changes per **lease** (a
+    partition key range), load-balanced across processor instances via a dedicated **lease
+    container in Cosmos itself** — conceptually the same shape as `EventProcessorClient`'s
+    partition ownership + blob checkpoint store that `Benzene.Azure.EventHub`'s
+    `BenzeneEventHubWorker` already wraps, but the checkpoint *store* is a Cosmos container, not
+    Azure Blob Storage.
+  - Checkpoint granularity is **coarser than Kinesis, closer to Event Hubs**: even with
+    `WithManualCheckpointing()`, a lease's callback delivers a batch and checkpoints that whole
+    batch as a unit — there is no per-document resume token the way Kinesis's sequence number or
+    Event Hubs' per-event offset allow. This means Cosmos Change Feed is architecturally a
+    **fan-in `StreamContext<TDocument>`-per-batch** citizen, not a candidate for
+    Kinesis-style true per-record checkpointing — `IStreamCheckpointer<TDocument>` would wrap the
+    Change Feed context's batch-level `CheckpointAsync()`, and a handler that wants finer-grained
+    safety has to do its own within-batch bookkeeping, same limitation already documented for the
+    Event Hubs Functions trigger.
+  - **Real design deviation from every existing Azure adapter:** Event Hub/Kafka/Service Bus
+    contexts are all built around opaque/string transport payloads (`EventData`,
+    `ServiceBusReceivedMessage`, Kafka's key/value). Cosmos DB's Functions `CosmosDBTrigger`
+    binding and the Change Feed Processor builder both require a **concrete document type
+    parameter** (a POCO or `dynamic`) — there's no "raw bytes" shape to bind to. A
+    `Benzene.Azure.*.CosmosDb.ChangeFeed` package therefore needs to be **generic over
+    `TDocument`** (`ChangeFeedContext<TDocument>` / `StreamContext<TDocument>`), which none of the
+    existing single-concrete-type Azure packages are — worth flagging up front as a design
+    decision, not something to discover mid-implementation.
+  - **Two hosting shapes, sequencing recommendation:** build the **Azure Functions
+    `CosmosDBTrigger` adapter first** (smaller — directly mirrors the already-shipped
+    `UseEventHubStream`/`StreamingExtensions.cs` shape, and the trigger's own auto-checkpoint-on
+    success behavior needs no new checkpointer plumbing beyond a `NullStreamCheckpointer`-style
+    default). Follow with a **self-hosted `BenzeneCosmosChangeFeedWorker`**
+    (`Benzene.Azure.CosmosDb`, mirroring `BenzeneEventHubWorker`/`BenzeneServiceBusWorker`'s
+    `IBenzeneWorker`/`IBenzeneWorkerStartup` shape) for teams that want real manual per-batch
+    checkpoint control or non-Functions hosting (AKS/Container Apps) — this exactly repeats
+    Benzene's own actual sequencing for Service Bus and Event Hubs (Functions trigger shipped
+    2026-07-13/14, self-hosted worker as a fast-follow 2026-07-17), so there's already an in-repo
+    precedent for doing it in this order rather than simultaneously.
+
+- **Fresh gap scan beyond Cosmos** (cross-checked against this document's own still-open items
+  near lines ~1022-1071, ~1448-1481, ~1630-1670, plus a live repo grep — nothing below was newly
+  invented, all independently reconfirmed still true this session):
+  - **Managed Identity / RBAC: still genuinely absent**, and worse than "just missing docs" — a
+    repo-wide grep for `DefaultAzureCredential|ManagedIdentityCredential|TokenCredential` across
+    `src/` returns only the two abstract client-factory seams
+    (`Benzene.Azure.EventHub/IEventProcessorClientFactory.cs`,
+    `Benzene.Azure.ServiceBus/IServiceBusClientFactory.cs`) — the seams exist, but there is not one
+    concrete Managed Identity example anywhere in the codebase or docs, despite this document
+    listing it as a "Critical Blocker" since its earliest draft.
+  - **Azure Queue Storage and Blob Storage Functions triggers: still entirely unbuilt** (line
+    ~1022-1034), two of the most commonly used Functions trigger types, both still absent with no
+    progress since this document's original estimate.
+  - **Terraform: still absent** — the Bicep template shipped 2026-07-14
+    (`examples/Azure/Benzene.Example.Azure/main.bicep`) has no Terraform equivalent.
+  - **No performance benchmark data exists** — re-confirmed still true; this document's own
+    Performance Goals section (Consumption <2000ms / Premium <800ms P99 cold start) has never been
+    measured against, and can't be from this sandbox (needs real deployed Azure resources).
+  - **Documentation-debt side-finding:** `Benzene.Azure.Function.Core`, `.AspNet`, `.EventHub`, and
+    `.Kafka`'s `CLAUDE.md` files are still generic, stale template boilerplate ("Common Azure
+    abstractions", "Azure authentication integration") that don't name a single real type in the
+    package — unlike `Benzene.Azure.Function.ServiceBus`'s and both self-hosted workers'
+    (`Benzene.Azure.ServiceBus`, `Benzene.Azure.EventHub`) accurate, type-specific `CLAUDE.md`
+    files. Low-risk, low-effort fix, not previously called out anywhere in this document.
+
+- **No code changes made this pass.** Prioritized worklist (Cosmos DB Change Feed items called out
+  explicitly, in priority order) was handed off directly as the deliverable rather than duplicated
+  here — see the task/PR this addendum was written for.
