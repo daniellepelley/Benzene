@@ -277,8 +277,27 @@ az deployment group create --resource-group my-function-rg \
   --parameters functionAppName=my-benzene-function
 ```
 
-The template only covers the HTTP trigger path - add your own resources for Event Hub, Kafka, or
-Service Bus namespaces if you wire up those triggers too (see the next section).
+The template only covers the HTTP trigger path - add your own resources for Event Hub, Service
+Bus, Cosmos DB, Storage, or Event Grid if you wire up those triggers too (see the next section).
+
+### Deploying with Terraform
+
+The same infrastructure is also available as Terraform, in
+[`examples/Azure/Benzene.Example.Azure/main.tf`](../examples/Azure/Benzene.Example.Azure/main.tf) -
+resource-for-resource equivalent to the Bicep template (Storage Account, workspace-based
+Application Insights, Consumption plan, Linux isolated-worker Function App with a
+system-assigned managed identity), plus a sketched `azurerm_role_assignment` for when you add
+identity-based trigger connections:
+
+```bash
+cd examples/Azure/Benzene.Example.Azure
+terraform init
+terraform apply -var function_app_name=my-benzene-function
+```
+
+One deliberate difference: Terraform creates and manages the resource group itself (Terraform
+convention), where the Bicep flow deploys into a group you create with `az group create`. Both
+templates carry the same hand-checked-not-deployed disclaimer - review before production use.
 
 ## Non-HTTP triggers
 
