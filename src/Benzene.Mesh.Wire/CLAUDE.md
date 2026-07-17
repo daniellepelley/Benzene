@@ -55,3 +55,27 @@ pull-based collector idiom and can adopt these shapes as ingest sources (roadmap
 Abstractions.MessageHandlers (definitions lookup, mappers), Core.MessageHandlers /
 Core.Middleware (interception idiom), Core.Messages (BenzeneMessage status reader),
 HealthChecks.Core (heartbeat health shape), Results.
+
+## Tests
+- `test/Benzene.Conformance.Test/MeshDescriptorConformanceTest.cs` /
+  `MeshTraceConformanceTest.cs` - the language-neutral fixture-driven conformance suite (wire
+  shapes, hash invariants).
+- `test/Benzene.Mesh.Test/Wire/MeshSchemaGeneratorTest.cs` - direct unit coverage of every
+  `MeshSchemaGenerator.Derive` branch: each primitive/date/byte-array mapping, the unconstrained
+  `{}` cases (object/JsonElement/enum), `Nullable<T>`'s added `"null"` type, dictionary/enumerable
+  mapping, `JsonPropertyName`/`JsonIgnore` (`Always` and `WhenWritingDefault`) handling, the
+  nullable-annotated-property → optional "required" rule, lexicographic property ordering, and
+  cycle-cutting on a self-referencing type. None of this had a test before (the conformance suite
+  only exercises it indirectly through the canonical conformance handlers' payload shapes).
+- `test/Benzene.Mesh.Test/Wire/ExtensionsTest.cs` - end-to-end pipeline tests for
+  `UseMeshDescriptor`/`UseMeshTrace`, built on a real `BenzeneMessageContext`/
+  `BenzeneMessageApplication` pipeline (mirrors `HealthCheckPipelineTest`'s pattern) since
+  `Benzene.Mesh.Test` didn't previously reference this package or `Core.MessageHandlers`/
+  `Core.Messages`/`Microsoft.Dependencies` (now added as `ProjectReference`s). Covers: descriptor
+  topic + alias matching vs. fall-through, `UseMeshTrace`'s null-exporter pass-through, a
+  successful export's topic/service/status/duration/ids, W3C traceparent join vs. missing/
+  malformed-header fresh-trace fallback, a throwing exporter not affecting the response,
+  no-status-reader → empty status, the `x-correlation-id` header capture, and `MeshSpan.Current`
+  being set during `next()` and restored afterward. Setting up these tests requires
+  `.AddContextItems()` explicitly (not part of `AddBenzeneMessage()` - only `AddMessageHandlers()`
+  pulls it in) since none of these tests route through `.UseMessageHandlers()`.
