@@ -2543,3 +2543,48 @@ self-hosted worker, mirroring the Service Bus and Event Hubs trigger→worker pa
   `docs/hosting.md`'s worker-concurrency section and `docs/reference/packages.md`'s self-hosted
   table, `Benzene.Azure.Function.CosmosDb`'s CLAUDE.md un-stubbed, and a type-specific
   `CLAUDE.md` in the new package. Package count: **10 production, 5 TestHelpers**.
+
+## Document History Addendum — 2026-07-17 (fourth entry): Managed Identity / RBAC Closed as a Docs+Example Gap
+
+Closes the oldest still-open "Critical Blocker": Managed Identity / RBAC, which the 2026-07-17
+gap scan re-confirmed as "not one concrete Managed Identity example anywhere in the codebase or
+docs". Deliberately **no new `src/` code and no new dependencies**: every Azure package already
+exposes the right seam (`IServiceBusClientFactory`, `IEventProcessorClientFactory`,
+`ICosmosChangeFeedProcessorFactory<T>`, and the Functions triggers' `Connection` setting
+resolution), and authentication is a client-construction concern the caller owns — the same
+reasoning that rejected a bespoke Application-Insights package on 2026-07-14. What was missing
+was demonstration, which is what shipped:
+
+- **New cookbook `docs/cookbooks/managed-identity.md`** (replaces the README's "*(planned)*"
+  entry): `DefaultAzureCredential` fundamentals (credential chain, user-assigned client id,
+  local-dev fall-through to `az login`); concrete credential-based client construction for all
+  three self-hosted workers (Service Bus hostname ctor; Event Hubs processor + its
+  `BlobContainerClient` checkpoint store — two roles, two resources; Cosmos endpoint ctor with
+  the data-plane-RBAC-is-not-ARM-RBAC warning and the `az cosmosdb sql role assignment create`
+  command, since the change feed processor needs Built-in Data Contributor to write leases);
+  the zero-code Functions path (`X__fullyQualifiedNamespace`/`X__accountEndpoint`/
+  `X__accountName` app-setting conventions, per-trigger role tables including the host's own
+  storage roles, and the classic-Linux-Consumption content-share caveat stated honestly);
+  well-known role-definition GUIDs; CLI + Bicep role-assignment snippets; emulators-stay-on-
+  connection-strings guidance (existing integration tests unchanged, deliberately); and a
+  401-vs-403 / propagation-delay / wrong-role-plane troubleshooting section.
+- **`examples/Azure/Benzene.Example.Azure/main.bicep`**: system-assigned identity enabled on the
+  Function App + new `functionAppPrincipalId` output ready for role assignments, with a comment
+  explaining why `AzureWebJobsStorage` stays key-based on the Consumption plan. Same
+  hand-checked-not-deployed disclaimer as the rest of the template (no `az`/`bicep` CLI in this
+  environment).
+- **Cross-links**: new "Managed identity instead of connection strings" subsection in
+  `docs/azure-functions.md`'s triggers section; per-worker pointers in
+  `docs/getting-started-worker.md`'s three Azure sections.
+- **Gap discovered and recorded, not papered over:** `Benzene.Kafka.Core`'s worker builds its
+  `ConsumerBuilder` internally (`BenzeneKafkaWorker` line ~71) with **no hook** for
+  `SetOAuthBearerTokenRefreshHandler`, so true managed-identity OAUTHBEARER against Event Hubs'
+  Kafka endpoint is not reachable through Benzene today. The cookbook documents what *does* work
+  through the existing `ConsumerConfig` seam (config-only OIDC client-credentials — Entra RBAC
+  but secret-bearing) and names the gap explicitly. Follow-up item: add an optional
+  consumer-builder configuration hook to `Benzene.Kafka.Core` (public-API addition to a
+  non-Azure package — needs its own flagged change per repo policy).
+- **Scope note:** this closes *outbound* identity (Benzene→Azure resources). *Inbound* request
+  authentication for HTTP functions (validating Entra ID JWTs) was already covered generically
+  by `Benzene.Auth.OAuth2` + `docs/cookbooks/auth-patterns.md` and is not Azure-specific work;
+  the old "Azure authentication middleware" checklist items conflated the two.

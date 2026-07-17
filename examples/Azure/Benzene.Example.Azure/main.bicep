@@ -90,6 +90,16 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   name: functionAppName
   location: location
   kind: 'functionapp,linux'
+  // System-assigned managed identity: Azure creates and rotates a credential for this app so it
+  // can authenticate to Service Bus/Event Hubs/Cosmos DB/Storage via Entra ID RBAC instead of
+  // connection strings. Grant roles to the principalId output below - see
+  // ../../../docs/cookbooks/managed-identity.md for the per-service roles and role-assignment
+  // Bicep/CLI snippets (this template's HTTP-only example doesn't need any yet; AzureWebJobsStorage
+  // below stays key-based because the Consumption plan's content share requires it - see the
+  // cookbook's Consumption-plan caveat).
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: hostingPlan.id
     httpsOnly: true
@@ -128,6 +138,9 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
 
 @description('Default hostname of the deployed Function App.')
 output functionAppHostName string = functionApp.properties.defaultHostName
+
+@description('Object id of the Function App\'s system-assigned managed identity - the principal to grant RBAC roles to (see docs/cookbooks/managed-identity.md).')
+output functionAppPrincipalId string = functionApp.identity.principalId
 
 @description('Application Insights connection string (also set as an app setting on the Function App).')
 output applicationInsightsConnectionString string = applicationInsights.properties.ConnectionString

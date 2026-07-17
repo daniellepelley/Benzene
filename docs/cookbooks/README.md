@@ -25,7 +25,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Service Bus Message Handling](service-bus-handling.md) - Process Service Bus messages with Benzene
 - [Event Hub Stream Processing](event-hub-processing.md) - Handle high-throughput Event Hub streams, batching, and checkpointing boundaries
 - [Cosmos DB Change Feed Processing](cosmos-change-feed-processing.md) - Consume a container's change feed as an ordered document stream
-- Managed Identity for Azure Resources *(planned)*
+- [Managed Identity & RBAC for Azure Resources](managed-identity.md) - Run every Azure integration with no connection strings: `DefaultAzureCredential` wiring for the Service Bus/Event Hubs/Cosmos DB workers, identity-based connection settings for the Functions triggers, and the RBAC roles each one needs
 
 ### Validation & Error Handling
 - [FluentValidation with Custom Rules](fluentvalidation-custom-rules.md) - Cross-field rules, async DB validation, and per-rule status overrides
