@@ -20,4 +20,11 @@ public interface IServiceResolver : IDisposable
     /// <typeparam name="T">The service type to resolve.</typeparam>
     /// <returns>The resolved service instance if registered; otherwise, null.</returns>
     T? TryGetService<T>() where T : class;
+
+    /// <summary>
+    /// Gets all registered services of the specified type from the container.
+    /// </summary>
+    /// <typeparam name="T">The service type to resolve.</typeparam>
+    /// <returns>All resolved service instances; an empty sequence when none are registered.</returns>
+    IEnumerable<T> GetServices<T>() where T : class;
 }

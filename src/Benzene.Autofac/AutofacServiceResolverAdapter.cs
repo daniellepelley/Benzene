@@ -76,6 +76,11 @@ public class AutofacServiceResolverAdapter : IServiceResolver
         }
     }
 
+    public IEnumerable<T> GetServices<T>() where T : class
+    {
+        return _container.Resolve<IEnumerable<T>>();
+    }
+
     public void Dispose()
     {
         _scope?.Dispose();

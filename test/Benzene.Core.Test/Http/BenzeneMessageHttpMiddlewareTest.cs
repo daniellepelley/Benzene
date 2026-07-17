@@ -53,6 +53,8 @@ public class BenzeneMessageHttpMiddlewareTest
         }
 
         public T? TryGetService<T>() where T : class => null;
+
+        public IEnumerable<T> GetServices<T>() where T : class => Array.Empty<T>();
     }
 
     private class FakeServiceResolverFactory : IServiceResolverFactory

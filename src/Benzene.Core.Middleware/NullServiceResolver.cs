@@ -39,4 +39,14 @@ public class NullServiceResolver : IServiceResolver
     {
         return null;
     }
+
+    /// <summary>
+    /// Gets all services of the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type of service to retrieve.</typeparam>
+    /// <returns>Always returns an empty sequence.</returns>
+    public IEnumerable<T> GetServices<T>() where T : class
+    {
+        return [];
+    }
 }

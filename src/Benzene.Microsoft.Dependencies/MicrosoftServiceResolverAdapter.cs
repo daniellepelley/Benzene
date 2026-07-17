@@ -69,6 +69,11 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
         }
     }
 
+    public IEnumerable<T> GetServices<T>() where T : class
+    {
+        return _serviceProvider.GetServices<T>();
+    }
+
     public void Dispose()
     {
         _scope?.Dispose();
