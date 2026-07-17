@@ -1,7 +1,13 @@
 # Benzene Clients Vision
 
 **Status:** Living reference document
-**Last Updated:** 2026-07-12
+**Last Updated:** 2026-07-17
+
+> **2026-07-17 update:** the concrete design pass §4 asks for now exists —
+> [`work/benzene-clients-redesign-plan.md`](benzene-clients-redesign-plan.md) proposes
+> `IBenzeneMessageSender`, `OutboundRoutingBuilder`, and a migration plan, checked against every
+> §2/§4 design-decision test in this document. It's a design proposal only, not yet implemented or
+> approved for implementation.
 **Purpose:** Capture the aims for Benzene's outbound "pipes and adapters out" —
 everything in `Benzene.Clients`, `Benzene.Clients.Aws`, `Benzene.Client.Http`, and
 sibling packages — so a redesign of that layer is driven by a clear statement of intent
