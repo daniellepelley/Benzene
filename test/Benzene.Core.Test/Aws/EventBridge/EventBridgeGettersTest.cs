@@ -39,6 +39,21 @@ public class EventBridgeGettersTest
     }
 
     [Fact]
+    public void Body_UndefinedDetail_ReturnsNull()
+    {
+        var context = new EventBridgeContext(new EventBridgeEvent
+        {
+            DetailType = "order.created",
+            Source = "com.example.orders"
+            // Detail left as the JsonElement default (ValueKind.Undefined).
+        });
+
+        var body = new EventBridgeMessageBodyGetter().GetBody(context);
+
+        Assert.Null(body);
+    }
+
+    [Fact]
     public void Headers_ContainPrefixedEnvelopeMetadata()
     {
         var headers = new EventBridgeMessageHeadersGetter().GetHeaders(CreateContext());
@@ -68,5 +83,27 @@ public class EventBridgeGettersTest
         var headers = new EventBridgeMessageHeadersGetter().GetHeaders(CreateContext());
 
         Assert.DoesNotContain(headers, x => !x.Key.StartsWith("eventbridge-"));
+    }
+
+    [Fact]
+    public void Headers_BenzeneHeadersKeyIsNotAnObject_IsIgnored()
+    {
+        var context = CreateContext("{\"name\":\"some-name\",\"_benzeneHeaders\":\"not-an-object\"}");
+
+        var headers = new EventBridgeMessageHeadersGetter().GetHeaders(context);
+
+        Assert.DoesNotContain(headers, x => !x.Key.StartsWith("eventbridge-"));
+    }
+
+    [Fact]
+    public void Headers_EmbeddedNonStringValue_IsSkipped()
+    {
+        var context = CreateContext(
+            "{\"name\":\"some-name\",\"_benzeneHeaders\":{\"x-correlation-id\":\"abc-123\",\"x-retry-count\":3}}");
+
+        var headers = new EventBridgeMessageHeadersGetter().GetHeaders(context);
+
+        Assert.Equal("abc-123", headers["x-correlation-id"]);
+        Assert.DoesNotContain("x-retry-count", headers.Keys);
     }
 }

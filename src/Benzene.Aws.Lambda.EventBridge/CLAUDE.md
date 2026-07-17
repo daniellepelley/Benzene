@@ -40,3 +40,15 @@ the message body. See `docs/plans/eventbridge-plan.md` for the design decisions 
 - The `aws_cloudwatch_event_rule`/target/permission Terraform for a consuming Lambda can be
   generated from its `[Message]` topics — see `Benzene.CodeGen.Terraform`
   (`TerraformEventBridgeRuleBuilder`).
+
+## Tests
+- `test/Benzene.Core.Test/Aws/EventBridge/EventBridgeGettersTest.cs` — topic/body/headers getters,
+  including edge cases: undefined `detail` (`Body` returns null), a non-object `_benzeneHeaders`
+  value (ignored), and a non-string value inside `_benzeneHeaders` (skipped, only string-valued
+  entries are lifted).
+- `test/Benzene.Core.Test/Aws/EventBridge/EventBridgeLambdaHandlerTest.cs` — `CanHandle` routing:
+  both `detail-type`/`source` present (handled), neither present (falls through), and the two
+  partial-match branches (`detail-type` without `source`, and vice versa — both also fall through).
+- `test/Benzene.Core.Test/Aws/EventBridge/EventBridgeMessagePipelineTest.cs` — full pipeline
+  round-trip (`EventBridgeApplication` + `AddEventBridge()`), including an unknown `detail-type`
+  producing a not-found result.
