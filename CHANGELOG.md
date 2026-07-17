@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Kafka.Core`: live-broker test coverage for `BenzeneKafkaWorker<TKey,TValue>`'s own
+  `Consume` loop (`test/Benzene.Integration.Test/Kafka/BenzeneKafkaWorkerLiveTest.cs`), the last
+  self-hosted worker gap called out in the package's `CLAUDE.md` — a real worker, hosted via
+  `Benzene.HostedService.BuildHostedService()`, now consumes a real message produced against the
+  Event Hubs emulator's Kafka-compatible endpoint (the same emulator `Benzene.Azure.Function.Kafka`'s
+  `KafkaConsumerPipelineTest` already exercises in CI) and dispatches it through the full
+  message-handler pipeline. Test-only change, no production code touched.
 - `Benzene.Azure.Function.ServiceBus`: `ServiceBusOptions.AckMode` (default `ServiceBusAckMode.AutoComplete`,
   reproducing today's Functions-host-auto-completes behavior exactly) - set `ServiceBusAckMode.Explicit`
   for true per-message `CompleteMessageAsync`/`AbandonMessageAsync` control tied to the handler's

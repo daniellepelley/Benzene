@@ -90,10 +90,10 @@ producer support. This is one of the "self-hosted worker" startup modes document
 - Message key for partitioning
 - Headers for metadata
 - Commit strategies configurable
-- **No test coverage exists for `BenzeneKafkaWorker`'s actual consume loop** - `IConsumer<TKey,TValue>`
-  needs a live broker to exercise for real, so the loop itself has never been unit tested directly
-  (same situation as `Benzene.SelfHost.Http`'s `BenzeneHttpWorker`). The concurrency/ordering/drain
-  behavior it relies on is unit-tested in isolation instead, via
+- `IConsumer<TKey,TValue>` needs a live broker to exercise for real, so the consume loop's own
+  synchronous startup validation is unit-tested broker-independently (see below), and its live
+  behavior is now covered end to end against a real broker (see "Live-broker test coverage"
+  below). The concurrency/ordering/drain behavior it relies on is unit-tested in isolation too, via
   `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`'s own test suite
   (`test/Benzene.Core.Test/Hosting/BoundedConcurrentDispatcherTest.cs`).
   `test/Benzene.Core.Test/Kafka/BenzeneKafkaWorkerTest.cs` covers the one part of
@@ -106,3 +106,18 @@ producer support. This is one of the "self-hosted worker" startup modes document
   need a broker (getters, converters, `KafkaClientMiddleware`) is unit-tested in
   `test/Benzene.Core.Test/Kafka/KafkaCoreMappersTest.cs` plus
   `test/Benzene.Core.Test/Clients/OutboundHeaderForwardingTest.cs`.
+- **Live-broker test coverage** (`test/Benzene.Integration.Test/Kafka/BenzeneKafkaWorkerLiveTest.cs`):
+  `BenzeneKafkaWorkerLiveTest.StartAsync_ConsumesRealKafkaMessage_DispatchesThroughPipeline` runs a
+  real `BenzeneKafkaWorker<Ignore,string>` (via `InlineSelfHostedStartUp`/`IBenzeneWorkerStartup.UseKafka`,
+  hosted through `Benzene.HostedService.BuildHostedService()`) against the same Event Hubs emulator's
+  Kafka-compatible endpoint (`localhost:9092`, SASL PLAIN) that
+  `Benzene.Azure.Function.Kafka`'s `KafkaConsumerPipelineTest` already proved works in CI - see
+  `DockerEmulatorCollection`. It produces a real message with Confluent.Kafka's own `IProducer`,
+  waits (via a `TaskCompletionSource` set from a Moq callback, not a fixed delay) for the worker's
+  own consume loop to dispatch it through `KafkaApplication`/`.UseMessageHandlers()` to a real
+  `IExampleService` mock, then stops the host and asserts the handler ran. This is the first test in
+  the repo that exercises `BenzeneKafkaWorker.StartAsync`'s actual `Consume` loop against a live
+  broker, closing the gap called out above for everything except the loop's own polling/dispatch
+  wiring (still exercised only indirectly through `BoundedConcurrentDispatcher<T>`'s isolated unit
+  tests, since asserting ordering/concurrency against a real, timing-sensitive broker would be
+  flaky).
