@@ -3,6 +3,7 @@ using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.Messages;
 using Benzene.Results;
 using Microsoft.Extensions.Logging;
 
@@ -28,6 +29,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
     private readonly IMessageHandlerFactory _messageHandlerFactory;
     private readonly IMessageHandlerDefinitionLookUp _messageHandlerDefinitionLookUp;
     private readonly IMessageGetter<TContext> _messageGetter;
+    private readonly IMessageVersionGetter<TContext> _messageVersionGetter;
     private readonly IRequestMapper<TContext> _requestMapper;
     private readonly IDefaultStatuses _defaultStatuses;
     private readonly IMessageHandlerResultSetter<TContext> _messageHandlerResultSetter;
@@ -36,7 +38,8 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
     /// Initializes a new instance of the <see cref="MessageRouter{TContext}"/> class.
     /// </summary>
     /// <param name="messageHandlerFactory">Creates the invocable handler for a resolved definition.</param>
-    /// <param name="messageGetter">Extracts the topic (and other message data) from the context.</param>
+    /// <param name="messageGetter">Extracts the topic id (and other message data) from the context.</param>
+    /// <param name="messageVersionGetter">Extracts the payload schema version from the context, combined with the topic id below into the <see cref="ITopic"/> used for handler-version dispatch (docs/specification/versioning.md §2.3).</param>
     /// <param name="messageHandlerDefinitionLookUpUp">Resolves the handler definition registered for a topic.</param>
     /// <param name="requestMapper">Maps the context into the handler's request type.</param>
     /// <param name="messageHandlerResultSetter">Writes the outcome of dispatch back onto the context.</param>
@@ -44,6 +47,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
     /// <param name="logger">Logger used to record routing decisions and failures.</param>
     public MessageRouter(IMessageHandlerFactory messageHandlerFactory,
         IMessageGetter<TContext> messageGetter,
+        IMessageVersionGetter<TContext> messageVersionGetter,
         IMessageHandlerDefinitionLookUp messageHandlerDefinitionLookUpUp,
         IRequestMapper<TContext> requestMapper,
         IMessageHandlerResultSetter<TContext> messageHandlerResultSetter,
@@ -56,6 +60,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         _messageHandlerDefinitionLookUp = messageHandlerDefinitionLookUpUp;
         _logger = logger;
         _messageGetter = messageGetter;
+        _messageVersionGetter = messageVersionGetter;
         _messageHandlerFactory = messageHandlerFactory;
     }
 
@@ -71,6 +76,18 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
         var topic = _messageGetter.GetTopic(context);
+        // A version already on the topic (e.g. an explicit UsePresetTopic(topicId, version)) is a
+        // deliberate override and wins; the message's own version signal only fills the gap when
+        // the topic getter didn't already supply one.
+        if (!string.IsNullOrEmpty(topic?.Id) && string.IsNullOrEmpty(topic.Version))
+        {
+            var version = _messageVersionGetter.GetVersion(context);
+            if (!string.IsNullOrEmpty(version))
+            {
+                topic = new Topic(topic.Id, version);
+            }
+        }
+
         if (string.IsNullOrEmpty(topic?.Id))
         {
             _logger.LogWarning("Topic is missing");

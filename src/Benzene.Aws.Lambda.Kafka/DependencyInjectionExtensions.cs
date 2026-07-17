@@ -2,6 +2,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Serialization;
 
@@ -25,6 +26,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<KafkaContext>, KafkaMessageTopicGetter>();
+        services.AddScoped<IMessageVersionGetter<KafkaContext>, HeaderMessageVersionGetter<KafkaContext>>();
         services.AddScoped<IMessageHeadersGetter<KafkaContext>, KafkaMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<KafkaContext>, KafkaMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<KafkaContext>, KafkaMessageMessageHandlerResultSetter>();

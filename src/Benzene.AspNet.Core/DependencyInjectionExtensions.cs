@@ -37,6 +37,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ISerializer, JsonSerializer>();
         services.AddScoped<IMiddlewarePipelineBuilder<AspNetContext>, MiddlewarePipelineBuilder<AspNetContext>>();
         services.AddScoped<IMessageTopicGetter<AspNetContext>, AspNetMessageTopicGetter>();
+        services.AddScoped<IMessageVersionGetter<AspNetContext>, AspNetMessageVersionGetter>();
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspMessageMessageHandlerResultSetter>();

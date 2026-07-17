@@ -26,6 +26,7 @@ public static class DependencyInjectionExtensions
         services.TryAddSingleton<IGrpcMethodFinder, ReflectionGrpcMethodFinder>();
         services.TryAddSingleton<IGrpcRouteFinder, GrpcRouteFinder>();
         services.AddScoped<IMessageTopicGetter<GrpcContext>, GrpcMessageTopicGetter>();
+        services.AddScoped<IMessageVersionGetter<GrpcContext>, HeaderMessageVersionGetter<GrpcContext>>();
         services.AddScoped<IMessageBodyGetter<GrpcContext>, GrpcMessageBodyGetter>();
         services.AddScoped<IMessageHeadersGetter<GrpcContext>, GrpcMessageHeadersGetter>();
         services.AddScoped<IMessageHandlerResultSetter<GrpcContext>, GrpcMessageMessageHandlerResultSetter>();

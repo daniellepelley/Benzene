@@ -21,6 +21,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.TryAddScoped<IMessageTopicGetter<SelfHostHttpContext>, HttpListenerMessageTopicGetter>();
+        services.TryAddScoped<IMessageVersionGetter<SelfHostHttpContext>, HttpListenerMessageVersionGetter>();
         services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, HttpListenerMessageHandlerResultSetter>();

@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Middleware;
@@ -31,6 +32,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<PubSubContext>, PubSubMessageTopicGetter>();
+        services.AddScoped<IMessageVersionGetter<PubSubContext>, HeaderMessageVersionGetter<PubSubContext>>();
         services.AddScoped<IMessageHeadersGetter<PubSubContext>, PubSubMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<PubSubContext>, PubSubMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<PubSubContext>, PubSubMessageMessageHandlerResultSetter>();

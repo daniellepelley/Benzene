@@ -61,6 +61,7 @@ public static class DependencyInjectionExtensions
     public static IBenzeneServiceContainer AddAspNet(this IBenzeneServiceContainer services)
     {
         services.AddScoped<IMessageTopicGetter<AspNetContext>, AspNetMessageTopicGetter>();
+        services.AddScoped<IMessageVersionGetter<AspNetContext>, AspNetMessageVersionGetter>();
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspNetMessageMessageHandlerResultSetter>();
