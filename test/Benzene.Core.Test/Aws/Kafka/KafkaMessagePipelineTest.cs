@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.KafkaEvents;
@@ -143,7 +145,74 @@ public class KafkaMessagePipelineTest
 
         Assert.Equal(Defaults.Message, AwsLambdaBenzeneTestHost.StreamToString(kafkaContext.KafkaEvent.Records.First().Value.First().Value));
     }
-    
+
+    [Fact]
+    public async Task Send_FromStream_NonKafkaEvent_DoesNotRoute()
+    {
+        var runs = 0;
+        var services = ServiceResolverMother.CreateServiceCollection();
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
+
+        app.UseKafka(message => message
+            .Use(null, (context, next) =>
+            {
+                runs++;
+                return next();
+            })
+        );
+
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsAwsKafkaEvent();
+        request.EventSource = "aws:sqs";
+
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
+
+        Assert.Equal(0, runs);
+    }
+
+    [Fact]
+    public async Task MultiplePartitionsAndRecords_AllRecordsAreProcessed()
+    {
+        var processedTopics = new List<string>();
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<KafkaContext>>>(_ => NullLogger<MessageRouter<KafkaContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .UsingBenzene(x => x.AddKafka());
+
+        var pipelineBuilder = new MiddlewarePipelineBuilder<KafkaContext>(new MicrosoftBenzeneServiceContainer(services));
+        pipelineBuilder.Use(null, (context, next) =>
+        {
+            processedTopics.Add(context.KafkaEventRecord.Topic);
+            return next();
+        });
+
+        var kafkaEvent = new KafkaEvent
+        {
+            EventSource = "aws:kafka",
+            Records = new Dictionary<string, IList<KafkaEvent.KafkaEventRecord>>
+            {
+                ["partition-0"] = new List<KafkaEvent.KafkaEventRecord>
+                {
+                    new() { Topic = "topic-a", Value = new MemoryStream() },
+                    new() { Topic = "topic-a", Value = new MemoryStream() }
+                },
+                ["partition-1"] = new List<KafkaEvent.KafkaEventRecord>
+                {
+                    new() { Topic = "topic-b", Value = new MemoryStream() }
+                }
+            }
+        };
+
+        var app = new KafkaApplication(pipelineBuilder.Build());
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+
+        await app.HandleAsync(kafkaEvent, serviceResolverFactory);
+
+        Assert.Equal(3, processedTopics.Count);
+        Assert.Equal(2, processedTopics.Count(x => x == "topic-a"));
+        Assert.Single(processedTopics, x => x == "topic-b");
+    }
+
     [Fact]
     public async Task KafkaInSnsOut()
     {
