@@ -113,11 +113,8 @@ Requires .NET 10.
 
 ## Contributing
 
-Contributions are welcome. To get started:
-
-- Clone the repo and open `Benzene.sln`
-- Follow the existing middleware/test conventions in `src/` and `test/`
-- Run the test suite with `dotnet test test/Benzene.Core.Test/Benzene.Test.csproj`
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, conventions, and
+what to read before sending a change.
 
 ## License
 
