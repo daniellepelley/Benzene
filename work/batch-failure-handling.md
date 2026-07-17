@@ -3,10 +3,9 @@
 **Status:** Implemented for `Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Lambda.Sns`,
 `Benzene.Kafka.Core` (both the dispatcher's catch/continue toggle and outcome-gated offset commit),
 `Benzene.Azure.Function.Kafka`, `Benzene.Azure.Function.ServiceBus` (**both** the catch/escalate
-toggle **and** true per-message `ServiceBusMessageActions` ack, as of 2026-07-17), and
-`Benzene.Aws.Sqs`'s polling `SqsConsumer`. `Benzene.Aws.Lambda.Kinesis` remains deliberately
-deferred - a concrete design now exists (`work/kinesis-batch-failure-handling-design.md`,
-2026-07-17) but is not yet implemented - see its entry below.
+toggle **and** true per-message `ServiceBusMessageActions` ack, as of 2026-07-17),
+`Benzene.Aws.Sqs`'s polling `SqsConsumer`, and (as of 2026-07-17) `Benzene.Aws.Lambda.Kinesis` -
+implementing the design at `work/kinesis-batch-failure-handling-design.md`.
 
 ## Context
 
@@ -70,28 +69,30 @@ pipeline).
 | `Azure.Function.Kafka` (`KafkaApplication`/new `KafkaBatchApplication`) | Batch, concurrent fan-out | `KafkaOptions.CatchExceptions`/`RaiseOnFailureStatus` (both default `false`, unchanged behavior), same shape as `SnsOptions`. No platform partial-ack exists for Kafka triggers (confirmed: no companion action type in the isolated-worker SDK), so containment here means swallow-vs-cascade, not report-a-subset. `KafkaMessageMessageHandlerResultSetter` was upgraded from a true no-op to actually recording `MessageResult`, so `RaiseOnFailureStatus` has something to read. |
 | `Azure.Function.ServiceBus` (`ServiceBusApplication`/new `ServiceBusBatchApplication`) | Batch, concurrent fan-out (`IsBatched` optional) | Same `CatchExceptions`/`RaiseOnFailureStatus` shape as Kafka above (`ServiceBusOptions`), same no-op-to-real upgrade for `ServiceBusMessageMessageHandlerResultSetter`. **2026-07-17: true per-message `ServiceBusMessageActions` completion shipped too** - `ServiceBusOptions.AckMode` (`AutoComplete` default vs `Explicit`), a new `HandleServiceBusMessages(IAzureFunctionApp, ServiceBusMessageActions, params ServiceBusReceivedMessage[])` overload, and a new `ServiceBusTriggerBatch` request type carrying the messages + actions together (named to avoid colliding with the real `Azure.Messaging.ServiceBus.ServiceBusMessageBatch` SDK type). `ServiceBusBatchApplication` now implements both `IMiddlewareApplication<ServiceBusReceivedMessage[]>` and `IMiddlewareApplication<ServiceBusTriggerBatch>`, sharing one instance registered as two entry points. Complete on success, abandon on failure result or exception - exactly once per message regardless of `CatchExceptions`/`RaiseOnFailureStatus`, which independently control invocation-level cascade. |
 | `Aws.Sqs/Consumer/SqsConsumer` (poll-based, distinct from Lambda-triggered SQS) | Batch per poll, whole-batch ack | `SqsConsumerOptions.AckMode` (`WholeBatch` default, unchanged behavior, vs `PerMessage`). Required three things together: a bespoke per-message try/catch loop in `SqsConsumerApplication` (replacing the no-try/catch `MiddlewareMultiApplication` base), `SqsConsumerMessageContext` gaining `IHasMessageResult` (it had no result concept at all before), and `SqsConsumerMessageMessageHandlerResultSetter` upgraded from a no-op to real - `PerMessage` mode calls `DeleteMessageBatchAsync` with only the successful subset instead of `WholeBatch`'s all-or-nothing. |
+| `Aws.Lambda.Kinesis` (`KinesisStreamApplication`) | Fan-in (whole batch = one `StreamContext<KinesisEventRecord>`), so containment here means "resume from checkpoint," not "report a subset" - matches Kinesis's own shard-ordered `ReportBatchItemFailures` contract, which only reads the *first* reported failure. Implements `work/kinesis-batch-failure-handling-design.md` in full: a new `KinesisBatchResponse` (hand-rolled, mirrors `Amazon.Lambda.SQSEvents.SQSBatchResponse`'s wire shape), a new internal `KinesisStreamCheckpointer : IStreamCheckpointer<KinesisEventRecord>` wired into the batch's `StreamContext`, and a new `StreamMiddlewareApplication<TEvent,TItem,TResult>` core sibling (`Benzene.Core.Middleware.Streaming`) that `KinesisStreamApplication` now extends instead of the non-result 2-generic version. A pipeline exception is caught inside `KinesisStreamApplication` (logged, not rethrown) so the response still carries whatever was checkpointed before the failure - the checkpointer's resume point is itself the correct failure signal here, unlike the fan-out transports' opt-in `CatchExceptions`. `KinesisLambdaHandler` now writes the response back instead of discarding it (Kinesis event source mapping invocations are synchronous from Lambda's own perspective once `ReportBatchItemFailures` is configured on the trigger). One real behavior change, flagged in the package's own `CLAUDE.md`: a handler that never calls `Checkpointer.CheckpointAsync(...)` now gets a response naming the *first* record on any exception (whole-batch retry) instead of the previous silent no-op via `NullStreamCheckpointer`. |
 
 ## Deliberately deferred
 
-| Transport | Why |
-|---|---|
-| `Aws.Lambda.Kinesis` (`KinesisStreamApplication`) | **2026-07-17 correction:** the original "5-7 files, needs redesigning the streaming abstraction" estimate below was made without accounting for `IStreamCheckpointer<TItem>` already existing in `Benzene.Core.Middleware.Streaming` - `Benzene.Aws.Lambda.Kinesis/CLAUDE.md` already flagged this as planned "streaming Phase 2" work. A concrete, much smaller design now exists at `work/kinesis-batch-failure-handling-design.md` (a `KinesisBatchResponse` type + a `KinesisStreamCheckpointer : IStreamCheckpointer<KinesisEventRecord>` + one new response-producing `StreamMiddlewareApplication<TEvent,TItem,TResult>` core sibling - 4 files, no redesign of `StreamContext`/the stream operators). Still deferred - this is a design proposal, not yet implemented - but the "not a small change" framing below is superseded. ~~Confirmed **not** a small change on investigation: it fans the entire batch into one `StreamContext`/one pipeline run (fan-in, by design, for windowing/aggregation) - there is no per-record dispatch loop anywhere in Benzene's streaming code to hook a result into, and `StreamContext<TItem>` carries no result concept at all. AWS's Kinesis event source mapping does support `ReportBatchItemFailures`, but Benzene has zero scaffolding toward it (no `KinesisBatchResponse`, no `Amazon.Lambda.KinesisEvents` dependency - `KinesisEventRecord` is hand-rolled). Doing this properly means redesigning the streaming abstraction's per-item identity tracking first (`StreamContext`, `StreamOperators.Window`/`PartitionBy`, `KinesisStreamApplication`'s whole shape) - 5-7 files and a real design decision, not an add-on.~~ |
+None currently - every batch/event transport surveyed this session now has some form of
+configurable containment/checkpointing.
 
 `Aws.Lambda.DynamoDb`'s `DynamoDbApplication` (sequential, stop-at-first-failure,
-checkpoint-and-redeliver-from-here) is a third, deliberately different shape from a prior design
-decision (DS5) — not a gap, and not a candidate for this same two-knob toggle, since ordering is
-the whole point there.
+checkpoint-and-redeliver-from-here) is a deliberately different shape from a prior design decision
+(DS5) — not a gap, and not a candidate for this same two-knob toggle, since ordering is the whole
+point there.
 
 ## Why this wasn't built as one shared abstraction
 
-Six transports now implement some form of this (SQS Lambda, SNS Lambda, Kafka.Core's dispatcher,
-Azure Kafka, Azure Service Bus, the SQS poll consumer). Per the project's own "no premature
-abstraction" convention (`AGENTS.md`), each is still an independent, transport-local `XOptions`
-class with a transport-local exception type (`SqsBatchProcessingException`,
-`SnsMessageProcessingException`, `KafkaMessageProcessingException`,
-`ServiceBusMessageProcessingException`) rather than a shared interface/base class - the concrete
-shapes differ enough (an enum for SQS's single containment knob; two independent bools for the
-transports with both knobs; a constructor bool + callback for the dispatcher, since it's shared
-infrastructure rather than an `XOptions`-wired transport) that a forced common interface would add
-ceremony without removing real duplication. If a seventh transport picks up the same shape, that's
-the point to revisit factoring out a shared abstraction.
+Seven transports now implement some form of this (SQS Lambda, SNS Lambda, Kafka.Core's dispatcher,
+Azure Kafka, Azure Service Bus, the SQS poll consumer, and now Kinesis). Per the project's own "no
+premature abstraction" convention (`AGENTS.md`), each is still an independent, transport-local
+shape rather than a shared interface/base class - the concrete shapes differ enough (an enum for
+SQS's single containment knob; two independent bools for the transports with both knobs; a
+constructor bool + callback for the dispatcher, since it's shared infrastructure rather than an
+`XOptions`-wired transport; a checkpointer + response type for Kinesis's resume-from-checkpoint
+model, genuinely different from every other transport's skip-or-cascade shape) that a forced common
+interface would add ceremony without removing real duplication. `StreamMiddlewareApplication<TEvent,TItem,TResult>`
+(`Benzene.Core.Middleware.Streaming`, added for Kinesis) is the one piece that *is* shared - it's
+the natural `TResult`-producing sibling of an existing pattern
+(`MiddlewareApplication<TEvent,TContext,TResult>`), not new ceremony for this feature specifically,
+and directly reusable for SQS streaming's still-open half of `docs/plans/streaming-plan.md` Phase 2.

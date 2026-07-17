@@ -13,12 +13,14 @@ namespace Benzene.Aws.Lambda.Kinesis;
 /// <remarks>
 /// Added to the outer <see cref="AwsEventStreamContext"/> pipeline by <see cref="Extensions.UseKinesisStream"/>.
 /// It only handles the invocation when the first record's source is <c>aws:kinesis</c>; otherwise it
-/// defers to the next event source adapter. Kinesis targets are invoked asynchronously — no response
-/// is written.
+/// defers to the next event source adapter. Writes back a <see cref="KinesisBatchResponse"/> naming
+/// the sequence number to resume from — Kinesis event source mapping invocations are synchronous
+/// from Lambda's own perspective once <c>ReportBatchItemFailures</c> is configured on the trigger,
+/// even though no response was written here before this type existed.
 /// </remarks>
 public class KinesisLambdaHandler : AwsLambdaMiddlewareRouter<KinesisEvent>
 {
-    private readonly IMiddlewareApplication<KinesisEvent> _application;
+    private readonly IMiddlewareApplication<KinesisEvent, KinesisBatchResponse> _application;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KinesisLambdaHandler"/> class.
@@ -26,7 +28,7 @@ public class KinesisLambdaHandler : AwsLambdaMiddlewareRouter<KinesisEvent>
     /// <param name="application">The Kinesis application to dispatch matching invocations to.</param>
     /// <param name="serviceResolver">The service resolver for the current invocation scope.</param>
     public KinesisLambdaHandler(
-        IMiddlewareApplication<KinesisEvent> application,
+        IMiddlewareApplication<KinesisEvent, KinesisBatchResponse> application,
         IServiceResolver serviceResolver)
         : base(serviceResolver)
     {
@@ -46,13 +48,15 @@ public class KinesisLambdaHandler : AwsLambdaMiddlewareRouter<KinesisEvent>
     }
 
     /// <summary>
-    /// Handles the event by running the batch through the Kinesis streaming application. No response is written.
+    /// Handles the event by running the batch through the Kinesis streaming application and writing
+    /// the resulting <see cref="KinesisBatchResponse"/>.
     /// </summary>
     /// <param name="request">The Kinesis event batch extracted from the invocation payload.</param>
-    /// <param name="context">The AWS event stream context for this invocation.</param>
+    /// <param name="context">The AWS event stream context to write the response to.</param>
     /// <param name="serviceResolverFactory">The service resolver factory for the current invocation.</param>
     protected override async Task HandleFunction(KinesisEvent request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        await _application.HandleAsync(request, serviceResolverFactory);
+        var response = await _application.HandleAsync(request, serviceResolverFactory);
+        MapResponse(context, response);
     }
 }

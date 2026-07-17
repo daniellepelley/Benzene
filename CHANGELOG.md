@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Aws.Lambda.Kinesis`: real per-batch checkpointing and failure containment for the
+  Kinesis event source mapping's `ReportBatchItemFailures`. `KinesisStreamApplication`'s
+  `StreamContext<KinesisEventRecord>` now carries a real `KinesisStreamCheckpointer` (a new
+  `IStreamCheckpointer<KinesisEventRecord>`) instead of the previous no-op
+  `NullStreamCheckpointer` - call `context.Checkpointer.CheckpointAsync(record)` after your stream
+  handler has safely processed (or windowed past) a record. A new `KinesisBatchResponse` (mirroring
+  `Amazon.Lambda.SQSEvents.SQSBatchResponse`'s wire shape) is returned by `KinesisLambdaHandler`,
+  naming the sequence number to resume from - Kinesis's shard-ordered retry contract only reads the
+  *first* reported failure, unlike SQS's per-message list. A pipeline exception is caught (logged)
+  rather than cascaded, so the response still reflects whatever was checkpointed before the
+  failure. Also adds `StreamMiddlewareApplication<TEvent,TItem,TResult>`
+  (`Benzene.Core.Middleware.Streaming`), the result-producing sibling of the existing
+  `StreamMiddlewareApplication<TEvent,TItem>`, directly reusable for a future SQS-streaming
+  equivalent. **Behavioral change worth knowing about**: a handler that never calls
+  `CheckpointAsync` now gets a response naming the *first* record's sequence number on any
+  exception (AWS retries the whole batch) instead of the previous silent no-op - purely
+  additive/more-correct, no code changes required to adopt it. See
+  `work/kinesis-batch-failure-handling-design.md` and `Benzene.Aws.Lambda.Kinesis/CLAUDE.md`.
 - `Benzene.Kafka.Core`: live-broker test coverage for `BenzeneKafkaWorker<TKey,TValue>`'s own
   `Consume` loop (`test/Benzene.Integration.Test/Kafka/BenzeneKafkaWorkerLiveTest.cs`), the last
   self-hosted worker gap called out in the package's `CLAUDE.md` — a real worker, hosted via

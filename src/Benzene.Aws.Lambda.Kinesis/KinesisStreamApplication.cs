@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Aws.Lambda.Kinesis;
 
@@ -14,7 +17,16 @@ namespace Benzene.Aws.Lambda.Kinesis;
 /// <c>PartitionBy(r =&gt; r.Kinesis.PartitionKey)</c>), rather than fanning out per record and losing
 /// shard ordering.
 /// </summary>
-public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent, KinesisEventRecord>
+/// <remarks>
+/// Response-producing: wires a <see cref="KinesisStreamCheckpointer"/> into the batch's
+/// <see cref="StreamContext{TItem}"/> and returns a <see cref="KinesisBatchResponse"/> naming the
+/// sequence number to resume from, for triggers with <c>ReportBatchItemFailures</c> configured. If
+/// the pipeline throws, the exception is caught (logged, not rethrown) so the response still carries
+/// whatever the handler had checkpointed before failing — the checkpointer's resume point is itself
+/// the correct failure signal for Kinesis's shard-ordered retry contract, so there's nothing to gain
+/// by cascading the exception instead. See <c>work/kinesis-batch-failure-handling-design.md</c>.
+/// </remarks>
+public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent, KinesisEventRecord, KinesisBatchResponse>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="KinesisStreamApplication"/> class.
@@ -22,20 +34,56 @@ public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent
     /// <param name="pipeline">The built stream pipeline to run the batch through.</param>
     public KinesisStreamApplication(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline)
         : base(
-            new TransportMiddlewarePipeline<StreamContext<KinesisEventRecord>>("kinesis", pipeline),
-            @event => new StreamContext<KinesisEventRecord>(ToAsyncEnumerable(@event.Records)))
+            new CatchAndCheckpointPipeline(new TransportMiddlewarePipeline<StreamContext<KinesisEventRecord>>("kinesis", pipeline)),
+            @event => BuildContext(@event.Records),
+            context => BuildResponse((KinesisStreamCheckpointer)context.Checkpointer))
     { }
+
+    private static StreamContext<KinesisEventRecord> BuildContext(List<KinesisEventRecord> records)
+    {
+        records ??= new List<KinesisEventRecord>();
+        return new StreamContext<KinesisEventRecord>(ToAsyncEnumerable(records), checkpointer: new KinesisStreamCheckpointer(records));
+    }
+
+    private static KinesisBatchResponse BuildResponse(KinesisStreamCheckpointer checkpointer)
+        => new(checkpointer.FirstUncheckpointedSequenceNumber);
 
     private static async IAsyncEnumerable<KinesisEventRecord> ToAsyncEnumerable(List<KinesisEventRecord> records)
     {
-        if (records != null)
+        foreach (var record in records)
         {
-            foreach (var record in records)
-            {
-                yield return record;
-            }
+            yield return record;
         }
 
         await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Catches an exception from the inner pipeline instead of letting it cascade, so the outer
+    /// <see cref="MiddlewareApplication{TEvent,TContext,TResult}"/> can still run its
+    /// <c>resultMapper</c> against the context's checkpointer and return a real
+    /// <see cref="KinesisBatchResponse"/> resume point.
+    /// </summary>
+    private class CatchAndCheckpointPipeline : IMiddlewarePipeline<StreamContext<KinesisEventRecord>>
+    {
+        private readonly IMiddlewarePipeline<StreamContext<KinesisEventRecord>> _pipeline;
+
+        public CatchAndCheckpointPipeline(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline)
+        {
+            _pipeline = pipeline;
+        }
+
+        public async Task HandleAsync(StreamContext<KinesisEventRecord> context, IServiceResolver serviceResolver)
+        {
+            try
+            {
+                await _pipeline.HandleAsync(context, serviceResolver);
+            }
+            catch (Exception ex)
+            {
+                serviceResolver.GetService<ILogger<KinesisStreamApplication>>()
+                    .LogError(ex, "Kinesis stream processing failed; resuming from the last checkpoint");
+            }
+        }
     }
 }

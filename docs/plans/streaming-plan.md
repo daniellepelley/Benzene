@@ -153,7 +153,15 @@ None of this touches `IMessageHandler`, `MessageRouter`, or any existing transpo
   step sees all items in order in one scope.
 - **Phase 2 — stream solutions.** `UseWindow`, `UsePartitionedBy`, checkpoint steps, and real
   checkpoint wiring for Event Hubs + SQS (SQS mapping windowed failures back to `SQSBatchResponse`).
-  Tests per operator.
+  Tests per operator. **Kinesis half done (2026-07-17)**: `Benzene.Aws.Lambda.Kinesis` now wires a
+  real `KinesisStreamCheckpointer : IStreamCheckpointer<KinesisEventRecord>` (replacing
+  `NullStreamCheckpointer`) and maps its resume point to a real `KinesisBatchResponse` for
+  `ReportBatchItemFailures` — see that package's `CLAUDE.md` and
+  `work/kinesis-batch-failure-handling-design.md`. This also added
+  `StreamMiddlewareApplication<TEvent,TItem,TResult>` (the result-producing sibling of the existing
+  two-generic version) to `Benzene.Core.Middleware/Streaming`, directly reusable for the still-open
+  SQS-streaming half of this phase. `UseCheckpointAfterEach()`/`UseWindow`/`UsePartitionedBy` are
+  still not implemented.
 - **Phase 3 — handler bridge (optional).** `UseStreamHandlers()` + the context converter enabling
   `IMessageHandler<IAsyncEnumerable<TItem>, TResponse>`. Tests: a streaming handler receives the full
   async sequence via the existing router.
