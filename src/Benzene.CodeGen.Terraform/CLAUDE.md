@@ -37,3 +37,22 @@ of hand-maintained. See `docs/terraform.md`.
 - **Benzene.CodeGen.Core** — `ICodeBuilder`, `CodeFile`, `LineWriter`
 - **Benzene.Core.MessageHandlers** — `ReflectionMessageHandlersFinder` for `[Message]` topic
   discovery
+
+## Tests
+- `test/Benzene.Core.Test/Autogen/CodeGen/Terraform/TerraformLambdaEventBusPermissionsBuilderTest.cs` —
+  `BuildPermission`/`BuildSubscription` (single-resource output, `filter_policy` shape),
+  `BuildPermissions`/`BuildSubscriptions` (one resource block per `TopicsMap` entry),
+  `BuildCodeFiles`'s two-file output, `NameFormatter.UnderScoreCase`, and
+  `DarwinTopicNamer.FormatName` — including the non-obvious case where a recognized
+  `namesToConvert` entry is returned **verbatim** (still hyphenated), not underscored, because the
+  match compares underscored forms but returns the original list entry.
+- `test/Benzene.Core.Test/Autogen/CodeGen/Terraform/TerraformDirectoryMergerTest.cs` — real
+  filesystem round trips (temp directory, cleaned up via `IDisposable`): no existing file → new
+  content passes through unchanged; an existing file whose first line matches the new content's
+  first line → that resource block is replaced; no matching first line → the new content is
+  appended after the existing file's content; multiple files in one `Merge` call are merged
+  independently. Previously zero coverage anywhere in the repo — also fixed a real bug this pass
+  surfaced: `Merge` built the existing-file path with a hardcoded `\` separator, which is not a
+  path separator on Linux/macOS (a `File.Exists` check for `<dir>\<name>` never matches on those
+  platforms, so every merge silently took the "file doesn't exist" branch and clobbered existing
+  Terraform files instead of merging into them) — fixed to `Path.Combine(directoryPath, pair.Key)`.

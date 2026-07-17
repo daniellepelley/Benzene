@@ -9,7 +9,7 @@ public class TerraformDirectoryMerger : IDirectoryMerger
         var output = new Dictionary<string, string[]>();
         foreach (var pair in newContent)
         {
-            var filePath = $"{directoryPath}\\{pair.Key}";
+            var filePath = Path.Combine(directoryPath, pair.Key);
             var exists = File.Exists(filePath);
 
             if (exists)
