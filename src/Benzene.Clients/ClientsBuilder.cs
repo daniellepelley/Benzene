@@ -2,6 +2,12 @@
 
 namespace Benzene.Clients;
 
+/// <summary>
+/// Superseded by <see cref="OutboundRoutingBuilder"/>/<c>AddOutboundRouting(...)</c>, which replaces
+/// the service-name/topic-key factory shape with one topic-keyed pipeline table. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
+/// </summary>
+[Obsolete("Use OutboundRoutingBuilder/AddOutboundRouting instead - see work/benzene-clients-redesign-plan.md")]
 public class ClientsBuilder
 {
     private readonly List<ClientMapping> _clientMappings = new();
