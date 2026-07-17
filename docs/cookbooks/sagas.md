@@ -169,14 +169,64 @@ you:
 - **Compensation runs only for steps that succeeded.** A step that failed created no effect, so it's
   never compensated; the orchestrator only unwinds what actually happened.
 
+## Automatic retry
+
+A clean `RolledBack` means the system is back at its starting state — safe to try again. Instead of
+looping yourself, pass a `SagaRetryPolicy` and the orchestrator re-runs the whole saga with
+exponential backoff:
+
+```csharp
+var result = await saga.RunAsync(new SagaRunOptions
+{
+    RetryPolicy = new SagaRetryPolicy(maxAttempts: 3, initialDelay: TimeSpan.FromSeconds(1))
+});
+```
+
+Retry is deliberately limited to `RolledBack`. A `Succeeded` saga needs no retry, and a
+`PartiallyRolledBack` one may have left effects that a re-run would double-apply — so it's returned
+for you to handle, never retried. (`maxAttempts` is the total number of attempts; `1` = no retry.)
+
+## Recording progress and outcome: `ISagaStateStore`
+
+Pass an `ISagaStateStore` to record when a saga starts, each stage it completes, and how it finishes
+— so a `RolledBack` or (especially) a `PartiallyRolledBack` outcome is **durably visible** to an
+operator even if the process later restarts:
+
+```csharp
+var store = new InMemorySagaStateStore();   // or a durable adapter (below)
+var result = await saga.RunAsync(new SagaRunOptions { Name = "signup", StateStore = store });
+
+foreach (var e in store.Events)
+    Console.WriteLine($"{e.SagaId} attempt {e.Attempt}: {e.Kind} {e.StageIndex} {e.Result?.Outcome}");
+```
+
+`InMemorySagaStateStore` is the built-in, testable default. A durable store is a three-method
+implementation — persist each call to a row/document:
+
+```csharp
+public class TableSagaStateStore : ISagaStateStore
+{
+    public Task RecordStartedAsync(SagaRunInfo run, CancellationToken ct = default)
+        => _table.UpsertAsync(run.SagaId, new { run.Name, run.Attempt, run.StageCount, Status = "started" }, ct);
+
+    public Task RecordStageCompletedAsync(string sagaId, int attempt, int stageIndex, CancellationToken ct = default)
+        => _table.AppendAsync(sagaId, new { attempt, stageCompleted = stageIndex }, ct);
+
+    public Task RecordFinishedAsync(string sagaId, int attempt, SagaResult result, CancellationToken ct = default)
+        => _table.UpsertAsync(sagaId, new { attempt, Status = result.Outcome.ToString() }, ct);
+}
+```
+
+> **The store records progress; it does not *resume* a saga.** The steps are in-memory functions
+> (closures), which can't be serialized and rehydrated after a crash — durable resume of arbitrary
+> steps isn't something a Func-based engine can offer. What you get is durable observability and
+> operational recovery: what ran, how far it got, and how it ended. If the host dies mid-saga, you
+> re-run the operation; your idempotent forwards/compensations make that safe.
+
 ## What it does *not* do (by design)
 
-- **It's in-process.** The saga runs to completion (or rollback) within one `RunAsync()` call. It
-  does **not** persist progress or resume after a process crash — the steps are in-memory functions,
-  which can't be serialized and rehydrated. If the host dies mid-saga, you re-run the operation; your
-  idempotent forwards/compensations make that safe.
-- **It doesn't retry for you (yet).** On a clean `RolledBack`, *you* decide whether to call
-  `RunAsync()` again. A built-in retry policy is a planned fast-follow.
+- **No durable resume.** See the note above — the store records what happened; it doesn't replay
+  in-memory steps after a crash. Re-run the operation instead (idempotency makes that safe).
 - **No two-phase commit, no distributed locks.** That's the whole point of the saga pattern — it
   trades atomic isolation for compensations, which is what lets it span services that share no
   transaction.

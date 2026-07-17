@@ -34,6 +34,19 @@ Saga  ── ordered ──▶  Stage  ── concurrent ──▶  Step (forwar
   `FailedStageIndex`, `Failure` (the failing step's result), `FailureException`, and
   `CompensationFailures` (steps whose compensation itself failed — orphaned effects to attend to).
 - `SagaStepState` — `Pending` / `Succeeded` / `Failed` / `RolledBack` / `CompensationFailed`.
+- `Saga.RunAsync(SagaRunOptions)` — the opt-in overload for the §7 fast-follows (`RunAsync()` stays
+  the zero-overhead default: one attempt, no store, no id). `SagaRunOptions` carries an optional
+  `SagaId`/`Name`, an `ISagaStateStore`, and a `SagaRetryPolicy`.
+- `SagaRetryPolicy` (§7.5) — whole-saga retry: `MaxAttempts` (total attempts, 1 = no retry),
+  `InitialDelay`, `BackoffFactor`, and an internal `Delay` seam for tests. Retry fires **only** on
+  `RolledBack` (a clean rollback is safe to re-run from scratch); `Succeeded` needs none and
+  `PartiallyRolledBack` must not be re-run (would double-apply orphaned effects).
+- `ISagaStateStore` (§7.4) — pluggable progress/outcome sink: `RecordStartedAsync` →
+  `RecordStageCompletedAsync` (per completed stage) → `RecordFinishedAsync`, once per attempt.
+  Records progress for durable **observability/operational recovery**; it does **not** resume a saga
+  (in-memory step closures can't be serialized/rehydrated). `InMemorySagaStateStore` (event list +
+  `EventsFor(sagaId)`) is the built-in test double; a durable adapter is a 3-method copy-paste (see
+  the cookbook). `SagaRunInfo`/`SagaStateEvent`/`SagaStateEventKind` are the data model.
 
 ## Design decisions (from `work/saga-design.md` §7)
 - **Await-all within a stage** (not fail-fast) — deterministic; every step's outcome is known
@@ -41,8 +54,10 @@ Saga  ── ordered ──▶  Stage  ── concurrent ──▶  Step (forwar
 - **Best-effort rollback** — every compensation is attempted even if one fails; failures surface as
   `PartiallyRolledBack` + `CompensationFailures` rather than stranding the rest.
 - **Typed `SagaContext`** for threading results between stages.
-- **In-process only** for now — no state persistence, no DB dependency (durable/resumable sagas are
-  a possible pluggable fast-follow, deliberately not baked in).
+- **In-process execution** — the engine runs a saga to completion/rollback in one call. Progress can
+  be recorded to a pluggable `ISagaStateStore` (shipped fast-follow) for durable observability, but
+  the engine does **not** resume in-memory step closures after a crash (they can't be serialized) —
+  no DB dependency is baked into core. Optional whole-saga retry via `SagaRetryPolicy` (shipped).
 - **Client-agnostic engine** — depends only on `Benzene.Abstractions` + `Benzene.Results`, **not**
   `Benzene.Clients`. Because `IBenzeneMessageSender.SendAsync(topic, req)` already returns
   `Task<IBenzeneResult<T>>`, a step's `Do(...)` calls it directly — no adapter package needed. An
@@ -60,7 +75,10 @@ Saga  ── ordered ──▶  Stage  ── concurrent ──▶  Step (forwar
 - Concurrency safety: steps in a stage run concurrently but only **read** earlier stages' context
   values during that phase; writes happen single-threaded after each stage barrier (`Stage.Publish`),
   so `SagaContext` needs no locking.
-- Test coverage lives in `test/Benzene.Core.Test/Saga/` — happy path, mid-stage failure + rollback,
-  cross-stage LIFO rollback, compensation-failure → `PartiallyRolledBack`, and forward-throws.
+- Test coverage lives in `test/Benzene.Core.Test/Saga/` — `SagaTest.cs` (happy path, mid-stage
+  failure + rollback, cross-stage LIFO rollback, compensation-failure → `PartiallyRolledBack`,
+  forward-throws) and `SagaRetryAndStateStoreTest.cs` (retry recovers a flaky step, exhausts to
+  `RolledBack`, refuses to retry `PartiallyRolledBack`; state store records start/stage/finish, only
+  completed stages on failure, one `Started` per retry attempt, and generates an id when none given).
 - Vocabulary note: the legacy code called the forward+compensation unit a "Part" and the parallel
   group a "Step"; this package renames them **Step** and **Stage** respectively.

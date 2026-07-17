@@ -285,7 +285,7 @@ decision, and revisiting after A.1.
 
 | ID | Item | Category | Vehicle | Status |
 |----|------|----------|---------|--------|
-| A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | **Shipped** — engine + tests + example (v1: in-process, engine-only; see `saga-design.md` §7 fast-follows) |
+| A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | **Shipped** — engine + tests + example; fast-follows shipped: `SagaRetryPolicy` (whole-saga retry on clean rollback) + pluggable `ISagaStateStore` (progress/outcome recording, in-memory default); user cookbook `docs/cookbooks/sagas.md`. In-process (no durable resume by design) |
 | A.2 | Contract testing / CI gate | Build | `Benzene.HealthChecks.Schema` + `Clients.HealthChecks` + `Schema.OpenApi.Compatibility` | **Shipped** — A.2a runtime drift check (provider `SchemaHealthCheck` + hardened consumer processor) and A.2b CI gate (`SchemaCompatibility.EnsureBackwardCompatible`); cookbook `docs/cookbooks/contract-testing.md` |
 | A.3 | Idempotency | Build | `Benzene.Idempotency` | **Shipped** — `IdempotencyMiddleware<TContext>` + pluggable `IIdempotencyStore` + in-memory store + header/body-hash key strategy; 20 tests; cookbook `docs/cookbooks/idempotency.md` (Redis store as copy-paste `SET NX`) |
 | A.4 | Authorization depth | Build | `Benzene.Auth.Core` | **Shipped** — `RequireRole`/`RequirePolicy`/`RequireAuthorization<TResource>` + `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams (BCL-only, no new NuGet); 8 tests; cookbook section in `docs/cookbooks/auth-patterns.md` |
