@@ -1,3 +1,4 @@
+using Benzene.Core;
 using Benzene.GoogleCloud.Functions.PubSub;
 using Benzene.GoogleCloud.Functions.PubSub.TestHelpers;
 using Xunit;
@@ -25,12 +26,12 @@ public class PubSubGettersTest
     }
 
     [Fact]
-    public void PubSubMessageTopicGetter_MissingTopicAttribute_ReturnsNullTopicId()
+    public void PubSubMessageTopicGetter_MissingTopicAttribute_ReturnsMissing()
     {
         var data = new PubSubMessageBuilder().Build();
         var context = new PubSubContext(data);
 
-        Assert.Null(new PubSubMessageTopicGetter().GetTopic(context).Id);
+        Assert.Equal(Constants.Missing, new PubSubMessageTopicGetter().GetTopic(context).Id);
     }
 
     [Fact]
