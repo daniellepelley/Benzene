@@ -100,6 +100,7 @@ See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 | `Benzene.Azure.Function.AspNet` | Handle HTTP-triggered functions via the ASP.NET Core integration — `UseHttp(...)`. |
 | `Benzene.Azure.Function.EventHub` | Handle Event Hub stream events. |
 | `Benzene.Azure.Function.Kafka` | Handle Kafka-triggered functions. |
+| `Benzene.Azure.Function.CosmosDb` | Handle Cosmos DB Change Feed triggers as a fan-in document stream — `UseCosmosDbChangeFeed<TDocument>(...)`. |
 
 See [Azure Functions Setup](../azure-functions).
 

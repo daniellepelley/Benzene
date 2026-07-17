@@ -24,6 +24,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 ### Azure
 - [Service Bus Message Handling](service-bus-handling.md) - Process Service Bus messages with Benzene
 - [Event Hub Stream Processing](event-hub-processing.md) - Handle high-throughput Event Hub streams, batching, and checkpointing boundaries
+- [Cosmos DB Change Feed Processing](cosmos-change-feed-processing.md) - Consume a container's change feed as an ordered document stream
 - Managed Identity for Azure Resources *(planned)*
 
 ### Validation & Error Handling
