@@ -47,3 +47,8 @@ Azure Kafka integration for Benzene (Azure Event Hubs with Kafka protocol). Prov
   `KafkaMessageTopicGetter`, and `KafkaMessageHeadersGetter`'s always-empty contract.
 - `test/Benzene.Core.Test/Azure/KafkaFailureHandlingTest.cs` - `KafkaOptions`'
   `CatchExceptions`/`RaiseOnFailureStatus` combinations against `KafkaBatchApplication` directly.
+- `test/Benzene.Core.Test/Azure/KafkaBatchAndNoOpTest.cs` - a 3-record batch (with `CatchExceptions`
+  on) where one record's handler throws, pinning down that the other two records still get
+  processed rather than the whole batch aborting; `KafkaMessageProcessingException`'s message text
+  includes the topic; and `UseKafka(IBenzeneApplicationBuilder, ...)`'s no-op branch on a
+  non-`IAzureFunctionAppBuilder` app (returns the same instance untouched).
