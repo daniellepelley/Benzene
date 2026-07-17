@@ -2,6 +2,7 @@ using System;
 using Amazon.SimpleNotificationService;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
+using Benzene.Clients;
 using Benzene.Core.Middleware;
 using Void = Benzene.Abstractions.Results.Void;
 
@@ -76,5 +77,31 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl)
     {
         return app.Convert(new SnsContextConverter<T>(queueUrl), builder => builder.UseSnsClient());
+    }
+
+    /// <summary>
+    /// Converts an outbound route pipeline (<c>OutboundRoutingBuilder.Route</c>) to publish via SNS,
+    /// using a custom middleware configuration. See <c>work/benzene-clients-redesign-plan.md</c> §3.
+    /// </summary>
+    /// <param name="app">The outbound pipeline builder to convert.</param>
+    /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
+    /// <param name="action">A callback used to configure the converted SNS publish pipeline.</param>
+    /// <returns>The pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app,
+        string topicArn, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action)
+    {
+        return app.Convert(new OutboundSnsContextConverter(topicArn), action);
+    }
+
+    /// <summary>
+    /// Converts an outbound route pipeline (<c>OutboundRoutingBuilder.Route</c>) to publish via SNS,
+    /// using the default <see cref="SnsClientMiddleware"/> configuration.
+    /// </summary>
+    /// <param name="app">The outbound pipeline builder to convert.</param>
+    /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
+    /// <returns>The pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app, string topicArn)
+    {
+        return app.Convert(new OutboundSnsContextConverter(topicArn), builder => builder.UseSnsClient());
     }
 }

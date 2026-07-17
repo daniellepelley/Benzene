@@ -1,0 +1,85 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Amazon.SQS.Model;
+using Benzene.Abstractions.Middleware;
+using Benzene.Abstractions.Results;
+using Benzene.Abstractions.Serialization;
+using Benzene.Clients;
+using Benzene.Results;
+using Void = Benzene.Abstractions.Results.Void;
+
+namespace Benzene.Clients.Aws.Sqs;
+
+/// <summary>
+/// Converts between an outbound <see cref="OutboundContext"/> and an <see cref="SqsSendMessageContext"/>,
+/// so an outbound route (<c>OutboundRoutingBuilder.Route</c>) can send via SQS. The
+/// <see cref="OutboundContext"/> counterpart of <see cref="SqsContextConverter{T}"/> - see
+/// <c>work/benzene-clients-redesign-plan.md</c> §3.
+/// </summary>
+/// <remarks>
+/// SQS has no request/response semantics beyond a send acknowledgement, so the response this
+/// converter produces is always <see cref="IBenzeneResult{Void}"/> - a topic routed here must be
+/// sent via <c>IBenzeneMessageSender.SendAsync&lt;TRequest,Void&gt;</c>.
+/// </remarks>
+public class OutboundSqsContextConverter : IContextConverter<OutboundContext, SqsSendMessageContext>
+{
+    private readonly ISerializer _serializer;
+    private readonly string _queueUrl;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OutboundSqsContextConverter"/> class using a
+    /// <see cref="JsonSerializer"/> to serialize the outgoing message.
+    /// </summary>
+    /// <param name="queueUrl">The URL of the queue to send to.</param>
+    public OutboundSqsContextConverter(string queueUrl)
+        : this(queueUrl, new JsonSerializer())
+    { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OutboundSqsContextConverter"/> class.
+    /// </summary>
+    /// <param name="queueUrl">The URL of the queue to send to.</param>
+    /// <param name="serializer">The serializer used to serialize the outgoing message.</param>
+    public OutboundSqsContextConverter(string queueUrl, ISerializer serializer)
+    {
+        _queueUrl = queueUrl;
+        _serializer = serializer;
+    }
+
+    /// <summary>
+    /// Builds an SQS send message request, serializing the outgoing message as the message body and
+    /// setting the topic and headers as message attributes.
+    /// </summary>
+    /// <param name="contextIn">The outbound context to convert.</param>
+    /// <returns>A task that resolves to the built <see cref="SqsSendMessageContext"/>.</returns>
+    public Task<SqsSendMessageContext> CreateRequestAsync(OutboundContext contextIn)
+    {
+        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
+        foreach (var header in contextIn.Headers)
+        {
+            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
+        }
+
+        messageAttributes["topic"] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
+
+        return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
+        {
+            QueueUrl = _queueUrl,
+            MessageBody = _serializer.Serialize(contextIn.Request),
+            MessageAttributes = messageAttributes
+        }));
+    }
+
+    /// <summary>
+    /// Maps the SQS send response's HTTP status code back onto the outbound context as an
+    /// <see cref="IBenzeneResult{Void}"/>.
+    /// </summary>
+    /// <param name="contextIn">The outbound context to set the response on.</param>
+    /// <param name="contextOut">The completed <see cref="SqsSendMessageContext"/>.</param>
+    /// <returns>A completed task.</returns>
+    public Task MapResponseAsync(OutboundContext contextIn, SqsSendMessageContext contextOut)
+    {
+        contextIn.Response = contextOut.Response.HttpStatusCode.Convert<Void>();
+        return Task.CompletedTask;
+    }
+}
