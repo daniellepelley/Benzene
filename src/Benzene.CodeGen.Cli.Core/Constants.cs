@@ -27,4 +27,14 @@ public static class Constants
     public const string Format = "format";
     public const string FormatDefault = "json";
     public const string FormatDescription = "The document format, either 'yaml' or 'json'";
+    public const string Url = "url";
+    public const string UrlDescription = "The base URL of the Benzene Cloud Service to probe, e.g. https://orders.example.com";
+    public const string InvokePath = "invoke-path";
+    public const string InvokePathDescription = "Overrides the wire-envelope endpoint path probed for R4/R6. Defaults to /benzene/invoke";
+    public const string SpecPath = "spec-path";
+    public const string SpecPathDescription = "Overrides the derived spec endpoint path probed for R5. Defaults to /benzene/spec";
+    public const string HealthPath = "health-path";
+    public const string HealthPathDescription = "Overrides the health endpoint path probed for R3. Defaults to /benzene/health";
+    public const string NoTraceParentProbe = "no-traceparent-probe";
+    public const string NoTraceParentProbeDescription = "Skips the R8 bonus traceparent header sent with the R4/R6 probe requests";
 }

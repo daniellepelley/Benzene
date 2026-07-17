@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
+    <ProjectReference Include="..\Benzene.CloudService.Probe\Benzene.CloudService.Probe.csproj" />
     <ProjectReference Include="..\Benzene.CodeGen.ApiGateway\Benzene.CodeGen.ApiGateway.csproj" />
     <ProjectReference Include="..\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj" />
     <ProjectReference Include="..\Benzene.CodeGen.LambdaTestTool\Benzene.CodeGen.LambdaTestTool.csproj" />

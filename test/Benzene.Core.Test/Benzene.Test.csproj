@@ -86,6 +86,7 @@
     <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Clients.HealthChecks\Benzene.Clients.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.CloudService.Probe\Benzene.CloudService.Probe.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.ApiGateway\Benzene.CodeGen.ApiGateway.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Cli.Core\Benzene.CodeGen.Cli.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj" />

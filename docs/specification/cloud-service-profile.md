@@ -183,11 +183,31 @@ questions, and both stay in force:
   changes in response to runtime degradation (§4): an unreachable collector doesn't make a
   conformant service stop claiming the profile. Other ports MAY offer the same shape; nothing in
   the wire contract requires it (the `profile` field is optional, per mesh.md §2).
-- An *external* live-probe checker — asserting R1–R8's observable surfaces from outside a running
-  service (health response shape, envelope round-trip, spec and descriptor presence, default
-  paths) without relying on that service's own self-check — remains future work; until it exists,
-  use the live-interop form described in
-  [porting-guide.md §3](porting-guide.md#3-conformance-testing).
+- An *external* **live-probe checker** exists for auditing any service over plain HTTP without
+  relying on that service's own self-check — `Benzene.CloudService.Probe`
+  (`CloudServiceProbe.RunAsync`, and the `benzene profile-check --url <url>` CLI command built on
+  it). It is deliberately independent of `Benzene.CloudService` — no dependency on it, BCL only —
+  so it audits a Go or Node port's service exactly as it would a .NET one; the profile is
+  language-neutral and so is the checker.
+
+  A black-box HTTP probe genuinely cannot verify everything the self-check can, so the live-probe
+  checker reports a **tri-state** verdict per requirement (Satisfied / NotSatisfied /
+  Inconclusive) rather than the self-check's bool, with a reason always attached — an outside
+  observer explaining itself matters even more when it has no service-side word to fall back on.
+  Two things are structurally unobservable from a single service and stay `Inconclusive` by
+  design, never silently upgraded: R8 (propagation requires either a second service to observe
+  forwarded `traceparent` headers, or a collector deriving consumer edges from trace parentage —
+  [mesh.md](mesh.md) §3–§4) and the registration/heartbeat half of R6 (only the reserved `mesh`
+  topic's descriptor response is directly observable; delivery to a collector is not, so a passing
+  descriptor check is reported as satisfying only the observable half, never the whole of R6). R7
+  likewise degrades to `Inconclusive` the moment the caller points the probe at non-default paths
+  — it then has no way to know what the service's *own* defaults are, only that something answers
+  at the paths it was told to check.
+
+  This checker complements, not replaces, the live-interop form described in
+  [porting-guide.md §3](porting-guide.md#3-conformance-testing): that form proves cross-language
+  wire compatibility end-to-end; this one audits a single deployed service's profile conformance
+  from outside.
 
 ## 6. Relationship to the adoption ladder *(informative)*
 

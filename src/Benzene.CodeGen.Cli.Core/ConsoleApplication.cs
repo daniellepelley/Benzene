@@ -1,4 +1,5 @@
 ﻿using Benzene.CodeGen.Cli.Core.Commands.Build;
+using Benzene.CodeGen.Cli.Core.Commands.CloudServiceProfile;
 using Benzene.CodeGen.Cli.Core.Commands.Confluence;
 using Benzene.CodeGen.Cli.Core.Commands.HealthCheck;
 using Benzene.CodeGen.Cli.Core.Commands.LambdaTestTool;
@@ -20,7 +21,8 @@ public class ConsoleApplication
             new HealthCheckCommand(),
             new SpecCommand(),
             new LambdaTestToolCommand(),
-            new ConfluenceCommand()
+            new ConfluenceCommand(),
+            new CloudServiceProfileCheckCommand()
             );
     }
 
