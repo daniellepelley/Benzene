@@ -2629,3 +2629,43 @@ attributes, same policy-preserving approach as the Cosmos trigger adapter):
   (`__queueServiceUri`/`__blobServiceUri`) and their storage roles; type-specific `CLAUDE.md` in
   both packages. Package count: **12 production, 5 TestHelpers**. Remaining unbuilt trigger
   types from the original list: Event Grid and Timer.
+
+## Document History Addendum — 2026-07-17 (sixth entry): Event Grid and Timer Triggers — Functions Trigger Matrix Complete
+
+Closes the last two trigger types from the roadmap's original list (Blob, Queue, Cosmos DB,
+Event Grid, Timer — lines ~1970/~2343). **Every Functions trigger type the roadmap named is now
+built.** Both packages zero-dependency, same consumer-references-the-extension-package policy as
+the previous four:
+
+- **`Benzene.Azure.Function.EventGrid`** — message-routed adapter, **topic = event type**
+  (`Microsoft.Storage.BlobCreated` or custom types), the direct Azure counterpart of
+  `Benzene.Aws.Lambda.S3`'s route-on-event-name shape. `EventGridTriggerEvent` is Benzene's own
+  model (payload as BCL `JsonElement` — no `Azure.Messaging.EventGrid`), with
+  `Parse(string)` handling **both wire schemas** (Event Grid schema and CloudEvents 1.0,
+  detected via `specversion`; `type`/`source` vs `eventType`/`topic` mapping). Event `data` is
+  the handler's request payload (`{}` fallback); envelope `id`/`subject`/`source` surface as
+  headers. Full mapper set + `UsePresetTopic` override; failure = propagate to Event Grid's own
+  retry/dead-letter (subscription-configured). Transport tag `"event-grid"`.
+- **`Benzene.Azure.Function.Timer`** — scheduled ticks into the pipeline, two modes:
+  `UseTick(...)` direct, or `UsePresetTopic("nightly-cleanup").UseMessageHandlers()` making a
+  scheduled job just another message handler (tick body = serialized `TimerTriggerInfo`, so
+  handlers can bind the schedule info; proven by test against a real handler).
+  `TimerTriggerInfo`/`TimerScheduleStatus` property names match the worker's `TimerInfo` JSON so
+  the trigger parameter binds directly as Benzene's type. **Named `UseTimerTrigger`** — `UseTimer`
+  already exists as Core.Middleware's timing middleware (collision caught at design time, noted
+  in the package CLAUDE.md). Documented platform reality: a failed tick is not retried.
+  Transport tag `"timer"`.
+- **Tests:** 10 new tests in `test/Benzene.Core.Test/Azure/` (`EventGridPipelineTest` —
+  end-to-end routing for both schemas, `Parse` mapping both schemas, headers, empty-data
+  fallback; `TimerPipelineTest` — tick delivery with schedule info, preset-topic dispatch to a
+  real handler, exception propagation, platform-neutral no-op). Full `Benzene.sln` build 0
+  errors; full `Benzene.Core.Test` suite green.
+- **Docs:** Event Grid and Timer subsections with trigger examples in `docs/azure-functions.md`'s
+  Non-HTTP triggers section (intro updated to name all eight), two `docs/reference/packages.md`
+  rows, type-specific `CLAUDE.md` in both packages. No managed-identity cookbook rows needed:
+  the Event Grid trigger is push-delivered (no connection setting) and Timer only uses the host's
+  `AzureWebJobsStorage`, already covered. Package count: **14 production, 5 TestHelpers**.
+- **Azure trigger matrix status: complete.** Remaining major Azure roadmap items after this
+  pass: Terraform template (P1), the `Benzene.Kafka.Core` consumer-builder hook for secretless
+  OAUTHBEARER (public-API change, flagged in the fourth entry), performance benchmarks (needs
+  real deployed Azure), and Durable Functions (explicitly long-term, never scoped).

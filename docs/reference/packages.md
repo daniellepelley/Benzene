@@ -103,6 +103,8 @@ See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 | `Benzene.Azure.Function.CosmosDb` | Handle Cosmos DB Change Feed triggers as a fan-in document stream — `UseCosmosDbChangeFeed<TDocument>(...)`. |
 | `Benzene.Azure.Function.QueueStorage` | Handle Queue Storage triggers — `UseQueueStorage(...)`, routing via a Benzene message envelope (`UseBenzeneMessage`) or a fixed per-queue topic (`UsePresetTopic`). |
 | `Benzene.Azure.Function.BlobStorage` | Handle Blob Storage triggers — `UseBlobStorage(...)` + `UseBlob(...)`, delivering the blob's name and content to a non-routed pipeline. |
+| `Benzene.Azure.Function.EventGrid` | Handle Event Grid triggers — `UseEventGrid(...)`, routing events to message handlers by event type (both Event Grid and CloudEvents schemas). |
+| `Benzene.Azure.Function.Timer` | Handle Timer triggers — `UseTimerTrigger(...)`, consuming ticks directly (`UseTick`) or dispatching them to a message handler via `UsePresetTopic`. |
 
 See [Azure Functions Setup](../azure-functions).
 
