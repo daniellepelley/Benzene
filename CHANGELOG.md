@@ -191,6 +191,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transport-agnostic `WithApplication()` in `Benzene.Core.MessageHandlers` is unaffected.)
 
 ### Changed
+- CI (`build-benzene.yml`): `Benzene.Grpc.Test`, `Benzene.Mesh.Test`, and `Benzene.Conformance.Test`
+  now run as part of the main `build` job, alongside the existing `Benzene.Core.Test` run. All three
+  were already part of `Benzene.sln` (so already compiled by CI) but were previously never actually
+  executed anywhere except a developer's own machine.
 - Updated to .NET 10
 - IContextConverter is now async
 - Cleaned up namespaces across AWS Lambda packages

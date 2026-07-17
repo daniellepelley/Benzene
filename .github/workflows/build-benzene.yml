@@ -32,6 +32,12 @@ jobs:
         directory: ./coverage
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
+    - name: Test (Grpc)
+      run: dotnet test test/Benzene.Grpc.Test/Benzene.Grpc.Test.csproj --no-build --verbosity normal
+    - name: Test (Mesh)
+      run: dotnet test test/Benzene.Mesh.Test/Benzene.Mesh.Test.csproj --no-build --verbosity normal
+    - name: Test (Conformance)
+      run: dotnet test test/Benzene.Conformance.Test/Benzene.Conformance.Test.csproj --no-build --verbosity normal
 
   aws-integration-tests:
 
