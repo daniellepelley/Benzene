@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Clients.Aws` / `Benzene.Clients`: Step 3 of the outbound redesign
+  (`work/benzene-clients-redesign-plan.md`) - `.UseSqs(queueUrl, ...)`/`.UseSns(topicArn, ...)` now
+  have `OutboundContext` overloads, so an `OutboundRoutingBuilder.Route(topic, pipeline => pipeline.UseSqs(...))`
+  route can send via SQS/SNS through new `OutboundSqsContextConverter`/`OutboundSnsContextConverter`
+  (the `OutboundContext` counterparts of the existing `SqsContextConverter<T>`/`SnsContextConverter<T>`,
+  reusing the same `SqsClientMiddleware`/`SnsClientMiddleware`). Also lands the design's
+  middleware-ification of the old `ClientBuilder` decorators: new `CorrelationIdMiddleware`
+  (`Benzene.Clients.CorrelationId`, `.UseCorrelationId(...)`) and `W3CTraceContextMiddleware`
+  (`Benzene.Clients.TraceContext`, `.UseW3CTraceContext()`) stamp headers onto `OutboundContext`
+  directly - converted from `CorrelationIdBenzeneMessageClient`/`TraceContextBenzeneMessageClient`.
+  Retry needed no new type: the existing, already-generic `Benzene.Resilience.RetryMiddleware<TContext>`/
+  `.UseRetry<TContext>(...)` already works on `OutboundContext` unmodified. **Constraint worth
+  knowing**: SQS/SNS have no request/response semantics beyond a send acknowledgement, so a topic
+  routed through `.UseSqs(...)`/`.UseSns(...)` must be sent via
+  `IBenzeneMessageSender.SendAsync<TRequest,Void>` - any other response type compiles but throws
+  `InvalidCastException` at runtime (a real, documented trade-off of `IBenzeneMessageSender`'s
+  unconstrained-generic shape, not something this change fixes). `.UseAwsLambda(...)` has no
+  `OutboundContext` overload yet - explicitly deferred, see the design doc's dated update and
+  `Benzene.Clients.Aws/CLAUDE.md`.
 - `Benzene.CodeGen.Client` / `Benzene.Clients`: Step 2 of the outbound redesign
   (`work/benzene-clients-redesign-plan.md`) - generated `{Service}ServiceClient`s now target
   `IBenzeneMessageSender` instead of `IBenzeneMessageClientFactory`: the constructor takes

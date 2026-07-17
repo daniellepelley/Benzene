@@ -3,6 +3,7 @@ using Amazon.SQS;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
+using Benzene.Clients;
 using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
@@ -63,6 +64,33 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSqs<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl)
     {
         return app.Convert(new SqsContextConverter<T>(queueUrl), builder => builder.UseSqsClient());
+    }
+
+    /// <summary>
+    /// Converts an outbound route pipeline (<c>OutboundRoutingBuilder.Route</c>) to send via SQS,
+    /// using a custom middleware configuration. See <c>work/benzene-clients-redesign-plan.md</c> §3.
+    /// </summary>
+    /// <param name="app">The outbound pipeline builder to convert.</param>
+    /// <param name="queueUrl">The URL of the queue to send to.</param>
+    /// <param name="action">A callback used to configure the converted SQS send pipeline.</param>
+    /// <returns>The pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app,
+        string queueUrl,
+        Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action)
+    {
+        return app.Convert(new OutboundSqsContextConverter(queueUrl), action);
+    }
+
+    /// <summary>
+    /// Converts an outbound route pipeline (<c>OutboundRoutingBuilder.Route</c>) to send via SQS,
+    /// using the default <see cref="SqsClientMiddleware"/> configuration.
+    /// </summary>
+    /// <param name="app">The outbound pipeline builder to convert.</param>
+    /// <param name="queueUrl">The URL of the queue to send to.</param>
+    /// <returns>The pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app, string queueUrl)
+    {
+        return app.Convert(new OutboundSqsContextConverter(queueUrl), builder => builder.UseSqsClient());
     }
 
     /// <summary>

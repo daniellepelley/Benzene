@@ -21,6 +21,30 @@ that capability. `SendAsync` gained a third, optional `headers` parameter
 property (never null, defaults empty) — see `src/Benzene.Clients/CLAUDE.md` for the shipped shape.
 Everything else in §2 shipped as designed.
 
+**2026-07-17 update — Step 3 implemented (SQS/SNS; Lambda deferred).** §2.4's middleware-ification
+table shipped with one simplification: **retry needed no new type at all** -
+`Benzene.Resilience.RetryMiddleware<TContext>`/`.UseRetry<TContext>(...)` already existed, fully
+generic, with a `shouldRetryContext: Func<TContext,bool>` predicate - it works on `OutboundContext`
+unmodified. `CorrelationIdMiddleware`/`W3CTraceContextMiddleware` shipped as new, small
+`IMiddleware<OutboundContext>` types (`Benzene.Clients.CorrelationId`/`Benzene.Clients.TraceContext`),
+added via `.UseCorrelationId()`/`.UseW3CTraceContext()`, converted directly from
+`CorrelationIdBenzeneMessageClient`/`TraceContextBenzeneMessageClient`'s logic. `HeadersMiddleware`
+was never built - unnecessary, since Step 2's per-call `headers` parameter on `SendAsync` already
+closes the "ambient mutable header state" concern §2.4 raised, structurally, without a decorator.
+`.UseSqs(...)`/`.UseSns(...)` shipped on the outbound pipeline builder (`Benzene.Clients.Aws`), via
+new `OutboundSqsContextConverter`/`OutboundSnsContextConverter` (the `OutboundContext` counterparts
+of the existing `SqsContextConverter<T>`/`SnsContextConverter<T>`). **`.UseAwsLambda(...)` is
+explicitly deferred, not implemented** - SQS/SNS already prove the pattern generically end to end;
+Lambda would follow the identical recipe (`OutboundAwsLambdaContextConverter` +
+`.UseAwsLambda(functionName, ...)`) whenever it's next picked up. **Real constraint worth knowing**:
+since SQS/SNS have no request/response semantics beyond a send acknowledgement, a topic routed
+through `.UseSqs(...)`/`.UseSns(...)` must be sent via `IBenzeneMessageSender.SendAsync<TRequest,Void>`
+- calling it with any other `TResponse` compiles but throws `InvalidCastException` at runtime
+(`OutboundContext.Response` is always boxed as `IBenzeneResult<Void>` for these two transports).
+This is a real, inherent trade-off of `IBenzeneMessageSender`'s unconstrained-generic shape (§2.1) -
+the old `IBenzeneClientContext<T,Void>`-typed pipelines caught this at compile time; the new one
+only catches it at runtime. Not fixed here - flagging for whoever next revisits the interface shape.
+
 ## 1. Current shape (verified against actual code)
 
 - `IBenzeneMessageClient.SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest>)` —

@@ -39,3 +39,17 @@ AWS client implementations for calling Benzene services in AWS. Provides clients
   `AwsLambdaBenzeneMessageClient`/`CreateAwsLambdaBenzeneMessageClient()` sugar) does NOT forward
   headers — a raw `InvokeRequest` has no header-like concept. `AwsLambdaBenzeneMessageClient` already
   forwards headers correctly by embedding them in its own `BenzeneMessageClientRequest` envelope.
+- **Outbound routing (2026-07-17, Step 3 of `work/benzene-clients-redesign-plan.md`)**:
+  `OutboundSqsContextConverter`/`OutboundSnsContextConverter` are the `Benzene.Clients.OutboundContext`
+  counterparts of `SqsContextConverter<T>`/`SnsContextConverter<T>` - the `OutboundContext`
+  overloads of `.UseSqs(queueUrl, ...)`/`.UseSns(topicArn, ...)` in `Sqs/Extensions.cs`/`Sns/Extensions.cs`
+  use them to convert an `OutboundRoutingBuilder.Route(topic, pipeline => pipeline.UseSqs(...))` route
+  onto the same `SqsClientMiddleware`/`SnsClientMiddleware` the older `IBenzeneClientContext<T,Void>`-typed
+  `.UseSqs<T>(...)`/`.UseSns<T>(...)` overloads already use - forward per-call headers (from
+  `IBenzeneMessageSender.SendAsync`'s `headers` parameter) onto message attributes exactly like the
+  old converters do. Both response mappers hardcode `IBenzeneResult<Void>` - SQS/SNS have no
+  request/response semantics beyond a send acknowledgement, so a topic routed through either must
+  be sent via `SendAsync<TRequest,Void>`; any other `TResponse` compiles but throws
+  `InvalidCastException` at runtime. **`.UseAwsLambda(...)` has no `OutboundContext` overload yet** -
+  explicitly deferred, not forgotten; would follow the identical `OutboundAwsLambdaContextConverter`
+  recipe whenever picked up.

@@ -8,8 +8,29 @@ Client abstractions for calling Benzene services. Provides interfaces and base i
 ### Outbound routing (current, 2026-07-17)
 The redesigned outbound mechanism from `work/benzene-clients-redesign-plan.md` - a single
 topic-keyed pipeline table replacing the service-name/topic-key factory + decorator-chain shape
-below. See that document for the full design and the 4-step migration plan. Steps 1 and 2 are done
-(the mechanism itself, and `Benzene.CodeGen.Client`'s generated clients now target it).
+below. See that document for the full design and the 4-step migration plan. Steps 1-3 are done: the
+mechanism itself, `Benzene.CodeGen.Client`'s generated clients target it, and
+`Benzene.Clients.Aws`'s SQS/SNS transports (and the cross-cutting middleware below) are wired onto
+it - `.UseAwsLambda(...)` is explicitly deferred (see that package's `CLAUDE.md`).
+
+### Outbound middleware (current, 2026-07-17)
+The middleware-ification of the old `ClientBuilder`/`IDependencyWrapper<T>` decorators, for use on
+an `OutboundRoutingBuilder.Route(...)` pipeline:
+- **Retry** - no new type needed. `Benzene.Resilience.RetryMiddleware<TContext>`/
+  `.UseRetry<TContext>(...)` (already existed, fully generic) works on `OutboundContext` unmodified -
+  pass `shouldRetryContext: ctx => ((IBenzeneResult)ctx.Response).IsServiceUnavailable() || ...`
+  to match `RetryBenzeneMessageClient`'s old default retry predicate.
+- `CorrelationIdMiddleware` (`Benzene.Clients.CorrelationId`) / `.UseCorrelationId(correlationKey = "correlationId")` -
+  stamps the current `ICorrelationId.Get()` value onto `OutboundContext.Headers`. Converted from
+  `CorrelationIdBenzeneMessageClient`.
+- `W3CTraceContextMiddleware` (`Benzene.Clients.TraceContext`) / `.UseW3CTraceContext()` - stamps
+  `Activity.Current`'s `traceparent`/`tracestate` onto `OutboundContext.Headers`. Converted from
+  `TraceContextBenzeneMessageClient`. Same method name as `Benzene.Diagnostics.UseW3CTraceContext<TContext>()`
+  (the *inbound* trace-context-extraction middleware) - no collision since one's generic and one's
+  a concrete `OutboundContext` overload, but don't confuse the two; they run in opposite directions.
+- No dedicated `HeadersMiddleware` - unnecessary. `IBenzeneMessageSender.SendAsync`'s per-call
+  `headers` parameter (see above) already closes the "ambient mutable header state" concern
+  structurally, without a decorator.
 - `IBenzeneMessageSender` - the one interface business logic depends on:
   `SendAsync<TRequest,TResponse>(topic, request, headers = null)`. No service name, no client type,
   no factory resolution at the call site. `headers` is optional per-call metadata (e.g. a
@@ -98,3 +119,12 @@ change in the generated class body.
 - `test/Benzene.Core.Test/Autogen/CodeGen/Client/MessageClientSdkBuilderTest.cs` - golden-file
   coverage for the generated `{Service}ServiceClient`/`{Service}ServiceClientRouting` output
   (`test/Benzene.Core.Test/Autogen/CodeGen/Client/Examples/*.txt`).
+- `test/Benzene.Core.Test/Clients/W3CTraceContextMiddlewareTest.cs` /
+  `CorrelationIdMiddlewareTest.cs` - the two outbound cross-cutting middleware directly (an ambient
+  `Activity`/`ICorrelationId` value gets stamped onto `OutboundContext.Headers`; no ambient value
+  leaves headers unchanged).
+- `test/Benzene.Core.Test/Clients/Aws/Sqs/OutboundSqsContextConverterTest.cs` /
+  `Aws/Sns/OutboundSnsContextConverterTest.cs` - `.UseSqs(...)`/`.UseSns(...)` routed end to end
+  through `AddOutboundRouting` + the resolved `IBenzeneMessageSender`: the mocked AWS client
+  receives the right queue/topic, serialized body, `topic` message attribute, and forwarded
+  per-call headers; the result maps `HttpStatusCode.OK` to `BenzeneResultStatus.Ok`.
