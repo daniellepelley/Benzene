@@ -11,9 +11,12 @@ But not every deployment has that in front of it — a self-hosted worker, a ser
 This cookbook covers:
 - **`Benzene.Auth.OAuth2`** — validating an inbound `Authorization: Bearer <token>` JWT against an identity provider's JWKS endpoint
 - **`Benzene.Auth.Basic`** — RFC 7617 username/password authentication
-- **`RequireScope`** — basic scope-based authorization once a caller is authenticated
+- **`RequireScope`** — scope-based authorization (OAuth2/JWT) once a caller is authenticated
+- **`RequireRole` / `RequirePolicy` / `RequireAuthorization`** (`Benzene.Auth.Core`) — mechanism-agnostic role, named-policy, and resource-based authorization over any authenticated caller
 
-None of this is RBAC or a policy engine — see [What This Doesn't Cover](#what-this-doesnt-cover).
+Benzene provides the authorization *enforcement* primitives and pluggable policy/resource seams,
+but no built-in adapter for a specific external policy engine — see
+[What This Doesn't Cover](#what-this-doesnt-cover).
 
 ## Prerequisites
 
@@ -178,6 +181,73 @@ Two distinct failure statuses matter here, and `RequireScope` keeps them distinc
 Collapsing these into one status would leave an API consumer unable to tell "you're not logged in"
 apart from "you're logged in but don't have permission" from the response code alone.
 
+## Authorization: Roles, Policies & Resource Checks
+
+Scopes are an OAuth2/JWT concept, so `RequireScope` lives in `Benzene.Auth.OAuth2`. For
+authorization that reads off any authenticated caller — regardless of whether the principal came
+from a bearer token, Basic auth, or a custom mechanism — `Benzene.Auth.Core` adds three
+mechanism-agnostic checks. Benzene owns the *enforcement* (each short-circuits with `Unauthorized`
+when there's no caller and `Forbidden` when the caller lacks permission, the same distinction
+`RequireScope` keeps); *what a role/policy means* stays in your app.
+
+All three compose the same way as `RequireScope`, and on any transport (not just HTTP) whose
+pipeline sets a principal.
+
+### Roles — `RequireRole`
+
+```csharp
+app.UseOAuth2Bearer(oauth2Options)
+   .RequireRole("admin", "operator");   // any one role is sufficient
+```
+
+Roles are read from the caller's `ClaimsPrincipal.IsInRole` *and* the common role claim types
+(`ClaimTypes.Role`, `role`, `roles`), with the `roles` claim also accepted as a JSON array — Azure
+AD's app-roles shape — so it works whether your issuer emits one claim per role or a single array.
+
+### Named or inline policies — `RequirePolicy`
+
+A policy is a named rule over the principal. Define it inline, or register it once and reference it
+by name:
+
+```csharp
+// Inline (sync or async predicate):
+app.RequirePolicy("employees-only",
+    principal => principal.HasClaim("department", "engineering"));
+
+// Or register once, reference by name from many pipelines:
+services.AddAuthorizationPolicy("mfa-required",
+    principal => principal.HasClaim(c => c.Type == "amr" && c.Value == "mfa"));
+// ...
+app.RequirePolicy("mfa-required");
+```
+
+For anything more involved than a predicate, implement `IAuthorizationPolicy` (a `Name` plus
+`Task<bool> IsSatisfiedAsync(ClaimsPrincipal)`) and pass the instance to `RequirePolicy` or register
+it with `AddAuthorizationPolicy`.
+
+### Resource-based checks — `RequireAuthorization`
+
+When the decision depends on *which* resource is being acted on (ownership, tenant match), implement
+`IAuthorizationHandler<TResource>` and map the message to the resource it targets:
+
+```csharp
+public class SameTenantHandler : IAuthorizationHandler<OrderResource>
+{
+    public Task<bool> IsAuthorizedAsync(ClaimsPrincipal principal, OrderResource resource)
+        => Task.FromResult(principal.HasClaim("tenant", resource.Tenant));
+}
+
+services.AddScoped<IAuthorizationHandler<OrderResource>, SameTenantHandler>();
+// ...
+app.RequireAuthorization<AspNetContext, OrderResource>(
+    ctx => new OrderResource(ctx.HttpContext.Request.Query["tenant"]));
+```
+
+The resource is derived from the transport **context** (topic, headers, a route/query value) because
+authorization runs before the pipeline maps the request into a typed handler argument. When a
+decision needs the fully-deserialized request, do that check inside the handler against the same
+`AuthenticationHolder` principal instead.
+
 ## Protecting Only Some Routes
 
 Every `Use*` call here is ordinary middleware — add it in front of the routes that need it, not
@@ -247,11 +317,14 @@ project's `README.md` for exactly how to start it and mint a test token.
 
 ## What This Doesn't Cover
 
-- **RBAC, resource-based policies, or any specific authorization-policy library.** `RequireScope`
-  is deliberately the ceiling of what Benzene provides for authorization — anything more
-  structured is an application concern layered on top of the `ClaimsPrincipal` these packages
-  expose via `AuthenticationHolder`.
-  For details, see `work/auth-middleware-design.md` in the repository, the design proposal this feature was built from.
+- **Integration with a specific external authorization-policy library or rules engine (OPA,
+  Cedar, ASP.NET Core's `IAuthorizationService`).** Benzene provides the enforcement primitives —
+  `RequireRole`/`RequirePolicy`/`RequireAuthorization` (see [Authorization: Roles, Policies &
+  Resource Checks](#authorization-roles-policies--resource-checks) above) — and the pluggable
+  `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams to plug such an engine into, but
+  ships no adapter for any particular one. What a policy *means* stays in your app.
+  For the original scope decision, see `work/auth-middleware-design.md` §4 and the A.4 entry in
+  `work/enterprise-adoption-gap-analysis.md`.
 - **Issuing or refreshing tokens, or driving an OAuth2 login/consent flow.** `Benzene.Auth.OAuth2`
   only validates inbound bearer tokens; it's not an OAuth2 client or authorization server.
 - **mTLS, session/cookie authentication, or SOAP/WS-Security** — not addressed by this feature.

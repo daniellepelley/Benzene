@@ -32,6 +32,36 @@ auth or OAuth2/JWT lives in its own concrete package.
   `Benzene.Auth.OAuth2/CLAUDE.md` for why JWT validation failures never pass their real exception
   message through this helper.
 
+## Authorization layer (A.4 — RBAC/policies over the principal)
+The mechanism-agnostic authorization primitives the auth design (`work/auth-middleware-design.md`
+§4) deliberately left as "an app concern layered on top of the `ClaimsPrincipal`". They read the
+scoped `AuthenticationHolder.Principal` an authentication middleware set, and short-circuit via
+`AuthResults` — `Unauthorized` when there's no caller, `Forbidden` when the caller lacks
+permission. All live here (not a mechanism package) because they read a plain `ClaimsPrincipal` and
+so aren't tied to JWTs the way OAuth2 scopes are; and unconstrained on `TContext` (no `IHttpContext`
+bound) because authorization only reads the principal, so it composes on any transport whose
+pipeline sets one. All are in `AuthorizationExtensions`:
+- `RequireRole<TContext>(params string[] anyOfRoles)` - any-one-of role check. Roles via
+  `RoleClaims` (internal): `ClaimsPrincipal.IsInRole` **plus** the common role claim types
+  (`ClaimTypes.Role`, `role`, `roles`), the `roles` value also accepted as a JSON array (Azure AD
+  app-roles). Role names are never space-split (unlike scopes - they can contain spaces).
+- `RequirePolicy<TContext>(...)` - a named rule over the principal. Overloads: an
+  `IAuthorizationPolicy` instance; a `policyName` resolved from DI (`GetServices<IAuthorizationPolicy>()`
+  matched by `Name`, throws a wiring-error `InvalidOperationException` if absent); or a
+  `(name, predicate)` inline (sync or async). `IAuthorizationPolicy` = `{ string Name;
+  Task<bool> IsSatisfiedAsync(ClaimsPrincipal) }`; `DelegateAuthorizationPolicy` is the inline impl.
+- `RequireAuthorization<TContext, TResource>(Func<TContext, TResource> resourceSelector)` -
+  resource-based, resolves an app-registered `IAuthorizationHandler<TResource>`
+  (`Task<bool> IsAuthorizedAsync(ClaimsPrincipal, TResource)`). The resource is derived from the
+  **context** (topic/headers/route/query), because authorization runs before request mapping; a
+  decision needing the typed request is done inside the handler instead.
+- DI: `AddAuthorizationPolicy(policy)` / `AddAuthorizationPolicy(name, predicate)`.
+- Benzene owns the enforcement mechanism; policy/handler *meaning* is the app's - no domain baked
+  in, no external policy-engine (OPA/Cedar/`IAuthorizationService`) adapter shipped, only the seams.
+- Tests: `test/Benzene.Core.Test/Auth/AuthorizationTest.cs` (real Kestrel host after
+  `UseOAuth2Bearer`, mirroring `RequireScopeTest`): role match/miss/no-token, `roles` JSON-array,
+  inline + by-name policy, resource-based same-tenant.
+
 ## Important conventions
 - `Unauthorized` ("caller not authenticated") vs. `Forbidden` ("caller authenticated but not
   permitted") is the wire-contracts.md §3 distinction this whole feature exists to preserve - don't

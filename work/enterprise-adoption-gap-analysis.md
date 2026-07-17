@@ -141,13 +141,26 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
 
 ### A.4 — Authorization depth (extend `Benzene.Auth`)
 
-- **Requirement.** Roles, policies, and resource/attribute checks — declarative per handler.
-- **Current state.** Scope-only (`ScopeClaims` + `RequireScope`).
-- **Proposed work.** A policy/permission enforcement layer: `[RequirePermission]`/`[RequirePolicy]`
+- **Requirement.** Roles, policies, and resource/attribute checks — over any authenticated caller.
+- **Current state.** **Shipped** (`Benzene.Auth.Core`, no new NuGet — BCL-only, reads a plain
+  `ClaimsPrincipal`). Three mechanism-agnostic pipeline checks in `AuthorizationExtensions`, mirroring
+  `RequireScope`'s shape: `RequireRole` (any-of, honoring `IsInRole` + `ClaimTypes.Role`/`role`/`roles`
+  incl. Azure AD's JSON-array app-roles), `RequirePolicy` (an `IAuthorizationPolicy` instance, a
+  DI-registered policy by name, or an inline sync/async predicate), and `RequireAuthorization<TResource>`
+  (resource-based via an app-registered `IAuthorizationHandler<TResource>`). Each yields `Unauthorized`
+  with no caller and `Forbidden` when authenticated-but-unpermitted. 8 tests (real Kestrel host after
+  `UseOAuth2Bearer`).
+- **Original proposal.** A policy/permission enforcement layer: `[RequirePermission]`/`[RequirePolicy]`
   handler attributes, role-claim support, and a resource-based hook
   (`IAuthorizationHandler<TResource>`), all transport-agnostic. Benzene owns the **enforcement
   mechanism**; what a permission *means* is the app's pluggable policy handler (keeps domain out).
+  (Delivered as *pipeline* middleware, not per-handler attributes — consistent with the existing
+  `RequireScope`/`CorsMiddleware` precedent; Benzene has no attribute-driven authorization seam, and
+  `IFilter<T>` can only express "ignored", not `Forbidden`. Per-handler differentiation is done by
+  composing per-route pipelines, as the auth-patterns cookbook's "Protecting Only Some Routes" shows.
+  A per-handler `[RequirePolicy]` attribute remains a possible fast-follow.)
 - **Vision fit.** Cross-cutting → shared pipeline.
+- **Docs.** `src/Benzene.Auth.Core/CLAUDE.md`; cookbook section in `docs/cookbooks/auth-patterns.md`.
 
 ### A.5 — Secrets & multi-cloud configuration (`Benzene.Configuration.*`)
 
@@ -243,7 +256,7 @@ decision, and revisiting after A.1.
 | A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | **Shipped** — engine + tests + example (v1: in-process, engine-only; see `saga-design.md` §7 fast-follows) |
 | A.2 | Contract testing / CI gate | Build | `Benzene.HealthChecks.Schema` + `Clients.HealthChecks` + `Schema.OpenApi.Compatibility` | **Shipped** — A.2a runtime drift check (provider `SchemaHealthCheck` + hardened consumer processor) and A.2b CI gate (`SchemaCompatibility.EnsureBackwardCompatible`); cookbook `docs/cookbooks/contract-testing.md` |
 | A.3 | Idempotency | Build | `Benzene.Idempotency` | **Shipped** — `IdempotencyMiddleware<TContext>` + pluggable `IIdempotencyStore` + in-memory store + header/body-hash key strategy; 20 tests; cookbook `docs/cookbooks/idempotency.md` (Redis store as copy-paste `SET NX`) |
-| A.4 | Authorization depth | Build | extend `Benzene.Auth` | Not started |
+| A.4 | Authorization depth | Build | `Benzene.Auth.Core` | **Shipped** — `RequireRole`/`RequirePolicy`/`RequireAuthorization<TResource>` + `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams (BCL-only, no new NuGet); 8 tests; cookbook section in `docs/cookbooks/auth-patterns.md` |
 | A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.*` | Not started |
 | A.6 | Schema registry | Build | `Benzene.SchemaRegistry.*` | Not started |
 | B.1 | Multi-tenancy | Enable via seam + docs | cookbook (+ optional thin helper) | Not started |
