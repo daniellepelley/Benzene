@@ -11,6 +11,16 @@ signatures... without flagging it as a breaking change," implementation should n
 without an explicit go-ahead — this document is the thing to review before that decision, not a
 green light to proceed.
 
+**2026-07-17 update — approved and Steps 1-2 implemented.** One correction discovered during Step
+2: §2.1's `IBenzeneMessageSender.SendAsync<TRequest,TResponse>(topic, request)` two-arg snippet
+turned out to be incomplete — the pre-existing generated client (`Benzene.CodeGen.Client`) already
+had a real, public per-call `headers` overload (`XAsync(message, IDictionary<string,string> headers)`),
+and migrating it onto the new sender without threading headers through would have silently dropped
+that capability. `SendAsync` gained a third, optional `headers` parameter
+(`IDictionary<string,string>? headers = null`) and `OutboundContext` gained a matching `Headers`
+property (never null, defaults empty) — see `src/Benzene.Clients/CLAUDE.md` for the shipped shape.
+Everything else in §2 shipped as designed.
+
 ## 1. Current shape (verified against actual code)
 
 - `IBenzeneMessageClient.SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest>)` —

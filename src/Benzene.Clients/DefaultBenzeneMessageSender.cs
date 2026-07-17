@@ -25,14 +25,14 @@ internal class DefaultBenzeneMessageSender : IBenzeneMessageSender
     }
 
     /// <inheritdoc />
-    public async Task<IBenzeneResult<TResponse>> SendAsync<TRequest, TResponse>(string topic, TRequest request)
+    public async Task<IBenzeneResult<TResponse>> SendAsync<TRequest, TResponse>(string topic, TRequest request, IDictionary<string, string>? headers = null)
     {
         if (!_routes.TryGetValue(topic, out var pipeline))
         {
             throw new UnroutedTopicException(topic);
         }
 
-        var context = new OutboundContext(topic, request!);
+        var context = new OutboundContext(topic, request!, headers);
         await pipeline.HandleAsync(context, _serviceResolver);
         return (IBenzeneResult<TResponse>)context.Response!;
     }

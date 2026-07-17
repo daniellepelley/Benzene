@@ -73,11 +73,11 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
         lineWriter.WriteLine($"public class {_serviceName}ServiceClient : I{_serviceName}ServiceClient", 1);
         lineWriter.WriteLine("{", 1);
 
-        lineWriter.WriteLine("private readonly IBenzeneMessageClientFactory _clientFactory;", 2);
+        lineWriter.WriteLine("private readonly IBenzeneMessageSender _sender;", 2);
         lineWriter.WriteLine();
-        lineWriter.WriteLine($"public {_serviceName}ServiceClient(IBenzeneMessageClientFactory clientFactory)", 2);
+        lineWriter.WriteLine($"public {_serviceName}ServiceClient(IBenzeneMessageSender sender)", 2);
         lineWriter.WriteLine("{", 2);
-        lineWriter.WriteLine("_clientFactory = clientFactory;", 3);
+        lineWriter.WriteLine("_sender = sender;", 3);
         lineWriter.WriteLine("}", 2);
         lineWriter.WriteLine();
 
@@ -91,8 +91,27 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
         lineWriter.WriteLines(AddHealthCheckMethod());
 
         lineWriter.WriteLine("}", 1);
+
+        lineWriter.WriteLines(AddRoutingClass(eventServiceDocument));
+
         lineWriter.WriteLine("}");
 
+        return lineWriter.GetLines();
+    }
+
+    private string[] AddRoutingClass(EventServiceDocument eventServiceDocument)
+    {
+        // Reflected over by Benzene.Clients' ValidateOutboundRouting() at startup - see
+        // work/benzene-clients-redesign-plan.md §2.5.
+        var topics = eventServiceDocument.Requests.Select(x => x.Topic).Append("healthcheck");
+        var requiredTopics = string.Join(", ", topics.Select(topic => $@"""{topic}"""));
+
+        var lineWriter = new LineWriter();
+        lineWriter.WriteLine();
+        lineWriter.WriteLine($"public static class {_serviceName}ServiceClientRouting", 1);
+        lineWriter.WriteLine("{", 1);
+        lineWriter.WriteLine($"public static readonly string[] RequiredTopics = {{ {requiredTopics} }};", 2);
+        lineWriter.WriteLine("}", 1);
         return lineWriter.GetLines();
     }
 
@@ -109,29 +128,23 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
         lineWriter.WriteLine(
             $"public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()", 2);
         lineWriter.WriteLine("{", 2);
-        lineWriter.WriteLine($"using (var client = _clientFactory.Create(\"{_serviceName}\", \"healthcheck\"))",
-            3);
-        lineWriter.WriteLine("{", 3);
         lineWriter.WriteLine(
-            $@"var benzeneResult = await client.SendMessageAsync<NullPayload, HealthCheckResponse>(""healthcheck"", new NullPayload(), null);",
-            4);
+            $@"var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>(""healthcheck"", new NullPayload());",
+            3);
         lineWriter.WriteLine(
             "return benzeneResult.Status != BenzeneResultStatus.Ok",
-            4);
-        lineWriter.WriteLine("? benzeneResult", 5);
+            3);
+        lineWriter.WriteLine("? benzeneResult", 4);
         lineWriter.WriteLine(
-            ": BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);", 5);
-        lineWriter.WriteLine("}", 3);
+            ": BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);", 4);
         lineWriter.WriteLine("}", 2);
         return lineWriter.GetLines();
     }
 
     private string[] AddMethod(string topic, OpenApiSchema requestType, OpenApiSchema responseType)
     {
-        var topicFunction = GetTopicFunction(topic);
         var requestTypeName = _typeName.GetName(requestType);
         var responseTypeName = _typeName.GetName(responseType);
-        // var responseTypeName = _typeName.GetName(responseType, new[] { "create", "update" }.Contains(topicFunction));
         var methodName = _methodName.Create(topic, requestType);
 
         var lineWriter = new LineWriter();
@@ -143,15 +156,11 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
         lineWriter.WriteLine();
 
         lineWriter.WriteLine(
-            $"public async Task<IBenzeneResult<{responseTypeName}>> {methodName}Async({requestTypeName} message, IDictionary<string, string> headers)", 2);
+            $"public Task<IBenzeneResult<{responseTypeName}>> {methodName}Async({requestTypeName} message, IDictionary<string, string> headers)", 2);
         lineWriter.WriteLine("{", 2);
-        lineWriter.WriteLine($"using (var client = _clientFactory.Create(\"{_serviceName}\", \"{topic}\"))",
-            3);
-        lineWriter.WriteLine("{", 3);
         lineWriter.WriteLine(
-            $@"return await client.SendMessageAsync<{requestTypeName}, {responseTypeName}>(""{topic}"", message, headers);",
-            4);
-        lineWriter.WriteLine("}", 3);
+            $@"return _sender.SendAsync<{requestTypeName}, {responseTypeName}>(""{topic}"", message, headers);",
+            3);
         lineWriter.WriteLine("}", 2);
         lineWriter.WriteLine();
         return lineWriter.GetLines();

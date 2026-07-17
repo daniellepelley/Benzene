@@ -202,6 +202,13 @@ Now `.WithTenantHeader()` chains alongside the built-in decorators.
 
 ## Registering and routing clients
 
+> **A newer, topic-keyed mechanism is being staged in as a replacement** —
+> `IBenzeneMessageSender`/`AddOutboundRouting(...)` (`Benzene.Clients`). Everything below still
+> works (nothing here is deprecated-and-broken), but new code, and `Benzene.CodeGen.Client`'s
+> generated clients, should prefer the new mechanism — see `src/Benzene.Clients/CLAUDE.md` and
+> `work/benzene-clients-redesign-plan.md`. `Benzene.Clients.Aws`'s transport wiring (`.UseSqs(...)`
+> etc. below) hasn't migrated onto it yet.
+
 `AddBenzeneMessageClients(Action<ClientsBuilder>)` (from `Benzene.Clients`, extended per-transport by `Benzene.Clients.Aws`/`Benzene.Kafka.Core`) registers an `IBenzeneMessageClientFactory` — resolvable via DI — built from one or more `ClientMapping`s:
 
 ```csharp

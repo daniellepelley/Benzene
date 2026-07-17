@@ -20,7 +20,10 @@ public interface IBenzeneMessageSender
     /// <param name="topic">The topic to send on - must have a route registered via
     /// <see cref="OutboundRoutingBuilder.Route"/>.</param>
     /// <param name="request">The request payload.</param>
+    /// <param name="headers">Per-call headers (e.g. a caller-supplied correlation/tenant value) -
+    /// distinct from any headers a route's own middleware adds statically at
+    /// <see cref="OutboundRoutingBuilder.Route"/>-configuration time. Optional; defaults to none.</param>
     /// <returns>The result of the send.</returns>
     /// <exception cref="UnroutedTopicException">No route is registered for <paramref name="topic"/>.</exception>
-    Task<IBenzeneResult<TResponse>> SendAsync<TRequest, TResponse>(string topic, TRequest request);
+    Task<IBenzeneResult<TResponse>> SendAsync<TRequest, TResponse>(string topic, TRequest request, IDictionary<string, string>? headers = null);
 }

@@ -12,11 +12,11 @@ namespace Benzene.Service.Clients.User
     [ExcludeFromCodeCoverage]
     public class UserServiceClient : IUserServiceClient
     {
-        private readonly IBenzeneMessageClientFactory _clientFactory;
+        private readonly IBenzeneMessageSender _sender;
 
-        public UserServiceClient(IBenzeneMessageClientFactory clientFactory)
+        public UserServiceClient(IBenzeneMessageSender sender)
         {
-            _clientFactory = clientFactory;
+            _sender = sender;
         }
 
         public string HashCode => "316b1e00619d111ea16d8bca7435a62d3406466dd2f9b7d2eecd5643345757b8";
@@ -26,23 +26,22 @@ namespace Benzene.Service.Clients.User
             return CreateUserAsync(message, null);
         }
 
-        public async Task<IBenzeneResult<Guid?>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers)
+        public Task<IBenzeneResult<Guid?>> CreateUserAsync(CreateUserMessage message, IDictionary<string, string> headers)
         {
-            using (var client = _clientFactory.Create("User", "user:create"))
-            {
-                return await client.SendMessageAsync<CreateUserMessage, Guid?>("user:create", message, headers);
-            }
+            return _sender.SendAsync<CreateUserMessage, Guid?>("user:create", message, headers);
         }
 
         public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()
         {
-            using (var client = _clientFactory.Create("User", "healthcheck"))
-            {
-                var benzeneResult = await client.SendMessageAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload(), null);
-                return benzeneResult.Status != BenzeneResultStatus.Ok
-                    ? benzeneResult
-                    : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
-            }
+            var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload());
+            return benzeneResult.Status != BenzeneResultStatus.Ok
+                ? benzeneResult
+                : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
         }
+    }
+
+    public static class UserServiceClientRouting
+    {
+        public static readonly string[] RequiredTopics = { "user:create", "healthcheck" };
     }
 }

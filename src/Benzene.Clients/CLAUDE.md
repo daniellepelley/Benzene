@@ -8,22 +8,50 @@ Client abstractions for calling Benzene services. Provides interfaces and base i
 ### Outbound routing (current, 2026-07-17)
 The redesigned outbound mechanism from `work/benzene-clients-redesign-plan.md` - a single
 topic-keyed pipeline table replacing the service-name/topic-key factory + decorator-chain shape
-below. See that document for the full design and the 4-step migration plan (this is Step 1: add
-the new mechanism alongside the old, non-breaking).
+below. See that document for the full design and the 4-step migration plan. Steps 1 and 2 are done
+(the mechanism itself, and `Benzene.CodeGen.Client`'s generated clients now target it).
 - `IBenzeneMessageSender` - the one interface business logic depends on:
-  `SendAsync<TRequest,TResponse>(topic, request)`. No service name, no client type, no factory
-  resolution at the call site.
-- `OutboundContext` - the outbound pipeline context: `Topic`, `Request`, and a settable `Response`
-  slot. Deliberately non-generic, matching every other `IMiddleware<TContext>` in this codebase.
+  `SendAsync<TRequest,TResponse>(topic, request, headers = null)`. No service name, no client type,
+  no factory resolution at the call site. `headers` is optional per-call metadata (e.g. a
+  caller-supplied correlation/tenant value) - **note this is one deviation from the design doc's
+  §2.1 two-arg snippet**, added while implementing Step 2 because the pre-existing generated
+  client's public API already had a real per-call headers overload that migrating away from
+  `IBenzeneMessageClientFactory` would otherwise have silently dropped.
+- `OutboundContext` - the outbound pipeline context: `Topic`, `Request`, `Headers` (per-call, never
+  null), and a settable `Response` slot. Deliberately non-generic, matching every other
+  `IMiddleware<TContext>` in this codebase.
 - `OutboundRoutingBuilder` / `AddOutboundRouting(...)` - builds one `IMiddlewarePipeline<OutboundContext>`
   per topic via `.Route(topic, pipeline => ...)`; `Build()` throws `DuplicateOutboundRouteException`
-  for a repeated topic. `AddOutboundRouting(...)` registers the resulting `IBenzeneMessageSender`.
+  for a repeated topic. `AddOutboundRouting(...)` registers the resulting `IBenzeneMessageSender`
+  plus an `OutboundRoutingTopics` singleton (the registered topic set, for `ValidateOutboundRouting()` below).
 - `DefaultBenzeneMessageSender` (internal) - resolves a topic to its pipeline and runs it; throws
   `UnroutedTopicException` for a topic with no registered route.
+- `ValidateOutboundRouting()` (on `IServiceResolver`) - per design §2.5: reflects over every loaded
+  assembly for a `*Routing` type with a public static `string[] RequiredTopics` field (what
+  `Benzene.CodeGen.Client`'s generated `{Service}ServiceClientRouting` classes emit) and throws
+  `MissingOutboundRoutesException` listing every required topic with no registered route. Opt-in -
+  call once, typically right after resolving `IBenzeneMessageSender`. **Caveat for test authors**:
+  the reflection scan is genuinely global (`AppDomain.CurrentDomain.GetAssemblies()`), so a
+  test-local `*Routing` type with a `RequiredTopics` field stays loaded and visible to every other
+  `ValidateOutboundRouting()` call for the rest of that test process, once JIT-touched - see
+  `test/Benzene.Core.Test/Clients/ValidateOutboundRoutingTest.cs`'s own `OrderServiceClientRouting`
+  for the one that currently exists.
 - Transport-specific route-registration extensions (`.UseSqs(...)`/`.UseSns(...)`/etc. on the
   outbound pipeline builder) and the middleware-ified decorators (retry/headers/correlation/trace
   context) are **not yet implemented** - still Step 3 of the migration plan; for now, `.Route(...)`
   pipelines are built with whatever `IMiddleware<OutboundContext>` exists at the time.
+
+### Benzene.CodeGen.Client generated clients (current, 2026-07-17)
+`MessageClientSdkBuilder` (in `Benzene.CodeGen.Client`, not this package, but documented here since
+it's the primary consumer of the outbound routing mechanism above) now generates against
+`IBenzeneMessageSender` instead of `IBenzeneMessageClientFactory`: the generated
+`{Service}ServiceClient`'s constructor takes `IBenzeneMessageSender sender`, and every generated
+`XAsync(message, headers)` method body is `return _sender.SendAsync<TRequest,TResponse>("topic", message, headers);`
+- no more per-call `using (var client = _clientFactory.Create(...))`. Each generated client also
+now emits a sibling `{Service}ServiceClientRouting` static class with a `RequiredTopics` array
+(every request topic plus `"healthcheck"`), for `ValidateOutboundRouting()` above. The generated
+*interface* (`I{Service}ServiceClient`) is unchanged - this is purely an implementation-detail
+change in the generated class body.
 
 ### Legacy outbound mechanism (obsolete, superseded by the above)
 - Client abstractions
@@ -64,3 +92,9 @@ the new mechanism alongside the old, non-breaking).
   `UnroutedTopicException`. Exercises `DefaultBenzeneMessageSender` (internal, no
   `InternalsVisibleTo` wiring in this repo) through `AddOutboundRouting` + the resolved
   `IBenzeneMessageSender` instead of a direct unit test.
+- `test/Benzene.Core.Test/Clients/ValidateOutboundRoutingTest.cs` - all required topics routed
+  doesn't throw; a missing required topic throws `MissingOutboundRoutesException` naming exactly
+  the missing one.
+- `test/Benzene.Core.Test/Autogen/CodeGen/Client/MessageClientSdkBuilderTest.cs` - golden-file
+  coverage for the generated `{Service}ServiceClient`/`{Service}ServiceClientRouting` output
+  (`test/Benzene.Core.Test/Autogen/CodeGen/Client/Examples/*.txt`).

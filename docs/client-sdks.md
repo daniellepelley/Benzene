@@ -62,26 +62,31 @@ overloads).
 
 ## Using the generated client
 
-The generated client takes an `IBenzeneMessageClientFactory` (from `Benzene.Clients`) in its
-constructor and returns results as `IBenzeneResult<T>` — the same result model your handlers use:
+The generated client takes an `IBenzeneMessageSender` (from `Benzene.Clients`) in its constructor
+and returns results as `IBenzeneResult<T>` — the same result model your handlers use:
 
 ```csharp
 public class HelloWorldServiceClient : IHelloWorldServiceClient
 {
-    public HelloWorldServiceClient(IBenzeneMessageClientFactory clientFactory) { /* generated */ }
+    public HelloWorldServiceClient(IBenzeneMessageSender sender) { /* generated */ }
 
     public Task<IBenzeneResult<HelloWorldResponse>> HelloWorldAsync(HelloWorldMessage message) { /* generated */ }
     public Task<IBenzeneResult<HelloWorldResponse>> HelloWorldAsync(HelloWorldMessage message, IDictionary<string, string> headers) { /* generated */ }
 }
 ```
 
-Configure the underlying transport with the appropriate [client package](reference/packages#outbound-messaging-clients)
-— for example `Benzene.Clients.Aws` to call the service via a Lambda invoke, or `Benzene.Client.Http`
-over HTTP. The generated client is transport-agnostic; the `IBenzeneMessageClientFactory` you
-register decides how the message is actually sent.
+The generator also emits a sibling `HelloWorldServiceClientRouting.RequiredTopics` array, for
+`ValidateOutboundRouting()`'s startup check — see [Registering and routing
+clients](clients.md#registering-and-routing-clients).
+
+Configure the underlying transport by routing each of the client's topics via
+`AddOutboundRouting(...)` — for example `.UseSqs(...)`/`.UseSns(...)` from `Benzene.Clients.Aws` to
+call the service via AWS, or an HTTP transport for calling it over HTTP. The generated client is
+transport-agnostic; the outbound route registered for each topic decides how the message is
+actually sent.
 
 ```csharp
-var client = new HelloWorldServiceClient(clientFactory);
+var client = new HelloWorldServiceClient(sender);
 var result = await client.HelloWorldAsync(new HelloWorldMessage { Name = "World" });
 if (BenzeneResult.IsSuccess(result))
 {
