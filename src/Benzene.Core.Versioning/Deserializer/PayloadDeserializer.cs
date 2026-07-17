@@ -8,15 +8,15 @@ namespace Benzene.Core.Versioning.Deserializer;
 public class PayloadDeserializer : IPayloadDeserializer
 {
     private readonly SchemaCasters _jsonElementSchemaCasters;
-    private readonly IPayloadSchemaVersionLookUp _PayloadSchemaVersionLookUp;
-    private readonly IPayloadFields _PayloadFields;
+    private readonly IPayloadSchemaVersionLookUp _payloadSchemaVersionLookUp;
+    private readonly IPayloadFields _payloadFields;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-    public PayloadDeserializer(ISchemaCasters schemaCasters, IPayloadSchemaVersionLookUp PayloadSchemaVersionLookUp, IPayloadFields PayloadFields, JsonSerializerOptions jsonSerializerOptions)
+    public PayloadDeserializer(ISchemaCasters schemaCasters, IPayloadSchemaVersionLookUp payloadSchemaVersionLookUp, IPayloadFields payloadFields, JsonSerializerOptions jsonSerializerOptions)
     {
         _jsonSerializerOptions = jsonSerializerOptions;
-        _PayloadFields = PayloadFields;
-        _PayloadSchemaVersionLookUp = PayloadSchemaVersionLookUp;
+        _payloadFields = payloadFields;
+        _payloadSchemaVersionLookUp = payloadSchemaVersionLookUp;
         _jsonElementSchemaCasters = new SchemaCasters(schemaCasters.GetAll()
             .Select(CreateJsonElementSchemaCaster)
             .ToArray());
@@ -43,14 +43,14 @@ public class PayloadDeserializer : IPayloadDeserializer
 
     public T? Deserialize<T>(JsonElement json)
     {
-        var fromSchemaVersion = _PayloadFields.GetSchemaVersion(json);
-        var topic = _PayloadFields.GetTopic(json);
+        var fromSchemaVersion = _payloadFields.GetSchemaVersion(json);
+        var topic = _payloadFields.GetTopic(json);
 
-        var toSchemaVersion = _PayloadSchemaVersionLookUp.GetSchemaVersion(topic);
+        var toSchemaVersion = _payloadSchemaVersionLookUp.GetSchemaVersion(topic);
 
         if (fromSchemaVersion == toSchemaVersion)
         {
-            return JsonSerializer.Deserialize<T>(json.GetRawText(), _jsonSerializerOptions);
+            return json.Deserialize<T>(_jsonSerializerOptions);
         }
 
         var schemaCaster = (ISchemaCaster<JsonElement, T>)_jsonElementSchemaCasters.GetSchemaCaster(fromSchemaVersion, toSchemaVersion, topic);

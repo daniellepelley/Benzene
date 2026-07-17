@@ -98,6 +98,7 @@
     <ProjectReference Include="..\..\src\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.Messages.TestHelpers\Benzene.Core.Messages.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Core.Versioning\Benzene.Core.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Extras\Benzene.Extras.csproj" />

@@ -68,18 +68,24 @@ public class CasterFuncBuilder
     {
         _ = _settings.InitValues.TryGetValue(toType, out var initValueDictionary);
 
-        return GetProperties(fromType, toType)
+        // Init values bind on every writable target property they were registered for - including
+        // properties newly added in the target schema, which have no source counterpart to map from.
+        var initValueBindings = toType.GetProperties()
+            .Where(prop => prop.CanWrite && initValueDictionary != null && initValueDictionary.ContainsKey(prop.Name))
+            .Select(toProperty =>
+            {
+                var func = initValueDictionary![toProperty.Name];
+                var invokeExpression = Expression.Invoke(Expression.Constant(func));
+                var convertedValue = Expression.Convert(invokeExpression, toProperty.PropertyType);
+                return Expression.Bind(toProperty, convertedValue);
+            });
+
+        var mappedBindings = GetProperties(fromType, toType)
+            .Where(properties => initValueDictionary == null || !initValueDictionary.ContainsKey(properties.Item2.Name))
             .Select(properties =>
             {
                 var fromProperty = properties.Item1;
                 var toProperty = properties.Item2;
-
-                if (initValueDictionary != null && initValueDictionary.TryGetValue(toProperty.Name, out var func))
-                {
-                    var invokeExpression = Expression.Invoke(Expression.Constant(func));
-                    var convertedValue = Expression.Convert(invokeExpression, toProperty.PropertyType);
-                    return Expression.Bind(toProperty, convertedValue);
-                }
 
                 if (fromProperty.PropertyType == toProperty.PropertyType)
                 {
@@ -117,7 +123,9 @@ public class CasterFuncBuilder
 
                 var classExpression = CreateClassExpression(fromExpression, fromProperty, toProperty);
                 return Expression.Bind(toProperty, classExpression);
-            }).ToArray();
+            });
+
+        return initValueBindings.Concat(mappedBindings).ToArray();
     }
 
     private ConditionalExpression CreateClassExpression(Expression fromExpression, PropertyInfo fromProperty,
@@ -136,12 +144,8 @@ public class CasterFuncBuilder
     private ConditionalExpression CreateEnumerableExpression(Expression fromExpression, PropertyInfo fromProperty,
         PropertyInfo toProperty)
     {
-        var fromElementType = fromProperty.PropertyType.IsGenericType
-            ? fromProperty.PropertyType.GetGenericArguments()[0]
-            : typeof(object);
-        var toElementType = toProperty.PropertyType.IsGenericType
-            ? toProperty.PropertyType.GetGenericArguments()[0]
-            : typeof(object);
+        var fromElementType = fromProperty.PropertyType.GetGenericArguments()[0];
+        var toElementType = toProperty.PropertyType.GetGenericArguments()[0];
         var mapDelegate = MapDelegate(fromElementType, toElementType);
         var fromValue = Expression.Property(fromExpression, fromProperty);
         var isNull = Expression.Equal(fromValue, Expression.Constant(null, fromProperty.PropertyType));
@@ -174,8 +178,14 @@ public class CasterFuncBuilder
     }
 
     private static bool IsEnumerable(PropertyInfo fromProp, PropertyInfo toProp) =>
-        typeof(IEnumerable<>).IsAssignableFrom(fromProp.PropertyType) &&
-        typeof(IEnumerable<>).IsAssignableFrom(toProp.PropertyType);
+        IsGenericEnumerable(fromProp.PropertyType) && IsGenericEnumerable(toProp.PropertyType);
+
+    // A single-generic-argument type assignable to IEnumerable<T> (List<T>, IEnumerable<T>,
+    // IReadOnlyList<T>, Collection<T>...). Excludes string and dictionaries.
+    private static bool IsGenericEnumerable(Type type) =>
+        type.IsGenericType &&
+        type.GetGenericArguments().Length == 1 &&
+        typeof(IEnumerable<>).MakeGenericType(type.GetGenericArguments()[0]).IsAssignableFrom(type);
 
     private static MemberAssignment CreateEnumExpression(Expression fromExpression, PropertyInfo fromProp,
         PropertyInfo toProp)
@@ -222,7 +232,10 @@ public class CasterFuncBuilder
                 ? Expression.Condition(typeCheck, convertedDerivedExpr, Expression.Default(toType))
                 : Expression.Condition(typeCheck, convertedDerivedExpr, conditionalExpr);
         }
-        return conditionalExpr!;
+
+        return conditionalExpr
+            ?? throw new InvalidOperationException(
+                $"No target types could be matched for any type derived from {fromType.FullName} when mapping to {toType.FullName}.");
     }
 
     private MethodCallExpression CreateListExpression(Expression fromExpr, Type fromType, Type toType)
@@ -281,8 +294,8 @@ public class CasterFuncBuilder
             // Prepend the base type so it is processed first (innermost check).
             // The loop builds expressions with each iteration becoming the outermost
             // conditional, so less-specific types must be processed before more-specific
-            // ones. Appending the base type would make "is ValuationGrouping" match
-            // before "is AggregateValuationGrouping", swallowing all subtype instances.
+            // ones. Appending the base type would make "is BaseType" match before
+            // "is DerivedType", swallowing all subtype instances.
             return
             [
                 baseType,

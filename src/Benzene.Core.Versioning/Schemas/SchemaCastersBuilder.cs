@@ -2,7 +2,7 @@ using Benzene.Core.Versioning.CasterBuilder;
 
 namespace Benzene.Core.Versioning.Schemas;
 
-public class SchemaCastersBuilder()
+public class SchemaCastersBuilder
 {
     private readonly List<ISchemaCaster> _definitions = new();
 

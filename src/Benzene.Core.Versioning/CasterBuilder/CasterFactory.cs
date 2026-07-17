@@ -14,12 +14,6 @@ public class CasterFactory<TFrom, TTo>
         return new FuncCaster<TFrom, TTo>(func);
     }
 
-    public CasterFactory<TFrom, TTo> Register<TFromType, TToType>()
-    {
-        _ = _builder.Register<TFromType, TToType>();
-        return this;
-    }
-
     public CasterFactory<TFrom, TTo> RegisterInitValue<TProp>(Expression<Func<TTo, TProp>> memberSelector, TProp value)
     {
         _ = RegisterInitValue(memberSelector, () => value);

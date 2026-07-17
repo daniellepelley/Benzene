@@ -5,10 +5,10 @@ namespace Benzene.Core.Versioning.Schemas;
 
 public class SchemaCastDefinitionsExpander
 {
-    public ISchemaCaster[] Expand(ISchemaCaster[] schemaCastDefinitions, PayloadSchemaVersions[] documentVersionsDefinitions)
+    public ISchemaCaster[] Expand(ISchemaCaster[] schemaCastDefinitions, PayloadSchemaVersions[] payloadSchemaVersions)
     {
         var expanded = new List<ISchemaCaster>();
-        foreach (var def in GetRequiredCasters(documentVersionsDefinitions))
+        foreach (var def in GetRequiredCasters(payloadSchemaVersions))
         {
             var existingDefinition = schemaCastDefinitions.FirstOrDefault(x =>
                 x.Definition.FromSchema == def.FromSchema &&
@@ -29,10 +29,10 @@ public class SchemaCastDefinitionsExpander
         }
         return expanded.ToArray();
     }
-    private static SchemaCastDefinition[] GetRequiredCasters(PayloadSchemaVersions[] documentVersionsDefinitions)
+    private static SchemaCastDefinition[] GetRequiredCasters(PayloadSchemaVersions[] payloadSchemaVersions)
     {
         var requiredCasters = new List<SchemaCastDefinition>();
-        foreach (var definition in documentVersionsDefinitions)
+        foreach (var definition in payloadSchemaVersions)
         {
             foreach (var fromSchema in definition.FromSchemas)
             {
@@ -60,7 +60,7 @@ public class SchemaCastDefinitionsExpander
             return [];
         }
 
-        // Build adjacency list for edges that match the requested document type
+        // Build adjacency list for edges that match the requested topic
         var edges = schemaCastDefinitions.Where(e => string.Equals(e.Definition.Topic, topic, StringComparison.Ordinal)).ToList();
 
         // BFS from fromSchema to find toSchema

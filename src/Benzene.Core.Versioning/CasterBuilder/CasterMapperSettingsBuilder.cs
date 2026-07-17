@@ -18,7 +18,7 @@ public class CasterMapperSettingsBuilder
         };
     }
 
-    public CasterMapperSettingsBuilder Register<TFrom, TTo>()
+    public CasterMapperSettingsBuilder RegisterTypeMapping<TFrom, TTo>()
     {
         _typeMapping.Add(typeof(TFrom), typeof(TTo));
         return this;
@@ -44,13 +44,6 @@ public class CasterMapperSettingsBuilder
         return this;
     }
 
-    public CasterMapperSettingsBuilder RegisterTypeMapping<TFrom, TTo>()
-    {
-        _typeMapping.Add(typeof(TFrom), typeof(TTo));
-        return this;
-    }
-
     public CasterMapperSettingsBuilder RegisterInitValue<TTo, TProp>(Expression<Func<TTo, TProp>> memberSelector, TProp value)
         => RegisterInitValue(memberSelector, () => value);
-
 }
