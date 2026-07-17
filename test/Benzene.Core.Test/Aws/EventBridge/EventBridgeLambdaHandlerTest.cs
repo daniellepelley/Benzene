@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.EventBridge.TestHelpers;
@@ -58,6 +59,64 @@ public class EventBridgeLambdaHandlerTest
 
         // A BenzeneMessage-shaped payload: has a topic, but no detail-type/source.
         var request = new { topic = Defaults.Topic, headers = new { }, body = "{}" };
+
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
+
+        Assert.False(eventBridgeHandled);
+        Assert.True(fellThrough);
+    }
+
+    [Fact]
+    public async Task DetailTypeWithoutSource_FallsThroughToNextMiddleware()
+    {
+        var eventBridgeHandled = false;
+        var fellThrough = false;
+
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        app.UseEventBridge(eventBridge => eventBridge
+            .Use(null, (context, next) =>
+            {
+                eventBridgeHandled = true;
+                return next();
+            })
+        );
+        app.Use(null, (context, next) =>
+        {
+            fellThrough = true;
+            return next();
+        });
+
+        // detail-type present but source missing - not a valid EventBridge payload.
+        var request = new Dictionary<string, object> { ["detail-type"] = Defaults.Topic, ["detail"] = new { } };
+
+        await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
+
+        Assert.False(eventBridgeHandled);
+        Assert.True(fellThrough);
+    }
+
+    [Fact]
+    public async Task SourceWithoutDetailType_FallsThroughToNextMiddleware()
+    {
+        var eventBridgeHandled = false;
+        var fellThrough = false;
+
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        app.UseEventBridge(eventBridge => eventBridge
+            .Use(null, (context, next) =>
+            {
+                eventBridgeHandled = true;
+                return next();
+            })
+        );
+        app.Use(null, (context, next) =>
+        {
+            fellThrough = true;
+            return next();
+        });
+
+        // source present but detail-type missing - not a valid EventBridge payload.
+        var request = new { source = "com.example.orders", detail = new { } };
 
         await app.Build().HandleAsync(AwsEventStreamContextBuilder.Build(request), ServiceResolverMother.CreateServiceResolver());
 
