@@ -3,7 +3,8 @@
 Benzene runs on the Azure Functions **isolated worker** model, using the same platform-neutral
 `BenzeneStartUp` base class as every other Benzene host (AWS Lambda, ASP.NET Core). This guide
 starts from an empty folder and ends with a deployed Function App handling HTTP requests, plus
-optional Event Hub, Kafka, Service Bus, and Cosmos DB Change Feed triggers.
+optional Event Hub, Kafka, Service Bus, Cosmos DB Change Feed, Queue Storage, and Blob Storage
+triggers.
 
 ## Prerequisites
 
@@ -57,7 +58,7 @@ dotnet add package Benzene.Azure.Function.AspNet --prerelease
 transitively. `Benzene.Azure.Function.AspNet` adds the `UseHttp` middleware for handling HTTP
 requests as ASP.NET Core `HttpRequest`/`IActionResult`. Add `Benzene.Azure.Function.EventHub` or
 `Benzene.Azure.Function.Kafka` the same way if your function also needs to handle those event
-sources (see [Event Hub, Kafka, Service Bus, and Cosmos DB triggers](#event-hub-kafka-service-bus-and-cosmos-db-triggers) below) — each has a
+sources (see [Non-HTTP triggers](#non-http-triggers) below) — each has a
 corresponding direct Microsoft package too (`Microsoft.Azure.Functions.Worker.Extensions.EventHubs`
 version `6.5.0`, or `Microsoft.Azure.Functions.Worker.Extensions.Kafka` version `4.3.0`).
 
@@ -279,7 +280,7 @@ az deployment group create --resource-group my-function-rg \
 The template only covers the HTTP trigger path - add your own resources for Event Hub, Kafka, or
 Service Bus namespaces if you wire up those triggers too (see the next section).
 
-## Event Hub, Kafka, Service Bus, and Cosmos DB triggers
+## Non-HTTP triggers
 
 Benzene provides specialized middleware for other Azure Functions trigger types, each
 configured inside the same `Configure` method, on the same platform-neutral `app` shown in step 4
@@ -291,6 +292,8 @@ sub-pipeline, exactly as with any other Benzene host:
 - **Kafka** (Event Hubs' Kafka-compatible endpoint): `app.UseKafka(...)`, in `Benzene.Azure.Function.Kafka`
 - **Service Bus**: `app.UseServiceBus(...)`, in `Benzene.Azure.Function.ServiceBus`
 - **Cosmos DB Change Feed**: `app.UseCosmosDbChangeFeed<TDocument>(...)`, in `Benzene.Azure.Function.CosmosDb`
+- **Queue Storage**: `app.UseQueueStorage(...)`, in `Benzene.Azure.Function.QueueStorage`
+- **Blob Storage**: `app.UseBlobStorage(...)`, in `Benzene.Azure.Function.BlobStorage`
 
 ### Event Hubs
 
@@ -495,6 +498,118 @@ public class CosmosDbFunction
 pipeline throws, the exception propagates, the lease is not advanced, and the runtime redelivers
 the whole batch — there is no per-document resume point in the change feed, so design handlers to
 be idempotent across batch redelivery.)
+
+### Queue Storage
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.QueueStorage --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues
+```
+
+A Queue Storage message has no properties or attributes — the body is the entire message — so
+there are two routing modes. If the producer is a Benzene client sending the usual message
+envelope (topic + payload), use the `UseBenzeneMessage` bridge; if the queue carries raw payloads
+from a non-Benzene producer, give the queue a fixed topic (a queue usually carries one message
+type anyway):
+
+```csharp
+// Envelope-routed (Benzene producer):
+app.UseQueueStorage(queue => queue
+    .UseBenzeneMessage(direct => direct.UseMessageHandlers()));
+
+// Or fixed-topic (raw payloads):
+app.UseQueueStorage(queue => queue
+    .UsePresetTopic("orders.created")
+    .UseMessageHandlers());
+```
+
+`Benzene.Azure.Function.QueueStorage` has no SDK dependency; your project supplies the trigger
+attribute. Add a trigger function that injects `IAzureFunctionApp` and calls
+`HandleQueueMessage(...)`:
+
+```csharp
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.QueueStorage;
+using Microsoft.Azure.Functions.Worker;
+
+public class QueueFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public QueueFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("orders-queue")]
+    public Task Run([QueueTrigger("orders", Connection = "StorageConnection")] string messageText)
+    {
+        return _app.HandleQueueMessage(messageText);
+    }
+}
+```
+
+(Bind the SDK's `QueueMessage` instead of `string` if you want the message id and dequeue count
+available on the context — construct a `QueueStorageMessage` with those properties and pass it to
+`HandleQueueMessages(...)`. On failure, the exception propagates and the host's own retry and
+`<queue>-poison` machinery takes over — configure `maxDequeueCount`/`visibilityTimeout` in
+`host.json`.)
+
+### Blob Storage
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.BlobStorage --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Storage.Blobs
+```
+
+A blob is a file, not a message envelope, and one blob-trigger function watches one container
+path — so unlike the queue/Service Bus triggers there is no message-handler routing; the pipeline
+consumes the blob directly via `UseBlob(...)` (composing with correlation/metrics/exception
+middleware as usual):
+
+```csharp
+app.UseBlobStorage(blob => blob
+    .UseBlob(async delivered =>
+    {
+        // delivered.Name, delivered.Content (byte[]), delivered.GetContentAsString()
+    }));
+```
+
+Add a trigger function that binds the content and the `{name}` expression, and calls
+`HandleBlob(...)`:
+
+```csharp
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.BlobStorage;
+using Microsoft.Azure.Functions.Worker;
+
+public class BlobFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public BlobFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("invoice-uploaded")]
+    public Task Run(
+        [BlobTrigger("invoices/{name}", Connection = "StorageConnection")] byte[] content,
+        string name)
+    {
+        return _app.HandleBlob(name, content);
+    }
+}
+```
+
+(On failure the host retries up to 5 times, then records the blob in its
+`webjobs-blobtrigger-poison` queue. The classic blob trigger polls via blob receipts, so delivery
+can lag on large containers — consider the Event Grid-based blob trigger source for
+latency-sensitive work; the Benzene pipeline side is unchanged either way.)
 
 ### Managed identity instead of connection strings
 
