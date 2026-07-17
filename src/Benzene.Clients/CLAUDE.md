@@ -87,6 +87,19 @@ change in the generated class body.
   `CorrelationId/` (`WithCorrelationId()`), `TraceContext/` (`WithW3CTraceContext()` - stamps
   `Activity.Current`'s `traceparent`/`tracestate` onto outgoing headers),
   `HeaderBenzeneMessageClient`/`HeadersBenzeneMessageClient`, `RetryBenzeneMessageClient`
+- Also `[Obsolete]` (2026-07-17, closing a Step 1 gap): `BenzeneMessageClientFactory`,
+  `ClientMessageSender<TRequest,TResponse>`, `ClientMapping`, `ClientMappingBuilder`,
+  `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders`, and the decorator classes themselves
+  (`RetryBenzeneMessageClient`, `HeaderBenzeneMessageClient`, `HeadersBenzeneMessageClient`,
+  `CorrelationIdBenzeneMessageClient`, `TraceContextBenzeneMessageClient`) - all confirmed
+  reachable only through the obsoleted factory/builder layer above, never independently. **Not**
+  obsoleted, and never will be as part of this redesign: `IBenzeneMessageClient` itself and its
+  concrete transport implementations (`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
+  `AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`,
+  `KafkaBenzeneMessageClient`) - `IBenzeneMessageClient` is shared foundation for
+  `Benzene.Grpc.Client`/`Benzene.Kafka.Core`, entirely outside this redesign's scope. See
+  `work/benzene-clients-redesign-plan.md`'s 2026-07-17 Step 4 scope-correction update for the full
+  verified-safe deletion set.
 
 ## When to use this package
 - When building clients for Benzene services

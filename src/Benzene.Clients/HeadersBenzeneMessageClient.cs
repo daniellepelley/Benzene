@@ -3,6 +3,11 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Clients
 {
+    /// <summary>
+    /// Superseded by <see cref="IBenzeneMessageSender"/>'s per-call <c>headers</c> parameter. See
+    /// <c>work/benzene-clients-redesign-plan.md</c>.
+    /// </summary>
+    [Obsolete("Use IBenzeneMessageSender.SendAsync's headers parameter instead - see work/benzene-clients-redesign-plan.md")]
     public sealed class HeadersBenzeneMessageClient : IBenzeneMessageClient
     {
         private readonly IClientHeaders _clientHeaders;

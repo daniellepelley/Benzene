@@ -2,6 +2,11 @@
 
 namespace Benzene.Clients;
 
+/// <summary>
+/// Superseded by <see cref="OutboundRoutingBuilder"/>/<c>AddOutboundRouting(...)</c>. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
+/// </summary>
+[Obsolete("Use OutboundRoutingBuilder/AddOutboundRouting instead - see work/benzene-clients-redesign-plan.md")]
 public class BenzeneMessageClientFactory : IBenzeneMessageClientFactory
 {
     private readonly Dictionary<ClientMapping, IBenzeneMessageClient> _clients = new();

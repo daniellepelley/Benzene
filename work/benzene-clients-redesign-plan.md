@@ -45,6 +45,49 @@ This is a real, inherent trade-off of `IBenzeneMessageSender`'s unconstrained-ge
 the old `IBenzeneClientContext<T,Void>`-typed pipelines caught this at compile time; the new one
 only catches it at runtime. Not fixed here - flagging for whoever next revisits the interface shape.
 
+**2026-07-17 update — Step 4 scope correction (deletion not yet performed).** Before starting §4's
+deletion pass, a repo-wide grep for every type named in §4's list turned up a materially different
+blast radius than this document assumed, and one genuinely dangerous near-mistake worth recording:
+
+- **`IBenzeneMessageClient` itself, and its concrete transport implementations, are NOT part of the
+  old mechanism and must NOT be deleted.** `SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
+  `AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient` (all `Benzene.Clients.Aws`),
+  `GrpcBenzeneMessageClient` (`Benzene.Grpc.Client`), and `KafkaBenzeneMessageClient`
+  (`Benzene.Kafka.Core`) all implement `IBenzeneMessageClient` directly and are load-bearing,
+  actively-used clients for packages entirely outside this redesign's scope. §4's original list
+  (`ClientsBuilder`/`SingleClientsBuilder`/`IBenzeneMessageClientFactory`/`IClientMessageRouter`/
+  `IDependencyWrapper<T>`/`DependencyWrapperFactory<T>`/decorator-wrapper classes) never named
+  `IBenzeneMessageClient` explicitly, but a naive "delete everything the obsoleted factory layer
+  touches" pass would have reached it transitively and broken gRPC, Kafka, EventBridge, and Mesh
+  clients. It stays.
+- **Step 1 left a gap in `Benzene.Clients.Aws`** that's now closed (this update, non-breaking):
+  `SqsBenzeneMessageClientFactory`, `AwsLambdaBenzeneMessageClientFactory`,
+  `SqsBenzeneMessageClientExtensions`, `AwsLambdaBenzeneMessageClientExtensions`, and
+  `Extensions.AddBenzeneMessageClients`/`AddBenzeneMessageClient`/`AddLambdaClients` all consumed
+  `IBenzeneMessageClientFactory`/`ClientsBuilder`/`SingleClientsBuilder` but were never themselves
+  marked `[Obsolete]` in Step 1 - only the `Benzene.Clients`-core aggregation types were. Also newly
+  marked `[Obsolete]`, confirmed (via grep) to be exclusively reachable through that same obsoleted
+  factory/builder layer and nothing else: `ClientBuilder`, `BenzeneMessageClientFactory`,
+  `RetryBenzeneMessageClient`, `HeaderBenzeneMessageClient`, `HeadersBenzeneMessageClient`,
+  `CorrelationIdBenzeneMessageClient`, `TraceContextBenzeneMessageClient`,
+  `RetryBenzeneMessageClientWrapper`, `CorrelationIdBenzeneMessageClientWrapper`,
+  `TraceContextBenzeneMessageClientWrapper`, `ClientMessageSender<TRequest,TResponse>`,
+  `ClientMapping`, `ClientMappingBuilder`, `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders`
+  (all `Benzene.Clients`).
+- **The verified-safe Step 4 deletion set** is therefore: everything listed in the two bullets
+  above (the aggregation/factory/router/decorator layer, now fully `[Obsolete]` across both
+  `Benzene.Clients` and `Benzene.Clients.Aws`) - and nothing else. `IBenzeneMessageClient`,
+  `ClientExtensions` (its generic `SendMessageAsync` sugar, unrelated to the factory layer), and
+  every concrete `*BenzeneMessageClient` transport implementation stay.
+- **Test-file impact still needs a file-by-file pass before the actual deletion commit** - some
+  test files (e.g. `test/Benzene.Core.Test/Clients/Aws/Lambda/AwsLambdaBenzeneMessageClientTest.cs`,
+  `test/Benzene.Core.Test/Clients/Aws/Sqs/SqsBenzeneMessageClientTest.cs`) test the *surviving*
+  concrete client classes and must be kept; others (e.g. `AwsLambdaBenzeneMessageClientFactoryTest.cs`,
+  `BenzeneMessageClientFactoryTest.cs`, `ClientExtensionTest.cs`, `HealthCheckTest.cs`'s
+  retry-client cases) test only the deleted factory/decorator layer and go with it. Not yet
+  itemized file-by-file - the next work session on Step 4 should do that enumeration before
+  deleting anything, per this document's own "confirm via grep before deleting, not by assumption."
+
 ## 1. Current shape (verified against actual code)
 
 - `IBenzeneMessageClient.SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest>)` —

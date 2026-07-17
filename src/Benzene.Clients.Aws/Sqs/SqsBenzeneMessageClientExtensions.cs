@@ -8,7 +8,11 @@ namespace Benzene.Clients.Aws.Sqs;
 /// <summary>
 /// Provides extension methods for registering <see cref="SqsBenzeneMessageClient"/> instances on a
 /// <see cref="ClientsBuilder"/>.
+///
+/// Superseded by <c>.UseSqs(queueUrl)</c> on an <c>OutboundRoutingBuilder.Route</c> pipeline. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
 /// </summary>
+[Obsolete("Use .UseSqs(queueUrl) on an OutboundRoutingBuilder.Route pipeline instead - see work/benzene-clients-redesign-plan.md")]
 public static class SqsBenzeneMessageClientExtensions
 {
     /// <summary>

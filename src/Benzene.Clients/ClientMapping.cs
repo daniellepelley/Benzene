@@ -2,6 +2,11 @@
 
 namespace Benzene.Clients;
 
+/// <summary>
+/// Part of the obsolete <see cref="ClientsBuilder"/> mechanism, superseded by
+/// <see cref="OutboundRoutingBuilder"/>. See <c>work/benzene-clients-redesign-plan.md</c>.
+/// </summary>
+[Obsolete("Use OutboundRoutingBuilder/AddOutboundRouting instead - see work/benzene-clients-redesign-plan.md")]
 public class ClientMapping
 {
     public TopicAndServiceKey[] Keys { get; }

@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Benzene.Clients.Aws` / `Benzene.Clients`: closed a gap in Step 1 of the outbound redesign
+  (`work/benzene-clients-redesign-plan.md`) - the `Benzene.Clients.Aws`-side factory/extension
+  layer built on the already-obsoleted `IBenzeneMessageClientFactory`/`ClientsBuilder` mechanism
+  (`SqsBenzeneMessageClientFactory`, `AwsLambdaBenzeneMessageClientFactory`,
+  `SqsBenzeneMessageClientExtensions`, `AwsLambdaBenzeneMessageClientExtensions`,
+  `Extensions.AddBenzeneMessageClients`/`AddBenzeneMessageClient`/`AddLambdaClients`) was never
+  itself marked `[Obsolete]` in Step 1. Also newly marked, confirmed reachable only through that
+  same obsoleted layer: `ClientBuilder`, `BenzeneMessageClientFactory`, `RetryBenzeneMessageClient`,
+  `HeaderBenzeneMessageClient`, `HeadersBenzeneMessageClient`, `CorrelationIdBenzeneMessageClient`,
+  `TraceContextBenzeneMessageClient`, `RetryBenzeneMessageClientWrapper`,
+  `CorrelationIdBenzeneMessageClientWrapper`, `TraceContextBenzeneMessageClientWrapper`,
+  `ClientMessageSender<TRequest,TResponse>`, `ClientMapping`, `ClientMappingBuilder`,
+  `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders` (all `Benzene.Clients`). Non-breaking -
+  warning-level only. **`IBenzeneMessageClient` itself and its concrete transport implementations
+  (`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`, `AwsLambdaBenzeneMessageClient`,
+  `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`, `KafkaBenzeneMessageClient`)
+  remain untouched** - they're load-bearing for `Benzene.Grpc.Client`/`Benzene.Kafka.Core`, entirely
+  outside this redesign's scope, and were never obsoleted. See the design doc's dated update for the
+  full verified-safe Step 4 deletion scope.
 - `Benzene.Clients.Aws` / `Benzene.Clients`: Step 3 of the outbound redesign
   (`work/benzene-clients-redesign-plan.md`) - `.UseSqs(queueUrl, ...)`/`.UseSns(topicArn, ...)` now
   have `OutboundContext` overloads, so an `OutboundRoutingBuilder.Route(topic, pipeline => pipeline.UseSqs(...))`
