@@ -35,6 +35,7 @@
 	  <ProjectReference Include="..\..\src\Benzene.Azure.Function.ServiceBus.TestHelpers\Benzene.Azure.Function.ServiceBus.TestHelpers.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
