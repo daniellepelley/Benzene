@@ -88,6 +88,9 @@ matching where your service runs; your message handlers stay identical across al
 | `Benzene.Aws.Lambda.Sns` | Handle SNS notification events — `UseSns(...)`. |
 | `Benzene.Aws.Lambda.S3` | Handle S3 bucket notification events — `UseS3(...)`. |
 | `Benzene.Aws.Lambda.Kafka` | Handle MSK / self-managed Kafka events — `UseKafka(...)`. |
+| `Benzene.Aws.Lambda.DynamoDb` | Handle DynamoDB Streams change-data-capture records — `UseDynamoDb(...)`. |
+| `Benzene.Aws.Lambda.EventBridge` | Handle EventBridge events — `UseEventBridge(...)`. |
+| `Benzene.Aws.Lambda.Kinesis` | Handle Kinesis Data Streams batches as a **streaming** pipeline — `UseKinesisStream(...)`. |
 
 See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 [AWS IAM Permissions](../aws-iam-permissions) for the per-source policies.
@@ -100,6 +103,7 @@ See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 | `Benzene.Azure.Function.AspNet` | Handle HTTP-triggered functions via the ASP.NET Core integration — `UseHttp(...)`. |
 | `Benzene.Azure.Function.EventHub` | Handle Event Hub stream events. |
 | `Benzene.Azure.Function.Kafka` | Handle Kafka-triggered functions. |
+| `Benzene.Azure.Function.ServiceBus` | Handle Service Bus-triggered functions (queue or topic/subscription, single or batched) — `UseServiceBus(...)` — distinct from `Benzene.Azure.ServiceBus` below, which consumes Service Bus in a self-hosted worker instead of as a Functions trigger. |
 
 See [Azure Functions Setup](../azure-functions).
 
@@ -123,7 +127,16 @@ See [Worker Service Setup](../getting-started-worker#part-b-built-in-workers-kaf
 | `Benzene.SelfHost` | Run Benzene as a standalone worker pipeline with no external transport — useful for background/worker services. |
 | `Benzene.SelfHost.Http` | A self-hosted HTTP server (built on `HttpListener`) for running a Benzene HTTP service without ASP.NET Core. |
 | `Benzene.HostedService` | Run Benzene inside a .NET Generic Host as an `IHostedService` / background worker. |
-| `Benzene.Grpc` | Expose message handlers over gRPC — includes the `[GrpcMethod]` attribute and method-handler factory. |
+| `Benzene.Grpc` | Expose message handlers over gRPC — includes the `[GrpcMethod]` attribute and method-handler factory. Reference `Benzene.Grpc.AspNet` (below) to actually host it; you rarely reference this directly. |
+| `Benzene.Grpc.AspNet` | Host `Benzene.Grpc` on ASP.NET Core — `AddBenzeneGrpc()` / `UseGrpc(...)`, plus opt-in `grpc.health.v1`/`grpc.reflection.v1alpha` support. The package a gRPC server application actually references. See [Getting Started: gRPC](../getting-started-grpc). |
+
+### Google Cloud Functions
+
+| Package | What it gives you |
+|---|---|
+| `Benzene.GoogleCloud.Functions.Core` | Shared bootstrap for every Google Cloud Functions trigger-type package — not referenced directly. |
+| `Benzene.GoogleCloud.Functions.Http` | Host an HTTP-triggered function on Cloud Functions Gen2 (`GoogleCloudFunctionHost<TStartUp>`). If you're targeting Cloud Run instead, you don't need this — `Benzene.AspNet.Core` alone is enough. |
+| `Benzene.GoogleCloud.Functions.PubSub` | Handle a Pub/Sub **push** subscription delivered to a Cloud Functions Gen2 CloudEvent trigger — `UsePubSub(...)`. |
 
 ## Outbound messaging clients
 
@@ -138,6 +151,7 @@ above are inbound; these are outbound.
 | `Benzene.Client.Http` | HTTP client middleware for sending outbound HTTP requests through the Benzene client pipeline. |
 | `Benzene.Aws.Sqs` | An SQS client for sending to / consuming from queues directly (`ISqsClient`, `SqsMessageClient`, `SqsConsumerConfig`) — distinct from `Benzene.Aws.Lambda.Sqs`, which handles SQS *as a Lambda trigger*. |
 | `Benzene.Kafka.Core` | A Kafka client for producing Benzene messages to topics (`KafkaBenzeneMessageClient`), plus Kafka config. |
+| `Benzene.Grpc.Client` | An outbound gRPC client (`GrpcBenzeneMessageClient`) that sends unary calls through a Benzene middleware pipeline over a `Grpc.Net.Client.GrpcChannel`. |
 
 ## Validation
 
@@ -150,6 +164,18 @@ and [Data Annotations](../data-annotations).
 | `Benzene.DataAnnotations` | Validate requests using `System.ComponentModel.DataAnnotations` attributes. |
 | `Benzene.JsonSchema` | JSON Schema validation middleware for incoming messages. |
 
+## Authentication
+
+Opt-in authentication middleware for services with no security-terminating gateway in front of
+them. See the [Authentication Patterns cookbook](../cookbooks/auth-patterns) and
+[Common Middleware](../common-middleware#useoauth2bearer).
+
+| Package | What it gives you |
+|---|---|
+| `Benzene.Auth.Core` | The shared contracts every concrete auth package builds on — the scoped `AuthenticationHolder` a validated caller identity is handed through on, plus the `Unauthorized`/`Forbidden` short-circuit helper. Reference directly only when writing your own authentication middleware. |
+| `Benzene.Auth.Basic` | RFC 7617 HTTP Basic authentication — `UseBasicAuth(...)`. The simplest option when you just need a username/password gate. |
+| `Benzene.Auth.OAuth2` | OAuth2 bearer token (JWT) validation against a JWKS endpoint — `UseOAuth2Bearer(...)` — plus scope-based authorization, `RequireScope(...)`. |
+
 ## Serialization
 
 Benzene serializes with `System.Text.Json` by default (in the core packages). Add these only
@@ -161,6 +187,15 @@ to override that.
 | `Benzene.Xml` | XML serialization support — an `XmlSerializer` and serializer option for XML request/response bodies. |
 | `Benzene.Avro` | Apache Avro binary serialization — an `IMediaFormat` (`application/avro`) for compact, schema-evolving payloads, popular in finance/data streaming (Kafka). |
 | `Benzene.MessagePack` | MessagePack binary serialization — an `IMediaFormat` backed by MessagePack-CSharp, for compact encoding in high-throughput domains where JSON's text overhead matters. |
+
+## Payload versioning
+
+Run multiple schema versions of the same message side by side, casting an older/newer payload to
+the version your handler understands. See [Versioning](../specification/versioning).
+
+| Package | What it gives you |
+|---|---|
+| `Benzene.Core.Versioning` | Casts a payload between schema versions (upcasting older payloads forward, downcasting newer ones back), composing multi-step chains automatically — registered in `ConfigureServices` via `services.UsingBenzene(x => x.UsePayloadVersionCasting<TContext>())`. |
 
 ## Observability & resilience
 
@@ -198,6 +233,7 @@ topics. See [Terraform](../terraform) and [OpenAPI Specification](../spec).
 | Package | What it gives you |
 |---|---|
 | `Benzene.Schema.OpenApi` | Generate OpenAPI (HTTP) and AsyncAPI (event) documents from your handlers — `UseSpec()`. |
+| `Benzene.Spec.Ui` | Serve a self-contained, Swagger-UI-style web viewer for the spec `Benzene.Schema.OpenApi` generates — `UseSpecUi()`. See [Spec UI](../spec-ui). |
 | `Benzene.CodeGen.Core` | The code-generation engine (code/file/example builders) the other CodeGen packages build on. |
 | `Benzene.CodeGen.Client` | Generate strongly-typed C# client SDKs from a service's message contract. |
 | `Benzene.CodeGen.ApiGateway` | Generate AWS API Gateway definitions from HTTP endpoints. |
@@ -209,6 +245,34 @@ topics. See [Terraform](../terraform) and [OpenAPI Specification](../spec).
 | `Benzene.Extras` | Additional/optional middleware — event broadcasting and JSON-patch (`PATCH`) support. |
 | `Benzene.Tools` | Shared tooling helpers, including inline start-ups and builders used by the test host and CLI. |
 
+## Cloud Service Profile
+
+Batteries-included conformance with the [Cloud Service Profile specification](../specification/cloud-service-profile)
+— the standard operational surface (invoke envelope, spec, health, mesh descriptor, trace feed,
+collector registration) a Benzene HTTP service can self-certify against.
+
+| Package | What it gives you |
+|---|---|
+| `Benzene.CloudService` | Wires every profile-required operational surface at the default standard paths in one call — `UseBenzeneCloudService("name", ...)`. Syntactic sugar over the underlying `Use*` calls; never required for full manual control. |
+| `Benzene.CloudService.Probe` | An external live-probe checker: hits a running service over real HTTP from outside and independently verifies profile conformance, the way an operator or CI job would. |
+
+## Service mesh
+
+Cross-service fleet visibility — a catalog of every service's spec, health, and contract drift,
+plus a live trace feed. See [Service Mesh](../specification/mesh) for the full wire contract and
+`deploy/Mesh/README.md` for running the aggregator/UI via `docker-compose`.
+
+| Package | What it gives you |
+|---|---|
+| `Benzene.Mesh.Contracts` | Shared data shapes for the mesh feature — the service registry config and the aggregator's generated snapshot/manifest artifacts. Pure data types, no HTTP or file I/O. |
+| `Benzene.Mesh.Wire` | The spec-conformant wire layer that makes a .NET service a citizen of a cross-language mesh fleet — the derived service descriptor (`UseMeshDescriptor(...)`) and the trace-emitting middleware (`UseMeshTrace(...)`). |
+| `Benzene.Mesh.Aggregator` | Polls every service in a `MeshServiceRegistry` for its spec and health, computes contract drift, and publishes a catalog — the pull-based collector. |
+| `Benzene.Mesh.Collector` | An ordinary Benzene service that ingests the mesh wire topics and answers live `mesh:query:*` read models over an in-memory store — the push-based counterpart to the aggregator. |
+| `Benzene.Mesh.Reporting` | Lets a service with no synchronous entry point an aggregator could poll (e.g. a Lambda triggered only by SQS/SNS) self-report its own spec/health as a side effect of real traffic. |
+| `Benzene.Mesh.Tracing.Tempo` | Queries Grafana Tempo's service-graph metrics and publishes the result as mesh topology — live trace integration for the aggregator's catalog. |
+| `Benzene.Mesh.Aws.Lambda` | Fetches a service's spec/health via a synchronous AWS Lambda `Invoke` instead of HTTP, for services with no public HTTP surface at all. |
+| `Benzene.Mesh.Ui` | Serves a self-contained, catalog-style web viewer for the aggregator's manifest/service artifacts — `UseMeshUi()` — plus a live Fleet view over a collector's query topic, `UseMeshFleetUi()`. |
+
 ## Testing support
 
 See [Testing Benzene](../testing-benzene).
@@ -216,7 +280,7 @@ See [Testing Benzene](../testing-benzene).
 | Package | What it gives you |
 |---|---|
 | `Benzene.Testing` | The in-memory test host (`BenzeneTestHost`) and message/HTTP builders for driving handlers and pipelines in unit/integration tests. |
-| `*.TestHelpers` | Per-transport test helpers (message builders and test-host extensions) that make it easy to feed transport-shaped events into the test host. One exists per transport: `Benzene.Aws.Lambda.ApiGateway.TestHelpers`, `Benzene.Aws.Lambda.Sqs.TestHelpers`, `Benzene.Aws.Lambda.Sns.TestHelpers`, `Benzene.Aws.Lambda.Kafka.TestHelpers`, `Benzene.Aws.Sqs.TestHelpers`, `Benzene.Azure.Function.AspNet.TestHelpers`, `Benzene.Azure.Function.EventHub.TestHelpers`, `Benzene.Azure.Function.Kafka.TestHelpers`, `Benzene.Core.MessageHandlers.TestHelpers`, `Benzene.Core.Messages.TestHelpers`. |
+| `*.TestHelpers` | Per-transport test helpers (message builders and test-host extensions) that make it easy to feed transport-shaped events into the test host. Every host/transport package above has a matching `*.TestHelpers` package, named identically with the suffix added (e.g. `Benzene.Aws.Lambda.Sqs` → `Benzene.Aws.Lambda.Sqs.TestHelpers`); a few foundational packages (`Benzene.Core.MessageHandlers`, `Benzene.Core.Messages`) have one too. |
 
 ## See also
 

@@ -146,6 +146,16 @@ Configures the self-hosted HTTP server (no ASP.NET Core).
 [`UseRetry`](middleware#useretry) for the full list (`numberOfRetries`, `initialDelay`,
 `backoffFactor`, `shouldRetry`, …).
 
+### `AvroOptions` — `Benzene.Avro`
+
+Passed to [`UseAvro(...)`](../common-middleware#useavro). Optional — a type with no explicit
+registration falls back to a reflection-inferred schema.
+
+| Member | Default | Purpose |
+|---|---|---|
+| `UseReflectionSchemas` | `true` | Infer an Avro schema by reflection for any type with no explicit registration. Set `false` to require an explicit schema for every serialized type. |
+| `RegisterSchema<T>(avroSchemaJson)` / `RegisterSchema(type, avroSchemaJson)` | — | Registers an explicit Avro schema (`.avsc` JSON) for a type; always wins over reflection for that type. |
+
 ## See also
 
 - [Getting Started](../getting-started) — configuration in a running service.

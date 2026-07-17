@@ -66,7 +66,7 @@ services.UsingBenzene(x => x
 
 // Validation
 .UseFluentValidation()                 // FluentValidation integration
-.UseDataAnnotations()                  // DataAnnotations validation
+.UseDataAnnotationsValidation()        // DataAnnotations validation
 
 // Health
 .UseHealthCheck("path", builder)       // Health check endpoint

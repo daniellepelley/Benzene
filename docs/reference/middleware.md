@@ -43,8 +43,29 @@ These select the event source and open its sub-pipeline. Install the matching
 | `UseS3(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.S3` | Handle S3 bucket-notification events. |
 | `UseKafka(...)` | `AwsEventStreamContext` / Azure | `Benzene.Aws.Lambda.Kafka`, `Benzene.Azure.Function.Kafka` | Handle Kafka records. |
 | `UseEventHub(...)` | `EventHubContext` | `Benzene.Azure.Function.EventHub` | Handle Azure Event Hub events. |
+| `UseDynamoDb(...)` | `DynamoDbRecordContext` | `Benzene.Aws.Lambda.DynamoDb` | Handle DynamoDB Streams change-data-capture records. See [AWS Lambda Setup](../getting-started-aws#dynamodb-streams). |
+| `UseEventBridge(...)` | `EventBridgeContext` | `Benzene.Aws.Lambda.EventBridge` | Handle EventBridge events (topic = `detail-type`, body = `detail`). See [AWS Lambda Setup](../getting-started-aws#eventbridge). |
+| `UseKinesisStream(...)` | `StreamContext<KinesisEventRecord>` | `Benzene.Aws.Lambda.Kinesis` | Handle a Kinesis Data Streams batch as one ordered, **streaming** pipeline (fan-in, not fan-out). See [AWS Lambda Setup](../getting-started-aws#kinesis-streaming). |
+| `UseServiceBus(...)` | `ServiceBusContext` | `Benzene.Azure.Function.ServiceBus` | Handle Service Bus-triggered functions (queue or topic/subscription, single or batched). See [Azure Functions Setup](../azure-functions#service-bus). |
+| `UseGrpc(...)` | `GrpcContext` | `Benzene.Grpc.AspNet` | Handle gRPC calls routed by `[GrpcMethod]`. See [Getting Started: gRPC](../getting-started-grpc). |
+| `UsePubSub(...)` | `PubSubContext` | `Benzene.GoogleCloud.Functions.PubSub` | Handle a Google Cloud Pub/Sub push subscription delivered to a Cloud Functions Gen2 CloudEvent trigger. |
 | `UseApiGatewayCustomAuthorizer(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.ApiGateway` | Handle API Gateway custom-authorizer (Lambda authorizer) invocations. |
 | `UseWorker(...)` / `UseAwsLambda(...)` | host builders | `Benzene.SelfHost` / `Benzene.Aws.Lambda.Core` | Open the platform-neutral event pipeline for a self-hosted worker or AWS Lambda host. |
+
+### Self-hosted worker consumers
+
+Distinct from the Lambda/Functions rows above: these run inside `app.UseWorker(worker => ...)`
+(a long-running process you own — console app, container, AKS), consuming a source directly
+rather than being invoked by a platform trigger. See
+[Worker Service Setup](../getting-started-worker#part-b-built-in-workers-kafka-http-service-bus-event-hub).
+
+| Step | Context | Package | Purpose |
+|---|---|---|---|
+| `worker.UseKafka(...)` | `KafkaRecordContext<TKey, TValue>` | `Benzene.Kafka.Core` | Consume Kafka records directly (no Lambda/Functions trigger). |
+| `worker.UseHttp(...)` | `SelfHostHttpContext` | `Benzene.SelfHost.Http` | Run a bare `HttpListener`-based HTTP endpoint. |
+| `worker.UseServiceBus(...)` | `ServiceBusConsumerContext` | `Benzene.Azure.ServiceBus` | Consume Azure Service Bus directly via a `ServiceBusProcessor`. |
+| `worker.UseEventHub(...)` | `EventHubConsumerContext` | `Benzene.Azure.EventHub` | Consume Azure Event Hubs directly via an `EventProcessorClient`. |
+| `worker.UseSqs(...)` | `SqsConsumerMessageContext` | `Benzene.Aws.Sqs` | Poll an SQS queue directly (no Lambda trigger). |
 
 ---
 
@@ -202,6 +223,19 @@ bound to an HTTP method/path. See [Health Checks](../health-checks).
 | `AllowedDomains` | Origins allowed to call the API (`"*"` allows all — avoid in production). |
 | `AllowedHeaders` | Headers echoed in `Access-Control-Allow-Headers`. |
 
+### Authentication — `UseBasicAuth(...)` / `UseOAuth2Bearer(...)` / `RequireScope(...)`
+
+**Packages:** `Benzene.Auth.Basic`, `Benzene.Auth.OAuth2`. Opt-in authentication for services with
+no security-terminating gateway in front of them. Both require an HTTP context and short-circuit
+with `Unauthorized`/`Forbidden` on failure. Full prose, parameters, and short-circuit behavior are
+covered in [Common Middleware](../common-middleware#useoauth2bearer) — not duplicated here — and a
+worked example is in the [Authentication Patterns cookbook](../cookbooks/auth-patterns.md).
+
+```csharp
+.UseBasicAuth(new ServiceAccountValidator())
+.UseOAuth2Bearer(oauth2Options).RequireScope("orders:write")
+```
+
 ### `UseSpec(string topic = "spec")`
 
 **Package:** `Benzene.Schema.OpenApi`. Exposes the service's OpenAPI/AsyncAPI schema on a topic
@@ -318,6 +352,29 @@ For sending messages *out* to other services, configured on a client pipeline
 | `UseSnsClient()` / `UseSns(...)` | `Benzene.Clients.Aws` | An SNS topic. |
 | `UseAwsLambdaClient()` / `UseAwsLambda(...)` | `Benzene.Clients.Aws` | A direct AWS Lambda invoke. |
 | `UseKafkaClient()` / `UseKafka(...)` | `Benzene.Kafka.Core` | A Kafka topic. |
+| `UseGrpcClient()` / `UseGrpc(...)` | `Benzene.Grpc.Client` | A unary gRPC call. |
+
+---
+
+## Specification & fleet-conformance middleware
+
+These wire a service into the standards described in `docs/specification/` — the
+[Cloud Service Profile](../specification/cloud-service-profile) and the
+[service mesh](../specification/mesh) — rather than solving an application concern directly.
+Newcomers building their first service don't need these; they're listed here for completeness,
+not because they belong on the critical path.
+
+| Step | Package | Purpose |
+|---|---|---|
+| `UseBenzeneCloudService(...)` | `Benzene.CloudService` | One call that wires every Cloud Service Profile-required surface (invoke envelope, spec, health, mesh descriptor, trace feed, collector registration) at once — sugar over the other steps in this table, not a replacement for them. |
+| `UseMeshDescriptor(...)` | `Benzene.Mesh.Wire` | Expose the service's derived mesh descriptor on the reserved `mesh` topic. |
+| `UseMeshTrace(...)` | `Benzene.Mesh.Wire` | Emit mesh trace events for every invocation to a trace exporter. |
+| `UseSpecUi(...)` | `Benzene.Spec.Ui` | Serve a Swagger-UI-style viewer over the spec `UseSpec()` produces. See [Spec UI](../spec-ui). |
+| `UseMeshUi(...)` / `UseMeshFleetUi(...)` | `Benzene.Mesh.Ui` | Serve a viewer over a mesh aggregator's catalog artifacts, or a live Fleet view over a collector's query topic. |
+
+`Benzene.Core.Versioning`'s `UsePayloadVersionCasting<TContext>()` is deliberately not in this
+table — it's a DI registration (`services.UsingBenzene(x => x.UsePayloadVersionCasting<TContext>())`
+in `ConfigureServices`), not a pipeline step. See [Package Reference](packages#payload-versioning).
 
 ---
 
