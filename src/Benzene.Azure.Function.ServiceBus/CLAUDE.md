@@ -16,9 +16,19 @@ as they do for HTTP, Event Hubs, and Kafka.
 - `ServiceBusMessageHeadersGetter` - exposes the message's string-typed application properties as headers
 - `ServiceBusMessageMessageHandlerResultSetter` - records the outcome onto `MessageResult` (see "Important conventions" below)
 - `ServiceBusApplication` / `ServiceBusBatchApplication` - the entry point application invoked by the
-  Azure Functions trigger method, and the per-message-loop application it wraps
+  Azure Functions trigger method, and the per-message-loop application it wraps.
+  `ServiceBusBatchApplication` implements both `IMiddlewareApplication<ServiceBusReceivedMessage[]>`
+  and `IMiddlewareApplication<ServiceBusTriggerBatch>` - see "True per-message ack" below.
+- `ServiceBusTriggerBatch` - carries a batch's messages together with the
+  `Microsoft.Azure.Functions.Worker.ServiceBusMessageActions` needed to complete/abandon them -
+  a distinct request type from `ServiceBusReceivedMessage[]` so `ServiceBusAckMode.Explicit` can be
+  dispatched to specifically. Named `...TriggerBatch`, not `...MessageBatch`, to avoid colliding
+  with the real `Azure.Messaging.ServiceBus.ServiceBusMessageBatch` SDK type (an outbound-sending
+  concept, unrelated to this).
 - `ServiceBusOptions` / `ServiceBusMessageProcessingException` - configurable exception/failure-status
   handling (see "Important conventions" below)
+- `ServiceBusAckMode` - `AutoComplete` (default, unchanged behavior) vs `Explicit` (true per-message
+  complete/abandon control - see "True per-message ack" below)
 - `DependencyInjectionExtensions.AddAzureServiceBus()` / `UseServiceBus(...)` - registration and pipeline wiring
 
 ## When to use this package
@@ -44,14 +54,27 @@ as they do for HTTP, Event Hubs, and Kafka.
   (`Benzene.Core.MessageHandlers`) before `.UseMessageHandlers()` in that subscription's pipeline to
   route every message on it to a fixed topic instead of relying on the property. Carried via scoped
   DI state (`PresetTopicHolder`), not a property on `ServiceBusContext`.
-- **Result handling does not affect message completion**: unlike some other Benzene transports, this
-  package does not complete, abandon, or dead-letter the message based on the handler's outcome. The
-  Azure Functions Service Bus trigger auto-completes the message on its own default settings when the
-  trigger function returns without throwing. Explicit complete/abandon/dead-letter control (via
-  `ServiceBusMessageActions`) and session handling are **not implemented** - they're candidates for
-  future work, not present today. `ServiceBusMessageMessageHandlerResultSetter` DOES record the
-  outcome onto `ServiceBusContext.MessageResult` (it's not a no-op) - that's read by
-  `ServiceBusOptions.RaiseOnFailureStatus` below, but nothing completes/abandons the message based on it.
+- **True per-message ack** (`ServiceBusOptions.AckMode`): defaults to `ServiceBusAckMode.AutoComplete`
+  - the Azure Functions Service Bus trigger auto-completes the message on its own default settings
+  when the trigger function returns without throwing, exactly as before this option existed. Set
+  `AckMode = ServiceBusAckMode.Explicit` for real per-message `CompleteMessageAsync`/
+  `AbandonMessageAsync` control based on the handler's outcome - this requires **two** things
+  together: (1) the trigger's `[ServiceBusTrigger]` attribute must set `AutoCompleteMessages = false`
+  (a Functions-runtime-level setting Benzene can't set for you), and (2) the trigger function must
+  call the `HandleServiceBusMessages(IAzureFunctionApp, ServiceBusMessageActions, params
+  ServiceBusReceivedMessage[])` overload - bind `ServiceBusMessageActions` as a trigger function
+  parameter and pass it through. The plain `HandleServiceBusMessages(IAzureFunctionApp, params
+  ServiceBusReceivedMessage[])` overload has no `ServiceBusMessageActions` to act on, so `AckMode`
+  has no effect through it even if set to `Explicit` - see `ServiceBusBatchApplication`'s own doc
+  comments. On success, the message is completed; on a non-exception failure result or an unhandled
+  exception, it's abandoned (returned to the queue, respecting the queue's own max-delivery-count
+  before auto-dead-lettering) - abandon happens exactly once per message regardless of
+  `CatchExceptions`/`RaiseOnFailureStatus`, since those two options only decide whether the *whole
+  invocation* cascades, not whether *this message* gets acted on. Session handling
+  (`ServiceBusSessionMessageActions`, ordered per-session processing) is still **not implemented**.
+  `ServiceBusMessageMessageHandlerResultSetter` DOES record the outcome onto
+  `ServiceBusContext.MessageResult` (it's not a no-op) - that's what both `RaiseOnFailureStatus` and
+  `AckMode = Explicit` read to decide a message's outcome.
 - **Exception/failure-status handling is configurable via `ServiceBusOptions`**
   (`UseServiceBus(..., configure)`), defaulting to today's original behavior: a handler exception
   cascades and fails the whole trigger invocation, and a non-exception failure result is silently
@@ -59,9 +82,10 @@ as they do for HTTP, Event Hubs, and Kafka.
   cascading it (that message's failure doesn't affect the rest of the batch or fail the invocation);
   set `ServiceBusOptions.RaiseOnFailureStatus = true` to escalate a non-exception failure result into
   a thrown `ServiceBusMessageProcessingException` too. Both default to `false`
-  (purely additive/opt-in). This is still not the same as true per-message partial-ack (that needs
-  `ServiceBusMessageActions`, still not wired up) - it only controls whether the *whole invocation*
-  is reported as failed to the Functions host.
+  (purely additive/opt-in). On their own (with `AckMode` left at the default `AutoComplete`), these
+  only control whether the *whole invocation* is reported as failed to the Functions host - true
+  per-message completion needs `AckMode = ServiceBusAckMode.Explicit` too, see "True per-message
+  ack" below.
 - Supports both single-message triggers (the common case) and batched triggers (`IsBatched = true`) via
   the same `params ServiceBusReceivedMessage[]` dispatch signature.
 
@@ -69,4 +93,10 @@ as they do for HTTP, Event Hubs, and Kafka.
 - `test/Benzene.Core.Test/Azure/ServiceBusPipelineTest.cs` - full pipeline happy path.
 - `test/Benzene.Core.Test/Azure/ServiceBus/` - `ServiceBusMessageTopicGetter`/`ServiceBusMessageHeadersGetter`.
 - `test/Benzene.Core.Test/Azure/ServiceBusFailureHandlingTest.cs` - `ServiceBusOptions`'
-  `CatchExceptions`/`RaiseOnFailureStatus` combinations against `ServiceBusBatchApplication` directly.
+  `CatchExceptions`/`RaiseOnFailureStatus` combinations against `ServiceBusBatchApplication` directly,
+  plus `AckMode = Explicit` complete/abandon behavior (success completes, failure result abandons, an
+  unhandled exception abandons then cascades or is swallowed per `CatchExceptions`, and the plain
+  `ServiceBusReceivedMessage[]` overload never touches `ServiceBusMessageActions` even when `AckMode`
+  is `Explicit`) - dispatches through `IMiddlewareApplication<ServiceBusTriggerBatch>` directly with
+  a mocked `Microsoft.Azure.Functions.Worker.ServiceBusMessageActions` (mockable: non-sealed, virtual
+  methods, protected constructor Moq's proxy can call).

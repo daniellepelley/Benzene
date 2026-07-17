@@ -23,4 +23,13 @@ public class ServiceBusOptions
     /// failure that retrying won't fix.
     /// </summary>
     public bool RaiseOnFailureStatus { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets whether each message's completion is left to the Functions host's own
+    /// auto-complete behavior, or explicitly controlled based on the handler's outcome. Defaults to
+    /// <see cref="ServiceBusAckMode.AutoComplete"/> (unchanged behavior). Set to
+    /// <see cref="ServiceBusAckMode.Explicit"/> for true per-message complete/abandon control - see
+    /// that enum's own doc comments for the trigger configuration it requires.
+    /// </summary>
+    public ServiceBusAckMode AckMode { get; set; } = ServiceBusAckMode.AutoComplete;
 }

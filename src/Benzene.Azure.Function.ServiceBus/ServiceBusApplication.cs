@@ -6,6 +6,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Azure.Function.ServiceBus;
@@ -36,9 +37,11 @@ public class ServiceBusApplication : EntryPointMiddlewareApplication<ServiceBusR
 /// Runs every message in a Service Bus trigger batch through the middleware pipeline concurrently,
 /// each in its own service scope, applying <see cref="ServiceBusOptions"/> to decide whether a
 /// message's exception or failure result is contained (logged, doesn't affect the rest of the batch)
-/// or left to cascade and fail the whole invocation.
+/// or left to cascade and fail the whole invocation - and, when <see cref="ServiceBusOptions.AckMode"/>
+/// is <see cref="ServiceBusAckMode.Explicit"/>, to complete or abandon each message individually
+/// based on that same outcome.
 /// </summary>
-public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusReceivedMessage[]>
+public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusReceivedMessage[]>, IMiddlewareApplication<ServiceBusTriggerBatch>
 {
     private readonly IMiddlewarePipeline<ServiceBusContext> _pipeline;
     private readonly ServiceBusOptions _options;
@@ -49,15 +52,50 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
         _options = options ?? new ServiceBusOptions();
     }
 
-    public async Task HandleAsync(ServiceBusReceivedMessage[] @event, IServiceResolverFactory serviceResolverFactory)
+    /// <summary>
+    /// Handles a batch with no <see cref="ServiceBusMessageActions"/> available - <see cref="ServiceBusOptions.AckMode"/>
+    /// has no effect here even if set to <see cref="ServiceBusAckMode.Explicit"/>, since there is
+    /// nothing to complete/abandon against; use the <see cref="ServiceBusTriggerBatch"/> overload
+    /// (via <c>Extensions.HandleServiceBusMessages(IAzureFunctionApp, ServiceBusMessageActions,
+    /// ServiceBusReceivedMessage[])</c>) for explicit ack mode to take effect.
+    /// </summary>
+    public Task HandleAsync(ServiceBusReceivedMessage[] @event, IServiceResolverFactory serviceResolverFactory)
+        => HandleAsync(@event, messageActions: null, serviceResolverFactory);
+
+    /// <summary>
+    /// Handles a batch together with the <see cref="ServiceBusMessageActions"/> needed to complete/abandon
+    /// each message - required for <see cref="ServiceBusOptions.AckMode"/> = <see cref="ServiceBusAckMode.Explicit"/>
+    /// to actually complete/abandon messages.
+    /// </summary>
+    public Task HandleAsync(ServiceBusTriggerBatch @event, IServiceResolverFactory serviceResolverFactory)
+        => HandleAsync(@event.Messages, @event.MessageActions, serviceResolverFactory);
+
+    private async Task HandleAsync(ServiceBusReceivedMessage[] messages, ServiceBusMessageActions? messageActions, IServiceResolverFactory serviceResolverFactory)
     {
-        var tasks = @event.Select(message => new ServiceBusContext(message)).Select(async context =>
+        var explicitAck = messageActions != null && _options.AckMode == ServiceBusAckMode.Explicit;
+
+        var tasks = messages.Select(message => new ServiceBusContext(message)).Select(async context =>
             {
+                var acked = false;
+
                 try
                 {
                     using (var scope = serviceResolverFactory.CreateScope())
                     {
                         await _pipeline.HandleAsync(context, scope);
+                    }
+
+                    if (explicitAck)
+                    {
+                        acked = true;
+                        if (context.MessageResult?.IsSuccessful == false)
+                        {
+                            await messageActions!.AbandonMessageAsync(context.Message);
+                        }
+                        else
+                        {
+                            await messageActions!.CompleteMessageAsync(context.Message);
+                        }
                     }
 
                     if (_options.RaiseOnFailureStatus && context.MessageResult?.IsSuccessful == false)
@@ -67,11 +105,21 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
                 }
                 catch (Exception ex) when (_options.CatchExceptions)
                 {
+                    if (explicitAck && !acked)
+                    {
+                        await messageActions!.AbandonMessageAsync(context.Message);
+                    }
+
                     using (var loggingScope = serviceResolverFactory.CreateScope())
                     {
                         loggingScope.GetService<ILogger<ServiceBusApplication>>()
                             .LogError(ex, "Processing Service Bus message {messageId} failed", context.Message.MessageId);
                     }
+                }
+                catch (Exception) when (explicitAck && !acked)
+                {
+                    await messageActions!.AbandonMessageAsync(context.Message);
+                    throw;
                 }
             })
             .ToArray();

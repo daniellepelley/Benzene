@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Benzene.Azure.Function.ServiceBus`: `ServiceBusOptions.AckMode` (default `ServiceBusAckMode.AutoComplete`,
+  reproducing today's Functions-host-auto-completes behavior exactly) - set `ServiceBusAckMode.Explicit`
+  for true per-message `CompleteMessageAsync`/`AbandonMessageAsync` control tied to the handler's
+  outcome. Requires the trigger's `AutoCompleteMessages = false` (Functions-runtime config, outside
+  Benzene's control) and a new `HandleServiceBusMessages(IAzureFunctionApp, ServiceBusMessageActions,
+  params ServiceBusReceivedMessage[])` overload that threads `ServiceBusMessageActions` through a new
+  `ServiceBusTriggerBatch` request type (named to avoid colliding with the real
+  `Azure.Messaging.ServiceBus.ServiceBusMessageBatch` SDK type) - `ServiceBusBatchApplication` now
+  implements both `IMiddlewareApplication<ServiceBusReceivedMessage[]>` (unchanged) and
+  `IMiddlewareApplication<ServiceBusTriggerBatch>` (new), sharing one instance. The plain
+  `ServiceBusReceivedMessage[]` overload never touches message completion, even if `AckMode` is set to
+  `Explicit` - there's nothing to act on without `ServiceBusMessageActions`. Purely additive. Closes
+  the "candidates for future work" gap flagged in the package's own `CLAUDE.md` and
+  `work/batch-failure-handling.md`'s deferred table.
+
 ### Changed
 - **BREAKING:** `Benzene.CodeGen.Core`'s example payload generation moved to
   `Benzene.Schema.OpenApi` so examples can be generated at runtime during spec builds, not just at
