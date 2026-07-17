@@ -1,4 +1,4 @@
-namespace Benzene.Core.Versioning.Deserializer;
+namespace Benzene.Core.Versioning.Schemas;
 
 public class PayloadSchemaVersions
 {

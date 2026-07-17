@@ -168,7 +168,8 @@ a cookbook (`docs/cookbooks/`) rather than framework code once implemented.
 
 ## 4. Mechanism B — transparent payload casting (single handler)
 
-**Status: design only — depends on the redesign in §4.4.** One handler serves a topic, written
+**Status: §4.4's redesign is done; the request/response casting decorators (§4.1/§4.2) are design
+only.** One handler serves a topic, written
 against the **latest** schema version. Producers on older (or newer) versions are transparently
 upcast (or downcast) at the edges of the pipeline; the handler never sees any version but its own.
 
@@ -256,7 +257,7 @@ Per design-principles.md §3's normative pattern, this capability's requirement 
 | `Benzene.Core.Versioning` schema casters registered for the topic (§4.4) | The decorators no-op without a registered `ISchemaCasters` entry for `(topic, incoming/target version)` | The request/response mapper decorators pass through unchanged — behaves exactly as an unversioned topic; not an error |
 | `IMessageVersionGetter<TContext>` returning a real signal | Casting only ever triggers for a version that differs from the canonical one | A topic with no version signalled always takes the canonical path — the same "absent means default" rule as §2.2 |
 
-### 4.4 Required redesign of `Benzene.Core.Versioning`
+### 4.4 Required redesign of `Benzene.Core.Versioning` — done
 
 The package as imported (see its `CLAUDE.md`) was built for a prior project whose wire format put
 the schema version and topic *inside* the JSON body (`IPayloadFields.GetSchemaVersion(JsonElement)`

@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using Benzene.Core.Versioning.Deserializer;
 using Benzene.Core.Versioning.Schemas;
 using Xunit;
 using V1 = Benzene.Test.Core.Versioning.Schemas.V1;
