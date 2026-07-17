@@ -3,8 +3,8 @@
 Benzene runs on the Azure Functions **isolated worker** model, using the same platform-neutral
 `BenzeneStartUp` base class as every other Benzene host (AWS Lambda, ASP.NET Core). This guide
 starts from an empty folder and ends with a deployed Function App handling HTTP requests, plus
-optional Event Hub, Kafka, Service Bus, Cosmos DB Change Feed, Queue Storage, and Blob Storage
-triggers.
+optional non-HTTP triggers — Event Hubs, Kafka, Service Bus, Cosmos DB Change Feed, Queue
+Storage, Blob Storage, Event Grid, and Timer.
 
 ## Prerequisites
 
@@ -294,6 +294,8 @@ sub-pipeline, exactly as with any other Benzene host:
 - **Cosmos DB Change Feed**: `app.UseCosmosDbChangeFeed<TDocument>(...)`, in `Benzene.Azure.Function.CosmosDb`
 - **Queue Storage**: `app.UseQueueStorage(...)`, in `Benzene.Azure.Function.QueueStorage`
 - **Blob Storage**: `app.UseBlobStorage(...)`, in `Benzene.Azure.Function.BlobStorage`
+- **Event Grid**: `app.UseEventGrid(...)`, in `Benzene.Azure.Function.EventGrid`
+- **Timer**: `app.UseTimerTrigger(...)`, in `Benzene.Azure.Function.Timer`
 
 ### Event Hubs
 
@@ -610,6 +612,120 @@ public class BlobFunction
 `webjobs-blobtrigger-poison` queue. The classic blob trigger polls via blob receipts, so delivery
 can lag on large containers — consider the Event Grid-based blob trigger source for
 latency-sensitive work; the Benzene pipeline side is unchanged either way.)
+
+### Event Grid
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.EventGrid --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.EventGrid
+```
+
+Event Grid events route **by their event type** — `Microsoft.Storage.BlobCreated`, or your own
+custom types — exactly the way the AWS S3 adapter routes on the S3 event name. Declare message
+handlers for those topics and the event's `data` payload arrives as the handler's request:
+
+```csharp
+app.UseEventGrid(eventGrid => eventGrid.UseMessageHandlers());
+```
+
+```csharp
+[Message("Microsoft.Storage.BlobCreated")]
+public class BlobCreatedHandler : IMessageHandler<BlobCreatedData>
+{
+    public Task HandleAsync(BlobCreatedData request) { /* ... */ }
+}
+```
+
+`Benzene.Azure.Function.EventGrid` has no SDK dependency — bind the trigger as `string` and
+Benzene parses it, handling **both** delivery schemas (the Event Grid schema and CloudEvents 1.0,
+detected by `specversion`). The envelope's `id`, `subject`, and `source` surface as message
+headers:
+
+```csharp
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.EventGrid;
+using Microsoft.Azure.Functions.Worker;
+
+public class EventGridFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public EventGridFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("event-grid")]
+    public Task Run([EventGridTrigger] string eventJson)
+    {
+        return _app.HandleEventGridEvent(eventJson);
+    }
+}
+```
+
+(On failure the exception propagates and Event Grid's own delivery retry — with backoff, up to 24
+hours — and optional dead-letter destination take over, configured on the event subscription.)
+
+### Timer
+
+Install the package and add the pipeline in `Configure`:
+
+```bash
+dotnet add package Benzene.Azure.Function.Timer --prerelease
+dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Timer
+```
+
+Two consumption modes. For scheduled work that doesn't need routing, `UseTick(...)`:
+
+```csharp
+app.UseTimerTrigger(timer => timer
+    .UseTick(async info =>
+    {
+        // info.IsPastDue, info.ScheduleStatus?.Next
+    }));
+```
+
+Or — the more interesting mode — give the pipeline a preset topic and the tick invokes the
+message handler declaring it, making a scheduled job just another (testable, portable) message
+handler:
+
+```csharp
+app.UseTimerTrigger(timer => timer
+    .UsePresetTopic("nightly-cleanup")
+    .UseMessageHandlers());
+```
+
+(The extension is named `UseTimerTrigger` because `UseTimer` is already Benzene's timing
+middleware.) Add a trigger function — bind the timer parameter directly as Benzene's
+`TimerTriggerInfo`, whose property names match the worker's `TimerInfo` JSON:
+
+```csharp
+using Benzene.Azure.Function.Core;
+using Benzene.Azure.Function.Timer;
+using Microsoft.Azure.Functions.Worker;
+
+public class NightlyCleanupFunction
+{
+    private readonly IAzureFunctionApp _app;
+
+    public NightlyCleanupFunction(IAzureFunctionApp app)
+    {
+        _app = app;
+    }
+
+    [Function("nightly-cleanup")]
+    public Task Run([TimerTrigger("0 0 2 * * *")] TimerTriggerInfo timer)
+    {
+        return _app.HandleTimer(timer);
+    }
+}
+```
+
+(Platform reality worth knowing: a failed tick is **not** retried — the next occurrence just runs
+on schedule. A job needing at-least-once semantics should enqueue its work rather than doing it
+inline.)
 
 ### Managed identity instead of connection strings
 
