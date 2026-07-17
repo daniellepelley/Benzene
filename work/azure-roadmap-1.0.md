@@ -2698,3 +2698,37 @@ without an equivalent).
 - No code changes; `Benzene.sln` untouched. Package count unchanged: **14 production, 5
   TestHelpers**. Remaining major items: Kafka consumer-builder hook (public-API change awaiting
   sign-off), performance benchmarks (needs real Azure), Durable Functions (long-term).
+
+## Document History Addendum — 2026-07-17 (eighth entry): Kafka Consumer Factory Seam — Secretless OAUTHBEARER Closed
+
+Closes the gap the fourth entry (Managed Identity pass) discovered and recorded:
+`BenzeneKafkaWorker` built its `ConsumerBuilder` internally with no hook, so managed-identity
+OAUTHBEARER against Event Hubs' Kafka endpoint wasn't reachable through Benzene. User approved
+proceeding with the flagged public-API addition.
+
+- **`IKafkaConsumerFactory<TKey,TValue>` + `KafkaConsumerFactory<TKey,TValue>`**
+  (`Benzene.Kafka.Core` — deliberately a *seam*, not a bare callback, for consistency with
+  `IEventProcessorClientFactory`/`IServiceBusClientFactory`/`ICosmosChangeFeedProcessorFactory`).
+  `Create(ConsumerConfig)` takes the config as a parameter so the worker can pass its own
+  instance *after* its `CommitOnlyOnSuccess` adjustment (`EnableAutoOffsetStore = false`) —
+  making it impossible for a custom factory to accidentally build from a config that misses it
+  (proven by test). The default factory accepts an optional
+  `Action<ConsumerBuilder<TKey,TValue>>`.
+- **Public API surface change (additive, flagged per repo policy):** optional trailing
+  `consumerFactory` parameter on `UseKafka<TKey,TValue>(...)` and the
+  `BenzeneKafkaWorker<TKey,TValue>` ctor. Source-compatible with all existing callers (omitted =
+  original build-straight-from-config behavior, byte-for-byte); binary-incompatible with
+  previously compiled callers as any optional-parameter addition is — acceptable at 0.0.x
+  prerelease, called out here rather than hidden.
+- **Tests:** 4 new in `test/Benzene.Core.Test/Kafka/KafkaConsumerFactoryTest.cs` (worker creates
+  through the factory + subscribes/closes/disposes the mock consumer; config adjustment ordering
+  proven; default factory's configure action). All 4 pre-existing `BenzeneKafkaWorkerTest` tests
+  pass unchanged. Full suite green.
+- **Docs:** the managed-identity cookbook's Kafka section rewritten from "not reachable today" to
+  the working secretless snippet (`SetOAuthBearerTokenRefreshHandler` fed by
+  `DefaultAzureCredential`), keeping the config-only OIDC client-credentials alternative with its
+  not-secretless caveat; `Benzene.Kafka.Core`'s CLAUDE.md documents the seam and its
+  build-from-the-passed-config contract.
+- With this, **every Azure roadmap item actionable from this environment is closed.** Remaining:
+  performance benchmarks / cold-start metrics (needs real deployed Azure resources) and Durable
+  Functions (long-term, unscoped).

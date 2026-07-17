@@ -13,6 +13,7 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
     private readonly KafkaApplication<TKey, TValue> _kafkaApplication;
     private readonly BenzeneKafkaConfig _benzeneKafkaConfig;
     private readonly ILogger<BenzeneKafkaWorker<TKey, TValue>> _logger;
+    private readonly IKafkaConsumerFactory<TKey, TValue> _consumerFactory;
     private readonly CancellationTokenSource _stoppingCts = new();
     private IConsumer<TKey, TValue>? _consumer;
     private Task? _runTask;
@@ -20,12 +21,14 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
 
     public BenzeneKafkaWorker(IServiceResolverFactory serviceResolverFactory,
         KafkaApplication<TKey, TValue> kafkaApplication, BenzeneKafkaConfig benzeneKafkaConfig,
-        ILogger<BenzeneKafkaWorker<TKey, TValue>> logger)
+        ILogger<BenzeneKafkaWorker<TKey, TValue>> logger,
+        IKafkaConsumerFactory<TKey, TValue>? consumerFactory = null)
     {
         _benzeneKafkaConfig = benzeneKafkaConfig;
         _kafkaApplication = kafkaApplication;
         _serviceResolverFactory = serviceResolverFactory;
         _logger = logger;
+        _consumerFactory = consumerFactory ?? new KafkaConsumerFactory<TKey, TValue>();
     }
 
     /// <summary>
@@ -68,7 +71,7 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
 
             try
             {
-                _consumer = new ConsumerBuilder<TKey, TValue>(_benzeneKafkaConfig.ConsumerConfig).Build();
+                _consumer = _consumerFactory.Create(_benzeneKafkaConfig.ConsumerConfig);
                 _consumer.Subscribe(_benzeneKafkaConfig.Topics);
 
                 Func<ConsumeResult<TKey, TValue>, int>? keySelector = _benzeneKafkaConfig.PreserveOrderPerPartition

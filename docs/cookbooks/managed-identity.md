@@ -190,18 +190,52 @@ The change feed processor needs Contributor, not Reader — it writes lease docu
 container. A 403 from an identity that "definitely has a role in the portal" is almost always
 this: an ARM role was granted where a data-plane role was needed.
 
-### Kafka over Event Hubs (`Benzene.Kafka.Core`) — Entra ID yes, managed identity not yet
+### Kafka over Event Hubs (`Benzene.Kafka.Core`)
 
 If you consume Event Hubs through its Kafka-compatible endpoint with the self-hosted Kafka
 worker, Entra ID auth replaces the `$ConnectionString` SASL/PLAIN trick with Kafka's
-`OAUTHBEARER` mechanism. What works through Benzene today is the **config-only OIDC
-client-credentials flow** — an Entra *service principal* (client id + secret), granted the same
-RBAC role as any other identity, expressed entirely on the `ConsumerConfig` that
-`BenzeneKafkaConfig` already carries:
+`OAUTHBEARER` mechanism. For a true **secretless managed identity**, supply an
+`IKafkaConsumerFactory<TKey,TValue>` (the Kafka counterpart of the Azure workers' client-factory
+seams) that wires a token refresh handler fed by `DefaultAzureCredential`:
 
 ```csharp
-consumerConfig.SecurityProtocol = SecurityProtocol.SaslSsl;
-consumerConfig.SaslMechanism = SaslMechanism.OAuthBearer;
+using Azure.Core;
+using Azure.Identity;
+using Benzene.Kafka.Core;
+using Confluent.Kafka;
+
+var credential = new DefaultAzureCredential();
+
+var consumerConfig = new ConsumerConfig
+{
+    BootstrapServers = "my-namespace.servicebus.windows.net:9093",
+    GroupId = "my-consumer-group",
+    SecurityProtocol = SecurityProtocol.SaslSsl,
+    SaslMechanism = SaslMechanism.OAuthBearer,
+};
+
+var consumerFactory = new KafkaConsumerFactory<string, string>(builder => builder
+    .SetOAuthBearerTokenRefreshHandler((client, _) =>
+    {
+        var token = credential.GetToken(new TokenRequestContext(
+            new[] { "https://my-namespace.servicebus.windows.net/.default" }));
+        client.OAuthBearerSetToken(token.Token, token.ExpiresOn.ToUnixTimeMilliseconds(), "benzene");
+    }));
+
+app.UseWorker(worker => worker.UseKafka<string, string>(
+    new BenzeneKafkaConfig { ConsumerConfig = consumerConfig, Topics = new[] { "my-topic" } },
+    kafka => kafka.UseMessageHandlers(),
+    consumerFactory));
+```
+
+The role is the same **Azure Event Hubs Data Receiver** as the native path — the Kafka endpoint
+is just a different protocol onto the same namespace.
+
+If you'd rather stay config-only (no factory), the **OIDC client-credentials flow** also works,
+expressed entirely on the `ConsumerConfig` — but note it authenticates an Entra *service
+principal* with a client secret, so it's Entra ID + RBAC without being secretless:
+
+```csharp
 consumerConfig.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
 consumerConfig.SaslOauthbearerTokenEndpointUrl =
     "https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token";
@@ -209,16 +243,6 @@ consumerConfig.SaslOauthbearerClientId = "<app-client-id>";
 consumerConfig.SaslOauthbearerClientSecret = configuration["Kafka:ClientSecret"];
 consumerConfig.SaslOauthbearerScope = "https://my-namespace.servicebus.windows.net/.default";
 ```
-
-That's Entra ID + RBAC (the same **Azure Event Hubs Data Receiver** role — the Kafka endpoint is
-just a different protocol onto the same namespace), but it is *not* secretless: the client secret
-is still a credential you store and rotate. A true managed-identity token
-(`ConsumerBuilder.SetOAuthBearerTokenRefreshHandler` feeding tokens from
-`DefaultAzureCredential`) is **not reachable through `Benzene.Kafka.Core` today** —
-`BenzeneKafkaWorker` builds its `ConsumerBuilder` internally and exposes no hook on it. That's a
-known gap (tracked in `work/azure-roadmap-1.0.md`); if you need secretless Kafka now, consume the
-namespace through the native path (`Benzene.Azure.EventHub`, above) instead, which the same hub
-supports.
 
 ## Azure Functions triggers: app settings only
 
