@@ -50,6 +50,13 @@ A language-neutral test suite that every implementation runs:
   `benzene-status` trailer over real transports.
 - A port is "Benzene" when it passes both; API shape is explicitly not part of conformance.
 
+Conformance comes in two levels ([cloud-service-profile.md](cloud-service-profile.md)): the
+fixtures above establish **Benzene Core**. A port that also wants its services to claim the
+**Cloud Service Profile** additionally implements the service-side mesh feeds and passes
+`mesh-descriptor-cases.json` and `mesh-trace-cases.json`. Plan for the profile from the start
+if the port's services should appear in a mesh — it is the difference between "interoperates"
+and "fully tool-operable".
+
 ## 4. Known .NET-isms that must NOT leak into the spec
 
 Recorded so they don't get accidentally specified:

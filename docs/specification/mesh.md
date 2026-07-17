@@ -20,8 +20,10 @@ health, stats, who-calls-whom) that is **derived from running code, never declar
 document specifies everything that crosses a process boundary to make that work identically
 across language ports.
 
-Mesh is optional, and so is each of its feeds. The normative degradation rule of §6 applies to
-every section here.
+At Core level, mesh is optional, and so is each of its feeds; the normative degradation rule of
+§6 applies to every section here. A service claiming the
+[Cloud Service Profile](cloud-service-profile.md) MUST provision the service-side feeds (its
+R6) — for such a service, §6 governs runtime degradation, not whether the feeds exist.
 
 ## 1. The reserved `mesh` topic
 
@@ -228,9 +230,12 @@ optional, on both sides:
 Three fixture files in [conformance/](conformance/README.md) pin this document; their formats
 and the canonical mesh handlers are documented there. A port that implements mesh MUST pass
 `mesh-descriptor-cases.json` and `mesh-trace-cases.json`; a port that additionally implements a
-collector MUST pass `mesh-collector-cases.json`. A port that implements neither is unaffected —
-mesh is an optional module, and this spec creates no obligation to implement it, only the
-obligation to implement it *compatibly*.
+collector MUST pass `mesh-collector-cases.json`. A port that implements neither is unaffected
+at Core level — mesh is an optional module there, and the Core spec creates no obligation to
+implement it, only the obligation to implement it *compatibly*. Supporting the
+[Cloud Service Profile](cloud-service-profile.md), however, requires the service-side feeds, so
+a port that wants its services to claim the profile implements §§1–3 and §5 and passes the two
+service-side fixture files.
 
 ## 8. Conformance language note
 

@@ -54,6 +54,11 @@ a fleet. But the dependencies only ever point *down* the ladder — a rung-2 ser
 participates in the mesh's trace feed (reduced, per [mesh.md](mesh.md) §6), and a rung-1 pipeline
 is still real Benzene.
 
+The top of the ladder has a name: a service at rungs 2–5 in full is a **Benzene Cloud Service**
+([cloud-service-profile.md](cloud-service-profile.md)) — the conformance target fleet tooling is
+allowed to assume. The ladder describes the journey and keeps every rung first-class; the
+profile marks the destination for services that opt in to being fully tool-operable.
+
 ## 3. Capabilities and what they require
 
 Because handlers are optional, every capability must be honest about whether it needs them.
@@ -135,7 +140,8 @@ In the spirit of section 1, a Benzene service SHOULD expose a standard set of we
 surfaces, so that people and tools can walk up to any service in the fleet and find the same
 things in the same places. Like everything else in this document: each surface is optional and
 each location is configurable — but the defaults below are the steer, and fleet tooling assumes
-them.
+them. (Under the [Cloud Service Profile](cloud-service-profile.md), this SHOULD becomes a MUST
+for the surfaces the profile requires — the profile's R7.)
 
 ### 5.1 The `/benzene/` prefix
 
