@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Benzene.Example.Saga</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Saga\Benzene.Saga.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Results\Benzene.Results.csproj" />
+  </ItemGroup>
+
+</Project>
