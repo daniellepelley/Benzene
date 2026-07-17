@@ -1,3 +1,4 @@
+using System;
 using Amazon.Lambda;
 using Microsoft.Extensions.Logging;
 
@@ -5,7 +6,12 @@ namespace Benzene.Clients.Aws.Lambda;
 
 /// <summary>
 /// Creates <see cref="AwsLambdaBenzeneMessageClient"/> instances for a specific Lambda function.
+///
+/// Superseded by <see cref="IBenzeneMessageSender"/>/<c>OutboundRoutingBuilder</c> (an
+/// <c>OutboundContext</c>-based <c>.UseAwsLambda(...)</c> route extension is not yet implemented -
+/// see <c>src/Benzene.Clients.Aws/CLAUDE.md</c>). See <c>work/benzene-clients-redesign-plan.md</c>.
 /// </summary>
+[Obsolete("Use IBenzeneMessageSender/OutboundRoutingBuilder instead - see work/benzene-clients-redesign-plan.md")]
 public class AwsLambdaBenzeneMessageClientFactory : IBenzeneMessageClientFactory
 {
     private readonly string _lambdaName;

@@ -4,6 +4,11 @@ using Benzene.Abstractions.Results;
 
 namespace Benzene.Clients;
 
+/// <summary>
+/// Superseded by <see cref="IBenzeneMessageSender"/>. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
+/// </summary>
+[Obsolete("Use IBenzeneMessageSender instead - see work/benzene-clients-redesign-plan.md")]
 public class ClientMessageSender<TRequest, TResponse> : IMessageSender<TRequest, TResponse>
 {
     private readonly IClientMessageRouter _clientMessageRouter;

@@ -7,7 +7,11 @@ namespace Benzene.Clients.Aws.Lambda;
 /// <summary>
 /// Provides extension methods for registering <see cref="AwsLambdaBenzeneMessageClient"/> instances on a
 /// <see cref="ClientsBuilder"/>.
+///
+/// Superseded by <see cref="IBenzeneMessageSender"/>/<c>OutboundRoutingBuilder</c>. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
 /// </summary>
+[Obsolete("Use IBenzeneMessageSender/OutboundRoutingBuilder instead - see work/benzene-clients-redesign-plan.md")]
 public static class AwsLambdaBenzeneMessageClientExtensions
 {
     /// <summary>

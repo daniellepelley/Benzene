@@ -3,6 +3,12 @@ using Benzene.Abstractions.DI;
 
 namespace Benzene.Clients;
 
+/// <summary>
+/// Superseded by ordinary outbound middleware on an <see cref="OutboundRoutingBuilder.Route"/>
+/// pipeline - the framework's own middleware pipeline replaces this decorator-chain builder. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
+/// </summary>
+[Obsolete("Use outbound pipeline middleware (OutboundRoutingBuilder.Route) instead - see work/benzene-clients-redesign-plan.md")]
 public class ClientBuilder
 {
     private readonly List<IDependencyWrapper<IBenzeneMessageClient>> _dependencyWrappers = new();

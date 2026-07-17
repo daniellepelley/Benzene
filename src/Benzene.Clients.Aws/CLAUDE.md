@@ -53,3 +53,14 @@ AWS client implementations for calling Benzene services in AWS. Provides clients
   `InvalidCastException` at runtime. **`.UseAwsLambda(...)` has no `OutboundContext` overload yet** -
   explicitly deferred, not forgotten; would follow the identical `OutboundAwsLambdaContextConverter`
   recipe whenever picked up.
+- **`[Obsolete]` (2026-07-17, closing a Step 1 gap)**: `SqsBenzeneMessageClientFactory`,
+  `AwsLambdaBenzeneMessageClientFactory`, `SqsBenzeneMessageClientExtensions`,
+  `AwsLambdaBenzeneMessageClientExtensions`, and `Extensions.AddBenzeneMessageClients`/
+  `AddBenzeneMessageClient`/`AddLambdaClients` - this package's own factory/extension layer built on
+  `Benzene.Clients`'s now-obsoleted `IBenzeneMessageClientFactory`/`ClientsBuilder`/
+  `SingleClientsBuilder`, never itself marked obsolete when those were in Step 1. Superseded by
+  `AddOutboundRouting(...)` + `.UseSqs(...)`/`.UseSns(...)` on an `OutboundRoutingBuilder.Route`
+  pipeline. **Not** obsoleted: `SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
+  `AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient` themselves - they implement
+  `IBenzeneMessageClient` directly and remain legitimate standalone clients (see
+  `work/benzene-clients-redesign-plan.md`'s 2026-07-17 Step 4 scope-correction update).

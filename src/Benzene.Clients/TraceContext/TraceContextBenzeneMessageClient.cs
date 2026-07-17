@@ -8,7 +8,11 @@ namespace Benzene.Clients.TraceContext;
 /// A Benzene message client decorator that stamps the current <see cref="Activity"/>'s W3C
 /// <c>traceparent</c>/<c>tracestate</c> onto outgoing message headers, so the receiving service can
 /// continue the same distributed trace.
+///
+/// Superseded by <see cref="W3CTraceContextMiddleware"/>/<c>.UseW3CTraceContext()</c> on an
+/// outbound route pipeline. See <c>work/benzene-clients-redesign-plan.md</c>.
 /// </summary>
+[Obsolete("Use W3CTraceContextMiddleware/.UseW3CTraceContext() instead - see work/benzene-clients-redesign-plan.md")]
 public class TraceContextBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly IBenzeneMessageClient _inner;

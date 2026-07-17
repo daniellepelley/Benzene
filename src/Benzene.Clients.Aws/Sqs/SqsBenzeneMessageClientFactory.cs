@@ -1,3 +1,4 @@
+using System;
 using Amazon.SQS;
 using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
@@ -6,7 +7,11 @@ namespace Benzene.Clients.Aws.Sqs;
 
 /// <summary>
 /// Creates <see cref="SqsBenzeneMessageClient"/> instances for a specific queue.
+///
+/// Superseded by <c>.UseSqs(queueUrl)</c> on an <c>OutboundRoutingBuilder.Route</c> pipeline. See
+/// <c>work/benzene-clients-redesign-plan.md</c>.
 /// </summary>
+[Obsolete("Use .UseSqs(queueUrl) on an OutboundRoutingBuilder.Route pipeline instead - see work/benzene-clients-redesign-plan.md")]
 public class SqsBenzeneMessageClientFactory : IBenzeneMessageClientFactory
 {
     private readonly ILogger<SqsBenzeneMessageClient> _logger;

@@ -11,7 +11,11 @@ namespace Benzene.Clients
     /// <b>not</b> retried by default: a timed-out operation may have been applied, so blind
     /// retries are only safe for idempotent calls — opt in with the <c>shouldRetry</c> predicate
     /// (e.g. <c>r =&gt; BenzeneResultStatus.IsTransient(r.Status)</c>).
+    /// Superseded by <c>Benzene.Resilience.RetryMiddleware&lt;OutboundContext&gt;</c>/
+    /// <c>.UseRetry(...)</c> on an outbound route pipeline. See
+    /// <c>work/benzene-clients-redesign-plan.md</c>.
     /// </summary>
+    [Obsolete("Use Benzene.Resilience.RetryMiddleware<OutboundContext>/.UseRetry(...) instead - see work/benzene-clients-redesign-plan.md")]
     public class RetryBenzeneMessageClient : IBenzeneMessageClient
     {
         private readonly IBenzeneMessageClient _inner;
