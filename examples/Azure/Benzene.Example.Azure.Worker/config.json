@@ -1,0 +1,15 @@
+{
+  "ServiceBus": {
+    "ConnectionString": "Endpoint=sb://localhost:5673;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+    "QueueName": "orders"
+  },
+  "EventHub": {
+    "ConnectionString": "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+    "Name": "orders",
+    "ConsumerGroup": "$Default",
+    "CheckpointContainer": "eventhub-example-checkpoints"
+  },
+  "Storage": {
+    "ConnectionString": "UseDevelopmentStorage=true"
+  }
+}

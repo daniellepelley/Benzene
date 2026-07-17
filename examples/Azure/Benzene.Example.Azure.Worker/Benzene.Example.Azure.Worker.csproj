@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Benzene.Example.Azure.Worker-2E1F0B4A-6C3D-4A8E-9F27-1B5C0D9E7A34</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="config.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Emulator compose/config files aren't compiled or copied - they're only used by `docker compose up`. -->
+  <ItemGroup>
+    <None Update="docker-compose.yml;servicebus-emulator-config.json;eventhub-emulator-config.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.EventHub\Benzene.Azure.EventHub.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.ServiceBus\Benzene.Azure.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
+    <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.csproj" />
+  </ItemGroup>
+
+</Project>
