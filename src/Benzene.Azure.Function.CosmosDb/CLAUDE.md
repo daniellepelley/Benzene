@@ -57,9 +57,10 @@ app.UseCosmosDbChangeFeed<OrderDocument>(feed => feed
 ## When to use this package
 - Consuming a Cosmos DB container's change feed in Azure Functions: CDC fan-in, materialized
   views, cache invalidation, event sourcing projections.
-- For manual per-batch checkpoint control or non-Functions hosting (AKS/Container Apps), the
-  planned self-hosted `Benzene.Azure.CosmosDb` worker (`Microsoft.Azure.Cosmos` Change Feed
-  Processor) is the follow-up — not built yet; see the roadmap addendum.
+- For manual per-batch checkpoint control or non-Functions hosting (AKS/Container Apps), use the
+  self-hosted `Benzene.Azure.CosmosDb` worker (`BenzeneCosmosChangeFeedWorker<TDocument>` on
+  `Microsoft.Azure.Cosmos`'s Change Feed Processor) — same `StreamContext<TDocument>` pipeline
+  shape, real batch-level checkpointer.
 
 ## Dependencies on other Benzene packages
 - **Benzene.Azure.Function.Core** — `IAzureFunctionAppBuilder`/`IAzureFunctionApp` entry-point

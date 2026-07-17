@@ -8,13 +8,13 @@ your worker has to do:
 | You want... | Use |
 |---|---|
 | A custom background loop (polling a database, a timer, a queue you talk to yourself), with the same `BenzeneStartUp` shape used by AWS/Azure/ASP.NET Core | **Part A** — `BenzeneStartUp` + `worker.Add(...)` |
-| A built-in consumer — Kafka (`Benzene.Kafka.Core`), a bare `HttpListener` endpoint (`Benzene.SelfHost.Http`), Azure Service Bus (`Benzene.Azure.ServiceBus`), or Azure Event Hubs (`Benzene.Azure.EventHub`) — as part of the same process | **Part B** — `BenzeneStartUp` + `worker.UseKafka(...)`/`worker.UseHttp(...)`/`worker.UseServiceBus(...)`/`worker.UseEventHub(...)` |
+| A built-in consumer — Kafka (`Benzene.Kafka.Core`), a bare `HttpListener` endpoint (`Benzene.SelfHost.Http`), Azure Service Bus (`Benzene.Azure.ServiceBus`), Azure Event Hubs (`Benzene.Azure.EventHub`), or a Cosmos DB Change Feed (`Benzene.Azure.CosmosDb`) — as part of the same process | **Part B** — `BenzeneStartUp` + `worker.UseKafka(...)`/`worker.UseHttp(...)`/`worker.UseServiceBus(...)`/`worker.UseEventHub(...)`/`worker.UseCosmosDbChangeFeed(...)` |
 
 Both use the same `BenzeneStartUp` shape — the one exercised by
 `test/Benzene.Core.Test/Hosting/UnifiedStartUpTest.cs` and documented in
 [Unified Hosting Model](hosting). They differ only in what you register inside `UseWorker(...)`:
 Part A adds a worker class you wrote yourself, while Part B calls a built-in
-`UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub` extension. Those built-in extensions
+`UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub`/`UseCosmosDbChangeFeed` extension. Those built-in extensions
 hang off the `IBenzeneWorkerStartup` builder that `UseWorker(...)` hands you — see
 [How `UseWorker` composes the built-in workers](#how-useworker-composes-the-built-in-workers) below
 for exactly how the two builders relate.
@@ -259,11 +259,12 @@ Note this bypasses `BenzeneStartUp`/`IBenzeneApplicationBuilder` entirely — `C
 receives an `IBenzeneWorkerStartup` directly (the same builder `UseWorker(...)` hands you), so it's
 a lighter-weight way to register a worker without going through the generic host.
 
-## Part B: built-in workers (Kafka, HTTP, Service Bus, Event Hub)
+## Part B: built-in workers (Kafka, HTTP, Service Bus, Event Hub, Cosmos DB)
 
 `Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka)), `Benzene.SelfHost.Http`,
-`Benzene.Azure.ServiceBus`, and `Benzene.Azure.EventHub` ship built-in workers rather than asking
-you to write your own. Their `UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub` extensions
+`Benzene.Azure.ServiceBus`, `Benzene.Azure.EventHub`, and `Benzene.Azure.CosmosDb` ship built-in
+workers rather than asking you to write your own. Their
+`UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub`/`UseCosmosDbChangeFeed` extensions
 target `IBenzeneWorkerStartup` — the worker-specific builder that `UseWorker(...)` hands you — so you
 wire them up from the same `BenzeneStartUp` shape as Part A, just calling the built-in extensions
 inside `UseWorker(...)` instead of `worker.Add(...)`:
@@ -424,6 +425,72 @@ it), or set `false` to stop the worker without checkpointing the failure so a re
 (at-least-once). See the cookbook's [checkpointing on failure](cookbooks/event-hub-processing#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events)
 for the trade-off.
 
+### Azure Cosmos DB Change Feed (`Benzene.Azure.CosmosDb`)
+
+Consume a Cosmos DB container's change feed in-process — the self-hosted counterpart of the
+[Cosmos DB Change Feed *trigger*](cookbooks/cosmos-change-feed-processing) in Azure Functions. The
+worker runs the SDK's Change Feed Processor, so lease ownership (one lease per partition key range,
+stored in a lease container in Cosmos itself) and load balancing across instances are the
+processor's job. What this worker adds over the Functions trigger is **manual checkpoint control**:
+each batch's `StreamContext<TDocument>` carries a real checkpointer wrapping the SDK's batch-level
+manual checkpoint hook, instead of the trigger's checkpoint-on-return-you-can't-touch.
+
+Like the trigger adapter — and unlike every other worker on this page — there is no
+`UseMessageHandlers()` routing: changed documents carry no message envelope, so the pipeline is a
+fan-in *streaming* pipeline, generic over your document type.
+
+```bash
+dotnet add package Benzene.HostedService --prerelease
+dotnet add package Benzene.Azure.CosmosDb --prerelease
+```
+
+```csharp
+using Benzene.Azure.CosmosDb;
+using Benzene.Core.Middleware;
+using Microsoft.Azure.Cosmos;
+
+public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
+{
+    // The factory decides the monitored container, lease container, names, and auth.
+    // The lease container must already exist — the processor does not create it.
+    var client = new CosmosClient(configuration["CosmosDb:ConnectionString"]);
+    var factory = new CosmosChangeFeedProcessorFactory<OrderDocument>(
+        monitoredContainer: client.GetContainer("shop", "orders"),
+        leaseContainer: client.GetContainer("shop", "leases"),
+        processorName: "orders-projection",
+        instanceName: Environment.MachineName,
+        configure: builder => builder.WithPollInterval(TimeSpan.FromSeconds(5)));
+
+    app.UseWorker(worker => worker.UseCosmosDbChangeFeed(
+        new BenzeneCosmosChangeFeedConfig
+        {
+            // Defaults shown: checkpoint automatically when the pipeline succeeds without
+            // checkpointing itself; let a failed batch redeliver (at-least-once).
+            AutoCheckpointOnSuccess = true,
+            CatchHandlerExceptions = false,
+        },
+        factory,
+        feed => feed.UseStream<OrderDocument>(async context =>
+        {
+            await foreach (var order in context.Items)
+            {
+                // in change feed order for the lease's partition key range
+            }
+            // Optional with AutoCheckpointOnSuccess; required without it (batch-level —
+            // the item passed is ignored, the whole batch is acknowledged):
+            // await context.Checkpointer.CheckpointAsync(lastOrder);
+        })));
+}
+```
+
+Checkpointing is **batch-level** — the change feed has no per-document resume token, so
+`Checkpointer.CheckpointAsync(item)` ignores the item and acknowledges the whole delivered batch.
+On failure, `CatchHandlerExceptions` decides between the platform-native default (`false`: the
+exception reaches the processor, the lease is not advanced, and the same batch is redelivered —
+which also means a reliably-failing batch retries forever) and skip mode (`true`: log, checkpoint
+anyway, move on — the poison batch is permanently skipped). The batch's lease token is available in
+`StreamContext.Metadata` under `CosmosChangeFeedApplication<TDocument>.LeaseTokenMetadataKey`.
+
 ### Testing
 
 A worker built this way isn't request/response-shaped, so there's no `BenzeneTestHost` shortcut —
@@ -471,9 +538,10 @@ public static IBenzeneApplicationBuilder UseWorker(this IBenzeneApplicationBuild
 ```
 
 `Benzene.Kafka.Core.Extensions.UseKafka`, `Benzene.SelfHost.Http.Extensions.UseHttp`,
-`Benzene.Azure.ServiceBus.Extensions.UseServiceBus`, and `Benzene.Azure.EventHub.Extensions.UseEventHub`
+`Benzene.Azure.ServiceBus.Extensions.UseServiceBus`, `Benzene.Azure.EventHub.Extensions.UseEventHub`,
+and `Benzene.Azure.CosmosDb.Extensions.UseCosmosDbChangeFeed`
 are all written directly against `IBenzeneWorkerStartup` (calling `.Add(...)` to register the built-in
-`BenzeneKafkaWorker`/`BenzeneHttpWorker`/`BenzeneServiceBusWorker`/`BenzeneEventHubWorker`), so you
+`BenzeneKafkaWorker`/`BenzeneHttpWorker`/`BenzeneServiceBusWorker`/`BenzeneEventHubWorker`/`BenzeneCosmosChangeFeedWorker`), so you
 call them on the `worker` builder that `UseWorker(...)` hands you — not on `IBenzeneApplicationBuilder`
 directly. If you write your own `IBenzeneWorker` from scratch (Part A), you don't need any of those
 packages; you register it with the same `worker.Add(...)` those extensions call under the hood.

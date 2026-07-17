@@ -322,14 +322,18 @@ where mode 3 above ("Benzene decides how many events at once") actually matters.
   from under in-flight handlers the way an earlier, simpler implementation did.
 
 The Azure self-hosted workers - `Benzene.Azure.ServiceBus.BenzeneServiceBusWorker` (a
-`ServiceBusProcessor` consuming a queue/subscription) and
+`ServiceBusProcessor` consuming a queue/subscription),
 `Benzene.Azure.EventHub.BenzeneEventHubWorker` (an `EventProcessorClient` consuming a hub with
-blob-checkpointed offsets) - are mode 3 too, but don't use `BoundedConcurrentDispatcher<T>`:
+blob-checkpointed offsets), and `Benzene.Azure.CosmosDb.BenzeneCosmosChangeFeedWorker<TDocument>`
+(a Change Feed Processor consuming a Cosmos DB container's change feed with Cosmos-lease-container
+checkpoints) - are mode 3 too, but don't use `BoundedConcurrentDispatcher<T>`:
 their SDK processors already own bounded concurrency natively. Service Bus concurrency is capped
 by `BenzeneServiceBusConfig.MaxConcurrentCalls` (the processor's own `MaxConcurrentCalls`);
 Event Hubs processes partitions concurrently with strictly one event at a time per partition
-(the same ordering promise as `PreserveOrderPerPartition = true`, with no unordered opt-out).
-`StopAsync` on both delegates to the processor's own stop, which waits for in-flight handlers.
+(the same ordering promise as `PreserveOrderPerPartition = true`, with no unordered opt-out);
+the Cosmos change feed delivers one ordered batch at a time per lease (partition key range), with
+leases running concurrently.
+`StopAsync` on all three delegates to the processor's own stop, which waits for in-flight handlers.
 The same is true of `Benzene.Aws.Sqs`'s `SqsConsumer`, whose "concurrency" is simply the poll
 batch (`MaxNumberOfMessages`) dispatched per iteration.
 

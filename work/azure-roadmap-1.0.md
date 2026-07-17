@@ -2498,3 +2498,48 @@ policy.
   `#event-hub-and-kafka-triggers` anchor link fixed as part of the retitle), rows in
   `docs/reference/packages.md` and `docs/cookbooks/README.md`, and a type-specific `CLAUDE.md`
   in the new package. Package count: **9 production, 5 TestHelpers**.
+
+## Document History Addendum — 2026-07-17 (third entry): Self-Hosted Cosmos Change Feed Worker Shipped
+
+Second half of the two-phase Cosmos sequencing — the fast-follow flagged as
+"awaits dependency approval" in the previous entry, now approved by the user and built. The
+Cosmos DB Change Feed story is complete: Functions trigger (`Benzene.Azure.Function.CosmosDb`) +
+self-hosted worker, mirroring the Service Bus and Event Hubs trigger→worker pattern.
+
+- **New production package `Benzene.Azure.CosmosDb`** (in `Benzene.sln`):
+  `BenzeneCosmosChangeFeedWorker<TDocument> : IBenzeneWorker` on `Microsoft.Azure.Cosmos`'s Change
+  Feed Processor via `GetChangeFeedProcessorBuilderWithManualCheckpoint`, wired through
+  `worker.UseCosmosDbChangeFeed<TDocument>(config, factory, action)` — the same
+  `IBenzeneWorkerStartup` shape as `UseServiceBus`/`UseEventHub`, but (like the trigger adapter,
+  and unlike every other worker) a fan-in `StreamContext<TDocument>` streaming pipeline with no
+  `UseMessageHandlers()` routing. Handlers port between trigger and worker unchanged.
+- **What it adds over the trigger: real manual checkpoint control.** The context's checkpointer
+  wraps the SDK's batch-level manual checkpoint hook (still no per-document resume token — the
+  coarse granularity the evaluation flagged). `BenzeneCosmosChangeFeedConfig`:
+  `AutoCheckpointOnSuccess` (default `true`, trigger-parity, skipped when the handler already
+  checkpointed) and `CatchHandlerExceptions` (default `false` — deliberately the **opposite** of
+  the Event Hubs worker's default, because the change feed redelivers a failed batch natively;
+  `true` = log + checkpoint anyway = permanently skip the poison batch).
+- **Seam:** `ICosmosChangeFeedProcessorFactory<TDocument>` /
+  `CosmosChangeFeedProcessorFactory<TDocument>` — caller owns containers, lease container,
+  processor/instance names, and auth (the Managed Identity seam, consistent with
+  `IEventProcessorClientFactory`/`IServiceBusClientFactory`); worker passes its delegates in,
+  since the Cosmos builder requires the handler at build time.
+- **Dependencies (user-approved this session):** `Microsoft.Azure.Cosmos` 3.62.0 (latest stable,
+  verified against the live NuGet feed) + `Newtonsoft.Json` 13.0.3 — the latter forced by the
+  Cosmos SDK's explicit-reference build check, pinned to the version three existing src packages
+  already use. Confined to this one package; the trigger adapter stays SDK-free.
+- **Tests:** 14 new tests in `test/Benzene.Core.Test/Azure/CosmosDbWorker/`
+  (`CosmosChangeFeedApplicationTest` — fan-in ordering, checkpointer wiring/reporting,
+  lease-token metadata, exception propagation; `BenzeneCosmosChangeFeedWorkerTest` — config
+  defaults, lifecycle, and every auto-checkpoint/skip/retry combination via delegate capture on a
+  mocked processor factory). Full `Benzene.sln` build 0 errors; `Benzene.Core.Test` full suite
+  green. Same live-test disclosure as the trigger entry: no Cosmos emulator run here (heavyweight,
+  and Docker is unreachable in this sandbox) — the SDK-facing seam is the factory interface,
+  which delegate capture covers.
+- **Docs:** new "Azure Cosmos DB Change Feed" section in `docs/getting-started-worker.md` (full
+  `UseWorker` walkthrough + all Part B lists updated), a "self-hosted worker" section replacing
+  the "planned" note in `docs/cookbooks/cosmos-change-feed-processing.md`, the worker added to
+  `docs/hosting.md`'s worker-concurrency section and `docs/reference/packages.md`'s self-hosted
+  table, `Benzene.Azure.Function.CosmosDb`'s CLAUDE.md un-stubbed, and a type-specific
+  `CLAUDE.md` in the new package. Package count: **10 production, 5 TestHelpers**.
