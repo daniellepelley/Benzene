@@ -190,6 +190,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously `[Obsolete]` — use the portable `UseBenzeneEnrichment()` instead. (The
   transport-agnostic `WithApplication()` in `Benzene.Core.MessageHandlers` is unaffected.)
 
+### Added
+- `CONTRIBUTING.md` — dev setup, a pointer to `AGENTS.md`/package `CLAUDE.md` files, and PR
+  expectations for external contributors. `README.md`'s inline "Contributing" section now points
+  to it instead of duplicating a shorter version of the same content.
+
 ### Changed
 - CI (`build-benzene.yml`): `Benzene.Grpc.Test`, `Benzene.Mesh.Test`, and `Benzene.Conformance.Test`
   now run as part of the main `build` job, alongside the existing `Benzene.Core.Test` run. All three
