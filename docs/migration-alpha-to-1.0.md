@@ -252,10 +252,12 @@ has been **removed**. Cross-service correlation is handled by automatic W3C
 
 Migration: add `UseW3CTraceContext()` (first in the pipeline). If you were honoring
 a partner's proprietary correlation header, populate `ICorrelationId` from a small
-middleware of your own instead — `ICorrelationId`, `AddCorrelationId()`, the
-`WithCorrelationId()` log-scope extension, and the outbound `WithCorrelationId()`
-client decorator all remain; only the inbound header-pickup middleware is gone. See
-the [Request Correlation cookbook](cookbooks/request-correlation) for the pattern.
+middleware of your own instead — `ICorrelationId`, `AddCorrelationId()`, and the
+`WithCorrelationId()` log-scope extension all remain; only the inbound header-pickup
+middleware is gone. The outbound client decorator moved to a different mechanism —
+see [Removed: the `ClientBuilder`-based outbound client mechanism](#breaking-removed-the-clientbuilder-based-outbound-client-mechanism)
+below. See the [Request Correlation cookbook](cookbooks/request-correlation) for the
+pattern.
 
 ## New: `UseBenzeneEnrichment()`, `UseBenzeneMetrics()`, W3C trace context
 
@@ -277,9 +279,10 @@ and `Benzene.Clients`:
   Must be the first middleware added. Currently wired for HTTP-based
   transports only (ASP.NET Core, Azure Functions' ASP.NET-style trigger, API
   Gateway) — SQS/SNS/Kafka/Event Hub inbound extraction is follow-up work.
-- **`WithW3CTraceContext()`** (`Benzene.Clients.TraceContext`) — the
-  matching outbound `ClientBuilder` decorator, stamping `Activity.Current`'s
-  `traceparent`/`tracestate` onto outgoing requests.
+- Outbound trace-context propagation moved to `.UseW3CTraceContext()` on an
+  `OutboundRoutingBuilder.Route` pipeline (`Benzene.Clients.TraceContext`) — see
+  [Removed: the `ClientBuilder`-based outbound client mechanism](#breaking-removed-the-clientbuilder-based-outbound-client-mechanism)
+  below.
 
 ## Removed: AWS-only `WithRequestId()`/`WithApplication()` log-context extensions
 
@@ -295,15 +298,47 @@ replace `.UseLogResult(x => x.WithRequestId().WithApplication())` with
 
 None of the outbound client context converters — HTTP, SQS, SNS, Kafka —
 actually forwarded `IBenzeneClientRequest.Headers` onto the real wire
-request. Header-based client decorators (e.g. `WithCorrelationId()` on a
-`ClientBuilder`, or the new `WithW3CTraceContext()`) populated a headers
-dictionary that never reached the other side. This is now fixed for all
-four converters. (`AwsLambdaBenzeneMessageClient` was already correct — it
-embeds headers in its own envelope. The lower-level `UseAwsLambda()`/
-`LambdaContextConverter` path has no header-like concept to forward into and
-remains documented as such.) If you were relying on the old (broken)
-behavior — e.g. asserting that a header decorator had no effect — that
-assumption no longer holds.
+request. Header-based client decorators (e.g. the old `ClientBuilder`-based
+`WithCorrelationId()`/`WithW3CTraceContext()`, since removed — see below)
+populated a headers dictionary that never reached the other side. This is now
+fixed for all four converters. (`AwsLambdaBenzeneMessageClient` was already
+correct — it embeds headers in its own envelope. The lower-level
+`UseAwsLambda()`/`LambdaContextConverter` path has no header-like concept to
+forward into and remains documented as such.) If you were relying on the old
+(broken) behavior — e.g. asserting that a header decorator had no effect —
+that assumption no longer holds.
+
+## Breaking: removed the `ClientBuilder`-based outbound client mechanism
+
+The alpha-era outbound client abstraction — service-name/topic-key client
+resolution plus a decorator-chain for cross-cutting concerns — has been
+**removed entirely**, superseded by a single topic-keyed outbound routing
+table (`work/benzene-clients-redesign-plan.md`). It was `[Obsolete]` for one
+release cycle before deletion.
+
+| Alpha | 1.0 |
+|---|---|
+| `ClientsBuilder` / `AddBenzeneMessageClients(...)` | `OutboundRoutingBuilder` / `AddOutboundRouting(...)` |
+| `SingleClientsBuilder` / `AddBenzeneMessageClient(...)` | `AddOutboundRouting(...)` — "one client" is just the N=1 case of "many" |
+| `IBenzeneMessageClientFactory` / `IClientMessageRouter` | `IBenzeneMessageSender` (`SendAsync<TRequest,TResponse>(topic, request, headers = null)`) |
+| `ClientBuilder` / `IDependencyWrapper<T>` / `DependencyWrapperFactory<T>` | Ordinary `IMiddleware<OutboundContext>` on an `OutboundRoutingBuilder.Route(topic, pipeline => ...)` pipeline |
+| `RetryBenzeneMessageClient` / `RetryBenzeneMessageClientWrapper` (`.WithRetry(n)`) | `Benzene.Resilience.RetryMiddleware<OutboundContext>` / `.UseRetry(...)` |
+| `HeaderBenzeneMessageClient` / `HeadersBenzeneMessageClient` / `IClientHeaders` / `ClientHeaders` | `IBenzeneMessageSender.SendAsync`'s per-call `headers` parameter, or `OutboundContext.Headers` from within a route's own middleware |
+| `CorrelationIdBenzeneMessageClient` / `CorrelationIdBenzeneMessageClientWrapper` (`.WithCorrelationId()`) | `Benzene.Clients.CorrelationId.CorrelationIdMiddleware` / `.UseCorrelationId(...)` |
+| `TraceContextBenzeneMessageClient` / `TraceContextBenzeneMessageClientWrapper` (`.WithW3CTraceContext()`) | `Benzene.Clients.TraceContext.W3CTraceContextMiddleware` / `.UseW3CTraceContext()` |
+| `AwsLambdaBenzeneMessageClientFactory` / `SqsBenzeneMessageClientFactory` and their `ClientsBuilder` extension methods (`Benzene.Clients.Aws`) | `.UseSqs(queueUrl)`/`.UseSns(topicArn)` on an `OutboundRoutingBuilder.Route` pipeline (`.UseAwsLambda(...)` not yet implemented — see `src/Benzene.Clients.Aws/CLAUDE.md`) |
+| `Extensions.AddLambdaClients(sender)` (`Benzene.Clients.Aws`) | `AddOutboundRouting(...)` with your own retry/header middleware on the route |
+
+`IBenzeneMessageClient` (the interface) and its concrete transport
+implementations — `SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
+`AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient`,
+`GrpcBenzeneMessageClient`, `KafkaBenzeneMessageClient` — are **unaffected**;
+they remain standalone clients usable outside the outbound routing mechanism.
+Only the resolution/factory/decorator layer built around them was removed.
+
+Generated clients from `Benzene.CodeGen.Client` already migrated onto
+`IBenzeneMessageSender` in an earlier 1.0-prep release — if you regenerate
+your client SDKs, no further action is needed there.
 
 ## New: unified `BenzeneTestHost`
 

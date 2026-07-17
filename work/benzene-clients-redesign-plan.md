@@ -45,6 +45,19 @@ This is a real, inherent trade-off of `IBenzeneMessageSender`'s unconstrained-ge
 the old `IBenzeneClientContext<T,Void>`-typed pipelines caught this at compile time; the new one
 only catches it at runtime. Not fixed here - flagging for whoever next revisits the interface shape.
 
+**2026-07-17 update — Step 4 complete. All four steps of this design are now implemented and
+shipped.** The verified-safe deletion set from the scope-correction note below was deleted in full:
+all `Benzene.Clients`/`Benzene.Clients.Aws` types listed there, plus their 11 exclusively-obsolete
+test files (deleted wholesale) and one mixed test file (`Aws/Client/ExtensionsTest.cs`, partially
+edited to drop only its obsolete-mechanism tests). `docs/migration-alpha-to-1.0.md` gained a
+"Breaking: removed the `ClientBuilder`-based outbound client mechanism" section with the full
+old→new mapping; `CHANGELOG.md` gained a `**BREAKING:**` entry; `docs/clients.md` (which predates
+this redesign and is written entirely around the deleted mechanism) got a top-of-document notice
+pointing at the replacement pending a full rewrite (tracked separately). Local build: 0 errors.
+Local `Benzene.Test` suite: 1277/1277 passing (1294 minus the 17 removed obsolete tests, confirming
+nothing else broke). `IBenzeneMessageClient` and its concrete transport clients were, as planned,
+never touched.
+
 **2026-07-17 update — Step 4 scope correction (deletion not yet performed).** Before starting §4's
 deletion pass, a repo-wide grep for every type named in §4's list turned up a materially different
 blast radius than this document assumed, and one genuinely dangerous near-mistake worth recording:

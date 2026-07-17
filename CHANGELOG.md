@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **BREAKING:** `Benzene.Clients` / `Benzene.Clients.Aws`: deleted the alpha-era outbound client
+  mechanism (Step 4 of `work/benzene-clients-redesign-plan.md`), `[Obsolete]` for one release cycle
+  before removal. Deleted: `ClientsBuilder`, `SingleClientsBuilder`, `IBenzeneMessageClientFactory`,
+  `IClientMessageRouter`, `IDependencyWrapper<T>` (`Benzene.Abstractions`),
+  `DependencyWrapperFactory<T>`, `ClientBuilder`, `BenzeneMessageClientFactory`,
+  `RetryBenzeneMessageClient`, `HeaderBenzeneMessageClient`, `HeadersBenzeneMessageClient`,
+  `CorrelationIdBenzeneMessageClient`, `TraceContextBenzeneMessageClient`,
+  `RetryBenzeneMessageClientWrapper`, `CorrelationIdBenzeneMessageClientWrapper`,
+  `TraceContextBenzeneMessageClientWrapper`, `ClientMessageSender<TRequest,TResponse>`,
+  `ClientMapping`, `ClientMappingBuilder`, `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders`
+  (all `Benzene.Clients`), and `SqsBenzeneMessageClientFactory`,
+  `AwsLambdaBenzeneMessageClientFactory`, `SqsBenzeneMessageClientExtensions`,
+  `AwsLambdaBenzeneMessageClientExtensions`, `Extensions.AddBenzeneMessageClients`/
+  `AddBenzeneMessageClient`/`AddLambdaClients` (all `Benzene.Clients.Aws`). Replaced by
+  `IBenzeneMessageSender`/`OutboundRoutingBuilder`/`AddOutboundRouting(...)` and outbound
+  `IMiddleware<OutboundContext>` (`.UseRetry(...)`, `.UseCorrelationId(...)`,
+  `.UseW3CTraceContext()`, `.UseSqs(...)`, `.UseSns(...)`) - see
+  `docs/migration-alpha-to-1.0.md` for the full mapping. `IBenzeneMessageClient` itself and its
+  concrete transport clients (`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
+  `AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`,
+  `KafkaBenzeneMessageClient`) are **unaffected** - only the resolution/factory/decorator layer
+  around them was removed.
+
 ### Added
 - `Benzene.Clients.Aws` / `Benzene.Clients`: closed a gap in Step 1 of the outbound redesign
   (`work/benzene-clients-redesign-plan.md`) - the `Benzene.Clients.Aws`-side factory/extension

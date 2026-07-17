@@ -6,12 +6,14 @@ Client abstractions for calling Benzene services. Provides interfaces and base i
 ## Key types/interfaces
 
 ### Outbound routing (current, 2026-07-17)
-The redesigned outbound mechanism from `work/benzene-clients-redesign-plan.md` - a single
-topic-keyed pipeline table replacing the service-name/topic-key factory + decorator-chain shape
-below. See that document for the full design and the 4-step migration plan. Steps 1-3 are done: the
-mechanism itself, `Benzene.CodeGen.Client`'s generated clients target it, and
-`Benzene.Clients.Aws`'s SQS/SNS transports (and the cross-cutting middleware below) are wired onto
-it - `.UseAwsLambda(...)` is explicitly deferred (see that package's `CLAUDE.md`).
+The outbound mechanism from `work/benzene-clients-redesign-plan.md` - a single topic-keyed
+pipeline table. See that document for the full design and its now-complete 4-step migration plan
+(all four steps shipped 2026-07-17; the old service-name/topic-key factory + decorator-chain
+mechanism this replaced has been deleted, not just deprecated - see "Legacy outbound mechanism"
+below for what to reach for instead if you're migrating old code).
+`Benzene.CodeGen.Client`'s generated clients target it, and `Benzene.Clients.Aws`'s SQS/SNS
+transports (and the cross-cutting middleware below) are wired onto it - `.UseAwsLambda(...)` is
+explicitly deferred (see that package's `CLAUDE.md`).
 
 ### Outbound middleware (current, 2026-07-17)
 The middleware-ification of the old `ClientBuilder`/`IDependencyWrapper<T>` decorators, for use on
@@ -74,32 +76,24 @@ now emits a sibling `{Service}ServiceClientRouting` static class with a `Require
 *interface* (`I{Service}ServiceClient`) is unchanged - this is purely an implementation-detail
 change in the generated class body.
 
-### Legacy outbound mechanism (obsolete, superseded by the above)
-- Client abstractions
-- Request/response mapping for clients
-- Client builder patterns
-- Type-safe client interfaces
-- `ClientsBuilder`/`SingleClientsBuilder`/`IBenzeneMessageClientFactory`/`IClientMessageRouter` -
-  **`[Obsolete]`** - service-name/topic-key client resolution, split by cardinality. Not yet
-  deleted (Step 4 of the migration plan) - still fully functional, just superseded.
-- `ClientBuilder`/`IDependencyWrapper<IBenzeneMessageClient>`/`DependencyWrapperFactory<T>` -
-  **`[Obsolete]`** - decorator-chain pattern for `IBenzeneMessageClient`; existing decorators:
-  `CorrelationId/` (`WithCorrelationId()`), `TraceContext/` (`WithW3CTraceContext()` - stamps
-  `Activity.Current`'s `traceparent`/`tracestate` onto outgoing headers),
-  `HeaderBenzeneMessageClient`/`HeadersBenzeneMessageClient`, `RetryBenzeneMessageClient`
-- Also `[Obsolete]` (2026-07-17, closing a Step 1 gap): `BenzeneMessageClientFactory`,
-  `ClientMessageSender<TRequest,TResponse>`, `ClientMapping`, `ClientMappingBuilder`,
-  `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders`, and the decorator classes themselves
-  (`RetryBenzeneMessageClient`, `HeaderBenzeneMessageClient`, `HeadersBenzeneMessageClient`,
-  `CorrelationIdBenzeneMessageClient`, `TraceContextBenzeneMessageClient`) - all confirmed
-  reachable only through the obsoleted factory/builder layer above, never independently. **Not**
-  obsoleted, and never will be as part of this redesign: `IBenzeneMessageClient` itself and its
-  concrete transport implementations (`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
-  `AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`,
-  `KafkaBenzeneMessageClient`) - `IBenzeneMessageClient` is shared foundation for
-  `Benzene.Grpc.Client`/`Benzene.Kafka.Core`, entirely outside this redesign's scope. See
-  `work/benzene-clients-redesign-plan.md`'s 2026-07-17 Step 4 scope-correction update for the full
-  verified-safe deletion set.
+### Legacy outbound mechanism (deleted 2026-07-17, Step 4 of the migration plan)
+The alpha-era service-name/topic-key factory + decorator-chain mechanism - `ClientsBuilder`,
+`SingleClientsBuilder`, `IBenzeneMessageClientFactory`, `IClientMessageRouter`,
+`IDependencyWrapper<T>` (`Benzene.Abstractions`), `DependencyWrapperFactory<T>`, `ClientBuilder`,
+`BenzeneMessageClientFactory`, `RetryBenzeneMessageClient`/`RetryBenzeneMessageClientWrapper`,
+`HeaderBenzeneMessageClient`/`HeadersBenzeneMessageClient`, `CorrelationIdBenzeneMessageClient`/
+`CorrelationIdBenzeneMessageClientWrapper`, `TraceContextBenzeneMessageClient`/
+`TraceContextBenzeneMessageClientWrapper`, `ClientMessageSender<TRequest,TResponse>`,
+`ClientMapping`, `ClientMappingBuilder`, `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders` -
+**has been deleted entirely**, after one release cycle as `[Obsolete]`. See
+`docs/migration-alpha-to-1.0.md`'s "Breaking: removed the `ClientBuilder`-based outbound client
+mechanism" section for the full old→new mapping, and `work/benzene-clients-redesign-plan.md`'s
+2026-07-17 Step 4 scope-correction update for what was verified safe to delete. **Untouched**:
+`IBenzeneMessageClient` itself and its concrete transport implementations
+(`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`, `AwsLambdaBenzeneMessageClient`,
+`EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`, `KafkaBenzeneMessageClient`) -
+`IBenzeneMessageClient` is shared foundation for `Benzene.Grpc.Client`/`Benzene.Kafka.Core`,
+entirely outside this redesign's scope, and was never obsoleted.
 
 ## When to use this package
 - When building clients for Benzene services
