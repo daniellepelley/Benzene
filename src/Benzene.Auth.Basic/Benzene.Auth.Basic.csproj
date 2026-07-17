@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Auth.Basic</AssemblyName>
+    <RootNamespace>Benzene.Auth.Basic</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>RFC 7617 HTTP Basic authentication middleware for Benzene (UseBasicAuth), validating credentials against an app-supplied IBasicAuthCredentialValidator. No third-party dependency beyond the BCL.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Auth.Core\Benzene.Auth.Core.csproj" />
+    <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+    <ProjectReference Include="..\Benzene.Http\Benzene.Http.csproj" />
+  </ItemGroup>
+
+</Project>

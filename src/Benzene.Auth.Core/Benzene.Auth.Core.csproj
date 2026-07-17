@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Auth.Core</AssemblyName>
+    <RootNamespace>Benzene.Auth.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Core authentication contracts for Benzene: the scoped AuthenticationHolder (the Context Purity seam for a validated caller identity) and the shared Unauthorized/Forbidden result-building helper used by every concrete Benzene.Auth.* middleware. No third-party dependency beyond the BCL.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+  </ItemGroup>
+
+</Project>

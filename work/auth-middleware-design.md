@@ -1,9 +1,9 @@
 # Authentication & Basic Scope Authorization Middleware — Design Proposal (2026-07-17)
 
-**Status:** Design proposal only — no code changes accompany this document. Two things in it need
-explicit sign-off before implementation starts: the new NuGet dependency (§5) and the naming/scope
-judgment calls in §7. Per `AGENTS.md`'s plan-first workflow, this is the plan; approval is the next
-step, not something this document grants itself.
+**Status:** Approved (2026-07-17) — the open questions in §8 are resolved (each question now
+records the decision) and implementation is in progress. §3.1/§3.2/§3.3 and §7 have been updated
+in place to reflect the one decision that changed the design (`RequireScope` moved from
+`Auth.Core` to `Auth.OAuth2`); the rest of the document is unchanged from the original proposal.
 
 ## 0. Framing (from the request)
 
@@ -76,15 +76,15 @@ what it needs):
 
 | Package | Contents | Third-party dependency |
 |---|---|---|
-| `Benzene.Auth.Core` | `AuthenticationHolder`, the `RequireScope` middleware, shared helpers (header parsing, the `Unauthorized`/`Forbidden` result-building helper) | none (BCL only) |
-| `Benzene.Auth.OAuth2` | `UseOAuth2Bearer(...)` — JWT bearer validation against a JWKS endpoint | `Microsoft.IdentityModel.JsonWebTokens` + `Microsoft.IdentityModel.Protocols.OpenIdConnect` (§5) |
+| `Benzene.Auth.Core` | `AuthenticationHolder`, shared helpers (header parsing, the `Unauthorized`/`Forbidden` result-building helper) | none (BCL only) |
+| `Benzene.Auth.OAuth2` | `UseOAuth2Bearer(...)` — JWT bearer validation against a JWKS endpoint — plus `RequireScope` (moved here per §8 Q3's decision: scopes are an OAuth2/JWT concept, not a mechanism-agnostic one) | `Microsoft.IdentityModel.JsonWebTokens` + `Microsoft.IdentityModel.Protocols.OpenIdConnect` (§5) |
 | `Benzene.Auth.Basic` | `UseBasicAuth(...)` — RFC 7617 Basic auth against an app-supplied credential validator | none (BCL only) |
 
 Both concrete packages depend only on `Benzene.Auth.Core` + `Benzene.Http` (for `IHttpContext`/
 `IHttpRequestAdapter<TContext>`/`IBenzeneResponseAdapter<TContext>`), mirroring how
 `Benzene.HealthChecks.Http` depends only on `HealthChecks.Core` plus what it wraps.
 
-### 3.2 `Benzene.Auth.Core`: the scoped holder and the authorization check
+### 3.2 `Benzene.Auth.Core`: the scoped holder
 
 ```csharp
 // AuthenticationHolder.cs — the scoped DI seam (Context purity pattern), not a TContext property.
@@ -108,48 +108,7 @@ Registration: each authentication middleware's own `Use*` extension does
 `PresetTopicHolder` itself, not centrally) — a pipeline that never adds an authentication
 middleware never even allocates a holder that anyone would look at.
 
-```csharp
-// Extensions.cs (Benzene.Auth.Core)
-public static IMiddlewarePipelineBuilder<TContext> RequireScope<TContext>(
-    this IMiddlewarePipelineBuilder<TContext> app, params string[] anyOfScopes)
-    where TContext : IHttpContext
-{
-    app.Register(x => x.TryAddScoped<AuthenticationHolder>());
-    return app.Use(resolver => new FuncWrapperMiddleware<TContext>("RequireScope", async (context, next) =>
-    {
-        var holder = resolver.GetService<AuthenticationHolder>();
-        if (holder.Principal is null)
-        {
-            // No authentication middleware ran, or it ran and failed upstream — either way there
-            // is no caller identity to check scopes against. This is Unauthorized, not Forbidden:
-            // "no one is authenticated" and "someone is authenticated but lacks permission" are
-            // different statuses (wire-contracts.md §3), and collapsing them would be a real
-            // information-loss bug for API consumers debugging a 403 they can't explain.
-            await SetResultAsync(resolver, context, BenzeneResultStatus.Unauthorized, "No authenticated caller");
-            return;
-        }
-
-        var granted = ScopeClaims(holder.Principal); // reads "scope" (space-delimited, RFC 8693)
-                                                       // and "scp" (Azure AD convention) claims —
-                                                       // see open question 1, §7.
-        if (!anyOfScopes.Any(granted.Contains))
-        {
-            await SetResultAsync(resolver, context, BenzeneResultStatus.Forbidden,
-                $"Missing required scope (any of: {string.Join(", ", anyOfScopes)})");
-            return;
-        }
-
-        await next();
-    }));
-}
-```
-
-`RequireScope` is deliberately **mechanism-agnostic**: it only reads claims off whatever
-`ClaimsPrincipal` ended up in the holder, so it works the same whether OAuth2 or Basic (or a
-future mechanism) populated it — see open question 3 (§7) on whether this is the right home for
-it regardless.
-
-### 3.3 `Benzene.Auth.OAuth2`: JWT bearer validation
+### 3.3 `Benzene.Auth.OAuth2`: JWT bearer validation and `RequireScope`
 
 ```csharp
 public class OAuth2BearerOptions
@@ -201,6 +160,49 @@ wrong issuer/audience/algorithm) → `Unauthorized` with a generic detail messag
 shapes; log the real reason server-side only) → success → build a `ClaimsPrincipal` from the
 validated token's claims, set `AuthenticationHolder.Principal`, `next()`.
 
+**`RequireScope`** (per §8 Q3's decision, this lives here rather than in `Auth.Core`: scopes are
+specifically an OAuth2/JWT concept — RFC 8693's `scope` claim and Azure AD's `scp` convention —
+not a mechanism-agnostic one, and putting it beside the middleware that actually produces
+scope-bearing tokens is more honest than implying Basic auth commonly carries scopes too):
+
+```csharp
+// Extensions.cs (Benzene.Auth.OAuth2)
+public static IMiddlewarePipelineBuilder<TContext> RequireScope<TContext>(
+    this IMiddlewarePipelineBuilder<TContext> app, params string[] anyOfScopes)
+    where TContext : IHttpContext
+{
+    app.Register(x => x.TryAddScoped<AuthenticationHolder>());
+    return app.Use(resolver => new FuncWrapperMiddleware<TContext>("RequireScope", async (context, next) =>
+    {
+        var holder = resolver.GetService<AuthenticationHolder>();
+        if (holder.Principal is null)
+        {
+            // No authentication middleware ran, or it ran and failed upstream — either way there
+            // is no caller identity to check scopes against. This is Unauthorized, not Forbidden:
+            // "no one is authenticated" and "someone is authenticated but lacks permission" are
+            // different statuses (wire-contracts.md §3), and collapsing them would be a real
+            // information-loss bug for API consumers debugging a 403 they can't explain.
+            await SetResultAsync(resolver, context, BenzeneResultStatus.Unauthorized, "No authenticated caller");
+            return;
+        }
+
+        // Per §8 Q1's decision: read BOTH conventions. "scope" is RFC 8693's single
+        // space-delimited string; "scp" is Azure AD's convention and may appear as either a
+        // space-delimited string or a JSON array, depending on issuer — normalize both into one
+        // flat set of granted scope strings.
+        var granted = ScopeClaims(holder.Principal);
+        if (!anyOfScopes.Any(granted.Contains))
+        {
+            await SetResultAsync(resolver, context, BenzeneResultStatus.Forbidden,
+                $"Missing required scope (any of: {string.Join(", ", anyOfScopes)})");
+            return;
+        }
+
+        await next();
+    }));
+}
+```
+
 ### 3.4 `Benzene.Auth.Basic`: RFC 7617 Basic auth
 
 ```csharp
@@ -230,7 +232,7 @@ null → `Unauthorized`; principal → set holder, `next()`.
 ## 4. What this does not solve (deliberately out of scope)
 
 - **RBAC / policy engines / integration with a specific authorization library** — per the request.
-  `RequireScope` (§3.2) is deliberately the ceiling of what this feature does for authorization;
+  `RequireScope` (§3.3) is deliberately the ceiling of what this feature does for authorization;
   anything more structured (roles, resource-based policies, a rules engine) is an app concern
   layered on top of the `ClaimsPrincipal` this middleware already exposes.
 - **SOAP / WS-Security** — declined per the request.
@@ -306,47 +308,39 @@ Roughly in priority order:
 
 ## 7. Recommended implementation order
 
-1. `Benzene.Auth.Core` — `AuthenticationHolder`, `RequireScope`, the shared
-   `Unauthorized`/`Forbidden` result-building helper. Unit tests: holder defaults to null
-   principal; `RequireScope` returns `Unauthorized` with no principal, `Forbidden` with a principal
-   missing the scope, passes through with it present; scope-claim parsing handles both `scope`
-   (space-delimited) and `scp` claim types.
+1. `Benzene.Auth.Core` — `AuthenticationHolder` and the shared `Unauthorized`/`Forbidden`
+   result-building helper only (`RequireScope` moved to step 3, per §8 Q3). Unit tests: holder
+   defaults to null principal; the result-building helper produces the correct status/detail shape
+   for both outcomes.
 2. `Benzene.Auth.Basic` — simplest concrete package, validates the Core contracts end-to-end
    before taking on the JWT dependency. Unit tests: missing header, malformed base64, credentials
    with a colon in the password, validator returning null, `WWW-Authenticate` header present on
    401.
-3. `Benzene.Auth.OAuth2` — the JWT/JWKS package. Needs a fake JWKS endpoint (a loopback
-   `HttpListener`, matching the pattern already used in `Benzene.CloudService.Probe`'s tests) or a
-   locally-generated RSA keypair + hand-built token for unit tests: valid token accepted, expired
-   token rejected, wrong issuer/audience rejected, unlisted algorithm rejected, malformed/missing
-   header rejected, JWKS rotation (a `kid` not yet cached triggers a refresh) exercised at least
-   once.
-4. Wire an example into `examples/` (an existing host, e.g. `Asp` or `Aws`, gets a
-   `UseOAuth2Bearer`/`UseBasicAuth` demo endpoint) and write
-   `docs/cookbooks/auth-patterns.md`, closing the gap flagged in §1/§6.
-5. Only after 1–4 land: revisit whether `Benzene.CloudService`'s `ICloudServiceBuilder` should gain
-   an authentication hook, and whether the mesh API-key gap (§6) gets its own follow-up design.
+3. `Benzene.Auth.OAuth2` — the JWT/JWKS package, plus `RequireScope` (§3.3). Needs a fake JWKS
+   endpoint (a loopback `HttpListener`, matching the pattern already used in
+   `Benzene.CloudService.Probe`'s tests) or a locally-generated RSA keypair + hand-built token for
+   unit tests: valid token accepted, expired token rejected, wrong issuer/audience rejected,
+   unlisted algorithm rejected, malformed/missing header rejected, JWKS rotation (a `kid` not yet
+   cached triggers a refresh) exercised at least once; `RequireScope` tested against both `scope`
+   (space-delimited) and `scp` (string and array forms) claim shapes, plus the
+   no-principal-yields-`Unauthorized`/wrong-scope-yields-`Forbidden` distinction.
+4. Wire an example into `examples/` (an existing host — `Asp`, since it already hosts the Spec UI
+   and is the fullest example per `examples/CLAUDE.md`) and write `docs/cookbooks/auth-patterns.md`
+   (per §8 Q4's decision — in scope for this work, not a follow-up), closing the gap flagged in
+   §1/§6.
+5. Deferred (per §8 Q5's decision): revisit whether `Benzene.CloudService`'s `ICloudServiceBuilder`
+   should gain an authentication hook, and the mesh API-key gap (§6), later — not part of this
+   work.
 
-## 8. Open questions for whoever approves this
+## 8. Open questions — resolved (2026-07-17)
 
-1. **Scope claim type**: support both `scope` (space-delimited string, RFC 8693) and `scp`
-   (Azure AD's convention, sometimes an array) by default, or pick one and make the other opt-in?
-   Leaning toward supporting both by default since it costs little and avoids an early surprise for
-   whichever IdP a given adopter uses — but flagging as a genuine judgment call.
-2. **Package naming**: `Benzene.Auth.*` (used throughout this doc) vs `Benzene.Security.*`. No
-   existing prefix precedent either way in the codebase (checked — neither exists yet). No strong
-   recommendation; `Auth.*` reads slightly more precise given RBAC/broader "security" concerns are
-   explicitly out of scope, but this is genuinely a naming preference call.
-3. **Does `RequireScope` belong in `Auth.Core`** (as designed, §3.2 — mechanism-agnostic, works
-   regardless of which authentication middleware populated the holder) or should it instead live
-   in `Auth.OAuth2` on the theory that Basic auth rarely carries meaningful scopes? Leaning toward
-   Core as designed — a Basic-auth credential validator can still choose to attach role/permission
-   claims, and `RequireScope` shouldn't need to know or care which middleware ran.
-4. **Is the `docs/cookbooks/auth-patterns.md` cookbook part of this work** (step 4, §7) or a
-   separate follow-up once the packages exist? Two roadmap docs already reference it as if it
-   exists; recommend writing it alongside the packages rather than leaving the dangling reference
-   any longer, but sequencing is a scope call for whoever approves the implementation order.
-5. **Should the mesh API-key gap (§6) get its own design doc now, immediately after this one, or
-   wait** until real-world usage surfaces it as a priority? No strong recommendation — it's a real
-   gap but wasn't part of the original request, so raising it here is meant as a flag, not a push
-   to expand this proposal's scope.
+1. **Scope claim type**: **decided — support both.** `RequireScope` (§3.3) reads both `scope`
+   (space-delimited) and `scp` (string or array) claims.
+2. **Package naming**: **decided — `Benzene.Auth.*`.**
+3. **Does `RequireScope` belong in `Auth.Core` or `Auth.OAuth2`**: **decided — `Auth.OAuth2`**
+   (moved from the original §3.2 sketch; see §3.1's table and §3.3). `Auth.Core` now holds only the
+   holder and the shared result-building helper.
+4. **Is the `docs/cookbooks/auth-patterns.md` cookbook part of this work**: **decided — yes**, in
+   scope now (§7 step 4).
+5. **Should the mesh API-key gap (§6) get its own design doc now**: **decided — deferred.** Not
+   part of this work; revisit later.

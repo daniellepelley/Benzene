@@ -50,6 +50,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Auth.Basic\Benzene.Auth.Basic.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Auth.Core\Benzene.Auth.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Auth.OAuth2\Benzene.Auth.OAuth2.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Autofac\Benzene.Autofac.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Avro\Benzene.Avro.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
