@@ -114,6 +114,7 @@ are the Azure counterparts of `Benzene.Kafka.Core`'s and `Benzene.Aws.Sqs`'s sta
 |---|---|
 | `Benzene.Azure.ServiceBus` | A self-hosted Service Bus consumer (`BenzeneServiceBusWorker`, `worker.UseServiceBus(...)`) that runs a `ServiceBusProcessor` over a queue or topic/subscription and dispatches each message through the middleware pipeline — distinct from `Benzene.Azure.Function.ServiceBus`, which handles Service Bus *as a Functions trigger*. |
 | `Benzene.Azure.EventHub` | A self-hosted Event Hubs consumer (`BenzeneEventHubWorker`, `worker.UseEventHub(...)`) that runs an `EventProcessorClient` (consumer groups, partition load balancing, blob checkpointing) and dispatches each event through the middleware pipeline — distinct from `Benzene.Azure.Function.EventHub`, which handles Event Hubs *as a Functions trigger*. |
+| `Benzene.Azure.CosmosDb` | A self-hosted Cosmos DB Change Feed consumer (`BenzeneCosmosChangeFeedWorker<TDocument>`, `worker.UseCosmosDbChangeFeed<TDocument>(...)`) that runs the SDK's Change Feed Processor (lease-container ownership, instance load balancing) and runs each batch through a fan-in streaming pipeline with manual batch-level checkpoint control — distinct from `Benzene.Azure.Function.CosmosDb`, which handles the change feed *as a Functions trigger*. |
 
 See [Worker Service Setup](../getting-started-worker#part-b-built-in-workers-kafka-http-service-bus-event-hub).
 

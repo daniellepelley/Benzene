@@ -181,9 +181,31 @@ platform's, not Benzene's.
 
 The `StreamContext<TDocument>.Checkpointer` is the no-op default (`NullStreamCheckpointer`) on
 this transport — calling it is harmless but does nothing, because the Functions trigger exposes no
-manual checkpoint API. Manual per-batch checkpoint control is the domain of the planned
-self-hosted change feed worker (`Microsoft.Azure.Cosmos` Change Feed Processor), which doesn't
-exist yet — see `work/azure-roadmap-1.0.md`.
+manual checkpoint API. Manual per-batch checkpoint control is the domain of the self-hosted
+worker below.
+
+## Outside Azure Functions: the self-hosted worker
+
+For non-Functions hosting (a console app, container, AKS) — or when you want real manual
+checkpoint control — `Benzene.Azure.CosmosDb` ships `BenzeneCosmosChangeFeedWorker<TDocument>`,
+which runs the SDK's Change Feed Processor directly and delivers each batch to the *same*
+`StreamContext<TDocument>` pipeline shape as the trigger adapter. The differences that matter:
+
+- The context's checkpointer is **real**: it wraps the processor's batch-level manual checkpoint
+  hook (still no per-document resume token — calling it acknowledges the whole batch).
+  `BenzeneCosmosChangeFeedConfig.AutoCheckpointOnSuccess` (default `true`) keeps the
+  trigger-like behavior of checkpointing when the pipeline succeeds; disable it for fully manual
+  control.
+- Failure handling is configurable: by default a pipeline exception reaches the processor, the
+  lease is not advanced, and the batch redelivers (at-least-once — and a poison batch retries
+  forever); `CatchHandlerExceptions = true` flips to log-checkpoint-continue, permanently
+  skipping the failed batch.
+- The batch's lease token rides in `StreamContext.Metadata` under
+  `CosmosChangeFeedApplication<TDocument>.LeaseTokenMetadataKey`.
+
+See the [worker guide's Cosmos DB section](../getting-started-worker.md) for the full
+`UseWorker(worker => worker.UseCosmosDbChangeFeed(...))` walkthrough, including the
+`CosmosChangeFeedProcessorFactory` that decides containers, names, and authentication.
 
 ## Idempotency is non-negotiable
 
