@@ -92,4 +92,79 @@ public class UseKinesisStreamTest
 
         Assert.Equal(0, runs);
     }
+
+    [Fact]
+    public async Task Send_FromStream_NullRecords_DoesNotRoute()
+    {
+        var runs = 0;
+        var services = ServiceResolverMother.CreateServiceCollection();
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
+
+        app.UseKinesisStream(kinesis => kinesis
+            .UseStream<KinesisEventRecord>((records, _) =>
+            {
+                runs++;
+                return Task.CompletedTask;
+            })
+        );
+
+        await app.Build().HandleAsync(
+            AwsEventStreamContextBuilder.Build(new KinesisEvent { Records = null }),
+            new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
+
+        Assert.Equal(0, runs);
+    }
+
+    [Fact]
+    public async Task Send_FromStream_EmptyRecords_DoesNotRoute()
+    {
+        var runs = 0;
+        var services = ServiceResolverMother.CreateServiceCollection();
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
+
+        app.UseKinesisStream(kinesis => kinesis
+            .UseStream<KinesisEventRecord>((records, _) =>
+            {
+                runs++;
+                return Task.CompletedTask;
+            })
+        );
+
+        await app.Build().HandleAsync(
+            AwsEventStreamContextBuilder.Build(new KinesisEvent { Records = new List<KinesisEventRecord>() }),
+            new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
+
+        Assert.Equal(0, runs);
+    }
+
+    [Fact]
+    public async Task Send_FromStream_HandlerThrowsAfterCheckpointing_WritesBatchItemFailuresResponse()
+    {
+        var services = ServiceResolverMother.CreateServiceCollection();
+        var app = new MiddlewarePipelineBuilder<AwsEventStreamContext>(new MicrosoftBenzeneServiceContainer(services));
+
+        app.UseKinesisStream(kinesis => kinesis
+            .UseStream<KinesisEventRecord>(async context =>
+            {
+                var processed = 0;
+                await foreach (var record in context.Items)
+                {
+                    processed++;
+                    if (processed == 2)
+                    {
+                        throw new InvalidOperationException("boom");
+                    }
+                    await context.Checkpointer.CheckpointAsync(record);
+                }
+            })
+        );
+
+        var awsContext = AwsEventStreamContextBuilder.Build(CreateKinesisEvent());
+        await app.Build().HandleAsync(awsContext, new MicrosoftServiceResolverAdapter(services.BuildServiceProvider()));
+
+        var response = AwsEventStreamContextBuilder.StreamToObject<KinesisBatchResponse>(awsContext.Response);
+
+        var failure = Assert.Single(response.BatchItemFailures);
+        Assert.Equal("2", failure.ItemIdentifier);
+    }
 }

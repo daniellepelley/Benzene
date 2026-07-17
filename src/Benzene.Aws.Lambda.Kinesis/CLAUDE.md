@@ -80,7 +80,13 @@ app.UseKinesisStream(kinesis => kinesis
   own stream-processing logic.
 
 ## Tests
-- `test/Benzene.Core.Test/Aws/Kinesis/UseKinesisStreamTest.cs` — full pipeline happy path, routing.
+- `test/Benzene.Core.Test/Aws/Kinesis/UseKinesisStreamTest.cs` — full pipeline happy path, routing
+  (including `CanHandle`'s null-`Records`/empty-`Records` guard branches, not just the
+  wrong-`EventSource` case), and an end-to-end wire-response assertion: a handler that throws after
+  checkpointing one record produces a real `KinesisBatchResponse` on `AwsEventStreamContext.Response`
+  naming the correct resume sequence number (deserialized via `AwsEventStreamContextBuilder.StreamToObject<T>`) -
+  `KinesisStreamApplicationTest` below only ever checks the in-memory return value, never the
+  serialized wire response `KinesisLambdaHandler.MapResponse` actually writes.
 - `test/Benzene.Core.Test/Aws/Kinesis/KinesisRecordDataTest.cs` — base64 decode helpers.
 - `test/Benzene.Core.Test/Aws/Kinesis/KinesisBatchResponseTest.cs` — constructor shape (empty vs
   single-failure `BatchItemFailures`).
