@@ -53,4 +53,49 @@ public class SchemaCastersTest
         Assert.Equal("order-1", result.Id);
         Assert.Equal(5, result.Quantity);
     }
+
+    [Fact]
+    public void SchemaCaster_CastNonGeneric_InvokesTheTypedCaster()
+    {
+        var caster = new SchemaCasters(BuildCasters()).GetSchemaCaster("V1", "V2", "orderCreated");
+
+        var result = (V2.OrderPayload)caster.Cast(new V1.OrderPayload { Id = "order-1", Quantity = 5 });
+
+        Assert.Equal("order-1", result.Id);
+        Assert.Equal(5, result.Quantity);
+    }
+
+    [Fact]
+    public void TryGetSchemaCaster_ByFromSchemaAndToType_FindsTheRequestUpcastCaster()
+    {
+        var casters = new SchemaCasters(BuildCasters());
+
+        var found = casters.TryGetSchemaCaster("orderCreated", "V1", typeof(V2.OrderPayload), out var caster);
+
+        Assert.True(found);
+        Assert.Equal(typeof(V1.OrderPayload), caster.FromType);
+        Assert.Equal(typeof(V2.OrderPayload), caster.ToType);
+    }
+
+    [Fact]
+    public void TryGetSchemaCaster_ByFromTypeAndToSchema_FindsTheResponseDowncastCaster()
+    {
+        var casters = new SchemaCasters(BuildCasters());
+
+        var found = casters.TryGetSchemaCaster("orderCreated", typeof(V2.OrderPayload), "V1", out var caster);
+
+        Assert.True(found);
+        Assert.Equal(typeof(V2.OrderPayload), caster.FromType);
+        Assert.Equal(typeof(V1.OrderPayload), caster.ToType);
+    }
+
+    [Fact]
+    public void TryGetSchemaCaster_NoMatch_ReturnsFalse()
+    {
+        var casters = new SchemaCasters(BuildCasters());
+
+        Assert.False(casters.TryGetSchemaCaster("orderCreated", "V9", typeof(V2.OrderPayload), out _));
+        Assert.False(casters.TryGetSchemaCaster("otherTopic", "V1", typeof(V2.OrderPayload), out _));
+        Assert.False(casters.TryGetSchemaCaster("orderCreated", typeof(V2.OrderPayload), "V9", out _));
+    }
 }

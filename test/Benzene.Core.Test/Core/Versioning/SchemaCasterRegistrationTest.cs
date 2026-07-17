@@ -1,4 +1,3 @@
-using Benzene.Core.Versioning.Deserializer;
 using Benzene.Core.Versioning.Schemas;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;

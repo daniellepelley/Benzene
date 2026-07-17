@@ -41,6 +41,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.TryAddScoped<IMessageTopicGetter<ApiGatewayContext>, ApiGatewayMessageTopicGetter>();
+        services.TryAddScoped<IMessageVersionGetter<ApiGatewayContext>, ApiGatewayMessageVersionGetter>();
         services.TryAddScoped<IMessageHeadersGetter<ApiGatewayContext>, ApiGatewayMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<ApiGatewayContext>, ApiGatewayMessageBodyGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageMessageHandlerResultSetter>();
