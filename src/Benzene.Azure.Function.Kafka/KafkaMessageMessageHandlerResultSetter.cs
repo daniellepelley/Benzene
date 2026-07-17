@@ -3,7 +3,8 @@ using Benzene.Core.MessageHandlers;
 namespace Benzene.Azure.Function.Kafka;
 
 /// <summary>
-/// Sets the message handler result on a <see cref="KafkaContext"/>. A no-op setter, since the Kafka
-/// trigger doesn't track per-record results the way batch-failure-reporting transports do.
+/// Records a message handler's outcome onto <see cref="KafkaContext.MessageResult"/>. The Kafka
+/// trigger has no platform-level per-record acknowledgement to report back to, but
+/// <see cref="KafkaBatchApplication"/> reads this to support <see cref="KafkaOptions.RaiseOnFailureStatus"/>.
 /// </summary>
-public class KafkaMessageMessageHandlerResultSetter : DefaultMessageMessageHandlerResultSetterBase<KafkaContext>;
+public class KafkaMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<KafkaContext>;

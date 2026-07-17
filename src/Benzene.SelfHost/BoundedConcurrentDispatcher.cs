@@ -23,9 +23,15 @@ namespace Benzene.SelfHost;
 /// in the pattern this replaces), rather than letting an unbounded in-memory backlog build up when
 /// handlers fall behind the arrival rate.
 ///
-/// A fault thrown by <c>handle</c> is caught and logged per item - it never stops that lane's
-/// consumer loop or goes unobserved, unlike the fire-and-forget <c>.ContinueWith(...)</c> pattern
-/// this replaces.
+/// A fault thrown by <c>handle</c> is always logged per item; by default (<c>catchExceptions</c>
+/// <c>true</c>) it's then swallowed - it never stops that lane's consumer loop or goes unobserved,
+/// unlike the fire-and-forget <c>.ContinueWith(...)</c> pattern this replaces. With
+/// <c>catchExceptions</c> <c>false</c>, the fault is rethrown after logging (and after invoking
+/// <c>onFault</c>, if supplied) - this ends that lane's consume loop. Since a dead lane's channel
+/// still has capacity 1 and nothing left to read it, callers that route by key (e.g. Kafka
+/// partition) will eventually block in <see cref="EnqueueAsync"/> once that lane's channel fills -
+/// <c>onFault</c> exists so a caller can react (e.g. stop the whole worker) rather than silently
+/// deadlock.
 /// </remarks>
 /// <typeparam name="T">The item type pulled from the poll loop.</typeparam>
 public sealed class BoundedConcurrentDispatcher<T>
@@ -38,13 +44,23 @@ public sealed class BoundedConcurrentDispatcher<T>
     /// <summary>Initializes a new instance of the <see cref="BoundedConcurrentDispatcher{T}"/> class.</summary>
     /// <param name="laneCount">The maximum number of items handled concurrently.</param>
     /// <param name="handle">The async handler each dispatched item is passed to.</param>
-    /// <param name="logger">Logs a fault from <paramref name="handle"/> without stopping the lane it occurred on.</param>
+    /// <param name="logger">Logs a fault from <paramref name="handle"/>, regardless of <paramref name="catchExceptions"/>.</param>
     /// <param name="keySelector">
     /// When provided, routes items sharing the same key to the same lane, preserving per-key order.
     /// When <c>null</c> (the default), items round-robin across lanes with no ordering guarantee.
     /// </param>
+    /// <param name="catchExceptions">
+    /// When <c>true</c> (the default), a fault from <paramref name="handle"/> is logged and
+    /// swallowed - that lane keeps consuming. When <c>false</c>, the fault is logged, passed to
+    /// <paramref name="onFault"/> if supplied, and rethrown - ending that lane's consume loop.
+    /// </param>
+    /// <param name="onFault">
+    /// Invoked with the fault when <paramref name="catchExceptions"/> is <c>false</c> and
+    /// <paramref name="handle"/> throws, before the fault is rethrown. Lets a caller react to a
+    /// lane dying (e.g. stop the whole worker) instead of leaving it silently one lane short.
+    /// </param>
     public BoundedConcurrentDispatcher(int laneCount, Func<T, CancellationToken, Task> handle, ILogger logger,
-        Func<T, int>? keySelector = null)
+        Func<T, int>? keySelector = null, bool catchExceptions = true, Action<Exception>? onFault = null)
     {
         if (laneCount < 1)
         {
@@ -67,7 +83,7 @@ public sealed class BoundedConcurrentDispatcher<T>
 
         for (var i = 0; i < laneCount; i++)
         {
-            _consumers[i] = ConsumeLoopAsync(_lanes[i], handle, logger);
+            _consumers[i] = ConsumeLoopAsync(_lanes[i], handle, logger, catchExceptions, onFault);
         }
     }
 
@@ -102,7 +118,8 @@ public sealed class BoundedConcurrentDispatcher<T>
         await Task.WhenAny(Task.WhenAll(_consumers), Task.Delay(drainTimeout));
     }
 
-    private static async Task ConsumeLoopAsync(Channel<T> lane, Func<T, CancellationToken, Task> handle, ILogger logger)
+    private static async Task ConsumeLoopAsync(Channel<T> lane, Func<T, CancellationToken, Task> handle, ILogger logger,
+        bool catchExceptions, Action<Exception>? onFault)
     {
         await foreach (var item in lane.Reader.ReadAllAsync())
         {
@@ -113,6 +130,12 @@ public sealed class BoundedConcurrentDispatcher<T>
             catch (Exception ex)
             {
                 logger.LogError(ex, "Unhandled exception processing item in Benzene worker loop");
+
+                if (!catchExceptions)
+                {
+                    onFault?.Invoke(ex);
+                    throw;
+                }
             }
         }
     }

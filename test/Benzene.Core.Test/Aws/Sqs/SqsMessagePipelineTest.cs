@@ -336,7 +336,40 @@ public class SqsMessagePipelineTest
         SQSBatchResponse batchResponse = await aws.HandleAsync(request, serviceResolverFactory);
         Assert.Equal(5, batchResponse.BatchItemFailures.Count);
     }
-    
+
+    [Fact]
+    public async Task Send_BatchProcessFailureOnError_FailWholeBatch_ThrowsSqsBatchProcessingException()
+    {
+        var mockSqsClient = new Mock<ISqsClient>();
+        mockSqsClient.Setup(x => x.PublishAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync("foo");
+
+        var mockExampleService = new Mock<IExampleService>();
+        mockExampleService.Setup(x => x.Register(It.IsAny<string>())).Throws<Exception>();
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<SqsMessageContext>>>(_ =>
+                NullLogger<MessageRouter<SqsMessageContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .AddTransient(_ => mockExampleService.Object)
+            .AddTransient(_ => mockSqsClient.Object)
+            .UsingBenzene(x => x
+                .AddSqs());
+
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+
+        var pipeline = new MiddlewarePipelineBuilder<SqsMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+
+        pipeline.UseMessageHandlers();
+
+        var aws = new SqsApplication(pipeline.Build(), new SqsOptions { BatchFailureMode = SqsBatchFailureMode.FailWholeBatch });
+
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqs(5);
+
+        var exception = await Assert.ThrowsAsync<SqsBatchProcessingException>(() => aws.HandleAsync(request, serviceResolverFactory));
+        Assert.Equal(5, exception.FailedMessageIds.Count);
+    }
+
     [Fact]
     public async Task SqsInSnsOut()
     {

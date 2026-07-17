@@ -14,8 +14,11 @@ as they do for HTTP, Event Hubs, and Kafka.
 - `ServiceBusMessageTopicGetter` - reads the topic from the message's `"topic"` application property
 - `ServiceBusMessageBodyGetter` - reads the message body as a string (`message.Body.ToString()`)
 - `ServiceBusMessageHeadersGetter` - exposes the message's string-typed application properties as headers
-- `ServiceBusMessageMessageHandlerResultSetter` - no-op (see "Important conventions" below)
-- `ServiceBusApplication` - the entry point application invoked by the Azure Functions trigger method
+- `ServiceBusMessageMessageHandlerResultSetter` - records the outcome onto `MessageResult` (see "Important conventions" below)
+- `ServiceBusApplication` / `ServiceBusBatchApplication` - the entry point application invoked by the
+  Azure Functions trigger method, and the per-message-loop application it wraps
+- `ServiceBusOptions` / `ServiceBusMessageProcessingException` - configurable exception/failure-status
+  handling (see "Important conventions" below)
 - `DependencyInjectionExtensions.AddAzureServiceBus()` / `UseServiceBus(...)` - registration and pipeline wiring
 
 ## When to use this package
@@ -25,7 +28,7 @@ as they do for HTTP, Event Hubs, and Kafka.
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions** - Core abstractions
-- **Benzene.Core.MessageHandlers** - Message handler infrastructure, `DefaultMessageMessageHandlerResultSetterBase`
+- **Benzene.Core.MessageHandlers** - Message handler infrastructure, `MessageMessageHandlerResultSetterBase`
 - **Benzene.Azure.Function.Core** - Azure Functions isolated-worker host integration
 - **Azure.Messaging.ServiceBus** - Service Bus SDK (for `ServiceBusReceivedMessage`)
 - **Microsoft.Azure.Functions.Worker.Extensions.ServiceBus** - isolated-worker Service Bus trigger binding
@@ -41,10 +44,29 @@ as they do for HTTP, Event Hubs, and Kafka.
   (`Benzene.Core.MessageHandlers`) before `.UseMessageHandlers()` in that subscription's pipeline to
   route every message on it to a fixed topic instead of relying on the property. Carried via scoped
   DI state (`PresetTopicHolder`), not a property on `ServiceBusContext`.
-- **Result handling is a no-op**: unlike some other Benzene transports, this package does not complete,
-  abandon, or dead-letter the message based on the handler's outcome. The Azure Functions Service Bus
-  trigger auto-completes the message on its own default settings when the trigger function returns
-  without throwing. Explicit complete/abandon/dead-letter control (via `ServiceBusMessageActions`) and
-  session handling are **not implemented** - they're candidates for future work, not present today.
+- **Result handling does not affect message completion**: unlike some other Benzene transports, this
+  package does not complete, abandon, or dead-letter the message based on the handler's outcome. The
+  Azure Functions Service Bus trigger auto-completes the message on its own default settings when the
+  trigger function returns without throwing. Explicit complete/abandon/dead-letter control (via
+  `ServiceBusMessageActions`) and session handling are **not implemented** - they're candidates for
+  future work, not present today. `ServiceBusMessageMessageHandlerResultSetter` DOES record the
+  outcome onto `ServiceBusContext.MessageResult` (it's not a no-op) - that's read by
+  `ServiceBusOptions.RaiseOnFailureStatus` below, but nothing completes/abandons the message based on it.
+- **Exception/failure-status handling is configurable via `ServiceBusOptions`**
+  (`UseServiceBus(..., configure)`), defaulting to today's original behavior: a handler exception
+  cascades and fails the whole trigger invocation, and a non-exception failure result is silently
+  accepted. Set `ServiceBusOptions.CatchExceptions = true` to catch and log an exception instead of
+  cascading it (that message's failure doesn't affect the rest of the batch or fail the invocation);
+  set `ServiceBusOptions.RaiseOnFailureStatus = true` to escalate a non-exception failure result into
+  a thrown `ServiceBusMessageProcessingException` too. Both default to `false`
+  (purely additive/opt-in). This is still not the same as true per-message partial-ack (that needs
+  `ServiceBusMessageActions`, still not wired up) - it only controls whether the *whole invocation*
+  is reported as failed to the Functions host.
 - Supports both single-message triggers (the common case) and batched triggers (`IsBatched = true`) via
   the same `params ServiceBusReceivedMessage[]` dispatch signature.
+
+## Tests
+- `test/Benzene.Core.Test/Azure/ServiceBusPipelineTest.cs` - full pipeline happy path.
+- `test/Benzene.Core.Test/Azure/ServiceBus/` - `ServiceBusMessageTopicGetter`/`ServiceBusMessageHeadersGetter`.
+- `test/Benzene.Core.Test/Azure/ServiceBusFailureHandlingTest.cs` - `ServiceBusOptions`'
+  `CatchExceptions`/`RaiseOnFailureStatus` combinations against `ServiceBusBatchApplication` directly.

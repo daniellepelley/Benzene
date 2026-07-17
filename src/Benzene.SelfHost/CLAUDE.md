@@ -22,8 +22,14 @@ duplicate independently. Built on `System.Threading.Channels` (BCL, no new NuGet
   strictly-FIFO consumer preserves order for that key (e.g. a Kafka partition) while different keys
   still run concurrently. With no `keySelector`, items round-robin across lanes with no ordering
   promise.
-- A fault thrown by the handler is caught and logged per item (via the injected `ILogger`) - it
-  never stops that lane or goes unobserved, unlike the pattern it replaces.
+- A fault thrown by the handler is always logged per item (via the injected `ILogger`). By default
+  (`catchExceptions: true`, the default) it's then swallowed - it never stops that lane or goes
+  unobserved, unlike the pattern it replaces. With `catchExceptions: false`, the fault is instead
+  rethrown after logging (and after invoking the optional `onFault` callback) - this ends that
+  lane's consume loop. `Benzene.Kafka.Core.BenzeneKafkaConfig.CatchHandlerExceptions` is the first
+  caller-facing toggle for this (default `true`, preserving prior behavior exactly); it wires
+  `onFault` to stop the whole worker, since a dead lane's channel otherwise silently deadlocks
+  `EnqueueAsync` for that key once it fills.
 - `DrainAsync(timeout)` completes every lane's writer and awaits all consumer tasks up to the
   timeout - the mechanism that makes `StopAsync` on both workers actually graceful now, instead of
   abandoning in-flight work.

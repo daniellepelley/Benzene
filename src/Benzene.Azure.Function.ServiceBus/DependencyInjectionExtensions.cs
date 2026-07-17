@@ -46,13 +46,22 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="app">The Azure Function app builder to add Service Bus handling to.</param>
     /// <param name="action">The action that configures the Service Bus middleware pipeline.</param>
+    /// <param name="configure">
+    /// Optionally configures <see cref="ServiceBusOptions"/> - e.g. set
+    /// <see cref="ServiceBusOptions.CatchExceptions"/> to contain a handler exception to the
+    /// failing message instead of the default cascade-to-whole-invocation behavior, or
+    /// <see cref="ServiceBusOptions.RaiseOnFailureStatus"/> to escalate a non-exception failure
+    /// result into a thrown exception too.
+    /// </param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseServiceBus(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action)
+    public static IAzureFunctionAppBuilder UseServiceBus(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action, Action<ServiceBusOptions>? configure = null)
     {
         app.Register(x => x.AddAzureServiceBus());
         var pipeline = app.Create<ServiceBusContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new ServiceBusApplication(pipeline.Build(), serviceResolverFactory));
+        var options = new ServiceBusOptions();
+        configure?.Invoke(options);
+        app.Add(serviceResolverFactory => new ServiceBusApplication(pipeline.Build(), serviceResolverFactory, options));
         return app;
     }
 
@@ -62,12 +71,13 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Service Bus middleware pipeline.</param>
+    /// <param name="configure">Optionally configures <see cref="ServiceBusOptions"/> - see the <see cref="IAzureFunctionAppBuilder"/> overload.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseServiceBus(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action)
+    public static IBenzeneApplicationBuilder UseServiceBus(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action, Action<ServiceBusOptions>? configure = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseServiceBus(action);
+            azureApp.UseServiceBus(action, configure);
         }
         return app;
     }

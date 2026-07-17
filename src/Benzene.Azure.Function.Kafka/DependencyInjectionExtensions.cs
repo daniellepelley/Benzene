@@ -43,13 +43,21 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="app">The Azure Function app builder to add Kafka handling to.</param>
     /// <param name="action">The action that configures the Kafka middleware pipeline.</param>
+    /// <param name="configure">
+    /// Optionally configures <see cref="KafkaOptions"/> - e.g. set <see cref="KafkaOptions.CatchExceptions"/>
+    /// to contain a handler exception to the failing record instead of the default cascade-to-whole-invocation
+    /// behavior, or <see cref="KafkaOptions.RaiseOnFailureStatus"/> to escalate a non-exception failure
+    /// result into a thrown exception too.
+    /// </param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseKafka(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action)
+    public static IAzureFunctionAppBuilder UseKafka(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action, Action<KafkaOptions>? configure = null)
     {
         app.Register(x => x.AddAzureKafka());
         var pipeline = app.Create<KafkaContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new KafkaApplication(pipeline.Build(), serviceResolverFactory));
+        var options = new KafkaOptions();
+        configure?.Invoke(options);
+        app.Add(serviceResolverFactory => new KafkaApplication(pipeline.Build(), serviceResolverFactory, options));
         return app;
     }
 
@@ -59,12 +67,13 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Kafka middleware pipeline.</param>
+    /// <param name="configure">Optionally configures <see cref="KafkaOptions"/> - see the <see cref="IAzureFunctionAppBuilder"/> overload.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseKafka(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action)
+    public static IBenzeneApplicationBuilder UseKafka(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action, Action<KafkaOptions>? configure = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseKafka(action);
+            azureApp.UseKafka(action, configure);
         }
         return app;
     }

@@ -1,8 +1,12 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
 namespace Benzene.Azure.Function.Kafka;
 
@@ -18,10 +22,60 @@ public class KafkaApplication : EntryPointMiddlewareApplication<KafkaRecord[]>
     /// </summary>
     /// <param name="pipeline">The built Kafka middleware pipeline to run each event through.</param>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
-    public KafkaApplication(IMiddlewarePipeline<KafkaContext> pipeline, IServiceResolverFactory serviceResolverFactory)
-        : base(new MiddlewareMultiApplication<KafkaRecord[], KafkaContext>(
-                new TransportMiddlewarePipeline<KafkaContext>("kafka", pipeline),
-            kafkaEvents => kafkaEvents.Select(kafkaEvent => new KafkaContext(kafkaEvent)).ToArray()),
-            serviceResolverFactory)
+    /// <param name="options">
+    /// Configures how a handler's exceptions and failure results are handled. Defaults to a new
+    /// <see cref="KafkaOptions"/> instance (both <see cref="KafkaOptions.CatchExceptions"/> and
+    /// <see cref="KafkaOptions.RaiseOnFailureStatus"/> off) if omitted.
+    /// </param>
+    public KafkaApplication(IMiddlewarePipeline<KafkaContext> pipeline, IServiceResolverFactory serviceResolverFactory, KafkaOptions? options = null)
+        : base(new KafkaBatchApplication(pipeline, options), serviceResolverFactory)
     { }
+}
+
+/// <summary>
+/// Runs every record in a Kafka trigger batch through the middleware pipeline concurrently, each in
+/// its own service scope, applying <see cref="KafkaOptions"/> to decide whether a record's exception
+/// or failure result is contained (logged, doesn't affect the rest of the batch) or left to cascade
+/// and fail the whole invocation.
+/// </summary>
+public class KafkaBatchApplication : IMiddlewareApplication<KafkaRecord[]>
+{
+    private readonly IMiddlewarePipeline<KafkaContext> _pipeline;
+    private readonly KafkaOptions _options;
+
+    public KafkaBatchApplication(IMiddlewarePipeline<KafkaContext> pipeline, KafkaOptions? options = null)
+    {
+        _pipeline = new TransportMiddlewarePipeline<KafkaContext>("kafka", pipeline);
+        _options = options ?? new KafkaOptions();
+    }
+
+    public async Task HandleAsync(KafkaRecord[] @event, IServiceResolverFactory serviceResolverFactory)
+    {
+        var tasks = @event.Select(kafkaEvent => new KafkaContext(kafkaEvent)).Select(async context =>
+            {
+                try
+                {
+                    using (var scope = serviceResolverFactory.CreateScope())
+                    {
+                        await _pipeline.HandleAsync(context, scope);
+                    }
+
+                    if (_options.RaiseOnFailureStatus && context.MessageResult?.IsSuccessful == false)
+                    {
+                        throw new KafkaMessageProcessingException(context.KafkaEvent.Topic);
+                    }
+                }
+                catch (Exception ex) when (_options.CatchExceptions)
+                {
+                    using (var loggingScope = serviceResolverFactory.CreateScope())
+                    {
+                        loggingScope.GetService<ILogger<KafkaApplication>>()
+                            .LogError(ex, "Processing Kafka record on topic {topic} failed", context.KafkaEvent.Topic);
+                    }
+                }
+            })
+            .ToArray();
+
+        await Task.WhenAll(tasks);
+    }
 }

@@ -170,6 +170,70 @@ public class SqsConsumerMessagePipelineTest
 
 
     [Fact]
+    public async Task SendAsync_PerMessageAckMode_DeletesOnlyTheSuccessfulMessage()
+    {
+        var mockSqsClient = new Mock<IAmazonSQS>();
+
+        var mockSqsClientFactory = new Mock<ISqsClientFactory>();
+        mockSqsClientFactory.Setup(x => x.Create())
+            .Returns(mockSqsClient.Object);
+
+        var succeedingMessage = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqsMessage();
+        var failingMessage = RequestMother.CreateSerializationErrorPayload().AsSqsMessage();
+
+        mockSqsClient
+            .SetupSequence(x => x.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new ReceiveMessageResponse
+            {
+                Messages = new List<Message> { succeedingMessage, failingMessage }
+            })
+            .ReturnsAsync(() => new ReceiveMessageResponse { Messages = new List<Message>() });
+
+        List<DeleteMessageBatchRequestEntry> deletedEntries = null;
+        mockSqsClient
+            .Setup(x => x.DeleteMessageBatchAsync(It.IsAny<DeleteMessageBatchRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<DeleteMessageBatchRequest, CancellationToken>((request, _) => deletedEntries = request.Entries)
+            .ReturnsAsync(new DeleteMessageBatchResponse());
+
+        var mockDefaultService = new Mock<IExampleService>();
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<SqsConsumerMessageContext>>>(_ =>
+                NullLogger<MessageRouter<SqsConsumerMessageContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .AddScoped(_ => mockDefaultService.Object)
+            .UsingBenzene(x => x.AddSqsConsumer());
+
+        var pipeline =
+            new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        pipeline.UseMessageHandlers();
+
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        var application = new SqsConsumerApplication(pipeline.Build(), new SqsConsumerOptions { AckMode = SqsConsumerAckMode.PerMessage });
+
+        var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
+        {
+            MaxNumberOfMessages = 10,
+            QueueUrl = "some-url"
+        }, mockSqsClientFactory.Object, new SqsConsumerOptions { AckMode = SqsConsumerAckMode.PerMessage });
+
+        var tokenSource = new CancellationTokenSource(5000);
+
+        try
+        {
+            await consumer.StartAsync(tokenSource.Token);
+        }
+        catch
+        {
+        }
+
+        Assert.NotNull(deletedEntries);
+        Assert.Single(deletedEntries);
+        Assert.Equal(succeedingMessage.MessageId, deletedEntries[0].Id);
+    }
+
+    [Fact]
     public async Task StartAsync_ReceiveMessageThrowsTaskCanceled_StopsWithoutRethrowing()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();

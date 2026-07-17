@@ -82,6 +82,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `RequestResponse.Example`/`Event.Example` are new optional members; the field is additive, and
   `EventServiceDocumentDeserializer` round-trips it. `Benzene.Spec.Ui` renders the example per
   topic/event with a copy button. See `docs/spec.md` / `docs/spec-ui.md`.
+- `Benzene.Aws.Lambda.Sqs`: `SqsOptions.BatchFailureMode` (via a new `Action<SqsOptions>? configure`
+  parameter on `UseSqs`) - defaults to `SqsBatchFailureMode.PartialBatchFailure`, reproducing
+  today's per-message `SQSBatchResponse.BatchItemFailures` reporting exactly. Set to
+  `SqsBatchFailureMode.FailWholeBatch` to instead throw the new `SqsBatchProcessingException` when
+  any message in the batch fails, so SQS retries the whole batch instead of just the failed
+  messages. Purely additive.
+- `Benzene.Aws.Lambda.Sns`: `SnsOptions.CatchExceptions` and `SnsOptions.RaiseOnFailureStatus` (via
+  a new `Action<SnsOptions>? configure` parameter on `UseSns`) - both default to `false`,
+  reproducing today's implicit behavior exactly (a handler exception cascades to fail the Lambda
+  invocation, triggering SNS's own subscription retry policy; a non-exception failure result is
+  silently accepted, no retry). `CatchExceptions = true` catches and logs exceptions instead of
+  cascading them; `RaiseOnFailureStatus = true` escalates a non-exception failure result into the
+  new `SnsMessageProcessingException`, so SNS retries it too - `CatchExceptions` governs both real
+  and escalated exceptions uniformly. Purely additive. See `work/batch-failure-handling.md` for the
+  general containment/escalation vocabulary this establishes for other batch/event transports.
+- `Benzene.Kafka.Core`: `BenzeneKafkaConfig.CatchHandlerExceptions` (default `true`, reproducing
+  today's catch-log-continue behavior exactly) - set `false` to instead stop the whole worker on
+  the first unhandled handler exception. Implemented in the shared
+  `Benzene.SelfHost.BoundedConcurrentDispatcher<T>` as new optional `catchExceptions`/`onFault`
+  constructor parameters (both back-compatible defaults, so `Benzene.SelfHost.Http.BenzeneHttpWorker`
+  is unaffected). Purely additive.
+- `Benzene.Kafka.Core`: `BenzeneKafkaConfig.CommitOnlyOnSuccess` (default `false`, reproducing
+  Confluent.Kafka's own default of auto-storing an offset as soon as it's consumed) - set `true` for
+  at-least-once processing, so a message whose handler fails (or whose worker crashes mid-handling)
+  is redelivered instead of silently skipped. Sets `ConsumerConfig.EnableAutoOffsetStore = false` and
+  calls `IConsumer.StoreOffset` only after the handler succeeds. Requires
+  `CatchHandlerExceptions = false` and `PreserveOrderPerPartition = true` - `BenzeneKafkaWorker`
+  throws `InvalidOperationException` at startup otherwise, since `StoreOffset` is a last-write-wins
+  watermark with no gap tracking and either combination could silently commit past a failed message.
+  Purely additive.
+- `Benzene.Azure.Function.Kafka`: `KafkaOptions.CatchExceptions`/`RaiseOnFailureStatus` (via a new
+  `Action<KafkaOptions>? configure` parameter on `UseKafka`) - same shape and defaults as
+  `Benzene.Aws.Lambda.Sns`'s `SnsOptions`; `RaiseOnFailureStatus` escalates into a new
+  `KafkaMessageProcessingException`. `KafkaMessageMessageHandlerResultSetter` now records the
+  outcome onto `KafkaContext.MessageResult` (previously a true no-op) so `RaiseOnFailureStatus` has
+  something to read. Purely additive.
+- `Benzene.Azure.Function.ServiceBus`: `ServiceBusOptions.CatchExceptions`/`RaiseOnFailureStatus`
+  (via a new `Action<ServiceBusOptions>? configure` parameter on `UseServiceBus`) - same shape as
+  the Kafka entry above, escalates into a new `ServiceBusMessageProcessingException`.
+  `ServiceBusMessageMessageHandlerResultSetter` likewise upgraded from a no-op to a real setter.
+  Still not true per-message `ServiceBusMessageActions` completion (a larger, separate follow-up -
+  see `work/batch-failure-handling.md`). Purely additive.
+- `Benzene.Aws.Sqs`: `SqsConsumerOptions.AckMode` (via a new `Action<SqsConsumerOptions>? configure`
+  parameter on `UseSqs`) for the standalone polling `SqsConsumer` - defaults to
+  `SqsConsumerAckMode.WholeBatch`, reproducing today's all-or-nothing batch deletion exactly. Set to
+  `SqsConsumerAckMode.PerMessage` to delete only the messages that actually succeeded instead.
+  Required `SqsConsumerMessageContext` to gain `IHasMessageResult` (it had no result concept before)
+  and `SqsConsumerMessageMessageHandlerResultSetter` to become a real setter instead of a no-op.
+  Purely additive.
 - `Benzene.Core.MessageHandlers`: `UsePresetTopic<TContext>(topicId, version)` pipeline extension,
   `PresetTopicMiddleware<TContext>`, and `PresetTopicMessageTopicGetter<TContext>` - lets a specific
   SQS queue or Service Bus subscription route every message to one fixed topic, for producers that
@@ -216,6 +265,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transport-agnostic `WithApplication()` in `Benzene.Core.MessageHandlers` is unaffected.)
 
 ### Changed
+- CI (`build-benzene.yml`): `Benzene.Grpc.Test`, `Benzene.Mesh.Test`, and `Benzene.Conformance.Test`
+  now run as part of the main `build` job, alongside the existing `Benzene.Core.Test` run. All three
+  were already part of `Benzene.sln` (so already compiled by CI) but were previously never actually
+  executed anywhere except a developer's own machine.
 - Updated to .NET 10
 - IContextConverter is now async
 - Cleaned up namespaces across AWS Lambda packages

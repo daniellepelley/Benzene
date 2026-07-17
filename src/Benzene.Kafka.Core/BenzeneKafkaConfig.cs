@@ -32,4 +32,37 @@ public class BenzeneKafkaConfig
     /// iteration retry loop - logging and burning CPU on every failed attempt.
     /// </summary>
     public TimeSpan ConsumeExceptionRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Gets or sets whether an unhandled exception from a message handler is caught (logged, that
+    /// lane keeps consuming) or left to stop the worker entirely. Defaults to <c>true</c> (catch) -
+    /// a single bad message shouldn't take down the whole consumer. Set to <c>false</c> to instead
+    /// stop the worker on the first unhandled handler exception (the same effect as calling
+    /// <c>StopAsync</c>) - useful when a handler exception should be treated as fatal rather than
+    /// silently logged and skipped.
+    /// </summary>
+    public bool CatchHandlerExceptions { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether an offset is only stored (and so only eligible to be committed) after
+    /// its message's handler has completed successfully, instead of Confluent.Kafka's default of
+    /// auto-storing the offset as soon as <c>Consume</c> returns the message - before it's actually
+    /// been handled. Defaults to <c>false</c> (auto-store on consume, the Confluent.Kafka default).
+    /// Set to <c>true</c> for at-least-once processing: a message whose handler fails (or whose
+    /// worker crashes mid-handling) is redelivered on restart/rebalance instead of being silently
+    /// skipped.
+    /// </summary>
+    /// <remarks>
+    /// Requires <see cref="CatchHandlerExceptions"/> = <c>false</c> and
+    /// <see cref="PreserveOrderPerPartition"/> = <c>true</c> - enforced at worker startup. Both are
+    /// load-bearing: Confluent.Kafka's <c>StoreOffset</c> is a last-write-wins watermark with no gap
+    /// tracking, so storing a later offset silently commits past any earlier message that hasn't
+    /// actually been stored yet. Catching a handler exception (rather than stopping the worker)
+    /// would let a later, successful message on the same partition store its offset while the
+    /// failed one's was never stored - silently skipping the failed message on the next commit.
+    /// Requiring <c>PreserveOrderPerPartition</c> guarantees a partition's messages are only ever
+    /// handled - and so only ever stored - one at a time, in order, so the watermark never advances
+    /// past a message that hasn't actually succeeded yet.
+    /// </remarks>
+    public bool CommitOnlyOnSuccess { get; set; } = false;
 }
