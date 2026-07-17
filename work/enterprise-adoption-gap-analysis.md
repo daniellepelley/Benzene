@@ -223,6 +223,15 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
   packages the holder + resolver strategies + a "tenant required" guard so teams don't rewrite it.
   Isolation of data/cache is achieved by the app using the tenant context (e.g. per-tenant cache
   key prefix, per-tenant connection string) — Benzene provides the context, not the storage policy.
+- **Current state.** **Shipped as a cookbook** (`docs/cookbooks/multi-tenancy.md`). Documents the
+  scoped `TenantHolder` (Context-purity seam, mirroring `PresetTopicHolder`/`AuthenticationHolder`), a
+  strategy-driven `UseTenant` resolver middleware (auth claim / message header / HTTP subdomain), a
+  `RequireTenant` guard that short-circuits with `BadRequest` via the result-setter idiom, and the
+  app-side isolation uses (per-tenant cache prefix, connection string, data filter, outbound header
+  propagation) plus the security guidance (prefer the tamper-proof claim; don't isolate on an
+  unchecked client header; fail closed). The optional `Benzene.MultiTenancy` package was **not** built
+  — the cookbook's closing "Do you need a package?" section explains why (nothing Benzene-specific
+  remains once the holder + two middleware exist; isolation policy is per-app).
 - **Vision fit.** Passes all five, precisely *because* it's the existing seam.
 
 ---
@@ -282,7 +291,7 @@ decision, and revisiting after A.1.
 | A.4 | Authorization depth | Build | `Benzene.Auth.Core` | **Shipped** — `RequireRole`/`RequirePolicy`/`RequireAuthorization<TResource>` + `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams (BCL-only, no new NuGet); 8 tests; cookbook section in `docs/cookbooks/auth-patterns.md` |
 | A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.Core` | **Shipped** — neutral `ISecretStore` seam + env/file/in-memory/composite/caching providers, `SecretResolver` (typed fail-fast) + `SecretValidation` (startup); BCL-only, no new NuGet; 17 tests; cookbook `docs/cookbooks/secrets-configuration.md` (copy-paste cloud adapters) |
 | A.6 | Schema registry | Build | `Benzene.SchemaRegistry.Core` | **Shipped** — neutral `ISchemaRegistryClient` seam + in-memory registry, `ConfluentWireFormat` codec, `SchemaRegistrySerializer` decorator, `SchemaRegistrar` (register + evolution gate); BCL-only, no new NuGet; 15 tests; cookbook `docs/cookbooks/schema-registry.md` (copy-paste Confluent/Azure adapters) |
-| B.1 | Multi-tenancy | Enable via seam + docs | cookbook (+ optional thin helper) | Not started |
+| B.1 | Multi-tenancy | Enable via seam + docs | cookbook | **Shipped** — cookbook `docs/cookbooks/multi-tenancy.md` (scoped `TenantHolder` + `UseTenant` resolver strategies + `RequireTenant` guard + isolation uses + security notes); optional `Benzene.MultiTenancy` package intentionally not built |
 | C.1 | Unit-of-work / data access | Out of scope | — | Won't do |
 | C.2 | Audit trail | Out of scope | — | Won't do |
 | D.1 | Transactional outbox | Boundary | relay + store interface, or defer | Deferred — decide after A.1 |

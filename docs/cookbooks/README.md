@@ -50,6 +50,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 ### Cross-Cutting Concerns
 - [Request Correlation Across Services](request-correlation.md) - Track requests through distributed systems
 - [Idempotency (de-duplicating redelivered messages)](idempotency.md) - Ensure a handler's side effect runs at most once per message on at-least-once transports (SQS, Service Bus, Event Hubs, Kafka), with a pluggable store
+- [Multi-Tenancy](multi-tenancy.md) - Attribute every request to a tenant and isolate its data/cache using a scoped `TenantHolder` set by a resolver middleware (claim / header / subdomain), with a "tenant required" guard
 - Rate Limiting *(planned)*
 - Circuit Breaker Pattern *(planned - `Benzene.Resilience` currently implements retry-with-backoff only; see [Resilience](../resilience.md))*
 - [Request Authentication & Authorization](auth-patterns.md) - OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
