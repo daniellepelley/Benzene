@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Saga</AssemblyName>
+    <RootNamespace>Benzene.Saga</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+  </ItemGroup>
+
+</Project>

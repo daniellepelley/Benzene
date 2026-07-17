@@ -124,6 +124,7 @@
     <ProjectReference Include="..\..\src\Benzene.NewtonsoftJson\Benzene.NewtonsoftJson.csproj" />
     <ProjectReference Include="..\..\src\Benzene.OpenTelemetry\Benzene.OpenTelemetry.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Resilience\Benzene.Resilience.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Saga\Benzene.Saga.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\src\Benzene.SelfHost\Benzene.SelfHost.csproj" />
     <ProjectReference Include="..\..\src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj" />
