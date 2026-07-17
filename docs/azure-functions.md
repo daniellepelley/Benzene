@@ -496,6 +496,17 @@ pipeline throws, the exception propagates, the lease is not advanced, and the ru
 the whole batch — there is no per-document resume point in the change feed, so design handlers to
 be idempotent across batch redelivery.)
 
+### Managed identity instead of connection strings
+
+Every trigger above can authenticate as the Function App's managed identity with **zero code
+changes** — the `Connection` name in the trigger attribute stays the same, and only the app
+settings change (`ServiceBusConnection` → `ServiceBusConnection__fullyQualifiedNamespace`, etc.),
+plus RBAC role assignments to the app's identity. See
+[Managed Identity & RBAC for Azure Resources](cookbooks/managed-identity) for the per-trigger
+settings, the roles each trigger needs (including the Functions host's own storage roles), and
+the Consumption-plan caveat. The example's `main.bicep` enables a system-assigned identity and
+outputs its `principalId` ready for role assignments.
+
 ## Correlation and tracing
 
 Every middleware in every pipeline — HTTP, Event Hub, Kafka — is automatically wrapped in a

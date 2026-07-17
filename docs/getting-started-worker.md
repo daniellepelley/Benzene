@@ -337,7 +337,9 @@ Consume a Service Bus queue or topic/subscription in-process — the self-hosted
 SDK's `ServiceBusProcessor`, so receiving, message-lock renewal, and bounded concurrency
 (`MaxConcurrentCalls`) are the processor's job; you just supply the client and the pipeline. The
 caller builds the `ServiceBusClient` (connection string, managed identity, or emulator), so
-Benzene never prescribes how you authenticate.
+Benzene never prescribes how you authenticate — see
+[Managed Identity & RBAC](cookbooks/managed-identity) for the credential-based constructor and
+the RBAC roles to grant.
 
 ```bash
 dotnet add package Benzene.HostedService --prerelease
@@ -379,7 +381,9 @@ Consume an event hub in-process — the self-hosted counterpart of the
 blob-checkpointed offsets are the processor's job. Unlike the Functions trigger — where batching and
 checkpointing are entirely the runtime's — here **Benzene owns checkpointing** (per partition, every
 `CheckpointInterval` successfully handled events) and the starting position for a fresh consumer
-group.
+group. The client construction below is connection-string-based; for the credential-based
+constructors and the two roles this worker needs (namespace + checkpoint container), see
+[Managed Identity & RBAC](cookbooks/managed-identity).
 
 ```bash
 dotnet add package Benzene.HostedService --prerelease
@@ -482,6 +486,10 @@ public override void Configure(IBenzeneApplicationBuilder app, IConfiguration co
         })));
 }
 ```
+
+For managed-identity authentication (`CosmosClient(accountEndpoint, credential)`) and the Cosmos
+data-plane RBAC role this worker needs — which is granted with its own CLI command, not the
+portal's IAM blade — see [Managed Identity & RBAC](cookbooks/managed-identity).
 
 Checkpointing is **batch-level** — the change feed has no per-document resume token, so
 `Checkpointer.CheckpointAsync(item)` ignores the item and acknowledges the whole delivered batch.
