@@ -44,6 +44,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Integration Testing Lambda Functions](testing-lambda-functions.md) - Test Lambda handlers end-to-end
 - [Mocking External Dependencies](mocking-dependencies.md) - Test message handlers in isolation
 - [Contract Testing (schema compatibility)](contract-testing.md) - Catch breaking contract changes before they reach consumers, at runtime (schema-hash drift check) and in CI (backward-compatibility gate)
+- [Schema Registry Integration](schema-registry.md) - Register event payload schemas centrally, frame messages with the Confluent wire format for cross-consumer interop, and gate schema evolution at deploy time (with copy-paste Confluent / Azure adapters)
 - [Contract Testing (conformance)](../specification/porting-guide.md) - Verify message contracts between services via the conformance-testing approach
 
 ### Cross-Cutting Concerns

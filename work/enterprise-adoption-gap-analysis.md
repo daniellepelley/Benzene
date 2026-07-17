@@ -188,12 +188,24 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
 
 - **Requirement.** Manage/validate event payload schemas centrally (Confluent / Azure Schema
   Registry) for event-driven contracts.
-- **Current state.** `Benzene.Avro` handles schemas registry-less; Mesh tracks drift; no registry
-  client.
-- **Proposed work.** Registry client integration for (de)serialization + schema evolution checks,
+- **Current state.** **Shipped** (`Benzene.SchemaRegistry.Core`, BCL-only, no new NuGet). Neutral
+  `ISchemaRegistryClient` seam (register→id, get-by-id/latest, compatibility) with an
+  `InMemorySchemaRegistryClient` reference impl + pluggable `ISchemaCompatibilityChecker`; the
+  interop-critical `ConfluentWireFormat` codec (magic byte + big-endian schema-id framing);
+  `SchemaRegistrySerializer` (an `IPayloadSerializer` decorator that frames any inner serializer's
+  output using a startup-resolved id map — no per-message registry call); `ISchemaResolver` seam
+  (Type→schema, keeps the package Avro-free) with a documented Avro adapter; and `SchemaRegistrar`
+  (async startup register + `EnsureCompatibleAsync` evolution gate). 15 tests. Confluent/Azure
+  registry clients are documented copy-paste adapters.
+- **Original proposal.** Registry client integration for (de)serialization + schema evolution checks,
   complementing Avro and the A.2 contract gate. Benzene "lends itself to this" — uniform messages +
   existing serialization seam.
+  (Delivered abstraction-first, same scope decision as A.5: the core + Confluent framing + in-memory
+  registry ship BCL-only and fully tested; the vendor registry clients — `Confluent.SchemaRegistry`,
+  `Azure.Data.SchemaRegistry` — are documented copy-paste adapters rather than SDK-dependency packages,
+  since each is a new NuGet dep AGENTS.md gates and needs a live registry to integration-test.)
 - **Vision fit.** Fits the serialization/contract story.
+- **Docs.** `src/Benzene.SchemaRegistry.Core/CLAUDE.md`; cookbook `docs/cookbooks/schema-registry.md`.
 
 ---
 
@@ -269,7 +281,7 @@ decision, and revisiting after A.1.
 | A.3 | Idempotency | Build | `Benzene.Idempotency` | **Shipped** — `IdempotencyMiddleware<TContext>` + pluggable `IIdempotencyStore` + in-memory store + header/body-hash key strategy; 20 tests; cookbook `docs/cookbooks/idempotency.md` (Redis store as copy-paste `SET NX`) |
 | A.4 | Authorization depth | Build | `Benzene.Auth.Core` | **Shipped** — `RequireRole`/`RequirePolicy`/`RequireAuthorization<TResource>` + `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams (BCL-only, no new NuGet); 8 tests; cookbook section in `docs/cookbooks/auth-patterns.md` |
 | A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.Core` | **Shipped** — neutral `ISecretStore` seam + env/file/in-memory/composite/caching providers, `SecretResolver` (typed fail-fast) + `SecretValidation` (startup); BCL-only, no new NuGet; 17 tests; cookbook `docs/cookbooks/secrets-configuration.md` (copy-paste cloud adapters) |
-| A.6 | Schema registry | Build | `Benzene.SchemaRegistry.*` | Not started |
+| A.6 | Schema registry | Build | `Benzene.SchemaRegistry.Core` | **Shipped** — neutral `ISchemaRegistryClient` seam + in-memory registry, `ConfluentWireFormat` codec, `SchemaRegistrySerializer` decorator, `SchemaRegistrar` (register + evolution gate); BCL-only, no new NuGet; 15 tests; cookbook `docs/cookbooks/schema-registry.md` (copy-paste Confluent/Azure adapters) |
 | B.1 | Multi-tenancy | Enable via seam + docs | cookbook (+ optional thin helper) | Not started |
 | C.1 | Unit-of-work / data access | Out of scope | — | Won't do |
 | C.2 | Audit trail | Out of scope | — | Won't do |

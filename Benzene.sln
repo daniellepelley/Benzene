@@ -290,6 +290,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Function.Cosm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.CosmosDb", "src\Benzene.Azure.CosmosDb\Benzene.Azure.CosmosDb.csproj", "{23532FA5-160A-40F7-BB51-6B8068369296}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.SchemaRegistry.Core", "src\Benzene.SchemaRegistry.Core\Benzene.SchemaRegistry.Core.csproj", "{BA3DB216-1607-4260-9557-6A44EF3008F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1752,6 +1754,18 @@ Global
 		{23532FA5-160A-40F7-BB51-6B8068369296}.Release|x64.Build.0 = Release|Any CPU
 		{23532FA5-160A-40F7-BB51-6B8068369296}.Release|x86.ActiveCfg = Release|Any CPU
 		{23532FA5-160A-40F7-BB51-6B8068369296}.Release|x86.Build.0 = Release|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Debug|x64.Build.0 = Debug|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Debug|x86.Build.0 = Debug|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Release|x64.ActiveCfg = Release|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Release|x64.Build.0 = Release|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Release|x86.ActiveCfg = Release|Any CPU
+		{BA3DB216-1607-4260-9557-6A44EF3008F8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1877,6 +1891,7 @@ Global
 		{274B141B-F8F9-416F-8D0F-2CE37219E129} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{6F2E12BE-10D0-421A-AC9E-996DB6D5B824} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{23532FA5-160A-40F7-BB51-6B8068369296} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{BA3DB216-1607-4260-9557-6A44EF3008F8} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

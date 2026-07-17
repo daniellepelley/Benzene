@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.SchemaRegistry.Core</AssemblyName>
+    <RootNamespace>Benzene.SchemaRegistry.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Neutral schema-registry abstraction for Benzene: a provider-agnostic ISchemaRegistryClient seam, the Confluent wire-format codec (magic byte + schema id framing) for cross-consumer interop, and a registry-aware serializer decorator that registers a type's schema and frames the payload. BCL-only; Confluent/Azure registry clients implement the same interface.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

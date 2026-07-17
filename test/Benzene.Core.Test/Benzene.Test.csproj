@@ -99,6 +99,7 @@
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Client\Benzene.CodeGen.Client.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Core\Benzene.CodeGen.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Configuration.Core\Benzene.Configuration.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.SchemaRegistry.Core\Benzene.SchemaRegistry.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.LambdaTestTool\Benzene.CodeGen.LambdaTestTool.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.SourceGenerators\Benzene.CodeGen.SourceGenerators.csproj" />
