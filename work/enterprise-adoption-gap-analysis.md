@@ -229,7 +229,7 @@ decision, and revisiting after A.1.
 
 | ID | Item | Category | Vehicle | Status |
 |----|------|----------|---------|--------|
-| A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | Not started — design first |
+| A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | **Shipped** — engine + tests + example (v1: in-process, engine-only; see `saga-design.md` §7 fast-follows) |
 | A.2 | Contract testing / CI gate | Build | extend `Benzene.Mesh` + `Clients.HealthChecks` | Not started |
 | A.3 | Idempotency | Build | `Benzene.Idempotency` (+ Redis adapter) | Not started |
 | A.4 | Authorization depth | Build | extend `Benzene.Auth` | Not started |
