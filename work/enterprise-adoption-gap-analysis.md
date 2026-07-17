@@ -166,12 +166,23 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
 
 - **Requirement.** Secrets never in plaintext config; typed config validated at startup; portable
   across clouds.
-- **Current state.** Raw `IConfiguration`/env vars only.
-- **Proposed work.** A **neutral secrets/config abstraction** with provider adapters for Azure Key
+- **Current state.** **Shipped** (`Benzene.Configuration.Core`, BCL-only, no new NuGet). Neutral
+  one-method `ISecretStore` seam covering secrets and config; BCL providers (`InMemory`,
+  `EnvironmentVariable` with name→key mapping, `File` for Docker/K8s mounts, `Composite` first-non-null
+  layering, `Caching` = the optional-reload seam with TTL + `Invalidate`); `SecretResolver`
+  (typed fail-fast `Require*`/`Get`) and `SecretValidation.EnsureRequiredAsync` (startup completeness,
+  lists all missing at once); `AddSecretStore(s)` DI. 17 tests. Cloud adapters (Key Vault, Secrets
+  Manager, SSM) are a one-method implementation each, documented copy-paste in the cookbook.
+- **Original proposal.** A **neutral secrets/config abstraction** with provider adapters for Azure Key
   Vault, AWS Secrets Manager, SSM Parameter Store, and Azure App Configuration; startup
   fail-fast validation; optional reload. The value is the multi-cloud abstraction (a portability
   win, on-vision) — not re-implementing any provider.
+  (Delivered abstraction-first per an explicit scope decision: the core ships BCL-only, and the cloud
+  adapters are documented copy-paste implementations rather than SDK-dependency packages — each cloud
+  SDK is a new NuGet dep AGENTS.md gates, and none can be CI-integration-tested without cloud creds.
+  Shipping real adapter packages remains an option if a turnkey provider package is wanted later.)
 - **Vision fit.** Portability (§2.7); neutral abstraction, provider adapters at the edge.
+- **Docs.** `src/Benzene.Configuration.Core/CLAUDE.md`; cookbook `docs/cookbooks/secrets-configuration.md`.
 
 ### A.6 — Schema registry integration (`Benzene.SchemaRegistry.*`)
 
@@ -257,7 +268,7 @@ decision, and revisiting after A.1.
 | A.2 | Contract testing / CI gate | Build | `Benzene.HealthChecks.Schema` + `Clients.HealthChecks` + `Schema.OpenApi.Compatibility` | **Shipped** — A.2a runtime drift check (provider `SchemaHealthCheck` + hardened consumer processor) and A.2b CI gate (`SchemaCompatibility.EnsureBackwardCompatible`); cookbook `docs/cookbooks/contract-testing.md` |
 | A.3 | Idempotency | Build | `Benzene.Idempotency` | **Shipped** — `IdempotencyMiddleware<TContext>` + pluggable `IIdempotencyStore` + in-memory store + header/body-hash key strategy; 20 tests; cookbook `docs/cookbooks/idempotency.md` (Redis store as copy-paste `SET NX`) |
 | A.4 | Authorization depth | Build | `Benzene.Auth.Core` | **Shipped** — `RequireRole`/`RequirePolicy`/`RequireAuthorization<TResource>` + `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams (BCL-only, no new NuGet); 8 tests; cookbook section in `docs/cookbooks/auth-patterns.md` |
-| A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.*` | Not started |
+| A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.Core` | **Shipped** — neutral `ISecretStore` seam + env/file/in-memory/composite/caching providers, `SecretResolver` (typed fail-fast) + `SecretValidation` (startup); BCL-only, no new NuGet; 17 tests; cookbook `docs/cookbooks/secrets-configuration.md` (copy-paste cloud adapters) |
 | A.6 | Schema registry | Build | `Benzene.SchemaRegistry.*` | Not started |
 | B.1 | Multi-tenancy | Enable via seam + docs | cookbook (+ optional thin helper) | Not started |
 | C.1 | Unit-of-work / data access | Out of scope | — | Won't do |

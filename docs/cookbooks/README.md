@@ -36,6 +36,9 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Redis Caching](redis-caching.md) - Cache handler responses with Redis
 - Outbox Pattern *(planned)*
 
+### Configuration & Secrets
+- [Secrets & Multi-Cloud Configuration](secrets-configuration.md) - A provider-agnostic `ISecretStore` seam (env vars, mounted files, composed, cached), startup fail-fast validation, and copy-paste Key Vault / AWS Secrets Manager / SSM adapters
+
 ### Testing
 - [Integration Testing Lambda Functions](testing-lambda-functions.md) - Test Lambda handlers end-to-end
 - [Mocking External Dependencies](mocking-dependencies.md) - Test message handlers in isolation

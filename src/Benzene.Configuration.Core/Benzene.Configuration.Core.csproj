@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Configuration.Core</AssemblyName>
+    <RootNamespace>Benzene.Configuration.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Neutral secrets/configuration abstraction for Benzene: a provider-agnostic ISecretStore seam (env vars, mounted files, in-memory, composed, cached) plus fail-fast startup validation and typed resolution, so an application ports across clouds without coupling to any one secret backend. BCL-only; cloud provider adapters (Key Vault, AWS Secrets Manager, ...) implement the same one-method interface.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>
