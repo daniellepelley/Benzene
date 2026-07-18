@@ -19,7 +19,9 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
   **not** set a `topic` attribute: SNS routing is the topic ARN itself, so they forward headers only.
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SNS has only a publish
   acknowledgement, so a topic routed through SNS must be sent via `SendAsync<TRequest, Void>`; any
-  other `TResponse` compiles but throws `InvalidCastException` at runtime (release plan Tier 2.4).
+  other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at
+  runtime, naming the topic, the actual (`Void`) and requested response types (release plan Tier
+  2.4 — this used to be a bare `InvalidCastException`; fixed in `DefaultBenzeneMessageSender`).
 - **No health check** — SNS has no lightweight liveness probe analogous to SQS `GetQueueAttributes`.
 
 ## Dependencies

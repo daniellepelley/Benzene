@@ -34,6 +34,12 @@ internal class DefaultBenzeneMessageSender : IBenzeneMessageSender
 
         var context = new OutboundContext(topic, request!, headers);
         await pipeline.HandleAsync(context, _serviceResolver);
-        return (IBenzeneResult<TResponse>)context.Response!;
+
+        if (context.Response is not IBenzeneResult<TResponse> typedResponse)
+        {
+            throw new OutboundResponseTypeMismatchException(topic, OutboundResponseTypeMismatchException.GetActualResponseType(context.Response), typeof(TResponse));
+        }
+
+        return typedResponse;
     }
 }

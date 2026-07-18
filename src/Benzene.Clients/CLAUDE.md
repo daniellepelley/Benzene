@@ -48,7 +48,13 @@ an `OutboundRoutingBuilder.Route(...)` pipeline:
   for a repeated topic. `AddOutboundRouting(...)` registers the resulting `IBenzeneMessageSender`
   plus an `OutboundRoutingTopics` singleton (the registered topic set, for `ValidateOutboundRouting()` below).
 - `DefaultBenzeneMessageSender` (internal) - resolves a topic to its pipeline and runs it; throws
-  `UnroutedTopicException` for a topic with no registered route.
+  `UnroutedTopicException` for a topic with no registered route. If the route's response isn't an
+  `IBenzeneResult<TResponse>` for the caller's requested `TResponse` - the common case being a
+  send-acknowledgement-only transport (SQS/SNS/Service Bus/Event Hubs/Event Grid/Queue Storage)
+  whose route always produces `IBenzeneResult<Void>` regardless of what `TResponse` was asked for -
+  it throws `OutboundResponseTypeMismatchException` naming the topic, the actual response type, and
+  the requested one (release plan Tier 2.4; replaced a bare `InvalidCastException` at this exact
+  call site that named neither).
 - `ValidateOutboundRouting()` (on `IServiceResolver`) - per design §2.5: reflects over every loaded
   assembly for a `*Routing` type with a public static `string[] RequiredTopics` field (what
   `Benzene.CodeGen.Client`'s generated `{Service}ServiceClientRouting` classes emit) and throws

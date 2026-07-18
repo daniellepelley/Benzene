@@ -178,7 +178,7 @@ services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
 
 `.UseSqs(queueUrl)` converts the route via `OutboundSqsContextConverter`, which serializes `OutboundContext.Request` as the message body and puts every `Headers` entry — plus a `topic` attribute — onto the outgoing `SendMessageRequest.MessageAttributes`. An overload, `.UseSqs(queueUrl, configure)`, lets you customize the inner SQS send pipeline (e.g. resolving `IAmazonSQS` a different way) instead of the default `UseSqsClient()`.
 
-**SQS has no request/response semantics beyond a send acknowledgement**, so a topic routed through `.UseSqs(...)` must be sent via `SendAsync<TRequest, Void>` — any other `TResponse` compiles but throws `InvalidCastException` at runtime, since `OutboundContext.Response` is always boxed as `IBenzeneResult<Void>` for this transport.
+**SQS has no request/response semantics beyond a send acknowledgement**, so a topic routed through `.UseSqs(...)` must be sent via `SendAsync<TRequest, Void>` — any other `TResponse` compiles but throws `OutboundResponseTypeMismatchException` at runtime (naming the topic, the actual `Void` response type, and the `TResponse` you requested), since `OutboundContext.Response` is always boxed as `IBenzeneResult<Void>` for this transport. The same constraint — and the same named exception on mismatch — applies to every other transport below that has no request/response semantics (SNS, Service Bus, Event Hubs, Event Grid, Queue Storage).
 
 ### SNS
 
@@ -461,6 +461,17 @@ public interface IContextConverter<TContextIn, TContextOut>
 ```
 
 `.Convert(converter, action)` plugs a converter into an `IMiddlewarePipelineBuilder`, letting you build a custom send pipeline directly out of transport-specific middleware (`UseSqsClient()`, `UseSnsClient()`, `UseKafkaClient()`, `UseGrpcClient()`, `UseHttpClient()`, `UseAwsLambdaClient()`) rather than going through the named-route (`OutboundContext`) or named-client (`IBenzeneMessageClient`) shorthand. Reach for this when you need pipeline-level control (e.g. inserting custom middleware between the conversion and the transport call) that neither of those exposes — the transport-specific shorthand documented above (`.UseSqs(...)`, `.UseSns(...)`, etc.) is the better default for most services. Note `UseGrpc<T>()`'s converter always maps the response to `Void` (matching Kafka's fire-and-forget shape); `GrpcBenzeneMessageClient` above bypasses it precisely to return the real typed response instead.
+
+## Runnable example: the ingress↔egress symmetry
+
+`examples/Aws/Benzene.Examples.Aws`'s `PublishOrderCreatedMessageHandler` and
+`examples/Azure/Benzene.Example.Azure`'s handler of the same name are copy-runnable, minimal
+demonstrations of egress alongside the ingress each host already has: both wire
+`AddOutboundRouting(...)` in their `DependenciesBuilder` (SQS reusing the same localstack queue the
+SQS ingress trigger talks to; Service Bus reusing the same `orders` queue the Service Bus trigger
+talks to, on the distinct `order_created` topic) and both handlers do nothing but call
+`IBenzeneMessageSender.SendAsync(...)` — the same transport-agnostic port a generated client uses.
+See each project's `DependenciesBuilder.cs` for the wiring and the handler itself for the call site.
 
 ## See Also
 
