@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <AssemblyName>Benzene.Clients.Aws.Lambda</AssemblyName>
+        <RootNamespace>Benzene.Clients.Aws.Lambda</RootNamespace>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.Lambda" Version="3.7.303.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+        <ProjectReference Include="..\Benzene.HealthChecks.Core\Benzene.HealthChecks.Core.csproj" />
+        <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
+        <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+    </ItemGroup>
+</Project>

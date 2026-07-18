@@ -129,17 +129,19 @@ the cluster's VPC. For self-managed (non-MSK) Kafka, you'll additionally need
 `secretsmanager:GetSecretValue` if you're using SASL/SCRAM authentication via a Secrets
 Manager secret.
 
-## `Benzene.Clients.Aws` outbound calls
+## `Benzene.Clients.Aws.*` outbound calls
 
 These are the permissions your Lambda (or any host) needs when it *sends* messages via
-the clients in `Benzene.Clients.Aws`, as opposed to receiving them:
+the AWS outbound clients, as opposed to receiving them. Each client lives in its own
+per-transport package (`Benzene.Clients.Aws.Sqs`, `.Sns`, `.Lambda`, `.StepFunctions`);
+`Benzene.Clients.Aws` is a meta-package that pulls in all of them.
 
-| Client | Action | Source |
-|---|---|---|
-| `SqsBenzeneMessageClient` | `sqs:SendMessage` | `src/Benzene.Clients.Aws/Sqs/SqsClientMiddleware.cs` |
-| `SnsBenzeneMessageClient` | `sns:Publish` | `src/Benzene.Clients.Aws/Sns/SnsClientMiddleware.cs` |
-| `AwsLambdaBenzeneMessageClient` / `AwsLambdaClient` | `lambda:InvokeFunction` | `src/Benzene.Clients.Aws/Lambda/AwsLambdaClient.cs` |
-| `StepFunctionsClient` | `states:StartExecution` | `src/Benzene.Clients.Aws/StepFunctions/StepFunctionsClient.cs` |
+| Client | Package | Action | Source |
+|---|---|---|---|
+| `SqsBenzeneMessageClient` | `Benzene.Clients.Aws.Sqs` | `sqs:SendMessage` | `src/Benzene.Clients.Aws.Sqs/SqsClientMiddleware.cs` |
+| `SnsBenzeneMessageClient` | `Benzene.Clients.Aws.Sns` | `sns:Publish` | `src/Benzene.Clients.Aws.Sns/SnsClientMiddleware.cs` |
+| `AwsLambdaBenzeneMessageClient` / `AwsLambdaClient` | `Benzene.Clients.Aws.Lambda` | `lambda:InvokeFunction` | `src/Benzene.Clients.Aws.Lambda/AwsLambdaClient.cs` |
+| `StepFunctionsClient` | `Benzene.Clients.Aws.StepFunctions` | `states:StartExecution` | `src/Benzene.Clients.Aws.StepFunctions/StepFunctionsClient.cs` |
 
 ```json
 {

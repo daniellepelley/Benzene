@@ -294,8 +294,8 @@ For sending messages *out* to other services, configured on a client pipeline
 |---|---|---|
 | `UseHttpClient()` / `UseHttp(...)` | `Benzene.Client.Http` | An outbound HTTP request. |
 | `UseSqsClient()` / `UseSqs(...)` | `Benzene.Aws.Sqs` | An SQS queue. |
-| `UseSnsClient()` / `UseSns(...)` | `Benzene.Clients.Aws` | An SNS topic. |
-| `UseAwsLambdaClient()` / `UseAwsLambda(...)` | `Benzene.Clients.Aws` | A direct AWS Lambda invoke. |
+| `UseSnsClient()` / `UseSns(...)` | `Benzene.Clients.Aws.Sns` | An SNS topic. |
+| `UseAwsLambdaClient()` / `UseAwsLambda(...)` | `Benzene.Clients.Aws.Lambda` | A direct AWS Lambda invoke. |
 | `UseKafkaClient()` / `UseKafka(...)` | `Benzene.Kafka.Core` | A Kafka topic. |
 
 ---

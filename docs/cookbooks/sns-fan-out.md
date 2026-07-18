@@ -6,7 +6,7 @@ Publish one event to an SNS topic and have several independent Lambda functions 
 
 You have one event (e.g. "order created") that multiple, independently-deployed services need to react to: one Lambda sends a notification email, another updates analytics, a third reconciles inventory. Rather than the publisher knowing about every consumer, you publish once to an SNS topic and let each Lambda subscribe independently. This cookbook covers:
 
-- Publishing a message to SNS with `Benzene.Clients.Aws`'s `SnsBenzeneMessageClient`
+- Publishing a message to SNS with `Benzene.Clients.Aws.Sns`'s `SnsBenzeneMessageClient`
 - Wiring an SNS-triggered Lambda to Benzene's message handler pipeline with `Benzene.Aws.Lambda.Sns`
 - Subscribing multiple Lambda functions to the same SNS topic (including how much of this Benzene's Terraform code generator actually automates, and how much is plain AWS configuration)
 
@@ -20,7 +20,7 @@ You have one event (e.g. "order created") that multiple, independently-deployed 
 Publisher (whichever service raises the event):
 
 ```bash
-dotnet add package Benzene.Clients.Aws
+dotnet add package Benzene.Clients.Aws.Sns
 ```
 
 Each subscriber Lambda:

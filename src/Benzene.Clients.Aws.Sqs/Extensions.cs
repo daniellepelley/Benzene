@@ -5,6 +5,7 @@ using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients;
 using Benzene.Core.Middleware;
+using Benzene.HealthChecks.Core;
 using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
@@ -110,5 +111,16 @@ public static class Extensions
         services.AddScoped(x => new SqsBenzeneMessageClient(queueUrl, pipeline,
             x.GetService<ILogger<SqsBenzeneMessageClient>>(), x.GetService<IServiceResolver>()));
         return services;
+    }
+
+    /// <summary>
+    /// Adds a health check that pings an SQS queue.
+    /// </summary>
+    /// <param name="builder">The health check builder to add the check to.</param>
+    /// <param name="queueUrl">The URL of the queue to ping.</param>
+    /// <returns>The health check builder for method chaining.</returns>
+    public static IHealthCheckBuilder AddSqsHealthCheck(this IHealthCheckBuilder builder, string queueUrl)
+    {
+        return builder.AddHealthCheck(resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>()));
     }
 }
