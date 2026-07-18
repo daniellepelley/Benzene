@@ -16,7 +16,7 @@ AWS Kafka Lambda integration for Benzene (MSK and self-managed Kafka). Processes
 - `KafkaMessageBodyGetter` - Extracts message body from Kafka record
 - `KafkaMessageHeadersGetter` - Extracts Kafka headers
 - `KafkaMessageTopicGetter` - Extracts Kafka topic
-- `KafkaMessageMessageHandlerResultSetter` - Sets result on context
+- `KafkaMessageHandlerResultSetter` - Sets result on context
 
 ### Other
 - `KafkaRegistrations` - Registers Kafka services

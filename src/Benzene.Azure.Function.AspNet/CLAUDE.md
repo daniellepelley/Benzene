@@ -16,7 +16,7 @@ use `Benzene.AspNet.Core`).
   pipeline's result into an `IActionResult`.
 - Mappers: `AspNetMessageTopicGetter` (topic from the matched `[HttpEndpoint]` route via the route
   finder — HTTP routes on method+path, not a message property), `AspNetMessageBodyGetter`,
-  `AspNetMessageHeadersGetter`, `AspNetMessageVersionGetter`, `AspNetMessageMessageHandlerResultSetter`,
+  `AspNetMessageHeadersGetter`, `AspNetMessageVersionGetter`, `AspNetMessageHandlerResultSetter`,
   `AspNetHeadersToBodyGetter`, and `AspNetContextRequestEnricher`.
 - `AspNetApplication` — the entry point application (`EntryPointMiddlewareApplication`) the trigger
   function dispatches to.

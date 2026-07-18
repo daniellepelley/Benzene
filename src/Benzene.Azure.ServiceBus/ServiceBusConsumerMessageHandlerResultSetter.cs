@@ -9,4 +9,4 @@ namespace Benzene.Azure.ServiceBus;
 /// <see cref="ServiceBusConsumerAckMode.AutoComplete"/>, settlement is decided by whether the
 /// handler threw, regardless of the recorded result.
 /// </summary>
-public class ServiceBusConsumerMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<ServiceBusConsumerContext>;
+public class ServiceBusConsumerMessageHandlerResultSetter : MessageHandlerResultSetterBase<ServiceBusConsumerContext>;

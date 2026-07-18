@@ -23,7 +23,7 @@ and does not aim for minimal-API/MVC feature parity.
   (called automatically by `UseHttp`): the getter set (`AspNetMessageTopicGetter`,
   `AspNetMessageVersionGetter`, `AspNetMessageHeadersGetter`, `AspNetMessageBodyGetter`),
   `AspNetRequestEnricher`, `AspNetHttpRequestAdapter`, `AspNetResponseAdapter`,
-  `AspMessageMessageHandlerResultSetter`, media-format negotiation, and a `TransportInfo("asp")`.
+  `AspMessageHandlerResultSetter`, media-format negotiation, and a `TransportInfo("asp")`.
 
 ## When to use this package
 - When building an ASP.NET Core web app and you want Benzene's hexagonal message handlers behind HTTP.

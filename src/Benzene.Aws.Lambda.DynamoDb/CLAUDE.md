@@ -59,5 +59,5 @@ not just assumed, before moving on to other packages) - `test/Benzene.Core.Test/
 - `DynamoDbLambdaHandlerTest.cs` - claim-vs-fall-through routing, plus `DynamoDbApplication`'s
   sequential stop-at-first-failure batching and exception-caught-and-reported-as-failure paths.
 - `DynamoDbMessagePipelineTest.cs` - full DI-wired pipeline (`AddDynamoDb()` +
-  `UseMessageHandlers()`), proving `DynamoDbMessageMessageHandlerResultSetter` correctly reflects
+  `UseMessageHandlers()`), proving `DynamoDbMessageHandlerResultSetter` correctly reflects
   both success and failure (including the unknown-topic case) onto the context Lambda reads back.

@@ -33,7 +33,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<DynamoDbRecordContext>, HeaderMessageVersionGetter<DynamoDbRecordContext>>();
         services.AddScoped<IMessageHeadersGetter<DynamoDbRecordContext>, DynamoDbMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<DynamoDbRecordContext>, DynamoDbMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<DynamoDbRecordContext>, DynamoDbMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<DynamoDbRecordContext>, DynamoDbMessageHandlerResultSetter>();
         services.AddMediaFormatNegotiation<DynamoDbRecordContext>();
         services
             .AddScoped<IRequestMapper<DynamoDbRecordContext>,

@@ -47,7 +47,7 @@ how a poll batch is acknowledged:
 - `SqsConsumerAckMode.PerMessage` - only the messages that actually succeeded (no thrown exception,
   and no unsuccessful `IBenzeneResult`) are deleted; failed messages are left on the queue
   individually, and one message's exception no longer aborts the whole poll iteration.
-`SqsConsumerMessageMessageHandlerResultSetter` now records the outcome onto
+`SqsConsumerMessageHandlerResultSetter` now records the outcome onto
 `SqsConsumerMessageContext.MessageResult` (previously a no-op, since deletion never used to depend
 on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
 (`SuccessfulMessages`/`FailedMessages`) that `SqsConsumer` uses to decide what to delete.

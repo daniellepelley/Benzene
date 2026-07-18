@@ -6,4 +6,4 @@ namespace Benzene.Aws.Lambda.Sns;
 /// Records the message handler result onto an <see cref="SnsRecordContext"/>'s
 /// <see cref="SnsRecordContext.MessageResult"/>.
 /// </summary>
-public class SnsMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<SnsRecordContext>;
+public class SnsMessageHandlerResultSetter : MessageHandlerResultSetterBase<SnsRecordContext>;

@@ -59,9 +59,9 @@ Provides complete implementation of message handler infrastructure for command/q
 - `ResponseHandlerContainer<TContext>` - Contains response handlers
 - `DefaultResponsePayloadMapper<TContext>` - Maps response payloads
 - `ResponseIfHandledMessageHandlerResultSetter<TContext>` - Sets result if handled
-- `ResponseMessageMessageHandlerResultSetterBase<TContext>` - Base for result setters
-- `DefaultMessageMessageHandlerResultSetterBase<TContext>` - Default result setter base
-- `MessageMessageHandlerResultSetterBase<TContext>` - shared result-setter base
+- `ResponseMessageHandlerResultSetterBase<TContext>` - Base for result setters
+- `DefaultMessageHandlerResultSetterBase<TContext>` - Default result setter base
+- `MessageHandlerResultSetterBase<TContext>` - shared result-setter base
 
 ### Serialization
 - `JsonSerializer` - System.Text.Json implementation of `ISerializer`; also implements
@@ -73,7 +73,7 @@ Provides complete implementation of message handler infrastructure for command/q
 - `BenzeneMessageGetter` - reads topic/headers/body off a `BenzeneMessageContext` and implements
   `IMessageBodyBytesGetter` (declared in `BenzeneBodyMapper.cs`, but the class name is
   `BenzeneMessageGetter`)
-- `BenzeneMessageMessageHandlerResultSetter` - Sets BenzeneMessage results
+- `BenzeneMessageHandlerResultSetter` - Sets BenzeneMessage results
 - `BenzeneMessageResponseAdapter` - Adapts responses to BenzeneMessage
 - `DefaultResponseStatusHandler<TContext>` - Handles response status
 

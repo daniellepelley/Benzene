@@ -17,7 +17,7 @@ AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda trigger
 - `SnsMessageBodyGetter` - Returns `SnsRecord.Sns.Message` (the SNS message body) verbatim
 - `SnsMessageHeadersGetter` - Extracts the SNS message attributes as headers
 - `SnsMessageTopicGetter` - Extracts the topic from the `topic` **message attribute** (not the topic ARN)
-- `SnsMessageMessageHandlerResultSetter` - Sets result on context
+- `SnsMessageHandlerResultSetter` - Sets result on context
 - `SnsUtils` - Helper for reading string message attributes
 - `SnsMessageProcessingException` - Thrown when `SnsOptions.RaiseOnFailureStatus` escalates a failure result
 

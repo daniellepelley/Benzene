@@ -33,7 +33,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<KafkaContext>, HeaderMessageVersionGetter<KafkaContext>>();
         services.AddScoped<IMessageHeadersGetter<KafkaContext>, KafkaMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<KafkaContext>, KafkaMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<KafkaContext>, KafkaMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<KafkaContext>, KafkaMessageHandlerResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("kafka"));
         return services;

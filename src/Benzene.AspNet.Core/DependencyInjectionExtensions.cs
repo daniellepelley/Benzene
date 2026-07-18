@@ -40,7 +40,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<AspNetContext>, AspNetMessageVersionGetter>();
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspMessageHandlerResultSetter>();
         services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
         services.AddScoped<IResponseRenderer<AspNetContext>, SerializerResponseRenderer<AspNetContext>>();
         services.AddScoped<IResponseHandler<AspNetContext>, RendererResponseHandler<AspNetContext>>();

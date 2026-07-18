@@ -35,7 +35,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<QueueStorageContext>, HeaderMessageVersionGetter<QueueStorageContext>>();
         services.AddScoped<IMessageHeadersGetter<QueueStorageContext>, QueueStorageMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<QueueStorageContext>, QueueStorageMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<QueueStorageContext>, QueueStorageMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<QueueStorageContext>, QueueStorageMessageHandlerResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("queue-storage"));
         return services;

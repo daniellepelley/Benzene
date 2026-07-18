@@ -37,7 +37,7 @@ public class S3RecordContext : IHasMessageResult
 
     /// <summary>
     /// Gets or sets the result of handling this record. Set by
-    /// <see cref="S3MessageMessageHandlerResultSetter"/>. S3 events are fire-and-forget, so this is
+    /// <see cref="S3MessageHandlerResultSetter"/>. S3 events are fire-and-forget, so this is
     /// recorded for diagnostics rather than written back to a response.
     /// </summary>
     public IMessageResult MessageResult { get; set; }

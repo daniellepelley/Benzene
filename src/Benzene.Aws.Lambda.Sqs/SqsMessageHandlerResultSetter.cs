@@ -8,7 +8,7 @@ namespace Benzene.Aws.Lambda.Sqs;
 /// Records whether a message handler result was successful onto the SQS context, so
 /// <see cref="SqsApplication"/> can report failed records back to SQS for retry.
 /// </summary>
-public class SqsMessageMessageHandlerResultSetter : IMessageHandlerResultSetter<SqsMessageContext>
+public class SqsMessageHandlerResultSetter : IMessageHandlerResultSetter<SqsMessageContext>
 {
     /// <summary>
     /// Sets the success flag on the context from the message handler result.

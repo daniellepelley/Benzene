@@ -14,7 +14,7 @@ as they do for HTTP, Event Hubs, and Kafka.
 - `ServiceBusMessageTopicGetter` - reads the topic from the message's `"topic"` application property
 - `ServiceBusMessageBodyGetter` - reads the message body as a string (`message.Body.ToString()`)
 - `ServiceBusMessageHeadersGetter` - exposes the message's string-typed application properties as headers
-- `ServiceBusMessageMessageHandlerResultSetter` - records the outcome onto `MessageResult` (see "Important conventions" below)
+- `ServiceBusMessageHandlerResultSetter` - records the outcome onto `MessageResult` (see "Important conventions" below)
 - `ServiceBusApplication` / `ServiceBusBatchApplication` - the entry point application invoked by the
   Azure Functions trigger method, and the per-message-loop application it wraps.
   `ServiceBusBatchApplication` implements both `IMiddlewareApplication<ServiceBusReceivedMessage[]>`
@@ -38,7 +38,7 @@ as they do for HTTP, Event Hubs, and Kafka.
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions** - Core abstractions
-- **Benzene.Core.MessageHandlers** - Message handler infrastructure, `MessageMessageHandlerResultSetterBase`
+- **Benzene.Core.MessageHandlers** - Message handler infrastructure, `MessageHandlerResultSetterBase`
 - **Benzene.Azure.Function.Core** - Azure Functions isolated-worker host integration
 - **Azure.Messaging.ServiceBus** - Service Bus SDK (for `ServiceBusReceivedMessage`)
 - **Microsoft.Azure.Functions.Worker.Extensions.ServiceBus** - isolated-worker Service Bus trigger binding
@@ -72,7 +72,7 @@ as they do for HTTP, Event Hubs, and Kafka.
   `CatchExceptions`/`RaiseOnFailureStatus`, since those two options only decide whether the *whole
   invocation* cascades, not whether *this message* gets acted on. Session handling
   (`ServiceBusSessionMessageActions`, ordered per-session processing) is still **not implemented**.
-  `ServiceBusMessageMessageHandlerResultSetter` DOES record the outcome onto
+  `ServiceBusMessageHandlerResultSetter` DOES record the outcome onto
   `ServiceBusContext.MessageResult` (it's not a no-op) - that's what both `RaiseOnFailureStatus` and
   `AckMode = Explicit` read to decide a message's outcome.
 - **Exception/failure-status handling is configurable via `ServiceBusOptions`**

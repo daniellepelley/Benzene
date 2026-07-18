@@ -29,7 +29,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<GrpcContext>, HeaderMessageVersionGetter<GrpcContext>>();
         services.AddScoped<IMessageBodyGetter<GrpcContext>, GrpcMessageBodyGetter>();
         services.AddScoped<IMessageHeadersGetter<GrpcContext>, GrpcMessageHeadersGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<GrpcContext>, GrpcMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<GrpcContext>, GrpcMessageHandlerResultSetter>();
         services.TryAddScoped<IGrpcMessageAdapter, ProtobufJsonGrpcMessageAdapter>();
         services.AddScoped<IRequestMapper<GrpcContext>, GrpcRequestMapper>();
         services.AddScoped<MessageRouter<GrpcContext>>();

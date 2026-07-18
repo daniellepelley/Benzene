@@ -7,4 +7,4 @@ namespace Benzene.Aws.S3;
 /// <see cref="S3RecordContext.MessageResult"/>. S3 events are fire-and-forget, so the result is
 /// recorded for diagnostics rather than written back to a response.
 /// </summary>
-public class S3MessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<S3RecordContext>;
+public class S3MessageHandlerResultSetter : MessageHandlerResultSetterBase<S3RecordContext>;

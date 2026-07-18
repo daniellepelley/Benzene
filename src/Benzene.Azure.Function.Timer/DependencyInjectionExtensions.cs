@@ -35,7 +35,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<TimerContext>, HeaderMessageVersionGetter<TimerContext>>();
         services.AddScoped<IMessageHeadersGetter<TimerContext>, TimerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<TimerContext>, TimerMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<TimerContext>, TimerMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<TimerContext>, TimerMessageHandlerResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("timer"));
         return services;

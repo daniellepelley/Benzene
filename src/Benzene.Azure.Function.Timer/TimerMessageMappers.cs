@@ -72,4 +72,4 @@ public class TimerMessageBodyGetter : IMessageBodyGetter<TimerContext>
 /// Records a message handler's outcome onto <see cref="TimerContext.MessageResult"/> - recorded
 /// for middleware/diagnostics; a tick has no caller to answer.
 /// </summary>
-public class TimerMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<TimerContext>;
+public class TimerMessageHandlerResultSetter : MessageHandlerResultSetterBase<TimerContext>;

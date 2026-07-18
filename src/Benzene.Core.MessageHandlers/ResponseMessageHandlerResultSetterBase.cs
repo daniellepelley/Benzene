@@ -16,18 +16,18 @@ namespace Benzene.Core.MessageHandlers;
 /// is a setter that implements <c>IMessageHandlerResultSetter&lt;TContext&gt;</c> (the "MessageHandlerResultSetter"
 /// part) by writing the outbound message/response (the "Message" part) via an
 /// <see cref="IResponseHandlerContainer{TContext}"/>, as opposed to
-/// <see cref="MessageMessageHandlerResultSetterBase{TContext}"/>, which records a simple pass/fail
+/// <see cref="MessageHandlerResultSetterBase{TContext}"/>, which records a simple pass/fail
 /// outcome onto the context instead of producing a response.
 /// </remarks>
-public class ResponseMessageMessageHandlerResultSetterBase<TContext> : IMessageHandlerResultSetter<TContext> where TContext : class
+public class ResponseMessageHandlerResultSetterBase<TContext> : IMessageHandlerResultSetter<TContext> where TContext : class
 {
     private readonly IResponseHandlerContainer<TContext> _responseHandlerContainer;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResponseMessageMessageHandlerResultSetterBase{TContext}"/> class.
+    /// Initializes a new instance of the <see cref="ResponseMessageHandlerResultSetterBase{TContext}"/> class.
     /// </summary>
     /// <param name="responseHandlerContainer">Runs the registered response handlers to produce the outbound response.</param>
-    public ResponseMessageMessageHandlerResultSetterBase(IResponseHandlerContainer<TContext> responseHandlerContainer)
+    public ResponseMessageHandlerResultSetterBase(IResponseHandlerContainer<TContext> responseHandlerContainer)
     {
         _responseHandlerContainer = responseHandlerContainer;
     }

@@ -32,7 +32,7 @@ is added to any HTTP-shaped pipeline via `Benzene.Http`'s CORS extension methods
   `version` route parameter, falling back to the header list
 - `ApiGatewayRequestEnricher` - Enriches the request object with query-string parameters, path
   parameters, and mapped headers
-- `ApiGatewayMessageMessageHandlerResultSetter` - Runs the `IResponseHandler` chain to set the result
+- `ApiGatewayMessageHandlerResultSetter` - Runs the `IResponseHandler` chain to set the result
   on the response
 
 ### Custom Authorizer (`ApiGatewayCustomAuthorizer/`)

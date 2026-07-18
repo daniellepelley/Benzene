@@ -30,7 +30,7 @@ public class SqsConsumerMessageContext : IHasMessageResult
 
     /// <summary>
     /// Gets or sets the result of handling this message. Set by
-    /// <see cref="SqsConsumerMessageMessageHandlerResultSetter"/>; read by <see cref="SqsConsumerApplication"/>
+    /// <see cref="SqsConsumerMessageHandlerResultSetter"/>; read by <see cref="SqsConsumerApplication"/>
     /// to support <see cref="SqsConsumerAckMode.PerMessage"/>.
     /// </summary>
     public IMessageResult MessageResult { get; set; }

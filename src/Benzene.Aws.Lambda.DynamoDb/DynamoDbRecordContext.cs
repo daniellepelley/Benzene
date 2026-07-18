@@ -34,7 +34,7 @@ public class DynamoDbRecordContext
 
     /// <summary>
     /// Gets or sets whether this record was handled successfully. Set by
-    /// <see cref="DynamoDbMessageMessageHandlerResultSetter"/>; null if no result has been set yet.
+    /// <see cref="DynamoDbMessageHandlerResultSetter"/>; null if no result has been set yet.
     /// </summary>
     public bool? IsSuccessful { get; set; }
 }
