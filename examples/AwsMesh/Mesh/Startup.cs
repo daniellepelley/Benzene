@@ -45,16 +45,22 @@ public class Startup : BenzeneStartUp
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
+        // Scope handler discovery to THIS assembly. The parameterless UseMessageHandlers() scans every
+        // loaded assembly, which would also discover Benzene.Mesh.Aggregator's own
+        // MeshAggregateMessageHandler — a second handler for topic "mesh:aggregate" (collision). This
+        // example deliberately uses its own MeshAggregateHandler (discovery + aggregate) instead.
+        var handlers = typeof(Startup).Assembly;
+
         app.UseAwsLambda(aws =>
         {
             // Scheduled aggregation: an EventBridge rule fires with detail-type "mesh:aggregate".
-            aws.UseEventBridge(eb => eb.UseMessageHandlers());
+            aws.UseEventBridge(eb => eb.UseMessageHandlers(handlers));
 
             // Public HTTP surface: the Mesh UI, the catalog artifacts (from S3), and POST /mesh/refresh.
             aws.UseApiGateway(http => http
                 .UseMeshUi("/mesh-ui", "manifest.json")
                 .UseMeshArtifacts()
-                .UseMessageHandlers());
+                .UseMessageHandlers(handlers));
         });
     }
 }
