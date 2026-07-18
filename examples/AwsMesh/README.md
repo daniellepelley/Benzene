@@ -96,6 +96,18 @@ REGION=eu-west-1 PROJECT=benzene-mesh ./adopt-existing.sh
 terraform apply -var region=eu-west-1
 ```
 
+If an earlier run failed *midway*, the account can end up with duplicate/partial resources (API
+Gateway allows duplicate names), which makes adoption ambiguous. Recover with a one-time clean slate —
+delete every app resource (never the state bucket), then recreate:
+
+```bash
+REGION=eu-west-1 PROJECT=benzene-mesh ./cleanup-all.sh
+terraform apply -var region=eu-west-1
+```
+
+In the GitHub Actions workflow this is the **`recreate`** checkbox on *Run workflow* — tick it once to
+recover, then leave it off for normal incremental deploys.
+
 ## See it working (both ends)
 
 1. **Open a service Spec UI** (`service_spec_ui_urls.orders`, etc.) — proof the three services are up

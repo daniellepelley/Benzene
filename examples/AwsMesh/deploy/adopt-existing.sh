@@ -33,10 +33,32 @@ tf_import() {
   terraform import -input=false -var "region=$REGION" "$addr" "$id"
 }
 
-# Look up an HTTP API's id by name (empty string if it doesn't exist).
-api_id() {
+# All HTTP API ids with a given name (a failed run can leave duplicate names).
+api_ids() {
   aws apigatewayv2 get-apis --region "$REGION" \
-    --query "Items[?Name=='$1'].ApiId | [0]" --output text 2>/dev/null || true
+    --query "Items[?Name=='$1'].ApiId" --output text 2>/dev/null || true
+}
+
+# First integration id under an api ("None" if it has none).
+first_integration() {
+  aws apigatewayv2 get-integrations --api-id "$1" --region "$REGION" \
+    --query 'Items[0].IntegrationId' --output text 2>/dev/null || true
+}
+
+# Pick the *complete* api for a name — the one that actually has an integration — so we never adopt a
+# half-created duplicate. Falls back to the first id, or empty if the name doesn't exist at all.
+pick_complete_api() {
+  local first=""
+  for id in $(api_ids "$1"); do
+    [ -z "$id" ] && continue
+    [ -z "$first" ] && first="$id"
+    local int; int="$(first_integration "$id")"
+    if [ -n "$int" ] && [ "$int" != "None" ]; then
+      echo "$id"
+      return 0
+    fi
+  done
+  echo "$first"
 }
 
 # ---- S3 + IAM (deterministic ids) ----------------------------------------------------------------
@@ -59,22 +81,37 @@ tf_import 'aws_lambda_permission.mesh_events' "${PROJECT}-mesh/AllowEventBridgeI
 # ---- API Gateway (opaque ids — discover by name) -------------------------------------------------
 adopt_http_api() {
   local addr_key="$1" api_name="$2"
-  local id; id="$(api_id "$api_name")"
+  local id; id="$(pick_complete_api "$api_name")"
   if [ -z "$id" ] || [ "$id" = "None" ]; then
     echo "· skip (no API named $api_name)"
     return 0
   fi
   tf_import "aws_apigatewayv2_api.${addr_key}" "$id"
 
-  local int_id; int_id="$(aws apigatewayv2 get-integrations --api-id "$id" --region "$REGION" \
-    --query 'Items[0].IntegrationId' --output text 2>/dev/null || true)"
-  tf_import "aws_apigatewayv2_integration.${addr_key}" "$id/$int_id"
+  local int_id; int_id="$(first_integration "$id")"
+  [ "$int_id" = "None" ] && int_id=""
+  if [ -n "$int_id" ]; then
+    tf_import "aws_apigatewayv2_integration.${addr_key}" "$id/$int_id"
+  else
+    echo "· skip integration (none on $id — apply will create it)"
+  fi
 
   local route_id; route_id="$(aws apigatewayv2 get-routes --api-id "$id" --region "$REGION" \
     --query "Items[?RouteKey=='\$default'].RouteId | [0]" --output text 2>/dev/null || true)"
-  tf_import "aws_apigatewayv2_route.${addr_key}" "$id/$route_id"
+  [ "$route_id" = "None" ] && route_id=""
+  if [ -n "$route_id" ]; then
+    tf_import "aws_apigatewayv2_route.${addr_key}" "$id/$route_id"
+  else
+    echo "· skip route (none on $id — apply will create it)"
+  fi
 
-  tf_import "aws_apigatewayv2_stage.${addr_key}" "$id/\$default"
+  local stage; stage="$(aws apigatewayv2 get-stages --api-id "$id" --region "$REGION" \
+    --query "Items[?StageName=='\$default'].StageName | [0]" --output text 2>/dev/null || true)"
+  if [ -n "$stage" ] && [ "$stage" != "None" ]; then
+    tf_import "aws_apigatewayv2_stage.${addr_key}" "$id/\$default"
+  else
+    echo "· skip stage (no \$default stage on $id — apply will create it)"
+  fi
 }
 
 for svc in orders payments shipping; do
