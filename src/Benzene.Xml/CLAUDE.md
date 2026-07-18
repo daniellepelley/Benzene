@@ -25,11 +25,12 @@ any other registered format, not replacing them.
 - When you need XML available for content negotiation alongside JSON rather than as the sole format.
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** / **Benzene.Abstractions.MessageHandlers** - `ISerializer`,
-  `IMediaFormat<TContext>`, DI seams.
-- **Benzene.Abstractions.Middleware** - `IMiddlewarePipelineBuilder<TContext>`.
-- **Benzene.Core.MessageHandlers** - `AcceptHeaderMediaFormatBase<TContext>` (the content-negotiation base).
-- `System.Xml` is part of the BCL - no NuGet package reference.
+Direct project references: **Benzene.Abstractions.MessageHandlers** (`ISerializer`,
+`IMediaFormat<TContext>`, DI seams), **Benzene.Core.MessageHandlers**
+(`AcceptHeaderMediaFormatBase<TContext>`, the content-negotiation base), and
+**Benzene.Core.Messages**. `IMiddlewarePipelineBuilder<TContext>` (used by `UseXml`) comes in
+transitively via `Benzene.Abstractions.Middleware`. `System.Xml` is part of the BCL - no NuGet
+package reference.
 
 ## Important conventions
 - Registered as an `IMediaFormat<TContext>`, so XML is negotiated per message via `content-type`/

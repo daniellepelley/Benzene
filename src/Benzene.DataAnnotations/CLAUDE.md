@@ -28,10 +28,10 @@ scanning, no per-rule status mapping, and no schema-builder integration.
   `benzene` spec, or per-failure result-status control.
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions.MessageHandlers** - `IMessageHandlerContext<>`, `IMessageRouterBuilder`,
-  `IHandlerMiddlewareBuilder`.
-- **Benzene.Abstractions.Middleware** - `IMiddleware<>`.
-- **Benzene.Results** - `BenzeneResult` (`ValidationError`).
+- **Benzene.Abstractions.MessageHandlers** - the only direct project reference
+  (`IMessageHandlerContext<>`, `IMessageRouterBuilder`, `IHandlerMiddlewareBuilder`). It transitively
+  brings in `Benzene.Abstractions.Middleware` (`IMiddleware<>`) and `Benzene.Results`
+  (`BenzeneResult.ValidationError`), both used by the middleware.
 - `System.ComponentModel.DataAnnotations` is part of the BCL - no NuGet package reference.
 
 ## Important conventions
