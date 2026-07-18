@@ -35,6 +35,14 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # Terraform's provider is set to resource_provider_registrations = "none", so register the
+      # handful of resource providers this stack needs up front (idempotent; safe to re-run).
+      - name: Register required Azure resource providers
+        run: |
+          for rp in Microsoft.ContainerRegistry Microsoft.Storage Microsoft.Web Microsoft.ManagedIdentity; do
+            az provider register --namespace "$rp"
+          done
+
       - uses: hashicorp/setup-terraform@v3
 
       # Remote state in a per-subscription storage account, created on first use (idempotent).
