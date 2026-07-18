@@ -8,8 +8,27 @@ idempotency key: the first delivery is processed and its key recorded; redeliver
 short-circuit without re-invoking the handler.
 
 Persistence is pluggable via `IIdempotencyStore` so the dedupe record can live wherever suits the
-deployment — no database opinion is baked in. The package ships an in-memory store for single-instance
-workers/tests; a multi-instance deployment supplies a shared store (e.g. Redis).
+deployment — no database opinion is baked in. **The only store this package ships is
+`InMemoryIdempotencyStore`, which is single-process.** There is no built-in shared/distributed store.
+
+## Capability boundary — cross-instance dedup is NOT solved in-box
+This package gives you the pipeline seam and a single-process in-memory store. It does **not**
+provide cross-instance exactly-once. Benzene instances are independent processes (e.g. separate
+Lambda invocations) that don't know about one another, so two concurrent redeliveries can land on
+two instances at the same moment. `InMemoryIdempotencyStore` cannot see across processes, and simply
+bolting on a shared store does not fully close the gap — it can just relocate the race (an instance
+can crash after claiming but before completing, a store write can lag, etc.). See
+`work/1.0-release-plan.md` §2 principle 6 and the §6 capability-honesty matrix.
+
+The honest solution lives partly outside Benzene:
+- **Supply your own `IIdempotencyStore` backed by an external store with atomic conditional-write
+  semantics** — DynamoDB conditional `PutItem` (attribute_not_exists), Redis `SET key val NX`, or a
+  unique-key insert. The whole guarantee rests on that write being atomic.
+- **Design handlers to be naturally idempotent** where possible (upserts keyed on a business id,
+  conditional writes), so a slipped-through duplicate is harmless rather than catastrophic.
+
+This middleware is a best-effort de-duplication optimisation on top of those, not a distributed
+exactly-once guarantee on its own.
 
 ## Key types
 - `IdempotencyMiddleware<TContext>` — the middleware. Derives a key, atomically claims it, invokes the
@@ -38,8 +57,10 @@ permanently suppresses a message:
   reprocesses.
 - otherwise (no throw, and either no result signal or a successful one) → recorded **completed**.
 
-On a duplicate of a completed key, the middleware sets a successful `IMessageResult` (when the context
-is `IHasMessageResult`) so the transport acknowledges/completes the duplicate rather than looping.
+On a duplicate of a completed key, the middleware sets a **synthetic** successful `MessageResult`
+(when the context is `IHasMessageResult`) so the transport acknowledges/completes the duplicate rather
+than looping. Note this is a fresh success signal — the original first-attempt response/payload is
+**not** stored or replayed; a duplicate HTTP-style caller does not get the original body back.
 
 ## `InProgressBehavior`
 A duplicate that arrives while the first copy is still `InProgress`:

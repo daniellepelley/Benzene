@@ -10,7 +10,8 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 - `SqsLambdaHandler` - Lambda function handler for SQS
 
 ### Context
-- `SqsContext` - Context for SQS message processing
+- `SqsMessageContext` - Context for a single record within an SQS batch event; exposes both the full
+  `SQSEvent` and the specific `SQSEvent.SQSMessage`, plus a nullable `IsSuccessful` outcome flag
 
 ### Message Handling
 - `SqsMessageBodyGetter` - Extracts message body from SQS event
@@ -55,4 +56,6 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
   on any failure, failing the whole invocation so SQS retries every message in the batch. Purely
   additive/opt-in - see `docs/cookbooks/handling-sqs-failures.md`
 - Message body deserialized to request object
-- Receipt handle available in context for manual acknowledgment
+- The raw `SQSEvent.SQSMessage` (including its receipt handle) is reachable via the context, but this
+  package does not delete messages itself — acknowledgment is handled by Lambda's event source mapping,
+  driven by the `SQSBatchResponse` this package returns (see partial batch failures above)

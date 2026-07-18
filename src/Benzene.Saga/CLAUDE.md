@@ -7,6 +7,20 @@ whole operation can be safely retried. It's the generalized, sustainable success
 commercial Benzene saga code (`Legacy/Benzene.Framework/Saga` in the `BenzeneImport` repo) — see
 `work/saga-design.md` for the design and the decisions taken.
 
+## Capability boundary — in-process only, NO durable crash-resume
+This is a deliberate boundary, not a gap (see `work/1.0-release-plan.md` §2 and the §6
+capability-honesty matrix):
+- **In-process, in-memory execution.** A saga runs to completion or rollback within a single
+  `RunAsync` call. Steps are in-memory closures; they cannot be serialized or rehydrated.
+- **The `ISagaStateStore` is for observability/operational recovery, not recovery-by-replay.** It
+  records start/stage/finish progress so you can see where a saga got to; it does **not** let the
+  engine resume a crashed saga. If the process dies mid-saga, the effects already applied are not
+  automatically compensated — that needs manual reconciliation using the recorded state.
+- **For crash-durable long-running orchestration, use a durable workflow engine outside Benzene** —
+  AWS Step Functions, Azure Durable Functions, Temporal, or similar, which persist workflow state
+  between steps and resume after a crash. Benzene sagas suit short, in-process compensation flows
+  where a full-process failure is acceptable to reconcile manually.
+
 ## The model
 ```
 Saga  ── ordered ──▶  Stage  ── concurrent ──▶  Step (forward + compensation)

@@ -5,8 +5,12 @@ Tracing and timing utilities for Benzene, built on `System.Diagnostics.Activity`
 exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage reports through.
 `AddDiagnostics()` wires `ActivityMiddlewareWrapper`, which automatically wraps *every* middleware in
 *every* pipeline in an `Activity` span (tagged `benzene.transport`/`benzene.topic`/`benzene.version`/
-`benzene.handler` where resolvable) — no explicit call needed per middleware. Also provides
-`DebugMiddlewareWrapper` (unrelated `Debug.WriteLine` dev tracing) and correlation-ID middleware.
+`benzene.handler` where resolvable) — no explicit call needed per middleware. `AddDiagnostics()` also
+registers `DebugMiddlewareWrapper` as an `IMiddlewareWrapper`, so it too wraps *every* middleware and
+emits `Debug.WriteLine` start/complete lines per stage (unrelated to `Activity`/tracing; visible only
+under a debugger/`DEBUG` build), and an `ActivityProcessTimerFactory` as the default
+`IProcessTimerFactory`. Correlation-ID registration lives in `DiagnosticsRegistrations` (auto-discovered
+`RegistrationsBase`), not in `AddDiagnostics()` itself.
 
 ## Key types/interfaces
 
@@ -31,6 +35,16 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
   `CompositeProcessTimerFactory`'s fan-out to every inner timer/factory, are unit-tested in
   `test/Benzene.Core.Test/Diagnostics/LoggingProcessTimerTest.cs` and
   `CompositeProcessTimerTest.cs`.
+
+### Metrics
+- `UseBenzeneMetrics<TContext>()` (`MetricsExtensions.cs`) - explicit-opt-in middleware that records
+  once per message (not per-middleware). Emits exactly two fixed instruments on the shared `"Benzene"`
+  `Meter`, tagged `topic`/`transport`/`result` (`"<missing>"` when a source isn't resolvable):
+  - `BenzeneDiagnostics.MessagesProcessed` - `Counter<long>` named `benzene.messages.processed`
+  - `BenzeneDiagnostics.MessageDuration` - `Histogram<double>` named `benzene.message.duration` (ms)
+  This is the whole metrics surface — there is no configurable/extensible instrument set, no other
+  built-in meters, and nothing is recorded unless you add this middleware. Export the `Meter` via
+  `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation(MeterProviderBuilder)`.
 
 ### Correlation
 - `ICorrelationId`/`CorrelationId`, `AddCorrelationId()`, `WithCorrelationId()` - a per-invocation

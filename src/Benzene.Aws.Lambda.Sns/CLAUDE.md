@@ -10,13 +10,16 @@ AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda trigger
 - `SnsLambdaHandler` - Lambda function handler for SNS
 
 ### Context
-- `SnsContext` - Context for SNS message processing
+- `SnsRecordContext` - Context for a single record within an SNS batch event (`IHasMessageResult`);
+  exposes both the full `SNSEvent` and the specific `SNSEvent.SNSRecord`
 
 ### Message Handling
-- `SnsMessageBodyGetter` - Extracts message body from SNS event
-- `SnsMessageHeadersGetter` - Extracts message attributes as headers
-- `SnsMessageTopicGetter` - Extracts topic from SNS topic ARN
+- `SnsMessageBodyGetter` - Returns `SnsRecord.Sns.Message` (the SNS message body) verbatim
+- `SnsMessageHeadersGetter` - Extracts the SNS message attributes as headers
+- `SnsMessageTopicGetter` - Extracts the topic from the `topic` **message attribute** (not the topic ARN)
 - `SnsMessageMessageHandlerResultSetter` - Sets result on context
+- `SnsUtils` - Helper for reading string message attributes
+- `SnsMessageProcessingException` - Thrown when `SnsOptions.RaiseOnFailureStatus` escalates a failure result
 
 ### Other
 - `SnsRegistrations` - Registers SNS services
@@ -36,12 +39,12 @@ AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda trigger
 - **Amazon.Lambda.SNSEvents** - SNS event types
 
 ## Important conventions
-- Processes SNS notifications in batches
+- Processes each record in an `SNSEvent` batch (fan-out, one context/handler per record)
 - Message attributes mapped to headers
-- Topic extracted from SNS topic ARN
-- Message subject available in context
-- SNS wraps message body - unwrapped automatically
-- Subscription confirmation handled separately
+- Topic determined from the `topic` message attribute (which a Benzene SNS client sets); a raw SNS
+  publish that omits it yields a null topic. The topic is **not** derived from the SNS topic ARN.
+- The message body is `SnsRecord.Sns.Message` as-is — the package does not unwrap a Benzene envelope
+- The raw `SNSEvent.SNSRecord` (subject, message ID, timestamp, etc.) is reachable via the context
 - No response expected - fire-and-forget pattern
 - Exception/failure-status handling is configurable via `SnsOptions` (`UseSns(..., configure)`),
   defaulting to today's implicit behavior: a handler exception cascades out of the invocation

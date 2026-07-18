@@ -1,15 +1,64 @@
 # Benzene.Schema.OpenApi
 
 ## What this package does
-OpenAPI (Swagger) schema generation for Benzene HTTP endpoints. Generates OpenAPI 3.0 specifications from Benzene message handlers and HTTP endpoints, enabling Swagger UI and API documentation.
+Generates a machine-readable spec of a Benzene service's message contract from its registered
+handlers, HTTP endpoints, and broadcast/sender message definitions, and serves it from a `spec`
+topic. Despite the package name it produces **three** spec formats, selected per request:
+- `benzene` - a Benzene-native "EventService" document (topics, request/response payloads, broadcast
+  events, HTTP mappings, validation rules, generated example payloads). This is the **default** and
+  the format `Benzene.Spec.Ui` renders.
+- `openapi` - OpenAPI 3.0 (via `Microsoft.OpenApi`), for HTTP endpoints.
+- `asyncapi` - AsyncAPI 2.0 (via `AsyncAPI.NET` / `LEGO.AsyncAPI`), for topic/event channels.
+
+Each format can be emitted as JSON or YAML. The package also includes a backward-compatibility gate
+for the `benzene` contract.
 
 ## Key types/interfaces
 
-### OpenAPI Generation
-- OpenAPI 3.0 schema generator
-- Endpoint discovery and documentation
-- Request/response schema generation
-- Swagger/OpenAPI middleware
+### Serving the spec
+- `Extensions.UseSpec<TContext>()` / `UseSpec<TContext>(string topic)` - registers `SpecMessageHandler`
+  on the `spec` topic (`Constants.DefaultSpecTopic`).
+- `SpecMessageHandler : IMessageHandler<SpecRequest, RawStringMessage>` - builds the spec and returns
+  it as a raw string.
+- `SpecRequest { string Type; string Format }` - `Type` selects `benzene`/`openapi`/`asyncapi`
+  (unknown/empty ⇒ `benzene`); `Format` selects `yaml` vs `json` (default `json`).
+- `SpecBuilder` - dispatches a `SpecRequest` to the right document builder and calls
+  `GenerateJson()`/`GenerateYaml()`.
+
+### Document builders (one per format)
+- `OpenApi/OpenApiDocumentBuilder` - OpenAPI 3.0 (`SerializeAsJson/Yaml(OpenApiSpecVersion.OpenApi3_0)`).
+  Builds paths/operations from HTTP endpoint definitions, request/response schemas, and a fixed set of
+  error responses (400/401/403/404/422/500/503) whose bodies reference `ErrorPayload`.
+- `AsyncApi/AsyncApiDocumentBuilder` - AsyncAPI 2.0 (`AsyncApiVersion.AsyncApi2_0`); channels per topic
+  plus `:benzeneResult` response channels, broadcast events, and message-sender definitions.
+- `EventService/EventServiceDocumentBuilder` - the `benzene` `EventServiceDocument`; requests, events,
+  HTTP mappings, an optional top-level `messageEndpoint`, and deterministic generated example payloads.
+- Builders implement the "consumer" seam interfaces in `Abstractions/` -
+  `IConsumesApplicationInfo`, `IConsumesMessageHandlerDefinitions`, `IConsumesHttpEndpointDefinitions`,
+  `IConsumesBroadcastEventsDefinitions`, `IConsumesMessageSenderDefinitions`,
+  `IConsumesMessageEndpoint` - and `SpecBuilder` feeds each builder only the definitions it consumes,
+  resolved from DI (`IApplicationInfo`, `IMessageHandlersFinder`, `IHttpEndpointFinder`,
+  `IMessageDefinitionFinder`, `IBenzeneMessageHttpEndpointInfo`). Output flows through `IProducesJson`/
+  `IProducesYaml`.
+
+### Schema building
+- `ISchemaBuilder` / `SchemaBuilder` - generates `OpenApiSchema`s from CLR types using Swashbuckle's
+  `SchemaGenerator` + a `System.Text.Json` contract resolver, and collects them into a components
+  catalogue.
+- `OpenApiValidationSchemaBuilder : ISchemaBuilder` - decorates generated schemas with validation
+  constraints pulled from a registered `IValidationSchemaBuilder` (e.g. `Benzene.FluentValidation`'s):
+  `minLength`/`maxLength`, `pattern`, `enum` (IsOneOf), `required` (NotEmpty/NotNull), and `uuid`/
+  `email` formats. `SpecBuilder` uses this automatically when an `IValidationSchemaBuilder` is registered.
+- `JsonOpenApiSchemaBuilder` - builds an `OpenApiSchema` set from a sample JSON document.
+- `OpenApiSchemaComparer` - structural diff between two `OpenApiSchema`s (type/format/properties).
+
+### Backward-compatibility gate (`Compatibility/`)
+- `SchemaCompatibility` - `Compare(baseline, current)` and `EnsureBackwardCompatible(...)` (throws
+  `SchemaCompatibilityException` on breaking changes; JSON-string overloads deserialize a committed
+  baseline). Supporting types: `SchemaCompatibilityComparer`, `SchemaCompatibilityReport`,
+  `SchemaCompatibilityRules`, `SchemaChange`/`SchemaChangeKind`, `ChangeCompatibility`,
+  `SchemaDirection`. Drop `EnsureBackwardCompatible` into a test to fail CI when the `benzene`
+  contract stops being backward compatible with a baseline `spec.json`.
 
 ### Example payload generation (`Examples/`)
 - `IExamplePayloadBuilder` / `ExamplePayloadBuilder` — builds a deterministic example payload
@@ -30,19 +79,29 @@ OpenAPI (Swagger) schema generation for Benzene HTTP endpoints. Generates OpenAP
   (golden files alongside).
 
 ## When to use this package
-- When generating OpenAPI documentation
-- For Swagger UI integration
-- For API documentation
-- For contract-first development
+- To expose a live, always-accurate spec of a service's topics/endpoints from its own handler
+  registrations (`UseSpec`), consumed by `Benzene.Spec.Ui`, Swagger UI (openapi), or AsyncAPI tooling.
+- To gate CI on backward-compatibility of the message contract (`SchemaCompatibility`).
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Http** - HTTP abstractions
-- **Benzene.JsonSchema** - JSON schema generation
+- **Benzene.Abstractions.Pipelines** / **Benzene.Core.MessageHandlers** / **Benzene.Core.Messages** /
+  **Benzene.Core** - message-handler definitions, finders, `RawStringMessage`, pipeline seams.
+- **Benzene.Abstractions.Validation** - `IValidationSchemaBuilder`/`IValidationSchema`/
+  `ValidationConstants`, consumed by `OpenApiValidationSchemaBuilder`.
+- **Benzene.Http** - HTTP endpoint definitions/routing and the BenzeneMessage endpoint info.
+- **Benzene.Results** - `BenzeneResult`, `ErrorPayload`.
+- NuGet: **Microsoft.OpenApi**(+**.Readers**), **AsyncAPI.NET**, **Swashbuckle.AspNetCore.SwaggerGen**
+  (schema generation only - no Swagger UI is bundled), **Newtonsoft.Json**.
+- Note: this package does **not** depend on `Benzene.JsonSchema`; schema generation is done via
+  Swashbuckle's `SchemaGenerator`, not that package.
 
 ## Important conventions
-- Discovers HTTP endpoints automatically
-- Generates request/response schemas
-- Supports OpenAPI 3.0
-- Integrates with Swagger UI
-- Includes authentication schemes
+- The `spec` topic is served like any other message handler; the default format is `benzene`, output
+  is JSON unless `Format` is `yaml`.
+- Schemas are generated from handler request/response types and keyed by type name; validation
+  constraints are merged in only when an `IValidationSchemaBuilder` is registered.
+- OpenAPI output is version 3.0; AsyncAPI output is 2.0.
+
+## Tests
+- Example payload generation: `test/Benzene.Core.Test/Autogen/Schema/OpenApi/Examples/ExamplePayloadBuilderTest.cs`
+  (with golden files).

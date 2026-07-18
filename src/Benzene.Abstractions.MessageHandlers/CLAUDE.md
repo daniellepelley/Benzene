@@ -19,9 +19,12 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 - `IMessageHandlerDefinitionLookUp` - Looks up handler definitions by topic
 
 ### Context & Results
-- `IBenzeneMessageContext` - Base context for message handling
-- `IMessageHandlerResult` - Non-generic result from handler
-- `IMessageHandlerResult<TResponse>` - Generic result with response payload
+- `IMessageHandlerContext<TRequest, TResponse>` - the per-invocation handler-pipeline context
+  (`Topic`, `HandlerType`, mapped `Request`, settable `Response`); the message-handler equivalent of
+  a transport context. (Declared in `IBenzeneMessageContext.cs`, but the interface name is
+  `IMessageHandlerContext`.)
+- `IMessageHandlerResult` / `IMessageHandlerResult<TResponse>` / `IMessageHandlerResultBase` -
+  non-generic, generic, and base handler-result interfaces
 - `IHasMessageResult` - Context that contains message result
 
 ### Pipelines
@@ -33,7 +36,9 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 - `IRequestMapper<TContext>` - Maps transport context to request objects
 - `IRequestEnricher<TContext>` - Enriches requests with context data
 - `IRequestContext<TRequest>` - Provides typed request from context
-- `IRequestMapperThunk<TContext>` - Deferred request mapper execution
+- `IRequestMapperThunk` - **non-generic** deferred handle onto the current message's request mapper;
+  its `GetRequest<TRequest>()` lets the non-generic router map the request to whatever type the
+  handler needs without the router being generic over that type
 
 ### Media Formats (`MediaFormats/`)
 - `IMediaFormat<TContext>` - A registrable request/response format: content type, whether it can
@@ -60,6 +65,7 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 ### Message Extraction
 - `IMessageGetter<TContext>` - Extracts message from transport context
 - `IMessageTopicGetter<TContext>` - Extracts topic/routing key from context
+- `IMessageVersionGetter<TContext>` - Extracts the message version from context
 - Preset-topic override (forcing a whole queue/subscription to route on a fixed topic regardless
   of what the message itself carries) is **not** a context capability - it's
   `Benzene.Core.MessageHandlers`' scoped `PresetTopicHolder`, set by `PresetTopicMiddleware<TContext>`

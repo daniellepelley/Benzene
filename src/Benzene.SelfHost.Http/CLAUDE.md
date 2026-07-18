@@ -63,11 +63,9 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
 - When deploying to environments without web server
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Abstractions.Middleware** - Middleware abstractions
-- **Benzene.Core.Middleware** - Middleware implementations
-- **Benzene.Http** - HTTP abstractions
-- **Benzene.SelfHost** - Self-hosting infrastructure
+- **Benzene.HostedService** - `IHostedService` glue (transitively brings in `Benzene.SelfHost`'s
+  `IBenzeneWorker` + `BoundedConcurrentDispatcher<T>`)
+- **Benzene.Http** - HTTP abstractions / response adapters
 
 ## Important conventions
 - Uses System.Net.HttpListener under the hood

@@ -1,32 +1,34 @@
 # Benzene.Testing
 
 ## What this package does
-Testing utilities and helpers for Benzene applications. Provides test host implementations, builder patterns for test setup, assertion helpers, and utilities for integration testing of Benzene pipelines and handlers.
+In-memory test-host and request-builder helpers for testing Benzene applications from a
+platform-neutral `BenzeneStartUp`, without deploying to a cloud host. This package builds the
+**configured services + configuration**; the concrete platform host is constructed by a `Build*`
+extension supplied by a platform package (e.g. `BuildAwsLambdaHost` in `Benzene.Aws.Lambda.Core`,
+`BuildAzureFunctionApp`) via the `Build<THost>(factory)` seam here.
 
 ## Key types/interfaces
-
-### Test Infrastructure
-- `BenzeneTestHost` - Test host for integration testing
-- Test builders for HTTP and messages
-- Test middleware and mocks
-- Assertion helpers
+- `BenzeneTestHost.Create<TStartUp>()` - static entry point returning a `BenzeneTestHostBuilder<TStartUp>`.
+- `BenzeneTestHostBuilder<TStartUp>` - `WithServices(Action<IServiceCollection>)` (override real
+  dependencies with fakes/mocks after the StartUp's own `ConfigureServices`), `WithConfiguration(...)`
+  (layer in-memory config overrides), and `Build<THost>(Func<TStartUp, IServiceCollection, IConfiguration, THost>)`
+  which runs the StartUp and hands the result to a platform factory.
+- `MessageBuilder<T>` / static `MessageBuilder` + `MessageBuilderExtensions` - build a Benzene message
+  (topic + typed body + headers) to drive through a test host.
+- `HttpBuilder<T>` / static `HttpBuilder` - build an HTTP-shaped test request.
+- The `IMessageBuilder<T>` / `IHttpBuilder<T>` / `IBenzeneTestHost` interfaces these implement live in
+  `Benzene.Abstractions`, not this package.
 
 ## When to use this package
-- When writing integration tests for Benzene apps
-- For testing message handlers
-- When testing middleware pipelines
-- For end-to-end testing without external dependencies
+- Integration-testing a `BenzeneStartUp`'s handlers/middleware in-memory with real DI, mocking only the
+  external edges via `WithServices(...)`.
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Abstractions.Middleware** - Middleware abstractions
-- **Benzene.Core.Middleware** - Middleware implementations
-- **Benzene.Core.MessageHandlers** - Message handler infrastructure
+- **Benzene.Abstractions** / **Benzene.Abstractions.Middleware** / **Benzene.Abstractions.Pipelines** -
+  the builder interfaces and pipeline/hosting abstractions
+- **Benzene.Microsoft.Dependencies** - `BenzeneStartUp`, the MEL container the host builds on
 
 ## Important conventions
-- Test host runs full pipeline
-- Builders provide fluent test setup
-- No external dependencies needed
-- Suitable for unit and integration tests
-- Can test HTTP and message-based scenarios
-- Mock dependencies via DI
+- `WithServices` overrides run **after** the StartUp's `ConfigureServices`, so last-registration-wins
+  replaces the real dependency.
+- No external process/network is started - suitable for unit and in-memory integration tests.

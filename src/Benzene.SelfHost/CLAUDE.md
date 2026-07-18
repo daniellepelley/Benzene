@@ -48,9 +48,10 @@ duplicate independently. Built on `System.Threading.Channels` (BCL, no new NuGet
   needs to bound how many items it processes concurrently
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Abstractions.Middleware** - Middleware abstractions
-- **Benzene.Core.Middleware** - Middleware implementations
+- **Benzene.Abstractions.Pipelines** - pipeline/hosting abstractions (`IBenzeneWorker`, `IRegisterDependency`)
+- **Benzene.Core** / **Benzene.Core.Middleware** - middleware pipeline implementation
+- **Benzene.Microsoft.Dependencies** - the MEL DI adapter used by `WorkerApplicationBuilder`
+- **Benzene.HealthChecks** / **Benzene.Http** - health-check + HTTP abstractions used by workers
 
 ## Important conventions
 - Self-hosted apps use Benzene's DI container directly
