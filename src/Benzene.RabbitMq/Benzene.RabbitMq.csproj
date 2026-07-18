@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.RabbitMq</AssemblyName>
+    <RootNamespace>Benzene.RabbitMq</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>RabbitMQ transport for Benzene: a self-hosted consumer worker with per-message ack/nack and an outbound publish client, built on the RabbitMQ.Client v7 async API.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RabbitMQ.Client" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
+    <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.SelfHost\Benzene.SelfHost.csproj" />
+  </ItemGroup>
+
+</Project>
