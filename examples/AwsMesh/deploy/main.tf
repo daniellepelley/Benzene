@@ -1,5 +1,9 @@
 terraform {
   required_version = ">= 1.5.0"
+  # Remote state in S3 so the state survives between (ephemeral) CI runs — otherwise every run starts
+  # blind and collides with the resources the previous run created. Configured at `terraform init`
+  # time via -backend-config (bucket/key/region), so nothing account-specific is committed here.
+  backend "s3" {}
   required_providers {
     aws = {
       source  = "hashicorp/aws"

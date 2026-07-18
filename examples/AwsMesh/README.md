@@ -77,10 +77,22 @@ so each service's Spec UI and the Mesh UI serve their relative assets from their
 
 ### Deploy locally instead (if you do have Terraform)
 
+State is kept in a per-account S3 bucket (`benzene-mesh-tfstate-<account-id>`) so repeated runs are
+incremental rather than colliding — configured at `init` time, so nothing account-specific is
+committed. Create the bucket once, then `init` against it:
+
 ```bash
 # Build + zip each Lambda (self-contained, provided.al2023) into examples/AwsMesh/artifacts/, then:
 cd examples/AwsMesh/deploy
-terraform init
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+aws s3api create-bucket --bucket "benzene-mesh-tfstate-$ACCOUNT" --region eu-west-1 \
+  --create-bucket-configuration LocationConstraint=eu-west-1   # omit --create-bucket-configuration in us-east-1
+terraform init \
+  -backend-config="bucket=benzene-mesh-tfstate-$ACCOUNT" \
+  -backend-config="key=aws-mesh/terraform.tfstate" \
+  -backend-config="region=eu-west-1"
+# If resources already exist from an earlier run without persisted state, adopt them first:
+REGION=eu-west-1 PROJECT=benzene-mesh ./adopt-existing.sh
 terraform apply -var region=eu-west-1
 ```
 

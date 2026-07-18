@@ -96,10 +96,45 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.region }}
 
+      # Remote state lives in a per-account S3 bucket so it survives between (ephemeral) CI runs.
+      # Create it on first use (idempotent), then point `terraform init` at it via -backend-config.
+      - name: Terraform init (remote S3 state)
+        working-directory: examples/AwsMesh/deploy
+        env:
+          REGION: ${{ inputs.region }}
+        run: |
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          STATE_BUCKET="benzene-mesh-tfstate-${ACCOUNT}"
+          if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
+            echo "Creating state bucket $STATE_BUCKET"
+            if [ "$REGION" = "us-east-1" ]; then
+              aws s3api create-bucket --bucket "$STATE_BUCKET" --region "$REGION"
+            else
+              aws s3api create-bucket --bucket "$STATE_BUCKET" --region "$REGION" \
+                --create-bucket-configuration LocationConstraint="$REGION"
+            fi
+            aws s3api put-bucket-versioning --bucket "$STATE_BUCKET" \
+              --versioning-configuration Status=Enabled
+          fi
+          terraform init -input=false \
+            -backend-config="bucket=$STATE_BUCKET" \
+            -backend-config="key=aws-mesh/terraform.tfstate" \
+            -backend-config="region=$REGION"
+
+      # First run after losing local state: adopt the already-created resources so apply updates them
+      # in place instead of colliding (409 AlreadyExists). Idempotent — a no-op once state is populated.
+      - name: Adopt any pre-existing resources into state
+        working-directory: examples/AwsMesh/deploy
+        env:
+          REGION: ${{ inputs.region }}
+          PROJECT: benzene-mesh
+        run: |
+          chmod +x adopt-existing.sh
+          ./adopt-existing.sh
+
       - name: Terraform apply
         working-directory: examples/AwsMesh/deploy
         run: |
-          terraform init -input=false
           terraform apply -input=false -auto-approve -var "region=${{ inputs.region }}"
 
       - name: Show URLs
