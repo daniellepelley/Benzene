@@ -278,6 +278,14 @@
   .topo-table tr:hover td { background: var(--surface-2); }
   .b-source-tempo { color: var(--accent); background: var(--accent-tint); }
   .b-source-structural { color: var(--chip-ink); background: var(--chip-bg); }
+  .topics-toggle { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .topics-toggle input { cursor: pointer; }
+  .t-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-family: var(--mono); }
+  .t-domain { color: var(--accent); background: var(--accent-tint); }
+  .t-utility { color: var(--chip-ink); background: var(--chip-bg); }
+  .t-svc { display: inline-block; padding: 1px 6px; margin: 1px 3px 1px 0; border-radius: 4px; background: var(--surface-2); font-size: 12px; }
+  .t-http { color: var(--ink-faint); }
+  .topics-table td { white-space: normal; }
 </style>
 </head>
 <body>
@@ -316,6 +324,27 @@
     <input type="search" id="filter" placeholder="Filter services…" autocomplete="off" spellcheck="false" />
   </div>
   <div id="content"></div>
+
+  <section id="topics-section" style="display:none">
+    <div class="topo-head">
+      <h2>Topics</h2>
+      <span class="topo-generated" id="topics-generated"></span>
+      <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show utilities</label>
+    </div>
+    <div class="topo-table-wrap">
+      <table class="topo-table" id="topics-table">
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Type</th>
+            <th>Services</th>
+            <th>HTTP</th>
+          </tr>
+        </thead>
+        <tbody id="topics-tbody"></tbody>
+      </table>
+    </div>
+  </section>
 
   <section id="topology-section" style="display:none">
     <div class="topo-head">
@@ -614,8 +643,59 @@
     manifestUrl = url;
     detailCache = {};
     render();
+    loadTopics();
     loadTopology();
   }
+
+  /* ---------- topics (cross-service catalog) ---------- */
+  var currentTopics = [];
+  function loadTopics() {
+    fetch(resolveUrl("topics.json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (cat) { renderTopics(cat); })
+      .catch(function () { document.getElementById("topics-section").style.display = "none"; });
+  }
+  function renderTopics(cat) {
+    currentTopics = (cat && cat.topics) || [];
+    var section = document.getElementById("topics-section");
+    if (!currentTopics.length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
+    renderTopicRows();
+  }
+  function renderTopicRows() {
+    var showUtils = document.getElementById("topics-show-utils").checked;
+    var rows = currentTopics.filter(function (t) { return showUtils || !t.reserved; });
+    var tbody = document.getElementById("topics-tbody");
+    tbody.innerHTML = "";
+    rows.forEach(function (t) {
+      var tr = el("tr");
+
+      var tdTopic = el("td"); tdTopic.appendChild(el("span", null, t.topic)); tr.appendChild(tdTopic);
+
+      var tdType = el("td");
+      tdType.appendChild(el("span", "t-badge " + (t.reserved ? "t-utility" : "t-domain"), t.reserved ? "utility" : "domain"));
+      tr.appendChild(tdType);
+
+      var tdSvc = el("td", "topics-table");
+      (t.services || []).forEach(function (s) { tdSvc.appendChild(el("span", "t-svc", s.service)); });
+      tr.appendChild(tdSvc);
+
+      var tdHttp = el("td", "t-http");
+      var maps = [];
+      (t.services || []).forEach(function (s) {
+        (s.httpMappings || []).forEach(function (m) {
+          var label = (m.method || "").toUpperCase() + " " + (m.path || "");
+          if (maps.indexOf(label) === -1) maps.push(label);
+        });
+      });
+      tdHttp.textContent = maps.length ? maps.join(", ") : "–";
+      tr.appendChild(tdHttp);
+
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById("topics-show-utils").addEventListener("change", renderTopicRows);
 
   /* ---------- topology ---------- */
   function loadTopology() {

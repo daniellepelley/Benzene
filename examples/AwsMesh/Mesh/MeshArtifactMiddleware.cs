@@ -50,7 +50,7 @@ public class MeshArtifactMiddleware<TContext> : IMiddleware<TContext> where TCon
     }
 
     private static bool IsArtifact(string key)
-        => key is "manifest.json" or "topology.json" or "registry.json"
+        => key is "manifest.json" or "topology.json" or "topics.json" or "registry.json"
            || (key.StartsWith("services/", StringComparison.Ordinal) && key.EndsWith(".json", StringComparison.Ordinal));
 }
 
