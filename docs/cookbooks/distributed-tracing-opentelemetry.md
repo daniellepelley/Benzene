@@ -27,7 +27,7 @@ On the ASP.NET Core API project:
 ```bash
 dotnet add package Benzene.AspNet.Core --prerelease
 dotnet add package Benzene.Diagnostics --prerelease
-dotnet add package Benzene.Clients.Aws --prerelease
+dotnet add package Benzene.Clients.Aws.Sqs --prerelease
 dotnet add package Benzene.OpenTelemetry --prerelease
 dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
 ```

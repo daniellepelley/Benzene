@@ -140,7 +140,12 @@ above are inbound; these are outbound.
 | Package | What it gives you |
 |---|---|
 | `Benzene.Clients` | The Benzene message-client abstraction and builder for sending typed messages to other Benzene services. |
-| `Benzene.Clients.Aws` | Send messages by invoking another AWS Lambda (`AwsLambdaBenzeneMessageClient`), plus a Lambda health check. |
+| `Benzene.Clients.Aws.Sqs` | Send to an SQS queue (`SqsBenzeneMessageClient`, `.UseSqs(...)`), plus `AddSqsHealthCheck`. Pins only `AWSSDK.SQS`. |
+| `Benzene.Clients.Aws.Sns` | Publish to an SNS topic (`SnsBenzeneMessageClient`, `.UseSns(...)`). Pins only `AWSSDK.SimpleNotificationService`. |
+| `Benzene.Clients.Aws.EventBridge` | Put events on an EventBridge bus (`EventBridgeBenzeneMessageClient`, `.UseEventBridge(...)`). Pins only `AWSSDK.EventBridge`. |
+| `Benzene.Clients.Aws.Lambda` | Invoke another AWS Lambda (`AwsLambdaBenzeneMessageClient`, `.UseAwsLambda(...)`), plus `AddLambdaHealthCheck`. Pins only `AWSSDK.Lambda`. |
+| `Benzene.Clients.Aws.StepFunctions` | Start a Step Functions execution (`StepFunctionsClient`), plus `AddStepFunctionHealthCheck`. Pins only `AWSSDK.StepFunctions`. |
+| `Benzene.Clients.Aws` | Meta-package referencing all five `Benzene.Clients.Aws.*` transport packages — one reference if you want everything; prefer the specific transport package for new code. |
 | `Benzene.Clients.HealthChecks` | Health checks that verify downstream Benzene clients are reachable and contract-compatible. |
 | `Benzene.Client.Http` | HTTP client middleware for sending outbound HTTP requests through the Benzene client pipeline. |
 | `Benzene.Aws.Sqs` | An SQS client for sending to / consuming from queues directly (`ISqsClient`, `SqsMessageClient`, `SqsConsumerConfig`) — distinct from `Benzene.Aws.Lambda.Sqs`, which handles SQS *as a Lambda trigger*. |

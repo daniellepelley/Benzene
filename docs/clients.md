@@ -23,7 +23,7 @@ Add the core client abstractions, plus whichever transport package(s) you need:
 | Package | What it adds |
 |---|---|
 | `Benzene.Clients` | `IBenzeneMessageSender`, `OutboundContext`, `OutboundRoutingBuilder`/`AddOutboundRouting(...)`, `ValidateOutboundRouting()`, and the cross-cutting middleware (correlation ID, W3C trace context). Pulled in transitively by every transport package below. |
-| `Benzene.Clients.Aws` | `.UseSqs(...)`/`.UseSns(...)` outbound route extensions, plus the standalone `AwsLambdaBenzeneMessageClient`/`SqsBenzeneMessageClient`/`SnsBenzeneMessageClient`/`EventBridgeBenzeneMessageClient` transport clients and health checks for them. |
+| `Benzene.Clients.Aws.Sqs` / `.Sns` / `.EventBridge` / `.Lambda` / `.StepFunctions` | The AWS outbound clients, segregated one package per transport so using SNS doesn't drag in SQS. Each gives the `.UseSqs(...)`/`.UseSns(...)`/`.UseEventBridge(...)`/`.UseAwsLambda(...)` route extensions and/or the standalone `SqsBenzeneMessageClient`/`SnsBenzeneMessageClient`/`EventBridgeBenzeneMessageClient`/`AwsLambdaBenzeneMessageClient` clients, plus the relevant health check. `Benzene.Clients.Aws` is a meta-package that references all five. |
 | `Benzene.Kafka.Core` | `KafkaBenzeneMessageClient` (Kafka transport). |
 | `Benzene.Grpc.Client` | `GrpcBenzeneMessageClient` (gRPC transport). |
 | `Benzene.Client.Http` | `HttpContextConverter`/`HttpClientMiddleware` — the lower-level pipeline building blocks for sending over HTTP (see [HTTP](#http) below). |
@@ -168,7 +168,7 @@ It reflects over every loaded assembly for any type with a public static `string
 
 ### SQS
 
-Package: `Benzene.Clients.Aws`.
+Package: `Benzene.Clients.Aws.Sqs`.
 
 ```csharp
 services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
@@ -181,7 +181,7 @@ services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
 
 ### SNS
 
-Package: `Benzene.Clients.Aws`.
+Package: `Benzene.Clients.Aws.Sns`.
 
 ```csharp
 services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
@@ -251,7 +251,7 @@ There's no built-in decorator chain anymore for a directly-resolved `IBenzeneMes
 
 ### AWS Lambda
 
-Package: `Benzene.Clients.Aws`.
+Package: `Benzene.Clients.Aws.Lambda`.
 
 ```csharp
 services.AddScoped<IBenzeneMessageClient>(x =>
@@ -267,7 +267,7 @@ It wraps the topic, headers, and serialized message body into its own envelope, 
 
 ### SQS (as a standalone client)
 
-Package: `Benzene.Clients.Aws`. Prefer `.UseSqs(queueUrl)` on an outbound route (above) for new code — this is the lower-level path, useful when you want an `IBenzeneMessageClient` handle rather than routing through `IBenzeneMessageSender`:
+Package: `Benzene.Clients.Aws.Sqs`. Prefer `.UseSqs(queueUrl)` on an outbound route (above) for new code — this is the lower-level path, useful when you want an `IBenzeneMessageClient` handle rather than routing through `IBenzeneMessageSender`:
 
 ```csharp
 services.AddSqsMessageClient(queueUrl, pipeline => pipeline.UseSqsClient());
@@ -277,7 +277,7 @@ services.AddSqsMessageClient(queueUrl, pipeline => pipeline.UseSqsClient());
 
 ### SNS (as a standalone client)
 
-Package: `Benzene.Clients.Aws`. Prefer `.UseSns(topicArn)` on an outbound route (above) for new code.
+Package: `Benzene.Clients.Aws.Sns`. Prefer `.UseSns(topicArn)` on an outbound route (above) for new code.
 
 ```csharp
 var client = new SnsBenzeneMessageClient(topicArn,
@@ -300,7 +300,7 @@ var client = new KafkaBenzeneMessageClient(producer, logger, serviceResolver);
 
 ### EventBridge
 
-Package: `Benzene.Clients.Aws` (`Benzene.Clients.Aws.EventBridge`).
+Package: `Benzene.Clients.Aws.EventBridge`.
 
 ```csharp
 var client = new EventBridgeBenzeneMessageClient("com.mycompany.orders",

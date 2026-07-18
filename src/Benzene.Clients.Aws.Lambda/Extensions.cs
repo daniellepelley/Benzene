@@ -3,6 +3,8 @@ using Amazon.Lambda;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Middleware;
+using Benzene.HealthChecks.Core;
+using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Lambda;
@@ -58,5 +60,16 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseAwsLambda<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app)
     {
         return app.Convert(new LambdaContextConverter<T>(), builder => builder.UseAwsLambdaClient());
+    }
+
+    /// <summary>
+    /// Adds a health check that pings an AWS Lambda function.
+    /// </summary>
+    /// <param name="builder">The health check builder to add the check to.</param>
+    /// <param name="lambdaName">The name of the Lambda function to ping.</param>
+    /// <returns>The health check builder for method chaining.</returns>
+    public static IHealthCheckBuilder AddLambdaHealthCheck(this IHealthCheckBuilder builder, string lambdaName)
+    {
+        return builder.AddHealthCheck(resolver => new AwsLambdaHealthCheck(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<ILogger<AwsLambdaHealthCheck>>()));
     }
 }

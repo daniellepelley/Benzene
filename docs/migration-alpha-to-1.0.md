@@ -326,8 +326,8 @@ release cycle before deletion.
 | `HeaderBenzeneMessageClient` / `HeadersBenzeneMessageClient` / `IClientHeaders` / `ClientHeaders` | `IBenzeneMessageSender.SendAsync`'s per-call `headers` parameter, or `OutboundContext.Headers` from within a route's own middleware |
 | `CorrelationIdBenzeneMessageClient` / `CorrelationIdBenzeneMessageClientWrapper` (`.WithCorrelationId()`) | `Benzene.Clients.CorrelationId.CorrelationIdMiddleware` / `.UseCorrelationId(...)` |
 | `TraceContextBenzeneMessageClient` / `TraceContextBenzeneMessageClientWrapper` (`.WithW3CTraceContext()`) | `Benzene.Clients.TraceContext.W3CTraceContextMiddleware` / `.UseW3CTraceContext()` |
-| `AwsLambdaBenzeneMessageClientFactory` / `SqsBenzeneMessageClientFactory` and their `ClientsBuilder` extension methods (`Benzene.Clients.Aws`) | `.UseSqs(queueUrl)`/`.UseSns(topicArn)` on an `OutboundRoutingBuilder.Route` pipeline (`.UseAwsLambda(...)` not yet implemented — see `src/Benzene.Clients.Aws/CLAUDE.md`) |
-| `Extensions.AddLambdaClients(sender)` (`Benzene.Clients.Aws`) | `AddOutboundRouting(...)` with your own retry/header middleware on the route |
+| `AwsLambdaBenzeneMessageClientFactory` / `SqsBenzeneMessageClientFactory` and their `ClientsBuilder` extension methods (`Benzene.Clients.Aws.Lambda` / `.Sqs`) | `.UseSqs(queueUrl)`/`.UseSns(topicArn)` on an `OutboundRoutingBuilder.Route` pipeline (`.UseAwsLambda(...)` outbound-route overload not yet implemented — see `src/Benzene.Clients.Aws.Lambda/CLAUDE.md`) |
+| `Extensions.AddLambdaClients(sender)` (`Benzene.Clients.Aws.Lambda`) | `AddOutboundRouting(...)` with your own retry/header middleware on the route |
 
 `IBenzeneMessageClient` (the interface) and its concrete transport
 implementations — `SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,

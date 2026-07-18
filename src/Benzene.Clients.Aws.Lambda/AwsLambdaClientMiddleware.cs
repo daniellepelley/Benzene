@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Benzene.Abstractions.Middleware;
-using Benzene.Clients.Aws.Sqs;
 
 namespace Benzene.Clients.Aws.Lambda;
 
@@ -26,7 +25,7 @@ public class AwsLambdaClientMiddleware : IMiddleware<LambdaSendMessageContext>
     /// <summary>
     /// Gets the name of this middleware.
     /// </summary>
-    public string Name => nameof(SqsClientMiddleware);
+    public string Name => nameof(AwsLambdaClientMiddleware);
 
     /// <summary>
     /// Invokes the context's request against AWS Lambda and sets the response. This is a terminal

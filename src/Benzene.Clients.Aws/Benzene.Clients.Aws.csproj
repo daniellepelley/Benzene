@@ -1,5 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+    <!--
+        Meta-package. Benzene.Clients.Aws no longer carries any code of its own: the outbound AWS
+        clients are now segregated into one package per transport so that (for example) using the SNS
+        client doesn't drag in the SQS SDK. This package references all five so existing consumers who
+        genuinely want everything keep a single reference; new consumers should reference just the
+        transport package(s) they need (Benzene.Clients.Aws.Sqs, .Sns, .EventBridge, .Lambda,
+        .StepFunctions).
+    -->
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <AssemblyName>Benzene.Clients.Aws</AssemblyName>
@@ -8,17 +16,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AWSSDK.EventBridge" Version="3.7.301.4" />
-        <PackageReference Include="AWSSDK.Lambda" Version="3.7.303.2" />
-        <PackageReference Include="AWSSDK.SQS" Version="3.7.502.57" />
-        <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.301.4" />
-        <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.301.4" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
-        <ProjectReference Include="..\Benzene.HealthChecks.Core\Benzene.HealthChecks.Core.csproj" />
-        <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
-        <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+        <ProjectReference Include="..\Benzene.Clients.Aws.Sqs\Benzene.Clients.Aws.Sqs.csproj" />
+        <ProjectReference Include="..\Benzene.Clients.Aws.Sns\Benzene.Clients.Aws.Sns.csproj" />
+        <ProjectReference Include="..\Benzene.Clients.Aws.EventBridge\Benzene.Clients.Aws.EventBridge.csproj" />
+        <ProjectReference Include="..\Benzene.Clients.Aws.Lambda\Benzene.Clients.Aws.Lambda.csproj" />
+        <ProjectReference Include="..\Benzene.Clients.Aws.StepFunctions\Benzene.Clients.Aws.StepFunctions.csproj" />
     </ItemGroup>
 </Project>
