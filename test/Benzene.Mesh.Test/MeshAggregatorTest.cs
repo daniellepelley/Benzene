@@ -55,6 +55,49 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_PublishesTopicsCatalog_AcrossServices_WithReservedFlag()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+        var ordersSpec = "{\"requests\":[{\"topic\":\"order:create\",\"httpMappings\":[{\"method\":\"post\",\"path\":\"/orders\"}]},{\"topic\":\"spec\",\"reserved\":true}]}";
+        var paymentsSpec = "{\"requests\":[{\"topic\":\"payment:take\"},{\"topic\":\"spec\",\"reserved\":true}]}";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, paymentsSpec)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("payments-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var json = await store.TryReadAsync("topics.json");
+        Assert.NotNull(json);
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>(json!, JsonOptions)!;
+
+        // The reserved 'spec' topic is exposed by both services and flagged reserved.
+        var spec = Assert.Single(catalog.Topics, t => t.Topic == "spec");
+        Assert.True(spec.Reserved);
+        Assert.Equal(new[] { "orders-api", "payments-api" }, spec.Services.Select(s => s.Service).OrderBy(x => x).ToArray());
+
+        // A domain topic is owned by one service, not reserved, with its HTTP mapping preserved.
+        var create = Assert.Single(catalog.Topics, t => t.Topic == "order:create");
+        Assert.False(create.Reserved);
+        var svc = Assert.Single(create.Services);
+        Assert.Equal("orders-api", svc.Service);
+        Assert.Equal("post", Assert.Single(svc.HttpMappings).Method);
+
+        // Domain topics sort ahead of reserved utilities.
+        Assert.False(catalog.Topics[0].Reserved);
+        Assert.True(catalog.Topics[^1].Reserved);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_UnchangedSpec_SecondRun_NoDrift()
     {
         var handler = new RoutingHttpMessageHandler()

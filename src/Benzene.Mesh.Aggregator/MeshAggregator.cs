@@ -56,13 +56,13 @@ public class MeshAggregator
     public async Task<MeshManifest> RunOnceAsync(MeshServiceRegistry registry)
     {
         var entries = registry.Services;
-        var snapshots = await Task.WhenAll(entries.Select(BuildSnapshotAsync));
+        var results = await Task.WhenAll(entries.Select(BuildServiceAsync));
 
         var manifestEntries = new List<MeshManifestEntry>(entries.Length);
         for (var i = 0; i < entries.Length; i++)
         {
             var entry = entries[i];
-            var snapshot = snapshots[i];
+            var snapshot = results[i].Snapshot;
             await _store.PublishAsync($"services/{entry.Name}.json", JsonSerializer.Serialize(snapshot, JsonOptions));
 
             manifestEntries.Add(new MeshManifestEntry(
@@ -71,10 +71,48 @@ public class MeshAggregator
 
         var manifest = new MeshManifest(_clock(), manifestEntries.ToArray());
         await _store.PublishAsync("manifest.json", JsonSerializer.Serialize(manifest, JsonOptions));
+
+        // Cross-service topic catalog: every topic across the mesh -> which service(s) expose it.
+        var catalog = BuildTopicCatalog(entries, results);
+        await _store.PublishAsync("topics.json", JsonSerializer.Serialize(catalog, JsonOptions));
+
         return manifest;
     }
 
-    private async Task<MeshServiceSnapshot> BuildSnapshotAsync(MeshServiceRegistryEntry entry)
+    private MeshTopicCatalog BuildTopicCatalog(MeshServiceRegistryEntry[] entries, ServiceResult[] results)
+    {
+        var byTopic = new Dictionary<string, TopicAggregate>(StringComparer.Ordinal);
+        for (var i = 0; i < entries.Length; i++)
+        {
+            foreach (var topic in results[i].Topics)
+            {
+                if (!byTopic.TryGetValue(topic.Topic, out var aggregate))
+                {
+                    aggregate = new TopicAggregate();
+                    byTopic[topic.Topic] = aggregate;
+                }
+
+                aggregate.Reserved |= topic.Reserved;
+                aggregate.Services.Add(new MeshTopicService(entries[i].Name, topic.HttpMappings));
+            }
+        }
+
+        var topics = byTopic
+            .Select(kvp => new MeshTopicEntry(kvp.Key, kvp.Value.Reserved, kvp.Value.Services.ToArray()))
+            .OrderBy(x => x.Reserved) // domain topics first, utilities last
+            .ThenBy(x => x.Topic, StringComparer.Ordinal)
+            .ToArray();
+
+        return new MeshTopicCatalog(_clock(), topics);
+    }
+
+    private sealed class TopicAggregate
+    {
+        public bool Reserved;
+        public readonly List<MeshTopicService> Services = new();
+    }
+
+    private async Task<ServiceResult> BuildServiceAsync(MeshServiceRegistryEntry entry)
     {
         var source = ResolveSource(entry.Source);
 
@@ -107,7 +145,65 @@ public class MeshAggregator
             error ??= ex.GetType().Name;
         }
 
-        return await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
+        var snapshot = await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
+        return new ServiceResult(snapshot, ParseTopics(specJson));
+    }
+
+    private readonly record struct ServiceResult(MeshServiceSnapshot Snapshot, IReadOnlyList<ServiceTopic> Topics);
+
+    private readonly record struct ServiceTopic(string Topic, bool Reserved, MeshTopicHttpMapping[] HttpMappings);
+
+    /// <summary>
+    /// Extracts the topics from a service's <c>benzene</c> spec (its <c>requests</c> array) for the
+    /// cross-service topic catalog. Best-effort: a missing/unparseable spec contributes no topics
+    /// (the service is still catalogued via its snapshot), never failing the run.
+    /// </summary>
+    private static IReadOnlyList<ServiceTopic> ParseTopics(string? specJson)
+    {
+        if (string.IsNullOrWhiteSpace(specJson))
+        {
+            return Array.Empty<ServiceTopic>();
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(specJson);
+            if (!doc.RootElement.TryGetProperty("requests", out var requests) || requests.ValueKind != JsonValueKind.Array)
+            {
+                return Array.Empty<ServiceTopic>();
+            }
+
+            var topics = new List<ServiceTopic>();
+            foreach (var request in requests.EnumerateArray())
+            {
+                if (!request.TryGetProperty("topic", out var topicElement) || topicElement.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var reserved = request.TryGetProperty("reserved", out var reservedElement)
+                               && reservedElement.ValueKind == JsonValueKind.True;
+
+                var mappings = new List<MeshTopicHttpMapping>();
+                if (request.TryGetProperty("httpMappings", out var httpMappings) && httpMappings.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var mapping in httpMappings.EnumerateArray())
+                    {
+                        var method = mapping.TryGetProperty("method", out var m) ? m.GetString() ?? "" : "";
+                        var path = mapping.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "";
+                        mappings.Add(new MeshTopicHttpMapping(method, path));
+                    }
+                }
+
+                topics.Add(new ServiceTopic(topicElement.GetString()!, reserved, mappings.ToArray()));
+            }
+
+            return topics;
+        }
+        catch (JsonException)
+        {
+            return Array.Empty<ServiceTopic>();
+        }
     }
 
     private IMeshServiceSource ResolveSource(string sourceKey)
