@@ -71,17 +71,28 @@ Benzene's features so the example dogfoods them on a real deploy:
   `router.UseFluentValidation()`, so an invalid payload is rejected identically no matter which
   transport it arrived on.
 
-## Interconnectivity → topology
+## Interconnectivity → topology (a real chain)
 
-`orders-api` **declares** the topics it sends downstream (`payments:capture`, `shipping:book`), so
-they appear in its spec's `events`. The mesh aggregator turns that into a **structural topology**: an
-edge from each service that *sends* a domain topic to each service that *handles* it. After a refresh,
-`topology.json` carries `orders → payments` and `orders → shipping` edges (source `structural`), and
-the Mesh UI's **Topology** table shows them — no tracing backend required.
+The services form a live **order → payment → shipment** chain:
 
-The next step (live *observed* edges + latency/error metrics) is actual runtime egress — `orders`
-invoking payments/shipping via Benzene AWS Lambda clients, plus `Benzene.Mesh.Tracing.Tempo`. The
-structural "designed to call" graph above already lights up the topology view from the deployed specs.
+- `orders-api`, on `orders:create`, sends **`payments:capture`** to the payments SQS queue.
+- `payments-api`, on `payments:capture`, sends **`shipping:book`** to the shipping SQS queue.
+- `shipping-api` books the shipment (terminal).
+
+Each hop uses a Benzene `IBenzeneMessageSender` (`AddOutboundRouting` → `UseSqs`) targeting the next
+service's SQS **ingress** — the same queue the shared wiring already consumes. Terraform provisions
+the two queues, the SQS→Lambda event-source mappings, and the send/receive IAM. Sends are best-effort,
+so a downstream hiccup never fails the upstream call (and locally, with no queue, it just logs).
+
+Because each service also **declares** what it sends (in its spec's `events`), the mesh aggregator
+derives a **structural topology** — an edge from each sender to each handler — and publishes
+`topology.json`. After a refresh the Mesh UI's **Topology** table shows `orders → payments` and
+`payments → shipping` (source `structural`), no tracing backend required. Layer on
+`Benzene.Mesh.Tracing.Tempo` to add *observed* edges (real req-rate / error / latency) on top.
+
+**See the chain fire:** invoke `orders-api` (any transport — `orders-create-sqs.json`, the API, …),
+then watch CloudWatch: `orders` logs "sent payments:capture", `payments` logs "sent shipping:book",
+`shipping` logs the booking — all tied together by the propagated correlation id.
 
 ## Deploy it (via GitHub Actions — no local tooling)
 

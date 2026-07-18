@@ -1,4 +1,5 @@
 using System.Reflection;
+using Amazon.SQS;
 using Benzene.Abstractions.Hosting;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
@@ -7,6 +8,8 @@ using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.CloudService;
+using Benzene.Clients;
+using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
@@ -37,11 +40,13 @@ public static class MeshServiceWiring
 {
     /// <summary>
     /// Registers the baseline, the domain handlers, HTTP routing, JSON console logging (captured to
-    /// CloudWatch on Lambda), and the domain's FluentValidation validators. Optionally declares the
-    /// topics this service <em>sends</em> to other services (<paramref name="outboundSends"/>) — they
-    /// appear in the spec's <c>events</c>, from which the mesh derives structural topology edges.
+    /// CloudWatch on Lambda), and the domain's FluentValidation validators. Each
+    /// <paramref name="outboundSends"/> both <b>declares</b> a topic this service sends (so it appears
+    /// in the spec's <c>events</c> → the mesh's structural topology) <b>and wires the runtime route</b>
+    /// (an <see cref="IBenzeneMessageSender"/> that fans the topic out to the SQS queue named by the
+    /// send's env var — the ingress the target service already consumes).
     /// </summary>
-    public static void ConfigureServices(IServiceCollection services, Assembly domainAssembly, params IMessageDefinition[] outboundSends)
+    public static void ConfigureServices(IServiceCollection services, Assembly domainAssembly, params OutboundSend[] outboundSends)
     {
         // Structured JSON logs to stdout → CloudWatch. The correlation id + processTime that
         // UseLogResult emits ride along on every line.
@@ -57,8 +62,23 @@ public static class MeshServiceWiring
 
             if (outboundSends.Length > 0)
             {
-                // Declares "this service sends topic T" in the spec's events → the mesh's structural topology.
-                x.AddBroadcastEvent(outboundSends);
+                // Declare each send in the spec's events → the mesh's structural topology edge.
+                x.AddBroadcastEvent(outboundSends
+                    .Select(s => (IMessageDefinition)new BroadcastEventDefinition(s.Topic, s.MessageType))
+                    .ToArray());
+
+                // The runtime route: an IBenzeneMessageSender that sends each topic to its target
+                // service's SQS ingress queue. Lazy IAmazonSQS so the client is only built on a real
+                // send (so a service without queue env vars — e.g. the Lambda test tool — still starts).
+                x.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient());
+                x.AddOutboundRouting(routing =>
+                {
+                    foreach (var send in outboundSends)
+                    {
+                        var queueUrl = Environment.GetEnvironmentVariable(send.QueueUrlEnvVar) ?? "";
+                        routing.Route(send.Topic, pipeline => pipeline.UseSqs(queueUrl));
+                    }
+                });
             }
         });
     }

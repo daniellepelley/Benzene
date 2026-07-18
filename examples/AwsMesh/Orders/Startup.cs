@@ -4,7 +4,6 @@ using Benzene.Examples.AwsMesh.Orders.Handlers;
 using Benzene.Examples.AwsMesh.Orders.HealthChecks;
 using Benzene.Examples.AwsMesh.Orders.Model;
 using Benzene.Examples.AwsMesh.Shared;
-using Benzene.Extras.Broadcast;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
@@ -25,9 +24,8 @@ public class Startup : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly,
-            // orders-api sends these downstream — declared so the mesh draws orders → payments/shipping.
-            new BroadcastEventDefinition("payments:capture", typeof(OutboundPaymentCapture)),
-            new BroadcastEventDefinition("shipping:book", typeof(OutboundShipmentBook)));
+            // orders-api → payments-api: on create, send payments:capture to the payments SQS queue.
+            new OutboundSend("payments:capture", typeof(OutboundPaymentCapture), "PAYMENTS_QUEUE_URL"));
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {

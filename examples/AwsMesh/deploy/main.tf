@@ -111,8 +111,72 @@ resource "aws_lambda_function" "service" {
   memory_size      = 512
   timeout          = 30
 
+  # The order → payment → shipment chain: each sender gets the next service's queue URL. Only added
+  # for services that send (orders, payments); shipping is terminal.
+  dynamic "environment" {
+    for_each = length(local.service_env[each.key]) > 0 ? [1] : []
+    content {
+      variables = local.service_env[each.key]
+    }
+  }
+
   # Discovery finds services by this tag; the mesh Lambda deliberately does NOT carry it.
   tags = { (var.discovery_tag_key) = "true" }
+}
+
+# ---------------------------------------------------------------------------------------------------
+# Runtime interconnectivity: SQS ingress queues for the order → payment → shipment chain. orders sends
+# payments:capture to the payments queue; payments sends shipping:book to the shipping queue; each
+# queue triggers its service Lambda (which already handles SQS via the shared wiring).
+# ---------------------------------------------------------------------------------------------------
+locals {
+  service_env = {
+    orders   = { PAYMENTS_QUEUE_URL = aws_sqs_queue.payments.url }
+    payments = { SHIPPING_QUEUE_URL = aws_sqs_queue.shipping.url }
+    shipping = {}
+  }
+}
+
+resource "aws_sqs_queue" "payments" {
+  name                       = "${var.project}-payments-queue"
+  visibility_timeout_seconds = 60
+}
+
+resource "aws_sqs_queue" "shipping" {
+  name                       = "${var.project}-shipping-queue"
+  visibility_timeout_seconds = 60
+}
+
+resource "aws_lambda_event_source_mapping" "payments" {
+  event_source_arn = aws_sqs_queue.payments.arn
+  function_name    = aws_lambda_function.service["payments"].arn
+  batch_size       = 1
+}
+
+resource "aws_lambda_event_source_mapping" "shipping" {
+  event_source_arn = aws_sqs_queue.shipping.arn
+  function_name    = aws_lambda_function.service["shipping"].arn
+  batch_size       = 1
+}
+
+# The shared service role can send to both queues (as a producer) and consume them (the event-source
+# mapping polls with the function's role).
+data "aws_iam_policy_document" "service_sqs" {
+  statement {
+    actions = [
+      "sqs:SendMessage",
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes",
+    ]
+    resources = [aws_sqs_queue.payments.arn, aws_sqs_queue.shipping.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "service_sqs" {
+  name   = "${var.project}-service-sqs"
+  role   = aws_iam_role.service.id
+  policy = data.aws_iam_policy_document.service_sqs.json
 }
 
 # ---------------------------------------------------------------------------------------------------

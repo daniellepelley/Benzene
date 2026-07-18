@@ -2,6 +2,7 @@ using Benzene.Abstractions.Hosting;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Examples.AwsMesh.Payments.Handlers;
 using Benzene.Examples.AwsMesh.Payments.HealthChecks;
+using Benzene.Examples.AwsMesh.Payments.Model;
 using Benzene.Examples.AwsMesh.Shared;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
@@ -21,7 +22,9 @@ public class Startup : BenzeneStartUp
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly);
+        => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly,
+            // payments-api → shipping-api: on capture, send shipping:book to the shipping SQS queue.
+            new OutboundSend("shipping:book", typeof(OutboundShipmentBook), "SHIPPING_QUEUE_URL"));
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
