@@ -1,0 +1,88 @@
+name: Deploy Azure Mesh Example
+
+# Manual-only: deploys examples/AzureMesh (3 Cloud Service Web Apps + the mesh Web App) to Azure via
+# Terraform. Needs an Azure service principal in the "test" GitHub Environment: AZURE_CREDENTIALS
+# (azure/login JSON) or the OIDC trio, plus ARM_SUBSCRIPTION_ID. Nothing here runs on push.
+on:
+  workflow_dispatch:
+    inputs:
+      location:
+        description: "Azure region"
+        required: true
+        default: "westeurope"
+      acr_name:
+        description: "ACR name (globally unique, alphanumeric)"
+        required: true
+      storage_account:
+        description: "Storage account for artifacts (globally unique, lowercase alphanumeric)"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  RG: benzene-mesh-rg
+  PROJECT: benzene-mesh
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      # Remote state in a per-subscription storage account, created on first use (idempotent).
+      - name: Terraform init (remote azurerm state)
+        working-directory: examples/AzureMesh/deploy
+        env:
+          LOCATION: ${{ inputs.location }}
+          STATE_SA: ${{ inputs.storage_account }}tfstate
+        run: |
+          az group create -n "$RG" -l "$LOCATION" >/dev/null
+          az storage account create -n "$STATE_SA" -g "$RG" -l "$LOCATION" --sku Standard_LRS >/dev/null 2>&1 || true
+          az storage container create -n tfstate --account-name "$STATE_SA" --auth-mode login >/dev/null 2>&1 || true
+          terraform init -input=false \
+            -backend-config="resource_group_name=$RG" \
+            -backend-config="storage_account_name=$STATE_SA" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=azure-mesh.tfstate"
+
+      # Phase 1: create the registry (and RG) so we have somewhere to push the images.
+      - name: Terraform apply (registry only)
+        working-directory: examples/AzureMesh/deploy
+        run: |
+          terraform apply -input=false -auto-approve \
+            -var "location=${{ inputs.location }}" \
+            -var "acr_name=${{ inputs.acr_name }}" \
+            -var "storage_account=${{ inputs.storage_account }}" \
+            -target=azurerm_container_registry.acr
+
+      - name: Build + push images to ACR
+        run: |
+          az acr login --name "${{ inputs.acr_name }}"
+          REG="${{ inputs.acr_name }}.azurecr.io"
+          TAG="${GITHUB_SHA::12}"
+          docker build -f examples/K8sMesh/Service/Dockerfile -t "$REG/benzene-azuremesh-service:$TAG" .
+          docker build -f examples/AzureMesh/Mesh/Dockerfile  -t "$REG/benzene-azuremesh-mesh:$TAG" .
+          docker push "$REG/benzene-azuremesh-service:$TAG"
+          docker push "$REG/benzene-azuremesh-mesh:$TAG"
+
+      # Phase 2: full apply, pointing the Web Apps at the freshly-pushed image tag.
+      - name: Terraform apply (full)
+        working-directory: examples/AzureMesh/deploy
+        run: |
+          terraform apply -input=false -auto-approve \
+            -var "location=${{ inputs.location }}" \
+            -var "acr_name=${{ inputs.acr_name }}" \
+            -var "storage_account=${{ inputs.storage_account }}" \
+            -var "image_tag=${GITHUB_SHA::12}"
+
+      - name: Show URLs
+        working-directory: examples/AzureMesh/deploy
+        run: terraform output
