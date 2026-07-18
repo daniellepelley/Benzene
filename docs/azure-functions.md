@@ -759,7 +759,7 @@ app.UseTimerTrigger(timer => timer
     .UseMessageHandlers());
 ```
 
-(The extension is named `UseTimerTrigger` because `UseTimer` is already Benzene's timing
+(The extension is named `UseTimerTrigger` because `UseTimer` is already `Benzene.Diagnostics`' timing
 middleware.) Add a trigger function — bind the timer parameter directly as Benzene's
 `TimerTriggerInfo`, whose property names match the worker's `TimerInfo` JSON:
 
