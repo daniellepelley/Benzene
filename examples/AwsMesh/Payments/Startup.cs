@@ -24,7 +24,9 @@ public class Startup : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.UsingBenzene(x => x.AddMessageHandlers(typeof(Startup).Assembly));
+        // AddBenzene registers the baseline every Benzene app needs (IDefaultStatuses, serializer,
+        // version selection, core middleware); UseBenzeneCloudService/UseApiGateway don't add it.
+        services.UsingBenzene(x => x.AddBenzene().AddMessageHandlers(typeof(Startup).Assembly));
     }
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)

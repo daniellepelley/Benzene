@@ -35,6 +35,10 @@ public class Startup : BenzeneStartUp
 
         services.UsingBenzene(benzene =>
         {
+            // Baseline every Benzene app needs (IDefaultStatuses, serializer, version selection, core
+            // middleware). UseApiGateway/UseEventBridge/UseMessageHandlers don't register it — the app
+            // must, same as every other Benzene example.
+            benzene.AddBenzene();
             benzene.AddMessageHandlers(typeof(Startup).Assembly);
             // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in S3.
             benzene.AddMeshAggregatorWithS3(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()), bucket, prefix);
