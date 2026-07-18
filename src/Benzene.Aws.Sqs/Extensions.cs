@@ -36,6 +36,7 @@ public static class Extensions
             .AddSqsConsumer()
         );
         var middlewarePipelineBuilder = app.Create<SqsConsumerMessageContext>();
+        middlewarePipelineBuilder.UseBenzeneInvocation();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 

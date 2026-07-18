@@ -47,6 +47,15 @@ Full detail (including the interaction with `CatchExceptions`): `docs/cookbooks/
 - `SnsRegistrations` - Registers SNS services
 - Extension methods for configuration
 
+## W3C trace context and invocationId (release plan Tier 3.5)
+`.UseW3CTraceContext<SnsRecordContext>()` works: `SnsMessageHeadersGetter` already read real SNS
+message attributes. Separately, `UseSns(...)` now auto-wires `UseBenzeneInvocation()`
+(`BenzeneInvocationExtensions.cs`) as the first middleware in the SNS pipeline, so
+`IBenzeneInvocation` resolves inside each record's dispatch (`InvocationId` = the record's SNS
+`MessageId`) - previously this threw/silently came back `null`, because each record is dispatched
+through its own DI scope, disconnected from whatever the outer Lambda invocation populated. No
+application code changes needed for either fix.
+
 ## When to use this package
 - When building Lambda functions triggered by SNS
 - For pub/sub event handling with Benzene

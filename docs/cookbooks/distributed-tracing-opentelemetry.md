@@ -221,7 +221,9 @@ public class WorkerStartUp : BenzeneStartUp
             MaxNumberOfMessages = 10
         },
         sqsClientFactory,
-        sqsApp => sqsApp.UseMessageHandlers()));
+        sqsApp => sqsApp
+            .UseW3CTraceContext()
+            .UseMessageHandlers()));
     }
 }
 ```
@@ -260,9 +262,16 @@ public class ProcessOrderMessage
 }
 ```
 
-### The current limitation, honestly stated
+### Async transports are supported too
 
-> `UseW3CTraceContext()` — the middleware that lets a service pick up an inbound trace and continue it — is only wired for HTTP-based transports today (ASP.NET Core, Azure Functions' ASP.NET-style trigger, API Gateway). SQS/SNS/Kafka/Event Hub inbound extraction is not yet implemented. That means in the exact setup above: the API service's outbound client correctly stamps `traceparent` onto the SQS message (step 4), but the worker has no supported way to read it back out and parent its own `Activity` on it. The worker's spans still show up in Jaeger — they're just a second, disconnected trace, not a continuation of the API's trace. If your downstream service were itself HTTP-based (another ASP.NET Core app, an Azure Function behind the ASP.NET-style trigger, a Lambda behind API Gateway) instead of an SQS consumer, `UseW3CTraceContext()` on that side would pick the parent back up and you'd get one unbroken trace end-to-end today.
+`UseW3CTraceContext()` is fully generic — it works on any pipeline context with a registered
+`IMessageHeadersGetter<TContext>`, which is exactly the seam `.UseSqs(...)` (and `.UseSns(...)`,
+`.UseKafka(...)`, `.UseEventHub(...)`, on both AWS and Azure, Lambda/Functions-triggered and
+self-hosted-worker alike) already registers. Step 6's `sqsApp.UseW3CTraceContext().UseMessageHandlers()`
+above is exactly the same call, in exactly the same "first middleware" position, as step 3's HTTP
+pipeline — the API service's outbound client stamps `traceparent` onto the SQS message (step 4),
+and the worker's `UseW3CTraceContext()` reads it back out and parents its own `Activity` on it, so
+Jaeger shows **one continuous trace** spanning both services, not two disconnected ones.
 
 ## Testing
 
@@ -273,8 +282,8 @@ public class ProcessOrderMessage
    curl -X POST http://localhost:5000/orders -H "Content-Type: application/json" -d '{"customerId":"cust-1"}'
    ```
 3. Open the Jaeger UI at `http://localhost:16686` and select the API service. You should see a trace containing spans for `W3CTraceContext.Root`, the HTTP middleware pipeline, and `CreateOrderMessageHandler`.
-4. Select the worker service. You'll see a **separate** trace for the SQS consumer pipeline and `ProcessOrderMessageHandler` — per the limitation above, this is expected today, not a bug in your setup.
-5. To confirm the header did go out on the wire (even though nothing reads it back yet), inspect the SQS message: `traceparent` will be present as a string message attribute alongside `topic`.
+4. Select the worker service. You should see the **same trace ID** as the API service, continuing with spans for the SQS consumer pipeline and `ProcessOrderMessageHandler` — one continuous trace across both services, not two disconnected ones.
+5. To confirm the header actually went out on the wire, inspect the SQS message: `traceparent` will be present as a string message attribute alongside `topic`.
 
 ## Troubleshooting
 
@@ -286,12 +295,12 @@ public class ProcessOrderMessage
 
 ### Two separate traces instead of one continuous trace across both services
 
-- If both services are HTTP-based, confirm `UseW3CTraceContext()` is the **first** middleware added, and that `.UseW3CTraceContext()` is on the outbound route used to call the second service.
-- If the downstream service is SQS/SNS/Kafka/Event Hub-based, this is the documented current limitation above, not a misconfiguration — there's nothing further to wire up until inbound extraction lands for that transport.
+- Confirm `UseW3CTraceContext()` is the **first** middleware added on the receiving side (HTTP or async transport alike), and that `.UseW3CTraceContext()` is on the outbound route used to call the second service.
+- Confirm the receiving pipeline actually has an `IMessageHeadersGetter<TContext>` registered for its context type — see the next Troubleshooting entry.
 
 ### `UseW3CTraceContext()` throws or the pipeline fails to resolve
 
-- It resolves `IMessageHeadersGetter<TContext>` for whatever context type the pipeline runs on. On HTTP-based pipelines (ASP.NET Core's `AspNetContext`, API Gateway's `ApiGatewayContext`) this is registered automatically by `UseHttp`/`UseApiGateway`. If you're adding it to a custom or lower-level pipeline, make sure the corresponding header getter is registered first.
+- It resolves `IMessageHeadersGetter<TContext>` for whatever context type the pipeline runs on. This is registered automatically by every built-in transport's `Use*(...)` extension — `UseHttp`/`UseApiGateway` for HTTP-based pipelines, and `UseSqs`/`UseSns`/`UseKafka`/`UseEventHub` (AWS Lambda, Azure Functions, and self-hosted workers alike) for the async transports. If you're adding it to a custom or lower-level pipeline, make sure the corresponding header getter is registered first.
 
 ## Variations
 

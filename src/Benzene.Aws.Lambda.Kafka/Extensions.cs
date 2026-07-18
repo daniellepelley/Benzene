@@ -19,7 +19,11 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseKafka(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action)
     {
         app.Register(x => x.AddKafka());
-        var pipeline = app.CreateMiddlewarePipeline(action);
+        var pipeline = app.CreateMiddlewarePipeline<KafkaContext>(builder =>
+        {
+            builder.UseBenzeneInvocation();
+            action(builder);
+        });
         return app.Use(resolver => new KafkaLambdaHandler(new KafkaApplication(pipeline), resolver));
     }
 }

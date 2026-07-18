@@ -153,11 +153,14 @@ effect on a client pipeline built via the lower-level `UseAwsLambda()`/`LambdaCo
 `InvokeRequest` has no header-like concept). See [Clients — Header forwarding](clients.md#header-forwarding)
 for the full per-transport breakdown.
 
-> Inbound extraction (`UseW3CTraceContext()`) is currently wired for HTTP-based transports (ASP.NET
-> Core, Azure Functions' ASP.NET-style trigger, API Gateway) — SQS/SNS/Kafka/Event Hub inbound
-> extraction is not yet implemented, so a trace started by an HTTP request continues correctly through
-> the outbound clients above, but a queue/stream consumer won't yet pick the parent back up on the
-> receiving end.
+> Inbound extraction (`UseW3CTraceContext()`) works on HTTP-based transports (ASP.NET Core, Azure
+> Functions' ASP.NET-style trigger, API Gateway) **and** the async transports — SQS, SNS, Kafka
+> (AWS Lambda, Azure Functions, and the self-hosted worker), and Event Hub (Azure Functions and the
+> self-hosted worker). A trace started by an HTTP request continues correctly through the outbound
+> clients above, and a queue/stream consumer on the receiving end picks the parent back up too, as
+> long as `.UseW3CTraceContext()` is the first middleware in its pipeline — see the
+> [distributed tracing cookbook](cookbooks/distributed-tracing-opentelemetry.md) for a full worked
+> HTTP-to-SQS example.
 
 ### OpenTelemetry
 

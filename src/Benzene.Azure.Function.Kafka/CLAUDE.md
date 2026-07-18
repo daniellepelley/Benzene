@@ -35,12 +35,23 @@ be reprocessed, so the handler needs to be idempotent (see
 - `Extensions.HandleKafkaEvents(this IAzureFunctionApp, params KafkaRecord[])` — the dispatch helper
   the `[KafkaTrigger]` function calls. `DependencyInjectionExtensions.UseKafka(...)` is the wiring
   (both builder types), with an optional `Action<KafkaOptions>`.
+- **invocationId (release plan Tier 3.5).** `UseKafka(...)` now auto-wires
+  `BenzeneInvocationExtensions.cs`'s `UseBenzeneInvocation()` as the first middleware, so
+  `IBenzeneInvocation` resolves inside each record's dispatch (`InvocationId` =
+  `"{topic}-{partition}-{offset}"` - Kafka has no single message-id field) - each record in the
+  trigger's batch is dispatched through its own DI scope via `MiddlewareMultiApplication`'s
+  per-record `CreateScope()`, disconnected from whatever `IBenzeneInvocation` the outer Azure
+  Functions invocation populated. No application code changes needed.
 
-## Known limitation
-`KafkaMessageHeadersGetter` **always returns an empty dictionary** — the Functions Kafka trigger's
-record headers aren't surfaced through this path yet. Body-based routing and payloads are
-unaffected; only transport headers are missing. Documented in `docs/getting-started-kafka.md`'s
-Azure Functions section.
+## Headers and W3C trace context
+`KafkaMessageHeadersGetter` reads `KafkaRecord.Headers` (`Microsoft.Azure.Functions.Worker.KafkaHeader[]`
+— confirmed present on `Microsoft.Azure.Functions.Worker.Extensions.Kafka` 4.3.0's `KafkaRecord` type,
+each entry a `Key`/`Value` (`byte[]`) pair), UTF-8 decoding each value — same convention as
+`Benzene.Kafka.Core`'s and `Benzene.Aws.Lambda.Kafka`'s header getters. This means `.UseW3CTraceContext
+<KafkaContext>()` works on this transport: a `traceparent`/`tracestate` header set by an upstream
+producer round-trips through the trigger and becomes the pipeline's root `Activity`'s parent, same as
+every other transport whose `IMessageHeadersGetter<TContext>` reads real headers. Covered by
+`KafkaGettersTest.cs` (decoding) and `KafkaW3CTraceContextTest.cs` (end-to-end trace continuation).
 
 ## When to use this package
 - Consuming Event Hubs over its Kafka protocol via an Azure Functions Kafka trigger. Add
@@ -56,4 +67,4 @@ Azure Functions section.
   `UseBenzeneMessage` envelope bridge (that's for Event Hubs and Queue Storage, whose messages
   carry no routable topic of their own — a Kafka record does).
 - Coverage: `KafkaPipelineTest.cs`, `KafkaGettersTest.cs`, `KafkaFailureHandlingTest.cs`,
-  `KafkaBatchAndNoOpTest.cs`.
+  `KafkaBatchAndNoOpTest.cs`, `KafkaW3CTraceContextTest.cs`.

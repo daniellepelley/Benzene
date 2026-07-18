@@ -64,3 +64,11 @@ how a poll batch is acknowledged:
 `SqsConsumerMessageContext.MessageResult` (previously a no-op, since deletion never used to depend
 on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
 (`SuccessfulMessages`/`FailedMessages`) that `SqsConsumer` uses to decide what to delete.
+
+### W3C trace context and invocationId (release plan Tier 3.5)
+`.UseW3CTraceContext<SqsConsumerMessageContext>()` works: `SqsConsumerMessageHeadersGetter` already
+read real message attributes. Separately, `UseSqs(...)` now auto-wires `UseBenzeneInvocation()`
+(`Consumer/BenzeneInvocationExtensions.cs`) as the first middleware, so `IBenzeneInvocation`
+resolves inside each message's dispatch (`InvocationId` = the message's SQS `MessageId`, `Platform`
+= `"Worker"`) - a long-running worker has no Lambda-style outer invocation boundary at all, so this
+is the only invocation identity available here. No application code changes needed for either fix.

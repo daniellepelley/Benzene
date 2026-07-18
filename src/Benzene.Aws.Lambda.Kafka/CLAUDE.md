@@ -20,6 +20,16 @@ batch reprocessing" as if that were a routine per-record mechanism — it isn't:
 nothing consequence of an *unhandled exception*, not of a returned failure result, and there is
 currently no supported way to get per-record `BatchItemFailures` reporting out of this package.)
 
+## W3C trace context and invocationId (release plan Tier 3.5)
+`.UseW3CTraceContext<KafkaContext>()` works: `KafkaMessageHeadersGetter` already read real Kafka
+record headers. Separately, `UseKafka(...)` now auto-wires `UseBenzeneInvocation()`
+(`BenzeneInvocationExtensions.cs`) as the first middleware, so `IBenzeneInvocation` resolves inside
+each record's dispatch (`InvocationId` = `"{topic}-{partition}-{offset}"` - Kafka has no single
+message-id field) - previously this threw/silently came back `null`, because each record is
+dispatched through its own DI scope via `MiddlewareMultiApplication`'s per-record
+`CreateScope()`, disconnected from whatever the outer Lambda invocation populated. No application
+code changes needed for either fix.
+
 ## Key types/interfaces
 
 ### Application & Handler

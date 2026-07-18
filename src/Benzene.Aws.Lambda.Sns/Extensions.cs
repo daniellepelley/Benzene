@@ -25,7 +25,11 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseSns(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<SnsRecordContext>> action, Action<SnsOptions> configure = null)
     {
         app.Register(x => x.AddSns());
-        var pipeline = app.CreateMiddlewarePipeline(action);
+        var pipeline = app.CreateMiddlewarePipeline<SnsRecordContext>(builder =>
+        {
+            builder.UseBenzeneInvocation();
+            action(builder);
+        });
         var options = new SnsOptions();
         configure?.Invoke(options);
         return app.Use(resolver => new SnsLambdaHandler(new SnsApplication(pipeline, options), resolver));

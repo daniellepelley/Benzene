@@ -33,6 +33,7 @@ public static class Extensions
             .AddEventHubConsumer()
         );
         var middlewarePipelineBuilder = app.Create<EventHubConsumerContext>();
+        middlewarePipelineBuilder.UseBenzeneInvocation();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 

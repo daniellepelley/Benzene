@@ -80,6 +80,13 @@ prevent checkpointing, have the handler throw instead of returning a failure `IM
 - `Extensions.UseEventHub(IBenzeneWorkerStartup, config, clientFactory, action)` - the
   `IBenzeneWorkerStartup` wiring, mirroring `UseKafka`/`UseSqs`/`UseServiceBus`; registers
   `AddBenzeneMessage().AddEventHubConsumer()` and adds the worker.
+- **W3C trace context and invocationId (release plan Tier 3.5).** `.UseW3CTraceContext<EventHubConsumerContext>()`
+  works: `EventHubConsumerMessageHeadersGetter` already read real string-typed `EventData.Properties`.
+  Separately, `UseEventHub(...)` now auto-wires `UseBenzeneInvocation()`
+  (`BenzeneInvocationExtensions.cs`) as the first middleware, so `IBenzeneInvocation` resolves
+  inside each event's dispatch (`InvocationId` = the event's service-assigned `SequenceNumber`,
+  `Platform` = `"Worker"`) - a long-running worker has no outer invocation boundary at all, so this
+  is the only invocation identity available here. No application code changes needed for either fix.
 
 ## When to use this package
 - Consuming Event Hubs from a long-running process (console app, container, AKS) instead of an

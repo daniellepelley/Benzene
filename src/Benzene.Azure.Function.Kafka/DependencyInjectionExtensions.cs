@@ -56,6 +56,7 @@ public static class DependencyInjectionExtensions
     {
         app.Register(x => x.AddAzureKafka());
         var pipeline = app.Create<KafkaContext>();
+        pipeline.UseBenzeneInvocation();
         action(pipeline);
         var options = new KafkaOptions();
         configure?.Invoke(options);

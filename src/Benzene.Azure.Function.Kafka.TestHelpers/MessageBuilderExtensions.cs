@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Linq;
+using System.Text;
 using Benzene.Abstractions;
 using Benzene.Core.MessageHandlers.Serialization;
 using Microsoft.Azure.Functions.Worker;
@@ -12,7 +13,10 @@ public static class MessageBuilderExtensions
         return new KafkaRecord
         {
             Topic = source.Topic,
-            Value = Encoding.UTF8.GetBytes(new JsonSerializer().Serialize(source.Message))
+            Value = Encoding.UTF8.GetBytes(new JsonSerializer().Serialize(source.Message)),
+            Headers = source.Headers
+                .Select(x => new KafkaHeader { Key = x.Key, Value = Encoding.UTF8.GetBytes(x.Value) })
+                .ToArray()
         };
     }
 }
