@@ -10,6 +10,15 @@ public class RequestResponse : IOpenApiSerializable
 {
     public string Topic { get; set; }
     public string Version { get; set; }
+
+    /// <summary>
+    /// True when this is a reserved Benzene utility topic (spec, health, mesh, …) rather than a
+    /// domain topic — see <see cref="ReservedTopics"/>. Serialized as <c>reserved</c> only when true,
+    /// so spec/mesh tooling can group or hide utility topics separately from the service's domain.
+    /// </summary>
+    [JsonProperty("reserved")]
+    public bool Reserved { get; set; }
+
     public HttpMapping[] HttpMappings { get; set; } = Array.Empty<HttpMapping>();
     public OpenApiSchema Request { get; set; }
     public OpenApiSchema Response { get; set; }
@@ -28,6 +37,10 @@ public class RequestResponse : IOpenApiSerializable
         writer.WriteStartObject();
 
         writer.WriteProperty("topic", Topic);
+        if (Reserved)
+        {
+            writer.WriteProperty("reserved", true);
+        }
         writer.WriteOptionalCollection("httpMappings", HttpMappings, (w, o) => o.SerializeAsV3(w));
         writer.WriteRequiredObject("request", Request, (w, o) => o.SerializeAsV3(w));
         writer.WriteRequiredObject("response", Response, (w, o) => o.SerializeAsV3(w));

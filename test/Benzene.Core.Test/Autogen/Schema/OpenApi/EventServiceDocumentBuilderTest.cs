@@ -59,6 +59,30 @@ public class EventServiceDocumentBuilderTest
     }
 
     [Fact]
+    public void Build_FlagsReservedUtilityTopics_ButNotDomainTopics()
+    {
+        var domain = MessageHandlerDefinition.CreateInstance("tenant:create", typeof(Example), typeof(Inner));
+        var spec = MessageHandlerDefinition.CreateInstance("spec", typeof(Example), typeof(Inner));
+        var health = MessageHandlerDefinition.CreateInstance("healthcheck", typeof(Example), typeof(Inner));
+
+        var doc = new EventServiceDocumentBuilder(new SchemaBuilder())
+            .AddMessageHandlerDefinitions(new[] { domain, spec, health })
+            .Build();
+
+        Assert.False(Assert.Single(doc.Requests, x => x.Topic == "tenant:create").Reserved);
+        Assert.True(Assert.Single(doc.Requests, x => x.Topic == "spec").Reserved);
+        Assert.True(Assert.Single(doc.Requests, x => x.Topic == "healthcheck").Reserved);
+
+        var json = doc.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+        Assert.Contains("\"reserved\": true", json);
+
+        // Round-trips through the deserializer (JsonProperty("reserved")).
+        var roundTripped = new EventServiceDocumentDeserializer().Deserialize(json);
+        Assert.True(Assert.Single(roundTripped.Requests, x => x.Topic == "spec").Reserved);
+        Assert.False(Assert.Single(roundTripped.Requests, x => x.Topic == "tenant:create").Reserved);
+    }
+
+    [Fact]
     public void Build_GeneratesExamplesForRequestsAndEvents()
     {
         var messageHandlerDefinition = MessageHandlerDefinition.CreateInstance("tenant:create",

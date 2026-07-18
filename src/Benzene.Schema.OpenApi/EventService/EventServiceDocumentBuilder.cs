@@ -146,6 +146,7 @@ namespace Benzene.Schema.OpenApi.EventService
                 {
                     Topic = messageHandlerDefinition.Topic.Id,
                     Version = messageHandlerDefinition.Topic.Version,
+                    Reserved = ReservedTopics.IsReserved(messageHandlerDefinition.Topic.Id),
                     Request = _schemaBuilder.AddSchema(messageHandlerDefinition.RequestType),
                     Response = _schemaBuilder.AddSchema(messageHandlerDefinition.ResponseType)
                 });
