@@ -11,10 +11,10 @@ The generator lives in the `Benzene.CodeGen.Client` package and produces a
 ## How it works
 
 Generation runs off a service description called an `EventServiceDocument` — the same model behind
-the [OpenAPI/AsyncAPI spec](spec). You can build that document two ways:
+the [OpenAPI/AsyncAPI spec](spec.md). You can build that document two ways:
 
 - **From the handler assembly directly** (reflection), at build time.
-- **From a running service's [`spec` endpoint](spec)**, so you can generate a client from a
+- **From a running service's [`spec` endpoint](spec.md)**, so you can generate a client from a
   deployed service without referencing its code.
 
 ## Generating from a handler assembly
@@ -106,15 +106,15 @@ var handlerFiles = new MessageHandlerBuilder("MyService.Handlers").BuildCodeFile
 ## Generating from a deployed service
 
 To generate a client from a service you don't have the source for, fetch its `EventServiceDocument`
-from the running service's [`spec` endpoint](spec) (the service must have
-[`UseSpec()`](reference/middleware#usespecstring-topic--spec) in its pipeline), then feed that
+from the running service's [`spec` endpoint](spec.md) (the service must have
+[`UseSpec()`](reference/middleware.md#usespecstring-topic--spec) in its pipeline), then feed that
 document into `MessageClientSdkBuilder` exactly as above. The
-[`Benzene.CodeGen.Cli`](reference/packages#code-generation--tooling) tool wraps this flow for
+[`Benzene.CodeGen.Cli`](reference/packages.md#code-generation--tooling) tool wraps this flow for
 command-line use.
 
 ## Further Reading
 
-- [OpenAPI Specification](spec) - the `spec` endpoint the document comes from
-- [Package Reference](reference/packages#code-generation--tooling) - the code-generation packages
-- [Package Reference: outbound clients](reference/packages#outbound-messaging-clients) - transports the client sends over
-- [Message Handlers](message-handlers) - the contracts the SDK is generated from
+- [OpenAPI Specification](spec.md) - the `spec` endpoint the document comes from
+- [Package Reference](reference/packages.md#code-generation--tooling) - the code-generation packages
+- [Package Reference: outbound clients](reference/packages.md#outbound-messaging-clients) - transports the client sends over
+- [Message Handlers](message-handlers.md) - the contracts the SDK is generated from

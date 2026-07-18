@@ -3,7 +3,7 @@
 Message handlers are the components that receive and process a single message. There should be
 exactly one message handler per topic your service handles. The topic (and the request/response
 types) form the front-facing contract for the service — they're what's used to generate OpenAPI /
-AsyncAPI documentation, client code, etc. (see [Spec](spec)).
+AsyncAPI documentation, client code, etc. (see [Spec](spec.md)).
 
 Handlers support constructor dependency injection, so keep the handler itself thin and push
 business logic into an injected service.
@@ -36,7 +36,7 @@ public interface IMessageHandler<TRequest>
   your handler's `HandleAsync` completes — this is why a no-response handler always reports back an
   "Accepted" result.
 
-See [Message Results](message-result) for everything about `IBenzeneResult<T>` and the available
+See [Message Results](message-result.md) for everything about `IBenzeneResult<T>` and the available
 status factories — this page doesn't repeat that detail.
 
 ### Request / response example
@@ -198,7 +198,7 @@ the pipeline. `MessageRouter<TContext>.HandleAsync`:
 
 The overload that accepts `Action<MessageRouterBuilder> router` lets you add middleware that runs
 **per handler invocation**, wrapped around the actual call — this is how
-[`.UseFluentValidation()`](fluent-validation) plugs in: it registers an `IHandlerMiddlewareBuilder`
+[`.UseFluentValidation()`](fluent-validation.md) plugs in: it registers an `IHandlerMiddlewareBuilder`
 that runs before `MessageHandlerMiddleware<TRequest, TResponse>` and short-circuits with a
 validation-failure result if the request fails validation, without ever reaching your handler code.
 
@@ -223,7 +223,7 @@ the request body two ways:
 The default registered via `AddContextItems()`, `MultiSerializerOptionsRequestMapper<TContext>`,
 picks which `ISerializer` to use per request by asking the scoped `IMediaFormatNegotiator<TContext>`
 which registered `IMediaFormat<TContext>` applies (typically decided from the request's
-`content-type` header — e.g. negotiating between JSON and [XML](common-middleware) bodies) instead of
+`content-type` header — e.g. negotiating between JSON and [XML](common-middleware.md) bodies) instead of
 always using the one default serializer. `EnrichingRequestMapper<TContext>` layers on
 `IRequestEnricher<TContext>` to merge extra context-derived fields into the deserialized request
 object.
@@ -273,25 +273,25 @@ needs:
   representation instead of `ErrorPayload` JSON.
 - **`DefaultResponseStatusHandler<TContext>`** / transport-specific status handlers — map the
   `IBenzeneResult.Status` string onto the transport's native status/acknowledgement concept (HTTP
-  status code, SQS batch-item-failure, etc. — see [Message Results](message-result#transport-mapping)
+  status code, SQS batch-item-failure, etc. — see [Message Results](message-result.md#transport-mapping)
   for the full mapping table).
 
 `IMessageHandlerResultSetter<TContext>` is the seam between `MessageRouter<TContext>` and all of
 this — it's what actually stores the `IMessageHandlerResult` on the context so the response
 handlers (and diagnostics, e.g. `ActivityMiddlewareDecorator`'s `benzene.handler` tag — see
-[Middleware](middleware#automatic-activity-wrapping-imiddlewarewrapper)) can read it afterwards.
+[Middleware](middleware.md#automatic-activity-wrapping-imiddlewarewrapper)) can read it afterwards.
 
 ## See also
 
-- [Message Results](message-result) — `IBenzeneResult<T>`, the `BenzeneResult` factory, result
+- [Message Results](message-result.md) — `IBenzeneResult<T>`, the `BenzeneResult` factory, result
   statuses, and how they map onto transport-specific responses.
-- [Middleware](middleware) — the pipeline mechanism `MessageRouter<TContext>` and per-handler
+- [Middleware](middleware.md) — the pipeline mechanism `MessageRouter<TContext>` and per-handler
   middleware (like FluentValidation) are built on.
-- [Common Middleware](common-middleware#usemessagehandlers) — `.UseMessageHandlers(...)` and
+- [Common Middleware](common-middleware.md#usemessagehandlers) — `.UseMessageHandlers(...)` and
   `.UseFluentValidation()` as ready-made pipeline middleware.
-- [Common Middleware: UsePresetTopic](common-middleware#usepresettopic) — route every message on
+- [Common Middleware: UsePresetTopic](common-middleware.md#usepresettopic) — route every message on
   one specific queue/subscription's pipeline to a fixed topic, for producers that never set the
   usual topic attribute/property.
-- [Fluent Validation](fluent-validation) — request validation before a handler is invoked.
-- [Spec](spec) — generating OpenAPI/AsyncAPI documentation from `[Message]`/`[HttpEndpoint]`
+- [Fluent Validation](fluent-validation.md) — request validation before a handler is invoked.
+- [Spec](spec.md) — generating OpenAPI/AsyncAPI documentation from `[Message]`/`[HttpEndpoint]`
   metadata.

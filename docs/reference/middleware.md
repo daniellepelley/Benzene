@@ -1,8 +1,8 @@
 # Middleware Reference
 
 A complete catalogue of the middleware Benzene ships, what each does, and the package it lives
-in. For the concept of how the pipeline works, see [Middleware](../middleware); for prose on
-the most common steps, see [Common Middleware](../common-middleware).
+in. For the concept of how the pipeline works, see [Middleware](../middleware.md); for prose on
+the most common steps, see [Common Middleware](../common-middleware.md).
 
 ## Two pipeline levels
 
@@ -32,12 +32,12 @@ Order matters: each step wraps everything added after it, so put cross-cutting c
 ## Transport / entry-point middleware
 
 These select the event source and open its sub-pipeline. Install the matching
-[package](packages#hosts--transports); each is documented with a full walkthrough elsewhere.
+[package](packages.md#hosts--transports); each is documented with a full walkthrough elsewhere.
 
 | Step | Context | Package | Purpose |
 |---|---|---|---|
-| `UseHttp(...)` | `AspNetContext` | `Benzene.AspNet.Core`, `Benzene.Azure.Function.AspNet` | Handle HTTP requests. See [ASP.NET Core](../asp-net-core). |
-| `UseApiGateway(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.ApiGateway` | Handle API Gateway events. See [AWS Lambda Setup](../getting-started-aws). |
+| `UseHttp(...)` | `AspNetContext` | `Benzene.AspNet.Core`, `Benzene.Azure.Function.AspNet` | Handle HTTP requests. See [ASP.NET Core](../asp-net-core.md). |
+| `UseApiGateway(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.ApiGateway` | Handle API Gateway events. See [AWS Lambda Setup](../getting-started-aws.md). |
 | `UseSqs(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.Sqs` | Handle SQS queue events. |
 | `UseSns(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.Sns` | Handle SNS notification events. |
 | `UseS3(...)` | `AwsEventStreamContext` | `Benzene.Aws.Lambda.S3` | Handle S3 bucket-notification events. |
@@ -81,7 +81,7 @@ All of these extend `IMiddlewarePipelineBuilder<TContext>` and are added before
 
 **Package:** `Benzene.Diagnostics`. Propagates the W3C `traceparent`/`tracestate` trace context
 across service boundaries — the recommended cross-service correlation mechanism. See
-[Monitoring](../monitoring#w3c-trace-context).
+[Monitoring](../monitoring.md#w3c-trace-context).
 
 ```csharp
 .UseW3CTraceContext()
@@ -102,7 +102,7 @@ on this or an outer pipeline.
 
 **Package:** `Benzene.Diagnostics`. Records `benzene.messages.processed` (count) and
 `benzene.message.duration` (ms) for the wrapped stage, tagged by `topic`, `transport`, and
-`result`. Export via [OpenTelemetry](../monitoring#opentelemetry).
+`result`. Export via [OpenTelemetry](../monitoring.md#opentelemetry).
 
 ```csharp
 .UseBenzeneMetrics()
@@ -175,7 +175,7 @@ exponential backoff.
 
 **Package:** transport packages (e.g. `Benzene.Aws.Lambda.ApiGateway`) plus
 `Benzene.HealthChecks`. Exposes health checks on a topic (default `healthcheck`), optionally
-bound to an HTTP method/path. See [Health Checks](../health-checks).
+bound to an HTTP method/path. See [Health Checks](../health-checks.md).
 
 ```csharp
 // HTTP-bound, explicit checks:
@@ -206,7 +206,7 @@ bound to an HTTP method/path. See [Health Checks](../health-checks).
 
 **Package:** `Benzene.Schema.OpenApi`. Exposes the service's OpenAPI/AsyncAPI schema on a topic
 so it can be queried at runtime. **Required for the code-generation CLI to introspect the
-service.** See [OpenAPI Specification](../spec).
+service.** See [OpenAPI Specification](../spec.md).
 
 ```csharp
 .UseSpec()
@@ -242,7 +242,7 @@ per handler, after routing and deserialization.
 
 **Package:** `Benzene.FluentValidation`. Finds a FluentValidation validator for the request type
 and short-circuits with a validation failure before the handler runs. See
-[Fluent Validation](../fluent-validation).
+[Fluent Validation](../fluent-validation.md).
 
 ```csharp
 .UseMessageHandlers(router => router
@@ -254,7 +254,7 @@ and short-circuits with a validation failure before the handler runs. See
 ### `UseDataAnnotationsValidation()`
 
 **Package:** `Benzene.DataAnnotations`. Validates the request using
-`System.ComponentModel.DataAnnotations` attributes. See [Data Annotations](../data-annotations).
+`System.ComponentModel.DataAnnotations` attributes. See [Data Annotations](../data-annotations.md).
 
 ```csharp
 .UseMessageHandlers(router => router
@@ -288,7 +288,7 @@ than routing it to a single one — useful for in-process fan-out.
 
 For sending messages *out* to other services, configured on a client pipeline
 (`IMiddlewarePipelineBuilder<...SendMessageContext>` / `IBenzeneClientContext<...>`). See the
-[client packages](packages#outbound-messaging-clients).
+[client packages](packages.md#outbound-messaging-clients).
 
 | Step | Package | Sends via |
 |---|---|---|
@@ -302,7 +302,7 @@ For sending messages *out* to other services, configured on a client pipeline
 
 ## See also
 
-- [Middleware](../middleware) — the pipeline concept.
-- [Common Middleware](../common-middleware) — narrative on the most-used steps.
-- [Package Reference](packages) — which package each step ships in.
-- [Monitoring & Diagnostics](../monitoring) — the observability middleware in context.
+- [Middleware](../middleware.md) — the pipeline concept.
+- [Common Middleware](../common-middleware.md) — narrative on the most-used steps.
+- [Package Reference](packages.md) — which package each step ships in.
+- [Monitoring & Diagnostics](../monitoring.md) — the observability middleware in context.

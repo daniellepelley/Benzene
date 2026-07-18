@@ -86,7 +86,7 @@ Handlers then depend only on `IOrderRepository` — no EF types leak into your l
 - `DatabaseConnectionHealthCheck<TDbContext>` — verifies the database is reachable.
 - `DatabaseHealthCheck<TDbContext>` — verifies connectivity and that a target migration is applied.
 
-Add one to your [health-check](../health-checks) set:
+Add one to your [health-check](../health-checks.md) set:
 
 ```csharp
 var healthChecks = new IHealthCheck[]
@@ -102,7 +102,7 @@ var healthChecks = new IHealthCheck[]
 Because handlers depend on `IOrderRepository`, unit-test them with a mocked repository (see
 [Mocking External Dependencies](mocking-dependencies.md)) — no database needed. For repository
 tests, use EF Core's in-memory or SQLite provider, or point at a real database in Docker via
-[`WithConfiguration`](../testing-benzene) for an integration test.
+[`WithConfiguration`](../testing-benzene.md) for an integration test.
 
 ```csharp
 var repository = new Mock<IOrderRepository>();
@@ -144,7 +144,7 @@ Run EF migrations as part of deployment rather than at startup on serverless hos
 
 ## Further Reading
 
-- [Health Checks](../health-checks) - the health-check pipeline
+- [Health Checks](../health-checks.md) - the health-check pipeline
 - [Redis Caching](redis-caching.md) - caching reads in front of EF
-- [Message Handlers](../message-handlers) - keeping handlers thin and port-based
-- [Package Reference](../reference/packages#health-checks) - the EF health-check package
+- [Message Handlers](../message-handlers.md) - keeping handlers thin and port-based
+- [Package Reference](../reference/packages.md#health-checks) - the EF health-check package

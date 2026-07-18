@@ -359,16 +359,16 @@ Enable it once, at startup:
 services.UsingBenzene(x => x.AddDiagnostics());
 ```
 
-See [Monitoring & Diagnostics](monitoring#tracing) for how these spans get exported to a real
-tracing backend via `Benzene.OpenTelemetry`, and [Common Middleware](common-middleware#usetimer) for
+See [Monitoring & Diagnostics](monitoring.md#tracing) for how these spans get exported to a real
+tracing backend via `Benzene.OpenTelemetry`, and [Common Middleware](common-middleware.md#usetimer) for
 `UseTimer`, which opens an additional, explicitly-named `Activity` around a whole pipeline stage
 (distinct from the automatic per-middleware spans described here).
 
 ## See also
 
-- [Common Middleware](common-middleware) — the ready-made middleware Benzene ships (correlation
+- [Common Middleware](common-middleware.md) — the ready-made middleware Benzene ships (correlation
   IDs, timers, metrics, health checks, message handler routing, validation).
-- [Monitoring & Diagnostics](monitoring) — tracing, metrics, logging, and distributed trace
+- [Monitoring & Diagnostics](monitoring.md) — tracing, metrics, logging, and distributed trace
   propagation built on top of the mechanisms described here.
-- [Message Handlers](message-handlers) — how `MessageRouter<TContext>` and `UseMessageHandlers(...)`
+- [Message Handlers](message-handlers.md) — how `MessageRouter<TContext>` and `UseMessageHandlers(...)`
   use this pipeline to dispatch to individual handlers.

@@ -8,8 +8,8 @@ it exercises the whole pipeline end to end rather than individual middleware in 
 
 ## Testing a `BenzeneStartUp`-based app (recommended)
 
-If your `StartUp` derives from `BenzeneStartUp` (see [AWS Lambda Setup](getting-started-aws) /
-[Azure Functions Setup](azure-functions)), `BenzeneTestHost` builds a test host from it directly —
+If your `StartUp` derives from `BenzeneStartUp` (see [AWS Lambda Setup](getting-started-aws.md) /
+[Azure Functions Setup](azure-functions.md)), `BenzeneTestHost` builds a test host from it directly —
 one API regardless of which platform(s) your `Configure` method wires up.
 
 ```csharp
@@ -45,7 +45,7 @@ registration the StartUp made — the standard way to swap in fakes and mocks.
 ### AWS Lambda
 
 `BuildAwsLambdaHost()` builds an `IAwsLambdaEntryPoint` — the same construction
-[`AwsLambdaHost<TStartUp>`](getting-started-aws) performs for a real deployment. Wrap it in
+[`AwsLambdaHost<TStartUp>`](getting-started-aws.md) performs for a real deployment. Wrap it in
 `AwsLambdaBenzeneTestHost` (from `Benzene.Tools`) to send events into it and get typed responses
 back:
 
@@ -89,7 +89,7 @@ point registered today.
 
 For ASP.NET Core, use the framework's own [`WebApplicationFactory`](https://learn.microsoft.com/aspnet/core/test/integration-tests)
 against a `Program` that calls `builder.UseBenzene<StartUp>()` / `app.UseBenzene()` (see
-[ASP.NET Core Integration](asp-net-core)), rather than a Benzene-specific dispatch helper. Since
+[ASP.NET Core Integration](asp-net-core.md)), rather than a Benzene-specific dispatch helper. Since
 your app already *is* a standard ASP.NET Core app, `WebApplicationFactory`/`TestServer` exercises
 the real request pipeline (routing, model binding, middleware ordering) that a hand-rolled request
 object wouldn't, and gives you a real `HttpClient` to call `PostAsync`/`GetAsync` on. Override

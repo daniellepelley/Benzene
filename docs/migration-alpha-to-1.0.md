@@ -256,7 +256,7 @@ middleware of your own instead — `ICorrelationId`, `AddCorrelationId()`, and t
 `WithCorrelationId()` log-scope extension all remain; only the inbound header-pickup
 middleware is gone. The outbound client decorator moved to a different mechanism —
 see [Removed: the `ClientBuilder`-based outbound client mechanism](#breaking-removed-the-clientbuilder-based-outbound-client-mechanism)
-below. See the [Request Correlation cookbook](cookbooks/request-correlation) for the
+below. See the [Request Correlation cookbook](cookbooks/request-correlation.md) for the
 pattern.
 
 ## New: `UseBenzeneEnrichment()`, `UseBenzeneMetrics()`, W3C trace context
@@ -350,7 +350,7 @@ to a platform-specific `Build*()` bridge (`BuildAwsLambdaHost()`,
 `BuildAzureFunctionApp()`, ...). It is now the standard test-host entry point for a
 `BenzeneStartUp`; the pre-1.0, `AwsLambdaStartUp`-specific test helpers targeted the
 removed startup classes, so services now test through `BenzeneTestHost` instead. See
-[Testing Benzene](testing-benzene) for the full guide.
+[Testing Benzene](testing-benzene.md) for the full guide.
 
 ## Other notable behavior changes
 

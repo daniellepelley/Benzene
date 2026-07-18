@@ -1,6 +1,6 @@
 # Correlation Ids
 
-> Cross-service correlation is handled by automatic [W3C `traceparent` propagation](monitoring#w3c-trace-context)
+> Cross-service correlation is handled by automatic [W3C `traceparent` propagation](monitoring.md#w3c-trace-context)
 > (`UseW3CTraceContext()`), which continues a distributed trace from the incoming
 > `traceparent`/`tracestate` headers on every transport — see the
 > [migration guide](migration-alpha-to-1.0#correlation-ids).
@@ -28,10 +28,10 @@ app.Use("PartnerCorrelation", resolver => async (context, next) =>
 ```
 
 Outbound clients can still forward the value: `.UseCorrelationId()` on an outbound route pipeline
-(see [Clients — Outbound middleware](clients#outbound-middleware)) stamps the current
+(see [Clients — Outbound middleware](clients.md#outbound-middleware)) stamps the current
 `ICorrelationId` onto the outgoing request's `x-correlation-id` header.
 
 ## See Also
 
-- [Monitoring & Diagnostics — W3C Trace Context](monitoring#w3c-trace-context)
-- [Request Correlation cookbook](cookbooks/request-correlation)
+- [Monitoring & Diagnostics — W3C Trace Context](monitoring.md#w3c-trace-context)
+- [Request Correlation cookbook](cookbooks/request-correlation.md)

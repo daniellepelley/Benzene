@@ -55,7 +55,7 @@ package; reference directly only when hand-building a pipeline.
 | `Benzene.Core.MessageHandlers` | Message handler pipeline, routing, and the `[Message]` topic attribute — the heart of dispatch. |
 | `Benzene.Core.Messages` | Outbound message-sender pipeline and context-predicate building. |
 | `Benzene.Core.Middleware` | The concrete middleware pipeline: `BenzeneApplicationBuilder`, exception-handler and context-converter middleware, entry-point application. |
-| `Benzene.Results` | `IBenzeneResult<T>` result helpers and extensions (`BenzeneResult.Ok(...)`, status mapping). See [Message Results](../message-result). |
+| `Benzene.Results` | `IBenzeneResult<T>` result helpers and extensions (`BenzeneResult.Ok(...)`, status mapping). See [Message Results](../message-result.md). |
 | `Benzene.Http` | Shared HTTP building blocks used by every HTTP transport — the `[HttpEndpoint]` routing attribute and CORS middleware. |
 
 ## Dependency injection
@@ -76,7 +76,7 @@ matching where your service runs; your message handlers stay identical across al
 
 | Package | What it gives you |
 |---|---|
-| `Benzene.AspNet.Core` | Host Benzene inside an ASP.NET Core app — `UseBenzene(...)` / `UseHttp(...)`. The simplest local-first host. See [ASP.NET Core](../asp-net-core) and [Getting Started](../getting-started). |
+| `Benzene.AspNet.Core` | Host Benzene inside an ASP.NET Core app — `UseBenzene(...)` / `UseHttp(...)`. The simplest local-first host. See [ASP.NET Core](../asp-net-core.md) and [Getting Started](../getting-started.md). |
 
 ### AWS Lambda
 
@@ -89,8 +89,8 @@ matching where your service runs; your message handlers stay identical across al
 | `Benzene.Aws.Lambda.S3` | Handle S3 bucket notification events — `UseS3(...)`. |
 | `Benzene.Aws.Lambda.Kafka` | Handle MSK / self-managed Kafka events — `UseKafka(...)`. |
 
-See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
-[AWS IAM Permissions](../aws-iam-permissions) for the per-source policies.
+See [AWS Lambda Setup](../getting-started-aws.md) for a full walkthrough and
+[AWS IAM Permissions](../aws-iam-permissions.md) for the per-source policies.
 
 ### Azure Functions
 
@@ -107,7 +107,7 @@ See [AWS Lambda Setup](../getting-started-aws) for a full walkthrough and
 | `Benzene.Azure.Function.EventGrid` | Handle Event Grid triggers — `UseEventGrid(...)`, routing events to message handlers by event type (both Event Grid and CloudEvents schemas). |
 | `Benzene.Azure.Function.Timer` | Handle Timer triggers — `UseTimerTrigger(...)`, consuming ticks directly (`UseTick`) or dispatching them to a message handler via `UsePresetTopic`. |
 
-See [Azure Functions Setup](../azure-functions).
+See [Azure Functions Setup](../azure-functions.md).
 
 ### Azure (self-hosted / worker)
 
@@ -121,7 +121,7 @@ are the Azure counterparts of `Benzene.Kafka.Core`'s and `Benzene.Aws.Sqs`'s sta
 | `Benzene.Azure.EventHub` | A self-hosted Event Hubs consumer (`BenzeneEventHubWorker`, `worker.UseEventHub(...)`) that runs an `EventProcessorClient` (consumer groups, partition load balancing, blob checkpointing) and dispatches each event through the middleware pipeline — distinct from `Benzene.Azure.Function.EventHub`, which handles Event Hubs *as a Functions trigger*. |
 | `Benzene.Azure.CosmosDb` | A self-hosted Cosmos DB Change Feed consumer (`BenzeneCosmosChangeFeedWorker<TDocument>`, `worker.UseCosmosDbChangeFeed<TDocument>(...)`) that runs the SDK's Change Feed Processor (lease-container ownership, instance load balancing) and runs each batch through a fan-in streaming pipeline with manual batch-level checkpoint control — distinct from `Benzene.Azure.Function.CosmosDb`, which handles the change feed *as a Functions trigger*. |
 
-See [Worker Service Setup](../getting-started-worker#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db).
+See [Worker Service Setup](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db).
 
 ### Other hosts
 
@@ -148,8 +148,8 @@ above are inbound; these are outbound.
 
 ## Validation
 
-Add request validation to the message-handler pipeline. See [Fluent Validation](../fluent-validation)
-and [Data Annotations](../data-annotations).
+Add request validation to the message-handler pipeline. See [Fluent Validation](../fluent-validation.md)
+and [Data Annotations](../data-annotations.md).
 
 | Package | What it gives you |
 |---|---|
@@ -169,7 +169,7 @@ to override that.
 
 ## Observability & resilience
 
-See [Monitoring & Diagnostics](../monitoring) and [Correlation IDs](../correlation-ids).
+See [Monitoring & Diagnostics](../monitoring.md) and [Correlation IDs](../correlation-ids.md).
 
 | Package | What it gives you |
 |---|---|
@@ -179,7 +179,7 @@ See [Monitoring & Diagnostics](../monitoring) and [Correlation IDs](../correlati
 
 ## Health checks
 
-See [Health Checks](../health-checks).
+See [Health Checks](../health-checks.md).
 
 | Package | What it gives you |
 |---|---|
@@ -198,7 +198,7 @@ See [Health Checks](../health-checks).
 ## Code generation & tooling
 
 Benzene can generate SDKs, infrastructure, and API specs from your message handlers and their
-topics. See [Terraform](../terraform) and [OpenAPI Specification](../spec).
+topics. See [Terraform](../terraform.md) and [OpenAPI Specification](../spec.md).
 
 | Package | What it gives you |
 |---|---|
@@ -208,7 +208,7 @@ topics. See [Terraform](../terraform) and [OpenAPI Specification](../spec).
 | `Benzene.CodeGen.ApiGateway` | Generate AWS API Gateway definitions from HTTP endpoints. |
 | `Benzene.CodeGen.Terraform` | Generate Terraform for Lambda functions and event-bus permissions. |
 | `Benzene.CodeGen.Markdown` | Generate Markdown documentation for a service and its messages. |
-| `Benzene.CodeGen.LambdaTestTool` | Generate per-topic test payload files (BenzeneMessage envelope, SNS, SQS, API Gateway) for the AWS Lambda Test Tool — see [Payload Testing](../payload-testing). |
+| `Benzene.CodeGen.LambdaTestTool` | Generate per-topic test payload files (BenzeneMessage envelope, SNS, SQS, API Gateway) for the AWS Lambda Test Tool — see [Payload Testing](../payload-testing.md). |
 | `Benzene.CodeGen.SourceGenerators` | Roslyn source generator that discovers message handlers at compile time (an alternative to runtime reflection). |
 | `Benzene.CodeGen.Cli` / `Benzene.CodeGen.Cli.Core` | The `benzene` code-generation command-line tool and its core. |
 | `Benzene.Extras` | Additional/optional middleware — event broadcasting and JSON-patch (`PATCH`) support. |
@@ -216,7 +216,7 @@ topics. See [Terraform](../terraform) and [OpenAPI Specification](../spec).
 
 ## Testing support
 
-See [Testing Benzene](../testing-benzene).
+See [Testing Benzene](../testing-benzene.md).
 
 | Package | What it gives you |
 |---|---|
@@ -225,6 +225,6 @@ See [Testing Benzene](../testing-benzene).
 
 ## See also
 
-- [Getting Started](../getting-started) — install your first package and run a service.
-- [Middleware](../middleware) and [Common Middleware](../common-middleware) — what you compose into the pipeline.
-- [Message Handlers](../message-handlers) — the code the packages exist to run.
+- [Getting Started](../getting-started.md) — install your first package and run a service.
+- [Middleware](../middleware.md) and [Common Middleware](../common-middleware.md) — what you compose into the pipeline.
+- [Message Handlers](../message-handlers.md) — the code the packages exist to run.

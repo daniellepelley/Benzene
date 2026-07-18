@@ -28,7 +28,7 @@ services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
 
 Put `.UseRetry(...)` *after* the transport middleware in the pipeline (outermost in the chain) so a
 failed attempt retries the whole send beneath it, including any header-stamping middleware. See
-[Clients — Outbound middleware](clients#outbound-middleware) for the full reference.
+[Clients — Outbound middleware](clients.md#outbound-middleware) for the full reference.
 
 ## Prerequisites
 
@@ -132,6 +132,6 @@ Not currently implemented in `Benzene.Resilience`. You'd need to bring your own 
 
 ## See Also
 
-- [Middleware](middleware)
-- [Common Middleware](common-middleware)
-- [Caching](caching)
+- [Middleware](middleware.md)
+- [Common Middleware](common-middleware.md)
+- [Caching](caching.md)

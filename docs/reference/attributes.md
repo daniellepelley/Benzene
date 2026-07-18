@@ -29,7 +29,7 @@ public class CreateOrderHandler : IMessageHandler<CreateOrderRequest, OrderDto> 
 public class CreateOrderHandlerV2 : IMessageHandler<CreateOrderRequestV2, OrderDto> { /* … */ }
 ```
 
-See [Message Handlers](../message-handlers).
+See [Message Handlers](../message-handlers.md).
 
 ## `[HttpEndpoint]`
 
@@ -56,13 +56,13 @@ public class GetUserHandler : IMessageHandler<GetUserRequest, GetUserResponse> {
 ```
 
 Route parameters (`{id}`) are bound onto the matching property of the request type. See
-[ASP.NET Core](../asp-net-core) and [Getting Started](../getting-started).
+[ASP.NET Core](../asp-net-core.md) and [Getting Started](../getting-started.md).
 
 ## `[GrpcMethod]`
 
 **Package:** `Benzene.Grpc` · **Namespace:** `Benzene.Grpc` · **Target:** class (repeatable)
 
-Maps a gRPC method onto the handler's topic so the [gRPC transport](packages#other-hosts) can
+Maps a gRPC method onto the handler's topic so the [gRPC transport](packages.md#other-hosts) can
 route calls to it. Repeatable, to serve several methods from one handler.
 
 ```csharp
@@ -100,7 +100,7 @@ public ValidationStatusAttribute(string status)
 public class CreateOrderRequest { /* … */ }
 ```
 
-See [Fluent Validation](../fluent-validation) and [Data Annotations](../data-annotations).
+See [Fluent Validation](../fluent-validation.md) and [Data Annotations](../data-annotations.md).
 
 ---
 
@@ -110,6 +110,6 @@ See [Fluent Validation](../fluent-validation) and [Data Annotations](../data-ann
 
 ## See also
 
-- [Message Handlers](../message-handlers) — where these attributes are applied.
-- [Middleware Reference](middleware) — the pipeline steps that act on routed messages.
-- [Package Reference](packages) — which package each attribute ships in.
+- [Message Handlers](../message-handlers.md) — where these attributes are applied.
+- [Middleware Reference](middleware.md) — the pipeline steps that act on routed messages.
+- [Package Reference](packages.md) — which package each attribute ships in.

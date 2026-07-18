@@ -56,7 +56,7 @@ dotnet add package Benzene.AspNet.Core --prerelease
 ## 2. Define a message handler
 
 Business logic lives in message handlers, not in a controller action — this keeps it testable and
-portable across hosts. See [Message Handlers](message-handlers) for the full picture; the minimal
+portable across hosts. See [Message Handlers](message-handlers.md) for the full picture; the minimal
 shape is:
 
 ```csharp
@@ -259,12 +259,12 @@ On ASP.NET Core, `IBenzeneInvocation.InvocationId` is populated from `HttpContex
 `Platform` is `"AspNet"`, and `GetFeature<HttpContext>()` returns the current request's native
 `HttpContext` if you need to drop down to it.
 
-For cross-service correlation see [Correlation IDs](correlation-ids) — this rides on the W3C
+For cross-service correlation see [Correlation IDs](correlation-ids.md) — this rides on the W3C
 trace context propagation described next.
 
 ### W3C trace context
 
-See [W3C Trace Context](monitoring#w3c-trace-context) in the monitoring guide for the full
+See [W3C Trace Context](monitoring.md#w3c-trace-context) in the monitoring guide for the full
 picture of how `Benzene.Diagnostics`' `UseW3CTraceContext()` middleware continues a caller's
 distributed trace. On ASP.NET Core specifically: the framework's own hosting layer already
 extracts the inbound `traceparent` header and starts its own `Activity` before your middleware
@@ -292,8 +292,8 @@ app.UseHttp(http => http
     .UseMessageHandlers());
 ```
 
-See [Monitoring & Diagnostics](monitoring) for the full set of options, and
-[Common Middleware](common-middleware) for `UseBenzeneEnrichment()`'s exact behavior.
+See [Monitoring & Diagnostics](monitoring.md) for the full set of options, and
+[Common Middleware](common-middleware.md) for `UseBenzeneEnrichment()`'s exact behavior.
 
 ### Health checks
 
@@ -313,7 +313,7 @@ app.UseHttp(http => http
 ```
 
 Place `UseHealthCheck` before `UseMessageHandlers` in the pipeline — it short-circuits requests for
-its topic and calls `next()` for everything else. See [Health Checks](health-checks) for how to
+its topic and calls `next()` for everything else. See [Health Checks](health-checks.md) for how to
 write a health check and the full set of ways to register one.
 
 ### Validation
@@ -323,7 +323,7 @@ app.UseHttp(http => http
     .UseMessageHandlers(router => router.UseFluentValidation()));
 ```
 
-See [Fluent Validation](fluent-validation) for how validators are resolved and how failures are
+See [Fluent Validation](fluent-validation.md) for how validators are resolved and how failures are
 turned into a `ValidationError` result.
 
 ### Testing
@@ -332,15 +332,15 @@ Use the framework's own `WebApplicationFactory` against your `Program`/`Startup`
 Benzene-specific dispatch helper — since the app already *is* a standard ASP.NET Core app,
 `WebApplicationFactory`/`TestServer` exercises the real request pipeline (routing, model binding,
 middleware ordering) and gives you a real `HttpClient`. See the
-[ASP.NET Core section of Testing Benzene](testing-benzene#aspnet-core) for the full walkthrough,
+[ASP.NET Core section of Testing Benzene](testing-benzene.md#aspnet-core) for the full walkthrough,
 including overriding services via `WithWebHostBuilder`.
 
 ## See Also
 
-- [Correlation IDs](correlation-ids)
-- [Monitoring & Diagnostics](monitoring)
-- [Testing Benzene](testing-benzene)
-- [Health Checks](health-checks)
-- [Fluent Validation](fluent-validation)
-- [Message Handlers](message-handlers)
-- [Middleware](middleware)
+- [Correlation IDs](correlation-ids.md)
+- [Monitoring & Diagnostics](monitoring.md)
+- [Testing Benzene](testing-benzene.md)
+- [Health Checks](health-checks.md)
+- [Fluent Validation](fluent-validation.md)
+- [Message Handlers](message-handlers.md)
+- [Middleware](middleware.md)

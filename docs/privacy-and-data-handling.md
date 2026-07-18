@@ -34,7 +34,7 @@ assessment.
 Everything below requires an explicit call in your own `StartUp`/pipeline configuration. None of it
 happens unless you write it.
 
-- **`WithHeaders(params string[] headers)`** (see [Common Middleware](common-middleware#uselogresult--uselogcontext))
+- **`WithHeaders(params string[] headers)`** (see [Common Middleware](common-middleware.md#uselogresult--uselogcontext))
   logs the *named* request headers verbatim, keyed by their own header name. This is the one built-in
   extension point where a careless call can leak something sensitive — e.g. `WithHeaders("Authorization")`
   would log a bearer token in plaintext. Only pass header names you've confirmed don't carry
@@ -67,7 +67,7 @@ happens unless you write it.
 
 ## Sampling and data retention
 
-Tracing sampling (see [Sampling Strategies](sampling-strategies)) reduces *how much* trace data is
+Tracing sampling (see [Sampling Strategies](sampling-strategies.md)) reduces *how much* trace data is
 exported, which indirectly reduces exposure if your spans ever did carry sensitive tags — but it's
 not a substitute for not capturing sensitive data in the first place, since sampled spans still
 contain whatever was tagged on them. Data retention (how long your tracing backend/log aggregator

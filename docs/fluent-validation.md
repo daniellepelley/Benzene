@@ -198,7 +198,7 @@ var schemas = schemaBuilder.GetValidationSchemas(typeof(TestValidationObject));
 Recognized rule types include minimum/maximum length, regular expressions, `NotEmpty`/`NotNull`, `IsOneOf`, email, phone number, numeric comparisons (`GreaterThan`, `LessThanOrEqual`, etc.), and the custom string validators listed above. Rules it doesn't recognize are omitted from the schema rather than causing an error.
 
 ## See Also
-- [Message Handlers](message-handlers) — where validation middleware sits in the request lifecycle
-- [Handler Result](message-result) — `IBenzeneResult` statuses, including `ValidationError`
-- [Middleware](middleware) — general middleware pipeline concepts
-- [Data Annotations](data-annotations) — the attribute-based alternative to FluentValidation
+- [Message Handlers](message-handlers.md) — where validation middleware sits in the request lifecycle
+- [Handler Result](message-result.md) — `IBenzeneResult` statuses, including `ValidationError`
+- [Middleware](middleware.md) — general middleware pipeline concepts
+- [Data Annotations](data-annotations.md) — the attribute-based alternative to FluentValidation

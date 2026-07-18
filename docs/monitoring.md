@@ -1,6 +1,6 @@
 # Monitoring & Diagnostics
 
-Benzene includes built-in support for common monitoring and diagnostic patterns, ensuring your services are observable and easy to debug. Detailed information on core middleware can be found in the [Common Middleware](common-middleware) section.
+Benzene includes built-in support for common monitoring and diagnostic patterns, ensuring your services are observable and easy to debug. Detailed information on core middleware can be found in the [Common Middleware](common-middleware.md) section.
 
 ## Correlation IDs
 
@@ -12,8 +12,8 @@ system. In Benzene this rides on the W3C `traceparent`/`tracestate` headers via
 `UseW3CTraceContext()` — see [W3C trace context](#w3c-trace-context) below.
 
 A per-invocation `ICorrelationId` (self-generated GUID, settable from your own middleware) remains
-available for log-scope enrichment — see [Correlation Ids](correlation-ids) and
-`.UseLogResult(x => x.WithCorrelationId())` in [Common Middleware](common-middleware).
+available for log-scope enrichment — see [Correlation Ids](correlation-ids.md) and
+`.UseLogResult(x => x.WithCorrelationId())` in [Common Middleware](common-middleware.md).
 
 ## Tracing
 
@@ -108,7 +108,7 @@ app.UseLogResult(x => x
 
 Scope properties flow to any provider that supports scopes — for the console provider enable `IncludeScopes`; Serilog's provider maps scopes to its `LogContext` automatically.
 
-For a single, portable call that covers `invocationId`/`traceId`/`spanId`/`topic`/`transport`/`handler` on every platform (rather than hand-composing the extensions above), see [`UseBenzeneEnrichment()`](common-middleware#usebenzeneenrichment).
+For a single, portable call that covers `invocationId`/`traceId`/`spanId`/`topic`/`transport`/`handler` on every platform (rather than hand-composing the extensions above), see [`UseBenzeneEnrichment()`](common-middleware.md#usebenzeneenrichment).
 
 ### Autofac
 
@@ -150,7 +150,7 @@ This stamps `Activity.Current`'s `traceparent`/`tracestate` onto outgoing messag
 today for HTTP, SQS, SNS, and Kafka (all forward headers onto the real request), and for AWS Lambda's
 `AwsLambdaBenzeneMessageClient` (which embeds headers into its own message envelope) — but has no
 effect on a client pipeline built via the lower-level `UseAwsLambda()`/`LambdaContextConverter` (a raw
-`InvokeRequest` has no header-like concept). See [Clients — Header forwarding](clients#header-forwarding)
+`InvokeRequest` has no header-like concept). See [Clients — Header forwarding](clients.md#header-forwarding)
 for the full per-transport breakdown.
 
 > Inbound extraction (`UseW3CTraceContext()`) is currently wired for HTTP-based transports (ASP.NET
@@ -162,7 +162,7 @@ for the full per-transport breakdown.
 ### OpenTelemetry
 
 `AddDiagnostics()` already produces `Activity` spans (one per middleware, see [Tracing](#tracing)
-above) and, when you add [`UseBenzeneMetrics()`](common-middleware#usebenzenemetrics), the
+above) and, when you add [`UseBenzeneMetrics()`](common-middleware.md#usebenzenemetrics), the
 `benzene.messages.processed`/`benzene.message.duration` metrics. Neither goes anywhere on its own —
 the `Benzene.OpenTelemetry` package wires both into an OTel provider so they get exported to a real
 backend:
@@ -185,5 +185,5 @@ hosting integration (`OpenTelemetry.Extensions.Hosting`'s `AddOpenTelemetry()`, 
 etc.) the same way any other `AddSource`/`AddMeter` call would.
 
 For guidance on configuring a `Sampler` (recorded/exported trace volume), see
-[Sampling Strategies](sampling-strategies). For what data ends up in your logs/traces and how to
-avoid capturing PII, see [Privacy & Data Handling](privacy-and-data-handling).
+[Sampling Strategies](sampling-strategies.md). For what data ends up in your logs/traces and how to
+avoid capturing PII, see [Privacy & Data Handling](privacy-and-data-handling.md).

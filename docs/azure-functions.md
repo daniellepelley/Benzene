@@ -65,7 +65,7 @@ version `6.5.0`, or `Microsoft.Azure.Functions.Worker.Extensions.Kafka` version 
 ## 3. Define a message handler
 
 Business logic lives in message handlers, not in the trigger function — this keeps it testable
-and portable across hosts. See [Message Handlers](message-handlers) for the full picture; the
+and portable across hosts. See [Message Handlers](message-handlers.md) for the full picture; the
 minimal shape is:
 
 ```csharp
@@ -153,7 +153,7 @@ public class StartUp : BenzeneStartUp
 
 `UseHttp` on `IBenzeneApplicationBuilder` is a no-op on any host other than Azure Functions (it
 only does something when `app` is actually an `IAzureFunctionAppBuilder`), which is what lets the
-same `StartUp` shape be reused across platforms — see [ASP.NET Core Integration](asp-net-core) for
+same `StartUp` shape be reused across platforms — see [ASP.NET Core Integration](asp-net-core.md) for
 the same `UseHttp` method used in a plain ASP.NET Core app.
 
 ## 5. Wire up the isolated worker host
@@ -451,7 +451,7 @@ Benzene's sense, set a `"topic"` application property on each message you send; 
 `ServiceBusMessageTopicGetter` reads to route to the matching handler. If a subscription's producer
 isn't a Benzene client and never sets that property at all, call `.UsePresetTopic("orders.created")`
 before `.UseMessageHandlers()` in that subscription's pipeline to route every message on it to a
-fixed topic instead — see [Common Middleware: UsePresetTopic](common-middleware#usepresettopic).
+fixed topic instead — see [Common Middleware: UsePresetTopic](common-middleware.md#usepresettopic).
 Add a trigger function that
 injects `IAzureFunctionApp` and calls `HandleServiceBusMessages(...)`:
 
@@ -490,7 +490,7 @@ it to `HandleServiceBusMessages(messageActions, message)` — a successful resul
 message, a failure result or exception abandons it (respecting the queue's max delivery count
 before Service Bus's native dead-lettering kicks in). The full walkthrough, including how
 `CatchExceptions`/`RaiseOnFailureStatus` interact with it, is in
-[Service Bus Message Handling, step 5](cookbooks/service-bus-handling#5-message-completion-the-default-and-real-per-message-control).
+[Service Bus Message Handling, step 5](cookbooks/service-bus-handling.md#5-message-completion-the-default-and-real-per-message-control).
 
 ### Cosmos DB Change Feed
 
@@ -523,7 +523,7 @@ dispatch (a changed document has no message envelope to route on). Second, chang
 **ordered batch per partition key range**, so Benzene presents the whole batch to one pipeline run
 as a single `StreamContext<TDocument>` (fan-in) — the same streaming shape as `UseEventHubStream`
 — rather than fanning it out into isolated per-document contexts. See
-[Cosmos DB Change Feed Processing](cookbooks/cosmos-change-feed-processing) for the full
+[Cosmos DB Change Feed Processing](cookbooks/cosmos-change-feed-processing.md) for the full
 walkthrough.
 
 `Benzene.Azure.Function.CosmosDb` deliberately has no Azure SDK dependency; your function app
@@ -795,7 +795,7 @@ Every trigger above can authenticate as the Function App's managed identity with
 changes** — the `Connection` name in the trigger attribute stays the same, and only the app
 settings change (`ServiceBusConnection` → `ServiceBusConnection__fullyQualifiedNamespace`, etc.),
 plus RBAC role assignments to the app's identity. See
-[Managed Identity & RBAC for Azure Resources](cookbooks/managed-identity) for the per-trigger
+[Managed Identity & RBAC for Azure Resources](cookbooks/managed-identity.md) for the per-trigger
 settings, the roles each trigger needs (including the Functions host's own storage roles), and
 the Consumption-plan caveat. The example's `main.bicep` enables a system-assigned identity and
 outputs its `principalId` ready for role assignments.
@@ -810,7 +810,7 @@ services.UsingBenzene(x => x.AddDiagnostics());
 ```
 
 This is the same tracing system used across every Benzene host, not something Azure-specific. See
-[Monitoring & Diagnostics](monitoring) for the full picture, and [Correlation Ids](correlation-ids)
+[Monitoring & Diagnostics](monitoring.md) for the full picture, and [Correlation Ids](correlation-ids.md)
 for the header-based legacy alternative to W3C trace context propagation.
 
 ### `IBenzeneInvocation`
@@ -857,9 +857,9 @@ collects — for that, add `AddDiagnostics()` in `ConfigureServices` and `UseBen
 `Configure` (both shown wired up in the example project). Since Application Insights' `ILogger`
 provider reads `BeginScope` values into `customDimensions` automatically, no Application-Insights-specific
 code is required beyond those two calls. See
-[Logging to Application Insights](cookbooks/logging-application-insights) for the full recipe
+[Logging to Application Insights](cookbooks/logging-application-insights.md) for the full recipe
 (including KQL queries against `customDimensions`) and
-[Distributed Tracing with OpenTelemetry](cookbooks/distributed-tracing-opentelemetry) if you'd rather
+[Distributed Tracing with OpenTelemetry](cookbooks/distributed-tracing-opentelemetry.md) if you'd rather
 export Benzene's `Activity` spans to Application Insights via OTLP instead of (or alongside) the
 classic SDK shown here.
 
@@ -867,7 +867,7 @@ classic SDK shown here.
 
 Benzene ships a unified test host (`Benzene.Testing`) that builds an in-memory app straight from
 your real `StartUp` — no need to run `func start` or hit the network. See
-[Testing Benzene](testing-benzene) for the full picture; for Azure Functions specifically:
+[Testing Benzene](testing-benzene.md) for the full picture; for Azure Functions specifically:
 
 ```csharp
 var app = BenzeneTestHost.Create<StartUp>()
@@ -962,9 +962,9 @@ These require a working Docker daemon and aren't run as part of the main `Benzen
 
 ## See Also
 
-- [Message Handlers](message-handlers) — the full picture on `[Message]`, `[HttpEndpoint]`, and handler discovery
-- [ASP.NET Core Integration](asp-net-core) — the same `UseHttp` pipeline, hosted outside Azure Functions
-- [Testing Benzene](testing-benzene) — `BenzeneTestHost`, including AWS Lambda and ASP.NET Core patterns
-- [Monitoring & Diagnostics](monitoring) — tracing, metrics, and W3C trace context propagation
-- [Correlation Ids](correlation-ids) — the legacy header-based correlation ID middleware
+- [Message Handlers](message-handlers.md) — the full picture on `[Message]`, `[HttpEndpoint]`, and handler discovery
+- [ASP.NET Core Integration](asp-net-core.md) — the same `UseHttp` pipeline, hosted outside Azure Functions
+- [Testing Benzene](testing-benzene.md) — `BenzeneTestHost`, including AWS Lambda and ASP.NET Core patterns
+- [Monitoring & Diagnostics](monitoring.md) — tracing, metrics, and W3C trace context propagation
+- [Correlation Ids](correlation-ids.md) — the legacy header-based correlation ID middleware
 - [`examples/Azure`](../examples/Azure) — a complete, runnable project covering HTTP routing, validation, OpenAPI spec generation, and Service Bus + Queue Storage triggers dispatching into the same handlers

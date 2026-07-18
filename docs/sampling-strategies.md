@@ -52,7 +52,7 @@ what your tracing backend charges for ingestion.
 ### Respecting upstream sampling decisions: `ParentBasedSampler`
 
 If a request already carries a `traceparent` header with a sampling decision (see
-[W3C Trace Context](monitoring#w3c-trace-context) — Benzene propagates `traceparent`/`tracestate`
+[W3C Trace Context](monitoring.md#w3c-trace-context) — Benzene propagates `traceparent`/`tracestate`
 automatically via `UseW3CTraceContext()`), you generally want to honor that decision rather than
 re-sample independently, so a trace stays complete end-to-end across services instead of having
 gaps where an internal sampler disagreed with an upstream one:
@@ -91,7 +91,7 @@ not lose any metrics data.
 
 ## See also
 
-- [Monitoring & Diagnostics](monitoring) — the broader tracing/metrics/logging picture
+- [Monitoring & Diagnostics](monitoring.md) — the broader tracing/metrics/logging picture
 - [OpenTelemetry sampler documentation](https://opentelemetry.io/docs/languages/net/sampling/) — the
   authoritative reference for `Sampler` implementations and configuration, since this is standard
   OTel behavior, not something Benzene wraps or changes

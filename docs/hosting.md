@@ -38,8 +38,8 @@ no separate host already listening. This is the one mode where how many events B
 
 ## Overview
 
-Every platform-specific getting-started guide ([AWS Lambda](getting-started-aws),
-[Azure Functions](azure-functions), [ASP.NET Core](asp-net-core)) builds on the same foundation:
+Every platform-specific getting-started guide ([AWS Lambda](getting-started-aws.md),
+[Azure Functions](azure-functions.md), [ASP.NET Core](asp-net-core.md)) builds on the same foundation:
 a `BenzeneStartUp` subclass that defines configuration, service registration, and middleware
 pipeline setup once. A thin, platform-specific host adapter (`AwsLambdaHost<TStartUp>`,
 `IHostBuilder.UseBenzene<TStartUp>()`, `WebApplicationBuilder.UseBenzene<TStartUp>()`) then wires
@@ -215,7 +215,7 @@ Point the Lambda's `function-handler` at `YourAssembly::YourNamespace.Function::
 `AwsLambdaHost<TStartUp>`'s constructor builds the `ServiceCollection`, calls `GetConfiguration`,
 `ConfigureServices`, and `Configure` (against an `AwsLambdaApplicationBuilder`) once on cold
 start, then reuses the built pipeline for every subsequent invocation via
-`FunctionHandlerAsync(Stream, ILambdaContext)`. See [AWS Lambda Setup](getting-started-aws) for
+`FunctionHandlerAsync(Stream, ILambdaContext)`. See [AWS Lambda Setup](getting-started-aws.md) for
 the full walkthrough including SAM deployment and the other supported event sources (SQS, SNS,
 Kafka, S3).
 
@@ -263,7 +263,7 @@ host.Run();
 
 A single catch-all trigger function then injects `IAzureFunctionApp` and calls
 `HandleHttpRequest(...)` (or `HandleEventHub(...)`/`HandleKafkaEvents(...)`). See
-[Azure Functions Setup](azure-functions) for the full walkthrough, including why only the
+[Azure Functions Setup](azure-functions.md) for the full walkthrough, including why only the
 isolated worker model (not the legacy in-process `Microsoft.Azure.WebJobs` model) is supported.
 
 **Generic Worker host** (`Benzene.HostedService`) registers a singleton `IHostedService` instead,
@@ -385,7 +385,7 @@ stashes the `StartUp` instance and configuration in a singleton for later. `IApp
 against a real `AspApplicationBuilder` wrapping the built `IApplicationBuilder`. Inside
 `Configure`, use `app.UseHttp(http => http.UseMessageHandlers())` to wire up routes — `UseHttp`
 is a no-op `IBenzeneApplicationBuilder` extension on any platform other than ASP.NET Core, same
-pattern as `UseAwsLambda`/`UseWorker`. See [ASP.NET Core Integration](asp-net-core) for more
+pattern as `UseAwsLambda`/`UseWorker`. See [ASP.NET Core Integration](asp-net-core.md) for more
 detail on request routing.
 
 ### gRPC on ASP.NET Core
@@ -424,7 +424,7 @@ Two things are easy to miss because gRPC's hosting model differs from Benzene's 
   something to bind to. Methods with a matching `[GrpcMethod]`-tagged handler never actually reach
   that class's method body; unmatched methods fall through to it normally.
 
-See [gRPC Setup](getting-started-grpc) for the full walkthrough, including all four RPC shapes,
+See [gRPC Setup](getting-started-grpc.md) for the full walkthrough, including all four RPC shapes,
 metadata, status-code mapping, and the optional health check/reflection services.
 
 ## `IBenzeneInvocation` and `IBenzeneInvocationAccessor`
@@ -514,7 +514,7 @@ current scope throws a `BenzeneException` with a message explaining exactly that
 
 `Benzene.Testing`'s `BenzeneTestHost.Create<TStartUp>()` builds an in-memory host from a
 `BenzeneStartUp`-based app, with `WithConfiguration`/`WithServices` overrides layered on top,
-without needing a real cloud host. See [Testing Benzene](testing-benzene) for the full guide,
+without needing a real cloud host. See [Testing Benzene](testing-benzene.md) for the full guide,
 including the per-platform `Build*` extensions (`BuildAwsLambdaHost()`, `BuildAzureFunctionApp()`)
 and how to send events/messages into the built host.
 
@@ -538,10 +538,10 @@ hosts — including AWS Lambda via `AwsLambdaHost<TStartUp>` — run on Microsof
 
 ## See Also
 
-- [AWS Lambda Setup](getting-started-aws)
-- [Azure Functions Setup](azure-functions)
-- [ASP.NET Core Integration](asp-net-core)
-- [gRPC Setup](getting-started-grpc)
-- [Testing Benzene](testing-benzene)
-- [Middleware](middleware)
-- [Message Handlers](message-handlers)
+- [AWS Lambda Setup](getting-started-aws.md)
+- [Azure Functions Setup](azure-functions.md)
+- [ASP.NET Core Integration](asp-net-core.md)
+- [gRPC Setup](getting-started-grpc.md)
+- [Testing Benzene](testing-benzene.md)
+- [Middleware](middleware.md)
+- [Message Handlers](message-handlers.md)
