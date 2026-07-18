@@ -21,9 +21,22 @@ public static class Extensions
     /// <returns>The service container for method chaining.</returns>
     public static IBenzeneServiceContainer AddMeshAggregator(
         this IBenzeneServiceContainer services, MeshServiceRegistry registry, string artifactRootDirectory)
+        => services.AddMeshAggregator(registry, _ => new FileSystemMeshArtifactStore(artifactRootDirectory));
+
+    /// <summary>
+    /// Registers <see cref="MeshAggregator"/> backed by a caller-supplied <see cref="IMeshArtifactStore"/>
+    /// factory — for a blob-storage adapter (S3, Azure Blob) instead of the local-disk default.
+    /// </summary>
+    /// <param name="services">The service container to register with.</param>
+    /// <param name="registry">The services the aggregator should poll on each run.</param>
+    /// <param name="artifactStoreFactory">Builds the store generated catalog artifacts are written to/read from.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddMeshAggregator(
+        this IBenzeneServiceContainer services, MeshServiceRegistry registry,
+        Func<IServiceResolver, IMeshArtifactStore> artifactStoreFactory)
     {
         services.AddSingleton(registry);
-        services.AddSingleton<IMeshArtifactStore>(_ => new FileSystemMeshArtifactStore(artifactRootDirectory));
+        services.AddSingleton(artifactStoreFactory);
         services.AddSingleton<HttpClient>();
         // The default IMeshServiceSource - other adapter packages (e.g. an AWS Lambda Invoke
         // source) add their own IMeshServiceSource registration alongside this one; MeshAggregator

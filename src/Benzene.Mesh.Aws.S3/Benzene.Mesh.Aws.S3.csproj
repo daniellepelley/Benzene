@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Mesh.Aws.S3</AssemblyName>
+    <RootNamespace>Benzene.Mesh.Aws.S3</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>An Amazon S3 IMeshArtifactStore for the Benzene mesh aggregator: writes and reads the generated catalog artifacts (manifest.json, services/*.json, topology.json) and the discovery-generated registry.json to/from an S3 bucket, so a mesh service running as a Lambda persists its output centrally.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.309.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
+  </ItemGroup>
+
+</Project>
