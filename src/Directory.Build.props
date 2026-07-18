@@ -6,6 +6,25 @@
     <!-- Everything under src/ is a shippable package (including *.TestHelpers,
          Benzene.Testing and Benzene.Tools, which are user-facing test support). -->
     <IsPackable>true</IsPackable>
+
+    <!-- NuGet listing metadata. A package may override Description/PackageTags with something
+         more specific in its own .csproj (csproj wins over Directory.Build.props). PackageIcon
+         is deliberately not set yet — there is no raster (PNG) logo asset in the repo; add one
+         and set PackageIcon centrally when it exists. -->
+    <PackageProjectUrl>https://github.com/daniellepelley/Benzene</PackageProjectUrl>
+    <Description>Benzene is a hexagonal (ports-and-adapters) framework for C# — write your message handlers once and host them behind AWS Lambda, Azure Functions, ASP.NET Core, or a self-hosted worker without rewriting them.</Description>
+    <PackageTags>benzene;hexagonal;ports-and-adapters;middleware;message-handlers;aws-lambda;azure-functions;aspnetcore;serverless;messaging</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Source debugging: SourceLink is built into the .NET SDK for GitHub-hosted repos, so no
+         PackageReference is needed. PublishRepositoryUrl embeds the commit-pinned repo URL;
+         EmbedUntrackedSources covers generated files; symbols ship as a .snupkg. Deterministic
+         builds are enabled only in CI (GitHub Actions). -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
 </Project>

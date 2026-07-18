@@ -75,13 +75,22 @@ public void OldMethod() { }
 
 ### Single version source
 
-All Benzene packages share one version, defined in **`version.txt`** at the
-repository root. The root `Directory.Build.props` reads it into `VersionPrefix`;
-individual `.csproj` files must not set `PackageVersion`/`Version`. The publish
-workflow (`deploy-benzene.yml`) overrides the version at pack time with
-`-p:PackageVersion=x.y.z-alpha.N` for pre-release builds.
+All Benzene packages share one **numeric base version** (`MAJOR.MINOR.PATCH`), defined in
+**`version.txt`** at the repository root. The root `Directory.Build.props` reads it into
+`VersionPrefix`; individual `.csproj` files must not set `PackageVersion`/`Version`.
 
-To cut a new version, change `version.txt` — nothing else.
+The publish workflow (`deploy-benzene.yml`) composes the final SemVer at pack time from the
+numeric base plus a **channel** chosen as a `workflow_dispatch` input, and overrides with
+`-p:PackageVersion=...`:
+
+- `stable` → the exact base, e.g. **`1.0.0`**.
+- any prerelease channel (`alpha`/`beta`/`rc`/`preview`) → the base plus an auto-incremented
+  counter, e.g. **`1.0.0-rc.1`**, `1.0.0-rc.2`, … (the counter is derived from the highest
+  already-published version for that base+channel on nuget.org).
+
+To cut a new base version, change `version.txt` — nothing else. To flip from prerelease to
+stable, run the workflow with the `stable` channel once the base is right (e.g. set `version.txt`
+to `1.0.0` and publish `stable`).
 
 ### Packability
 
@@ -144,4 +153,4 @@ For questions about versioning or compatibility:
 
 ---
 
-**Note**: This versioning policy took effect with Benzene 1.0.0. Earlier alpha releases (0.x.x-alpha) did not follow strict semver.
+**Note**: This versioning policy takes effect at the Benzene 1.0.0 release. Earlier alpha releases (0.x.x-alpha) did not follow strict semver.

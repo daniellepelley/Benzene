@@ -304,3 +304,6 @@ BenchmarkDotNet.Artifacts/
 
 # Generated static site output (website/generator)
 website/dist/
+
+# Stray codegen / scratch output at repo root (must never be committed)
+/Output/

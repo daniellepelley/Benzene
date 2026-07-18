@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<Description>Benzene integration with FluentValidation</Description>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Daniel Le Pelley</Authors>
 		<AssemblyName>Benzene.FluentValidation</AssemblyName>
 		<RootNamespace>Benzene.FluentValidation</RootNamespace>
