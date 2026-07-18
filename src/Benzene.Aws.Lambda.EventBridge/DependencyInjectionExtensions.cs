@@ -29,7 +29,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<EventBridgeContext>, HeaderMessageVersionGetter<EventBridgeContext>>();
         services.AddScoped<IMessageHeadersGetter<EventBridgeContext>, EventBridgeMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventBridgeContext>, EventBridgeMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<EventBridgeContext>, EventBridgeMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<EventBridgeContext>, EventBridgeMessageHandlerResultSetter>();
         services.AddMediaFormatNegotiation<EventBridgeContext>();
         services
             .AddScoped<IRequestMapper<EventBridgeContext>,

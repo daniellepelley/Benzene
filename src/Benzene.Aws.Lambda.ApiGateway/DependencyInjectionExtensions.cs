@@ -44,7 +44,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageVersionGetter<ApiGatewayContext>, ApiGatewayMessageVersionGetter>();
         services.TryAddScoped<IMessageHeadersGetter<ApiGatewayContext>, ApiGatewayMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<ApiGatewayContext>, ApiGatewayMessageBodyGetter>();
-        services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageMessageHandlerResultSetter>();
+        services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<ApiGatewayContext>,
                 MultiSerializerOptionsRequestMapper<ApiGatewayContext>>();

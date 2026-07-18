@@ -30,7 +30,8 @@ production code.
 - **Benzene.AspNet.Core** - `AspApplicationBuilder`, to run `BenzeneStartUp.Configure` against the
   `TestServer`'s `IApplicationBuilder` exactly as production ASP.NET Core hosting does
 - **Benzene.Core.MessageHandlers** - `AddBenzene`
-- **Benzene.Grpc** - `Benzene.Grpc.Client`
+- **Benzene.Grpc** - the routing/dispatch types these tests exercise (`BenzeneInterceptor`,
+  `GrpcMethodHandler`)
 - **Benzene.Grpc.AspNet** - `AddBenzeneGrpc`/`UseGrpc`, which `GrpcTestHost` exercises unchanged
 - **Benzene.Microsoft.Dependencies** - `BenzeneStartUp`
 - **Benzene.Testing** - `BenzeneTestHostBuilder<TStartUp>`, which `BuildGrpcHost` extends

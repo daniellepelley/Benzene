@@ -11,13 +11,13 @@ namespace Benzene.Core.MessageHandlers;
 /// <typeparam name="TContext">The transport context type.</typeparam>
 /// <remarks>
 /// The "Message" + "MessageHandlerResultSetter" naming reflects what the type does, not a typo: like
-/// <see cref="MessageMessageHandlerResultSetterBase{TContext}"/> and
-/// <see cref="ResponseMessageMessageHandlerResultSetterBase{TContext}"/>, it implements
+/// <see cref="MessageHandlerResultSetterBase{TContext}"/> and
+/// <see cref="ResponseMessageHandlerResultSetterBase{TContext}"/>, it implements
 /// <c>IMessageHandlerResultSetter&lt;TContext&gt;</c>, but deliberately discards the result instead
 /// of recording it or writing a response - use this as the base for a transport where there is
 /// nothing meaningful to set.
 /// </remarks>
-public abstract class DefaultMessageMessageHandlerResultSetterBase<TContext>: IMessageHandlerResultSetter<TContext>
+public abstract class DefaultMessageHandlerResultSetterBase<TContext>: IMessageHandlerResultSetter<TContext>
 {
     /// <summary>
     /// Does nothing with <paramref name="messageHandlerResult"/>; provided for transports that have

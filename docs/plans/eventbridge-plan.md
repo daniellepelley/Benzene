@@ -95,7 +95,7 @@ rule generation from `[Message]` topics is explicitly out of scope (future work)
 transport `"eventbridge"`), `EventBridgeLambdaHandler.cs`
 (`AwsLambdaMiddlewareRouter<EventBridgeEvent>`, `CanHandle` per E2, fire-and-forget),
 `EventBridgeMessageTopicGetter/BodyGetter/HeadersGetter.cs` (per E1/E3/E4),
-`EventBridgeMessageMessageHandlerResultSetter.cs`, `DependencyInjectionExtensions.cs`
+`EventBridgeMessageHandlerResultSetter.cs`, `DependencyInjectionExtensions.cs`
 (`AddEventBridge()`), `Extensions.cs` (`UseEventBridge(...)`), `EventBridgeRegistrations.cs`,
 `CLAUDE.md`, csproj (ProjectReference: `Benzene.Aws.Lambda.Core` only).
 

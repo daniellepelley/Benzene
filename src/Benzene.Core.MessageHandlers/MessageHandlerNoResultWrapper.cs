@@ -15,7 +15,7 @@ namespace Benzene.Core.MessageHandlers;
 /// After the inner handler completes, this always returns an accepted result with no payload -
 /// there is no <typeparamref name="TResponse"/> value to report.
 /// </remarks>
-public class MessageHandlerNoResultWrapper<TRequest, TResponse> : IMessageHandler<TRequest, TResponse>
+internal class MessageHandlerNoResultWrapper<TRequest, TResponse> : IMessageHandler<TRequest, TResponse>
 {
     private readonly IMessageHandler<TRequest> _inner;
 

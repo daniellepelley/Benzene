@@ -9,4 +9,4 @@ namespace Benzene.Azure.Function.ServiceBus;
 /// <c>CLAUDE.md</c>), but <see cref="ServiceBusBatchApplication"/> reads this to support
 /// <see cref="ServiceBusOptions.RaiseOnFailureStatus"/>.
 /// </summary>
-public class ServiceBusMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<ServiceBusContext>;
+public class ServiceBusMessageHandlerResultSetter : MessageHandlerResultSetterBase<ServiceBusContext>;

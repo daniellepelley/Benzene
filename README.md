@@ -24,6 +24,9 @@ Grid, Timer), or ASP.NET Core without rewriting any of it.**
   no manual routing tables to maintain
 - Multi-cloud by design: the same handlers run on AWS, Azure, or a
   plain ASP.NET Core host
+- Honest by design: Benzene abstracts your business logic, never the
+  transport or the database — so you keep every cloud-native feature of
+  the tools you chose (see the [Capability Matrix](docs/capability-matrix.md))
 
 ## Quickstart
 

@@ -36,7 +36,7 @@ public class SnsRecordContext : IHasMessageResult
     public SNSEvent.SNSRecord SnsRecord { get; }
 
     /// <summary>
-    /// Gets or sets the result of handling this record. Set by <see cref="SnsMessageMessageHandlerResultSetter"/>.
+    /// Gets or sets the result of handling this record. Set by <see cref="SnsMessageHandlerResultSetter"/>.
     /// </summary>
     public IMessageResult MessageResult { get; set; }
 }

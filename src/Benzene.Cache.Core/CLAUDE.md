@@ -1,32 +1,41 @@
 # Benzene.Cache.Core
 
 ## What this package does
-Core caching abstractions and implementations for Benzene. Provides cache interface, cache middleware, and utilities for caching message handler results and HTTP responses.
+Provider-agnostic caching abstractions plus a cache-aside / write-through base-class layering that
+concrete providers (e.g. `Benzene.Cache.Redis`) extend. This package contains **no cache middleware
+and no HTTP response caching** — it is a set of interfaces + abstract base classes your handler code
+calls directly, plus a health check. Values are JSON-serialized via the shared
+`Benzene.Core.MessageHandlers.Serialization.JsonSerializer`.
 
 ## Key types/interfaces
-
-### Cache Infrastructure
-- `ICache<T>` - Cache interface
-- Cache middleware
-- Cache key generation
-- TTL and expiration support
+- `ICacheService` - marker service exposing only `CanConnectAsync()` (a provider connection is
+  supplied by the concrete implementation, e.g. `RedisCacheService`)
+- `ICacheEntry<T>` / `ICacheWriteActions<T>` / `ICacheInvalidateActions` - the read/write/invalidate
+  contracts a concrete single-/multi-key cache entry implements
+- `CacheUpdateAction` enum - `None` / `Set` / `Invalidate`
+- `CacheHealthCheck<TCacheService>` + `CacheHealthCheckFactory<TCacheService>` and the
+  `IHealthCheckBuilder.AddCacheHealthCheck<TCacheService>()` extension
 
 ## When to use this package
-- When implementing caching in Benzene
-- For caching message handler results
-- For HTTP response caching
-- Foundation for cache providers
+- When implementing a cache provider (subclass the `CacheEntry<T>` layering)
+- When your handler needs cache-aside (`LazyLoadAsync`) or write-through (`WriteThroughAsync`) around
+  a database read/modify
+
+## Deliberate boundaries (NOT shipped)
+- **No stampede / single-flight / dogpile protection.** `CacheEntry<T>.LazyLoadAsync` is a plain
+  cache-aside: on a miss every concurrent caller runs `databaseReadFunc` and writes back. There is
+  no lock or in-flight coalescing (see `CacheEntry.cs`).
+- No cache middleware, no automatic key generation, no HTTP response caching.
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Abstractions.Middleware** - Middleware abstractions
+- **Benzene.Core.MessageHandlers** - the shared JSON `ISerializer`
+- **Benzene.Core** / **Benzene.Results** / **Benzene.Abstractions.Results** - `IBenzeneResult`/status
+- **Benzene.Diagnostics** - `IProcessTimerFactory` timing scopes
+- **Benzene.HealthChecks.Core** - health-check contracts
 
 ## Important conventions
-- Generic cache interface
-- TTL-based expiration
-- Key generation strategies
-- Middleware for automatic caching
-- Provider-agnostic
+- Read failures degrade to a miss: `CacheEntry<T>.GetValueAsync` swallows and logs a read exception
+  rather than propagating, so a cache outage doesn't fail the request.
 - `CacheHealthCheck<TCacheService>` - an `IHealthCheck` verifying `ICacheService.CanConnectAsync()`;
   result `Data` includes `CanConnect` and `Error` (the exception's type name, not its message - not a
   connection string or other secret); result `Dependencies` includes one

@@ -34,7 +34,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<S3RecordContext>, HeaderMessageVersionGetter<S3RecordContext>>();
         services.AddScoped<IMessageHeadersGetter<S3RecordContext>, S3MessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<S3RecordContext>, S3MessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<S3RecordContext>, S3MessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<S3RecordContext>, S3MessageHandlerResultSetter>();
         services.AddMediaFormatNegotiation<S3RecordContext>();
         services
             .AddScoped<IRequestMapper<S3RecordContext>,

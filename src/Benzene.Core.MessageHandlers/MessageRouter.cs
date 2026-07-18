@@ -115,7 +115,7 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
 
         _logger.LogDebug("Handler mapped to topic");
 
-        var result = await handler.HandlerAsync(new RequestMapperThunk<TContext>(_requestMapper, context));
+        var result = await handler.HandleAsync(new DeferredRequestMapper<TContext>(_requestMapper, context));
         await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, result));
     }
 }

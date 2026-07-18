@@ -185,10 +185,10 @@ Kafka — no envelope deserialization step, unlike `Benzene.Azure.Function.Event
 
 This is the part worth being precise about, since Service Bus (unlike Event Hubs) has native
 dead-lettering, and it would be easy to assume Benzene always wires into it.
-`ServiceBusMessageMessageHandlerResultSetter` **does** record the outcome:
+`ServiceBusMessageHandlerResultSetter` **does** record the outcome:
 
 ```csharp
-public class ServiceBusMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<ServiceBusContext>;
+public class ServiceBusMessageHandlerResultSetter : MessageHandlerResultSetterBase<ServiceBusContext>;
 ```
 
 (it used to be a genuine no-op; it isn't anymore) - but recording the outcome onto

@@ -27,8 +27,8 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
   defaulting to `GET /livez`/`GET /readyz` (path overridable); see `docs/kubernetes-health-checks.md`
 - `HttpListenerMessageHandlerResultSetter` - the `IMessageHandlerResultSetter<SelfHostHttpContext>`
   every response (health check or routed handler) is written through; runs the registered
-  `IResponseHandler<SelfHostHttpContext>` chain via `ResponseMessageMessageHandlerResultSetterBase`,
-  same pattern as `AspMessageMessageHandlerResultSetter`/`ApiGatewayMessageMessageHandlerResultSetter`.
+  `IResponseHandler<SelfHostHttpContext>` chain via `ResponseMessageHandlerResultSetterBase`,
+  same pattern as `AspMessageHandlerResultSetter`/`ApiGatewayMessageHandlerResultSetter`.
   **Fixed real bugs, found by writing the package's first real end-to-end test** (previously misnamed
   `KafkaMessageHandlerResultSetter`, apparently copy-pasted from `Benzene.Kafka.Core`): it unconditionally
   forced `Response.StatusCode = 200` regardless of the actual result and never invoked
@@ -63,11 +63,9 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
 - When deploying to environments without web server
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Abstractions.Middleware** - Middleware abstractions
-- **Benzene.Core.Middleware** - Middleware implementations
-- **Benzene.Http** - HTTP abstractions
-- **Benzene.SelfHost** - Self-hosting infrastructure
+- **Benzene.HostedService** - `IHostedService` glue (transitively brings in `Benzene.SelfHost`'s
+  `IBenzeneWorker` + `BoundedConcurrentDispatcher<T>`)
+- **Benzene.Http** - HTTP abstractions / response adapters
 
 ## Important conventions
 - Uses System.Net.HttpListener under the hood

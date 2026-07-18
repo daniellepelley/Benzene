@@ -37,7 +37,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<ServiceBusContext>, HeaderMessageVersionGetter<ServiceBusContext>>();
         services.AddScoped<IMessageHeadersGetter<ServiceBusContext>, ServiceBusMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusContext>, ServiceBusMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<ServiceBusContext>, ServiceBusMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<ServiceBusContext>, ServiceBusMessageHandlerResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("service-bus"));
         return services;

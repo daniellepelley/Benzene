@@ -25,7 +25,7 @@ packages here without asking first (repo NuGet policy).
 
 ## Naming caution
 The builder extension is **`UseTimerTrigger`** — NOT `UseTimer`, which already exists in
-`Benzene.Core.Middleware` as the timing middleware. Keep it that way.
+`Benzene.Diagnostics` (`Timers/Extensions.cs`) as the timing middleware. Keep it that way.
 
 ## Key types
 - `TimerTriggerInfo` / `TimerScheduleStatus` — dependency-free models (`IsPastDue`,

@@ -8,4 +8,4 @@ namespace Benzene.Aws.Sqs.Consumer;
 /// under the default <see cref="SqsConsumerAckMode.WholeBatch"/>, the whole batch is still deleted
 /// together regardless of any individual message's recorded result.
 /// </summary>
-public class SqsConsumerMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<SqsConsumerMessageContext>;
+public class SqsConsumerMessageHandlerResultSetter : MessageHandlerResultSetterBase<SqsConsumerMessageContext>;

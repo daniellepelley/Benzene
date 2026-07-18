@@ -1,32 +1,38 @@
 # Benzene.Autofac
 
 ## What this package does
-Autofac DI container integration for Benzene. Adapts Benzene's DI abstractions to Autofac's ContainerBuilder and ILifetimeScope, enabling use of Autofac's advanced features (modules, decorators, interceptors).
+Adapts Benzene's DI abstractions onto Autofac. It is a **thin adapter**: `UsingBenzene(...)` on your own
+Autofac `ContainerBuilder` gives Benzene an `IBenzeneServiceContainer` view over it, so Benzene's
+registrations land in your Autofac container and Benzene resolves services through Autofac's
+`ILifetimeScope`.
 
 ## Key types/interfaces
-
-### Autofac Integration
-- Adapter from `IBenzeneServiceContainer` to `ContainerBuilder`
-- Adapter from `IServiceResolver` to `ILifetimeScope`
-- Autofac module support
-- Advanced Autofac features
+- `Extensions.UsingBenzene(this ContainerBuilder)` / `UsingBenzene(this ContainerBuilder, Action<IBenzeneServiceContainer>)` -
+  the entry point.
+- `AutofacBenzeneServiceContainer : IBenzeneServiceContainer` - maps Benzene lifetimes to Autofac:
+  `AddScoped` → `InstancePerLifetimeScope`, `AddSingleton` → `SingleInstance`, `AddTransient` →
+  `InstancePerDependency` (open generics via `RegisterGeneric`).
+- `AutofacServiceResolverAdapter : IServiceResolver` - resolves from an Autofac `IComponentContext`/scope.
+- `AutofacServiceResolverFactory : IServiceResolverFactory` - calls `containerBuilder.Build()` and opens a
+  lifetime scope per Benzene scope.
 
 ## When to use this package
-- When you need Autofac's advanced features
-- For applications using Autofac modules
-- When you want decorator pattern support
-- For complex DI scenarios
+- When your application already uses Autofac and you want Benzene to register/resolve through it.
+
+## Deliberate boundaries
+- This package adds **no** Autofac module/decorator/interceptor wrappers of its own. Because
+  `UsingBenzene` operates on your real `ContainerBuilder`, you keep full access to Autofac's native
+  features (modules, decorators, interceptors) and use them directly — Benzene neither hides nor
+  re-exposes them.
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions (DI)
-- **Autofac** - Autofac DI container
+- **Benzene.Abstractions** - the DI abstractions (`IBenzeneServiceContainer`, `IServiceResolver`, factories)
+- **Benzene.Core**
+- **Autofac** (6.5.0)
 
 ## Important conventions
-- Register Benzene services in `ContainerBuilder`
-- Lifetime scopes mapped to Benzene scopes
-- Autofac modules work with Benzene
-- Decorators and interceptors supported
+- Benzene `AddScoped`/`AddSingleton`/`AddTransient` map to Autofac lifetimes as above.
 - `AutofacServiceResolverFactory` registers `NullLoggerFactory`/open-generic `Logger<>` fallbacks
   (via `IfNotRegistered`) so `ILogger<T>` always resolves; register your own `ILoggerFactory`
   instance (e.g. `LoggerFactory.Create(x => x.AddConsole())`) to enable real logging — user
-  registrations always win over the fallbacks
+  registrations always win over the fallbacks.

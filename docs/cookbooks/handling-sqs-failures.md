@@ -55,7 +55,7 @@ catch (Exception ex)
 
 Two ways a message ends up in `BatchItemFailures`:
 
-1. **Your handler returns a failure result and no exception is thrown.** `SqsMessageMessageHandlerResultSetter` copies your message handler's `IBenzeneResult.IsSuccessful` onto `SqsMessageContext.IsSuccessful` after the pipeline runs. Any `BenzeneResult` factory method built from an error array (`ServiceUnavailable`, `BadRequest`, `ValidationError`, `NotFound`, etc.) sets `IsSuccessful` to `false`; `Ok`, `Accepted`, `Created`, etc. set it to `true`.
+1. **Your handler returns a failure result and no exception is thrown.** `SqsMessageHandlerResultSetter` copies your message handler's `IBenzeneResult.IsSuccessful` onto `SqsMessageContext.IsSuccessful` after the pipeline runs. Any `BenzeneResult` factory method built from an error array (`ServiceUnavailable`, `BadRequest`, `ValidationError`, `NotFound`, etc.) sets `IsSuccessful` to `false`; `Ok`, `Accepted`, `Created`, etc. set it to `true`.
 2. **The pipeline throws.** `SqsApplication` catches the exception, logs it via `ILogger<SqsApplication>` (message: `"Processing SQS message {messageId} failed"`), and reports the same message ID as failed.
 
 Either way, only the specific `MessageId`s that failed go into `SQSBatchResponse.BatchItemFailures` — the records that succeeded are never reported, so **AWS will not redeliver them**. This is what makes it a *partial* batch failure: a 10-message batch where 1 message fails only causes that 1 message to become visible again on the queue.

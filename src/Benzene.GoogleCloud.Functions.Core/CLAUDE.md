@@ -12,15 +12,15 @@ a thin shared foundation - not a transport adapter itself.
 - `GoogleCloudStartUpRunner.Bootstrap<TStartUp>()` - constructs `TStartUp`, calls
   `GetConfiguration()`, builds a `ServiceCollection` (with `.AddLogging()`) and a
   `MicrosoftBenzeneServiceContainer` wrapping it, returning all four. Every trigger-type package
-  (`Benzene.GoogleCloud.Functions.Http` today; a future `Benzene.GoogleCloud.Functions.PubSub`)
+  (`Benzene.GoogleCloud.Functions.Http` and `Benzene.GoogleCloud.Functions.PubSub`)
   calls this once at cold start, then runs `startUp.ConfigureServices(services, configuration)` and
   `startUp.Configure(<its own IBenzeneApplicationBuilder>, configuration)` itself - this package
   doesn't own `Configure`'s application-builder shape, since that's trigger-type-specific (HTTP vs.
   CloudEvent).
 
 ## When to use this package
-- Not directly - consumed by `Benzene.GoogleCloud.Functions.Http` and any future Google Cloud
-  Functions trigger-type package.
+- Not directly - consumed by `Benzene.GoogleCloud.Functions.Http`,
+  `Benzene.GoogleCloud.Functions.PubSub`, and any future Google Cloud Functions trigger-type package.
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions.Pipelines** - `IBenzeneApplicationBuilder` (referenced transitively by
@@ -31,5 +31,5 @@ a thin shared foundation - not a transport adapter itself.
 - Deliberately has **no** Google-specific NuGet dependency at all (no
   `Google.Cloud.Functions.Framework`) - it's Google-neutral bootstrap plumbing, matching
   `Benzene.Aws.Lambda.Core`'s minimal-dependency posture. The Functions Framework dependency lives
-  in `Benzene.GoogleCloud.Functions.Http` (and will live in any future `.Functions.PubSub`), not
-  here.
+  in the trigger-type packages (`Benzene.GoogleCloud.Functions.Http`,
+  `Benzene.GoogleCloud.Functions.PubSub`), not here.

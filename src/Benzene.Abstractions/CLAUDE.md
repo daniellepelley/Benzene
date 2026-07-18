@@ -24,9 +24,9 @@ Benzene-specific logger interface. What remains here is the scope-enrichment bui
 - `IPayloadSerializer : ISerializer` - Additive byte-oriented extension (`Serialize(Type, object, IBufferWriter<byte>)` / `Deserialize(Type, ReadOnlySpan<byte>)`), avoiding an intermediate string allocation when both the serializer and the transport's body getter support bytes
 
 ### Results
-- `IBenzeneResult` - Marker interface for result types
-- `IBenzeneResult<T>` - Generic result with typed payload
-- `Void` - Unit type for handlers with no response payload
+- `IBenzeneResult` - result contract: `Status`, `IsSuccessful`, `Errors`, `PayloadAsObject`
+- `IBenzeneResult<T>` - adds the strongly-typed `Payload`
+- `Void` - Unit type (a class) for handlers with no response payload
 
 ### Builders & Testing
 - `IHttpBuilder<T>` - Fluent builder for HTTP-based tests
@@ -35,9 +35,6 @@ Benzene-specific logger interface. What remains here is the scope-enrichment bui
 
 ### Other
 - `ICorrelationId` - Provides correlation ID for request tracking
-- `IDependencyWrapper<T>` - **`[Obsolete]`** (2026-07-17) - wraps dependencies for specific
-  contexts; its one real consumer, `Benzene.Clients`'s outbound decorator chain, is being
-  superseded by ordinary outbound middleware - see `work/benzene-clients-redesign-plan.md`
 
 ## When to use this package
 - When implementing new Benzene middleware or extensions

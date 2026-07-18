@@ -9,8 +9,8 @@ middleware pipeline as a fire-and-forget, no-response transport.
 > (assembly/namespace `Benzene.Aws.EventBridge`). It never contained EventBridge/
 > CloudWatch Events code — every type here has always handled S3 event notifications
 > via `Amazon.Lambda.S3Events`. It was renamed to `Benzene.Aws.Lambda.S3` to match what
-> it actually does. Real EventBridge/CloudWatch Events support does not exist yet and
-> would be a separate, future package.
+> it actually does. Real EventBridge support now lives in the separate
+> `Benzene.Aws.Lambda.EventBridge` package.
 
 ## Key types/interfaces
 

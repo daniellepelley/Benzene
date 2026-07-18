@@ -6,4 +6,4 @@ namespace Benzene.Aws.Lambda.Kafka;
 /// Records the message handler result onto a <see cref="KafkaContext"/>'s
 /// <see cref="KafkaContext.MessageResult"/>.
 /// </summary>
-public class KafkaMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<KafkaContext>;
+public class KafkaMessageHandlerResultSetter : MessageHandlerResultSetterBase<KafkaContext>;

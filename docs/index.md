@@ -10,6 +10,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
   - [Benzene Specifications (Draft)](specification/README.md) — two levels: the Core Specification (the language-neutral portable core: concepts, wire contracts, transport bindings, porting guide) and the [Cloud Service Profile](specification/cloud-service-profile.md) (the conformance target that guarantees mesh, Spec UI, and fleet tooling work on a service)
   - [Unified Hosting Model](hosting.md)
+  - [Capability Matrix](capability-matrix.md) — what Benzene does, deliberately doesn't (and why), and how to fill the gap
   - [Message Handlers](message-handlers.md)
   - [Message Results](message-result.md)
   - [Middleware](middleware.md)

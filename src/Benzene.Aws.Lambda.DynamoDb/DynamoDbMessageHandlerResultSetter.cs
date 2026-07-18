@@ -9,7 +9,7 @@ namespace Benzene.Aws.Lambda.DynamoDb;
 /// <see cref="DynamoDbApplication"/> can stop at the first failed record and report it back to
 /// Lambda for redelivery.
 /// </summary>
-public class DynamoDbMessageMessageHandlerResultSetter : IMessageHandlerResultSetter<DynamoDbRecordContext>
+public class DynamoDbMessageHandlerResultSetter : IMessageHandlerResultSetter<DynamoDbRecordContext>
 {
     /// <summary>
     /// Sets the success flag on the context from the message handler result.

@@ -7,4 +7,4 @@ namespace Benzene.Azure.EventHub;
 /// Event Hubs has no per-event settlement, so the recorded result doesn't affect checkpointing -
 /// see <see cref="EventHubConsumerContext.MessageResult"/>.
 /// </summary>
-public class EventHubConsumerMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<EventHubConsumerContext>;
+public class EventHubConsumerMessageHandlerResultSetter : MessageHandlerResultSetterBase<EventHubConsumerContext>;

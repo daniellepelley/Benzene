@@ -1,5 +1,8 @@
 # Resilience
 
+
+> **Boundary:** Benzene ships retry-with-backoff only; circuit breaker/timeout/bulkhead are served by bringing your own Polly pipeline into middleware — see the [Capability Matrix](capability-matrix.md).
+
 Benzene's resilience support is a single, custom (not Polly-based) middleware — `RetryMiddleware<TContext>` — added to a pipeline via the `.UseRetry(...)` extension from `Benzene.Resilience`.
 
 ## Overview

@@ -7,4 +7,4 @@ namespace Benzene.Azure.Function.Kafka;
 /// trigger has no platform-level per-record acknowledgement to report back to, but
 /// <see cref="KafkaBatchApplication"/> reads this to support <see cref="KafkaOptions.RaiseOnFailureStatus"/>.
 /// </summary>
-public class KafkaMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<KafkaContext>;
+public class KafkaMessageHandlerResultSetter : MessageHandlerResultSetterBase<KafkaContext>;

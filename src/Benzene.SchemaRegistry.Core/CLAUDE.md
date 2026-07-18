@@ -17,9 +17,12 @@ Confluent/Azure SDK dependency; those registry clients implement the same one in
   idempotent re-registration, compatibility via a pluggable `ISchemaCompatibilityChecker`. Single
   process only (doesn't coordinate ids across instances — use a shared registry there).
 - `ISchemaCompatibilityChecker` / `TextualSchemaCompatibilityChecker` — the default is deliberately
-  conservative (first schema always OK; `None` accepts anything; otherwise must be textually
-  identical), so it never *falsely* approves a structural change. Supply a format-aware checker, or
-  rely on the registry server's own check, for real Avro/JSON evolution rules.
+  conservative (first schema always OK; `None` accepts anything; otherwise the candidate must be
+  **byte-for-byte textually identical** to the latest), so it never *falsely* approves a structural
+  change. Note this means the `Backward`/`Forward`/`Full` modes are accepted as configuration but the
+  in-box checker enforces them only as textual identity — it does **not** perform structural
+  Avro/JSON read/write compatibility analysis. For real evolution rules, supply your own format-aware
+  `ISchemaCompatibilityChecker` or rely on a real registry server's own compatibility check.
 - `ConfluentWireFormat` — the interop-critical byte codec: `Encode(schemaId, payload)` prepends the
   `0x00` magic byte + 4-byte **big-endian** schema id; `Decode(framed, out id)` validates and strips
   it. This is exactly the framing Confluent producers/consumers expect, so Benzene payloads

@@ -1,5 +1,8 @@
 # Idempotency (de-duplicating redelivered messages)
 
+
+> **Boundary:** Benzene ships an in-memory, single-process idempotency store; cross-instance de-duplication is deliberately not solved in-box (see why, and the external-store pattern, in the [Capability Matrix](../capability-matrix.md)).
+
 At-least-once transports — SQS, Azure Service Bus, Event Hubs, Kafka — will occasionally deliver the
 same message more than once: a visibility timeout lapses mid-processing, a consumer restarts before
 committing, a producer retries after a network blip. If your handler has a side effect (charges a

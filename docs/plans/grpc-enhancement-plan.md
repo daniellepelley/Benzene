@@ -92,7 +92,7 @@ Modify:
 - `GrpcMethodHandlerFactory.cs` — drop the `ServiceDescriptor` ctor param (clean break).
 - `GrpcMessageBodyGetter.cs` — `IMessage m => JsonFormatter.Default.Format(m)`, else System.Text.Json.
 - `GrpcContext.cs` — setter becomes typed pass-through; add `object? ResponsePayload` on the base for untyped payloads; add `IMessageHandlerResult? MessageHandlerResult { get; set; }` (needed by Phase 4).
-- `GrpcMessageMessageHandlerResultSetter.cs` — set both `ResponseAsObject` and `MessageHandlerResult`.
+- `GrpcMessageHandlerResultSetter.cs` — set both `ResponseAsObject` and `MessageHandlerResult`.
 - `DependencyInjectionExtensions.cs` — register `IGrpcMessageAdapter` (TryAdd) + `GrpcRequestMapper`.
 
 Tests: `ProtobufJsonGrpcMessageAdapterTest` (pass-through both ways, POCO→`EchoReply` incl. camelCase/null handling, protobuf→POCO, non-protobuf target throws); `GrpcRequestMapperTest`; `GrpcMethodPipelineTest` modeled on `SqsMessagePipelineTest.cs` (build `MiddlewarePipelineBuilder<GrpcContext>` over `MicrosoftBenzeneServiceContainer`, `.UseMessageHandlers(...)`, invoke `GrpcMethodHandler.HandleAsync<EchoRequest, EchoReply>`) with handlers from **two different services** to prove multi-service works.

@@ -30,7 +30,7 @@ public class KafkaContext : IHasMessageResult
     public KafkaEvent.KafkaEventRecord KafkaEventRecord { get; }
 
     /// <summary>
-    /// Gets or sets the result of handling this record. Set by <see cref="KafkaMessageMessageHandlerResultSetter"/>.
+    /// Gets or sets the result of handling this record. Set by <see cref="KafkaMessageHandlerResultSetter"/>.
     /// </summary>
     public IMessageResult MessageResult { get; set; }
 }

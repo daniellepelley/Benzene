@@ -21,7 +21,7 @@ using Xunit;
 
 namespace Benzene.Test.Core.Core.MessageHandling;
 
-public class RequestMapperThunkTest
+public class DeferredRequestMapperTest
 {
     [Fact]
     public void GetsRequest()
@@ -33,7 +33,7 @@ public class RequestMapperThunkTest
         });
 
         var requestMapper = new RequestMapper<BenzeneMessageContext>(new BenzeneMessageGetter(), serializer);
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(requestMapper, context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
@@ -50,7 +50,7 @@ public class RequestMapperThunkTest
             serviceResolver);
 
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(
             new MultiSerializerOptionsRequestMapper<BenzeneMessageContext>(mediaFormatNegotiator,
                 serviceResolver,
                 Mock.Of<IMessageBodyGetter<BenzeneMessageContext>>(),
@@ -72,7 +72,7 @@ public class RequestMapperThunkTest
             serviceResolver);
 
         var context = new BenzeneMessageContext(new BenzeneMessageRequest());
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(
             new MultiSerializerOptionsRequestMapper<BenzeneMessageContext>(mediaFormatNegotiator,
                 serviceResolver,
                 Mock.Of<IMessageBodyGetter<BenzeneMessageContext>>(),
@@ -104,7 +104,7 @@ public class RequestMapperThunkTest
                 new BenzeneMessageGetter(),
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
 
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(requestMapper, context);
 
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
@@ -133,7 +133,7 @@ public class RequestMapperThunkTest
                 new BenzeneMessageGetter(),
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
 
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(requestMapper, context);
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
         Assert.Equal("some-name", request!.Name);
@@ -161,7 +161,7 @@ public class RequestMapperThunkTest
                 new BenzeneMessageGetter(),
                 Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
 
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(requestMapper, context);
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
         Assert.Equal("some-name", request!.Name);
@@ -190,7 +190,7 @@ public class RequestMapperThunkTest
             mediaFormatNegotiator, serviceResolver, new BenzeneMessageGetter(),
             Array.Empty<IRequestEnricher<BenzeneMessageContext>>());
 
-        var requestFactory = new RequestMapperThunk<BenzeneMessageContext>(requestMapper, context);
+        var requestFactory = new DeferredRequestMapper<BenzeneMessageContext>(requestMapper, context);
         var request = requestFactory.GetRequest<ExampleRequestPayload>();
 
         Assert.Equal("some-name", request!.Name);

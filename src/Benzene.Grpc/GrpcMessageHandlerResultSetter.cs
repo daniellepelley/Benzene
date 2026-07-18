@@ -3,7 +3,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 
 namespace Benzene.Grpc;
 
-public class GrpcMessageMessageHandlerResultSetter : IMessageHandlerResultSetter<GrpcContext>
+public class GrpcMessageHandlerResultSetter : IMessageHandlerResultSetter<GrpcContext>
 {
     public Task SetResultAsync(GrpcContext context, IMessageHandlerResult messageHandlerResult)
     {

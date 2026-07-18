@@ -9,13 +9,13 @@ namespace Benzene.AspNet.Core;
 /// pipeline untouched (so <c>next()</c> can continue to other middleware/endpoints) for requests that
 /// didn't match a message handler.
 /// </summary>
-public class AspMessageMessageHandlerResultSetter : ResponseIfHandledMessageHandlerResultSetter<AspNetContext>
+public class AspMessageHandlerResultSetter : ResponseIfHandledMessageHandlerResultSetter<AspNetContext>
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="AspMessageMessageHandlerResultSetter"/> class.
+    /// Initializes a new instance of the <see cref="AspMessageHandlerResultSetter"/> class.
     /// </summary>
     /// <param name="responseHandlerContainer">The container of response handlers to run against the context.</param>
-    public AspMessageMessageHandlerResultSetter(IResponseHandlerContainer<AspNetContext> responseHandlerContainer) : base(responseHandlerContainer)
+    public AspMessageHandlerResultSetter(IResponseHandlerContainer<AspNetContext> responseHandlerContainer) : base(responseHandlerContainer)
     {
     }
 }

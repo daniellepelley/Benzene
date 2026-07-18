@@ -10,7 +10,7 @@ namespace Benzene.Core.MessageHandlers;
 /// wrapping no-response handlers with <see cref="MessageHandlerNoResultWrapper{TRequest,TResponse}"/>
 /// first so both handler shapes end up going through the same pipeline machinery.
 /// </summary>
-public class PipelineMessageHandlerWrapper : IMessageHandlerWrapper
+internal class PipelineMessageHandlerWrapper : IMessageHandlerWrapper
 {
     private readonly IHandlerPipelineBuilder _handlerPipelineBuilder;
     private readonly IServiceResolver _serviceResolver;

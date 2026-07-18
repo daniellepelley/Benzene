@@ -13,4 +13,8 @@
     <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Benzene.Test" />
+  </ItemGroup>
+
 </Project>

@@ -33,6 +33,11 @@ data types - no HTTP, no file I/O, no execution logic.
   and an `Error` (exception type name only, never a message).
 - `MeshManifestEntry`/`MeshManifest` - the top-level `manifest.json` index: one denormalized row per
   service (`Status`, `ContractDrift`) so a catalog view doesn't need to fetch every snapshot.
+- `MeshTopology`/`TopologyEdge`/`TopologyEdgeSource` - the `topology.json` shape: cross-service call
+  edges (`Client`→`Server`, plus nullable `RequestsPerMinute`/`ErrorRate`/`P50`/`P95`/`P99LatencyMs`),
+  each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for a
+  future "designed to call" derivation). Pure shapes only - actually populated by
+  `Benzene.Mesh.Tracing.Tempo`, not by anything in this package.
 - `MeshServiceStatus` - string constants `Healthy`/`Unhealthy`/`Unreachable`, mirroring
   `HealthCheckStatus`'s loose-string convention (not an enum).
 - `MeshHashing.ComputeHash(string json)` - the contract-drift hash. Deliberately reimplements

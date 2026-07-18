@@ -35,7 +35,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageVersionGetter<TimerContext>, HeaderMessageVersionGetter<TimerContext>>();
         services.AddScoped<IMessageHeadersGetter<TimerContext>, TimerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<TimerContext>, TimerMessageBodyGetter>();
-        services.AddScoped<IMessageHandlerResultSetter<TimerContext>, TimerMessageMessageHandlerResultSetter>();
+        services.AddScoped<IMessageHandlerResultSetter<TimerContext>, TimerMessageHandlerResultSetter>();
 
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo("timer"));
         return services;
@@ -53,7 +53,7 @@ public static class DependencyInjectionExtensions
     /// <returns>The Azure Function app builder, for method chaining.</returns>
     /// <remarks>
     /// Named <c>UseTimerTrigger</c> (not <c>UseTimer</c>) to avoid colliding with
-    /// <c>Benzene.Core.Middleware</c>'s timing middleware extension of that name.
+    /// <c>Benzene.Diagnostics</c>'s timing middleware extension of that name.
     /// </remarks>
     public static IAzureFunctionAppBuilder UseTimerTrigger(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<TimerContext>> action)
     {

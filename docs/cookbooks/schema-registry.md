@@ -1,5 +1,8 @@
 # Schema Registry Integration
 
+
+> **Boundary:** the in-box compatibility checker only accepts byte-identical schemas; structural evolution needs a real registry server or your own checker — see the [Capability Matrix](../capability-matrix.md).
+
 Event-driven services that share a Kafka topic need a shared source of truth for the payload schema
 on that topic — so a producer can't silently ship a breaking change, and consumers (including
 non-Benzene ones) can resolve the exact schema a message was written with. A **schema registry**

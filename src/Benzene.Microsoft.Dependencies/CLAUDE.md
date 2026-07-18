@@ -4,12 +4,15 @@
 Microsoft.Extensions.DependencyInjection integration for Benzene. Adapts Benzene's DI abstractions to Microsoft's IServiceCollection and IServiceProvider, enabling use of Microsoft's built-in DI container.
 
 ## Key types/interfaces
-
-### Microsoft DI Integration
-- Adapter from `IBenzeneServiceContainer` to `IServiceCollection`
-- Adapter from `IServiceResolver` to `IServiceProvider`
-- Service lifetime mapping
-- DI registration extensions
+- `Extensions.UsingBenzene(this IServiceCollection)` / `UsingBenzene(this IServiceCollection, Action<IBenzeneServiceContainer>)` -
+  the entry point (also calls `services.AddLogging()`).
+- `MicrosoftBenzeneServiceContainer : IBenzeneServiceContainer` - a Benzene container view over an
+  `IServiceCollection` (Benzene scoped/singleton/transient map directly to MEL lifetimes).
+- `MicrosoftServiceResolverAdapter : IServiceResolver` - resolves from an `IServiceProvider` scope.
+- `MicrosoftServiceResolverFactory : IServiceResolverFactory` - builds the provider and opens a MEL scope
+  (`IServiceProvider.CreateScope()`) per Benzene scope.
+- `BenzeneStartUp` - abstract `IStartUp<IServiceCollection, IConfiguration, IBenzeneApplicationBuilder>`
+  base for platform-neutral startup classes.
 
 ## When to use this package
 - When using Benzene with ASP.NET Core

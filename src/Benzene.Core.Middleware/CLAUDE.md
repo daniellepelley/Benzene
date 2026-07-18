@@ -37,8 +37,12 @@ end to end: the scope is both disposed now, and disposing it actually releases s
 ### Middleware Components
 - `FuncWrapperMiddleware<TContext>` - Wraps Func as middleware
 - `ContextConverterMiddleware<TContext, TContextOut>` - Converts context types
-- `MiddlewareRouter` - Routes to different pipelines
+- `MiddlewareRouter<TRequest, TContext>` - abstract base for routing to different pipelines
 - `ExceptionHandlerMiddleware<TContext>` - Centralized exception handling
+- `StreamContext<TItem>` / `StreamMiddlewareApplication<...>` / `IStreamCheckpointer<TItem>` /
+  `NullStreamCheckpointer<TItem>` - stream-record processing (used by `.UseStream()`)
+- `BenzeneApplicationBuilder` / `BenzeneInvocation` / `BenzeneInvocationAccessor` - the concrete
+  hosting app-builder and per-invocation context implementations
 
 ### Context Conversion
 - `InlineContextConverter<TIn, TOut>` - Inline context transformation
@@ -48,15 +52,17 @@ end to end: the scope is both disposed now, and disposing it actually releases s
 - `NullServiceResolver` - Null object pattern resolver
 - `NullServiceResolverFactory` - Null object pattern factory
 
-### Extension Methods (Extensions.cs)
+### Extension Methods (Extensions.cs and siblings)
 - `.Use()` - Adds middleware to pipeline
 - `.OnRequest()` - Executes action on request
 - `.OnResponse()` - Executes action on response
 - `.Split()` - Splits pipeline into branches
 - `.Convert()` - Converts context type
 - `.UseExceptionHandler()` - Adds exception handling middleware
-- `.UseTimer()` - Adds timing middleware
-- Many more fluent configuration methods
+- `.UseLogContext()` / `.UseLogResult()` - log-scope enrichment (via `LoggerExtensions`)
+- `.UseBenzeneInvocation()` - populates the per-invocation `IBenzeneInvocation`
+  (`BenzeneInvocationExtensions`)
+- `.UseStream()` - stream-processing pipeline (`StreamExtensions`)
 
 ### Other
 - `RegisterDependency` - Base class for registration modules

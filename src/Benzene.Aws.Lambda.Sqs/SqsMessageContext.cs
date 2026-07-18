@@ -36,7 +36,7 @@ public class SqsMessageContext
 
     /// <summary>
     /// Gets or sets whether this record was handled successfully. Set by
-    /// <see cref="SqsMessageMessageHandlerResultSetter"/>; null if no result has been set yet.
+    /// <see cref="SqsMessageHandlerResultSetter"/>; null if no result has been set yet.
     /// </summary>
     public bool? IsSuccessful { get; set; }
 }

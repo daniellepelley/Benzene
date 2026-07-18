@@ -128,7 +128,7 @@ body describing the error, not the (empty) `OrderDto` payload.
 ### AWS SQS
 
 SQS Lambda processing is batch-based, so instead of a single status code, each record's
-`IsSuccessful` flag decides whether that individual message is retried. `SqsMessageMessageHandlerResultSetter`
+`IsSuccessful` flag decides whether that individual message is retried. `SqsMessageHandlerResultSetter`
 copies `IBenzeneResult.IsSuccessful` onto the per-record `SqsMessageContext.IsSuccessful`; after the
 whole batch is processed, `SqsApplication` reports every record where `IsSuccessful == false` (or
 where an unhandled exception occurred) back to Lambda as an `SQSBatchResponse.BatchItemFailure`,
@@ -144,7 +144,7 @@ which can flip a batch to whole-batch failure semantics if a single record fails
 ### AWS SNS
 
 SNS delivers one notification per Lambda invocation rather than a batch, so there's no per-record
-acknowledgement API to report back to — `SnsMessageMessageHandlerResultSetter` records the result
+acknowledgement API to report back to — `SnsMessageHandlerResultSetter` records the result
 onto the context's `MessageResult`, and by default retry behavior for SNS is governed by whether the
 Lambda invocation itself throws, not by the `IBenzeneResult.Status`. Both halves of that are
 configurable via `Benzene.Aws.Lambda.Sns`'s `SnsOptions`: `CatchExceptions` (default `false`)

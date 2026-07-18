@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Benzene.Test.Aws.S3;
 
-public class S3MessageMessageHandlerResultSetterTest
+public class S3MessageHandlerResultSetterTest
 {
     private static S3RecordContext CreateContext()
     {
@@ -19,7 +19,7 @@ public class S3MessageMessageHandlerResultSetterTest
     public async Task SetResultAsync_SuccessfulResult_RecordsSuccessfulMessageResult()
     {
         var context = CreateContext();
-        var setter = new S3MessageMessageHandlerResultSetter();
+        var setter = new S3MessageHandlerResultSetter();
 
         await setter.SetResultAsync(context, new MessageHandlerResult(BenzeneResult.Ok()));
 
@@ -31,7 +31,7 @@ public class S3MessageMessageHandlerResultSetterTest
     public async Task SetResultAsync_FailedResult_RecordsUnsuccessfulMessageResult()
     {
         var context = CreateContext();
-        var setter = new S3MessageMessageHandlerResultSetter();
+        var setter = new S3MessageHandlerResultSetter();
 
         await setter.SetResultAsync(context, new MessageHandlerResult(BenzeneResult.NotFound("not found")));
 

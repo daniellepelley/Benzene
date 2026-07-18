@@ -6,11 +6,11 @@ namespace Benzene.SelfHost.Http;
 /// <summary>
 /// Sets the message handler result onto a <see cref="SelfHostHttpContext"/>'s response, running the
 /// registered <see cref="IResponseHandler{TContext}"/> chain (status code, body, etc.) via the shared
-/// <see cref="ResponseMessageMessageHandlerResultSetterBase{TContext}"/> behavior - the same pattern
-/// used by every other HTTP-shaped transport (<c>AspMessageMessageHandlerResultSetter</c>,
-/// <c>ApiGatewayMessageMessageHandlerResultSetter</c>).
+/// <see cref="ResponseMessageHandlerResultSetterBase{TContext}"/> behavior - the same pattern
+/// used by every other HTTP-shaped transport (<c>AspMessageHandlerResultSetter</c>,
+/// <c>ApiGatewayMessageHandlerResultSetter</c>).
 /// </summary>
-public class HttpListenerMessageHandlerResultSetter : ResponseMessageMessageHandlerResultSetterBase<SelfHostHttpContext>
+public class HttpListenerMessageHandlerResultSetter : ResponseMessageHandlerResultSetterBase<SelfHostHttpContext>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpListenerMessageHandlerResultSetter"/> class.

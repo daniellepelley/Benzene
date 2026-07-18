@@ -8,4 +8,4 @@ namespace Benzene.GoogleCloud.Functions.PubSub;
 /// "did <c>HandleAsync</c> throw", but <see cref="PubSubMiddlewareApplication"/> reads this to
 /// support <see cref="PubSubOptions.RaiseOnFailureStatus"/>.
 /// </summary>
-public class PubSubMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<PubSubContext>;
+public class PubSubMessageHandlerResultSetter : MessageHandlerResultSetterBase<PubSubContext>;

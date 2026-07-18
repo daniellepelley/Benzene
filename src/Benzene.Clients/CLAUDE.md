@@ -59,10 +59,13 @@ an `OutboundRoutingBuilder.Route(...)` pipeline:
   `ValidateOutboundRouting()` call for the rest of that test process, once JIT-touched - see
   `test/Benzene.Core.Test/Clients/ValidateOutboundRoutingTest.cs`'s own `OrderServiceClientRouting`
   for the one that currently exists.
-- Transport-specific route-registration extensions (`.UseSqs(...)`/`.UseSns(...)`/etc. on the
-  outbound pipeline builder) and the middleware-ified decorators (retry/headers/correlation/trace
-  context) are **not yet implemented** - still Step 3 of the migration plan; for now, `.Route(...)`
-  pipelines are built with whatever `IMiddleware<OutboundContext>` exists at the time.
+- Transport-specific route-registration extensions on the outbound pipeline builder **now exist**:
+  `.UseSqs(...)` / `.UseSns(...)` are the `IMiddlewarePipelineBuilder<OutboundContext>` overloads in
+  **`Benzene.Clients.Aws`** (`Sqs/Extensions.cs`, `Sns/Extensions.cs`) - not in this package, since
+  they carry the AWS SDK dependency. The cross-cutting middleware (`.UseRetry(...)` from
+  `Benzene.Resilience`, `.UseCorrelationId(...)`, `.UseW3CTraceContext()`) are the ones documented
+  under "Outbound middleware" above. Only `.UseAwsLambda(...)` on the `OutboundContext` builder
+  remains deferred (see `Benzene.Clients.Aws`'s `CLAUDE.md`).
 
 ### Benzene.CodeGen.Client generated clients (current, 2026-07-17)
 `MessageClientSdkBuilder` (in `Benzene.CodeGen.Client`, not this package, but documented here since
@@ -102,9 +105,10 @@ entirely outside this redesign's scope, and was never obsoleted.
 - Foundation for specific client implementations
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
+- **Benzene.Abstractions.Messages** - `IBenzeneClientRequest<T>`, client message contracts
 - **Benzene.Core.Middleware** - `MiddlewarePipelineBuilder<TContext>`, for `OutboundRoutingBuilder`'s
   per-topic pipelines (added 2026-07-17 for the outbound routing redesign above)
+- **Benzene.Results** - `IBenzeneResult`/status mapping (`BenzeneResultHttpMapper`)
 
 ## Important conventions
 - Type-safe request/response

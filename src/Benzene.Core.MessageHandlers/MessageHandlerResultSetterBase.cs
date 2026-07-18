@@ -18,10 +18,10 @@ namespace Benzene.Core.MessageHandlers;
 /// it is a setter that implements <c>IMessageHandlerResultSetter&lt;TContext&gt;</c> (the "MessageHandlerResultSetter"
 /// part) by writing an <see cref="IMessageResult"/> - the transport's own completion/acknowledgement
 /// outcome (the "Message[Result]" part) - onto the context, rather than mapping the handler's result
-/// into a response payload. See also <see cref="ResponseMessageMessageHandlerResultSetterBase{TContext}"/>,
+/// into a response payload. See also <see cref="ResponseMessageHandlerResultSetterBase{TContext}"/>,
 /// which does the response-writing equivalent for transports that produce a response body instead.
 /// </remarks>
-public abstract class MessageMessageHandlerResultSetterBase<TContext>: IMessageHandlerResultSetter<TContext> where TContext : IHasMessageResult
+public abstract class MessageHandlerResultSetterBase<TContext>: IMessageHandlerResultSetter<TContext> where TContext : IHasMessageResult
 {
     /// <summary>
     /// Records whether handling succeeded onto <see cref="IHasMessageResult.MessageResult"/> as a new

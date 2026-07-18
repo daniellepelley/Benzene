@@ -8,4 +8,4 @@ namespace Benzene.Azure.Function.QueueStorage;
 /// retries it and eventually moves it to the poison queue), so the result is recorded for
 /// middleware/diagnostics rather than written back to the transport.
 /// </summary>
-public class QueueStorageMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<QueueStorageContext>;
+public class QueueStorageMessageHandlerResultSetter : MessageHandlerResultSetterBase<QueueStorageContext>;

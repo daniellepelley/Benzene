@@ -14,7 +14,7 @@ AWS Kafka use `Benzene.Aws.Lambda.Kafka`, and for a self-hosted (non-Functions) 
   `MessageResult`.
 - Mappers: `KafkaMessageTopicGetter` (topic from `record.Topic` — a real Kafka topic, unlike Queue
   Storage which has none), `KafkaMessageBodyGetter`, `KafkaMessageHeadersGetter`,
-  `KafkaMessageMessageHandlerResultSetter`.
+  `KafkaMessageHandlerResultSetter`.
 - `KafkaApplication : EntryPointMiddlewareApplication<KafkaRecord[]>` / `KafkaBatchApplication` —
   the entry point and its per-record batch loop, transport-tagged `"kafka"`.
 - `KafkaOptions` — `CatchExceptions` (default `false`: a handler exception cascades to fail the

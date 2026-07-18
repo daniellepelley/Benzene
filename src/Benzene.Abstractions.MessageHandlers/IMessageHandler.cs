@@ -35,18 +35,18 @@ public interface IMessageHandler<TRequest>
 /// The non-generic, transport-facing entry point for invoking a resolved message handler. This is
 /// what <see cref="IMessageHandlerFactory"/> returns and what a router/dispatcher (e.g.
 /// <c>MessageRouter&lt;TContext&gt;</c>) calls: it hides the handler's concrete request/response types
-/// behind <see cref="IRequestMapperThunk"/>, since the router only knows the topic being handled, not
+/// behind <see cref="IDeferredRequestMapper"/>, since the router only knows the topic being handled, not
 /// the handler's generic type arguments, until it resolves the handler.
 /// </summary>
 public interface IMessageHandler
 {
     /// <summary>
-    /// Maps the incoming message to the handler's request type via <paramref name="requestMapperThunk"/>
+    /// Maps the incoming message to the handler's request type via <paramref name="deferredRequestMapper"/>
     /// and invokes the handler, returning its result as an untyped <see cref="IBenzeneResult"/>.
     /// </summary>
-    /// <param name="requestMapperThunk">
+    /// <param name="deferredRequestMapper">
     /// Deferred request mapper that can produce the handler's specific request type on demand.
     /// </param>
     /// <returns>The outcome of handling the message.</returns>
-    Task<IBenzeneResult> HandlerAsync(IRequestMapperThunk requestMapperThunk);
+    Task<IBenzeneResult> HandleAsync(IDeferredRequestMapper deferredRequestMapper);
 }

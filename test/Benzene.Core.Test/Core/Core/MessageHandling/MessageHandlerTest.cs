@@ -16,7 +16,7 @@ public class MessageHandlerTest
     [Fact]
     public async Task HandlersMessage()
     {
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -30,14 +30,14 @@ public class MessageHandlerTest
         var messageHandler =
             new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, NullLogger.Instance, new DefaultStatuses());
 
-        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        var result = await messageHandler.HandleAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.Ok, result.Status);
     }
     
     [Fact]
     public async Task HandlersMessage_ArgumentException()
     {
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -51,14 +51,14 @@ public class MessageHandlerTest
         var messageHandler =
             new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, NullLogger.Instance, new DefaultStatuses());
 
-        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        var result = await messageHandler.HandleAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.ValidationError, result.Status);
     }
  
     [Fact]
     public async Task HandlersMessage_Null()
     {
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(null as ExampleRequestPayload);
 
@@ -69,14 +69,14 @@ public class MessageHandlerTest
         var messageHandler =
             new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, NullLogger.Instance, new DefaultStatuses());
 
-        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        var result = await messageHandler.HandleAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.Ok, result.Status);
     }
    
     [Fact]
     public async Task HandlersMessage_HandlerError()
     {
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -90,7 +90,7 @@ public class MessageHandlerTest
         var messageHandler =
             new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, NullLogger.Instance, new DefaultStatuses());
 
-        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        var result = await messageHandler.HandleAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
                 
@@ -98,7 +98,7 @@ public class MessageHandlerTest
     public async Task HandlersMessage_SerializationError()
     {
         var errorMessage = "Invalid Format";
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Throws(new SerializationException(errorMessage));
 
@@ -109,7 +109,7 @@ public class MessageHandlerTest
         var messageHandler =
             new MessageHandler<ExampleRequestPayload, ExampleResponsePayload>(mockMessageHandler.Object, NullLogger.Instance, new DefaultStatuses());
 
-        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        var result = await messageHandler.HandleAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.BadRequest, result.Status);
         Assert.Equal(errorMessage, result.Errors[1]);
         mockMessageHandler.Verify(x => x.HandleAsync(It.IsAny<ExampleRequestPayload>()), Times.Never);

@@ -8,4 +8,4 @@ namespace Benzene.Azure.Function.EventGrid;
 /// retry/dead-letter machinery), so the result is recorded for middleware/diagnostics rather than
 /// written back to the transport.
 /// </summary>
-public class EventGridMessageMessageHandlerResultSetter : MessageMessageHandlerResultSetterBase<EventGridContext>;
+public class EventGridMessageHandlerResultSetter : MessageHandlerResultSetterBase<EventGridContext>;

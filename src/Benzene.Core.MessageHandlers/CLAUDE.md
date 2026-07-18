@@ -59,8 +59,9 @@ Provides complete implementation of message handler infrastructure for command/q
 - `ResponseHandlerContainer<TContext>` - Contains response handlers
 - `DefaultResponsePayloadMapper<TContext>` - Maps response payloads
 - `ResponseIfHandledMessageHandlerResultSetter<TContext>` - Sets result if handled
-- `ResponseMessageMessageHandlerResultSetterBase<TContext>` - Base for result setters
-- `DefaultMessageMessageHandlerResultSetterBase` - Default result setter base
+- `ResponseMessageHandlerResultSetterBase<TContext>` - Base for result setters
+- `DefaultMessageHandlerResultSetterBase<TContext>` - Default result setter base
+- `MessageHandlerResultSetterBase<TContext>` - shared result-setter base
 
 ### Serialization
 - `JsonSerializer` - System.Text.Json implementation of `ISerializer`; also implements
@@ -69,14 +70,17 @@ Provides complete implementation of message handler infrastructure for command/q
 
 ### BenzeneMessage (Transport-Agnostic)
 - `BenzeneMessageApplication` - Application for BenzeneMessage
-- `BenzeneBodyMapper` - Maps BenzeneMessage bodies
-- `BenzeneMessageMessageHandlerResultSetter` - Sets BenzeneMessage results
+- `BenzeneMessageGetter` - reads topic/headers/body off a `BenzeneMessageContext` and implements
+  `IMessageBodyBytesGetter` (declared in `BenzeneBodyMapper.cs`, but the class name is
+  `BenzeneMessageGetter`)
+- `BenzeneMessageHandlerResultSetter` - Sets BenzeneMessage results
 - `BenzeneMessageResponseAdapter` - Adapts responses to BenzeneMessage
 - `DefaultResponseStatusHandler<TContext>` - Handles response status
 
 ### Context
-- `BenzeneMessageContext` - Context for BenzeneMessage handling
-- `MessageHandlerContext<TRequest, TResponse>` - Generic handler context
+- `MessageHandlerContext<TRequest, TResponse>` - Generic handler context (the concrete
+  `IMessageHandlerContext<TRequest, TResponse>`). Note: the `BenzeneMessageContext` transport
+  context itself is defined in **Benzene.Core.Messages**, not this package.
 
 ### Routing
 - `MessageRouter<TContext>` - Routes messages to handlers

@@ -1,5 +1,8 @@
 # Sagas (distributed transactions that roll back cleanly)
 
+
+> **Boundary:** Benzene sagas are in-process with no durable crash-resume; for crash-durable orchestration use a workflow engine — see the [Capability Matrix](../capability-matrix.md).
+
 Some operations span several services and must be all-or-nothing: a signup that creates a tenant,
 then a user, then an RBAC role, across three systems. There's no database transaction that covers
 all three — if the third step fails, you're left with an orphaned tenant and user. A **saga** solves

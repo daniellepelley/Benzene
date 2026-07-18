@@ -18,7 +18,7 @@ package wired through `UseMessageHandlers()` exactly like every other transport,
 - `PubSubMessageBodyGetter` - reads the message body via `PubsubMessage.TextData` (UTF-8 decode of
   the message's `Data` payload, already provided as a convenience property by the generated type).
 - `PubSubMessageHeadersGetter` - exposes the message's attributes as headers.
-- `PubSubMessageMessageHandlerResultSetter` - records the outcome onto `PubSubContext.MessageResult`
+- `PubSubMessageHandlerResultSetter` - records the outcome onto `PubSubContext.MessageResult`
   (a real setter, not a no-op) - read by `PubSubOptions.RaiseOnFailureStatus`.
 - `PubSubMiddlewareApplication` - the per-invocation handler: runs the one message through the
   pipeline, applying `PubSubOptions`. No `Task.WhenAll`/fan-out loop, since there's only ever one

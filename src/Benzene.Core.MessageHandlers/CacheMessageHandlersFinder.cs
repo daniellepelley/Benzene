@@ -11,7 +11,7 @@ namespace Benzene.Core.MessageHandlers;
 /// The cache is populated lazily on first use and never invalidated - handler definitions are
 /// assumed not to change for the lifetime of the process.
 /// </remarks>
-public class CacheMessageHandlersFinder : IMessageHandlersFinder
+internal class CacheMessageHandlersFinder : IMessageHandlersFinder
 {
     private readonly IMessageHandlersFinder _inner;
     private IMessageHandlerDefinition[]? _messageHandlerDefinitions;
