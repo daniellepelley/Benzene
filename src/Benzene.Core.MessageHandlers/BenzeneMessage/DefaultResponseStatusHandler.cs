@@ -15,7 +15,7 @@ namespace Benzene.Core.MessageHandlers.BenzeneMessage;
 /// this type is unrelated - it simply propagates whatever status <see cref="IMessageHandlerResult.BenzeneResult"/>
 /// already carries onto the response.
 /// </remarks>
-public class DefaultResponseStatusHandler<TContext> : IResponseHandler<TContext> where TContext : class
+internal class DefaultResponseStatusHandler<TContext> : IResponseHandler<TContext> where TContext : class
 {
     private readonly IBenzeneResponseAdapter<TContext> _benzeneResponseAdapter;
 

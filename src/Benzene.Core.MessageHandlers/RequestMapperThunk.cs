@@ -10,7 +10,7 @@ namespace Benzene.Core.MessageHandlers;
 /// dispatched, not the concrete request type, until a handler has been resolved.
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type being mapped from.</typeparam>
-public class RequestMapperThunk<TContext> : IRequestMapperThunk
+internal class RequestMapperThunk<TContext> : IRequestMapperThunk
 {
     private readonly TContext _context;
     private readonly IRequestMapper<TContext> _requestMapper;

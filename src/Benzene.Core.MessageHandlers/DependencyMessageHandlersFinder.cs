@@ -7,7 +7,7 @@ namespace Benzene.Core.MessageHandlers;
 /// are registered directly in the DI container, so handlers can be registered explicitly (e.g. by a
 /// library that ships its own handlers, without relying on reflection-based discovery).
 /// </summary>
-public class DependencyMessageHandlersFinder : IMessageHandlersFinder
+internal class DependencyMessageHandlersFinder : IMessageHandlersFinder
 {
     private readonly IEnumerable<IMessageHandlerDefinition> _messageHandlerDefinitions;
 

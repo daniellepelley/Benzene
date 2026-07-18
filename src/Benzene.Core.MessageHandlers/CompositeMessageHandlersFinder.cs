@@ -7,7 +7,7 @@ namespace Benzene.Core.MessageHandlers;
 /// DI-based <see cref="DependencyMessageHandlersFinder"/>) into a single finder whose definitions are
 /// the union of all of them, so <see cref="MessageHandlerDefinitionLookUp"/> only needs to depend on one finder.
 /// </summary>
-public class CompositeMessageHandlersFinder : IMessageHandlersFinder
+internal class CompositeMessageHandlersFinder : IMessageHandlersFinder
 {
     private readonly IMessageHandlersFinder[] _inners;
 

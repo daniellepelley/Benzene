@@ -9,7 +9,7 @@ namespace Benzene.Core.MessageHandlers.BenzeneMessage;
 /// writes headers, content type, status code, and body on <see cref="BenzeneMessageContext.BenzeneMessageResponse"/>,
 /// creating the response object on first write via the <c>EnsureResponseExists</c> extension method.
 /// </summary>
-public class BenzeneMessageResponseAdapter : IBenzeneResponseAdapter<BenzeneMessageContext>
+internal class BenzeneMessageResponseAdapter : IBenzeneResponseAdapter<BenzeneMessageContext>
 {
     /// <inheritdoc />
     public void SetResponseHeader(BenzeneMessageContext context, string headerKey, string headerValue)
