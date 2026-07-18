@@ -115,7 +115,9 @@ cd examples/AwsMesh/deploy && terraform destroy
 I can build and compile all of this, but the live AWS behaviour is only verifiable on a real deploy.
 The most likely things to tweak on the first run (all localized):
 - **Custom-runtime packaging** — the `bootstrap` wrapper + self-contained publish RID/arch
-  (`lambda_architecture` must match the CI `RID`).
+  (`lambda_architecture` must match the CI `RID`). Note the `provided.al2023` runtime ships **no
+  libicu**, so all four Lambda projects publish with `<InvariantGlobalization>true</InvariantGlobalization>`
+  — without it the apphost aborts at init with "Couldn't find a valid ICU package installed".
 - **API Gateway payload format** — pinned to `1.0` to match `Benzene.Aws.Lambda.ApiGateway`; if a UI
   route 500s, this is the first thing to check.
 - **EventBridge → `mesh:aggregate` routing** — the scheduled target sends a constant

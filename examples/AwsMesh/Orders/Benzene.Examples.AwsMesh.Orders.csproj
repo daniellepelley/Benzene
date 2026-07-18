@@ -10,6 +10,8 @@
     <!-- .NET 10 has no managed Lambda runtime; deploy self-contained on provided.al2023. -->
     <AWSProjectType>Lambda</AWSProjectType>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- provided.al2023 ships no libicu; run globalization-invariant so the apphost starts. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
