@@ -45,3 +45,8 @@ occurrence just runs on schedule — so a job needing at-least-once semantics sh
 ## Tests
 - `test/Benzene.Core.Test/Azure/TimerPipelineTest.cs` — tick delivery with schedule info,
   preset-topic dispatch to a real message handler, exception propagation, platform-neutral no-op.
+
+## No egress package — deliberately (release plan §5.2)
+There is no `Benzene.Clients.Azure.Timer`. A timer trigger is a **scheduler**, not a transport —
+there is nothing to publish to; a tick is purely inbound. Egress only exists for transports a
+service can send *to* (queues, topics, event streams).

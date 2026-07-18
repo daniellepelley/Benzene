@@ -79,3 +79,11 @@ app.UseCosmosDbChangeFeed<OrderDocument>(feed => feed
 - `test/Benzene.Core.Test/Azure/CosmosDbChangeFeedPipelineTest.cs` — fan-in single-run/ordering,
   empty and null batches, two document types routing independently, exception propagation, the
   platform-neutral no-op overload, and unregistered-type dispatch failure.
+
+## No egress package — deliberately (release plan §5.2)
+There is no `Benzene.Clients.Azure.CosmosDb`. Cosmos DB is a **database**, not a transport — the
+change feed is a read-side event stream (hence the ingress above), but writing to Cosmos is
+ordinary database access, the same category as any other persistence call. Benzene doesn't get
+involved in database access (design philosophy principle 2 — see the
+[Capability Matrix](../../docs/capability-matrix.md)); use `CosmosClient`/`Container` directly in
+your own handler code.

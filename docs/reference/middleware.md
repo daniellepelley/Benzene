@@ -296,7 +296,11 @@ For sending messages *out* to other services, configured on a client pipeline
 | `UseSqsClient()` / `UseSqs(...)` | `Benzene.Aws.Sqs` | An SQS queue. |
 | `UseSnsClient()` / `UseSns(...)` | `Benzene.Clients.Aws.Sns` | An SNS topic. |
 | `UseAwsLambdaClient()` / `UseAwsLambda(...)` | `Benzene.Clients.Aws.Lambda` | A direct AWS Lambda invoke. |
-| `UseKafkaClient()` / `UseKafka(...)` | `Benzene.Kafka.Core` | A Kafka topic. |
+| `UseKafkaClient()` / `UseKafka(...)` | `Benzene.Kafka.Core` | A Kafka topic (including Event Hubs' Kafka endpoint). |
+| `UseServiceBusClient()` / `UseServiceBus(...)` | `Benzene.Clients.Azure.ServiceBus` | An Azure Service Bus queue/topic. |
+| `UseEventHubClient()` / `UseEventHub(...)` | `Benzene.Clients.Azure.EventHub` | An Azure Event Hub. |
+| `UseEventGridClient()` / `UseEventGrid(...)` / `UseEventGridEventSchema(...)` | `Benzene.Clients.Azure.EventGrid` | An Azure Event Grid topic. |
+| `UseQueueStorageClient()` / `UseQueueStorage(...)` | `Benzene.Clients.Azure.QueueStorage` | An Azure Storage queue. |
 
 ---
 

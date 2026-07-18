@@ -146,6 +146,10 @@ above are inbound; these are outbound.
 | `Benzene.Clients.Aws.Lambda` | Invoke another AWS Lambda (`AwsLambdaBenzeneMessageClient`, `.UseAwsLambda(...)`), plus `AddLambdaHealthCheck`. Pins only `AWSSDK.Lambda`. |
 | `Benzene.Clients.Aws.StepFunctions` | Start a Step Functions execution (`StepFunctionsClient`), plus `AddStepFunctionHealthCheck`. Pins only `AWSSDK.StepFunctions`. |
 | `Benzene.Clients.Aws` | Meta-package referencing all five `Benzene.Clients.Aws.*` transport packages — one reference if you want everything; prefer the specific transport package for new code. |
+| `Benzene.Clients.Azure.ServiceBus` | Send to a Service Bus queue/topic (`ServiceBusBenzeneMessageClient`, `.UseServiceBus(...)`). Pins only `Azure.Messaging.ServiceBus`. |
+| `Benzene.Clients.Azure.EventHub` | Send an event to an Event Hub (`EventHubBenzeneMessageClient`, `.UseEventHub(...)`). Pins only `Azure.Messaging.EventHubs`. |
+| `Benzene.Clients.Azure.EventGrid` | Publish to Event Grid as CloudEvents 1.0 or the classic schema (`EventGridBenzeneMessageClient`, `.UseEventGrid(...)`/`.UseEventGridEventSchema(...)`). Pins only `Azure.Messaging.EventGrid`. |
+| `Benzene.Clients.Azure.QueueStorage` | Send an enveloped message to a Storage queue (`QueueStorageBenzeneMessageClient`, `.UseQueueStorage(...)`). Pins only `Azure.Storage.Queues`. |
 | `Benzene.Clients.HealthChecks` | Health checks that verify downstream Benzene clients are reachable and contract-compatible. |
 | `Benzene.Client.Http` | HTTP client middleware for sending outbound HTTP requests through the Benzene client pipeline. |
 | `Benzene.Aws.Sqs` | An SQS client for sending to / consuming from queues directly (`ISqsClient`, `SqsMessageClient`, `SqsConsumerConfig`) — distinct from `Benzene.Aws.Lambda.Sqs`, which handles SQS *as a Lambda trigger*. |

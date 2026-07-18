@@ -82,6 +82,16 @@ producer support. This is one of the "self-hosted worker" startup modes document
   a thrown exception → `ServiceUnavailable`) is unit-testable against a mocked
   `IProducer<string,string>` with no live broker - see
   `test/Benzene.Core.Test/Kafka/KafkaBenzeneMessageClientTest.cs`.
+- **This package IS the Azure "Kafka over Event Hubs" egress** (release plan Tier 2.2/§5.2's Kafka
+  decision): Event Hubs exposes a Kafka-protocol endpoint, so `KafkaBenzeneMessageClient`/
+  `.UseKafka(...)` work unchanged against it - just point `ProducerConfig.BootstrapServers` at the
+  namespace's Kafka endpoint (`<namespace>.servicebus.windows.net:9093`) and configure SASL/OAuth
+  (`SetOAuthBearerTokenRefreshHandler` for Managed Identity, matching the consumer-side note above,
+  or `SaslMechanism.Plain` with a connection-string-derived token for the non-MI path). No dedicated
+  `Benzene.Clients.Azure.Kafka` package was built - it would be a thin, duplicate wrapper around
+  exactly this producer. Document the Event Hubs Kafka endpoint setup alongside
+  `docs/cookbooks/managed-identity.md`'s existing consumer-side Kafka/Event Hubs guidance, not as new
+  code.
 
 ## When to use this package
 - When building Kafka-based applications

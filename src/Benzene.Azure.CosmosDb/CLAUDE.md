@@ -79,3 +79,9 @@ evaluation; a handler wanting finer-grained safety does its own within-batch boo
 - No live/emulator test: the Cosmos emulator is heavyweight and this sandbox has no Docker; the
   worker's SDK-facing seam is the factory interface, covered by delegate capture above. If a live
   test is added later, follow `Benzene*WorkerLiveTest.cs` in `test/Benzene.Integration.Test/`.
+
+## No egress package — deliberately (release plan §5.2)
+There is no `Benzene.Clients.Azure.CosmosDb`. Cosmos DB is a **database, not a transport** — see
+`Benzene.Azure.Function.CosmosDb`'s `CLAUDE.md` for the full rationale (same as the Function
+trigger: the change feed is a read-side stream, writing is ordinary database access, bring your
+own `CosmosClient`).

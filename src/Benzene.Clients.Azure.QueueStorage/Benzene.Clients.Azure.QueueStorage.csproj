@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <AssemblyName>Benzene.Clients.Azure.QueueStorage</AssemblyName>
+        <RootNamespace>Benzene.Clients.Azure.QueueStorage</RootNamespace>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Azure.Storage.Queues" Version="12.27.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+        <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
+        <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
+        <ProjectReference Include="..\Benzene.Results\Benzene.Results.csproj" />
+    </ItemGroup>
+</Project>
