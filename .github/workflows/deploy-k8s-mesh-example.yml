@@ -1,0 +1,62 @@
+name: Deploy K8s Mesh Example
+
+# Manual-only: builds the two images, spins up a throwaway kind cluster, deploys examples/K8sMesh, and
+# asserts the mesh discovers the three benzene-labelled Services. Fully self-contained — no cloud
+# credentials needed, so this is a real end-to-end proof of the Kubernetes discovery story in CI.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images (context = repo root)
+        run: |
+          docker build -f examples/K8sMesh/Service/Dockerfile -t benzene-k8smesh-service:local .
+          docker build -f examples/K8sMesh/Mesh/Dockerfile     -t benzene-k8smesh-mesh:local .
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: benzene
+
+      - name: Load images into kind
+        run: |
+          kind load docker-image benzene-k8smesh-service:local --name benzene
+          kind load docker-image benzene-k8smesh-mesh:local --name benzene
+
+      - name: Deploy
+        run: |
+          kubectl apply -f examples/K8sMesh/k8s/namespace.yaml
+          kubectl apply -f examples/K8sMesh/k8s/services.yaml
+          kubectl apply -f examples/K8sMesh/k8s/mesh.yaml
+
+      - name: Wait for rollout
+        run: |
+          for d in orders payments shipping mesh; do
+            kubectl -n benzene-mesh rollout status "deploy/$d" --timeout=180s
+          done
+
+      - name: Trigger a discovery pass and assert 3 services discovered
+        run: |
+          kubectl -n benzene-mesh port-forward svc/mesh 8080:80 >/dev/null 2>&1 &
+          PF=$!
+          trap 'kill $PF 2>/dev/null || true' EXIT
+          sleep 5
+          RESP=$(curl -fsS -XPOST http://localhost:8080/mesh/refresh)
+          echo "refresh -> $RESP"
+          echo "$RESP" | grep -q '"discovered":3' \
+            || { echo "::error::expected 3 discovered, got: $RESP"; exit 1; }
+          echo "--- manifest.json ---"; curl -fsS http://localhost:8080/manifest.json
+          echo "--- topics.json ---";   curl -fsS http://localhost:8080/topics.json
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          kubectl -n benzene-mesh get pods -o wide || true
+          kubectl -n benzene-mesh logs deploy/mesh --tail=100 || true

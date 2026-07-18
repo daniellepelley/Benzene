@@ -1,0 +1,74 @@
+# The mesh service: discovers the benzene-labelled Services (needs RBAC to list Services), interrogates
+# each over in-cluster HTTP, and serves the Mesh UI. Its own Service is NOT benzene-labelled, so it
+# never discovers itself.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mesh
+  namespace: benzene-mesh
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mesh-service-reader
+  namespace: benzene-mesh
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mesh-service-reader
+  namespace: benzene-mesh
+subjects:
+  - kind: ServiceAccount
+    name: mesh
+    namespace: benzene-mesh
+roleRef:
+  kind: Role
+  name: mesh-service-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mesh
+  namespace: benzene-mesh
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: mesh }
+  template:
+    metadata:
+      labels: { app: mesh }
+    spec:
+      serviceAccountName: mesh
+      containers:
+        - name: mesh
+          image: benzene-k8smesh-mesh:local
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: MESH_NAMESPACE, value: benzene-mesh }
+            - { name: MESH_ARTIFACT_DIR, value: /artifacts }
+          volumeMounts:
+            - { name: artifacts, mountPath: /artifacts }
+      volumes:
+        - name: artifacts
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mesh
+  namespace: benzene-mesh
+spec:
+  type: NodePort
+  selector: { app: mesh }
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30080
