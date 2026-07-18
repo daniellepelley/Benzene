@@ -51,9 +51,10 @@ services.UsingBenzene(x => x
 | **Core** | `Benzene.Abstractions.*`, `Benzene.Core.*`, `Benzene.Http`, `Benzene.Results` |
 | **AWS** | `Benzene.Aws.Lambda.*`, `Benzene.Aws.Sqs`, `Benzene.Clients.Aws` |
 | **Azure** | `Benzene.Azure.Function.*`, `Benzene.AspNet.Core` |
+| **Messaging (self-hosted)** | `Benzene.Kafka.Core`, `Benzene.RabbitMq`, `Benzene.Azure.ServiceBus`, `Benzene.Azure.EventHub` |
 | **Validation** | `Benzene.FluentValidation`, `Benzene.DataAnnotations` |
 | **Observability** | `Benzene.Diagnostics`, `Benzene.OpenTelemetry`, `Benzene.HealthChecks.*` |
-| **Infrastructure** | `Benzene.Microsoft.Dependencies`, `Benzene.Cache.*`, `Benzene.Resilience` |
+| **Infrastructure** | `Benzene.Microsoft.Dependencies`, `Benzene.Cache.*`, `Benzene.Resilience`, `Benzene.Resilience.Polly` |
 
 ## Common Middleware
 
@@ -208,6 +209,9 @@ docs/
 ├── getting-started-aws.md            # Platform guides
 ├── azure-functions.md
 ├── asp-net-core.md
+├── getting-started-kafka.md
+├── getting-started-rabbitmq.md
+├── getting-started-worker.md
 │
 ├── message-handlers.md               # Core concepts
 ├── middleware.md

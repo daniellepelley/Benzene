@@ -55,7 +55,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Idempotency (de-duplicating redelivered messages)](idempotency.md) - Ensure a handler's side effect runs at most once per message on at-least-once transports (SQS, Service Bus, Event Hubs, Kafka), with a pluggable store
 - [Multi-Tenancy](multi-tenancy.md) - Attribute every request to a tenant and isolate its data/cache using a scoped `TenantHolder` set by a resolver middleware (claim / header / subdomain), with a "tenant required" guard
 - Rate Limiting *(planned)*
-- [Polly Resilience Pipelines (circuit breaker, timeout, bulkhead)](polly-resilience.md) - `Benzene.Resilience` implements retry-with-backoff only; bring your own Polly `ResiliencePipeline` into a ~15-line middleware for circuit breaker/timeout/bulkhead — no separate NuGet package needed
+- [Polly Resilience Pipelines (circuit breaker, timeout, hedging, fallback)](polly-resilience.md) - `Benzene.Resilience` implements retry-with-backoff only; the sibling `Benzene.Resilience.Polly` package runs your own Polly `ResiliencePipeline` as middleware (`.UseResiliencePipeline(...)`) for the full toolkit, and bridges a returned failure result to Polly's outcome model
 - [Request Authentication & Authorization](auth-patterns.md) - OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
 
 ## Cookbook Structure

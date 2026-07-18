@@ -38,6 +38,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 
 - **Messaging**
   - [Getting Started with Kafka](getting-started-kafka.md)
+  - [Getting Started with RabbitMQ](getting-started-rabbitmq.md)
   - [Getting Started with gRPC](getting-started-grpc.md)
   - [Getting Started with Worker Services](getting-started-worker.md)
 
@@ -50,7 +51,8 @@ Benzene is a hexagonal framework designed for services running in serverless env
 - **Clients & Resilience**
   - [Clients](clients.md)
   - [Caching](caching.md)
-  - [Resilience](resilience.md)
+  - [Resilience](resilience.md) — retry-with-backoff, plus the full Polly toolkit via `Benzene.Resilience.Polly`
+  - [Polly Resilience Pipelines](cookbooks/polly-resilience.md) — circuit breaker, timeout, hedging, fallback
 
 - **Code Generation**
   - [Terraform](terraform.md)
