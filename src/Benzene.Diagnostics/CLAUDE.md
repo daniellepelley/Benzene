@@ -9,7 +9,11 @@ exposes the shared `ActivitySource`/`Meter` ("Benzene") every pipeline stage rep
 registers `DebugMiddlewareWrapper` as an `IMiddlewareWrapper`, so it too wraps *every* middleware and
 emits `Debug.WriteLine` start/complete lines per stage (unrelated to `Activity`/tracing; visible only
 under a debugger/`DEBUG` build), and an `ActivityProcessTimerFactory` as the default
-`IProcessTimerFactory`. Correlation-ID registration lives in `DiagnosticsRegistrations` (auto-discovered
+`IProcessTimerFactory`. If you want *only* the span-per-middleware behaviour without the debug wrapper,
+timer factory, and correlation registrations, call the focused `AddActivityPerMiddleware()` instead —
+it registers just `ActivityMiddlewareWrapper`. Both share the same `IsTypeRegistered` guard, so
+calling both (or either twice) never double-wraps a middleware; `AddDiagnostics()` itself delegates to
+`AddActivityPerMiddleware()` for that single registration. Correlation-ID registration lives in `DiagnosticsRegistrations` (auto-discovered
 `RegistrationsBase`), not in `AddDiagnostics()` itself.
 
 ## Key types/interfaces
@@ -112,6 +116,8 @@ under a debugger/`DEBUG` build), and an `ActivityProcessTimerFactory` as the def
 ## When to use this package
 - Add `AddDiagnostics()` to get automatic `Activity` spans per middleware and `UseTimer("name")`
   support, on every platform (AWS, Azure, ASP.NET Core, Worker)
+- Add `AddActivityPerMiddleware()` when you want *only* the automatic span-per-middleware behaviour
+  and none of the other diagnostics registrations (debug wrapper, timer factory, correlation)
 - Add `UseBenzeneEnrichment()` once per pipeline for portable log/trace enrichment instead of
   hand-composing platform-specific `WithXxx()` log-context extensions
 - Add `UseW3CTraceContext()` as the first middleware on any pipeline (HTTP, SQS, SNS, Kafka, Event
