@@ -39,7 +39,9 @@ public class MeshAggregateHandler : IMessageHandler<Void, MeshAggregateSummary>
         // 2. Interrogate each discovered service and publish the catalog artifacts to S3.
         await _aggregator.RunOnceAsync(registry);
 
-        return BenzeneResult.Ok(new MeshAggregateSummary(registry.Services.Length));
+        // A pass creates/refreshes the catalog artifacts (a state change), so signal 201 rather than
+        // 200 on the POST /mesh/refresh surface. (On the EventBridge path the status is irrelevant.)
+        return BenzeneResult.Created(new MeshAggregateSummary(registry.Services.Length));
     }
 }
 
