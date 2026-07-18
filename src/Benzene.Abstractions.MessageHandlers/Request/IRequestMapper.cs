@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Maps a transport-specific context's raw message body into a strongly-typed request object.
-/// Wrapped by <see cref="IRequestMapperThunk"/> so a router can defer this until it knows the
+/// Wrapped by <see cref="IDeferredRequestMapper"/> so a router can defer this until it knows the
 /// handler's request type, and typically implemented on top of an <c>ISerializer</c> and the
 /// context's <c>IMessageBodyGetter{TContext}</c>.
 /// </summary>

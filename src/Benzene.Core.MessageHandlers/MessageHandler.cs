@@ -10,7 +10,7 @@ namespace Benzene.Core.MessageHandlers;
 /// <summary>
 /// Adapts a strongly-typed <see cref="IMessageHandler{TRequest,TResponse}"/> to the
 /// non-generic <see cref="IMessageHandler"/> the router works with, deserializing the request via
-/// an <see cref="IRequestMapperThunk"/> and translating unhandled exceptions into
+/// an <see cref="IDeferredRequestMapper"/> and translating unhandled exceptions into
 /// <see cref="IBenzeneResult"/> error responses instead of letting them propagate out of the pipeline.
 /// </summary>
 /// <typeparam name="TRequest">The strongly-typed request the inner handler expects.</typeparam>
@@ -42,22 +42,22 @@ public class MessageHandler<TRequest, TResponse> : IMessageHandler where TReques
     }
 
     /// <summary>
-    /// Maps the request out of <paramref name="requestMapperThunk"/> and invokes the inner handler,
+    /// Maps the request out of <paramref name="deferredRequestMapper"/> and invokes the inner handler,
     /// converting mapping failures and handler exceptions into an <see cref="IBenzeneResult"/> rather
     /// than throwing.
     /// </summary>
-    /// <param name="requestMapperThunk">Supplies the deserialized <typeparamref name="TRequest"/> for the current message.</param>
+    /// <param name="deferredRequestMapper">Supplies the deserialized <typeparamref name="TRequest"/> for the current message.</param>
     /// <returns>
     /// The handler's result; a bad-request result if the message could not be deserialized; a
     /// validation-error result if the handler threw an <see cref="ArgumentException"/>; or a
     /// service-unavailable result for any other unhandled exception.
     /// </returns>
-    public async Task<IBenzeneResult> HandlerAsync(IRequestMapperThunk requestMapperThunk)
+    public async Task<IBenzeneResult> HandleAsync(IDeferredRequestMapper deferredRequestMapper)
     {
         TRequest? messageObject;
         try
         {
-            messageObject = requestMapperThunk.GetRequest<TRequest>();
+            messageObject = deferredRequestMapper.GetRequest<TRequest>();
         }
         catch(Exception ex)
         {

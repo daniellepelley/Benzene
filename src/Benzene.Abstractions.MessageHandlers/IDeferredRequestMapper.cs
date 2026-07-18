@@ -7,7 +7,7 @@
 /// type the handler actually needs (<c>GetRequest&lt;TRequest&gt;</c>) without the router itself
 /// needing to be generic over that type.
 /// </summary>
-public interface IRequestMapperThunk
+public interface IDeferredRequestMapper
 {
     /// <summary>Maps the current message to the given request type.</summary>
     /// <typeparam name="TRequest">The request type expected by the handler.</typeparam>

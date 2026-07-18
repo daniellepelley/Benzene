@@ -17,7 +17,7 @@ public class MessageHandlerFactoryTest
     [Fact]
     public async Task FindRoutes()
     {
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload
             {
@@ -35,7 +35,7 @@ public class MessageHandlerFactoryTest
 
         var messageHandler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic)));
 
-        var result = await messageHandler.HandlerAsync(mockRequestFactory.Object);
+        var result = await messageHandler.HandleAsync(mockRequestFactory.Object);
         Assert.Equal(BenzeneResultStatus.Ok, result.Status);
     }
 
@@ -45,7 +45,7 @@ public class MessageHandlerFactoryTest
         // Proves the per-(handler,request,response)-triple compiled dispatcher cache differentiates
         // correctly: v1 and v2 share a topic id and request type but differ in handler type and
         // response type, so a cache keyed incorrectly would cross-wire them.
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload { Name = Defaults.Name });
 
@@ -61,8 +61,8 @@ public class MessageHandlerFactoryTest
         var v1Handler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic, "")));
         var v2Handler = messageHandlerFactory.Create(messageHandlerLookup.FindHandler(new Topic(Defaults.Topic, "2.0")));
 
-        var v1Result = await v1Handler.HandlerAsync(mockRequestFactory.Object);
-        var v2Result = await v2Handler.HandlerAsync(mockRequestFactory.Object);
+        var v1Result = await v1Handler.HandleAsync(mockRequestFactory.Object);
+        var v2Result = await v2Handler.HandleAsync(mockRequestFactory.Object);
 
         Assert.Equal(BenzeneResultStatus.Ok, v1Result.Status);
         Assert.Equal(BenzeneResultStatus.Deleted, v2Result.Status);
@@ -90,11 +90,11 @@ public class MessageHandlerFactoryTest
 
         Assert.NotSame(first, second);
 
-        var mockRequestFactory = new Mock<IRequestMapperThunk>();
+        var mockRequestFactory = new Mock<IDeferredRequestMapper>();
         mockRequestFactory.Setup(x => x.GetRequest<ExampleRequestPayload>())
             .Returns(new ExampleRequestPayload { Name = Defaults.Name });
 
-        Assert.Equal(BenzeneResultStatus.Ok, (await first.HandlerAsync(mockRequestFactory.Object)).Status);
-        Assert.Equal(BenzeneResultStatus.Ok, (await second.HandlerAsync(mockRequestFactory.Object)).Status);
+        Assert.Equal(BenzeneResultStatus.Ok, (await first.HandleAsync(mockRequestFactory.Object)).Status);
+        Assert.Equal(BenzeneResultStatus.Ok, (await second.HandleAsync(mockRequestFactory.Object)).Status);
     }
 }
