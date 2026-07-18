@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Mesh.Discovery.Azure</AssemblyName>
+    <RootNamespace>Benzene.Mesh.Discovery.Azure</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Azure self-discovery for the Benzene Mesh: enumerates the App Service / Function App resources in a subscription (filtered by tag, e.g. benzene) and emits HTTP mesh registry entries at their default hostnames, so the aggregator discovers services instead of being hand-fed a mesh.json. Reuses the default HTTP interrogation source.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.ResourceManager" Version="1.13.0" />
+    <PackageReference Include="Azure.Identity" Version="1.13.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
