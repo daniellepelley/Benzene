@@ -1,54 +1,48 @@
 # Benzene.Azure.Function.Kafka
 
 ## What this package does
-Azure Kafka integration for Benzene (Azure Event Hubs with Kafka protocol). Provides utilities for working with Event Hubs using Kafka API, enabling Kafka-compatible event processing on Azure.
+The **Kafka trigger** adapter for Benzene's Azure Functions isolated-worker host, targeting Event
+Hubs' Kafka-compatible endpoint (the `Microsoft.Azure.Functions.Worker.Extensions.Kafka`
+extension). It runs a triggered batch of `KafkaRecord`s through the middleware pipeline, routing
+each by its native Kafka **topic** — so `[Message("topic")]` handlers and `.UseMessageHandlers()`
+work as with every other transport. This is Kafka-over-Event-Hubs specifically; for MSK / native
+AWS Kafka use `Benzene.Aws.Lambda.Kafka`, and for a self-hosted (non-Functions) Kafka consumer use
+`Benzene.Kafka.Core`.
 
-## Key types/interfaces
+## Key types
+- `KafkaContext : IHasMessageResult` — wraps a single `KafkaRecord`; records the handler outcome on
+  `MessageResult`.
+- Mappers: `KafkaMessageTopicGetter` (topic from `record.Topic` — a real Kafka topic, unlike Queue
+  Storage which has none), `KafkaMessageBodyGetter`, `KafkaMessageHeadersGetter`,
+  `KafkaMessageMessageHandlerResultSetter`.
+- `KafkaApplication : EntryPointMiddlewareApplication<KafkaRecord[]>` / `KafkaBatchApplication` —
+  the entry point and its per-record batch loop, transport-tagged `"kafka"`.
+- `KafkaOptions` — `CatchExceptions` (default `false`: a handler exception cascades to fail the
+  whole trigger invocation, so the Functions host's retry notices) and `RaiseOnFailureStatus`
+  (escalate a non-exception failure result the same way). Mirrors `ServiceBusOptions`' first two
+  flags; Kafka has no per-message ack shape, so there's no `AckMode` here.
+- `Extensions.HandleKafkaEvents(this IAzureFunctionApp, params KafkaRecord[])` — the dispatch helper
+  the `[KafkaTrigger]` function calls. `DependencyInjectionExtensions.UseKafka(...)` is the wiring
+  (both builder types), with an optional `Action<KafkaOptions>`.
 
-### Azure Kafka Integration
-- Kafka consumer for Event Hubs
-- Kafka producer for Event Hubs
-- Event Hubs Kafka configuration
+## Known limitation
+`KafkaMessageHeadersGetter` **always returns an empty dictionary** — the Functions Kafka trigger's
+record headers aren't surfaced through this path yet. Body-based routing and payloads are
+unaffected; only transport headers are missing. Documented in `docs/getting-started-kafka.md`'s
+Azure Functions section.
 
 ## When to use this package
-- When using Event Hubs with Kafka protocol
-- For Kafka-compatible applications on Azure
-- When migrating Kafka apps to Azure
-- For Event Hubs with existing Kafka clients
+- Consuming Event Hubs over its Kafka protocol via an Azure Functions Kafka trigger. Add
+  `Microsoft.Azure.Functions.Worker.Extensions.Kafka` (4.3.0) directly to your function app so the
+  trigger registers (see `docs/azure-functions.md` → Kafka).
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Azure.Function.Core** - Azure core utilities
-- **Benzene.Kafka.Core** - Kafka core abstractions
+- **Benzene.Azure.Function.Core** — the host/app builder.
+- **Benzene.Core.MessageHandlers** — routing and mapper infrastructure.
 
 ## Important conventions
-- Uses Event Hubs Kafka endpoint
-- Compatible with standard Kafka protocol
-- Leverages Event Hubs features via Kafka API
-- Connection string format differs from native Event Hubs
-
-## Important conventions
-- Exception/failure-status handling is configurable via `KafkaOptions` (`UseKafka(..., configure)`),
-  defaulting to today's original behavior: a handler exception cascades and fails the whole trigger
-  invocation (the Kafka trigger has no `batchItemFailures`-equivalent partial-failure mechanism at
-  the platform level), and a non-exception failure result is silently accepted. Set
-  `KafkaOptions.CatchExceptions = true` to catch and log an exception instead of cascading it (that
-  record's failure doesn't affect the rest of the batch or fail the invocation); set
-  `KafkaOptions.RaiseOnFailureStatus = true` to escalate a non-exception failure result into a
-  thrown `KafkaMessageProcessingException` too. Both default to `false` (purely additive/opt-in).
-  `KafkaMessageMessageHandlerResultSetter` now records the outcome onto `KafkaContext.MessageResult`
-  (previously a no-op) specifically so `RaiseOnFailureStatus` has something to read.
-
-## Tests
-- `test/Benzene.Core.Test/Azure/KafkaPipelineTest.cs` - full pipeline happy path (real
-  `KafkaRecord` through `.UseKafka().UseMessageHandlers()`).
-- `test/Benzene.Core.Test/Azure/KafkaGettersTest.cs` - `KafkaMessageBodyGetter` (UTF-8 decode, and
-  the null-`Value` → null-body case the pipeline test's happy path doesn't reach),
-  `KafkaMessageTopicGetter`, and `KafkaMessageHeadersGetter`'s always-empty contract.
-- `test/Benzene.Core.Test/Azure/KafkaFailureHandlingTest.cs` - `KafkaOptions`'
-  `CatchExceptions`/`RaiseOnFailureStatus` combinations against `KafkaBatchApplication` directly.
-- `test/Benzene.Core.Test/Azure/KafkaBatchAndNoOpTest.cs` - a 3-record batch (with `CatchExceptions`
-  on) where one record's handler throws, pinning down that the other two records still get
-  processed rather than the whole batch aborting; `KafkaMessageProcessingException`'s message text
-  includes the topic; and `UseKafka(IBenzeneApplicationBuilder, ...)`'s no-op branch on a
-  non-`IAzureFunctionAppBuilder` app (returns the same instance untouched).
+- The Kafka record value is `byte[]`, decoded as UTF-8 JSON like every other transport; there is no
+  `UseBenzeneMessage` envelope bridge (that's for Event Hubs and Queue Storage, whose messages
+  carry no routable topic of their own — a Kafka record does).
+- Coverage: `KafkaPipelineTest.cs`, `KafkaGettersTest.cs`, `KafkaFailureHandlingTest.cs`,
+  `KafkaBatchAndNoOpTest.cs`.

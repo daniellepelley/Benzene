@@ -43,7 +43,7 @@ public class AzureFunctionApp : IAzureFunctionApp
             }
         }
 
-        throw new BenzeneException("Cannot handle this kind of request");
+        throw CreateNoEntryPointException($"{FormatType(typeof(TRequest))} -> {FormatType(typeof(TResponse))}");
     }
 
     /// <summary>
@@ -64,6 +64,40 @@ public class AzureFunctionApp : IAzureFunctionApp
             }
         }
 
-        throw new BenzeneException("Cannot handle this kind of request");
+        throw CreateNoEntryPointException(FormatType(typeof(TRequest)));
+    }
+
+    private BenzeneException CreateNoEntryPointException(string requestedShape)
+    {
+        var registered = _apps
+            .SelectMany(app => app.GetType().GetInterfaces()
+                .Where(i => i.IsGenericType && i.GetGenericArguments().Length > 0 &&
+                            typeof(IEntryPointMiddlewareApplication).IsAssignableFrom(i))
+                .Select(i => string.Join(" -> ", i.GetGenericArguments().Select(FormatType))))
+            .Distinct()
+            .ToArray();
+
+        var registeredList = registered.Length == 0 ? "none" : string.Join(", ", registered);
+        return new BenzeneException(
+            $"No entry point application is registered for request shape [{requestedShape}]. " +
+            $"Registered entry points: [{registeredList}]. " +
+            "Wire the matching Use...() extension (UseHttp, UseServiceBus, UseEventHub, UseQueueStorage, ...) " +
+            "in your StartUp's Configure method for this trigger's request type.");
+    }
+
+    private static string FormatType(Type type)
+    {
+        if (type.IsArray)
+        {
+            return $"{FormatType(type.GetElementType()!)}[]";
+        }
+
+        if (!type.IsGenericType)
+        {
+            return type.Name;
+        }
+
+        var name = type.Name[..type.Name.IndexOf('`')];
+        return $"{name}<{string.Join(", ", type.GetGenericArguments().Select(FormatType))}>";
     }
 }

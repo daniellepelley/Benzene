@@ -2774,3 +2774,47 @@ request" error message (roadmap item of long standing), the four stale legacy CL
 (flagged in the 2026-07-17 gap scan), the Worker example's absence from the per-folder `.sln`
 (solution-structure change requiring explicit approval), and the guide's filename breaking the
 `getting-started-*` family (rename would break inbound links; needs a decision).
+
+## Document History Addendum — 2026-07-17 (tenth entry): Four Deferred Azure Polish Items Closed
+
+The four items the ninth entry recorded as out-of-scope (plus the DX re-verification's residual
+notes) were then explicitly directed by the user and are now done:
+
+- **`AzureFunctionApp`'s "Cannot handle this kind of request" replaced with a diagnostic
+  message.** Both `HandleAsync` overloads now throw a `BenzeneException` naming the requested
+  request/response shape and listing the registered entry point shapes (reflected off the
+  constructed `IEntryPointMiddlewareApplication<...>` interfaces), ending with "Wire the matching
+  Use...() extension (UseHttp, UseServiceBus, ...) in your StartUp's Configure method." A
+  forgotten `UseHttp(...)`/`UseServiceBus(...)` is now self-diagnosing. Tests:
+  `test/Benzene.Core.Test/Azure/AzureFunctionAppErrorMessageTest.cs` (names the unregistered
+  shape + the registered entry point; "none" when nothing is wired). Behavior otherwise
+  unchanged — still a `BenzeneException`, still thrown on no match.
+- **The four stale legacy CLAUDE.md files rewritten** (`Benzene.Azure.Function.{Core,AspNet,
+  EventHub,Kafka}`) — from generic "Azure service client abstractions"/"consumers and producers"
+  boilerplate to accurate, type-specific docs naming the real types (`IAzureFunctionApp`/
+  `UseBenzene<TStartUp>`/`InlineAzureFunctionStartUp`; the AspNet HTTP-trigger adapter and its
+  route-based topic getter, explicitly *not* App Service/Container Apps; EventHub's fan-out vs
+  `UseEventHubStream` fan-in split and consumption-only scope; Kafka's native-topic routing, its
+  `KafkaOptions`, and the documented empty-headers limitation). Every type name and test-file
+  reference verified against source. The other ten Azure package CLAUDE.md files were already
+  accurate and untouched.
+- **Worker example added to the per-folder solution.** `examples/Azure/Benzene.Example.Azure.sln`
+  now contains `Benzene.Example.Azure.Worker` (and the `QueueStorage`/`ServiceBus` Function
+  packages the HTTP example gained in the ninth entry), so opening the folder solution in an IDE
+  shows both examples. Solution builds clean. (This is the solution-structure change the ninth
+  entry deferred pending approval — user-directed here.)
+- **`docs/getting-started-azure.md` redirect stub added.** Rather than rename the guide (50
+  inbound `azure-functions` link occurrences across 46 files — a mass rewrite the website
+  generator makes risky), the family-consistent URL now resolves to a short pointer page linking
+  the canonical `azure-functions` guide, the self-hosted workers, and the four Azure cookbooks.
+  Satisfies the "URL-guessers/grep-ers miss it" concern with zero risk to existing links.
+
+Also applied from the DX re-verification's smaller notes (already merged in the ninth entry's
+follow-up commit `c0a6258`): `order.create` → `order_create` in the example function comments,
+precise direct-reference wording for the transitively-compiling triggers, the "See Also" example
+description, and a non-HTTP-trigger-needs-real-`AzureWebJobsStorage` troubleshooting bullet.
+
+**Azure status:** every roadmap item and every DX-audit finding actionable from this environment
+is now closed. The only remaining Azure work needs a real Azure subscription (a `deploy-azure-
+example` workflow; performance/cold-start benchmarks) or its own scoping session (Durable
+Functions).
