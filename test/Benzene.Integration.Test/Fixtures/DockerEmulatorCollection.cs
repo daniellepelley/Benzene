@@ -17,7 +17,8 @@ namespace Benzene.Integration.Test.Fixtures;
 public class DockerEmulatorCollection :
     ICollectionFixture<SqsFixture>,
     ICollectionFixture<EventHubFixture>,
-    ICollectionFixture<ServiceBusFixture>
+    ICollectionFixture<ServiceBusFixture>,
+    ICollectionFixture<RabbitMqFixture>
 {
     public const string Name = "Docker Emulators";
 }

@@ -1,0 +1,13 @@
+services:
+  rabbitmq:
+    # Pinned, not :latest, for reproducible CI. 4.0 is the current stable line and ships the v7
+    # async-API-compatible broker. Non-default credentials are set below on purpose: RabbitMQ's
+    # built-in "guest" user is restricted to loopback connections *inside the container*, so a
+    # host->mapped-port login as guest is refused - any non-guest user is not loopback-restricted,
+    # so the test connects as "benzene" instead.
+    image: rabbitmq:4.0
+    environment:
+      - RABBITMQ_DEFAULT_USER=benzene
+      - RABBITMQ_DEFAULT_PASS=benzene
+    ports:
+      - 5672:5672

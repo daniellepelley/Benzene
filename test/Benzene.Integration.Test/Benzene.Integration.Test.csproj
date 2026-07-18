@@ -39,6 +39,7 @@
 	  <ProjectReference Include="..\..\src\Benzene.HostedService\Benzene.HostedService.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.RabbitMq\Benzene.RabbitMq.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
 	</ItemGroup>
@@ -60,6 +61,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Fixtures\Files\ServiceBus\servicebus-emulator-config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Fixtures\Files\RabbitMq\rabbitmq-docker-compose.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
