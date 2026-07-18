@@ -28,16 +28,20 @@ locals {
   services = ["orders", "payments", "shipping"]
 }
 
-resource "azurerm_resource_group" "this" {
-  name     = var.resource_group
-  location = var.location
+# The resource group is bootstrapped imperatively by the workflow (`az group create`, idempotent)
+# before Terraform runs — it has to exist first to hold the remote-state storage account. So Terraform
+# *reads* it as a data source rather than managing it, which sidesteps the "a resource with the ID ...
+# already exists - needs to be imported" collision entirely (and avoids Terraform owning the RG that
+# holds its own state). Everything else in this file is created inside it as normal.
+data "azurerm_resource_group" "this" {
+  name = var.resource_group
 }
 
 # --- Container registry (holds the two images CI builds + pushes) ------------------------------------
 resource "azurerm_container_registry" "acr" {
   name                = var.acr_name
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
   sku                 = "Basic"
   admin_enabled       = true
 }
@@ -45,8 +49,8 @@ resource "azurerm_container_registry" "acr" {
 # --- Storage for the mesh catalog artifacts ----------------------------------------------------------
 resource "azurerm_storage_account" "artifacts" {
   name                     = var.storage_account
-  resource_group_name      = azurerm_resource_group.this.name
-  location                 = azurerm_resource_group.this.location
+  resource_group_name      = data.azurerm_resource_group.this.name
+  location                 = data.azurerm_resource_group.this.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
@@ -60,8 +64,8 @@ resource "azurerm_storage_container" "mesh" {
 # --- App Service plan (Linux) ------------------------------------------------------------------------
 resource "azurerm_service_plan" "this" {
   name                = "${var.project}-plan"
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
   os_type             = "Linux"
   sku_name            = "B1"
 }
@@ -70,8 +74,8 @@ resource "azurerm_service_plan" "this" {
 resource "azurerm_linux_web_app" "service" {
   for_each            = toset(local.services)
   name                = "${var.project}-${each.value}"
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
   service_plan_id     = azurerm_service_plan.this.id
 
   # Discovery finds services by this tag; the mesh Web App deliberately does NOT carry it.
@@ -98,8 +102,8 @@ resource "azurerm_linux_web_app" "service" {
 # --- The mesh Web App (NOT tagged) with a managed identity that can read resources + write blobs ------
 resource "azurerm_linux_web_app" "mesh" {
   name                = "${var.project}-mesh"
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
   service_plan_id     = azurerm_service_plan.this.id
 
   identity { type = "SystemAssigned" }
@@ -119,14 +123,14 @@ resource "azurerm_linux_web_app" "mesh" {
     PORT                                = "8080"
     MESH_BLOB_URI                       = azurerm_storage_account.artifacts.primary_blob_endpoint
     MESH_BLOB_CONTAINER                 = azurerm_storage_container.mesh.name
-    MESH_REGION                         = azurerm_resource_group.this.location
+    MESH_REGION                         = data.azurerm_resource_group.this.location
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
   }
 }
 
 # Discover: the mesh identity can read (list) the resources in the resource group.
 resource "azurerm_role_assignment" "mesh_reader" {
-  scope                = azurerm_resource_group.this.id
+  scope                = data.azurerm_resource_group.this.id
   role_definition_name = "Reader"
   principal_id         = azurerm_linux_web_app.mesh.identity[0].principal_id
 }
