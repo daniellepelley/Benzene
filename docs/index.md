@@ -28,7 +28,10 @@ Benzene is a hexagonal framework designed for services running in serverless env
     - [AWS Lambda Setup](getting-started-aws)
     - [AWS IAM Permissions Reference](aws-iam-permissions)
   - **Azure**
-    - [Azure Functions Setup](azure-functions)
+    - [Azure Functions Setup](azure-functions) — HTTP plus every non-HTTP trigger (Event Hubs, Kafka, Service Bus, Cosmos DB Change Feed, Queue/Blob Storage, Event Grid, Timer)
+    - [Self-hosted Azure workers](getting-started-worker#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db) — Service Bus, Event Hubs, and Cosmos DB Change Feed consumers without Azure Functions
+    - [Managed Identity & RBAC](cookbooks/managed-identity) — no connection strings: credential wiring and the roles each integration needs
+    - [Service Bus](cookbooks/service-bus-handling) / [Event Hubs](cookbooks/event-hub-processing) / [Cosmos DB Change Feed](cookbooks/cosmos-change-feed-processing) cookbooks
   - **Cloudflare**
     - [Cloudflare Containers Setup](getting-started-cloudflare)
 

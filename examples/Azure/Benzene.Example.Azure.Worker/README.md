@@ -15,7 +15,7 @@ trigger. It uses:
 - [`Benzene.Azure.EventHub`](../../../src/Benzene.Azure.EventHub) — `worker.UseEventHub(...)`, an
   `EventProcessorClient` over an event hub with blob-checkpointed offsets.
 
-See [Worker Service Setup, Part B](../../../docs/getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub)
+See [Worker Service Setup, Part B](../../../docs/getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db)
 for the guide this example follows.
 
 ## What it does

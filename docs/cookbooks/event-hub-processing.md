@@ -549,7 +549,7 @@ The key inversion from the trigger: **here Benzene owns what the runtime owned a
   where a fresh consumer group with no checkpoint begins — the `EventProcessorClient` default is the
   *end* of the partition.
 
-See [Worker Service Setup, Part B](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub)
+See [Worker Service Setup, Part B](../getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db)
 for the full host wiring.
 
 ## Further Reading
