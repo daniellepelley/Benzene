@@ -22,7 +22,7 @@ public class Startup : BenzeneStartUp
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly,
+        => MeshServiceWiring.ConfigureServices(services, "payments", typeof(Startup).Assembly,
             // payments-api → shipping-api: on capture, send shipping:book to the shipping SQS queue.
             new OutboundSend("shipping:book", typeof(OutboundShipmentBook), "SHIPPING_QUEUE_URL"));
 

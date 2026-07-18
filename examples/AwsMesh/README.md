@@ -54,6 +54,19 @@ Each service Lambda is a **self-contained executable** hosting the Benzene pipel
 `Amazon.Lambda.RuntimeSupport` bootstrap — because .NET 10 has no managed Lambda runtime, they deploy
 on the **`provided.al2023`** custom runtime (self-contained publish).
 
+## OpenTelemetry (traces + metrics)
+
+Every Lambda (the three services and the mesh) wires **full OpenTelemetry**: `AddOpenTelemetry()` with
+Benzene's instrumentation (`AddBenzeneInstrumentation`) for traces and metrics, exported over **OTLP**,
+plus the pipeline middleware `UseW3CTraceContext` → `UseBenzeneEnrichment` → `UseBenzeneMetrics` on
+every transport. The W3C trace-context propagation is what stitches the **order → payment → shipment**
+spans (across the SQS hops) into a single distributed trace — feed it to Grafana Tempo and the mesh's
+Topology can show *observed* edges on top of the structural ones.
+
+Point it at a collector with the standard `OTEL_EXPORTER_OTLP_ENDPOINT` Lambda env var (unset, the
+exporter simply no-ops). On the `provided.al2023` custom runtime, reliable span export also wants the
+ADOT layer or a per-invocation force-flush — a deploy-infra concern, not a code change.
+
 ## What each service shows off
 
 Every service is wired through the shared `Shared/MeshServiceWiring` helper, which "goes to town" on

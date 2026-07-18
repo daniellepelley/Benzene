@@ -5,14 +5,19 @@ using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Diagnostics;
 using Benzene.Mesh.Aws.Lambda;
 using Benzene.Mesh.Aws.S3;
 using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Aws;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
+using Benzene.OpenTelemetry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Benzene.Examples.AwsMesh.Mesh;
 
@@ -33,12 +38,25 @@ public class Startup : BenzeneStartUp
                      ?? throw new InvalidOperationException("MESH_ARTIFACT_BUCKET is required.");
         var prefix = Environment.GetEnvironmentVariable("MESH_ARTIFACT_PREFIX") ?? "";
 
+        // Full OpenTelemetry for the mesh Lambda too, so its discovery/aggregation + UI pipelines are
+        // traced and metered alongside the services. Exported over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT).
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService("benzene-mesh"))
+            .WithTracing(tracing => tracing
+                .SetSampler(new AlwaysOnSampler())
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter())
+            .WithMetrics(metrics => metrics
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter());
+
         services.UsingBenzene(benzene =>
         {
             // Baseline every Benzene app needs (IDefaultStatuses, serializer, version selection, core
             // middleware). UseApiGateway/UseEventBridge/UseMessageHandlers don't register it — the app
             // must, same as every other Benzene example.
             benzene.AddBenzene();
+            benzene.AddDiagnostics();
             benzene.AddMessageHandlers(typeof(Startup).Assembly);
             // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in S3.
             benzene.AddMeshAggregatorWithS3(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()), bucket, prefix);
@@ -58,10 +76,17 @@ public class Startup : BenzeneStartUp
         app.UseAwsLambda(aws =>
         {
             // Scheduled aggregation: an EventBridge rule fires with detail-type "mesh:aggregate".
-            aws.UseEventBridge(eb => eb.UseMessageHandlers(handlers));
+            aws.UseEventBridge(eb => eb
+                .UseW3CTraceContext()
+                .UseBenzeneEnrichment()
+                .UseBenzeneMetrics()
+                .UseMessageHandlers(handlers));
 
             // Public HTTP surface: the Mesh UI, the catalog artifacts (from S3), and POST /mesh/refresh.
             aws.UseApiGateway(http => http
+                .UseW3CTraceContext()
+                .UseBenzeneEnrichment()
+                .UseBenzeneMetrics()
                 .UseMeshUi("/mesh-ui", "manifest.json")
                 .UseMeshArtifacts()
                 .UseMessageHandlers(handlers));

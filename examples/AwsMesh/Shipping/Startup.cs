@@ -21,7 +21,7 @@ public class Startup : BenzeneStartUp
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly);
+        => MeshServiceWiring.ConfigureServices(services, "shipping", typeof(Startup).Assembly);
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
