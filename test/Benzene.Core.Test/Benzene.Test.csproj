@@ -95,6 +95,10 @@
     <ProjectReference Include="..\..\src\Benzene.Cache.Redis\Benzene.Cache.Redis.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Client.Http\Benzene.Client.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.Azure.ServiceBus\Benzene.Clients.Azure.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.Azure.EventHub\Benzene.Clients.Azure.EventHub.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.Azure.EventGrid\Benzene.Clients.Azure.EventGrid.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.Azure.QueueStorage\Benzene.Clients.Azure.QueueStorage.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Clients.HealthChecks\Benzene.Clients.HealthChecks.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CloudService.Probe\Benzene.CloudService.Probe.csproj" />

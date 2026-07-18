@@ -24,7 +24,8 @@ Add the core client abstractions, plus whichever transport package(s) you need:
 |---|---|
 | `Benzene.Clients` | `IBenzeneMessageSender`, `OutboundContext`, `OutboundRoutingBuilder`/`AddOutboundRouting(...)`, `ValidateOutboundRouting()`, and the cross-cutting middleware (correlation ID, W3C trace context). Pulled in transitively by every transport package below. |
 | `Benzene.Clients.Aws.Sqs` / `.Sns` / `.EventBridge` / `.Lambda` / `.StepFunctions` | The AWS outbound clients, segregated one package per transport so using SNS doesn't drag in SQS. Each gives the `.UseSqs(...)`/`.UseSns(...)`/`.UseEventBridge(...)`/`.UseAwsLambda(...)` route extensions and/or the standalone `SqsBenzeneMessageClient`/`SnsBenzeneMessageClient`/`EventBridgeBenzeneMessageClient`/`AwsLambdaBenzeneMessageClient` clients, plus the relevant health check. `Benzene.Clients.Aws` is a meta-package that references all five. |
-| `Benzene.Kafka.Core` | `KafkaBenzeneMessageClient` (Kafka transport). |
+| `Benzene.Clients.Azure.ServiceBus` / `.EventHub` / `.EventGrid` / `.QueueStorage` | The Azure outbound clients, one package per transport, mirroring the AWS split. Each gives a `.Use<Transport>(...)` route extension and a standalone `IBenzeneMessageClient`. No egress exists for Blob Storage/Cosmos DB Change Feed/Timer — they aren't transports (see [Capability Matrix](capability-matrix.md)); "Kafka over Event Hubs" egress is `Benzene.Kafka.Core` unchanged (below), not a separate Azure package. |
+| `Benzene.Kafka.Core` | `KafkaBenzeneMessageClient` (Kafka transport — including Event Hubs' Kafka-protocol endpoint). |
 | `Benzene.Grpc.Client` | `GrpcBenzeneMessageClient` (gRPC transport). |
 | `Benzene.Client.Http` | `HttpContextConverter`/`HttpClientMiddleware` — the lower-level pipeline building blocks for sending over HTTP (see [HTTP](#http) below). |
 | `Benzene.Resilience` | `RetryMiddleware<TContext>`/`.UseRetry(...)` — works on `OutboundContext` unmodified. |
@@ -190,6 +191,50 @@ services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
 
 Same shape as SQS: `.UseSns(topicArn)` (and the `.UseSns(topicArn, configure)` overload) via `OutboundSnsContextConverter`, forwarding `Headers` onto `PublishRequest.MessageAttributes`. Same `Void`-only constraint as SQS above.
 
+### Azure Service Bus
+
+Package: `Benzene.Clients.Azure.ServiceBus`.
+
+```csharp
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:create", pipeline => pipeline.UseServiceBus(sender))));
+```
+
+`.UseServiceBus(sender)` converts the route via `OutboundServiceBusContextConverter`, which serializes `OutboundContext.Request` as the message body and puts every `Headers` entry — plus a `topic` application property — onto `ServiceBusMessage.ApplicationProperties`, the exact property Benzene's Service Bus ingress reads to route and rehydrate headers. `sender` is a `ServiceBusSender` you build yourself (`ServiceBusClient.CreateSender(queueOrTopicName)`) — Benzene never wraps the connection-string-vs-Managed-Identity choice, it just takes the client you already built. Same `Void`-only constraint as SQS/SNS above.
+
+### Azure Event Hubs
+
+Package: `Benzene.Clients.Azure.EventHub`.
+
+```csharp
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:create", pipeline => pipeline.UseEventHub(producerClient))));
+```
+
+Same shape as Service Bus: `.UseEventHub(producerClient)` via `OutboundEventHubContextConverter`, forwarding `Headers` — plus a `topic` property — onto `EventData.Properties`. `producerClient` is an `EventHubProducerClient` you build yourself.
+
+### Azure Event Grid
+
+Package: `Benzene.Clients.Azure.EventGrid`.
+
+```csharp
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:create", pipeline => pipeline.UseEventGrid("my-service", publisherClient))));
+```
+
+`.UseEventGrid(source, publisherClient)` sends a CloudEvents 1.0 `CloudEvent` via `OutboundEventGridContextConverter`, with `Type` set to the topic (the field Benzene's Event Grid ingress routes on) and headers forwarded onto `ExtensionAttributes`. **Headers aren't round-tripped by Benzene's own ingress yet** — see the package's `CLAUDE.md`. For publishers still on the classic Event Grid schema, `.UseEventGridEventSchema(...)` is available but carries no headers at all.
+
+### Azure Queue Storage
+
+Package: `Benzene.Clients.Azure.QueueStorage`.
+
+```csharp
+services.UsingBenzene(x => x.AddOutboundRouting(routing => routing
+    .Route("order:create", pipeline => pipeline.UseQueueStorage(queueClient))));
+```
+
+A Queue Storage message has no properties/attributes bag, so `.UseQueueStorage(queueClient)` serializes a `BenzeneMessageRequest` envelope (`Topic`/`Headers`/`Body`) as the message text — the same envelope `BenzeneMessageQueueStorageHandler` (`queue.UseBenzeneMessage(...)`) reads on the ingress side. **If the destination queue instead uses a fixed `UsePresetTopic(...)` route**, the body must be the raw payload, not this envelope — send via `QueueClient.SendMessageAsync(...)` directly instead of through this converter.
+
 ### AWS Lambda, Kafka, EventBridge, gRPC
 
 These transports don't have an `OutboundContext` route extension yet — `.UseAwsLambda(...)` and equivalents for Kafka/EventBridge/gRPC are not yet implemented on the outbound routing pipeline. Until they land, use the transport's `IBenzeneMessageClient` implementation directly (see [Using a transport client directly](#using-a-transport-client-directly) below) rather than through `AddOutboundRouting(...)`.
@@ -287,6 +332,46 @@ var client = new SnsBenzeneMessageClient(topicArn,
 ```
 
 Like SQS, `SnsBenzeneMessageClient` builds an internal middleware pipeline (`UseSnsClient(...)`), and `SnsContextConverter<T>` forwards `IBenzeneClientRequest.Headers` onto the `PublishRequest.MessageAttributes`. The response is mapped from the publish call's HTTP status code.
+
+### Azure Service Bus (as a standalone client)
+
+Package: `Benzene.Clients.Azure.ServiceBus`. Prefer `.UseServiceBus(sender)` on an outbound route (above) for new code.
+
+```csharp
+var client = new ServiceBusBenzeneMessageClient(sender, logger, serviceResolver);
+```
+
+`ServiceBusBenzeneMessageClient` builds an internal middleware pipeline (`UseServiceBusClient(sender)`), and `ServiceBusContextConverter<T>` forwards `IBenzeneClientRequest.Headers` — plus a `topic` application property — onto `ServiceBusMessage.ApplicationProperties`. Service Bus has no request/response semantics beyond a send acknowledgement, so a successful send always maps to `BenzeneResult.Accepted<TResponse>()`.
+
+### Azure Event Hubs (as a standalone client)
+
+Package: `Benzene.Clients.Azure.EventHub`.
+
+```csharp
+var client = new EventHubBenzeneMessageClient(producerClient, logger, serviceResolver);
+```
+
+`EventHubContextConverter<T>` forwards headers — plus a `topic` property — onto `EventData.Properties`; the event is sent as a single-event batch. Same accepted-on-success mapping as Service Bus.
+
+### Azure Event Grid (as a standalone client)
+
+Package: `Benzene.Clients.Azure.EventGrid`.
+
+```csharp
+var client = new EventGridBenzeneMessageClient("my-service", publisherClient, logger, serviceResolver);
+```
+
+Sends a CloudEvents 1.0 `CloudEvent` with `Type` set to the topic. See [Azure Event Grid](#azure-event-grid) above for the headers caveat.
+
+### Azure Queue Storage (as a standalone client)
+
+Package: `Benzene.Clients.Azure.QueueStorage`.
+
+```csharp
+var client = new QueueStorageBenzeneMessageClient(queueClient, logger, serviceResolver);
+```
+
+Serializes a `BenzeneMessageRequest` envelope as the queue message text — see [Azure Queue Storage](#azure-queue-storage) above for the preset-topic caveat.
 
 ### Kafka
 

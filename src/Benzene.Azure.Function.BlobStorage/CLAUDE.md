@@ -53,6 +53,13 @@ sensitive work. Neither concern changes anything in this package.
 Deliberate: the dispatch surface is `HandleBlob(name, content)` with primitive arguments — there
 is nothing to build.
 
+## No egress package — deliberately (release plan §5.2)
+There is no `Benzene.Clients.Azure.BlobStorage`. Blob Storage is a **store**, not a transport —
+writing a blob is storage access, the same category as writing to a database. Benzene doesn't get
+involved in database/storage access (design philosophy principle 2 — see the
+[Capability Matrix](../../docs/capability-matrix.md)); use `BlobClient`/`BlobContainerClient`
+directly in your own handler code.
+
 ## Tests
 - `test/Benzene.Core.Test/Azure/BlobStoragePipelineTest.cs` — delivery of name+content, UTF-8
   string overload round-trip, exception propagation, platform-neutral no-op overload.
