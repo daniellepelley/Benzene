@@ -1,0 +1,87 @@
+name: Deploy AWS Mesh Example
+
+# Manual-only: deploys examples/AwsMesh (3 Cloud Service Lambdas + the mesh Lambda) to AWS via
+# Terraform. Set repo secrets AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY (an IAM user/role that can
+# manage Lambda, IAM, S3, API Gateway, and EventBridge). Nothing here runs on push.
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "AWS region"
+        required: true
+        default: "eu-west-1"
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  RID: "linux-x64" # must match deploy/variables.tf lambda_architecture (x86_64)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { name: orders,   project: examples/AwsMesh/Orders,   assembly: Benzene.Examples.AwsMesh.Orders }
+          - { name: payments, project: examples/AwsMesh/Payments, assembly: Benzene.Examples.AwsMesh.Payments }
+          - { name: shipping, project: examples/AwsMesh/Shipping, assembly: Benzene.Examples.AwsMesh.Shipping }
+          - { name: mesh,     project: examples/AwsMesh/Mesh,     assembly: Benzene.Examples.AwsMesh.Mesh }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish (self-contained, provided.al2023)
+        run: |
+          dotnet publish "${{ matrix.project }}" -c Release -r "$RID" --self-contained true \
+            -p:PublishReadyToRun=true -o out
+          # provided.al2023 looks for a `bootstrap` executable at the zip root; wrap the apphost.
+          printf '#!/bin/sh\nexec $LAMBDA_TASK_ROOT/%s\n' "${{ matrix.assembly }}" > out/bootstrap
+          chmod +x out/bootstrap out/"${{ matrix.assembly }}"
+
+      - name: Zip
+        run: |
+          mkdir -p artifacts
+          (cd out && zip -qr "../artifacts/${{ matrix.name }}.zip" .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lambda-${{ matrix.name }}
+          path: artifacts/${{ matrix.name }}.zip
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download built Lambda zips
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lambda-*
+          merge-multiple: true
+          path: examples/AwsMesh/artifacts
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Terraform apply
+        working-directory: examples/AwsMesh/deploy
+        run: |
+          terraform init -input=false
+          terraform apply -input=false -auto-approve -var "region=${{ inputs.region }}"
+
+      - name: Show URLs
+        working-directory: examples/AwsMesh/deploy
+        run: terraform output
