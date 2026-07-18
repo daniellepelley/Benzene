@@ -57,6 +57,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # The AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY secrets live in the "test" GitHub Environment;
+    # a job must declare the environment for its secrets to be exposed.
+    environment: test
     steps:
       - uses: actions/checkout@v4
 
