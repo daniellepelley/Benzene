@@ -1,0 +1,5 @@
+{
+  "detail-type": "orders:create",
+  "source": "benzene.demo",
+  "detail": { "item": "Espresso Machine", "quantity": 2 }
+}

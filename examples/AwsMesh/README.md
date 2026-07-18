@@ -54,11 +54,29 @@ Each service Lambda is a **self-contained executable** hosting the Benzene pipel
 `Amazon.Lambda.RuntimeSupport` bootstrap — because .NET 10 has no managed Lambda runtime, they deploy
 on the **`provided.al2023`** custom runtime (self-contained publish).
 
-## Interconnectivity (later)
+## What each service shows off
 
-The three domains (order → payment → shipment) are set up to call each other later (e.g. an order
-handler invoking payments then shipping), so the mesh's topology view shows real cross-service edges.
-Not wired yet — the first milestone is discovery + catalog.
+Every service is wired through the shared `Shared/MeshServiceWiring` helper, which "goes to town" on
+Benzene's features so the example dogfoods them on a real deploy:
+
+- **One set of handlers, five transports.** Each domain handler is reachable over **API Gateway**
+  (HTTP), **direct Lambda invoke** (BenzeneMessage), **SQS**, **SNS**, and **EventBridge** — the same
+  handler, no per-transport code. Fire any of them from the **Lambda test tool**: each service ships
+  saved requests under `.lambda-test-tool/SavedRequests/` (e.g. `orders-create-sqs.json`,
+  `orders-create-eventbridge.json`, `orders-create-direct.json`, `orders-create-apigateway.json`).
+- **Tracing/logging across every pipeline.** Every transport pipeline is wrapped with
+  `UseLogResult` + a **correlation id**, emitting a structured JSON log line per invocation (request,
+  response, `processTime`) to stdout → **CloudWatch**.
+- **Validation everywhere.** Each domain request has a **FluentValidation** validator applied via
+  `router.UseFluentValidation()`, so an invalid payload is rejected identically no matter which
+  transport it arrived on.
+
+## Interconnectivity (next)
+
+The three domains (order → payment → shipment) are set up to call each other via Benzene AWS Lambda
+**clients** (`AddOutboundRouting` + outbound invoke), so the mesh's topology view can show real
+cross-service edges. This is the remaining showpiece — it needs cross-Lambda invoke IAM + the callee
+function names wired in, so it lands as a focused follow-up on top of the observability above.
 
 ## Deploy it (via GitHub Actions — no local tooling)
 

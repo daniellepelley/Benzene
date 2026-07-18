@@ -1,0 +1,6 @@
+{
+  "httpMethod": "GET",
+  "path": "/shipments",
+  "headers": { "Accept": "application/json" },
+  "isBase64Encoded": false
+}

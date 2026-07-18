@@ -1,0 +1,4 @@
+{
+  "topic": "shipping:book",
+  "message": "{\"orderId\":\"ord-1\",\"carrier\":\"DPD\"}"
+}

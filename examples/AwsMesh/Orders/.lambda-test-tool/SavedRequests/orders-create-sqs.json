@@ -1,0 +1,11 @@
+{
+  "Records": [
+    {
+      "Body": "{\"item\":\"Espresso Machine\",\"quantity\":2}",
+      "EventSource": "aws:sqs",
+      "MessageAttributes": {
+        "topic": { "StringValue": "orders:create", "DataType": "String" }
+      }
+    }
+  ]
+}

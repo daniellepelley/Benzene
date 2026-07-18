@@ -1,0 +1,13 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "Sns": {
+        "Message": "{\"item\":\"Espresso Machine\",\"quantity\":2}",
+        "MessageAttributes": {
+          "topic": { "Type": "String", "Value": "orders:create" }
+        }
+      }
+    }
+  ]
+}

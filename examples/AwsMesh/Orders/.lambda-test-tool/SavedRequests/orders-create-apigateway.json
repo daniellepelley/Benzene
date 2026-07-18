@@ -1,0 +1,7 @@
+{
+  "httpMethod": "POST",
+  "path": "/orders",
+  "headers": { "Content-Type": "application/json" },
+  "body": "{\"item\":\"Espresso Machine\",\"quantity\":2}",
+  "isBase64Encoded": false
+}

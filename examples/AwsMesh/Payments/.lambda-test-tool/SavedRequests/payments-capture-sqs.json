@@ -1,0 +1,11 @@
+{
+  "Records": [
+    {
+      "Body": "{\"orderId\":\"ord-1\",\"amount\":549.00,\"currency\":\"GBP\"}",
+      "EventSource": "aws:sqs",
+      "MessageAttributes": {
+        "topic": { "StringValue": "payments:capture", "DataType": "String" }
+      }
+    }
+  ]
+}
