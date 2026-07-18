@@ -61,6 +61,18 @@ jobs:
             -backend-config="container_name=tfstate" \
             -backend-config="key=azure-mesh.tfstate"
 
+      # Adopt any resources that already exist in Azure but aren't yet tracked in state (the RG is
+      # created above to hold the state storage account; a prior partial run can leave others). Import
+      # is a no-op on a clean subscription, so this is safe on every deploy and prevents the
+      # "resource already exists - needs to be imported" apply failure.
+      - name: Adopt existing resources into state
+        working-directory: examples/AzureMesh/deploy
+        env:
+          ACR_NAME: ${{ inputs.acr_name }}
+          SA: ${{ inputs.storage_account }}
+          LOCATION: ${{ inputs.location }}
+        run: ./adopt-existing.sh
+
       # Phase 1: create the registry (and RG) so we have somewhere to push the images.
       - name: Terraform apply (registry only)
         working-directory: examples/AzureMesh/deploy
