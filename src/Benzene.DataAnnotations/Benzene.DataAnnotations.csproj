@@ -4,7 +4,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Description>Benzene integration with Microsoft Data Annotations</Description>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Daniel Le Pelley</Authors>
 		<AssemblyName>Benzene.DataAnnotations</AssemblyName>
 		<RootNamespace>Benzene.DataAnnotations</RootNamespace>

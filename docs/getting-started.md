@@ -6,7 +6,7 @@ Core, then, if you want, take the exact same message handler to AWS Lambda or Az
 without changing a line of it.
 
 If you already know you're deploying to a specific platform, you can jump straight to
-[AWS Lambda Setup](getting-started-aws) or [Azure Functions Setup](azure-functions) — but
+[AWS Lambda Setup](getting-started-aws.md) or [Azure Functions Setup](azure-functions.md) — but
 starting here first is the quickest way to see how Benzene fits together.
 
 ## What you'll build
@@ -28,7 +28,7 @@ That's it — the local walkthrough needs nothing else installed.
 Benzene separates *what your service does* from *how it's invoked*:
 
 - A **message handler** contains your logic. It receives a typed request and returns a typed
-  response wrapped in a [result](message-result). It knows nothing about HTTP, Lambda, or
+  response wrapped in a [result](message-result.md). It knows nothing about HTTP, Lambda, or
   queues.
 - Each handler is mapped to a **topic** — a stable string like `hello:world` that identifies
   the operation. Handlers are discovered automatically by reflection, so there's no routing
@@ -38,8 +38,8 @@ Benzene separates *what your service does* from *how it's invoked*:
   matching handler by topic, and turns the result back into a transport-native response.
 
 Because only the transport pipeline changes between hosts, the handler you write below runs
-unchanged on every platform Benzene supports. See [Message Handlers](message-handlers) and
-[Middleware](middleware) for the full picture.
+unchanged on every platform Benzene supports. See [Message Handlers](message-handlers.md) and
+[Middleware](middleware.md) for the full picture.
 
 ## 1. Create the project
 
@@ -108,7 +108,7 @@ Two attributes do the wiring, and both are found by reflection:
   The `{name}` segment is bound onto the request's `Name` property.
 
 The return type — `Task<IBenzeneResult<HelloWorldResponse>>` — is the response wrapped in a
-[result](message-result), which carries success/failure status alongside the payload.
+[result](message-result.md), which carries success/failure status alongside the payload.
 `BenzeneResult.Ok(...)` is the success case.
 
 ## 4. Register and wire up Benzene
@@ -198,17 +198,17 @@ Now that you have a service running, layer on the cross-cutting concerns and pla
 need — each is a small, self-contained addition:
 
 - **Add validation** — reject bad requests before they reach your handler with
-  [FluentValidation](fluent-validation) or [Data Annotations](data-annotations).
+  [FluentValidation](fluent-validation.md) or [Data Annotations](data-annotations.md).
 - **Add correlation & logging** — trace requests end-to-end with
-  [Correlation IDs](correlation-ids) and [Monitoring & Diagnostics](monitoring).
+  [Correlation IDs](correlation-ids.md) and [Monitoring & Diagnostics](monitoring.md).
 - **Understand the pipeline** — see what else you can compose in with
-  [Middleware](middleware) and [Common Middleware](common-middleware).
-- **Test your handlers** — [Testing Benzene](testing-benzene) shows how to test handlers in
+  [Middleware](middleware.md) and [Common Middleware](common-middleware.md).
+- **Test your handlers** — [Testing Benzene](testing-benzene.md) shows how to test handlers in
   isolation and pipelines end-to-end.
 - **Deploy to the cloud** — take the same handler to
-  [AWS Lambda](getting-started-aws) (API Gateway, SQS, SNS, Kafka, S3) or
-  [Azure Functions](azure-functions).
-- **Go deeper with recipes** — the [Cookbooks](cookbooks/README) cover real-world scenarios
+  [AWS Lambda](getting-started-aws.md) (API Gateway, SQS, SNS, Kafka, S3) or
+  [Azure Functions](azure-functions.md).
+- **Go deeper with recipes** — the [Cookbooks](cookbooks/README.md) cover real-world scenarios
   like retries, fan-out, caching, and distributed tracing.
 
 For complete, runnable projects covering every transport, see the

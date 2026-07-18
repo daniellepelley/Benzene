@@ -5,6 +5,21 @@ name: Deploy Benzene
 
 on:
   workflow_dispatch:
+    inputs:
+      channel:
+        description: >-
+          Release channel. "stable" publishes the exact version.txt value (e.g. 1.0.0).
+          Any prerelease channel appends an auto-incremented counter to produce a
+          SemVer-2 prerelease (e.g. 1.0.0-rc.1), per VERSIONING.md.
+        type: choice
+        required: true
+        default: alpha
+        options:
+          - alpha
+          - beta
+          - rc
+          - preview
+          - stable
 jobs:
   deploy:
 
@@ -15,34 +30,45 @@ jobs:
       id-token: write
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
     - name: Determine version
       id: version
+      env:
+        CHANNEL: ${{ inputs.channel }}
       run: |
         set -euo pipefail
+        # version.txt is the numeric base only (MAJOR.MINOR.PATCH); the channel decides the suffix.
         BASE_VERSION="$(tr -d '[:space:]' < version.txt)"
         PACKAGE_ID="benzene.core"
 
-        HTTP_STATUS=$(curl -s -o /tmp/nuget-versions.json -w '%{http_code}' \
-          "https://api.nuget.org/v3-flatcontainer/${PACKAGE_ID}/index.json")
+        if [ "$CHANNEL" = "stable" ]; then
+          # A stable release is cut deliberately from version.txt with no counter.
+          FULL_VERSION="${BASE_VERSION}"
+        else
+          # Prerelease: find the highest existing counter for this base+channel on nuget and
+          # increment it, producing a SemVer-2 dotted prerelease (e.g. 1.0.0-rc.3).
+          HTTP_STATUS=$(curl -s -o /tmp/nuget-versions.json -w '%{http_code}' \
+            "https://api.nuget.org/v3-flatcontainer/${PACKAGE_ID}/index.json")
 
-        LAST_BUILD=0
-        if [ "$HTTP_STATUS" = "200" ]; then
-          ESCAPED_BASE_VERSION=$(printf '%s' "$BASE_VERSION" | sed 's/\./\\./g')
-          while IFS= read -r BUILD; do
-            if [ "$BUILD" -gt "$LAST_BUILD" ]; then
-              LAST_BUILD="$BUILD"
-            fi
-          done < <(jq -r '.versions[]' /tmp/nuget-versions.json \
-            | grep -E "^${ESCAPED_BASE_VERSION}\.[0-9]+-alpha$" \
-            | sed -E "s/^${ESCAPED_BASE_VERSION}\.([0-9]+)-alpha$/\1/")
+          LAST_BUILD=0
+          if [ "$HTTP_STATUS" = "200" ]; then
+            ESCAPED="$(printf '%s' "${BASE_VERSION}-${CHANNEL}" | sed 's/[.-]/\\&/g')"
+            while IFS= read -r BUILD; do
+              if [ "$BUILD" -gt "$LAST_BUILD" ]; then
+                LAST_BUILD="$BUILD"
+              fi
+            done < <(jq -r '.versions[]' /tmp/nuget-versions.json \
+              | grep -E "^${ESCAPED}\.[0-9]+$" \
+              | sed -E "s/^${ESCAPED}\.([0-9]+)$/\1/")
+          fi
+
+          FULL_VERSION="${BASE_VERSION}-${CHANNEL}.$((LAST_BUILD + 1))"
         fi
 
-        FULL_VERSION="${BASE_VERSION}.$((LAST_BUILD + 1))-alpha"
         echo "Resolved version: ${FULL_VERSION}"
         echo "full_version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
     - name: Restore dependencies

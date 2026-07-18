@@ -11,7 +11,7 @@ that one-off cost so latency-sensitive endpoints stay responsive.
 
 ## Prerequisites
 
-- An AWS Lambda Benzene service (see [AWS Lambda Setup](../getting-started-aws))
+- An AWS Lambda Benzene service (see [AWS Lambda Setup](../getting-started-aws.md))
 - Familiarity with your SAM/deployment configuration
 
 ## What happens on a cold start
@@ -76,7 +76,7 @@ with the source generator (step 1) reduces that risk.
 ### 4. Keep the dependency graph lean
 
 `ConfigureServices` runs on cold start, so:
-- Only reference the [packages](../reference/packages) you use — each is small and focused, so don't
+- Only reference the [packages](../reference/packages.md) you use — each is small and focused, so don't
   pull in transports or integrations you don't need.
 - Defer expensive initialization (opening a database/Redis connection) until first use rather than
   eagerly in `ConfigureServices`. Benzene's [Redis cache service](redis-caching.md), for example,
@@ -121,7 +121,7 @@ pipeline under AOT before adopting it.
 
 ## Further Reading
 
-- [AWS Lambda Setup](../getting-started-aws) - the Lambda host and pipeline build
-- [Package Reference](../reference/packages#code-generation--tooling) - the source-generator package
+- [AWS Lambda Setup](../getting-started-aws.md) - the Lambda host and pipeline build
+- [Package Reference](../reference/packages.md#code-generation--tooling) - the source-generator package
 - [Redis Caching](redis-caching.md) - an example of lazy connection init
 - [AWS: Lambda performance](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html)

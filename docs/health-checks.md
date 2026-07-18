@@ -305,7 +305,7 @@ on at this point in the pipeline).
 
 `.UseHealthCheck()` runs one undifferentiated set of checks. For Kubernetes (or any platform with a
 liveness-vs-readiness distinction), `Benzene.HealthChecks` also provides two purpose-built
-convenience methods — see [Kubernetes Health Checks](kubernetes-health-checks) for the full guide,
+convenience methods — see [Kubernetes Health Checks](kubernetes-health-checks.md) for the full guide,
 including which checks belong in which and example probe YAML. Short version:
 
 ```csharp
@@ -357,7 +357,7 @@ unhealthy if any failed, degraded if any warned, healthy otherwise. A gRPC `Chec
 reflects that aggregate as `SERVING`/`NOT_SERVING` per the standard protocol.
 
 Both health checks and reflection are off by default (`EnableHealthChecks`/`EnableReflection` on
-`BenzeneGrpcOptions`) — see [gRPC Setup](getting-started-grpc#10-health-checks-and-reflection-d8)
+`BenzeneGrpcOptions`) — see [gRPC Setup](getting-started-grpc.md#10-health-checks-and-reflection-d8)
 for the full walkthrough.
 
 ## Response format
@@ -416,7 +416,7 @@ every transport, with no extra configuration needed.
 times out) report the exception's *type name* (e.g. `"SqlException"`), not its message — some
 ADO.NET providers embed connection details in exception messages, and this response can flow out to
 whatever calls the health check with no built-in authorization. See
-[Privacy & Data Handling](privacy-and-data-handling) for the full reasoning.
+[Privacy & Data Handling](privacy-and-data-handling.md) for the full reasoning.
 
 ### Result naming and deduplication
 
@@ -505,8 +505,8 @@ this if you want different `Data`/behavior than the shipped one.)
 
 ## See Also
 
-- [Common Middleware](common-middleware) — `.UseHealthCheck()` alongside the other pipeline
+- [Common Middleware](common-middleware.md) — `.UseHealthCheck()` alongside the other pipeline
   middleware
-- [Middleware](middleware) — how middleware ordering and inline middleware work in general
-- [Monitoring & Diagnostics](monitoring) — tracing, logging, and metrics for the rest of your pipeline
-- [gRPC Setup](getting-started-grpc) — the grpc.health.v1 bridge
+- [Middleware](middleware.md) — how middleware ordering and inline middleware work in general
+- [Monitoring & Diagnostics](monitoring.md) — tracing, logging, and metrics for the rest of your pipeline
+- [gRPC Setup](getting-started-grpc.md) — the grpc.health.v1 bridge

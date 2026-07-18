@@ -12,7 +12,7 @@ your worker has to do:
 
 Both use the same `BenzeneStartUp` shape — the one exercised by
 `test/Benzene.Core.Test/Hosting/UnifiedStartUpTest.cs` and documented in
-[Unified Hosting Model](hosting). They differ only in what you register inside `UseWorker(...)`:
+[Unified Hosting Model](hosting.md). They differ only in what you register inside `UseWorker(...)`:
 Part A adds a worker class you wrote yourself, while Part B calls a built-in
 `UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub`/`UseCosmosDbChangeFeed` extension. Those built-in extensions
 hang off the `IBenzeneWorkerStartup` builder that `UseWorker(...)` hands you — see
@@ -133,8 +133,8 @@ is (a database query, an internal queue, a SDK's long-poll call).
 ### 5. Define your `StartUp`
 
 `BenzeneStartUp` is the same platform-neutral base class used by
-[AWS Lambda](getting-started-aws), [Azure Functions](azure-functions), and
-[ASP.NET Core](asp-net-core). Register your worker via `UseWorker`, the `Benzene.SelfHost`
+[AWS Lambda](getting-started-aws.md), [Azure Functions](azure-functions.md), and
+[ASP.NET Core](asp-net-core.md). Register your worker via `UseWorker`, the `Benzene.SelfHost`
 extension that's a no-op on every platform except this one:
 
 ```csharp
@@ -217,7 +217,7 @@ You should see a `heartbeat at ...` line every 30 seconds.
 
 There's no `BenzeneTestHost.Build*`/`Send*Async` helper for a worker-only `StartUp` — a worker
 isn't request/response-shaped, so there's nothing to "send" to it. Build the real host and drive
-its lifecycle directly instead, exactly as in [Testing Benzene](testing-benzene#worker--generic-host):
+its lifecycle directly instead, exactly as in [Testing Benzene](testing-benzene.md#worker--generic-host):
 
 ```csharp
 var host = new HostBuilder().UseBenzene<StartUp>().Build();
@@ -261,7 +261,7 @@ a lighter-weight way to register a worker without going through the generic host
 
 ## Part B: built-in workers (Kafka, HTTP, Service Bus, Event Hub, Cosmos DB)
 
-`Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka)), `Benzene.SelfHost.Http`,
+`Benzene.Kafka.Core` (see [Kafka Setup](getting-started-kafka.md)), `Benzene.SelfHost.Http`,
 `Benzene.Azure.ServiceBus`, `Benzene.Azure.EventHub`, and `Benzene.Azure.CosmosDb` ship built-in
 workers rather than asking you to write your own. Their
 `UseKafka`/`UseHttp`/`UseServiceBus`/`UseEventHub`/`UseCosmosDbChangeFeed` extensions
@@ -326,19 +326,19 @@ await host.RunAsync();
 
 Add Kafka consumption the same way, inside the same `UseWorker(...)`, via
 `Benzene.Kafka.Core`'s `worker.UseKafka<TKey, TValue>(kafkaConfig, kafka => kafka.UseMessageHandlers())` —
-see [Kafka Setup](getting-started-kafka#1-self-hosted-kafka-worker-benzenekafkacore) for the full
+see [Kafka Setup](getting-started-kafka.md#1-self-hosted-kafka-worker-benzenekafkacore) for the full
 walkthrough; `examples/Kafka/Benzene.Examples.Kakfa` combines exactly this Kafka-plus-HTTP shape in
 one worker.
 
 ### Azure Service Bus (`Benzene.Azure.ServiceBus`)
 
 Consume a Service Bus queue or topic/subscription in-process — the self-hosted counterpart of the
-[Service Bus *trigger*](cookbooks/service-bus-handling) in Azure Functions. The worker runs the
+[Service Bus *trigger*](cookbooks/service-bus-handling.md) in Azure Functions. The worker runs the
 SDK's `ServiceBusProcessor`, so receiving, message-lock renewal, and bounded concurrency
 (`MaxConcurrentCalls`) are the processor's job; you just supply the client and the pipeline. The
 caller builds the `ServiceBusClient` (connection string, managed identity, or emulator), so
 Benzene never prescribes how you authenticate — see
-[Managed Identity & RBAC](cookbooks/managed-identity) for the credential-based constructor and
+[Managed Identity & RBAC](cookbooks/managed-identity.md) for the credential-based constructor and
 the RBAC roles to grant.
 
 ```bash
@@ -368,7 +368,7 @@ public override void Configure(IBenzeneApplicationBuilder app, IConfiguration co
 ```
 
 The topic used for handler routing comes from the message's `"topic"` application property, exactly
-as in the Functions trigger — see the cookbook's [Where the topic comes from](cookbooks/service-bus-handling#2-where-the-topic-comes-from).
+as in the Functions trigger — see the cookbook's [Where the topic comes from](cookbooks/service-bus-handling.md#2-where-the-topic-comes-from).
 `AckMode` controls settlement: `AutoComplete` (default) lets the processor complete on success and
 abandon when the handler throws; `Explicit` makes Benzene complete/abandon each message itself from
 the handler's outcome, including a non-exception failure result.
@@ -376,14 +376,14 @@ the handler's outcome, including a non-exception failure result.
 ### Azure Event Hubs (`Benzene.Azure.EventHub`)
 
 Consume an event hub in-process — the self-hosted counterpart of the
-[Event Hub *trigger*](cookbooks/event-hub-processing) in Azure Functions. The worker runs the SDK's
+[Event Hub *trigger*](cookbooks/event-hub-processing.md) in Azure Functions. The worker runs the SDK's
 `EventProcessorClient`, so consumer groups, partition load balancing across worker instances, and
 blob-checkpointed offsets are the processor's job. Unlike the Functions trigger — where batching and
 checkpointing are entirely the runtime's — here **Benzene owns checkpointing** (per partition, every
 `CheckpointInterval` successfully handled events) and the starting position for a fresh consumer
 group. The client construction below is connection-string-based; for the credential-based
 constructors and the two roles this worker needs (namespace + checkpoint container), see
-[Managed Identity & RBAC](cookbooks/managed-identity).
+[Managed Identity & RBAC](cookbooks/managed-identity.md).
 
 ```bash
 dotnet add package Benzene.HostedService --prerelease
@@ -426,13 +426,13 @@ The topic comes from each event's `"topic"` property. Event Hubs has no per-even
 `CatchHandlerExceptions` (default `true`) decides what happens to a failing event: logged and the
 partition keeps going (the failed event is effectively skipped once a later one checkpoints past
 it), or set `false` to stop the worker without checkpointing the failure so a restart redelivers it
-(at-least-once). See the cookbook's [checkpointing on failure](cookbooks/event-hub-processing#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events)
+(at-least-once). See the cookbook's [checkpointing on failure](cookbooks/event-hub-processing.md#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events)
 for the trade-off.
 
 ### Azure Cosmos DB Change Feed (`Benzene.Azure.CosmosDb`)
 
 Consume a Cosmos DB container's change feed in-process — the self-hosted counterpart of the
-[Cosmos DB Change Feed *trigger*](cookbooks/cosmos-change-feed-processing) in Azure Functions. The
+[Cosmos DB Change Feed *trigger*](cookbooks/cosmos-change-feed-processing.md) in Azure Functions. The
 worker runs the SDK's Change Feed Processor, so lease ownership (one lease per partition key range,
 stored in a lease container in Cosmos itself) and load balancing across instances are the
 processor's job. What this worker adds over the Functions trigger is **manual checkpoint control**:
@@ -489,7 +489,7 @@ public override void Configure(IBenzeneApplicationBuilder app, IConfiguration co
 
 For managed-identity authentication (`CosmosClient(accountEndpoint, credential)`) and the Cosmos
 data-plane RBAC role this worker needs — which is granted with its own CLI command, not the
-portal's IAM blade — see [Managed Identity & RBAC](cookbooks/managed-identity).
+portal's IAM blade — see [Managed Identity & RBAC](cookbooks/managed-identity.md).
 
 Checkpointing is **batch-level** — the change feed has no per-document resume token, so
 `Checkpointer.CheckpointAsync(item)` ignores the item and acknowledges the whole delivered batch.
@@ -505,7 +505,7 @@ A worker built this way isn't request/response-shaped, so there's no `BenzeneTes
 drive it exactly as in [Part A's testing section](#8-testing): build the real host with
 `new HostBuilder().UseBenzene<StartUp>().Build()`, start its `IHostedService`s, drive it with real
 input (an HTTP call, a published Kafka message), poll for the observable effect, then stop them. The
-Kafka integration-test flow in [Kafka Setup](getting-started-kafka#17-testing) follows the same shape
+Kafka integration-test flow in [Kafka Setup](getting-started-kafka.md#17-testing) follows the same shape
 against a live broker.
 
 ## How `UseWorker` composes the built-in workers
@@ -560,7 +560,7 @@ packages; you register it with the same `worker.Add(...)` those extensions call 
   no-ops on every `IBenzeneApplicationBuilder` that isn't a `WorkerApplicationBuilder` (e.g. if
   you're actually running under `AwsLambdaApplicationBuilder`). This is deliberate — it's what lets
   a single `StartUp` mix `UseAwsLambda(...)` and `UseWorker(...)` in one `Configure` method (see
-  [Unified Hosting Model](hosting)) — but double-check you're building the host via
+  [Unified Hosting Model](hosting.md)) — but double-check you're building the host via
   `Benzene.HostedService`'s `UseBenzene<TStartUp>()`, not some other adapter, if a worker you
   registered never starts.
 - **Wrong `UseBenzene<TStartUp>()` resolves** — if a project references both `Benzene.HostedService`
@@ -580,8 +580,8 @@ packages; you register it with the same `worker.Add(...)` those extensions call 
 
 ## See Also
 
-- [Unified Hosting Model](hosting)
-- [Testing Benzene](testing-benzene)
-- [Kafka Setup](getting-started-kafka)
-- [Health Checks](health-checks)
-- [Message Handlers](message-handlers)
+- [Unified Hosting Model](hosting.md)
+- [Testing Benzene](testing-benzene.md)
+- [Kafka Setup](getting-started-kafka.md)
+- [Health Checks](health-checks.md)
+- [Message Handlers](message-handlers.md)

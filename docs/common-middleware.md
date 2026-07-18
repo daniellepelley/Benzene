@@ -61,7 +61,7 @@ app.UseTimer("benzene-message-application");
 app.UseTimer((context, elapsedMs) => myMetrics.Record(elapsedMs));
 ```
 
-See also: [Monitoring — Named timers](monitoring#named-timers).
+See also: [Monitoring — Named timers](monitoring.md#named-timers).
 
 ---
 
@@ -113,7 +113,7 @@ app.UseBenzeneMetrics();
 
 Wire `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` against an OTel
 `MeterProviderBuilder` to actually export these to a real backend — see
-[Monitoring — OpenTelemetry](monitoring#opentelemetry).
+[Monitoring — OpenTelemetry](monitoring.md#opentelemetry).
 
 ---
 
@@ -142,7 +142,7 @@ from `AddDiagnostics()` correctly nests under the remote trace.
 Only wired for HTTP-based transports today (ASP.NET Core, Azure Functions' ASP.NET-style trigger,
 API Gateway) — SQS/SNS/Kafka/Event Hub inbound extraction is not yet implemented. To propagate a
 trace to a downstream Benzene service, see `.UseW3CTraceContext()` on an outbound route, described in
-[Monitoring — Distributed Tracing](monitoring#distributed-tracing).
+[Monitoring — Distributed Tracing](monitoring.md#distributed-tracing).
 
 ---
 
@@ -210,7 +210,7 @@ On HTTP-based transports (ASP.NET Core, API Gateway, `Benzene.SelfHost.Http`), a
 overload lets you match on HTTP method and path instead of (or as well as) a topic — see
 `Benzene.SelfHost.Http.Extensions.UseHealthCheck(method, path, ...)`.
 
-See also: [Health Checks](health-checks) for a full worked example.
+See also: [Health Checks](health-checks.md) for a full worked example.
 
 ---
 
@@ -234,7 +234,7 @@ public static IMiddlewarePipelineBuilder<TContext> UseSpec<TContext>(
 app.UseSpec("spec");
 ```
 
-See also: [Spec](spec) for the request/response format.
+See also: [Spec](spec.md) for the request/response format.
 
 ---
 
@@ -275,7 +275,7 @@ app.UseMessageHandlers(router => router
     .UseFluentValidation());
 ```
 
-See also: [Message Handlers](message-handlers).
+See also: [Message Handlers](message-handlers.md).
 
 ---
 
@@ -341,7 +341,7 @@ app.UseMessageHandlers(router => router
     .UseFluentValidation());
 ```
 
-See also: [Fluent Validation](fluent-validation).
+See also: [Fluent Validation](fluent-validation.md).
 
 ---
 
@@ -418,7 +418,7 @@ These configure what `UseLogResult`/`UseLogContext` attach to the scope:
 app.UseBenzeneEnrichment();
 ```
 
-See also: [Monitoring — Logging](monitoring#logging).
+See also: [Monitoring — Logging](monitoring.md#logging).
 
 ---
 
@@ -678,4 +678,4 @@ app.UseMessagePack();
 timer backends are superseded by `Benzene.Diagnostics`'s `ActivityProcessTimerFactory`, which backs
 `UseTimer(name)` with a real `System.Diagnostics.Activity` and works with any OpenTelemetry-compatible
 backend via `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` — see
-[Monitoring — OpenTelemetry](monitoring#opentelemetry).
+[Monitoring — OpenTelemetry](monitoring.md#opentelemetry).

@@ -5,7 +5,7 @@
          CI overrides with -p:PackageVersion=x.y.z-alpha.N when publishing. -->
     <VersionPrefix>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)version.txt').Trim())</VersionPrefix>
     <Authors>Daniel Le Pelley</Authors>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/daniellepelley/Benzene</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <!-- Nothing packs by default; src/Directory.Build.props opts product packages in. -->

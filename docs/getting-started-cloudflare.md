@@ -30,7 +30,7 @@ dotnet add package Benzene.AspNet.Core --prerelease
 ## 2. Define a message handler
 
 Business logic lives in message handlers, not in a controller action — this keeps it testable
-and portable across hosts. See [Message Handlers](message-handlers) for the full picture; the
+and portable across hosts. See [Message Handlers](message-handlers.md) for the full picture; the
 minimal shape is:
 
 ```csharp
@@ -71,7 +71,7 @@ register per-handler.
 platform-neutral application definition shared by every Benzene host. Configure the HTTP
 pipeline via `UseHttp`, and register a liveness check — Cloudflare Containers health-checks the
 container over HTTP, so this is load bearing, not decorative (see
-[Kubernetes Health Checks](kubernetes-health-checks) for the full liveness/readiness pattern
+[Kubernetes Health Checks](kubernetes-health-checks.md) for the full liveness/readiness pattern
 this reuses):
 
 ```csharp
@@ -127,7 +127,7 @@ app.UseBenzene();
 app.Run();
 ```
 
-See [ASP.NET Core Integration](asp-net-core) for the full picture of this wiring.
+See [ASP.NET Core Integration](asp-net-core.md) for the full picture of this wiring.
 
 ## 5. Containerize it
 
@@ -213,7 +213,7 @@ wrangler deploy
 that any external dependency is reachable, per Kubernetes' (and Cloudflare Containers') own
 guidance. If your app has a real external dependency (a database, a downstream API), add a
 `/readyz` readiness check the same way, with `UseReadinessCheck` in place of `UseLivenessCheck`.
-See [Kubernetes Health Checks](kubernetes-health-checks) for the full liveness/readiness model
+See [Kubernetes Health Checks](kubernetes-health-checks.md) for the full liveness/readiness model
 and how to write a check against a real dependency.
 
 ## Troubleshooting
@@ -237,9 +237,9 @@ match the exported class name in `src/index.ts` exactly, and that a `[[migration
 
 ## See Also
 
-- [ASP.NET Core Integration](asp-net-core) — the full `Benzene.AspNet.Core` wiring this builds on
-- [Kubernetes Health Checks](kubernetes-health-checks) — the liveness/readiness pattern used above
-- [Message Handlers](message-handlers)
+- [ASP.NET Core Integration](asp-net-core.md) — the full `Benzene.AspNet.Core` wiring this builds on
+- [Kubernetes Health Checks](kubernetes-health-checks.md) — the liveness/readiness pattern used above
+- [Message Handlers](message-handlers.md)
 - [`examples/Cloudflare`](../examples/Cloudflare) — the complete runnable project, Dockerfile, and
   Worker config this guide is drawn from (hand-checked against current Cloudflare Containers docs,
   but not independently deployed or verified against a live account — review before production use)

@@ -1,0 +1,11 @@
+<Project>
+
+  <!-- Pack the repository README into every package so its nuget.org listing isn't blank.
+       Skipped for the few packages that ship their own docs/README.md (they set PackageReadmeFile
+       and their own None include in their .csproj); the Exists() condition matches exactly those,
+       avoiding a duplicate-PackagePath pack error. -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true' And !Exists('$(MSBuildProjectDirectory)/docs/README.md')">
+    <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+</Project>

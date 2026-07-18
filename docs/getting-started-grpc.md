@@ -4,7 +4,7 @@
 client-streaming, and bidirectional — be implemented by ordinary Benzene message handlers instead
 of hand-written service method bodies, wired into the same platform-neutral
 `BenzeneStartUp`/`IBenzeneApplicationBuilder` model as HTTP, AWS Lambda, and Azure Functions (see
-[Unified Hosting Model](hosting)). This guide walks through the whole surface: routing, both
+[Unified Hosting Model](hosting.md)). This guide walks through the whole surface: routing, both
 handler styles (protobuf-direct and POCO), all four RPC shapes, metadata, status codes,
 cancellation, health checks/reflection, and the outbound client — matching
 [`examples/Grpc`](../examples/Grpc), the fully worked reference for this package.
@@ -213,7 +213,7 @@ regardless of how many items the handler yields. Per-item concerns (throttling, 
 ## 5. Wire it up
 
 `Benzene.Grpc.AspNet` fits into the same `BenzeneStartUp` your other transports use — see
-[Unified Hosting Model](hosting) if this is your first Benzene transport:
+[Unified Hosting Model](hosting.md) if this is your first Benzene transport:
 
 ```csharp
 using Benzene.Abstractions.Hosting;
@@ -255,7 +255,7 @@ app.Run();
 ```
 
 Two things that are easy to get wrong because gRPC's hosting model differs from Benzene's other
-transports (see [Unified Hosting Model — gRPC on ASP.NET Core](hosting#grpc-on-aspnet-core)
+transports (see [Unified Hosting Model — gRPC on ASP.NET Core](hosting.md#grpc-on-aspnet-core)
 for why):
 
 - **`AddBenzeneGrpc()` in `ConfigureServices` is required**, in addition to `UsingBenzene(...)` —
@@ -339,7 +339,7 @@ A non-OK status throws `RpcException(new Status(mappedCode, detail))` — `detai
 `IBenzeneResult.Errors` if present, otherwise the raw status string. The `benzene-status` trailer
 (see step 6) is added regardless of whether the call succeeded, so a client that also happens to be
 a Benzene.Grpc client can recover the original status precisely (see
-[Clients — gRPC](clients#grpc)) even where several statuses collapse to the same `StatusCode`.
+[Clients — gRPC](clients.md#grpc)) even where several statuses collapse to the same `StatusCode`.
 
 ## 9. Deadlines and cancellation (D6)
 
@@ -386,12 +386,12 @@ app.MapBenzeneGrpcHealthService();
 app.MapBenzeneGrpcReflectionService();
 ```
 
-See [Health Checks — gRPC](health-checks#grpc-grpchealthv1) for how `BenzeneHealthCheckBridge`
+See [Health Checks — gRPC](health-checks.md#grpc-grpchealthv1) for how `BenzeneHealthCheckBridge`
 aggregates Benzene health checks onto the standard grpc.health.v1 protocol.
 
 ## 11. Calling other gRPC services
 
-Package: `Benzene.Grpc.Client`. See [Clients — gRPC](clients#grpc) for the full guide;
+Package: `Benzene.Grpc.Client`. See [Clients — gRPC](clients.md#grpc) for the full guide;
 `GrpcBenzeneMessageClient : IBenzeneMessageClient` sends unary calls through a Benzene middleware
 pipeline over a `GrpcChannel` you own, with the same POCO-or-protobuf-direct choice on both sides
 as the server, and status mapping symmetric to step 8.
@@ -413,7 +413,7 @@ var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" });
 `BenzeneInterceptor` routing, the middleware pipeline, and serialization all run exactly as they
 would in production; nothing is bypassed. `WithServices`/`WithConfiguration` (from
 `BenzeneTestHostBuilder`) work the same way they do for every other platform's test host — see
-[Testing Benzene](testing-benzene).
+[Testing Benzene](testing-benzene.md).
 
 For unit-testing a `GrpcMethodHandler`/pipeline directly, without a host, `TestServerCallContext`
 (also in `Benzene.Grpc.TestHelpers`) is a minimal hand-rolled `ServerCallContext` —
@@ -442,10 +442,10 @@ For unit-testing a `GrpcMethodHandler`/pipeline directly, without a host, `TestS
 
 ## See Also
 
-- [Unified Hosting Model](hosting)
-- [Clients](clients)
-- [Health Checks](health-checks)
-- [Testing Benzene](testing-benzene)
-- [ASP.NET Core Integration](asp-net-core)
-- [Message Handlers](message-handlers)
-- [Middleware](middleware)
+- [Unified Hosting Model](hosting.md)
+- [Clients](clients.md)
+- [Health Checks](health-checks.md)
+- [Testing Benzene](testing-benzene.md)
+- [ASP.NET Core Integration](asp-net-core.md)
+- [Message Handlers](message-handlers.md)
+- [Middleware](middleware.md)

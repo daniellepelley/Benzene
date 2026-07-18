@@ -43,7 +43,7 @@ occurrence of the placeholder gets renamed); `-o` sets the output directory.
 | `benzene.kafka.worker` | Self-hosted Kafka consumer (`Confluent.Kafka`), for a long-running worker/container |
 
 Every generated project has its own `README.md` with run/deploy instructions and links back to the
-matching [getting-started guide](getting-started) for that host — the template gets you to a
+matching [getting-started guide](getting-started.md) for that host — the template gets you to a
 buildable starting point; the guide covers everything beyond it (validation, other event sources,
 testing, observability).
 
@@ -66,7 +66,7 @@ public class HelloWorldMessageHandler : IMessageHandler<HelloWorldRequest, Hello
 ```
 
 That's deliberate — it's the same handler shape that runs unchanged behind every transport Benzene
-supports (see [Getting Started](getting-started)'s "core idea in 60 seconds"), so trying a second
+supports (see [Getting Started](getting-started.md)'s "core idea in 60 seconds"), so trying a second
 template after your first one feels familiar rather than like starting over.
 
 ## Visual Studio
@@ -111,7 +111,7 @@ plugin:
 
 ## See Also
 
-- [Getting Started](getting-started) — the hand-written walkthrough each template automates
-- [AWS Lambda Setup](getting-started-aws) / [Azure Functions Setup](azure-functions) /
-  [Kafka Setup](getting-started-kafka) — the full picture beyond what a starter template covers
+- [Getting Started](getting-started.md) — the hand-written walkthrough each template automates
+- [AWS Lambda Setup](getting-started-aws.md) / [Azure Functions Setup](azure-functions.md) /
+  [Kafka Setup](getting-started-kafka.md) — the full picture beyond what a starter template covers
 - [`templates/`](../templates) in the repository — the template pack's source, and how to build/pack/test it locally

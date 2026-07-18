@@ -1,10 +1,10 @@
 # Kubernetes Health Checks
 
 `Benzene.HealthChecks` provides purpose-built liveness/readiness convenience methods on top of the
-general-purpose [health checks](health-checks) support, matching [Kubernetes' own liveness/readiness/
+general-purpose [health checks](health-checks.md) support, matching [Kubernetes' own liveness/readiness/
 startup probe model](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/).
 This page covers the semantics, how to wire them up per transport, and example probe configuration.
-Read [Health Checks](health-checks) first if you haven't already — this page assumes you know
+Read [Health Checks](health-checks.md) first if you haven't already — this page assumes you know
 `IHealthCheck`/`IHealthCheckBuilder` and doesn't repeat that material.
 
 ## Liveness vs. readiness
@@ -65,7 +65,7 @@ app.UseLivenessCheck("/healthz/live", x => x.AddHealthCheck<ProcessResponsiveChe
 ### ASP.NET Core
 
 ASP.NET Core doesn't have an equivalent HTTP-path overload (an ASP.NET Core request's topic is
-already resolved via routing before Benzene's middleware runs — see [Health Checks](health-checks#http-method--path-based-raw-http-transports)
+already resolved via routing before Benzene's middleware runs — see [Health Checks](health-checks.md#http-method--path-based-raw-http-transports)
 for why) — use the topic-based `UseLivenessCheck`/`UseReadinessCheck` there, and register an
 `IHttpEndpointDefinition` mapping the conventional paths to the liveness/readiness topics so an
 incoming `GET /livez`/`GET /readyz` actually resolves to the right topic:
@@ -128,12 +128,12 @@ spec:
 
 Both probes work correctly against Benzene's response because the HTTP status code — not just the
 JSON body — reflects health: `200` when healthy, `503 Service Unavailable` when not (see
-[HTTP status codes](health-checks#http-status-codes)). Kubernetes' `httpGet` probe type only inspects
+[HTTP status codes](health-checks.md#http-status-codes)). Kubernetes' `httpGet` probe type only inspects
 the status code (2xx-399 is a pass, anything else is a failure), so this matters — a health check
 that returned `200` unconditionally, with the real status only visible in the response body, would
 never actually fail a Kubernetes probe.
 
-If you'd rather probe over gRPC, see [Health Checks — gRPC (grpc.health.v1)](health-checks#grpc-grpchealthv1)
+If you'd rather probe over gRPC, see [Health Checks — gRPC (grpc.health.v1)](health-checks.md#grpc-grpchealthv1)
 for `Benzene.Grpc.AspNet`'s standard-protocol bridge, which Kubernetes' native gRPC probe type
 (`grpc.livenessProbe`/`readinessProbe.grpc`) can query directly.
 
@@ -148,7 +148,7 @@ for `Benzene.Grpc.AspNet`'s standard-protocol bridge, which Kubernetes' native g
 
 ## See also
 
-- [Health Checks](health-checks) — the general-purpose health check system this builds on
-- [Privacy & Data Handling](privacy-and-data-handling) — what health check diagnostic data is safe
+- [Health Checks](health-checks.md) — the general-purpose health check system this builds on
+- [Privacy & Data Handling](privacy-and-data-handling.md) — what health check diagnostic data is safe
   to expose to whatever can reach these endpoints
-- [Monitoring & Diagnostics](monitoring) — tracing, logging, and metrics for the rest of your pipeline
+- [Monitoring & Diagnostics](monitoring.md) — tracing, logging, and metrics for the rest of your pipeline

@@ -218,7 +218,7 @@ Read errors are caught and logged (at `Error` level for `CacheEntry<T>.GetValueA
 
 ## See Also
 
-- [Health Checks](health-checks)
-- [Monitoring & Diagnostics](monitoring) — for `IProcessTimerFactory` / `AddDiagnostics()`
-- [Message Results](message-result) — for `IBenzeneResult<T>` / `BenzeneResultStatus`
-- [Resilience](resilience)
+- [Health Checks](health-checks.md)
+- [Monitoring & Diagnostics](monitoring.md) — for `IProcessTimerFactory` / `AddDiagnostics()`
+- [Message Results](message-result.md) — for `IBenzeneResult<T>` / `BenzeneResultStatus`
+- [Resilience](resilience.md)

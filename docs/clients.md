@@ -4,7 +4,7 @@ Benzene clients let one Benzene service call another — over SQS, SNS, AWS Lamb
 
 ## Overview
 
-A Benzene service is a set of message handlers reachable by topic (see [Message Handlers](message-handlers)). When one service needs to call another, it sends through `IBenzeneMessageSender` — the one interface business logic depends on:
+A Benzene service is a set of message handlers reachable by topic (see [Message Handlers](message-handlers.md)). When one service needs to call another, it sends through `IBenzeneMessageSender` — the one interface business logic depends on:
 
 ```csharp
 public interface IBenzeneMessageSender
@@ -100,8 +100,8 @@ Cross-cutting concerns are ordinary `IMiddleware<OutboundContext>`, added to a r
 | Extension | Middleware | Behavior |
 |---|---|---|
 | `.UseRetry(n)` (`Benzene.Resilience`) | `RetryMiddleware<OutboundContext>` | Retries the whole pipeline beneath it up to `n` times. Pass `shouldRetryContext: ctx => ((IBenzeneResult)ctx.Response).IsServiceUnavailable()` (or similar) to retry on a specific result status, and/or `shouldRetry` to retry specific exceptions. Fully generic — this is the same `RetryMiddleware<TContext>` used elsewhere in Benzene, not something built specifically for outbound clients. |
-| `.UseCorrelationId(correlationKey = "correlationId")` (`Benzene.Clients.CorrelationId`) | `CorrelationIdMiddleware` | Stamps the current `ICorrelationId.Get()` value onto `OutboundContext.Headers`. See [Correlation IDs](correlation-ids). |
-| `.UseW3CTraceContext()` (`Benzene.Clients.TraceContext`) | `W3CTraceContextMiddleware` | Stamps `Activity.Current`'s W3C `traceparent`/`tracestate` onto `OutboundContext.Headers`, so the receiving service can continue the same distributed trace. See [Monitoring & Diagnostics — W3C Trace Context](monitoring#w3c-trace-context). No-ops (leaves headers unchanged) when there's no ambient `Activity`. Same method name as `Benzene.Diagnostics.UseW3CTraceContext<TContext>()` (the *inbound* trace-context-extraction middleware) — they run in opposite directions, don't confuse the two. |
+| `.UseCorrelationId(correlationKey = "correlationId")` (`Benzene.Clients.CorrelationId`) | `CorrelationIdMiddleware` | Stamps the current `ICorrelationId.Get()` value onto `OutboundContext.Headers`. See [Correlation IDs](correlation-ids.md). |
+| `.UseW3CTraceContext()` (`Benzene.Clients.TraceContext`) | `W3CTraceContextMiddleware` | Stamps `Activity.Current`'s W3C `traceparent`/`tracestate` onto `OutboundContext.Headers`, so the receiving service can continue the same distributed trace. See [Monitoring & Diagnostics — W3C Trace Context](monitoring.md#w3c-trace-context). No-ops (leaves headers unchanged) when there's no ambient `Activity`. Same method name as `Benzene.Diagnostics.UseW3CTraceContext<TContext>()` (the *inbound* trace-context-extraction middleware) — they run in opposite directions, don't confuse the two. |
 
 There's no dedicated headers middleware — `IBenzeneMessageSender.SendAsync`'s per-call `headers` parameter already covers ambient/per-request header state without a decorator.
 
@@ -361,7 +361,7 @@ Every transport puts `Headers` (from either `OutboundContext.Headers` on the out
 
 The one exception is the lower-level `UseAwsLambda()`/`LambdaContextConverter` pipeline style (see [The context-converter pipeline](#the-context-converter-pipeline) below): a raw `InvokeRequest` has no header-like concept comparable to HTTP/SQS/SNS/Kafka, so `LambdaContextConverter.CreateRequestAsync` does not forward headers — a middleware like `.UseW3CTraceContext()` would have no effect on a client pipeline built with `UseAwsLambda()` specifically. This doesn't affect `AwsLambdaBenzeneMessageClient`, which is unrelated and already forwards headers as described above.
 
-See [`OutboundHeaderForwardingTest`](../test/Benzene.Core.Test/Clients/OutboundHeaderForwardingTest.cs) for the tests that pin this behavior down per transport (standalone-client path), and `test/Benzene.Core.Test/Clients/Aws/Sqs/OutboundSqsContextConverterTest.cs`/`Aws/Sns/OutboundSnsContextConverterTest.cs` for the outbound-routing path, and [Monitoring & Diagnostics — W3C Trace Context](monitoring#w3c-trace-context) for the same note in the context of trace propagation specifically.
+See [`OutboundHeaderForwardingTest`](../test/Benzene.Core.Test/Clients/OutboundHeaderForwardingTest.cs) for the tests that pin this behavior down per transport (standalone-client path), and `test/Benzene.Core.Test/Clients/Aws/Sqs/OutboundSqsContextConverterTest.cs`/`Aws/Sns/OutboundSnsContextConverterTest.cs` for the outbound-routing path, and [Monitoring & Diagnostics — W3C Trace Context](monitoring.md#w3c-trace-context) for the same note in the context of trace propagation specifically.
 
 ## The context-converter pipeline
 
@@ -379,8 +379,8 @@ public interface IContextConverter<TContextIn, TContextOut>
 
 ## See Also
 
-- [Correlation IDs](correlation-ids)
-- [Monitoring & Diagnostics — W3C Trace Context](monitoring#w3c-trace-context)
-- [Message Handlers](message-handlers)
-- [gRPC Setup](getting-started-grpc)
+- [Correlation IDs](correlation-ids.md)
+- [Monitoring & Diagnostics — W3C Trace Context](monitoring.md#w3c-trace-context)
+- [Message Handlers](message-handlers.md)
+- [gRPC Setup](getting-started-grpc.md)
 - [Migration Guide: Alpha → 1.0](migration-alpha-to-1.0) — the old `ClientBuilder`-based mechanism this page used to describe, and the full old→new mapping

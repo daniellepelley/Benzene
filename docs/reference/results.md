@@ -7,7 +7,7 @@ response (HTTP status codes, etc.), so your handler expresses intent once and it
 everywhere.
 
 You build results with the static `BenzeneResult` factory (in `Benzene.Results`). For the
-conceptual introduction, see [Message Results](../message-result).
+conceptual introduction, see [Message Results](../message-result.md).
 
 ```csharp
 public Task<IBenzeneResult<OrderDto>> HandleAsync(GetOrderRequest request)
@@ -45,7 +45,7 @@ the HTTP status code HTTP transports map it to (via `DefaultHttpStatusCodeMapper
 | `BenzeneResult.Forbidden()` | `Forbidden` | `403` | Authenticated but not permitted. |
 | `BenzeneResult.NotFound<T>()` | `NotFound` | `404` | Resource does not exist. |
 | `BenzeneResult.Conflict()` | `Conflict` | `409` | Conflicts with current state. |
-| `BenzeneResult.ValidationError(message)` | `ValidationError` | `422` | Request failed validation. Returned automatically by [validation middleware](middleware#message-router-middleware). |
+| `BenzeneResult.ValidationError(message)` | `ValidationError` | `422` | Request failed validation. Returned automatically by [validation middleware](middleware.md#message-router-middleware). |
 | `BenzeneResult.TooManyRequests()` | `TooManyRequests` | `429` | Throttled / rate limited; transient — back off and retry. |
 | `BenzeneResult.UnexpectedError(message)` | `UnexpectedError` | `500` | Unhandled/unexpected failure. |
 | `BenzeneResult.NotImplemented()` | `NotImplemented` | `501` | Operation not implemented. |
@@ -85,7 +85,7 @@ BenzeneResult.BadRequest("Invalid request");
 | `BenzeneResult.Set(status, payload, isSuccess)` | Explicit status *and* payload *and* success flag — for results whose success class shouldn't be derived from the status (e.g. an unhealthy health check: `ServiceUnavailable` for the HTTP 503, successful so the report payload renders as the body). |
 | `BenzeneResult.IsSuccess(result)` | True when the result's status is a success status. |
 | `BenzeneResult.IsAccepted(result)` | True when the result is `Accepted`. |
-| `*Internal` factories (`OkInternal`, `NotFoundInternal`, …) | Variants used for internal/inter-service results — e.g. results returned across a Benzene [message client](packages#outbound-messaging-clients) rather than mapped straight to an HTTP response. |
+| `*Internal` factories (`OkInternal`, `NotFoundInternal`, …) | Variants used for internal/inter-service results — e.g. results returned across a Benzene [message client](packages.md#outbound-messaging-clients) rather than mapped straight to an HTTP response. |
 
 ## Classifying statuses
 
@@ -120,6 +120,6 @@ its `shouldRetry` constructor parameter (e.g. `r => BenzeneResultStatus.IsTransi
 
 ## See also
 
-- [Message Results](../message-result) — the conceptual introduction.
-- [Message Handlers](../message-handlers) — where results are returned.
-- [Fluent Validation](../fluent-validation) / [Data Annotations](../data-annotations) — produce `ValidationError` results automatically.
+- [Message Results](../message-result.md) — the conceptual introduction.
+- [Message Handlers](../message-handlers.md) — where results are returned.
+- [Fluent Validation](../fluent-validation.md) / [Data Annotations](../data-annotations.md) — produce `ValidationError` results automatically.

@@ -72,9 +72,9 @@ Each host has a natural configuration source; the `BenzeneStartUp` above stays t
 
 | Host | Typical source |
 |---|---|
-| **AWS Lambda** | Environment variables (set in the SAM template, console, or CDK/Terraform), read via `.AddEnvironmentVariables()`. See [AWS Lambda Setup](../getting-started-aws#configuration). |
-| **Azure Functions** | `local.settings.json` locally, Function App application settings when deployed. See [Azure Functions Setup](../azure-functions). |
-| **ASP.NET Core** | `appsettings.json` / `config.json` and environment variables via the standard host builder. See [ASP.NET Core](../asp-net-core). |
+| **AWS Lambda** | Environment variables (set in the SAM template, console, or CDK/Terraform), read via `.AddEnvironmentVariables()`. See [AWS Lambda Setup](../getting-started-aws.md#configuration). |
+| **Azure Functions** | `local.settings.json` locally, Function App application settings when deployed. See [Azure Functions Setup](../azure-functions.md). |
+| **ASP.NET Core** | `appsettings.json` / `config.json` and environment variables via the standard host builder. See [ASP.NET Core](../asp-net-core.md). |
 
 ## Two ways to wire ASP.NET Core
 
@@ -99,7 +99,7 @@ these however you like — inline, or bound from `IConfiguration`.
 
 ### `CorsSettings` — `Benzene.Http`
 
-Passed to [`UseCors(...)`](middleware#usecorscorssettings-corssettings).
+Passed to [`UseCors(...)`](middleware.md#usecorscorssettings-corssettings).
 
 | Property | Purpose |
 |---|---|
@@ -143,12 +143,12 @@ Configures the self-hosted HTTP server (no ASP.NET Core).
 ### Retry options — `Benzene.Resilience`
 
 `UseRetry(...)` takes its settings as method parameters rather than an options class — see
-[`UseRetry`](middleware#useretry) for the full list (`numberOfRetries`, `initialDelay`,
+[`UseRetry`](middleware.md#useretry) for the full list (`numberOfRetries`, `initialDelay`,
 `backoffFactor`, `shouldRetry`, …).
 
 ## See also
 
-- [Getting Started](../getting-started) — configuration in a running service.
-- [AWS Lambda Setup](../getting-started-aws#configuration) — Lambda configuration specifics.
-- [Middleware Reference](middleware) — the steps you add in `Configure`.
-- [Package Reference](packages) — which package each option class ships in.
+- [Getting Started](../getting-started.md) — configuration in a running service.
+- [AWS Lambda Setup](../getting-started-aws.md#configuration) — Lambda configuration specifics.
+- [Middleware Reference](middleware.md) — the steps you add in `Configure`.
+- [Package Reference](packages.md) — which package each option class ships in.

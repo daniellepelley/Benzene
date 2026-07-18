@@ -47,7 +47,7 @@ dotnet add package Microsoft.Extensions.Configuration.FileExtensions
 ## 3. Define a message handler
 
 Business logic lives in message handlers, not in the Lambda entry point — this keeps it
-testable and portable across hosts. See [Message Handlers](message-handlers) for the full
+testable and portable across hosts. See [Message Handlers](message-handlers.md) for the full
 picture; the minimal shape is:
 
 ```csharp
@@ -131,7 +131,7 @@ public class StartUp : BenzeneStartUp
 > This is the platform-neutral pattern used by every Benzene host — the
 > [`examples/Aws`](../examples/Aws) project follows exactly this shape. Only the AWS-specific event
 > wiring lives inside `UseAwsLambda(...)`; the same `StartUp` runs unchanged on other Benzene hosts
-> (see [Azure Functions Setup](azure-functions)).
+> (see [Azure Functions Setup](azure-functions.md)).
 
 ## 5. Wire up the Lambda entry point
 
@@ -191,7 +191,7 @@ values. This works for any transport your `StartUp` wires up — `SendSqsAsync`/
 come from the matching `Benzene.Aws.Lambda.Sqs.TestHelpers`/`Benzene.Aws.Lambda.Sns.TestHelpers`
 packages, and a topic-routed `BenzeneMessage` (no specific transport) can be sent directly via
 `SendBenzeneMessageAsync` from `Benzene.Core.MessageHandlers.TestHelpers`, if your `Configure`
-wires up `UseBenzeneMessage(...)`. See [Testing Benzene](testing-benzene) for the full pattern,
+wires up `UseBenzeneMessage(...)`. See [Testing Benzene](testing-benzene.md) for the full pattern,
 including configuration/service overrides.
 
 ## 7. Deploy with SAM
@@ -278,14 +278,14 @@ SQS messages are processed in batches; the message body is deserialized to your 
 and message attributes are mapped to headers. `SqsApplication` supports reporting partial-batch
 failures back to SQS, so only the records that actually failed are retried/redriven to a
 dead-letter queue rather than the whole batch. See
-[AWS IAM Permissions](aws-iam-permissions) for the execution-role permissions the SQS event
+[AWS IAM Permissions](aws-iam-permissions.md) for the execution-role permissions the SQS event
 source mapping needs (`sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:GetQueueAttributes`).
 
 The topic is normally read from a `topic` message attribute, set by a Benzene client. If a
 queue's producer isn't a Benzene client and never sets one (a raw SQS send, a queue fed by
 another system), call `.UsePresetTopic("orders.created")` before `.UseMessageHandlers()` in that
 queue's pipeline to route every message on it to a fixed topic instead — see
-[Common Middleware: UsePresetTopic](common-middleware#usepresettopic).
+[Common Middleware: UsePresetTopic](common-middleware.md#usepresettopic).
 
 ### SNS
 
@@ -297,7 +297,7 @@ eventPipeline.UseSns(snsApp => snsApp
 
 SNS invokes your function via a resource-based Lambda permission — no extra
 execution-role IAM is needed to receive notifications (see
-[AWS IAM Permissions](aws-iam-permissions)). The topic is resolved from a `topic` message
+[AWS IAM Permissions](aws-iam-permissions.md)). The topic is resolved from a `topic` message
 attribute (or the SNS topic ARN, depending on delivery configuration) and routed to the
 matching message handler, same as every other transport. There is no response to write back —
 SNS delivery is fire-and-forget.
@@ -351,7 +351,7 @@ eventPipeline.UseKafka(kafkaApp => kafkaApp
 
 Works for both MSK and self-managed Kafka. Kafka record headers are mapped to Benzene
 message headers, and partition/offset are available on `KafkaContext`. See
-[AWS IAM Permissions](aws-iam-permissions) for the MSK-specific permissions your
+[AWS IAM Permissions](aws-iam-permissions.md) for the MSK-specific permissions your
 execution role needs — these are more involved than the other event sources since MSK
 event source mappings require VPC connectivity.
 
@@ -395,7 +395,7 @@ decode each with `record.Kinesis.GetData()` / `GetDataAsString()`, and use the s
 `PartitionBy(...)` (restore per-shard order the poller batched together) and `Window(n)` (fixed-size
 batches). Processing is fire-and-forget; the Lambda poller checkpoints the shard on success. This is
 the AWS counterpart to the Azure Event Hubs streaming binding. See
-[AWS IAM Permissions](aws-iam-permissions) for the stream-consumer permissions the event source
+[AWS IAM Permissions](aws-iam-permissions.md) for the stream-consumer permissions the event source
 mapping needs (`kinesis:GetRecords`, `kinesis:GetShardIterator`, `kinesis:DescribeStream`,
 `kinesis:ListShards`).
 
@@ -404,7 +404,7 @@ mapping needs (`kinesis:GetRecords`, `kinesis:GetShardIterator`, `kinesis:Descri
 Each event source above has different IAM requirements — some need explicit
 execution-role permissions (SQS, Kafka), others invoke your function via a
 resource-based permission and need none. See
-[AWS IAM Permissions Reference](aws-iam-permissions) for a minimal policy per
+[AWS IAM Permissions Reference](aws-iam-permissions.md) for a minimal policy per
 package, with the specific SDK call in Benzene's source that drives each requirement.
 
 ## Configuration
@@ -430,7 +430,7 @@ eventPipeline.UseApiGateway(apiGatewayApp => apiGatewayApp
     .UseMessageHandlers());
 ```
 
-See [Health Checks](health-checks) for writing your own `IHealthCheck` (e.g. one that checks
+See [Health Checks](health-checks.md) for writing your own `IHealthCheck` (e.g. one that checks
 database connectivity) and the full set of `UseHealthCheck` overloads.
 
 ## Observability
@@ -456,12 +456,12 @@ database connectivity) and the full set of `UseHealthCheck` overloads.
   `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` to export those spans (and
   `UseBenzeneMetrics()`'s counters) to a real backend via OpenTelemetry.
 - **Cross-service correlation**: `eventPipeline.UseApiGateway(a => a.UseW3CTraceContext()...)`
-  (W3C `traceparent` propagation) — see [Correlation IDs](correlation-ids).
+  (W3C `traceparent` propagation) — see [Correlation IDs](correlation-ids.md).
 - **Log enrichment**: `UseBenzeneEnrichment()` attaches `invocationId`/`traceId`/`spanId`/
   `topic`/`transport`/`handler` to the logging scope in one call, portable across every
   Benzene host.
 
-See [Monitoring & Diagnostics](monitoring) for the full picture, including logging providers
+See [Monitoring & Diagnostics](monitoring.md) for the full picture, including logging providers
 and named timers.
 
 ## Bare Metal Entry Point
@@ -538,12 +538,12 @@ override temporarily to confirm.
 
 ## See Also
 
-- [Correlation IDs](correlation-ids) — the legacy `correlationId`-header approach, and why
+- [Correlation IDs](correlation-ids.md) — the legacy `correlationId`-header approach, and why
   W3C trace context supersedes it for cross-service correlation
-- [Monitoring & Diagnostics](monitoring) — tracing, logging, and OpenTelemetry export
-- [Health Checks](health-checks) — writing custom `IHealthCheck`s and wiring `UseHealthCheck`
-- [AWS IAM Permissions Reference](aws-iam-permissions) — minimum IAM policy per AWS package
-- [Testing Benzene](testing-benzene) — the full `BenzeneTestHost` pattern, including
+- [Monitoring & Diagnostics](monitoring.md) — tracing, logging, and OpenTelemetry export
+- [Health Checks](health-checks.md) — writing custom `IHealthCheck`s and wiring `UseHealthCheck`
+- [AWS IAM Permissions Reference](aws-iam-permissions.md) — minimum IAM policy per AWS package
+- [Testing Benzene](testing-benzene.md) — the full `BenzeneTestHost` pattern, including
   configuration/service overrides and Azure/ASP.NET Core equivalents
 - [`examples/Aws`](../examples/Aws) — a complete, runnable project covering API Gateway, SQS,
   SNS, Kafka, health checks, and validation

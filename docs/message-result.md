@@ -1,6 +1,6 @@
 # Message Results
 
-Every [message handler](message-handlers) returns its outcome wrapped in an `IBenzeneResult<T>` (or
+Every [message handler](message-handlers.md) returns its outcome wrapped in an `IBenzeneResult<T>` (or
 `IBenzeneResult` for handlers with no payload) instead of throwing for expected failure cases. The
 result carries a status, a success flag, the payload (on success), and error messages (on failure).
 Build one with the static `BenzeneResult` factory (`Benzene.Results`) — you should not need to
@@ -120,7 +120,7 @@ public static class BenzeneResultStatus
 
 `HttpStatusCodeResponseHandler<TContext>` applies this mapping to the HTTP response via
 `IBenzeneResponseAdapter<TContext>`. On success, `SerializerResponseRenderer<TContext>` (see
-[Message Handlers](message-handlers#response-handling)) serializes `Payload`; on failure, it
+[Message Handlers](message-handlers.md#response-handling)) serializes `Payload`; on failure, it
 serializes an `ErrorPayload` (`{ Status, Detail }`, where `Detail` is `Errors` joined with `", "`) —
 so a `BenzeneResult.NotFound<OrderDto>("Order 123 not found")` becomes an HTTP `404` with a JSON
 body describing the error, not the (empty) `OrderDto` payload.
@@ -138,7 +138,7 @@ etc. result (anything with `IsSuccessful == false`, e.g. `ValidationError`, `Not
 `ServiceUnavailable`) causes that message to be retried by SQS, exactly like an unhandled exception
 would. This partial-batch-failure behavior is itself configurable — see
 `Benzene.Aws.Lambda.Sqs`'s `SqsOptions.BatchFailureMode`
-([Handling SQS Message Failures](cookbooks/handling-sqs-failures#opting-into-whole-batch-failure-instead)),
+([Handling SQS Message Failures](cookbooks/handling-sqs-failures.md#opting-into-whole-batch-failure-instead)),
 which can flip a batch to whole-batch failure semantics if a single record fails.
 
 ### AWS SNS
@@ -151,10 +151,10 @@ configurable via `Benzene.Aws.Lambda.Sns`'s `SnsOptions`: `CatchExceptions` (def
 controls whether a thrown exception cascades to fail the invocation (triggering SNS's subscription
 retry policy) or is caught and logged instead, and `RaiseOnFailureStatus` (default `false`) controls
 whether a non-exception failure result is escalated into a thrown exception so SNS retries it too —
-see [SNS Fan-Out Pattern](cookbooks/sns-fan-out#configuring-exception-and-retry-behavior-with-snsoptions).
+see [SNS Fan-Out Pattern](cookbooks/sns-fan-out.md#configuring-exception-and-retry-behavior-with-snsoptions).
 
 ## See also
 
-- [Message Handlers](message-handlers) — how handlers produce `IBenzeneResult<T>` and how the
+- [Message Handlers](message-handlers.md) — how handlers produce `IBenzeneResult<T>` and how the
   router/response-handling pipeline consumes it.
-- [Middleware](middleware) — the pipeline mechanism handlers run inside.
+- [Middleware](middleware.md) — the pipeline mechanism handlers run inside.

@@ -5,68 +5,68 @@ Benzene is a hexagonal framework designed for services running in serverless env
 ### Main Themes
 
 - **General**
-  - [Getting Started](getting-started) — build and run your first Benzene service in 5 minutes
-  - [Project Templates](getting-started-templates) — `dotnet new` starter projects for every host, consumable from Visual Studio and Rider
+  - [Getting Started](getting-started.md) — build and run your first Benzene service in 5 minutes
+  - [Project Templates](getting-started-templates.md) — `dotnet new` starter projects for every host, consumable from Visual Studio and Rider
   - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
-  - [Benzene Specifications (Draft)](specification/README) — two levels: the Core Specification (the language-neutral portable core: concepts, wire contracts, transport bindings, porting guide) and the [Cloud Service Profile](specification/cloud-service-profile) (the conformance target that guarantees mesh, Spec UI, and fleet tooling work on a service)
-  - [Unified Hosting Model](hosting)
-  - [Message Handlers](message-handlers)
-  - [Message Results](message-result)
-  - [Middleware](middleware)
-  - [Common Middleware](common-middleware)
-  - [Correlation Ids](correlation-ids)
-  - [Testing Benzene](testing-benzene)
-  - [Payload Testing](payload-testing) — construct demo payloads and send them into a running service by topic
-  - [Health Checks](health-checks)
-  - [Kubernetes Health Checks](kubernetes-health-checks)
-  - [Monitoring & Diagnostics](monitoring)
-  - [Sampling Strategies](sampling-strategies)
-  - [Privacy & Data Handling](privacy-and-data-handling)
+  - [Benzene Specifications (Draft)](specification/README.md) — two levels: the Core Specification (the language-neutral portable core: concepts, wire contracts, transport bindings, porting guide) and the [Cloud Service Profile](specification/cloud-service-profile.md) (the conformance target that guarantees mesh, Spec UI, and fleet tooling work on a service)
+  - [Unified Hosting Model](hosting.md)
+  - [Message Handlers](message-handlers.md)
+  - [Message Results](message-result.md)
+  - [Middleware](middleware.md)
+  - [Common Middleware](common-middleware.md)
+  - [Correlation Ids](correlation-ids.md)
+  - [Testing Benzene](testing-benzene.md)
+  - [Payload Testing](payload-testing.md) — construct demo payloads and send them into a running service by topic
+  - [Health Checks](health-checks.md)
+  - [Kubernetes Health Checks](kubernetes-health-checks.md)
+  - [Monitoring & Diagnostics](monitoring.md)
+  - [Sampling Strategies](sampling-strategies.md)
+  - [Privacy & Data Handling](privacy-and-data-handling.md)
 
 - **Cloud Providers**
   - **AWS**
-    - [AWS Lambda Setup](getting-started-aws)
-    - [AWS IAM Permissions Reference](aws-iam-permissions)
+    - [AWS Lambda Setup](getting-started-aws.md)
+    - [AWS IAM Permissions Reference](aws-iam-permissions.md)
   - **Azure**
-    - [Azure Functions Setup](azure-functions) — HTTP plus every non-HTTP trigger (Event Hubs, Kafka, Service Bus, Cosmos DB Change Feed, Queue/Blob Storage, Event Grid, Timer)
-    - [Self-hosted Azure workers](getting-started-worker#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db) — Service Bus, Event Hubs, and Cosmos DB Change Feed consumers without Azure Functions
-    - [Managed Identity & RBAC](cookbooks/managed-identity) — no connection strings: credential wiring and the roles each integration needs
-    - [Service Bus](cookbooks/service-bus-handling) / [Event Hubs](cookbooks/event-hub-processing) / [Cosmos DB Change Feed](cookbooks/cosmos-change-feed-processing) cookbooks
+    - [Azure Functions Setup](azure-functions.md) — HTTP plus every non-HTTP trigger (Event Hubs, Kafka, Service Bus, Cosmos DB Change Feed, Queue/Blob Storage, Event Grid, Timer)
+    - [Self-hosted Azure workers](getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db) — Service Bus, Event Hubs, and Cosmos DB Change Feed consumers without Azure Functions
+    - [Managed Identity & RBAC](cookbooks/managed-identity.md) — no connection strings: credential wiring and the roles each integration needs
+    - [Service Bus](cookbooks/service-bus-handling.md) / [Event Hubs](cookbooks/event-hub-processing.md) / [Cosmos DB Change Feed](cookbooks/cosmos-change-feed-processing.md) cookbooks
   - **Cloudflare**
-    - [Cloudflare Containers Setup](getting-started-cloudflare)
+    - [Cloudflare Containers Setup](getting-started-cloudflare.md)
 
 - **Messaging**
-  - [Getting Started with Kafka](getting-started-kafka)
-  - [Getting Started with gRPC](getting-started-grpc)
-  - [Getting Started with Worker Services](getting-started-worker)
+  - [Getting Started with Kafka](getting-started-kafka.md)
+  - [Getting Started with gRPC](getting-started-grpc.md)
+  - [Getting Started with Worker Services](getting-started-worker.md)
 
 - **Integrations**
-  - [ASP.NET Core](asp-net-core)
+  - [ASP.NET Core](asp-net-core.md)
   - **Validation**
-    - [Fluent Validation](fluent-validation)
-    - [Data Annotations](data-annotations)
+    - [Fluent Validation](fluent-validation.md)
+    - [Data Annotations](data-annotations.md)
 
 - **Clients & Resilience**
-  - [Clients](clients)
-  - [Caching](caching)
-  - [Resilience](resilience)
+  - [Clients](clients.md)
+  - [Caching](caching.md)
+  - [Resilience](resilience.md)
 
 - **Code Generation**
-  - [Terraform](terraform)
-  - [Client SDKs](client-sdks)
-  - [OpenAPI Specification](spec)
+  - [Terraform](terraform.md)
+  - [Client SDKs](client-sdks.md)
+  - [OpenAPI Specification](spec.md)
 
 - **Reference**
-  - [Package Reference](reference/packages) — every NuGet package and when to install it
-  - [Middleware Reference](reference/middleware) — every pipeline step and its options
-  - [Attributes Reference](reference/attributes) — the attributes you apply to handlers
-  - [Result & Status Reference](reference/results) — result statuses and their HTTP mappings
-  - [Configuration Reference](reference/configuration) — the StartUp lifecycle and config options
+  - [Package Reference](reference/packages.md) — every NuGet package and when to install it
+  - [Middleware Reference](reference/middleware.md) — every pipeline step and its options
+  - [Attributes Reference](reference/attributes.md) — the attributes you apply to handlers
+  - [Result & Status Reference](reference/results.md) — result statuses and their HTTP mappings
+  - [Configuration Reference](reference/configuration.md) — the StartUp lifecycle and config options
 
 - **Cookbooks**
-  - [Cookbook Index](cookbooks/README)
-  - [Logging to Application Insights](cookbooks/logging-application-insights)
-  - [Authentication Patterns](cookbooks/auth-patterns) — OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
+  - [Cookbook Index](cookbooks/README.md)
+  - [Logging to Application Insights](cookbooks/logging-application-insights.md)
+  - [Authentication Patterns](cookbooks/auth-patterns.md) — OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
 
 - **Live Demos**
   - [Mesh UI](../demos/mesh/index.html) — a running dashboard over sample service health, contract drift, and cross-service traffic

@@ -13,7 +13,7 @@ You want to test a handler's behaviour without touching real infrastructure:
 
 ## Prerequisites
 
-- A Benzene service with a `StartUp` (see [Testing Benzene](../testing-benzene))
+- A Benzene service with a `StartUp` (see [Testing Benzene](../testing-benzene.md))
 - A test project with a test framework (xUnit here) and a mocking library (Moq here)
 - `Benzene.Testing` (and the `*.TestHelpers` package for your transport)
 
@@ -114,7 +114,7 @@ The same host builder serves every transport; only the dispatch helper differs:
 | Azure Functions | `.BuildAzureFunctionApp()` | `HandleHttpRequest(...)`, `HandleEventHub(...)` |
 | ASP.NET Core | `Program` + `WebApplicationFactory` | a real `HttpClient` |
 
-See [Testing Benzene](../testing-benzene) for the full matrix, including ASP.NET Core and worker
+See [Testing Benzene](../testing-benzene.md) for the full matrix, including ASP.NET Core and worker
 hosts.
 
 ## Troubleshooting
@@ -151,7 +151,7 @@ via `WithServices` just the same. Benzene's own examples use in-memory implement
 
 ## Further Reading
 
-- [Testing Benzene](../testing-benzene) - the complete testing guide
-- [Message Handlers](../message-handlers) - why handlers stay thin and injectable
+- [Testing Benzene](../testing-benzene.md) - the complete testing guide
+- [Message Handlers](../message-handlers.md) - why handlers stay thin and injectable
 - [Integration Testing Lambda Functions](testing-lambda-functions.md) - end-to-end Lambda tests
-- [Package Reference](../reference/packages#testing-support) - the testing packages
+- [Package Reference](../reference/packages.md#testing-support) - the testing packages

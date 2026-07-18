@@ -16,7 +16,7 @@ in its own way. Pick the section below that matches how you're hosting the servi
   [Kafdrop](https://github.com/obsidiandynamics/kafdrop) at `http://localhost:19000` for inspecting
   topics
 - For the AWS or Azure sections: the same cloud prerequisites as
-  [AWS Lambda Setup](getting-started-aws) / [Azure Functions Setup](azure-functions)
+  [AWS Lambda Setup](getting-started-aws.md) / [Azure Functions Setup](azure-functions.md)
 
 ## Which package do I need?
 
@@ -84,7 +84,7 @@ public class HelloWorldMessage
 
 This is an `IMessageHandler<TRequest>` (no response type) — the right shape for a fire-and-forget
 Kafka record, since nothing is written back to the broker. See
-[Message Handlers](message-handlers) for the request/response shape if you need one for another
+[Message Handlers](message-handlers.md) for the request/response shape if you need one for another
 transport on the same handler.
 
 ### 1.4 Define your StartUp
@@ -236,7 +236,7 @@ clusters. It's a thin adapter over `Amazon.Lambda.KafkaEvents`'s `KafkaEvent` an
 `Confluent.Kafka` or `Benzene.Kafka.Core` at all — records already arrive deserialized as part of
 the Lambda invocation payload.
 
-Add it to an existing [AWS Lambda](getting-started-aws) `StartUp`:
+Add it to an existing [AWS Lambda](getting-started-aws.md) `StartUp`:
 
 ```bash
 dotnet add package Benzene.Aws.Lambda.Kafka --prerelease
@@ -256,9 +256,9 @@ events are fire-and-forget — no response is written back, and a Lambda invocat
 records processes all of them (flattened across topic-partitions) through the pipeline before
 returning.
 
-See [AWS Lambda Setup](getting-started-aws#kafka) for how this fits alongside other AWS event
+See [AWS Lambda Setup](getting-started-aws.md#kafka) for how this fits alongside other AWS event
 sources in the same function, and
-[AWS IAM Permissions Reference](aws-iam-permissions#kafka-trigger-benzeneawslambdakafka) for the
+[AWS IAM Permissions Reference](aws-iam-permissions.md#kafka-trigger-benzeneawslambdakafka) for the
 MSK-specific execution-role permissions — these are more involved than other AWS event sources
 because MSK event source mappings require VPC connectivity.
 
@@ -270,7 +270,7 @@ endpoint the trigger binding supports, including Azure Event Hubs' Kafka-compati
 despite its package description mentioning Event Hubs specifically, the source has no Event
 Hubs-specific code; it's a generic `KafkaRecord`/`KafkaRecord[]` adapter.
 
-Add it to an existing [Azure Functions](azure-functions) `StartUp`:
+Add it to an existing [Azure Functions](azure-functions.md) `StartUp`:
 
 ```bash
 dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Kafka
@@ -321,7 +321,7 @@ regardless of what the broker sent — so header-based middleware (correlation I
 context) won't see anything on Azure's Kafka trigger even though it works on the worker and AWS
 paths above.
 
-See [Azure Functions Setup](azure-functions#kafka) for how this fits alongside HTTP and Event Hubs
+See [Azure Functions Setup](azure-functions.md#kafka) for how this fits alongside HTTP and Event Hubs
 triggers in the same Function App.
 
 ## Troubleshooting
@@ -336,13 +336,13 @@ triggers in the same Function App.
 - **Missing headers on Azure** — see the Azure Functions note above; this is a current gap in
   `Benzene.Azure.Function.Kafka`, not a broker or configuration issue.
 - **MSK connectivity failures on AWS** — almost always a VPC/security-group issue, not a Benzene
-  issue; see [AWS IAM Permissions Reference](aws-iam-permissions#kafka-trigger-benzeneawslambdakafka).
+  issue; see [AWS IAM Permissions Reference](aws-iam-permissions.md#kafka-trigger-benzeneawslambdakafka).
 
 ## See Also
 
-- [Unified Hosting Model](hosting)
-- [Testing Benzene](testing-benzene)
-- [AWS Lambda Setup](getting-started-aws)
-- [Azure Functions Setup](azure-functions)
-- [Message Handlers](message-handlers)
-- [AWS IAM Permissions Reference](aws-iam-permissions)
+- [Unified Hosting Model](hosting.md)
+- [Testing Benzene](testing-benzene.md)
+- [AWS Lambda Setup](getting-started-aws.md)
+- [Azure Functions Setup](azure-functions.md)
+- [Message Handlers](message-handlers.md)
+- [AWS IAM Permissions Reference](aws-iam-permissions.md)

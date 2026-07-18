@@ -26,7 +26,7 @@ dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
 
 ## Benzene's built-in metrics
 
-Adding [`UseBenzeneMetrics()`](../reference/middleware#usebenzenemetrics) to a pipeline records, for
+Adding [`UseBenzeneMetrics()`](../reference/middleware.md#usebenzenemetrics) to a pipeline records, for
 the wrapped stage:
 
 | Instrument | Type | Tags |
@@ -98,7 +98,7 @@ services.AddOpenTelemetry()
 
 Attach an in-memory metric reader to a test `MeterProvider` (or scrape a local Prometheus/OTLP
 collector) and assert the expected instruments and tag values are emitted after sending a message
-through the [test host](../testing-benzene).
+through the [test host](../testing-benzene.md).
 
 ## Troubleshooting
 
@@ -129,7 +129,7 @@ same `AddBenzeneInstrumentation()` exists for traces.
 
 ## Further Reading
 
-- [Monitoring & Diagnostics](../monitoring#opentelemetry) - metrics in context
-- [Middleware Reference](../reference/middleware#usebenzenemetrics) - `UseBenzeneMetrics`
+- [Monitoring & Diagnostics](../monitoring.md#opentelemetry) - metrics in context
+- [Middleware Reference](../reference/middleware.md#usebenzenemetrics) - `UseBenzeneMetrics`
 - [Distributed Tracing with OpenTelemetry](distributed-tracing-opentelemetry.md) - the tracing counterpart
 - [.NET metrics](https://learn.microsoft.com/dotnet/core/diagnostics/metrics) - `System.Diagnostics.Metrics`

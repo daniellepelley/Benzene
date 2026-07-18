@@ -120,7 +120,7 @@ public class CreateWidgetRequest
 ```
 
 ## See Also
-- [Fluent Validation](fluent-validation) — the rule-based alternative with configurable failure statuses and schema generation
-- [Message Handlers](message-handlers) — where validation middleware sits in the request lifecycle
-- [Handler Result](message-result) — `IBenzeneResult` statuses, including `ValidationError`
-- [Middleware](middleware) — general middleware pipeline concepts
+- [Fluent Validation](fluent-validation.md) — the rule-based alternative with configurable failure statuses and schema generation
+- [Message Handlers](message-handlers.md) — where validation middleware sits in the request lifecycle
+- [Handler Result](message-result.md) — `IBenzeneResult` statuses, including `ValidationError`
+- [Middleware](middleware.md) — general middleware pipeline concepts
