@@ -42,7 +42,8 @@ tf_import() {
     || echo "  (skipped: not present in Azure, or not importable)"
 }
 
-tf_import 'azurerm_resource_group.this'       "$RG_ID"
+# NB: the resource group itself is a Terraform *data source* (created imperatively by the workflow),
+# so it is never imported here — only the resources this stack actually manages are adopted below.
 tf_import 'azurerm_container_registry.acr'    "$RG_ID/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME"
 tf_import 'azurerm_storage_account.artifacts' "$SA_ID"
 tf_import 'azurerm_storage_container.mesh'    "https://$SA.blob.core.windows.net/mesh"
