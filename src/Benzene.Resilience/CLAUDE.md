@@ -34,16 +34,16 @@ this package is pure Benzene middleware over `Benzene.Abstractions.Middleware`.
 ## When to use this package
 - When you want a downstream pipeline step retried on transient failure with exponential backoff.
 
-## Deliberate boundaries (NOT shipped)
-- **No circuit breaker, no timeout, no bulkhead, and no `Benzene.Resilience.Polly` package.**
-  Evaluated for 1.0 (plan §3.2) and deliberately not built: wrapping a Polly `ResiliencePipeline` in
-  an `IMiddleware<TContext>` is ~15 lines with no Benzene-specific plumbing needed, well under the
-  bar for a new package (new NuGet surface to freeze, a new transitive Polly dependency) — so it's
-  documented as a cookbook instead: `docs/cookbooks/polly-resilience.md`. Benzene's stance (see
-  `work/1.0-release-plan.md` §2, principle 4) is to expose best-in-class libraries rather than wrap
-  them: for circuit-breaker/timeout/bulkhead, build your own (copy-paste-able) middleware that runs
-  your Polly `ResiliencePipeline` — Benzene gives you the pipe, it does not hide Polly behind an
-  abstraction or own the integration.
+## Deliberate boundaries (this package)
+- **This package is retry-only, and stays that way.** No circuit breaker, timeout, bulkhead, hedging,
+  or fallback here, and **no Polly dependency** — that keeps `Benzene.Resilience` the zero-dependency
+  option for callers who only want retry.
+- **The full toolkit lives in the sibling `Benzene.Resilience.Polly`.** For circuit breaker / timeout
+  / hedging / fallback / rate limiting, use `.UseResiliencePipeline(...)` from that package, which
+  runs the pipeline through a Polly v8 `ResiliencePipeline`. It also bridges Benzene's
+  result-on-context failure model to Polly's outcome model via an optional `isFailure` predicate —
+  see `src/Benzene.Resilience.Polly/CLAUDE.md`. Pick this package (`.UseRetry`) for retry with no
+  extra dependency; pick `Benzene.Resilience.Polly` for anything more.
 
 ## Important conventions
 - **Retry re-invokes the whole downstream pipeline.** Do not place it on an inbound context that has

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Resilience.Polly</AssemblyName>
+    <RootNamespace>Benzene.Resilience.Polly</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Polly v8 resilience for Benzene: wrap a middleware pipeline (or an outbound port call) in a Polly ResiliencePipeline - retry, circuit breaker, timeout, hedging, fallback, rate limiting.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Polly.Core" Version="8.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
+    <ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+  </ItemGroup>
+
+</Project>
