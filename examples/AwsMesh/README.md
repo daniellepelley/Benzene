@@ -71,12 +71,17 @@ Benzene's features so the example dogfoods them on a real deploy:
   `router.UseFluentValidation()`, so an invalid payload is rejected identically no matter which
   transport it arrived on.
 
-## Interconnectivity (next)
+## Interconnectivity → topology
 
-The three domains (order → payment → shipment) are set up to call each other via Benzene AWS Lambda
-**clients** (`AddOutboundRouting` + outbound invoke), so the mesh's topology view can show real
-cross-service edges. This is the remaining showpiece — it needs cross-Lambda invoke IAM + the callee
-function names wired in, so it lands as a focused follow-up on top of the observability above.
+`orders-api` **declares** the topics it sends downstream (`payments:capture`, `shipping:book`), so
+they appear in its spec's `events`. The mesh aggregator turns that into a **structural topology**: an
+edge from each service that *sends* a domain topic to each service that *handles* it. After a refresh,
+`topology.json` carries `orders → payments` and `orders → shipping` edges (source `structural`), and
+the Mesh UI's **Topology** table shows them — no tracing backend required.
+
+The next step (live *observed* edges + latency/error metrics) is actual runtime egress — `orders`
+invoking payments/shipping via Benzene AWS Lambda clients, plus `Benzene.Mesh.Tracing.Tempo`. The
+structural "designed to call" graph above already lights up the topology view from the deployed specs.
 
 ## Deploy it (via GitHub Actions — no local tooling)
 

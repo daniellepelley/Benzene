@@ -72,6 +72,16 @@ already runs, not a bespoke standalone tool.
   deployment that never wires this up has no write surface at all). A reporter that isn't colocated
   posts here via `Benzene.Mesh.Reporting.HttpMeshReportPublisher` instead of writing directly.
 
+## Structural topology (`topology.json`)
+Each run also derives a **structural** ("designed to call") topology and publishes it as
+`topology.json` (`MeshTopology`/`TopologyEdge` in `Benzene.Mesh.Contracts`, `Source =
+TopologyEdgeSource.Structural`): an edge from each service that declares it **sends** a domain topic
+(the spec's `events`) to each service that **handles** it (the spec's `requests`). No tracing backend
+needed — it's read straight from the specs the aggregator already fetches. This fills the gap
+`TopologyEdgeSource.Structural`'s doc-comment described as "not currently produced by any package".
+Note: `Benzene.Mesh.Tracing.Tempo` publishes *observed* edges to the same `topology.json`; a
+deployment using both currently has last-writer-wins (merging structural + observed is a future step).
+
 ## Aggregated topic catalog (`topics.json`)
 Alongside `manifest.json`/`services/{name}.json`, each run also publishes `topics.json`
 (`MeshTopicCatalog` in `Benzene.Mesh.Contracts`): every distinct topic across the mesh → which
@@ -108,5 +118,5 @@ bare `HttpClient`. `AddMeshAggregator`'s own public signature is unchanged.
 - Every fetch failure is recorded as the exception's *type name*, never its message - this
   artifact aggregates across services into something with broader visibility than one service's own
   health endpoint.
-- No topology/edge derivation in this package yet - deliberately deferred (see
-  `work/service-mesh-roadmap-1.0.md` and the plan history for why).
+- Derives **structural** topology edges from the specs (see "Structural topology" above); *observed*
+  (traffic) edges remain `Benzene.Mesh.Tracing.Tempo`'s job.

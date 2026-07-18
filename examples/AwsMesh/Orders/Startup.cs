@@ -2,7 +2,9 @@ using Benzene.Abstractions.Hosting;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Examples.AwsMesh.Orders.Handlers;
 using Benzene.Examples.AwsMesh.Orders.HealthChecks;
+using Benzene.Examples.AwsMesh.Orders.Model;
 using Benzene.Examples.AwsMesh.Shared;
+using Benzene.Extras.Broadcast;
 using Benzene.HealthChecks.Core;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +24,10 @@ public class Startup : BenzeneStartUp
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly);
+        => MeshServiceWiring.ConfigureServices(services, typeof(Startup).Assembly,
+            // orders-api sends these downstream — declared so the mesh draws orders → payments/shipping.
+            new BroadcastEventDefinition("payments:capture", typeof(OutboundPaymentCapture)),
+            new BroadcastEventDefinition("shipping:book", typeof(OutboundShipmentBook)));
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {

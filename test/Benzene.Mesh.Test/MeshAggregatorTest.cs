@@ -98,6 +98,39 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_DerivesStructuralTopology_FromSenderToHandler()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+        // orders declares it *sends* payments:capture (events); payments *handles* it (requests).
+        var ordersSpec = "{\"requests\":[{\"topic\":\"orders:create\"}],\"events\":[{\"topic\":\"payments:capture\"}]}";
+        var paymentsSpec = "{\"requests\":[{\"topic\":\"payments:capture\"}]}";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, paymentsSpec)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("payments-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var json = await store.TryReadAsync("topology.json");
+        Assert.NotNull(json);
+        var topology = JsonSerializer.Deserialize<MeshTopology>(json!, JsonOptions)!;
+
+        var edge = Assert.Single(topology.Edges);
+        Assert.Equal("orders-api", edge.Client);
+        Assert.Equal("payments-api", edge.Server);
+        Assert.Equal(TopologyEdgeSource.Structural, edge.Source);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_UnchangedSpec_SecondRun_NoDrift()
     {
         var handler = new RoutingHttpMessageHandler()

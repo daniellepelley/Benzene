@@ -10,7 +10,9 @@ using Benzene.CloudService;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
+using Benzene.Abstractions.Messages;
 using Benzene.Diagnostics.Correlation;
+using Benzene.Extras.Broadcast;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -35,20 +37,30 @@ public static class MeshServiceWiring
 {
     /// <summary>
     /// Registers the baseline, the domain handlers, HTTP routing, JSON console logging (captured to
-    /// CloudWatch on Lambda), and the domain's FluentValidation validators.
+    /// CloudWatch on Lambda), and the domain's FluentValidation validators. Optionally declares the
+    /// topics this service <em>sends</em> to other services (<paramref name="outboundSends"/>) — they
+    /// appear in the spec's <c>events</c>, from which the mesh derives structural topology edges.
     /// </summary>
-    public static void ConfigureServices(IServiceCollection services, Assembly domainAssembly)
+    public static void ConfigureServices(IServiceCollection services, Assembly domainAssembly, params IMessageDefinition[] outboundSends)
     {
         // Structured JSON logs to stdout → CloudWatch. The correlation id + processTime that
         // UseLogResult emits ride along on every line.
         services.AddLogging(logging => logging.AddJsonConsole());
         services.AddValidatorsFromAssembly(domainAssembly);
 
-        services.UsingBenzene(x => x
-            .AddBenzene()
-            .AddCorrelationId()
-            .AddMessageHandlers(domainAssembly)
-            .AddHttpMessageHandlers());
+        services.UsingBenzene(x =>
+        {
+            x.AddBenzene()
+                .AddCorrelationId()
+                .AddMessageHandlers(domainAssembly)
+                .AddHttpMessageHandlers();
+
+            if (outboundSends.Length > 0)
+            {
+                // Declares "this service sends topic T" in the spec's events → the mesh's structural topology.
+                x.AddBroadcastEvent(outboundSends);
+            }
+        });
     }
 
     /// <summary>
