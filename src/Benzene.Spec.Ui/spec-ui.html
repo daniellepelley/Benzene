@@ -225,6 +225,16 @@
   }
   .section-head .expand-all:hover { color: var(--accent); }
 
+  /* ---------- Benzene utilities (reserved topics) ---------- */
+  .utility-head { display: flex; align-items: center; gap: 12px; margin: 34px 0 14px; }
+  .utility-head .utility-toggle {
+    font: inherit; font-size: 13px; font-family: var(--mono); color: var(--ink-faint);
+    background: none; border: none; cursor: pointer; padding: 0; letter-spacing: .02em;
+  }
+  .utility-head .utility-toggle:hover { color: var(--accent); }
+  .utility-head .utility-hint { font-size: 11.5px; color: var(--ink-faint); font-style: italic; }
+  .utility-box { border-left: 2px solid var(--line); padding-left: 12px; margin-bottom: 8px; }
+
   /* ---------- Operation card ---------- */
   .op {
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
@@ -501,6 +511,20 @@
         "address": { "line1": "value", "line2": "value", "postcode": "AB12 3CD", "country": "GB" },
         "carrier": "royal-mail"
       }
+    },
+    {
+      "topic": "spec",
+      "reserved": true,
+      "httpMappings": [ { "method": "get", "path": "/benzene/spec" } ],
+      "request":  { "type": "object" },
+      "response": { "type": "object" }
+    },
+    {
+      "topic": "healthcheck",
+      "reserved": true,
+      "httpMappings": [ { "method": "get", "path": "/benzene/health" } ],
+      "request":  { "type": "object" },
+      "response": { "type": "object" }
     }
   ],
   "events": [
@@ -1029,7 +1053,12 @@
     document.getElementById("lede-title").textContent = info.title || "Benzene Spec Explorer";
     document.getElementById("lede-desc").textContent = info.description || "";
 
-    var requests = spec.requests || [];
+    var allRequests = spec.requests || [];
+    // Domain topics vs reserved Benzene utility topics (spec/health/mesh/…). Utilities are pulled
+    // out of the main list and shown in a collapsed, labelled panel so they don't clutter the
+    // service's domain contract.
+    var requests = allRequests.filter(function (r) { return !r.reserved; });
+    var utilityRequests = allRequests.filter(function (r) { return r.reserved; });
     var events = spec.events || [];
     var schemaKeys = Object.keys(schemas());
     var httpCount = requests.filter(function (r) { return (r.httpMappings || []).length; }).length;
@@ -1037,12 +1066,16 @@
     // stats
     var stats = document.getElementById("stats");
     stats.innerHTML = "";
-    [
+    var statDefs = [
       ["accent", requests.length, requests.length === 1 ? "Topic" : "Topics"],
       ["", httpCount, "HTTP-mapped"],
       ["event", events.length, events.length === 1 ? "Event" : "Events"],
       ["", schemaKeys.length, "Schemas"]
-    ].forEach(function (t) {
+    ];
+    if (utilityRequests.length) {
+      statDefs.push(["", utilityRequests.length, "Utilities"]);
+    }
+    statDefs.forEach(function (t) {
       var c = el("div", "stat" + (t[0] ? " " + t[0] : ""));
       c.appendChild(el("div", "n", String(t[1])));
       c.appendChild(el("div", "l", t[2]));
@@ -1054,7 +1087,7 @@
     var nav = document.getElementById("nav");
     nav.innerHTML = "";
 
-    if (!requests.length && !events.length && !schemaKeys.length) {
+    if (!allRequests.length && !events.length && !schemaKeys.length) {
       var es = el("div", "empty-state");
       es.innerHTML = 'Nothing to show. <span class="mono">Load a Benzene spec</span> to explore its topics.';
       content.appendChild(es);
@@ -1071,6 +1104,30 @@
         navReq.body.appendChild(navLink(op.id, r.topic, (r.httpMappings || []).length ? "http" : "msg"));
       });
       nav.appendChild(navReq.group);
+    }
+
+    // Benzene utilities (reserved topics) — collapsed by default, clearly labelled, and kept out of
+    // the left nav so the service's domain contract stays the focus. Accessible via the toggle.
+    if (utilityRequests.length) {
+      var uHead = el("div", "utility-head");
+      var uToggle = el("button", "utility-toggle");
+      var uBox = el("div", "utility-box");
+      uBox.style.display = "none";
+      var uOpen = false;
+      var setUToggle = function () {
+        uToggle.textContent = (uOpen ? "▾" : "▸") + " Benzene utilities (" + utilityRequests.length + ")";
+      };
+      setUToggle();
+      uToggle.addEventListener("click", function () {
+        uOpen = !uOpen;
+        uBox.style.display = uOpen ? "" : "none";
+        setUToggle();
+      });
+      uHead.appendChild(uToggle);
+      uHead.appendChild(el("span", "utility-hint", "Cloud Service Profile endpoints — not part of the service domain"));
+      content.appendChild(uHead);
+      utilityRequests.forEach(function (r) { uBox.appendChild(buildOp("request", r)); });
+      content.appendChild(uBox);
     }
 
     // Events
