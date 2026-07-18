@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Mesh.Discovery.Aws</AssemblyName>
+    <RootNamespace>Benzene.Mesh.Discovery.Aws</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>AWS self-discovery for the Benzene Mesh: enumerates the Lambda functions in an account (filtered by tag, e.g. benzene) and emits mesh registry entries bound to the AWS-Lambda-Invoke interrogation source, so the aggregator discovers services instead of being hand-fed a mesh.json. Uses AWSSDK.Lambda ListFunctions/ListTags only.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.303.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

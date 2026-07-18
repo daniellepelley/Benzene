@@ -318,6 +318,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Clients.Azure.Event
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Clients.Azure.QueueStorage", "src\Benzene.Clients.Azure.QueueStorage\Benzene.Clients.Azure.QueueStorage.csproj", "{7A85E0C1-C786-4B68-BBAA-7E77994C42EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Mesh.Discovery.Aws", "src\Benzene.Mesh.Discovery.Aws\Benzene.Mesh.Discovery.Aws.csproj", "{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1948,6 +1950,18 @@ Global
 		{7A85E0C1-C786-4B68-BBAA-7E77994C42EC}.Release|x64.Build.0 = Release|Any CPU
 		{7A85E0C1-C786-4B68-BBAA-7E77994C42EC}.Release|x86.ActiveCfg = Release|Any CPU
 		{7A85E0C1-C786-4B68-BBAA-7E77994C42EC}.Release|x86.Build.0 = Release|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Debug|x64.Build.0 = Debug|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Debug|x86.Build.0 = Debug|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Release|x64.ActiveCfg = Release|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Release|x64.Build.0 = Release|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Release|x86.ActiveCfg = Release|Any CPU
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -2087,6 +2101,7 @@ Global
 		{C4E70C67-E8F3-427C-A23E-7DF01AEB5978} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8FEE9CFA-D126-45E2-B51B-8B3D24378FFA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{7A85E0C1-C786-4B68-BBAA-7E77994C42EC} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{A6AFD9C2-E677-4338-BD27-5EEB0D92FABD} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

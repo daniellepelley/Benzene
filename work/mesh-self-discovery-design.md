@@ -1,7 +1,31 @@
 # Mesh Self-Discovery — Design Proposal (2026-07-18)
 
-**Status:** DRAFT for review — plan-first, no code yet. Decisions the user needs to make are in §11
-(NuGet asks) and §12 (open questions).
+**Status:** APPROVED (2026-07-18) — decisions recorded in §0.1; implementation starts with the AWS
+offering. §3.1 is superseded by the §0.1 "discovery creates config, aggregator consumes it" seam.
+
+## 0.1 Decisions (2026-07-18)
+
+1. **AWS enumeration:** `AWSSDK.Lambda` `ListFunctions` + per-function tags only (no
+   `AWSSDK.ResourceGroupsTaggingAPI` — **zero new AWS dependency**). May add the tagging-API option
+   later as an alternative.
+2. **Real adapter packages** (`Benzene.Mesh.Discovery.*`), not copy-paste — as recommended.
+3. **Union** discovered services with static config (static still pins un-discoverable services).
+4. **Discovery creates config; the aggregator consumes it at runtime — a hard seam.** Discovery is a
+   *separate phase* that writes a `mesh.json`-shaped registry document (to a file / S3 / blob); the
+   existing aggregator reads that document at runtime exactly as it reads a hand-written `mesh.json`.
+   This is cleaner than the §3.1 in-process union: discovery and runtime monitoring are decoupled,
+   independently hostable, and the generated document is inspectable. The union (decision 3) is
+   between the hand-written static config and the discovery-generated document at aggregator load.
+5. **Plug-and-play hosting:** the *same* aggregator + UI components run in every host; only the
+   discovery provider and the config/artifact store backend swap per platform.
+6. **Mesh runtime is .NET-only for now.** The *services* it discovers are multi-language (the Go and
+   TypeScript ports), but re-implementing the mesh runtime per language would be duplication — out of
+   scope. The mesh is configured entirely via **JSON config**.
+7. **Build order:** implement AWS end-to-end first, learn from it, then copy the shape for Azure and
+   Kubernetes. The final deliverable is an **end-to-end AWS test**: deploy test Benzene Lambdas + a
+   mesh service (itself an AWS Lambda) and watch discovery → interrogation → catalog work; ideally
+   with .NET, TypeScript, and Go Lambdas all integrated with one mesh, subject to port maturity.
+   **This E2E test is delivered last.**
 
 ## 0. The ask (restated from the brief)
 
@@ -297,6 +321,12 @@ the mesh broad reach.
   handler. No cloud SDK yet — unit-test with a fake provider.
 - **P2 — AWS adapter** (`Benzene.Mesh.Discovery.Aws`) — the highest-value first cloud, since the invoke
   interrogation already exists. Pick the enumeration option (§11.1).
+  **Status: P1+P2 discovery engine landed (2026-07-18).** `IMeshDiscoveryProvider` + `MeshDiscoveryFilter`
+  + `MeshDiscoveryRunner` (union, seed-wins) + `MeshRegistryJson` (the discovery→config seam) in
+  `Benzene.Mesh.Contracts`; `AwsLambdaDiscoveryProvider` (`ListFunctions`+`ListTags`, tag-filtered) +
+  `AddMeshAwsLambdaDiscovery` in `Benzene.Mesh.Discovery.Aws`; 9 tests. **Still open for AWS:** the
+  runnable mesh-host wiring (discovery Lambda → write registry JSON to S3 → aggregator reads it) and
+  the E2E test (delivered last).
 - **P3 — Tagging convention + IaC defaults** — document the convention; stamp `benzene` in
   `Benzene.Templates` and the Terraform emitters.
 - **P4 — Azure adapter** (`Benzene.Mesh.Discovery.Azure`) — ARM/Resource Graph enumeration; per-entry
