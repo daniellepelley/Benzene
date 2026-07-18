@@ -63,6 +63,12 @@ open http://localhost:8080/mesh-ui        # the discovered catalog + cross-servi
 Each service's own Spec UI is reachable the same way (`port-forward svc/orders 8081:80` →
 `http://localhost:8081/benzene/spec-ui`).
 
+## OpenTelemetry
+
+Both the services and the mesh wire **full OpenTelemetry** (`AddOpenTelemetry` + Benzene traces/metrics
+over OTLP, plus `UseW3CTraceContext`/`UseBenzeneEnrichment`/`UseBenzeneMetrics` on the pipeline). Set
+`OTEL_EXPORTER_OTLP_ENDPOINT` (e.g. an in-cluster collector Service) to export; unset, it no-ops.
+
 ## Known first-deploy iteration points
 - **.NET 10 base images** — the Dockerfiles use `mcr.microsoft.com/dotnet/{sdk,aspnet}:10.0`; pin to
   the exact tag your registry has if `10.0` doesn't resolve.

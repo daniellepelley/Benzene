@@ -50,6 +50,12 @@ Storage**.
    - `service_spec_ui_urls` — each service's Spec UI (with its **Benzene utilities** panel).
    - `mesh_refresh_url` — `POST` to force a discovery+aggregation pass (returns `201 {"discovered":3}`).
 
+## OpenTelemetry
+
+The mesh Web App wires **full OpenTelemetry** (`AddOpenTelemetry` + Benzene traces/metrics over OTLP,
+plus `UseW3CTraceContext`/`UseBenzeneEnrichment`/`UseBenzeneMetrics` on the pipeline). Set
+`OTEL_EXPORTER_OTLP_ENDPOINT` (app setting) to export to a collector; unset, it no-ops.
+
 ## Known first-deploy iteration points
 
 Like the AWS example, the live Azure behaviour is only verifiable on a real deploy; the likely

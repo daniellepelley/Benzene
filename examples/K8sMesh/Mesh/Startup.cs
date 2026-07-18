@@ -2,14 +2,19 @@ using Benzene.Abstractions.Hosting;
 using Benzene.AspNet.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Diagnostics;
 using Benzene.Http;
 using Benzene.Mesh.Aggregator;
 using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Kubernetes;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
+using Benzene.OpenTelemetry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Benzene.Examples.K8sMesh.Mesh;
 
@@ -29,8 +34,19 @@ public class Startup : BenzeneStartUp
     {
         var artifactDir = Environment.GetEnvironmentVariable("MESH_ARTIFACT_DIR") ?? "/artifacts";
 
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService("benzene-mesh"))
+            .WithTracing(tracing => tracing
+                .SetSampler(new AlwaysOnSampler())
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter())
+            .WithMetrics(metrics => metrics
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter());
+
         services.UsingBenzene(benzene => benzene
             .AddBenzene()
+            .AddDiagnostics()
             .AddMessageHandlers(typeof(Startup).Assembly)
             .AddHttpMessageHandlers()
             // Discovery starts with an empty registry — discovery replaces it at runtime.
@@ -46,6 +62,9 @@ public class Startup : BenzeneStartUp
         // Scope handler discovery to this assembly so Benzene.Mesh.Aggregator's own
         // MeshAggregateMessageHandler (also [Message("mesh:aggregate")]) isn't discovered too.
         app.UseHttp(asp => asp
+            .UseW3CTraceContext()
+            .UseBenzeneEnrichment()
+            .UseBenzeneMetrics()
             .UseMeshUi("/mesh-ui", "manifest.json")
             .UseMeshArtifacts()
             .UseMessageHandlers(typeof(Startup).Assembly));

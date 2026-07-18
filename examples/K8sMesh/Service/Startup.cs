@@ -3,12 +3,17 @@ using Benzene.AspNet.Core;
 using Benzene.CloudService;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Diagnostics;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
+using Benzene.OpenTelemetry;
 using Benzene.Spec.Ui;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Benzene.Examples.K8sMesh.Service;
 
@@ -28,8 +33,20 @@ public class Startup : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
+        // Full OpenTelemetry: Benzene traces + metrics over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT).
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService($"{ServiceName}-api"))
+            .WithTracing(tracing => tracing
+                .SetSampler(new AlwaysOnSampler())
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter())
+            .WithMetrics(metrics => metrics
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter());
+
         services.UsingBenzene(x => x
             .AddBenzene()
+            .AddDiagnostics()
             .AddMessageHandlers(Domain.HandlersFor(ServiceName))
             .AddHttpMessageHandlers());
     }
@@ -40,6 +57,9 @@ public class Startup : BenzeneStartUp
         IHealthCheck[] healthChecks = { new ServiceHealthCheck(name) };
 
         app.UseHttp(asp => asp
+            .UseW3CTraceContext()
+            .UseBenzeneEnrichment()
+            .UseBenzeneMetrics()
             .UseSpecUi("/benzene/spec-ui", "/benzene/spec?type=benzene")
             .UseBenzeneCloudService($"{name}-api", cloud => cloud
                 .WithServiceVersion("1.0.0")

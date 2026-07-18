@@ -2,14 +2,19 @@ using Benzene.Abstractions.Hosting;
 using Benzene.AspNet.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Diagnostics;
 using Benzene.Http;
 using Benzene.Mesh.Azure.Blob;
 using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Azure;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
+using Benzene.OpenTelemetry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Benzene.Examples.AzureMesh.Mesh;
 
@@ -32,8 +37,19 @@ public class Startup : BenzeneStartUp
         var container = Environment.GetEnvironmentVariable("MESH_BLOB_CONTAINER") ?? "mesh";
         var prefix = Environment.GetEnvironmentVariable("MESH_BLOB_PREFIX") ?? "";
 
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService("benzene-mesh"))
+            .WithTracing(tracing => tracing
+                .SetSampler(new AlwaysOnSampler())
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter())
+            .WithMetrics(metrics => metrics
+                .AddBenzeneInstrumentation()
+                .AddOtlpExporter());
+
         services.UsingBenzene(benzene => benzene
             .AddBenzene()
+            .AddDiagnostics()
             .AddMessageHandlers(typeof(Startup).Assembly)
             .AddHttpMessageHandlers()
             // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in Blob Storage.
@@ -50,6 +66,9 @@ public class Startup : BenzeneStartUp
         // Scope handler discovery to this assembly so Benzene.Mesh.Aggregator's own
         // MeshAggregateMessageHandler (also [Message("mesh:aggregate")]) isn't discovered too.
         app.UseHttp(asp => asp
+            .UseW3CTraceContext()
+            .UseBenzeneEnrichment()
+            .UseBenzeneMetrics()
             .UseMeshUi("/mesh-ui", "manifest.json")
             .UseMeshArtifacts()
             .UseMessageHandlers(typeof(Startup).Assembly));
