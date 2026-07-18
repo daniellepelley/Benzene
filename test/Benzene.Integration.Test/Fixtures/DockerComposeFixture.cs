@@ -14,6 +14,14 @@ namespace Benzene.Integration.Test.Fixtures;
 /// therefore a default project name) can silently step on each other's containers/networks,
 /// especially if they happen to reuse the same service name (as this project's Event Hub and
 /// Service Bus compose files both did before this was discovered and fixed).
+///
+/// Separately, watch host port bindings: every fixture registered in
+/// <see cref="DockerEmulatorCollection"/> is brought up concurrently for the collection's whole
+/// lifetime (not just for the duration of one test), so two compose files that each bind the same
+/// host port collide even though they live in separate directories - Service Bus and RabbitMQ both
+/// had to be remapped off the AMQP default (5672) for exactly this reason, since the Event Hubs
+/// emulator claims it first. Give each new fixture's compose file a host port nothing else in the
+/// collection already uses.
 /// </summary>
 public class DockerComposeFixture : IDisposable
 {

@@ -10,4 +10,10 @@ services:
       - RABBITMQ_DEFAULT_USER=benzene
       - RABBITMQ_DEFAULT_PASS=benzene
     ports:
-      - 5672:5672
+      # Remapped from the broker's default (5672) so this can run alongside the Event Hubs
+      # emulator (eventhub-docker-compose.yaml), which claims that same host port - both fixtures
+      # are ICollectionFixtures in the same DockerEmulatorCollection, so both compose stacks are up
+      # concurrently for the whole test collection. The RabbitMQ client connects on any port
+      # explicitly (see RabbitMqWorkerLiveTest.Port), so remapping the host side is transparent to
+      # the broker/client protocol.
+      - 5674:5672

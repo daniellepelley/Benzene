@@ -28,7 +28,10 @@ namespace Benzene.Integration.Test.RabbitMq;
 public class RabbitMqWorkerLiveTest
 {
     private const string HostName = "localhost";
-    private const int Port = 5672;
+
+    // Remapped to 5674 on the host side (see rabbitmq-docker-compose.yaml) to avoid colliding with
+    // the Event Hubs emulator, which claims the broker's default 5672.
+    private const int Port = 5674;
     private const string UserName = "benzene";
     private const string Password = "benzene";
     private const string QueueName = Defaults.Topic;
