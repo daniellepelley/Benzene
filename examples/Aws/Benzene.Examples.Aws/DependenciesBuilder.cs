@@ -11,11 +11,14 @@ using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
+using Benzene.Clients;
+using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
+using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Examples.App.Validators;
@@ -86,7 +89,13 @@ public static class DependenciesBuilder
             // .AddXml()
             // .AddSerializer<XmlSerializer>("application/xml")
             // .AddCorrelationId()
-            .AddMessageHandlers(typeof(CreateOrderMessage).Assembly));
+            .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
+            // Egress demo (release plan Tier 2.3): publishes OrderCreatedEvent to the same
+            // localstack queue (MY_QUEUE_URL) the SQS ingress trigger above already talks to, on a
+            // distinct topic ("order_created") - see PublishOrderCreatedMessageHandler. Reuses the
+            // IAmazonSQS singleton registered above.
+            .AddOutboundRouting(routing => routing
+                .Route(MessageTopicNames.OrderCreated, pipeline => pipeline.UseSqs(configuration["MY_QUEUE_URL"]))));
         
         // services.AddScoped<IMiddlewareFactory>(_ => new TimerMiddlewareFactory(
         //     new DebugTimerFactory()

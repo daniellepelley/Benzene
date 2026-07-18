@@ -1,9 +1,13 @@
-﻿using Benzene.Abstractions.DI;
+﻿using Azure.Messaging.ServiceBus;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Clients;
+using Benzene.Clients.Azure.ServiceBus;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages;
 using Benzene.Diagnostics;
+using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.App.Services;
 using Benzene.Http;
@@ -41,6 +45,18 @@ public static class DependenciesBuilder
             MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
         services.AddScoped<SpecMessageHandler>();
         services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
+
+        // Egress demo (release plan Tier 2.3): reuses the same "ServiceBusConnection" app setting
+        // and "orders" queue the ServiceBusFunction ingress trigger already talks to (see
+        // ServiceBusFunction.cs), on a distinct topic ("order_created") - see
+        // PublishOrderCreatedMessageHandler. Benzene never wraps the connection-string-vs-Managed-
+        // Identity choice - build the ServiceBusClient however your deployment needs (see
+        // docs/cookbooks/managed-identity.md for the DefaultAzureCredential path).
+        var serviceBusClient = new ServiceBusClient(configuration["ServiceBusConnection"]);
+        var serviceBusSender = serviceBusClient.CreateSender("orders");
+        services.AddSingleton(serviceBusClient);
+        services.AddSingleton(serviceBusSender);
+
         services.UsingBenzene(x => x
                 .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
                 .AddHttpMessageHandlers()
@@ -48,6 +64,8 @@ public static class DependenciesBuilder
                 // combined with the Application Insights logging wired in Program.cs, this is
                 // what correlates Benzene's topic/handler/invocationId onto every log line and
                 // trace that reaches Application Insights. See docs/cookbooks/logging-application-insights.md.
-                .AddDiagnostics());
+                .AddDiagnostics()
+                .AddOutboundRouting(routing => routing
+                    .Route(MessageTopicNames.OrderCreated, pipeline => pipeline.UseServiceBus(serviceBusSender))));
     }
 }

@@ -22,7 +22,9 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
   wire, **and** set a `topic` message attribute (the SQS consumer routes on it).
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SQS has only a send
   acknowledgement, so a topic routed through SQS must be sent via `SendAsync<TRequest, Void>`; any
-  other `TResponse` compiles but throws `InvalidCastException` at runtime (release plan Tier 2.4).
+  other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at
+  runtime, naming the topic, the actual (`Void`) and requested response types (release plan Tier
+  2.4 — this used to be a bare `InvalidCastException`; fixed in `DefaultBenzeneMessageSender`).
 
 ## Dependencies
 `AWSSDK.SQS`; Benzene `Clients`, `Core.Middleware`, `HealthChecks.Core`, `Results`.

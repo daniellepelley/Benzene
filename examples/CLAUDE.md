@@ -22,8 +22,10 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
 - **`App/`** — shared handlers/validators/services (above); the reused core.
 - **`Asp/`** — ASP.NET Core host. Also where the Spec UI (`/spec-ui`) and the `spec` endpoint are wired.
 - **`Aws/`** — AWS Lambda host demonstrating multiple event sources (API Gateway + custom authorizer,
-  SNS, SQS, Kafka, EventBridge) in one function.
-- **`Azure/`** — Azure Functions host.
+  SNS, SQS, Kafka, EventBridge) in one function. Also demonstrates **egress** alongside ingress:
+  `PublishOrderCreatedMessageHandler` + `DependenciesBuilder`'s `AddOutboundRouting(...)` wiring —
+  see [docs/clients.md](../docs/clients.md#runnable-example-the-ingressegress-symmetry).
+- **`Azure/`** — Azure Functions host. Same egress demonstration as `Aws/` above, via Service Bus.
 - **`Grpc/`** — gRPC host (+ a client project).
 - **`Kafka/`** — Kafka consumer and producer.
 - **`Google/`** — Google Cloud host (built on `Benzene.AspNet.Core` + `Benzene.Http`).
