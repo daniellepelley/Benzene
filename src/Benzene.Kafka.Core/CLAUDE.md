@@ -92,6 +92,13 @@ producer support. This is one of the "self-hosted worker" startup modes document
   exactly this producer. Document the Event Hubs Kafka endpoint setup alongside
   `docs/cookbooks/managed-identity.md`'s existing consumer-side Kafka/Event Hubs guidance, not as new
   code.
+- **W3C trace context and invocationId (release plan Tier 3.5).** `.UseW3CTraceContext<KafkaRecordContext<TKey,TValue>>()`
+  works: `KafkaMessageHeadersGetter` already read real Confluent.Kafka `Message.Headers`.
+  Separately, `UseKafka(...)` now auto-wires `UseBenzeneInvocation<TKey,TValue>()`
+  (`KafkaMessage/BenzeneInvocationExtensions.cs`) as the first middleware, so `IBenzeneInvocation`
+  resolves inside each record's dispatch (`InvocationId` = `"{topic}-{partition}-{offset}"`,
+  `Platform` = `"Worker"`) - a long-running worker has no outer invocation boundary at all, so this
+  is the only invocation identity available here. No application code changes needed for either fix.
 
 ## When to use this package
 - When building Kafka-based applications

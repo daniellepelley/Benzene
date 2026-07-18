@@ -24,6 +24,7 @@ public static class Extensions
             .AddKafka<TKey, TValue>()
         );
         var middlewarePipelineBuilder = app.Create<KafkaRecordContext<TKey, TValue>>();
+        middlewarePipelineBuilder.UseBenzeneInvocation();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 

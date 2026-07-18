@@ -10,6 +10,17 @@ the Service Bus counterpart of `Benzene.Aws.Sqs`'s `Consumer/` (SQS polled outsi
 process. For Service Bus messages delivered by an Azure Functions trigger, use
 `Benzene.Azure.Function.ServiceBus` instead.
 
+## ⚠️ Unsafe by default: a handler failure result is silently completed, not retried
+`BenzeneServiceBusConfig.AckMode` defaults to `ServiceBusConsumerAckMode.AutoComplete` — a handler
+that returns a failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) without throwing still
+gets its message **completed** (removed from the queue/subscription); only a thrown exception is
+abandoned for redelivery. Set `AckMode = ServiceBusConsumerAckMode.Explicit` to have a failed
+`IMessageResult` abandon the message too (redelivery subject to the entity's own lock
+duration/max-delivery-count/dead-letter settings) — see `ServiceBusConsumerAckMode`'s doc comments
+below. This means Service Bus may redeliver the same message, so the handler needs to be
+idempotent — see [Capability Matrix](../../docs/capability-matrix.md) /
+[Idempotency](../../docs/cookbooks/idempotency.md).
+
 ## Key types/interfaces
 - `BenzeneServiceBusWorker : IBenzeneWorker` - creates a `ServiceBusProcessor` from
   `IServiceBusClientFactory` + `BenzeneServiceBusConfig` and starts it. Unlike the SQS/Kafka

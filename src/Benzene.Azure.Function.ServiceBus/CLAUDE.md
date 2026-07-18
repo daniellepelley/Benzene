@@ -7,6 +7,19 @@ Service Bus message (or batch, if the trigger is configured with `IsBatched = tr
 `[Message("topic")]`-attributed handlers and `.UseMessageHandlers()` topic-based routing work exactly
 as they do for HTTP, Event Hubs, and Kafka.
 
+## ⚠️ Unsafe by default: a handler failure result is silently completed, not retried
+With both `ServiceBusOptions.AckMode` at its default (`AutoComplete`) and `RaiseOnFailureStatus`
+at its default (`false`), a handler that returns a failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`) without throwing is **auto-completed** — the message is
+removed from the queue/subscription and Service Bus never redelivers it. Only a thrown exception
+is retried by default. Fix: set `ServiceBusOptions.AckMode = ServiceBusAckMode.Explicit` (abandons
+a failed message for redelivery) and/or `RaiseOnFailureStatus = true` (escalates it into a thrown
+exception so the whole invocation fails too) — see "True per-message ack" and "Exception/
+failure-status handling" below for the full detail and the trigger configuration `Explicit`
+requires. Either fix means Service Bus may redeliver the same message, so the handler needs to be
+idempotent — see [Capability Matrix](../../docs/capability-matrix.md) and
+[Idempotency](../../docs/cookbooks/idempotency.md).
+
 ## Key types/interfaces
 - `ServiceBusContext` - wraps a single `Azure.Messaging.ServiceBus.ServiceBusReceivedMessage`; a
   plain description of the message only - preset-topic override (see "Important conventions"

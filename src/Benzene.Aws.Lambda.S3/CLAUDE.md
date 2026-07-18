@@ -12,6 +12,18 @@ middleware pipeline as a fire-and-forget, no-response transport.
 > it actually does. Real EventBridge support now lives in the separate
 > `Benzene.Aws.Lambda.EventBridge` package.
 
+## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result is always silently dropped
+`S3Application` is a plain `MiddlewareMultiApplication<S3Event, S3RecordContext>` fan-out — there
+is **no `Options` class** and no equivalent of `Benzene.Aws.Lambda.Sns`'s `RaiseOnFailureStatus`.
+If a handler returns a non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`),
+nothing in this package inspects it — the Lambda invocation always reports success, so the S3
+event notification is considered delivered and is never retried. Only an unhandled exception
+propagating out of the pipeline fails the invocation, which is what lets Lambda's own async-invoke
+retry (2 automatic retries) and configured on-failure destination/DLQ take over — S3 event
+notifications invoke Lambda asynchronously, so this is governed entirely by the function's own
+`MaximumRetryAttempts`/destination configuration, not by anything in this package. If failure
+results need to be retried, have the handler throw for failures that should retry.
+
 ## Key types/interfaces
 
 ### Application & Handler

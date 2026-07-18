@@ -9,6 +9,15 @@ through a Benzene middleware pipeline. This is the Event Hubs counterpart of
 documented in `docs/hosting.md`, where Benzene owns the process. For events delivered by an Azure
 Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 
+## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result never affects checkpointing
+`EventHubConsumerContext.MessageResult` is recorded for diagnostics/middleware only — there is no
+`RaiseOnFailureStatus`-style option here at all. A handler that returns a failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`) without throwing is checkpointed exactly like a success
+once `CheckpointInterval` is reached; only a **thrown exception**, combined with
+`CatchHandlerExceptions = false`, stops the worker before it checkpoints past that event (see
+`CatchHandlerExceptions` below for the redelivery mechanics). If you need a failed result to
+prevent checkpointing, have the handler throw instead of returning a failure `IMessageResult`.
+
 ## Key types/interfaces
 - `BenzeneEventHubWorker : IBenzeneWorker` - wires `ProcessEventAsync`/`ProcessErrorAsync` on an
   `EventProcessorClient` from `IEventProcessorClientFactory` and starts it. No hand-rolled poll
@@ -71,6 +80,13 @@ Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 - `Extensions.UseEventHub(IBenzeneWorkerStartup, config, clientFactory, action)` - the
   `IBenzeneWorkerStartup` wiring, mirroring `UseKafka`/`UseSqs`/`UseServiceBus`; registers
   `AddBenzeneMessage().AddEventHubConsumer()` and adds the worker.
+- **W3C trace context and invocationId (release plan Tier 3.5).** `.UseW3CTraceContext<EventHubConsumerContext>()`
+  works: `EventHubConsumerMessageHeadersGetter` already read real string-typed `EventData.Properties`.
+  Separately, `UseEventHub(...)` now auto-wires `UseBenzeneInvocation()`
+  (`BenzeneInvocationExtensions.cs`) as the first middleware, so `IBenzeneInvocation` resolves
+  inside each event's dispatch (`InvocationId` = the event's service-assigned `SequenceNumber`,
+  `Platform` = `"Worker"`) - a long-running worker has no outer invocation boundary at all, so this
+  is the only invocation identity available here. No application code changes needed for either fix.
 
 ## When to use this package
 - Consuming Event Hubs from a long-running process (console app, container, AKS) instead of an

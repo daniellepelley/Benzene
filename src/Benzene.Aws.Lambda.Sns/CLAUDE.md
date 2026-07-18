@@ -3,6 +3,28 @@
 ## What this package does
 AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda triggers through Benzene's message handler pipeline. Handles SNS message structure, attributes, and notification processing.
 
+## ⚠️ Unsafe-by-default: a handler failure result is silently dropped, not retried
+**`SnsOptions.RaiseOnFailureStatus` defaults to `false`.** If your message handler returns a
+non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`), `SnsApplication`
+still reports the Lambda invocation as **successful** — SNS sees a delivered notification and
+**never retries it**. The message is gone; nothing dead-letters it. This is different from a
+thrown exception, which *does* cascade out of the invocation by default and lets SNS's
+subscription-level retry/redrive policy do its job.
+
+If you want at-least-once/retry-on-failure semantics for business-logic failures too, set:
+```csharp
+app.UseAwsLambda(eventPipeline => eventPipeline
+    .UseSns(snsApp => snsApp.UseMessageHandlers(),
+        options => options.RaiseOnFailureStatus = true));
+```
+This escalates a failure result into a thrown `SnsMessageProcessingException`, so SNS retries it
+the same way it would an unhandled exception. **If you turn this on, your handler must be
+idempotent** — a retried SNS delivery re-runs the same handler with the same message, and SNS
+itself provides no dedup — see the idempotency row in
+[Capability Matrix](../../docs/capability-matrix.md) and [Idempotency](../../docs/cookbooks/idempotency.md).
+Full detail (including the interaction with `CatchExceptions`): `docs/cookbooks/sns-fan-out.md`
+§"Configuring exception and retry behavior with `SnsOptions`" and `docs/message-result.md` §"AWS SNS".
+
 ## Key types/interfaces
 
 ### Application & Handler
@@ -24,6 +46,15 @@ AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda trigger
 ### Other
 - `SnsRegistrations` - Registers SNS services
 - Extension methods for configuration
+
+## W3C trace context and invocationId (release plan Tier 3.5)
+`.UseW3CTraceContext<SnsRecordContext>()` works: `SnsMessageHeadersGetter` already read real SNS
+message attributes. Separately, `UseSns(...)` now auto-wires `UseBenzeneInvocation()`
+(`BenzeneInvocationExtensions.cs`) as the first middleware in the SNS pipeline, so
+`IBenzeneInvocation` resolves inside each record's dispatch (`InvocationId` = the record's SNS
+`MessageId`) - previously this threw/silently came back `null`, because each record is dispatched
+through its own DI scope, disconnected from whatever the outer Lambda invocation populated. No
+application code changes needed for either fix.
 
 ## When to use this package
 - When building Lambda functions triggered by SNS

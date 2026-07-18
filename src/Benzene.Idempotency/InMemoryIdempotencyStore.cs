@@ -40,6 +40,8 @@ public class InMemoryIdempotencyStore : IIdempotencyStore
     /// <inheritdoc />
     public Task<ClaimResult> TryClaimAsync(string key, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         lock (_gate)
         {
             var now = _now();
@@ -61,6 +63,8 @@ public class InMemoryIdempotencyStore : IIdempotencyStore
     /// <inheritdoc />
     public Task CompleteAsync(string key, bool wasSuccessful, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         lock (_gate)
         {
             _entries[key] = new Entry
@@ -76,6 +80,8 @@ public class InMemoryIdempotencyStore : IIdempotencyStore
     /// <inheritdoc />
     public Task ReleaseAsync(string key, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         lock (_gate)
         {
             _entries.Remove(key);

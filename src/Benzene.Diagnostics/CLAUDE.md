@@ -61,26 +61,61 @@ under a debugger/`DEBUG` build), and an `ActivityProcessTimerFactory` as the def
   middleware that attaches `invocationId` (from `IBenzeneInvocation`), `traceId`/`spanId` (from
   `Activity.Current`), `topic`, `transport`, and `handler` to the logging scope, and tags the current
   `Activity` with `benzene.invocationId`. Each key degrades gracefully (simply omitted) when its
-  backing service isn't registered for that pipeline scope — e.g. `invocationId` is omitted inside a
-  per-message SQS/SNS/Kafka sub-pipeline, since `IBenzeneInvocation` isn't wired into those nested DI
-  scopes today. Replaced the AWS-only `WithRequestId()`/`WithApplication()`, which have been removed.
+  backing service isn't registered for that pipeline scope. **Fixed (release plan Tier 3.5,
+  2026-07-18):** `invocationId` used to be omitted inside a per-message SQS/SNS/Kafka/Event Hub
+  sub-pipeline, because each of those transports dispatches every record/event through its own
+  fresh DI scope (`serviceResolverFactory.CreateScope()`), disconnected from whatever
+  `IBenzeneInvocation` an outer Lambda/Functions-invocation-level pipeline populated -
+  `IBenzeneInvocation` is scoped, not ambient, so a fresh scope's accessor was always `null`. Every
+  batch/per-message transport now auto-wires its own `UseBenzeneInvocation()` as the first
+  middleware in its per-message pipeline (no application code changes required), deriving
+  `InvocationId` from that message's own natural identifier: `SqsMessageContext`/
+  `SqsConsumerMessageContext` → the SQS `MessageId`; `SnsRecordContext` → the SNS `MessageId`;
+  `KafkaContext`/`KafkaRecordContext<TKey,TValue>` → `"{topic}-{partition}-{offset}"` (Kafka has no
+  single message-id field); `EventHubConsumerContext` → the event's `SequenceNumber`. See each
+  transport package's own `BenzeneInvocationExtensions.cs` (`Benzene.Aws.Lambda.Sqs`,
+  `Benzene.Aws.Sqs.Consumer`, `Benzene.Aws.Lambda.Sns`, `Benzene.Aws.Lambda.Kafka`,
+  `Benzene.Kafka.Core.KafkaMessage`, `Benzene.Azure.EventHub`, `Benzene.Azure.Function.EventHub`,
+  `Benzene.Azure.Function.Kafka` — the Azure Functions Event Hub/Kafka triggers have the identical
+  `MiddlewareMultiApplication`-per-record scope issue as the AWS Lambda batch transports, fixed the
+  same way). Replaced the AWS-only `WithRequestId()`/`WithApplication()`, which have been removed.
 
 ### W3C Trace Context
 - `UseW3CTraceContext<TContext>()` (`W3CTraceContextExtensions.cs`) - reads `traceparent`/`tracestate`
   (case-insensitively) and starts the pipeline's root `Activity` with the parsed remote context as its
   parent, so traces continue across services instead of each hop starting a new one. Must be the FIRST
   middleware added — everything after it inherits the correct ambient `Activity.Current` parent. Falls
-  back to a normal root span when the header is missing/invalid; never throws. Currently wired for
-  HTTP-based transports only (ASP.NET Core, Azure Functions' ASP.NET-style trigger, API Gateway) —
-  SQS/SNS/Kafka/Event Hub inbound extraction isn't implemented yet. Outbound injection is a separate
-  `WithW3CTraceContext()` `ClientBuilder` decorator in `Benzene.Clients.TraceContext`.
+  back to a normal root span when the header is missing/invalid; never throws.
+  - **It is, and always was, fully generic and transport-agnostic** - the only requirement is that
+    `IMessageHeadersGetter<TContext>` be registered in DI for that context type (the same seam the
+    message-handler dispatch pipeline already uses for headers). "HTTP-only" (as this doc used to
+    claim) described the fact that nobody had wired it into an async transport's pipeline anywhere
+    in the codebase yet, not a limitation of the middleware itself.
+  - **Fixed for real (release plan Tier 3.5, 2026-07-18):** now proven to work end to end on SQS,
+    SNS, Kafka (AWS Lambda, the self-hosted `Benzene.Kafka.Core` worker, and the Azure Functions
+    Kafka trigger), and Event Hub (the self-hosted `Benzene.Azure.EventHub` worker and the Azure
+    Functions Event Hub trigger) - see each transport's `CLAUDE.md`. Two real gaps were found and
+    closed along the way (not just documentation): `Benzene.Azure.Function.Kafka`'s
+    `KafkaMessageHeadersGetter` was a stub that always returned `{}` regardless of what was on the
+    record (confirmed via reflection against the installed
+    `Microsoft.Azure.Functions.Worker.Extensions.Kafka` 4.3.0 that the trigger's bound type
+    genuinely does expose headers - this was a Benzene oversight, not a platform limitation), and
+    `Benzene.Azure.Function.EventHub`'s `EventHubContext` had **no**
+    `IMessageHeadersGetter<EventHubContext>` registered at all (the package had no first-class
+    mappers of its own, only the envelope-routing path). Every other transport's getter was already
+    correct; adding W3C trace context there needed no code change, only the same DI-registration
+    check plus tests proving it.
+  - Outbound injection is a separate `WithW3CTraceContext()`-equivalent - see
+    `Benzene.Clients.TraceContext`'s `W3CTraceContextMiddleware`/`.UseW3CTraceContext()` (the
+    `OutboundContext` overload, opposite direction, no naming collision).
 
 ## When to use this package
 - Add `AddDiagnostics()` to get automatic `Activity` spans per middleware and `UseTimer("name")`
   support, on every platform (AWS, Azure, ASP.NET Core, Worker)
 - Add `UseBenzeneEnrichment()` once per pipeline for portable log/trace enrichment instead of
   hand-composing platform-specific `WithXxx()` log-context extensions
-- Add `UseW3CTraceContext()` as the first middleware on HTTP-based pipelines to continue a caller's
+- Add `UseW3CTraceContext()` as the first middleware on any pipeline (HTTP, SQS, SNS, Kafka, Event
+  Hub - anything with a registered `IMessageHeadersGetter<TContext>`) to continue a caller's
   distributed trace instead of starting a new one per hop
 - Wire `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` against an OTel `TracerProviderBuilder`/
   `MeterProviderBuilder` to actually export what this package produces to a real backend

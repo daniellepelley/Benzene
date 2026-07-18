@@ -24,7 +24,11 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseSqs(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<SqsMessageContext>> action, Action<SqsOptions> configure = null)
     {
         app.Register(x => x.AddSqs());
-        var pipeline = app.CreateMiddlewarePipeline(action);
+        var pipeline = app.CreateMiddlewarePipeline<SqsMessageContext>(builder =>
+        {
+            builder.UseBenzeneInvocation();
+            action(builder);
+        });
         var options = new SqsOptions();
         configure?.Invoke(options);
         return app.Use(resolver => new SqsLambdaHandler(new SqsApplication(pipeline, options), resolver));

@@ -116,21 +116,24 @@ public class RedisIdempotencyStore : IIdempotencyStore
 
     public async Task<ClaimResult> TryClaimAsync(string key, CancellationToken ct = default)
     {
-        // Atomic claim: only succeeds if the key does not already exist.
-        var won = await _db.StringSetAsync(key, "in-progress", _ttl, When.NotExists);
+        // Atomic claim: only succeeds if the key does not already exist. Forward `ct` all the way
+        // to the client call so a caller-side cancellation actually aborts the network round trip
+        // instead of an accepted-but-ignored token (StackExchange.Redis honors it via the
+        // command's async pipeline).
+        var won = await _db.StringSetAsync(key, "in-progress", _ttl, When.NotExists).WaitAsync(ct);
         if (won)
             return ClaimResult.Won();
 
-        var value = await _db.StringGetAsync(key);
+        var value = await _db.StringGetAsync(key).WaitAsync(ct);
         var status = value == "completed" ? IdempotencyStatus.Completed : IdempotencyStatus.InProgress;
         return ClaimResult.AlreadyExists(new IdempotencyRecord(key, status, wasSuccessful: status == IdempotencyStatus.Completed));
     }
 
     public Task CompleteAsync(string key, bool wasSuccessful, CancellationToken ct = default)
-        => _db.StringSetAsync(key, wasSuccessful ? "completed" : "failed", _ttl);
+        => _db.StringSetAsync(key, wasSuccessful ? "completed" : "failed", _ttl).WaitAsync(ct);
 
     public Task ReleaseAsync(string key, CancellationToken ct = default)
-        => _db.KeyDeleteAsync(key);
+        => _db.KeyDeleteAsync(key).WaitAsync(ct);
 }
 ```
 

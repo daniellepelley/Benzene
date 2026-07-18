@@ -315,11 +315,10 @@ public class KafkaFunction
 ```
 
 As with the worker and AWS paths, `[Message("...")]` must match the Kafka topic name literally
-(`KafkaMessageTopicGetter.GetTopic` reads `KafkaEvent.Topic` directly). **Kafka record headers are
-not mapped on this path** — `KafkaMessageHeadersGetter` always returns an empty dictionary today,
-regardless of what the broker sent — so header-based middleware (correlation IDs, W3C trace
-context) won't see anything on Azure's Kafka trigger even though it works on the worker and AWS
-paths above.
+(`KafkaMessageTopicGetter.GetTopic` reads `KafkaEvent.Topic` directly). Kafka record headers **are**
+mapped to Benzene headers on this path too (`KafkaMessageHeadersGetter` reads `KafkaRecord.Headers`,
+UTF-8 decoding each value) — header-based middleware (correlation IDs, W3C trace context via
+`.UseW3CTraceContext<KafkaContext>()`) works the same as on the worker and AWS paths above.
 
 See [Azure Functions Setup](azure-functions.md#kafka) for how this fits alongside HTTP and Event Hubs
 triggers in the same Function App.
@@ -333,8 +332,6 @@ triggers in the same Function App.
 - **`GroupId` collisions in tests** — the worker example generates a random `GroupId` per test run
   (`Guid.NewGuid().ToString()`) to avoid two test runs fighting over the same consumer group's
   offsets; reuse a stable `GroupId` only once you want durable, resumable consumption.
-- **Missing headers on Azure** — see the Azure Functions note above; this is a current gap in
-  `Benzene.Azure.Function.Kafka`, not a broker or configuration issue.
 - **MSK connectivity failures on AWS** — almost always a VPC/security-group issue, not a Benzene
   issue; see [AWS IAM Permissions Reference](aws-iam-permissions.md#kafka-trigger-benzeneawslambdakafka).
 

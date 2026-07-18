@@ -37,6 +37,19 @@ below). Both sit on top of `AWSSDK.SQS`.
   layer and does not wrap the SQS SDK's own transport features.
 
 ## `Consumer/` — standalone polling worker (`SqsConsumer`/`UseSqs` on `IBenzeneWorkerStartup`)
+
+### ⚠️ Unsafe by default: a handler failure result is silently deleted, not retried
+`SqsConsumerOptions.AckMode` defaults to `SqsConsumerAckMode.WholeBatch`. Under that default, a
+message whose handler returns a failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`)
+without throwing is deleted along with the rest of the batch anyway — **only a thrown exception**
+keeps the whole batch on the queue for redelivery. This is a different (and stricter/less safe)
+default than `Benzene.Aws.Lambda.Sqs`'s Lambda-triggered `SqsOptions.BatchFailureMode`, which
+defaults to retrying just the failed records. Set `AckMode = SqsConsumerAckMode.PerMessage` here to
+have a failed `IBenzeneResult` (not just a thrown exception) keep that individual message on the
+queue instead of deleting it with the rest of the batch — see `SqsConsumerAckMode`'s doc comments
+below. Either way a redelivered message means the handler needs to be idempotent — see
+[Capability Matrix](../../docs/capability-matrix.md) / [Idempotency](../../docs/cookbooks/idempotency.md).
+
 Distinct from the message-publishing client above - a long-running worker that polls a queue
 directly (for `Benzene.HostedService`/`Benzene.SelfHost`, not Lambda). `SqsConsumerOptions.AckMode`
 (via `UseSqs(config, clientFactory, action, configure)`'s optional `configure` parameter) controls
@@ -51,3 +64,11 @@ how a poll batch is acknowledged:
 `SqsConsumerMessageContext.MessageResult` (previously a no-op, since deletion never used to depend
 on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
 (`SuccessfulMessages`/`FailedMessages`) that `SqsConsumer` uses to decide what to delete.
+
+### W3C trace context and invocationId (release plan Tier 3.5)
+`.UseW3CTraceContext<SqsConsumerMessageContext>()` works: `SqsConsumerMessageHeadersGetter` already
+read real message attributes. Separately, `UseSqs(...)` now auto-wires `UseBenzeneInvocation()`
+(`Consumer/BenzeneInvocationExtensions.cs`) as the first middleware, so `IBenzeneInvocation`
+resolves inside each message's dispatch (`InvocationId` = the message's SQS `MessageId`, `Platform`
+= `"Worker"`) - a long-running worker has no Lambda-style outer invocation boundary at all, so this
+is the only invocation identity available here. No application code changes needed for either fix.

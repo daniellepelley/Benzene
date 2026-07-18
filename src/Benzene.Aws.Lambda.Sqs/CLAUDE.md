@@ -43,6 +43,16 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 - **Benzene.Aws.Lambda.Core** - AWS Lambda core
 - **Amazon.Lambda.SQSEvents** - SQS event types
 
+## W3C trace context and invocationId (release plan Tier 3.5)
+`.UseW3CTraceContext<SqsMessageContext>()` works: `SqsMessageHeadersGetter` already read real
+message attributes, so a `traceparent` set by an upstream egress client round-trips into the
+pipeline's root `Activity`. Separately, `UseSqs(...)` now auto-wires `UseBenzeneInvocation()` (in
+`BenzeneInvocationExtensions.cs`) as the first middleware in the SQS pipeline, so `IBenzeneInvocation`
+resolves inside each record's dispatch (`InvocationId` = the record's SQS `MessageId`) - previously
+this threw/silently came back `null` (via `UseBenzeneEnrichment`'s `TryGetService`), because each
+record is dispatched through its own DI scope, disconnected from whatever the outer Lambda
+invocation populated. No application code changes needed for either fix.
+
 ## Important conventions
 - Processes SQS messages in batches
 - Message attributes mapped to headers

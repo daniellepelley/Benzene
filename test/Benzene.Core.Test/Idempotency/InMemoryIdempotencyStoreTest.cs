@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Benzene.Idempotency;
 using Xunit;
@@ -79,5 +80,30 @@ public class InMemoryIdempotencyStoreTest
 
         Assert.True((await store.TryClaimAsync("key-a")).Claimed);
         Assert.True((await store.TryClaimAsync("key-b")).Claimed);
+    }
+
+    [Fact]
+    public async Task TryClaim_AlreadyCancelledToken_Throws()
+    {
+        var store = new InMemoryIdempotencyStore();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => store.TryClaimAsync("key-1", cts.Token));
+    }
+
+    [Fact]
+    public async Task CompleteAndRelease_AlreadyCancelledToken_Throw()
+    {
+        var store = new InMemoryIdempotencyStore();
+        await store.TryClaimAsync("key-1");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => store.CompleteAsync("key-1", wasSuccessful: true, cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => store.ReleaseAsync("key-1", cts.Token));
     }
 }
