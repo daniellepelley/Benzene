@@ -1,32 +1,50 @@
 # Benzene.Azure.Function.EventHub
 
 ## What this package does
-Azure Event Hubs integration for Benzene. Provides consumers and producers for Event Hubs, enabling event stream processing through Benzene's message handler pipeline. Supports Azure Functions Event Hub triggers.
+The **Event Hubs trigger** adapter for Benzene's Azure Functions isolated-worker host. It runs a
+triggered batch of `EventData` through the middleware pipeline. This is *consumption* only — it is
+the Functions-trigger counterpart of the self-hosted `Benzene.Azure.EventHub` worker (which owns
+its own `EventProcessorClient`); there is no producer here. For consuming Event Hubs in a
+long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
 
-## Key types/interfaces
+## Two dispatch shapes (both under `Benzene.Azure.Function.EventHub.Function`)
+1. **Fan-out (default), `UseEventHub(...)`** — `EventHubApplication` maps the batch to one
+   `EventHubContext` per event via `MiddlewareMultiApplication` and processes them, transport-tagged
+   `"event-hub"`. Inside it, `UseBenzeneMessage(...)` routes an event whose body deserializes into a
+   **Benzene message envelope** (`{"topic","headers","body"}`) to the direct-message pipeline via
+   `BenzeneMessageEventHubHandler` (a `MiddlewareRouter` that defers a non-envelope body to the next
+   middleware rather than failing). This is the routing path the getting-started guide shows.
+2. **Fan-in (streaming), `UseEventHubStream(...)`** — `StreamingExtensions` presents the whole
+   batch as one `StreamContext<EventData>` (from `Benzene.Core.Middleware`'s streaming engine), for
+   windowing/aggregation over the batch. Batch-level only: the Functions Event Hub trigger
+   checkpoints the whole batch on successful return, so there's no per-event checkpoint control
+   here (the self-hosted `Benzene.Azure.EventHub` worker is where `CheckpointInterval` lives). This
+   is the Azure sibling of AWS's `Benzene.Aws.Lambda.Kinesis`.
 
-### Event Hub Integration
-- Event Hub consumer implementation
-- Event Hub producer implementation
-- Event Hub context and adapters
-- Message handling for Event Hub events
+## Key types
+- `EventHubContext` — wraps a single `Azure.Messaging.EventHubs.EventData` (created via
+  `CreateInstance`); transport shape only.
+- `EventHubApplication : EntryPointMiddlewareApplication<EventData[]>` — the fan-out entry point.
+- `BenzeneMessageEventHubHandler` — the envelope router used by `UseBenzeneMessage`.
+- `Extensions.HandleEventHub(this IAzureFunctionApp, params EventData[])` — the dispatch helper the
+  `[EventHubTrigger]` function calls. `DependencyInjectionExtensions.UseEventHub(...)` and
+  `StreamingExtensions.UseEventHubStream(...)` are the two wiring extensions (each on both
+  `IAzureFunctionAppBuilder` and the platform-neutral `IBenzeneApplicationBuilder`).
 
 ## When to use this package
-- When consuming events from Azure Event Hubs
-- For event stream processing in Azure
-- With Azure Functions Event Hub triggers
-- For real-time analytics and event sourcing
+- Consuming an Event Hub via an Azure Functions Event Hub trigger. Add
+  `Microsoft.Azure.Functions.Worker.Extensions.EventHubs` (6.5.0) directly to your function app so
+  the trigger registers (see `docs/azure-functions.md` → Event Hubs, and the partitioning/
+  checkpointing cookbook `docs/cookbooks/event-hub-processing.md`).
 
 ## Dependencies on other Benzene packages
-- **Benzene.Abstractions** - Core abstractions
-- **Benzene.Abstractions.Middleware** - Middleware abstractions
-- **Benzene.Core.MessageHandlers** - Message handler infrastructure
-- **Benzene.Azure.Function.Core** - Azure core utilities
-- **Azure.Messaging.EventHubs** - Event Hubs SDK
+- **Benzene.Azure.Function.Core** — the host/app builder.
+- **Benzene.Core.MessageHandlers** — routing, `BenzeneMessageApplication`, and (transitively via
+  `Benzene.Core.Middleware`) the `StreamContext`/streaming engine used by `UseEventHubStream`.
+- **Azure.Messaging.EventHubs.Processor** — the `EventData` type.
 
 ## Important conventions
-- Supports batch processing of events
-- Partition key extracted from context
-- Event metadata available in context
-- Checkpointing supported
-- Consumer groups for scaling
+- Consumption-side only; no producer. Envelope routing (`UseBenzeneMessage`) mirrors the Queue
+  Storage adapter; the Kafka adapter has no envelope bridge (its records route by native topic).
+- Coverage: `EventHubPipelineTest.cs` (fan-out + envelope routing). Streaming shares the engine
+  tests in `Core/Middleware/Streaming/`.
