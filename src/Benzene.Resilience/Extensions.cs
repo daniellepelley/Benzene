@@ -9,11 +9,13 @@ public static class Extensions
         int numberOfRetries = 3,
         TimeSpan? initialDelay = null,
         double backoffFactor = 2.0,
+        TimeSpan? maxDelay = null,
         Func<Exception, bool>? shouldRetry = null,
         Func<TContext, bool>? shouldRetryContext = null,
+        Func<TimeSpan, TimeSpan>? jitter = null,
         Func<TimeSpan, Task>? delay = null)
     {
         return app.Use(_ => new RetryMiddleware<TContext>(
-            numberOfRetries, initialDelay, backoffFactor, shouldRetry, shouldRetryContext, delay));
+            numberOfRetries, initialDelay, backoffFactor, maxDelay, shouldRetry, shouldRetryContext, jitter, delay));
     }
 }

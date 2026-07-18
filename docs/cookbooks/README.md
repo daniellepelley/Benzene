@@ -44,7 +44,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Integration Testing Lambda Functions](testing-lambda-functions.md) - Test Lambda handlers end-to-end
 - [Mocking External Dependencies](mocking-dependencies.md) - Test message handlers in isolation
 - [Contract Testing (schema compatibility)](contract-testing.md) - Catch breaking contract changes before they reach consumers, at runtime (schema-hash drift check) and in CI (backward-compatibility gate)
-- [Schema Registry Integration](schema-registry.md) - Register event payload schemas centrally, frame messages with the Confluent wire format for cross-consumer interop, and gate schema evolution at deploy time (with copy-paste Confluent / Azure adapters)
+- [Schema Registry Integration](schema-registry.md) - Register event payload schemas centrally, frame messages with the Confluent wire format for cross-consumer interop, and gate deploys with a byte-identical compatibility check (structural evolution needs a real registry server or your own checker; with copy-paste Confluent / Azure adapters)
 - [Contract Testing (conformance)](../specification/porting-guide.md) - Verify message contracts between services via the conformance-testing approach
 
 ### Orchestration
@@ -55,7 +55,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [Idempotency (de-duplicating redelivered messages)](idempotency.md) - Ensure a handler's side effect runs at most once per message on at-least-once transports (SQS, Service Bus, Event Hubs, Kafka), with a pluggable store
 - [Multi-Tenancy](multi-tenancy.md) - Attribute every request to a tenant and isolate its data/cache using a scoped `TenantHolder` set by a resolver middleware (claim / header / subdomain), with a "tenant required" guard
 - Rate Limiting *(planned)*
-- Circuit Breaker Pattern *(planned - `Benzene.Resilience` currently implements retry-with-backoff only; see [Resilience](../resilience.md))*
+- [Polly Resilience Pipelines (circuit breaker, timeout, bulkhead)](polly-resilience.md) - `Benzene.Resilience` implements retry-with-backoff only; bring your own Polly `ResiliencePipeline` into a ~15-line middleware for circuit breaker/timeout/bulkhead — no separate NuGet package needed
 - [Request Authentication & Authorization](auth-patterns.md) - OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
 
 ## Cookbook Structure

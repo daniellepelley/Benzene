@@ -9,6 +9,17 @@ work as with every other transport. This is Kafka-over-Event-Hubs specifically; 
 AWS Kafka use `Benzene.Aws.Lambda.Kafka`, and for a self-hosted (non-Functions) Kafka consumer use
 `Benzene.Kafka.Core`.
 
+## ⚠️ Unsafe by default: a handler failure result is silently accepted, not retried
+`KafkaOptions.RaiseOnFailureStatus` defaults to `false`. A handler that returns a failure result
+(e.g. `BenzeneResult.ServiceUnavailable(...)`) without throwing does not fail the invocation — the
+Functions host's retry notices nothing, and there is no partial-batch-failure mechanism for this
+trigger to fall back on either (see "Key types" below). Only a thrown exception is retried by
+default. Set `RaiseOnFailureStatus = true` to escalate a failure result into a thrown
+`KafkaMessageProcessingException` if you want it retried too — this means a redelivered record can
+be reprocessed, so the handler needs to be idempotent (see
+[Capability Matrix](../../docs/capability-matrix.md) /
+[Idempotency](../../docs/cookbooks/idempotency.md)).
+
 ## Key types
 - `KafkaContext : IHasMessageResult` — wraps a single `KafkaRecord`; records the handler outcome on
   `MessageResult`.

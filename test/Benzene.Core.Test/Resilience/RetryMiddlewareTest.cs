@@ -183,4 +183,98 @@ public class RetryMiddlewareTest
             },
             recordedDelays);
     }
+
+    [Fact]
+    public async Task HandleAsync_MaxDelay_CapsTheActualSleepButNotTheUnderlyingGrowth()
+    {
+        var recordedDelays = new List<TimeSpan>();
+        var middleware = new RetryMiddleware<object>(
+            numberOfRetries: 3,
+            initialDelay: TimeSpan.FromMilliseconds(10),
+            backoffFactor: 3.0,
+            maxDelay: TimeSpan.FromMilliseconds(50),
+            delay: delay =>
+            {
+                recordedDelays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.HandleAsync(new object(), () =>
+            throw new InvalidOperationException("always fails")));
+
+        // Uncapped growth would be 10ms, 30ms, 90ms - the third attempt is capped at 50ms.
+        Assert.Equal(
+            new[]
+            {
+                TimeSpan.FromMilliseconds(10),
+                TimeSpan.FromMilliseconds(30),
+                TimeSpan.FromMilliseconds(50),
+            },
+            recordedDelays);
+    }
+
+    [Fact]
+    public async Task HandleAsync_Jitter_AppliedToTheCappedDelayBeforeSleeping()
+    {
+        var recordedDelays = new List<TimeSpan>();
+        var middleware = new RetryMiddleware<object>(
+            numberOfRetries: 2,
+            initialDelay: TimeSpan.FromMilliseconds(10),
+            backoffFactor: 2.0,
+            maxDelay: TimeSpan.FromMilliseconds(15),
+            jitter: delay => delay + TimeSpan.FromMilliseconds(1),
+            delay: delay =>
+            {
+                recordedDelays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.HandleAsync(new object(), () =>
+            throw new InvalidOperationException("always fails")));
+
+        // Uncapped/unjittered growth would be 10ms, 20ms; capped at 15ms, then +1ms jitter.
+        Assert.Equal(
+            new[]
+            {
+                TimeSpan.FromMilliseconds(11),
+                TimeSpan.FromMilliseconds(16),
+            },
+            recordedDelays);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoJitterOrMaxDelaySpecified_BehavesExactlyAsBefore()
+    {
+        var recordedDelays = new List<TimeSpan>();
+        var middleware = new RetryMiddleware<object>(
+            numberOfRetries: 2,
+            initialDelay: TimeSpan.FromMilliseconds(10),
+            backoffFactor: 2.0,
+            delay: delay =>
+            {
+                recordedDelays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.HandleAsync(new object(), () =>
+            throw new InvalidOperationException("always fails")));
+
+        Assert.Equal(
+            new[] { TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20) },
+            recordedDelays);
+    }
+
+    [Fact]
+    public void FullJitter_ReturnsADurationBetweenZeroAndTheInputDelay()
+    {
+        var jitter = RetryMiddleware.FullJitter(new Random(42));
+        var input = TimeSpan.FromMilliseconds(100);
+
+        for (var i = 0; i < 20; i++)
+        {
+            var result = jitter(input);
+            Assert.True(result >= TimeSpan.Zero);
+            Assert.True(result <= input);
+        }
+    }
 }

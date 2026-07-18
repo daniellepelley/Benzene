@@ -37,6 +37,19 @@ below). Both sit on top of `AWSSDK.SQS`.
   layer and does not wrap the SQS SDK's own transport features.
 
 ## `Consumer/` — standalone polling worker (`SqsConsumer`/`UseSqs` on `IBenzeneWorkerStartup`)
+
+### ⚠️ Unsafe by default: a handler failure result is silently deleted, not retried
+`SqsConsumerOptions.AckMode` defaults to `SqsConsumerAckMode.WholeBatch`. Under that default, a
+message whose handler returns a failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`)
+without throwing is deleted along with the rest of the batch anyway — **only a thrown exception**
+keeps the whole batch on the queue for redelivery. This is a different (and stricter/less safe)
+default than `Benzene.Aws.Lambda.Sqs`'s Lambda-triggered `SqsOptions.BatchFailureMode`, which
+defaults to retrying just the failed records. Set `AckMode = SqsConsumerAckMode.PerMessage` here to
+have a failed `IBenzeneResult` (not just a thrown exception) keep that individual message on the
+queue instead of deleting it with the rest of the batch — see `SqsConsumerAckMode`'s doc comments
+below. Either way a redelivered message means the handler needs to be idempotent — see
+[Capability Matrix](../../docs/capability-matrix.md) / [Idempotency](../../docs/cookbooks/idempotency.md).
+
 Distinct from the message-publishing client above - a long-running worker that polls a queue
 directly (for `Benzene.HostedService`/`Benzene.SelfHost`, not Lambda). `SqsConsumerOptions.AckMode`
 (via `UseSqs(config, clientFactory, action, configure)`'s optional `configure` parameter) controls

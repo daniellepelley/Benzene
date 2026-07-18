@@ -146,12 +146,18 @@ which can flip a batch to whole-batch failure semantics if a single record fails
 SNS delivers one notification per Lambda invocation rather than a batch, so there's no per-record
 acknowledgement API to report back to — `SnsMessageHandlerResultSetter` records the result
 onto the context's `MessageResult`, and by default retry behavior for SNS is governed by whether the
-Lambda invocation itself throws, not by the `IBenzeneResult.Status`. Both halves of that are
-configurable via `Benzene.Aws.Lambda.Sns`'s `SnsOptions`: `CatchExceptions` (default `false`)
-controls whether a thrown exception cascades to fail the invocation (triggering SNS's subscription
-retry policy) or is caught and logged instead, and `RaiseOnFailureStatus` (default `false`) controls
-whether a non-exception failure result is escalated into a thrown exception so SNS retries it too —
-see [SNS Fan-Out Pattern](cookbooks/sns-fan-out.md#configuring-exception-and-retry-behavior-with-snsoptions).
+Lambda invocation itself throws, not by the `IBenzeneResult.Status`. **This means a handler that
+returns a failure result (`IsSuccessful == false`) without throwing is, by default, silently
+accepted — SNS considers the notification delivered and never retries it.** Both halves of that
+behavior are configurable via `Benzene.Aws.Lambda.Sns`'s `SnsOptions`: `CatchExceptions` (default
+`false`) controls whether a thrown exception cascades to fail the invocation (triggering SNS's
+subscription retry policy) or is caught and logged instead, and `RaiseOnFailureStatus` (default
+`false`) controls whether a non-exception failure result is escalated into a thrown exception so
+SNS retries it too — see
+[SNS Fan-Out Pattern](cookbooks/sns-fan-out.md#configuring-exception-and-retry-behavior-with-snsoptions).
+Turning `RaiseOnFailureStatus` on means SNS may redeliver the same message, so the handler needs to
+be idempotent — see the idempotency row in [Capability Matrix](capability-matrix.md) and
+[Idempotency](cookbooks/idempotency.md).
 
 ## See also
 

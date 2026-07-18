@@ -233,6 +233,12 @@ public class TableSagaStateStore : ISagaStateStore
 - **No two-phase commit, no distributed locks.** That's the whole point of the saga pattern — it
   trades atomic isolation for compensations, which is what lets it span services that share no
   transaction.
+- **No crash-durable long-running orchestration.** If you need a workflow that survives a process
+  restart mid-flight, resumes automatically, or waits on a human for hours/days, that's a different
+  problem than what `Benzene.Saga` solves — reach for a real durable orchestrator instead: AWS Step
+  Functions, Azure Durable Functions, Temporal, or similar. `Benzene.Clients.Aws.StepFunctions`
+  ships an outbound `StepFunctionsClient` so a handler can *start* a Step Functions execution, but
+  running and resuming that workflow is Step Functions' job, not Benzene's.
 
 ## Testing
 

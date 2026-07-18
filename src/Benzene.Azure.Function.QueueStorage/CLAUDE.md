@@ -6,6 +6,15 @@ worker): delivers a queue message to a Benzene middleware pipeline. The Azure co
 `Benzene.Aws.Lambda.Sqs` in spirit, but structurally closer to `Benzene.Azure.Function.EventHub` —
 see "Routing" below for why.
 
+## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result is always silently dropped
+There is no `Options` class here (unlike `Benzene.Aws.Lambda.Sqs`, whose `SqsOptions.BatchFailureMode`
+defaults to retrying failed records). If a handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), nothing in this package inspects it — the message is
+deleted like any success. Queue Storage's own poison-queue/`maxDequeueCount` machinery (see
+"Failure handling" below) only ever sees an **unhandled exception**, never a returned failure
+result — so a handler that "fails gracefully" via `IBenzeneResult` instead of throwing gets none of
+that retry/poison-queue protection.
+
 ## Zero dependencies — deliberately
 References only `Benzene.Azure.Function.Core` + `Benzene.Core.MessageHandlers` — no storage SDK,
 no Functions extension package (same approach as `Benzene.Azure.Function.CosmosDb` and

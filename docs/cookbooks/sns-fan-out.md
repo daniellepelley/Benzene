@@ -10,6 +10,15 @@ You have one event (e.g. "order created") that multiple, independently-deployed 
 - Wiring an SNS-triggered Lambda to Benzene's message handler pipeline with `Benzene.Aws.Lambda.Sns`
 - Subscribing multiple Lambda functions to the same SNS topic (including how much of this Benzene's Terraform code generator actually automates, and how much is plain AWS configuration)
 
+> **A handler failure result is silently dropped by default.** If a subscriber's handler returns
+> a non-exception failure (e.g. `BenzeneResult.ServiceUnavailable(...)`) instead of throwing,
+> `SnsOptions.RaiseOnFailureStatus` defaults to `false` and the Lambda invocation reports success —
+> SNS never retries that notification, and there's no DLQ for it either. See
+> ["Configuring exception and retry behavior with `SnsOptions`"](#configuring-exception-and-retry-behavior-with-snsoptions)
+> below to opt into retry-on-failure, and note it requires an idempotent handler (SNS redelivery
+> has no dedup of its own) — see [Capability Matrix](../capability-matrix.md) and
+> [Idempotency](idempotency.md).
+
 ## Prerequisites
 
 - An SNS topic (or the ARN of one you'll create alongside your Lambdas)

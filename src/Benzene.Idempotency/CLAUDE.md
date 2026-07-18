@@ -90,6 +90,18 @@ default header/body-hash strategy (resolving the transport's `IMessageHeadersGet
 - Engine is transport-agnostic; persistence is pluggable (mirrors how `Benzene.Saga` keeps state
   storage out of the engine). Do not bake in a specific database.
 - A custom store's `TryClaimAsync` MUST be atomic — the whole guarantee rests on it.
+- `TryClaimAsync`/`CompleteAsync`/`ReleaseAsync` all take a `CancellationToken`. `InMemoryIdempotencyStore`
+  has no downstream I/O to cancel, but still honors it (`ThrowIfCancellationRequested()` before taking
+  the lock) rather than silently ignoring an already-cancelled caller. A custom store backed by real
+  network I/O (Redis, DynamoDB) MUST forward the token to the underlying client call — see the Redis
+  example in `docs/cookbooks/idempotency.md` — so a caller-side cancellation actually aborts the round
+  trip instead of the token being accepted-but-ignored.
+- `IdempotencyMiddleware<TContext>.HandleAsync` itself has no `CancellationToken` to forward: it
+  implements `IMiddleware<TContext>.HandleAsync(TContext, Func<Task>)`, and that pipeline-wide
+  interface carries no cancellation token (a framework-wide characteristic, not specific to this
+  package — see `Benzene.Abstractions.Middleware/CLAUDE.md`). The middleware therefore always calls
+  the store with the default token; a store that needs cancellation (e.g. to bound a slow network
+  call) should apply its own timeout/cancellation internally rather than expect one from the caller.
 
 ## Tests
 - `test/Benzene.Core.Test/Idempotency/InMemoryIdempotencyStoreTest.cs` — store semantics (claim wins

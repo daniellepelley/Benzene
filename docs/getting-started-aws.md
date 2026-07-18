@@ -302,6 +302,11 @@ attribute (or the SNS topic ARN, depending on delivery configuration) and routed
 matching message handler, same as every other transport. There is no response to write back —
 SNS delivery is fire-and-forget.
 
+**Unsafe by default:** a handler that returns a failure result (rather than throwing) is silently
+accepted — the invocation reports success and SNS never retries it. Set `SnsOptions.RaiseOnFailureStatus
+= true` if you want failure results retried too (requires an idempotent handler, since SNS
+redelivery has no dedup) — see [SNS Fan-Out Pattern](cookbooks/sns-fan-out.md#configuring-exception-and-retry-behavior-with-snsoptions).
+
 ### EventBridge
 
 ```csharp

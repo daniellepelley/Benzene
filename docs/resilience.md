@@ -66,8 +66,10 @@ With the defaults (`numberOfRetries: 3`, `initialDelay: 200ms`, `backoffFactor: 
 | `numberOfRetries` | `3` | Number of *additional* attempts after the first. Total possible invocations of `next()` is `numberOfRetries + 1`. |
 | `initialDelay` | `TimeSpan.FromMilliseconds(200)` | Delay before the *first* retry. |
 | `backoffFactor` | `2.0` | Multiplier applied to the delay after each retry (exponential backoff). `1.0` gives a constant delay; `1` retry has no effect on backoff since there's nothing after it. |
+| `maxDelay` | `null` (uncapped) | `TimeSpan?` — caps the actual sleep each attempt. The exponential growth used to compute the *next* attempt's delay is left uncapped, so later attempts still compound off the true curve — only the sleep is capped, matching AWS's documented "full jitter" algorithm (`sleep = random(0, min(cap, base * factor^attempt))`). |
 | `shouldRetry` | retry everything except `OperationCanceledException` | `Func<Exception, bool>` — called when `next()` throws, while attempts remain. Return `false` to let a specific exception propagate immediately without retrying. |
 | `shouldRetryContext` | `_ => false` (never) | `Func<TContext, bool>` — called after `next()` **completes successfully** (no exception), while attempts remain. Return `true` to retry anyway based on state in `TContext` (e.g. a result object indicating a soft failure). |
+| `jitter` | `null` (no jitter — identity function) | `Func<TimeSpan, TimeSpan>` — transforms the capped delay into the actual sleep. `RetryMiddleware.FullJitter()` (static, on the non-generic `RetryMiddleware` class) is a ready-made "full jitter" implementation (`random(0, delay)`) that spreads out retries from many callers that backed off simultaneously, instead of them all retrying in lockstep. |
 | `delay` | `Task.Delay` | `Func<TimeSpan, Task>` — the actual wait between attempts. Overriding this (e.g. to a no-op) is how the package's own tests run retry scenarios instantly — see `test/Benzene.Core.Test/Resilience/RetryMiddlewareTest.cs`. |
 
 Retry accounting is shared across both failure modes: once `numberOfRetries` attempts have been used up (whether from thrown exceptions, a non-satisfied `shouldRetryContext`, or a mix of both), the middleware stops — an exhausted exception-based retry rethrows the last exception; an exhausted context-based retry simply returns (no exception to throw).
@@ -107,6 +109,25 @@ app.UseRetry<MyMessageContext>(
 
 Delays for this configuration would be 50ms, 150ms, 450ms, 1350ms, 4050ms across the five retries.
 
+### Capping delay and adding jitter
+
+For a service with many concurrent callers that might all back off in lockstep (a "thundering herd"
+retrying at the same moment), cap the maximum sleep and randomize it:
+
+```csharp
+app.UseRetry<MyMessageContext>(
+    numberOfRetries: 5,
+    initialDelay: TimeSpan.FromMilliseconds(100),
+    backoffFactor: 2.0,
+    maxDelay: TimeSpan.FromSeconds(10),
+    jitter: RetryMiddleware.FullJitter());
+```
+
+Uncapped growth would reach 100ms, 200ms, 400ms, 800ms, 1600ms — none of which exceed the 10s cap in
+this example, so `maxDelay` only matters once the exponential curve would otherwise exceed it (e.g.
+with more retries or a larger `backoffFactor`). `FullJitter()` then randomizes each (possibly capped)
+delay to somewhere between zero and that value, rather than sleeping the exact computed duration.
+
 ### Testing pipelines that use `UseRetry`
 
 Pass a no-op `delay` function to avoid real waits in tests, as `RetryMiddlewareTest` does:
@@ -131,7 +152,10 @@ This is the default `shouldRetry` behavior — cancellation is treated as intent
 Check whether you passed a `shouldRetryContext` predicate — if your context always satisfies it (e.g. a bug in the predicate, or a result field that's never populated the way you expect), the middleware will keep retrying successful, non-throwing calls until `numberOfRetries` is exhausted, then return normally without an exception (so the failure may not be obvious from a stack trace).
 
 **I need a circuit breaker / timeout / bulkhead, not just retry.**
-Not currently implemented in `Benzene.Resilience`. You'd need to bring your own (e.g. wrap the relevant middleware call with Polly directly, or write a custom `IMiddleware<TContext>`) until such a middleware exists in this package.
+Not implemented in `Benzene.Resilience` — deliberately (see the boundary note at the top of this
+page). Bring your own Polly `ResiliencePipeline` into a small middleware — see
+[Polly Resilience Pipelines](cookbooks/polly-resilience.md) for the ~15-line integration, no separate
+package needed.
 
 ## See Also
 

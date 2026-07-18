@@ -9,6 +9,15 @@ through a Benzene middleware pipeline. This is the Event Hubs counterpart of
 documented in `docs/hosting.md`, where Benzene owns the process. For events delivered by an Azure
 Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 
+## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result never affects checkpointing
+`EventHubConsumerContext.MessageResult` is recorded for diagnostics/middleware only — there is no
+`RaiseOnFailureStatus`-style option here at all. A handler that returns a failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`) without throwing is checkpointed exactly like a success
+once `CheckpointInterval` is reached; only a **thrown exception**, combined with
+`CatchHandlerExceptions = false`, stops the worker before it checkpoints past that event (see
+`CatchHandlerExceptions` below for the redelivery mechanics). If you need a failed result to
+prevent checkpointing, have the handler throw instead of returning a failure `IMessageResult`.
+
 ## Key types/interfaces
 - `BenzeneEventHubWorker : IBenzeneWorker` - wires `ProcessEventAsync`/`ProcessErrorAsync` on an
   `EventProcessorClient` from `IEventProcessorClientFactory` and starts it. No hand-rolled poll
