@@ -56,6 +56,10 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   document root → a relative fetch of `manifest.json` (so the plain embedded page works unmodified
   when copied next to the aggregator's output, with no query param or attribute needed) → embedded
   sample. Theme-aware (light/dark), with a "Load manifest" dialog.
+- After every manifest load, also fetches `topics.json` (the aggregator's cross-service topic
+  catalog) via the same `resolveUrl()` precedence and renders it as a table (topic, domain-vs-utility
+  badge, owning-service chips, HTTP mappings) with a "show utilities" toggle that hides the reserved
+  Benzene topics by default. Missing `topics.json` hides the section silently, same as topology.
 - After every manifest load, also fetches `topology.json` via the same `resolveUrl()` precedence
   (relative to `manifestUrl`) and renders it as a sortable table (client, server, source badge,
   req/min, error rate, p50/p95/p99 latency) below the service list. Any fetch failure - 404,

@@ -49,6 +49,10 @@ and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-ho
   server-side: no `messageEndpoint`, no panel — the page degrades to the read-only viewer.
 - Loads a spec from, in precedence order: `?url=` query param → `data-spec-url` on the document root
   → embedded sample. Theme-aware (light/dark), with a search filter and a "Load spec" dialog.
+- **Reserved utility topics** (`reserved: true` in the `benzene` spec — see `Benzene.Schema.OpenApi`'s
+  `ReservedTopics`) are split out of the main "Message topics" list into a collapsed, labelled
+  "Benzene utilities" panel (with a Utilities stat), so the service's domain contract stays the
+  focus while its Cloud Service Profile endpoints stay one click away.
 
 ## When to use this package
 - To give a running Benzene service a browsable spec page, alongside its `spec` endpoint.

@@ -116,8 +116,16 @@ recover, then leave it off for normal incremental deploys.
    returns `{ "discovered": 3 }` once it has found the three `benzene`-tagged Lambdas.
 3. **Open the Mesh UI** (`mesh_ui_url`) — the catalog of the three services the mesh **discovered by
    itself** (no `mesh.json`), each interrogated by direct Lambda-Invoke, with health and dependencies.
+   Below the service list, the **Topics** table is the cross-service catalog (every topic across the
+   platform → which service owns it, its HTTP mapping, domain vs utility), with a **show utilities**
+   toggle that hides the reserved Benzene endpoints by default.
+4. **Open a service's Spec UI** and note the **Benzene utilities** panel — the reserved
+   `spec`/`health`/`mesh` endpoints are collapsed out of the service's domain topics.
 
 That's the end-to-end test: services on one end, the self-discovering mesh on the other.
+
+The `POST $mesh_refresh_url` endpoint returns **201 Created** (a pass creates/refreshes the catalog
+artifacts) with `{ "discovered": N }`.
 
 ## How discovery is scoped
 

@@ -72,6 +72,14 @@ already runs, not a bespoke standalone tool.
   deployment that never wires this up has no write surface at all). A reporter that isn't colocated
   posts here via `Benzene.Mesh.Reporting.HttpMeshReportPublisher` instead of writing directly.
 
+## Aggregated topic catalog (`topics.json`)
+Alongside `manifest.json`/`services/{name}.json`, each run also publishes `topics.json`
+(`MeshTopicCatalog` in `Benzene.Mesh.Contracts`): every distinct topic across the mesh → which
+service(s) expose it, its HTTP mappings, and a `reserved` (domain-vs-utility) flag lifted from each
+service's `benzene` spec `requests[].reserved`. Parsing is best-effort per service — a
+missing/unparseable spec contributes no topics and never fails the run. `Benzene.Mesh.Ui` renders it
+as a cross-service topic table with a "show utilities" toggle.
+
 ## Breaking change (pre-1.0, flagged per repo convention)
 `MeshAggregator`'s constructor changed from `(HttpClient httpClient, IMeshArtifactStore store,
 Func<DateTimeOffset>? clock = null)` to `(IEnumerable<IMeshServiceSource> sources, IMeshArtifactStore

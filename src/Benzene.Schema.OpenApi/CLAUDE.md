@@ -98,6 +98,12 @@ for the `benzene` contract.
 ## Important conventions
 - The `spec` topic is served like any other message handler; the default format is `benzene`, output
   is JSON unless `Format` is `yaml`.
+- **Reserved utility topics** (`ReservedTopics`): the Cloud Service Profile's operational topics
+  (`spec`/`healthcheck`/`liveness`/`readiness`/`mesh`/`invoke`/`report`) are flagged on each
+  `benzene`-spec `RequestResponse` as `reserved: true` (emitted only when true, read back via
+  `JsonProperty`). Consumers (`Benzene.Spec.Ui`, `Benzene.Mesh.Aggregator`) use it to separate a
+  service's domain topics from its Benzene utility endpoints. Matched by default topic id — a
+  renamed reserved topic isn't auto-flagged (it's a presentation aid, not a security boundary).
 - Schemas are generated from handler request/response types and keyed by type name; validation
   constraints are merged in only when an `IValidationSchemaBuilder` is registered.
 - OpenAPI output is version 3.0; AsyncAPI output is 2.0.
