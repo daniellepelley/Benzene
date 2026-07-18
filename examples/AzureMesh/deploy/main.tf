@@ -12,6 +12,13 @@ terraform {
 
 provider "azurerm" {
   features {}
+
+  # Don't let the provider auto-register the entire catalog of Azure resource providers on every
+  # apply. That mass-registration (a) touches namespaces this stack never uses (Microsoft.Kusto,
+  # etc.) and (b) is prone to transient "409 ConflictingConcurrentWriteNotAllowed" failures that
+  # abort the whole apply. The workflow explicitly registers the handful this stack actually needs
+  # (ContainerRegistry, Storage, Web, ManagedIdentity) before running Terraform.
+  resource_provider_registrations = "none"
 }
 
 data "azurerm_client_config" "current" {}
