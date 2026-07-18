@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Shared\Benzene.Examples.AwsMesh.Shared.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />

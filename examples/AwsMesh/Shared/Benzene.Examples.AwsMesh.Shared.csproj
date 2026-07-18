@@ -4,29 +4,28 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <OutputType>Exe</OutputType>
-    <AssemblyName>Benzene.Examples.AwsMesh.Orders</AssemblyName>
-    <RootNamespace>Benzene.Examples.AwsMesh.Orders</RootNamespace>
-    <!-- .NET 10 has no managed Lambda runtime; deploy self-contained on provided.al2023. -->
-    <AWSProjectType>Lambda</AWSProjectType>
-    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <!-- provided.al2023 ships no libicu; run globalization-invariant so the apphost starts. -->
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>Benzene.Examples.AwsMesh.Shared</AssemblyName>
+    <RootNamespace>Benzene.Examples.AwsMesh.Shared</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.10.0" />
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.3.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared\Benzene.Examples.AwsMesh.Shared.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.EventBridge\Benzene.Aws.Lambda.EventBridge.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sns\Benzene.Aws.Lambda.Sns.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Spec.Ui\Benzene.Spec.Ui.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
   </ItemGroup>
 
