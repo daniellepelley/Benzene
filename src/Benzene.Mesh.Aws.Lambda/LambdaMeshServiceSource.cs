@@ -32,11 +32,24 @@ public class LambdaMeshServiceSource : IMeshServiceSource
     private const string SpecTopic = "spec";
     private const string HealthTopic = "healthcheck";
 
-    private readonly IAwsLambdaClient _client;
+    private readonly Lazy<IAwsLambdaClient> _client;
 
     /// <summary>Initializes a new instance of the <see cref="LambdaMeshServiceSource"/> class.</summary>
     /// <param name="client">The client used to invoke each service's Lambda function.</param>
     public LambdaMeshServiceSource(IAwsLambdaClient client)
+        : this(new Lazy<IAwsLambdaClient>(() => client))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LambdaMeshServiceSource"/> class with a lazily-built
+    /// client. The client is only constructed the first time a Lambda-sourced service is actually fetched,
+    /// so simply registering this source (which <see cref="MeshAggregator"/> resolves eagerly alongside
+    /// every other <see cref="IMeshServiceSource"/>) never constructs an <c>AmazonLambdaClient</c> - a
+    /// pure-HTTP mesh deployment therefore doesn't need AWS region/credentials configured just to start.
+    /// </summary>
+    /// <param name="client">A lazy handle to the client used to invoke each service's Lambda function.</param>
+    public LambdaMeshServiceSource(Lazy<IAwsLambdaClient> client)
     {
         _client = client;
     }
@@ -62,7 +75,7 @@ public class LambdaMeshServiceSource : IMeshServiceSource
         // honored from the caller's point of view, even though the underlying Invoke itself can't
         // be aborted mid-flight (the same limitation any fire-and-await network call has once the
         // request is already in flight).
-        var response = await _client
+        var response = await _client.Value
             .SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(request, functionName, InvocationType.RequestResponse)
             .WaitAsync(cancellationToken);
 

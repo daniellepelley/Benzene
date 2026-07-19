@@ -27,7 +27,12 @@ public static class Extensions
     {
         services.AddSingleton<IAmazonLambda>(_ => new AmazonLambdaClient());
         services.AddSingleton<IAwsLambdaClient>(resolver => new AwsLambdaClient(resolver.GetService<IAmazonLambda>()));
-        services.AddSingleton<IMeshServiceSource>(resolver => new LambdaMeshServiceSource(resolver.GetService<IAwsLambdaClient>()));
+        // Register the source with a *lazy* client handle: MeshAggregator resolves every
+        // IMeshServiceSource eagerly at startup, so constructing the client here would force an
+        // AmazonLambdaClient (which needs a region) even for a pure-HTTP mesh. Deferring it means the
+        // AWS client is only built the first time a service with Source=AwsLambdaInvoke is fetched.
+        services.AddSingleton<IMeshServiceSource>(resolver =>
+            new LambdaMeshServiceSource(new Lazy<IAwsLambdaClient>(resolver.GetService<IAwsLambdaClient>)));
         return services;
     }
 }

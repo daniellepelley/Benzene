@@ -54,6 +54,15 @@ opaque string" use case has neither, so the lower-level client is the better fit
   the same default-construction pattern `Benzene.CodeGen.Cli.Core.AmazonLambdaClientFactory` uses.
   Override the `IAmazonLambda` registration yourself (register it before calling
   `AddMeshLambdaSource()`, or re-register after) for custom credentials/region.
+- **The client is constructed lazily.** `MeshAggregator` resolves *every* `IMeshServiceSource`
+  eagerly (via `IEnumerable<IMeshServiceSource>` constructor injection) as soon as it's built, so
+  `AddMeshLambdaSource()` registers `LambdaMeshServiceSource` with a `Lazy<IAwsLambdaClient>` rather
+  than the resolved client - the `AmazonLambdaClient` (which throws `No RegionEndpoint or ServiceURL
+  configured` without a region) is only constructed the first time a service with
+  `Source=AwsLambdaInvoke` is actually fetched. This is what lets a **pure-HTTP** mesh host (e.g.
+  `deploy/Mesh/Benzene.Mesh.Host` or `examples/K8sMesh/compose`) that references this package start
+  with no AWS region/credentials configured at all. `LambdaMeshServiceSource` keeps its original
+  eager `IAwsLambdaClient` constructor too (used by the tests), delegating to the lazy one.
 
 ## When to use this package
 - A monitored service is hosted on AWS Lambda with no public HTTP surface (no API Gateway/Function
