@@ -24,7 +24,7 @@ locals {
   # The three Cloud Service Lambdas. Each is tagged so discovery finds it; each gets its own HTTP API
   # so its Spec UI's relative fetches resolve cleanly.
   services = {
-    orders   = { zip = var.orders_zip,   name = "${var.project}-orders" }
+    orders   = { zip = var.orders_zip, name = "${var.project}-orders" }
     payments = { zip = var.payments_zip, name = "${var.project}-payments" }
     shipping = { zip = var.shipping_zip, name = "${var.project}-shipping" }
   }

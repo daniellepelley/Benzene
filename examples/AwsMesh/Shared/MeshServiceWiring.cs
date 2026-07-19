@@ -60,17 +60,23 @@ public static class MeshServiceWiring
         services.AddValidatorsFromAssembly(domainAssembly);
 
         // Full OpenTelemetry: Benzene's traces + metrics (the pipeline emits spans/metrics via the
-        // UseW3CTraceContext/UseBenzeneEnrichment/UseBenzeneMetrics middleware in Configure), exported
-        // over OTLP. Set OTEL_EXPORTER_OTLP_ENDPOINT to your collector; unset, the exporter just no-ops.
+        // UseW3CTraceContext/UseBenzeneEnrichment/UseBenzeneMetrics middleware in Configure). The OTLP
+        // exporter is only attached when OTEL_EXPORTER_OTLP_ENDPOINT is set — otherwise the instrumentation
+        // is still armed (set the env var and it exports) but nothing tries to reach a collector, so there
+        // are no connection-refused errors in CloudWatch when running without one.
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService($"{serviceName}-api"))
-            .WithTracing(tracing => tracing
-                .SetSampler(new AlwaysOnSampler())
-                .AddBenzeneInstrumentation()
-                .AddOtlpExporter())
-            .WithMetrics(metrics => metrics
-                .AddBenzeneInstrumentation()
-                .AddOtlpExporter());
+            .WithTracing(tracing =>
+            {
+                tracing.SetSampler(new AlwaysOnSampler()).AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(otlpEndpoint)) tracing.AddOtlpExporter();
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
+            });
 
         services.UsingBenzene(x =>
         {
