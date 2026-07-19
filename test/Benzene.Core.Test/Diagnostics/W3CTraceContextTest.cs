@@ -64,6 +64,9 @@ public class W3CTraceContextTest
         var activity = Assert.Single(activities, a => a.OperationName == "W3CTraceContext.Root");
         Assert.Equal(traceId, activity.TraceId.ToHexString());
         Assert.Equal(parentSpanId, activity.ParentSpanId.ToHexString());
+        // The parent arrived in an inbound header, so it must be marked remote - ParentBased samplers
+        // and OTel exporters branch on this to sample an ingested trace correctly at each hop.
+        Assert.True(activity.HasRemoteParent);
     }
 
     [Fact]

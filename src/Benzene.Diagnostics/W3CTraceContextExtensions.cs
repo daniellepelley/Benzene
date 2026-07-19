@@ -42,7 +42,11 @@ public static class W3CTraceContextExtensions
             var tracestate = messageMapper.GetHeader(context, "tracestate");
 
             var activity = !string.IsNullOrEmpty(traceparent) &&
-                ActivityContext.TryParse(traceparent, string.IsNullOrEmpty(tracestate) ? null : tracestate, out var parentContext)
+                // isRemote: true - the parent arrived over the wire in an inbound header, so it is a
+                // remote parent. The 3-arg overload defaults isRemote to false, which makes
+                // ParentBased samplers and OTel exporters treat every ingested trace as an in-process
+                // child and mis-decide sampling at each service hop.
+                ActivityContext.TryParse(traceparent, string.IsNullOrEmpty(tracestate) ? null : tracestate, isRemote: true, out var parentContext)
                 ? BenzeneDiagnostics.ActivitySource.StartActivity("W3CTraceContext.Root", ActivityKind.Server, parentContext)
                 : BenzeneDiagnostics.ActivitySource.StartActivity("W3CTraceContext.Root", ActivityKind.Server);
 
