@@ -198,6 +198,29 @@ public class BenzeneResultExtensionsTest
 
 
     [Fact]
+    public void AsPayload_ProjectingASuccess_StaysSuccessful()
+    {
+        // As<TOutput>() on a successful result must keep it successful. A single-string call to
+        // BenzeneResult.Set<TOutput>(status) bound to the params-string[] errors overload, routing to
+        // the failure constructor — so a projected Ok reported IsSuccessful=false (a 200 with an error
+        // body downstream, and misclassified as a failure by saga/idempotency/batch escalation).
+        var projected = BenzeneResult.Ok<int>(5).As<string>();
+
+        Assert.Equal(BenzeneResultStatus.Ok, projected.Status);
+        Assert.True(projected.IsSuccessful);
+    }
+
+    [Fact]
+    public void AsPayload_ProjectingAFailure_StaysFailedAndKeepsErrors()
+    {
+        var projected = BenzeneResult.ValidationError<int>("bad").As<string>();
+
+        Assert.Equal(BenzeneResultStatus.ValidationError, projected.Status);
+        Assert.False(projected.IsSuccessful);
+        Assert.Contains("bad", projected.Errors);
+    }
+
+    [Fact]
     public void AsPayload_Task()
     {
         Assert.Equal(BenzeneResultStatus.Ok, Task.FromResult(BenzeneResult.Ok()).As<Void>().Result.Status);

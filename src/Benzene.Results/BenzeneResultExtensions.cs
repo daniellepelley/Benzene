@@ -97,7 +97,12 @@ public static class BenzeneResultExtensions
     public static IBenzeneResult<TOutput> As<TOutput>(this IBenzeneResult serviceBenzeneResult)
     {
         return serviceBenzeneResult.IsSuccessful
-           ? BenzeneResult.Set<TOutput>(serviceBenzeneResult.Status)
+           // Set<TOutput>(status, true) → the (string, bool) overload. A single-string
+           // Set<TOutput>(status) has no matching overload and silently bound to
+           // Set<TOutput>(string, params string[]) with zero errors — the FAILURE constructor — so a
+           // projected success came back IsSuccessful=false (a 200 carrying an error body downstream,
+           // and misread as a failure by saga/idempotency/SQS batch escalation).
+           ? BenzeneResult.Set<TOutput>(serviceBenzeneResult.Status, true)
            : BenzeneResult.Set<TOutput>(serviceBenzeneResult.Status, serviceBenzeneResult.Errors);
     }
 
