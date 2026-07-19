@@ -1153,3 +1153,45 @@ erroring.
 All four of §10.8's originally-deferred items are now shipped except CI/dev-time surfacing and
 staleness/changelog history over time — both real, both still open, neither blocking anything
 built so far.
+
+### 10.15 2026-07-19 (implementation) — the topic view becomes a page, not a popup
+
+Direct feedback on §10.12: a small modal dialog was the wrong shape. What was actually wanted is
+"a whole new page around that topic, much like the pages for a service, with sections for each
+service so you can drill back into the service from there." Reworked accordingly, replacing the
+`<dialog>` entirely:
+
+- **A real view swap, not an overlay.** `#main-view` (the service list, topic table, topology —
+  everything Mesh Explorer normally shows) and `#topic-page` are mutually exclusive; opening a
+  topic hides one and shows the other, with a **Back** button to return. `location.hash` is the
+  single source of truth for which is showing (`syncTopicPageFromHash`, reacting to `hashchange`),
+  so the browser's own Back/Forward buttons, a bookmarked link, and the in-page Back button/Escape
+  all converge on the same behavior instead of three different code paths doing similar things
+  slightly differently.
+- **"Sections for each service" means the real service card, not a name.** Each version's
+  Producers/Consumers sections now embed the *actual* `buildServiceCard(svc)` used in the main
+  list — same accordion, status/drift badges, owning team, spec/health/spec-ui links, lazy
+  health-check detail — looked up from the manifest by name. This is what makes "all the details
+  about that topic" literal rather than aspirational, and it's what makes "drill back into the
+  service... from that page" possible: the embedded card's own **topics** link (§10.13) still
+  works from inside the topic page, so a producer/consumer's own topics are one more click away
+  without leaving. A producer/consumer name absent from the manifest (legitimate for a `gap`
+  topic's external producer, or a since-deregistered service) renders as a plain placeholder
+  instead of a broken card, rather than silently dropping it.
+- **Navigation, not a dialog dismissal.** Opening a topic sets `location.hash` directly (a real,
+  navigable history entry — clicking through several topics and hitting Back moves through them
+  the way normal links do); leaving clears it via `history.replaceState` rather than
+  `location.hash = ""`, specifically to avoid the bare trailing `#` the latter leaves in the
+  address bar - caught by the same real-browser verification below, not by inspection.
+
+Verified end-to-end with the same real-browser (Playwright) approach as every prior increment in
+this arc, this time against a fixture with a service *outside* the manifest as a topic's producer:
+confirmed the view swap (main-view hidden, topic-page shown) and the URL on open, confirmed real
+embedded service cards render with correct status/drift/owning-team data and that expanding one
+triggers its actual (unfixtured, 404ing) health-check fetch — not a stub, confirmed the unknown-
+service placeholder renders instead of a broken card, confirmed the Back button and Escape both
+return to the main view with a fully clean URL (no trailing `#`), confirmed direct navigation to a
+`#topic:` URL opens the right page on load, and confirmed clicking an embedded card's own
+**topics** link from inside the topic page correctly exits back to the main view and filters the
+topic table for that service — the "drill into the service, then into what else it touches" loop
+the feedback asked for.

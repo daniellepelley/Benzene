@@ -268,34 +268,27 @@
   .loader .primary:hover { background: var(--accent-soft); }
   .ld-err { color: var(--req); font-size: 12.5px; font-family: var(--mono); min-height: 16px; }
 
-  /* Topic view dialog */
-  dialog.topic-view {
-    border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
-    background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
-    width: min(720px, 94vw); max-height: min(640px, 86vh);
+  /* Topic page - a full view swap (like clicking a service card, but page-scale), not a dialog:
+     work/service-mesh-roadmap-1.0.md §10.15. */
+  .topic-page-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 26px; }
+  .topic-page-head h1 { margin: 0 0 6px; font-size: 21px; font-family: var(--mono); letter-spacing: -.01em; word-break: break-word; }
+  .topic-page-head p { margin: 0; color: var(--ink-soft); max-width: 62ch; font-size: 13.5px; }
+  .tp-back {
+    flex: none; display: inline-flex; align-items: center; gap: 6px;
   }
-  dialog.topic-view::backdrop { background: rgba(10,11,20,.5); backdrop-filter: blur(2px); }
-  .tv-head {
-    display: flex; align-items: flex-start; gap: 14px;
-    padding: 18px 20px 14px; border-bottom: 1px solid var(--line);
+  .tp-version { margin-bottom: 34px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+  .tp-version:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .tp-version-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tp-version-label { font-size: 16px; font-weight: 650; font-family: var(--mono); }
+  .tp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 720px) { .tp-grid { grid-template-columns: 1fr; } }
+  .tp-side h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .tp-mapping { font-size: 11.5px; color: var(--ink-faint); font-family: var(--mono); margin: -4px 0 8px 1px; }
+  .tp-unknown-svc {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    padding: 11px 14px; margin-bottom: 11px;
+    background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius);
   }
-  .tv-head h3 { margin: 0 0 4px; font-size: 17px; font-family: var(--mono); letter-spacing: -.01em; word-break: break-word; }
-  .tv-head p { margin: 0; color: var(--ink-faint); font-size: 12.5px; max-width: 56ch; }
-  .tv-close {
-    margin-left: auto; flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-    background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); border-radius: var(--radius-sm);
-    cursor: pointer;
-  }
-  .tv-close:hover { color: var(--ink); border-color: var(--accent); }
-  .tv-body { padding: 6px 20px 20px; overflow-y: auto; max-height: calc(min(640px, 86vh) - 84px); }
-  .tv-version { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
-  .tv-version:last-child { border-bottom: none; }
-  .tv-version-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  .tv-version-label { font-size: 13px; font-weight: 640; }
-  .tv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 560px) { .tv-grid { grid-template-columns: 1fr; } }
-  .tv-side-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; margin-bottom: 6px; }
-  .tv-side-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
   .topic-link { background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-align: left; }
   .topic-link:hover, .topic-link:focus-visible { text-decoration: underline; outline: none; }
 
@@ -368,6 +361,7 @@
 </header>
 
 <main>
+ <div id="main-view">
   <div class="lede">
     <h1 id="lede-title">Benzene Mesh Explorer</h1>
     <p id="lede-desc">Every service's health status and contract-drift state, in one place.</p>
@@ -432,6 +426,22 @@
       </table>
     </div>
   </section>
+ </div>
+
+  <section id="topic-page" style="display:none">
+    <div class="topic-page-head">
+      <button class="tb-btn tp-back" id="topic-page-back" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m14 6-6 6 6 6"/></svg>
+        Back
+      </button>
+      <div>
+        <h1 id="tp-title"></h1>
+        <p>Every version seen across the fleet, who produces it, and who consumes it — derived
+          entirely from services' own self-description, never declared by hand.</p>
+      </div>
+    </div>
+    <div id="tp-body"></div>
+  </section>
 </main>
 
 <dialog class="loader" id="loader">
@@ -456,20 +466,6 @@
       </div>
     </div>
   </form>
-</dialog>
-
-<dialog class="topic-view" id="topic-view">
-  <div class="tv-head">
-    <div>
-      <h3 id="tv-title"></h3>
-      <p>Every version seen across the fleet, who produces it, and who consumes it — derived
-        entirely from services' own self-description, never declared by hand.</p>
-    </div>
-    <button class="tv-close" id="tv-close" type="button" aria-label="Close">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg>
-    </button>
-  </div>
-  <div class="tv-body" id="tv-body"></div>
 </dialog>
 
 <script id="benzene-mesh-data" type="application/json">
@@ -709,13 +705,12 @@
      "is that service even healthy right now" - the point of a centralized view over independently
      hosted pages (work/service-mesh-roadmap-1.0.md §10.4/§10.9). */
   function goToService(name) {
-    var topicView = document.getElementById("topic-view");
-    if (topicView.open) topicView.close();
+    clearTopicHash();
 
     var filterInput = document.getElementById("filter");
     if (filterInput.value) { filterInput.value = ""; applyFilter(""); }
 
-    var card = document.querySelector('.svc[data-service="' + cssEscape(name) + '"]');
+    var card = document.querySelector('#content .svc[data-service="' + cssEscape(name) + '"]');
     if (!card) return;
 
     if (!card.classList.contains("open")) {
@@ -737,6 +732,8 @@
      touch" is exactly what that search already answers once it also matches producer/consumer
      names, not just the topic id (work/service-mesh-roadmap-1.0.md §10.11's remaining gap). */
   function goToTopicsFor(name) {
+    clearTopicHash();
+
     var section = document.getElementById("topics-section");
     if (section.style.display === "none") return; // no topics.json published - nothing to jump to
 
@@ -793,7 +790,7 @@
     section.style.display = "";
     document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
     renderTopicRows();
-    openTopicViewFromHash(); // a page loaded with #topic:<id> in the URL opens straight to it
+    syncTopicPageFromHash(); // a page loaded with #topic:<id> in the URL opens straight to it
   }
   var TOPIC_STATUS_LABELS = {
     "deprecation-candidate": "deprecation candidate",
@@ -820,7 +817,7 @@
     var link = el("button", "topic-link", topicId);
     link.type = "button";
     link.title = "View " + topicId;
-    link.addEventListener("click", function () { openTopicView(topicId); });
+    link.addEventListener("click", function () { location.hash = topicHashFor(topicId); });
     return link;
   }
 
@@ -830,50 +827,67 @@
     return TOPIC_HASH_PREFIX + encodeURIComponent(topicId);
   }
 
-  function openTopicView(topicId) {
+  /* ---------- topic page: a full view swap, not a dialog ----------
+     "A whole new page around that topic, much like the pages for a service, with sections for
+     each service so you can drill back into the service from there" - work/service-mesh-roadmap-
+     1.0.md §10.15. #main-view (everything the normal Mesh Explorer shows) and #topic-page are
+     mutually exclusive; location.hash is the single source of truth for which one is showing, so
+     the browser's own Back/Forward buttons and direct/bookmarked links all behave the same as
+     clicking a topic link or the in-page Back button. */
+  function renderTopicPage(topicId) {
     var versions = currentTopics.filter(function (t) { return t.topic === topicId; });
-    if (!versions.length) return;
+    if (!versions.length) return; // stale/unknown link - leave whatever's currently showing as-is
     versions = versions.slice().sort(function (a, b) {
       return (a.version || "").localeCompare(b.version || "");
     });
 
-    document.getElementById("tv-title").textContent = topicId;
-    var body = document.getElementById("tv-body");
+    document.getElementById("tp-title").textContent = topicId;
+    var body = document.getElementById("tp-body");
     body.innerHTML = "";
-    versions.forEach(function (t) { body.appendChild(buildTopicVersionBlock(t)); });
+    versions.forEach(function (t) { body.appendChild(buildTopicPageVersionSection(t)); });
 
-    var dialog = document.getElementById("topic-view");
-    if (typeof dialog.showModal === "function") dialog.showModal();
-
-    // Deep-linkable: a URL ending in #topic:<id> reopens this exact topic on load, so a topic
-    // view can be shared/bookmarked instead of being purely session-local
-    // (work/service-mesh-roadmap-1.0.md §10.12's "not done" note).
-    if (location.hash !== topicHashFor(topicId)) {
-      history.replaceState(null, "", location.pathname + location.search + topicHashFor(topicId));
-    }
+    document.getElementById("main-view").style.display = "none";
+    document.getElementById("topic-page").style.display = "";
+    window.scrollTo(0, 0);
   }
 
-  /* Clears the URL's #topic:… hash whenever the dialog closes, however it closed (the close
-     button, Escape, or a chip inside it navigating elsewhere via goToService) - <dialog> fires a
-     native "close" event for all of these, so hooking that one event covers every path. */
-  document.getElementById("topic-view").addEventListener("close", function () {
+  function hideTopicPage() {
+    document.getElementById("topic-page").style.display = "none";
+    document.getElementById("main-view").style.display = "";
+  }
+
+  function syncTopicPageFromHash() {
     if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
+      renderTopicPage(decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
+    } else {
+      hideTopicPage();
+    }
+  }
+  window.addEventListener("hashchange", syncTopicPageFromHash);
+
+  /* Leaving via the Back button, Escape, or a cross-link elsewhere all go through this - a plain
+     location.hash = "" still leaves a bare trailing "#" in the address bar, so this strips the
+     hash properly via replaceState instead (no new history entry - opening a topic already got
+     one via topicLink's location.hash =, so browser Back/Forward between topics still works). */
+  function clearTopicHash() {
+    if (location.hash) {
       history.replaceState(null, "", location.pathname + location.search);
+    }
+    hideTopicPage();
+  }
+
+  document.getElementById("topic-page-back").addEventListener("click", clearTopicHash);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && document.getElementById("topic-page").style.display !== "none") {
+      clearTopicHash();
     }
   });
 
-  function openTopicViewFromHash() {
-    if (location.hash.indexOf(TOPIC_HASH_PREFIX) !== 0) return;
-    var topicId = decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length));
-    openTopicView(topicId);
-  }
-  window.addEventListener("hashchange", openTopicViewFromHash);
+  function buildTopicPageVersionSection(t) {
+    var block = el("div", "tp-version");
 
-  function buildTopicVersionBlock(t) {
-    var block = el("div", "tv-version");
-
-    var head = el("div", "tv-version-head");
-    head.appendChild(el("span", "mono tv-version-label", t.version || "unversioned"));
+    var head = el("div", "tp-version-head");
+    head.appendChild(el("span", "mono tp-version-label", t.version || "unversioned"));
     if (t.reserved) head.appendChild(el("span", "t-badge t-utility", "utility"));
     if (t.status && TOPIC_STATUS_LABELS[t.status]) {
       var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
@@ -882,38 +896,50 @@
     }
     block.appendChild(head);
 
-    var grid = el("div", "tv-grid");
-    grid.appendChild(buildTopicSideList("Producers", t.producers || []));
-    grid.appendChild(buildTopicSideList("Consumers", t.consumers || []));
+    var grid = el("div", "tp-grid");
+    grid.appendChild(buildTopicServiceSection("Producers", t.producers || []));
+    grid.appendChild(buildTopicServiceSection("Consumers", t.consumers || []));
     block.appendChild(grid);
 
     return block;
   }
 
-  function buildTopicSideList(label, items) {
-    var side = el("div", "tv-side");
-    side.appendChild(el("div", "tv-side-label", label + " (" + items.length + ")"));
+  function findManifestService(name) {
+    return (manifest.services || []).filter(function (s) { return s.name === name; })[0];
+  }
+
+  /* Each producer/consumer gets the *real* service card - same accordion, same lazy health-check
+     detail, same spec/health/spec-ui/topics links - as the main service list, not just a name.
+     "All the details about that topic" means all the details about the services on it too. A
+     name with no matching manifest entry (a service that's since been removed from the registry,
+     or - for a "gap" topic - a producer outside this fleet entirely) renders as a plain
+     placeholder instead of a broken card. */
+  function buildTopicServiceSection(label, items) {
+    var side = el("div", "tp-side");
+    side.appendChild(el("h2", null, label + " (" + items.length + ")"));
     if (!items.length) {
       side.appendChild(el("div", "t-empty", "none"));
       return side;
     }
     items.forEach(function (item) {
-      var row = el("div", "tv-side-row");
-      row.appendChild(svcChip(item.service));
       if (item.httpMappings && item.httpMappings.length) {
         var maps = item.httpMappings.map(function (m) {
           return (m.method || "").toUpperCase() + " " + (m.path || "");
         }).join(", ");
-        row.appendChild(el("span", "t-http", maps));
+        side.appendChild(el("div", "tp-mapping", maps));
       }
-      side.appendChild(row);
+      var svc = findManifestService(item.service);
+      if (svc) {
+        side.appendChild(buildServiceCard(svc));
+      } else {
+        var placeholder = el("div", "tp-unknown-svc");
+        placeholder.appendChild(el("span", "svc-name", item.service));
+        placeholder.appendChild(el("span", "t-empty", "not in this fleet's manifest"));
+        side.appendChild(placeholder);
+      }
     });
     return side;
   }
-
-  document.getElementById("tv-close").addEventListener("click", function () {
-    document.getElementById("topic-view").close();
-  });
 
   function topicMatchesQuery(t, q) {
     if (!q) return true;

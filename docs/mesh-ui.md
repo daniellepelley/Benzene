@@ -39,17 +39,25 @@ service's card above, so "who's still consuming this" is never more than one cli
 that service actually healthy right now." A card hidden by an active search filter is revealed
 automatically when you jump to it this way.
 
-**Clicking a topic id opens its topic view** — a dialog grouping every version of that topic
-together (the flat table is one row per (topic, version); the dialog is the "everything about
-this topic, across every version" answer). Each version gets its own producers/consumers/status
-block, so "is anything still consuming `shipping:booked` v1 while v2 is live" is answered at a
-glance instead of scanning the table for every row that happens to share a topic id. Producer/
-consumer chips inside the dialog are the same jump-to-service links as the table.
+**Clicking a topic id opens its topic page** — a full view swap (the service list, topic table,
+and topology all step aside; a **Back** button returns to them), not a small popup, grouping every
+version of that topic together with a section per version. Each version's **Producers** and
+**Consumers** sections render the *real* service card for every service involved — the same
+accordion, status/drift badges, owning-team label, spec/health/spec-ui links, and lazy health-check
+detail as the main service list, not just a name — so a producer or consumer can be drilled straight
+into from the topic page itself, with no separate lookup. A producer/consumer name with no matching
+entry in the manifest (e.g. a system outside this fleet feeding a `gap` topic) renders as a plain
+placeholder instead of a broken card. Every embedded card's own **topics** link still works from
+inside the topic page too — it returns to the main view and re-filters the topic table, so drilling
+from a topic into one of its services and back into a *different* topic that service touches is a
+few clicks, not a dead end.
 
 Opening a topic updates the URL to `…#topic:<id>` — copy it straight out of the address bar to
 share or bookmark a link to that exact topic; opening that URL later (or just refreshing) reopens
-the same view once the page's `topics.json` has loaded. Closing the dialog, however it's closed
-(the close button, Escape, or following a producer/consumer link elsewhere), clears the hash again.
+the same page once `topics.json` has loaded. Leaving the page, however you leave it (the Back
+button, Escape, or a link inside it navigating elsewhere), clears the hash again. Browsing between
+topics is real navigation — the browser's own Back/Forward buttons move through topic views the
+same way clicking around the page does.
 
 **The topic table has its own search box**, matching against the topic id *or* any producer/
 consumer service name — useful once a fleet has more topics than fit on screen, and it doubles as
