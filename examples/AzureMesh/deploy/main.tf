@@ -83,15 +83,16 @@ resource "azurerm_linux_web_app" "service" {
 
   site_config {
     application_stack {
-      docker_registry_url = "https://${azurerm_container_registry.acr.login_server}"
-      docker_image_name   = "${var.service_image}:${var.image_tag}"
+      # In azurerm v4 the registry URL/credentials are owned by application_stack, not app_settings —
+      # setting DOCKER_REGISTRY_SERVER_* in app_settings too is rejected ("cannot set a value for ...").
+      docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
+      docker_registry_username = azurerm_container_registry.acr.admin_username
+      docker_registry_password = azurerm_container_registry.acr.admin_password
+      docker_image_name        = "${var.service_image}:${var.image_tag}"
     }
   }
 
   app_settings = {
-    DOCKER_REGISTRY_SERVER_URL          = "https://${azurerm_container_registry.acr.login_server}"
-    DOCKER_REGISTRY_SERVER_USERNAME     = azurerm_container_registry.acr.admin_username
-    DOCKER_REGISTRY_SERVER_PASSWORD     = azurerm_container_registry.acr.admin_password
     WEBSITES_PORT                       = "8080"
     PORT                                = "8080"
     MESH_SERVICE                        = each.value
@@ -110,15 +111,15 @@ resource "azurerm_linux_web_app" "mesh" {
 
   site_config {
     application_stack {
-      docker_registry_url = "https://${azurerm_container_registry.acr.login_server}"
-      docker_image_name   = "${var.mesh_image}:${var.image_tag}"
+      # As above: registry URL/credentials live in application_stack, not app_settings, on azurerm v4.
+      docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
+      docker_registry_username = azurerm_container_registry.acr.admin_username
+      docker_registry_password = azurerm_container_registry.acr.admin_password
+      docker_image_name        = "${var.mesh_image}:${var.image_tag}"
     }
   }
 
   app_settings = {
-    DOCKER_REGISTRY_SERVER_URL          = "https://${azurerm_container_registry.acr.login_server}"
-    DOCKER_REGISTRY_SERVER_USERNAME     = azurerm_container_registry.acr.admin_username
-    DOCKER_REGISTRY_SERVER_PASSWORD     = azurerm_container_registry.acr.admin_password
     WEBSITES_PORT                       = "8080"
     PORT                                = "8080"
     MESH_BLOB_URI                       = azurerm_storage_account.artifacts.primary_blob_endpoint
