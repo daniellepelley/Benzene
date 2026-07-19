@@ -33,17 +33,36 @@ public static class MetricsExtensions
             .Use("BenzeneMetrics", resolver => async (context, next) =>
             {
                 var stopwatch = Stopwatch.StartNew();
-                await next();
-
-                var tags = new TagList
+                // Record in a finally so a throwing pipeline is still counted and timed - an escaped
+                // exception is the most important thing to observe, yet without this it was never
+                // recorded (the "failure" result tag was only ever reachable for a handler that
+                // returned an unsuccessful result WITHOUT throwing).
+                var threw = false;
+                try
                 {
-                    { "topic", resolver.TryGetService<IMessageGetter<TContext>>()?.GetTopic(context)?.Id ?? "<missing>" },
-                    { "transport", resolver.TryGetService<ICurrentTransport>()?.Name ?? "<missing>" },
-                    { "result", context is IHasMessageResult r ? (r.MessageResult.IsSuccessful ? "success" : "failure") : "<missing>" },
-                };
+                    await next();
+                }
+                catch
+                {
+                    threw = true;
+                    throw;
+                }
+                finally
+                {
+                    var result = threw
+                        ? "failure"
+                        : context is IHasMessageResult r ? (r.MessageResult.IsSuccessful ? "success" : "failure") : "<missing>";
 
-                BenzeneDiagnostics.MessagesProcessed.Add(1, tags);
-                BenzeneDiagnostics.MessageDuration.Record(stopwatch.Elapsed.TotalMilliseconds, tags);
+                    var tags = new TagList
+                    {
+                        { "topic", resolver.TryGetService<IMessageGetter<TContext>>()?.GetTopic(context)?.Id ?? "<missing>" },
+                        { "transport", resolver.TryGetService<ICurrentTransport>()?.Name ?? "<missing>" },
+                        { "result", result },
+                    };
+
+                    BenzeneDiagnostics.MessagesProcessed.Add(1, tags);
+                    BenzeneDiagnostics.MessageDuration.Record(stopwatch.Elapsed.TotalMilliseconds, tags);
+                }
             });
     }
 }

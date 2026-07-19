@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -74,5 +75,34 @@ public class BenzeneMetricsTest
 
         var duration = Assert.Single(doubleMeasurements, m => m.Name == "benzene.message.duration");
         Assert.Contains(duration.Tags, t => t.Key == "result" && (string)t.Value == "success");
+    }
+
+    [Fact]
+    public async Task UseBenzeneMetrics_WhenThePipelineThrows_StillRecordsAsFailure()
+    {
+        var (longMeasurements, doubleMeasurements, listener) = ListenToBenzeneMeter();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+
+        var builder = new MiddlewarePipelineBuilder<FakeMessageContext>(container);
+        builder.UseBenzeneMetrics();
+        builder.Use((_, _) => throw new InvalidOperationException("boom"));
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        // The exception must still propagate...
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            pipeline.HandleAsync(new FakeMessageContext(), resolver));
+
+        // ...and the message must still be counted and timed, tagged result=failure. Previously a
+        // throwing pipeline recorded nothing at all, so failing requests never appeared in the metrics.
+        var count = Assert.Single(longMeasurements, m => m.Name == "benzene.messages.processed");
+        Assert.Contains(count.Tags, t => t.Key == "result" && (string)t.Value == "failure");
+        Assert.Single(doubleMeasurements, m => m.Name == "benzene.message.duration");
     }
 }
