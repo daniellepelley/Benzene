@@ -1,5 +1,6 @@
 using Azure.Messaging.EventHubs;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -20,7 +21,7 @@ public class EventHubApplication : EntryPointMiddlewareApplication<EventData[]>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
     public EventHubApplication(IMiddlewarePipeline<EventHubContext> pipelineBuilder, IServiceResolverFactory serviceResolverFactory)
         : base(new MiddlewareMultiApplication<EventData[], EventHubContext>(
-                new TransportMiddlewarePipeline<EventHubContext>("event-hub", pipelineBuilder),
+                new TransportMiddlewarePipeline<EventHubContext>(TransportNames.EventHub, pipelineBuilder),
         @event => @event.Select(EventHubContext.CreateInstance).ToArray()),
             serviceResolverFactory)
     { }

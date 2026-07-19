@@ -37,7 +37,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageBodyGetter<PubSubContext>, PubSubMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<PubSubContext>, PubSubMessageHandlerResultSetter>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("pubsub"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.PubSub));
         return services;
     }
 

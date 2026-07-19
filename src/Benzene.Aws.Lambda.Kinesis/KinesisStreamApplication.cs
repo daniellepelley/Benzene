@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -34,7 +35,7 @@ public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent
     /// <param name="pipeline">The built stream pipeline to run the batch through.</param>
     public KinesisStreamApplication(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline)
         : base(
-            new CatchAndCheckpointPipeline(new TransportMiddlewarePipeline<StreamContext<KinesisEventRecord>>("kinesis", pipeline)),
+            new CatchAndCheckpointPipeline(new TransportMiddlewarePipeline<StreamContext<KinesisEventRecord>>(TransportNames.Kinesis, pipeline)),
             @event => BuildContext(@event.Records),
             context => BuildResponse((KinesisStreamCheckpointer)context.Checkpointer))
     { }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 
@@ -29,7 +30,7 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
     /// </param>
     public SqsConsumerApplication(IMiddlewarePipeline<SqsConsumerMessageContext> pipeline, SqsConsumerOptions options = null)
     {
-        _pipeline = new TransportMiddlewarePipeline<SqsConsumerMessageContext>("sqs", pipeline);
+        _pipeline = new TransportMiddlewarePipeline<SqsConsumerMessageContext>(TransportNames.Sqs, pipeline);
         _options = options ?? new SqsConsumerOptions();
     }
 

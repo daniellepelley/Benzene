@@ -1,8 +1,10 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers.Info;
 
 namespace Benzene.Azure.Function.EventHub.Function;
 
@@ -25,6 +27,7 @@ public static class DependencyInjectionExtensions
     public static IBenzeneServiceContainer AddAzureEventHub(this IBenzeneServiceContainer services)
     {
         services.AddScoped<IMessageHeadersGetter<EventHubContext>, EventHubMessageHeadersGetter>();
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.EventHub));
         return services;
     }
 

@@ -1,6 +1,9 @@
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers.Info;
 
 namespace Benzene.Azure.Function.BlobStorage;
 
@@ -9,6 +12,19 @@ namespace Benzene.Azure.Function.BlobStorage;
 /// </summary>
 public static class DependencyInjectionExtensions
 {
+    /// <summary>
+    /// Registers the services blob-trigger handling depends on beyond the entry point application
+    /// itself - currently just the <see cref="ITransportInfo"/> advertising <c>"blob-storage"</c>
+    /// as a wired transport. Called automatically by <see cref="UseBlobStorage"/>.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddAzureBlobStorage(this IBenzeneServiceContainer services)
+    {
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.BlobStorage));
+        return services;
+    }
+
     /// <summary>
     /// Adds a blob entry point application to the Azure Function app, configuring its inner
     /// middleware pipeline. There is no <c>UseMessageHandlers()</c>-style routing on this transport
@@ -21,6 +37,7 @@ public static class DependencyInjectionExtensions
     /// <returns>The Azure Function app builder, for method chaining.</returns>
     public static IAzureFunctionAppBuilder UseBlobStorage(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<BlobStorageContext>> action)
     {
+        app.Register(x => x.AddAzureBlobStorage());
         var pipeline = app.Create<BlobStorageContext>();
         action(pipeline);
         app.Add(serviceResolverFactory => new BlobStorageApplication(pipeline.Build(), serviceResolverFactory));

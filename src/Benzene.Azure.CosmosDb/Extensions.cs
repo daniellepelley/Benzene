@@ -1,4 +1,7 @@
+using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Benzene.SelfHost;
 
@@ -18,6 +21,20 @@ namespace Benzene.Azure.CosmosDb;
 public static class Extensions
 {
     /// <summary>
+    /// Registers the services Cosmos DB Change Feed consumption depends on beyond the entry point
+    /// application itself - currently just the <see cref="ITransportInfo"/> advertising
+    /// <c>"cosmos-db"</c> as a wired transport. Called automatically by
+    /// <see cref="UseCosmosDbChangeFeed{TDocument}"/>.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddCosmosDbChangeFeed(this IBenzeneServiceContainer services)
+    {
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.CosmosDb));
+        return services;
+    }
+
+    /// <summary>
     /// Adds a Cosmos DB Change Feed consumer to the worker. There is no
     /// <c>UseMessageHandlers()</c>-style routing on this transport - changed documents carry no
     /// message envelope - so the pipeline is a streaming pipeline over the document type,
@@ -36,6 +53,7 @@ public static class Extensions
         BenzeneCosmosChangeFeedConfig config, ICosmosChangeFeedProcessorFactory<TDocument> processorFactory,
         Action<IMiddlewarePipelineBuilder<StreamContext<TDocument>>> action)
     {
+        app.Register(x => x.AddCosmosDbChangeFeed());
         var middlewarePipelineBuilder = app.Create<StreamContext<TDocument>>();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();

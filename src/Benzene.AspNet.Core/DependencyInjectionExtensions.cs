@@ -54,7 +54,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("asp"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Asp));
         services.AddHttpMessageHandlers();
 
         return services;

@@ -1,5 +1,6 @@
 using Azure.Messaging.EventHubs;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -19,7 +20,7 @@ public class EventHubConsumerApplication : MiddlewareApplication<EventData, Even
     /// </summary>
     /// <param name="pipeline">The built Event Hub middleware pipeline to run each event through.</param>
     public EventHubConsumerApplication(IMiddlewarePipeline<EventHubConsumerContext> pipeline)
-        : base(new TransportMiddlewarePipeline<EventHubConsumerContext>("event-hub", pipeline),
+        : base(new TransportMiddlewarePipeline<EventHubConsumerContext>(TransportNames.EventHub, pipeline),
             EventHubConsumerContext.CreateInstance,
             context => context.MessageResult)
     { }

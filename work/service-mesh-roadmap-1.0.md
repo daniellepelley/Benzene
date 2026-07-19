@@ -1194,6 +1194,7 @@ return to the main view with a fully clean URL (no trailing `#`), confirmed dire
 `#topic:` URL opens the right page on load, and confirmed clicking an embedded card's own
 **topics** link from inside the topic page correctly exits back to the main view and filters the
 topic table for that service — the "drill into the service, then into what else it touches" loop
+the feedback asked for.
 
 ### 10.16 2026-07-19 (plan) — §10.1 transport-neutral `bindings`, revised and scoped down
 
@@ -1315,4 +1316,29 @@ cut, not a compromise forced by running out of design space.
 bug fixes are worth doing on their own merits. Then (3)+(4) (spec field + builder seam + round-trip
 test). Then (5) (UI) verified the same real-browser way as every other UI increment this arc. (6)
 last, once the shape is settled.
-the feedback asked for.
+
+### 10.17 2026-07-19 (implementation) — §10.16 steps 1–2 shipped
+
+Both pure-C# steps, no wire-format change:
+
+- **`TransportNames`** (`Benzene.Abstractions.MessageHandlers.Info`) — one `const string` per
+  transport. Every `TransportMiddlewarePipeline<TContext>("...", ...)` call site and every
+  `new TransportInfo("...")` DI registration across all ~20 transport packages now references the
+  constant instead of retyping the literal — the two mechanisms can no longer drift apart into two
+  names for the same transport.
+- **Closed the `ITransportInfo` coverage gap** found while tracing those call sites: `Benzene.RabbitMq`,
+  `Benzene.Azure.ServiceBus` (consumer), `Benzene.Azure.EventHub` (consumer),
+  `Benzene.Azure.Function.EventHub`, `Benzene.Azure.Function.BlobStorage`, `Benzene.Azure.CosmosDb`,
+  and `Benzene.Aws.Sqs` (self-host consumer) all tagged messages at runtime but never registered a
+  startup `ITransportInfo` — so `ITransportsInfo.Transports` silently omitted them. Each now
+  registers one, via a new `AddAzureBlobStorage()`/`AddCosmosDbChangeFeed()` DI method for the two
+  packages (`Benzene.Azure.Function.BlobStorage`, `Benzene.Azure.CosmosDb`) that had no DI
+  registration point of their own to add it to, called automatically by `UseBlobStorage`/
+  `UseCosmosDbChangeFeed` respectively.
+- **Fixed the `"direct"`/`"benzene"` drift**: `AddBenzeneMessage()`'s `ITransportInfo` registration
+  now says `TransportNames.Benzene`, matching what `BenzeneMessageApplication` actually tags at
+  runtime.
+
+Full solution build (0 errors) and the complete `Benzene.Core.Test` suite (1530 tests) pass.
+Step 3 (the document-level `transports` spec field) and onward are still open, per §10.16's
+sequencing.

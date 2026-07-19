@@ -1,3 +1,4 @@
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -31,7 +32,7 @@ public class CosmosChangeFeedApplication<TDocument>
     /// <param name="pipeline">The built stream pipeline to run each batch through.</param>
     public CosmosChangeFeedApplication(IMiddlewarePipeline<StreamContext<TDocument>> pipeline)
         : base(
-            new TransportMiddlewarePipeline<StreamContext<TDocument>>("cosmos-db", pipeline),
+            new TransportMiddlewarePipeline<StreamContext<TDocument>>(TransportNames.CosmosDb, pipeline),
             BuildContext,
             context => ((CosmosChangeFeedStreamCheckpointer<TDocument>)context.Checkpointer).HasCheckpointed)
     { }

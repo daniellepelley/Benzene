@@ -41,7 +41,7 @@ public static class DependencyInjectionExtensions
         services.AddMediaFormatNegotiation<SelfHostHttpContext>();
         services.AddScoped<IBenzeneResponseAdapter<SelfHostHttpContext>, HttpContextResponseAdapter>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("http"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Http));
         services.AddHttpMessageHandlers();
 
         return services;

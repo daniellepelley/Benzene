@@ -38,7 +38,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<GrpcServerCallAccessor>();
         services.AddScoped<IGrpcServerCallAccessor>(x => x.GetService<GrpcServerCallAccessor>());
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("grpc"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Grpc));
         services.AddContextItems();
         return services;
     }

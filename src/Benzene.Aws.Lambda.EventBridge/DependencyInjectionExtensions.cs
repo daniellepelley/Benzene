@@ -35,7 +35,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<EventBridgeContext>,
                 MultiSerializerOptionsRequestMapper<EventBridgeContext>>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("eventbridge"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.EventBridge));
 
         return services;
     }

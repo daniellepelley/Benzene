@@ -1,3 +1,4 @@
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Messages.BenzeneMessage;
@@ -24,7 +25,7 @@ public class BenzeneMessageApplication : MiddlewareApplication<IBenzeneMessageRe
     /// <param name="pipeline">The middleware pipeline to run each request through.</param>
     public BenzeneMessageApplication(IMiddlewarePipeline<BenzeneMessageContext> pipeline)
         : base(
-            new TransportMiddlewarePipeline<BenzeneMessageContext>("benzene", pipeline),
+            new TransportMiddlewarePipeline<BenzeneMessageContext>(TransportNames.Benzene, pipeline),
             @event => new BenzeneMessageContext(@event),
             context => context.BenzeneMessageResponse)
     { }

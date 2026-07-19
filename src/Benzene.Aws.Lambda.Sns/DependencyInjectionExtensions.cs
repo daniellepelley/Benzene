@@ -39,7 +39,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<SnsRecordContext>,
                 MultiSerializerOptionsRequestMapper<SnsRecordContext>>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("sns"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Sns));
 
         return services;
     }

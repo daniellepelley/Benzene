@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -18,7 +19,7 @@ public class RabbitMqApplication : MiddlewareApplication<BasicDeliverEventArgs, 
     /// <summary>Initializes a new instance of the <see cref="RabbitMqApplication"/> class.</summary>
     /// <param name="pipeline">The built RabbitMQ middleware pipeline to run each delivery through.</param>
     public RabbitMqApplication(IMiddlewarePipeline<RabbitMqContext> pipeline)
-        : base(new TransportMiddlewarePipeline<RabbitMqContext>("rabbitmq", pipeline),
+        : base(new TransportMiddlewarePipeline<RabbitMqContext>(TransportNames.RabbitMq, pipeline),
             RabbitMqContext.CreateInstance,
             context => context.MessageResult)
     { }

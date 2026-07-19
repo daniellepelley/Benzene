@@ -40,7 +40,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<S3RecordContext>,
                 MultiSerializerOptionsRequestMapper<S3RecordContext>>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("s3"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.S3));
 
         return services;
     }
