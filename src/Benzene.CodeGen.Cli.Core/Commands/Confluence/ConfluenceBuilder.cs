@@ -27,7 +27,7 @@ public class ConfluenceBuilder
 
             Console.WriteLine("{0} code files created", codeFiles.Length);
 
-            var confluenceClient = new ConfluenceClient(payload.ConfluenceUser, payload.ConfluenceApiToken, payload.ConfluencePage);
+            var confluenceClient = new ConfluenceClient(payload.ConfluenceUser, payload.ConfluenceApiToken, payload.ConfluencePage, payload.ConfluenceBaseUrl);
 
             foreach (var codeFile in codeFiles)
             {

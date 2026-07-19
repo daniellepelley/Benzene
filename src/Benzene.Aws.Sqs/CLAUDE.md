@@ -27,10 +27,11 @@ below). Both sit on top of `AWSSDK.SQS`.
 
 ## Important conventions
 - `SqsMessageClient` tags each message with a `topic` (and optional `status`) message attribute; it does
-  **not** map arbitrary Benzene headers onto message attributes. The topic attribute key is a
-  configurable default, not hard-coded (`new SqsMessageClient(sqs, queueUrl, topicAttributeKey)`) — keep
-  it in sync with the consumer's key. The polling consumer's key is
-  `SqsConsumerConfig.TopicAttributeKey` (threaded into `AddSqsConsumer(topicAttributeKey)`).
+  **not** map arbitrary Benzene headers onto message attributes. Both the topic and status attribute keys
+  are configurable defaults, not hard-coded
+  (`new SqsMessageClient(sqs, queueUrl, topicAttributeKey, statusAttributeKey)`) — keep them in sync with
+  the consumer's keys. The polling consumer's topic key is `SqsConsumerConfig.TopicAttributeKey`
+  (threaded into `AddSqsConsumer(topicAttributeKey)`).
 - The target queue URL is supplied to `SqsMessageClient`'s constructor — it is not resolved from
   configuration by this package.
 - **Not supported by the client:** FIFO queues (no `MessageGroupId`/`MessageDeduplicationId` is ever set),

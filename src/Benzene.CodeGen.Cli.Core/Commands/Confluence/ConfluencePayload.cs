@@ -11,6 +11,8 @@ public class ConfluencePayload : ICommandPayload
     public string LambdaName { get; set; }
     [Arg(Name = Constants.Output, Description = Constants.OutputDescription)]
     public string Output { get; set; }
+    [Arg(Name = Constants.ConfluenceBaseUrl, DefaultValue = Constants.ConfluenceBaseUrlDefault, Description = Constants.ConfluenceBaseUrlDescription)]
+    public string ConfluenceBaseUrl { get; set; }
     [Arg(Name = Constants.ConfluenceUser, Description = Constants.ConfluenceUserDescription)]
     public string ConfluenceUser { get; set; }
     [Arg(Name = Constants.ConfluenceApiToken, Description = Constants.ConfluenceApiTokenDescription)]

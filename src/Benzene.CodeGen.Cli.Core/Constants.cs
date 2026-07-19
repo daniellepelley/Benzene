@@ -13,6 +13,9 @@ public static class Constants
     public const string DirectoryDescription = "The destination directory for the code. Leave empty for current directory.";
     public const string File = "file";
     public const string FileDescription = "Path to a benzene spec JSON file to read instead of fetching the spec from a lambda";
+    public const string ConfluenceBaseUrl = "confluence-base-url";
+    public const string ConfluenceBaseUrlDefault = "https://ngbenzene.atlassian.net";
+    public const string ConfluenceBaseUrlDescription = "The base URL of the Confluence (Atlassian) instance, e.g. 'https://your-org.atlassian.net'";
     public const string ConfluenceUser = "confluence-user";
     public const string ConfluenceUserDescription = "The username for the Confluence account";
     public const string ConfluenceApiToken = "confluence-api-token";

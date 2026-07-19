@@ -19,9 +19,18 @@ public class SqsMessageClient : ISqsClient
     /// </summary>
     public const string DefaultTopicAttribute = "topic";
 
+    /// <summary>
+    /// The default message-attribute key the status is written to. It is a single default, not a
+    /// hard-coded value — pass a different key to
+    /// <see cref="SqsMessageClient(IAmazonSQS, string, string, string)"/> to interoperate with a
+    /// consumer that reads the status from another attribute.
+    /// </summary>
+    public const string DefaultStatusAttribute = "status";
+
     private readonly IAmazonSQS _amazonSqs;
     private readonly string _queueUrl;
     private readonly string _topicAttributeKey;
+    private readonly string _statusAttributeKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqsMessageClient"/> class.
@@ -32,11 +41,16 @@ public class SqsMessageClient : ISqsClient
     /// The message attribute the topic is written to. Defaults to
     /// <see cref="DefaultTopicAttribute"/> (<c>"topic"</c>).
     /// </param>
-    public SqsMessageClient(IAmazonSQS amazonSqs, string queueUrl, string topicAttributeKey = DefaultTopicAttribute)
+    /// <param name="statusAttributeKey">
+    /// The message attribute the status is written to. Defaults to
+    /// <see cref="DefaultStatusAttribute"/> (<c>"status"</c>).
+    /// </param>
+    public SqsMessageClient(IAmazonSQS amazonSqs, string queueUrl, string topicAttributeKey = DefaultTopicAttribute, string statusAttributeKey = DefaultStatusAttribute)
     {
         _queueUrl = queueUrl;
         _amazonSqs = amazonSqs;
         _topicAttributeKey = topicAttributeKey;
+        _statusAttributeKey = statusAttributeKey;
     }
 
     /// <summary>
@@ -66,7 +80,7 @@ public class SqsMessageClient : ISqsClient
 
         if (!string.IsNullOrEmpty(status))
         {
-            request.MessageAttributes.Add("status",
+            request.MessageAttributes.Add(_statusAttributeKey,
                 new MessageAttributeValue { DataType = "String", StringValue = status });
         }
 
