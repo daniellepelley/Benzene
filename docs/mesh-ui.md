@@ -39,6 +39,13 @@ service's card above, so "who's still consuming this" is never more than one cli
 that service actually healthy right now." A card hidden by an active search filter is revealed
 automatically when you jump to it this way.
 
+**Clicking a topic id opens its topic view** — a dialog grouping every version of that topic
+together (the flat table is one row per (topic, version); the dialog is the "everything about
+this topic, across every version" answer). Each version gets its own producers/consumers/status
+block, so "is anything still consuming `shipping:booked` v1 while v2 is live" is answered at a
+glance instead of scanning the table for every row that happens to share a topic id. Producer/
+consumer chips inside the dialog are the same jump-to-service links as the table.
+
 ### Serving it
 
 Transport-agnostic HTTP middleware — works on AWS Lambda API Gateway, Azure Functions, ASP.NET

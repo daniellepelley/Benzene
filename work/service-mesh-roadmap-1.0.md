@@ -1077,3 +1077,29 @@ itself is cleared).
 Still not done: linking the *other* direction (a service card → the topics it's involved in) and
 linking out to `Benzene.Spec.Ui`/topic-level detail beyond what's already in the table — both
 reasonable next increments, not started here.
+
+### 10.12 2026-07-19 (implementation) — the topic view itself
+
+The flat topics table is one row per (topic, version); the actual "a topic, its versions, and who
+produces/consumes each" page requested is now a dialog opened by clicking a topic id
+(`mesh-ui.html`'s new `#topic-view`). It groups every version of the clicked topic id together —
+one block per version, each with its own producers/consumers lists (with HTTP mappings shown) and
+status badge — so "is anything still consuming `shipping:booked` v1 while v2 is live" is answered
+in one view instead of scanning the flat table for every row sharing that topic id. Producer/
+consumer names inside the dialog reuse the same `svcChip`/`goToService` jump-to-card links as the
+table (closing the dialog first, so the scroll/flash lands on a visible page). Kept as a dialog
+within the existing single-page Mesh Explorer rather than a new hosted page or route, consistent
+with §10.7/§10.9's "one centralized UI" direction — no new hosting, no CORS story, no micro-frontend.
+
+Verified end-to-end with the same real-browser (Playwright) approach as §10.10/§10.11: opened the
+dialog for a two-version topic, confirmed both version blocks rendered with correct producer/
+consumer counts and the right one's status badge, confirmed a chip clicked *inside* the dialog
+closes it and correctly jumps to/opens/flashes the target service card, and confirmed both the
+close button and native Escape-key dismissal work. The test caught a real bug before it shipped:
+the version label concatenated a hardcoded `"v "` prefix onto version strings that already start
+with `v` (e.g. `v1` rendered as `v v1`) — versions are arbitrary strings, not guaranteed to follow
+that convention, so the prefix was dropped and the raw version string is shown as-is.
+
+Not done: no deep-linkable URL for a specific topic (e.g. a `#topic-<id>` hash) — opening a topic
+view is currently session-local, not shareable via URL. A reasonable next increment, not started
+here since it wasn't part of what was asked.
