@@ -182,6 +182,17 @@
   .search input::placeholder { color: var(--ink-faint); }
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
 
+  .topics-search { position: relative; width: 220px; }
+  .topics-search input {
+    width: 100%; height: 28px; padding: 0 10px 0 28px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 12.5px;
+  }
+  .topics-search input::placeholder { color: var(--ink-faint); }
+  .topics-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--ink-faint); }
+  .topics-empty { color: var(--ink-faint); font-size: 12.5px; padding: 14px 4px; }
+
   /* ---------- Service card ---------- */
   .svc {
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
@@ -207,6 +218,8 @@
   .svc-links { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; font-size: 12px; }
   .svc-links a { color: var(--accent); text-decoration: none; }
   .svc-links a:hover { text-decoration: underline; }
+  .svc-topics-link { background: none; border: none; padding: 0; font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; }
+  .svc-topics-link:hover, .svc-topics-link:focus-visible { text-decoration: underline; outline: none; }
   .chev { flex: none; color: var(--ink-faint); transition: transform .16s; }
   .svc.open .chev { transform: rotate(90deg); }
 
@@ -310,7 +323,8 @@
   .topo-table tr:hover td { background: var(--surface-2); }
   .b-source-tempo { color: var(--accent); background: var(--accent-tint); }
   .b-source-structural { color: var(--chip-ink); background: var(--chip-bg); }
-  .topics-toggle { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .topo-head-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .topics-toggle { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; gap: 5px; }
   .topics-toggle input { cursor: pointer; }
   .t-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-family: var(--mono); }
   .t-domain { color: var(--accent); background: var(--accent-tint); }
@@ -369,7 +383,13 @@
     <div class="topo-head">
       <h2>Topics</h2>
       <span class="topo-generated" id="topics-generated"></span>
-      <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show utilities</label>
+      <div class="topo-head-actions">
+        <div class="topics-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+          <input type="search" id="topics-filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
+        </div>
+        <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show utilities</label>
+      </div>
     </div>
     <div class="topo-table-wrap">
       <table class="topo-table" id="topics-table">
@@ -593,6 +613,11 @@
     if (svc.healthUrl) { var a2 = el("a", null, "health"); a2.href = svc.healthUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
     var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
     if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; a3.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a3); }
+    var a4 = el("button", "svc-topics-link", "topics");
+    a4.type = "button";
+    a4.title = "Find topics " + svc.name + " produces or consumes";
+    a4.addEventListener("click", function (e) { e.stopPropagation(); goToTopicsFor(svc.name); });
+    links.appendChild(a4);
     head.appendChild(links);
 
     var chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -705,6 +730,20 @@
 
   function cssEscape(s) {
     return window.CSS && CSS.escape ? CSS.escape(s) : String(s).replace(/["\\]/g, "\\$&");
+  }
+
+  /* ---------- cross-linking, the other direction: a service card -> the topics it's involved in
+     Reuses the topics search box rather than a separate view - "which topics does orders-api
+     touch" is exactly what that search already answers once it also matches producer/consumer
+     names, not just the topic id (work/service-mesh-roadmap-1.0.md §10.11's remaining gap). */
+  function goToTopicsFor(name) {
+    var section = document.getElementById("topics-section");
+    if (section.style.display === "none") return; // no topics.json published - nothing to jump to
+
+    var filterInput = document.getElementById("topics-filter");
+    filterInput.value = name;
+    renderTopicRows();
+    section.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   /* ---------- loader dialog ---------- */
@@ -846,11 +885,31 @@
     document.getElementById("topic-view").close();
   });
 
+  function topicMatchesQuery(t, q) {
+    if (!q) return true;
+    if (t.topic.toLowerCase().indexOf(q) >= 0) return true;
+    var services = (t.producers || []).concat(t.consumers || []);
+    return services.some(function (s) { return (s.service || "").toLowerCase().indexOf(q) >= 0; });
+  }
+
   function renderTopicRows() {
     var showUtils = document.getElementById("topics-show-utils").checked;
-    var rows = currentTopics.filter(function (t) { return showUtils || !t.reserved; });
+    var q = document.getElementById("topics-filter").value.trim().toLowerCase();
+    var rows = currentTopics.filter(function (t) {
+      return (showUtils || !t.reserved) && topicMatchesQuery(t, q);
+    });
     var tbody = document.getElementById("topics-tbody");
     tbody.innerHTML = "";
+
+    if (!rows.length) {
+      var emptyRow = el("tr");
+      var emptyCell = el("td", "topics-empty", q ? "No topics match “" + q + "”." : "No topics to show.");
+      emptyCell.colSpan = 7;
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+
     rows.forEach(function (t) {
       var tr = el("tr");
 
@@ -907,6 +966,7 @@
     });
   }
   document.getElementById("topics-show-utils").addEventListener("change", renderTopicRows);
+  document.getElementById("topics-filter").addEventListener("input", renderTopicRows);
 
   /* ---------- topology ---------- */
   function loadTopology() {

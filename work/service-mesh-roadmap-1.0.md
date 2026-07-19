@@ -1103,3 +1103,28 @@ that convention, so the prefix was dropped and the raw version string is shown a
 Not done: no deep-linkable URL for a specific topic (e.g. a `#topic-<id>` hash) — opening a topic
 view is currently session-local, not shareable via URL. A reasonable next increment, not started
 here since it wasn't part of what was asked.
+
+### 10.13 2026-07-19 (implementation) — topic search, and the reverse cross-link for free
+
+Two of §10.8/§10.11's remaining deferred items, done together since they turned out to be nearly
+the same piece of work:
+
+- **Topic search at fleet scale** (§10.8's "discoverability at scale" finding): the topics table
+  gained its own search box, matching against the topic id *or* any producer/consumer service
+  name — not just topic id, so it doubles as a lookup by service. An empty-result state shows a
+  clear "no topics match" message rather than a silently blank table.
+- **The reverse cross-link** (§10.11's "still not done: a service card → the topics it's involved
+  in"): each service card gained a **topics** action that pre-fills the new search box with that
+  service's name, re-renders the table, and scrolls to it. Deliberately not a new view — it reuses
+  the search box directly, since "which topics does `orders-api` touch" and "find topics matching
+  `orders-api`" are the same question asked from two directions.
+
+Verified end-to-end with the same real-browser (Playwright) approach as the prior three
+increments: confirmed search matches by topic id and by service name independently, confirmed the
+empty-state message, confirmed clearing the filter restores every row, and confirmed clicking a
+service card's "topics" link correctly fills the search and shows exactly the topics that service
+produces or consumes (including topics where it's a producer on one version and absent on another
+— proving the match is per-topic-entry, not per-topic-id).
+
+Still not done: the deep-linkable topic URL from §10.12, and §10.8's remaining staleness/changelog
+history and CI/dev-time surfacing items — all still open, none blocking on what's shipped so far.

@@ -46,6 +46,12 @@ block, so "is anything still consuming `shipping:booked` v1 while v2 is live" is
 glance instead of scanning the table for every row that happens to share a topic id. Producer/
 consumer chips inside the dialog are the same jump-to-service links as the table.
 
+**The topic table has its own search box**, matching against the topic id *or* any producer/
+consumer service name — useful once a fleet has more topics than fit on screen, and it doubles as
+the reverse cross-link: every service card also has a **topics** link that pre-fills this search
+with that service's name and scrolls to the table, answering "which topics does `orders-api`
+touch" from the service side instead of hunting through rows by hand.
+
 ### Serving it
 
 Transport-agnostic HTTP middleware — works on AWS Lambda API Gateway, Azure Functions, ASP.NET
