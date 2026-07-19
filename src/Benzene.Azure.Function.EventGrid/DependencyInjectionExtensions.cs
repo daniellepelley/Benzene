@@ -32,7 +32,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<EventGridContext>>(resolver =>
             new PresetTopicMessageTopicGetter<EventGridContext>(new EventGridMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<EventGridContext>, HeaderMessageVersionGetter<EventGridContext>>();
+        services.AddHeaderMessageVersionGetter<EventGridContext>();
         services.AddScoped<IMessageHeadersGetter<EventGridContext>, EventGridMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventGridContext>, EventGridMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<EventGridContext>, EventGridMessageHandlerResultSetter>();

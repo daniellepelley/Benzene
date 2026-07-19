@@ -6,9 +6,11 @@ using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Http;
+using Benzene.Http.Routing;
 
 namespace Benzene.Azure.Function.AspNet;
 
@@ -61,7 +63,10 @@ public static class DependencyInjectionExtensions
     public static IBenzeneServiceContainer AddAspNet(this IBenzeneServiceContainer services)
     {
         services.AddScoped<IMessageTopicGetter<AspNetContext>, AspNetMessageTopicGetter>();
-        services.AddScoped<IMessageVersionGetter<AspNetContext>, AspNetMessageVersionGetter>();
+        services.AddScoped<IMessageVersionGetter<AspNetContext>>(resolver =>
+            new AspNetMessageVersionGetter(resolver.GetService<IRouteFinder>(),
+                resolver.GetService<IMessageHeadersGetter<AspNetContext>>(),
+                resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspNetMessageHandlerResultSetter>();

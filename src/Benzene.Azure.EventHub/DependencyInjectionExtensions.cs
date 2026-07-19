@@ -44,7 +44,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<EventHubConsumerContext>>(resolver =>
             new PresetTopicMessageTopicGetter<EventHubConsumerContext>(new EventHubConsumerMessageTopicGetter(topicPropertyKey), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<EventHubConsumerContext>, HeaderMessageVersionGetter<EventHubConsumerContext>>();
+        services.AddHeaderMessageVersionGetter<EventHubConsumerContext>();
         services.AddScoped<IMessageHeadersGetter<EventHubConsumerContext>, EventHubConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventHubConsumerContext>, EventHubConsumerMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<EventHubConsumerContext>, EventHubConsumerMessageHandlerResultSetter>();

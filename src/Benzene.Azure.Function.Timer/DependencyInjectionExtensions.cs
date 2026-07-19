@@ -32,7 +32,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<TimerContext>>(resolver =>
             new PresetTopicMessageTopicGetter<TimerContext>(new TimerMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<TimerContext>, HeaderMessageVersionGetter<TimerContext>>();
+        services.AddHeaderMessageVersionGetter<TimerContext>();
         services.AddScoped<IMessageHeadersGetter<TimerContext>, TimerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<TimerContext>, TimerMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<TimerContext>, TimerMessageHandlerResultSetter>();

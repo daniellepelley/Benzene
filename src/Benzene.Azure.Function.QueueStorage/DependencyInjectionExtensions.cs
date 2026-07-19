@@ -32,7 +32,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<QueueStorageContext>>(resolver =>
             new PresetTopicMessageTopicGetter<QueueStorageContext>(new QueueStorageMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<QueueStorageContext>, HeaderMessageVersionGetter<QueueStorageContext>>();
+        services.AddHeaderMessageVersionGetter<QueueStorageContext>();
         services.AddScoped<IMessageHeadersGetter<QueueStorageContext>, QueueStorageMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<QueueStorageContext>, QueueStorageMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<QueueStorageContext>, QueueStorageMessageHandlerResultSetter>();

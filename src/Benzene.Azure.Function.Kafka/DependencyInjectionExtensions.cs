@@ -30,7 +30,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<KafkaContext>, KafkaMessageTopicGetter>();
-        services.AddScoped<IMessageVersionGetter<KafkaContext>, HeaderMessageVersionGetter<KafkaContext>>();
+        services.AddHeaderMessageVersionGetter<KafkaContext>();
         services.AddScoped<IMessageHeadersGetter<KafkaContext>, KafkaMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<KafkaContext>, KafkaMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<KafkaContext>, KafkaMessageHandlerResultSetter>();

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Http.Routing;
 
@@ -15,8 +16,9 @@ public class AspNetMessageVersionGetter : HttpMessageVersionGetterBase<AspNetCon
     /// </summary>
     /// <param name="routeFinder">The route finder used to match the request's method and path to a route.</param>
     /// <param name="headersGetter">Extracts the header dictionary from the context, for the fallback path.</param>
-    public AspNetMessageVersionGetter(IRouteFinder routeFinder, IMessageHeadersGetter<AspNetContext> headersGetter)
-        : base(routeFinder, headersGetter)
+    /// <param name="headerNames">The header-name fallback list; defaults to <see cref="Benzene.Core.MessageHandlers.HeaderMessageVersionGetter{TContext}.DefaultHeaderNames"/> when null.</param>
+    public AspNetMessageVersionGetter(IRouteFinder routeFinder, IMessageHeadersGetter<AspNetContext> headersGetter, IReadOnlyList<string>? headerNames = null)
+        : base(routeFinder, headersGetter, headerNames)
     {
     }
 

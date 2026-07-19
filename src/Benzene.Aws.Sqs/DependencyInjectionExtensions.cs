@@ -44,7 +44,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ISqsClientFactory, SqsClientFactory>();
         services.AddScoped<IMessageTopicGetter<SqsConsumerMessageContext>>(resolver =>
             new PresetTopicMessageTopicGetter<SqsConsumerMessageContext>(new SqsConsumerMessageTopicGetter(topicAttributeKey), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<SqsConsumerMessageContext>, HeaderMessageVersionGetter<SqsConsumerMessageContext>>();
+        services.AddHeaderMessageVersionGetter<SqsConsumerMessageContext>();
         services.AddScoped<IMessageHeadersGetter<SqsConsumerMessageContext>, SqsConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsConsumerMessageContext>, SqsConsumerMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SqsConsumerMessageContext>, SqsConsumerMessageHandlerResultSetter>();

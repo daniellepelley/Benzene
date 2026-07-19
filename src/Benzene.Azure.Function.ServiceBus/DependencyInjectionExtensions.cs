@@ -44,7 +44,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<ServiceBusContext>>(resolver =>
             new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter(topicPropertyKey), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<ServiceBusContext>, HeaderMessageVersionGetter<ServiceBusContext>>();
+        services.AddHeaderMessageVersionGetter<ServiceBusContext>();
         services.AddScoped<IMessageHeadersGetter<ServiceBusContext>, ServiceBusMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusContext>, ServiceBusMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<ServiceBusContext>, ServiceBusMessageHandlerResultSetter>();

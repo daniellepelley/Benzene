@@ -30,7 +30,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<DynamoDbRecordContext>, DynamoDbMessageTopicGetter>();
-        services.AddScoped<IMessageVersionGetter<DynamoDbRecordContext>, HeaderMessageVersionGetter<DynamoDbRecordContext>>();
+        services.AddHeaderMessageVersionGetter<DynamoDbRecordContext>();
         services.AddScoped<IMessageHeadersGetter<DynamoDbRecordContext>, DynamoDbMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<DynamoDbRecordContext>, DynamoDbMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<DynamoDbRecordContext>, DynamoDbMessageHandlerResultSetter>();

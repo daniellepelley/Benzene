@@ -43,7 +43,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<RabbitMqContext>>(resolver =>
             new PresetTopicMessageTopicGetter<RabbitMqContext>(new RabbitMqMessageTopicGetter(topicHeaderKey), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<RabbitMqContext>, HeaderMessageVersionGetter<RabbitMqContext>>();
+        services.AddHeaderMessageVersionGetter<RabbitMqContext>();
         services.AddScoped<IMessageHeadersGetter<RabbitMqContext>, RabbitMqMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<RabbitMqContext>, RabbitMqMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<RabbitMqContext>, RabbitMqMessageHandlerResultSetter>();

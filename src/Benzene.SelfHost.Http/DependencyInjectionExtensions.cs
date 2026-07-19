@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.MediaFormats;
@@ -11,6 +12,7 @@ using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Http;
+using Benzene.Http.Routing;
 
 namespace Benzene.SelfHost.Http;
 
@@ -21,7 +23,10 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.TryAddScoped<IMessageTopicGetter<SelfHostHttpContext>, HttpListenerMessageTopicGetter>();
-        services.TryAddScoped<IMessageVersionGetter<SelfHostHttpContext>, HttpListenerMessageVersionGetter>();
+        services.TryAddScoped<IMessageVersionGetter<SelfHostHttpContext>>(resolver =>
+            new HttpListenerMessageVersionGetter(resolver.GetService<IRouteFinder>(),
+                resolver.GetService<IMessageHeadersGetter<SelfHostHttpContext>>(),
+                resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, HttpListenerMessageHandlerResultSetter>();

@@ -102,7 +102,15 @@ e.g. `new HeaderMessageVersionGetter<TContext>(headersGetter, headerNames: ["ben
 "version", "x-version"])` — not a hard-coded scan order, so an application can narrow, reorder, or
 fully replace it via its own DI registration without writing a new `IMessageVersionGetter<TContext>`
 from scratch, while still being free to replace the whole getter (e.g. for a version signal that
-isn't a header/route parameter at all) exactly as any other extension point permits. Because every
+isn't a header/route parameter at all) exactly as any other extension point permits. Because the
+fallback list is an **application-wide** contract (the same regardless of transport, unlike a
+transport's topic attribute/property key), it is set in **one place** rather than per transport:
+`services.AddMessageVersionHeaderNames("schema-version", ...)` registers a
+`MessageVersionHeaderNames` override that every transport's version getter resolves at message-handle
+time (each transport registers its getter via `AddHeaderMessageVersionGetter<TContext>()`, the HTTP
+transports via their `HttpMessageVersionGetterBase` subclasses). Registration order relative to the
+transport `UseXxx`/`AddXxx` calls does not matter, and when no override is registered every getter
+falls back to `HeaderMessageVersionGetter<TContext>.DefaultHeaderNames`. Because every
 transport already registers an `IMessageHeadersGetter<TContext>` mapping its native metadata onto
 the flat header dictionary (wire-contracts.md §2), one generic `HeaderMessageVersionGetter<TContext>`
 built against that (not the native transport type) can serve as the default for every transport

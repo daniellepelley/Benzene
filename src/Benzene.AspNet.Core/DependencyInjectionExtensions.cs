@@ -14,6 +14,7 @@ using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Middleware;
 using Benzene.Http;
+using Benzene.Http.Routing;
 
 namespace Benzene.AspNet.Core;
 
@@ -37,7 +38,10 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ISerializer, JsonSerializer>();
         services.AddScoped<IMiddlewarePipelineBuilder<AspNetContext>, MiddlewarePipelineBuilder<AspNetContext>>();
         services.AddScoped<IMessageTopicGetter<AspNetContext>, AspNetMessageTopicGetter>();
-        services.AddScoped<IMessageVersionGetter<AspNetContext>, AspNetMessageVersionGetter>();
+        services.AddScoped<IMessageVersionGetter<AspNetContext>>(resolver =>
+            new AspNetMessageVersionGetter(resolver.GetService<IRouteFinder>(),
+                resolver.GetService<IMessageHeadersGetter<AspNetContext>>(),
+                resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspMessageHandlerResultSetter>();

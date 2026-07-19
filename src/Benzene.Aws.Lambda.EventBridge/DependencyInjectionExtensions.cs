@@ -26,7 +26,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<EventBridgeContext>, EventBridgeMessageTopicGetter>();
-        services.AddScoped<IMessageVersionGetter<EventBridgeContext>, HeaderMessageVersionGetter<EventBridgeContext>>();
+        services.AddHeaderMessageVersionGetter<EventBridgeContext>();
         services.AddScoped<IMessageHeadersGetter<EventBridgeContext>, EventBridgeMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventBridgeContext>, EventBridgeMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<EventBridgeContext>, EventBridgeMessageHandlerResultSetter>();

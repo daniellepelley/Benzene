@@ -87,6 +87,17 @@ Provides complete implementation of message handler infrastructure for command/q
 - `MessageRouterBuilder` - Builds message routing
 - `HandlerPipelineBuilder` - Builds handler pipelines
 - `VersionSelector` - Selects handler versions
+- `HeaderMessageVersionGetter<TContext>` - the default `IMessageVersionGetter<TContext>`: reads the
+  payload schema version from the header dictionary, trying each name in an ordered fallback list
+  (default `["benzene-version", "version", "x-version"]`, `DefaultHeaderNames`)
+- `MessageVersionHeaderNames` + `MessageVersionHeaderNamesExtensions` - the header-name fallback is
+  an **application-wide** concern (same set regardless of transport, unlike a per-transport topic
+  key), so it's overridden in one place: `AddMessageVersionHeaderNames(...)` registers a
+  `MessageVersionHeaderNames` that every transport's getter resolves at message-handle time. Each
+  transport registers its version getter via `AddHeaderMessageVersionGetter<TContext>()`
+  (`TryAdd...` for `BenzeneMessageContext`); the HTTP transports layer the route-parameter check in
+  front via `HttpMessageVersionGetterBase` subclasses that thread the same override. No override
+  registered ⇒ `DefaultHeaderNames`
 - `PresetTopicHolder` - scoped (one instance per message), carries the current message's preset
   `ITopic`, or `null` if none was set. **Not on the context** - a context type describes a
   transport message's shape; it shouldn't accumulate optional, cross-cutting routing overrides

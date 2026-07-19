@@ -42,7 +42,7 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<IMessageTopicGetter<SqsMessageContext>>(resolver =>
             new PresetTopicMessageTopicGetter<SqsMessageContext>(new SqsMessageTopicGetter(topicAttributeKey), resolver.GetService<PresetTopicHolder>()));
-        services.AddScoped<IMessageVersionGetter<SqsMessageContext>, HeaderMessageVersionGetter<SqsMessageContext>>();
+        services.AddHeaderMessageVersionGetter<SqsMessageContext>();
         services.AddScoped<IMessageHeadersGetter<SqsMessageContext>, SqsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsMessageContext>, SqsMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SqsMessageContext>, SqsMessageHandlerResultSetter>();

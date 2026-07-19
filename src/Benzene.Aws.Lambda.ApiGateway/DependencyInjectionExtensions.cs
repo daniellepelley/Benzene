@@ -17,6 +17,7 @@ using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Benzene.Http.Routing;
 
 namespace Benzene.Aws.Lambda.ApiGateway;
 
@@ -41,7 +42,10 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.TryAddScoped<IMessageTopicGetter<ApiGatewayContext>, ApiGatewayMessageTopicGetter>();
-        services.TryAddScoped<IMessageVersionGetter<ApiGatewayContext>, ApiGatewayMessageVersionGetter>();
+        services.TryAddScoped<IMessageVersionGetter<ApiGatewayContext>>(resolver =>
+            new ApiGatewayMessageVersionGetter(resolver.GetService<IRouteFinder>(),
+                resolver.GetService<IMessageHeadersGetter<ApiGatewayContext>>(),
+                resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.TryAddScoped<IMessageHeadersGetter<ApiGatewayContext>, ApiGatewayMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<ApiGatewayContext>, ApiGatewayMessageBodyGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageHandlerResultSetter>();

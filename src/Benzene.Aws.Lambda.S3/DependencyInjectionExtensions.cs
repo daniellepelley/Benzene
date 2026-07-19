@@ -31,7 +31,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<S3RecordContext>, S3MessageTopicGetter>();
-        services.AddScoped<IMessageVersionGetter<S3RecordContext>, HeaderMessageVersionGetter<S3RecordContext>>();
+        services.AddHeaderMessageVersionGetter<S3RecordContext>();
         services.AddScoped<IMessageHeadersGetter<S3RecordContext>, S3MessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<S3RecordContext>, S3MessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<S3RecordContext>, S3MessageHandlerResultSetter>();

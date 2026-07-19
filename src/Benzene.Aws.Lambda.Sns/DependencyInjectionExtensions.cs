@@ -40,7 +40,7 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<JsonSerializer>();
 
         services.AddScoped<IMessageTopicGetter<SnsRecordContext>>(_ => new SnsMessageTopicGetter(topicAttributeKey));
-        services.AddScoped<IMessageVersionGetter<SnsRecordContext>, HeaderMessageVersionGetter<SnsRecordContext>>();
+        services.AddHeaderMessageVersionGetter<SnsRecordContext>();
         services.AddScoped<IMessageHeadersGetter<SnsRecordContext>, SnsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SnsRecordContext>, SnsMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<SnsRecordContext>, SnsMessageHandlerResultSetter>();
