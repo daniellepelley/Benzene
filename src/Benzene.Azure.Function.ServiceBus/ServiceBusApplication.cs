@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -48,7 +49,7 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
 
     public ServiceBusBatchApplication(IMiddlewarePipeline<ServiceBusContext> pipeline, ServiceBusOptions? options = null)
     {
-        _pipeline = new TransportMiddlewarePipeline<ServiceBusContext>("service-bus", pipeline);
+        _pipeline = new TransportMiddlewarePipeline<ServiceBusContext>(TransportNames.ServiceBus, pipeline);
         _options = options ?? new ServiceBusOptions();
     }
 

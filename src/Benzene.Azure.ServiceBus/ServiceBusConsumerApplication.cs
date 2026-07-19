@@ -1,5 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -20,7 +21,7 @@ public class ServiceBusConsumerApplication : MiddlewareApplication<ServiceBusRec
     /// </summary>
     /// <param name="pipeline">The built Service Bus middleware pipeline to run each message through.</param>
     public ServiceBusConsumerApplication(IMiddlewarePipeline<ServiceBusConsumerContext> pipeline)
-        : base(new TransportMiddlewarePipeline<ServiceBusConsumerContext>("service-bus", pipeline),
+        : base(new TransportMiddlewarePipeline<ServiceBusConsumerContext>(TransportNames.ServiceBus, pipeline),
             ServiceBusConsumerContext.CreateInstance,
             context => context.MessageResult)
     { }

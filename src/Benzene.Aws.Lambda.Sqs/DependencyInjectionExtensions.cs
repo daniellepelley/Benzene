@@ -41,7 +41,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<SqsMessageContext>,
                 MultiSerializerOptionsRequestMapper<SqsMessageContext>>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("sqs"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Sqs));
         return services;
     }
 }

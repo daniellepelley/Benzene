@@ -39,7 +39,7 @@ public static class DependencyInjectionExtensions
             .AddScoped<IRequestMapper<DynamoDbRecordContext>,
                 MultiSerializerOptionsRequestMapper<DynamoDbRecordContext>>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("dynamodb"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.DynamoDb));
         return services;
     }
 }

@@ -21,7 +21,7 @@ public static class DependencyInjectionExtensions
     /// </remarks>
     public static IBenzeneServiceContainer AddKinesis(this IBenzeneServiceContainer services)
     {
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("kinesis"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Kinesis));
 
         return services;
     }

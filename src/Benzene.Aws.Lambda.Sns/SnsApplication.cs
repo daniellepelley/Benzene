@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ public class SnsApplication : IMiddlewareApplication<SNSEvent>
     /// </param>
     public SnsApplication(IMiddlewarePipeline<SnsRecordContext> pipeline, SnsOptions options = null)
     {
-        _pipeline = new TransportMiddlewarePipeline<SnsRecordContext>("sns", pipeline);
+        _pipeline = new TransportMiddlewarePipeline<SnsRecordContext>(TransportNames.Sns, pipeline);
         _options = options ?? new SnsOptions();
     }
 

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -45,7 +46,7 @@ public class KafkaBatchApplication : IMiddlewareApplication<KafkaRecord[]>
 
     public KafkaBatchApplication(IMiddlewarePipeline<KafkaContext> pipeline, KafkaOptions? options = null)
     {
-        _pipeline = new TransportMiddlewarePipeline<KafkaContext>("kafka", pipeline);
+        _pipeline = new TransportMiddlewarePipeline<KafkaContext>(TransportNames.Kafka, pipeline);
         _options = options ?? new KafkaOptions();
     }
 

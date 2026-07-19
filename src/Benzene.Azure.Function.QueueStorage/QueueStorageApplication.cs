@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -21,7 +22,7 @@ public class QueueStorageApplication : EntryPointMiddlewareApplication<QueueStor
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
     public QueueStorageApplication(IMiddlewarePipeline<QueueStorageContext> pipeline, IServiceResolverFactory serviceResolverFactory)
         : base(new MiddlewareMultiApplication<QueueStorageMessage[], QueueStorageContext>(
-                new TransportMiddlewarePipeline<QueueStorageContext>("queue-storage", pipeline),
+                new TransportMiddlewarePipeline<QueueStorageContext>(TransportNames.QueueStorage, pipeline),
                 messages => messages.Select(message => new QueueStorageContext(message)).ToArray()),
             serviceResolverFactory)
     { }

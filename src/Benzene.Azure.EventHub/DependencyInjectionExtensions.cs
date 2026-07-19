@@ -1,8 +1,10 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
@@ -38,6 +40,8 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageHandlerResultSetter<EventHubConsumerContext>, EventHubConsumerMessageHandlerResultSetter>();
         services.AddMediaFormatNegotiation<EventHubConsumerContext>();
         services.AddScoped<IRequestMapper<EventHubConsumerContext>, MultiSerializerOptionsRequestMapper<EventHubConsumerContext>>();
+
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.EventHub));
 
         return services;
     }

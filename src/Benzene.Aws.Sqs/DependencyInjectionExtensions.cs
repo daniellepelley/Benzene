@@ -1,9 +1,11 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Aws.Sqs.Consumer;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
@@ -40,6 +42,8 @@ public static class DependencyInjectionExtensions
         services
             .AddScoped<IRequestMapper<SqsConsumerMessageContext>,
                 MultiSerializerOptionsRequestMapper<SqsConsumerMessageContext>>();
+
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Sqs));
 
         return services;
     }

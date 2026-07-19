@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -19,7 +20,7 @@ public class TimerApplication : EntryPointMiddlewareApplication<TimerTriggerInfo
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
     public TimerApplication(IMiddlewarePipeline<TimerContext> pipeline, IServiceResolverFactory serviceResolverFactory)
         : base(new MiddlewareApplication<TimerTriggerInfo, TimerContext>(
-                new TransportMiddlewarePipeline<TimerContext>("timer", pipeline),
+                new TransportMiddlewarePipeline<TimerContext>(TransportNames.Timer, pipeline),
                 timer => new TimerContext(timer)),
             serviceResolverFactory)
     { }

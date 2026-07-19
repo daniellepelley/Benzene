@@ -1,5 +1,6 @@
 using System.Linq;
 using Amazon.Lambda.S3Events;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -18,7 +19,7 @@ public class S3Application : MiddlewareMultiApplication<S3Event, S3RecordContext
     /// <param name="pipeline">The built S3 middleware pipeline to run each record through.</param>
     public S3Application(IMiddlewarePipeline<S3RecordContext> pipeline)
         : base(
-            new TransportMiddlewarePipeline<S3RecordContext>("s3", pipeline),
+            new TransportMiddlewarePipeline<S3RecordContext>(TransportNames.S3, pipeline),
             @event => @event.Records.Select(record => S3RecordContext.CreateInstance(@event, record)).ToArray())
     { }
 }

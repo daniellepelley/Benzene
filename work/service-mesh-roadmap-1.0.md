@@ -1195,3 +1195,150 @@ return to the main view with a fully clean URL (no trailing `#`), confirmed dire
 **topics** link from inside the topic page correctly exits back to the main view and filters the
 topic table for that service — the "drill into the service, then into what else it touches" loop
 the feedback asked for.
+
+### 10.16 2026-07-19 (plan) — §10.1 transport-neutral `bindings`, revised and scoped down
+
+§10.10's "explicitly not done" note deferred §10.1 because auto-deriving per-topic transport
+bindings (queue name, Kafka topic, EventBridge bus, …) looked like it needed ~10 new per-transport
+declaration attributes — a separate, unscoped design effort. Asked to plan it now, with a specific
+steer: there's already transport-tagging machinery (`TransportMiddlewarePipeline`) — reuse or adapt
+it instead of inventing new attributes, and stop hardcoding/duplicating the transport name string.
+Investigating that machinery changes the shape of the plan substantially — it's smaller than §10.1
+originally sketched, and it surfaces two real bugs worth fixing as part of the same change.
+
+**What already exists (two separate mechanisms, easy to conflate — confirmed by reading both in
+full):**
+
+1. `TransportMiddlewarePipeline<TContext>` (`Benzene.Core.MessageHandlers.Info`) — a **runtime,
+   per-invocation** decorator. Every transport `Application` class wraps its pipeline in one,
+   passing a literal transport-name string (`"sqs"`, `"kafka"`, `"rabbitmq"`, …); at invocation
+   time it calls `ISetCurrentTransport.SetTransport(name)` so `ICurrentTransport` (log
+   enrichment) reports the right transport for *that message*. ~20 call sites, one per transport
+   `Application` class.
+2. `ITransportInfo`/`ITransportsInfo` (`Benzene.Abstractions.MessageHandlers.Info`,
+   implementations in `Benzene.Core.MessageHandlers.Info`) — a **startup-time DI registry**,
+   entirely separate from (1). Each transport package's own `DependencyInjectionExtensions.cs`
+   registers `services.AddSingleton<ITransportInfo>(_ => new TransportInfo("<name>"))` as a side
+   effect of that transport being configured; `TransportsInfo` aggregates every registered
+   `ITransportInfo.Name` into a deduplicated `string[] Transports`. This is available at
+   DI-container-build time — i.e. at spec-build time — with **no invocation needed**, which is
+   exactly the shape a spec builder wants (specs are built once at startup, not per-message).
+
+**Why the per-topic attribute design isn't needed.** Read every `UseMessageHandlers<TContext>(...)`
+overload in `Benzene.Core.MessageHandlers/Extensions.cs` (7 overloads, lines 56–255) end to end:
+none of them filter the handler set by transport. Whatever handlers are discovered/registered for
+a pipeline are reachable by whatever transport that pipeline is wired to — transport reachability
+is a **host-level** fact ("this process is wired to SQS and HTTP"), not a per-topic one. The one
+genuine exception is HTTP, which already requires an explicit `[HttpEndpoint(method, path)]`
+attribute per handler to get a route — and that's already captured correctly as per-topic
+`httpMappings`. So the missing piece isn't "which topics does which transport carry" (no topic
+opts out of a wired non-HTTP transport), it's just "which non-HTTP transports is this host wired
+to at all" — a single document-level fact, sourced straight from `ITransportsInfo`, not a new
+per-topic-per-transport declaration mechanism.
+
+**Two real bugs found while tracing the ~20 call sites** (each transport package's own
+`DependencyInjectionExtensions.cs`, grepped in full — `new TransportInfo(` and
+`TransportMiddlewarePipeline<` side by side):
+
+- **Several transports tag messages at runtime but never register `ITransportInfo` at startup**,
+  so `ITransportsInfo.Transports` silently omits them today: `Benzene.RabbitMq` (tags
+  `"rabbitmq"`), `Benzene.Azure.Function.BlobStorage` (`"blob-storage"`), `Benzene.Azure.CosmosDb`
+  (`"cosmos-db"`), `Benzene.Azure.EventHub`'s consumer (`"event-hub"`), `Benzene.Azure.ServiceBus`'s
+  consumer (`"service-bus"` — note `Benzene.Azure.Function.ServiceBus`, a *different* package, does
+  register it), `Benzene.Aws.Sqs`'s self-host consumer (`"sqs"` — again, `Benzene.Aws.Lambda.Sqs`,
+  a different package, does register it). A host built on any of these alone would build a
+  `transports` list missing its own transport.
+- **`"direct"` vs `"benzene"` drift**: `Benzene.Core.MessageHandlers/DI/Extensions.cs`'s
+  `AddBenzeneMessage()` registers the startup `ITransportInfo` as `"direct"`, but
+  `BenzeneMessageApplication` tags every runtime invocation as `"benzene"`
+  (`TransportMiddlewarePipeline<BenzeneMessageContext>("benzene", pipeline)`). Same transport, two
+  different names depending which mechanism you ask — exactly the kind of drift a shared constant
+  would have caught at compile time.
+
+**Revised plan:**
+
+1. **Shared transport-name constants.** Add `TransportNames` (static class, one `const string` per
+   transport — `Sqs = "sqs"`, `Kafka = "kafka"`, `RabbitMq = "rabbitmq"`, `Benzene = "benzene"`,
+   …) to `Benzene.Abstractions.MessageHandlers.Info`, alongside `ITransportInfo`/`ITransportsInfo`
+   — every package that has either call site already references this project (directly or
+   transitively through `Benzene.Core.MessageHandlers`). Replace every literal transport-name
+   string at both the `TransportMiddlewarePipeline<TContext>("...", ...)` call site and the
+   `new TransportInfo("...")` call site with the matching constant, in the same ~20 packages. This
+   is the concrete fix for "no longer hardcoded" / "shared" from the ask — one source of truth per
+   transport name, referenced (not retyped) at every site that needs it, so the two mechanisms
+   can never drift apart again the way `"direct"`/`"benzene"` did.
+2. **Fix the coverage gap.** Add the missing `ITransportInfo` registrations found above (RabbitMq,
+   BlobStorage, CosmosDb, Azure.EventHub consumer, Azure.ServiceBus consumer, Aws.Sqs self-host
+   consumer) to each package's `DependencyInjectionExtensions.cs`, using the new constants. Resolve
+   the `"direct"`/`"benzene"` drift by renaming `AddBenzeneMessage()`'s registration to
+   `TransportNames.Benzene` (matching the runtime tag, which is the name that actually shows up in
+   logs today — `"direct"` was never observable at runtime, so nothing depends on that string).
+   Without this step, the new spec field in (3) would be built on the same incomplete data these
+   bugs already cause — worth fixing regardless of (3), but load-bearing for it.
+3. **Document-level `transports` field on the `benzene` spec.** Add `string[] Transports` to
+   `EventServiceDocument` (top-level, sibling to the existing `messageEndpoint` — not per-topic;
+   §10.1's per-topic shape isn't needed per the reasoning above), written only when non-empty
+   (same "omit rather than emit an empty array" convention `Version`/`httpMappings` already
+   follow). Add a new `IConsumesTransportsInfo<TBuilder>` seam to `Benzene.Schema.OpenApi.Abstractions`
+   (same shape as `IConsumesApplicationInfo` etc.), implemented by `EventServiceDocumentBuilder` via
+   a new `AddTransportsInfo(ITransportsInfo)` method, and wired into `SpecBuilder` alongside the
+   other `IConsumes*` resolutions. `EventServiceDocumentDeserializer` reads it back, matching every
+   other field's round-trip test pattern (see `EventServiceDocumentBuilderTest`'s existing
+   `Version`/`reserved` round-trip tests for the pattern to follow).
+4. **Per-topic reachability stays derived, not duplicated.** A topic's *effective* non-HTTP
+   reachability is "every entry in the document-level `transports` list" (any wired transport can
+   reach any registered handler, per the `UseMessageHandlers` finding above); its HTTP reachability
+   is its own `httpMappings`, unchanged. Nothing new is needed per-topic — this is a reading, not a
+   schema change, so it's computed wherever it's displayed (mesh-ui.html, spec-ui.html) rather than
+   stored redundantly on every topic.
+5. **UI.** `mesh-ui.html`: render the service's `transports` list as a chip row on its service
+   card (replacing nothing — this is new information, additive to the existing status/drift
+   badges), and on the topic page (§10.15) show, per producer/consumer service section, that
+   service's transport chips inline — answering "how would I actually reach this topic on this
+   service" without inventing a new per-topic UI element. `spec-ui.html` gets the same chip row
+   wherever it already surfaces service-level info (near `messageEndpoint`), replacing the
+   HTTP-verb-badge-as-topic-decoration pattern the original §10.1 complaint was about — HTTP
+   becomes one chip among several instead of the implicit default.
+6. **Docs.** `docs/specification/wire-contracts.md` (or wherever the `benzene` EventServiceDocument
+   shape is documented) gains the `transports` field; `docs/mesh-ui.md` gains a line on the chip
+   row, matching the existing pattern for every other field documented there.
+
+**Explicitly not doing (still correctly out of scope):** per-topic per-transport binding detail
+(queue name, Kafka topic, EventBridge bus/detail-type, ARN, …) — the original §10.1 sketch's
+`{ "transport": "sqs", "queue": "orders-queue" }` shape. Nothing in this plan captures *which*
+queue/topic/bus a transport uses, only *that* the host is wired to it. That remains a real gap for
+someone trying to go find the actual queue, but it's a materially different, larger effort (new
+capture points inside each transport's own configuration, not just a name) and nothing in §10.3's
+shipped producer/consumer/version work or this plan depends on it — deferring it again is a clean
+cut, not a compromise forced by running out of design space.
+
+**Sequencing:** (1) and (2) first — pure C#, no wire-format change, immediately testable, and (2)'s
+bug fixes are worth doing on their own merits. Then (3)+(4) (spec field + builder seam + round-trip
+test). Then (5) (UI) verified the same real-browser way as every other UI increment this arc. (6)
+last, once the shape is settled.
+
+### 10.17 2026-07-19 (implementation) — §10.16 steps 1–2 shipped
+
+Both pure-C# steps, no wire-format change:
+
+- **`TransportNames`** (`Benzene.Abstractions.MessageHandlers.Info`) — one `const string` per
+  transport. Every `TransportMiddlewarePipeline<TContext>("...", ...)` call site and every
+  `new TransportInfo("...")` DI registration across all ~20 transport packages now references the
+  constant instead of retyping the literal — the two mechanisms can no longer drift apart into two
+  names for the same transport.
+- **Closed the `ITransportInfo` coverage gap** found while tracing those call sites: `Benzene.RabbitMq`,
+  `Benzene.Azure.ServiceBus` (consumer), `Benzene.Azure.EventHub` (consumer),
+  `Benzene.Azure.Function.EventHub`, `Benzene.Azure.Function.BlobStorage`, `Benzene.Azure.CosmosDb`,
+  and `Benzene.Aws.Sqs` (self-host consumer) all tagged messages at runtime but never registered a
+  startup `ITransportInfo` — so `ITransportsInfo.Transports` silently omitted them. Each now
+  registers one, via a new `AddAzureBlobStorage()`/`AddCosmosDbChangeFeed()` DI method for the two
+  packages (`Benzene.Azure.Function.BlobStorage`, `Benzene.Azure.CosmosDb`) that had no DI
+  registration point of their own to add it to, called automatically by `UseBlobStorage`/
+  `UseCosmosDbChangeFeed` respectively.
+- **Fixed the `"direct"`/`"benzene"` drift**: `AddBenzeneMessage()`'s `ITransportInfo` registration
+  now says `TransportNames.Benzene`, matching what `BenzeneMessageApplication` actually tags at
+  runtime.
+
+Full solution build (0 errors) and the complete `Benzene.Core.Test` suite (1530 tests) pass.
+Step 3 (the document-level `transports` spec field) and onward are still open, per §10.16's
+sequencing.

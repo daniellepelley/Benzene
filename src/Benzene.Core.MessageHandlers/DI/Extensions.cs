@@ -3,11 +3,11 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Serialization;
-using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Core.DI;
 using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.Info;
@@ -49,7 +49,7 @@ public static class Extensions
         services.AddScoped<IResponseHandler<BenzeneMessageContext>, DefaultResponseStatusHandler<BenzeneMessageContext>>();
         services.TryAddScoped<IResponsePayloadMapper<BenzeneMessageContext>, DefaultResponsePayloadMapper<BenzeneMessageContext>>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("direct"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Benzene));
 
         return services;
     }

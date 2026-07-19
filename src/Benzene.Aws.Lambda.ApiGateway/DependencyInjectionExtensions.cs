@@ -57,7 +57,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IResponseHandler<ApiGatewayContext>, RendererResponseHandler<ApiGatewayContext>>();
         services.AddMediaFormatNegotiation<ApiGatewayContext>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("api-gateway"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.ApiGateway));
         services.AddHttpMessageHandlers();
 
         return services;

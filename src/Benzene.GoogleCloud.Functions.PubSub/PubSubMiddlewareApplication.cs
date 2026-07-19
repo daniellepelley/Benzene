@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Google.Events.Protobuf.Cloud.PubSub.V1;
@@ -29,7 +30,7 @@ public class PubSubMiddlewareApplication : IMiddlewareApplication<MessagePublish
     /// </param>
     public PubSubMiddlewareApplication(IMiddlewarePipeline<PubSubContext> pipeline, PubSubOptions? options = null)
     {
-        _pipeline = new TransportMiddlewarePipeline<PubSubContext>("pubsub", pipeline);
+        _pipeline = new TransportMiddlewarePipeline<PubSubContext>(TransportNames.PubSub, pipeline);
         _options = options ?? new PubSubOptions();
     }
 

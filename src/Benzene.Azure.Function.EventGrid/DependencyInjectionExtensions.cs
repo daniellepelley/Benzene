@@ -37,7 +37,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMessageBodyGetter<EventGridContext>, EventGridMessageBodyGetter>();
         services.AddScoped<IMessageHandlerResultSetter<EventGridContext>, EventGridMessageHandlerResultSetter>();
 
-        services.AddSingleton<ITransportInfo>(_ => new TransportInfo("event-grid"));
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.EventGrid));
         return services;
     }
 

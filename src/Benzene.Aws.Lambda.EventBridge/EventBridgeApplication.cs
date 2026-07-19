@@ -1,3 +1,4 @@
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -13,7 +14,7 @@ public class EventBridgeApplication : MiddlewareApplication<EventBridgeEvent, Ev
 {
     public EventBridgeApplication(IMiddlewarePipeline<EventBridgeContext> pipeline)
         : base(
-            new TransportMiddlewarePipeline<EventBridgeContext>("eventbridge", pipeline),
+            new TransportMiddlewarePipeline<EventBridgeContext>(TransportNames.EventBridge, pipeline),
             @event => new EventBridgeContext(@event))
     { }
 }

@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -19,7 +20,7 @@ public class BlobStorageApplication : EntryPointMiddlewareApplication<BlobTrigge
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
     public BlobStorageApplication(IMiddlewarePipeline<BlobStorageContext> pipeline, IServiceResolverFactory serviceResolverFactory)
         : base(new MiddlewareApplication<BlobTriggerEvent, BlobStorageContext>(
-                new TransportMiddlewarePipeline<BlobStorageContext>("blob-storage", pipeline),
+                new TransportMiddlewarePipeline<BlobStorageContext>(TransportNames.BlobStorage, pipeline),
                 blob => new BlobStorageContext(blob)),
             serviceResolverFactory)
     { }

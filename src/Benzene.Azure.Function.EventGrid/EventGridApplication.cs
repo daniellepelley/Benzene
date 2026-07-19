@@ -1,4 +1,5 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
@@ -20,7 +21,7 @@ public class EventGridApplication : EntryPointMiddlewareApplication<EventGridTri
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
     public EventGridApplication(IMiddlewarePipeline<EventGridContext> pipeline, IServiceResolverFactory serviceResolverFactory)
         : base(new MiddlewareMultiApplication<EventGridTriggerEvent[], EventGridContext>(
-                new TransportMiddlewarePipeline<EventGridContext>("event-grid", pipeline),
+                new TransportMiddlewarePipeline<EventGridContext>(TransportNames.EventGrid, pipeline),
                 events => events.Select(@event => new EventGridContext(@event)).ToArray()),
             serviceResolverFactory)
     { }
