@@ -272,10 +272,32 @@ such as authorization.
     .UseFilters(typeof(MyFilter).Assembly))
 ```
 
+### `UseResponseEvents(...)`
+
+**Package:** `Benzene.Extras` (`Benzene.Extras.ResponseEvents`). Republishes a handler's response
+payload as a follow-up event, per declarative per-pipeline mappings — e.g. an SQS `order:create`
+handler's `OrderCreated` response is broadcast on `order:created`. Events publish through
+`IBenzeneMessageSender`, so each event topic needs an `AddOutboundRouting` route (which also
+gives the publish correlation/trace stamping and retry). Mappings are introspectable via
+`IResponseEventCatalog`, and typed mappings (`Map<TPayload>`) flow into generated specs. See the
+[Response as Event cookbook](../cookbooks/response-as-event.md).
+
+```csharp
+.UseMessageHandlers(router => router
+    .UseResponseEvents(events => events
+        .Map("order:create", "order:created")
+        .OnPublishFailure(PublishFailureMode.FailMessage)))
+```
+
 ### `UseBroadcastEvent()`
 
-**Package:** `Benzene.Extras`. Broadcasts an event message to multiple matching handlers rather
-than routing it to a single one — useful for in-process fan-out.
+**Package:** `Benzene.Extras` (`Benzene.Extras.Broadcast`). The older, hardwired predecessor of
+`UseResponseEvents`: after a handler runs, if the topic's last `:`-segment is
+`create`/`update`/`delete` and the result status is the matching `Created`/`Updated`/`Deleted`,
+the response payload is published on the past-tense topic (`order:create` → `order:created`) via
+an `IEventSender` **you must implement and register yourself** (no default implementation ships).
+Superseded by `UseResponseEvents(events => events.MapCrudConvention())`, which does the same
+through the routed, introspectable machinery above.
 
 ```csharp
 .UseMessageHandlers(router => router

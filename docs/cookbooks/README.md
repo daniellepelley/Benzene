@@ -49,6 +49,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 
 ### Orchestration
 - [Sagas (distributed transactions that roll back cleanly)](sagas.md) - Run a multi-service operation as all-or-nothing: each step carries a compensation, and any failure rolls the whole thing back in reverse (LIFO) order, leaving no orphaned records
+- [Response as Event](response-as-event.md) - Republish a request/response handler's response payload as a follow-up event on fire-and-forget transports (SQS `order:create` → broadcast `order:created`), declaratively via `UseResponseEvents`
 
 ### Cross-Cutting Concerns
 - [Request Correlation Across Services](request-correlation.md) - Track requests through distributed systems
