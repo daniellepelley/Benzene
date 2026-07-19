@@ -156,3 +156,56 @@ by extending Phase 1/3 tests rather than adding new example projects.
   worth confirming once Phase 1's actual CI runtime cost is known.
 - Whether the Testcontainers spike in `work/testing-tooling-investigation.md` lands before Phase 2/3
   — if so, this plan's fixtures should follow suit rather than migrate twice.
+
+## Progress log
+
+### 2026-07-19 — Phase 1 started: Saga, Azure, and an Aws gap-fill; two real bugs found and fixed
+
+**New in-memory test projects:**
+- `examples/Saga/Benzene.Example.Saga.Tests` (4 tests) — drives `SignupSaga` directly (no
+  host/transport; the example is a plain console app over `Benzene.Saga`). Happy path, final-stage
+  failure, and two parallel-first-stage-failure variants, proving rollback correctness when the
+  failure happens after the parallel stage has already committed.
+- `examples/Azure/Benzene.Example.Azure.Test` (4 tests) — `Benzene.Testing`'s `BenzeneTestHost` +
+  `BuildAzureFunctionApp()`, proving the same `CreateOrderMessageHandler`/`GetAllOrderMessageHandler`
+  are reachable via both HTTP and Service Bus, plus the egress demo (with `IBenzeneMessageSender`
+  replaced by a capturing fake via `WithServices`, so no live Service Bus is needed). QueueStorage
+  ingress deliberately not covered yet (envelope-JSON casing needs its own investigation — noted as
+  a follow-up, not guessed at).
+- `examples/Aws/Benzene.Examples.Aws.Tests/Integration/PublishOrderCreatedTest.cs` (1 new test) —
+  the existing 58-test Aws suite had **zero** coverage of the egress demo; added the same
+  fake-sender pattern as Azure's.
+
+**Two real, confirmed bugs found and fixed** (not test-harness artifacts — verified against the
+real deployment path too, not just the test host):
+1. **`examples/Azure/Benzene.Example.Azure/DependenciesBuilder.cs` was missing `.AddBenzene()`
+   entirely.** `UsingBenzene(...)`, `AddHttpMessageHandlers()`, and the real Azure Functions
+   `HostBuilderExtensions.UseBenzene<TStartUp>()` hosting path none of them call it implicitly —
+   every request would have thrown `BenzeneException: Unable to resolve type MessageRouter<...>`
+   at runtime. The Aws example's equivalent `DependenciesBuilder` already called `.AddBenzene()`
+   correctly, which is how the asymmetry surfaced.
+2. **`PublishOrderCreatedMessageHandler` was undiscoverable in *both* the Aws and Azure examples** —
+   same bug, same shape, in both. Root cause: `DependenciesBuilder.Register` calls
+   `.AddMessageHandlers(typeof(CreateOrderMessage).Assembly)` (the shared App domain assembly only,
+   not the host's own assembly where `PublishOrderCreatedMessageHandler` actually lives), and
+   `AddMessageHandlers`'s `IMessageHandlersFinder`/`IHttpEndpointFinder` registrations are
+   `TryAddSingleton` — locked in by that first, narrower call. The later, broader
+   `.UseMessageHandlers(router => ...)` scan inside `Configure()` (which uses
+   `AppDomain.CurrentDomain.GetAssemblies()`, and would have found it) never actually takes effect,
+   because `TryAddSingleton` silently no-ops once something's already registered. Fixed by passing
+   both assemblies to the `ConfigureServices`-time call in both `DependenciesBuilder`s. This means
+   the egress demo (`POST /orders/publish-created` / topic `order_publish_demo`) has been
+   unreachable via HTTP or its own topic in both examples since it was added — confirmed nothing in
+   the pre-existing Aws test suite ever called it.
+
+**One pre-existing, unrelated failure found, not yet fixed:**
+`Benzene.Examples.Aws.Tests.Integration.CreateOrderTest.CreateOrder_ApiGateway_BenzeneMessage`
+fails on `main` independent of any change in this pass (verified by stashing the
+`DependenciesBuilder.cs` fix and re-running) — posts to `admin/benzene-message` and asserts an
+order was persisted, but the order collection comes back empty. Not investigated further this pass
+(scope creep beyond what was in flight); flagged here as a genuine, separate pre-1.0 bug for a
+follow-up pass — Phase 1 CI wiring (once added) will make this kind of thing impossible to miss
+going forward, which is exactly the point of this initiative.
+
+**Verified:** `Benzene.Examples.sln` and `Benzene.sln` both build clean; all new/touched test
+projects pass except the one pre-existing failure noted above (unchanged, not a regression).
