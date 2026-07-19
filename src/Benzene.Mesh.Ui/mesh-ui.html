@@ -203,6 +203,7 @@
   .b-unreachable { color: var(--req); background: var(--m-delete-bg); }
   .b-drift { color: var(--m-event); background: var(--m-event-bg); }
   .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 620; letter-spacing: -.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .svc-team { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
   .svc-links { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; font-size: 12px; }
   .svc-links a { color: var(--accent); text-decoration: none; }
   .svc-links a:hover { text-decoration: underline; }
@@ -285,6 +286,9 @@
   .t-utility { color: var(--chip-ink); background: var(--chip-bg); }
   .t-svc { display: inline-block; padding: 1px 6px; margin: 1px 3px 1px 0; border-radius: 4px; background: var(--surface-2); font-size: 12px; }
   .t-http { color: var(--ink-faint); }
+  .t-empty { color: var(--ink-faint); }
+  .t-status-deprecation-candidate { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
+  .t-status-gap { color: var(--m-put); background: var(--m-put-bg); cursor: help; }
   .topics-table td { white-space: normal; }
 </style>
 </head>
@@ -336,9 +340,12 @@
         <thead>
           <tr>
             <th>Topic</th>
+            <th>Version</th>
             <th>Type</th>
-            <th>Services</th>
+            <th>Producers</th>
+            <th>Consumers</th>
             <th>HTTP</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody id="topics-tbody"></tbody>
@@ -404,14 +411,16 @@
       "status": "healthy",
       "contractDrift": false,
       "specUrl": "https://orders-api.example/spec?type=benzene",
-      "healthUrl": "https://orders-api.example/healthcheck"
+      "healthUrl": "https://orders-api.example/healthcheck",
+      "owningTeam": "team-checkout"
     },
     {
       "name": "payments-api",
       "status": "unhealthy",
       "contractDrift": true,
       "specUrl": "https://payments-api.example/spec?type=benzene",
-      "healthUrl": "https://payments-api.example/healthcheck"
+      "healthUrl": "https://payments-api.example/healthcheck",
+      "owningTeam": "team-payments"
     },
     {
       "name": "shipping-api",
@@ -526,6 +535,7 @@
     head.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
     if (svc.contractDrift) head.appendChild(el("span", "badge b-drift", "drift"));
     head.appendChild(el("span", "svc-name", svc.name));
+    if (svc.owningTeam) head.appendChild(el("span", "svc-team", svc.owningTeam));
 
     var links = el("div", "svc-links");
     if (svc.specUrl) { var a1 = el("a", null, "spec"); a1.href = svc.specUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
@@ -663,6 +673,15 @@
     document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
     renderTopicRows();
   }
+  var TOPIC_STATUS_LABELS = {
+    "deprecation-candidate": "deprecation candidate",
+    "gap": "gap"
+  };
+  var TOPIC_STATUS_TITLES = {
+    "deprecation-candidate": "Produced somewhere in the fleet, but nothing consumes it anymore - a candidate for retiring, not proof it's already safe to delete.",
+    "gap": "Consumed here, but nothing in this fleet declares producing it - may be fed by a third party or a system outside this fleet. Worth confirming that's expected."
+  };
+
   function renderTopicRows() {
     var showUtils = document.getElementById("topics-show-utils").checked;
     var rows = currentTopics.filter(function (t) { return showUtils || !t.reserved; });
@@ -673,17 +692,35 @@
 
       var tdTopic = el("td"); tdTopic.appendChild(el("span", null, t.topic)); tr.appendChild(tdTopic);
 
+      var tdVersion = el("td");
+      tdVersion.appendChild(el("span", "mono", t.version || "–"));
+      tr.appendChild(tdVersion);
+
       var tdType = el("td");
       tdType.appendChild(el("span", "t-badge " + (t.reserved ? "t-utility" : "t-domain"), t.reserved ? "utility" : "domain"));
       tr.appendChild(tdType);
 
-      var tdSvc = el("td", "topics-table");
-      (t.services || []).forEach(function (s) { tdSvc.appendChild(el("span", "t-svc", s.service)); });
-      tr.appendChild(tdSvc);
+      var tdProducers = el("td", "topics-table");
+      var producers = t.producers || [];
+      if (producers.length) {
+        producers.forEach(function (p) { tdProducers.appendChild(el("span", "t-svc", p.service)); });
+      } else {
+        tdProducers.appendChild(el("span", "t-empty", "–"));
+      }
+      tr.appendChild(tdProducers);
+
+      var tdConsumers = el("td", "topics-table");
+      var consumers = t.consumers || [];
+      if (consumers.length) {
+        consumers.forEach(function (s) { tdConsumers.appendChild(el("span", "t-svc", s.service)); });
+      } else {
+        tdConsumers.appendChild(el("span", "t-empty", "–"));
+      }
+      tr.appendChild(tdConsumers);
 
       var tdHttp = el("td", "t-http");
       var maps = [];
-      (t.services || []).forEach(function (s) {
+      consumers.forEach(function (s) {
         (s.httpMappings || []).forEach(function (m) {
           var label = (m.method || "").toUpperCase() + " " + (m.path || "");
           if (maps.indexOf(label) === -1) maps.push(label);
@@ -691,6 +728,16 @@
       });
       tdHttp.textContent = maps.length ? maps.join(", ") : "–";
       tr.appendChild(tdHttp);
+
+      var tdStatus = el("td");
+      if (t.status && TOPIC_STATUS_LABELS[t.status]) {
+        var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
+        badge.title = TOPIC_STATUS_TITLES[t.status] || "";
+        tdStatus.appendChild(badge);
+      } else {
+        tdStatus.appendChild(el("span", "t-empty", "–"));
+      }
+      tr.appendChild(tdStatus);
 
       tbody.appendChild(tr);
     });

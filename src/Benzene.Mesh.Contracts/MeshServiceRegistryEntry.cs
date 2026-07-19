@@ -38,13 +38,21 @@ public class MeshServiceRegistryEntry
     /// untyped string dictionary rather than typed per-source subclasses, so this package doesn't
     /// need to know what every adapter package requires.
     /// </param>
-    public MeshServiceRegistryEntry(string name, string specUrl, string healthUrl, string source, IReadOnlyDictionary<string, string>? sourceOptions)
+    /// <param name="owningTeam">
+    /// The team or individual to contact about this service, if known — surfaced on the manifest
+    /// and the topic view so "who do I talk to before I change this" has an answer without a
+    /// separate lookup. Optional and purely informational; nothing in the aggregator or the wire
+    /// contracts depends on it being present.
+    /// </param>
+    public MeshServiceRegistryEntry(string name, string specUrl, string healthUrl, string source,
+        IReadOnlyDictionary<string, string>? sourceOptions, string? owningTeam = null)
     {
         Name = name;
         SpecUrl = specUrl;
         HealthUrl = healthUrl;
         Source = source;
         SourceOptions = sourceOptions;
+        OwningTeam = owningTeam;
     }
 
     /// <summary>The service's name, used as its key across all generated mesh artifacts.</summary>
@@ -61,4 +69,7 @@ public class MeshServiceRegistryEntry
 
     /// <summary>Source-specific configuration, or <c>null</c> if the source needs none.</summary>
     public IReadOnlyDictionary<string, string>? SourceOptions { get; }
+
+    /// <summary>The team or individual to contact about this service, or <c>null</c> if unset.</summary>
+    public string? OwningTeam { get; }
 }

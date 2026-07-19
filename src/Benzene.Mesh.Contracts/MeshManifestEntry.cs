@@ -13,13 +13,16 @@ public class MeshManifestEntry
     /// <param name="contractDrift">Whether this service's spec changed since the previous run.</param>
     /// <param name="specUrl">The URL the spec was fetched from.</param>
     /// <param name="healthUrl">The URL the health check response was fetched from.</param>
-    public MeshManifestEntry(string name, string status, bool contractDrift, string specUrl, string healthUrl)
+    /// <param name="owningTeam">The team or individual to contact about this service, or <c>null</c> if unset.</param>
+    public MeshManifestEntry(string name, string status, bool contractDrift, string specUrl, string healthUrl,
+        string? owningTeam = null)
     {
         Name = name;
         Status = status;
         ContractDrift = contractDrift;
         SpecUrl = specUrl;
         HealthUrl = healthUrl;
+        OwningTeam = owningTeam;
     }
 
     /// <summary>The service's name.</summary>
@@ -36,4 +39,7 @@ public class MeshManifestEntry
 
     /// <summary>The URL the health check response was fetched from.</summary>
     public string HealthUrl { get; }
+
+    /// <summary>The team or individual to contact about this service, or <c>null</c> if unset.</summary>
+    public string? OwningTeam { get; }
 }

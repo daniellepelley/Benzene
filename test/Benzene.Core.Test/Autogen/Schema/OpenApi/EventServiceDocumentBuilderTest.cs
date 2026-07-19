@@ -108,5 +108,31 @@ public class EventServiceDocumentBuilderTest
         var json = doc.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
         Assert.Contains("\"example\"", json);
     }
+
+    [Fact]
+    public void Build_WritesVersion_ForVersionedRequestsAndEvents_ButOmitsItWhenUnversioned()
+    {
+        var versionedRequest = MessageHandlerDefinition.CreateInstance("shipping:booked", "v2", typeof(Example), typeof(Inner), typeof(object));
+        var unversionedRequest = MessageHandlerDefinition.CreateInstance("tenant:create", typeof(Example), typeof(Inner));
+        var versionedEvent = new BroadcastEventDefinition(new Topic("shipping:booked", "v2"), typeof(Example));
+
+        var doc = new EventServiceDocumentBuilder(new SchemaBuilder())
+            .AddMessageHandlerDefinitions(new[] { versionedRequest, unversionedRequest })
+            .AddBroadcastEventDefinitions(new[] { versionedEvent })
+            .Build();
+
+        Assert.Equal("v2", Assert.Single(doc.Requests, x => x.Topic == "shipping:booked").Version);
+        Assert.Equal(string.Empty, Assert.Single(doc.Requests, x => x.Topic == "tenant:create").Version);
+        Assert.Equal("v2", Assert.Single(doc.Events, x => x.Topic == "shipping:booked").Version);
+
+        var json = doc.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+        Assert.Contains("\"version\": \"v2\"", json);
+
+        // Round-trips through the deserializer.
+        var roundTripped = new EventServiceDocumentDeserializer().Deserialize(json);
+        Assert.Equal("v2", Assert.Single(roundTripped.Requests, x => x.Topic == "shipping:booked").Version);
+        Assert.Equal(string.Empty, Assert.Single(roundTripped.Requests, x => x.Topic == "tenant:create").Version);
+        Assert.Equal("v2", Assert.Single(roundTripped.Events, x => x.Topic == "shipping:booked").Version);
+    }
 }
 

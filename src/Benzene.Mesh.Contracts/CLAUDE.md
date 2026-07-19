@@ -14,6 +14,16 @@ data types - no HTTP, no file I/O, no execution logic.
   `SourceOptions` is an untyped `IReadOnlyDictionary<string, string>?` for source-specific config
   (e.g. an AWS Lambda function name/region) - deliberately untyped so this package doesn't need to
   know what every adapter package requires, keeping it dependency-light (see Important conventions).
+  `OwningTeam` (optional, `null` default) is purely informational - the team/individual to contact
+  about this service, threaded through to `MeshManifestEntry` so "who do I talk to before I change
+  this" has an answer in the manifest without a separate lookup.
+- `MeshTopicEntry`/`MeshTopicService`/`MeshTopicProducer`/`MeshTopicHttpMapping`/`MeshTopicStatus`
+  - the `topics.json` shapes (see `Benzene.Mesh.Aggregator/CLAUDE.md`'s "Aggregated topic catalog"
+  section for the full computation). One `MeshTopicEntry` per **(topic, version)** pair seen
+  anywhere in the fleet: `Producers` (from each service's spec `events`) and `Consumers` (from
+  `requests`, each carrying its `HttpMappings`), plus a `Status` (`MeshTopicStatus.DeprecationCandidate`/
+  `.Gap`/`null`) computed by `Benzene.Mesh.Aggregator` from the producer/consumer shape - never a
+  claim any single service makes about its own topics (work/service-mesh-roadmap-1.0.md §10.9).
 - `MeshServiceSource` - string constants for known `Source` values (`Http`, `AwsLambdaInvoke`);
   adapter packages' constants get added here too, matching `TopologyEdgeSource`'s existing "known
   names live in Contracts" convention.
@@ -32,7 +42,8 @@ data types - no HTTP, no file I/O, no execution logic.
   service's `HealthCheckResponse` (from `Benzene.HealthChecks.Core`, reused as-is - no parallel type),
   and an `Error` (exception type name only, never a message).
 - `MeshManifestEntry`/`MeshManifest` - the top-level `manifest.json` index: one denormalized row per
-  service (`Status`, `ContractDrift`) so a catalog view doesn't need to fetch every snapshot.
+  service (`Status`, `ContractDrift`, optional `OwningTeam`) so a catalog view doesn't need to
+  fetch every snapshot.
 - `MeshTopology`/`TopologyEdge`/`TopologyEdgeSource` - the `topology.json` shape: cross-service call
   edges (`Client`→`Server`, plus nullable `RequestsPerMinute`/`ErrorRate`/`P50`/`P95`/`P99LatencyMs`),
   each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for a

@@ -168,7 +168,10 @@ namespace Benzene.Schema.OpenApi.EventService
             (
                 messageDefinition.Topic.Id,
                 _schemaBuilder.AddSchema(messageDefinition.RequestType)
-            ));
+            )
+            {
+                Version = messageDefinition.Topic.Version
+            });
             return this;
         }
         public EventServiceDocumentBuilder AddMessageSenderDefinitions(IMessageDefinition[] messageDefinitions)
@@ -183,7 +186,15 @@ namespace Benzene.Schema.OpenApi.EventService
 
         public EventServiceDocumentBuilder AddMessageSenderDefinition(IMessageDefinition messageDefinition)
         {
-            return AddEvent(messageDefinition.Topic.Id, messageDefinition.RequestType);
+            _events.Add(new Event
+            (
+                messageDefinition.Topic.Id,
+                _schemaBuilder.AddSchema(messageDefinition.RequestType)
+            )
+            {
+                Version = messageDefinition.Topic.Version
+            });
+            return this;
         }
 
         public EventServiceDocumentBuilder AddEvent(string topic, Type type)

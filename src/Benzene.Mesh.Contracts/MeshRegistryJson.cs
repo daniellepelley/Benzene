@@ -5,7 +5,7 @@ namespace Benzene.Mesh.Contracts;
 
 /// <summary>
 /// Serializes/deserializes a <see cref="MeshServiceRegistry"/> to the <c>mesh.json</c>
-/// <c>{ "services": [ { name, specUrl, healthUrl, source, sourceOptions } ] }</c> shape the aggregator
+/// <c>{ "services": [ { name, specUrl, healthUrl, source, sourceOptions, owningTeam } ] }</c> shape the aggregator
 /// host reads. This is the concrete seam between the discovery phase (which <em>writes</em> this
 /// document) and runtime monitoring (which <em>reads</em> it) — the generated document is a drop-in
 /// for a hand-written <c>mesh.json</c>, so nothing in the aggregator changes.
@@ -49,6 +49,7 @@ public static class MeshRegistryJson
         public string? HealthUrl { get; set; }
         public string Source { get; set; } = MeshServiceSource.Http;
         public Dictionary<string, string>? SourceOptions { get; set; }
+        public string? OwningTeam { get; set; }
 
         public static RegistryEntryDto From(MeshServiceRegistryEntry entry) => new()
         {
@@ -56,10 +57,11 @@ public static class MeshRegistryJson
             SpecUrl = string.IsNullOrEmpty(entry.SpecUrl) ? null : entry.SpecUrl,
             HealthUrl = string.IsNullOrEmpty(entry.HealthUrl) ? null : entry.HealthUrl,
             Source = entry.Source,
-            SourceOptions = entry.SourceOptions?.ToDictionary(kv => kv.Key, kv => kv.Value)
+            SourceOptions = entry.SourceOptions?.ToDictionary(kv => kv.Key, kv => kv.Value),
+            OwningTeam = entry.OwningTeam
         };
 
         public MeshServiceRegistryEntry ToEntry()
-            => new(Name, SpecUrl ?? string.Empty, HealthUrl ?? string.Empty, Source, SourceOptions);
+            => new(Name, SpecUrl ?? string.Empty, HealthUrl ?? string.Empty, Source, SourceOptions, OwningTeam);
     }
 }

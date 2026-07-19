@@ -9,7 +9,15 @@ namespace Benzene.Schema.OpenApi.EventService;
 public class RequestResponse : IOpenApiSerializable
 {
     public string Topic { get; set; }
-    public string Version { get; set; }
+
+    /// <summary>
+    /// The topic's handler version (core-concepts.md §2) — distinct from a payload schema
+    /// version. Empty for the unversioned handler. Written to the wire only when non-empty (an
+    /// unversioned topic's JSON carries no <c>version</c> field at all, not an empty string) -
+    /// defaults to <see cref="string.Empty"/>, not <c>null</c>, so a round-tripped (deserialized)
+    /// unversioned topic matches a freshly built one.
+    /// </summary>
+    public string Version { get; set; } = string.Empty;
 
     /// <summary>
     /// True when this is a reserved Benzene utility topic (spec, health, mesh, …) rather than a
@@ -37,6 +45,10 @@ public class RequestResponse : IOpenApiSerializable
         writer.WriteStartObject();
 
         writer.WriteProperty("topic", Topic);
+        if (!string.IsNullOrEmpty(Version))
+        {
+            writer.WriteProperty("version", Version);
+        }
         if (Reserved)
         {
             writer.WriteProperty("reserved", true);

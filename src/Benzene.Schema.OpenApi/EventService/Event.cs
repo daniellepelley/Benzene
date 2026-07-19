@@ -18,6 +18,13 @@ public class Event : IOpenApiSerializable
     public OpenApiSchema Message { get; }
 
     /// <summary>
+    /// The topic's handler version (core-concepts.md §2), when this event's producer declared one.
+    /// Empty by default. Written to the wire only when non-empty, matching
+    /// <see cref="RequestResponse.Version"/>.
+    /// </summary>
+    public string Version { get; set; } = string.Empty;
+
+    /// <summary>
     /// An example message payload for this event. Generated from the message schema during
     /// <see cref="EventServiceDocumentBuilder.Build"/> unless one was supplied. Ignored by
     /// Newtonsoft deserialization (an <see cref="IOpenApiAny"/> can't be materialized from JSON
@@ -31,6 +38,10 @@ public class Event : IOpenApiSerializable
         writer.WriteStartObject();
 
         writer.WriteProperty("topic", Topic);
+        if (!string.IsNullOrEmpty(Version))
+        {
+            writer.WriteProperty("version", Version);
+        }
         writer.WriteRequiredObject("message", Message, (w, o) => o.SerializeAsV3(w));
 
         if (Example != null)

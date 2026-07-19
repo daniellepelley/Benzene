@@ -84,11 +84,37 @@ deployment using both currently has last-writer-wins (merging structural + obser
 
 ## Aggregated topic catalog (`topics.json`)
 Alongside `manifest.json`/`services/{name}.json`, each run also publishes `topics.json`
-(`MeshTopicCatalog` in `Benzene.Mesh.Contracts`): every distinct topic across the mesh → which
-service(s) expose it, its HTTP mappings, and a `reserved` (domain-vs-utility) flag lifted from each
-service's `benzene` spec `requests[].reserved`. Parsing is best-effort per service — a
-missing/unparseable spec contributes no topics and never fails the run. `Benzene.Mesh.Ui` renders it
-as a cross-service topic table with a "show utilities" toggle.
+(`MeshTopicCatalog` in `Benzene.Mesh.Contracts`): every distinct **(topic, version)** pair across
+the mesh, who **produces** it (`MeshTopicEntry.Producers`, from each service's spec `events`) and
+who **consumes** it (`MeshTopicEntry.Consumers`, from `requests`, with HTTP mappings preserved),
+plus a `reserved` (domain-vs-utility) flag lifted from `requests[].reserved`. Parsing is
+best-effort per service — a missing/unparseable spec contributes no topics and never fails the
+run. `Benzene.Mesh.Ui` renders it as a cross-service topic table with a "show utilities" toggle.
+
+This artifact is entirely **aggregator-computed**, not a Benzene wire contract — see
+`work/service-mesh-roadmap-1.0.md` §10.9. No individual service's spec is ever asked to say
+whether its own topics are still in use; only looking across every service's self-description at
+once can answer that, which is exactly what this file is for.
+
+**`MeshTopicEntry.Status`** (`Benzene.Mesh.Contracts.MeshTopicStatus`) is an informational signal
+computed from `Producers`/`Consumers`, never present on a reserved topic:
+- `deprecation-candidate` — produced somewhere in the fleet, but nothing consumes it anymore. A
+  candidate for retiring, not proof it's already safe to delete.
+- `gap` — consumed somewhere, entirely through non-HTTP bindings, but produced nowhere in the
+  fleet. **Not necessarily a problem** — the producer may be a third party or a system outside
+  this Benzene fleet (e.g. something writing straight to a queue) — but worth surfacing so someone
+  can confirm that's expected. Deliberately scoped to non-HTTP-only consumers: an HTTP-invoked
+  topic's "producer" is inherently an external caller (a browser, a third party), never a
+  fleet-internal spec declaration, so without this carve-out nearly every ordinary REST endpoint
+  would flag as a false-positive gap.
+- `null` — either both sides are present, or there's no reliable signal to flag (e.g. an
+  HTTP-invoked topic with no consumers-side data to reason about).
+
+These are structural signals only — computed from what services declare in their specs, not from
+observed traffic. A topic that's structurally wired but genuinely idle, or one consumed outside
+this fleet's own registry, can't be distinguished from here; that stronger signal is what the
+collector/trace path (`docs/specification/mesh.md`, `Benzene.Mesh.Collector`'s Fleet view) adds
+when it's wired up, deliberately deferred rather than required for this artifact to be useful.
 
 ## Breaking change (pre-1.0, flagged per repo convention)
 `MeshAggregator`'s constructor changed from `(HttpClient httpClient, IMeshArtifactStore store,
@@ -100,6 +126,13 @@ satisfiable by registered services risks ambiguous/non-deterministic resolution 
 underlying DI container. Anyone constructing `MeshAggregator` directly (not through
 `AddMeshAggregator`) needs to pass `new[] { new HttpMeshServiceSource(httpClient) }` instead of a
 bare `HttpClient`. `AddMeshAggregator`'s own public signature is unchanged.
+
+**2026-07-19, `topics.json` shape:** `MeshTopicEntry` gained `Version`/`Producers`/`Status` and
+renamed `Services` to `Consumers` (a plain rename means the same thing, clearer now that there
+are two categories). `MeshTopicEntry`'s constructor signature changed accordingly - any code
+constructing one directly (not just reading the JSON, which is unaffected beyond the added/renamed
+fields) needs updating. `MeshServiceRegistryEntry`/`MeshManifestEntry` also gained an optional,
+purely additive `OwningTeam` (trailing, defaults to `null`) - source-compatible.
 
 ## When to use this package
 - Any Benzene solution that wants a generated catalog of its services' contracts and health,

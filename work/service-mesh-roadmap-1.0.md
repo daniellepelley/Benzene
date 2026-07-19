@@ -1009,3 +1009,48 @@ one aggregator-computed view of which services wire up to which other services a
 versions are consumed by whom — producers, consumers, and both directions of gap — built entirely
 from self-descriptive data services already publish, judged only by the thing looking at the
 whole platform at once.
+
+### 10.10 2026-07-19 (implementation) — §10.3-structural shipped
+
+The revised §10.3 scope from §10.8/§10.9 is implemented and tested (1533+132 tests green across
+`Benzene.Core.Test`/`Benzene.Mesh.Test`, full `Benzene.sln` build clean):
+
+- **Fixed a real, previously-undetected spec bug found along the way**: `RequestResponse.Version`
+  existed as a C# property (correctly populated from the handler's topic version) but was never
+  actually written to the wire — `RequestResponse.SerializeAsV3` never emitted a `"version"`
+  property at all. Every `benzene`-format spec ever served was silently dropping topic version
+  from the JSON. Fixed, plus added the same field to `Event` (broadcast/sender topics), which
+  never carried version at all before now — both omit `version` from the wire when empty, so an
+  unversioned topic's JSON is unchanged (`Benzene.Schema.OpenApi`: `RequestResponse.cs`,
+  `Event.cs`, `EventServiceDocumentBuilder.cs`, `SchemaDeserializer.cs`).
+- **`Benzene.Mesh.Aggregator`'s `topics.json`** (`MeshAggregator.BuildTopicCatalog`) now keys by
+  **(topic, version)**, tracks **producers** (from `events`) alongside the existing **consumers**
+  (from `requests`, renamed from `Services` — the plain rename `MeshTopicEntry.Consumers`, plus
+  new `MeshTopicEntry.Producers: MeshTopicProducer[]`), and computes `MeshTopicEntry.Status`
+  (`Benzene.Mesh.Contracts.MeshTopicStatus.DeprecationCandidate`/`.Gap`/`null`) per the rules
+  worked out in §10.9 — including the HTTP-endpoint false-positive guard on `gap` (only flagged
+  when every consumer of that topic has zero HTTP mappings, so an ordinary REST endpoint with no
+  fleet-internal producer never misflags).
+- **Ownership**: `MeshServiceRegistryEntry`/`MeshManifestEntry` gained an optional `OwningTeam`
+  (additive, `null` default), round-tripping through `mesh.json` (`MeshRegistryJson`) to the
+  manifest, per §10.8's finding that nothing answered "who do I talk to before I change this."
+- **`Benzene.Mesh.Ui`'s Mesh Explorer** (`mesh-ui.html`) renders all of the above: topic table
+  gained Version/Producers/Consumers/Status columns (with a tooltip explaining what each status
+  means and that neither is an error), service cards show the owning team when set.
+- **Confirmed staying out of `docs/specification/`**, per §10.9's rule: none of this touched the
+  Core Specification or the Cloud Service Profile — `MeshTopicEntry`/`MeshTopicStatus` live only
+  in `Benzene.Mesh.Contracts`/`Benzene.Mesh.Aggregator`, documented in those packages' own
+  `CLAUDE.md` and in `docs/mesh-ui.md`, not in `docs/specification/mesh.md`.
+
+**Explicitly not done in this pass — still open for a future iteration:**
+- **§10.1 (transport-neutral `bindings`)** — deferred. Auto-deriving non-HTTP bindings (SQS queue
+  name, Kafka topic, etc.) needs new per-transport declaration attributes/wiring-time capture
+  across ~10 transport packages, a separate, larger design effort not yet scoped. §10.3 turned out
+  not to depend on it — producer/consumer/version visibility works off `requests`/`events` alone.
+- **§10.4/§10.5 in full** (in-app cross-linking from the topic table to service cards, and any
+  further dashboard consolidation) — the topic table is additive to the existing Mesh Explorer
+  page today, not yet cross-linked to the service list above it.
+- **§10.8's deferred items** (staleness/changelog history, topic search at fleet scale, CI/dev-time
+  surfacing of the compatibility gate) — unchanged, still explicitly future phases.
+- **§10.2 (transport-native test payloads)** — still de-scoped per the user's explicit instruction
+  in §10.7, not revisited.

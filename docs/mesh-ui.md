@@ -15,12 +15,24 @@ offline (Mesh Explorer) or behind strict CSPs (both).
 ## Mesh Explorer
 
 Shows a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
-service cards — name, status badge, drift badge, links to the service's raw spec/health URLs.
-Expanding a card lazily fetches that service's per-service JSON and renders its health-check
-detail (type, status, dependencies, data). When the aggregator also published `topics.json` and
-`topology.json`, the page additionally renders the cross-service topic catalog and a sortable
-edge table (client, server, source, req/min, error rate, p50/p95/p99 latency) — either section is
-silently hidden if its file is missing, since most deployments won't have both wired up.
+service cards — name, an optional owning-team label, status badge, drift badge, links to the
+service's raw spec/health URLs. Expanding a card lazily fetches that service's per-service JSON
+and renders its health-check detail (type, status, dependencies, data). When the aggregator also
+published `topics.json` and `topology.json`, the page additionally renders the cross-service topic
+catalog and a sortable edge table (client, server, source, req/min, error rate, p50/p95/p99
+latency) — either section is silently hidden if its file is missing, since most deployments won't
+have both wired up.
+
+The topic catalog is keyed by **(topic, version)**, not topic id alone, and shows both directions
+of exposure — **Producers** (services whose spec declares sending it) and **Consumers** (services
+that handle it, with their HTTP mappings) — plus a computed **Status**: `deprecation candidate`
+(produced somewhere, consumed nowhere — a prompt to check whether it's safe to retire, not proof
+that it is) or `gap` (consumed somewhere with no HTTP mapping, produced nowhere in this fleet —
+often a legitimate third-party or non-Benzene producer, worth confirming rather than an error).
+Both are informational signals computed by the aggregator across every service's self-description
+at once — no individual service is ever asked whether its own topics are still in use. See
+`Benzene.Mesh.Aggregator/CLAUDE.md`'s "Aggregated topic catalog" section for the full computation,
+and `work/service-mesh-roadmap-1.0.md` §10.8–§10.9 for the design rationale.
 
 ### Serving it
 

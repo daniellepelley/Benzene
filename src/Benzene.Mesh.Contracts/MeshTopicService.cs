@@ -1,6 +1,6 @@
 namespace Benzene.Mesh.Contracts;
 
-/// <summary>A single service's exposure of a topic within a <see cref="MeshTopicEntry"/>.</summary>
+/// <summary>A single service's consumption (handling) of a topic within a <see cref="MeshTopicEntry"/>.</summary>
 public class MeshTopicService
 {
     /// <summary>Initializes a new instance of the <see cref="MeshTopicService"/> class.</summary>
@@ -36,4 +36,18 @@ public class MeshTopicHttpMapping
 
     /// <summary>The HTTP path.</summary>
     public string Path { get; }
+}
+
+/// <summary>A single service's declaration that it sends (produces) a topic, within a <see cref="MeshTopicEntry"/>.</summary>
+public class MeshTopicProducer
+{
+    /// <summary>Initializes a new instance of the <see cref="MeshTopicProducer"/> class.</summary>
+    /// <param name="service">The service name (matches its <see cref="MeshManifestEntry"/>).</param>
+    public MeshTopicProducer(string service)
+    {
+        Service = service;
+    }
+
+    /// <summary>The service name (matches its <see cref="MeshManifestEntry"/>).</summary>
+    public string Service { get; }
 }

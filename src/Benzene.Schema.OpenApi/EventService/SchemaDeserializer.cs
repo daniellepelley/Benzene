@@ -92,6 +92,7 @@ public class EventServiceDocumentDeserializer
 
         return new Event(@event.Topic, GetSchema(jToken, "message"))
         {
+            Version = @event.Version,
             Example = GetExample(jToken)
         };
     }
