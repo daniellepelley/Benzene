@@ -1,4 +1,4 @@
-using Benzene.Examples.Kakfa;
+using Benzene.Examples.Kafka;
 using Benzene.HostedService;
 using Microsoft.Extensions.Hosting;
 

@@ -66,8 +66,8 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
 - **Inconsistent naming:** some folders use `Benzene.Example.*` (singular — Asp, Grpc, Azure) and others
   `Benzene.Examples.*` (plural — Aws, Google, Kafka, App, CodeGen, OpenTelemetry). Leave it unless asked;
   renaming a project touches its `.csproj`, every `.sln` that lists it, and every `ProjectReference` to it.
-- **`Kakfa` typo:** `examples/Kafka/Benzene.Examples.Kakfa` and `…Kakfa.Producer` are misspelled. Same
-  caution — a rename is a multi-file `.sln`/reference change, not a casual fix.
+  (The former `Kakfa` misspelling under `examples/Kafka` was corrected to `Benzene.Examples.Kafka` /
+  `Benzene.Examples.Kafka.Producer` — release plan 4.1.)
 
 ## Startup model
 All host examples use the platform-neutral `BenzeneStartUp` (`Configure(IBenzeneApplicationBuilder app, …)`),

@@ -11,7 +11,7 @@ using Benzene.SelfHost.Http;
 using Benzene.Xml;
 using Confluent.Kafka;
 
-namespace Benzene.Examples.Kakfa;
+namespace Benzene.Examples.Kafka;
 
 public class StartUp : BenzeneStartUp
 {

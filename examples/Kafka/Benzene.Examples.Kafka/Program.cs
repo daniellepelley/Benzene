@@ -1,4 +1,4 @@
-using Benzene.Examples.Kakfa;
+using Benzene.Examples.Kafka;
 using Benzene.HostedService;
 
 IHost host = Host.CreateDefaultBuilder(args)

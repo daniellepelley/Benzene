@@ -328,7 +328,7 @@ await host.RunAsync();
 Add Kafka consumption the same way, inside the same `UseWorker(...)`, via
 `Benzene.Kafka.Core`'s `worker.UseKafka<TKey, TValue>(kafkaConfig, kafka => kafka.UseMessageHandlers())` —
 see [Kafka Setup](getting-started-kafka.md#1-self-hosted-kafka-worker-benzenekafkacore) for the full
-walkthrough; `examples/Kafka/Benzene.Examples.Kakfa` combines exactly this Kafka-plus-HTTP shape in
+walkthrough; `examples/Kafka/Benzene.Examples.Kafka` combines exactly this Kafka-plus-HTTP shape in
 one worker.
 
 ### RabbitMQ (`Benzene.RabbitMq`)

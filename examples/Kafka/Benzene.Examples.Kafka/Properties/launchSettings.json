@@ -1,6 +1,6 @@
 ﻿{
   "profiles": {
-    "Benzene.Examples.Kakfa": {
+    "Benzene.Examples.Kafka": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "environmentVariables": {

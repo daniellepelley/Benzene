@@ -13,7 +13,7 @@ using Benzene.Schema.OpenApi;
 using Benzene.Xml;
 using Confluent.Kafka;
 
-namespace Benzene.Examples.Kakfa;
+namespace Benzene.Examples.Kafka;
 
 public static class DependenciesBuilder
 {

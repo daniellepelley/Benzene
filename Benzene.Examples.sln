@@ -121,7 +121,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Kafka", "Kafka", "{60FA65BB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Examples.Kafka.Test", "examples\Kafka\Benzene.Examples.Kafka.Test\Benzene.Examples.Kafka.Test.csproj", "{8DFA8F6D-FE23-487D-85BB-E5AC9CACA393}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Examples.Kakfa", "examples\Kafka\Benzene.Examples.Kakfa\Benzene.Examples.Kakfa.csproj", "{1BCE7EE9-D7D9-41C8-AA07-A2FBF3B9A96D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Examples.Kafka", "examples\Kafka\Benzene.Examples.Kafka\Benzene.Examples.Kafka.csproj", "{1BCE7EE9-D7D9-41C8-AA07-A2FBF3B9A96D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.HostedService", "src\Benzene.HostedService\Benzene.HostedService.csproj", "{36526044-6F5B-4884-893D-1265241B1AD8}"
 EndProject
@@ -131,7 +131,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Clients", "src\Benz
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.SelfHost.Http", "src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj", "{F8C039D1-4BDD-4EFE-8B18-93A1D52170F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Examples.Kakfa.Producer", "examples\Kafka\Benzene.Examples.Kakfa.Producer\Benzene.Examples.Kakfa.Producer.csproj", "{43FE4337-EC19-4819-A4BA-EE7A5E87AF60}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Examples.Kafka.Producer", "examples\Kafka\Benzene.Examples.Kafka.Producer\Benzene.Examples.Kafka.Producer.csproj", "{43FE4337-EC19-4819-A4BA-EE7A5E87AF60}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.OpenTelemetry", "src\Benzene.OpenTelemetry\Benzene.OpenTelemetry.csproj", "{C169F748-01CB-4BFA-B5EE-9A8A9D46F7B9}"
 EndProject

@@ -6,7 +6,7 @@
 // using Newtonsoft.Json;
 // using Void = Benzene.Abstractions.Results.Void;
 //
-// namespace Benzene.Examples.Kakfa.Producer;
+// namespace Benzene.Examples.Kafka.Producer;
 //
 // public class KafkaSender : IDisposable
 // {
