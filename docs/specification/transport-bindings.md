@@ -103,6 +103,24 @@ HTTP, Event Hub, Service Bus, and Kafka triggers.
 Topic from message metadata/envelope; headers from Kafka headers (UTF-8); no response channel —
 result mapping is acknowledge/log only.
 
+### RabbitMQ (self-hosted consumer) — `Benzene.RabbitMq`
+
+- Topic: the delivery's `topic` header (matching the SQS/SNS/Service Bus convention above), falling
+  back to the AMQP routing key so a non-Benzene producer's message still routes.
+- Headers: `BasicProperties.Headers`, UTF-8 decoded (RabbitMQ carries header values as `byte[]` on
+  the wire); the outbound client mirrors this so header-based decorators round-trip.
+- One delivery per invocation, one scope; no response channel — result mapping is
+  acknowledge/nack, per the configured ack mode.
+
+### Cosmos DB Change Feed — `Benzene.Azure.CosmosDb` / `Benzene.Azure.Function.CosmosDb`
+
+Not topic-routed: this binding is **streaming-shaped** (core-concepts §3), not handler-shaped —
+each delivered change-feed batch is one `StreamContext<TDocument>` invocation, fanned in rather
+than dispatched by topic. Checkpointing is batch-level (the change feed has no per-document resume
+token); the self-hosted worker exposes a real checkpoint hook, the Azure Functions trigger
+checkpoints on successful return only. Present as two bindings sharing one pipeline shape, matching
+the Functions-trigger / self-hosted-worker split every other Azure transport has.
+
 ### Outbound clients (the reverse direction)
 
 Every outbound client implements one interface — `sendMessage(topic, headers, message) → result`

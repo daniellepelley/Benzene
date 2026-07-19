@@ -27,6 +27,10 @@ Grid, Timer), or ASP.NET Core without rewriting any of it.**
 - Honest by design: Benzene abstracts your business logic, never the
   transport or the database — so you keep every cloud-native feature of
   the tools you chose (see the [Capability Matrix](docs/capability-matrix.md))
+- Designed to outlive its .NET implementation: every concept, wire format, and
+  status is written down independently of the C# API, so a future port to
+  another language is a translation of a design, not a rewrite (see the
+  [Benzene Specification](docs/specification/README.md))
 
 ## Quickstart
 
@@ -91,6 +95,9 @@ written once and apply everywhere.
 Full documentation is available in [`docs/`](./docs), including:
 
 - [Migration Guide (Alpha → 1.0)](docs/migration-alpha-to-1.0.md)
+- [Benzene Specification (Draft)](docs/specification/README.md) — the language-neutral core:
+  concepts, wire contracts, transport bindings, and a porting guide for implementing Benzene in
+  another language
 - [Message Handlers](docs/message-handlers.md) and [Handler Results](docs/message-result.md)
 - [Middleware](docs/middleware.md) and [Common Middleware](docs/common-middleware.md)
 - [Testing Benzene](docs/testing-benzene.md)

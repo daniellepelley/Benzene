@@ -8,7 +8,6 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Getting Started](getting-started.md) — build and run your first Benzene service in 5 minutes
   - [Project Templates](getting-started-templates.md) — `dotnet new` starter projects for every host, consumable from Visual Studio and Rider
   - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
-  - [Benzene Specifications (Draft)](specification/README.md) — two levels: the Core Specification (the language-neutral portable core: concepts, wire contracts, transport bindings, porting guide) and the [Cloud Service Profile](specification/cloud-service-profile.md) (the conformance target that guarantees mesh, Spec UI, and fleet tooling work on a service)
   - [Unified Hosting Model](hosting.md)
   - [Capability Matrix](capability-matrix.md) — what Benzene does, deliberately doesn't (and why), and how to fill the gap
   - [Message Handlers](message-handlers.md)
@@ -23,6 +22,18 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Monitoring & Diagnostics](monitoring.md)
   - [Sampling Strategies](sampling-strategies.md)
   - [Privacy & Data Handling](privacy-and-data-handling.md)
+
+- **Benzene Specification (Draft)** — the language-neutral core Benzene itself is defined by, independent of the .NET implementation, so a future port to another language is a translation of a design rather than a rewrite
+  - [Overview & How the Spec Is Organized](specification/README.md) — the two conformance levels (Core vs. the Cloud Service Profile) and how the documents below relate
+  - [Design Principles](specification/design-principles.md) — "opinionated but optional": the adoption ladder, and the rule that every steer must be replaceable
+  - [Core Concepts](specification/core-concepts.md) — the abstract model: pipeline, context, message handler, topic, result, lifecycle
+  - [Wire Contracts](specification/wire-contracts.md) — the message envelope, header conventions, the status vocabulary, and its per-protocol (HTTP/gRPC) mappings
+  - [Transport Bindings](specification/transport-bindings.md) — what a transport adapter must satisfy, with every existing binding as a worked example
+  - [Mesh Contracts](specification/mesh.md) — service self-description, trace events, and collector topics for fleet-wide visibility
+  - [Cloud Service Profile](specification/cloud-service-profile.md) — the named conformance target that guarantees mesh, Spec UI, and fleet tooling work on a service with no per-service negotiation
+  - [Payload Schema Versioning](specification/versioning.md) — draft proposal for versioning a topic's request/response shape independently of handler versioning
+  - [Porting Guide](specification/porting-guide.md) — concept-vs-idiom mapping and suggested order for implementing Benzene in another language
+  - [Conformance Fixtures](specification/conformance/README.md) — the language-neutral test fixtures every implementation runs to prove conformance
 
 - **Cloud Providers**
   - **AWS**
@@ -57,7 +68,8 @@ Benzene is a hexagonal framework designed for services running in serverless env
 - **Code Generation**
   - [Terraform](terraform.md)
   - [Client SDKs](client-sdks.md)
-  - [OpenAPI Specification](spec.md)
+  - [Spec Endpoint (OpenAPI / AsyncAPI / Benzene format)](spec.md) — a runtime feature of a Benzene service, not to be confused with the [Benzene Specification](specification/README.md) above: this is a `UseSpec` middleware that serves *your* service's own schema
+  - [Spec UI](spec-ui.md) — a Swagger-UI-style browser for the spec endpoint above
 
 - **Reference**
   - [Package Reference](reference/packages.md) — every NuGet package and when to install it
