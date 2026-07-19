@@ -95,7 +95,7 @@ public class FluentValidationSchemaBuilder : IValidationSchemaBuilder
             case "IsNumericValidator":
                 return new ValidationSchema(ValidationConstants.IsNumeric, "Is Numeric");
             case "IsDoubleGuidValidator":
-                return new ValidationSchema(ValidationConstants.IsNumeric, "Is Numeric");
+                return new ValidationSchema(ValidationConstants.IsDoubleGuid, "Is DoubleGuid ('Guid|Guid')");
             case "IsLettersOrSymbolsValidator":
                 return new ValidationSchema(ValidationConstants.IsLettersOrSymbols, "Is Letters Or Symbols");
              case "IsNumbersOrSymbolsValidator":
