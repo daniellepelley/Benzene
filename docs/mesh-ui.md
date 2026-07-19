@@ -34,6 +34,11 @@ at once — no individual service is ever asked whether its own topics are still
 `Benzene.Mesh.Aggregator/CLAUDE.md`'s "Aggregated topic catalog" section for the full computation,
 and `work/service-mesh-roadmap-1.0.md` §10.8–§10.9 for the design rationale.
 
+Every producer/consumer name is clickable — it scrolls to, opens, and briefly highlights that
+service's card above, so "who's still consuming this" is never more than one click away from "is
+that service actually healthy right now." A card hidden by an active search filter is revealed
+automatically when you jump to it this way.
+
 ### Serving it
 
 Transport-agnostic HTTP middleware — works on AWS Lambda API Gateway, Azure Functions, ASP.NET
