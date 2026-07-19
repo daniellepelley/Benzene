@@ -417,3 +417,41 @@ wires** — every wired concern is now asserted by at least one example test (th
 wired-but-unasserted got closed this pass). The remaining blanks are the three concerns wired in no
 example at all (idempotency/retry/versioning), which are tracked above as an approval-gated
 "add a demo, then assert it" follow-up rather than a test-only gap.
+
+### 2026-07-19 (cont.) — Phase 3 written: Azure Service Bus real-dependency egress tier
+
+Wrote the Service Bus counterpart of Phase 2.1's LocalStack SQS tier:
+`examples/Azure/Benzene.Example.Azure.Dev.Test` (deliberately **not** in `Benzene.Examples.sln` —
+needs Docker), driving the Azure example's egress demo (`POST /orders/publish-created` →
+`PublishOrderCreatedMessageHandler` → the real `.UseServiceBus(sender)` route) against a **real
+Azure Service Bus emulator**, then draining the `orders` queue with a real `ServiceBusReceiver` to
+prove the message landed with the right topic application-property (`order_created`) and JSON body —
+not a fake sender. It's the real-dependency mirror of the in-memory
+`StartUpTest.Egress_PublishOrderCreated_SendsOnTheOrderCreatedTopic`.
+
+**Why this was de-risked despite no local Docker:** the repo's existing `azure-integration-tests` CI
+job already stands up this exact emulator (`test/Benzene.Integration.Test`'s `ServiceBusFixture` +
+`servicebus-docker-compose.yaml`) and runs green, so Phase 3 mirrors a proven-in-CI setup rather
+than breaking new ground — the same "write-and-verify-in-CI" approach that worked for Phase 2.1.
+Reused verbatim: the `mcr.microsoft.com/azure-messaging/servicebus-emulator` + `mssql` backend
+compose (ports remapped to 5673/5301), and the canonical emulator connection string
+`Endpoint=sb://localhost:5673;...UseDevelopmentEmulator=true;`. The only new config is an `orders`
+queue in `servicebus-emulator-config.json` (the queue the example's `CreateSender("orders")` targets).
+
+**Readiness (the fragile part, handled explicitly):** the Service Bus emulator exposes no HTTP health
+endpoint (unlike LocalStack), and on a cold CI runner its MSSQL backend can still be starting after
+the containers report "created". So `ServiceBusEmulatorFixture` proves readiness the only way that
+actually matters — by successfully *sending* to the `orders` queue in a retry loop (180s window,
+matching the library's `BenzeneServiceBusWorkerLiveTest`), draining the probe so it can't be mistaken
+for the test's own message. The test then drains → drives the HTTP request → receives exactly one
+message → asserts topic + payload. Response status is `202` (`OutboundServiceBusContextConverter`
+always maps the send-ack to `Accepted`), unlike the AWS SQS tier's `200`.
+
+**CI:** new `examples-azure-servicebus-tests` job in `build-benzene.yml` (mirrors
+`examples-aws-localstack-tests`: docker-compose CLI shim + restore/build/test the `.Dev.Test`
+project directly, since it's not in any solution). Compile-verified locally under .NET 10; runtime
+behaviour verified in CI (no local Docker daemon in the authoring environment).
+
+*Phase 3 status:* written and pushed; **awaiting the CI run to confirm the emulator tier passes on
+the runner** — same verification model as Phase 2.1. Kafka real-dependency tier (the other half of
+plan step 5.3) remains a separate follow-up.

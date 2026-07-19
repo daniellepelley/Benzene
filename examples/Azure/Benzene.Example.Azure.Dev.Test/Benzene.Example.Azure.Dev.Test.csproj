@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Benzene.Example.Azure.Dev.Test</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- Deliberately NOT added to Benzene.Examples.sln: this tier needs a running Azure Service Bus
+         emulator (Docker), so it's kept out of the compile/in-memory-test gate and run by its own CI
+         job, matching the .Dev.Test convention (examples/CLAUDE.md) - the Service Bus counterpart of
+         examples/Aws/Benzene.Examples.Aws.Dev.Test (LocalStack SQS). -->
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 7.18.2 matches the version Benzene.Clients.Azure.ServiceBus (the egress path under test)
+         pins, so the receiver in this test speaks the same SDK the example sends with. -->
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.18.2" />
+    <PackageReference Include="Ductus.FluentDocker" Version="2.10.59" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Same host-build helpers the in-memory Benzene.Example.Azure.Test uses (BenzeneTestHost,
+         BuildAzureFunctionApp, HandleHttpRequest, HttpBuilder) - this tier only swaps the fake
+         IBenzeneMessageSender for the example's real ServiceBus egress route against the emulator. -->
+    <ProjectReference Include="..\Benzene.Example.Azure\Benzene.Example.Azure.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core.TestHelpers\Benzene.Azure.Function.Core.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet.TestHelpers\Benzene.Azure.Function.AspNet.TestHelpers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures\Files\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
