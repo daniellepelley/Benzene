@@ -818,3 +818,67 @@ requires:
 Each of 1–4 ships value standalone even if §10.5 never happens — a service can keep self-hosting
 its own Spec UI forever and still benefit from richer bindings, a topic view, better test
 payloads, and cross-links between whichever pages a team does deploy.
+
+### 10.7 2026-07-19 (same-day) revision: narrow the scope, and build on the Aggregator, not a new package
+
+Follow-up user feedback narrows §10.1–10.6 considerably. This section supersedes the priority
+order and the shape of §10.2/§10.4/§10.5 above; §10.1 and §10.3's substance stand, with §10.3
+reframed below.
+
+**1. De-scope §10.2 (transport-native "Try it" payloads).** Explicitly called out as low value
+and a security concern: generating test payloads is one thing, but any UI that reaches into
+"different systems" from a central, aggregated view raises exactly the kind of access/blast-radius
+question a platform-wide dashboard should avoid inviting. Not part of the near-term plan. If it
+ever happens, it stays scoped to a single service's own self-hosted Spec UI (where "this page can
+reach this one service" is an unremarkable, already-true statement), never the centralized view.
+
+**2. Reject the micro-frontend pattern outright.** Explicit instruction: don't build toward a
+world where each domain service serves its own UI fragment that a dashboard stitches together.
+Each service's own hosted Spec UI (`UseSpecUi()`) stays exactly what it already incidentally is —
+optional, like a web service having its own Swagger page. Useful for a team looking at their own
+service in isolation; **irrelevant to the platform-wide aggregation story**, which must be built
+by fetching each service's machine-readable JSON (spec, health, and whatever else) and rendering
+it centrally, once, in one dashboard codebase.
+
+**3. The priority is platform-wide topic/transport visibility — and the thing to build on already
+exists.** Checked `Benzene.Mesh.Aggregator`'s actual current behavior before writing this: it
+*already* does exactly the pattern just described — polls every registered service's spec + health
+JSON concurrently (`MeshAggregator.RunOnceAsync`, `IMeshServiceSource`), computes contract drift,
+and — this is the part that matters most here — **already derives structural producer/consumer
+topology edges from the fetched specs alone, with no live tracing or collector involved** (§7.3's
+`topology.json`, `source: "structural"`). This means the highest-priority ask — "which services
+create a topic and which consume it, across the whole platform" — is **already substantially
+buildable as an Aggregator + Mesh Explorer enhancement**, not a new package:
+
+- **§10.1 (transport-neutral `bindings`)** stays exactly as designed — extend what
+  `Benzene.Schema.OpenApi` puts in the spec, which is exactly what `Benzene.Mesh.Aggregator`
+  already fetches from every service. No new fetch path needed; the Aggregator picks up richer
+  bindings for free once the spec carries them.
+- **§10.3 (topic view), reframed:** build the producer/consumer/version breakdown primarily off
+  **structural** data the Aggregator already derives from specs — "which services' specs still
+  declare producing/handling `shipping:booked@v1`" answers most of the deprecation question
+  (§10.3's original motivating example) with **zero live traffic dependency and zero collector
+  security surface** — a structurally orphaned topic (nobody's spec claims it anymore) is a
+  strong, low-risk deprecation signal on its own. The collector/trace-derived "is it *actually*
+  still receiving traffic" signal (mesh.md §4's consumer-edges-from-trace-parentage mechanism,
+  Fleet view) remains a valid **optional enhancement** layered on top later — a version can be
+  structurally wired but genuinely idle, which only traces can tell you — but it is explicitly
+  **not a prerequisite** for shipping the topic view. Build the structural version first.
+- **§10.5, reframed: this is not a new "dashboard" package.** It's `Benzene.Mesh.Aggregator` +
+  `Benzene.Mesh.Ui` (Mesh Explorer), extended: richer per-topic bindings in the rendered catalog,
+  and the new topic-level drill-down (§10.3) added as a page within the *existing* Mesh Explorer
+  rather than a new host. This is materially less new engineering than §10.5 originally proposed,
+  and it matches the user's explicit direction: one central UI, driven off JSON, no per-service UI
+  fragments.
+- **§10.4 (cross-linking), reframed:** since there is only ever one centrally-hosted UI in this
+  direction (Mesh Explorer, extended), "cross-linking" is internal navigation within that one
+  page/app (service card → its topics → a topic's full producer/consumer breakdown → back), not
+  links between independently-hosted pages on different services. Considerably simpler than
+  originally scoped.
+
+**Revised near-term sequencing:** §10.1 (bindings in the spec + Aggregator fetch) →
+§10.3-structural (topic/producer/consumer view in Mesh Explorer, off Aggregator data only) →
+internal navigation between the two. The collector/Fleet-view trace-derived enhancement, live
+test-payload dispatch, and any standalone dashboard package are all explicitly deferred, not
+cancelled — revisit only after the structural, pull-based visibility story above is shipped and
+proven useful on its own.
