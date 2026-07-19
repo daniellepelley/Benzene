@@ -178,7 +178,7 @@ upcast (or downcast) at the edges of the pipeline; the handler never sees any ve
 Hooks into `IRequestMapper<TContext>` (`Benzene.Core.MessageHandlers.Request`), which already sits
 exactly at the right seam: `MessageRouter<TContext>` resolves the topic and handler definition
 first (so `messageHandlerDefinition.RequestType` — the canonical/latest shape — is known) *before*
-`RequestMapperThunk<TContext>.GetRequest<TRequest>()` calls
+`DeferredRequestMapper<TContext>.GetRequest<TRequest>()` calls
 `IRequestMapper<TContext>.GetBody<TRequest>(context)` to materialize the request. A casting request
 mapper is a **decorator** around the existing one:
 

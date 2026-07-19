@@ -5,7 +5,8 @@ Runs a Benzene middleware pipeline (or an outbound port call) through a [Polly v
 `ResiliencePipeline`, so the full Polly strategy set — retry, circuit breaker, timeout, hedging,
 fallback, rate limiter — applies to whatever `next` wraps. It is a **sibling** to `Benzene.Resilience`,
 not a replacement: that package stays the zero-dependency homegrown retry; this one takes a
-`Polly.Core` (8.x) dependency in exchange for the whole toolkit.
+`Polly.Core` (8.x) dependency in exchange for the whole toolkit. See the
+[Capability Matrix](../../docs/capability-matrix.md) for how the two resilience options relate.
 
 The seam is a plain wrap: `IMiddleware<TContext>.HandleAsync(context, next)` calls
 `pipeline.ExecuteAsync(_ => next(), ...)`. The `ResiliencePipeline` is supplied ready-built, so the

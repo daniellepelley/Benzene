@@ -8,7 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\App\Benzene.Examples.App\Benzene.Examples.App.Dev.csproj" />
-      <ProjectReference Include="..\Benzene.Examples.Kakfa\Benzene.Examples.Kakfa.Dev.csproj" />
+      <ProjectReference Include="..\Benzene.Examples.Kafka\Benzene.Examples.Kafka.Dev.csproj" />
     </ItemGroup>
 
     <ItemGroup>

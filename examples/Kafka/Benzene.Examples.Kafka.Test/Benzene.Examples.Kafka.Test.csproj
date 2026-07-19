@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Benzene.Examples.Kakfa\Benzene.Examples.Kakfa.csproj" />
+      <ProjectReference Include="..\Benzene.Examples.Kafka\Benzene.Examples.Kafka.csproj" />
     </ItemGroup>
 
     <ItemGroup>

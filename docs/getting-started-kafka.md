@@ -203,7 +203,7 @@ await client.SendMessageAsync<object, Benzene.Abstractions.Results.Void>("hello_
 `IBenzeneClientRequest.Headers` onto the outbound `Message.Headers` (UTF-8 encoded) — the same
 mechanism correlation-ID/trace-context decorators rely on to reach the wire. A plain
 `IProducer<string, string>.ProduceAsync(...)` call works exactly as well if you don't need that;
-see `examples/Kafka/Benzene.Examples.Kakfa.Producer` for a minimal producer console app built this
+see `examples/Kafka/Benzene.Examples.Kafka.Producer` for a minimal producer console app built this
 way.
 
 ### 1.7 Testing

@@ -77,12 +77,17 @@ is added to any HTTP-shaped pipeline via `Benzene.Http`'s CORS extension methods
   APIs and HTTP APIs configured for payload format 1.0. There is deliberately no v2 support
   (`APIGatewayHttpApiV2ProxyRequest` is not referenced anywhere in the package); `ApiGatewayLambdaHandler`
   claims an invocation only when the deserialized payload has a non-null `HttpMethod` (a v1.0-shaped field).
-- **The HTTP request adapter maps path, method, and single-value headers only.** `ApiGatewayHttpRequestAdapter`
-  does not copy `QueryStringParameters` or `MultiValueHeaders` onto the Benzene `HttpRequest`; multi-value
-  headers and query strings are not surfaced through the HTTP abstraction. Query-string parameters and path
-  parameters *are* surfaced separately — onto the request object — by `ApiGatewayRequestEnricher`.
-- **Request bodies are passed through as-is.** `ApiGatewayMessageBodyGetter` returns
-  `APIGatewayProxyRequest.Body` verbatim; `IsBase64Encoded` is ignored and bodies are not base64-decoded.
+- **Single-value headers and query strings only — multi-value entries are dropped.** Query-string
+  parameters, path parameters, and headers *are* surfaced onto the request object (by
+  `ApiGatewayRequestEnricher`, which reads `QueryStringParameters`/`PathParameters`/`Headers`), but only
+  their **single-value** forms: `MultiValueHeaders` and `MultiValueQueryStringParameters` are not read, so
+  a header or query key sent more than once collapses to the single value AWS puts in the single-value map
+  (the last value). `ApiGatewayHttpRequestAdapter` likewise maps path, method, and single-value `Headers`
+  only. Full multi-value support is a post-1.0 enhancement (it needs the multi-value maps threaded through
+  the single-value getter/enricher contracts).
+- **Base64-encoded request bodies are decoded.** When API Gateway sets `IsBase64Encoded` (binary media
+  types, or any payload it can't treat as text), `ApiGatewayMessageBodyGetter` base64-decodes the body back
+  to its real text (UTF-8) so the handler never sees base64; a normal text body is returned verbatim.
 - CORS is not handled here — use the shared `Benzene.Http` `CorsMiddleware`.
 - Custom authorizers return an `APIGatewayCustomAuthorizerResponse` (IAM policy document).
 - Topic/route resolution is by matching HTTP method + path against registered routes via `IRouteFinder`.

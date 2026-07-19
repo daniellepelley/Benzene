@@ -18,9 +18,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core", "..\..\src\B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions.Pipelines", "..\..\src\Benzene.Abstractions.Pipelines\Benzene.Abstractions.Pipelines.csproj", "{871B79EF-CA9E-45A5-8D27-96B922CF7A79}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.Kakfa", "Benzene.Examples.Kakfa\Benzene.Examples.Kakfa.csproj", "{6D5A8F71-163B-4DDC-82D3-8AEF09755C56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.Kafka", "Benzene.Examples.Kafka\Benzene.Examples.Kafka.csproj", "{6D5A8F71-163B-4DDC-82D3-8AEF09755C56}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.Kakfa.Producer", "Benzene.Examples.Kakfa.Producer\Benzene.Examples.Kakfa.Producer.csproj", "{6F22E46D-8239-4840-9AAE-04A9AB152153}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.Kafka.Producer", "Benzene.Examples.Kafka.Producer\Benzene.Examples.Kafka.Producer.csproj", "{6F22E46D-8239-4840-9AAE-04A9AB152153}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Kafka.Core", "..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj", "{6BFD2E29-95AA-416E-BF23-0E1DC608A740}"
 EndProject

@@ -6,6 +6,8 @@ payload schemas centrally and frame published messages so the wider Kafka ecosys
 writer schema — complementing `Benzene.Avro` (which serializes registry-less) and the A.2 contract
 gate (build-time compatibility) with a runtime registry story. Ships the mechanism BCL-only — no
 Confluent/Azure SDK dependency; those registry clients implement the same one interface.
+See the [Capability Matrix](../../docs/capability-matrix.md) for the in-box compatibility checker's
+limits (byte-identical only) and how to get structural evolution checking.
 
 ## Key types
 - `ISchemaRegistryClient` — the neutral seam: `RegisterAsync(SchemaDefinition)→int id` (idempotent

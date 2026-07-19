@@ -192,7 +192,7 @@ the pipeline. `MessageRouter<TContext>.HandleAsync`:
 3. Creates the handler instance via `IMessageHandlerFactory` (resolving it from DI, wrapping it per
    `IMessageHandlerWrapper`, and building its own per-handler middleware pipeline — see
    [Response handling](#response-handling) below).
-4. Invokes the handler through an `IRequestMapperThunk<TContext>` (defers request-body mapping until
+4. Invokes the handler through an `IDeferredRequestMapper` (defers request-body mapping until
    the handler actually needs it) and sets the resulting `IMessageHandlerResult` on the context via
    `IMessageHandlerResultSetter<TContext>`.
 

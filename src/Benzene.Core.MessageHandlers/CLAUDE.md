@@ -37,7 +37,7 @@ Provides complete implementation of message handler infrastructure for command/q
   registered `IMediaFormatNegotiator<TContext>` which format to read with, then caches the
   resulting `EnrichingRequestMapper`/`RequestMapper` pair per distinct `ISerializer`
 - `EnrichingRequestMapper<TContext>` - Enriches requests with context data
-- `RequestMapperThunk<TContext>` - Deferred request mapping
+- `DeferredRequestMapper<TContext>` - Deferred request mapping
 
 ### Media Formats (`MediaFormats/`)
 - `JsonMediaFormat<TContext>` - The process default `IMediaFormat<TContext>`, wraps the shared
