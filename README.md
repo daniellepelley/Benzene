@@ -45,11 +45,12 @@ A message handler, mapped to a topic:
 
 ```csharp
 [Message("hello:world")]
-public class HelloWorldMessageHandler : IMessageHandler<HelloWorldMessage, HelloWorldResponse>
+[HttpEndpoint("GET", "/hello/{name}")]
+public class HelloWorldMessageHandler : IMessageHandler<HelloWorldRequest, HelloWorldResponse>
 {
-    public Task<IBenzeneResult<HelloWorldResponse>> HandleAsync(HelloWorldMessage message)
+    public Task<IBenzeneResult<HelloWorldResponse>> HandleAsync(HelloWorldRequest message)
     {
-        return Task.FromResult(BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}" }));
+        return Task.FromResult(BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}!" }));
     }
 }
 ```
