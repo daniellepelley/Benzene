@@ -102,6 +102,35 @@ jobs:
         dotnet test examples/Saga/Benzene.Example.Saga.Tests/Benzene.Example.Saga.Tests.csproj --no-build --verbosity normal
         dotnet test examples/Google/Benzene.Examples.Google.Tests/Benzene.Examples.Google.Tests.csproj --no-build --verbosity normal
 
+  # Real-dependency tier for the AWS example: runs its SQS egress demo end-to-end against a real
+  # LocalStack SQS queue (Benzene.Examples.Aws.Dev.Test). Mirrors the library-level
+  # aws-integration-tests job. The .Dev.Test project is deliberately NOT in Benzene.Examples.sln
+  # (it needs Docker), so it's restored/built directly here.
+  examples-aws-localstack-tests:
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Ensure docker-compose CLI is resolvable (FluentDocker looks for this binary name; ubuntu-latest only ships the "docker compose" v2 plugin)
+      run: |
+        if ! command -v docker-compose >/dev/null 2>&1; then
+          printf '#!/usr/bin/env bash\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
+          sudo chmod +x /usr/local/bin/docker-compose
+        fi
+        docker-compose version
+    - name: Restore
+      run: dotnet restore examples/Aws/Benzene.Examples.Aws.Dev.Test/Benzene.Examples.Aws.Dev.Test.csproj
+    - name: Build
+      run: dotnet build examples/Aws/Benzene.Examples.Aws.Dev.Test/Benzene.Examples.Aws.Dev.Test.csproj --no-restore
+    - name: Test
+      run: dotnet test examples/Aws/Benzene.Examples.Aws.Dev.Test/Benzene.Examples.Aws.Dev.Test.csproj --no-build --verbosity normal
+
   azure-integration-tests:
 
     runs-on: ubuntu-latest

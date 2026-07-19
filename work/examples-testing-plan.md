@@ -288,3 +288,49 @@ OpenTelemetry, Saga, Google — 8 projects, ~107 tests, all run in CI. The only 
 in-memory tier are the deliberately-out-of-scope ones (AwsMesh/AzureMesh — not in the solution,
 Terraform-deployed; `examples/Mesh` — inherently live-integration, covered by `run.sh` + the
 K8sMesh compose CI job; Kafka's live tier; and Google/Cloudflare/CodeGen per 1.0 scoping).
+
+### 2026-07-19 (cont.) — Phase 2.1 shipped: AWS example SQS egress against real LocalStack
+
+`examples/Aws/Benzene.Examples.Aws.Dev.Test` is the real-dependency counterpart of the in-memory
+`PublishOrderCreatedTest`. It runs the AWS example's SQS **egress** demo end-to-end against a real
+LocalStack SQS queue — `POST /orders/publish-created` → `PublishOrderCreatedMessageHandler` → the
+real `.UseSqs(MY_QUEUE_URL)` outbound route (no fake sender) → LocalStack — then drains the queue
+with the AWS SDK and asserts a message actually landed with the right `topic` attribute
+(`order_created`) and payload (the `OrderCreatedEvent` Id). This is the first time the example's
+egress path is exercised against real infrastructure rather than a mock.
+
+Design notes (all matched to the proven `test/Benzene.Aws.Tests` LocalStack pattern):
+- `LocalStackFixture` (FluentDocker + a copied `sqs-docker-compose.yaml`, `SERVICES=sqs`) — a
+  self-contained copy of the library fixture rather than a cross-reference into the library tests.
+- Credentials/endpoint wired via env vars the example already reads (`AWS_SERVICE_URL`,
+  `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `MY_QUEUE_URL`), set **before**
+  `BuildAwsLambdaHost` since `DependenciesBuilder` reads them at `ConfigureServices` time. The queue
+  URL is captured from `CreateQueue` (not hardcoded), so it's robust to LocalStack's account id.
+- The real send returns `Ok`/HTTP 200 (SQS's send ack), unlike the in-memory fake sender's
+  `Accepted`/202 — so the HTTP-status assertion is a 2xx range check and the drained message carries
+  the real proof.
+- **Not in `Benzene.Examples.sln`** (needs Docker) — its own CI job `examples-aws-localstack-tests`
+  in `build-benzene.yml`, modeled exactly on the existing `aws-integration-tests` job (docker-compose
+  CLI shim + restore/build/test the project directly).
+
+**Honesty caveat:** this sandbox has the Docker CLI but no running daemon, so Phase 2.1 was
+**compile-verified locally but not executed** — its runtime verification happens in CI (the same
+fallback the repo already uses for infra-dependent work). It's built to mirror the known-good
+library LocalStack tests as closely as possible to de-risk that, but the first green CI run is what
+confirms it.
+
+### Phase 2.2 (Lambda-into-LocalStack spike) — status: deferred, needs a live Docker loop
+
+The plan's step 2.2 — package the example Lambda, register it *inside* LocalStack, wire a real SQS
+event source mapping, and assert a real invocation — is genuinely new ground for this repo (no
+existing Lambda-in-LocalStack anywhere) and, unlike 2.1, can't be de-risked by mirroring an existing
+pattern. It's also the piece most sensitive to LocalStack Lambda-executor specifics (container vs
+zip packaging, the `provided.al2023`/.NET 10 self-contained bootstrap, Docker-in-Docker on the
+runner). Blind-writing it without a working local Docker loop to iterate against would be low-
+confidence. **Deferred until either a local Docker daemon is available in this environment or Phase
+2.1's CI job is confirmed green** (which establishes the LocalStack-on-the-runner baseline the spike
+builds on). The concrete intended approach when picked up: `dotnet lambda package` the example (zip,
+`provided.al2023`, matching `deploy-aws-example.yml`), `awslocal lambda create-function` +
+`create-event-source-mapping` against the LocalStack SQS queue, drop a message, and poll a
+side-effect (an output queue or a LocalStack Lambda log) for the invocation — all in a dedicated
+`.Dev.Test` fixture or a compose-based CI job. To be written up as a findings note here once run.

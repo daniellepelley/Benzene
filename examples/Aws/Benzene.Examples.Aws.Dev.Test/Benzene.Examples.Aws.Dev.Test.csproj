@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Benzene.Examples.Aws.Dev.Test</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- Deliberately NOT added to Benzene.Examples.sln: this tier needs a running LocalStack
+         (Docker), so it's kept out of the compile/in-memory-test gate and run by its own CI job,
+         matching the .Dev.Test convention (examples/CLAUDE.md). -->
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.502.57" />
+    <PackageReference Include="Ductus.FluentDocker" Version="2.10.59" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
+    <ProjectReference Include="..\Benzene.Examples.Aws\Benzene.Examples.Aws.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures\Files\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
