@@ -97,6 +97,7 @@ jobs:
         dotnet test examples/Asp/Benzene.Example.Asp.Test/Benzene.Example.Asp.Test.csproj --no-build --verbosity normal
         dotnet test examples/Aws/Benzene.Examples.Aws.Tests/Benzene.Examples.Aws.Tests.csproj --no-build --verbosity normal
         dotnet test examples/Azure/Benzene.Example.Azure.Test/Benzene.Example.Azure.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Grpc/Benzene.Example.Grpc.Test/Benzene.Example.Grpc.Test.csproj --no-build --verbosity normal
         dotnet test examples/OpenTelemetry/Benzene.Examples.OpenTelemetry.Test/Benzene.Examples.OpenTelemetry.Test.csproj --no-build --verbosity normal
         dotnet test examples/Saga/Benzene.Example.Saga.Tests/Benzene.Example.Saga.Tests.csproj --no-build --verbosity normal
         dotnet test examples/Google/Benzene.Examples.Google.Tests/Benzene.Examples.Google.Tests.csproj --no-build --verbosity normal

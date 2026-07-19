@@ -265,3 +265,26 @@ unchanged.
 
 **Verified:** `Benzene.sln` + `Benzene.Examples.sln` build clean; all seven CI-gated example test
 projects green (103 tests).
+
+### 2026-07-19 (cont.) — Phase 1 complete: Grpc
+
+`examples/Grpc/Benzene.Example.Grpc.Test` (4 tests) closes the last Phase 1 gap. The example has no
+`BenzeneStartUp` (top-level `Program.cs`) and mixes a native `MapGrpcService<GreeterService>` with
+Benzene `[GrpcMethod]` routing on the same method paths, so the `BuildGrpcHost<TStartUp>` helper
+doesn't fit. Instead the test drives the *real* `Program.cs` via `WebApplicationFactory` (entry
+point pinned by the public `GreeterService` type) and calls it over a genuine generated
+`Greeter.GreeterClient` stub — reused from the client example project, whose generated types live in
+a different namespace (`Benzene.Example.Grpc.Client`) so there's no collision with the server's — via
+the in-memory HTTP/2 test handler (`server.CreateHandler()`).
+
+All four RPC shapes (unary, server-stream, client-stream, bidi) assert the **Benzene** handler
+answered rather than the native `GreeterService`: the interceptor (`BenzeneInterceptor`) routes any
+method matching a `[GrpcMethod]` handler through Benzene and only falls back to the native service
+otherwise, and the unary handler's distinctive "…this is Benzene" reply is the proof it won. Added
+to the CI "Test in-memory examples" step.
+
+**Phase 1 is now complete for every 1.0-scoped, in-solution example:** App, Asp, Aws, Azure, Grpc,
+OpenTelemetry, Saga, Google — 8 projects, ~107 tests, all run in CI. The only examples without an
+in-memory tier are the deliberately-out-of-scope ones (AwsMesh/AzureMesh — not in the solution,
+Terraform-deployed; `examples/Mesh` — inherently live-integration, covered by `run.sh` + the
+K8sMesh compose CI job; Kafka's live tier; and Google/Cloudflare/CodeGen per 1.0 scoping).
