@@ -204,6 +204,7 @@
   .lede { margin-bottom: 22px; }
   .lede h1 { margin: 0 0 6px; font-size: 25px; letter-spacing: -.02em; text-wrap: balance; }
   .lede p { margin: 0; color: var(--ink-soft); max-width: 62ch; }
+  .lede-transports { margin-top: 10px; }
 
   .stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 30px; }
   .stat {
@@ -433,6 +434,7 @@
     <div class="lede">
       <h1 id="lede-title">Benzene Spec Explorer</h1>
       <p id="lede-desc"></p>
+      <div class="lede-transports chips" id="lede-transports"></div>
     </div>
     <div class="stats" id="stats"></div>
     <div id="content"></div>
@@ -473,6 +475,7 @@
   },
   "tags": [ { "name": "order" }, { "name": "shipment" } ],
   "messageEndpoint": "/benzene-message",
+  "transports": [ "http", "sqs", "sns" ],
   "requests": [
     {
       "topic": "order:create",
@@ -1052,6 +1055,12 @@
     document.getElementById("doc-version").textContent = info.version ? "v" + info.version : "";
     document.getElementById("lede-title").textContent = info.title || "Benzene Spec Explorer";
     document.getElementById("lede-desc").textContent = info.description || "";
+
+    var ledeTransports = document.getElementById("lede-transports");
+    ledeTransports.innerHTML = "";
+    (spec.transports || []).forEach(function (t) {
+      ledeTransports.appendChild(el("span", "chip", t));
+    });
 
     var allRequests = spec.requests || [];
     // Domain topics vs reserved Benzene utility topics (spec/health/mesh/…). Utilities are pulled

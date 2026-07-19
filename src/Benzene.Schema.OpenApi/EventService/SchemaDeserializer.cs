@@ -26,6 +26,7 @@ public class EventServiceDocumentDeserializer
         doc.Info = GetInfo(jObject);
         doc.Tags = GetTags(jObject);
         doc.MessageEndpoint = jObject["messageEndpoint"]?.Value<string>();
+        doc.Transports = GetTransports(jObject);
         doc.Events = GetEvents(jObject);
         doc.Requests = GetRequests(jObject);
         return doc;
@@ -70,6 +71,12 @@ public class EventServiceDocumentDeserializer
         return jArray!
             .Select(x => reader.ReadFragment<OpenApiTag>(x.ToString(), OpenApiSpecVersion.OpenApi3_0, out _))
             .ToArray();
+    }
+
+    private static string[] GetTransports(JObject jObject)
+    {
+        var transportsJArray = jObject.GetValue("transports") as JArray;
+        return transportsJArray?.Select(x => x.Value<string>()!).ToArray() ?? Array.Empty<string>();
     }
 
     private Event[] GetEvents(JObject jObject)

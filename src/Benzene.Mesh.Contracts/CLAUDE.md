@@ -42,8 +42,12 @@ data types - no HTTP, no file I/O, no execution logic.
   service's `HealthCheckResponse` (from `Benzene.HealthChecks.Core`, reused as-is - no parallel type),
   and an `Error` (exception type name only, never a message).
 - `MeshManifestEntry`/`MeshManifest` - the top-level `manifest.json` index: one denormalized row per
-  service (`Status`, `ContractDrift`, optional `OwningTeam`) so a catalog view doesn't need to
-  fetch every snapshot.
+  service (`Status`, `ContractDrift`, optional `OwningTeam`, `Transports`) so a catalog view
+  doesn't need to fetch every snapshot. `Transports` (`string[]`, empty default) is lifted from
+  that service's spec's document-level `transports` field (`Benzene.Schema.OpenApi`'s
+  `EventServiceDocument.Transports`) by `Benzene.Mesh.Aggregator`, the same "parse the spec,
+  denormalize onto the manifest" treatment as `OwningTeam` - see
+  `Benzene.Mesh.Aggregator/CLAUDE.md`.
 - `MeshTopology`/`TopologyEdge`/`TopologyEdgeSource` - the `topology.json` shape: cross-service call
   edges (`Client`→`Server`, plus nullable `RequestsPerMinute`/`ErrorRate`/`P50`/`P95`/`P99LatencyMs`),
   each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for a

@@ -1342,3 +1342,45 @@ Both pure-C# steps, no wire-format change:
 Full solution build (0 errors) and the complete `Benzene.Core.Test` suite (1530 tests) pass.
 Step 3 (the document-level `transports` spec field) and onward are still open, per §10.16's
 sequencing.
+
+### 10.18 2026-07-19 (implementation) — §10.16 steps 3-6 shipped: `transports` end to end
+
+The document-level `transports` field is now live from spec build through to both UIs:
+
+- **Spec (`Benzene.Schema.OpenApi`).** `EventServiceDocument.Transports` (`string[]`, written only
+  when non-empty, same "omit rather than emit empty" convention as `Version`/`httpMappings`). A new
+  `IConsumesTransportsInfo<TBuilder>` seam (mirroring `IConsumesMessageEndpoint`) is implemented by
+  `EventServiceDocumentBuilder.AddTransportsInfo(ITransportsInfo)` and wired into `SpecBuilder`
+  alongside the other `IConsumes*` resolutions, resolving `ITransportsInfo` from DI - the registry
+  §10.17 just finished closing the coverage gap on. `EventServiceDocumentDeserializer` round-trips
+  it. Documented in `docs/spec.md`'s new "Transport advertisement" section, right after the
+  existing "Message endpoint advertisement" one it mirrors.
+- **Aggregator (`Benzene.Mesh.Aggregator`/`Benzene.Mesh.Contracts`).** `MeshManifestEntry` gained
+  a trailing, additive `Transports` (empty default - source-compatible). A new `ParseTransports`
+  (mirrors `ParseTopics`/`ParseOutboundTopics`'s best-effort JSON parsing, never fails the run on a
+  missing/unparseable spec) reads it out of each service's spec during `BuildServiceAsync` and
+  denormalizes it onto the manifest entry, the same treatment §10.10 gave `OwningTeam` - so
+  `mesh-ui.html` can render it without an extra per-service fetch.
+- **UI.** `mesh-ui.html`: each service card gets a `.svc-transports` chip row (hidden entirely when
+  empty - most of a fixture's cards in local testing correctly showed none). Because the topic
+  page (§10.15) embeds the *real* `buildServiceCard(svc)` for every producer/consumer, the same
+  chip row appears there automatically, no separate code path - verified end to end with a
+  two-service Playwright fixture (one with three transports, one with none): main-list chips
+  correct, no-transports card correctly renders no row, and the topic page's embedded cards showed
+  exactly the expected chips. `spec-ui.html` gets a parallel `#lede-transports` chip row under the
+  title/description, replacing nothing - verified the same way against the embedded sample spec.
+  Both embedded fallback samples (`mesh-ui.html`'s sample manifest, `spec-ui.html`'s sample spec)
+  now include example `transports` data so the standalone/offline demo shows the feature without
+  needing a live backend.
+- **Docs.** `docs/spec.md` (the actual home of the `benzene` `EventServiceDocument` field
+  reference - not `docs/specification/wire-contracts.md`, which turned out not to document this
+  format at all) gains "Transport advertisement"; `docs/mesh-ui.md` gains the chip row in both the
+  main service-card description and the topic-page producer/consumer section. Every touched
+  package's own `CLAUDE.md` (`Benzene.Schema.OpenApi`, `Benzene.Mesh.Contracts`,
+  `Benzene.Mesh.Aggregator`, `Benzene.Mesh.Ui`, `Benzene.Spec.Ui`) updated to match, per this
+  repo's per-package doc-truth convention.
+
+Full solution build (0 errors) and the complete `Benzene.Core.Test` (1531 tests) and
+`Benzene.Mesh.Test` (134 tests) suites pass. §10.16's plan is now fully implemented - the only
+remaining, deliberately out-of-scope item is per-topic per-transport binding detail (queue names,
+Kafka topics, etc.), unchanged from §10.16's "explicitly not doing" call.

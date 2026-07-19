@@ -36,10 +36,19 @@ for the `benzene` contract.
 - Builders implement the "consumer" seam interfaces in `Abstractions/` -
   `IConsumesApplicationInfo`, `IConsumesMessageHandlerDefinitions`, `IConsumesHttpEndpointDefinitions`,
   `IConsumesBroadcastEventsDefinitions`, `IConsumesMessageSenderDefinitions`,
-  `IConsumesMessageEndpoint` - and `SpecBuilder` feeds each builder only the definitions it consumes,
-  resolved from DI (`IApplicationInfo`, `IMessageHandlersFinder`, `IHttpEndpointFinder`,
-  `IMessageDefinitionFinder`, `IBenzeneMessageHttpEndpointInfo`). Output flows through `IProducesJson`/
-  `IProducesYaml`.
+  `IConsumesMessageEndpoint`, `IConsumesTransportsInfo` - and `SpecBuilder` feeds each builder only
+  the definitions it consumes, resolved from DI (`IApplicationInfo`, `IMessageHandlersFinder`,
+  `IHttpEndpointFinder`, `IMessageDefinitionFinder`, `IBenzeneMessageHttpEndpointInfo`,
+  `ITransportsInfo`). Output flows through `IProducesJson`/`IProducesYaml`.
+- `EventServiceDocument.Transports` (`string[]`, written only when non-empty) - every transport
+  the host is wired to receive messages over, sourced from `ITransportsInfo` (every registered
+  `ITransportInfo.Name`, aggregated at spec-build time - see `Benzene.Core.MessageHandlers`'s
+  "Transport Info" section). Document-level, not per-topic: Benzene's topic routing has no
+  per-topic transport filtering, so any wired non-HTTP transport reaches any registered topic
+  uniformly - a per-topic list would just repeat this array on every request/event. HTTP stays
+  the one per-topic exception, already captured by each `RequestResponse.HttpMappings` (needs an
+  explicit `[HttpEndpoint]` attribute per handler). See `docs/spec.md`'s "Transport advertisement"
+  section and `work/service-mesh-roadmap-1.0.md` §10.16-§10.17 for the design/implementation log.
 
 ### Schema building
 - `ISchemaBuilder` / `SchemaBuilder` - generates `OpenApiSchema`s from CLR types using Swashbuckle's

@@ -222,6 +222,7 @@
   .svc-topics-link:hover, .svc-topics-link:focus-visible { text-decoration: underline; outline: none; }
   .chev { flex: none; color: var(--ink-faint); transition: transform .16s; }
   .svc.open .chev { transform: rotate(90deg); }
+  .svc-transports { padding: 0 15px 12px; margin-top: -4px; }
 
   .svc-body { display: none; padding: 4px 15px 17px; border-top: 1px solid var(--line-soft); }
   .svc.open .svc-body { display: block; }
@@ -478,7 +479,8 @@
       "contractDrift": false,
       "specUrl": "https://orders-api.example/spec?type=benzene",
       "healthUrl": "https://orders-api.example/healthcheck",
-      "owningTeam": "team-checkout"
+      "owningTeam": "team-checkout",
+      "transports": ["http", "sqs"]
     },
     {
       "name": "payments-api",
@@ -486,7 +488,8 @@
       "contractDrift": true,
       "specUrl": "https://payments-api.example/spec?type=benzene",
       "healthUrl": "https://payments-api.example/healthcheck",
-      "owningTeam": "team-payments"
+      "owningTeam": "team-payments",
+      "transports": ["sns", "sqs"]
     },
     {
       "name": "shipping-api",
@@ -623,6 +626,14 @@
     chev.innerHTML = '<path d="m9 6 6 6-6 6"/>';
     head.appendChild(chev);
     card.appendChild(head);
+
+    if (svc.transports && svc.transports.length) {
+      var transportsRow = el("div", "svc-transports chips");
+      svc.transports.forEach(function (t) {
+        transportsRow.appendChild(el("span", "chip", t));
+      });
+      card.appendChild(transportsRow);
+    }
 
     var body = el("div", "svc-body");
     card.appendChild(body);

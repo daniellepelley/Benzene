@@ -1,4 +1,6 @@
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Messages;
 using Benzene.Extras.Broadcast;
 using Benzene.Http.Routing;
@@ -133,6 +135,33 @@ public class EventServiceDocumentBuilderTest
         Assert.Equal("v2", Assert.Single(roundTripped.Requests, x => x.Topic == "shipping:booked").Version);
         Assert.Equal(string.Empty, Assert.Single(roundTripped.Requests, x => x.Topic == "tenant:create").Version);
         Assert.Equal("v2", Assert.Single(roundTripped.Events, x => x.Topic == "shipping:booked").Version);
+    }
+
+    [Fact]
+    public void Build_WritesTransports_WhenAnyAreRegistered_ButOmitsTheFieldWhenNone()
+    {
+        var transportsInfo = new TransportsInfo(new ITransportInfo[] { new TransportInfo("sqs"), new TransportInfo("http") });
+
+        var doc = new EventServiceDocumentBuilder(new SchemaBuilder())
+            .AddTransportsInfo(transportsInfo)
+            .Build();
+
+        Assert.Equal(new[] { "sqs", "http" }, doc.Transports);
+
+        var json = doc.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+        Assert.Contains("\"transports\"", json);
+
+        var roundTripped = new EventServiceDocumentDeserializer().Deserialize(json);
+        Assert.Equal(new[] { "sqs", "http" }, roundTripped.Transports);
+
+        var docWithNoTransports = new EventServiceDocumentBuilder(new SchemaBuilder()).Build();
+        Assert.Empty(docWithNoTransports.Transports);
+
+        var jsonWithNoTransports = docWithNoTransports.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+        Assert.DoesNotContain("\"transports\"", jsonWithNoTransports);
+
+        var roundTrippedWithNoTransports = new EventServiceDocumentDeserializer().Deserialize(jsonWithNoTransports);
+        Assert.Empty(roundTrippedWithNoTransports.Transports);
     }
 }
 

@@ -257,6 +257,32 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_SpecAdvertisesTransports_ThreadsThroughToManifest()
+    {
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"},\"transports\":[\"sqs\",\"http\"]}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory));
+
+        var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Equal(new[] { "sqs", "http" }, Assert.Single(manifest.Services).Transports);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_SpecHasNoTransports_ManifestTransportsIsEmpty()
+    {
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory));
+
+        var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Empty(Assert.Single(manifest.Services).Transports);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_HealthEndpointReportsUnhealthy_ManifestShowsUnhealthy()
     {
         var handler = new RoutingHttpMessageHandler()

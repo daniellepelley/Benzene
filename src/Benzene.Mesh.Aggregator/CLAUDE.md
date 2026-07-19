@@ -134,6 +134,16 @@ constructing one directly (not just reading the JSON, which is unaffected beyond
 fields) needs updating. `MeshServiceRegistryEntry`/`MeshManifestEntry` also gained an optional,
 purely additive `OwningTeam` (trailing, defaults to `null`) - source-compatible.
 
+**2026-07-19, `manifest.json` gained `transports`:** `MeshManifestEntry` gained an optional,
+purely additive `Transports` (`string[]`, trailing, defaults to `Array.Empty<string>()` when
+omitted) - source-compatible. A new `ParseTransports` (private, mirrors `ParseTopics`/
+`ParseOutboundTopics`'s best-effort JSON parsing) reads each service's spec's document-level
+`transports` field (`Benzene.Schema.OpenApi.EventService.EventServiceDocument.Transports`, see
+`work/service-mesh-roadmap-1.0.md` §10.16-§10.17) during `BuildServiceAsync` and threads it
+through `ServiceResult` into the manifest entry, same denormalization treatment as `OwningTeam`. A
+missing/unparseable spec, or one predating this field, contributes an empty list rather than
+failing the run.
+
 ## When to use this package
 - Any Benzene solution that wants a generated catalog of its services' contracts and health,
   refreshed on a schedule or triggered post-deploy - wire `AddMeshAggregator(...)` into a host and

@@ -82,6 +82,14 @@ public class SpecBuilder
                 consumesMessageEndpoint.AddMessageEndpoint(messageEndpointInfo.Path);
             }
         }
+        if (builder is IConsumesTransportsInfo<TBuilder> consumesTransportsInfo)
+        {
+            var transportsInfo = resolver.TryGetService<ITransportsInfo>();
+            if (transportsInfo != null)
+            {
+                consumesTransportsInfo.AddTransportsInfo(transportsInfo);
+            }
+        }
 
         return builder;
     }

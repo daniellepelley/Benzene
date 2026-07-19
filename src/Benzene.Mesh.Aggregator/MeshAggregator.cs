@@ -67,7 +67,7 @@ public class MeshAggregator
 
             manifestEntries.Add(new MeshManifestEntry(
                 entry.Name, DetermineStatus(snapshot), snapshot.ContractDrift, entry.SpecUrl, entry.HealthUrl,
-                entry.OwningTeam));
+                entry.OwningTeam, results[i].Transports.ToArray()));
         }
 
         var manifest = new MeshManifest(_clock(), manifestEntries.ToArray());
@@ -265,11 +265,12 @@ public class MeshAggregator
         }
 
         var snapshot = await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
-        return new ServiceResult(snapshot, ParseTopics(specJson), ParseOutboundTopics(specJson));
+        return new ServiceResult(snapshot, ParseTopics(specJson), ParseOutboundTopics(specJson), ParseTransports(specJson));
     }
 
     private readonly record struct ServiceResult(
-        MeshServiceSnapshot Snapshot, IReadOnlyList<ServiceTopic> Topics, IReadOnlyList<ServiceOutboundTopic> OutboundTopics);
+        MeshServiceSnapshot Snapshot, IReadOnlyList<ServiceTopic> Topics, IReadOnlyList<ServiceOutboundTopic> OutboundTopics,
+        IReadOnlyList<string> Transports);
 
     private readonly record struct ServiceTopic(string Topic, string Version, bool Reserved, MeshTopicHttpMapping[] HttpMappings);
 
@@ -369,6 +370,38 @@ public class MeshAggregator
         catch (JsonException)
         {
             return Array.Empty<ServiceOutboundTopic>();
+        }
+    }
+
+    /// <summary>
+    /// Extracts the document-level <c>transports</c> field from a service's <c>benzene</c> spec -
+    /// every transport that service is wired to receive messages over. Best-effort, same posture
+    /// as <see cref="ParseTopics"/>: a missing/unparseable spec, or one from before this field
+    /// existed, contributes an empty list rather than failing the run.
+    /// </summary>
+    private static IReadOnlyList<string> ParseTransports(string? specJson)
+    {
+        if (string.IsNullOrWhiteSpace(specJson))
+        {
+            return Array.Empty<string>();
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(specJson);
+            if (!doc.RootElement.TryGetProperty("transports", out var transports) || transports.ValueKind != JsonValueKind.Array)
+            {
+                return Array.Empty<string>();
+            }
+
+            return transports.EnumerateArray()
+                .Where(t => t.ValueKind == JsonValueKind.String)
+                .Select(t => t.GetString()!)
+                .ToArray();
+        }
+        catch (JsonException)
+        {
+            return Array.Empty<string>();
         }
     }
 
