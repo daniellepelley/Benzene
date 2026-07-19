@@ -1,5 +1,10 @@
 # Getting Started: Benzene on Cloudflare Containers
 
+> **⚠️ Experimental / community-supported — not part of the Benzene 1.0 support commitment.**
+> Cloudflare is **out of scope for the 1.0 release**. It's a valid, working path, but it receives
+> less testing and no API-stability guarantee compared with the AWS, Azure, ASP.NET Core, and
+> self-hosted surfaces that 1.0 commits to. Treat it as a community/experimental offering.
+
 Cloudflare Workers has no native .NET runtime, so a Benzene app can't run *inside* a Worker the
 way it runs in AWS Lambda or Azure Functions. [Cloudflare Containers](https://developers.cloudflare.com/containers/)
 is the supported path instead: a thin Worker proxies HTTP traffic to a full Docker container

@@ -1,5 +1,9 @@
 # Benzene Google Cloud Example
 
+> **⚠️ Experimental / community-supported — not part of the Benzene 1.0 support commitment.**
+> Google Cloud is **out of scope for the 1.0 release**; it works but receives less testing and no
+> API-stability guarantee than the AWS / Azure / ASP.NET / self-hosted surfaces.
+
 Demonstrates Benzene's Google Cloud integration (Phase 0 of
 [`work/google-cloud-roadmap-1.0.md`](../../work/google-cloud-roadmap-1.0.md)): **one**
 platform-neutral `Startup : BenzeneStartUp` class, hosted unchanged on both of Google Cloud's
