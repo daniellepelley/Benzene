@@ -954,3 +954,58 @@ producer list (from `events`, not just handlers) + version-keyed topic catalog i
 optional `owningTeam` field threaded through — all part of the same delivery, not a page bolted
 onto today's `topics.json` as-is. Staleness history, topic search, and CI/dev-time surfacing
 remain explicitly deferred phases after that ships.
+
+### 10.9 2026-07-19 (same day) — a hard boundary: services self-describe, only the Aggregator judges; plus the reverse gap
+
+Follow-up feedback draws a boundary that needs to be permanent, not implicit, before any of §10.1–
+§10.8 gets built: **a service's own spec MAY carry more self-descriptive data (§10.1's `bindings`
+is exactly this kind), but a service MUST NOT be asked to have an opinion about whether its own
+topics/events are still in use fleet-wide, or whether they're safe to deprecate.** A single
+service structurally cannot know that — it only knows what it itself produces and consumes.
+Judgments like "safe to retire," "orphaned," or "gap" only make sense computed centrally, by the
+Aggregator, looking holistically across every service's self-description at once. Concretely:
+
+- **The Core Specification (`docs/specification/`, including `mesh.md`'s `ServiceDescriptor`) MUST
+  stay purely self-descriptive** — a topic's entry there is "id, version, schema, bindings," never
+  "used," "deprecated," or "orphaned." This is already true today (`ServiceDescriptor.topics` has
+  no such field, and nothing in §10.1–§10.8 proposed adding one) — this section makes it an
+  explicit, permanent rule so nobody adds a `deprecated: bool` to the wire contract later. A
+  deprecation judgment is a fact about the *fleet*, not a fact about the *service*, and the wire
+  contract is what any Benzene implementation in any language must honor — it has no business
+  carrying a fleet-level opinion no single service is positioned to assert.
+- **The aggregated, judged view (the extended `topics.json` from §10.8's revised §10.3 scope —
+  producers, consumers, versions, "likely safe to deprecate," "gap") is entirely
+  `Benzene.Mesh.Aggregator`-owned output, not part of `docs/specification/` at all.** This split
+  already exists structurally today, just not stated as a rule: `topics.json`/`manifest.json`/
+  `topology.json` are Aggregator artifacts documented in `Benzene.Mesh.Aggregator/CLAUDE.md`, a
+  different thing entirely from `mesh.md`'s collector wire contract (mesh.md §9 already separates
+  these as "two designs [that] solve the same problem from opposite ends"). Once §10.3 ships, its
+  format should be documented as an Aggregator artifact (that package's own `CLAUDE.md`, plus a
+  `docs/` page if it needs one) — explicitly **not** folded into `docs/specification/mesh.md` or
+  the [Cloud Service Profile](../docs/specification/cloud-service-profile.md), which are the
+  cross-language conformance surface every port has to implement identically. Keeping the judged
+  view out of that surface means a port that never implements this aggregation is still fully
+  Benzene-conformant — the aggregation is fleet tooling built *on* the spec, not part of it.
+
+**The reverse gap, and it's mostly free.** §10.8's blocker 1 was "a topic produced somewhere but
+consumed nowhere" (deprecation candidate). The mirror case matters equally: **a topic *consumed*
+somewhere but *produced* nowhere in the fleet** — a service handles a topic that no service's
+spec declares sending. This is explicitly **not** presented as a problem: the producer may
+legitimately be a third party, or something writing directly to a queue/topic outside Benzene
+entirely (the plan's own §10.1 already acknowledges topics don't have to be Benzene-native on
+every side). It should be surfaced as an informational **gap**, not an error — "nothing in this
+platform's own fleet produces what this service is listening for; either that's expected (external
+source) or it's worth asking someone." Once §10.8's producer-list fix lands (`MeshTopicEntry`
+carries producers from `events`, not just consumers from `requests`), this case falls out of the
+same data with no further modeling work: a topic entry with a non-empty consumer list and an
+*empty* producer list *is* the gap signal. The only net-new work is in the topic view itself:
+label the two directions distinctly (empty consumers → "deprecation candidate"; empty producers →
+"gap, possibly external source") rather than treating both as an undifferentiated warning, since
+they carry different operational meaning and only one of them implies "someone should look at
+this before it's deleted."
+
+**Restated goal, unchanged in substance from §10.3/§10.8, now with the direction locked down:**
+one aggregator-computed view of which services wire up to which other services and which topics/
+versions are consumed by whom — producers, consumers, and both directions of gap — built entirely
+from self-descriptive data services already publish, judged only by the thing looking at the
+whole platform at once.
