@@ -41,7 +41,18 @@ public class HealthCheckNamer
             return name;
         }
 
-        _existingNames[name]++;
-        return $"{name}-{_existingNames[name]}";
+        // Reserve the generated "name-N" too, and keep bumping until the candidate is genuinely
+        // unused. Previously the suffixed name was returned but never recorded, so a later check whose
+        // Type literally equalled a generated name (e.g. checks typed "a","a","a-2") produced two
+        // identical keys and HealthCheckProcessor's ToDictionary threw - taking down the whole probe
+        // (all checks, incl. liveness/readiness) with a 500 instead of returning the report.
+        string candidate;
+        do
+        {
+            _existingNames[name]++;
+            candidate = $"{name}-{_existingNames[name]}";
+        } while (!_existingNames.TryAdd(candidate, 1));
+
+        return candidate;
     }
 }
