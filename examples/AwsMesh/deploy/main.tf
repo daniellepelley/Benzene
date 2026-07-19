@@ -39,6 +39,27 @@ resource "aws_s3_bucket" "artifacts" {
 }
 
 # ---------------------------------------------------------------------------------------------------
+# Lambda code is deployed *via S3*, not uploaded inline. A self-contained .NET publish is tens of MB,
+# which exceeds the ~70 MB request cap on the direct Create/UpdateFunctionCode API
+# ("RequestEntityTooLargeException"). Pushing the zip to S3 first and pointing the function at it
+# (s3_bucket/s3_key) sidesteps that limit (S3-based code supports up to 250 MB unzipped).
+# ---------------------------------------------------------------------------------------------------
+resource "aws_s3_object" "service_code" {
+  for_each = local.services
+  bucket   = aws_s3_bucket.artifacts.id
+  key      = "code/${each.key}.zip"
+  source   = each.value.zip
+  etag     = filemd5(each.value.zip)
+}
+
+resource "aws_s3_object" "mesh_code" {
+  bucket = aws_s3_bucket.artifacts.id
+  key    = "code/mesh.zip"
+  source = var.mesh_zip
+  etag   = filemd5(var.mesh_zip)
+}
+
+# ---------------------------------------------------------------------------------------------------
 # IAM: a basic-execution role for the service Lambdas, and a discovery+invoke+S3 role for the mesh.
 # ---------------------------------------------------------------------------------------------------
 data "aws_iam_policy_document" "lambda_assume" {
@@ -103,7 +124,8 @@ resource "aws_lambda_function" "service" {
 
   function_name    = each.value.name
   role             = aws_iam_role.service.arn
-  filename         = each.value.zip
+  s3_bucket        = aws_s3_bucket.artifacts.id
+  s3_key           = aws_s3_object.service_code[each.key].key
   source_code_hash = filebase64sha256(each.value.zip)
   runtime          = "provided.al2023"
   handler          = "bootstrap"
@@ -111,13 +133,13 @@ resource "aws_lambda_function" "service" {
   memory_size      = 512
   timeout          = 30
 
-  # The order → payment → shipment chain: each sender gets the next service's queue URL. Only added
-  # for services that send (orders, payments); shipping is terminal.
-  dynamic "environment" {
-    for_each = length(local.service_env[each.key]) > 0 ? [1] : []
-    content {
-      variables = local.service_env[each.key]
-    }
+  # Always emit exactly one environment block with a non-empty variables map. A *conditional*
+  # (dynamic) environment block whose values are only known after apply (the SQS queue URLs, created
+  # in this same apply) trips the AWS provider's "inconsistent final plan: block count changed from
+  # 0 to 1" bug. So every service gets a stable MESH_SERVICE var, merged with its chain-specific
+  # queue URL where it has one (orders → payments, payments → shipping; shipping is terminal).
+  environment {
+    variables = merge({ MESH_SERVICE = each.key }, local.service_env[each.key])
   }
 
   # Discovery finds services by this tag; the mesh Lambda deliberately does NOT carry it.
@@ -185,7 +207,8 @@ resource "aws_iam_role_policy" "service_sqs" {
 resource "aws_lambda_function" "mesh" {
   function_name    = "${var.project}-mesh"
   role             = aws_iam_role.mesh.arn
-  filename         = var.mesh_zip
+  s3_bucket        = aws_s3_bucket.artifacts.id
+  s3_key           = aws_s3_object.mesh_code.key
   source_code_hash = filebase64sha256(var.mesh_zip)
   runtime          = "provided.al2023"
   handler          = "bootstrap"
