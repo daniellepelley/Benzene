@@ -22,7 +22,7 @@ namespace Benzene.Core.MessageHandlers;
 /// result, and any other exception becomes a service-unavailable result. A <c>null</c> result from the
 /// inner handler is treated as an accepted no-content response.
 /// </remarks>
-public class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequest : class
+internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequest : class
 {
     private readonly IMessageHandler<TRequest, TResponse> _inner;
     private readonly ILogger _logger;

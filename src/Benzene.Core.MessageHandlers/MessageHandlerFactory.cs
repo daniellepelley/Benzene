@@ -24,7 +24,7 @@ namespace Benzene.Core.MessageHandlers;
 /// (<c>MakeGenericMethod</c> + building the delegate) is paid once per triple, not once per message,
 /// since the definition set is static after startup.
 /// </remarks>
-public class MessageHandlerFactory : IMessageHandlerFactory
+internal class MessageHandlerFactory : IMessageHandlerFactory
 {
     private static readonly ConcurrentDictionary<(Type HandlerType, Type RequestType, Type ResponseType), Func<MessageHandlerFactory, ITopic, IMessageHandler?>> _dispatcherCache = new();
     private readonly IMessageHandlerWrapper _messageHandlerWrapper;
