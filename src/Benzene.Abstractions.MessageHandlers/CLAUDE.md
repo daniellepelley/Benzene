@@ -36,7 +36,7 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 - `IRequestMapper<TContext>` - Maps transport context to request objects
 - `IRequestEnricher<TContext>` - Enriches requests with context data
 - `IRequestContext<TRequest>` - Provides typed request from context
-- `IRequestMapperThunk` - **non-generic** deferred handle onto the current message's request mapper;
+- `IDeferredRequestMapper` - **non-generic** deferred handle onto the current message's request mapper;
   its `GetRequest<TRequest>()` lets the non-generic router map the request to whatever type the
   handler needs without the router being generic over that type
 
