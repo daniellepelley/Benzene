@@ -3,7 +3,9 @@
 ## What this package does
 Provides a single retry middleware for the Benzene pipeline: `RetryMiddleware<TContext>`, added
 via `.UseRetry(...)`. Retry uses **exponential backoff only**. There is **no Polly dependency** —
-this package is pure Benzene middleware over `Benzene.Abstractions.Middleware`.
+this package is pure Benzene middleware over `Benzene.Abstractions.Middleware`. See the
+[Capability Matrix](../../docs/capability-matrix.md) for where retry fits and when to reach for
+`Benzene.Resilience.Polly` (circuit breaker / timeout / hedging / fallback).
 
 ## Key types/interfaces
 - **`RetryMiddleware<TContext>`** — re-invokes the downstream pipeline (`next`) on failure. Retries

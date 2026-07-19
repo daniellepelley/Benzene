@@ -2,7 +2,9 @@
 
 ## What this package does
 OAuth2 bearer token (JWT) validation as opt-in Benzene middleware (`UseOAuth2Bearer`), plus
-scope-based authorization (`RequireScope`) - see `work/auth-middleware-design.md` §3.3. The one
+scope-based authorization (`RequireScope`) - see `work/auth-middleware-design.md` §3.3. See the
+[Capability Matrix](../../docs/capability-matrix.md)'s *AuthN / AuthZ* row for what Benzene ships
+here versus what's yours to add (a policy-engine adapter, rate limiting). The one
 package in the `Benzene.Auth.*` family with a third-party dependency (approved per the design doc
 §5): `Microsoft.IdentityModel.JsonWebTokens` 8.19.2 (JWT parsing/validation -
 `JsonWebTokenHandler`, the modern replacement for `JwtSecurityTokenHandler`) and

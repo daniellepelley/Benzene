@@ -3,7 +3,9 @@
 ## What this package does
 An outbound HTTP transport for the Benzene client pipeline: converts an `IBenzeneClientContext<TRequest,
 TResponse>` into an `HttpRequestMessage`, sends it with a supplied `HttpClient`, then deserializes the
-`HttpResponseMessage` back into a typed `IBenzeneResult<TResponse>`.
+`HttpResponseMessage` back into a typed `IBenzeneResult<TResponse>`. You supply the `HttpClient` — see
+the [Capability Matrix](../../docs/capability-matrix.md)'s *Outbound HTTP* row for the
+`IHttpClientFactory`/lifetime story (yours to own on this low-level path).
 
 ## Key types/interfaces
 - `HttpSendMessageContext` - the pipeline context wrapping an `HttpRequestMessage Request` and a

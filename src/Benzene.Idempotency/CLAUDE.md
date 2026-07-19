@@ -10,6 +10,8 @@ short-circuit without re-invoking the handler.
 Persistence is pluggable via `IIdempotencyStore` so the dedupe record can live wherever suits the
 deployment — no database opinion is baked in. **The only store this package ships is
 `InMemoryIdempotencyStore`, which is single-process.** There is no built-in shared/distributed store.
+See the [Capability Matrix](../../docs/capability-matrix.md) for why cross-instance de-duplication
+can't be solved inside Benzene alone, and the external-store pattern that does solve it.
 
 ## Capability boundary — cross-instance dedup is NOT solved in-box
 This package gives you the pipeline seam and a single-process in-memory store. It does **not**

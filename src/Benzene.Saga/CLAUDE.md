@@ -8,8 +8,8 @@ commercial Benzene saga code (`Legacy/Benzene.Framework/Saga` in the `BenzeneImp
 `work/saga-design.md` for the design and the decisions taken.
 
 ## Capability boundary — in-process only, NO durable crash-resume
-This is a deliberate boundary, not a gap (see `work/1.0-release-plan.md` §2 and the §6
-capability-honesty matrix):
+This is a deliberate boundary, not a gap (see `work/1.0-release-plan.md` §2 and the
+[Capability Matrix](../../docs/capability-matrix.md)):
 - **In-process, in-memory execution.** A saga runs to completion or rollback within a single
   `RunAsync` call. Steps are in-memory closures; they cannot be serialized or rehydrated.
 - **The `ISagaStateStore` is for observability/operational recovery, not recovery-by-replay.** It

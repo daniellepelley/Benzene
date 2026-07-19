@@ -125,6 +125,9 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
   distributed trace instead of starting a new one per hop
 - Wire `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation()` against an OTel `TracerProviderBuilder`/
   `MeterProviderBuilder` to actually export what this package produces to a real backend
+- See the [Capability Matrix](../../docs/capability-matrix.md)'s *Distributed tracing* row for what
+  Benzene traces out of the box (W3C context on HTTP **and** async transports) and what backend
+  wiring is yours
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions** - Core abstractions

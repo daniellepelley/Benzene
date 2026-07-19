@@ -6,7 +6,9 @@ application from *where* its secrets and config actually live so the same code p
 the app depends on `ISecretStore`; a provider adapter implements it. Ships the mechanism-agnostic
 core BCL-only — no cloud SDK dependency. Cloud adapters (Azure Key Vault, AWS Secrets Manager, SSM
 Parameter Store, Azure App Configuration) are a one-method implementation each; the cookbook shows
-copy-paste versions rather than this package taking on those SDK dependencies.
+copy-paste versions rather than this package taking on those SDK dependencies. See the
+[Capability Matrix](../../docs/capability-matrix.md)'s *Configuration & secrets* row for why the
+cloud adapters ship as cookbook snippets rather than maintained packages (a post-1.0 candidate).
 
 ## Key types
 - `ISecretStore` — the whole seam: `Task<string?> GetSecretAsync(string name, CancellationToken)`.
