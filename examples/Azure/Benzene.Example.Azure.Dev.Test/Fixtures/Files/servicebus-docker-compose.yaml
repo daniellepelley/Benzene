@@ -1,0 +1,32 @@
+services:
+  servicebus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    volumes:
+      - ./servicebus-emulator-config.json:/ServiceBus_Emulator/ConfigFiles/Config.json
+    ports:
+      # 5673, not the emulator's default 5672 - so this reuses the exact same emulator connection
+      # string the library's own Service Bus integration tests use
+      # (Endpoint=sb://localhost:5673;...UseDevelopmentEmulator=true;), keeping one canonical string.
+      - 5673:5672
+      - 5301:5300
+    environment:
+      SQL_SERVER: mssql
+      MSSQL_SA_PASSWORD: Benzene_Test_Pwd1!
+      ACCEPT_EULA: Y
+    depends_on:
+      - mssql
+    networks:
+      sb-emulator:
+        aliases:
+          - sb-emulator
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: Benzene_Test_Pwd1!
+    networks:
+      sb-emulator:
+        aliases:
+          - mssql
+networks:
+  sb-emulator:
