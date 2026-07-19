@@ -77,6 +77,25 @@ public class CasterFactoryTest
         Assert.Equal(0, result.Optional);            // int? null -> int : default, not an exception
     }
 
+    private class LineFrom { public string Sku { get; set; } public int Count { get; set; } }
+    private class LineTo { public string Sku { get; set; } public int Count { get; set; } }
+    private class ArrayFrom { public LineFrom[] Lines { get; set; } }
+    private class ArrayTo { public LineTo[] Lines { get; set; } }
+
+    [Fact]
+    public void Cast_ArrayPropertyWithChangedElementType_MapsElementWise()
+    {
+        // An array property whose element type changes between versions used to throw at startup
+        // (Expression.New(T[]) has no parameterless ctor); it must map element-wise like List<T> does.
+        var caster = new CasterFactory<ArrayFrom, ArrayTo>().Build();
+
+        var result = caster.Cast(new ArrayFrom { Lines = new[] { new LineFrom { Sku = "s1", Count = 2 } } });
+
+        var line = Assert.Single(result.Lines);
+        Assert.Equal("s1", line.Sku);
+        Assert.Equal(2, line.Count);
+    }
+
     [Fact]
     public void Cast_MapsNestedClassesByName()
     {

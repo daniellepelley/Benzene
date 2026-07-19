@@ -161,8 +161,8 @@ public class CasterFuncBuilder
     private ConditionalExpression CreateEnumerableExpression(Expression fromExpression, PropertyInfo fromProperty,
         PropertyInfo toProperty)
     {
-        var fromElementType = fromProperty.PropertyType.GetGenericArguments()[0];
-        var toElementType = toProperty.PropertyType.GetGenericArguments()[0];
+        var fromElementType = GetEnumerableElementType(fromProperty.PropertyType);
+        var toElementType = GetEnumerableElementType(toProperty.PropertyType);
         var mapDelegate = MapDelegate(fromElementType, toElementType);
         var fromValue = Expression.Property(fromExpression, fromProperty);
         var isNull = Expression.Equal(fromValue, Expression.Constant(null, fromProperty.PropertyType));
@@ -174,9 +174,12 @@ public class CasterFuncBuilder
             fromValue,
             Expression.Constant(mapDelegate, typeof(Func<,>).MakeGenericType(fromElementType, toElementType))
         );
+        // Materialize as an array when the target property is an array (T[] has no parameterless ctor,
+        // so the old class-mapping fall-through threw at startup), otherwise a List (assignable to
+        // List<T>/IEnumerable<T>/IReadOnlyList<T>).
         var convertedCollection = Expression.Call(
             typeof(Enumerable),
-            nameof(Enumerable.ToList),
+            toProperty.PropertyType.IsArray ? nameof(Enumerable.ToArray) : nameof(Enumerable.ToList),
             [toElementType],
             mapCall
         );
@@ -195,7 +198,17 @@ public class CasterFuncBuilder
     }
 
     private static bool IsEnumerable(PropertyInfo fromProp, PropertyInfo toProp) =>
-        IsGenericEnumerable(fromProp.PropertyType) && IsGenericEnumerable(toProp.PropertyType);
+        IsEnumerableType(fromProp.PropertyType) && IsEnumerableType(toProp.PropertyType);
+
+    // An array (T[]) or a single-generic-argument type assignable to IEnumerable<T> (List<T>,
+    // IEnumerable<T>, IReadOnlyList<T>, Collection<T>...). Arrays were previously excluded (they are
+    // not IsGenericType), so an array property with a changed element type fell through to
+    // class-mapping and threw Expression.New(T[]) at startup.
+    private static bool IsEnumerableType(Type type) =>
+        type.IsArray || IsGenericEnumerable(type);
+
+    private static Type GetEnumerableElementType(Type type) =>
+        type.IsArray ? type.GetElementType() : type.GetGenericArguments()[0];
 
     // A single-generic-argument type assignable to IEnumerable<T> (List<T>, IEnumerable<T>,
     // IReadOnlyList<T>, Collection<T>...). Excludes string and dictionaries.
