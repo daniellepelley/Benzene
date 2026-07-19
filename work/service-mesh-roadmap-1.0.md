@@ -1047,10 +1047,33 @@ The revised §10.3 scope from §10.8/§10.9 is implemented and tested (1533+132 
   name, Kafka topic, etc.) needs new per-transport declaration attributes/wiring-time capture
   across ~10 transport packages, a separate, larger design effort not yet scoped. §10.3 turned out
   not to depend on it — producer/consumer/version visibility works off `requests`/`events` alone.
-- **§10.4/§10.5 in full** (in-app cross-linking from the topic table to service cards, and any
-  further dashboard consolidation) — the topic table is additive to the existing Mesh Explorer
-  page today, not yet cross-linked to the service list above it.
+- **§10.5 in full** (a genuinely centralized dashboard consolidating specs from multiple deployed
+  fleets) — out of scope; §10.4's cross-linking below covers the single-page case.
 - **§10.8's deferred items** (staleness/changelog history, topic search at fleet scale, CI/dev-time
   surfacing of the compatibility gate) — unchanged, still explicitly future phases.
 - **§10.2 (transport-native test payloads)** — still de-scoped per the user's explicit instruction
   in §10.7, not revisited.
+
+### 10.11 2026-07-19 (implementation) — §10.4 cross-linking shipped
+
+Every producer/consumer name in the topic table (`mesh-ui.html`) is now a real, keyboard-accessible
+`<button>`, not inert text. Clicking one clears an active search filter if it's hiding the target
+(the filter only toggles `display`, so every card always exists in the DOM), scrolls that service's
+card into view, opens it (dispatching a real click on its header, so it goes through the exact same
+lazy-load path as a manual click — not a shortcut that skips `loadDetail`), and flashes an
+accent-ring animation so the jump is visually obvious even when the target card was already on
+screen. This directly answers the "producer/consumer names alone half-answer the question" gap
+§10.8 flagged — "`legacy:refund` has one remaining consumer, `payments-api`" is only useful once
+the very next click tells you whether that service is even healthy right now.
+
+Verified end-to-end with a real headless-browser smoke test (Playwright against a local static
+server serving `mesh-ui.html` plus fixture `manifest.json`/`topics.json`), not just code review:
+confirmed the new table headers/status badges render, confirmed clicking a producer chip opens and
+flashes the correct card and triggers its real detail fetch (a deliberately-unfixtured 404 proved
+the real `loadDetail` code path ran, not a stub), and confirmed the filter-clearing behavior
+(a card hidden by an active filter is correctly revealed when cross-linked to, and the filter input
+itself is cleared).
+
+Still not done: linking the *other* direction (a service card → the topics it's involved in) and
+linking out to `Benzene.Spec.Ui`/topic-level detail beyond what's already in the table — both
+reasonable next increments, not started here.

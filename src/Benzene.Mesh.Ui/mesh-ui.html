@@ -284,12 +284,17 @@
   .t-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-family: var(--mono); }
   .t-domain { color: var(--accent); background: var(--accent-tint); }
   .t-utility { color: var(--chip-ink); background: var(--chip-bg); }
-  .t-svc { display: inline-block; padding: 1px 6px; margin: 1px 3px 1px 0; border-radius: 4px; background: var(--surface-2); font-size: 12px; }
+  .t-svc { display: inline-block; padding: 1px 6px; margin: 1px 3px 1px 0; border-radius: 4px;
+           background: var(--surface-2); color: var(--ink); font: inherit; font-size: 12px;
+           border: none; cursor: pointer; }
+  .t-svc:hover, .t-svc:focus-visible { background: var(--accent-tint); color: var(--accent); outline: none; }
   .t-http { color: var(--ink-faint); }
   .t-empty { color: var(--ink-faint); }
   .t-status-deprecation-candidate { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
   .t-status-gap { color: var(--m-put); background: var(--m-put-bg); cursor: help; }
   .topics-table td { white-space: normal; }
+  @keyframes svc-flash { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 3px var(--accent-soft); } }
+  .svc-flash { animation: svc-flash 1.1s ease-in-out; }
 </style>
 </head>
 <body>
@@ -530,6 +535,7 @@
   function buildServiceCard(svc) {
     var card = el("article", "svc");
     card.tabIndex = 0;
+    card.dataset.service = svc.name;
 
     var head = el("div", "svc-head");
     head.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
@@ -617,13 +623,41 @@
   }
 
   /* ---------- filter ---------- */
-  document.getElementById("filter").addEventListener("input", function (e) {
-    var q = e.target.value.trim().toLowerCase();
+  function applyFilter(q) {
+    q = (q || "").trim().toLowerCase();
     document.querySelectorAll(".svc").forEach(function (card) {
       var name = (card.querySelector(".svc-name") || {}).textContent || "";
       card.style.display = (!q || name.toLowerCase().indexOf(q) >= 0) ? "" : "none";
     });
+  }
+  document.getElementById("filter").addEventListener("input", function (e) {
+    applyFilter(e.target.value);
   });
+
+  /* ---------- cross-linking: topic table service names -> the matching service card ----------
+     Producers/consumers in the topic catalog are just names until you can jump straight to
+     "is that service even healthy right now" - the point of a centralized view over independently
+     hosted pages (work/service-mesh-roadmap-1.0.md §10.4/§10.9). */
+  function goToService(name) {
+    var filterInput = document.getElementById("filter");
+    if (filterInput.value) { filterInput.value = ""; applyFilter(""); }
+
+    var card = document.querySelector('.svc[data-service="' + cssEscape(name) + '"]');
+    if (!card) return;
+
+    if (!card.classList.contains("open")) {
+      card.querySelector(".svc-head").click();
+    }
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+    card.classList.remove("svc-flash");
+    // eslint-disable-next-line no-unused-expressions
+    void card.offsetWidth; // restart the animation if the same card is clicked again
+    card.classList.add("svc-flash");
+  }
+
+  function cssEscape(s) {
+    return window.CSS && CSS.escape ? CSS.escape(s) : String(s).replace(/["\\]/g, "\\$&");
+  }
 
   /* ---------- loader dialog ---------- */
   var loader = document.getElementById("loader");
@@ -682,6 +716,14 @@
     "gap": "Consumed here, but nothing in this fleet declares producing it - may be fed by a third party or a system outside this fleet. Worth confirming that's expected."
   };
 
+  function svcChip(name) {
+    var chip = el("button", "t-svc", name);
+    chip.type = "button";
+    chip.title = "Jump to " + name;
+    chip.addEventListener("click", function () { goToService(name); });
+    return chip;
+  }
+
   function renderTopicRows() {
     var showUtils = document.getElementById("topics-show-utils").checked;
     var rows = currentTopics.filter(function (t) { return showUtils || !t.reserved; });
@@ -703,7 +745,7 @@
       var tdProducers = el("td", "topics-table");
       var producers = t.producers || [];
       if (producers.length) {
-        producers.forEach(function (p) { tdProducers.appendChild(el("span", "t-svc", p.service)); });
+        producers.forEach(function (p) { tdProducers.appendChild(svcChip(p.service)); });
       } else {
         tdProducers.appendChild(el("span", "t-empty", "–"));
       }
@@ -712,7 +754,7 @@
       var tdConsumers = el("td", "topics-table");
       var consumers = t.consumers || [];
       if (consumers.length) {
-        consumers.forEach(function (s) { tdConsumers.appendChild(el("span", "t-svc", s.service)); });
+        consumers.forEach(function (s) { tdConsumers.appendChild(svcChip(s.service)); });
       } else {
         tdConsumers.appendChild(el("span", "t-empty", "–"));
       }
