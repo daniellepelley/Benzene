@@ -882,3 +882,75 @@ internal navigation between the two. The collector/Fleet-view trace-derived enha
 test-payload dispatch, and any standalone dashboard package are all explicitly deferred, not
 cancelled — revisit only after the structural, pull-based visibility story above is shipped and
 proven useful on its own.
+
+### 10.8 2026-07-19 (dx-champion review) — the structural signal isn't fully there yet, before it ships
+
+Requested review, framed around the actual problem this whole feature exists to solve: in a
+system with many services and many events, change becomes hard because visibility is poor.
+Findings below are verified directly against `MeshAggregator.cs`/`MeshTopicEntry.cs` (not just
+taken on the reviewer's word) — the direction in §10.7 is right, but two of the gaps it found are
+blockers for §10.3's own motivating example ("is `shipping:booked` v1 safe to retire"), not later
+polish.
+
+**Confirmed blocker 1 — a purely-outbound topic is invisible, not shown-with-zero-consumers.**
+`MeshAggregator.BuildTopicCatalog` (`MeshAggregator.cs` line 144) only iterates
+`results[i].Topics` — topics a service *handles* (spec `requests`, via `ParseTopics`). A topic a
+service declares it *sends* (spec `events`, via `ParseOutboundTopics`) is used only inside
+`BuildTopology` (line 114) to draw a structural edge, and only when some other service's handler
+exists to draw the edge to. A topic with a producer and **zero** handlers anywhere in the fleet —
+exactly the deprecation-candidate case this feature is meant to surface — produces no row in
+`topics.json` and no edge in `topology.json`. It doesn't read as "orphaned"; it doesn't appear at
+all, which is worse for the "is it safe to delete this" question than a loud zero-consumers flag
+would be. `ServiceTopic`/`MeshTopicEntry` need a producers list built from `events`, not just the
+existing handlers list built from `requests`, so a topic entry can exist from a producer
+declaration alone.
+
+**Confirmed blocker 2 — topic version is dropped at the aggregator boundary.** Verified:
+`RequestResponse.Version` already exists on the spec (`Benzene.Schema.OpenApi`), but
+`ServiceTopic` (`MeshAggregator.cs` line 212: `(string Topic, bool Reserved, MeshTopicHttpMapping[]
+HttpMappings)`) never carries it through, and `BuildTopicCatalog` keys its dictionary by topic id
+alone (line 146). Every version of a topic collapses into one row. §10.3's own worked example —
+"is `shipping:booked@v1` safe to retire while v2 is alive" — cannot be answered with today's
+structural data: the topic view would show "has producers/consumers," full stop, no way to tell
+versions apart. This has to land as part of §10.3's scope, not a later refinement — thread
+`Version` through `ServiceTopic`/`MeshTopicEntry`, key the catalog by `(topic, version)`.
+
+**Missing signal — ownership/contact.** Confirmed: no `owningTeam`/contact field exists anywhere
+in `Benzene.Mesh.Contracts` today (`MeshServiceRegistryEntry`'s constructors carry only
+`name`/`specUrl`/`healthUrl`/`source` — this repo's own §7.4 sketch of `mesh.json` once proposed
+`owningTeam` but it was never implemented). "Who do I talk to before I change this" is one of the
+plainest questions a developer asks when weighing a breaking change, and nothing in the plan
+answers it. Cheap to add without new infrastructure: `mesh.json` is already a human-edited,
+per-service registry — an optional `owningTeam` string per entry, threaded through to the topic
+view's producer/consumer list, is additive and config-only. Add to §10.3's scope.
+
+**Don't let cross-linking (§10.4) slip.** A topic view listing producer/consumer service names by
+text only half-answers the daily workflow — the very next question is always "is that consumer
+even healthy/deployed right now," answered by one click into that service's card in the same Mesh
+Explorer. Since §10.7 already reframed this as pure in-app navigation (no CORS, no separate
+host), there's no reason to sequence it as a follow-on: producer/consumer names should link to
+their service card from day one of §10.3, not arrive in a later pass.
+
+**Deferred, not urgent, but worth naming so they don't become an invisible ceiling:**
+- *Staleness/changelog:* `MeshServiceSnapshot` already tracks `SpecHash`/`PreviousSpecHash`
+  this-run-vs-last, but nothing further back — "when did this topic's schema actually last
+  change" isn't answerable beyond one run. A short rolling history of hash changes with
+  timestamps is a natural next increment once §10.3 ships, not a blocker for it.
+- *Discoverability at scale:* `mesh-ui.html`'s topic table has a reserved/domain toggle but no
+  search — fine for a demo fleet, not for "hundreds of topics." Copy the search-box pattern Spec
+  UI and Fleet view already have.
+- *Dev-time/CI surfacing:* everything in §10.1–10.7 is a viewer someone has to remember to open.
+  The problem bites hardest at the moment someone is about to delete a topic or a field — in a PR,
+  not a browser tab. `Benzene.Schema.OpenApi`'s existing backward-compatibility gate
+  (`SchemaCompatibility.EnsureBackwardCompatible`) only knows one service's own baseline today; a
+  CI-time check that pulls the aggregator's last-published, producer/consumer/version-aware
+  `topics.json` (once blockers 1–2 are fixed) and warns or fails a PR that removes a topic/version
+  still consumed elsewhere turns a cross-team surprise into a named, addressed CI failure. Real,
+  but explicitly a later phase — not part of the near-term sequencing below.
+
+**Revised §10.3 scope (supersedes the "already substantially buildable" framing in §10.7):**
+producer list (from `events`, not just handlers) + version-keyed topic catalog in
+`Benzene.Mesh.Contracts`/`Benzene.Mesh.Aggregator`, with in-page links to service cards, and an
+optional `owningTeam` field threaded through — all part of the same delivery, not a page bolted
+onto today's `topics.json` as-is. Staleness history, topic search, and CI/dev-time surfacing
+remain explicitly deferred phases after that ships.
