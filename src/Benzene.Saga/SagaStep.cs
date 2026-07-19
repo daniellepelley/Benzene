@@ -41,6 +41,10 @@ public class SagaStep<T> : ISagaStep
     /// <inheritdoc />
     public async Task ExecuteAsync(SagaContext context)
     {
+        // Reset per run: a step instance is reused across retry attempts, so an Exception left over
+        // from an earlier attempt would otherwise still be reported as this attempt's FailureException
+        // even when this attempt failed by returning a failed result rather than throwing.
+        Exception = null;
         try
         {
             _result = await _forward(context);
