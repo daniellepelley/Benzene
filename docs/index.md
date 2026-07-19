@@ -35,6 +35,9 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Porting Guide](specification/porting-guide.md) — concept-vs-idiom mapping and suggested order for implementing Benzene in another language
   - [Conformance Fixtures](specification/conformance/README.md) — the language-neutral test fixtures every implementation runs to prove conformance
 
+- **Service Mesh**
+  - [Mesh UI](mesh-ui.md) — the two dashboards `Benzene.Mesh.Ui` ships: the Mesh Explorer (a published-artifact catalog viewer, primarily static-hosted) and the Fleet view (a live dashboard polling a running `Benzene.Mesh.Collector`)
+
 - **Cloud Providers**
   - **AWS**
     - [AWS Lambda Setup](getting-started-aws.md)
@@ -86,3 +89,6 @@ Benzene is a hexagonal framework designed for services running in serverless env
 - **Live Demos**
   - [Mesh UI](../demos/mesh/index.html) — a running dashboard over sample service health, contract drift, and cross-service traffic
   - [Spec UI](../demos/spec/index.html) — browse a sample Benzene message spec, Swagger-UI style
+  - Fleet view has no static demo here — it only ever renders what it polls live from a running
+    `Benzene.Mesh.Collector`, so there's nothing to show without one. See [Mesh UI](mesh-ui.md#fleet-view)
+    for what it looks like, or run [`examples/Mesh`](../examples/Mesh)'s `./run.sh` for the real thing.
