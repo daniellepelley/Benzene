@@ -84,6 +84,52 @@ jobs:
     # Saga, Mesh, CodeGen, and the out-of-1.0-scope Google/Cloudflare, which still must compile).
     - name: Build all examples
       run: dotnet build Benzene.Examples.sln
+    # Run the in-memory example test projects (Benzene.Testing / BuildAwsLambdaHost /
+    # BuildAzureFunctionApp / WebApplicationFactory) - no external dependency, safe on a plain runner.
+    # This turns the examples from compile-only into a real regression gate: a src/ change that breaks
+    # an example's behaviour now fails the build. Listed explicitly rather than `dotnet test <sln>`
+    # because Benzene.Examples.Kafka.Test, despite its name, connects to a real Kafka broker (it's
+    # effectively a .Dev.Test) and can't run here; the true real-dependency tiers live in *.Dev.Test
+    # projects kept out of the solution entirely.
+    - name: Test in-memory examples
+      run: |
+        dotnet test examples/App/Benzene.Examples.App.Test/Benzene.Examples.App.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Asp/Benzene.Example.Asp.Test/Benzene.Example.Asp.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Aws/Benzene.Examples.Aws.Tests/Benzene.Examples.Aws.Tests.csproj --no-build --verbosity normal
+        dotnet test examples/Azure/Benzene.Example.Azure.Test/Benzene.Example.Azure.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Grpc/Benzene.Example.Grpc.Test/Benzene.Example.Grpc.Test.csproj --no-build --verbosity normal
+        dotnet test examples/OpenTelemetry/Benzene.Examples.OpenTelemetry.Test/Benzene.Examples.OpenTelemetry.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Saga/Benzene.Example.Saga.Tests/Benzene.Example.Saga.Tests.csproj --no-build --verbosity normal
+        dotnet test examples/Google/Benzene.Examples.Google.Tests/Benzene.Examples.Google.Tests.csproj --no-build --verbosity normal
+
+  # Real-dependency tier for the AWS example: runs its SQS egress demo end-to-end against a real
+  # LocalStack SQS queue (Benzene.Examples.Aws.Dev.Test). Mirrors the library-level
+  # aws-integration-tests job. The .Dev.Test project is deliberately NOT in Benzene.Examples.sln
+  # (it needs Docker), so it's restored/built directly here.
+  examples-aws-localstack-tests:
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Ensure docker-compose CLI is resolvable (FluentDocker looks for this binary name; ubuntu-latest only ships the "docker compose" v2 plugin)
+      run: |
+        if ! command -v docker-compose >/dev/null 2>&1; then
+          printf '#!/usr/bin/env bash\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
+          sudo chmod +x /usr/local/bin/docker-compose
+        fi
+        docker-compose version
+    - name: Restore
+      run: dotnet restore examples/Aws/Benzene.Examples.Aws.Dev.Test/Benzene.Examples.Aws.Dev.Test.csproj
+    - name: Build
+      run: dotnet build examples/Aws/Benzene.Examples.Aws.Dev.Test/Benzene.Examples.Aws.Dev.Test.csproj --no-restore
+    - name: Test
+      run: dotnet test examples/Aws/Benzene.Examples.Aws.Dev.Test/Benzene.Examples.Aws.Dev.Test.csproj --no-build --verbosity normal
 
   azure-integration-tests:
 

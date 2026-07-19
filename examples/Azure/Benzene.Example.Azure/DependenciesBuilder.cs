@@ -58,7 +58,14 @@ public static class DependenciesBuilder
         services.AddSingleton(serviceBusSender);
 
         services.UsingBenzene(x => x
-                .AddMessageHandlers(typeof(CreateOrderMessage).Assembly)
+                .AddBenzene()
+                // Both the shared App domain's handlers AND this host's own (PublishOrderCreatedMessageHandler
+                // below) - AddMessageHandlers only registers handlers from the assemblies it's given, and
+                // the finder it registers is locked in via TryAddSingleton, so a later broader
+                // .UseMessageHandlers(...) scan in Configure() can't widen it - omitting this project's
+                // own assembly here left PublishOrderCreatedMessageHandler undiscoverable (no topic
+                // route, no HTTP route) despite compiling and looking wired.
+                .AddMessageHandlers(typeof(CreateOrderMessage).Assembly, typeof(PublishOrderCreatedMessageHandler).Assembly)
                 .AddHttpMessageHandlers()
                 // Tags each pipeline stage's Activity and enables UseBenzeneEnrichment() below -
                 // combined with the Application Insights logging wired in Program.cs, this is

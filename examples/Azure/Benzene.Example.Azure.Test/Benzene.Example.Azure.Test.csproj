@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Benzene.Example.Azure.Test</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Example.Azure\Benzene.Example.Azure.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core.TestHelpers\Benzene.Azure.Function.Core.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet.TestHelpers\Benzene.Azure.Function.AspNet.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.ServiceBus.TestHelpers\Benzene.Azure.Function.ServiceBus.TestHelpers.csproj" />
+  </ItemGroup>
+</Project>
