@@ -44,5 +44,13 @@ public class PublishOrderCreatedTest
 
         Assert.Equal(202, response.StatusCode);
         Assert.Equal(MessageTopicNames.OrderCreated, fakeSender.LastTopic);
+
+        // Assert the message *body* too, not just the topic - the egress demo's whole point is that
+        // the OrderCreatedEvent handed to the handler is what gets published on the wire. This mirrors
+        // the Azure example's egress test (Egress_PublishOrderCreated_SendsOnTheOrderCreatedTopic), so
+        // both hosts prove ingress->handler->egress carries the payload through, not only the topic.
+        var sent = Assert.IsType<OrderCreatedEvent>(fakeSender.LastRequest);
+        Assert.Equal(orderCreated.Id, sent.Id);
+        Assert.Equal("acme", sent.Name);
     }
 }
