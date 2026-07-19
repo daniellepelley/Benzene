@@ -84,6 +84,22 @@ jobs:
     # Saga, Mesh, CodeGen, and the out-of-1.0-scope Google/Cloudflare, which still must compile).
     - name: Build all examples
       run: dotnet build Benzene.Examples.sln
+    # Run the in-memory example test projects (Benzene.Testing / BuildAwsLambdaHost /
+    # BuildAzureFunctionApp / WebApplicationFactory) - no external dependency, safe on a plain runner.
+    # This turns the examples from compile-only into a real regression gate: a src/ change that breaks
+    # an example's behaviour now fails the build. Listed explicitly rather than `dotnet test <sln>`
+    # because Benzene.Examples.Kafka.Test, despite its name, connects to a real Kafka broker (it's
+    # effectively a .Dev.Test) and can't run here; the true real-dependency tiers live in *.Dev.Test
+    # projects kept out of the solution entirely.
+    - name: Test in-memory examples
+      run: |
+        dotnet test examples/App/Benzene.Examples.App.Test/Benzene.Examples.App.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Asp/Benzene.Example.Asp.Test/Benzene.Example.Asp.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Aws/Benzene.Examples.Aws.Tests/Benzene.Examples.Aws.Tests.csproj --no-build --verbosity normal
+        dotnet test examples/Azure/Benzene.Example.Azure.Test/Benzene.Example.Azure.Test.csproj --no-build --verbosity normal
+        dotnet test examples/OpenTelemetry/Benzene.Examples.OpenTelemetry.Test/Benzene.Examples.OpenTelemetry.Test.csproj --no-build --verbosity normal
+        dotnet test examples/Saga/Benzene.Example.Saga.Tests/Benzene.Example.Saga.Tests.csproj --no-build --verbosity normal
+        dotnet test examples/Google/Benzene.Examples.Google.Tests/Benzene.Examples.Google.Tests.csproj --no-build --verbosity normal
 
   azure-integration-tests:
 

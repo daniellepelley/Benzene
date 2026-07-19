@@ -209,3 +209,59 @@ going forward, which is exactly the point of this initiative.
 
 **Verified:** `Benzene.Examples.sln` and `Benzene.sln` both build clean; all new/touched test
 projects pass except the one pre-existing failure noted above (unchanged, not a regression).
+
+### 2026-07-19 (cont.) — Phase 1 finished: App + OpenTelemetry tests, CI gate wired, pre-existing bug fixed
+
+**More in-memory test projects:**
+- `examples/App/Benzene.Examples.App.Test` (19 tests) — the shared domain's `OrderService`
+  orchestration (create status-mapping, the three-way update path) against a mocked `IOrderDbClient`,
+  plus `OrderMapper` round-trip and `InMemoryOrderDbClient` behaviour. This is the domain every host
+  example reuses and none tested directly before.
+- `examples/OpenTelemetry/Benzene.Examples.OpenTelemetry.Test` (4 tests) — drives the example's real
+  `Program.cs` entry point via `WebApplicationFactory` (pointed at the assembly through a public
+  request type, so the example itself is untouched), proving `/api/send` dispatches every handler
+  including the deliberately-failing one, and `/api/topics` reflects the registry. The OTLP exporter
+  having no collector to reach under test is a non-issue (never fails a request).
+
+**Pre-existing bug fixed (the one flagged above):**
+`CreateOrderTest.CreateOrder_ApiGateway_BenzeneMessage` posted to `admin/benzene-message`, but the
+example wires the BenzeneMessage-over-HTTP endpoint at its default path
+(`BenzeneMessageHttpOptions.DefaultPath` = `/benzene-message`) — the stale `admin/...` path never
+matched, so the request fell through to normal HTTP routing, found no matching `[HttpEndpoint]`, and
+persisted nothing. Corrected the test's path; the whole 59-test Aws suite is now green.
+
+**CI gate wired (the load-bearing Phase 1 deliverable):**
+`build-benzene.yml`'s `examples-build` job gained a "Test in-memory examples" step running the seven
+in-memory example test projects (`--no-build`, after the existing solution build). Examples went
+from compile-only to a real executing regression gate — a `src/` change that breaks an example's
+behaviour now fails the build, which is precisely how both of last pass's real bugs would have been
+caught automatically.
+
+**Finding (not fixed — flagged):** `Benzene.Examples.Kafka.Test`, despite its name, connects to a
+real Kafka broker in its fixture setup (`KafkaSetUp` → `Broker transport failure` with no broker) —
+it's effectively a `.Dev.Test` that was mis-named and left in `Benzene.Examples.sln`. It's therefore
+**excluded** from the CI test step (which lists projects explicitly rather than `dotnet test <sln>`
+for exactly this reason). Renaming it to `.Dev.Test` and pulling it out of the solution — matching
+the Asp/Kafka `.Dev.Test` convention already established — is a clean follow-up (multi-file
+`.sln`/reference change, so not bundled here).
+
+**Scope correction:** the plan's original table had **AwsMesh** getting in-memory tests, but AwsMesh
+is not in `Benzene.Examples.sln` at all — it's built only by the manual, `workflow_dispatch`-only
+Terraform deploy workflow (`deploy-aws-mesh-example.yml`), so a test project there wouldn't run in
+the CI gate without adding its four service projects to the solution (a structural change needing
+approval per `examples/CLAUDE.md`). Same reasoning applies to AzureMesh. Both are therefore **out of
+the in-memory Phase 1 scope**, matching how they were already out of the real-dependency tier scope.
+The `examples/Mesh` services (which *are* in the solution) are ASP.NET hosts whose interesting
+behaviour is cross-service HTTP tracing/collector-edge derivation — inherently live-integration,
+already exercised by `examples/Mesh/run.sh` and the `smoke-mesh-compose.yml` K8sMesh CI job — so
+in-memory tests there would only cover trivial hardcoded-list handlers; deferred as low-ROI. **Grpc**
+remains a genuine gap but needs a host-build shim (the example has no `BenzeneStartUp` and mixes
+native `MapGrpcService` with Benzene routing on the same method) — deferred to a focused follow-up.
+
+**Phase 1 status:** in-memory coverage now exists and runs in CI for App, Asp, Aws, Azure,
+OpenTelemetry, Saga, and Google (7 projects, ~103 tests). Remaining Phase 1 gap: Grpc (deferred,
+noted above). Phases 2–4 (LocalStack, Azure/Kafka real-dependency tiers, cross-cutting matrix)
+unchanged.
+
+**Verified:** `Benzene.sln` + `Benzene.Examples.sln` build clean; all seven CI-gated example test
+projects green (103 tests).
