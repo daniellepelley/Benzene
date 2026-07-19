@@ -20,6 +20,7 @@ namespace Benzene.Clients.Azure.ServiceBus;
 public class ServiceBusBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly ILogger<ServiceBusBenzeneMessageClient> _logger;
+    private readonly string _topicPropertyKey;
     private readonly IMiddlewarePipeline<ServiceBusSendMessageContext> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
 
@@ -30,10 +31,12 @@ public class ServiceBusBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="sender">The Service Bus sender (bound to a queue or topic) to send with.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public ServiceBusBenzeneMessageClient(ServiceBusSender sender, ILogger<ServiceBusBenzeneMessageClient> logger, IServiceResolver serviceResolver)
+    /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="ServiceBusContextConverter{T}.DefaultTopicProperty"/>).</param>
+    public ServiceBusBenzeneMessageClient(ServiceBusSender sender, ILogger<ServiceBusBenzeneMessageClient> logger, IServiceResolver serviceResolver, string topicPropertyKey = ServiceBusContextConverter<object>.DefaultTopicProperty)
     {
         _serviceResolver = serviceResolver;
         _logger = logger;
+        _topicPropertyKey = topicPropertyKey;
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<ServiceBusSendMessageContext>(benzeneServiceContainer);
@@ -49,11 +52,13 @@ public class ServiceBusBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="middlewarePipeline">The built middleware pipeline to send through.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public ServiceBusBenzeneMessageClient(IMiddlewarePipeline<ServiceBusSendMessageContext> middlewarePipeline, ILogger<ServiceBusBenzeneMessageClient> logger, IServiceResolver serviceResolver)
+    /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="ServiceBusContextConverter{T}.DefaultTopicProperty"/>).</param>
+    public ServiceBusBenzeneMessageClient(IMiddlewarePipeline<ServiceBusSendMessageContext> middlewarePipeline, ILogger<ServiceBusBenzeneMessageClient> logger, IServiceResolver serviceResolver, string topicPropertyKey = ServiceBusContextConverter<object>.DefaultTopicProperty)
     {
         _serviceResolver = serviceResolver;
         _middlewarePipeline = middlewarePipeline;
         _logger = logger;
+        _topicPropertyKey = topicPropertyKey;
     }
 
     /// <summary>
@@ -70,7 +75,7 @@ public class ServiceBusBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new ServiceBusContextConverter<TRequest>(new JsonSerializer());
+            var converter = new ServiceBusContextConverter<TRequest>(new JsonSerializer(), _topicPropertyKey);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

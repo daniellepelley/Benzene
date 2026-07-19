@@ -22,23 +22,34 @@ namespace Benzene.Clients.Azure.EventHub;
 /// </remarks>
 public class OutboundEventHubContextConverter : IContextConverter<OutboundContext, EventHubSendMessageContext>
 {
+    /// <summary>
+    /// The default event-property key the topic is written to. It is a single default, not a
+    /// hard-coded value — pass a different key to interoperate with a consumer that routes on another
+    /// property. Keep it in sync with the consumer's property key.
+    /// </summary>
+    public const string DefaultTopicProperty = "topic";
+
     private readonly ISerializer _serializer;
+    private readonly string _topicPropertyKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutboundEventHubContextConverter"/> class using a
     /// <see cref="JsonSerializer"/> to serialize the outgoing message.
     /// </summary>
-    public OutboundEventHubContextConverter()
-        : this(new JsonSerializer())
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
+    public OutboundEventHubContextConverter(string topicPropertyKey = DefaultTopicProperty)
+        : this(new JsonSerializer(), topicPropertyKey)
     { }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutboundEventHubContextConverter"/> class.
     /// </summary>
     /// <param name="serializer">The serializer used to serialize the outgoing message.</param>
-    public OutboundEventHubContextConverter(ISerializer serializer)
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
+    public OutboundEventHubContextConverter(ISerializer serializer, string topicPropertyKey = DefaultTopicProperty)
     {
         _serializer = serializer;
+        _topicPropertyKey = topicPropertyKey;
     }
 
     /// <summary>
@@ -55,7 +66,7 @@ public class OutboundEventHubContextConverter : IContextConverter<OutboundContex
             eventData.Properties[header.Key] = header.Value;
         }
 
-        eventData.Properties["topic"] = contextIn.Topic;
+        eventData.Properties[_topicPropertyKey] = contextIn.Topic;
 
         return Task.FromResult(new EventHubSendMessageContext(eventData));
     }

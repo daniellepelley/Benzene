@@ -11,18 +11,32 @@ namespace Benzene.Aws.Sqs.Client;
 /// </summary>
 public class SqsMessageClient : ISqsClient
 {
+    /// <summary>
+    /// The default message-attribute key the topic is written to. It is a single default, not a
+    /// hard-coded value — pass a different key to
+    /// <see cref="SqsMessageClient(IAmazonSQS, string, string)"/> to interoperate with a consumer that
+    /// routes on another attribute. Keep it in sync with the consumer's attribute key.
+    /// </summary>
+    public const string DefaultTopicAttribute = "topic";
+
     private readonly IAmazonSQS _amazonSqs;
     private readonly string _queueUrl;
+    private readonly string _topicAttributeKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqsMessageClient"/> class.
     /// </summary>
     /// <param name="amazonSqs">The underlying SQS client.</param>
     /// <param name="queueUrl">The URL of the queue to publish to.</param>
-    public SqsMessageClient(IAmazonSQS amazonSqs, string queueUrl)
+    /// <param name="topicAttributeKey">
+    /// The message attribute the topic is written to. Defaults to
+    /// <see cref="DefaultTopicAttribute"/> (<c>"topic"</c>).
+    /// </param>
+    public SqsMessageClient(IAmazonSQS amazonSqs, string queueUrl, string topicAttributeKey = DefaultTopicAttribute)
     {
         _queueUrl = queueUrl;
         _amazonSqs = amazonSqs;
+        _topicAttributeKey = topicAttributeKey;
     }
 
     /// <summary>
@@ -41,7 +55,7 @@ public class SqsMessageClient : ISqsClient
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
                 {
-                    "topic", new MessageAttributeValue
+                    _topicAttributeKey, new MessageAttributeValue
                     {
                         DataType = "String",
                         StringValue = topic

@@ -5,17 +5,40 @@ using Benzene.Core.Messages;
 namespace Benzene.Azure.ServiceBus;
 
 /// <summary>
-/// Extracts the message topic from a Service Bus message's <c>"topic"</c> application property.
+/// Extracts the message topic from a Service Bus message's topic application property.
 /// </summary>
 public class ServiceBusConsumerMessageTopicGetter : IMessageTopicGetter<ServiceBusConsumerContext>
 {
     /// <summary>
-    /// Gets the topic from the Service Bus message's <c>"topic"</c> application property.
+    /// The default application-property key the topic is read from. It is a single default, not a
+    /// hard-coded value — pass a different key to <see cref="ServiceBusConsumerMessageTopicGetter(string)"/>
+    /// (or via <see cref="BenzeneServiceBusConfig.TopicPropertyKey"/> /
+    /// <c>DependencyInjectionExtensions.AddServiceBusConsumer(topicPropertyKey)</c>) to consume messages
+    /// a non-Benzene producer routes on another application property.
+    /// </summary>
+    public const string DefaultTopicProperty = "topic";
+
+    private readonly string _topicPropertyKey;
+
+    /// <summary>
+    /// Initializes a new instance that reads the topic from the given application-property key.
+    /// </summary>
+    /// <param name="topicPropertyKey">
+    /// The application property the topic is carried on. Defaults to
+    /// <see cref="DefaultTopicProperty"/> (<c>"topic"</c>).
+    /// </param>
+    public ServiceBusConsumerMessageTopicGetter(string topicPropertyKey = DefaultTopicProperty)
+    {
+        _topicPropertyKey = topicPropertyKey;
+    }
+
+    /// <summary>
+    /// Gets the topic from the Service Bus message's topic application property.
     /// </summary>
     /// <param name="context">The Service Bus consumer context to extract the topic from.</param>
     /// <returns>
     /// The topic, or a topic with <see cref="Benzene.Core.Constants.Missing"/> as its ID if the
-    /// <c>"topic"</c> property isn't present.
+    /// topic property isn't present.
     /// </returns>
     public ITopic GetTopic(ServiceBusConsumerContext context)
     {
@@ -23,8 +46,8 @@ public class ServiceBusConsumerMessageTopicGetter : IMessageTopicGetter<ServiceB
         return new Topic(GetTopicProperty(context)!);
     }
 
-    private static string? GetTopicProperty(ServiceBusConsumerContext context)
+    private string? GetTopicProperty(ServiceBusConsumerContext context)
     {
-        return context.Message.ApplicationProperties.TryGetValue("topic", out var value) ? value as string : null;
+        return context.Message.ApplicationProperties.TryGetValue(_topicPropertyKey, out var value) ? value as string : null;
     }
 }

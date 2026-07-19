@@ -21,6 +21,10 @@ property `ServiceBusMessageTopicGetter`/`ServiceBusConsumerMessageTopicGetter` r
 side (both the Function trigger and the self-hosted worker). Headers (correlation id, W3C
 `traceparent`) are forwarded onto the same `ApplicationProperties` bag as string values, matching
 `ServiceBusMessageHeadersGetter`'s "every string-typed application property is a header" convention.
+The topic property key is a configurable default, not hard-coded (`topicPropertyKey` on the
+converters, `.UseServiceBus(..., topicPropertyKey: "x")`, and
+`AddServiceBusMessageClient(..., topicPropertyKey)`) — keep it in sync with the consumer's key
+(`BenzeneServiceBusConfig.TopicPropertyKey` / `.AddAzureServiceBus(topicPropertyKey)`).
 
 ## No `TokenCredential`/connection-string wrapping — deliberately
 Mirrors the ingress `IServiceBusClientFactory` seam: this package takes an already-built

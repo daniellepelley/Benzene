@@ -53,5 +53,25 @@ namespace Benzene.Test.Aws.Sns
             Assert.Equal(Constants.Missing, topic.Id);
             Assert.Equal("some-message", message);
         }
+
+        [Fact]
+        public void SnsMessageTopicGetter_ReadsCustomAttributeKey_WhenConfigured()
+        {
+            var snsRecordContext = SnsRecordContext.CreateInstance(null, new SNSEvent.SNSRecord
+            {
+                Sns = new SNSEvent.SNSMessage
+                {
+                    Message = "some-message",
+                    MessageAttributes = new Dictionary<string, SNSEvent.MessageAttribute>
+                    {
+                        {"x-my-topic", new SNSEvent.MessageAttribute { Value = "some-topic"}}
+                    }
+                }
+            });
+
+            var topic = new SnsMessageTopicGetter("x-my-topic").GetTopic(snsRecordContext);
+
+            Assert.Equal("some-topic", topic.Id);
+        }
     }
 }

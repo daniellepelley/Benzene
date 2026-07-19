@@ -47,12 +47,14 @@ public static class Extensions
     /// <param name="app">The pipeline builder to convert.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
     /// <param name="action">A callback used to configure the converted SQS send pipeline.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="SqsContextConverter{T}.DefaultTopicAttribute"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSqs<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
         string queueUrl,
-        Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action)
+        Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action,
+        string topicAttributeKey = SqsContextConverter<T>.DefaultTopicAttribute)
     {
-        return app.Convert(new SqsContextConverter<T>(queueUrl), action);
+        return app.Convert(new SqsContextConverter<T>(queueUrl, topicAttributeKey), action);
     }
 
     /// <summary>
@@ -61,10 +63,11 @@ public static class Extensions
     /// <typeparam name="T">The type of the outgoing message.</typeparam>
     /// <param name="app">The pipeline builder to convert.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="SqsContextConverter{T}.DefaultTopicAttribute"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSqs<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSqs<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SqsContextConverter<T>.DefaultTopicAttribute)
     {
-        return app.Convert(new SqsContextConverter<T>(queueUrl), builder => builder.UseSqsClient());
+        return app.Convert(new SqsContextConverter<T>(queueUrl, topicAttributeKey), builder => builder.UseSqsClient());
     }
 
     /// <summary>
@@ -74,12 +77,14 @@ public static class Extensions
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
     /// <param name="action">A callback used to configure the converted SQS send pipeline.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app,
         string queueUrl,
-        Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action)
+        Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action,
+        string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
     {
-        return app.Convert(new OutboundSqsContextConverter(queueUrl), action);
+        return app.Convert(new OutboundSqsContextConverter(queueUrl, topicAttributeKey), action);
     }
 
     /// <summary>
@@ -88,10 +93,11 @@ public static class Extensions
     /// </summary>
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app, string queueUrl)
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
     {
-        return app.Convert(new OutboundSqsContextConverter(queueUrl), builder => builder.UseSqsClient());
+        return app.Convert(new OutboundSqsContextConverter(queueUrl, topicAttributeKey), builder => builder.UseSqsClient());
     }
 
     /// <summary>
@@ -101,15 +107,16 @@ public static class Extensions
     /// <param name="services">The service container to register on.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
     /// <param name="action">A callback used to configure the SQS send pipeline.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="SqsContextConverter{T}.DefaultTopicAttribute"/>).</param>
     /// <returns>The service container, for chaining.</returns>
-    public static IBenzeneServiceContainer AddSqsMessageClient(this IBenzeneServiceContainer services, string queueUrl, Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action)
+    public static IBenzeneServiceContainer AddSqsMessageClient(this IBenzeneServiceContainer services, string queueUrl, Action<IMiddlewarePipelineBuilder<SqsSendMessageContext>> action, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
     {
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<SqsSendMessageContext>(services);
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 
         services.AddScoped(x => new SqsBenzeneMessageClient(queueUrl, pipeline,
-            x.GetService<ILogger<SqsBenzeneMessageClient>>(), x.GetService<IServiceResolver>()));
+            x.GetService<ILogger<SqsBenzeneMessageClient>>(), x.GetService<IServiceResolver>(), topicAttributeKey));
         return services;
     }
 
@@ -118,9 +125,14 @@ public static class Extensions
     /// </summary>
     /// <param name="builder">The health check builder to add the check to.</param>
     /// <param name="queueUrl">The URL of the queue to ping.</param>
+    /// <param name="topicAttributeKey">
+    /// The message attribute the ping topic is written to (defaults to
+    /// <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/>) — pass the same key the queue's
+    /// consumer routes on.
+    /// </param>
     /// <returns>The health check builder for method chaining.</returns>
-    public static IHealthCheckBuilder AddSqsHealthCheck(this IHealthCheckBuilder builder, string queueUrl)
+    public static IHealthCheckBuilder AddSqsHealthCheck(this IHealthCheckBuilder builder, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
     {
-        return builder.AddHealthCheck(resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>()));
+        return builder.AddHealthCheck(resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>(), topicAttributeKey));
     }
 }

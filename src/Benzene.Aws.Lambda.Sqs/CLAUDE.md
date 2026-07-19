@@ -16,7 +16,10 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 ### Message Handling
 - `SqsMessageBodyGetter` - Extracts message body from SQS event
 - `SqsMessageHeadersGetter` - Extracts message attributes as headers
-- `SqsMessageTopicGetter` - Extracts topic from the `topic` message attribute
+- `SqsMessageTopicGetter` - Extracts topic from the `topic` message attribute. The attribute key is a
+  configurable default, not hard-coded: `new SqsMessageTopicGetter(topicAttributeKey)`, or via
+  `.AddSqs(topicAttributeKey)` / `.UseSqs(..., topicAttributeKey: "x")` — keep it in sync with the
+  producer's key
 - `SqsMessageHandlerResultSetter` - Sets result on context
 - Preset topic override - if the queue's producer never sets a `topic` message attribute (e.g. a
   raw SQS send, not a Benzene client), call `.UsePresetTopic("some-topic")` before
@@ -56,8 +59,9 @@ invocation populated. No application code changes needed for either fix.
 ## Important conventions
 - Processes SQS messages in batches
 - Message attributes mapped to headers
-- Topic determined from the `topic` message attribute by default, or a fixed preset topic per
-  queue if configured via `.UsePresetTopic(...)` (see "Message Handling" above)
+- Topic determined from the `topic` message attribute by default (the attribute key is overridable —
+  see `SqsMessageTopicGetter` above), or a fixed preset topic per queue if configured via
+  `.UsePresetTopic(...)` (see "Message Handling" above)
 - Failed messages can be retried via SQS dead-letter queue
 - Partial batch failures supported by default (`SqsBatchFailureMode.PartialBatchFailure` - only
   the messages that actually failed are reported via `SQSBatchResponse.BatchItemFailures`, so SQS

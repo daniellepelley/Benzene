@@ -24,7 +24,10 @@ idempotent — see [Capability Matrix](../../docs/capability-matrix.md) and
 - `ServiceBusContext` - wraps a single `Azure.Messaging.ServiceBus.ServiceBusReceivedMessage`; a
   plain description of the message only - preset-topic override (see "Important conventions"
   below) is scoped DI state, not a context capability
-- `ServiceBusMessageTopicGetter` - reads the topic from the message's `"topic"` application property
+- `ServiceBusMessageTopicGetter` - reads the topic from the message's `"topic"` application property.
+  The property key is a configurable default, not hard-coded:
+  `new ServiceBusMessageTopicGetter(topicPropertyKey)`, or via `.AddAzureServiceBus(topicPropertyKey)` /
+  `.UseServiceBus(..., topicPropertyKey: "x")` — keep it in sync with the producer's key
 - `ServiceBusMessageBodyGetter` - reads the message body as a string (`message.Body.ToString()`)
 - `ServiceBusMessageHeadersGetter` - exposes the message's string-typed application properties as headers
 - `ServiceBusMessageHandlerResultSetter` - records the outcome onto `MessageResult` (see "Important conventions" below)

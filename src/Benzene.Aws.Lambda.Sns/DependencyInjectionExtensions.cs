@@ -26,10 +26,20 @@ public static class DependencyInjectionExtensions
     /// Called automatically by <see cref="Extensions.UseSns"/>; you don't normally need to call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddSns(this IBenzeneServiceContainer services)
+        => services.AddSns(SnsMessageTopicGetter.DefaultTopicAttribute);
+
+    /// <summary>
+    /// Registers the services required to process SNS notifications, with the topic getter reading the
+    /// given message-attribute key (see <see cref="SnsMessageTopicGetter.DefaultTopicAttribute"/>).
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is read from.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddSns(this IBenzeneServiceContainer services, string topicAttributeKey)
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.AddScoped<IMessageTopicGetter<SnsRecordContext>, SnsMessageTopicGetter>();
+        services.AddScoped<IMessageTopicGetter<SnsRecordContext>>(_ => new SnsMessageTopicGetter(topicAttributeKey));
         services.AddScoped<IMessageVersionGetter<SnsRecordContext>, HeaderMessageVersionGetter<SnsRecordContext>>();
         services.AddScoped<IMessageHeadersGetter<SnsRecordContext>, SnsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SnsRecordContext>, SnsMessageBodyGetter>();

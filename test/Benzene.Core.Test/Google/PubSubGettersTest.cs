@@ -35,6 +35,15 @@ public class PubSubGettersTest
     }
 
     [Fact]
+    public void PubSubMessageTopicGetter_ReadsCustomAttributeKey_WhenConfigured()
+    {
+        var data = new PubSubMessageBuilder().WithAttribute("x-my-topic", "my-topic").Build();
+        var context = new PubSubContext(data);
+
+        Assert.Equal("my-topic", new PubSubMessageTopicGetter("x-my-topic").GetTopic(context).Id);
+    }
+
+    [Fact]
     public void PubSubMessageHeadersGetter_ReturnsAttributesAsHeaders()
     {
         var data = new PubSubMessageBuilder().WithAttribute("correlation-id", "abc-123").Build();

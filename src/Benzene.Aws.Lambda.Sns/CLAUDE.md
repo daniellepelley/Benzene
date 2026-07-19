@@ -38,7 +38,10 @@ Full detail (including the interaction with `CatchExceptions`): `docs/cookbooks/
 ### Message Handling
 - `SnsMessageBodyGetter` - Returns `SnsRecord.Sns.Message` (the SNS message body) verbatim
 - `SnsMessageHeadersGetter` - Extracts the SNS message attributes as headers
-- `SnsMessageTopicGetter` - Extracts the topic from the `topic` **message attribute** (not the topic ARN)
+- `SnsMessageTopicGetter` - Extracts the topic from the `topic` **message attribute** (not the topic
+  ARN). The attribute key is a configurable default, not hard-coded:
+  `new SnsMessageTopicGetter(topicAttributeKey)`, or via `.AddSns(topicAttributeKey)` /
+  `.UseSns(..., topicAttributeKey: "x")` — keep it in sync with the producer's key
 - `SnsMessageHandlerResultSetter` - Sets result on context
 - `SnsUtils` - Helper for reading string message attributes
 - `SnsMessageProcessingException` - Thrown when `SnsOptions.RaiseOnFailureStatus` escalates a failure result

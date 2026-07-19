@@ -21,10 +21,15 @@ public static class Extensions
     /// behavior, or <see cref="SnsOptions.RaiseOnFailureStatus"/> to escalate a non-exception failure
     /// result into a thrown exception so SNS retries it too.
     /// </param>
+    /// <param name="topicAttributeKey">
+    /// The message attribute the topic is read from, defaulting to
+    /// <see cref="SnsMessageTopicGetter.DefaultTopicAttribute"/> (<c>"topic"</c>). Pass a different key
+    /// to consume messages a non-Benzene producer routes on another attribute.
+    /// </param>
     /// <returns>The pipeline builder for method chaining.</returns>
-    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseSns(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<SnsRecordContext>> action, Action<SnsOptions> configure = null)
+    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseSns(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<SnsRecordContext>> action, Action<SnsOptions> configure = null, string topicAttributeKey = SnsMessageTopicGetter.DefaultTopicAttribute)
     {
-        app.Register(x => x.AddSns());
+        app.Register(x => x.AddSns(topicAttributeKey));
         var pipeline = app.CreateMiddlewarePipeline<SnsRecordContext>(builder =>
         {
             builder.UseBenzeneInvocation();

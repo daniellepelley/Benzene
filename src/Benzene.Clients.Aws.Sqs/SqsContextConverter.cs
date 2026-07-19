@@ -16,16 +16,25 @@ namespace Benzene.Clients.Aws.Sqs;
 /// <typeparam name="T">The type of the outgoing message.</typeparam>
 public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T, Void>, SqsSendMessageContext>
 {
+    /// <summary>
+    /// The default message-attribute key the topic is written to. It is a single default, not a
+    /// hard-coded value — pass a different key to interoperate with a consumer that routes on another
+    /// attribute. Keep it in sync with the consumer's attribute key.
+    /// </summary>
+    public const string DefaultTopicAttribute = "topic";
+
     private readonly ISerializer _serializer;
     private readonly string _queueUrl;
+    private readonly string _topicAttributeKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqsContextConverter{T}"/> class using a
     /// <see cref="JsonSerializer"/> to serialize the outgoing message.
     /// </summary>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
-    public SqsContextConverter(string queueUrl)
-        :this(queueUrl, new JsonSerializer())
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="DefaultTopicAttribute"/>).</param>
+    public SqsContextConverter(string queueUrl, string topicAttributeKey = DefaultTopicAttribute)
+        :this(queueUrl, new JsonSerializer(), topicAttributeKey)
     { }
 
     /// <summary>
@@ -33,10 +42,12 @@ public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
     /// </summary>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
     /// <param name="serializer">The serializer used to serialize the outgoing message.</param>
-    public SqsContextConverter(string queueUrl, ISerializer serializer)
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="DefaultTopicAttribute"/>).</param>
+    public SqsContextConverter(string queueUrl, ISerializer serializer, string topicAttributeKey = DefaultTopicAttribute)
     {
         _queueUrl = queueUrl;
         _serializer = serializer;
+        _topicAttributeKey = topicAttributeKey;
     }
 
     /// <summary>
@@ -53,7 +64,7 @@ public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
             messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
         }
 
-        messageAttributes["topic"] = new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String" };
+        messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String" };
 
         return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {

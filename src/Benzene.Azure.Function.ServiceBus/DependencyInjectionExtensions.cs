@@ -28,12 +28,22 @@ public static class DependencyInjectionExtensions
     /// Called automatically by <see cref="UseServiceBus(IAzureFunctionAppBuilder, Action{IMiddlewarePipelineBuilder{ServiceBusContext}})"/>; you don't normally need to call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddAzureServiceBus(this IBenzeneServiceContainer services)
+        => services.AddAzureServiceBus(ServiceBusMessageTopicGetter.DefaultTopicProperty);
+
+    /// <summary>
+    /// Registers the services required to process Service Bus-triggered messages, with the topic getter
+    /// reading the given application-property key (see <see cref="ServiceBusMessageTopicGetter.DefaultTopicProperty"/>).
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicPropertyKey">The application property the topic is read from.</param>
+    /// <returns>The service container, for method chaining.</returns>
+    public static IBenzeneServiceContainer AddAzureServiceBus(this IBenzeneServiceContainer services, string topicPropertyKey)
     {
         services.TryAddScoped<JsonSerializer>();
         services.TryAddScoped<PresetTopicHolder>();
 
         services.AddScoped<IMessageTopicGetter<ServiceBusContext>>(resolver =>
-            new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+            new PresetTopicMessageTopicGetter<ServiceBusContext>(new ServiceBusMessageTopicGetter(topicPropertyKey), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageVersionGetter<ServiceBusContext>, HeaderMessageVersionGetter<ServiceBusContext>>();
         services.AddScoped<IMessageHeadersGetter<ServiceBusContext>, ServiceBusMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusContext>, ServiceBusMessageBodyGetter>();
@@ -57,9 +67,9 @@ public static class DependencyInjectionExtensions
     /// result into a thrown exception too.
     /// </param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseServiceBus(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action, Action<ServiceBusOptions>? configure = null)
+    public static IAzureFunctionAppBuilder UseServiceBus(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action, Action<ServiceBusOptions>? configure = null, string topicPropertyKey = ServiceBusMessageTopicGetter.DefaultTopicProperty)
     {
-        app.Register(x => x.AddAzureServiceBus());
+        app.Register(x => x.AddAzureServiceBus(topicPropertyKey));
         var pipeline = app.Create<ServiceBusContext>();
         action(pipeline);
         var options = new ServiceBusOptions();
@@ -84,11 +94,11 @@ public static class DependencyInjectionExtensions
     /// <param name="action">The action that configures the Service Bus middleware pipeline.</param>
     /// <param name="configure">Optionally configures <see cref="ServiceBusOptions"/> - see the <see cref="IAzureFunctionAppBuilder"/> overload.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseServiceBus(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action, Action<ServiceBusOptions>? configure = null)
+    public static IBenzeneApplicationBuilder UseServiceBus(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<ServiceBusContext>> action, Action<ServiceBusOptions>? configure = null, string topicPropertyKey = ServiceBusMessageTopicGetter.DefaultTopicProperty)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseServiceBus(action, configure);
+            azureApp.UseServiceBus(action, configure, topicPropertyKey);
         }
         return app;
     }

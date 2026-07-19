@@ -18,7 +18,10 @@ only `Azure.Messaging.EventHubs` (5.11.5, matching the ingress packages' `.Proce
 
 ## Routing — matches the ingress exactly
 Sets a `"topic"` property on `EventData.Properties` (the AMQP application-properties bag) — the same
-property `EventHubConsumerMessageTopicGetter` reads on the self-hosted worker ingress side. Headers
+property `EventHubConsumerMessageTopicGetter` reads on the self-hosted worker ingress side. The
+property key is a configurable default, not hard-coded (`topicPropertyKey` on the converters,
+`.UseEventHub(..., topicPropertyKey: "x")`, and `AddEventHubMessageClient(..., topicPropertyKey)`) —
+keep it in sync with the consumer's `BenzeneEventHubConfig.TopicPropertyKey`. Headers
 (correlation id, W3C `traceparent`) are forwarded onto the same `Properties` bag as string values.
 Note: the Azure Functions Event Hub *trigger* package routes via a Benzene-envelope body instead
 (`UseBenzeneMessage`), not a property — if publishing to a trigger-based consumer using that path,

@@ -14,6 +14,7 @@ public class SqsHealthCheck : IHealthCheck
 {
     private readonly IAmazonSQS _amazonSqs;
     private readonly string _queueUrl;
+    private readonly string _topicAttributeKey;
     private const int TimeOut = 10000;
 
     /// <summary>
@@ -21,10 +22,16 @@ public class SqsHealthCheck : IHealthCheck
     /// </summary>
     /// <param name="queueUrl">The URL of the queue to ping.</param>
     /// <param name="amazonSqs">The SQS client used to send the ping message.</param>
-    public SqsHealthCheck(string queueUrl, IAmazonSQS amazonSqs)
+    /// <param name="topicAttributeKey">
+    /// The message attribute the ping topic is written to. Defaults to
+    /// <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/> (<c>"topic"</c>) — pass the same
+    /// key the queue's consumer routes on so the ping is routable there too.
+    /// </param>
+    public SqsHealthCheck(string queueUrl, IAmazonSQS amazonSqs, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
     {
         _queueUrl = queueUrl;
         _amazonSqs = amazonSqs;
+        _topicAttributeKey = topicAttributeKey;
     }
 
     /// <summary>
@@ -41,7 +48,7 @@ public class SqsHealthCheck : IHealthCheck
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
-                { "topic", new MessageAttributeValue
+                { _topicAttributeKey, new MessageAttributeValue
                     {
                         DataType = "String",
                         StringValue = "ping"

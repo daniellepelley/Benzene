@@ -28,12 +28,22 @@ public static class DependencyInjectionExtensions
     /// call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddServiceBusConsumer(this IBenzeneServiceContainer services)
+        => services.AddServiceBusConsumer(ServiceBusConsumerMessageTopicGetter.DefaultTopicProperty);
+
+    /// <summary>
+    /// Registers the standalone Service Bus consumer's services, with the topic getter reading the
+    /// given application-property key (see <see cref="ServiceBusConsumerMessageTopicGetter.DefaultTopicProperty"/>).
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicPropertyKey">The application property the topic is read from.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddServiceBusConsumer(this IBenzeneServiceContainer services, string topicPropertyKey)
     {
         services.TryAddScoped<JsonSerializer>();
         services.TryAddScoped<PresetTopicHolder>();
 
         services.AddScoped<IMessageTopicGetter<ServiceBusConsumerContext>>(resolver =>
-            new PresetTopicMessageTopicGetter<ServiceBusConsumerContext>(new ServiceBusConsumerMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+            new PresetTopicMessageTopicGetter<ServiceBusConsumerContext>(new ServiceBusConsumerMessageTopicGetter(topicPropertyKey), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageVersionGetter<ServiceBusConsumerContext>, HeaderMessageVersionGetter<ServiceBusConsumerContext>>();
         services.AddScoped<IMessageHeadersGetter<ServiceBusConsumerContext>, ServiceBusConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<ServiceBusConsumerContext>, ServiceBusConsumerMessageBodyGetter>();

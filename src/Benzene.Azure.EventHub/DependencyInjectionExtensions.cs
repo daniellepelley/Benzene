@@ -28,12 +28,22 @@ public static class DependencyInjectionExtensions
     /// call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddEventHubConsumer(this IBenzeneServiceContainer services)
+        => services.AddEventHubConsumer(EventHubConsumerMessageTopicGetter.DefaultTopicProperty);
+
+    /// <summary>
+    /// Registers the standalone Event Hub consumer's services, with the topic getter reading the given
+    /// event-property key (see <see cref="EventHubConsumerMessageTopicGetter.DefaultTopicProperty"/>).
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicPropertyKey">The event property the topic is read from.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddEventHubConsumer(this IBenzeneServiceContainer services, string topicPropertyKey)
     {
         services.TryAddScoped<JsonSerializer>();
         services.TryAddScoped<PresetTopicHolder>();
 
         services.AddScoped<IMessageTopicGetter<EventHubConsumerContext>>(resolver =>
-            new PresetTopicMessageTopicGetter<EventHubConsumerContext>(new EventHubConsumerMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+            new PresetTopicMessageTopicGetter<EventHubConsumerContext>(new EventHubConsumerMessageTopicGetter(topicPropertyKey), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageVersionGetter<EventHubConsumerContext>, HeaderMessageVersionGetter<EventHubConsumerContext>>();
         services.AddScoped<IMessageHeadersGetter<EventHubConsumerContext>, EventHubConsumerMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<EventHubConsumerContext>, EventHubConsumerMessageBodyGetter>();

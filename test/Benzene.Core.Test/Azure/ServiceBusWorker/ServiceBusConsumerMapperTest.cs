@@ -40,6 +40,16 @@ public class ServiceBusConsumerMapperTest
     }
 
     [Fact]
+    public void GetTopic_ReadsCustomApplicationPropertyKey_WhenConfigured()
+    {
+        var context = CreateContext(new Dictionary<string, object> { { "x-my-topic", "some-topic" } });
+
+        var topic = new ServiceBusConsumerMessageTopicGetter("x-my-topic").GetTopic(context);
+
+        Assert.Equal("some-topic", topic.Id);
+    }
+
+    [Fact]
     public void PresetTopicMessageTopicGetter_PresetSet_OverridesMissingTopicProperty()
     {
         var context = CreateContext(new Dictionary<string, object>());

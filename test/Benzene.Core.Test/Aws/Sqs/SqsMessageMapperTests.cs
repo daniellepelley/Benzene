@@ -47,5 +47,22 @@ namespace Benzene.Test.Aws.Sqs
             Assert.Equal(Constants.Missing, topic.Id);
             Assert.Equal("some-message", message);
         }
+
+        [Fact]
+        public void SqsMessageTopicGetter_ReadsCustomAttributeKey_WhenConfigured()
+        {
+            var sqsMessageContext = SqsMessageContext.CreateInstance(null, new SQSEvent.SQSMessage
+            {
+                Body = "some-message",
+                MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>
+                {
+                    { "x-my-topic", new SQSEvent.MessageAttribute { StringValue = "some-topic" } }
+                }
+            });
+
+            var topic = new SqsMessageTopicGetter("x-my-topic").GetTopic(sqsMessageContext);
+
+            Assert.Equal("some-topic", topic.Id);
+        }
     }
 }

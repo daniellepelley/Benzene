@@ -74,4 +74,31 @@ public class OutboundSqsContextConverterTest
                 message.MessageAttributes["tenantId"].StringValue == "tenant-1"
             ), It.IsAny<CancellationToken>()));
     }
+
+    [Fact]
+    public async Task SendAsync_WithCustomTopicAttributeKey_WritesTopicToThatAttribute()
+    {
+        var mockAmazonSqs = new Mock<IAmazonSQS>();
+        mockAmazonSqs.Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMessageResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var services = new ServiceCollection();
+        services.AddSingleton(mockAmazonSqs.Object);
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddOutboundRouting(routing => routing
+            .Route(Defaults.Topic, pipeline => pipeline.UseSqs(Defaults.SqsQueueUrl, topicAttributeKey: "x-my-topic")));
+
+        var resolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+        var sender = resolver.GetService<IBenzeneMessageSender>();
+
+        await sender.SendAsync<ExampleRequestPayload, Void>(
+            Defaults.Topic, new ExampleRequestPayload { Id = 42, Name = "foo" });
+
+        mockAmazonSqs.Verify(x => x.SendMessageAsync(
+            It.Is<SendMessageRequest>(message =>
+                message.MessageAttributes.ContainsKey("x-my-topic") &&
+                message.MessageAttributes["x-my-topic"].StringValue == Defaults.Topic &&
+                !message.MessageAttributes.ContainsKey("topic")
+            ), It.IsAny<CancellationToken>()));
+    }
 }

@@ -28,10 +28,20 @@ public static class DependencyInjectionExtensions
     /// Called automatically by <see cref="UsePubSub"/>; you don't normally need to call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddGooglePubSub(this IBenzeneServiceContainer services)
+        => services.AddGooglePubSub(PubSubMessageTopicGetter.DefaultTopicAttribute);
+
+    /// <summary>
+    /// Registers the services required to process a Pub/Sub-triggered message, with the topic getter
+    /// reading the given message-attribute key (see <see cref="PubSubMessageTopicGetter.DefaultTopicAttribute"/>).
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is read from.</param>
+    /// <returns>The service container, for method chaining.</returns>
+    public static IBenzeneServiceContainer AddGooglePubSub(this IBenzeneServiceContainer services, string topicAttributeKey)
     {
         services.TryAddScoped<JsonSerializer>();
 
-        services.AddScoped<IMessageTopicGetter<PubSubContext>, PubSubMessageTopicGetter>();
+        services.AddScoped<IMessageTopicGetter<PubSubContext>>(_ => new PubSubMessageTopicGetter(topicAttributeKey));
         services.AddScoped<IMessageVersionGetter<PubSubContext>, HeaderMessageVersionGetter<PubSubContext>>();
         services.AddScoped<IMessageHeadersGetter<PubSubContext>, PubSubMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<PubSubContext>, PubSubMessageBodyGetter>();
@@ -55,11 +65,11 @@ public static class DependencyInjectionExtensions
     /// into a thrown exception too.
     /// </param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UsePubSub(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<PubSubContext>> action, Action<PubSubOptions>? configure = null)
+    public static IBenzeneApplicationBuilder UsePubSub(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<PubSubContext>> action, Action<PubSubOptions>? configure = null, string topicAttributeKey = PubSubMessageTopicGetter.DefaultTopicAttribute)
     {
         if (app is GooglePubSubFunctionApplicationBuilder pubSubApp)
         {
-            app.Register(x => x.AddGooglePubSub());
+            app.Register(x => x.AddGooglePubSub(topicAttributeKey));
             var pipeline = app.Create<PubSubContext>();
             action(pipeline);
             var options = new PubSubOptions();

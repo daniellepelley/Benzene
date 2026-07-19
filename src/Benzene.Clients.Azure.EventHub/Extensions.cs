@@ -46,11 +46,13 @@ public static class Extensions
     /// <typeparam name="T">The type of the outgoing message.</typeparam>
     /// <param name="app">The pipeline builder to convert.</param>
     /// <param name="action">A callback used to configure the converted Event Hubs send pipeline.</param>
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
-        Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action)
+        Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action,
+        string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty)
     {
-        return app.Convert(new EventHubContextConverter<T>(), action);
+        return app.Convert(new EventHubContextConverter<T>(topicPropertyKey), action);
     }
 
     /// <summary>
@@ -60,10 +62,11 @@ public static class Extensions
     /// <typeparam name="T">The type of the outgoing message.</typeparam>
     /// <param name="app">The pipeline builder to convert.</param>
     /// <param name="producerClient">The Event Hubs producer client used to send events.</param>
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, EventHubProducerClient producerClient)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, EventHubProducerClient producerClient, string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty)
     {
-        return app.Convert(new EventHubContextConverter<T>(), builder => builder.UseEventHubClient(producerClient));
+        return app.Convert(new EventHubContextConverter<T>(topicPropertyKey), builder => builder.UseEventHubClient(producerClient));
     }
 
     /// <summary>
@@ -72,11 +75,13 @@ public static class Extensions
     /// </summary>
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="action">A callback used to configure the converted Event Hubs send pipeline.</param>
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="OutboundEventHubContextConverter.DefaultTopicProperty"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<OutboundContext> UseEventHub(this IMiddlewarePipelineBuilder<OutboundContext> app,
-        Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action)
+        Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action,
+        string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty)
     {
-        return app.Convert(new OutboundEventHubContextConverter(), action);
+        return app.Convert(new OutboundEventHubContextConverter(topicPropertyKey), action);
     }
 
     /// <summary>
@@ -86,10 +91,11 @@ public static class Extensions
     /// </summary>
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="producerClient">The Event Hubs producer client used to send events.</param>
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="OutboundEventHubContextConverter.DefaultTopicProperty"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<OutboundContext> UseEventHub(this IMiddlewarePipelineBuilder<OutboundContext> app, EventHubProducerClient producerClient)
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseEventHub(this IMiddlewarePipelineBuilder<OutboundContext> app, EventHubProducerClient producerClient, string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty)
     {
-        return app.Convert(new OutboundEventHubContextConverter(), builder => builder.UseEventHubClient(producerClient));
+        return app.Convert(new OutboundEventHubContextConverter(topicPropertyKey), builder => builder.UseEventHubClient(producerClient));
     }
 
     /// <summary>
@@ -98,15 +104,16 @@ public static class Extensions
     /// </summary>
     /// <param name="services">The service container to register on.</param>
     /// <param name="action">A callback used to configure the Event Hubs send pipeline.</param>
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
     /// <returns>The service container, for chaining.</returns>
-    public static IBenzeneServiceContainer AddEventHubMessageClient(this IBenzeneServiceContainer services, Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action)
+    public static IBenzeneServiceContainer AddEventHubMessageClient(this IBenzeneServiceContainer services, Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action, string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty)
     {
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<EventHubSendMessageContext>(services);
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 
         services.AddScoped(x => new EventHubBenzeneMessageClient(pipeline,
-            x.GetService<ILogger<EventHubBenzeneMessageClient>>(), x.GetService<IServiceResolver>()));
+            x.GetService<ILogger<EventHubBenzeneMessageClient>>(), x.GetService<IServiceResolver>(), topicPropertyKey));
         return services;
     }
 }

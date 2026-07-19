@@ -52,7 +52,9 @@ idempotent — see [Capability Matrix](../../docs/capability-matrix.md) /
 - Mappers (`ServiceBusConsumerMessage{TopicGetter,HeadersGetter,BodyGetter}`) - same conventions
   as `Benzene.Azure.Function.ServiceBus`: topic from the `"topic"` application property (wrapped
   in `PresetTopicMessageTopicGetter`/`PresetTopicHolder` for per-pipeline presets), headers from
-  string-typed application properties, body as string.
+  string-typed application properties, body as string. The topic property key is a configurable
+  default, not hard-coded: `BenzeneServiceBusConfig.TopicPropertyKey` (threaded into
+  `AddServiceBusConsumer(topicPropertyKey)`) — keep it in sync with the producer's key.
 - **`AddServiceBusConsumer` must register, per context type, everything `.UseMessageHandlers()`
   resolves** - besides the four getters above, that means `IMessageVersionGetter<ServiceBusConsumerContext>`
   (`HeaderMessageVersionGetter`), `AddMediaFormatNegotiation<ServiceBusConsumerContext>()`, and

@@ -38,4 +38,20 @@ public class SqsConsumerMessageTopicGetterTest
 
         Assert.Equal("preset-topic", topic.Id);
     }
+
+    [Fact]
+    public void GetTopic_ReadsCustomAttributeKey_WhenConfigured()
+    {
+        var context = SqsConsumerMessageContext.CreateInstance(new Message
+        {
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                { "x-my-topic", new MessageAttributeValue { StringValue = "some-topic", DataType = "String" } }
+            }
+        });
+
+        var topic = new SqsConsumerMessageTopicGetter("x-my-topic").GetTopic(context);
+
+        Assert.Equal("some-topic", topic.Id);
+    }
 }

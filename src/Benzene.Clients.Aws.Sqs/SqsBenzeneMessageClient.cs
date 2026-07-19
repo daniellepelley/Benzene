@@ -21,6 +21,7 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly ILogger<SqsBenzeneMessageClient> _logger;
     private readonly string _queueUrl;
+    private readonly string _topicAttributeKey;
     private readonly IMiddlewarePipeline<SqsSendMessageContext> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
 
@@ -32,11 +33,13 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="amazonSqsClient">The SQS client to send with.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, ILogger<SqsBenzeneMessageClient> logger, IServiceResolver serviceResolver)
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="SqsContextConverter{T}.DefaultTopicAttribute"/>).</param>
+    public SqsBenzeneMessageClient(string queueUrl, IAmazonSQS amazonSqsClient, ILogger<SqsBenzeneMessageClient> logger, IServiceResolver serviceResolver, string topicAttributeKey = SqsContextConverter<object>.DefaultTopicAttribute)
     {
         _serviceResolver = serviceResolver;
         _queueUrl = queueUrl;
         _logger = logger;
+        _topicAttributeKey = topicAttributeKey;
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<SqsSendMessageContext>(benzeneServiceContainer);
@@ -53,12 +56,14 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="middlewarePipeline">The built middleware pipeline to send through.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, ILogger<SqsBenzeneMessageClient> logger, IServiceResolver serviceResolver)
+    /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="SqsContextConverter{T}.DefaultTopicAttribute"/>).</param>
+    public SqsBenzeneMessageClient(string queueUrl, IMiddlewarePipeline<SqsSendMessageContext> middlewarePipeline, ILogger<SqsBenzeneMessageClient> logger, IServiceResolver serviceResolver, string topicAttributeKey = SqsContextConverter<object>.DefaultTopicAttribute)
     {
         _serviceResolver = serviceResolver;
         _middlewarePipeline = middlewarePipeline;
         _logger = logger;
         _queueUrl = queueUrl;
+        _topicAttributeKey = topicAttributeKey;
     }
 
     /// <summary>
@@ -75,7 +80,7 @@ public class SqsBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new SqsContextConverter<TRequest>(_queueUrl, new JsonSerializer());
+            var converter = new SqsContextConverter<TRequest>(_queueUrl, new JsonSerializer(), _topicAttributeKey);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

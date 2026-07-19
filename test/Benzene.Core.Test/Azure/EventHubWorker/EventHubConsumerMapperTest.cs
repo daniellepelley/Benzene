@@ -41,6 +41,16 @@ public class EventHubConsumerMapperTest
     }
 
     [Fact]
+    public void GetTopic_ReadsCustomPropertyKey_WhenConfigured()
+    {
+        var context = CreateContext(properties: ("x-my-topic", "some-topic"));
+
+        var topic = new EventHubConsumerMessageTopicGetter("x-my-topic").GetTopic(context);
+
+        Assert.Equal("some-topic", topic.Id);
+    }
+
+    [Fact]
     public void PresetTopicMessageTopicGetter_PresetSet_OverridesMissingTopicProperty()
     {
         var context = CreateContext();

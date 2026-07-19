@@ -60,7 +60,9 @@ prevent checkpointing, have the handler throw instead of returning a failure `IM
   scope per event via the base class.
 - Mappers (`EventHubConsumerMessage{TopicGetter,HeadersGetter,BodyGetter}`) - topic from the
   event's `"topic"` property (wrapped in `PresetTopicMessageTopicGetter`/`PresetTopicHolder`),
-  headers from string-typed properties, body as string.
+  headers from string-typed properties, body as string. The topic property key is a configurable
+  default, not hard-coded: `BenzeneEventHubConfig.TopicPropertyKey` (threaded into
+  `AddEventHubConsumer(topicPropertyKey)`) — keep it in sync with the producer's key.
 - **`AddEventHubConsumer` must register, per context type, everything `.UseMessageHandlers()`
   resolves** - besides the four getters above, that means `IMessageVersionGetter<EventHubConsumerContext>`
   (`HeaderMessageVersionGetter`), `AddMediaFormatNegotiation<EventHubConsumerContext>()`, and

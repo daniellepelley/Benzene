@@ -27,7 +27,7 @@ public static class Extensions
     {
         app.Register(x => x
             .AddBenzeneMessage()
-            .AddServiceBusConsumer()
+            .AddServiceBusConsumer(config.TopicPropertyKey)
         );
         var middlewarePipelineBuilder = app.Create<ServiceBusConsumerContext>();
         action(middlewarePipelineBuilder);

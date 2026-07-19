@@ -20,10 +20,15 @@ public static class Extensions
     /// to <see cref="SqsBatchFailureMode.FailWholeBatch"/> to fail the whole batch on any message
     /// failure instead of the default per-message partial-batch-failure reporting.
     /// </param>
+    /// <param name="topicAttributeKey">
+    /// The message attribute the topic is read from, defaulting to
+    /// <see cref="SqsMessageTopicGetter.DefaultTopicAttribute"/> (<c>"topic"</c>). Pass a different key
+    /// to consume messages a non-Benzene producer routes on another attribute.
+    /// </param>
     /// <returns>The pipeline builder for method chaining.</returns>
-    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseSqs(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<SqsMessageContext>> action, Action<SqsOptions> configure = null)
+    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseSqs(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<SqsMessageContext>> action, Action<SqsOptions> configure = null, string topicAttributeKey = SqsMessageTopicGetter.DefaultTopicAttribute)
     {
-        app.Register(x => x.AddSqs());
+        app.Register(x => x.AddSqs(topicAttributeKey));
         var pipeline = app.CreateMiddlewarePipeline<SqsMessageContext>(builder =>
         {
             builder.UseBenzeneInvocation();

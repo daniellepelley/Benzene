@@ -42,4 +42,12 @@ public class BenzeneEventHubConfig
     /// redelivers it (at-least-once).
     /// </summary>
     public bool CatchHandlerExceptions { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the event property the topic is read from. Defaults to
+    /// <see cref="EventHubConsumerMessageTopicGetter.DefaultTopicProperty"/> (<c>"topic"</c>) — set a
+    /// different key to consume events a non-Benzene producer routes on another property, without
+    /// writing a custom topic getter. Keep it in sync with the producer's key.
+    /// </summary>
+    public string TopicPropertyKey { get; set; } = EventHubConsumerMessageTopicGetter.DefaultTopicProperty;
 }

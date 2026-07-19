@@ -20,6 +20,7 @@ namespace Benzene.Clients.Azure.EventHub;
 public class EventHubBenzeneMessageClient : IBenzeneMessageClient
 {
     private readonly ILogger<EventHubBenzeneMessageClient> _logger;
+    private readonly string _topicPropertyKey;
     private readonly IMiddlewarePipeline<EventHubSendMessageContext> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
 
@@ -30,10 +31,12 @@ public class EventHubBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="producerClient">The Event Hubs producer client to send with.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public EventHubBenzeneMessageClient(EventHubProducerClient producerClient, ILogger<EventHubBenzeneMessageClient> logger, IServiceResolver serviceResolver)
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
+    public EventHubBenzeneMessageClient(EventHubProducerClient producerClient, ILogger<EventHubBenzeneMessageClient> logger, IServiceResolver serviceResolver, string topicPropertyKey = EventHubContextConverter<object>.DefaultTopicProperty)
     {
         _serviceResolver = serviceResolver;
         _logger = logger;
+        _topicPropertyKey = topicPropertyKey;
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<EventHubSendMessageContext>(benzeneServiceContainer);
@@ -49,11 +52,13 @@ public class EventHubBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="middlewarePipeline">The built middleware pipeline to send through.</param>
     /// <param name="logger">The logger used to record send failures.</param>
     /// <param name="serviceResolver">The service resolver used to run the pipeline.</param>
-    public EventHubBenzeneMessageClient(IMiddlewarePipeline<EventHubSendMessageContext> middlewarePipeline, ILogger<EventHubBenzeneMessageClient> logger, IServiceResolver serviceResolver)
+    /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
+    public EventHubBenzeneMessageClient(IMiddlewarePipeline<EventHubSendMessageContext> middlewarePipeline, ILogger<EventHubBenzeneMessageClient> logger, IServiceResolver serviceResolver, string topicPropertyKey = EventHubContextConverter<object>.DefaultTopicProperty)
     {
         _serviceResolver = serviceResolver;
         _middlewarePipeline = middlewarePipeline;
         _logger = logger;
+        _topicPropertyKey = topicPropertyKey;
     }
 
     /// <summary>
@@ -70,7 +75,7 @@ public class EventHubBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new EventHubContextConverter<TRequest>(new JsonSerializer());
+            var converter = new EventHubContextConverter<TRequest>(new JsonSerializer(), _topicPropertyKey);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

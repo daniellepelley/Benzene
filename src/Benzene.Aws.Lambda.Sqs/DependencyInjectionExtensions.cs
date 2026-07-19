@@ -26,12 +26,22 @@ public static class DependencyInjectionExtensions
     /// Called automatically by <see cref="Extensions.UseSqs"/>; you don't normally need to call this directly.
     /// </remarks>
     public static IBenzeneServiceContainer AddSqs(this IBenzeneServiceContainer services)
+        => services.AddSqs(SqsMessageTopicGetter.DefaultTopicAttribute);
+
+    /// <summary>
+    /// Registers the services required to process SQS messages, with the topic getter reading the
+    /// given message-attribute key (see <see cref="SqsMessageTopicGetter.DefaultTopicAttribute"/>).
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicAttributeKey">The message attribute the topic is read from.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddSqs(this IBenzeneServiceContainer services, string topicAttributeKey)
     {
         services.TryAddScoped<JsonSerializer>();
         services.TryAddScoped<PresetTopicHolder>();
 
         services.AddScoped<IMessageTopicGetter<SqsMessageContext>>(resolver =>
-            new PresetTopicMessageTopicGetter<SqsMessageContext>(new SqsMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+            new PresetTopicMessageTopicGetter<SqsMessageContext>(new SqsMessageTopicGetter(topicAttributeKey), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageVersionGetter<SqsMessageContext>, HeaderMessageVersionGetter<SqsMessageContext>>();
         services.AddScoped<IMessageHeadersGetter<SqsMessageContext>, SqsMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<SqsMessageContext>, SqsMessageBodyGetter>();

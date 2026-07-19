@@ -14,7 +14,10 @@ package wired through `UseMessageHandlers()` exactly like every other transport,
   Framework's `ICloudEventFunction<TData>` delivers **exactly one** Pub/Sub message per invocation,
   so there's no batch/array context here at all - this is structurally closer to a single HTTP
   request than to Kafka/SNS's per-record batch loop.
-- `PubSubMessageTopicGetter` - reads the topic from the message's `"topic"` attribute.
+- `PubSubMessageTopicGetter` - reads the topic from the message's `"topic"` attribute. The attribute
+  key is a configurable default, not hard-coded: `new PubSubMessageTopicGetter(topicAttributeKey)`, or
+  via `.AddGooglePubSub(topicAttributeKey)` / `.UsePubSub(..., topicAttributeKey: "x")` — keep it in
+  sync with the producer's key.
 - `PubSubMessageBodyGetter` - reads the message body via `PubsubMessage.TextData` (UTF-8 decode of
   the message's `Data` payload, already provided as a convenience property by the generated type).
 - `PubSubMessageHeadersGetter` - exposes the message's attributes as headers.

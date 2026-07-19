@@ -30,7 +30,7 @@ public static class Extensions
     {
         app.Register(x => x
             .AddBenzeneMessage()
-            .AddEventHubConsumer()
+            .AddEventHubConsumer(config.TopicPropertyKey)
         );
         var middlewarePipelineBuilder = app.Create<EventHubConsumerContext>();
         middlewarePipelineBuilder.UseBenzeneInvocation();

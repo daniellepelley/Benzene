@@ -19,7 +19,10 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
 ## Conventions
 - `SqsContextConverter`/`OutboundSqsContextConverter` forward `IBenzeneClientRequest.Headers` onto
   real SQS `MessageAttributes` so header decorators (correlation ID, W3C trace context) reach the
-  wire, **and** set a `topic` message attribute (the SQS consumer routes on it).
+  wire, **and** set a `topic` message attribute (the SQS consumer routes on it). The topic attribute
+  key is a configurable default, not hard-coded (`topicAttributeKey` on the converters,
+  `.UseSqs(queueUrl, topicAttributeKey: "x")`, `AddSqsMessageClient(..., topicAttributeKey)`, and
+  `AddSqsHealthCheck(queueUrl, topicAttributeKey)`) — keep it in sync with the consumer's key.
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SQS has only a send
   acknowledgement, so a topic routed through SQS must be sent via `SendAsync<TRequest, Void>`; any
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at

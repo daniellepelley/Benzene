@@ -46,4 +46,12 @@ public class BenzeneServiceBusConfig
     /// enum's own doc comments for the exact semantics of each mode.
     /// </summary>
     public ServiceBusConsumerAckMode AckMode { get; set; } = ServiceBusConsumerAckMode.AutoComplete;
+
+    /// <summary>
+    /// Gets or sets the application property the topic is read from. Defaults to
+    /// <see cref="ServiceBusConsumerMessageTopicGetter.DefaultTopicProperty"/> (<c>"topic"</c>) — set
+    /// a different key to consume messages a non-Benzene producer routes on another application
+    /// property, without writing a custom topic getter. Keep it in sync with the producer's key.
+    /// </summary>
+    public string TopicPropertyKey { get; set; } = ServiceBusConsumerMessageTopicGetter.DefaultTopicProperty;
 }

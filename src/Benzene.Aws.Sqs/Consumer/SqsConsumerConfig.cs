@@ -19,4 +19,12 @@ public class SqsConsumerConfig
     /// Gets or sets the SQS long-poll wait time in seconds (0-20, per the SQS API). Defaults to 1.
     /// </summary>
     public int WaitTimeSeconds { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets the message attribute the topic is read from. Defaults to
+    /// <see cref="SqsConsumerMessageTopicGetter.DefaultTopicAttribute"/> (<c>"topic"</c>) — set a
+    /// different key to consume messages a non-Benzene producer routes on another attribute, without
+    /// writing a custom topic getter. Keep it in sync with the producer's attribute key.
+    /// </summary>
+    public string TopicAttributeKey { get; set; } = SqsConsumerMessageTopicGetter.DefaultTopicAttribute;
 }

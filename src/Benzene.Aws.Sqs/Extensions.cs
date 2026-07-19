@@ -33,7 +33,7 @@ public static class Extensions
     {
         app.Register(x => x
             .AddBenzeneMessage()
-            .AddSqsConsumer()
+            .AddSqsConsumer(sqsConsumerConfig.TopicAttributeKey)
         );
         var middlewarePipelineBuilder = app.Create<SqsConsumerMessageContext>();
         middlewarePipelineBuilder.UseBenzeneInvocation();

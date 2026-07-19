@@ -22,23 +22,34 @@ namespace Benzene.Clients.Azure.ServiceBus;
 /// </remarks>
 public class OutboundServiceBusContextConverter : IContextConverter<OutboundContext, ServiceBusSendMessageContext>
 {
+    /// <summary>
+    /// The default application-property key the topic is written to. It is a single default, not a
+    /// hard-coded value — pass a different key to interoperate with a consumer that routes on another
+    /// application property. Keep it in sync with the consumer's property key.
+    /// </summary>
+    public const string DefaultTopicProperty = "topic";
+
     private readonly ISerializer _serializer;
+    private readonly string _topicPropertyKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutboundServiceBusContextConverter"/> class using a
     /// <see cref="JsonSerializer"/> to serialize the outgoing message.
     /// </summary>
-    public OutboundServiceBusContextConverter()
-        : this(new JsonSerializer())
+    /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
+    public OutboundServiceBusContextConverter(string topicPropertyKey = DefaultTopicProperty)
+        : this(new JsonSerializer(), topicPropertyKey)
     { }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutboundServiceBusContextConverter"/> class.
     /// </summary>
     /// <param name="serializer">The serializer used to serialize the outgoing message.</param>
-    public OutboundServiceBusContextConverter(ISerializer serializer)
+    /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
+    public OutboundServiceBusContextConverter(ISerializer serializer, string topicPropertyKey = DefaultTopicProperty)
     {
         _serializer = serializer;
+        _topicPropertyKey = topicPropertyKey;
     }
 
     /// <summary>
@@ -55,7 +66,7 @@ public class OutboundServiceBusContextConverter : IContextConverter<OutboundCont
             message.ApplicationProperties[header.Key] = header.Value;
         }
 
-        message.ApplicationProperties["topic"] = contextIn.Topic;
+        message.ApplicationProperties[_topicPropertyKey] = contextIn.Topic;
 
         return Task.FromResult(new ServiceBusSendMessageContext(message));
     }
