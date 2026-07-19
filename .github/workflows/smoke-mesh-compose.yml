@@ -1,0 +1,89 @@
+name: Smoke - Mesh Compose
+
+# End-to-end smoke test for the cloud-free local mesh demo (examples/K8sMesh/compose): build the two
+# images, `docker compose up`, and assert the mesh host discovers all three benzene services over HTTP
+# and reports them healthy. Fully self-contained (no cloud credentials), so unlike the deploy-*-mesh
+# workflows this runs automatically on every push/PR that touches the demo or the packages it embeds.
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'examples/K8sMesh/**'
+      - 'deploy/Mesh/**'
+      - 'src/Benzene.Mesh.Aggregator/**'
+      - 'src/Benzene.Mesh.Contracts/**'
+      - 'src/Benzene.Mesh.Ui/**'
+      - 'src/Benzene.Mesh.Aws.Lambda/**'
+      - '.github/workflows/smoke-mesh-compose.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'examples/K8sMesh/**'
+      - 'deploy/Mesh/**'
+      - 'src/Benzene.Mesh.Aggregator/**'
+      - 'src/Benzene.Mesh.Contracts/**'
+      - 'src/Benzene.Mesh.Ui/**'
+      - 'src/Benzene.Mesh.Aws.Lambda/**'
+      - '.github/workflows/smoke-mesh-compose.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_FILE: examples/K8sMesh/compose/docker-compose.yml
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build the images (multi-stage; context = repo root, set inside the compose file) and start the
+      # stack: three K8sMesh Service containers + the deploy/Mesh host, wired via the static mesh.json.
+      - name: Compose up (build)
+        run: docker compose -f "$COMPOSE_FILE" up -d --build
+
+      # The mesh host polls every 15s (no HTTP refresh endpoint), so wait for the first background pass
+      # to publish manifest.json, then assert all three services are discovered and healthy.
+      - name: Assert 3 services discovered and healthy
+        run: |
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8090/artifacts/manifest.json -o manifest.json 2>/dev/null; then
+              total=$(jq '.services | length' manifest.json)
+              healthy=$(jq '[.services[] | select(.status=="healthy")] | length' manifest.json)
+              echo "attempt $i: $healthy/$total healthy"
+              if [ "$total" = "3" ] && [ "$healthy" = "3" ]; then ok=1; break; fi
+            else
+              echo "attempt $i: manifest.json not ready yet"
+            fi
+            sleep 5
+          done
+          if [ "$ok" != "1" ]; then
+            echo "::error::mesh did not report 3 healthy services in time"
+            cat manifest.json 2>/dev/null || true
+            exit 1
+          fi
+          echo "--- manifest.json ---"; cat manifest.json
+
+      # The cross-service topic catalog should list each service's domain topic with the right consumer.
+      - name: Assert the topic catalog
+        run: |
+          curl -fsS http://localhost:8090/artifacts/topics.json -o topics.json
+          echo "--- topics.json ---"; cat topics.json
+          for t in order:create payment:take shipment:book; do
+            jq -e --arg t "$t" '.topics[] | select(.topic == $t)' topics.json >/dev/null \
+              || { echo "::error::expected topic '$t' missing from topics.json"; exit 1; }
+          done
+          echo "all expected topics present"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose -f "$COMPOSE_FILE" ps -a || true
+          docker compose -f "$COMPOSE_FILE" logs --tail=120 || true
+
+      - name: Compose down
+        if: always()
+        run: docker compose -f "$COMPOSE_FILE" down -v || true
