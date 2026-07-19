@@ -1,0 +1,45 @@
+name: benzene-mesh
+
+# A cloud-free, one-command Benzene service-mesh demo. Three real Benzene Cloud Services
+# (orders / payments / shipping — the K8sMesh Service image, one image, MESH_SERVICE selects the
+# domain) are discovered over plain HTTP and aggregated by the config-driven mesh host
+# (deploy/Mesh/Benzene.Mesh.Host), which serves the Mesh UI at http://localhost:8090/mesh-ui.
+#
+#   docker compose -f examples/K8sMesh/compose/docker-compose.yml up --build
+#
+# Both images build from mcr.microsoft.com/dotnet base images; the build context is the repo root
+# because the projects reference src/ directly. See README.md.
+
+services:
+  orders:
+    build:
+      context: ../../..
+      dockerfile: examples/K8sMesh/Service/Dockerfile
+    image: benzene-mesh-service:compose
+    environment:
+      - MESH_SERVICE=orders
+
+  payments:
+    image: benzene-mesh-service:compose
+    environment:
+      - MESH_SERVICE=payments
+    depends_on: [orders]
+
+  shipping:
+    image: benzene-mesh-service:compose
+    environment:
+      - MESH_SERVICE=shipping
+    depends_on: [orders]
+
+  mesh:
+    build:
+      context: ../../..
+      dockerfile: deploy/Mesh/Benzene.Mesh.Host/Dockerfile
+    image: benzene-mesh-host:compose
+    ports:
+      - "8090:8080"
+    environment:
+      - MESH_CONFIG_PATH=/config/mesh.json
+    volumes:
+      - ./mesh.json:/config/mesh.json:ro
+    depends_on: [orders, payments, shipping]

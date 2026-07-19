@@ -1,0 +1,21 @@
+{
+  "artifactRootDirectory": "/data/mesh-artifacts",
+  "pollIntervalSeconds": 15,
+  "services": [
+    {
+      "name": "orders",
+      "specUrl": "http://orders:8080/benzene/spec?type=benzene",
+      "healthUrl": "http://orders:8080/benzene/health"
+    },
+    {
+      "name": "payments",
+      "specUrl": "http://payments:8080/benzene/spec?type=benzene",
+      "healthUrl": "http://payments:8080/benzene/health"
+    },
+    {
+      "name": "shipping",
+      "specUrl": "http://shipping:8080/benzene/spec?type=benzene",
+      "healthUrl": "http://shipping:8080/benzene/health"
+    }
+  ]
+}

@@ -33,16 +33,22 @@ public class Startup : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        // Full OpenTelemetry: Benzene traces + metrics over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT).
+        // Full OpenTelemetry: Benzene traces + metrics. The OTLP exporter is only attached when
+        // OTEL_EXPORTER_OTLP_ENDPOINT is set — otherwise the instrumentation is armed but nothing tries
+        // to reach a collector, so there are no connection-refused errors in the logs without one.
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService($"{ServiceName}-api"))
-            .WithTracing(tracing => tracing
-                .SetSampler(new AlwaysOnSampler())
-                .AddBenzeneInstrumentation()
-                .AddOtlpExporter())
-            .WithMetrics(metrics => metrics
-                .AddBenzeneInstrumentation()
-                .AddOtlpExporter());
+            .WithTracing(tracing =>
+            {
+                tracing.SetSampler(new AlwaysOnSampler()).AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(otlpEndpoint)) tracing.AddOtlpExporter();
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
+            });
 
         services.UsingBenzene(x => x
             .AddBenzene()

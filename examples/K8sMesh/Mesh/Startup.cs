@@ -34,15 +34,21 @@ public class Startup : BenzeneStartUp
     {
         var artifactDir = Environment.GetEnvironmentVariable("MESH_ARTIFACT_DIR") ?? "/artifacts";
 
+        // The OTLP exporter is only attached when OTEL_EXPORTER_OTLP_ENDPOINT is set — the
+        // instrumentation is armed either way, so there are no connection-refused errors without one.
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService("benzene-mesh"))
-            .WithTracing(tracing => tracing
-                .SetSampler(new AlwaysOnSampler())
-                .AddBenzeneInstrumentation()
-                .AddOtlpExporter())
-            .WithMetrics(metrics => metrics
-                .AddBenzeneInstrumentation()
-                .AddOtlpExporter());
+            .WithTracing(tracing =>
+            {
+                tracing.SetSampler(new AlwaysOnSampler()).AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(otlpEndpoint)) tracing.AddOtlpExporter();
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
+            });
 
         services.UsingBenzene(benzene => benzene
             .AddBenzene()
