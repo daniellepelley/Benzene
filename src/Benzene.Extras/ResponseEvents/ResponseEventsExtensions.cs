@@ -33,12 +33,34 @@ public static class ResponseEventsExtensions
         builder.Register(services =>
         {
             services.AddSingleton(mappings);
-            services.TryAddSingleton<ResponseEventCatalog>();
-            services.TryAddSingleton<IResponseEventCatalog>(resolver => resolver.GetService<ResponseEventCatalog>());
-            services.TryAddSingleton<IMessageDefinitionFinder<IMessageDefinition>>(resolver => resolver.GetService<ResponseEventCatalog>());
             services.TryAddScoped<IResponseEventPublisher, BenzeneMessageSenderResponseEventPublisher>();
+            AddResponseEventCatalog(services);
         });
 
         return builder;
+    }
+
+    /// <summary>
+    /// Declares published events that don't come from a response mapping - events handler code
+    /// sends directly via <c>IBenzeneMessageSender</c> - so they still appear in generated specs
+    /// (AsyncAPI / event-service documents) and in <see cref="IResponseEventCatalog"/>. Purely
+    /// declarative: registers no runtime behavior.
+    /// </summary>
+    /// <param name="services">The service container to register into.</param>
+    /// <param name="definitions">The (event topic, payload type) definitions this service publishes,
+    /// e.g. <see cref="ResponseEventDefinition"/> instances.</param>
+    /// <returns>The same container, for chaining.</returns>
+    public static IBenzeneServiceContainer AddResponseEventDeclarations(this IBenzeneServiceContainer services, params IMessageDefinition[] definitions)
+    {
+        services.AddSingleton(new ResponseEventDeclarations(definitions));
+        AddResponseEventCatalog(services);
+        return services;
+    }
+
+    private static void AddResponseEventCatalog(IBenzeneServiceContainer services)
+    {
+        services.TryAddSingleton<ResponseEventCatalog>();
+        services.TryAddSingleton<IResponseEventCatalog>(resolver => resolver.GetService<ResponseEventCatalog>());
+        services.TryAddSingleton<IMessageDefinitionFinder<IMessageDefinition>>(resolver => resolver.GetService<ResponseEventCatalog>());
     }
 }

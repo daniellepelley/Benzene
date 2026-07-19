@@ -1,4 +1,4 @@
-using Benzene.Extras.Broadcast;
+using Benzene.Extras.ResponseEvents;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;
 using LEGO.AsyncAPI;
@@ -18,7 +18,7 @@ public class AsyncApiDocumentBuilderJsonTest
     [Fact]
     public void Json_SimpleType()
     {
-        var broadcastEventDefinition = new BroadcastEventDefinition(Topic, typeof(Inner));
+        var responseEventDefinition = new ResponseEventDefinition(Topic, typeof(Inner));
 
         var json = JsonConvert.SerializeObject(new Inner
         {
@@ -28,7 +28,7 @@ public class AsyncApiDocumentBuilderJsonTest
         });
 
         var doc = CreateBuilder()
-            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .AddBroadcastEventDefinitions(new[] { responseEventDefinition })
             .Build();
 
         var doc2 = CreateBuilder()
@@ -44,8 +44,8 @@ public class AsyncApiDocumentBuilderJsonTest
     [Fact]
     public void Json_NestedType()
     {
-        var broadcastEventDefinition1 = new BroadcastEventDefinition(Topic, typeof(Example));
-        var broadcastEventDefinition2 = new BroadcastEventDefinition(Topic2, typeof(Inner));
+        var responseEventDefinition1 = new ResponseEventDefinition(Topic, typeof(Example));
+        var responseEventDefinition2 = new ResponseEventDefinition(Topic2, typeof(Inner));
 
         var json = JsonConvert.SerializeObject(new Example
         {
@@ -69,8 +69,8 @@ public class AsyncApiDocumentBuilderJsonTest
         });
 
         var doc = CreateBuilder()
-            .AddBroadcastEventDefinition(broadcastEventDefinition1)
-            .AddBroadcastEventDefinition(broadcastEventDefinition2)
+            .AddBroadcastEventDefinition(responseEventDefinition1)
+            .AddBroadcastEventDefinition(responseEventDefinition2)
             .Build();
 
         var doc2 = CreateBuilder()

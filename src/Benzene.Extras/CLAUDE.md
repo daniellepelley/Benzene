@@ -39,17 +39,17 @@ payload the transport can't deliver; a per-pipeline mapping publishes it as an e
   route's middleware (correlation, W3C trace, retry) applies. Registered `TryAddScoped` - swap it
   for a test fake or an outbox relay.
 - `IResponseEventCatalog` / `ResponseEventCatalog` - app-wide introspection: aggregates every
-  pipeline's registered `ResponseEventMappings` singletons; also an
-  `IMessageDefinitionFinder<IMessageDefinition>` so `Map<TPayload>` mappings appear in generated
-  AsyncAPI/event-service specs (same seam `AddBroadcastEvent` declarations used).
-
-### Broadcast (`Broadcast/`) — superseded
-The hardwired predecessor of ResponseEvents: `UseBroadcastEvent()` publishes CRUD responses on
-the past-tense topic via `IEventSender` - an interface with **no shipped implementation** (the
-app must provide one), resolved eagerly per message, with no header propagation and no runtime
-use of the `AddBroadcastEvent` declarations (they feed spec generation only). Kept for
-compatibility; prefer `UseResponseEvents(events => events.MapCrudConvention())`. Do not extend
-this folder - evolve `ResponseEvents/` instead.
+  pipeline's registered `ResponseEventMappings` singletons plus any
+  `AddResponseEventDeclarations(...)` declaration-only definitions; also an
+  `IMessageDefinitionFinder<IMessageDefinition>` so both appear in generated
+  AsyncAPI/event-service specs.
+- `AddResponseEventDeclarations(params IMessageDefinition[])` (container extension) -
+  declaration-only published events: for topics handler code sends directly via
+  `IBenzeneMessageSender`, so they still show up in specs and the catalog with no runtime
+  republishing (used by the AwsMesh example for topology edges).
+- History: the pre-1.0 `Broadcast/` folder (`UseBroadcastEvent()`/`IEventSender`, hardwired CRUD
+  mapping, no shipped sender) was **removed**; `MapCrudConvention()` +
+  `AddResponseEventDeclarations` cover its two use cases. Don't reintroduce it.
 
 ### Other
 - `Patches/` - `IPatchMessage`/`PatchMessage` + `PatchExtensions`: partial-update (patch) message

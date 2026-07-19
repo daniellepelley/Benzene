@@ -176,8 +176,5 @@ services.AddScoped<IResponseEventPublisher, MyOutboxPublisher>();
 
 ## Related
 
-- [`UseBroadcastEvent()`](../reference/middleware.md#usebroadcastevent) — the older, hardwired
-  CRUD-only version of this feature; `UseResponseEvents(events => events.MapCrudConvention())`
-  is its declarative replacement.
 - [SNS Fan-Out Pattern](sns-fan-out.md) — publishing the same event to many consumers.
 - [Idempotency](idempotency.md) — required for `FailMessage` redelivery semantics.

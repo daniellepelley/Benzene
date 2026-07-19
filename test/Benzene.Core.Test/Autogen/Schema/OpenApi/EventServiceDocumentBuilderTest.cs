@@ -2,7 +2,7 @@ using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Messages;
-using Benzene.Extras.Broadcast;
+using Benzene.Extras.ResponseEvents;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
@@ -23,7 +23,7 @@ public class EventServiceDocumentBuilderTest
             typeof(Example),
             typeof(Inner[]));
 
-        var broadcastEventDefinition = new BroadcastEventDefinition("tenant:created", typeof(Example));
+        var responseEventDefinition = new ResponseEventDefinition("tenant:created", typeof(Example));
         
         var httpEndpointDefinition = new HttpEndpointDefinition("GET", "/some-route", "tenant:create");
         
@@ -46,7 +46,7 @@ public class EventServiceDocumentBuilderTest
                 Name = "benzene"
             })
             .AddMessageHandlerDefinitions(new[] { messageHandlerDefinition })
-            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .AddBroadcastEventDefinitions(new[] { responseEventDefinition })
             .AddMessageSenderDefinitions(new[] { messageSenderDefinition })
             .AddHttpEndpointDefinitions(new []{ httpEndpointDefinition }, new[] { messageHandlerDefinition })
             .Build();
@@ -91,11 +91,11 @@ public class EventServiceDocumentBuilderTest
             typeof(Example),
             typeof(Inner));
 
-        var broadcastEventDefinition = new BroadcastEventDefinition("tenant:created", typeof(Inner));
+        var responseEventDefinition = new ResponseEventDefinition("tenant:created", typeof(Inner));
 
         var doc = new EventServiceDocumentBuilder(new SchemaBuilder())
             .AddMessageHandlerDefinitions(new[] { messageHandlerDefinition })
-            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .AddBroadcastEventDefinitions(new[] { responseEventDefinition })
             .Build();
 
         var requestExample = Assert.IsType<OpenApiObject>(doc.Requests[0].Example);
@@ -116,7 +116,7 @@ public class EventServiceDocumentBuilderTest
     {
         var versionedRequest = MessageHandlerDefinition.CreateInstance("shipping:booked", "v2", typeof(Example), typeof(Inner), typeof(object));
         var unversionedRequest = MessageHandlerDefinition.CreateInstance("tenant:create", typeof(Example), typeof(Inner));
-        var versionedEvent = new BroadcastEventDefinition(new Topic("shipping:booked", "v2"), typeof(Example));
+        var versionedEvent = new ResponseEventDefinition(new Topic("shipping:booked", "v2"), typeof(Example));
 
         var doc = new EventServiceDocumentBuilder(new SchemaBuilder())
             .AddMessageHandlerDefinitions(new[] { versionedRequest, unversionedRequest })

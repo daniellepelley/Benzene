@@ -289,20 +289,9 @@ gives the publish correlation/trace stamping and retry). Mappings are introspect
         .OnPublishFailure(PublishFailureMode.FailMessage)))
 ```
 
-### `UseBroadcastEvent()`
-
-**Package:** `Benzene.Extras` (`Benzene.Extras.Broadcast`). The older, hardwired predecessor of
-`UseResponseEvents`: after a handler runs, if the topic's last `:`-segment is
-`create`/`update`/`delete` and the result status is the matching `Created`/`Updated`/`Deleted`,
-the response payload is published on the past-tense topic (`order:create` → `order:created`) via
-an `IEventSender` **you must implement and register yourself** (no default implementation ships).
-Superseded by `UseResponseEvents(events => events.MapCrudConvention())`, which does the same
-through the routed, introspectable machinery above.
-
-```csharp
-.UseMessageHandlers(router => router
-    .UseBroadcastEvent())
-```
+> The pre-1.0 `UseBroadcastEvent()` / `IEventSender` mechanism (hardwired CRUD-verb mapping, no
+> shipped sender) has been removed; `UseResponseEvents(events => events.MapCrudConvention())`
+> reproduces its topic convention through the routed, introspectable machinery above.
 
 ---
 

@@ -17,7 +17,7 @@ using Benzene.Core.Middleware;
 using Benzene.Abstractions.Messages;
 using Benzene.Diagnostics;
 using Benzene.Diagnostics.Correlation;
-using Benzene.Extras.Broadcast;
+using Benzene.Extras.ResponseEvents;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -94,8 +94,8 @@ public static class MeshServiceWiring
             if (outboundSends.Length > 0)
             {
                 // Declare each send in the spec's events → the mesh's structural topology edge.
-                x.AddBroadcastEvent(outboundSends
-                    .Select(s => (IMessageDefinition)new BroadcastEventDefinition(s.Topic, s.MessageType))
+                x.AddResponseEventDeclarations(outboundSends
+                    .Select(s => (IMessageDefinition)new ResponseEventDefinition(s.Topic, s.MessageType))
                     .ToArray());
 
                 // The runtime route: an IBenzeneMessageSender that sends each topic to its target

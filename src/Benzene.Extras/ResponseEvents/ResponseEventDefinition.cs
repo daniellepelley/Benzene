@@ -16,8 +16,19 @@ public sealed class ResponseEventDefinition : IMessageDefinition
     /// <param name="topic">The event topic id.</param>
     /// <param name="payloadType">The event payload type.</param>
     public ResponseEventDefinition(string topic, Type payloadType)
+        : this(new Topic(topic), payloadType)
     {
-        Topic = new Topic(topic);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ResponseEventDefinition"/> class with a full
+    /// topic (id + version).
+    /// </summary>
+    /// <param name="topic">The event topic.</param>
+    /// <param name="payloadType">The event payload type.</param>
+    public ResponseEventDefinition(ITopic topic, Type payloadType)
+    {
+        Topic = topic;
         RequestType = payloadType;
     }
 

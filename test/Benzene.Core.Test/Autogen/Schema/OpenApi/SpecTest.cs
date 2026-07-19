@@ -4,7 +4,6 @@ using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.TestHelpers;
 using Benzene.Core.MessageHandlers.DI;
-using Benzene.Extras.Broadcast;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
@@ -26,7 +25,6 @@ public class SpecTest
                 .UsingBenzene(x => x
                     .AddBenzene()
                     .AddBenzeneMessage()
-                    .AddBroadcastEvent()
                     .AddHttpMessageHandlers()
                     .SetApplicationInfo("Example App", "1.0", "Stuff")
                 ))

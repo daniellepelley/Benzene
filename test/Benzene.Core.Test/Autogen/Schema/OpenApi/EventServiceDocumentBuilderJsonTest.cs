@@ -1,5 +1,5 @@
 using System;
-using Benzene.Extras.Broadcast;
+using Benzene.Extras.ResponseEvents;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Microsoft.OpenApi;
@@ -18,7 +18,7 @@ public class EventServiceDocumentBuilderJsonTest
     [Fact]
     public void Json_NestedType()
     {
-        var broadcastEventDefinition = new BroadcastEventDefinition(Topic, typeof(Example));
+        var responseEventDefinition = new ResponseEventDefinition(Topic, typeof(Example));
 
         var json = JsonConvert.SerializeObject(new Example
         {
@@ -35,7 +35,7 @@ public class EventServiceDocumentBuilderJsonTest
         });
 
         var doc = CreateBuilder()
-            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .AddBroadcastEventDefinitions(new[] { responseEventDefinition })
             .Build();
 
         var doc2 = CreateBuilder()
@@ -52,7 +52,7 @@ public class EventServiceDocumentBuilderJsonTest
     [Fact]
     public void Json_SimpleType()
     {
-        var broadcastEventDefinition = new BroadcastEventDefinition(Topic, typeof(Inner));
+        var responseEventDefinition = new ResponseEventDefinition(Topic, typeof(Inner));
 
         var json = JsonConvert.SerializeObject(new Inner
         {
@@ -62,7 +62,7 @@ public class EventServiceDocumentBuilderJsonTest
         });
 
         var doc = CreateBuilder()
-            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .AddBroadcastEventDefinitions(new[] { responseEventDefinition })
             .Build();
 
 

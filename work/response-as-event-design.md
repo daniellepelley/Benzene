@@ -3,9 +3,10 @@
 **Date:** 2026-07-19
 **Status:** Part 2's core (§2.3 step 3) is implemented — `UseResponseEvents` in
 `Benzene.Extras/ResponseEvents`, per `docs/plans/response-events-plan.md` — and the F4 docs bug
-is fixed. `Benzene.Extras/Broadcast` is left untouched (no behavior change, no `IEventSender`
-bridge shipped) and documented as superseded; its retirement, the F1 diagnostic, the F2 Event
-Hub fix, and the outbox remain open as listed in §2.3.
+is fixed. `Benzene.Extras/Broadcast` has since been **deleted** (breaking, on explicit request;
+`MapCrudConvention()` + `AddResponseEventDeclarations(...)` replace it — see
+`docs/migration-alpha-to-1.0.md`), resolving F3. The F1 diagnostic, the F2 Event Hub fix, and
+the outbox remain open as listed in §2.3.
 **Scope:** (1) audit of every transport binding's result mapping, verifying that fire-and-forget
 transports do not carry or emit response payloads; (2) a design proposal for first-class support
 of the *response-as-event* pattern — a request/response message handler on a fire-and-forget

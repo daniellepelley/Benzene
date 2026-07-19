@@ -1,6 +1,6 @@
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
-using Benzene.Extras.Broadcast;
+using Benzene.Extras.ResponseEvents;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;
 using LEGO.AsyncAPI;
@@ -19,7 +19,7 @@ public class AsyncApiDocumentBuilderTest
             typeof(Example),
             typeof(Inner));
 
-        var broadcastEventDefinition = new BroadcastEventDefinition("tenant:created", typeof(Example));
+        var responseEventDefinition = new ResponseEventDefinition("tenant:created", typeof(Example));
         
         var messageSenderDefinition = MessageSenderDefinition.CreateInstance("tenant:updated", typeof(Example));
 
@@ -40,7 +40,7 @@ public class AsyncApiDocumentBuilderTest
                 Name = "benzene"
             })
             .AddMessageHandlerDefinitions(new[] { messageHandlerDefinition })
-            .AddBroadcastEventDefinitions(new[] { broadcastEventDefinition })
+            .AddBroadcastEventDefinitions(new[] { responseEventDefinition })
             .AddMessageSenderDefinitions(new[] { messageSenderDefinition })
             .Build();
             

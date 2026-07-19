@@ -50,8 +50,7 @@ public sealed class ResponseEventsBuilder
     /// Adds the CRUD naming convention (<see cref="CrudConventionResponseEventMapping"/>):
     /// <c>X:create</c>/<c>update</c>/<c>delete</c> handled with status
     /// <c>Created</c>/<c>Updated</c>/<c>Deleted</c> publishes the payload on <c>X:created</c>/
-    /// <c>updated</c>/<c>deleted</c>. The behavior <c>UseBroadcastEvent()</c> hardwired, as an
-    /// opt-in rule.
+    /// <c>updated</c>/<c>deleted</c>.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
     public ResponseEventsBuilder MapCrudConvention()

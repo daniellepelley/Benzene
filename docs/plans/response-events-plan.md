@@ -86,8 +86,10 @@ purity preserved); no scoped holder is needed since publishing happens inline.
 
 ## Explicitly deferred (design doc phases 1/4/5/6)
 
-- Retiring/reimplementing `Broadcast` — left untouched and marked superseded in docs; removal
-  is an iteration decision (public-API breaking).
+- Retiring/reimplementing `Broadcast` — ~~left untouched and marked superseded in docs~~ **done
+  in a follow-up: `Benzene.Extras/Broadcast` is deleted** (`MapCrudConvention()` +
+  `AddResponseEventDeclarations(...)` replace it; see `CHANGELOG.md` and
+  `docs/migration-alpha-to-1.0.md`).
 - F1 startup diagnostic (payload-with-nowhere-to-go warning) — needs the mapping registry
   this plan introduces; follow-up.
 - F2 (Event Hub envelope's discarded response serialization) — independent fix.
@@ -98,4 +100,5 @@ purity preserved); no scoped holder is needed since publishing happens inline.
 
 - New project reference `Benzene.Extras` → `Benzene.Clients` (no new external dependency, no
   new project, no solution-structure change).
-- Additive public API only; `Benzene.Extras/Broadcast` is not modified.
+- Additive public API only; `Benzene.Extras/Broadcast` is not modified. *(Overtaken by the
+  follow-up above: Broadcast was subsequently deleted on explicit request.)*

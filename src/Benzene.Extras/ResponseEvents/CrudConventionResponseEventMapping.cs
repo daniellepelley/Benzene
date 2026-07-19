@@ -5,11 +5,10 @@ using Benzene.Results;
 namespace Benzene.Extras.ResponseEvents;
 
 /// <summary>
-/// The CRUD convention rule (the behavior <c>Benzene.Extras.Broadcast</c> hardwired, expressed as
-/// one opt-in <see cref="IResponseEventMapping"/>): a topic whose last <c>:</c>-segment is
-/// <c>create</c>/<c>update</c>/<c>delete</c>, handled with the matching result status
-/// (<c>Created</c>/<c>Updated</c>/<c>Deleted</c>) and a payload, publishes that payload on the
-/// past-tense topic (<c>order:create</c> -> <c>order:created</c>). Added via
+/// The CRUD naming convention as one opt-in <see cref="IResponseEventMapping"/>: a topic whose
+/// last <c>:</c>-segment is <c>create</c>/<c>update</c>/<c>delete</c>, handled with the matching
+/// result status (<c>Created</c>/<c>Updated</c>/<c>Deleted</c>) and a payload, publishes that
+/// payload on the past-tense topic (<c>order:create</c> -> <c>order:created</c>). Added via
 /// <see cref="ResponseEventsBuilder.MapCrudConvention"/>.
 /// </summary>
 public sealed class CrudConventionResponseEventMapping : IResponseEventMapping

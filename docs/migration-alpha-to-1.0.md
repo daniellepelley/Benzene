@@ -340,6 +340,28 @@ Generated clients from `Benzene.CodeGen.Client` already migrated onto
 `IBenzeneMessageSender` in an earlier 1.0-prep release — if you regenerate
 your client SDKs, no further action is needed there.
 
+## Breaking: removed `UseBroadcastEvent()` / `IEventSender` (Benzene.Extras)
+
+The alpha-era Broadcast mechanism — a hardwired create/update/delete →
+created/updated/deleted republish of handler responses through an
+`IEventSender` port that shipped no implementation — has been **removed**,
+superseded by the declarative `Benzene.Extras.ResponseEvents` feature
+(see `docs/cookbooks/response-as-event.md`).
+
+| Alpha | 1.0 |
+|---|---|
+| `UseBroadcastEvent()` | `UseResponseEvents(events => events.MapCrudConvention())` — same topic convention, published via `IBenzeneMessageSender` outbound routes |
+| `IEventSender` (self-implemented) | `IResponseEventPublisher` (a default over `IBenzeneMessageSender` ships; replace the scoped registration to customize) |
+| `AddBroadcastEvent(definitions)` (spec declaration) | `AddResponseEventDeclarations(definitions)` |
+| `BroadcastEventDefinition(topic, payloadType)` | `ResponseEventDefinition(topic, payloadType)` |
+| `BroadcastEventChecker` / `IBroadcastEventChecker` | No equivalent — it was never consulted at runtime; declared definitions flow to specs via `IResponseEventCatalog` |
+
+Note each event topic now needs an `AddOutboundRouting` route (which is what
+gives the publish retry, correlation-id and W3C-trace stamping, and startup
+validation). `Benzene.Schema.OpenApi`'s spec-builder surface
+(`AddBroadcastEventDefinitions(...)` on the AsyncAPI/event-service document
+builders) is unchanged — it consumes any `IMessageDefinition`s.
+
 ## New: unified `BenzeneTestHost`
 
 `Benzene.Testing.BenzeneTestHost.Create<TStartUp>()` replaces ad hoc,
