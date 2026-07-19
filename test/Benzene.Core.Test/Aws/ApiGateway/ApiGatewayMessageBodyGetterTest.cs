@@ -25,6 +25,24 @@ public class ApiGatewayMessageBodyGetterTest
         Assert.Equal("some-message", request.Name);
     }
 
+    [Fact]
+    public void Map_Base64EncodedBody_IsDecoded()
+    {
+        var json = "{\"name\":\"some-message\"}";
+        var base64Request = new APIGatewayProxyRequest
+        {
+            HttpMethod = "POST",
+            Path = "/example",
+            Body = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json)),
+            IsBase64Encoded = true,
+        };
+
+        var mapper = new RequestMapper<ApiGatewayContext>(new ApiGatewayMessageBodyGetter(), new JsonSerializer());
+        var request = mapper.GetBody<ExampleRequestPayload>(new ApiGatewayContext(base64Request));
+
+        Assert.Equal("some-message", request.Name);
+    }
+
     // [Fact]
     // public void Map_Xml()
     // {
