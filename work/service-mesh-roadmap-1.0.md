@@ -637,3 +637,184 @@ discipline (thin adapters, transport-agnostic core).
 - Auto-remediation / alerting workflows — flagged as phase 5 polish at most.
 - Any UI framework decision beyond "matches the existing static-HTML `Spec.Ui` pattern" — not
   designed here.
+
+## 10. 2026-07-19 proposal: transport-neutral topic bindings, a topic-level view, cross-linking, and a unified dashboard
+
+**Status: PROPOSED, not yet implemented.** User feedback session on the spec + mesh UI family.
+Grounded against the actual current implementation (see the file references below) before
+writing this up; nothing here has been built yet.
+
+### 10.1 The core gap: topics only carry HTTP-shaped transport metadata
+
+Confirmed by reading the actual rendering code (`Benzene.Spec.Ui/spec-ui.html`,
+`Benzene.Mesh.Ui/mesh-ui.html`, `Benzene.Mesh.Ui/mesh-fleet-ui.html`): none of them literally
+concatenate an HTTP verb into the topic string — the topic renders clean
+(`el("span", "op-topic", topic)`), with a colored `POST`/`GET`/… *badge* next to it. But that
+badge visually dominates because it's the **only transport signal that exists at all**:
+
+- `docs/specification/mesh.md`'s `ServiceDescriptor` has one **service-level** `binding` field
+  (`"binding": "http"` — a single value for the whole service, §2).
+- The only **per-topic** transport data anywhere is `Benzene.Schema.OpenApi`'s `HttpMappings`
+  (`EventService/RequestResponse.cs`) — HTTP method + path, nothing else. A topic delivered by
+  SQS, SNS, Kafka, EventBridge, RabbitMQ, or direct Lambda invoke has **zero** transport
+  metadata in the spec or the mesh descriptor today, and a topic reachable by more than one
+  transport (e.g. HTTP *and* a queue) has no way to express that either.
+
+Topics are transport-neutral by design (`core-concepts.md` §2 — a topic is just an id + optional
+version); the spec/descriptor should reflect that instead of privileging HTTP.
+
+**Proposed fix — generalize `httpMappings` into a per-topic `bindings` array**, a superset that
+subsumes the HTTP case rather than sitting alongside it:
+
+```json
+"topics": [
+  {
+    "id": "order:create",
+    "version": "v2",
+    "requestSchema": { "...": "..." },
+    "responseSchema": { "...": "..." },
+    "bindings": [
+      { "transport": "http", "method": "POST", "path": "/orders" },
+      { "transport": "sqs", "queue": "orders-queue" },
+      { "transport": "lambda-invoke", "functionName": "orders-create-fn" }
+    ]
+  }
+]
+```
+
+- `transport` values line up with the binding catalog `transport-bindings.md` §2 already
+  documents (`http`, `grpc`, `sqs`, `sns`, `kafka`, `eventbridge`, `dynamodb-streams`,
+  `rabbitmq`, `event-hub`, `service-bus`, `cosmos-changefeed`, `lambda-invoke`/`benzene-message`
+  for the raw envelope) — each transport's binding-specific fields mirror what that binding's
+  topic-resolution rule already needs (queue name, topic ARN, Kafka topic, EventBridge
+  `detail-type`, …), not a new vocabulary invented here.
+- A topic MAY list zero bindings (nothing wired to receive it directly — e.g. an outbound-only
+  client-side topic) or several (the same handler reachable via HTTP *and* a queue).
+- This is a **wire-contract / spec change**, not implementation-only: it touches
+  `docs/specification/wire-contracts.md` (or a new subsection of `mesh.md` §2, since it's spec
+  material, not payload envelope material) and the `EventServiceDocument`/`benzene` spec format
+  (`Benzene.Schema.OpenApi`). Both are still draft v0.1, so this is an allowed pre-1.0 change per
+  `specification/README.md`'s versioning note — do it now, not as a post-1.0 breaking change.
+- UI follow-up in all three viewers: replace the HTTP-verb-badge-as-topic-decoration pattern with
+  a neutral "bindings" chip row (one chip per transport, HTTP included as just one of the
+  possible chips, not the default assumption).
+
+### 10.2 Transport-native test payloads in "Try it" — generate/copy only, not live-dispatch
+
+Confirmed **this mechanism already exists**, just not where a user would find it live:
+`Benzene.CodeGen.LambdaTestTool` (CLI: `benzene lambda-test-tool`) already builds real SQS/SNS
+event JSON, API Gateway request JSON, and the raw envelope per topic, from the same deterministic
+example generator (`Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder`) the spec itself
+embeds (`DefaultExampleBuilders.cs`). It's AWS-only today and it's an offline file-writer — Spec
+UI's "Try it" panel (`spec-ui.html`'s `tryItBlock`) only ever sends the raw
+`{topic, headers, body}` envelope over HTTP.
+
+**Decision (confirmed with the user):** generate-and-copy only, not live multi-protocol dispatch.
+A live "Send" only makes protocol sense for transports actually reachable over HTTP from a
+browser; a genuine direct Lambda invoke or an SQS send isn't reachable from client-side JS at all
+without a server-side proxy holding cloud credentials — a materially bigger and riskier piece of
+engineering than the value justifies here, and unnecessary when "copy the exact payload, paste it
+into the AWS CLI/console/Lambda Test Tool" already satisfies the actual workflow described.
+
+**Proposed shape:** add a transport picker to the "Try it" block, populated from the topic's new
+`bindings` (§10.1) plus the always-available raw envelope. Selecting a non-HTTP transport swaps
+the payload textarea's content to that transport's full event-shaped JSON (reusing
+`DefaultExampleBuilders`' generation logic, exposed as a library call the spec/UI layer can reach,
+not just the CLI) and shows "copy" instead of "send". Selecting HTTP/envelope keeps today's live
+Send behavior unchanged. Azure-shaped generators (Service Bus, Event Hub) are a documented
+follow-up, not blocking — call this out explicitly rather than silently shipping AWS-only and
+calling it done (per this repo's honesty-over-false-capability convention).
+
+### 10.3 A topic-level view: producers, consumers, and per-version deprecation signal
+
+**The data mostly already exists — the page doesn't.** The collector already derives consumer
+edges from trace parentage (`mesh.md` §4), and `TraceEvent` already carries `topicVersion` per
+invocation (`mesh.md` §3) — so "is anything in the estate still consuming `shipping:booked@v1`"
+is *already computable* from data `Benzene.Mesh.Collector` ingests today. Nobody surfaces it:
+Mesh Explorer's topic table shows producers only (`mesh-ui.html` `renderTopicRows`); Fleet view's
+topic table (`mesh-fleet-ui.html`) is a flat all-topics-at-once list with observed consumers but
+no per-version breakdown and no drill-down.
+
+**This is the highest-value, lowest-risk item here** — it needs no wire-contract change, only a
+new collector query and a new page:
+
+- New collector query topic, e.g. `mesh:query:topic` (body: `{ "topic": "...", "version": "..." }`
+  or version omitted for "all versions of this topic id") — collector-side read model, same
+  category as the existing `mesh:query:fleet` (`mesh.md` §4's note that `mesh:query:*` are
+  collector idiom, not wire contract, so this needs no spec change either).
+- Response: the topic's declared bindings (§10.1) from every service that provides it, every
+  distinct version seen (from trace events, not just the descriptor's current version — a
+  deprecated version can still show up here if traces still reference it), per-version
+  invocation/error counts, and the **consumer list per version**, derived from trace parentage
+  the same way Fleet view already does it, just scoped to one topic instead of the whole fleet.
+- New page (`Benzene.Mesh.Ui`, a third viewer alongside Mesh Explorer/Fleet view): one topic,
+  full producer/consumer/version breakdown, with a version reporting **zero observed consumers
+  across the trace window** flagged as a deprecation candidate — directly answering "can we
+  retire `shipping:booked` v1" and "is anything still listening to `shipping:booked` at all"
+  without the cross-team archaeology the user described. Zero-consumer detection needs an
+  explicit trace-window caveat in the UI (a version with no *recent* traffic isn't proof of zero
+  consumers forever, only within the collector's retained trace window) — state that honestly
+  rather than implying certainty a live system can't actually provide.
+
+### 10.4 Cross-linking between the viewers
+
+Confirmed gap: Spec UI, Mesh Explorer, and Fleet view are three independent pages today with no
+links between them. Proposed: each viewer gains outbound links wherever it already has the
+target's identity —
+
+- Fleet view's service rows → that service's Spec UI (needs the service's spec URL, which the
+  descriptor doesn't carry today — either add it to `ServiceDescriptor` or derive it from a
+  per-service base-URL convention the dashboard host, §10.5, already knows).
+- Fleet view's topic rows and the new Topic view (§10.3) → the new Topic view, and from there
+  back out to each listed producer/consumer's Spec UI and Fleet view service row.
+- Spec UI's topic cards → the Topic view for that topic (needs Spec UI to know the mesh
+  collector's URL, analogous to how it already knows its own `messageEndpoint`).
+
+All of this is plain deep-linking (`?url=`/query-param navigation, the same mechanism `SpecUiPage`
+already uses for `data-spec-url`) — no new transport, just wiring pages that already independently
+support "point me at an arbitrary URL" together with actual links instead of requiring a user to
+copy URLs by hand.
+
+### 10.5 A unified dashboard host, not one Spec UI per service
+
+**Confirmed mostly already possible with existing building blocks — the gap is that nobody has
+assembled them.** `SpecUiPage.GetHtml(specUrl)` already supports rendering any service's spec
+from a cross-origin URL; `Benzene.Http`'s `UseCors` already exists as off-the-shelf middleware
+(`docs/common-middleware.md`). Today's default story is still "each service serves its own Spec
+UI, pointed at its own `/spec`" — fine standalone, but wrong for the fleet-browsing experience
+being designed here: clicking from the mesh dashboard into a service's spec shouldn't hop to that
+service's own hosted page, it should stay inside one dashboard rendering that service's *JSON*.
+
+**Proposed:** a new package (working name `Benzene.Mesh.Dashboard`, or extend
+`Benzene.Mesh.Collector`'s own host if collocating is preferred — open question, not decided
+here) that serves one copy of Mesh Explorer, Fleet view, the new Topic view, and Spec UI, and
+navigates between them by fetching each target service's `/benzene/spec`, `/benzene/health`, and
+the collector's `mesh:query:*` topics — never redirecting to a service's own hosted UI. This
+requires:
+
+- Every service fronted by this dashboard to serve CORS headers permitting the dashboard's
+  origin on `/benzene/spec` and `/benzene/health` (`UseCors` already does this; it just isn't
+  part of the default service standard today). If this direction is adopted, add it to
+  `design-principles.md` §5 as a documented expectation for services that want to participate in
+  a central dashboard — don't leave it as an undocumented prerequisite that only shows up as a
+  failed fetch in the browser console.
+- The per-service Spec UI hosting (`UseSpecUi()` on each service) doesn't go away — it stays the
+  right choice for a team browsing *just their own* service's spec without a dashboard deployed
+  at all (adoption-ladder consistency: nothing here should make the non-dashboard path worse).
+
+### 10.6 Suggested sequencing
+
+1. **§10.1 (transport-neutral `bindings`)** first — it's the wire-contract foundation everything
+   else displays. Touches `Benzene.Schema.OpenApi` (spec generation), `mesh.md`/descriptor
+   derivation, and all three viewers' badge rendering.
+2. **§10.3 (topic view)** next — highest standalone value, no further wire-contract dependency
+   beyond §10.1's bindings display, buildable against data the collector already has.
+3. **§10.2 (transport-native Try it)** — independent of the above, can slot in anytime; reuses
+   `Benzene.CodeGen.LambdaTestTool`'s existing generators.
+4. **§10.4 (cross-linking)** — needs §10.1 and §10.3 to have somewhere to link *to*.
+5. **§10.5 (unified dashboard)** last — the biggest new package, and the one place a real
+   decision (dashboard-hosts-collector vs. standalone) needs settling before writing code.
+
+Each of 1–4 ships value standalone even if §10.5 never happens — a service can keep self-hosting
+its own Spec UI forever and still benefit from richer bindings, a topic view, better test
+payloads, and cross-links between whichever pages a team does deploy.
