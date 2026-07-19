@@ -793,6 +793,7 @@
     section.style.display = "";
     document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
     renderTopicRows();
+    openTopicViewFromHash(); // a page loaded with #topic:<id> in the URL opens straight to it
   }
   var TOPIC_STATUS_LABELS = {
     "deprecation-candidate": "deprecation candidate",
@@ -823,6 +824,12 @@
     return link;
   }
 
+  var TOPIC_HASH_PREFIX = "#topic:";
+
+  function topicHashFor(topicId) {
+    return TOPIC_HASH_PREFIX + encodeURIComponent(topicId);
+  }
+
   function openTopicView(topicId) {
     var versions = currentTopics.filter(function (t) { return t.topic === topicId; });
     if (!versions.length) return;
@@ -837,7 +844,30 @@
 
     var dialog = document.getElementById("topic-view");
     if (typeof dialog.showModal === "function") dialog.showModal();
+
+    // Deep-linkable: a URL ending in #topic:<id> reopens this exact topic on load, so a topic
+    // view can be shared/bookmarked instead of being purely session-local
+    // (work/service-mesh-roadmap-1.0.md §10.12's "not done" note).
+    if (location.hash !== topicHashFor(topicId)) {
+      history.replaceState(null, "", location.pathname + location.search + topicHashFor(topicId));
+    }
   }
+
+  /* Clears the URL's #topic:… hash whenever the dialog closes, however it closed (the close
+     button, Escape, or a chip inside it navigating elsewhere via goToService) - <dialog> fires a
+     native "close" event for all of these, so hooking that one event covers every path. */
+  document.getElementById("topic-view").addEventListener("close", function () {
+    if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  });
+
+  function openTopicViewFromHash() {
+    if (location.hash.indexOf(TOPIC_HASH_PREFIX) !== 0) return;
+    var topicId = decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length));
+    openTopicView(topicId);
+  }
+  window.addEventListener("hashchange", openTopicViewFromHash);
 
   function buildTopicVersionBlock(t) {
     var block = el("div", "tv-version");

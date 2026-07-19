@@ -1128,3 +1128,28 @@ produces or consumes (including topics where it's a producer on one version and 
 
 Still not done: the deep-linkable topic URL from §10.12, and §10.8's remaining staleness/changelog
 history and CI/dev-time surfacing items — all still open, none blocking on what's shipped so far.
+
+### 10.14 2026-07-19 (implementation) — deep-linkable topic URLs
+
+Closes §10.12's remaining "not done": opening a topic view now sets `location.hash` to
+`#topic:<encoded-topic-id>` via `history.replaceState` (no new history entries per open/close, so
+back/forward isn't cluttered). A page loaded with that hash already in the URL reopens the same
+topic once `topics.json` has resolved — the check runs at the end of `renderTopics()`, after
+`currentTopics` is populated, plus on `hashchange` for a link followed while the page is already
+open. Closing the dialog clears the hash again, hooked off `<dialog>`'s native `close` event so
+every close path is covered in one place — the close button, Escape, and a producer/consumer chip
+inside the dialog navigating elsewhere via `goToService` (which explicitly closes the topic view
+first) all fire it identically, confirmed in the verification below. An unknown/stale topic id in
+the hash is a safe no-op (`openTopicView` already early-returns when nothing matches), so a bad or
+outdated link never errors.
+
+Verified end-to-end with the same real-browser approach as the prior increments: confirmed the
+hash appears correctly (URL-encoded) after clicking a topic, confirmed it clears on close via the
+button, confirmed direct navigation to a URL carrying the hash opens the correct topic on load,
+confirmed Escape also clears the hash (proving the single `close`-event hook covers non-button
+dismissal too), and confirmed an unknown topic id in the hash leaves the dialog closed rather than
+erroring.
+
+All four of §10.8's originally-deferred items are now shipped except CI/dev-time surfacing and
+staleness/changelog history over time — both real, both still open, neither blocking anything
+built so far.

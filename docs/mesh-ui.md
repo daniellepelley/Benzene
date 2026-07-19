@@ -46,6 +46,11 @@ block, so "is anything still consuming `shipping:booked` v1 while v2 is live" is
 glance instead of scanning the table for every row that happens to share a topic id. Producer/
 consumer chips inside the dialog are the same jump-to-service links as the table.
 
+Opening a topic updates the URL to `…#topic:<id>` — copy it straight out of the address bar to
+share or bookmark a link to that exact topic; opening that URL later (or just refreshing) reopens
+the same view once the page's `topics.json` has loaded. Closing the dialog, however it's closed
+(the close button, Escape, or following a producer/consumer link elsewhere), clears the hash again.
+
 **The topic table has its own search box**, matching against the topic id *or* any producer/
 consumer service name — useful once a fleet has more topics than fit on screen, and it doubles as
 the reverse cross-link: every service card also has a **topics** link that pre-fills this search
