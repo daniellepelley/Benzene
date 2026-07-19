@@ -12,11 +12,20 @@ Functions health check. Pins **only** `AWSSDK.StepFunctions`.
   `HealthCheckDependency` (`Kind = "StateMachine"`, `Name` = ARN).
 - `Extensions` — **`AddStepFunctionHealthCheck`**.
 
-## Scope / honesty (release plan Tier 2.5 — decision pending)
-`StartExecutionAsync` is **fire-and-forget**: it starts the execution and does not thread the
-execution ARN back to the caller, so there is no built-in way to await or correlate the result. That
-is the honest 1.0 scope. Task-token callbacks / awaiting completion are a candidate post-1.0
-deepening — do not document a request/reply capability this package does not have.
+## Scope / honesty (release plan Tier 2.5 — decided 2026-07-19: honest fire-and-forget for 1.0)
+`StartExecutionAsync<TMessage, TResponse>` is **fire-and-forget**. On success it returns an empty
+`BenzeneResult.Accepted<TResponse>()` and **discards the `StartExecutionResponse`** — the new
+execution's ARN and start date are not threaded back, and `TResponse` never carries a value (Step
+Functions runs the state machine asynchronously; there is no synchronous output to map). So there is
+**no built-in way to await, poll, or correlate** the execution result, and **no task-token callback**
+(`SendTaskSuccess`/`SendTaskFailure`) support. A failure to *start* returns `ServiceUnavailable`.
+
+This is the deliberate, honest 1.0 scope — do not document a request/reply or workflow-tracking
+capability this package does not have. For anything more (capture the `ExecutionArn`,
+`DescribeExecution` polling, task-token callbacks, `.sync` integration), use the raw
+`IAmazonStepFunctions` SDK directly in your handler (principle 1: Benzene never hides the SDK).
+Deepening this into a first-class awaited/callback client is an explicit **post-1.0** item (release
+plan Post-1.0 list: "Durable/orchestration depth — Step Functions task-token callbacks").
 
 ## Dependencies
 `AWSSDK.StepFunctions`; Benzene `Clients`, `HealthChecks.Core`, `Results`.
