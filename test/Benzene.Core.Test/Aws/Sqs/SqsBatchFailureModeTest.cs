@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
@@ -13,6 +15,49 @@ namespace Benzene.Test.Aws.Sqs;
 
 public class SqsBatchFailureModeTest
 {
+    [Fact]
+    public async Task HandleAsync_ManyRecordsFailConcurrently_ReportsExactlyTheFailedIds()
+    {
+        // Partial-batch-failure reporting is built from tasks running concurrently under Task.WhenAll.
+        // A yielding pipeline forces the failure continuations to resume on pool threads at the same
+        // time - the exact condition under which a shared, non-thread-safe List<>.Add would drop or
+        // duplicate a failed id (silent SQS message loss) or throw mid-resize. Assert the reported set
+        // is EXACTLY the failed set, over repeated runs.
+        var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
+        mockPipeline
+            .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
+            .Returns(async (SqsMessageContext context, IServiceResolver _) =>
+            {
+                await Task.Yield();
+                if (context.SqsMessage.MessageId.StartsWith("fail"))
+                {
+                    throw new InvalidOperationException("boom");
+                }
+            });
+
+        var mockResolver = new Mock<IServiceResolver>();
+        mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
+        mockResolver.Setup(x => x.GetService<ILogger<SqsApplication>>()).Returns(Mock.Of<ILogger<SqsApplication>>());
+
+        var mockResolverFactory = new Mock<IServiceResolverFactory>();
+        mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
+
+        var application = new SqsApplication(mockPipeline.Object);
+
+        var records = Enumerable.Range(0, 60)
+            .Select(i => new SQSEvent.SQSMessage { MessageId = i % 2 == 0 ? $"ok-{i}" : $"fail-{i}" })
+            .ToList();
+        var expectedFailures = records.Select(r => r.MessageId).Where(id => id.StartsWith("fail")).OrderBy(id => id).ToArray();
+
+        for (var run = 0; run < 10; run++)
+        {
+            var response = await application.HandleAsync(new SQSEvent { Records = records }, mockResolverFactory.Object);
+
+            var reported = response.BatchItemFailures.Select(f => f.ItemIdentifier).OrderBy(id => id).ToArray();
+            Assert.Equal(expectedFailures, reported);
+        }
+    }
+
     [Fact]
     public void SqsOptions_DefaultBatchFailureMode_IsPartialBatchFailure()
     {
