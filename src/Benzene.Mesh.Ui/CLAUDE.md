@@ -44,7 +44,9 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   design-token block (light/dark theming) for visual consistency across Benzene's UI family.
 - Renders a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
   service cards (name, status badge, drift badge, links to the service's raw `specUrl`/
-  `healthUrl`, and a best-effort "View Spec UI" link derived from `specUrl`). Expanding a card
+  `healthUrl`, a best-effort "View Spec UI" link derived from `specUrl`, and - when the manifest
+  entry's `transports` is non-empty - a `.svc-transports` chip row of every transport that
+  service is wired to receive messages over). Expanding a card
   lazily fetches that service's `services/{name}.json` (resolved relative to the manifest's own
   URL, via `resolveUrl()`) and renders its health-check detail (type, status, dependencies, data).
   `resolveUrl()` first resolves `manifestUrl` itself against `location.href` before resolving the

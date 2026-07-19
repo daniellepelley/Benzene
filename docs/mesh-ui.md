@@ -16,8 +16,12 @@ offline (Mesh Explorer) or behind strict CSPs (both).
 
 Shows a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
 service cards — name, an optional owning-team label, status badge, drift badge, links to the
-service's raw spec/health URLs. Expanding a card lazily fetches that service's per-service JSON
-and renders its health-check detail (type, status, dependencies, data). When the aggregator also
+service's raw spec/health URLs, and (when its spec advertised any) a chip row of the transports
+that service is wired to receive messages over (e.g. `http`, `sqs`) — lifted from the `benzene`
+spec's document-level `transports` field (see [Spec](spec.md#transport-advertisement)), silently
+omitted for a service whose spec predates the field or advertised none. Expanding a card lazily
+fetches that service's per-service JSON and renders its health-check detail (type, status,
+dependencies, data). When the aggregator also
 published `topics.json` and `topology.json`, the page additionally renders the cross-service topic
 catalog and a sortable edge table (client, server, source, req/min, error rate, p50/p95/p99
 latency) — either section is silently hidden if its file is missing, since most deployments won't
@@ -43,9 +47,11 @@ automatically when you jump to it this way.
 and topology all step aside; a **Back** button returns to them), not a small popup, grouping every
 version of that topic together with a section per version. Each version's **Producers** and
 **Consumers** sections render the *real* service card for every service involved — the same
-accordion, status/drift badges, owning-team label, spec/health/spec-ui links, and lazy health-check
-detail as the main service list, not just a name — so a producer or consumer can be drilled straight
-into from the topic page itself, with no separate lookup. A producer/consumer name with no matching
+accordion, status/drift badges, owning-team label, transport chips, spec/health/spec-ui links, and
+lazy health-check detail as the main service list, not just a name — so a producer or consumer can
+be drilled straight into from the topic page itself, with no separate lookup, and its transport
+chips answer "how would I actually reach this topic on this service" right there. A producer/
+consumer name with no matching
 entry in the manifest (e.g. a system outside this fleet feeding a `gap` topic) renders as a plain
 placeholder instead of a broken card. Every embedded card's own **topics** link still works from
 inside the topic page too — it returns to the main view and re-filters the topic table, so drilling

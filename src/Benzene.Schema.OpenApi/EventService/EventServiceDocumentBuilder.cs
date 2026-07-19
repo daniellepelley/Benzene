@@ -18,6 +18,7 @@ namespace Benzene.Schema.OpenApi.EventService
         IConsumesApplicationInfo<EventServiceDocumentBuilder>,
         IConsumesHttpEndpointDefinitions<EventServiceDocumentBuilder>,
         IConsumesMessageEndpoint<EventServiceDocumentBuilder>,
+        IConsumesTransportsInfo<EventServiceDocumentBuilder>,
         IProducesJson,
         IProducesYaml
     {
@@ -27,6 +28,7 @@ namespace Benzene.Schema.OpenApi.EventService
         private OpenApiInfo _openApiInfo = new();
         private readonly List<OpenApiTag> _tags = new();
         private string? _messageEndpoint;
+        private string[] _transports = Array.Empty<string>();
 
         public EventServiceDocumentBuilder(ISchemaBuilder? schemaBuilder = null)
         {
@@ -53,7 +55,8 @@ namespace Benzene.Schema.OpenApi.EventService
                 components
             )
             {
-                MessageEndpoint = _messageEndpoint
+                MessageEndpoint = _messageEndpoint,
+                Transports = _transports
             };
         }
 
@@ -65,6 +68,16 @@ namespace Benzene.Schema.OpenApi.EventService
         public EventServiceDocumentBuilder AddMessageEndpoint(string path)
         {
             _messageEndpoint = path;
+            return this;
+        }
+
+        /// <summary>
+        /// Advertises every transport this host is wired to receive messages over as the
+        /// document's top-level <c>transports</c> field (see <see cref="EventServiceDocument.Transports"/>).
+        /// </summary>
+        public EventServiceDocumentBuilder AddTransportsInfo(ITransportsInfo transportsInfo)
+        {
+            _transports = transportsInfo.Transports;
             return this;
         }
 

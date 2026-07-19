@@ -35,6 +35,10 @@ and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-ho
 - Resolves `$ref`s into `components.schemas`; renders each topic as an expandable "operation" with
   its request/response payload tables, required-field emphasis, and validation constraint chips
   (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`).
+- Renders the spec's document-level `transports` field (see `docs/spec.md`'s "Transport
+  advertisement" section) as a chip row under the title/description (`#lede-transports`) when
+  present - every transport the service is wired to receive messages over, HTTP included as just
+  one chip among several rather than the implicit default.
 - Renders the per-topic/per-event `example` payload the `benzene` spec carries (generated
   server-side by `Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder` during spec build),
   pretty-printed with a copy button (`navigator.clipboard` with an `execCommand` fallback).

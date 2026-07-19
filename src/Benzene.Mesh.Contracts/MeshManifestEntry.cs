@@ -14,8 +14,15 @@ public class MeshManifestEntry
     /// <param name="specUrl">The URL the spec was fetched from.</param>
     /// <param name="healthUrl">The URL the health check response was fetched from.</param>
     /// <param name="owningTeam">The team or individual to contact about this service, or <c>null</c> if unset.</param>
+    /// <param name="transports">
+    /// The names of every transport this service is wired to receive messages over (e.g.
+    /// <c>["sqs", "http"]</c>), lifted from its spec's top-level <c>transports</c> field. Empty
+    /// when the spec didn't advertise any (an older service, or a spec fetch failure) - denormalized
+    /// here, same as <paramref name="owningTeam"/>, so a catalog view can render it without fetching
+    /// every service's full snapshot.
+    /// </param>
     public MeshManifestEntry(string name, string status, bool contractDrift, string specUrl, string healthUrl,
-        string? owningTeam = null)
+        string? owningTeam = null, string[]? transports = null)
     {
         Name = name;
         Status = status;
@@ -23,6 +30,7 @@ public class MeshManifestEntry
         SpecUrl = specUrl;
         HealthUrl = healthUrl;
         OwningTeam = owningTeam;
+        Transports = transports ?? Array.Empty<string>();
     }
 
     /// <summary>The service's name.</summary>
@@ -42,4 +50,10 @@ public class MeshManifestEntry
 
     /// <summary>The team or individual to contact about this service, or <c>null</c> if unset.</summary>
     public string? OwningTeam { get; }
+
+    /// <summary>
+    /// The names of every transport this service is wired to receive messages over, or an empty
+    /// array if its spec didn't advertise any.
+    /// </summary>
+    public string[] Transports { get; }
 }
