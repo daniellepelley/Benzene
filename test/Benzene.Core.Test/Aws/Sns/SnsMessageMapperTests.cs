@@ -73,5 +73,22 @@ namespace Benzene.Test.Aws.Sns
 
             Assert.Equal("some-topic", topic.Id);
         }
+
+        [Fact]
+        public void SnsMessageHeadersGetter_NullMessageAttributes_ReturnsEmpty_NotNre()
+        {
+            // A record deserialized without a MessageAttributes field has null attributes; the topic
+            // getter already tolerates this, so the headers getter must too (it used to NRE).
+            var snsRecordContext = SnsRecordContext.CreateInstance(null, new SNSEvent.SNSRecord
+            {
+                Sns = new SNSEvent.SNSMessage { Message = "some-message", MessageAttributes = null }
+            });
+
+            var headers = new SnsMessageHeadersGetter().GetHeaders(snsRecordContext);
+            var topic = new SnsMessageTopicGetter().GetTopic(snsRecordContext);
+
+            Assert.Empty(headers);
+            Assert.Equal(Constants.Missing, topic.Id);
+        }
     }
 }
