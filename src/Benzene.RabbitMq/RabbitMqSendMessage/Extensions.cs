@@ -30,12 +30,18 @@ public static class Extensions
     /// <param name="app">The outbound client pipeline builder.</param>
     /// <param name="exchange">The exchange to publish to (empty string for the default exchange).</param>
     /// <param name="action">Configures the inner RabbitMQ publish pipeline.</param>
+    /// <param name="topicHeaderKey">
+    /// The message-property header the topic is written to. Defaults to
+    /// <see cref="RabbitMqConstants.DefaultTopicHeader"/> (<c>"topic"</c>); pass a different key to
+    /// publish for a consumer that routes on another header.
+    /// </param>
     /// <returns>The same builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseRabbitMq<T>(
         this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string exchange,
-        Action<IMiddlewarePipelineBuilder<RabbitMqSendMessageContext>> action)
+        Action<IMiddlewarePipelineBuilder<RabbitMqSendMessageContext>> action,
+        string topicHeaderKey = RabbitMqConstants.DefaultTopicHeader)
     {
-        var converter = new RabbitMqContextConverter<T>(new Benzene.Core.MessageHandlers.Serialization.JsonSerializer(), exchange);
+        var converter = new RabbitMqContextConverter<T>(new Benzene.Core.MessageHandlers.Serialization.JsonSerializer(), exchange, topicHeaderKey);
         var middlewarePipeline = app.CreateMiddlewarePipeline(action);
         return app.Use(serviceResolver => new ContextConverterMiddleware<IBenzeneClientContext<T, Void>, RabbitMqSendMessageContext>(converter, middlewarePipeline, serviceResolver));
     }
@@ -47,10 +53,15 @@ public static class Extensions
     /// <param name="app">The outbound client pipeline builder.</param>
     /// <param name="channel">The RabbitMQ channel to publish on.</param>
     /// <param name="exchange">The exchange to publish to (empty string for the default exchange).</param>
+    /// <param name="topicHeaderKey">
+    /// The message-property header the topic is written to. Defaults to
+    /// <see cref="RabbitMqConstants.DefaultTopicHeader"/> (<c>"topic"</c>).
+    /// </param>
     /// <returns>The same builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseRabbitMq<T>(
-        this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, IChannel channel, string exchange = "")
+        this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, IChannel channel, string exchange = "",
+        string topicHeaderKey = RabbitMqConstants.DefaultTopicHeader)
     {
-        return app.UseRabbitMq<T>(exchange, builder => builder.UseRabbitMqClient(channel));
+        return app.UseRabbitMq<T>(exchange, builder => builder.UseRabbitMqClient(channel), topicHeaderKey);
     }
 }

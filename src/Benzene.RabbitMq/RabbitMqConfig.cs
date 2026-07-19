@@ -11,6 +11,14 @@ public class RabbitMqConfig
     public required string QueueName { get; set; }
 
     /// <summary>
+    /// The message-property header the topic is read from (falling back to the AMQP routing key when
+    /// absent). Defaults to <see cref="RabbitMqConstants.DefaultTopicHeader"/> (<c>"topic"</c>) — set a
+    /// different key to consume messages a non-Benzene producer routes on another header, without
+    /// writing a custom topic getter. Keep it in sync with the producer's header key.
+    /// </summary>
+    public string TopicHeaderKey { get; set; } = RabbitMqConstants.DefaultTopicHeader;
+
+    /// <summary>
     /// The consumer prefetch (QoS) count - the maximum number of unacknowledged deliveries the broker
     /// will hand this consumer at once. Bounds in-flight work and provides backpressure; set at or
     /// above <see cref="ConcurrentRequests"/> so every lane can stay fed. Default 5.

@@ -57,6 +57,30 @@ public class RabbitMqGettersTest
     }
 
     [Fact]
+    public void TopicGetter_ReadsCustomHeaderKey_WhenConfigured()
+    {
+        var headers = new Dictionary<string, object?> { ["x-my-topic"] = Encoding.UTF8.GetBytes("orderCreated") };
+        var context = CreateContext(routingKey: "some.routing.key", headers: headers);
+
+        var topic = new RabbitMqMessageTopicGetter("x-my-topic").GetTopic(context);
+
+        Assert.Equal("orderCreated", topic.Id);
+    }
+
+    [Fact]
+    public void TopicGetter_IgnoresDefaultHeader_WhenCustomKeyConfigured()
+    {
+        // A message carrying only the default "topic" header should fall back to the routing key when
+        // the getter is configured to read a different header, proving the key is honored end-to-end.
+        var headers = new Dictionary<string, object?> { ["topic"] = Encoding.UTF8.GetBytes("orderCreated") };
+        var context = CreateContext(routingKey: "orderPlaced", headers: headers);
+
+        var topic = new RabbitMqMessageTopicGetter("x-my-topic").GetTopic(context);
+
+        Assert.Equal("orderPlaced", topic.Id);
+    }
+
+    [Fact]
     public void BodyGetter_DecodesUtf8Body()
     {
         var context = CreateContext(body: Encoding.UTF8.GetBytes("{\"name\":\"benzene\"}"));

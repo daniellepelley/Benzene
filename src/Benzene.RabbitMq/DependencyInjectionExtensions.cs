@@ -25,12 +25,24 @@ public static class DependencyInjectionExtensions
     /// <param name="services">The service container to register services with.</param>
     /// <returns>The service container for method chaining.</returns>
     public static IBenzeneServiceContainer AddRabbitMq(this IBenzeneServiceContainer services)
+        => services.AddRabbitMq(RabbitMqConstants.DefaultTopicHeader);
+
+    /// <summary>
+    /// Registers everything <c>.UseMessageHandlers()</c> resolves per <see cref="RabbitMqContext"/>,
+    /// with the topic getter reading the given header key.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicHeaderKey">
+    /// The message-property header the topic is read from (see <see cref="RabbitMqConfig.TopicHeaderKey"/>).
+    /// </param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddRabbitMq(this IBenzeneServiceContainer services, string topicHeaderKey)
     {
         services.TryAddScoped<JsonSerializer>();
         services.TryAddScoped<PresetTopicHolder>();
 
         services.AddScoped<IMessageTopicGetter<RabbitMqContext>>(resolver =>
-            new PresetTopicMessageTopicGetter<RabbitMqContext>(new RabbitMqMessageTopicGetter(), resolver.GetService<PresetTopicHolder>()));
+            new PresetTopicMessageTopicGetter<RabbitMqContext>(new RabbitMqMessageTopicGetter(topicHeaderKey), resolver.GetService<PresetTopicHolder>()));
         services.AddScoped<IMessageVersionGetter<RabbitMqContext>, HeaderMessageVersionGetter<RabbitMqContext>>();
         services.AddScoped<IMessageHeadersGetter<RabbitMqContext>, RabbitMqMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<RabbitMqContext>, RabbitMqMessageBodyGetter>();

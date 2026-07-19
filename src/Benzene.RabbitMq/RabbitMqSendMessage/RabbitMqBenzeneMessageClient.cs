@@ -29,6 +29,7 @@ public class RabbitMqBenzeneMessageClient : IBenzeneMessageClient
     private readonly IServiceResolver _serviceResolver;
     private readonly IMiddlewarePipeline<RabbitMqSendMessageContext> _middlewarePipeline;
     private readonly string _exchange;
+    private readonly string _topicHeaderKey;
 
     /// <summary>Initializes a new instance publishing on the given channel to the given exchange.</summary>
     /// <param name="channel">The RabbitMQ channel to publish on.</param>
@@ -36,12 +37,15 @@ public class RabbitMqBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="serviceResolver">The resolver the publish pipeline runs in.</param>
     /// <param name="exchange">The exchange to publish to (empty string for the default exchange).</param>
     /// <param name="mandatory">Whether an unroutable message is returned rather than dropped.</param>
+    /// <param name="topicHeaderKey">The message-property header the topic is written to (defaults to <see cref="RabbitMqConstants.DefaultTopicHeader"/>).</param>
     public RabbitMqBenzeneMessageClient(IChannel channel, ILogger<RabbitMqBenzeneMessageClient> logger,
-        IServiceResolver serviceResolver, string exchange = "", bool mandatory = false)
+        IServiceResolver serviceResolver, string exchange = "", bool mandatory = false,
+        string topicHeaderKey = RabbitMqConstants.DefaultTopicHeader)
     {
         _serviceResolver = serviceResolver;
         _logger = logger;
         _exchange = exchange;
+        _topicHeaderKey = topicHeaderKey;
 
         var benzeneServiceContainer = new NullBenzeneServiceContainer();
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<RabbitMqSendMessageContext>(benzeneServiceContainer);
@@ -55,12 +59,15 @@ public class RabbitMqBenzeneMessageClient : IBenzeneMessageClient
     /// <param name="logger">Logs a publish failure.</param>
     /// <param name="serviceResolver">The resolver the publish pipeline runs in.</param>
     /// <param name="exchange">The exchange to publish to (empty string for the default exchange).</param>
+    /// <param name="topicHeaderKey">The message-property header the topic is written to (defaults to <see cref="RabbitMqConstants.DefaultTopicHeader"/>).</param>
     public RabbitMqBenzeneMessageClient(IMiddlewarePipeline<RabbitMqSendMessageContext> middlewarePipeline,
-        ILogger<RabbitMqBenzeneMessageClient> logger, IServiceResolver serviceResolver, string exchange = "")
+        ILogger<RabbitMqBenzeneMessageClient> logger, IServiceResolver serviceResolver, string exchange = "",
+        string topicHeaderKey = RabbitMqConstants.DefaultTopicHeader)
     {
         _serviceResolver = serviceResolver;
         _logger = logger;
         _exchange = exchange;
+        _topicHeaderKey = topicHeaderKey;
         _middlewarePipeline = middlewarePipeline;
     }
 
@@ -69,7 +76,7 @@ public class RabbitMqBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new RabbitMqContextConverter<TRequest>(SharedSerializer, _exchange);
+            var converter = new RabbitMqContextConverter<TRequest>(SharedSerializer, _exchange, _topicHeaderKey);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

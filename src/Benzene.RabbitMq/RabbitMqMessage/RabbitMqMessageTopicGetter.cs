@@ -21,16 +21,33 @@ namespace Benzene.RabbitMq.RabbitMqMessage;
 /// </remarks>
 public class RabbitMqMessageTopicGetter : IMessageTopicGetter<RabbitMqContext>
 {
+    private readonly string _topicHeaderKey;
+
+    /// <summary>
+    /// Initializes a new instance that reads the topic from the given header key, falling back to the
+    /// AMQP routing key.
+    /// </summary>
+    /// <param name="topicHeaderKey">
+    /// The message-property header the topic is carried on. Defaults to
+    /// <see cref="RabbitMqConstants.DefaultTopicHeader"/> (<c>"topic"</c>) — pass a different key to
+    /// consume messages a non-Benzene producer routes on another header, without writing a custom
+    /// <see cref="IMessageTopicGetter{RabbitMqContext}"/>.
+    /// </param>
+    public RabbitMqMessageTopicGetter(string topicHeaderKey = RabbitMqConstants.DefaultTopicHeader)
+    {
+        _topicHeaderKey = topicHeaderKey;
+    }
+
     /// <inheritdoc />
     public ITopic GetTopic(RabbitMqContext context)
     {
         return new Topic(GetTopicHeader(context) ?? context.DeliverEventArgs.RoutingKey);
     }
 
-    private static string? GetTopicHeader(RabbitMqContext context)
+    private string? GetTopicHeader(RabbitMqContext context)
     {
         var headers = context.DeliverEventArgs.BasicProperties.Headers;
-        if (headers == null || !headers.TryGetValue("topic", out var value) || value == null)
+        if (headers == null || !headers.TryGetValue(_topicHeaderKey, out var value) || value == null)
         {
             return null;
         }

@@ -36,7 +36,7 @@ message, handlers must be idempotent - see [Idempotency](../../docs/cookbooks/id
   reads for ack. Mirrors `ServiceBusConsumerApplication`.
 - `RabbitMqContext : IHasMessageResult` - wraps `BasicDeliverEventArgs` (context purity: transport
   shape only), carries `MessageResult`.
-- Getters: `RabbitMqMessageTopicGetter` (topic from the `"topic"` header, **falling back to the AMQP
+- Getters: `RabbitMqMessageTopicGetter` (topic from the topic header, **falling back to the AMQP
   routing key**; wrapped in `PresetTopicMessageTopicGetter` so `.UsePresetTopic(...)` works),
   `RabbitMqMessageBodyGetter` (UTF-8 body), `RabbitMqMessageHeadersGetter` (decodes the
   `byte[]`-valued `BasicProperties.Headers`, so W3C-trace/correlation/version header decorators
@@ -75,6 +75,19 @@ message, handlers must be idempotent - see [Idempotency](../../docs/cookbooks/id
   entry point, mirroring Kafka's `.UseKafka<T>(...)`.
 - Publish is fire-and-forget by default (maps a completed publish to `Accepted`, a thrown publish to
   `ServiceUnavailable`). Publisher confirms (at-least-once) are a documented future opt-in.
+
+## Configurable topic header key
+The topic header key defaults to `RabbitMqConstants.DefaultTopicHeader` (`"topic"`) but is **not
+hard-coded** - override it on each side to interoperate with a non-Benzene producer/consumer that
+carries the topic on a different header, without writing a custom `IMessageTopicGetter`/converter:
+- **Consumer**: `RabbitMqConfig.TopicHeaderKey` (threaded by `UseRabbitMq` into
+  `AddRabbitMq(topicHeaderKey)`, which constructs `new RabbitMqMessageTopicGetter(topicHeaderKey)`).
+  The bare `AddRabbitMq()` / `new RabbitMqMessageTopicGetter()` keep the default.
+- **Producer**: the `topicHeaderKey` argument on the outbound `.UseRabbitMq<T>(...)` extensions,
+  `RabbitMqBenzeneMessageClient`, and `RabbitMqContextConverter<T>` - all default to the same
+  constant.
+Keep the producer's and consumer's keys in sync. The routing-key fallback is unaffected: a message
+lacking the configured header still routes by its AMQP routing key.
 
 ## When to use this package
 - Consuming/producing RabbitMQ from a long-running process (console, container, Kubernetes) via

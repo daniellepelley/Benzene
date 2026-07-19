@@ -24,7 +24,7 @@ public static class Extensions
     {
         app.Register(x => x
             .AddBenzeneMessage()
-            .AddRabbitMq()
+            .AddRabbitMq(config.TopicHeaderKey)
         );
 
         var middlewarePipelineBuilder = app.Create<RabbitMqContext>();

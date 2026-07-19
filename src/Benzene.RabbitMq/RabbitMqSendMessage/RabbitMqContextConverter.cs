@@ -21,6 +21,7 @@ public class RabbitMqContextConverter<T> : IContextConverter<IBenzeneClientConte
 {
     private readonly ISerializer _serializer;
     private readonly string _exchange;
+    private readonly string _topicHeaderKey;
 
     /// <summary>Initializes a new instance publishing to the default exchange with the JSON serializer.</summary>
     public RabbitMqContextConverter()
@@ -31,10 +32,17 @@ public class RabbitMqContextConverter<T> : IContextConverter<IBenzeneClientConte
     /// <summary>Initializes a new instance of the <see cref="RabbitMqContextConverter{T}"/> class.</summary>
     /// <param name="serializer">The serializer used to encode the message body.</param>
     /// <param name="exchange">The exchange to publish to. Empty string (the default) uses the default exchange, where the routing key is the target queue name.</param>
-    public RabbitMqContextConverter(ISerializer serializer, string exchange)
+    /// <param name="topicHeaderKey">
+    /// The message-property header the topic is written to. Defaults to
+    /// <see cref="RabbitMqConstants.DefaultTopicHeader"/> (<c>"topic"</c>) — pass a different key to
+    /// publish for a non-Benzene consumer that routes on another header (keep it in sync with the
+    /// consumer's <see cref="RabbitMqMessage.RabbitMqMessageTopicGetter"/> key).
+    /// </param>
+    public RabbitMqContextConverter(ISerializer serializer, string exchange, string topicHeaderKey = RabbitMqConstants.DefaultTopicHeader)
     {
         _serializer = serializer;
         _exchange = exchange;
+        _topicHeaderKey = topicHeaderKey;
     }
 
     /// <inheritdoc />
@@ -48,7 +56,7 @@ public class RabbitMqContextConverter<T> : IContextConverter<IBenzeneClientConte
 
         // Carry the topic as a header too, so a Benzene RabbitMQ consumer's header-first topic getter
         // round-trips it regardless of the routing key the exchange binding uses.
-        headers["topic"] = Encoding.UTF8.GetBytes(contextIn.Request.Topic);
+        headers[_topicHeaderKey] = Encoding.UTF8.GetBytes(contextIn.Request.Topic);
 
         var body = Encoding.UTF8.GetBytes(_serializer.Serialize(contextIn.Request.Message));
 

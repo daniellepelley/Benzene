@@ -89,6 +89,35 @@ public class RabbitMqBenzeneMessageClientTest
     }
 
     [Fact]
+    public async Task SendMessageAsync_CustomTopicHeaderKey_WritesTopicToThatHeader()
+    {
+        BasicProperties? capturedProps = null;
+
+        var mockChannel = new Mock<IChannel>();
+        mockChannel.Setup(x => x.BasicPublishAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(),
+                It.IsAny<BasicProperties>(), It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()))
+            .Callback((string _, string _, bool _, BasicProperties props, ReadOnlyMemory<byte> _, CancellationToken _) =>
+            {
+                capturedProps = props;
+            })
+            .Returns(ValueTask.CompletedTask);
+
+        var client = new RabbitMqBenzeneMessageClient(mockChannel.Object,
+            NullLogger<RabbitMqBenzeneMessageClient>.Instance, new NullServiceResolver(),
+            topicHeaderKey: "x-my-topic");
+
+        await client.SendMessageAsync<string, string>("orderCreated", "some-message");
+
+        Assert.NotNull(capturedProps);
+        Assert.NotNull(capturedProps!.Headers);
+        // The topic is written to the configured header, not the default "topic", so a consumer routing
+        // on a non-Benzene header round-trips it without a custom converter.
+        Assert.Equal("orderCreated", Encoding.UTF8.GetString((byte[])capturedProps.Headers!["x-my-topic"]!));
+        Assert.False(capturedProps.Headers!.ContainsKey("topic"));
+    }
+
+    [Fact]
     public async Task SendMessageAsync_PrebuiltPipeline_ReturnsAccepted()
     {
         var pipeline = new MiddlewarePipelineBuilder<RabbitMqSendMessageContext>(new NullBenzeneServiceContainer())
