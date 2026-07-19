@@ -102,6 +102,23 @@ public class CasterFuncBuilder
                     }
                 }
 
+                // Value type whose nullability changed between versions (int->int?, int?->int, and
+                // non-null enum<->nullable enum) - the property types differ, so the equal-type block
+                // above misses it, and without this it fell through to class-mapping and came back
+                // `default`, silently dropping the value on the very common "make a field optional"
+                // schema change. Gated on a matching underlying type, so a genuinely different enum
+                // type (V1.Status vs V2.Status) still falls through to value-based enum casting below.
+                var fromUnderlying = Nullable.GetUnderlyingType(fromProperty.PropertyType) ?? fromProperty.PropertyType;
+                var toUnderlying = Nullable.GetUnderlyingType(toProperty.PropertyType) ?? toProperty.PropertyType;
+                if (fromUnderlying == toUnderlying && fromUnderlying.IsValueType)
+                {
+                    var fromValue = Expression.Property(fromExpression, fromProperty);
+                    var toValue = Nullable.GetUnderlyingType(toProperty.PropertyType) != null
+                        ? (Expression)Expression.Convert(fromValue, toProperty.PropertyType)          // ->Nullable<T>: wrap
+                        : Expression.Coalesce(fromValue, Expression.Default(toProperty.PropertyType)); // Nullable<T>->T: value or default, never throw
+                    return Expression.Bind(toProperty, toValue);
+                }
+
                 if (IsEnumerable(fromProperty, toProperty))
                 {
                     var enumerableExpression = CreateEnumerableExpression(fromExpression, fromProperty, toProperty);
