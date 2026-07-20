@@ -106,3 +106,53 @@ Fixed this pass (each reproduced with a failing test first, then fixed; full sui
 - 🚩 (still open, design/contract) Outbound SQS/SNS `Ok` vs siblings' `Accepted`; cache null-payload
   negative-caching policy; versioning unknown-version passthrough; auth `scope`-as-JSON-array asymmetry
   (low, fails-closed).
+
+## Third pass — performance + thread-safety audit (the SQS-scope-bug class)
+
+Scope: the user's own report — a batch giving one shared DI scope to concurrently-dispatched records
+(scoped EF DbContext contention). Fanned read-only hunters across every transport for scope
+granularity, shared/singleton thread-safety, and hot-path cost.
+
+**Scope-granularity audit result: CLEAN.** The per-record `CreateScope()` pattern is correctly
+propagated across every batch transport (Lambda SQS/SNS/Kinesis/DynamoDB, `MiddlewareMultiApplication`,
+etc.). Fan-in streams (Kinesis/Cosmos/gRPC streaming) share one scope deliberately but consume
+sequentially. One standalone consumer had missed the earlier fix — now fixed (below).
+
+Fixed this pass (each behavior-preserving; full Core suite green: 1627):
+- ✅ **SqsConsumerApplication shared-`List<Message>` race** (High) — the standalone (non-Lambda) SQS
+  polling consumer appended to a shared `List` from concurrent `WhenAll` continuations; a dropped
+  `Add` left a failed message in `SuccessfulMessages` → deleted from the queue despite failing
+  (silent message loss under `PerMessage` ack). Same class as the Lambda `SqsApplication` fix; this
+  instance was missed. Now return-from-task + build after `WhenAll`. Concurrency regression test
+  (60 msgs × 10 runs, yielding pipeline) — fails on the shared-list version.
+- ✅ **MessageHandlerDefinitionIndex non-volatile DCL publish** (Medium, ARM64/Graviton) — the
+  lock-free fast path read a non-volatile reference + int; a reader on a weak memory model could see
+  the published dictionary before its contents/version. Now one immutable state object via a single
+  `volatile` reference.
+- ✅ **MessageHandlerDefinitionLookUp O(n²) version selection** (perf) — version selection + its
+  candidate-array allocation ran once per candidate inside the `FirstOrDefault` predicate; hoisted to
+  run once. New `HandlerRoutingBenchmarks` guards it.
+- ✅ **CacheMessageHandlersFinder / CacheHttpEndpointFinder `??=` double-compute** (Low) — non-atomic
+  first-call cache let concurrent first calls both run the reflection discovery. Now double-checked
+  lock over a `volatile` field.
+- ✅ **BoundedConcurrentDispatcher round-robin int overflow** (Low) — signed `% laneCount` on an
+  ever-incrementing counter wraps to a negative lane index after `int.MaxValue` enqueues; now reduced
+  through `uint` like the keyed path already was.
+
+Tests/tooling added:
+- ✅ **MiddlewareMultiApplicationScopeIsolationTest** — the direct guard for the user's bug class:
+  200 records × 10 runs through a yielding pipeline, asserting each record resolves its OWN scoped
+  instance. Fails (200 distinct → 1) if the batch scope is hoisted to be shared.
+- ✅ **HandlerRoutingBenchmarks** — `FindHandler` cost vs `VersionsPerTopic` (1/5/20); watch that
+  allocation stays flat (the O(n²)→O(n) guard).
+
+### Flag for maintainer (design / public-API calls — NOT changed unilaterally)
+- 🚩 **Unbounded batch fan-out** — batch apps `Select(...).ToArray()` + `Task.WhenAll` with no
+  concurrency cap. A huge poll batch starts every record at once (thread-pool / downstream-connection
+  pressure). Opt-in bounded parallelism would be additive but is a behavior/API decision.
+- 🚩 **CancellationToken not threaded through the pipeline** — no cooperative cancellation/timeout on
+  `HandleAsync`; a breaking signature change.
+- 🚩 **AspNetMessageBodyGetter `.Result` sync-over-async** — blocks a pool thread reading the body;
+  fixing needs an async body-getter interface (API change).
+- 🚩 **HTTP route re-parsing per request** (perf) — `UrlMatcher`/`RouteFinder` re-split routes each
+  request; a precompiled matcher is a larger routing refactor.
