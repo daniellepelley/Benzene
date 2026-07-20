@@ -121,6 +121,41 @@ public class BenzeneHttpWorkerTest
     }
 
     [Fact]
+    public async Task StartAsync_LivenessCheck_WithQueryString_StillMatches()
+    {
+        var port = GetFreeTcpPort();
+        var config = new BenzeneHttpConfig
+        {
+            Url = $"http://127.0.0.1:{port}/",
+            ConcurrentRequests = 4
+        };
+        var capturingLogger = new CapturingLogger<BenzeneHttpWorker>();
+
+        var worker = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services
+                .AddLogging()
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger))
+            .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
+            .Build();
+
+        await worker.StartAsync(CancellationToken.None);
+        try
+        {
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            // A query string must not break path matching: HttpRequest.Path is the path only. The
+            // adapter used RawUrl (which includes "?probe=1"), so "/livez?probe=1" failed to match
+            // "/livez" and fell through undispatched.
+            var response = await PollUntilRespondingAsync(httpClient, $"http://127.0.0.1:{port}/livez?probe=1", capturingLogger);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+        finally
+        {
+            await worker.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task StartAsync_UnmatchedPath_FallsThroughToMissingTopic()
     {
         var port = GetFreeTcpPort();
