@@ -86,6 +86,8 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
             messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
         }
 
+        SnsContextConverter<object>.GuardAttributeLimit(messageAttributes.Count);
+
         return Task.FromResult(new SnsSendMessageContext(new PublishRequest
         {
             TopicArn = _topicArn,

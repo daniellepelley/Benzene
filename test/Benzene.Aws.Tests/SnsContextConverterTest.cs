@@ -90,6 +90,28 @@ public class SnsContextConverterTest
     }
 
     [Fact]
+    public async Task CreateRequestAsync_MoreThanTenAttributes_FailsFast()
+    {
+        var converter = new SnsContextConverter<ExampleRequestPayload>(
+            "arn:aws:sns:us-east-1:000000000000:some-topic");
+
+        // 10 headers + the routing topic attribute = 11, over SNS's 10-attribute cap. Fail fast with a
+        // clear error rather than letting the SDK throw opaquely (matching the SQS converter).
+        var headers = new Dictionary<string, string>();
+        for (var i = 0; i < 10; i++)
+        {
+            headers[$"h{i}"] = "v";
+        }
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "order:created", message: new ExampleRequestPayload { Name = "n" }, headers: headers);
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var ex = await Assert.ThrowsAsync<System.InvalidOperationException>(() => converter.CreateRequestAsync(context));
+        Assert.Contains("at most 10 message attributes", ex.Message);
+    }
+
+    [Fact]
     public async Task CreateRequestAsync_FifoHeaders_MapToGroupAndDeduplicationId()
     {
         var converter = new SnsContextConverter<ExampleRequestPayload>(

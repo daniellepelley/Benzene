@@ -88,6 +88,8 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
             messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String" };
         }
 
+        GuardAttributeLimit(messageAttributes.Count);
+
         var publishRequest = new PublishRequest
         {
             TopicArn = _topicArn,
@@ -98,6 +100,22 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         ApplyFifoProperties(publishRequest, contextIn.Request.Headers);
 
         return Task.FromResult(new SnsSendMessageContext(publishRequest));
+    }
+
+    /// <summary>The maximum number of message attributes SNS accepts on a single publish.</summary>
+    internal const int MaxMessageAttributes = 10;
+
+    internal static void GuardAttributeLimit(int attributeCount)
+    {
+        // SNS caps a publish at 10 message attributes (the routing topic attribute counts toward it),
+        // the same limit as SQS. Fail fast with a clear message rather than letting the SDK throw an
+        // opaque error the send path would swallow into a generic ServiceUnavailable.
+        if (attributeCount > MaxMessageAttributes)
+        {
+            throw new System.InvalidOperationException(
+                $"An SNS publish can carry at most {MaxMessageAttributes} message attributes, but {attributeCount} were set " +
+                "(the routing topic attribute counts toward the limit). Reduce the number of headers forwarded onto message attributes.");
+        }
     }
 
     private void ApplyFifoProperties(PublishRequest publishRequest, IDictionary<string, string> headers)
