@@ -48,7 +48,11 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
     /// </returns>
     public async Task<SqsConsumerBatchResult> HandleAsync(ReceiveMessageResponse @event, IServiceResolverFactory serviceResolverFactory)
     {
-        var failedMessages = new List<Message>();
+        // Each message's task RETURNS its failed Message (or null) rather than appending to a shared
+        // List: the continuations run concurrently under Task.WhenAll and List<T>.Add is not
+        // thread-safe, so a shared-list append raced - it could drop a failed message's entry (which
+        // then lands in successfulMessages below and gets DELETED from the queue despite failing -
+        // silent message loss), duplicate one, or throw mid-resize.
         var tasks = @event.Messages.Select(message => (Message: message, Context: SqsConsumerMessageContext.CreateInstance(message))).Select(async pair =>
             {
                 try
@@ -60,22 +64,26 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
 
                     if (pair.Context.MessageResult?.IsSuccessful == false)
                     {
-                        failedMessages.Add(pair.Message);
+                        return pair.Message;
                     }
                 }
                 catch (Exception)
                 {
-                    failedMessages.Add(pair.Message);
-
                     if (_options.AckMode == SqsConsumerAckMode.WholeBatch)
                     {
                         throw;
                     }
+
+                    return pair.Message;
                 }
+
+                return null;
             })
             .ToArray();
 
-        await Task.WhenAll(tasks);
+        var failedMessages = (await Task.WhenAll(tasks))
+            .Where(message => message != null)
+            .ToList();
 
         var successfulMessages = @event.Messages.Except(failedMessages).ToArray();
         return new SqsConsumerBatchResult(successfulMessages, failedMessages);

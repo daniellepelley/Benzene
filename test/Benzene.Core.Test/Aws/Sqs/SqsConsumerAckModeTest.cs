@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Benzene.Abstractions.DI;
@@ -14,6 +15,41 @@ namespace Benzene.Test.Aws.Sqs;
 
 public class SqsConsumerAckModeTest
 {
+    [Fact]
+    public async Task HandleAsync_ManyMessagesFailConcurrently_ReportsExactlyTheFailedMessages()
+    {
+        // The per-message outcomes are collected from tasks running concurrently under Task.WhenAll.
+        // A yielding pipeline forces the continuations to resume on pool threads at the same time -
+        // the exact condition under which a shared, non-thread-safe List<>.Add would drop a failed
+        // message (which then lands in SuccessfulMessages and gets deleted from the queue) or throw.
+        var mockPipeline = new Mock<IMiddlewarePipeline<SqsConsumerMessageContext>>();
+        mockPipeline
+            .Setup(x => x.HandleAsync(It.IsAny<SqsConsumerMessageContext>(), It.IsAny<IServiceResolver>()))
+            .Returns(async (SqsConsumerMessageContext context, IServiceResolver _) =>
+            {
+                await Task.Yield();
+                context.MessageResult = new MessageResult(!context.Message.MessageId.StartsWith("fail"));
+            });
+
+        var (_, resolverFactory) = CreateResolver();
+        var application = new SqsConsumerApplication(mockPipeline.Object, new SqsConsumerOptions { AckMode = SqsConsumerAckMode.PerMessage });
+
+        var messages = Enumerable.Range(0, 60)
+            .Select(i => new Message { MessageId = i % 2 == 0 ? $"ok-{i}" : $"fail-{i}", ReceiptHandle = $"r{i}" })
+            .ToList();
+        var response = new ReceiveMessageResponse { Messages = messages };
+        var expectedFailed = messages.Select(m => m.MessageId).Where(id => id.StartsWith("fail")).OrderBy(id => id).ToArray();
+
+        for (var run = 0; run < 10; run++)
+        {
+            var result = await application.HandleAsync(response, resolverFactory.Object);
+
+            var reportedFailed = result.FailedMessages.Select(m => m.MessageId).OrderBy(id => id).ToArray();
+            Assert.Equal(expectedFailed, reportedFailed);
+            Assert.Equal(30, result.SuccessfulMessages.Count);
+        }
+    }
+
     [Fact]
     public void SqsConsumerOptions_DefaultAckMode_IsWholeBatch()
     {
