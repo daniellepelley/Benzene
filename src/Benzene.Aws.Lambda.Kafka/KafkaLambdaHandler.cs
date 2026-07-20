@@ -14,11 +14,13 @@ namespace Benzene.Aws.Lambda.Kafka;
 /// <remarks>
 /// Added to the outer <see cref="AwsEventStreamContext"/> pipeline by <see cref="Extensions.UseKafka"/>.
 /// It only handles the invocation if the event source is <c>aws:kafka</c>; otherwise it defers to the
-/// next middleware. Kafka events don't return a response — this is a fire-and-forget pattern.
+/// next middleware. Writes back a <see cref="KafkaBatchResponse"/> naming each failed partition's
+/// resume offset — honoured by the event source mapping when <c>ReportBatchItemFailures</c> is
+/// configured on the trigger, and safely ignored otherwise (only a thrown exception retries then).
 /// </remarks>
 public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
 {
-    private readonly IMiddlewareApplication<KafkaEvent> _application;
+    private readonly IMiddlewareApplication<KafkaEvent, KafkaBatchResponse> _application;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KafkaLambdaHandler"/> class.
@@ -26,7 +28,7 @@ public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
     /// <param name="application">The Kafka application to dispatch matching invocations to.</param>
     /// <param name="serviceResolver">The service resolver for the current invocation scope.</param>
     public KafkaLambdaHandler(
-        IMiddlewareApplication<KafkaEvent> application,
+        IMiddlewareApplication<KafkaEvent, KafkaBatchResponse> application,
         IServiceResolver serviceResolver)
         : base(serviceResolver)
     {
@@ -44,15 +46,15 @@ public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
     }
 
     /// <summary>
-    /// Handles the event by running it through the Kafka application. No response is written.
+    /// Handles the event by running the batch through the Kafka application and writing the resulting
+    /// <see cref="KafkaBatchResponse"/>.
     /// </summary>
     /// <param name="request">The Kafka event extracted from the invocation payload.</param>
-    /// <param name="context">The AWS event stream context for this invocation.</param>
+    /// <param name="context">The AWS event stream context to write the response to.</param>
     /// <param name="serviceResolverFactory">The service resolver factory for the current invocation.</param>
     protected override async Task HandleFunction(KafkaEvent request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        // var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
-        // setCurrentTransport.SetTransport("kafka");
-        await _application.HandleAsync(request, serviceResolverFactory);
+        var response = await _application.HandleAsync(request, serviceResolverFactory);
+        MapResponse(context, response);
     }
 }

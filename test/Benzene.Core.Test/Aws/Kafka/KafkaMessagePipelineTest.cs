@@ -234,7 +234,7 @@ public class KafkaMessagePipelineTest
             .Build();
 
         var entryPoint =
-            new EntryPointMiddlewareApplication<KafkaEvent>(new KafkaApplication(app),
+            new EntryPointMiddlewareApplication<KafkaEvent, KafkaBatchResponse>(new KafkaApplication(app),
                 services.CreateServiceResolverFactory());
 
         var exampleRequestPayload = new ExampleRequestPayload

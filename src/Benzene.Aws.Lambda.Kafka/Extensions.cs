@@ -15,12 +15,15 @@ public static class Extensions
     /// </summary>
     /// <param name="app">The AWS event stream pipeline builder to add Kafka handling to.</param>
     /// <param name="action">The action that configures the inner Kafka pipeline.</param>
-    /// <param name="maxDegreeOfParallelism">
-    /// Optionally caps how many records from a batch run at once; <c>null</c> (the default) leaves the
-    /// fan-out unbounded - the original behavior.
+    /// <param name="configure">
+    /// Optionally configures <see cref="KafkaOptions"/> — e.g. set
+    /// <see cref="KafkaOptions.BatchFailureMode"/> to <see cref="KafkaBatchFailureMode.FailWholeBatch"/>
+    /// to fail the whole batch on any record failure instead of the default per-partition
+    /// partial-batch-failure reporting, or set <see cref="KafkaOptions.MaxDegreeOfParallelism"/> to
+    /// bound how many topic-partitions run concurrently.
     /// </param>
     /// <returns>The pipeline builder for method chaining.</returns>
-    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseKafka(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action, int? maxDegreeOfParallelism = null)
+    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseKafka(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<KafkaContext>> action, Action<KafkaOptions> configure = null)
     {
         app.Register(x => x.AddKafka());
         var pipeline = app.CreateMiddlewarePipeline<KafkaContext>(builder =>
@@ -28,6 +31,8 @@ public static class Extensions
             builder.UseBenzeneInvocation();
             action(builder);
         });
-        return app.Use(resolver => new KafkaLambdaHandler(new KafkaApplication(pipeline, maxDegreeOfParallelism), resolver));
+        var options = new KafkaOptions();
+        configure?.Invoke(options);
+        return app.Use(resolver => new KafkaLambdaHandler(new KafkaApplication(pipeline, options), resolver));
     }
 }
