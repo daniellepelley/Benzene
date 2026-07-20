@@ -84,7 +84,37 @@ public class MeshAggregator
         var topology = BuildTopology(entries, results);
         await _store.PublishAsync("topology.json", JsonSerializer.Serialize(topology, JsonOptions));
 
+        // Composite AsyncAPI: merge every service's own AsyncAPI 2.0 doc (fetched from its spec
+        // endpoint) into one fleet-wide document loadable in an AsyncAPI editor.
+        await _store.PublishAsync("asyncapi.json", BuildCompositeAsyncApi(entries, results));
+
         return manifest;
+    }
+
+    /// <summary>
+    /// Builds the composite AsyncAPI document from every service that returned an AsyncAPI doc,
+    /// passing each service's reserved-topic ids (from its benzene spec) so utility channels are
+    /// dropped. See <see cref="AsyncApiCompositor"/>.
+    /// </summary>
+    private string BuildCompositeAsyncApi(MeshServiceRegistryEntry[] entries, ServiceResult[] results)
+    {
+        var documents = new List<AsyncApiCompositor.ServiceDocument>();
+        for (var i = 0; i < entries.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(results[i].AsyncApiJson))
+            {
+                continue;
+            }
+
+            var reserved = results[i].Topics
+                .Where(topic => topic.Reserved)
+                .Select(topic => topic.Topic)
+                .ToHashSet(StringComparer.Ordinal);
+
+            documents.Add(new AsyncApiCompositor.ServiceDocument(entries[i].Name, results[i].AsyncApiJson!, reserved));
+        }
+
+        return AsyncApiCompositor.Merge(documents, _clock());
     }
 
     /// <summary>
@@ -294,13 +324,27 @@ public class MeshAggregator
             error ??= ex.GetType().Name;
         }
 
+        // AsyncAPI is fetched best-effort and additively: a failure here (or a source that can't
+        // serve type=asyncapi) never affects this service's own status/snapshot - it just means the
+        // service contributes no channels to the composite asyncapi.json.
+        string? asyncApiJson = null;
+        try
+        {
+            using var asyncApiTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
+            asyncApiJson = await source.TryFetchSpecAsync(entry, "asyncapi", asyncApiTimeout.Token);
+        }
+        catch
+        {
+            asyncApiJson = null;
+        }
+
         var snapshot = await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
-        return new ServiceResult(snapshot, ParseTopics(specJson), ParseOutboundTopics(specJson), ParseTransports(specJson));
+        return new ServiceResult(snapshot, ParseTopics(specJson), ParseOutboundTopics(specJson), ParseTransports(specJson), asyncApiJson);
     }
 
     private readonly record struct ServiceResult(
         MeshServiceSnapshot Snapshot, IReadOnlyList<ServiceTopic> Topics, IReadOnlyList<ServiceOutboundTopic> OutboundTopics,
-        IReadOnlyList<string> Transports);
+        IReadOnlyList<string> Transports, string? AsyncApiJson);
 
     private readonly record struct ServiceTopic(string Topic, string Version, bool Reserved, MeshTopicHttpMapping[] HttpMappings,
         JsonObject? RequestSchema, JsonObject? ResponseSchema);

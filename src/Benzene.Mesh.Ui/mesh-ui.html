@@ -320,6 +320,12 @@
   .topo-head-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
   .topics-toggle { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; gap: 5px; }
   .topics-toggle input { cursor: pointer; }
+  .topics-asyncapi {
+    font-family: var(--mono); font-size: 11.5px; color: var(--accent); text-decoration: none;
+    padding: 3px 9px; border: 1px solid var(--accent-tint); border-radius: var(--radius-sm); background: var(--accent-tint);
+    white-space: nowrap;
+  }
+  .topics-asyncapi:hover { color: var(--accent-soft); border-color: var(--accent-soft); }
   .t-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-family: var(--mono); }
   .t-domain { color: var(--accent); background: var(--accent-tint); }
   .t-utility { color: var(--chip-ink); background: var(--chip-bg); }
@@ -419,6 +425,10 @@
           <input type="search" id="topics-filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
         </div>
         <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show utilities</label>
+        <a id="topics-asyncapi" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
+           title="Download the fleet's composite AsyncAPI document" style="display:none">Composite AsyncAPI</a>
+        <a id="topics-asyncapi-studio" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
+           title="Open the composite AsyncAPI document in AsyncAPI Studio" style="display:none">open in Studio ↗</a>
       </div>
     </div>
     <div class="topo-table-wrap">
@@ -835,8 +845,26 @@
     if (!currentTopics.length) { section.style.display = "none"; return; }
     section.style.display = "";
     document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
+    updateAsyncApiLinks();
     renderTopicRows();
     syncTopicPageFromHash(); // a page loaded with #topic:<id> in the URL opens straight to it
+  }
+
+  /* The aggregator publishes asyncapi.json (the fleet's composite AsyncAPI doc) alongside
+     topics.json, so we surface it as a download link + an AsyncAPI Studio deep-link. Studio must
+     fetch the doc itself, so the deep-link is only offered when the resolved URL is absolute. */
+  function updateAsyncApiLinks() {
+    var url = resolveUrl("asyncapi.json");
+    var download = document.getElementById("topics-asyncapi");
+    download.href = url;
+    download.style.display = "";
+    var studio = document.getElementById("topics-asyncapi-studio");
+    if (/^https?:\/\//i.test(url)) {
+      studio.href = "https://studio.asyncapi.com/?url=" + encodeURIComponent(url);
+      studio.style.display = "";
+    } else {
+      studio.style.display = "none";
+    }
   }
   var TOPIC_STATUS_LABELS = {
     "deprecation-candidate": "deprecation candidate",

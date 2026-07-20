@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json.Nodes;
 using Benzene.HealthChecks.Core;
 using Benzene.Mesh.Aggregator;
 using Benzene.Mesh.Contracts;
@@ -103,6 +104,59 @@ public class MeshAggregatorTest : IDisposable
         Assert.False(catalog.Topics[0].Reserved);
         Assert.True(catalog.Topics[^1].Reserved);
     }
+
+    [Fact]
+    public async Task RunOnceAsync_PublishesCompositeAsyncApi_FromEachServicesAsyncApiEndpoint()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+
+        // Each service serves its benzene spec (topics) at type=benzene and its AsyncAPI 2.0 doc at
+        // the derived type=asyncapi URL. Both declare a "spec" utility topic that must be filtered.
+        var ordersBenzene = """{"requests":[{"topic":"order:create"},{"topic":"spec","reserved":true}]}""";
+        var paymentsBenzene = """{"requests":[{"topic":"payment:take"},{"topic":"spec","reserved":true}]}""";
+        var ordersAsyncApi = AsyncApiDoc("orders-api", "order:create", "Order");
+        var paymentsAsyncApi = AsyncApiDoc("payments-api", "payment:take", "Payment");
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersBenzene)
+            .MapGet("https://orders-api.example/spec?type=asyncapi&format=json", HttpStatusCode.OK, ordersAsyncApi)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, paymentsBenzene)
+            .MapGet("https://payments-api.example/spec?type=asyncapi&format=json", HttpStatusCode.OK, paymentsAsyncApi)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("payments-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var json = await store.TryReadAsync("asyncapi.json");
+        Assert.NotNull(json);
+
+        // Both services' channels are present, namespaced by service, and the reserved "spec"
+        // channel is filtered out. (Real AsyncAPI-reader validity is proven in an isolated project -
+        // see AsyncApiCompositorTest's note on the YamlDotNet conflict.)
+        var channels = JsonNode.Parse(json!)!["channels"]!.AsObject();
+        Assert.True(channels.ContainsKey("orders-api/order:create"));
+        Assert.True(channels.ContainsKey("payments-api/payment:take"));
+        Assert.DoesNotContain(channels, kv => kv.Key.Contains("spec"));
+    }
+
+    private static string AsyncApiDoc(string title, string topic, string schema) => $$"""
+    {
+      "asyncapi": "2.0.0",
+      "info": { "title": "{{title}}", "version": "1.0" },
+      "channels": {
+        "{{topic}}": { "subscribe": { "operationId": "{{topic}}", "message": { "name": "{{topic}}", "payload": { "$ref": "#/components/schemas/{{schema}}" } } } },
+        "spec": { "subscribe": { "operationId": "spec" } }
+      },
+      "components": { "schemas": { "{{schema}}": { "type": "object", "properties": { "id": { "type": "string" } } } } }
+    }
+    """;
 
     [Fact]
     public async Task RunOnceAsync_TopicWithSchema_InlinesRefsAndCarriesRequestResponseSchema()
