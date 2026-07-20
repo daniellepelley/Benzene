@@ -178,7 +178,11 @@ document-globally unique, and Benzene keys it per-service by topic so two servic
 would otherwise collide; a numeric suffix guards any residual dup — every `$ref` rewritten to
 match), reserved/utility topics are dropped (using the `reserved` flag already parsed from each
 benzene spec), and each channel's operations are tagged with the owning service. Two services sharing a topic id stay as two attributed channels rather than being forced
-into one. An empty/all-unfetchable run still publishes a valid empty-channels document, so the
+into one. Because dropping reserved-topic channels can orphan the schemas only they referenced,
+component schemas not reachable from a retained channel (following `$ref`s transitively) are pruned,
+so the doc carries no dangling components (which validators flag as "potentially unused component").
+The envelope also carries `id` (`urn:benzene:mesh:composite`) and `defaultContentType`
+(`application/json`). An empty/all-unfetchable run still publishes a valid empty-channels document, so the
 artifact link is always stable. `Benzene.Mesh.Ui` links it (download + AsyncAPI Studio deep-link).
 Real-AsyncAPI-reader validity is covered by an isolated check (the `Benzene.Mesh.Test` project can't
 host the reader — its transitive `KubernetesClient` pulls an incompatible `YamlDotNet`), with

@@ -102,9 +102,19 @@ public static class AsyncApiCompositor
             }
         }
 
+        // Each service contributes its whole components.schemas set, but reserved-topic channels
+        // (spec/health/…) are dropped above — so the schemas only those channels referenced are now
+        // orphaned. Drop everything not reachable from a retained channel so the composite carries no
+        // dangling components (which AsyncAPI validators flag as "potentially unused component").
+        PruneUnusedSchemas(channels, schemas);
+
         var document = new JsonObject
         {
             ["asyncapi"] = "2.0.0",
+            // A stable identifier for the composite application (AsyncAPI's optional `id`), and the
+            // content type every Benzene message body uses unless a message overrides it.
+            ["id"] = "urn:benzene:mesh:composite",
+            ["defaultContentType"] = "application/json",
             ["info"] = new JsonObject
             {
                 ["title"] = "Benzene Mesh — Composite AsyncAPI",
@@ -133,6 +143,83 @@ public static class AsyncApiCompositor
         catch (JsonException)
         {
             return null;
+        }
+    }
+
+    // Removes component schemas not reachable from any retained channel. Seeds from every
+    // #/components/schemas/<name> $ref in the channels, then transitively follows refs between
+    // schemas (a kept schema may $ref a nested one), keeping only what's reachable.
+    private static void PruneUnusedSchemas(JsonObject channels, JsonObject schemas)
+    {
+        var reachable = new HashSet<string>(StringComparer.Ordinal);
+        var queue = new Queue<string>();
+
+        foreach (var name in FindSchemaRefNames(channels))
+        {
+            if (reachable.Add(name))
+            {
+                queue.Enqueue(name);
+            }
+        }
+
+        while (queue.Count > 0)
+        {
+            var name = queue.Dequeue();
+            if (schemas[name] is not { } schema)
+            {
+                continue;
+            }
+
+            foreach (var nested in FindSchemaRefNames(schema))
+            {
+                if (reachable.Add(nested))
+                {
+                    queue.Enqueue(nested);
+                }
+            }
+        }
+
+        foreach (var key in schemas.Select(kv => kv.Key).ToList())
+        {
+            if (!reachable.Contains(key))
+            {
+                schemas.Remove(key);
+            }
+        }
+    }
+
+    private static IEnumerable<string> FindSchemaRefNames(JsonNode? node)
+    {
+        var results = new List<string>();
+        Walk(node, results);
+        return results;
+
+        static void Walk(JsonNode? n, List<string> into)
+        {
+            switch (n)
+            {
+                case JsonObject obj:
+                    if (obj["$ref"] is JsonValue value && value.TryGetValue<string>(out var reference)
+                        && reference.StartsWith(SchemaRefPrefix, StringComparison.Ordinal))
+                    {
+                        into.Add(reference.Substring(SchemaRefPrefix.Length));
+                    }
+
+                    foreach (var property in obj)
+                    {
+                        if (property.Key != "$ref")
+                        {
+                            Walk(property.Value, into);
+                        }
+                    }
+                    break;
+                case JsonArray array:
+                    foreach (var item in array)
+                    {
+                        Walk(item, into);
+                    }
+                    break;
+            }
         }
     }
 

@@ -93,6 +93,49 @@ public class AsyncApiCompositorTest
     }
 
     [Fact]
+    public void Merge_PrunesSchemasOnlyReferencedByDroppedReservedChannels()
+    {
+        // The reserved "spec" channel references SpecRequest; the domain "order:create" channel
+        // references Order (which nests OrderChild). Dropping the reserved channel must also drop
+        // SpecRequest (now orphaned), but keep Order and its nested OrderChild.
+        var doc = """
+        {
+          "asyncapi": "2.0.0",
+          "info": { "title": "orders-api", "version": "1.0" },
+          "channels": {
+            "order:create": { "subscribe": { "operationId": "order:create", "message": { "payload": { "$ref": "#/components/schemas/Order" } } } },
+            "spec": { "subscribe": { "operationId": "spec", "message": { "payload": { "$ref": "#/components/schemas/SpecRequest" } } } }
+          },
+          "components": { "schemas": {
+            "Order": { "type": "object", "properties": { "child": { "$ref": "#/components/schemas/OrderChild" } } },
+            "OrderChild": { "type": "object", "properties": { "n": { "type": "integer" } } },
+            "SpecRequest": { "type": "object", "properties": { "type": { "type": "string" } } }
+          } }
+        }
+        """;
+
+        var merged = AsyncApiCompositor.Merge(new[] { Service("orders-api", doc, "spec") }, At);
+        var schemas = JsonNode.Parse(merged)!["components"]!["schemas"]!.AsObject();
+
+        Assert.True(schemas.ContainsKey("OrdersApi_Order"));
+        Assert.True(schemas.ContainsKey("OrdersApi_OrderChild")); // reachable via Order's nested $ref
+        Assert.False(schemas.ContainsKey("OrdersApi_SpecRequest")); // orphaned by the dropped reserved channel
+    }
+
+    [Fact]
+    public void Merge_EmitsDefaultContentTypeAndId()
+    {
+        var merged = AsyncApiCompositor.Merge(new[]
+        {
+            Service("orders-api", ServiceDoc("orders-api", "order:create", "Order")),
+        }, At);
+
+        var doc = JsonNode.Parse(merged)!.AsObject();
+        Assert.Equal("application/json", doc["defaultContentType"]!.GetValue<string>());
+        Assert.False(string.IsNullOrEmpty(doc["id"]!.GetValue<string>()));
+    }
+
+    [Fact]
     public void Merge_SkipsReservedTopicChannels()
     {
         var doc = """
