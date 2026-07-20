@@ -44,8 +44,14 @@ public class HttpContextConverter<TRequest, TResponse> : IContextConverter<IBenz
 
     public async Task MapResponseAsync(IBenzeneClientContext<TRequest, TResponse> contextIn, HttpSendMessageContext contextOut)
     {
-        var body = await contextOut.Response.Content.ReadAsStringAsync();
+        // Both HttpRequestMessage and HttpResponseMessage are IDisposable and created per outbound
+        // call; dispose them once the body has been read (this is the terminal step that consumes the
+        // response). Not socket exhaustion today - SendAsync buffers the body - but a real
+        // disposable-not-disposed gap that would bite under a future streaming completion option.
+        contextOut.Request?.Dispose();
+        using var httpResponse = contextOut.Response;
+        var body = await httpResponse.Content.ReadAsStringAsync();
         var response = _serializer.Deserialize<TResponse>(body)!;
-        contextIn.Response = contextOut.Response.StatusCode.Convert(response);
+        contextIn.Response = httpResponse.StatusCode.Convert(response);
     }
 }
