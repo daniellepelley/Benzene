@@ -67,4 +67,29 @@ public class BenzeneServiceBusConfig
     /// the entity's lock duration, so the message isn't redelivered while still being processed.
     /// </summary>
     public TimeSpan? MaxAutoLockRenewalDuration { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the entity is <em>session-enabled</em> and should be consumed with a
+    /// session processor, which locks each session to one handler and delivers that session's messages
+    /// in strict FIFO order. Defaults to <c>false</c> (a regular processor, no ordering guarantee). The
+    /// entity itself must be created with sessions enabled; producing to it requires a
+    /// <c>SessionId</c> (see the client's <c>ServiceBusSenderProperties.SessionIdHeader</c>).
+    /// </summary>
+    public bool SessionsEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of sessions handled concurrently when
+    /// <see cref="SessionsEnabled"/> is on (<c>ServiceBusSessionProcessorOptions.MaxConcurrentSessions</c>).
+    /// Defaults to 8, the SDK default. Different sessions run concurrently; within a session, order is
+    /// preserved.
+    /// </summary>
+    public int MaxConcurrentSessions { get; set; } = 8;
+
+    /// <summary>
+    /// Gets or sets how many messages of a <em>single</em> session are handled concurrently when
+    /// <see cref="SessionsEnabled"/> is on (<c>ServiceBusSessionProcessorOptions.MaxConcurrentCallsPerSession</c>).
+    /// Defaults to 1 — the setting that preserves per-session FIFO ordering. Raise it only if
+    /// in-session ordering doesn't matter.
+    /// </summary>
+    public int MaxConcurrentCallsPerSession { get; set; } = 1;
 }

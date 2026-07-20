@@ -34,8 +34,21 @@ to the worker via `ServiceBusSettlementDecision` (it owns its DI scope so it can
 handler mutated). Only honored in `Explicit` mode — in `AutoComplete` the processor settles itself.
 Additive/opt-in; a handler that never sets the holder keeps the outcome-based default.
 
+## Session support (FIFO per session) — `BenzeneServiceBusConfig.SessionsEnabled`
+Set `SessionsEnabled = true` to consume a **session-enabled** entity via a
+`ServiceBusSessionProcessor` instead of a `ServiceBusProcessor`: each session is locked to one
+handler and its messages are delivered in strict FIFO order; different sessions run concurrently
+(`MaxConcurrentSessions`, default 8), one message at a time within a session
+(`MaxConcurrentCallsPerSession`, default 1 — the ordering-preserving setting). The entity must be
+created session-enabled, and producers must set a `SessionId` (see the client's
+`ServiceBusSenderProperties.SessionIdHeader`). Settlement (including the explicit-override path below)
+and `AckMode` behave identically to the non-session path — the worker settles both processor kinds
+through the shared internal `IServiceBusMessageSettler` adapter over `ProcessMessageEventArgs` /
+`ProcessSessionMessageEventArgs`. Default off (purely additive).
+
 ## Key types/interfaces
-- `BenzeneServiceBusWorker : IBenzeneWorker` - creates a `ServiceBusProcessor` from
+- `BenzeneServiceBusWorker : IBenzeneWorker` - creates a `ServiceBusProcessor` (or, when
+  `SessionsEnabled`, a `ServiceBusSessionProcessor`) from
   `IServiceBusClientFactory` + `BenzeneServiceBusConfig` and starts it. Unlike the SQS/Kafka
   workers there is no hand-rolled poll loop or `BoundedConcurrentDispatcher`: the processor itself
   owns receiving, message-lock renewal, and bounded concurrency (`MaxConcurrentCalls`), and pushes

@@ -25,6 +25,10 @@ public class BenzeneServiceBusWorkerTest
         Assert.Equal(ServiceBusConsumerAckMode.Explicit, config.AckMode);
         Assert.Equal(5, config.MaxConcurrentCalls);
         Assert.Equal(0, config.PrefetchCount);
+        Assert.False(config.SessionsEnabled);
+        Assert.Equal(8, config.MaxConcurrentSessions);
+        Assert.Equal(1, config.MaxConcurrentCallsPerSession);
+        Assert.Null(config.MaxAutoLockRenewalDuration);
     }
 
     [Fact]

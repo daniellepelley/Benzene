@@ -30,6 +30,7 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
     private readonly IServiceBusClientFactory _clientFactory;
     private ServiceBusClient? _client;
     private ServiceBusProcessor? _processor;
+    private ServiceBusSessionProcessor? _sessionProcessor;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BenzeneServiceBusWorker"/> class.
@@ -66,6 +67,12 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
 
         _client = _clientFactory.Create();
 
+        if (_config.SessionsEnabled)
+        {
+            await StartSessionProcessorAsync(cancellationToken);
+            return;
+        }
+
         var options = new ServiceBusProcessorOptions
         {
             AutoCompleteMessages = _config.AckMode == ServiceBusConsumerAckMode.AutoComplete,
@@ -88,6 +95,34 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
         await _processor.StartProcessingAsync(cancellationToken);
     }
 
+    private async Task StartSessionProcessorAsync(CancellationToken cancellationToken)
+    {
+        // A session processor locks each session to one handler and delivers its messages FIFO;
+        // different sessions run concurrently (MaxConcurrentSessions), one message at a time within a
+        // session (MaxConcurrentCallsPerSession = 1 by default).
+        var options = new ServiceBusSessionProcessorOptions
+        {
+            AutoCompleteMessages = _config.AckMode == ServiceBusConsumerAckMode.AutoComplete,
+            MaxConcurrentSessions = _config.MaxConcurrentSessions,
+            MaxConcurrentCallsPerSession = _config.MaxConcurrentCallsPerSession,
+            PrefetchCount = _config.PrefetchCount,
+        };
+
+        if (_config.MaxAutoLockRenewalDuration.HasValue)
+        {
+            options.MaxAutoLockRenewalDuration = _config.MaxAutoLockRenewalDuration.Value;
+        }
+
+        _sessionProcessor = !string.IsNullOrEmpty(_config.QueueName)
+            ? _client!.CreateSessionProcessor(_config.QueueName, options)
+            : _client!.CreateSessionProcessor(_config.TopicName!, _config.SubscriptionName!, options);
+
+        _sessionProcessor.ProcessMessageAsync += OnProcessSessionMessageAsync;
+        _sessionProcessor.ProcessErrorAsync += OnProcessErrorAsync;
+
+        await _sessionProcessor.StartProcessingAsync(cancellationToken);
+    }
+
     /// <summary>
     /// Stops the processor - waiting for in-flight message handlers to finish - then disposes it
     /// and the client.
@@ -103,6 +138,13 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
             _processor = null;
         }
 
+        if (_sessionProcessor != null)
+        {
+            await _sessionProcessor.StopProcessingAsync(cancellationToken);
+            await _sessionProcessor.DisposeAsync();
+            _sessionProcessor = null;
+        }
+
         if (_client != null)
         {
             await _client.DisposeAsync();
@@ -110,21 +152,27 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
         }
     }
 
-    private async Task OnProcessMessageAsync(ProcessMessageEventArgs args)
+    private Task OnProcessMessageAsync(ProcessMessageEventArgs args)
+        => HandleMessageAsync(new ProcessMessageSettler(args));
+
+    private Task OnProcessSessionMessageAsync(ProcessSessionMessageEventArgs args)
+        => HandleMessageAsync(new ProcessSessionMessageSettler(args));
+
+    private async Task HandleMessageAsync(IServiceBusMessageSettler settler)
     {
         if (_config.AckMode == ServiceBusConsumerAckMode.AutoComplete)
         {
             // The processor settles from whether this handler throws: complete on return, abandon
             // on throw (surfacing the exception to OnProcessErrorAsync for logging either way).
-            await _application.HandleAsync(args.Message, _serviceResolverFactory, args.CancellationToken);
+            await _application.HandleAsync(settler.Message, _serviceResolverFactory, settler.CancellationToken);
             return;
         }
 
         try
         {
-            var decision = await _application.HandleAsync(args.Message, _serviceResolverFactory, args.CancellationToken);
+            var decision = await _application.HandleAsync(settler.Message, _serviceResolverFactory, settler.CancellationToken);
 
-            await SettleAsync(args, decision);
+            await SettleAsync(settler, decision);
         }
         catch (Exception ex)
         {
@@ -134,15 +182,15 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
             using (var loggingScope = _serviceResolverFactory.CreateScope())
             {
                 loggingScope.GetService<ILogger<BenzeneServiceBusWorker>>()
-                    .LogError(ex, "Processing Service Bus message {messageId} failed", args.Message.MessageId);
+                    .LogError(ex, "Processing Service Bus message {messageId} failed", settler.Message.MessageId);
             }
 
-            await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+            await settler.AbandonMessageAsync();
             throw;
         }
     }
 
-    private static async Task SettleAsync(ProcessMessageEventArgs args, ServiceBusSettlementDecision decision)
+    private static async Task SettleAsync(IServiceBusMessageSettler settler, ServiceBusSettlementDecision decision)
     {
         // An explicit settlement the handler requested wins; otherwise fall back to the
         // outcome-based default (unsuccessful result → abandon, else complete).
@@ -152,29 +200,52 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
             switch (settlement.Value)
             {
                 case ServiceBusSettlement.Complete:
-                    await args.CompleteMessageAsync(args.Message, args.CancellationToken);
+                    await settler.CompleteMessageAsync();
                     return;
                 case ServiceBusSettlement.Abandon:
-                    await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+                    await settler.AbandonMessageAsync();
                     return;
                 case ServiceBusSettlement.DeadLetter:
-                    await args.DeadLetterMessageAsync(args.Message, decision.Settlement!.DeadLetterReason,
-                        decision.Settlement.DeadLetterDescription, args.CancellationToken);
+                    await settler.DeadLetterMessageAsync(decision.Settlement!.DeadLetterReason, decision.Settlement.DeadLetterDescription);
                     return;
                 case ServiceBusSettlement.Defer:
-                    await args.DeferMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+                    await settler.DeferMessageAsync();
                     return;
             }
         }
 
         if (decision.MessageResult?.IsSuccessful == false)
         {
-            await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+            await settler.AbandonMessageAsync();
         }
         else
         {
-            await args.CompleteMessageAsync(args.Message, args.CancellationToken);
+            await settler.CompleteMessageAsync();
         }
+    }
+
+    private sealed class ProcessMessageSettler : IServiceBusMessageSettler
+    {
+        private readonly ProcessMessageEventArgs _args;
+        public ProcessMessageSettler(ProcessMessageEventArgs args) => _args = args;
+        public ServiceBusReceivedMessage Message => _args.Message;
+        public CancellationToken CancellationToken => _args.CancellationToken;
+        public Task CompleteMessageAsync() => _args.CompleteMessageAsync(_args.Message, _args.CancellationToken);
+        public Task AbandonMessageAsync() => _args.AbandonMessageAsync(_args.Message, cancellationToken: _args.CancellationToken);
+        public Task DeadLetterMessageAsync(string? reason, string? description) => _args.DeadLetterMessageAsync(_args.Message, reason, description, _args.CancellationToken);
+        public Task DeferMessageAsync() => _args.DeferMessageAsync(_args.Message, cancellationToken: _args.CancellationToken);
+    }
+
+    private sealed class ProcessSessionMessageSettler : IServiceBusMessageSettler
+    {
+        private readonly ProcessSessionMessageEventArgs _args;
+        public ProcessSessionMessageSettler(ProcessSessionMessageEventArgs args) => _args = args;
+        public ServiceBusReceivedMessage Message => _args.Message;
+        public CancellationToken CancellationToken => _args.CancellationToken;
+        public Task CompleteMessageAsync() => _args.CompleteMessageAsync(_args.Message, _args.CancellationToken);
+        public Task AbandonMessageAsync() => _args.AbandonMessageAsync(_args.Message, cancellationToken: _args.CancellationToken);
+        public Task DeadLetterMessageAsync(string? reason, string? description) => _args.DeadLetterMessageAsync(_args.Message, reason, description, _args.CancellationToken);
+        public Task DeferMessageAsync() => _args.DeferMessageAsync(_args.Message, cancellationToken: _args.CancellationToken);
     }
 
     private Task OnProcessErrorAsync(ProcessErrorEventArgs args)
