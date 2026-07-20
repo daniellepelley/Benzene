@@ -1,4 +1,6 @@
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Benzene.HealthChecks.Core;
 using Benzene.Mesh.Contracts;
 
@@ -163,6 +165,7 @@ public class MeshAggregator
 
                 aggregate.Reserved |= topic.Reserved;
                 aggregate.Consumers.Add(new MeshTopicService(entries[i].Name, topic.HttpMappings));
+                aggregate.ConsumerSchemas.Add((topic.RequestSchema, topic.ResponseSchema));
             }
 
             foreach (var outbound in results[i].OutboundTopics)
@@ -175,14 +178,12 @@ public class MeshAggregator
                 }
 
                 aggregate.Producers.Add(new MeshTopicProducer(entries[i].Name));
+                aggregate.MessageSchema ??= outbound.MessageSchema;
             }
         }
 
         var topics = byTopic
-            .Select(kvp => new MeshTopicEntry(
-                kvp.Key.Topic, kvp.Key.Version, kvp.Value.Reserved,
-                kvp.Value.Consumers.ToArray(), kvp.Value.Producers.ToArray(),
-                DetermineTopicStatus(kvp.Value)))
+            .Select(kvp => BuildTopicEntry(kvp.Key.Topic, kvp.Key.Version, kvp.Value))
             .OrderBy(x => x.Reserved) // domain topics first, utilities last
             .ThenBy(x => x.Topic, StringComparer.Ordinal)
             .ThenBy(x => x.Version, StringComparer.Ordinal)
@@ -224,11 +225,40 @@ public class MeshAggregator
         return null;
     }
 
+    /// <summary>
+    /// Assembles one <see cref="MeshTopicEntry"/> from a topic's aggregate: the representative payload
+    /// schemas (first consumer's request/response, first producer's message) plus the cross-consumer
+    /// <see cref="MeshTopicEntry.SchemaMismatch"/> flag - two consumers of the same (topic, version)
+    /// declaring different inbound payloads is a likely contract error, so it is compared here (over
+    /// the inlined, key-order-normalized schemas) and surfaced, never on a reserved utility topic.
+    /// </summary>
+    private static MeshTopicEntry BuildTopicEntry(string topic, string version, TopicAggregate aggregate)
+    {
+        var requestSchema = aggregate.ConsumerSchemas.Select(pair => pair.Request).FirstOrDefault(schema => schema != null);
+        var responseSchema = aggregate.ConsumerSchemas.Select(pair => pair.Response).FirstOrDefault(schema => schema != null);
+
+        // Only consumers that actually declared a request schema are compared - a consumer whose spec
+        // predates schema-in-spec contributes no schema rather than a spurious "differs from" signal.
+        var mismatch = !aggregate.Reserved && aggregate.ConsumerSchemas
+            .Where(pair => pair.Request != null)
+            .Select(pair => Canonical(pair.Request) + " " + Canonical(pair.Response))
+            .Distinct(StringComparer.Ordinal)
+            .Count() > 1;
+
+        return new MeshTopicEntry(
+            topic, version, aggregate.Reserved,
+            aggregate.Consumers.ToArray(), aggregate.Producers.ToArray(),
+            DetermineTopicStatus(aggregate),
+            requestSchema, responseSchema, aggregate.MessageSchema, mismatch);
+    }
+
     private sealed class TopicAggregate
     {
         public bool Reserved;
         public readonly List<MeshTopicService> Consumers = new();
         public readonly List<MeshTopicProducer> Producers = new();
+        public readonly List<(JsonObject? Request, JsonObject? Response)> ConsumerSchemas = new();
+        public JsonObject? MessageSchema;
     }
 
     private async Task<ServiceResult> BuildServiceAsync(MeshServiceRegistryEntry entry)
@@ -272,9 +302,10 @@ public class MeshAggregator
         MeshServiceSnapshot Snapshot, IReadOnlyList<ServiceTopic> Topics, IReadOnlyList<ServiceOutboundTopic> OutboundTopics,
         IReadOnlyList<string> Transports);
 
-    private readonly record struct ServiceTopic(string Topic, string Version, bool Reserved, MeshTopicHttpMapping[] HttpMappings);
+    private readonly record struct ServiceTopic(string Topic, string Version, bool Reserved, MeshTopicHttpMapping[] HttpMappings,
+        JsonObject? RequestSchema, JsonObject? ResponseSchema);
 
-    private readonly record struct ServiceOutboundTopic(string Topic, string Version);
+    private readonly record struct ServiceOutboundTopic(string Topic, string Version, JsonObject? MessageSchema);
 
     /// <summary>
     /// Extracts the topics from a service's <c>benzene</c> spec (its <c>requests</c> array) for the
@@ -296,6 +327,7 @@ public class MeshAggregator
                 return Array.Empty<ServiceTopic>();
             }
 
+            var components = ReadComponents(doc.RootElement);
             var topics = new List<ServiceTopic>();
             foreach (var request in requests.EnumerateArray())
             {
@@ -322,7 +354,8 @@ public class MeshAggregator
                     }
                 }
 
-                topics.Add(new ServiceTopic(topicElement.GetString()!, version, reserved, mappings.ToArray()));
+                topics.Add(new ServiceTopic(topicElement.GetString()!, version, reserved, mappings.ToArray(),
+                    ExtractSchema(request, "request", components), ExtractSchema(request, "response", components)));
             }
 
             return topics;
@@ -353,6 +386,7 @@ public class MeshAggregator
                 return Array.Empty<ServiceOutboundTopic>();
             }
 
+            var components = ReadComponents(doc.RootElement);
             var topics = new List<ServiceOutboundTopic>();
             foreach (var @event in events.EnumerateArray())
             {
@@ -361,7 +395,7 @@ public class MeshAggregator
                     var version = @event.TryGetProperty("version", out var versionElement) && versionElement.ValueKind == JsonValueKind.String
                         ? versionElement.GetString() ?? ""
                         : "";
-                    topics.Add(new ServiceOutboundTopic(topic.GetString()!, version));
+                    topics.Add(new ServiceOutboundTopic(topic.GetString()!, version, ExtractSchema(@event, "message", components)));
                 }
             }
 
@@ -402,6 +436,156 @@ public class MeshAggregator
         catch (JsonException)
         {
             return Array.Empty<string>();
+        }
+    }
+
+    // A cycle-guard alone bounds recursion by ref name, but an inline (ref-less) self-referential
+    // shape has no name to guard on - this hard depth cap is the backstop that keeps a pathological
+    // spec from stalling a run. Deep enough that no realistic payload is truncated.
+    private const int MaxSchemaDepth = 32;
+
+    /// <summary>
+    /// Reads a service spec's <c>components.schemas</c> map (name → schema element) for <c>$ref</c>
+    /// resolution. Empty when the spec has no components block.
+    /// </summary>
+    private static Dictionary<string, JsonElement> ReadComponents(JsonElement root)
+    {
+        var map = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        if (root.TryGetProperty("components", out var components) && components.ValueKind == JsonValueKind.Object
+            && components.TryGetProperty("schemas", out var schemas) && schemas.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var schema in schemas.EnumerateObject())
+            {
+                map[schema.Name] = schema.Value;
+            }
+        }
+
+        return map;
+    }
+
+    /// <summary>
+    /// Pulls the named child schema (<c>request</c>/<c>response</c>/<c>message</c>) off a spec
+    /// <c>requests</c>/<c>events</c> entry and returns it fully self-contained (all <c>$ref</c>s into
+    /// <paramref name="components"/> inlined), or <c>null</c> when the entry carries no such schema.
+    /// The returned nodes are detached from the source <see cref="JsonDocument"/>, so they stay valid
+    /// after it is disposed.
+    /// </summary>
+    private static JsonObject? ExtractSchema(JsonElement entry, string propertyName, IReadOnlyDictionary<string, JsonElement> components)
+    {
+        if (!entry.TryGetProperty(propertyName, out var node) || node.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return InlineSchema(node, components, new HashSet<string>(StringComparer.Ordinal), 0) as JsonObject;
+    }
+
+    /// <summary>
+    /// Recursively inlines a schema element into a detached <see cref="JsonNode"/>: replaces each
+    /// <c>$ref</c> with the referenced component (tagging it with a <c>title</c> of the ref name),
+    /// recurses through <c>properties</c>/<c>items</c>/<c>additionalProperties</c>, and copies every
+    /// other key (<c>type</c>/<c>required</c>/<c>enum</c>/<c>format</c>/<c>minimum</c>/<c>pattern</c>/…)
+    /// verbatim - so downstream (comparison + the UI renderer) never has to resolve a ref. Recursive
+    /// types are cut with a <c>title</c>-only marker.
+    /// </summary>
+    private static JsonNode? InlineSchema(JsonElement node, IReadOnlyDictionary<string, JsonElement> components, HashSet<string> visiting, int depth)
+    {
+        if (depth > MaxSchemaDepth)
+        {
+            return new JsonObject { ["type"] = "object" };
+        }
+
+        if (node.ValueKind != JsonValueKind.Object)
+        {
+            return CloneValue(node);
+        }
+
+        if (node.TryGetProperty("$ref", out var refElement) && refElement.ValueKind == JsonValueKind.String)
+        {
+            var name = RefName(refElement.GetString());
+            if (name == null || !components.TryGetValue(name, out var target))
+            {
+                return new JsonObject();
+            }
+
+            if (!visiting.Add(name))
+            {
+                return new JsonObject { ["type"] = "object", ["title"] = name + " (recursive)" };
+            }
+
+            var resolved = InlineSchema(target, components, visiting, depth + 1);
+            visiting.Remove(name);
+            if (resolved is JsonObject resolvedObject && resolvedObject["title"] == null)
+            {
+                resolvedObject["title"] = name;
+            }
+
+            return resolved;
+        }
+
+        var result = new JsonObject();
+        foreach (var property in node.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "properties" when property.Value.ValueKind == JsonValueKind.Object:
+                    var properties = new JsonObject();
+                    foreach (var member in property.Value.EnumerateObject())
+                    {
+                        properties[member.Name] = InlineSchema(member.Value, components, visiting, depth + 1);
+                    }
+                    result["properties"] = properties;
+                    break;
+                case "items":
+                    result["items"] = InlineSchema(property.Value, components, visiting, depth + 1);
+                    break;
+                case "additionalProperties" when property.Value.ValueKind == JsonValueKind.Object:
+                    result["additionalProperties"] = InlineSchema(property.Value, components, visiting, depth + 1);
+                    break;
+                default:
+                    result[property.Name] = CloneValue(property.Value);
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    private static JsonNode? CloneValue(JsonElement element) => JsonNode.Parse(element.GetRawText());
+
+    private static string? RefName(string? reference) =>
+        string.IsNullOrEmpty(reference) ? null : reference!.Substring(reference.LastIndexOf('/') + 1);
+
+    /// <summary>
+    /// A stable, key-order-independent serialization of a schema node, used only to compare two
+    /// consumers' payloads for equality (object keys sorted; arrays kept in order since JSON Schema
+    /// arrays like <c>required</c>/<c>enum</c> are order-significant to a producer but two specs
+    /// generated the same way emit them the same way). <c>null</c> renders as the literal
+    /// <c>"null"</c>, distinct from an empty object.
+    /// </summary>
+    private static string Canonical(JsonNode? node)
+    {
+        switch (node)
+        {
+            case null:
+                return "null";
+            case JsonObject obj:
+                var builder = new StringBuilder("{");
+                var first = true;
+                foreach (var member in obj.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+                {
+                    if (!first)
+                    {
+                        builder.Append(',');
+                    }
+                    first = false;
+                    builder.Append(JsonSerializer.Serialize(member.Key)).Append(':').Append(Canonical(member.Value));
+                }
+                return builder.Append('}').ToString();
+            case JsonArray array:
+                return "[" + string.Join(",", array.Select(Canonical)) + "]";
+            default:
+                return node.ToJsonString();
         }
     }
 

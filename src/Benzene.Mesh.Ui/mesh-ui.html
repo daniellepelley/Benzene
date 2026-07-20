@@ -331,6 +331,41 @@
   .t-empty { color: var(--ink-faint); }
   .t-status-deprecation-candidate { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
   .t-status-gap { color: var(--m-put); background: var(--m-put-bg); cursor: help; }
+  .t-status-schema-mismatch { color: var(--m-delete); background: var(--m-delete-bg); cursor: help; font-weight: 650; }
+
+  /* ---------- topic payload (schema + validation) ---------- */
+  .tp-payload { margin: 0 0 26px; }
+  .tp-payload > h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .tp-io { margin-bottom: 14px; }
+  .tp-io-label { font-size: 12px; font-family: var(--mono); font-weight: 650; color: var(--ink-soft); margin-bottom: 6px; }
+  .tp-mismatch {
+    background: var(--m-delete-bg); color: var(--m-delete); border: 1px solid var(--m-delete);
+    border-radius: var(--radius-sm); padding: 10px 13px; font-size: 12.5px; line-height: 1.5; margin-bottom: 16px;
+  }
+
+  /* ---------- schema tree (mirrors Benzene.Spec.Ui's spec-ui.html) ---------- */
+  .schema { background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
+  .schema.empty { padding: 11px 14px; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; }
+  .prop { display: block; border-top: 1px solid var(--line-soft); }
+  .prop:first-child { border-top: none; }
+  .prop-row { display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; flex-wrap: wrap; }
+  .prop-row .pname { font-family: var(--mono); font-size: 13px; font-weight: 620; color: var(--ink); }
+  .prop-row .preq { color: var(--req); font-weight: 700; font-size: 12px; transform: translateY(-1px); }
+  .prop-row .ptype { font-family: var(--mono); font-size: 12px; color: var(--accent); cursor: default; }
+  .prop-row .ptype.ref { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .prop-row .ptype.ref:hover { color: var(--accent-soft); }
+  .prop-row .pdesc { flex-basis: 100%; color: var(--ink-soft); font-size: 12.5px; margin-top: -1px; }
+  .schema .chips { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+  .schema .chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 5px; background: var(--chip-bg); color: var(--chip-ink);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.5;
+  }
+  .schema .chip b { font-weight: 700; color: var(--ink); }
+  .schema .chip.fmt { background: var(--accent-tint); color: var(--accent); }
+  .schema .chip.enum { background: var(--m-put-bg); color: var(--m-put); }
+  .nested { margin: 0 0 10px 14px; border-left: 2px solid var(--line); padding-left: 0; }
+  .nested .schema { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
   .topics-table td { white-space: normal; }
   @keyframes svc-flash { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 3px var(--accent-soft); } }
   .svc-flash { animation: svc-flash 1.1s ease-in-out; }
@@ -894,6 +929,117 @@
     }
   });
 
+  /* ---------- payload schema + validation rules ----------
+     The topic catalog carries each topic's request/response/message JSON Schema with its $refs
+     already inlined by the aggregator (so there's no components catalog to resolve against here,
+     unlike Benzene.Spec.Ui - nested objects appear directly under properties[...].properties).
+     This renders the same property table + validation constraint chips the Spec UI shows. */
+  function schemaTypeLabel(s) {
+    if (!s) return "any";
+    if (s.type === "array") return "array<" + schemaTypeLabel(s.items) + ">";
+    if (s.title) return s.title;
+    if (s.type) return s.type;
+    if (s.properties) return "object";
+    return "any";
+  }
+  function schemaConstraintChips(s) {
+    var out = [];
+    function chip(label, val, cls) {
+      var c = el("span", "chip" + (cls ? " " + cls : ""));
+      if (val === undefined) { c.textContent = label; }
+      else { c.appendChild(document.createTextNode(label + " ")); c.appendChild(el("b", null, String(val))); }
+      out.push(c);
+    }
+    if (s.format) chip(s.format, undefined, "fmt");
+    if (s.enum && s.enum.length) {
+      var ec = el("span", "chip enum");
+      ec.appendChild(document.createTextNode("enum "));
+      ec.appendChild(el("b", null, s.enum.join(" · ")));
+      out.push(ec);
+    }
+    if (s.minLength != null && s.maxLength != null) chip("length", s.minLength + "–" + s.maxLength);
+    else { if (s.minLength != null) chip("min len", s.minLength); if (s.maxLength != null) chip("max len", s.maxLength); }
+    if (s.minimum != null && s.maximum != null) chip("range", s.minimum + "–" + s.maximum);
+    else { if (s.minimum != null) chip("≥", s.minimum); if (s.maximum != null) chip("≤", s.maximum); }
+    if (s.pattern) chip("pattern " + s.pattern);
+    if (s.nullable === true) chip("nullable");
+    if (s["default"] !== undefined) chip("default", s["default"]);
+    return out;
+  }
+  function renderSchemaTree(s, depth) {
+    s = s || {};
+    depth = depth || 0;
+    if (s.type === "array" && s.items) {
+      var wrap = el("div");
+      var note = el("div", "schema empty"); note.textContent = "array of " + schemaTypeLabel(s.items);
+      wrap.appendChild(note);
+      if (s.items && s.items.properties) wrap.appendChild(renderSchemaTree(s.items, depth));
+      return wrap;
+    }
+    if (!s.properties) {
+      var e = el("div", "schema empty");
+      e.textContent = s.type ? (schemaTypeLabel(s) + (s.format ? " (" + s.format + ")" : "")) : "no schema";
+      return e;
+    }
+    var required = s.required || [];
+    var box = el("div", "schema");
+    Object.keys(s.properties).forEach(function (key) {
+      var p = s.properties[key] || {};
+      var pr = el("div", "prop");
+      var row = el("div", "prop-row");
+      row.appendChild(el("span", "pname", key));
+      if (required.indexOf(key) >= 0) { var star = el("span", "preq", "*"); star.title = "required"; row.appendChild(star); }
+
+      var nested = (p.type === "object" || (!p.type && p.properties)) && p.properties ? p
+        : (p.type === "array" && p.items && p.items.properties ? p.items : null);
+      var tp = el("span", "ptype" + (nested ? " ref" : ""), schemaTypeLabel(p));
+      row.appendChild(tp);
+
+      var cc = schemaConstraintChips(p);
+      if (cc.length) { var chips = el("span", "chips"); cc.forEach(function (c) { chips.appendChild(c); }); row.appendChild(chips); }
+      if (p.description) row.appendChild(el("div", "pdesc", p.description));
+      pr.appendChild(row);
+
+      if (nested && depth < 16) {
+        var sub = el("div", "nested"); sub.style.display = "none";
+        sub.appendChild(renderSchemaTree(nested, depth + 1));
+        pr.appendChild(sub);
+        tp.addEventListener("click", function () {
+          var showing = sub.style.display !== "none";
+          sub.style.display = showing ? "none" : "block";
+          tp.textContent = (showing ? schemaTypeLabel(p) : "▾ " + schemaTypeLabel(p));
+        });
+      }
+      box.appendChild(pr);
+    });
+    return box;
+  }
+
+  function buildTopicPayloadSection(t) {
+    var parts = [];
+    if (t.requestSchema) parts.push(["Request", t.requestSchema]);
+    if (t.responseSchema) parts.push(["Response", t.responseSchema]);
+    if (t.messageSchema) parts.push(["Message", t.messageSchema]);
+    if (!parts.length && !t.schemaMismatch) return null;
+
+    var wrap = el("div", "tp-payload");
+    wrap.appendChild(el("h2", null, "Payload"));
+    if (t.schemaMismatch) {
+      var banner = el("div", "tp-mismatch");
+      banner.textContent = "⚠ Consumers of this topic and version declare different payload schemas. "
+        + "Handlers of the same topic and version are expected to agree on the payload, so this is likely a "
+        + "contract error to reconcile. The schema below is one consumer's, shown for reference.";
+      wrap.appendChild(banner);
+    }
+    parts.forEach(function (part) {
+      var io = el("div", "tp-io");
+      io.appendChild(el("div", "tp-io-label", part[0]));
+      io.appendChild(renderSchemaTree(part[1], 0));
+      wrap.appendChild(io);
+    });
+    return wrap;
+  }
+
   function buildTopicPageVersionSection(t) {
     var block = el("div", "tp-version");
 
@@ -905,7 +1051,15 @@
       badge.title = TOPIC_STATUS_TITLES[t.status] || "";
       head.appendChild(badge);
     }
+    if (t.schemaMismatch) {
+      var mm = el("span", "t-badge t-status-schema-mismatch", "schema mismatch");
+      mm.title = "Consumers of this topic and version declare different payload schemas — likely a contract error.";
+      head.appendChild(mm);
+    }
     block.appendChild(head);
+
+    var payload = buildTopicPayloadSection(t);
+    if (payload) block.appendChild(payload);
 
     var grid = el("div", "tp-grid");
     grid.appendChild(buildTopicServiceSection("Producers", t.producers || []));
@@ -1020,11 +1174,16 @@
       tr.appendChild(tdHttp);
 
       var tdStatus = el("td");
+      if (t.schemaMismatch) {
+        var mmBadge = el("span", "t-badge t-status-schema-mismatch", "schema mismatch");
+        mmBadge.title = "Consumers of this topic and version declare different payload schemas — likely a contract error.";
+        tdStatus.appendChild(mmBadge);
+      }
       if (t.status && TOPIC_STATUS_LABELS[t.status]) {
         var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
         badge.title = TOPIC_STATUS_TITLES[t.status] || "";
         tdStatus.appendChild(badge);
-      } else {
+      } else if (!t.schemaMismatch) {
         tdStatus.appendChild(el("span", "t-empty", "–"));
       }
       tr.appendChild(tdStatus);

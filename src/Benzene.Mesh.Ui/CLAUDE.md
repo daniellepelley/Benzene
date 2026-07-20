@@ -62,6 +62,17 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   catalog) via the same `resolveUrl()` precedence and renders it as a table (topic, domain-vs-utility
   badge, owning-service chips, HTTP mappings) with a "show utilities" toggle that hides the reserved
   Benzene topics by default. Missing `topics.json` hides the section silently, same as topology.
+- The per-topic drill-in page (`#topic:<id>`) renders each version's **payload schema** — a "Payload"
+  panel showing the Request/Response (or Message) structure with a property tree and validation-rule
+  chips (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`,
+  required `*`), the same rendering `Benzene.Spec.Ui` gives per topic. The schema comes inlined from
+  `topics.json` (`MeshTopicEntry.RequestSchema`/`ResponseSchema`/`MessageSchema`), so the renderer
+  (`renderSchemaTree`) expands nested objects inline rather than resolving `$ref`s. When the
+  aggregator flags `SchemaMismatch` (two consumers of the same topic+version declaring different
+  payloads — a likely contract error), it's **highlighted**: a red "schema mismatch" badge in the
+  topics table's Status column and on the topic-page version header, plus an explanatory banner above
+  the payload panel. All of this renders only when the schema/flag is present, so an older
+  `topics.json` without them degrades to the previous producers/consumers-only view.
 - After every manifest load, also fetches `topology.json` via the same `resolveUrl()` precedence
   (relative to `manifestUrl`) and renders it as a sortable table (client, server, source badge,
   req/min, error rate, p50/p95/p99 latency) below the service list. Any fetch failure - 404,

@@ -105,6 +105,127 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_TopicWithSchema_InlinesRefsAndCarriesRequestResponseSchema()
+    {
+        var ordersSpec = """{"requests":[{"topic":"order:create","request":{"$ref":"#/components/schemas/CreateOrder"},"response":{"$ref":"#/components/schemas/Order"}}],"components":{"schemas":{"CreateOrder":{"type":"object","required":["customerId"],"properties":{"customerId":{"type":"string","format":"uuid"},"line":{"$ref":"#/components/schemas/OrderLine"}}},"OrderLine":{"type":"object","properties":{"sku":{"type":"string","pattern":"^[A-Z]{3}$"}}},"Order":{"type":"object","properties":{"id":{"type":"string"}}}}}}""";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+        var create = Assert.Single(catalog.Topics, t => t.Topic == "order:create");
+
+        Assert.False(create.SchemaMismatch);
+        Assert.NotNull(create.RequestSchema);
+        Assert.NotNull(create.ResponseSchema);
+
+        // The top-level $ref was resolved and tagged with the ref name as a title.
+        Assert.Equal("CreateOrder", create.RequestSchema!["title"]!.GetValue<string>());
+        var props = create.RequestSchema["properties"]!.AsObject();
+        Assert.Equal("uuid", props["customerId"]!["format"]!.GetValue<string>());
+
+        // A nested $ref was inlined too - the "line" property is now a real object with the
+        // referenced component's properties, not a dangling { "$ref": ... }.
+        var line = props["line"]!.AsObject();
+        Assert.Null(line["$ref"]);
+        Assert.Equal("OrderLine", line["title"]!.GetValue<string>());
+        Assert.Equal("^[A-Z]{3}$", line["properties"]!["sku"]!["pattern"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_TwoConsumersSameTopicVersion_DifferentPayloads_FlagsSchemaMismatch()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+
+        // Both services consume order:submitted (unversioned), but with different request payloads -
+        // orders-api expects { id }, fulfilment-api expects { id, warehouse }. Same topic + version,
+        // divergent contract: a likely error the mesh should surface.
+        var ordersSpec = """{"requests":[{"topic":"order:submitted","request":{"$ref":"#/components/schemas/S"}}],"components":{"schemas":{"S":{"type":"object","properties":{"id":{"type":"string"}}}}}}""";
+        var fulfilmentSpec = """{"requests":[{"topic":"order:submitted","request":{"$ref":"#/components/schemas/S"}}],"components":{"schemas":{"S":{"type":"object","properties":{"id":{"type":"string"},"warehouse":{"type":"string"}}}}}}""";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, fulfilmentSpec)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("fulfilment-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+        var submitted = Assert.Single(catalog.Topics, t => t.Topic == "order:submitted");
+
+        Assert.Equal(2, submitted.Consumers.Length);
+        Assert.True(submitted.SchemaMismatch);
+        Assert.NotNull(submitted.RequestSchema); // one consumer's schema is still shown for reference
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_TwoConsumersSameTopicVersion_IdenticalPayloads_NoMismatch()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+
+        // Same payload declared by both consumers, even down to a different property order in the
+        // component - the key-order-normalized comparison must treat these as equal.
+        var ordersSpec = """{"requests":[{"topic":"order:submitted","request":{"$ref":"#/components/schemas/S"}}],"components":{"schemas":{"S":{"type":"object","properties":{"id":{"type":"string"},"total":{"type":"integer"}}}}}}""";
+        var fulfilmentSpec = """{"requests":[{"topic":"order:submitted","request":{"$ref":"#/components/schemas/S"}}],"components":{"schemas":{"S":{"properties":{"total":{"type":"integer"},"id":{"type":"string"}},"type":"object"}}}}""";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, fulfilmentSpec)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("fulfilment-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+        var submitted = Assert.Single(catalog.Topics, t => t.Topic == "order:submitted");
+
+        Assert.Equal(2, submitted.Consumers.Length);
+        Assert.False(submitted.SchemaMismatch);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_ProducerEvent_CarriesMessageSchema()
+    {
+        var ordersSpec = """{"events":[{"topic":"order:shipped","message":{"$ref":"#/components/schemas/Shipped"}}],"components":{"schemas":{"Shipped":{"type":"object","properties":{"trackingId":{"type":"string"}}}}}}""";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+        var shipped = Assert.Single(catalog.Topics, t => t.Topic == "order:shipped");
+
+        Assert.NotNull(shipped.MessageSchema);
+        Assert.Equal("Shipped", shipped.MessageSchema!["title"]!.GetValue<string>());
+        Assert.Equal("string", shipped.MessageSchema["properties"]!["trackingId"]!["type"]!.GetValue<string>());
+        Assert.False(shipped.SchemaMismatch); // a single producer, no consumers to disagree
+    }
+
+    [Fact]
     public async Task RunOnceAsync_TopicCatalog_KeysByVersion_AndFlagsDeprecationCandidateAndGap()
     {
         const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";

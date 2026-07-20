@@ -24,6 +24,14 @@ data types - no HTTP, no file I/O, no execution logic.
   `requests`, each carrying its `HttpMappings`), plus a `Status` (`MeshTopicStatus.DeprecationCandidate`/
   `.Gap`/`null`) computed by `Benzene.Mesh.Aggregator` from the producer/consumer shape - never a
   claim any single service makes about its own topics (work/service-mesh-roadmap-1.0.md §10.9).
+  `MeshTopicEntry` also carries the topic's **payload schema** — `RequestSchema`/`ResponseSchema`
+  (from a consumer's spec) and `MessageSchema` (from a producer's `events`), each a
+  `System.Text.Json.Nodes.JsonObject?` with `$ref`s already inlined by the aggregator so it renders
+  standalone — plus `SchemaMismatch` (bool): true when two or more consumers of the *same*
+  (topic, version) declare **different** inbound payloads, surfaced as a likely contract error
+  (unlike the informational `Status`). All four are optional/additive (trailing constructor params
+  defaulting to `null`/`false`), so old `topics.json` and any code constructing a `MeshTopicEntry`
+  keep working.
 - `MeshServiceSource` - string constants for known `Source` values (`Http`, `AwsLambdaInvoke`);
   adapter packages' constants get added here too, matching `TopologyEdgeSource`'s existing "known
   names live in Contracts" convention.
