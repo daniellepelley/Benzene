@@ -40,6 +40,7 @@ public static class Extensions
         services.TryAddHeaderMessageVersionGetter<BenzeneMessageContext>();
         services.TryAddScoped<IMessageHeadersGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
         services.TryAddScoped<IMessageBodyBytesGetter<BenzeneMessageContext>, BenzeneMessageGetter>();
+        services.TryAddScoped<BenzeneMessageResponseSuppression>();
         services.TryAddScoped<IMessageHandlerResultSetter<BenzeneMessageContext>, BenzeneMessageHandlerResultSetter>();
         services.TryAddScoped<IBenzeneResponseAdapter<BenzeneMessageContext>, BenzeneMessageResponseAdapter>();
 

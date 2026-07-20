@@ -9,7 +9,9 @@ the response-events code moved to its own new **`Benzene.ResponseEvents`** packa
 this doc that say `Benzene.Extras.ResponseEvents` are historical) and the rest was abandoned — see
 `docs/migration-alpha-to-1.0.md`. **The F1 diagnostic (D6) is now implemented** — opt-in
 `IServiceResolver.FindUnmappedResponseHandlers()` / `LogUnmappedResponseHandlers(...)`, advisory
-per the design. The F2 Event Hub fix and the outbox remain open as listed in §2.3.
+per the design. **F2 is now fixed** - one-way BenzeneMessage hosts (Event Hub, Queue Storage) skip
+serializing the discarded response via a scoped `BenzeneMessageResponseSuppression` + auto-applied
+`SuppressResponse()`. The outbox remains open as listed in §2.3.
 **Scope:** (1) audit of every transport binding's result mapping, verifying that fire-and-forget
 transports do not carry or emit response payloads; (2) a design proposal for first-class support
 of the *response-as-event* pattern — a request/response message handler on a fire-and-forget

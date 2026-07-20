@@ -1,5 +1,6 @@
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 
@@ -21,6 +22,8 @@ public static class Extensions
     {
         app.Register(x => x.AddBenzeneMessage());
         var middlewarePipelineBuilder = app.Create<BenzeneMessageContext>();
+        // Queue Storage has no reply channel - the response is discarded, so don't serialize it.
+        middlewarePipelineBuilder.SuppressResponse();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
         return app.Use(resolver => new BenzeneMessageQueueStorageHandler(pipeline, resolver));

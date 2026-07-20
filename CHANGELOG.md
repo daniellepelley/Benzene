@@ -174,6 +174,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `work/batch-failure-handling.md`'s deferred table.
 
 ### Changed
+- `Benzene.Core.MessageHandlers` / `Benzene.Azure.Function.EventHub` / `Benzene.Azure.Function.QueueStorage`:
+  BenzeneMessage pipelines hosted on a one-way transport (Event Hub, Queue Storage) no longer
+  serialize a response the host immediately discards - wasted work on a hot batch path. New scoped
+  `BenzeneMessageResponseSuppression` holder + `SuppressResponse()` pipeline extension
+  (`SuppressBenzeneMessageResponseMiddleware`); `BenzeneMessageHandlerResultSetter` skips the
+  response-handler run when suppressed. `UseBenzeneMessage(action)` on Event Hub and Queue Storage
+  applies it automatically. Request/response BenzeneMessage usage (direct Lambda invoke, HTTP,
+  tests) is unaffected - the flag defaults to off. Follows the scoped-DI-holder pattern
+  (`PresetTopicHolder`), no context change.
 - **BREAKING:** `Benzene.CodeGen.Core`'s example payload generation moved to
   `Benzene.Schema.OpenApi` so examples can be generated at runtime during spec builds, not just at
   codegen time: `IPayloadBuilder`/`PayloadBuilder` are now

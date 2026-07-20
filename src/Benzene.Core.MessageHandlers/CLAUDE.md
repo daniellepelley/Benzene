@@ -73,9 +73,15 @@ Provides complete implementation of message handler infrastructure for command/q
 - `BenzeneMessageGetter` - reads topic/headers/body off a `BenzeneMessageContext` and implements
   `IMessageBodyBytesGetter` (declared in `BenzeneBodyMapper.cs`, but the class name is
   `BenzeneMessageGetter`)
-- `BenzeneMessageHandlerResultSetter` - Sets BenzeneMessage results
+- `BenzeneMessageHandlerResultSetter` - Sets BenzeneMessage results (writes status + serialized
+  body via the response handlers), unless the response is suppressed for this message (below)
 - `BenzeneMessageResponseAdapter` - Adapts responses to BenzeneMessage
 - `DefaultResponseStatusHandler<TContext>` - Handles response status
+- `BenzeneMessageResponseSuppression` / `SuppressBenzeneMessageResponseMiddleware` /
+  `SuppressResponse()` - scoped-DI-holder (like `PresetTopicHolder`) that tells
+  `BenzeneMessageHandlerResultSetter` to skip response serialization on a one-way host (Event Hub,
+  Queue Storage) that discards it. Defaults off; those hosts' `UseBenzeneMessage(action)` add it
+  automatically, request/response hosts don't
 
 ### Context
 - `MessageHandlerContext<TRequest, TResponse>` - Generic handler context (the concrete
