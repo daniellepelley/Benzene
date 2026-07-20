@@ -56,12 +56,22 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
     {
         if (typeof(T) == typeof(IServiceResolver))
         {
-            return this as T ?? throw new InvalidOperationException();
+            return this as T;
+        }
+
+        if (typeof(T) == typeof(IServiceResolverFactory))
+        {
+            return new MicrosoftServiceResolverFactory(_serviceProvider) as T;
         }
 
         try
         {
-            return _serviceProvider.GetRequiredService<T>();
+            // GetService (not GetRequiredService) returns null for an UNREGISTERED service without
+            // throwing - so the common "optional feature is off" check (run per request/per event
+            // across the framework) no longer raises and catches a first-chance exception every time.
+            // The try/catch now only guards the rare registered-but-throws-on-construction case,
+            // preserving the previous "TryGetService never propagates" behavior.
+            return _serviceProvider.GetService<T>();
         }
         catch
         {

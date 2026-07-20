@@ -7,7 +7,7 @@ namespace Benzene.Autofac;
 
 public class AutofacServiceResolverAdapter : IServiceResolver
 {
-    private IComponentContext _container;
+    private readonly IComponentContext _container;
     private readonly ILifetimeScope? _scope;
     private readonly IServiceResolverFactory _serviceResolverFactory;
 
@@ -42,11 +42,6 @@ public class AutofacServiceResolverAdapter : IServiceResolver
             return this as T ?? throw new InvalidOperationException();
         }
 
-        if (typeof(T) == typeof(IServiceResolver))
-        {
-            return this as T ?? throw new InvalidOperationException();
-        }
-
         if (typeof(T) == typeof(IServiceResolverFactory))
         {
             return _serviceResolverFactory as T ?? throw new InvalidOperationException();
@@ -66,9 +61,23 @@ public class AutofacServiceResolverAdapter : IServiceResolver
 
     public T? TryGetService<T>() where T : class
     {
+        if (typeof(T) == typeof(IServiceResolver))
+        {
+            return this as T;
+        }
+
+        if (typeof(T) == typeof(IServiceResolverFactory))
+        {
+            return _serviceResolverFactory as T;
+        }
+
         try
         {
-            return GetService<T>();
+            // ResolveOptional returns null for an UNREGISTERED service without throwing, so the common
+            // "optional feature is off" check no longer raises + catches a first-chance BenzeneException
+            // every time (GetService<T> threw). The try/catch only guards the rare
+            // registered-but-throws-on-construction case, preserving the previous never-propagate behavior.
+            return _container.ResolveOptional<T>();
         }
         catch
         {
@@ -83,7 +92,9 @@ public class AutofacServiceResolverAdapter : IServiceResolver
 
     public void Dispose()
     {
+        // Don't null out _container: the field is non-nullable (assigning null was a nullability lie),
+        // and disposing the owned _scope already invalidates it - a post-dispose resolve then surfaces
+        // Autofac's ObjectDisposedException rather than an NRE.
         _scope?.Dispose();
-        _container = null;
     }
 }

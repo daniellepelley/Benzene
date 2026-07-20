@@ -43,4 +43,18 @@ public class MicrosoftDependencyInjectionTest
         var serviceResolver2 = serviceResolver.GetService<IServiceResolver>();
         Assert.NotNull(serviceResolver2);
     }
+
+    [Fact]
+    public void TryGetService_BuiltInTypes_ResolveSymmetricallyWithGetService()
+    {
+        var services = new ServiceCollection();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var serviceResolver = factory.CreateScope();
+
+        // TryGetService must special-case the built-in types the same way GetService does (the two
+        // used to diverge - GetService handled IServiceResolverFactory, TryGetService didn't).
+        Assert.NotNull(serviceResolver.TryGetService<IServiceResolver>());
+        Assert.NotNull(serviceResolver.TryGetService<IServiceResolverFactory>());
+        Assert.NotNull(serviceResolver.GetService<IServiceResolverFactory>());
+    }
 }
