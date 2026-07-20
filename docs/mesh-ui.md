@@ -35,8 +35,7 @@ that it is) or `gap` (consumed somewhere with no HTTP mapping, produced nowhere 
 often a legitimate third-party or non-Benzene producer, worth confirming rather than an error).
 Both are informational signals computed by the aggregator across every service's self-description
 at once — no individual service is ever asked whether its own topics are still in use. See
-`Benzene.Mesh.Aggregator/CLAUDE.md`'s "Aggregated topic catalog" section for the full computation,
-and `work/service-mesh-roadmap-1.0.md` §10.8–§10.9 for the design rationale.
+`Benzene.Mesh.Aggregator/CLAUDE.md`'s "Aggregated topic catalog" section for the full computation.
 
 Every producer/consumer name is clickable — it scrolls to, opens, and briefly highlights that
 service's card above, so "who's still consuming this" is never more than one click away from "is

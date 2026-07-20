@@ -92,4 +92,3 @@ Pass `SchemaCompatibilityRules.Strict()` to treat every non-compatible change as
 
 - [Client SDKs](../client-sdks.md) — the generated typed clients that bake in the contract hash.
 - [Health Checks](../health-checks.md) — registering the provider health check.
-- `work/enterprise-adoption-gap-analysis.md` A.2 — the design context for both mechanisms.

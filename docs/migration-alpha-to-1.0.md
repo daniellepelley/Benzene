@@ -313,7 +313,7 @@ that assumption no longer holds.
 The alpha-era outbound client abstraction — service-name/topic-key client
 resolution plus a decorator-chain for cross-cutting concerns — has been
 **removed entirely**, superseded by a single topic-keyed outbound routing
-table (`work/benzene-clients-redesign-plan.md`). It was `[Obsolete]` for one
+table (see [Clients](clients.md)). It was `[Obsolete]` for one
 release cycle before deletion.
 
 | Alpha | 1.0 |

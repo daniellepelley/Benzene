@@ -7,7 +7,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 - **General**
   - [Getting Started](getting-started.md) — build and run your first Benzene service in 5 minutes
   - [Project Templates](getting-started-templates.md) — `dotnet new` starter projects for every host, consumable from Visual Studio and Rider
-  - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0)
+  - [Migration Guide (Alpha → 1.0)](migration-alpha-to-1.0.md)
   - [Unified Hosting Model](hosting.md)
   - [Capability Matrix](capability-matrix.md) — what Benzene does, deliberately doesn't (and why), and how to fill the gap
   - [Message Handlers](message-handlers.md)

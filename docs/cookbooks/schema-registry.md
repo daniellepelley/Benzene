@@ -202,4 +202,3 @@ registry server. See `test/Benzene.Core.Test/SchemaRegistry/` for worked example
 
 - `src/Benzene.SchemaRegistry.Core/CLAUDE.md` — the type-by-type reference.
 - [Contract Testing](contract-testing.md) — the build/CI compatibility gate this complements.
-- `work/enterprise-adoption-gap-analysis.md` A.6 — the design context.

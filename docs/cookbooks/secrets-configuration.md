@@ -203,5 +203,3 @@ seeded values, `CachingSecretStore`'s injectable clock for TTL behaviour, and a 
 ## Further reading
 
 - `src/Benzene.Configuration.Core/CLAUDE.md` — the type-by-type reference.
-- `work/enterprise-adoption-gap-analysis.md` A.5 — the design context and the abstraction-vs-adapters
-  scope decision.

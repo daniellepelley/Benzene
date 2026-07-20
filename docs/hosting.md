@@ -347,8 +347,8 @@ batch (`MaxNumberOfMessages`) dispatched per iteration.
 
 This is a separate, smaller concern from the *serverless* batch adapters (SQS in
 `Benzene.Aws.Lambda.Sqs`; Event Hubs/Kafka/Service Bus triggers in the `Benzene.Azure.Function.*`
-packages), which today dispatch an entire batch via an uncapped `Task.WhenAll` - see
-`work/performance-roadmap-1.0.md` for that as a tracked follow-up.
+packages), which today dispatch an entire batch via an uncapped `Task.WhenAll` - capping that
+concurrency is a tracked performance follow-up.
 
 ### ASP.NET Core — `WebApplicationBuilder.UseBenzene<TStartUp>()` / `IApplicationBuilder.UseBenzene()`
 

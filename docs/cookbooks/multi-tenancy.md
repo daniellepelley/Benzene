@@ -232,4 +232,3 @@ Benzene-specific left to add once the holder and the two middleware exist.
 - [Authentication Patterns](auth-patterns.md) — the `AuthenticationHolder`/claim source for Strategy A.
 - `src/Benzene.Core.MessageHandlers/CLAUDE.md` — `PresetTopicHolder`, the scoped-holder pattern this mirrors.
 - `src/Benzene.Abstractions.Middleware/CLAUDE.md` — the "Context purity" convention (why tenant is a holder, not a `TContext` property).
-- `work/enterprise-adoption-gap-analysis.md` B.1 — the design context.

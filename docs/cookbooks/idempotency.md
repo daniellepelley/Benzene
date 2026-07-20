@@ -161,4 +161,3 @@ duplicate-short-circuits, throw/failed-result-releases, and the key-derivation c
 - `Benzene.Idempotency/CLAUDE.md` — package internals and the outcome-decision rules.
 - [Redis Caching](redis-caching.md) — the `Benzene.Cache.Redis` connection setup you can reuse for a
   Redis-backed store.
-- `work/enterprise-adoption-gap-analysis.md` A.3 — the design context.

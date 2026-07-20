@@ -7,8 +7,7 @@ implementation is the primary implementation of this document and covers the ful
 §4–§6 collector), together passing all three conformance fixture files via
 `test/Benzene.Conformance.Test`. The Go port (its `mesh`/`meshd` packages) is a fully conforming
 implementation — this contract was originally extracted from it — and the two have hosted each
-other's services in live cross-language fleets, in both directions (see
-`work/service-mesh-roadmap-1.0.md`'s 2026-07-16 updates). The pre-existing `Benzene.Mesh.*`
+other's services in live cross-language fleets, in both directions. The pre-existing `Benzene.Mesh.*`
 visibility packages (aggregator/UI/Tempo, developed independently against the roadmap) are
 collector-side idiom this contract doesn't constrain; §9 maps them, and bridging the aggregator's
 artifact pipeline to `Benzene.Mesh.Collector` is the natural integration follow-up.**
@@ -277,4 +276,4 @@ Nothing in the existing packages needs to be discarded: pull-based aggregation, 
 artifacts, Tempo topology, and the UI are collector-side idioms this contract deliberately does
 not constrain. Conformance for the .NET port means adding the wire layer: descriptor derivation
 (§2) with the reserved topic (§1), the trace feed (§3), and — for the aggregator — the ingest
-topics (§4). The concrete plan lives in `work/service-mesh-roadmap-1.0.md`.
+topics (§4).

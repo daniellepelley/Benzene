@@ -479,4 +479,4 @@ See each project's `DependenciesBuilder.cs` for the wiring and the handler itsel
 - [Monitoring & Diagnostics — W3C Trace Context](monitoring.md#w3c-trace-context)
 - [Message Handlers](message-handlers.md)
 - [gRPC Setup](getting-started-grpc.md)
-- [Migration Guide: Alpha → 1.0](migration-alpha-to-1.0) — the old `ClientBuilder`-based mechanism this page used to describe, and the full old→new mapping
+- [Migration Guide: Alpha → 1.0](migration-alpha-to-1.0.md) — the old `ClientBuilder`-based mechanism this page used to describe, and the full old→new mapping

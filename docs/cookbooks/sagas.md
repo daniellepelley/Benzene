@@ -282,5 +282,3 @@ forward-throws case — worth a read as executable documentation.
 
 - [`examples/Saga`](../../examples/Saga/Benzene.Example.Saga) — the runnable signup saga.
 - `src/Benzene.Saga/CLAUDE.md` — the type-by-type reference and design decisions.
-- `work/saga-design.md` — the full design, including the legacy code it generalizes and the open
-  questions (retry policy, pluggable state store) resolved along the way.

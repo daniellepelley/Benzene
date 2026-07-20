@@ -323,8 +323,6 @@ project's `README.md` for exactly how to start it and mint a test token.
   Resource Checks](#authorization-roles-policies--resource-checks) above) — and the pluggable
   `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams to plug such an engine into, but
   ships no adapter for any particular one. What a policy *means* stays in your app.
-  For the original scope decision, see `work/auth-middleware-design.md` §4 and the A.4 entry in
-  `work/enterprise-adoption-gap-analysis.md`.
 - **Issuing or refreshing tokens, or driving an OAuth2 login/consent flow.** `Benzene.Auth.OAuth2`
   only validates inbound bearer tokens; it's not an OAuth2 client or authorization server.
 - **mTLS, session/cookie authentication, or SOAP/WS-Security** — not addressed by this feature.
