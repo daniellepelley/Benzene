@@ -30,7 +30,9 @@ public class HttpContextConverter<TRequest, TResponse> : IContextConverter<IBenz
         var request = new HttpRequestMessage
         {
             Content = new StringContent(_serializer.Serialize(contextIn.Request.Message), Encoding.UTF8, "application/json"),
-            RequestUri = new Uri(_path),
+            // RelativeOrAbsolute so a relative path composes with the HttpClient's BaseAddress instead
+            // of throwing; an absolute path still works unchanged.
+            RequestUri = new Uri(_path, UriKind.RelativeOrAbsolute),
             Method = new HttpMethod(_verb)
         };
 
@@ -51,7 +53,17 @@ public class HttpContextConverter<TRequest, TResponse> : IContextConverter<IBenz
         contextOut.Request?.Dispose();
         using var httpResponse = contextOut.Response;
         var body = await httpResponse.Content.ReadAsStringAsync();
-        var response = _serializer.Deserialize<TResponse>(body)!;
+
+        // Only parse the body as TResponse on a success status with a non-empty body. An error
+        // response commonly carries a different shape (problem+json, an HTML error page, or an empty
+        // body); deserializing that as TResponse would throw and mask the real HTTP status with a
+        // serialization exception. On an error we surface the mapped status with a default payload.
+        TResponse response = default;
+        if (httpResponse.IsSuccessStatusCode && !string.IsNullOrEmpty(body))
+        {
+            response = _serializer.Deserialize<TResponse>(body)!;
+        }
+
         contextIn.Response = httpResponse.StatusCode.Convert(response);
     }
 }

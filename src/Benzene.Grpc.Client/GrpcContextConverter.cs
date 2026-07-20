@@ -14,6 +14,15 @@ namespace Benzene.Grpc.Client;
 /// </summary>
 public class GrpcContextConverter<T> : IContextConverter<IBenzeneClientContext<T, Void>, GrpcSendMessageContext>
 {
+    private readonly CancellationToken _cancellationToken;
+
+    /// <summary>Creates the converter, optionally carrying a cancellation token onto the outbound call
+    /// so an upstream cancel/deadline aborts the downstream RPC.</summary>
+    public GrpcContextConverter(CancellationToken cancellationToken = default)
+    {
+        _cancellationToken = cancellationToken;
+    }
+
     public Task<GrpcSendMessageContext> CreateRequestAsync(IBenzeneClientContext<T, Void> contextIn)
     {
         var headers = new Metadata();
@@ -22,7 +31,7 @@ public class GrpcContextConverter<T> : IContextConverter<IBenzeneClientContext<T
             headers.Add(header.Key, header.Value);
         }
 
-        return Task.FromResult(new GrpcSendMessageContext(contextIn.Request.Topic, contextIn.Request.Message, headers, deadline: null, CancellationToken.None));
+        return Task.FromResult(new GrpcSendMessageContext(contextIn.Request.Topic, contextIn.Request.Message, headers, deadline: null, _cancellationToken));
     }
 
     public Task MapResponseAsync(IBenzeneClientContext<T, Void> contextIn, GrpcSendMessageContext contextOut)

@@ -50,7 +50,11 @@ public class GrpcBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new GrpcContextConverter<TRequest>();
+            // Propagate the ambient cancellation token (seeded by the gRPC server from the inbound
+            // call's deadline/cancellation) onto the downstream RPC, so an upstream cancel aborts it
+            // instead of leaving orphaned work running.
+            var cancellationToken = _serviceResolver.TryGetService<ICancellationTokenAccessor>()?.CancellationToken ?? CancellationToken.None;
+            var converter = new GrpcContextConverter<TRequest>(cancellationToken);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);
