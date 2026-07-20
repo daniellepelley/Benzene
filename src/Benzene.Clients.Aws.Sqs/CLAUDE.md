@@ -11,6 +11,11 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
 - `OutboundSqsContextConverter` — the `Benzene.Clients.OutboundContext` counterpart, used by the
   `OutboundContext` overloads of `.UseSqs(queueUrl, …)` for `AddOutboundRouting(...).Route(topic, …)`.
 - `SqsHealthCheck` — pings the queue; reports `HealthCheckDependency` (`Kind = "Queue"`, `Name` = URL).
+- `SqsBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); sends a collection
+  via `SendMessageBatch` (≤10/call). Reuses `SqsContextConverter<T>` per entry, chunks with
+  `BatchSend.Chunk`, and maps `response.Failed` back to caller indices in a `BatchSendResult`. The
+  entry `Id` carries the caller's zero-based request index. Covered by
+  `test/Benzene.Core.Test/Clients/Aws/BatchMessageClientTest.cs`.
 - `LocalSqsClientFactory` (in `LocalAwsLambdaClientFactory.cs` — historically misnamed file) —
   builds an `IAmazonSQS` from a local AWS profile for dev/test.
 - `Extensions` — `UseSqsClient`, `UseSqs<T>`/`UseSqs` (both the `IBenzeneClientContext<T,Void>` and

@@ -15,6 +15,14 @@ only `Azure.Messaging.EventHubs` (5.11.5, matching the ingress packages' `.Proce
   the `OutboundContext` overloads of `.UseEventHub(...)` for `AddOutboundRouting(...).Route(topic, …)`.
 - `Extensions` — `UseEventHubClient`, `UseEventHub<T>`/`UseEventHub` (both the
   `IBenzeneClientContext<T,Void>` and `OutboundContext` overloads), `AddEventHubMessageClient`.
+- `EventHubBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); sends a
+  collection via a native `EventDataBatch` (`CreateBatchAsync` + `TryAdd` until full, then one
+  `SendAsync`; rolls to a new batch when full). A batch's partition key is fixed at creation, so
+  requests are first **grouped by their resolved partition key** (`partitionKeyHeader`) — events
+  sharing a key stay co-located and in order, exactly as the single-send path guarantees. **Failure
+  granularity is per-batch** (atomic send): a throwing `SendAsync` reports every event in that batch
+  as failed against its request index in the `BatchSendResult`. Covered by
+  `test/Benzene.Core.Test/Clients/Azure/BatchMessageClientTest.cs`.
 
 ## Routing — matches the ingress exactly
 Sets a `"topic"` property on `EventData.Properties` (the AMQP application-properties bag) — the same

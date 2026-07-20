@@ -17,6 +17,13 @@ introduces `Azure.Messaging.EventGrid` (5.0.0) fresh — the ingress package is 
   set to the Benzene topic. Prefer the CloudEvents path for new code.
 - Both share `EventGridSendMessageContext` (holds exactly one of `CloudEvent`/`EventGridEvent`) and
   `EventGridClientMiddleware` (dispatches to whichever is set).
+- `EventGridBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); publishes a
+  collection via `SendEventsAsync(IEnumerable<CloudEvent>)` (CloudEvents path). Reuses
+  `EventGridContextConverter<T>` per event and chunks with `BatchSend.Chunk` to `batchSize` (default
+  `MaxBatchSize` = 100; the Event Grid ~1 MB request cap still applies). **Failure granularity is
+  per-chunk** (atomic send): a throwing `SendEventsAsync` reports every event in that chunk as failed
+  against its request index in the `BatchSendResult`. Covered by
+  `test/Benzene.Core.Test/Clients/Azure/BatchMessageClientTest.cs`.
 
 ## Routing — matches the ingress exactly
 Benzene's Event Grid ingress (`EventGridMessageTopicGetter`) routes on the event's **type**, not its

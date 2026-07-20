@@ -14,6 +14,14 @@ plan Tier 2.2, §5.2). Pins only `Azure.Messaging.ServiceBus` (7.18.2, matching 
   the `OutboundContext` overloads of `.UseServiceBus(...)` for `AddOutboundRouting(...).Route(topic, …)`.
 - `Extensions` — `UseServiceBusClient`, `UseServiceBus<T>`/`UseServiceBus` (both the
   `IBenzeneClientContext<T,Void>` and `OutboundContext` overloads), `AddServiceBusMessageClient`.
+- `ServiceBusBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); sends a
+  collection via a native `ServiceBusMessageBatch` (`CreateMessageBatchAsync` + `TryAddMessage` until
+  full, then one `SendMessagesAsync`; rolls to a new batch when full). Reuses
+  `ServiceBusContextConverter<T>` per message (topic/header properties + sender properties). **Failure
+  granularity is per-batch, not per-message** — a Service Bus batch send is atomic, so if a
+  `SendMessagesAsync` throws, every message in that batch is reported failed (against its request
+  index) in the `BatchSendResult`; a single message too large for an empty batch is its own failure
+  without aborting the rest. Covered by `test/Benzene.Core.Test/Clients/Azure/BatchMessageClientTest.cs`.
 
 ## Routing — matches the ingress exactly
 Sets the `"topic"` application property on `ServiceBusMessage.ApplicationProperties` — the same

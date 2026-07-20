@@ -7,6 +7,11 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
 ## Key types
 - `SnsBenzeneMessageClient` — `IBenzeneMessageClient`; publishes to a topic ARN.
 - `SnsClientMiddleware` / `SnsSendMessageContext` — terminal publish middleware and its context.
+- `SnsBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); publishes a
+  collection via `PublishBatch` (≤10/call). Reuses `SnsContextConverter<T>` per entry (message +
+  attributes + FIFO group/dedup ids), chunks with `BatchSend.Chunk`, and maps `response.Failed` back
+  to caller indices in a `BatchSendResult` (entry `Id` = caller's request index). Covered by
+  `test/Benzene.Core.Test/Clients/Aws/BatchMessageClientTest.cs`.
 - `SnsContextConverter<T>` — `IBenzeneClientContext<T, Void>` → publish context.
 - `OutboundSnsContextConverter` — the `Benzene.Clients.OutboundContext` counterpart, used by the
   `OutboundContext` overloads of `.UseSns(topicArn, …)` for `AddOutboundRouting(...).Route(topic, …)`.
