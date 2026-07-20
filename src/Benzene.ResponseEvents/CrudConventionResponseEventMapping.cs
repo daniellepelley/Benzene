@@ -48,4 +48,11 @@ public sealed class CrudConventionResponseEventMapping : IResponseEventMapping
             ? null
             : new ResponseEventPublication($"{sourceTopic.Id}d", payload);
     }
+
+    /// <inheritdoc />
+    public bool Covers(ITopic topic)
+    {
+        var verb = topic.Id.Split(':').Last();
+        return VerbToStatus.ContainsKey(verb);
+    }
 }

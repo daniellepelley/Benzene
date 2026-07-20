@@ -15,6 +15,15 @@ public interface IResponseEventCatalog
 
     /// <summary>Every declaration-only published-event definition.</summary>
     IReadOnlyList<IMessageDefinition> DeclaredDefinitions { get; }
+
+    /// <summary>
+    /// Whether any registered mapping could publish an event for a successful response on
+    /// <paramref name="topic"/> (see <see cref="IResponseEventMapping.Covers"/>). Used by the
+    /// unmapped-response-handler diagnostic.
+    /// </summary>
+    /// <param name="topic">The (source) topic to test coverage for.</param>
+    /// <returns><c>true</c> if at least one mapping covers <paramref name="topic"/>.</returns>
+    bool CoversTopic(ITopic topic);
 }
 
 /// <summary>
@@ -42,6 +51,9 @@ public sealed class ResponseEventCatalog : IResponseEventCatalog, IMessageDefini
 
     /// <inheritdoc />
     public IReadOnlyList<IMessageDefinition> DeclaredDefinitions { get; }
+
+    /// <inheritdoc />
+    public bool CoversTopic(ITopic topic) => Mappings.Any(mapping => mapping.Covers(topic));
 
     /// <summary>
     /// Returns a definition for every mapping that declared both an event topic and a payload type,

@@ -47,6 +47,16 @@ specialized bits Extras also held).
   republishing (used by the AwsMesh example for topology edges). `ResponseEventDefinition` is the
   `IMessageDefinition` for an (event topic, payload type) pair; it has an `(ITopic, Type)` overload
   for versioned topics.
+- **Unmapped-response diagnostic (F1).** `IResponseEventMapping.Covers(ITopic)` (default interface
+  method; CRUD convention overrides) is the static coverage predicate;
+  `IResponseEventCatalog.CoversTopic(ITopic)` aggregates it. `ResponseEventDiagnosticsExtensions`
+  adds opt-in `IServiceResolver.FindUnmappedResponseHandlers()` (→ `ResponseEventGap[]`) and
+  `LogUnmappedResponseHandlers(ILogger?)` - they enumerate `IMessageHandlersFinder` definitions,
+  keep the response-returning ones (`ResponseType != Void`) whose topic no mapping covers, and
+  report them. **Advisory, never throws** - handlers are transport-agnostic, so a response is
+  correct on HTTP and dropped on SQS; the diagnostic can't know intent, so it lists candidates for
+  the developer to triage. Mirrors `Benzene.Clients`' `ValidateOutboundRouting` (opt-in, call once
+  after wiring).
 
 ## When to use this package
 - To republish handler responses as events on fire-and-forget transports (`UseResponseEvents`)

@@ -61,7 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (correlation/trace stamping, startup validation), `PublishFailureMode.FailMessage`(default)/
   `LogAndContinue` failure policy, `AddResponseEventDeclarations(...)` for declaration-only
   published events, and introspection via `IResponseEventCatalog`, which also feeds generated
-  AsyncAPI/event-service specs. Depends on `Benzene.Clients` + `Benzene.Core.MessageHandlers`.
+  AsyncAPI/event-service specs. Includes an opt-in startup diagnostic
+  (`IServiceResolver.FindUnmappedResponseHandlers()` / `LogUnmappedResponseHandlers(...)`) that
+  reports response-returning handlers whose topic no mapping covers - the payload a fire-and-forget
+  transport would silently drop; advisory (never throws), mirroring `ValidateOutboundRouting`.
+  Depends on `Benzene.Clients` + `Benzene.Core.MessageHandlers`.
   Design: `work/response-as-event-design.md`; usage: `docs/cookbooks/response-as-event.md`.
 - `Benzene.Clients.Aws` / `Benzene.Clients`: closed a gap in Step 1 of the outbound redesign
   (`work/benzene-clients-redesign-plan.md`) - the `Benzene.Clients.Aws`-side factory/extension

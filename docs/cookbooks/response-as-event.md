@@ -149,6 +149,27 @@ Mappings declared with `Map<TPayload>` also appear in generated specs: the catal
 as an `IMessageDefinitionFinder<IMessageDefinition>`, the seam spec builders read published-event
 declarations from.
 
+## Catching a forgotten mapping
+
+A request/response handler that returns a payload but runs on a fire-and-forget transport with no
+mapping silently drops that payload — the classic "I wrote `IMessageHandler<CreateOrder,
+OrderCreated>`, deployed it on SQS, and my event vanished" mistake. An opt-in startup diagnostic
+surfaces it. Call it once after wiring, e.g. against the resolved container:
+
+```csharp
+var gaps = serviceResolver.LogUnmappedResponseHandlers();   // logs a warning per gap, returns them
+// or, to decide yourself:
+foreach (var gap in serviceResolver.FindUnmappedResponseHandlers())
+    Console.WriteLine(gap.Description);
+```
+
+Each `ResponseEventGap` names the handler, topic, and response type of a response-returning
+handler no mapping covers. It's **advisory, never throws** — because a Benzene handler is
+transport-agnostic, the same handler legitimately returns its response as the reply over HTTP and
+(maybe) drops it over SQS, and registration alone can't tell which you meant. Treat the list as
+"did I forget a mapping?": map the ones whose response should become an event, ignore any topic
+served only over HTTP/gRPC. To gate CI, fail when the (filtered) list is non-empty.
+
 ## Swapping the publisher
 
 The middleware publishes through the `IResponseEventPublisher` port; the default implementation

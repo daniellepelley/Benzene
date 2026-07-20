@@ -34,4 +34,16 @@ public interface IResponseEventMapping
     /// <param name="result">The handler's result (status, success flag, payload).</param>
     /// <returns>The event to publish, or <c>null</c> if this mapping does not apply.</returns>
     ResponseEventPublication? Resolve(ITopic sourceTopic, IBenzeneResult result);
+
+    /// <summary>
+    /// Whether this mapping <em>could</em> publish an event for a successful response on
+    /// <paramref name="topic"/> - a static coverage check for diagnostics (the unmapped-response
+    /// handler warning), independent of any runtime result, status, or payload. Defaults to matching
+    /// <see cref="SourceTopic"/> case-insensitively; convention rules that derive their source
+    /// dynamically (e.g. by topic verb) override this.
+    /// </summary>
+    /// <param name="topic">The (source) topic to test coverage for.</param>
+    /// <returns><c>true</c> if a successful response on <paramref name="topic"/> could be published by this mapping.</returns>
+    bool Covers(ITopic topic) =>
+        SourceTopic != null && string.Equals(topic.Id, SourceTopic, StringComparison.OrdinalIgnoreCase);
 }
