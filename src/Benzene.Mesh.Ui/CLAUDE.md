@@ -42,6 +42,18 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
 - A single self-contained HTML file (inline CSS + vanilla JS, no external requests), embedded as
   a resource (`LogicalName` `Benzene.Mesh.Ui.mesh-ui.html`). Reuses `Benzene.Spec.Ui`'s exact CSS
   design-token block (light/dark theming) for visual consistency across Benzene's UI family.
+- Below the stats bar, an **issue inbox** (`#issues-section`, `renderIssues()`) promotes the fleet's
+  scattered problem signals into one severity-grouped, actionable worklist — the "what do I need to
+  act on now" landing surface. It's a pure client-side reduction over the same static artifacts the
+  page already reads (no backend): **Needs attention** = unhealthy/unreachable services + topic
+  schema-mismatch; **Warnings** = contract drift; **For review** = topic `deprecation-candidate`/`gap`.
+  Each row shows the owning team (when present) and links out — service rows call `goToService`,
+  topic rows set the `#topic:` hash — reusing the existing navigation. Reserved (utility) topics are
+  excluded. It re-renders from both `render()` (service legs) and `renderTopics()` (topic legs join
+  once `topics.json` loads). **Staleness is a deliberately-deferred category**: there is no
+  `MeshServiceStatus.Stale` / per-service freshness signal yet, so rather than silently omit it the
+  inbox shows a "pending data" note (see `work/mesh-ui-product-vision.md`'s near-term block and the
+  filed data requirement to `mesh-product-owner`). All-clear renders a check-mark empty state.
 - Renders a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
   service cards (name, status badge, drift badge, links to the service's raw `specUrl`/
   `healthUrl`, a best-effort "View Spec UI" link derived from `specUrl`, and - when the manifest

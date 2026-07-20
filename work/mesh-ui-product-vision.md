@@ -91,10 +91,13 @@ Candidate vessels, to be chosen *with* `mesh-product-owner`:
 - **End-to-end flow view** (outcome 2): follow a request across services incl.
   request→reply and event fan-out, using the AsyncAPI 3.0 operations+reply model.
   Data: existing composite `asyncapi.json` + topology.
-- **Issue inbox** (outcome 3): promote failing/unreachable/drifting/stale services
-  and schema mismatches into a triage list with severity, not scattered badges.
-  Data: existing manifest/health/drift + **staleness** (mesh roadmap "Staleness
-  representation" — OPEN; file the requirement).
+- **Issue inbox** (outcome 3): ✅ **SHIPPED** in `mesh-ui.html` (`renderIssues()`) — a
+  severity-grouped, link-out triage list (Needs attention / Warnings / For review) over the static
+  artifacts: unhealthy/unreachable + schema-mismatch (high), contract drift (medium),
+  deprecation-candidate/gap (low). Reserved topics excluded; verified light+dark via Playwright.
+  **Staleness** is rendered as an explicit "pending data" category, not fabricated — the missing
+  signal is filed as a data requirement to `mesh-product-owner` (`MeshServiceStatus.Stale` +
+  per-service freshness timestamp; mesh roadmap "Staleness representation" — OPEN).
 
 ### Mid term — usage & value (needs a data layer; drive requirements out)
 - **Usage analytics** (outcome 4): per-topic/flow traffic + error trends over

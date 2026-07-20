@@ -339,6 +339,48 @@
   .t-status-gap { color: var(--m-put); background: var(--m-put-bg); cursor: help; }
   .t-status-schema-mismatch { color: var(--m-delete); background: var(--m-delete-bg); cursor: help; font-weight: 650; }
 
+  /* ---------- issue inbox ---------- */
+  #issues-section { margin: 22px 0 4px; }
+  .issues-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
+  .issues-head h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+  .issues-sub { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .issues-clear { display: flex; align-items: center; gap: 9px; padding: 16px 18px; border-radius: var(--radius);
+                  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+                  color: var(--ink-soft); font-size: 14px; }
+  .issues-clear svg { flex: 0 0 auto; color: var(--ok); }
+  .issue-group { margin-bottom: 14px; }
+  .issue-group-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700;
+                       color: var(--ink-faint); margin: 0 0 7px 2px; display: flex; align-items: center; gap: 7px; }
+  .issue-group-label .cnt { font-family: var(--mono); color: var(--ink-soft); font-weight: 650; letter-spacing: 0; }
+  .issue-list { display: flex; flex-direction: column; gap: 7px; }
+  .issue { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+           padding: 11px 14px; border-radius: var(--radius-sm); background: var(--surface);
+           border: 1px solid var(--line); box-shadow: var(--shadow); cursor: pointer;
+           font: inherit; color: inherit; transition: border-color .12s, transform .12s; }
+  .issue:hover, .issue:focus-visible { border-color: var(--accent); outline: none; transform: translateX(2px); }
+  .issue[disabled] { cursor: default; opacity: .85; }
+  .issue[disabled]:hover { border-color: var(--line); transform: none; }
+  .issue-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; }
+  .sev-high .issue-dot { background: var(--req); }
+  .sev-medium .issue-dot { background: var(--m-put); }
+  .sev-low .issue-dot { background: var(--ink-faint); }
+  .issue-body { flex: 1 1 auto; min-width: 0; }
+  .issue-title { font-size: 14px; font-weight: 600; }
+  .issue-title .mono { font-family: var(--mono); font-weight: 650; }
+  .issue-why { font-size: 12.5px; color: var(--ink-faint); margin-top: 1px; }
+  .issue-meta { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+  .issue-kind { font-size: 11px; font-family: var(--mono); padding: 1px 7px; border-radius: 999px; }
+  .issue-kind.k-high { color: var(--req); background: var(--m-delete-bg); }
+  .issue-kind.k-medium { color: var(--m-event); background: var(--m-event-bg); }
+  .issue-kind.k-low { color: var(--chip-ink); background: var(--chip-bg); }
+  .issue-team { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  .issue-arrow { flex: 0 0 auto; color: var(--ink-faint); }
+  .issue[disabled] .issue-arrow { display: none; }
+  .issues-deferred { margin-top: 10px; font-size: 12px; color: var(--ink-faint);
+                     padding: 9px 12px; border-radius: var(--radius-sm); background: var(--surface-2);
+                     border: 1px dashed var(--line); }
+  .issues-deferred .mono { font-family: var(--mono); color: var(--ink-soft); }
+
   /* ---------- topic payload (schema + validation) ---------- */
   .tp-payload { margin: 0 0 26px; }
   .tp-payload > h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
@@ -409,6 +451,13 @@
     <p id="lede-desc">Every service's health status and contract-drift state, in one place.</p>
   </div>
   <div class="stats" id="stats"></div>
+  <section id="issues-section" style="display:none">
+    <div class="issues-head">
+      <h2>Issues</h2>
+      <span class="issues-sub" id="issues-sub"></span>
+    </div>
+    <div id="issues-body"></div>
+  </section>
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
     <input type="search" id="filter" placeholder="Filter services…" autocomplete="off" spellcheck="false" />
@@ -639,6 +688,97 @@
     }
 
     services.forEach(function (s) { content.appendChild(buildServiceCard(s)); });
+    renderIssues();
+  }
+
+  /* ---------- issue inbox ----------
+     Promotes the fleet's scattered problem signals into one severity-grouped, actionable worklist -
+     "what do I need to act on now" - over the same static artifacts the rest of the page reads
+     (manifest health/drift + topics.json schema-mismatch/status). Every row links out to the
+     offending service or topic. Staleness is a known-missing signal (there is no
+     MeshServiceStatus.Stale / per-service freshness timestamp yet), so it's shown as explicitly
+     deferred rather than silently omitted - see work/mesh-ui-product-vision.md's near-term block. */
+  function svcIssue(sev, kind, svc, title, why) {
+    return { sev: sev, kind: kind, title: title, subject: svc.name, why: why,
+             team: svc.owningTeam || null, nav: function () { goToService(svc.name); } };
+  }
+  function topicIssue(sev, kind, t, title, why) {
+    var subject = t.topic + (t.version ? " v" + t.version : "");
+    return { sev: sev, kind: kind, title: title, subject: subject, why: why, team: null,
+             nav: function () { location.hash = topicHashFor(t.topic); } };
+  }
+  function collectIssues() {
+    var issues = [];
+    (manifest.services || []).forEach(function (s) {
+      if (s.status === "unreachable") issues.push(svcIssue("high", "unreachable", s, "Service unreachable", "The aggregator could not reach this service on the last run."));
+      else if (s.status === "unhealthy") issues.push(svcIssue("high", "unhealthy", s, "Service unhealthy", "One or more of this service's health checks are failing."));
+      if (s.contractDrift) issues.push(svcIssue("medium", "drift", s, "Contract drift", "This service's live contract differs from the last recorded baseline."));
+    });
+    (currentTopics || []).forEach(function (t) {
+      if (t.reserved) return;
+      if (t.schemaMismatch) issues.push(topicIssue("high", "schema mismatch", t, "Schema mismatch", "Two consumers of this topic and version declare different payloads — a likely contract error."));
+      if (t.status === "deprecation-candidate") issues.push(topicIssue("low", "deprecation", t, "Deprecation candidate", TOPIC_STATUS_TITLES["deprecation-candidate"]));
+      else if (t.status === "gap") issues.push(topicIssue("low", "producer gap", t, "Producer gap", TOPIC_STATUS_TITLES["gap"]));
+    });
+    return issues;
+  }
+  function buildIssueRow(i) {
+    var row = el("button", "issue sev-" + i.sev);
+    row.type = "button";
+    row.title = "Go to " + i.subject;
+    row.appendChild(el("span", "issue-dot"));
+    var b = el("div", "issue-body");
+    var title = el("div", "issue-title");
+    title.appendChild(document.createTextNode(i.title + " · "));
+    title.appendChild(el("span", "mono", i.subject));
+    b.appendChild(title);
+    if (i.why) b.appendChild(el("div", "issue-why", i.why));
+    row.appendChild(b);
+    var meta = el("div", "issue-meta");
+    if (i.team) meta.appendChild(el("span", "issue-team", i.team));
+    meta.appendChild(el("span", "issue-kind k-" + i.sev, i.kind));
+    row.appendChild(meta);
+    var arrow = el("span", "issue-arrow");
+    arrow.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>';
+    row.appendChild(arrow);
+    row.addEventListener("click", i.nav);
+    return row;
+  }
+  function renderIssues() {
+    var section = document.getElementById("issues-section");
+    var body = document.getElementById("issues-body");
+    var sub = document.getElementById("issues-sub");
+    if (!(manifest.services || []).length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    body.innerHTML = "";
+
+    var issues = collectIssues();
+    [["high", "Needs attention"], ["medium", "Warnings"], ["low", "For review"]].forEach(function (g) {
+      var items = issues.filter(function (i) { return i.sev === g[0]; });
+      if (!items.length) return;
+      var group = el("div", "issue-group");
+      var label = el("div", "issue-group-label");
+      label.appendChild(document.createTextNode(g[1]));
+      label.appendChild(el("span", "cnt", String(items.length)));
+      group.appendChild(label);
+      var list = el("div", "issue-list");
+      items.forEach(function (i) { list.appendChild(buildIssueRow(i)); });
+      group.appendChild(list);
+      body.appendChild(group);
+    });
+
+    if (!issues.length) {
+      var clear = el("div", "issues-clear");
+      clear.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>';
+      clear.appendChild(document.createTextNode("All clear — no unhealthy, unreachable, drifting, or contract issues detected across the fleet."));
+      body.appendChild(clear);
+    }
+
+    var deferred = el("div", "issues-deferred");
+    deferred.innerHTML = 'Staleness detection is <span class="mono">pending data</span> — a service that stopped self-reporting is not yet flagged as stale (needs a per-service freshness signal from the mesh data layer).';
+    body.appendChild(deferred);
+
+    sub.textContent = issues.length ? (issues.length === 1 ? "1 issue" : issues.length + " issues") : "all clear";
   }
 
   function buildServiceCard(svc) {
@@ -847,6 +987,7 @@
     document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
     updateAsyncApiLinks();
     renderTopicRows();
+    renderIssues(); // topic-derived issues (schema mismatch, deprecation/gap) join once topics load
     syncTopicPageFromHash(); // a page loaded with #topic:<id> in the URL opens straight to it
   }
 
