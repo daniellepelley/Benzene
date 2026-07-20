@@ -12,7 +12,8 @@
 public class CacheHttpEndpointFinder : IHttpEndpointFinder
 {
     private readonly IHttpEndpointFinder _inner;
-    private IHttpEndpointDefinition[]? _httpEndpointDefinitions;
+    private readonly object _lock = new();
+    private volatile IHttpEndpointDefinition[]? _httpEndpointDefinitions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CacheHttpEndpointFinder"/> class.
@@ -32,6 +33,18 @@ public class CacheHttpEndpointFinder : IHttpEndpointFinder
     /// </returns>
     public IHttpEndpointDefinition[] FindDefinitions()
     {
-        return _httpEndpointDefinitions ??= _inner.FindDefinitions();
+        // Double-checked lock rather than `??=`: the latter is a non-atomic read-then-write, so two
+        // threads racing the first call both see null and both run the inner (potentially reflection-
+        // based) discovery. The volatile field publishes the result safely.
+        var cached = _httpEndpointDefinitions;
+        if (cached != null)
+        {
+            return cached;
+        }
+
+        lock (_lock)
+        {
+            return _httpEndpointDefinitions ??= _inner.FindDefinitions();
+        }
     }
 }

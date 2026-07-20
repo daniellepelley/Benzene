@@ -23,8 +23,13 @@ public class MessageHandlerDefinitionIndex
     private readonly MessageHandlersList? _messageHandlersList;
     private readonly object _buildLock = new();
 
-    private Dictionary<string, IMessageHandlerDefinition[]>? _byTopicId;
-    private int _builtForVersion = -1;
+    // The built index and the version it was built for are published together as a single immutable
+    // state object through one volatile reference. A separate reference + int would let a lock-free
+    // reader on a weak memory model (e.g. ARM64/Graviton) observe the published dictionary reference
+    // before the dictionary's own contents - or the matching version - became visible.
+    private volatile IndexState? _state;
+
+    private sealed record IndexState(Dictionary<string, IMessageHandlerDefinition[]> ByTopicId, int Version);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageHandlerDefinitionIndex"/> class.
@@ -66,19 +71,19 @@ public class MessageHandlerDefinitionIndex
     {
         var currentVersion = _messageHandlersList?.Version ?? 0;
 
-        var index = _byTopicId;
-        if (index != null && _builtForVersion == currentVersion)
+        var state = _state;
+        if (state != null && state.Version == currentVersion)
         {
-            return index;
+            return state.ByTopicId;
         }
 
         lock (_buildLock)
         {
             currentVersion = _messageHandlersList?.Version ?? 0;
-            index = _byTopicId;
-            if (index != null && _builtForVersion == currentVersion)
+            state = _state;
+            if (state != null && state.Version == currentVersion)
             {
-                return index;
+                return state.ByTopicId;
             }
 
             var built = _messageHandlersFinders
@@ -88,8 +93,7 @@ public class MessageHandlerDefinitionIndex
                 .GroupBy(x => x.Topic.Id)
                 .ToDictionary(x => x.Key, x => x.ToArray());
 
-            _byTopicId = built;
-            _builtForVersion = currentVersion;
+            _state = new IndexState(built, currentVersion);
             return built;
         }
     }

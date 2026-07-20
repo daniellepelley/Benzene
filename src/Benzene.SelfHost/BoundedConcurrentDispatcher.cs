@@ -95,9 +95,13 @@ public sealed class BoundedConcurrentDispatcher<T>
     /// <param name="cancellationToken">Cancels the enqueue.</param>
     public ValueTask EnqueueAsync(T item, CancellationToken cancellationToken)
     {
+        // Both paths reduce through uint: the round-robin counter increments without bound and would,
+        // after int.MaxValue enqueues on one dispatcher, wrap to int.MinValue - whose signed modulo is
+        // negative and would index _lanes[-x] (IndexOutOfRangeException). Casting to uint first keeps
+        // the index in [0, laneCount) across the wrap.
         var laneIndex = _keySelector != null
-            ? (int)((uint)_keySelector(item) % _lanes.Length)
-            : Interlocked.Increment(ref _roundRobinCounter) % _lanes.Length;
+            ? (int)((uint)_keySelector(item) % (uint)_lanes.Length)
+            : (int)((uint)Interlocked.Increment(ref _roundRobinCounter) % (uint)_lanes.Length);
 
         return _lanes[laneIndex].Writer.WriteAsync(item, cancellationToken);
     }

@@ -43,9 +43,18 @@ public class MessageHandlerDefinitionLookUp : IMessageHandlerDefinitionLookUp
             return null;
         }
 
-        return handlers.FirstOrDefault(x =>
-            x.Topic.Version == _versionSelector.Select(topic.Version, handlers
-                .Select(x1 => x1.Topic.Version).ToArray()));
+        // Resolve the target version once. Folding this into the FirstOrDefault predicate re-ran the
+        // whole version selection (and re-allocated the candidate-version array) for every handler in
+        // the list - O(n^2) work and allocation per dispatch for a value that doesn't vary across the
+        // scan.
+        var availableVersions = new string[handlers.Length];
+        for (var i = 0; i < handlers.Length; i++)
+        {
+            availableVersions[i] = handlers[i].Topic.Version;
+        }
+
+        var selectedVersion = _versionSelector.Select(topic.Version, availableVersions);
+        return handlers.FirstOrDefault(x => x.Topic.Version == selectedVersion);
     }
 
     /// <summary>

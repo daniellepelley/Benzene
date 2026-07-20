@@ -14,7 +14,8 @@ namespace Benzene.Core.MessageHandlers;
 internal class CacheMessageHandlersFinder : IMessageHandlersFinder
 {
     private readonly IMessageHandlersFinder _inner;
-    private IMessageHandlerDefinition[]? _messageHandlerDefinitions;
+    private readonly object _lock = new();
+    private volatile IMessageHandlerDefinition[]? _messageHandlerDefinitions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CacheMessageHandlersFinder"/> class.
@@ -31,6 +32,18 @@ internal class CacheMessageHandlersFinder : IMessageHandlersFinder
     /// <returns>The cached (or newly discovered, on first call) handler definitions.</returns>
     public IMessageHandlerDefinition[] FindDefinitions()
     {
-        return _messageHandlerDefinitions ??= _inner.FindDefinitions();
+        // Double-checked lock rather than `??=`: the latter is a non-atomic read-then-write, so two
+        // threads racing the first call both see null and both run the inner (potentially reflection-
+        // based, assembly-scanning) discovery. The volatile field publishes the result safely.
+        var cached = _messageHandlerDefinitions;
+        if (cached != null)
+        {
+            return cached;
+        }
+
+        lock (_lock)
+        {
+            return _messageHandlerDefinitions ??= _inner.FindDefinitions();
+        }
     }
 }
