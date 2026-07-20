@@ -32,7 +32,12 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
   a handler returning a `Benzene.Abstractions.Messages.IRawBytesMessage` is written verbatim via the
   byte `SetBody(context, ReadOnlyMemory<byte>)` overload (held as `_bodyBytes` and written directly in
   `FinalizeAsync`, skipping the UTF-8 encode that would corrupt a true binary payload); the string
-  path is unchanged. Binary request bodies still flow through the string buffer (a follow-up).
+  path is unchanged.
+- `HttpListenerMessageBodyGetter` - reads the request body **once as raw bytes** and buffers them
+  verbatim (via `BufferRequestBodyMiddleware` → `HttpRequestBodyBuffer.SetBytes`), so it can serve
+  both a string body (decoded with the request's `Content-Encoding`, defaulting to UTF-8) and — as
+  `IMessageBodyBytesGetter<SelfHostHttpContext>` — the exact bytes for a **binary request** (a handler
+  whose request type is `RawBytesRequest`). The `MaxRequestBodyBytes` cap is enforced in the byte read.
 - HTTP server lifecycle management
 
 ### Health checks (`Extensions.cs`)

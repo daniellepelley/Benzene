@@ -31,7 +31,19 @@ public class BufferRequestBodyMiddleware<TContext> : IMiddleware<TContext>
     /// <inheritdoc />
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
-        _buffer.Set(await _reader.ReadBodyAsync(context));
+        // Prefer the byte path when the transport supports it (binary request bodies): buffer the raw
+        // bytes verbatim so a binary body getter can serve them and a string getter derives the text.
+        // The default reader returns null here, so string-only transports (ASP.NET) are unchanged.
+        var bytes = await _reader.ReadBodyBytesAsync(context);
+        if (bytes.HasValue)
+        {
+            _buffer.SetBytes(bytes.Value);
+        }
+        else
+        {
+            _buffer.Set(await _reader.ReadBodyAsync(context));
+        }
+
         await next();
     }
 }

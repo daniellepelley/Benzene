@@ -198,6 +198,62 @@ public class BenzeneHttpWorkerTest
     }
 
     [Fact]
+    public async Task Post_BinaryBody_IsBufferedAndServedVerbatimByTheBytesGetter()
+    {
+        var port = GetFreeTcpPort();
+        var config = new BenzeneHttpConfig { Url = $"http://127.0.0.1:{port}/", ConcurrentRequests = 4 };
+        var capturingLogger = new CapturingLogger<BenzeneHttpWorker>();
+
+        // Bytes that are NOT valid standalone UTF-8 (0xFF, 0xFE, lone 0x80): a string round-trip would
+        // corrupt them, so an exact round-trip proves the raw-byte request path is used end to end.
+        var binary = new byte[] { 0x00, 0x01, 0x02, 0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE, 0x80, 0x7F };
+        byte[]? captured = null;
+
+        var worker = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services
+                .AddLogging()
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger)
+                .UsingBenzene(x => x.AddBenzene()))
+            .Configure(app => app.UseHttp(config, pipeline => pipeline
+                .Use(resolver => new Benzene.Core.Middleware.FuncWrapperMiddleware<SelfHostHttpContext>(
+                    "CaptureBytes", (context, next) =>
+                    {
+                        var bytesGetter = resolver.GetService<Benzene.Abstractions.Messages.Mappers.IMessageBodyBytesGetter<SelfHostHttpContext>>();
+                        captured = bytesGetter.GetBodyBytes(context).ToArray();
+                        return next();
+                    }))
+                .UseMessageHandlers()))
+            .Build();
+
+        await worker.StartAsync(CancellationToken.None);
+        try
+        {
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            // Poll until the listener is up, then POST the binary body.
+            for (var attempt = 0; attempt < 20 && captured == null; attempt++)
+            {
+                try
+                {
+                    var content = new ByteArrayContent(binary);
+                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    await httpClient.PostAsync($"http://127.0.0.1:{port}/capture", content);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+                {
+                    await Task.Delay(50);
+                }
+            }
+
+            Assert.NotNull(captured);
+            Assert.Equal(binary, captured);
+        }
+        finally
+        {
+            await worker.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task StartAsync_LivenessCheck_WithQueryString_StillMatches()
     {
         var port = GetFreeTcpPort();

@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Text;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Http.RequestBody;
 
@@ -11,7 +14,13 @@ namespace Benzene.SelfHost.Http;
 /// that async read. Only if nothing buffered the body (the middleware was not wired in) does it fall
 /// back to reading the stream itself.
 /// </summary>
-public class HttpListenerMessageBodyGetter : IMessageBodyGetter<SelfHostHttpContext>, IHttpRequestBodyReader<SelfHostHttpContext>
+/// <remarks>
+/// The body is read once as raw bytes and buffered verbatim, so a binary request (a handler whose
+/// request type is <c>RawBytesRequest</c>) gets the exact bytes via
+/// <see cref="IMessageBodyBytesGetter{SelfHostHttpContext}"/>, and a text request gets the string
+/// decoded from those same bytes (via the request's <c>Content-Encoding</c>, defaulting to UTF-8).
+/// </remarks>
+public class HttpListenerMessageBodyGetter : IMessageBodyGetter<SelfHostHttpContext>, IMessageBodyBytesGetter<SelfHostHttpContext>, IHttpRequestBodyReader<SelfHostHttpContext>
 {
     private readonly HttpRequestBodyBuffer _buffer;
     private readonly long? _maxRequestBodyBytes;
@@ -33,30 +42,76 @@ public class HttpListenerMessageBodyGetter : IMessageBodyGetter<SelfHostHttpCont
     }
 
     /// <summary>
-    /// Gets the request body. Returns the value buffered by the async pre-read when available;
-    /// otherwise reads the input stream synchronously as a fallback.
+    /// Gets the request body as a string. Serves the buffered body when available (decoding the
+    /// buffered bytes with the request's encoding); otherwise reads the stream synchronously.
     /// </summary>
     /// <param name="context">The HTTP context to extract the body from.</param>
     /// <returns>The request body as a string.</returns>
     public string? GetBody(SelfHostHttpContext context)
     {
-        return _buffer.IsBuffered
-            ? _buffer.Body
-            : ReadBodyAsync(context).GetAwaiter().GetResult();
+        if (_buffer.IsBytesBuffered)
+        {
+            return Decode(context, _buffer.BodyBytes);
+        }
+
+        if (_buffer.IsBuffered)
+        {
+            return _buffer.Body;
+        }
+
+        return Decode(context, ReadRawBytesAsync(context).GetAwaiter().GetResult());
     }
 
-    /// <summary>Reads the request body asynchronously, without blocking a thread.</summary>
+    /// <summary>
+    /// Gets the request body as raw bytes, for a binary request. Serves the buffered bytes when
+    /// available; otherwise reads the stream synchronously.
+    /// </summary>
+    /// <param name="context">The HTTP context to extract the body bytes from.</param>
+    /// <returns>The request body's raw bytes.</returns>
+    public ReadOnlyMemory<byte> GetBodyBytes(SelfHostHttpContext context)
+    {
+        if (_buffer.IsBytesBuffered)
+        {
+            return _buffer.BodyBytes;
+        }
+
+        if (_buffer.IsBuffered)
+        {
+            return _buffer.Body is null
+                ? ReadOnlyMemory<byte>.Empty
+                : GetEncoding(context).GetBytes(_buffer.Body);
+        }
+
+        return ReadRawBytesAsync(context).GetAwaiter().GetResult();
+    }
+
+    /// <summary>Reads the request body as a string asynchronously, without blocking a thread.</summary>
     /// <param name="context">The HTTP context to read the body from.</param>
     /// <returns>The request body as a string.</returns>
     public async Task<string?> ReadBodyAsync(SelfHostHttpContext context)
     {
+        return Decode(context, await ReadRawBytesAsync(context));
+    }
+
+    /// <summary>Reads the request body as raw bytes asynchronously (the binary path), without blocking a thread.</summary>
+    /// <param name="context">The HTTP context to read the body from.</param>
+    /// <returns>The request body's raw bytes.</returns>
+    public async Task<ReadOnlyMemory<byte>?> ReadBodyBytesAsync(SelfHostHttpContext context)
+    {
+        return await ReadRawBytesAsync(context);
+    }
+
+    private async Task<ReadOnlyMemory<byte>> ReadRawBytesAsync(SelfHostHttpContext context)
+    {
         var request = context.HttpListenerContext.Request;
+        var stream = request.InputStream;
 
         if (!_maxRequestBodyBytes.HasValue)
         {
-            // Unbounded (the default): original behavior, byte-for-byte.
-            using var reader = new StreamReader(request.InputStream);
-            return await reader.ReadToEndAsync();
+            // Unbounded (the default).
+            using var all = new MemoryStream();
+            await stream.CopyToAsync(all);
+            return all.ToArray();
         }
 
         var limit = _maxRequestBodyBytes.Value;
@@ -71,7 +126,6 @@ public class HttpListenerMessageBodyGetter : IMessageBodyGetter<SelfHostHttpCont
         // (we stop before buffering the whole body).
         using var buffered = new MemoryStream();
         var chunk = new byte[8192];
-        var stream = request.InputStream;
         long total = 0;
         int read;
         while ((read = await stream.ReadAsync(chunk.AsMemory())) > 0)
@@ -85,7 +139,16 @@ public class HttpListenerMessageBodyGetter : IMessageBodyGetter<SelfHostHttpCont
             buffered.Write(chunk, 0, read);
         }
 
-        var encoding = request.ContentEncoding ?? System.Text.Encoding.UTF8;
-        return encoding.GetString(buffered.GetBuffer(), 0, (int)buffered.Length);
+        return buffered.ToArray();
+    }
+
+    private static string Decode(SelfHostHttpContext context, ReadOnlyMemory<byte> bytes)
+    {
+        return GetEncoding(context).GetString(bytes.Span);
+    }
+
+    private static Encoding GetEncoding(SelfHostHttpContext context)
+    {
+        return context.HttpListenerContext.Request.ContentEncoding ?? System.Text.Encoding.UTF8;
     }
 }

@@ -32,6 +32,9 @@ public static class DependencyInjectionExtensions
         services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>>(resolver =>
             new HttpListenerMessageBodyGetter(resolver.GetService<HttpRequestBodyBuffer>(),
                 resolver.TryGetService<BenzeneHttpConfig>()?.MaxRequestBodyBytes));
+        services.TryAddScoped<IMessageBodyBytesGetter<SelfHostHttpContext>>(resolver =>
+            new HttpListenerMessageBodyGetter(resolver.GetService<HttpRequestBodyBuffer>(),
+                resolver.TryGetService<BenzeneHttpConfig>()?.MaxRequestBodyBytes));
         services.TryAddScoped<IHttpRequestBodyReader<SelfHostHttpContext>>(resolver =>
             new HttpListenerMessageBodyGetter(resolver.GetService<HttpRequestBodyBuffer>(),
                 resolver.TryGetService<BenzeneHttpConfig>()?.MaxRequestBodyBytes));

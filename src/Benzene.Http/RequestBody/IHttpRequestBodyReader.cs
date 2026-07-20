@@ -1,3 +1,5 @@
+using System;
+
 namespace Benzene.Http.RequestBody;
 
 /// <summary>
@@ -15,4 +17,15 @@ public interface IHttpRequestBodyReader<in TContext>
     /// <param name="context">The context to read the body from.</param>
     /// <returns>The body text, or <c>null</c> if there is no readable body or reading it fails.</returns>
     Task<string?> ReadBodyAsync(TContext context);
+
+    /// <summary>
+    /// Reads the request body as raw bytes, for transports that support binary request bodies. The
+    /// default returns <c>null</c>, meaning "no byte path — use <see cref="ReadBodyAsync"/>"; a
+    /// transport that can supply raw bytes (e.g. the self-hosted HttpListener) overrides this so
+    /// <see cref="BufferRequestBodyMiddleware{TContext}"/> buffers bytes verbatim and a binary body
+    /// getter can serve them without a lossy string round-trip.
+    /// </summary>
+    /// <param name="context">The context to read the body from.</param>
+    /// <returns>The raw body bytes, or <c>null</c> to fall back to the string read.</returns>
+    Task<ReadOnlyMemory<byte>?> ReadBodyBytesAsync(TContext context) => Task.FromResult<ReadOnlyMemory<byte>?>(null);
 }
