@@ -9,6 +9,19 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 3 — BenzeneMessage bypassed the configurable version getter (`BenzeneMessageGetter.GetTopic`)
+- **Bug:** `GetTopic` baked the raw `"version"` header into the topic version. `MessageRouter` treats a
+  topic-getter version as a deliberate preset override and skips `IMessageVersionGetter`, so BenzeneMessage
+  never used the configurable, priority-ordered header getter (default `benzene-version` > `version` >
+  `x-version`). A message with both `benzene-version` and `version` routed to the wrong handler version,
+  and an app that narrows the header list (docs/specification/versioning.md §2.1) was silently defeated.
+  Inconsistent with every other transport's topic getter (SQS/SNS return version-less topics).
+- **Repro:** `BenzeneMessageVersionRoutingTest.BenzeneVersionHeaderWinsOverVersionHeader` — routed to `1`
+  (version header) pre-fix, routes to `2` (benzene-version) post-fix. Single-`version`-header and no-header
+  cases unchanged (also tested).
+- **Fix:** `GetTopic` returns a version-less `Topic(id)`, deferring version resolution to the router's
+  version getter. Core suite (1850) + conformance (129) green.
+
 ### Cycle 2 — example/test-payload camelCase diverges from the wire for acronym names (`ExamplePayloadBuilder`)
 - **Bug:** `ExamplePayloadBuilder.CamelCase` lowercased the whole leading run of capitals, so `IPAddress`
   → `ipaddress`, but the service deserializes with STJ `JsonNamingPolicy.CamelCase` which yields
