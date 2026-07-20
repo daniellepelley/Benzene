@@ -3,8 +3,8 @@
 BenchmarkDotNet micro-benchmarks for Benzene's hot paths: the middleware pipeline
 (`MiddlewarePipeline<TContext>.HandleAsync`), the request-mapping path
 (`MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>`), per-message handler routing
-(`MessageHandlerDefinitionLookUp.FindHandler`), and HTTP route matching (`RouteFinder.Find`). This is
-the first benchmark suite in the repo — there is no prior baseline to compare against.
+(`MessageHandlerDefinitionLookUp.FindHandler`), per-message handler-pipeline construction
+(`HandlerPipelineBuilder.Create`), and HTTP route matching (`RouteFinder.Find`).
 
 ## Running
 
@@ -23,10 +23,12 @@ produce unreliable absolute numbers. Relative comparisons within the same run on
 are far more trustworthy than any single absolute ns/op or bytes-allocated figure quoted in
 isolation.
 
-**These numbers have not yet been generated or verified by anyone.** This suite was authored
-without access to a local .NET SDK to actually run it. Treat the first real local run's output as
-the baseline to record and compare future changes against — not the numbers in this file, because
-there aren't any yet.
+**Most of these benchmarks have not yet been run on trusted hardware.** The suite was authored
+without access to a dedicated machine. The one exception is `HandlerCreationBenchmarks`, whose
+*allocation* figures are recorded under "Recorded baselines" below (allocations are deterministic
+regardless of the environment; the timings from that run are not). Treat each other benchmark's
+first real local run as its baseline to record and compare future changes against — not any number
+absent from the baselines section.
 
 ## What each benchmark measures
 
@@ -72,6 +74,25 @@ re-allocating its candidate-version array once per candidate — O(n²) work and
 dispatch — before being hoisted to run once. The suite makes that cost visible and guards it from
 regressing (watch that allocated bytes stay flat, not scaling with `VersionsPerTopic`).
 
+### `HandlerCreationBenchmarks`
+
+- **`Build the handler pipeline (the per-message rebuild)`** — `HandlerPipelineBuilder.Create`, the
+  work `MessageHandlerFactory.Create` → `PipelineMessageHandlerWrapper.Wrap` does on *every*
+  dispatched message: a fresh `List`, one middleware instance per registered
+  `IHandlerMiddlewareBuilder`, a `.Select(...).ToArray()` into a `Func[]`, and a new
+  `MiddlewarePipeline` whose constructor reverses the array again.
+- **`Build + invoke: rebuild the pipeline then run one message through it`** — the same build,
+  wrapped in a `PipelineMessageHandler` and run once, to show what fraction of total per-message
+  dispatch allocation is the (removable) structure rebuild vs. the (inherent) per-invocation cost.
+
+`HandlerMiddlewareCount` is parameterized (0/1/3) because the removable structure-build cost scales
+with it. The pipeline *structure* (which builders, in what order) is fixed after startup — only the
+middleware *instances* are genuinely per-scope — so the top-level `MiddlewarePipeline`'s
+"structure once, instances per request" split *could* apply here but currently doesn't, rebuilding
+the whole structure per message. This suite exists to measure a structure-caching fix (see below),
+not just describe the cost. A long-lived resolver is reused so it isolates build/invoke cost from
+DI-scope-creation cost (which `MiddlewarePipelineBenchmarks` covers separately).
+
 ### `RouteFindingBenchmarks`
 
 - **`Find: hit (first route, extracts a parameter)`** / **`Find: miss (scans every route)`** —
@@ -83,6 +104,34 @@ pattern (split + `Regex.Split`) once at construction and splits only the incomin
 rather than re-splitting and re-running `Regex.Split` over every route's pattern on every request.
 Watch that per-request allocation stays low and doesn't carry the regex/splitting cost that used to
 scale with `RouteCount`.
+
+## Recorded baselines
+
+Absolute timings from a constrained/virtualized environment are not trustworthy (see the warning
+above — note the wide `Error` bars on the run below). **Allocated bytes/op, however, are
+deterministic** and don't depend on CPU timing, so they are the figures to hold onto and diff
+against. The one baseline captured so far:
+
+### `HandlerCreationBenchmarks` (ShortRun, allocations are the load-bearing numbers)
+
+| Benchmark | HandlerMiddlewareCount | Allocated |
+|-----------|-----------------------:|----------:|
+| Build the handler pipeline (per-message rebuild) | 0 | 408 B |
+| Build the handler pipeline (per-message rebuild) | 1 | 536 B |
+| Build the handler pipeline (per-message rebuild) | 3 | 792 B |
+| Build + invoke (full per-message dispatch)        | 0 | 1312 B |
+| Build + invoke (full per-message dispatch)        | 1 | 1568 B |
+| Build + invoke (full per-message dispatch)        | 3 | 2080 B |
+
+Reading: the per-message pipeline rebuild is a **~408 B fixed floor plus ~128 B per
+handler-middleware**, all of it structure that is fixed after startup. That rebuild is **~30–40% of
+the total per-message allocation** on the dispatch path (build vs. build+invoke rows), and it is the
+portion a structure-caching fix would remove. A fix should show the "Build the handler pipeline" row
+drop toward near-zero allocation and stop scaling with `HandlerMiddlewareCount`, with the
+"Build + invoke" row falling by the same amount — while a correctness test still proves two pipelines
+that share a handler (one with an extra middleware) get *distinct* chains. Timings that run: ShortRun
+means/errors were dominated by environment noise (build-only ~190–340 ns, build+invoke ~3.3–3.8 µs)
+and are recorded only as order-of-magnitude context, not a baseline.
 
 ## Why this project is separate from `Benzene.sln`'s test run
 
