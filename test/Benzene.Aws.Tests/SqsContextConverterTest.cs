@@ -50,4 +50,52 @@ public class SqsContextConverterTest
         Assert.True(result.Request.MessageAttributes.ContainsKey("topic"));
         Assert.Equal("some-topic", result.Request.MessageAttributes["topic"].StringValue);
     }
+
+    [Fact]
+    public async Task CreateRequestAsync_MoreThan10Attributes_ThrowsClearlyBeforeSend()
+    {
+        var converter = new SqsContextConverter<ExampleRequestPayload>(
+            "https://sqs.us-east-1.amazonaws.com/000000000000/some-queue");
+
+        // 10 headers + the topic attribute = 11, over the SQS limit of 10.
+        var headers = new Dictionary<string, string>();
+        for (var i = 0; i < 10; i++)
+        {
+            headers[$"h{i}"] = $"v{i}";
+        }
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "some-topic",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            headers: headers);
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var exception = await Assert.ThrowsAsync<System.InvalidOperationException>(() => converter.CreateRequestAsync(context));
+        Assert.Contains("11", exception.Message);
+        Assert.Contains("10 message attributes", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateRequestAsync_Exactly10Attributes_IsAllowed()
+    {
+        var converter = new SqsContextConverter<ExampleRequestPayload>(
+            "https://sqs.us-east-1.amazonaws.com/000000000000/some-queue");
+
+        // 9 headers + the topic attribute = 10, exactly at the limit.
+        var headers = new Dictionary<string, string>();
+        for (var i = 0; i < 9; i++)
+        {
+            headers[$"h{i}"] = $"v{i}";
+        }
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "some-topic",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            headers: headers);
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.Equal(10, result.Request.MessageAttributes.Count);
+    }
 }

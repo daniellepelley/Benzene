@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.SQS.Model;
@@ -6,6 +7,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Results;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sqs;
 
@@ -76,12 +78,30 @@ public class SqsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
             messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Request.Topic, DataType = "String" };
         }
 
+        GuardAttributeLimit(messageAttributes.Count);
+
         return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {
             QueueUrl = _queueUrl,
             MessageBody = _serializer.Serialize(contextIn.Request.Message),
             MessageAttributes = messageAttributes
         }));
+    }
+
+    /// <summary>The maximum number of message attributes SQS accepts on a single message.</summary>
+    internal const int MaxMessageAttributes = 10;
+
+    internal static void GuardAttributeLimit(int attributeCount)
+    {
+        // SQS caps a message at 10 message attributes; the topic attribute counts toward it. Fail fast
+        // with a clear message naming the count, rather than letting the SDK throw an opaque error
+        // that the send path would otherwise swallow into a generic ServiceUnavailable.
+        if (attributeCount > MaxMessageAttributes)
+        {
+            throw new InvalidOperationException(
+                $"An SQS message can carry at most {MaxMessageAttributes} message attributes, but {attributeCount} were set " +
+                "(the routing topic attribute counts toward the limit). Reduce the number of headers forwarded onto message attributes.");
+        }
     }
 
     /// <summary>

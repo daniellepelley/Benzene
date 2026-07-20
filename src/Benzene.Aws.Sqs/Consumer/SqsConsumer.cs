@@ -71,6 +71,9 @@ public class SqsConsumer : IBenzeneWorker
                 {
                     QueueUrl = _sqsConsumerConfig.QueueUrl,
                     MessageAttributeNames = new[] { "All" }.ToList(),
+                    // Request the ApproximateReceiveCount system attribute so a handler can make
+                    // poison-message decisions off SqsConsumerMessageContext.ApproximateReceiveCount.
+                    MessageSystemAttributeNames = new[] { "ApproximateReceiveCount" }.ToList(),
                     MaxNumberOfMessages = _sqsConsumerConfig.MaxNumberOfMessages,
                     WaitTimeSeconds = _sqsConsumerConfig.WaitTimeSeconds
                 }, cancellationToken);

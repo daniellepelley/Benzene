@@ -69,6 +69,16 @@ how a poll batch is acknowledged:
 on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
 (`SuccessfulMessages`/`FailedMessages`) that `SqsConsumer` uses to decide what to delete.
 
+### Long polling + poison-message signal
+- `SqsConsumerConfig.WaitTimeSeconds` defaults to **20** (maximum long polling) — a receive waits for
+  messages rather than returning empty immediately, cutting empty-receive request cost and latency.
+  Lower it only to make the poll loop spin faster (e.g. faster shutdown reaction).
+- `SqsConsumer` requests the `ApproximateReceiveCount` system attribute on each receive and surfaces
+  it as `SqsConsumerMessageContext.ApproximateReceiveCount` (`int?`), so a handler can make
+  poison-message decisions (e.g. dead-letter after N deliveries).
+- (Visibility-timeout heartbeat — extending a slow handler's message visibility on a background timer
+  — is a separate, larger follow-up, not yet implemented.)
+
 ### Bounded batch fan-out (`SqsConsumerOptions.MaxDegreeOfParallelism`)
 Defaults to `null` (unbounded - every message in a poll batch starts at once, the original
 behavior). Set a positive value to cap how many messages run concurrently, e.g. so a large poll

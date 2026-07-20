@@ -83,6 +83,8 @@ public class OutboundSqsContextConverter : IContextConverter<OutboundContext, Sq
             messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
         }
 
+        SqsContextConverter<object>.GuardAttributeLimit(messageAttributes.Count);
+
         return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {
             QueueUrl = _queueUrl,

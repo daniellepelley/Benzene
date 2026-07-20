@@ -29,6 +29,19 @@ public class SqsConsumerMessageContext : IHasMessageResult
     public Message Message { get; }
 
     /// <summary>
+    /// Gets the number of times this message has been received (SQS's <c>ApproximateReceiveCount</c>
+    /// system attribute), or <c>null</c> if it wasn't requested/present. A handler can use it to make
+    /// poison-message decisions (e.g. route to a dead-letter path after N deliveries). Requested by
+    /// <see cref="SqsConsumer"/> on each receive.
+    /// </summary>
+    public int? ApproximateReceiveCount =>
+        Message?.Attributes != null &&
+        Message.Attributes.TryGetValue("ApproximateReceiveCount", out var value) &&
+        int.TryParse(value, out var count)
+            ? count
+            : null;
+
+    /// <summary>
     /// Gets or sets the result of handling this message. Set by
     /// <see cref="SqsConsumerMessageHandlerResultSetter"/>; read by <see cref="SqsConsumerApplication"/>
     /// to support <see cref="SqsConsumerAckMode.PerMessage"/>.

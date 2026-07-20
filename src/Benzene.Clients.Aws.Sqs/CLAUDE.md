@@ -27,6 +27,10 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
   both converters omit the `topic` attribute when `Topic` is null/empty and skip any header whose
   value is empty. LocalStack tolerates empty values (so the live LocalStack tests passed either way),
   but real SQS does not — this mirrors the SNS converters' guard. Covered by `SqsContextConverterTest`.
+- **10-attribute cap guard.** SQS caps a message at 10 message attributes (the routing topic
+  attribute counts toward it). Both converters fail fast with a clear `InvalidOperationException`
+  naming the count if more are set, instead of letting the SDK throw an opaque error the send path
+  would swallow into a generic `ServiceUnavailable`. `SqsContextConverter<T>.GuardAttributeLimit`.
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SQS has only a send
   acknowledgement, so a topic routed through SQS must be sent via `SendAsync<TRequest, Void>`; any
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at
