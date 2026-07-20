@@ -95,8 +95,15 @@ Parallel `ApiGatewayV2*` set mirroring the v1 adapters against `ApiGatewayV2Cont
   is written by the shared `SerializerResponseRenderer` through the response adapter's byte `SetBody`
   overload, which base64-encodes the body and sets `IsBase64Encoded = true` so API Gateway returns
   real bytes. See `ApiGatewayResponseAdapter`/`ApiGatewayV2ResponseAdapter`'s `SetBody(context,
-  ReadOnlyMemory<byte>)`. Binary **request** bodies are still text-decoded (the base64 note below);
-  a raw-bytes request passthrough is a follow-up.
+  ReadOnlyMemory<byte>)`.
+- **Binary requests are supported** (v1 and v2): `ApiGatewayMessageBodyBytesGetter` /
+  `ApiGatewayV2MessageBodyBytesGetter` (registered as `IMessageBodyBytesGetter<...>`) return the
+  request body's raw bytes — base64-decoded when `IsBase64Encoded`, without the lossy UTF-8 round-trip
+  the string getter does. A handler declaring its request type as
+  `Benzene.Core.Messages.RawBytesRequest` (or `IRawBytesRequest`) receives those bytes verbatim via
+  `RequestMapper`'s raw-bytes passthrough. Registering the bytes getter also routes ordinary JSON
+  requests through the (equivalent) byte-deserialize path in `RequestMapper`; XML and other
+  non-`IPayloadSerializer` formats keep the string path.
 
 ## Important conventions
 - **Two payload formats supported.** `APIGatewayProxyRequest` (v1.0, REST APIs and HTTP APIs on

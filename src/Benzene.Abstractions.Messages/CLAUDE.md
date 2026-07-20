@@ -29,6 +29,10 @@ vocabulary the outbound (`Benzene.Clients`) and inbound message-handler pipeline
   for a handler returning bytes verbatim (image/PDF/zip). `SerializerResponseRenderer` writes it via
   the byte `SetBody` overload, skipping serialization; HTTP transports encode as needed (API Gateway
   base64 + `IsBase64Encoded`, self-host raw bytes). Concrete: `Benzene.Core.Messages.RawBytesMessage`.
+- `IRawBytesRequest` - the request-side raw-bytes payload: `Content` (`ReadOnlyMemory<byte>`). A
+  handler with this request type receives a binary upload verbatim — `RequestMapper` skips
+  deserialization (base64-decoding first where the transport base64-encodes binary bodies). Concrete:
+  `Benzene.Core.Messages.RawBytesRequest`.
 
 ### Mappers (the transport-read/write seam), namespace `...Messages.Mappers`
 - `IMessageBodyGetter<TContext>` (`GetBody`) / `IMessageBodyBytesGetter<TContext>` /

@@ -22,6 +22,10 @@ types, and the context-predicate helpers used for pipeline branching. There is n
   `ContentType`, for a handler returning bytes verbatim (image/PDF/zip). `SerializerResponseRenderer`
   writes it through the byte `SetBody` overload; HTTP transports encode as required (API Gateway
   base64 + `IsBase64Encoded`, self-host raw bytes).
+- `RawBytesRequest : IRawBytesRequest` - the request-side counterpart: wraps the incoming body's raw
+  `Content` (`ReadOnlyMemory<byte>`). A handler declaring its request type as `RawBytesRequest` (or
+  `IRawBytesRequest`) receives a binary upload verbatim — `RequestMapper` skips deserialization and
+  hands over the raw bytes (base64-decoded first on transports that base64-encode binary bodies).
 
 ### Outbound sending (`Benzene.Core.Messages.MessageSender`)
 - `MessageSender<TMessage>` / `MessageSender<TRequest, TResponse>` - `IMessageSender<...>`

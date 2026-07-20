@@ -1,6 +1,10 @@
+using System;
+using System.Text;
 using Benzene.Abstractions.MessageHandlers.Request;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Serialization;
+using Benzene.Core.Messages;
 
 namespace Benzene.Core.MessageHandlers.Request;
 
@@ -62,6 +66,21 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
             return requestContext.Request;
         }
 
+        // Raw-bytes passthrough (binary request bodies): a handler whose request type is
+        // RawBytesRequest (or IRawBytesRequest) receives the request body's raw bytes verbatim - no
+        // deserialization, no lossy UTF-8 round-trip. Prefer the byte getter (e.g. API Gateway's
+        // base64 decode); fall back to the UTF-8 bytes of the string body for transports that only
+        // expose a string getter. Checked before the serialized paths below, which would otherwise
+        // try to JSON-deserialize the body into the raw-bytes type.
+        if (typeof(TRequest) == typeof(RawBytesRequest) || typeof(TRequest) == typeof(IRawBytesRequest))
+        {
+            var raw = _messageBodyBytesGetter != null
+                ? _messageBodyBytesGetter.GetBodyBytes(context)
+                : AsUtf8Bytes(_messageBodyGetter.GetBody(context));
+
+            return (TRequest)(object)new RawBytesRequest(raw);
+        }
+
         if (_payloadSerializer != null && _messageBodyBytesGetter != null)
         {
             var bodyAsBytes = _messageBodyBytesGetter.GetBodyBytes(context);
@@ -76,5 +95,10 @@ public class RequestMapper<TContext> : IRequestMapper<TContext>
         return !string.IsNullOrEmpty(bodyAsString)
             ? _serializer.Deserialize<TRequest>(bodyAsString)
             : Activator.CreateInstance<TRequest>();
+    }
+
+    private static ReadOnlyMemory<byte> AsUtf8Bytes(string? body)
+    {
+        return string.IsNullOrEmpty(body) ? ReadOnlyMemory<byte>.Empty : Encoding.UTF8.GetBytes(body);
     }
 }

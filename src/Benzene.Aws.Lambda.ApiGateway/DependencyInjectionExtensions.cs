@@ -48,6 +48,7 @@ public static class DependencyInjectionExtensions
                 resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.TryAddScoped<IMessageHeadersGetter<ApiGatewayContext>, ApiGatewayMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<ApiGatewayContext>, ApiGatewayMessageBodyGetter>();
+        services.TryAddScoped<IMessageBodyBytesGetter<ApiGatewayContext>, ApiGatewayMessageBodyBytesGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayContext>, ApiGatewayMessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<ApiGatewayContext>,
@@ -89,6 +90,7 @@ public static class DependencyInjectionExtensions
                 resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.TryAddScoped<IMessageHeadersGetter<ApiGatewayV2Context>, ApiGatewayV2MessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<ApiGatewayV2Context>, ApiGatewayV2MessageBodyGetter>();
+        services.TryAddScoped<IMessageBodyBytesGetter<ApiGatewayV2Context>, ApiGatewayV2MessageBodyBytesGetter>();
         services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayV2Context>, ApiGatewayV2MessageHandlerResultSetter>();
         services
             .AddScoped<IRequestMapper<ApiGatewayV2Context>,
