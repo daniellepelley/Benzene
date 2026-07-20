@@ -153,6 +153,46 @@ public class CacheEntryTest
     }
 
     [Fact]
+    public async Task LazyLoadAsync_ValueType_CacheMiss_CallsDatabaseFuncAndReturnsTheDbValue()
+    {
+        // Regression: for an unconstrained value-type T, a cold cache returns default(T) (e.g. 0),
+        // and `default(int) != null` (boxed) is always true - so LazyLoad used to treat the MISS as a
+        // hit, return 0, and never read the database. The hit decision must be presence-based.
+        var store = new Dictionary<string, string>();
+        var entry = new FakeCacheEntry<int>(store);
+        var databaseFuncCalled = false;
+
+        var result = await entry.LazyLoadAsync(() =>
+        {
+            databaseFuncCalled = true;
+            return Task.FromResult(BenzeneResult.Ok(42));
+        });
+
+        Assert.True(databaseFuncCalled);
+        Assert.Equal(42, result.Payload);
+        Assert.True(store.ContainsKey("the-key")); // the DB value was written back
+    }
+
+    [Fact]
+    public async Task LazyLoadAsync_ValueType_CacheHitOfDefaultValue_IsAHitWithoutCallingDb()
+    {
+        // A genuinely-cached default value (0) is a hit, not a miss - presence, not `!= null`, decides.
+        var store = new Dictionary<string, string>();
+        var entry = new FakeCacheEntry<int>(store);
+        await entry.SetValueAsync(0);
+        var databaseFuncCalled = false;
+
+        var result = await entry.LazyLoadAsync(() =>
+        {
+            databaseFuncCalled = true;
+            return Task.FromResult(BenzeneResult.Ok(99));
+        });
+
+        Assert.False(databaseFuncCalled);
+        Assert.Equal(0, result.Payload);
+    }
+
+    [Fact]
     public async Task WriteThroughAsync_DefaultMapping_OkResult_SetsTheCache()
     {
         var store = new Dictionary<string, string>();

@@ -16,20 +16,34 @@ public abstract class CacheEntry<T> : CacheWriteActions<T>, ICacheEntry<T>
 
     public async Task<T?> GetValueAsync()
     {
+        var (_, value) = await TryReadEntryAsync();
+        return value;
+    }
+
+    /// <summary>
+    /// Reads the entry, returning whether the key was <em>present</em> (a real cache hit) separately
+    /// from the deserialized value. The presence flag is what <see cref="GetEntryValueAsync"/> already
+    /// knows (a non-empty stored string), and it's the only reliable hit signal for an unconstrained
+    /// generic <typeparamref name="T"/>: for a value type, a genuine miss returns <c>default(T)</c>,
+    /// and <c>default(T) != null</c> (via boxing) is always <c>true</c> - so deciding hit/miss from
+    /// <c>value != null</c> mistakes every value-type miss for a hit of the default value.
+    /// </summary>
+    private async Task<(bool Found, T? Value)> TryReadEntryAsync()
+    {
         try
         {
             Logger.LogDebug("Trying to hit cache key {key}", KeyDescription);
             var cacheValue = await GetEntryValueAsync();
             if (!string.IsNullOrEmpty(cacheValue))
             {
-                return Serializer.Deserialize<T>(cacheValue);
+                return (true, Serializer.Deserialize<T>(cacheValue));
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error occurred when trying to read from cache");
         }
-        return default;
+        return (false, default);
     }
 
     public Task<IBenzeneResult<T>> LazyLoadAsync(Func<Task<IBenzeneResult<T>>> databaseReadFunc)
@@ -41,9 +55,13 @@ public abstract class CacheEntry<T> : CacheWriteActions<T>, ICacheEntry<T>
     {
         using var timerScope = ProcessTimerFactory.Create("CacheEntry_LazyLoad");
 
-        var cacheValue = await GetValueAsync();
+        var (found, cacheValue) = await TryReadEntryAsync();
 
-        if (cacheValue != null)
+        // Hit requires the key to have been present. The `is not null` keeps the existing behavior
+        // for reference-type T (a present-but-null-deserialized value stays a miss, i.e. the current
+        // negative-caching/penetration behavior is unchanged); for a value type `found` is what
+        // corrects the miss-as-hit bug (`cacheValue is not null` is always true there).
+        if (found && cacheValue is not null)
         {
             timerScope.SetTag("cache-status", "hit");
             Logger.LogDebug("Cache hit for key {key}", KeyDescription);
