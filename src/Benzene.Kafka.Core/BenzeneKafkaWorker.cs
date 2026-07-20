@@ -81,10 +81,10 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                 Func<ConsumeResult<TKey, TValue>, CancellationToken, Task> handle = _benzeneKafkaConfig.CommitOnlyOnSuccess
                     ? async (consumeResult, _) =>
                     {
-                        await _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory);
+                        await _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory, runToken);
                         _consumer!.StoreOffset(consumeResult);
                     }
-                    : (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory);
+                    : (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory, runToken);
 
                 dispatcher = new BoundedConcurrentDispatcher<ConsumeResult<TKey, TValue>>(
                     _benzeneKafkaConfig.ConcurrentRequests,

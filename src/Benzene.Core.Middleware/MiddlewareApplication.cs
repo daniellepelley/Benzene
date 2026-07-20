@@ -1,5 +1,8 @@
-﻿using Benzene.Abstractions.DI;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core;
 
 namespace Benzene.Core.Middleware;
 
@@ -29,10 +32,23 @@ public class MiddlewareApplication<TEvent, TContext, TResult>(
     /// <param name="event">The event to process.</param>
     /// <param name="serviceResolverFactory">The service resolver factory for dependency resolution.</param>
     /// <returns>A task that represents the asynchronous operation, containing the processing result.</returns>
-    public async Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
+    public Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
+        => HandleAsync(@event, serviceResolverFactory, CancellationToken.None);
+
+    /// <summary>
+    /// Handles the event, additionally seeding the per-event scope's ambient cancellation token so any
+    /// component resolved during the pipeline can observe cancellation via
+    /// <see cref="ICancellationTokenAccessor"/>.
+    /// </summary>
+    /// <param name="event">The event to process.</param>
+    /// <param name="serviceResolverFactory">The service resolver factory for dependency resolution.</param>
+    /// <param name="cancellationToken">The transport's cancellation token for this event, or <see cref="CancellationToken.None"/> if it has no signal.</param>
+    /// <returns>A task that represents the asynchronous operation, containing the processing result.</returns>
+    public async Task<TResult> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory, CancellationToken cancellationToken)
     {
         var context = mapper(@event);
         using var serviceResolver = serviceResolverFactory.CreateScope();
+        serviceResolver.SeedCancellationToken(cancellationToken);
         await pipeline.HandleAsync(context, serviceResolver);
         return resultMapper(context);
     }
@@ -61,10 +77,23 @@ public class MiddlewareApplication<TEvent, TContext>(
     /// <param name="event">The event to process.</param>
     /// <param name="serviceResolverFactory">The service resolver factory for dependency resolution.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
+    public Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
+        => HandleAsync(@event, serviceResolverFactory, CancellationToken.None);
+
+    /// <summary>
+    /// Handles the event, additionally seeding the per-event scope's ambient cancellation token so any
+    /// component resolved during the pipeline can observe cancellation via
+    /// <see cref="ICancellationTokenAccessor"/>.
+    /// </summary>
+    /// <param name="event">The event to process.</param>
+    /// <param name="serviceResolverFactory">The service resolver factory for dependency resolution.</param>
+    /// <param name="cancellationToken">The transport's cancellation token for this event, or <see cref="CancellationToken.None"/> if it has no signal.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory, CancellationToken cancellationToken)
     {
         var context = mapper(@event);
         using var serviceResolver = serviceResolverFactory.CreateScope();
+        serviceResolver.SeedCancellationToken(cancellationToken);
         await pipeline.HandleAsync(context, serviceResolver);
     }
 }

@@ -6,9 +6,11 @@ using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
+using Benzene.Core.Middleware;
 using Benzene.Http;
 using Benzene.Http.RequestBody;
 using Benzene.Http.Routing;
@@ -32,6 +34,13 @@ public static class DependencyInjectionExtensions
     {
         app.Register(x => x.AddAspNet());
         var pipeline = app.Create<AspNetContext>();
+        // Seed the scope's ambient cancellation token from the request's aborted token, so any
+        // component resolving ICancellationTokenAccessor observes a client disconnect / request abort.
+        pipeline.Use(resolver => new FuncWrapperMiddleware<AspNetContext>("SeedCancellationToken", async (context, next) =>
+        {
+            resolver.SeedCancellationToken(context.HttpRequest.HttpContext.RequestAborted);
+            await next();
+        }));
         // Read the request body asynchronously, once, up front - so the synchronous
         // AspNetMessageBodyGetter serves it from memory instead of blocking a thread-pool thread.
         pipeline.UseBufferedRequestBody();

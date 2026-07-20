@@ -1,5 +1,6 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core;
 using Benzene.Grpc.Serialization;
 using Benzene.Grpc.Streaming;
 using Grpc.Core;
@@ -95,6 +96,10 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         {
             callAccessor.CallContext = context;
         }
+
+        // Seed the scope's ambient cancellation token from the gRPC call's token (client cancel /
+        // deadline), so a handler resolving ICancellationTokenAccessor observes it.
+        resolver.SeedCancellationToken(context.CancellationToken);
 
         try
         {

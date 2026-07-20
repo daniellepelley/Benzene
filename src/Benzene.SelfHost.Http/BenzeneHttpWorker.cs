@@ -45,7 +45,7 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
 
             var dispatcher = new BoundedConcurrentDispatcher<HttpListenerContext>(
                 _benzeneHttpConfig.ConcurrentRequests,
-                (httpContext, _) => _httpListenerApplication.HandleAsync(httpContext, _serviceResolverFactory),
+                (httpContext, _) => _httpListenerApplication.HandleAsync(httpContext, _serviceResolverFactory, runToken),
                 _logger);
 
             try

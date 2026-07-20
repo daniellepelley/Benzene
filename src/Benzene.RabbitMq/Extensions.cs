@@ -1,5 +1,7 @@
 using Benzene.Abstractions.Middleware;
+using Benzene.Core;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.Middleware;
 using Benzene.RabbitMq.RabbitMqMessage;
 using Benzene.SelfHost;
 using Microsoft.Extensions.Logging;
@@ -28,6 +30,13 @@ public static class Extensions
         );
 
         var middlewarePipelineBuilder = app.Create<RabbitMqContext>();
+        // Seed the scope's ambient cancellation token from the delivery's token, so any component
+        // resolving ICancellationTokenAccessor observes cancellation.
+        middlewarePipelineBuilder.Use(resolver => new FuncWrapperMiddleware<RabbitMqContext>("SeedCancellationToken", async (context, next) =>
+        {
+            resolver.SeedCancellationToken(context.DeliverEventArgs.CancellationToken);
+            await next();
+        }));
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 

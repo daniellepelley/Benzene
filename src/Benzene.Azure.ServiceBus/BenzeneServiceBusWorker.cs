@@ -111,13 +111,13 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
         {
             // The processor settles from whether this handler throws: complete on return, abandon
             // on throw (surfacing the exception to OnProcessErrorAsync for logging either way).
-            await _application.HandleAsync(args.Message, _serviceResolverFactory);
+            await _application.HandleAsync(args.Message, _serviceResolverFactory, args.CancellationToken);
             return;
         }
 
         try
         {
-            var messageResult = await _application.HandleAsync(args.Message, _serviceResolverFactory);
+            var messageResult = await _application.HandleAsync(args.Message, _serviceResolverFactory, args.CancellationToken);
 
             if (messageResult?.IsSuccessful == false)
             {

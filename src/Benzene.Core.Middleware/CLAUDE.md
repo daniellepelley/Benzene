@@ -49,6 +49,25 @@ own `Dispose()` used to be a no-op - see
 `test/Benzene.Core.Test/Core/Core/DI/ServiceResolverScopeDisposalTest.cs`) to close the leak
 end to end: the scope is both disposed now, and disposing it actually releases scoped services.
 
+**Ambient cancellation token seeding.** Both `MiddlewareApplication<...>` overloads also have a
+`HandleAsync(TEvent, IServiceResolverFactory, CancellationToken)` overload that seeds the per-event
+scope's `Benzene.Core.CancellationTokenAccessor` (via `IServiceResolver.SeedCancellationToken(...)`,
+a no-op for `CancellationToken.None`) right after `CreateScope()`, so any component resolving
+`ICancellationTokenAccessor` during the pipeline observes the transport's real cancellation signal
+without a signature change to the pipeline/handlers (the scoped-accessor pattern, like
+`PresetTopicHolder`). The original no-token overload delegates with `CancellationToken.None`.
+Transports seed it where they have a signal: **per-message/-call** - `Benzene.AspNet.Core` +
+`Benzene.Azure.Function.AspNet` (`HttpContext.RequestAborted`, via a `SeedCancellationToken`
+middleware), `Benzene.Grpc` (`ServerCallContext.CancellationToken`), `Benzene.RabbitMq`
+(`BasicDeliverEventArgs.CancellationToken`), the `Benzene.Azure.ServiceBus`/`Benzene.Azure.EventHub`
+workers (`ProcessMessageEventArgs`/`ProcessEventArgs.CancellationToken`, via the token overload); and
+**worker-shutdown** - `Benzene.SelfHost.Http` + `Benzene.Kafka.Core` (the worker's linked run token).
+AWS Lambda (no `ILambdaContext` token) and the Azure Functions non-HTTP triggers (their
+`FunctionContext.CancellationToken` never reaches Benzene) have no signal to seed;
+`Benzene.GoogleCloud.Functions.PubSub` has one but seeding it needs a token overload on
+`IEntryPointMiddlewareApplication` (a public-interface change) - deferred. Covered by
+`test/Benzene.Core.Test/Core/Middleware/CancellationTokenSeedingTest.cs`.
+
 ### Middleware Components
 - `FuncWrapperMiddleware<TContext>` - Wraps Func as middleware
 - `ContextConverterMiddleware<TContext, TContextOut>` - Converts context types

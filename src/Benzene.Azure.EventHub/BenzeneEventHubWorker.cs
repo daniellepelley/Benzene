@@ -97,7 +97,7 @@ public class BenzeneEventHubWorker : IBenzeneWorker
 
         try
         {
-            await _application.HandleAsync(args.Data, _serviceResolverFactory);
+            await _application.HandleAsync(args.Data, _serviceResolverFactory, args.CancellationToken);
         }
         catch (Exception ex)
         {
