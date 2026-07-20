@@ -65,6 +65,15 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         var messageAttributes = new Dictionary<string, MessageAttributeValue>();
         foreach (var header in contextIn.Request.Headers)
         {
+            // SNS rejects an empty message-attribute value ("must contain non-empty message attribute
+            // value") and fails the WHOLE publish - so skip empty-valued headers, matching the SQS
+            // converter and this package's documented contract. A decorator that emits "" when unset
+            // (correlation id / traceparent) would otherwise hard-fail every publish on real SNS.
+            if (string.IsNullOrEmpty(header.Value))
+            {
+                continue;
+            }
+
             messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = DataTypeFor(header.Value) };
         }
 

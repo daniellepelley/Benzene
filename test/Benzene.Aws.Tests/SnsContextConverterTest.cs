@@ -55,6 +55,41 @@ public class SnsContextConverterTest
     }
 
     [Fact]
+    public async Task CreateRequestAsync_EmptyValuedHeader_IsSkipped_NonEmptyIsCarried()
+    {
+        var converter = new SnsContextConverter<ExampleRequestPayload>(
+            "arn:aws:sns:us-east-1:000000000000:some-topic");
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "order:created",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            // An empty-valued header (e.g. a correlation decorator that emits "" when unset) must be
+            // skipped - SNS rejects an empty attribute value and fails the whole publish.
+            headers: new Dictionary<string, string> { { "x-empty", "" }, { "x-real", "v" } });
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.False(result.Request.MessageAttributes.ContainsKey("x-empty"));
+        Assert.Equal("v", result.Request.MessageAttributes["x-real"].StringValue);
+    }
+
+    [Fact]
+    public async Task OutboundConverter_EmptyValuedHeader_IsSkipped()
+    {
+        var converter = new OutboundSnsContextConverter(
+            "arn:aws:sns:us-east-1:000000000000:some-topic");
+
+        var context = new OutboundContext("order:created", new ExampleRequestPayload { Name = "n" },
+            new Dictionary<string, string> { { "x-empty", "" }, { "x-real", "v" } });
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.False(result.Request.MessageAttributes.ContainsKey("x-empty"));
+        Assert.Equal("v", result.Request.MessageAttributes["x-real"].StringValue);
+    }
+
+    [Fact]
     public async Task CreateRequestAsync_FifoHeaders_MapToGroupAndDeduplicationId()
     {
         var converter = new SnsContextConverter<ExampleRequestPayload>(

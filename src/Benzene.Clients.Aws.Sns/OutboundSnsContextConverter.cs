@@ -67,6 +67,13 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
         var messageAttributes = new Dictionary<string, MessageAttributeValue>();
         foreach (var header in contextIn.Headers)
         {
+            // Skip empty-valued headers: SNS rejects an empty message-attribute value and fails the
+            // whole publish (mirrors the SQS converter and this package's documented contract).
+            if (string.IsNullOrEmpty(header.Value))
+            {
+                continue;
+            }
+
             messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
         }
 
