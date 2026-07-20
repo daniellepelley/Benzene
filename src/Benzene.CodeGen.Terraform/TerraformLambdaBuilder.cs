@@ -53,17 +53,20 @@ public class TerraformLambdaBuilder : ICodeBuilder<TerraformLambdaSettings>
                 lineWriter.WriteLine($"reserved_concurrent_executions = {settings.ReservedConcurrentExecutions}");
             }
 
-            lineWriter.WriteLine();
-            lineWriter.WriteLine("vpc_config {");
-            using (lineWriter.StartIndent())
+            if (settings.SubnetIdsExpression != null)
             {
-                lineWriter.WriteLine("security_group_ids = [");
-                lineWriter.WriteLine("]");
-                lineWriter.WriteLine(
-                    "subnet_ids = data.terraform_remote_state.practice_suite.outputs.private_subnet_ids");
+                lineWriter.WriteLine();
+                lineWriter.WriteLine("vpc_config {");
+                using (lineWriter.StartIndent())
+                {
+                    lineWriter.WriteLine("security_group_ids = [");
+                    lineWriter.WriteLine("]");
+                    lineWriter.WriteLine($"subnet_ids = {settings.SubnetIdsExpression}");
+                }
+
+                lineWriter.WriteLine("}");
             }
 
-            lineWriter.WriteLine("}");
             lineWriter.WriteLine();
             lineWriter.WriteLine("tracing_config {");
             using (lineWriter.StartIndent())
@@ -79,11 +82,12 @@ public class TerraformLambdaBuilder : ICodeBuilder<TerraformLambdaSettings>
                 lineWriter.WriteLine("ignore_changes = [");
                 using (lineWriter.StartIndent())
                 {
-                    lineWriter.WriteLine("filename,");
-                    lineWriter.WriteLine("tags[\"AutoTag_CreateTime\"],");
-                    lineWriter.WriteLine("tags[\"AutoTag_Creator\"],");
-                    lineWriter.WriteLine("environment,");
-                    lineWriter.WriteLine("layers");
+                    var ignored = settings.IgnoredChanges.ToArray();
+                    for (var i = 0; i < ignored.Length; i++)
+                    {
+                        var comma = i < ignored.Length - 1 ? "," : string.Empty;
+                        lineWriter.WriteLine($"{ignored[i]}{comma}");
+                    }
                 }
                 lineWriter.WriteLine("]");
             }

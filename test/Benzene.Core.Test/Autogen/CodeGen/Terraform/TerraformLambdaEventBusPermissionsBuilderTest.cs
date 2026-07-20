@@ -94,28 +94,18 @@ public class TerraformLambdaEventBusPermissionsBuilderTest
         }, result.Select(x => x.Name).ToArray());
     }
 
-    [Theory]
-    [InlineData("platform-eventbus_user_topic")]
-    [InlineData("platform-eventbus_client_topic")]
-    [InlineData("platform-eventbus_person_topic")]
-    [InlineData("platform-eventbus_contactinfo_topic")]
-    public void DarwinTopicNamer_FormatName_RecognizedTopics_ReturnTheNamesToConvertEntryVerbatim(string topic)
-    {
-        // The match compares underscored forms, but returns the matching namesToConvert entry
-        // as-is (still hyphenated) rather than the underscored form - these four inputs already
-        // equal their own namesToConvert entry, so the round trip is a no-op.
-        Assert.Equal(topic, DarwinTopicNamer.FormatName(topic));
-    }
-
-    [Fact]
-    public void DarwinTopicNamer_FormatName_UnrecognizedTopic_ReturnsTheUnderscoredName()
-    {
-        Assert.Equal("orders_topic", DarwinTopicNamer.FormatName("orders-topic"));
-    }
-
     [Fact]
     public void NameFormatter_UnderScoreCase_ReplacesHyphensWithUnderscores()
     {
         Assert.Equal("benzene_orders_func", NameFormatter.UnderScoreCase("benzene-orders-func"));
+    }
+
+    [Fact]
+    public void CustomSnsRemoteStateName_IsUsedInTheArnReference()
+    {
+        var result = new TerraformLambdaEventBusPermissionsBuilder()
+            .BuildPermission("benzene-orders-func", "orders-topic", "event_bus");
+
+        Assert.Contains("  source_arn = data.terraform_remote_state.event_bus.outputs.orders_topic", result);
     }
 }

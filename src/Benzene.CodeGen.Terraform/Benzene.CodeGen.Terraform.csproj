@@ -9,9 +9,9 @@
     <!--
       Not part of the 1.0 NuGet release. The Terraform generator is either going to grow into a
       complete, opinionated infra generator or stay a separate/experimental artifact; until that
-      call is made it must not ship as a full-release package (it also still carries project-specific
-      AWS conventions — e.g. DarwinTopicNamer, the practice_suite/sns remote-state assumptions). It
-      stays in the solution so it keeps compiling and its tests keep running; it just isn't packed.
+      call is made it must not ship as a full-release package. Its previous project-specific AWS
+      coupling has been removed (see CLAUDE.md) - the default output is now generic. It stays in the
+      solution so it keeps compiling and its tests keep running; it just isn't packed.
     -->
     <IsPackable>false</IsPackable>
   </PropertyGroup>
