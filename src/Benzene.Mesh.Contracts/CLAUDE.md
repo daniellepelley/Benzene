@@ -50,8 +50,16 @@ data types - no HTTP, no file I/O, no execution logic.
   service's `HealthCheckResponse` (from `Benzene.HealthChecks.Core`, reused as-is - no parallel type),
   and an `Error` (exception type name only, never a message).
 - `MeshManifestEntry`/`MeshManifest` - the top-level `manifest.json` index: one denormalized row per
-  service (`Status`, `ContractDrift`, optional `OwningTeam`, `Transports`) so a catalog view
-  doesn't need to fetch every snapshot. `Transports` (`string[]`, empty default) is lifted from
+  service (`Status`, `ContractDrift`, optional `OwningTeam`, `Transports`, `SnapshotAtUtc`) so a
+  catalog view doesn't need to fetch every snapshot. `SnapshotAtUtc` (`DateTimeOffset?`, `null`
+  default/trailing) is denormalized from that service's `MeshServiceSnapshot.FetchedAtUtc` so a
+  catalog/issue view can judge **freshness** (a service that stopped self-reporting) from
+  `manifest.json` alone — deliberately a raw timestamp, **not** a `Stale` status: staleness is
+  orthogonal to health (a service can be healthy-as-last-heard *and* stale) and is a read-time
+  derivation, so it's judged UI-side against a threshold rather than baked into the artifact (see
+  `work/service-mesh-roadmap-1.0.md`'s 2026-07-20 staleness ruling). Distinct from
+  `MeshManifest.GeneratedAtUtc` — in push/self-report mode a row's snapshot can be older than the run
+  that emitted the manifest, which is what makes staleness detectable. `Transports` (`string[]`, empty default) is lifted from
   that service's spec's document-level `transports` field (`Benzene.Schema.OpenApi`'s
   `EventServiceDocument.Transports`) by `Benzene.Mesh.Aggregator`, the same "parse the spec,
   denormalize onto the manifest" treatment as `OwningTeam` - see

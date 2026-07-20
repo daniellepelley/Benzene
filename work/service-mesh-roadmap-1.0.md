@@ -298,6 +298,50 @@
 > items are the pre-existing ones tracked in `.claude/PRODUCT_OWNERS.md`'s Mesh PO priorities (live
 > Tempo verification, structural edges, topology graph visualization, staleness representation,
 > Phase 4/5 of the original roadmap).
+> **2026-07-20 staleness-representation ruling (mesh-product-owner):** resolves the "Staleness
+> representation" open item flagged by Phase C (the 2026-07-15 block above: "an opportunistically
+> self-reporting service's entry just ages with no signal that it's stale - `MeshServiceStatus`
+> has no `Stale` value yet") and the data requirement the `mesh-ui-product-owner` filed against
+> the shipped issue inbox (`work/mesh-ui-product-vision.md`, 2026-07-20 block: the inbox renders
+> staleness as an explicit "pending data" leg because nothing backs it). **Decision — staleness is
+> a read-time derivation over a raw timestamp, not a baked status, on either plane:**
+> - **It is not a `MeshServiceStatus` value.** Widening that three-constant set (`healthy`/
+>   `unhealthy`/`unreachable`, switched on by `DetermineStatus` and the UI) would conflate two
+>   orthogonal facts: *what a service last reported* vs. *how long ago it reported*. A service can
+>   be healthy-as-last-heard **and** stale at once; one string field can't carry both. Kept
+>   separate.
+> - **The aggregator cannot honestly compute staleness, so it doesn't.** Staleness of a
+>   statically-hosted artifact is relative to *when it is read*, not when it was generated - the
+>   aggregator, at generation time, has just written every row and thinks all of it is fresh. Only
+>   the reader knows "now." So on the static plane staleness is a **UI-side derivation**, and the
+>   contract's job is to surface the raw per-row timestamp the UI needs, not a pre-computed boolean
+>   that freezes a threshold policy into the artifact.
+> - **The real gap is a missing per-service timestamp on the manifest, not a missing status.** In
+>   pure *pull* mode staleness ≈ `unreachable` (the aggregator is the clock; every run stamps a
+>   fresh `FetchedAtUtc`). The gap is specifically the *push* path (Phase C self-report): a
+>   `services/{name}.json` written by `ArtifactStoreMeshReportPublisher` ages while `manifest.json`
+>   keeps re-publishing, and `MeshManifestEntry` carries **no** timestamp - only
+>   `MeshServiceSnapshot.FetchedAtUtc` does - so the issue inbox, which reads `manifest.json` alone,
+>   literally cannot see the age without fetching every snapshot. Fix: denormalize the snapshot's
+>   `FetchedAtUtc` up onto `MeshManifestEntry` as a new optional `SnapshotAtUtc` (nullable, trailing,
+>   additive - same treatment as `OwningTeam`/`Transports`), distinct from the manifest-level
+>   `GeneratedAtUtc` precisely because in push mode a single stale row's snapshot can be far older
+>   than the run that emitted the manifest.
+> - **The collector/fleet plane needs no contract change.** `ServiceSummary.LastSeen` (heartbeat
+>   age) already exists; staleness there is a pure `mesh-fleet-ui.html` derivation nobody has
+>   rendered yet - handed back to `mesh-ui-product-owner` as a UI-only follow-up, not a data item.
+> - **Threshold lives in the UI, default 24h on the static plane.** "Too old" is a viewing-time
+>   policy, so it belongs in the issue inbox (a JS knob), not in `Contracts` or the aggregator.
+>   Recommended default 24h for the artifact plane (a normally-scheduled mesh refreshes far more
+>   often; 24h won't false-positive but will catch a genuinely dead self-reporter). The collector
+>   plane, when it renders staleness, wants a much shorter threshold (a few missed heartbeats) -
+>   the UI PO's call. **Mesh-side build = the `SnapshotAtUtc` field + aggregator thread-through +
+>   tests only; the Stale classification and threshold knob are the UI PO's package.**
+>
+> **Status:** APPROVED (scoped down from the UI PO's proposal - no `MeshServiceStatus.Stale`, no
+> collector-plane contract change). Open item moves from "no signal exists" to "timestamp shipped on
+> the manifest; UI derivation pending in `Benzene.Mesh.Ui`/`mesh-fleet-ui.html`."
+
 **Owner:** `mesh-product-owner` (`.claude/agents/mesh-product-owner.md`)
 **Purpose:** Scope a cross-service "service mesh" visibility layer for Benzene solutions:
 a catalog of every service (topics, contracts, health/dependencies), a topology view of who

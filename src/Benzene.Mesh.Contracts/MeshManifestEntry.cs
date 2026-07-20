@@ -21,8 +21,16 @@ public class MeshManifestEntry
     /// here, same as <paramref name="owningTeam"/>, so a catalog view can render it without fetching
     /// every service's full snapshot.
     /// </param>
+    /// <param name="snapshotAtUtc">
+    /// When this service's underlying <see cref="MeshServiceSnapshot"/> was taken
+    /// (<see cref="MeshServiceSnapshot.FetchedAtUtc"/>), denormalized here so a catalog/issue view can
+    /// judge freshness from <c>manifest.json</c> alone without fetching every snapshot. <c>null</c> on
+    /// a manifest written before this field existed. Distinct from <see cref="MeshManifest.GeneratedAtUtc"/>
+    /// — in push/self-report mode a single row's snapshot can be older than the run that emitted the
+    /// manifest, which is exactly what makes a "stale service" detectable.
+    /// </param>
     public MeshManifestEntry(string name, string status, bool contractDrift, string specUrl, string healthUrl,
-        string? owningTeam = null, string[]? transports = null)
+        string? owningTeam = null, string[]? transports = null, DateTimeOffset? snapshotAtUtc = null)
     {
         Name = name;
         Status = status;
@@ -31,6 +39,7 @@ public class MeshManifestEntry
         HealthUrl = healthUrl;
         OwningTeam = owningTeam;
         Transports = transports ?? Array.Empty<string>();
+        SnapshotAtUtc = snapshotAtUtc;
     }
 
     /// <summary>The service's name.</summary>
@@ -56,4 +65,12 @@ public class MeshManifestEntry
     /// array if its spec didn't advertise any.
     /// </summary>
     public string[] Transports { get; }
+
+    /// <summary>
+    /// When this service's underlying snapshot was taken, denormalized from
+    /// <see cref="MeshServiceSnapshot.FetchedAtUtc"/> so freshness can be judged from the manifest
+    /// alone. <c>null</c> on a manifest written before this field existed. Distinct from
+    /// <see cref="MeshManifest.GeneratedAtUtc"/>.
+    /// </summary>
+    public DateTimeOffset? SnapshotAtUtc { get; }
 }

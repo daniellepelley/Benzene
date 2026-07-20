@@ -56,6 +56,59 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_PopulatesSnapshotAtUtc_FromTheSnapshotFetchTime()
+    {
+        // The manifest row carries a per-service freshness timestamp (denormalized from the snapshot's
+        // FetchedAtUtc) so a catalog/issue view can judge staleness from manifest.json alone.
+        var at = new DateTimeOffset(2026, 7, 20, 9, 0, 0, TimeSpan.Zero);
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory), () => at);
+
+        var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Equal(at, Assert.Single(manifest.Services).SnapshotAtUtc);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_UnreachableService_StillCarriesSnapshotAtUtc()
+    {
+        // Staleness must work precisely for services that stopped responding, so an unreachable row
+        // still ages honestly - its SnapshotAtUtc is populated even though the fetch failed.
+        var at = new DateTimeOffset(2026, 7, 20, 9, 0, 0, TimeSpan.Zero);
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.InternalServerError, null)
+            .MapGet(HealthUrl, HttpStatusCode.InternalServerError, null);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, new FileSystemMeshArtifactStore(_rootDirectory), () => at);
+
+        var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        var entry = Assert.Single(manifest.Services);
+        Assert.Equal(MeshServiceStatus.Unreachable, entry.Status);
+        Assert.Equal(at, entry.SnapshotAtUtc);
+    }
+
+    [Fact]
+    public void MeshManifestEntry_SnapshotAtUtc_RoundTrips_AndIsBackwardCompatible()
+    {
+        var at = new DateTimeOffset(2026, 7, 20, 9, 0, 0, TimeSpan.Zero);
+        var manifest = new MeshManifest(at, new[]
+        {
+            new MeshManifestEntry("orders-api", MeshServiceStatus.Healthy, false, SpecUrl, HealthUrl,
+                owningTeam: null, transports: null, snapshotAtUtc: at),
+        });
+
+        var round = JsonSerializer.Deserialize<MeshManifest>(JsonSerializer.Serialize(manifest, JsonOptions), JsonOptions)!;
+        Assert.Equal(at, Assert.Single(round.Services).SnapshotAtUtc);
+
+        // An older manifest.json without the field deserializes with a null timestamp (back-compat).
+        var legacy = """{"generatedAtUtc":"2026-07-20T09:00:00+00:00","services":[{"name":"orders-api","status":"healthy","contractDrift":false,"specUrl":"s","healthUrl":"h"}]}""";
+        var legacyManifest = JsonSerializer.Deserialize<MeshManifest>(legacy, JsonOptions)!;
+        Assert.Null(Assert.Single(legacyManifest.Services).SnapshotAtUtc);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_PublishesTopicsCatalog_AcrossServices_WithReservedFlag()
     {
         const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";

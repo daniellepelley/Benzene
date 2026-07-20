@@ -162,6 +162,14 @@ through `ServiceResult` into the manifest entry, same denormalization treatment 
 missing/unparseable spec, or one predating this field, contributes an empty list rather than
 failing the run.
 
+**2026-07-20, `manifest.json` gained `snapshotAtUtc`:** `MeshManifestEntry` gained an optional,
+purely additive `SnapshotAtUtc` (`DateTimeOffset?`, trailing, `null` default) - source-compatible,
+and an older `manifest.json` without it deserializes to `null`. `RunOnceAsync` threads
+`snapshot.FetchedAtUtc` (already `_clock()` at build time) onto each row - a one-line denormalization,
+same treatment as `OwningTeam`/`Transports`; the aggregator does **not** compute staleness (per the
+`work/service-mesh-roadmap-1.0.md` 2026-07-20 ruling, staleness is a read-time UI derivation over
+this raw timestamp, not a status). Consumed by `Benzene.Mesh.Ui`'s issue inbox.
+
 ## Composite AsyncAPI (`asyncapi.json`)
 Each run also fetches every service's own **AsyncAPI 3.0** document (the same `spec` endpoint's
 `type=asyncapi` — `IMeshServiceSource.TryFetchSpecAsync(entry, "asyncapi", ct)`, whose

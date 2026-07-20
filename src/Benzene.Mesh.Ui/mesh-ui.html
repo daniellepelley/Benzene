@@ -707,12 +707,32 @@
     return { sev: sev, kind: kind, title: title, subject: subject, why: why, team: null,
              nav: function () { location.hash = topicHashFor(t.topic); } };
   }
+  // Staleness is a viewing-time policy derived here from each row's `snapshotAtUtc` freshness - the
+  // aggregator ships the timestamp but never a "stale" verdict (it's the clock at poll time; a stale
+  // row only appears once a self-reporting service goes quiet). 24h default won't false-positive on a
+  // normally-scheduled mesh but catches a dead self-reporter.
+  var STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+  function snapshotAgeMs(svc) {
+    if (!svc.snapshotAtUtc) return null;
+    var t = Date.parse(svc.snapshotAtUtc);
+    return isNaN(t) ? null : Date.now() - t;
+  }
+  function humanAge(ms) {
+    var h = Math.round(ms / 3600000);
+    if (h < 48) return h + (h === 1 ? " hour" : " hours");
+    return Math.round(h / 24) + " days";
+  }
+  function freshnessKnown() {
+    return (manifest.services || []).some(function (s) { return !!s.snapshotAtUtc; });
+  }
   function collectIssues() {
     var issues = [];
     (manifest.services || []).forEach(function (s) {
       if (s.status === "unreachable") issues.push(svcIssue("high", "unreachable", s, "Service unreachable", "The aggregator could not reach this service on the last run."));
       else if (s.status === "unhealthy") issues.push(svcIssue("high", "unhealthy", s, "Service unhealthy", "One or more of this service's health checks are failing."));
       if (s.contractDrift) issues.push(svcIssue("medium", "drift", s, "Contract drift", "This service's live contract differs from the last recorded baseline."));
+      var age = snapshotAgeMs(s);
+      if (age != null && age > STALE_AFTER_MS) issues.push(svcIssue("medium", "stale", s, "Service stale", "Last reported " + humanAge(age) + " ago — past the " + humanAge(STALE_AFTER_MS) + " freshness window; it may have quietly stopped reporting."));
     });
     (currentTopics || []).forEach(function (t) {
       if (t.reserved) return;
@@ -774,9 +794,14 @@
       body.appendChild(clear);
     }
 
-    var deferred = el("div", "issues-deferred");
-    deferred.innerHTML = 'Staleness detection is <span class="mono">pending data</span> — a service that stopped self-reporting is not yet flagged as stale (needs a per-service freshness signal from the mesh data layer).';
-    body.appendChild(deferred);
+    // Only surface the "pending data" note when the manifest carries no freshness signal at all (an
+    // older manifest.json predating `snapshotAtUtc`); once timestamps are present, staleness is live
+    // and any stale service shows up as an issue above.
+    if (!freshnessKnown()) {
+      var deferred = el("div", "issues-deferred");
+      deferred.innerHTML = 'Staleness detection is <span class="mono">pending data</span> — this manifest carries no per-service freshness timestamp, so a service that stopped self-reporting can\'t yet be flagged as stale.';
+      body.appendChild(deferred);
+    }
 
     sub.textContent = issues.length ? (issues.length === 1 ? "1 issue" : issues.length + " issues") : "all clear";
   }

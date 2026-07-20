@@ -50,10 +50,12 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   Each row shows the owning team (when present) and links out — service rows call `goToService`,
   topic rows set the `#topic:` hash — reusing the existing navigation. Reserved (utility) topics are
   excluded. It re-renders from both `render()` (service legs) and `renderTopics()` (topic legs join
-  once `topics.json` loads). **Staleness is a deliberately-deferred category**: there is no
-  `MeshServiceStatus.Stale` / per-service freshness signal yet, so rather than silently omit it the
-  inbox shows a "pending data" note (see `work/mesh-ui-product-vision.md`'s near-term block and the
-  filed data requirement to `mesh-product-owner`). All-clear renders a check-mark empty state.
+  once `topics.json` loads). **Staleness** is derived here client-side (the `mesh-product-owner` ruled
+  it a read-time derivation, not a `Stale` status): a service is flagged stale when its
+  `manifest.json` `snapshotAtUtc` is older than `STALE_AFTER_MS` (24h default) — a `medium` issue,
+  since freshness is orthogonal to health. The "pending data" note only shows for an older manifest
+  that carries no `snapshotAtUtc` at all (`freshnessKnown()` false). All-clear renders a check-mark
+  empty state.
 - Renders a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
   service cards (name, status badge, drift badge, links to the service's raw `specUrl`/
   `healthUrl`, a best-effort "View Spec UI" link derived from `specUrl`, and - when the manifest

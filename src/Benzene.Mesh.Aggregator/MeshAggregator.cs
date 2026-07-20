@@ -69,7 +69,7 @@ public class MeshAggregator
 
             manifestEntries.Add(new MeshManifestEntry(
                 entry.Name, DetermineStatus(snapshot), snapshot.ContractDrift, entry.SpecUrl, entry.HealthUrl,
-                entry.OwningTeam, results[i].Transports.ToArray()));
+                entry.OwningTeam, results[i].Transports.ToArray(), snapshot.FetchedAtUtc));
         }
 
         var manifest = new MeshManifest(_clock(), manifestEntries.ToArray());

@@ -95,9 +95,12 @@ Candidate vessels, to be chosen *with* `mesh-product-owner`:
   severity-grouped, link-out triage list (Needs attention / Warnings / For review) over the static
   artifacts: unhealthy/unreachable + schema-mismatch (high), contract drift (medium),
   deprecation-candidate/gap (low). Reserved topics excluded; verified light+dark via Playwright.
-  **Staleness** is rendered as an explicit "pending data" category, not fabricated — the missing
-  signal is filed as a data requirement to `mesh-product-owner` (`MeshServiceStatus.Stale` +
-  per-service freshness timestamp; mesh roadmap "Staleness representation" — OPEN).
+  **Staleness** ✅ now derived: the `mesh-product-owner` ruled (roadmap 2026-07-20) it's a read-time
+  UI derivation over a raw timestamp, **not** a `Stale` status. `manifest.json` gained per-row
+  `snapshotAtUtc`; the inbox flags a service stale when it's past a 24h freshness window
+  (`STALE_AFTER_MS`), and only shows the "pending data" note for an older manifest with no timestamps.
+  Verified via Playwright (stale service surfaces, fresh ones don't, no-timestamp manifest still notes
+  pending).
 
 ### Mid term — usage & value (needs a data layer; drive requirements out)
 - **Usage analytics** (outcome 4): per-topic/flow traffic + error trends over
