@@ -9,6 +9,17 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 5 — XML responses declared `encoding="utf-16"` but shipped as UTF-8 (`Benzene.Xml.XmlSerializer`)
+- **Bug:** `Serialize` wrote via a `StringWriter` (always UTF-16), so `XmlWriter` stamped
+  `<?xml ... encoding="utf-16"?>` into the declaration. The body is returned as a string and transmitted
+  as UTF-8 like every other body, so the declaration contradicted the actual bytes; a conformant XML
+  client honoring the declaration fails to parse the response ("no Unicode byte order mark"). Benzene's
+  own string round-trip masked it (Deserialize reads chars from a StringReader, ignoring the declaration).
+- **Repro:** `Serialize_DeclaresUtf8_SoTheUtf8WireBytesParse` — pre-fix the declaration said utf-16 and
+  `XmlDocument.Load` over the UTF-8 bytes threw; post-fix it declares utf-8 and parses.
+- **Fix:** a `Utf8StringWriter : StringWriter` overriding `Encoding => Encoding.UTF8`, so the declaration
+  matches the UTF-8 wire bytes. Existing round-trip/caching/null tests unchanged. Core suite green.
+
 ### Cycle 4 — spec build crashes on a validation rule for a non-schema member (`OpenApiValidationSchemaBuilder`)
 - **Bug:** `schema.Properties[validationSchema.Key]` (unguarded indexer) threw `KeyNotFoundException`
   when a FluentValidation `RuleFor` targeted a member that isn't a serialized schema property (e.g. a

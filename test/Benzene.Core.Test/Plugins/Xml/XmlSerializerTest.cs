@@ -47,4 +47,22 @@ public class XmlSerializerTest
 
         Assert.Equal(string.Empty, serializer.Serialize<ExampleRequestPayload>(null));
     }
+
+    [Fact]
+    public void Serialize_DeclaresUtf8_SoTheUtf8WireBytesParse()
+    {
+        // The body is returned as a string and transmitted as UTF-8 (like every other body). A
+        // StringWriter is always UTF-16, so XmlWriter used to stamp `encoding="utf-16"` into the
+        // declaration - which contradicts the UTF-8 bytes actually sent. A conformant XML client
+        // honoring the declaration then fails to parse the response.
+        var serializer = new XmlSerializer();
+        var xml = serializer.Serialize(new ExampleRequestPayload { Id = 42, Name = "foo" });
+
+        Assert.DoesNotContain("utf-16", xml, System.StringComparison.OrdinalIgnoreCase);
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(xml);
+        var doc = new System.Xml.XmlDocument();
+        var exception = Record.Exception(() => doc.Load(new System.IO.MemoryStream(bytes)));
+        Assert.Null(exception);
+    }
 }

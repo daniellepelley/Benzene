@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using System.Xml;
 using Benzene.Abstractions.Serialization;
 
@@ -6,6 +7,16 @@ namespace Benzene.Xml;
 
 public class XmlSerializer : ISerializer
 {
+    // A plain StringWriter always reports Encoding.Unicode (UTF-16), so XmlWriter stamps
+    // `encoding="utf-16"` into the XML declaration. The body is returned as a string and then
+    // transmitted as UTF-8 (like every other body), so that declaration contradicts the bytes on the
+    // wire and a conformant XML client that honors it fails to parse the response. Report UTF-8 so the
+    // declaration matches the wire.
+    private sealed class Utf8StringWriter : StringWriter
+    {
+        public override Encoding Encoding => Encoding.UTF8;
+    }
+
     // System.Xml.Serialization.XmlSerializer's own constructor already caches (and reuses) the
     // dynamically-generated serialization assembly per type internally, but still repeats its own
     // cache lookup/lock and object construction on every call; caching the instance here removes
@@ -16,7 +27,7 @@ public class XmlSerializer : ISerializer
     {
         var xsSubmit = GetSerializer(type);
 
-        using var sww = new StringWriter();
+        using var sww = new Utf8StringWriter();
         using var writer = XmlWriter.Create(sww);
         xsSubmit.Serialize(writer, payload);
         return sww.ToString();
