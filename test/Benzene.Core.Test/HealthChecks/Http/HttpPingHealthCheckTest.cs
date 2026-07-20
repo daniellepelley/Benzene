@@ -59,6 +59,20 @@ public class HttpPingHealthCheckTest
     }
 
     [Fact]
+    public async Task ExecuteAsync_StripsBasicAuthCredentialsFromTheReportedUrlAndDependency()
+    {
+        var httpClient = new HttpClient(new StubHttpMessageHandler(HttpStatusCode.OK));
+        var healthCheck = new HttpPingHealthCheck(httpClient, "https://user:s3cret@example.test/ping");
+
+        var result = await healthCheck.ExecuteAsync();
+
+        // Credentials must not leak into the report (it flows out with no authorization).
+        Assert.DoesNotContain("s3cret", (string)result.Data["Url"]);
+        Assert.Equal("https://example.test/ping", result.Data["Url"]);
+        Assert.Equal("https://example.test/ping", Assert.Single(result.Dependencies).Name);
+    }
+
+    [Fact]
     public void Type_IsHttpPing()
     {
         var healthCheck = new HttpPingHealthCheck(new HttpClient(), "https://example.test/ping");

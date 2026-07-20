@@ -77,8 +77,13 @@ for the full Kubernetes wiring guide.
 ## Important conventions
 - `IsHealthy` on the aggregated response is `true` unless at least one check reports
   `HealthCheckStatus.Failed` - a `Warning` result does not make the whole response unhealthy
-- Every check gets a 10-second timeout and exception isolation automatically; individual
-  `IHealthCheck` implementations don't need to implement either themselves
+- Every check gets a configurable timeout (default 10s) and exception isolation automatically;
+  individual `IHealthCheck` implementations don't need to implement either themselves
+- Checks run **concurrently** (one `Task.WhenAll`), each resolved from the same per-request
+  `IServiceResolver` scope. A check must therefore not share mutable scoped state with another check -
+  most notably, don't have two checks resolve and use the same scoped, non-thread-safe EF `DbContext`
+  concurrently. Register a distinct context/resource per check, or make the check self-contained.
+  (`IServiceResolver` has no child-scope API, so the engine can't isolate each check in its own scope.)
 - `.UseHealthCheck(topic, ...)` responds to `Constants.DefaultHealthCheckTopic` ("healthcheck") in
   addition to whatever topic is passed; `.UseLivenessCheck`/`.UseReadinessCheck` do not
 - `HealthCheckProcessor.PerformHealthChecksAsync` maps the aggregate result to

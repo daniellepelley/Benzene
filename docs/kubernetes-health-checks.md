@@ -137,6 +137,15 @@ If you'd rather probe over gRPC, see [Health Checks — gRPC (grpc.health.v1)](h
 for `Benzene.Grpc.AspNet`'s standard-protocol bridge, which Kubernetes' native gRPC probe type
 (`grpc.livenessProbe`/`readinessProbe.grpc`) can query directly.
 
+> **Caveat — the gRPC bridge does not split liveness from readiness.** Unlike the HTTP
+> `UseLivenessCheck`/`UseReadinessCheck` topics, `Benzene.Grpc.AspNet`'s bridge aggregates *every*
+> registered `IHealthCheck` into one `grpc.health.v1` service. So a gRPC **liveness** probe would run
+> your external-dependency (readiness) checks too — exactly the restart-on-flaky-dependency
+> anti-pattern the [liveness/readiness split](#liveness-vs-readiness) exists to avoid. Until the
+> bridge supports per-service-name checks, prefer the HTTP `/livez` + `/readyz` split above for the
+> liveness/readiness distinction, and treat the gRPC bridge as a single aggregate health signal
+> (fine for a readiness probe or a plain "is it up" check, not for a dependency-free liveness probe).
+
 ## What this does not cover
 
 - **Startup probes.** Kubernetes' third probe type (for slow-starting containers) has no dedicated

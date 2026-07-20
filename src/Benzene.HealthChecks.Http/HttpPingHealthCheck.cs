@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading;
 using Benzene.Abstractions.DI;
 using Benzene.HealthChecks.Core;
@@ -39,12 +40,27 @@ namespace Benzene.HealthChecks.Http
         /// </summary>
         public async Task<IHealthCheckResult> ExecuteAsync()
         {
-            var dependencies = new[] { new HealthCheckDependency("Http", _url) };
+            // Report the URL with any userinfo (basic-auth credentials) stripped - the reported Url and
+            // Dependency can flow out to whoever calls the health check topic with no authorization,
+            // and a "https://user:pass@host" URL would otherwise leak the credentials. The request
+            // itself still uses the full URL.
+            var reportedUrl = StripUserInfo(_url);
+            var dependencies = new[] { new HealthCheckDependency("Http", reportedUrl) };
 
             var token = _cancellation?.CancellationToken ?? CancellationToken.None;
             using var response = await _httpClient.GetAsync(_url, token);
             return HealthCheckResult.CreateInstance(response.StatusCode == HttpStatusCode.OK, Type,
-                new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } }, dependencies);
+                new Dictionary<string, object> { { "Url", reportedUrl }, { "StatusCode", response.StatusCode } }, dependencies);
+        }
+
+        private static string StripUserInfo(string url)
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.UserInfo))
+            {
+                return uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped);
+            }
+
+            return url;
         }
 
         /// <inheritdoc />
