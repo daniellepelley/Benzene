@@ -15,8 +15,13 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
 
 ## Conventions
 - `SnsContextConverter`/`OutboundSnsContextConverter` forward `IBenzeneClientRequest.Headers` onto
-  SNS `MessageAttributes` (so correlation/trace decorators reach the wire) but — unlike SQS — do
-  **not** set a `topic` attribute: SNS routing is the topic ARN itself, so they forward headers only.
+  SNS `MessageAttributes` (so correlation/trace decorators reach the wire) **and** set a `topic`
+  message attribute — the same as SQS. The SNS *topic ARN* is the fan-out destination; the Benzene
+  *topic* (which handler runs) is a separate routing key, and `Benzene.Aws.Lambda.Sns`'s
+  `SnsMessageTopicGetter` reads it from this `topic` attribute. Omitting it (as this package used to)
+  made a Benzene→Benzene SNS round-trip resolve to a null topic and fail to route. The attribute key
+  is a configurable default (`topicAttributeKey` on the converters and `.UseSns(..., topicAttributeKey:)`),
+  `SnsContextConverter<T>.DefaultTopicAttribute` = `"topic"` — keep it in sync with the consumer's key.
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SNS has only a publish
   acknowledgement, so a topic routed through SNS must be sent via `SendAsync<TRequest, Void>`; any
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at

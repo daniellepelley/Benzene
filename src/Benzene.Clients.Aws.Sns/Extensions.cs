@@ -62,9 +62,9 @@ public static class Extensions
     /// <param name="action">The action that configures the inner SNS pipeline.</param>
     /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
-        string queueUrl, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action)
+        string queueUrl, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute)
     {
-        return Convert(app, new SnsContextConverter<T>(queueUrl), action);
+        return Convert(app, new SnsContextConverter<T>(queueUrl, topicAttributeKey), action);
     }
 
     /// <summary>
@@ -74,9 +74,9 @@ public static class Extensions
     /// <param name="app">The client pipeline builder to add SNS publishing to.</param>
     /// <param name="queueUrl">The ARN of the SNS topic to publish to.</param>
     /// <returns>The pipeline builder for method chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute)
     {
-        return app.Convert(new SnsContextConverter<T>(queueUrl), builder => builder.UseSnsClient());
+        return app.Convert(new SnsContextConverter<T>(queueUrl, topicAttributeKey), builder => builder.UseSnsClient());
     }
 
     /// <summary>
@@ -88,9 +88,9 @@ public static class Extensions
     /// <param name="action">A callback used to configure the converted SNS publish pipeline.</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app,
-        string topicArn, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action)
+        string topicArn, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute)
     {
-        return app.Convert(new OutboundSnsContextConverter(topicArn), action);
+        return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey), action);
     }
 
     /// <summary>
@@ -100,8 +100,8 @@ public static class Extensions
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app, string topicArn)
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app, string topicArn, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute)
     {
-        return app.Convert(new OutboundSnsContextConverter(topicArn), builder => builder.UseSnsClient());
+        return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey), builder => builder.UseSnsClient());
     }
 }

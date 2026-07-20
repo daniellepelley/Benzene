@@ -23,16 +23,25 @@ namespace Benzene.Clients.Aws.Sns;
 /// </remarks>
 public class OutboundSnsContextConverter : IContextConverter<OutboundContext, SnsSendMessageContext>
 {
+    /// <summary>
+    /// The default message-attribute key the Benzene routing topic is written to. It is a single
+    /// default, not a hard-coded value — pass a different key to interoperate with a consumer that
+    /// routes on another attribute. Keep it in sync with the consumer's attribute key.
+    /// </summary>
+    public const string DefaultTopicAttribute = "topic";
+
     private readonly ISerializer _serializer;
     private readonly string _topicArn;
+    private readonly string _topicAttributeKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutboundSnsContextConverter"/> class, using the
     /// default JSON serializer.
     /// </summary>
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
-    public OutboundSnsContextConverter(string topicArn)
-        : this(topicArn, new JsonSerializer())
+    /// <param name="topicAttributeKey">The message attribute the Benzene topic is written to (defaults to <see cref="DefaultTopicAttribute"/>).</param>
+    public OutboundSnsContextConverter(string topicArn, string topicAttributeKey = DefaultTopicAttribute)
+        : this(topicArn, new JsonSerializer(), topicAttributeKey)
     { }
 
     /// <summary>
@@ -40,10 +49,12 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
     /// </summary>
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <param name="serializer">The serializer used to serialize the message payload.</param>
-    public OutboundSnsContextConverter(string topicArn, ISerializer serializer)
+    /// <param name="topicAttributeKey">The message attribute the Benzene topic is written to (defaults to <see cref="DefaultTopicAttribute"/>).</param>
+    public OutboundSnsContextConverter(string topicArn, ISerializer serializer, string topicAttributeKey = DefaultTopicAttribute)
     {
         _topicArn = topicArn;
         _serializer = serializer;
+        _topicAttributeKey = topicAttributeKey;
     }
 
     /// <summary>
@@ -58,6 +69,10 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
         {
             messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
         }
+
+        // Carry the Benzene routing topic as a message attribute so a Benzene SNS Lambda consumer
+        // routes to the right handler — mirroring SQS. Without it the round-trip resolves to a null topic.
+        messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
 
         return Task.FromResult(new SnsSendMessageContext(new PublishRequest
         {

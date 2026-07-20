@@ -51,6 +51,60 @@ public class OutboundSnsContextConverterTest
     }
 
     [Fact]
+    public async Task SendAsync_RoutedThroughUseSns_WritesTheBenzeneTopicAsMessageAttribute()
+    {
+        // Regression: the SNS publisher used to omit the topic attribute the SNS Lambda consumer
+        // routes on, so a Benzene->Benzene SNS round-trip resolved to a null topic. It must now be set.
+        var mockAmazonSns = new Mock<IAmazonSimpleNotificationService>();
+        mockAmazonSns.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var services = new ServiceCollection();
+        services.AddSingleton(mockAmazonSns.Object);
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddOutboundRouting(routing => routing
+            .Route(Defaults.Topic, pipeline => pipeline.UseSns(TopicArn)));
+
+        var resolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+        var sender = resolver.GetService<IBenzeneMessageSender>();
+
+        await sender.SendAsync<ExampleRequestPayload, Void>(
+            Defaults.Topic, new ExampleRequestPayload { Id = 42, Name = "foo" });
+
+        mockAmazonSns.Verify(x => x.PublishAsync(
+            It.Is<PublishRequest>(message =>
+                message.MessageAttributes["topic"].StringValue == Defaults.Topic
+            ), It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
+    public async Task SendAsync_WithCustomTopicAttributeKey_WritesTopicToThatAttribute()
+    {
+        var mockAmazonSns = new Mock<IAmazonSimpleNotificationService>();
+        mockAmazonSns.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var services = new ServiceCollection();
+        services.AddSingleton(mockAmazonSns.Object);
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddOutboundRouting(routing => routing
+            .Route(Defaults.Topic, pipeline => pipeline.UseSns(TopicArn, topicAttributeKey: "x-my-topic")));
+
+        var resolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+        var sender = resolver.GetService<IBenzeneMessageSender>();
+
+        await sender.SendAsync<ExampleRequestPayload, Void>(
+            Defaults.Topic, new ExampleRequestPayload { Id = 42, Name = "foo" });
+
+        mockAmazonSns.Verify(x => x.PublishAsync(
+            It.Is<PublishRequest>(message =>
+                message.MessageAttributes.ContainsKey("x-my-topic") &&
+                message.MessageAttributes["x-my-topic"].StringValue == Defaults.Topic &&
+                !message.MessageAttributes.ContainsKey("topic")
+            ), It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
     public async Task SendAsync_WithHeaders_ForwardsHeadersAsMessageAttributes()
     {
         var mockAmazonSns = new Mock<IAmazonSimpleNotificationService>();
