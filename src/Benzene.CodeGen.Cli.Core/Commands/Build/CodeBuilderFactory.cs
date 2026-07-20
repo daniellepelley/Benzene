@@ -19,6 +19,8 @@ public class CodeBuilderFactory
                 return new ApiGatewayBuilderV1(codePayload.LambdaName);
             case "message-handlers":
                 return new MessageHandlerBuilder(LambdaNameParser.GetNamespace(codePayload.LambdaName, "Service"));
+            case "topic-client":
+                return new AtomicClientSdkBuilder(LambdaNameParser.GetNamespace(codePayload.LambdaName, "Client"));
             default:
                 return new MessageClientSdkBuilder(serviceName, LambdaNameParser.GetNamespace(codePayload.LambdaName, "Client"));
         }

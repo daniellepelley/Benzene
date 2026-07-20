@@ -8,7 +8,7 @@ public static class Constants
     public const string LambdaNameDescription = "The name of the lambda running the service";
     public const string Output = "output";
     public const string OutputDefault = "client";
-    public const string OutputDescription = "The build output, either 'client', 'message-handlers' or 'readme'";
+    public const string OutputDescription = "The build output: 'client' (one client for the whole service), 'topic-client' (a small self-contained client per topic), 'message-handlers' or 'readme'";
     public const string Directory = "directory";
     public const string DirectoryDescription = "The destination directory for the code. Leave empty for current directory.";
     public const string File = "file";
