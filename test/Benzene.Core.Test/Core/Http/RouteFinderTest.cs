@@ -37,6 +37,24 @@ public class RouteFinderTest
         Assert.Equal(Defaults.Topic, httpTopicRoute.Topic);
     }
     
+    [Fact]
+    public void Find_PrefersLiteralRoute_OverParameterizedRoute_RegardlessOfRegistrationOrder()
+    {
+        // /users/{id} is registered BEFORE the literal /users/me. A request for /users/me must reach
+        // the literal handler, not be captured by {id}="me" just because it was discovered first.
+        var mockHttpEndpointFinder = new Mock<IHttpEndpointFinder>();
+        mockHttpEndpointFinder.Setup(x => x.FindDefinitions())
+            .Returns(new[]
+            {
+                new HttpEndpointDefinition("get", "/users/{id}", "get-user"),
+                new HttpEndpointDefinition("get", "/users/me", "get-me")
+            });
+        var routeFinder = new RouteFinder(mockHttpEndpointFinder.Object);
+
+        Assert.Equal("get-me", routeFinder.Find("GET", "/users/me")!.Topic);
+        Assert.Equal("get-user", routeFinder.Find("GET", "/users/123")!.Topic);
+    }
+
     [Theory]
     [InlineData("GET", "/example", "examples")]
     [InlineData("get", "/example","example/action")]
