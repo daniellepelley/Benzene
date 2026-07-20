@@ -70,3 +70,39 @@ before any fix (dotnet 10 available; Docker not). Status key: ✅ fixed+tested+c
 ## Auth
 - No security/bypass/privilege-escalation bug found — auth is solid. One low, fail-closed asymmetry:
   the `scope` claim isn't JSON-array-parsed while `scp` is (wrongly denies, never wrongly grants).
+
+## Second pass (follow-up) — 12 more fixed, remainder are API/design decisions
+
+Fixed this pass (each reproduced with a failing test first, then fixed; full suite green: 1577):
+- ✅ **Middleware pipeline resolved every middleware up front** (High). Deferred DI resolution into the
+  chain closure, so a short-circuited/never-reached middleware isn't constructed and UseExceptionHandler
+  can cover a downstream construction failure. (`MiddlewarePipeline`)
+- ✅ **Route precedence: a `{param}` route could shadow a literal** (Medium-High). Order routes by
+  ascending parameter-segment count. (`RouteFinder`)
+- ✅ **UrlMatcher corrupted a param value overlapping a segment literal** (Low-Med). Position-anchored
+  extraction instead of global String.Replace.
+- ✅ **CORS headers set after the response was finalized on real servers** (High). Set them before next().
+- ✅ **Self-host put the query string in HttpRequest.Path** (Medium-High). Use Url.AbsolutePath.
+- ✅ **AspNet adapter threw on a duplicate header + wrote a body on 204** (Medium/Low). Append + 204 guard.
+- ✅ **Redis prefix invalidation didn't escape glob metacharacters** (Medium).
+- ✅ **Idempotency body-hash key could collide across distinct topic triples** (Low). Length-prefix.
+- ✅ **Log-scope build threw on a duplicate context key** (Low). Last-wins.
+- ✅ **Avro overflowed on uint > int.MaxValue** (Medium). Map uint to Avro long.
+- ✅ **test:** stopped the W3C trace-context tests flaking under parallel execution (shared collection).
+
+### Verified reproducible but NOT fixed (needs a design decision / public-API change — flagged)
+- 🚩 **AddMessageHandlers `TryAddSingleton` finder lock-in** (Medium). Confirmed reproducible, but a
+  naive fix (aggregate both finders) surfaces the test assembly's **duplicate topics** that the current
+  cross-finder dedup silently absorbs, breaking 50 tests. The no-arg overload's own XML doc says it's
+  *deliberately* reflection-free, so aggregating the two is a design change (dedup semantics), not a
+  drop-in. Reverted; needs maintainer input.
+- 🚩 **Cache value-type `T` miss-as-hit** (High-if-used, latent). Fix needs `where T : class` (a
+  source-breaking public-API change) or presence-tracking (an interface change). No in-repo caller uses
+  a value-type payload today. Left for a maintainer API decision.
+- 🚩 **MiddlewareRouter value-type request null-check always false** (Low, latent). Needs
+  `where TRequest : class` (public-API constraint). No in-repo value-type router. Flagged.
+- 🚩 **Avro Dictionary/map round-trip + extreme `ulong` > long.MaxValue** (Medium). Needs a bidirectional
+  Avro map-schema change (schema + datum + reverse). Niche serializer; deferred as a scoped follow-up.
+- 🚩 (still open, design/contract) Outbound SQS/SNS `Ok` vs siblings' `Accepted`; cache null-payload
+  negative-caching policy; versioning unknown-version passthrough; auth `scope`-as-JSON-array asymmetry
+  (low, fails-closed).
