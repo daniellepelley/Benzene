@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.26.1" />
     <PackageReference Include="Grpc.Core.Api" Version="2.62.0" />
+    <!-- google.rpc.Status / BadRequest for rich error details on the grpc-status-details-bin trailer -->
+    <PackageReference Include="Grpc.StatusProto" Version="2.62.0" />
   </ItemGroup>
 
   <ItemGroup>

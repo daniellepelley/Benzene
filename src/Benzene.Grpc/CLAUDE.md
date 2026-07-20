@@ -47,7 +47,12 @@ transport-host-agnostic - depends only on `Grpc.Core.Api` and `Google.Protobuf`,
 
 ### Status, metadata, cancellation (D4-D6)
 - `IGrpcStatusCodeMapper`/`DefaultGrpcStatusCodeMapper` - maps `BenzeneResultStatus` to
-  `Grpc.Core.StatusCode`; every response also gets a `benzene-status` trailer carrying the raw status
+  `Grpc.Core.StatusCode`; every response also gets a `benzene-status` trailer carrying the raw status.
+  **Rich errors**: on a non-OK result, `GrpcMethodHandler` also attaches a `google.rpc.Status` to the
+  standard `grpc-status-details-bin` trailer (via `Grpc.StatusProto`/`Google.Api.CommonProtos`), so a
+  gRPC client can read structured details with `RpcException.GetRpcStatus()`. A `ValidationError` maps
+  its error messages to a `google.rpc.BadRequest` (one field violation per message). Alongside, not
+  replacing, the flat `benzene-status` trailer.
 - `IGrpcServerCallAccessor`/`GrpcServerCallAccessor` - scoped accessor exposing the call's
   `ServerCallContext`/`CancellationToken` to handler code (mirrors `IHttpContextAccessor`)
 - `GrpcMessageHeadersGetter` - maps inbound `RequestHeaders` (skipping binary entries) to Benzene

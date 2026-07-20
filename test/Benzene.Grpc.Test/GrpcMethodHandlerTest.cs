@@ -78,6 +78,47 @@ public class GrpcMethodHandlerTest
         Assert.Equal("cancelled", reply.Message);
     }
 
+    [Fact]
+    public async Task HandleAsync_ValidationError_AttachesGoogleRpcStatusWithFieldViolations()
+    {
+        var pipeline = BuildResultPipeline(BenzeneResult.ValidationError("Name is required"), out var serviceResolverFactory);
+        var handler = new GrpcMethodHandler(new GrpcMethodDefinition("/x/y", "topic"), serviceResolverFactory, pipeline);
+        var callContext = TestServerCallContext.Create();
+
+        var exception = await Assert.ThrowsAsync<RpcException>(() =>
+            handler.HandleAsync<EchoRequest, EchoReply>(new EchoRequest { Name = "x" }, callContext));
+
+        Assert.Equal(StatusCode.InvalidArgument, exception.StatusCode);
+        // The flat trailer is still there...
+        Assert.Contains(callContext.ResponseTrailers, e => e.Key == "benzene-status" && e.Value == BenzeneResultStatus.ValidationError);
+
+        // ...and the structured google.rpc.Status carries the field violations.
+        var detailsBytes = callContext.ResponseTrailers.GetValueBytes("grpc-status-details-bin");
+        Assert.NotNull(detailsBytes);
+        var richStatus = Google.Rpc.Status.Parser.ParseFrom(detailsBytes);
+        var badRequest = richStatus.Details[0].Unpack<Google.Rpc.BadRequest>();
+        Assert.Equal("Name is required", badRequest.FieldViolations[0].Description);
+    }
+
+    private static IMiddlewarePipeline<GrpcContext> BuildResultPipeline(Benzene.Abstractions.Results.IBenzeneResult result, out IServiceResolverFactory serviceResolverFactory)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzene().AddBenzeneMessage().AddGrpcMessageHandlers();
+
+        var pipelineBuilder = new MiddlewarePipelineBuilder<GrpcContext>(container);
+        pipelineBuilder.Use((context, _) =>
+        {
+            context.MessageHandlerResult = new MessageHandlerResult(result);
+            return Task.CompletedTask;
+        });
+
+        serviceResolverFactory = container.CreateServiceResolverFactory();
+        return pipelineBuilder.Build();
+    }
+
     private static IMiddlewarePipeline<GrpcContext> BuildPipeline(out IServiceResolverFactory serviceResolverFactory)
     {
         var services = new ServiceCollection();

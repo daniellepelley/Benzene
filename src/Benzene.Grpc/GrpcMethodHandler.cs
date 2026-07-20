@@ -3,6 +3,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core;
 using Benzene.Grpc.Serialization;
 using Benzene.Grpc.Streaming;
+using Google.Protobuf;
 using Grpc.Core;
 
 namespace Benzene.Grpc;
@@ -119,6 +120,7 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         {
             var errors = grpcContext.MessageHandlerResult?.BenzeneResult.Errors;
             var detail = errors is { Length: > 0 } ? string.Join("; ", errors) : status ?? "Error";
+            AddRichErrorDetails(grpcContext.ResponseTrailers, statusCode, detail, status, errors);
             throw new RpcException(new Status(statusCode, detail));
         }
 
@@ -126,6 +128,35 @@ public class GrpcMethodHandler : IGrpcMethodHandler
         {
             await context.WriteResponseHeadersAsync(grpcContext.ResponseHeaders);
         }
+    }
+
+    /// <summary>
+    /// Attaches a <c>google.rpc.Status</c> to the <c>grpc-status-details-bin</c> trailer alongside the
+    /// flat <c>benzene-status</c> trailer, so a gRPC client can read structured error details. A
+    /// <see cref="Benzene.Results.BenzeneResultStatus.ValidationError"/> maps its error messages to a
+    /// <c>google.rpc.BadRequest</c> with one field violation per message.
+    /// </summary>
+    private static void AddRichErrorDetails(Metadata trailers, StatusCode statusCode, string detail, string? status, string[]? errors)
+    {
+        var richStatus = new Google.Rpc.Status
+        {
+            Code = (int)statusCode,
+            Message = detail,
+        };
+
+        if (status == Benzene.Results.BenzeneResultStatus.ValidationError && errors is { Length: > 0 })
+        {
+            var badRequest = new Google.Rpc.BadRequest();
+            foreach (var error in errors)
+            {
+                badRequest.FieldViolations.Add(new Google.Rpc.BadRequest.Types.FieldViolation { Description = error });
+            }
+
+            richStatus.Details.Add(Google.Protobuf.WellKnownTypes.Any.Pack(badRequest));
+        }
+
+        // The "-bin" suffix marks a binary metadata value; the client reads it via GetRpcStatus().
+        trailers.Add("grpc-status-details-bin", richStatus.ToByteArray());
     }
 
     private static IAsyncEnumerable<TResponseItem> ResolveResponseStream<TRequest, TResponseItem>(GrpcContext<TRequest, IAsyncEnumerable<TResponseItem>> grpcContext, IServiceResolver resolver, CancellationToken cancellationToken)
