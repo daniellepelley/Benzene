@@ -19,8 +19,9 @@ API decisions to make before the freeze, two verified integration bugs, and prov
 > API to isolate), T2.3 (EF Add* extensions + migration-error detail), T2.4 (AWS side-effect
 > warnings), T2.5 (gRPC doc fixed — bridge doesn't split liveness/readiness; the code split is
 > deferred), T2.6 (faulted-`.Result` fixed in Sqs/StepFunctions/Lambda; Http URL userinfo stripped;
-> `ContinueWith` fixed). REMAINING — T2.7 (caching/throttling), and the gRPC per-service-name code
-> split. Below kept as the record.
+> `ContinueWith` fixed), T2.7 (CachingHealthCheckProcessor — opt-in TTL cache keyed by check-set).
+> Tier 2 COMPLETE except the gRPC per-service-name **code** split (doc fixed; the code split and
+> transport token-seeding remain as their own features). Below kept as the record.
 
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way

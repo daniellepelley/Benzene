@@ -39,6 +39,11 @@ for the full Kubernetes wiring guide.
   (e.g. a different timeout) and have it win. Each check is **timed** and its duration stamped onto the
   result (`IHealthCheckResult.Duration`). A static `PerformHealthChecksAsync(topic, checks)` shim
   remains for source-compatibility (the `topic` arg is unused).
+- `CachingHealthCheckProcessor` - an opt-in `IHealthCheckProcessor` decorator that caches the
+  aggregated result for a TTL (keyed by the set of check `Type`s, so liveness/readiness cache
+  independently), so a probe polling every few seconds doesn't re-run every check and re-hit every
+  dependency. Register it as the `IHealthCheckProcessor` wrapping a `HealthCheckProcessor`; do NOT use
+  it for a liveness probe that must reflect the instant state.
   Each check's `Dependencies` (see `Benzene.HealthChecks.Core`) survives this aggregation - the
   processor explicitly rebuilds a `HealthCheckResult` per check, and threads `Dependencies` through
   that rebuild alongside `Status`/`Type`/`Data`. Known limitation: if `TimeOutHealthCheck`/
