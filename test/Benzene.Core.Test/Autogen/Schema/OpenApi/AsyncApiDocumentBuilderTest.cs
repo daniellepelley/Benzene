@@ -52,5 +52,41 @@ public class AsyncApiDocumentBuilderTest
         Assert.Equal(yaml, yaml1);
 
     }
+
+    [Fact]
+    public void Operations_UseTheCorrectAsyncApiPerspective()
+    {
+        // AsyncAPI 2.x is application-centric and counter-intuitive: `publish` = messages the app
+        // RECEIVES, `subscribe` = messages the app SENDS. A handler receives its request and sends its
+        // reply; a broadcast event and an egress message-sender are both things the app sends.
+        var handler = MessageHandlerDefinition.CreateInstance("tenant:create", typeof(Example), typeof(Inner));
+        var broadcast = new ResponseEventDefinition("tenant:created", typeof(Example));
+        var sender = MessageSenderDefinition.CreateInstance("tenant:updated", typeof(Example));
+
+        var doc = new AsyncApiDocumentBuilder(new SchemaBuilder())
+            .AddInfo(new AsyncApiInfo { Title = "tenant-core", Version = "1.0" })
+            .AddMessageHandlerDefinitions(new[] { handler })
+            .AddBroadcastEventDefinitions(new[] { broadcast })
+            .AddMessageSenderDefinitions(new[] { sender })
+            .Build();
+
+        // Handler request is received ⇒ publish (not subscribe); reply is sent ⇒ subscribe.
+        Assert.NotNull(doc.Channels["tenant:create"].Publish);
+        Assert.Null(doc.Channels["tenant:create"].Subscribe);
+        Assert.NotNull(doc.Channels["tenant:create:benzeneResult"].Subscribe);
+        Assert.Null(doc.Channels["tenant:create:benzeneResult"].Publish);
+
+        // Broadcast event and egress sender are produced/sent ⇒ subscribe (not publish).
+        Assert.NotNull(doc.Channels["tenant:created"].Subscribe);
+        Assert.Null(doc.Channels["tenant:created"].Publish);
+        Assert.NotNull(doc.Channels["tenant:updated"].Subscribe);
+        Assert.Null(doc.Channels["tenant:updated"].Publish);
+
+        // Document-root metadata is populated (no placeholder junk on the operations).
+        Assert.Equal("application/json", doc.DefaultContentType);
+        Assert.False(string.IsNullOrEmpty(doc.Id));
+        Assert.Null(doc.Channels["tenant:created"].Subscribe.Summary);
+        Assert.Null(doc.Channels["tenant:created"].Subscribe.Description);
+    }
 }
 

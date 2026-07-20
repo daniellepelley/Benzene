@@ -48,6 +48,16 @@ for the `benzene` contract.
   error responses (400/401/403/404/422/500/503) whose bodies reference `ErrorPayload`.
 - `AsyncApi/AsyncApiDocumentBuilder` - AsyncAPI 2.0 (`AsyncApiVersion.AsyncApi2_0`); channels per topic
   plus `:benzeneResult` response channels, broadcast events, and message-sender definitions.
+  **Operation perspective (important):** AsyncAPI 2.x names operations from the *application's* view,
+  counter-intuitively — `publish` = messages the app **receives/consumes**, `subscribe` = messages it
+  **sends/produces**. So a handler's request channel uses `publish` (it receives the request), its
+  `:benzeneResult` reply uses `subscribe` (it sends the reply), and broadcast/egress-sender channels use
+  `subscribe` (produced outbound). Getting this backwards makes every consumer read the service inside-out;
+  a builder test (`Operations_UseTheCorrectAsyncApiPerspective`) pins it. The document also carries `id`
+  (`urn:benzene:service:<title>`) and `defaultContentType` (`application/json`). AsyncAPI **3.0** (with
+  `action: send/receive` + a native `reply` object, which fits Benzene's request/reply far better) is a
+  documented follow-up — it needs a different library (the current `AsyncAPI.NET` 4.1.0 is 2.0-only); see
+  `work/asyncapi-alignment.md`.
 - `EventService/EventServiceDocumentBuilder` - the `benzene` `EventServiceDocument`; requests, events,
   HTTP mappings, an optional top-level `messageEndpoint`, and deterministic generated example payloads.
 - Builders implement the "consumer" seam interfaces in `Abstractions/` -

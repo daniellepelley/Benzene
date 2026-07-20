@@ -34,6 +34,10 @@ public class AsyncApiDocumentBuilder :
 
         return new AsyncApiDocument
         {
+            // A stable identifier for this application, and the content type every Benzene message
+            // body uses unless a message overrides it (AsyncAPI's document-root `id`/`defaultContentType`).
+            Id = BuildId(_openApiInfo.Title),
+            DefaultContentType = "application/json",
             Info = _openApiInfo,
             Tags = _tags.ToArray(),
             Channels = _channels,
@@ -44,6 +48,13 @@ public class AsyncApiDocumentBuilder :
                     x => Mapper.Map(x.Value))
             }
         };
+    }
+
+    private static string BuildId(string? title)
+    {
+        var slug = new string((title ?? string.Empty).Trim().ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+        return string.IsNullOrEmpty(slug) ? "urn:benzene:service" : $"urn:benzene:service:{slug}";
     }
     public AsyncApiDocumentBuilder AddApplicationInfo(IApplicationInfo applicationInfo)
     {
@@ -81,22 +92,26 @@ public class AsyncApiDocumentBuilder :
 
     public void AddMessageHandlerDefinition(string topic, IMessageHandlerDefinition[] messageHandlerDefinitions)
     {
+        // AsyncAPI 2.x operations are named from the application's perspective, counter-intuitively:
+        // `publish` = messages the application RECEIVES/consumes; `subscribe` = messages it SENDS/produces.
+        // A handler receives the request on `topic` (⇒ publish) and sends the reply on the
+        // `:benzeneResult` channel (⇒ subscribe).
         _channels.Add(topic, new AsyncApiChannel
         {
-            Subscribe = new AsyncApiOperation
+            Publish = new AsyncApiOperation
             {
                 OperationId = topic,
-                Message = messageHandlerDefinitions.Select(x => 
+                Message = messageHandlerDefinitions.Select(x =>
                     CreateAsyncApiMessage(topic, x.Topic.Version, x.RequestType)).ToList(),
             }
         });
 
         _channels.Add($"{topic}:benzeneResult", new AsyncApiChannel
         {
-            Publish = new AsyncApiOperation
+            Subscribe = new AsyncApiOperation
             {
                 OperationId = $"{topic}:benzeneResult",
-                Message = messageHandlerDefinitions.Select(x => 
+                Message = messageHandlerDefinitions.Select(x =>
                     CreateAsyncApiMessage(topic, x.Topic.Version, x.ResponseType)).ToList()
             }
         });
@@ -131,13 +146,13 @@ public class AsyncApiDocumentBuilder :
 
     public AsyncApiDocumentBuilder AddBroadcastEventDefinition(IMessageDefinition messageDefinition)
     {
+        // A broadcast event is produced/sent by the application ⇒ `subscribe` (see the perspective
+        // note in AddMessageHandlerDefinition).
         _channels.Add(messageDefinition.Topic.Id, new AsyncApiChannel
         {
-            Publish = new AsyncApiOperation
+            Subscribe = new AsyncApiOperation
             {
                 OperationId = messageDefinition.Topic.Id,
-                Summary = "Summary",
-                Description = "Description",
                 Message = new List<AsyncApiMessage>
                 {
                     CreateAsyncApiMessage(messageDefinition.Topic.Id, "", messageDefinition.RequestType)
@@ -149,13 +164,12 @@ public class AsyncApiDocumentBuilder :
 
     public AsyncApiDocumentBuilder AddEventDefinition(string topic, string typeName, OpenApiSchema schema)
     {
+        // An event is produced/sent by the application ⇒ `subscribe`.
         _channels.Add(topic, new AsyncApiChannel
         {
-            Publish = new AsyncApiOperation
+            Subscribe = new AsyncApiOperation
             {
                 OperationId = topic,
-                Summary = "Summary",
-                Description = "Description",
                 Message = new List<AsyncApiMessage>
                 {
                     CreateAsyncApiMessage(topic, String.Empty, AddSchema(typeName, schema))
@@ -178,13 +192,12 @@ public class AsyncApiDocumentBuilder :
     
     public AsyncApiDocumentBuilder AddMessageSenderDefinition(IMessageDefinition messageDefinition)
     {
+        // A message the application sends outbound (egress) ⇒ `subscribe`.
         _channels.Add(messageDefinition.Topic.Id, new AsyncApiChannel
         {
-            Publish = new AsyncApiOperation
+            Subscribe = new AsyncApiOperation
             {
                 OperationId = messageDefinition.Topic.Id,
-                Summary = "Summary",
-                Description = "Description",
                 Message = new List<AsyncApiMessage>
                 {
                     CreateAsyncApiMessage(messageDefinition.Topic.Id, "", messageDefinition.RequestType)
