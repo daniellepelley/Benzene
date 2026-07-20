@@ -35,9 +35,13 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
         // Forward headers onto the produced message, matching KafkaContextConverter. Previously
         // dropped here, which silently lost correlation-id / W3C trace-context on this produce path.
         var headers = new Headers();
-        foreach (var header in _messageHeadersGetter.GetHeaders(contextIn))
+        var messageHeaders = _messageHeadersGetter.GetHeaders(contextIn);
+        if (messageHeaders != null)
         {
-            headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
+            foreach (var header in messageHeaders)
+            {
+                headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
+            }
         }
 
         return Task.FromResult(new KafkaSendMessageContext(
