@@ -9,12 +9,16 @@
 /// </remarks>
 public class DefaultHttpHeaderMappings : IHttpHeaderMappings
 {
+    // Shared empty instance rather than a fresh allocation per call: the ApiGateway/self-host header
+    // paths call GetMappings() per request (twice), and every caller treats the result as read-only.
+    private static readonly IDictionary<string, string> Empty = new Dictionary<string, string>();
+
     /// <summary>
     /// Gets an empty header mappings dictionary.
     /// </summary>
-    /// <returns>An empty dictionary indicating no custom header name mappings.</returns>
+    /// <returns>An empty dictionary indicating no custom header name mappings. Treat as read-only.</returns>
     public IDictionary<string, string> GetMappings()
     {
-        return new Dictionary<string, string>();
+        return Empty;
     }
 }

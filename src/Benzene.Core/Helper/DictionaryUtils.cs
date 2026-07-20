@@ -16,7 +16,17 @@ public static class DictionaryUtils
     /// <param name="overlayDictionary">The overlay dictionary containing values to map.</param>
     public static void MapOnto(IDictionary<string, object> source, IDictionary<string, string> overlayDictionary)
     {
-        MapOnto(source, overlayDictionary?.ToDictionary(x => x.Key, x => x.Value as object));
+        if (overlayDictionary == null)
+        {
+            return;
+        }
+
+        // Overlay the string entries directly instead of first materializing a full
+        // Dictionary<string, object> copy (one throwaway dictionary per call on the HTTP path).
+        foreach (var overlay in overlayDictionary)
+        {
+            MapOnto(source, overlay.Key, overlay.Value);
+        }
     }
 
     /// <summary>
@@ -35,17 +45,27 @@ public static class DictionaryUtils
 
         foreach (var overlay in overlayDictionary)
         {
-            if (!source.ContainsKey(overlay.Key.ToLowerInvariant()))
-            {
-                source.Add(overlay.Key.ToLowerInvariant(), overlay.Value);
-            }
-            else if (source[overlay.Key.ToLowerInvariant()] == default)
-            {
-                source[overlay.Key.ToLowerInvariant()] = overlay.Value;
-            }
+            MapOnto(source, overlay.Key, overlay.Value);
         }
 
         return source;
+    }
+
+    // Adds the key (lower-cased) if absent, or fills it in when the existing value is null; the key is
+    // lower-cased once and looked up once, instead of the previous ContainsKey + up-to-three indexer
+    // re-lookups (each re-lower-casing the key) per entry.
+    private static void MapOnto(IDictionary<string, object> source, string key, object value)
+    {
+        var lowerKey = key.ToLowerInvariant();
+
+        if (!source.TryGetValue(lowerKey, out var existing))
+        {
+            source.Add(lowerKey, value);
+        }
+        else if (existing == default)
+        {
+            source[lowerKey] = value;
+        }
     }
     
     /// <summary>
@@ -73,12 +93,19 @@ public static class DictionaryUtils
     public static IDictionary<string, string> FilterAndReplace(IDictionary<string, string> source,
         IDictionary<string, string> filter)
     {
-        return source
-            .Where(x => filter.ContainsKey(x.Key.ToLowerInvariant()))
-            .Select(x => (filter[x.Key.ToLowerInvariant()], source[x.Key]))
-            .GroupBy(x => x.Item1)
-            .Select(x => x.First())
-            .ToDictionary(x => x.Item1, x => x.Item2);
+        // Single pass with TryGetValue/TryAdd (first-wins), replacing the per-entry double lookup +
+        // GroupBy/First/ToDictionary. Only entries whose key is in the filter are kept.
+        var output = new Dictionary<string, string>();
+
+        foreach (var entry in source)
+        {
+            if (filter.TryGetValue(entry.Key.ToLowerInvariant(), out var mapped))
+            {
+                output.TryAdd(mapped, entry.Value);
+            }
+        }
+
+        return output;
     }
 
     /// <summary>
@@ -90,14 +117,17 @@ public static class DictionaryUtils
     public static IDictionary<string, string> Replace(IDictionary<string, string> source,
         IDictionary<string, string> filter)
     {
-        return source
-            .Select(x => filter.ContainsKey(x.Key.ToLowerInvariant())
-                ? (filter[x.Key.ToLowerInvariant()], source[x.Key])
-                : (x.Key, x.Value)
-            )
-            .GroupBy(x => x.Item1)
-            .Select(x => x.First())
-            .ToDictionary(x => x.Item1, x => x.Item2);
+        // Single pass with TryGetValue/TryAdd (first-wins), replacing the per-entry double lookup +
+        // GroupBy/First/ToDictionary. A key found in the filter is renamed; others pass through.
+        var output = new Dictionary<string, string>();
+
+        foreach (var entry in source)
+        {
+            var key = filter.TryGetValue(entry.Key.ToLowerInvariant(), out var mapped) ? mapped : entry.Key;
+            output.TryAdd(key, entry.Value);
+        }
+
+        return output;
     }
 
     /// <summary>

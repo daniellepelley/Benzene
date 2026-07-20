@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Http;
 
@@ -27,13 +29,24 @@ public class AspNetMessageHeadersGetter : IMessageHeadersGetter<AspNetContext>
     /// <returns>A dictionary of header/field names to values.</returns>
     public IDictionary<string, string> GetHeaders(AspNetContext context)
     {
-        return context.HttpContext.Request.Headers
-            .Select(x => _headerMapping.ContainsKey(x.Key.ToLowerInvariant())
-                ? (_headerMapping[x.Key.ToLowerInvariant()], context.HttpContext.Request.Headers[x.Key].First())
-                : (x.Key, x.Value.First())
-            )
-            .GroupBy(x => x.Item1)
-            .Select(x => x.First())
-            .ToDictionary(x => x.Item1, x => x.Item2);
+        // Single pass with TryGetValue/TryAdd instead of a per-header double dictionary lookup
+        // (ContainsKey + indexer, each re-lowercasing the key) plus a GroupBy/First/ToDictionary just
+        // to dedupe - this runs on every HTTP request. TryAdd keeps the first entry per resulting key,
+        // matching the old GroupBy(...).Select(g => g.First()). When there are no mappings (the common
+        // case) the key isn't lowercased at all.
+        var headers = context.HttpContext.Request.Headers;
+        var result = new Dictionary<string, string>(headers.Count);
+        var hasMappings = _headerMapping.Count != 0;
+
+        foreach (var header in headers)
+        {
+            var key = hasMappings && _headerMapping.TryGetValue(header.Key.ToLowerInvariant(), out var mapped)
+                ? mapped
+                : header.Key;
+
+            result.TryAdd(key, header.Value.First());
+        }
+
+        return result;
     }
 }

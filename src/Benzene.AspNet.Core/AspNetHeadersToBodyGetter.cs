@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Http;
 
@@ -27,11 +29,19 @@ public class AspNetHeadersToBodyGetter : IMessageHeadersGetter<AspNetContext>
     /// <returns>A dictionary of mapped field names to header values, for headers in the configured mapping that are present on the request.</returns>
     public IDictionary<string, string> GetHeaders(AspNetContext context)
     {
-        return context.HttpContext.Request.Headers
-            .Where(x => _headerMapping.ContainsKey(x.Key.ToLowerInvariant()))
-            .Select(x => (_headerMapping[x.Key.ToLowerInvariant()], context.HttpContext.Request.Headers[x.Key].First()))
-            .GroupBy(x => x.Item1)
-            .Select(x => x.First())
-            .ToDictionary(x => x.Item1, x => x.Item2);
+        // Single pass with TryGetValue/TryAdd instead of a per-header double lookup + GroupBy/First/
+        // ToDictionary - runs on every HTTP request. TryAdd keeps the first entry per mapped name,
+        // matching the old GroupBy(...).Select(g => g.First()).
+        var result = new Dictionary<string, string>();
+
+        foreach (var header in context.HttpContext.Request.Headers)
+        {
+            if (_headerMapping.TryGetValue(header.Key.ToLowerInvariant(), out var mapped))
+            {
+                result.TryAdd(mapped, header.Value.First());
+            }
+        }
+
+        return result;
     }
 }
