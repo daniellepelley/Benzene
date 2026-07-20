@@ -30,6 +30,7 @@ internal sealed class MeshAnnouncer : IAsyncDisposable
     private readonly TimeSpan _heartbeatInterval;
     private readonly CancellationTokenSource _stopping = new();
     private int _started;
+    private Task? _runTask;
 
     public MeshAnnouncer(
         MeshServiceInfo info,
@@ -68,7 +69,7 @@ internal sealed class MeshAnnouncer : IAsyncDisposable
             return;
         }
 
-        _ = Task.Run(() => RunAsync(descriptor, _stopping.Token));
+        _runTask = Task.Run(() => RunAsync(descriptor, _stopping.Token));
     }
 
     private async Task RunAsync(MeshServiceDescriptor descriptor, CancellationToken cancellationToken)
@@ -139,6 +140,24 @@ internal sealed class MeshAnnouncer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _stopping.CancelAsync();
+
+        // Await the announce loop before disposing the CTS: the loop reads _stopping.Token on its
+        // in-flight SendAsync, so disposing the source out from under it would throw
+        // ObjectDisposedException (swallowed, but a real use-after-dispose). Mirrors
+        // HttpMeshTraceExporter, which stores and awaits its pump task the same way.
+        var runTask = _runTask;
+        if (runTask != null)
+        {
+            try
+            {
+                await runTask;
+            }
+            catch
+            {
+                // best-effort shutdown of side-channel telemetry (spec §6) - never throw from dispose
+            }
+        }
+
         _stopping.Dispose();
     }
 }
