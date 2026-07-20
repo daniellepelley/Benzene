@@ -77,6 +77,11 @@ public class KafkaConsumerFactoryTest
         mockFactory.Setup(x => x.Create(It.IsAny<ConsumerConfig>()))
             .Callback<ConsumerConfig>(consumerConfig => autoOffsetStoreAtCreation = consumerConfig.EnableAutoOffsetStore)
             .Returns(mockConsumer.Object);
+        // CommitOnlyOnSuccess defaults DrainOnRevoke on, so the worker builds via the rebalance-aware
+        // two-arg overload - set it up too, capturing the same config adjustment.
+        mockFactory.Setup(x => x.Create(It.IsAny<ConsumerConfig>(), It.IsAny<Action<ConsumerBuilder<string, string>>?>()))
+            .Callback<ConsumerConfig, Action<ConsumerBuilder<string, string>>?>((consumerConfig, _) => autoOffsetStoreAtCreation = consumerConfig.EnableAutoOffsetStore)
+            .Returns(mockConsumer.Object);
 
         using var worker = CreateWorker(config, mockFactory.Object);
         await worker.StartAsync(CancellationToken.None);

@@ -17,7 +17,13 @@ public static class Extensions
     /// <c>SetOAuthBearerTokenRefreshHandler</c> for secretless OAUTHBEARER auth). Defaults to
     /// building straight from the config, preserving the original behavior.
     /// </param>
-    public static IBenzeneWorkerStartup UseKafka<TKey, TValue>(this IBenzeneWorkerStartup app, BenzeneKafkaConfig benzeneKafkaConfig, Action<IMiddlewarePipelineBuilder<KafkaRecordContext<TKey, TValue>>> action, IKafkaConsumerFactory<TKey, TValue>? consumerFactory = null)
+    /// <param name="deadLetterOptions">
+    /// Optional retry-then-dead-letter policy: a persistently failing record is retried
+    /// <c>MaxAttempts</c> times, then re-produced (original key/value/headers plus <c>x-dlt-*</c>
+    /// diagnostics) to <c>DeadLetterTopic</c> via the caller's producer, and skipped past. Off unless
+    /// supplied with a topic and producer.
+    /// </param>
+    public static IBenzeneWorkerStartup UseKafka<TKey, TValue>(this IBenzeneWorkerStartup app, BenzeneKafkaConfig benzeneKafkaConfig, Action<IMiddlewarePipelineBuilder<KafkaRecordContext<TKey, TValue>>> action, IKafkaConsumerFactory<TKey, TValue>? consumerFactory = null, KafkaDeadLetterOptions<TKey, TValue>? deadLetterOptions = null)
     {
         app.Register(x => x
             .AddBenzeneMessage()
@@ -33,7 +39,7 @@ public static class Extensions
         {
             using var scope = serviceResolverFactory.CreateScope();
             var logger = scope.GetService<ILogger<BenzeneKafkaWorker<TKey, TValue>>>();
-            return new BenzeneKafkaWorker<TKey, TValue>(serviceResolverFactory, kafkaApplication, benzeneKafkaConfig, logger, consumerFactory);
+            return new BenzeneKafkaWorker<TKey, TValue>(serviceResolverFactory, kafkaApplication, benzeneKafkaConfig, logger, consumerFactory, deadLetterOptions);
         });
         return app;
     }

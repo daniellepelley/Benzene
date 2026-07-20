@@ -26,6 +26,21 @@ public interface IKafkaConsumerFactory<TKey, TValue>
     /// <param name="consumerConfig">The consumer configuration to build from.</param>
     /// <returns>The created (not yet subscribed) consumer; the worker subscribes, closes, and disposes it.</returns>
     IConsumer<TKey, TValue> Create(ConsumerConfig consumerConfig);
+
+    /// <summary>
+    /// Creates the consumer, applying an extra worker-supplied <see cref="ConsumerBuilder{TKey,TValue}"/>
+    /// configuration step (e.g. the rebalance handler that drives <c>DrainOnRevoke</c>) in addition to
+    /// any the factory applies itself. The default implementation ignores <paramref name="configureBuilder"/>
+    /// and falls back to <see cref="Create(ConsumerConfig)"/> - a custom factory built before this
+    /// overload existed keeps working unchanged, but the worker's rebalance-drain handler is only wired
+    /// when the factory honors this callback (the default <see cref="KafkaConsumerFactory{TKey,TValue}"/>
+    /// does).
+    /// </summary>
+    /// <param name="consumerConfig">The consumer configuration to build from.</param>
+    /// <param name="configureBuilder">A worker-supplied builder configuration step, or <c>null</c>.</param>
+    /// <returns>The created (not yet subscribed) consumer.</returns>
+    IConsumer<TKey, TValue> Create(ConsumerConfig consumerConfig, Action<ConsumerBuilder<TKey, TValue>>? configureBuilder)
+        => Create(consumerConfig);
 }
 
 /// <summary>
@@ -53,10 +68,14 @@ public class KafkaConsumerFactory<TKey, TValue> : IKafkaConsumerFactory<TKey, TV
     }
 
     /// <inheritdoc />
-    public IConsumer<TKey, TValue> Create(ConsumerConfig consumerConfig)
+    public IConsumer<TKey, TValue> Create(ConsumerConfig consumerConfig) => Create(consumerConfig, null);
+
+    /// <inheritdoc />
+    public IConsumer<TKey, TValue> Create(ConsumerConfig consumerConfig, Action<ConsumerBuilder<TKey, TValue>>? configureBuilder)
     {
         var builder = new ConsumerBuilder<TKey, TValue>(consumerConfig);
         _configure?.Invoke(builder);
+        configureBuilder?.Invoke(builder);
         return builder.Build();
     }
 }

@@ -33,6 +33,16 @@ duplicate independently. Built on `System.Threading.Channels` (BCL, no new NuGet
 - `DrainAsync(timeout)` completes every lane's writer and awaits all consumer tasks up to the
   timeout - the mechanism that makes `StopAsync` on both workers actually graceful now, instead of
   abandoning in-flight work.
+- `DrainLanesAsync(laneKeys, timeout)` (2026-07-20) quiesces only the lanes the given keys route to
+  (via `LaneForKey`, the same `key % laneCount` mapping `EnqueueAsync` uses), waiting until they have
+  no item queued or in flight - **without** completing them, so those lanes keep consuming afterward.
+  Unlike `DrainAsync` (a terminal, all-lane shutdown drain), this is a partial, reusable quiesce used
+  by `BenzeneKafkaWorker`'s consumer-group rebalance handler to settle a revoked partition's lane
+  before its offset is committed. Backed by a per-lane outstanding-item counter incremented in
+  `EnqueueAsync` and decremented in each lane's consume loop `finally` (so it un-counts on success,
+  swallowed fault, and rethrow alike). `LaneCount`/`LaneForKey` are exposed for callers that map
+  domain keys (Kafka partitions) to lanes. Covered by the `DrainLanesAsync_*` tests in
+  `BoundedConcurrentDispatcherTest`.
 - Fully unit-tested in isolation with fake items/handlers (bounded concurrency, per-key ordering,
   round-robin, exception isolation, drain-with-timeout) -
   `test/Benzene.Core.Test/Hosting/BoundedConcurrentDispatcherTest.cs`. Neither

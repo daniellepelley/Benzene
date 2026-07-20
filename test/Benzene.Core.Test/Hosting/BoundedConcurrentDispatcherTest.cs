@@ -208,4 +208,74 @@ public class BoundedConcurrentDispatcherTest
 
         Assert.True(sw.ElapsedMilliseconds < 2000, $"DrainAsync should return once its timeout elapses, took {sw.ElapsedMilliseconds}ms.");
     }
+
+    [Fact]
+    public async Task DrainLanesAsync_WaitsForOnlyTheTargetedLanesInFlightWork()
+    {
+        var logger = CreateLogger(out _);
+        var release = new TaskCompletionSource();
+        var lane0Completed = false;
+
+        // laneCount 2, key selector = the key: key 0 -> lane 0, key 1 -> lane 1.
+        var dispatcher = new BoundedConcurrentDispatcher<int>(laneCount: 2, async (item, ct) =>
+        {
+            if (item == 0)
+            {
+                await release.Task;
+                lane0Completed = true;
+            }
+        }, logger, keySelector: item => item);
+
+        await dispatcher.EnqueueAsync(0, CancellationToken.None); // lane 0, blocks until released
+        await dispatcher.EnqueueAsync(1, CancellationToken.None); // lane 1, completes immediately
+
+        // Draining only lane 1's key returns promptly even though lane 0 is still in flight.
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await dispatcher.DrainLanesAsync(new[] { 1 }, TimeSpan.FromSeconds(5));
+        sw.Stop();
+
+        Assert.False(lane0Completed, "Lane 0 should still be in flight - it was not targeted.");
+        Assert.True(sw.ElapsedMilliseconds < 2000, $"Draining an idle lane should return promptly, took {sw.ElapsedMilliseconds}ms.");
+
+        release.SetResult();
+        await dispatcher.DrainAsync(TimeSpan.FromSeconds(5));
+        Assert.True(lane0Completed);
+    }
+
+    [Fact]
+    public async Task DrainLanesAsync_ReturnsOnceTheTargetedLaneQuiesces()
+    {
+        var logger = CreateLogger(out _);
+        var completed = false;
+
+        var dispatcher = new BoundedConcurrentDispatcher<int>(laneCount: 2, async (item, ct) =>
+        {
+            await Task.Delay(150, ct);
+            completed = true;
+        }, logger, keySelector: item => item);
+
+        await dispatcher.EnqueueAsync(0, CancellationToken.None);
+
+        await dispatcher.DrainLanesAsync(new[] { 0 }, TimeSpan.FromSeconds(5));
+
+        Assert.True(completed, "DrainLanesAsync should wait for the targeted lane's in-flight work to finish.");
+    }
+
+    [Fact]
+    public async Task DrainLanesAsync_ReturnsOnTimeoutWhenWorkNeverFinishes()
+    {
+        var logger = CreateLogger(out _);
+        var neverCompletes = new TaskCompletionSource();
+
+        var dispatcher = new BoundedConcurrentDispatcher<int>(laneCount: 2, (item, ct) => neverCompletes.Task, logger,
+            keySelector: item => item);
+
+        await dispatcher.EnqueueAsync(0, CancellationToken.None);
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await dispatcher.DrainLanesAsync(new[] { 0 }, TimeSpan.FromMilliseconds(100));
+        sw.Stop();
+
+        Assert.True(sw.ElapsedMilliseconds < 2000, $"DrainLanesAsync should return once its timeout elapses, took {sw.ElapsedMilliseconds}ms.");
+    }
 }

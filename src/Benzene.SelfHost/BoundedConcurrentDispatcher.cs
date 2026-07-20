@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
@@ -39,6 +40,7 @@ public sealed class BoundedConcurrentDispatcher<T>
     private readonly Channel<T>[] _lanes;
     private readonly Task[] _consumers;
     private readonly Func<T, int>? _keySelector;
+    private readonly int[] _laneOutstanding;
     private int _roundRobinCounter = -1;
 
     /// <summary>Initializes a new instance of the <see cref="BoundedConcurrentDispatcher{T}"/> class.</summary>
@@ -70,6 +72,7 @@ public sealed class BoundedConcurrentDispatcher<T>
         _keySelector = keySelector;
         _lanes = new Channel<T>[laneCount];
         _consumers = new Task[laneCount];
+        _laneOutstanding = new int[laneCount];
 
         for (var i = 0; i < laneCount; i++)
         {
@@ -83,9 +86,15 @@ public sealed class BoundedConcurrentDispatcher<T>
 
         for (var i = 0; i < laneCount; i++)
         {
-            _consumers[i] = ConsumeLoopAsync(_lanes[i], handle, logger, catchExceptions, onFault);
+            _consumers[i] = ConsumeLoopAsync(i, handle, logger, catchExceptions, onFault);
         }
     }
+
+    /// <summary>Gets the number of lanes items are dispatched across.</summary>
+    public int LaneCount => _lanes.Length;
+
+    /// <summary>Maps a key to the lane index it routes to (the same mapping <see cref="EnqueueAsync"/> uses).</summary>
+    public int LaneForKey(int key) => (int)((uint)key % (uint)_lanes.Length);
 
     /// <summary>
     /// Routes <paramref name="item"/> to a lane (by key, if a key selector was supplied, otherwise
@@ -93,7 +102,7 @@ public sealed class BoundedConcurrentDispatcher<T>
     /// </summary>
     /// <param name="item">The item to dispatch.</param>
     /// <param name="cancellationToken">Cancels the enqueue.</param>
-    public ValueTask EnqueueAsync(T item, CancellationToken cancellationToken)
+    public async ValueTask EnqueueAsync(T item, CancellationToken cancellationToken)
     {
         // Both paths reduce through uint: the round-robin counter increments without bound and would,
         // after int.MaxValue enqueues on one dispatcher, wrap to int.MinValue - whose signed modulo is
@@ -103,7 +112,49 @@ public sealed class BoundedConcurrentDispatcher<T>
             ? (int)((uint)_keySelector(item) % (uint)_lanes.Length)
             : (int)((uint)Interlocked.Increment(ref _roundRobinCounter) % (uint)_lanes.Length);
 
-        return _lanes[laneIndex].Writer.WriteAsync(item, cancellationToken);
+        // Count the item as outstanding for its lane from the moment it's accepted (queued or in
+        // flight) until its handler finishes - this is what DrainLanesAsync waits on. If the write is
+        // cancelled/faulted, it never entered the lane, so undo the increment.
+        Interlocked.Increment(ref _laneOutstanding[laneIndex]);
+        try
+        {
+            await _lanes[laneIndex].Writer.WriteAsync(item, cancellationToken);
+        }
+        catch
+        {
+            Interlocked.Decrement(ref _laneOutstanding[laneIndex]);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Waits for the lanes the given keys route to (via <see cref="LaneForKey"/>) to have no items
+    /// queued or in flight, up to <paramref name="timeout"/> - without completing them, so those lanes
+    /// keep consuming afterwards. Used on a Kafka consumer-group rebalance to quiesce the revoked
+    /// partitions' lanes before their offsets are committed, so no record is committed as done while
+    /// still being handled. Because lanes are shared (<c>partition % laneCount</c>), this may also
+    /// wait on unrelated keys that share a lane - safe, just conservative.
+    /// </summary>
+    /// <param name="laneKeys">The keys (e.g. Kafka partition numbers) whose lanes should quiesce.</param>
+    /// <param name="timeout">The maximum time to wait before returning even if work is still in flight.</param>
+    public async Task DrainLanesAsync(IEnumerable<int> laneKeys, TimeSpan timeout)
+    {
+        var targetLanes = laneKeys.Select(LaneForKey).Distinct().ToArray();
+        if (targetLanes.Length == 0)
+        {
+            return;
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        while (targetLanes.Any(i => Volatile.Read(ref _laneOutstanding[i]) > 0))
+        {
+            if (stopwatch.Elapsed >= timeout)
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(10));
+        }
     }
 
     /// <summary>
@@ -122,10 +173,10 @@ public sealed class BoundedConcurrentDispatcher<T>
         await Task.WhenAny(Task.WhenAll(_consumers), Task.Delay(drainTimeout));
     }
 
-    private static async Task ConsumeLoopAsync(Channel<T> lane, Func<T, CancellationToken, Task> handle, ILogger logger,
+    private async Task ConsumeLoopAsync(int laneIndex, Func<T, CancellationToken, Task> handle, ILogger logger,
         bool catchExceptions, Action<Exception>? onFault)
     {
-        await foreach (var item in lane.Reader.ReadAllAsync())
+        await foreach (var item in _lanes[laneIndex].Reader.ReadAllAsync())
         {
             try
             {
@@ -140,6 +191,13 @@ public sealed class BoundedConcurrentDispatcher<T>
                     onFault?.Invoke(ex);
                     throw;
                 }
+            }
+            finally
+            {
+                // Runs on every path - success, swallowed exception, and the rethrow above (a finally
+                // still runs before the exception propagates) - so each item is un-counted exactly once
+                // and a quiescing DrainLanesAsync never hangs on a lane whose consumer is dying.
+                Interlocked.Decrement(ref _laneOutstanding[laneIndex]);
             }
         }
     }

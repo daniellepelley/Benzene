@@ -58,6 +58,35 @@ producer support. This is one of the "self-hosted worker" startup modes document
   message on the same partition advance the watermark past the failed one before its offset was
   ever stored, and out-of-order handling (`PreserveOrderPerPartition = false`) has the same failure
   mode even without any exception involved.
+  - **`DrainOnRevoke`** (`bool?`, 2026-07-20) - on a consumer-group rebalance, drains in-flight
+    handlers for the *revoked* partitions and commits their stored offsets before releasing them, so
+    no record is committed as done while still in flight and none is needlessly reprocessed by the
+    partition's next owner. `null` (default) resolves (`ShouldDrainOnRevoke`) to `CommitOnlyOnSuccess`
+    - draining is strictly safer under at-least-once and pointless under auto-store. Wired via the
+    consumer's `SetPartitionsRevokedHandler`, which quiesces the revoked partitions' dispatcher lanes
+    with `BoundedConcurrentDispatcher.DrainLanesAsync` (bounded by `DrainTimeout`) then `Commit()`s.
+    Only honored when the consumer is built through the default `KafkaConsumerFactory` or a custom
+    factory that applies the worker's builder-configuration callback (the new
+    `IKafkaConsumerFactory.Create(config, configureBuilder)` overload - a default interface method, so
+    pre-existing custom factories keep compiling but must implement it to get the drain handler). The
+    worker still calls the original single-arg `Create` when draining is off, so nothing changes on
+    that path. Prefer `PartitionAssignmentStrategy.CooperativeSticky` (a `ConsumerConfig` passthrough)
+    to reduce stop-the-world rebalances. Tests: `KafkaWorkerDeadLetterAndDrainTest` (config
+    resolution + the consumer is built with/without a rebalance handler per the flag); the lane-drain
+    mechanics themselves in `BoundedConcurrentDispatcherTest.DrainLanesAsync_*`.
+- **`KafkaDeadLetterOptions<TKey,TValue>`** (2026-07-20) - opt-in retry-then-dead-letter, passed to
+  `UseKafka(..., deadLetterOptions:)` / the worker ctor. When a record's handler keeps failing, the
+  worker retries it up to `MaxAttempts` (default 1, no retry), then re-produces the **original**
+  record (key, value, headers) to `DeadLetterTopic` via the caller-built `Producer` - Benzene never
+  wraps the producer's auth, matching the consumer-factory seam - with added `x-dlt-reason`
+  (exception **type name** only, never the message text), `x-dlt-original-topic`,
+  `x-dlt-original-partition`, `x-dlt-original-offset` headers, then advances past it (`StoreOffset`
+  under `CommitOnlyOnSuccess`). Off unless both `DeadLetterTopic` and `Producer` are set
+  (`IsEnabled`); the worker ctor throws if a topic is set without a producer. This keeps a poison
+  record from either wedging the partition (the `CatchHandlerExceptions=false` failure mode) or being
+  silently skipped (`CatchHandlerExceptions=true`): the dead-letter handle catches the handler fault
+  itself, so only a failure to *produce* the dead-letter propagates. Tests:
+  `KafkaWorkerDeadLetterAndDrainTest.DeadLetter_RetriesThenProducesOriginalRecordWithDiagnosticHeaders`.
 - `KafkaApplication<TKey,TValue>` - wraps the built middleware pipeline; `HandleAsync` is what the
   dispatcher calls per message, via its base `MiddlewareApplication<TEvent,TContext>` (`Benzene.Core.Middleware`),
   which creates a new DI scope per message and disposes it once the pipeline finishes - previously a

@@ -65,4 +65,20 @@ public class BenzeneKafkaConfig
     /// past a message that hasn't actually succeeded yet.
     /// </remarks>
     public bool CommitOnlyOnSuccess { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets whether, on a consumer-group rebalance, the worker drains in-flight handlers for
+    /// the revoked partitions and commits their stored offsets before releasing them - so no record is
+    /// committed as done while still being handled, and none is silently reprocessed by the partition's
+    /// next owner. <c>null</c> (the default) resolves to <see cref="CommitOnlyOnSuccess"/>: draining is
+    /// strictly safer under at-least-once and pointless under auto-store, so it defaults on exactly when
+    /// <see cref="CommitOnlyOnSuccess"/> is on. Set explicitly to override. Draining is bounded by
+    /// <see cref="DrainTimeout"/>. Wired via the consumer's <c>SetPartitionsRevokedHandler</c> - only
+    /// honored when the consumer is built through the default <see cref="KafkaConsumerFactory{TKey,TValue}"/>
+    /// or a custom factory that applies the worker's builder-configuration callback.
+    /// </summary>
+    public bool? DrainOnRevoke { get; set; }
+
+    /// <summary>Resolves <see cref="DrainOnRevoke"/> to its effective value (defaults to <see cref="CommitOnlyOnSuccess"/>).</summary>
+    public bool ShouldDrainOnRevoke => DrainOnRevoke ?? CommitOnlyOnSuccess;
 }
