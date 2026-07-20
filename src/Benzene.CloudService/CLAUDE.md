@@ -28,7 +28,19 @@ Core setup) remains the full-control path and this package must never be require
   the container's `IMessageHandlerDefinitionLookUp` on first use.
 - `MeshAnnouncer` — the outbound mesh feeds (mesh.md §4–§5): register-with-retry then heartbeats
   (health via `HealthCheckProcessor`). Started at wire-up on the eager path; by the first
-  invocation (typically a platform health probe) on the lazy path.
+  invocation (typically a platform health probe) on the lazy path. `IAsyncDisposable` **and**
+  `IDisposable` (bounded sync bridge, like `HttpMeshTraceExporter`) so a synchronously-disposed
+  container can stop the announce loop without MS DI throwing on an async-only-disposable.
+- **Mesh singleton disposal.** `MeshAnnouncer` and the (framework-created or `WithTraceExporter`-
+  supplied) `IMeshTraceExporter` are registered as singletons **and resolved once** by a
+  `RealizeMeshDisposables` middleware on the first invocation of either pipeline — a factory-
+  registered singleton that nothing resolves is never tracked for disposal by MS DI, so without the
+  resolve their `DisposeAsync` (announce-loop stop / trace tail-flush) never runs on shutdown. This
+  disposes them on any host that disposes its provider (ASP.NET Core, the generic host). A host whose
+  provider is never disposed — e.g. a short-lived Lambda container, where `MicrosoftServiceResolverFactory`
+  owns the provider but its `Dispose()` is a no-op — still can't dispose them; that provider-ownership
+  gap is tracked separately in `work/audit-remaining-suggestions.md` item 1. Covered by
+  `test/Benzene.Core.Test/CloudService/MeshDisposalTest.cs`.
 - `CloudServicePaths` — the `/benzene/*` default-standard path constants.
 
 ## Important conventions

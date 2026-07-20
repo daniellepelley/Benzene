@@ -21,7 +21,7 @@ public interface IMeshTraceExporter
 /// <see cref="DisposeAsync"/> flushes the tail so shutdown doesn't lose it. Works against any
 /// envelope-speaking collector - including the Go reference collector (meshd).
 /// </summary>
-public sealed class HttpMeshTraceExporter : IMeshTraceExporter, IAsyncDisposable
+public sealed class HttpMeshTraceExporter : IMeshTraceExporter, IAsyncDisposable, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly string _envelopeUrl;
@@ -67,6 +67,26 @@ public sealed class HttpMeshTraceExporter : IMeshTraceExporter, IAsyncDisposable
         _stopping.Cancel();
         await _pump.ConfigureAwait(false);
         _stopping.Dispose();
+    }
+
+    /// <summary>
+    /// Synchronous disposal bridge. A DI container disposed synchronously (MS DI's
+    /// <c>ServiceProvider.Dispose()</c> throws on a service that only implements
+    /// <see cref="IAsyncDisposable"/>) needs this path. It runs <see cref="DisposeAsync"/> but only
+    /// waits a bounded time: an unreachable collector must not hang shutdown, and the trace feed is
+    /// lossy by design (spec §4/§6), so abandoning an overlong tail-flush is acceptable - the
+    /// cancellation has already been signalled, so the pump winds down on its own regardless.
+    /// </summary>
+    public void Dispose()
+    {
+        try
+        {
+            DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (AggregateException)
+        {
+            // DisposeAsync swallows its own send failures; nothing here is actionable on shutdown.
+        }
     }
 
     private async Task PumpAsync()

@@ -67,6 +67,18 @@ hosts that have one; or give both types an `IDisposable` path. A realize-only ch
 **reverted** once these two blockers surfaced. Recommend deciding the disposal contract (who owns the
 provider, sync vs async) first.
 
+**Update (2026-07-20) — partially fixed.** The "give both types an `IDisposable` path" option was
+taken: `MeshAnnouncer` and `HttpMeshTraceExporter` now implement `IDisposable` (a bounded sync bridge
+to `DisposeAsync`, so an unreachable collector can't hang shutdown), and `UseBenzeneCloudService`
+registers the exporter and **realizes both** on the first invocation so the container tracks them.
+This disposes them cleanly on any host that disposes its provider, sync or async (ASP.NET Core, the
+generic host / self-host) — the long-running processes where a leak actually accumulates. Covered by
+`test/Benzene.Core.Test/CloudService/MeshDisposalTest.cs`. **Still open:** blocker (1) — the
+`MicrosoftServiceResolverFactory`-owns-but-never-disposes-the-provider path (AWS Lambda / self-host
+built from an `IServiceCollection`). Fixing that is the broader core-DI decision (it would surface
+disposal on *every* factory-owned provider, so it needs a sweep for other async-only-disposable
+singletons first) and is left for a maintainer call.
+
 ---
 
 ## 2. `ActivityMiddlewareDecorator` re-resolves the handler per middleware, per request (tracing on)

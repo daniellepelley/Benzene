@@ -1,3 +1,4 @@
+using System.Threading;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
@@ -88,11 +89,53 @@ public static class Extensions
                 new HttpEndpointDefinition("get", builder.HealthPath, HealthChecks.Constants.DefaultHealthCheckTopic));
             if (announcer != null)
             {
-                // So a host whose container disposal is actually wired through (unlike some test hosts)
+                // So a host whose container disposal is wired through (ASP.NET Core, the generic host)
                 // stops the announce loop on shutdown instead of leaking it - see MeshAnnouncer's remarks.
+                // Realized on first invocation (below) so the container actually tracks it for disposal.
                 x.AddSingleton(_ => announcer);
             }
+            if (traceExporter != null)
+            {
+                // The container owns the configured trace exporter's lifetime, so its DisposeAsync (which
+                // flushes the tail trace batch) runs on shutdown. Both shipped exporters dispose
+                // idempotently and implement IDisposable, so a synchronous container disposal is safe too.
+                x.AddSingleton(_ => traceExporter);
+            }
         });
+
+        // A factory-registered singleton is only disposed by the container once something *resolves*
+        // it (verified: MS DI never realizes a captured-instance factory that nothing resolves). The
+        // announcer and exporter above are otherwise only ever used via captured locals, so without
+        // this their DisposeAsync never runs on shutdown - the announce loop/HttpClient leak and the
+        // exporter drops its tail trace batch. Resolve each once, on the first invocation on either
+        // pipeline, so container disposal stops the loop and flushes the tail. (Hosts that never
+        // dispose their provider - e.g. a short-lived Lambda container - still can't dispose them;
+        // that path is the separate MicrosoftServiceResolverFactory ownership item.)
+        var meshRealized = new int[1];
+        void RealizeMeshDisposables<TCtx>(IMiddlewarePipelineBuilder<TCtx> pipeline)
+        {
+            if (announcer == null && traceExporter == null)
+            {
+                return;
+            }
+
+            pipeline.Use(resolver => new FuncWrapperMiddleware<TCtx>("RealizeMeshDisposables", (context, next) =>
+            {
+                if (Interlocked.Exchange(ref meshRealized[0], 1) == 0)
+                {
+                    if (announcer != null)
+                    {
+                        resolver.GetService<MeshAnnouncer>();
+                    }
+                    if (traceExporter != null)
+                    {
+                        resolver.GetService<IMeshTraceExporter>();
+                    }
+                }
+
+                return next();
+            }));
+        }
 
         // Eager path: handler types were given, so the descriptor exists now - register with the
         // collector immediately, before any traffic. Lazy path: the registry lives in the container,
@@ -104,6 +147,7 @@ public static class Extensions
         // middleware, then the router.
         app.UseBenzeneMessage(new BenzeneMessageHttpOptions { Path = builder.InvokePath }, envelope =>
         {
+            RealizeMeshDisposables(envelope);
             UseAnnouncerStart(envelope, announcer, descriptorSource);
             if (traceExporter != null)
             {
@@ -120,6 +164,7 @@ public static class Extensions
 
         // The HTTP-native surfaces: spec (R5) and health (R3) at their default-standard paths (R7),
         // and the app's own HTTP-routed topics through the same registry (R2).
+        RealizeMeshDisposables(app);
         UseAnnouncerStart(app, announcer, descriptorSource);
         app.UseSpec();
         app.UseHealthCheck(HealthChecks.Constants.DefaultHealthCheckTopic, healthChecks);

@@ -37,7 +37,11 @@ pull-based collector idiom and can adopt these shapes as ingest sources (roadmap
   other transports add their own, following the `IMessageGetter<TContext>` mapper idiom).
 - `HttpMeshTraceExporter` - bounded channel (DropWrite), batches to a collector's envelope
   endpoint as `mesh:traces`. Lossy by design in every failure mode (§4); `DisposeAsync` flushes
-  the tail and is idempotent.
+  the tail and is idempotent. Implements **both** `IAsyncDisposable` and `IDisposable`: MS DI's
+  synchronous `ServiceProvider.Dispose()` throws on an async-only-disposable, so the sync `Dispose()`
+  bridges to `DisposeAsync` with a bounded wait (an unreachable collector must not hang shutdown -
+  lossy by design, so an abandoned overlong tail-flush is fine). See
+  `test/Benzene.Core.Test/CloudService/MeshDisposalTest.cs`.
 - `MeshTopics` / `MeshTraceEvent` / `MeshTraceBatch` / `MeshHeartbeat` - the wire shapes.
   `MeshHeartbeat.Health` reuses `HealthChecks.Core.HealthCheckResponse` as-is.
 

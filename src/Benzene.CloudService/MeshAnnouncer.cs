@@ -18,7 +18,7 @@ namespace Benzene.CloudService;
 /// on, blocks, or fails an invocation. Started at wire-up when the descriptor is available
 /// eagerly, otherwise by the first invocation (see <see cref="EnsureStarted"/>).
 /// </summary>
-internal sealed class MeshAnnouncer : IAsyncDisposable
+internal sealed class MeshAnnouncer : IAsyncDisposable, IDisposable
 {
     private static readonly HttpClient DefaultHttp = new();
 
@@ -159,5 +159,25 @@ internal sealed class MeshAnnouncer : IAsyncDisposable
         }
 
         _stopping.Dispose();
+    }
+
+    /// <summary>
+    /// Synchronous disposal bridge. A DI container disposed synchronously (MS DI's
+    /// <c>ServiceProvider.Dispose()</c> throws on a service that only implements
+    /// <see cref="IAsyncDisposable"/>) needs this path. It runs <see cref="DisposeAsync"/> but only
+    /// waits a bounded time so an unreachable collector can't hang shutdown - the announce loop is
+    /// side-channel telemetry (spec §6), the cancellation is already signalled, so the loop winds
+    /// down on its own even if we stop waiting.
+    /// </summary>
+    public void Dispose()
+    {
+        try
+        {
+            DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (AggregateException)
+        {
+            // DisposeAsync is already best-effort and never throws for a down collector.
+        }
     }
 }

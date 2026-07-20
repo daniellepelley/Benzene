@@ -62,7 +62,14 @@ public interface ICloudServiceBuilder
     /// <summary>Relocates the health endpoint from <see cref="CloudServicePaths.Health"/> (flags R7 in the profile report).</summary>
     ICloudServiceBuilder WithHealthPath(string path);
 
-    /// <summary>Replaces the default HTTP trace exporter (an extension point, not a profile deviation).</summary>
+    /// <summary>
+    /// Replaces the default HTTP trace exporter (an extension point, not a profile deviation). The
+    /// cloud service takes ownership of the exporter's lifetime: it is registered as a singleton and
+    /// disposed on container shutdown (its <c>DisposeAsync</c> flushes the tail trace batch), so the
+    /// supplied exporter must tolerate being disposed by the container. Both shipped exporters dispose
+    /// idempotently and implement <see cref="IDisposable"/>, so this is safe for a synchronous
+    /// container disposal too.
+    /// </summary>
     ICloudServiceBuilder WithTraceExporter(IMeshTraceExporter traceExporter);
 
     /// <summary>
