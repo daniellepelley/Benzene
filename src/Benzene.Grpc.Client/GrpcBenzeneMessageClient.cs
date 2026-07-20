@@ -1,9 +1,11 @@
+using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Abstractions.Results;
 using Benzene.Clients;
 using Benzene.Core.Middleware;
+using Benzene.Grpc;
 using Benzene.Grpc.Serialization;
 using Benzene.Results;
 using Grpc.Core;
@@ -54,7 +56,7 @@ public class GrpcBenzeneMessageClient : IBenzeneMessageClient
             // call's deadline/cancellation) onto the downstream RPC, so an upstream cancel aborts it
             // instead of leaving orphaned work running.
             var cancellationToken = _serviceResolver.TryGetService<ICancellationTokenAccessor>()?.CancellationToken ?? CancellationToken.None;
-            var converter = new GrpcContextConverter<TRequest>(cancellationToken);
+            var converter = new GrpcContextConverter<TRequest>(cancellationToken, ResolveDeadline());
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);
@@ -75,6 +77,17 @@ public class GrpcBenzeneMessageClient : IBenzeneMessageClient
             _logger.LogError(ex, "Sending message {topic} failed", request.Topic);
             return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
         }
+    }
+
+    private DateTime? ResolveDeadline()
+    {
+        // Deadline propagation: when this send happens inside an inbound gRPC call, inherit that call's
+        // absolute deadline so the downstream call must finish by the same wall-clock time. The gRPC
+        // ServerCallContext reports DateTime.MaxValue when the inbound call has no deadline - treat that
+        // as "no deadline" rather than forwarding a max-value deadline.
+        var callContext = _serviceResolver.TryGetService<IGrpcServerCallAccessor>()?.CallContext;
+        var deadline = callContext?.Deadline;
+        return deadline.HasValue && deadline.Value != DateTime.MaxValue ? deadline : null;
     }
 
     public void Dispose()

@@ -12,7 +12,12 @@ a Benzene middleware pipeline over a `Grpc.Net.Client.GrpcChannel`. Mirrors the 
   pipeline (the normal DI path); the other takes a pre-built `IMiddlewarePipeline<GrpcSendMessageContext>`
   directly (used by tests). `SendMessageAsync<TRequest,TResponse>` converts the outbound payload,
   runs the pipeline, converts the protobuf response back to `TResponse` via `IGrpcMessageAdapter`,
-  and wraps it in an `IBenzeneResult<TResponse>` via the reverse status mapper
+  and wraps it in an `IBenzeneResult<TResponse>` via the reverse status mapper.
+  **Deadline propagation**: when the send happens inside an inbound gRPC call, it resolves
+  `IGrpcServerCallAccessor` and forwards that call's absolute `ServerCallContext.Deadline` onto the
+  downstream `CallOptions.Deadline`, so the downstream call must finish by the same wall-clock time
+  (an inbound `DateTime.MaxValue`, i.e. no deadline, forwards none). This complements the
+  already-propagated ambient cancellation token.
 - `GrpcSendMessageContext` - the send-pipeline context: topic, boxed message, headers, deadline,
   cancellation in; raw response object, `Status`, response trailers out
 
