@@ -25,6 +25,23 @@ for the `benzene` contract.
 - `SpecBuilder` - dispatches a `SpecRequest` to the right document builder and calls
   `GenerateJson()`/`GenerateYaml()`.
 
+### Test payloads (runtime, opt-in)
+- `Extensions.UseTestPayloads<TContext>()` / `UseTestPayloads<TContext>(string topic)` - registers
+  `TestPayloadsMessageHandler` on the `test-payloads` topic (`Constants.DefaultTestPayloadsTopic`).
+  Opt-in like `UseSpec` (nothing exposed unless called); reveals no more than the `spec` topic
+  already does.
+- `TestPayloadsMessageHandler : IMessageHandler<TestPayloadsRequest, RawStringMessage>` - builds the
+  service's `EventServiceDocument` (reusing `SpecBuilder.CreateBuilder(resolver, "benzene")`) and
+  returns a `TestPayloadsBuilder` manifest. `TestPayloadsRequest.Topic` optionally filters to one topic.
+- `TestPayloadsBuilder` - pure `EventServiceDocument → TestPayloadsManifest`/JSON: for each **domain**
+  topic (reserved utility topics skipped) it generates the deterministic, validation-aware example
+  body via the runtime-safe `Examples.ExamplePayloadBuilder` and wraps it in the portable
+  BenzeneMessage envelope (`{ topic, headers, body }`) - the exact shape a caller POSTs to
+  `/benzene-message` - plus the transports each topic is reachable on (`EventServiceDocument.Transports`
+  + per-topic HTTP mappings). Deliberately AWS-free; per-transport SNS/SQS/API-Gateway event
+  envelopes are a separate opt-in concern (see `work/runtime-test-payloads-plan.md`). Tests:
+  `test/Benzene.Core.Test/Autogen/Schema/OpenApi/TestPayloads/TestPayloadsBuilderTest.cs`.
+
 ### Document builders (one per format)
 - `OpenApi/OpenApiDocumentBuilder` - OpenAPI 3.0 (`SerializeAsJson/Yaml(OpenApiSpecVersion.OpenApi3_0)`).
   Builds paths/operations from HTTP endpoint definitions, request/response schemas, and a fixed set of

@@ -3,5 +3,6 @@
     public static class Constants
     {
         public const string DefaultSpecTopic = "spec";
+        public const string DefaultTestPayloadsTopic = "test-payloads";
     }
 }

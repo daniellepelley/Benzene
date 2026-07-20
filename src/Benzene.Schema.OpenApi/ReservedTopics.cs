@@ -21,6 +21,7 @@ public static class ReservedTopics
     public static readonly IReadOnlyCollection<string> DefaultIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         Constants.DefaultSpecTopic, // "spec"
+        Constants.DefaultTestPayloadsTopic, // "test-payloads"
         "healthcheck",
         "liveness",
         "readiness",
