@@ -1,9 +1,10 @@
 # Benzene.Benchmarks
 
 BenchmarkDotNet micro-benchmarks for Benzene's hot paths: the middleware pipeline
-(`MiddlewarePipeline<TContext>.HandleAsync`) and the request-mapping path
-(`MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>`). This is the first benchmark suite in
-the repo — there is no prior baseline to compare against.
+(`MiddlewarePipeline<TContext>.HandleAsync`), the request-mapping path
+(`MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>`), and per-message handler routing
+(`MessageHandlerDefinitionLookUp.FindHandler`). This is the first benchmark suite in the repo —
+there is no prior baseline to compare against.
 
 ## Running
 
@@ -56,6 +57,20 @@ length.
 A fresh mapper is constructed inside each `[Benchmark]` method rather than reused from
 `[GlobalSetup]`, because that's genuinely how it's used in production (a scoped, per-message
 instance) — reusing one across iterations would misrepresent the real allocation pattern.
+
+### `HandlerRoutingBenchmarks`
+
+- **`FindHandler: requested version is the first registered`** / **`... last registered`** —
+  `MessageHandlerDefinitionLookUp.FindHandler` resolving a topic (id + version) to a handler
+  definition against the shared, pre-built `MessageHandlerDefinitionIndex` (the index build is warmed
+  once in `[GlobalSetup]`, so the measured calls are steady-state lookups).
+
+`VersionsPerTopic` is parameterized (1/5/20) because that's the dimension version-selection cost
+scales with: the lookup picks one of N registered versions for the topic id. This selection used to
+be folded into the per-candidate `FirstOrDefault` predicate, re-running the whole selection and
+re-allocating its candidate-version array once per candidate — O(n²) work and allocation per
+dispatch — before being hoisted to run once. The suite makes that cost visible and guards it from
+regressing (watch that allocated bytes stay flat, not scaling with `VersionsPerTopic`).
 
 ## Why this project is separate from `Benzene.sln`'s test run
 
