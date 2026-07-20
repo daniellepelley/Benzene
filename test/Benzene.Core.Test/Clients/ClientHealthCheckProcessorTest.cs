@@ -64,4 +64,50 @@ public class ClientHealthCheckProcessorTest
         Assert.True(result.IsHealthy);
         Assert.Empty(result.HealthChecks);
     }
+
+    [Fact]
+    public void Process_HashesDiffer_DegradesSchemaCheckToWarning()
+    {
+        var result = ClientHealthCheckProcessor.Process(ResponseWithSchemaHash("service-hash"), "client-hash");
+
+        // Drift is surfaced as a first-class Warning, not only buried in Data...
+        Assert.Equal(HealthCheckStatus.Warning, result.HealthChecks[SchemaHealthCheckConstants.Type].Status);
+        // ...but Warning does not flip the aggregate IsHealthy (drift is degraded-but-not-fatal).
+        Assert.True(result.IsHealthy);
+    }
+
+    [Fact]
+    public void Process_HashesMatch_LeavesSchemaCheckOk()
+    {
+        var result = ClientHealthCheckProcessor.Process(ResponseWithSchemaHash("same-hash"), "same-hash");
+
+        Assert.Equal(HealthCheckStatus.Ok, result.HealthChecks[SchemaHealthCheckConstants.Type].Status);
+    }
+
+    [Fact]
+    public void Process_NoServiceHash_LeavesSchemaCheckOk_NoFalseWarning()
+    {
+        // Provider published no hash (e.g. older Benzene without SchemaHealthCheck): can't determine
+        // drift, so don't raise a false Warning - annotate IsMatch=false but keep the status.
+        var schema = (HealthCheckResult)HealthCheckResult.CreateInstance(true, SchemaHealthCheckConstants.Type,
+            new Dictionary<string, object>());
+        var response = new HealthCheckResponse(true,
+            new Dictionary<string, HealthCheckResult> { [SchemaHealthCheckConstants.Type] = schema });
+
+        var result = ClientHealthCheckProcessor.Process(response, "client-hash");
+
+        Assert.Equal(HealthCheckStatus.Ok, result.HealthChecks[SchemaHealthCheckConstants.Type].Status);
+        Assert.False(MatchOf(result).IsMatch);
+    }
+
+    [Fact]
+    public void Process_DoesNotMutateInputResult()
+    {
+        var input = ResponseWithSchemaHash("service-hash");
+
+        ClientHealthCheckProcessor.Process(input, "client-hash");
+
+        // The caller's own result object is untouched - no match annotation leaked into its Data.
+        Assert.False(input.HealthChecks[SchemaHealthCheckConstants.Type].Data.ContainsKey(SchemaHealthCheckConstants.MatchKey));
+    }
 }

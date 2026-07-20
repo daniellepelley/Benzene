@@ -7,6 +7,7 @@ using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
+using Benzene.Results;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,41 @@ public class HealthCheckTests
 
         var healthCheckResult = result.PayloadAsObject as HealthCheckResponse;
         Assert.False(healthCheckResult.IsHealthy);
+    }
+
+    [Fact]
+    public async Task WarningResult_DoesNotFlipIsHealthy()
+    {
+        var warning = new Mock<IHealthCheck>();
+        warning.Setup(x => x.Type).Returns("warn");
+        warning.Setup(x => x.ExecuteAsync()).ReturnsAsync(HealthCheckResult.CreateWarning("warn"));
+        var ok = new Mock<IHealthCheck>();
+        ok.Setup(x => x.Type).Returns("ok");
+        ok.Setup(x => x.ExecuteAsync()).ReturnsAsync(HealthCheckResult.CreateInstance(true, "ok"));
+
+        var result = await HealthCheckProcessor.PerformHealthChecksAsync(Defaults.HealthCheckTopic, new[] { warning.Object, ok.Object });
+
+        // A Warning is degraded-but-not-fatal: the aggregate stays healthy (200), unlike a Failed.
+        var response = result.PayloadAsObject as HealthCheckResponse;
+        Assert.True(response.IsHealthy);
+        Assert.Equal(BenzeneResultStatus.Ok, result.Status);
+    }
+
+    [Fact]
+    public async Task AnyFailedResult_FlipsIsHealthy_EvenAlongsideWarning()
+    {
+        var warning = new Mock<IHealthCheck>();
+        warning.Setup(x => x.Type).Returns("warn");
+        warning.Setup(x => x.ExecuteAsync()).ReturnsAsync(HealthCheckResult.CreateWarning("warn"));
+        var failed = new Mock<IHealthCheck>();
+        failed.Setup(x => x.Type).Returns("fail");
+        failed.Setup(x => x.ExecuteAsync()).ReturnsAsync(HealthCheckResult.CreateInstance(false, "fail"));
+
+        var result = await HealthCheckProcessor.PerformHealthChecksAsync(Defaults.HealthCheckTopic, new[] { warning.Object, failed.Object });
+
+        var response = result.PayloadAsObject as HealthCheckResponse;
+        Assert.False(response.IsHealthy);
+        Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
 
     [Fact]

@@ -24,9 +24,11 @@ public class HealthCheckResult : IHealthCheckResult
     /// <summary>Awaits <paramref name="success"/> and creates the corresponding result with no diagnostic data.</summary>
     /// <param name="success">A task producing whether the check succeeded.</param>
     /// <param name="type">The check's identifier.</param>
-    public static Task<IHealthCheckResult> CreateInstance(Task<bool> success, string type)
+    public static async Task<IHealthCheckResult> CreateInstance(Task<bool> success, string type)
     {
-        return success.ContinueWith(x => CreateInstance(x.Result, type, new Dictionary<string, object>()));
+        // async/await, not ContinueWith: ContinueWith runs on TaskScheduler.Current (a footgun) and, on
+        // a faulted source, x.Result surfaces an AggregateException that masks the real exception type.
+        return CreateInstance(await success, type, new Dictionary<string, object>());
     }
 
     /// <summary>Creates a result with diagnostic data, status <see cref="HealthCheckStatus.Ok"/> if <paramref name="success"/>, otherwise <see cref="HealthCheckStatus.Failed"/>.</summary>

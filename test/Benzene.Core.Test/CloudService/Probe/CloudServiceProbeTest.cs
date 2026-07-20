@@ -62,6 +62,44 @@ public class CloudServiceProbeTest
     }
 
     [Fact]
+    public async Task HealthEndpointReturns503WithValidBody_R3IsSatisfied()
+    {
+        // A conformant service that is merely unhealthy at probe time returns 503 with the same
+        // health-report body. Runtime degradation is not a conformance failure - R3 must pass on the
+        // report shape, not require a 200.
+        var port = GetFreeTcpPort();
+        using var fake = new FakeCloudService(port, CloudServiceProbePaths.Health, CloudServiceProbePaths.Spec, CloudServiceProbePaths.Invoke);
+        fake.OnHealth = ctx => WriteJsonAsync(ctx, 503, "{\"isHealthy\":false}");
+        fake.OnSpec = ctx => WriteJsonAsync(ctx, 200, "{\"openapi\":\"3.0.0\"}");
+        fake.OnInvoke = (ctx, topic) => topic switch
+        {
+            "healthcheck" => WriteJsonAsync(ctx, 503, Envelope("{\"isHealthy\":false}")),
+            _ => WriteJsonAsync(ctx, 404, "{}")
+        };
+
+        using var client = new HttpClient { BaseAddress = new Uri($"http://localhost:{port}") };
+        var report = await CloudServiceProbe.RunAsync(client);
+
+        AssertVerdict(report, "R3", CloudServiceProbeVerdict.Satisfied);
+    }
+
+    [Fact]
+    public async Task HealthEndpointReturnsUnexpectedStatus_R3IsNotSatisfied()
+    {
+        // A status that is neither 200 nor 503 is not a conformant health response.
+        var port = GetFreeTcpPort();
+        using var fake = new FakeCloudService(port, CloudServiceProbePaths.Health, CloudServiceProbePaths.Spec, CloudServiceProbePaths.Invoke);
+        fake.OnHealth = ctx => WriteJsonAsync(ctx, 500, "{\"isHealthy\":false}");
+        fake.OnSpec = ctx => WriteJsonAsync(ctx, 200, "{\"openapi\":\"3.0.0\"}");
+        fake.OnInvoke = (ctx, topic) => WriteJsonAsync(ctx, 404, "{}");
+
+        using var client = new HttpClient { BaseAddress = new Uri($"http://localhost:{port}") };
+        var report = await CloudServiceProbe.RunAsync(client);
+
+        AssertVerdict(report, "R3", CloudServiceProbeVerdict.NotSatisfied);
+    }
+
+    [Fact]
     public async Task UnreachableService_IsNotSatisfiedAndCascadesSensibly()
     {
         // Nothing is listening on this port - every probe call fails at the transport level.

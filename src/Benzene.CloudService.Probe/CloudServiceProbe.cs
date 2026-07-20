@@ -69,7 +69,7 @@ public static class CloudServiceProbe
         return new CloudServiceProbeReport(requirements);
     }
 
-    // ---- R3: GET the health path; satisfied iff 200 with a boolean isHealthy field (wire-contracts.md §5). ----
+    // ---- R3: GET the health path; satisfied iff 200 OR 503 with a boolean isHealthy field (wire-contracts.md §5). ----
     private static async Task<(CloudServiceProbeRequirement Requirement, bool Reached)> ProbeHealthAsync(
         HttpClient client, CloudServiceProbeOptions options, CancellationToken ct)
     {
@@ -79,18 +79,23 @@ public static class CloudServiceProbe
             return (new CloudServiceProbeRequirement("R3", HealthDescription, CloudServiceProbeVerdict.NotSatisfied,
                 $"GET {options.HealthPath} did not reach the service: {failure}"), false);
         }
-        if (status != 200)
+        // A conformant service returns 200 when healthy and 503 when unhealthy - both carry the same
+        // health-report body (see Benzene.HealthChecks.HealthCheckProcessor, which sets the 503 as a
+        // successful result so the report still renders). Runtime degradation is NOT a conformance
+        // failure (cloud-service-profile.md §4), so accept either and judge R3 on the report shape -
+        // matching how the mesh aggregator reads a 503 body rather than treating it as a fetch failure.
+        if (status != 200 && status != 503)
         {
             return (new CloudServiceProbeRequirement("R3", HealthDescription, CloudServiceProbeVerdict.NotSatisfied,
-                $"GET {options.HealthPath} returned {status}, expected 200"), true);
+                $"GET {options.HealthPath} returned {status}, expected 200 or 503"), true);
         }
         if (!TryGetBoolField(body, "isHealthy", out _))
         {
             return (new CloudServiceProbeRequirement("R3", HealthDescription, CloudServiceProbeVerdict.NotSatisfied,
-                $"200 response at {options.HealthPath} did not have a boolean 'isHealthy' field (wire-contracts.md §5)"), true);
+                $"{status} response at {options.HealthPath} did not have a boolean 'isHealthy' field (wire-contracts.md §5)"), true);
         }
         return (new CloudServiceProbeRequirement("R3", HealthDescription, CloudServiceProbeVerdict.Satisfied,
-            $"GET {options.HealthPath} returned 200 with a boolean 'isHealthy' field"), true);
+            $"GET {options.HealthPath} returned {status} with a boolean 'isHealthy' field"), true);
     }
 
     // ---- R4: POST a synthetic envelope; satisfied iff 200 with the {statusCode, headers, body} shape (wire-contracts.md §1.2). ----

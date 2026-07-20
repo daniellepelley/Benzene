@@ -131,12 +131,14 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
         lineWriter.WriteLine(
             $@"var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>(""healthcheck"", new NullPayload());",
             3);
+        lineWriter.WriteLine("if (benzeneResult.Payload == null)", 3);
+        lineWriter.WriteLine("{", 3);
+        lineWriter.WriteLine("return benzeneResult;", 4);
+        lineWriter.WriteLine("}", 3);
         lineWriter.WriteLine(
-            "return benzeneResult.Status != BenzeneResultStatus.Ok",
+            "var annotated = ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse;",
             3);
-        lineWriter.WriteLine("? benzeneResult", 4);
-        lineWriter.WriteLine(
-            ": BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);", 4);
+        lineWriter.WriteLine("return BenzeneResult.Set(benzeneResult.Status, annotated, benzeneResult.IsSuccessful);", 3);
         lineWriter.WriteLine("}", 2);
         return lineWriter.GetLines();
     }

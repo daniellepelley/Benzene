@@ -44,9 +44,12 @@ namespace Benzene.Service.Clients.Tenant
         public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()
         {
             var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload());
-            return benzeneResult.Status != BenzeneResultStatus.Ok
-                ? benzeneResult
-                : BenzeneResult.Ok(ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse);
+            if (benzeneResult.Payload == null)
+            {
+                return benzeneResult;
+            }
+            var annotated = ClientHealthCheckProcessor.Process(benzeneResult.Payload, HashCode) as HealthCheckResponse;
+            return BenzeneResult.Set(benzeneResult.Status, annotated, benzeneResult.IsSuccessful);
         }
     }
 

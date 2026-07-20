@@ -36,14 +36,8 @@ namespace Benzene.HealthChecks.Http
         {
             var dependencies = new[] { new HealthCheckDependency("Http", _url) };
 
-            var response = await _httpClient.GetAsync(_url);
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                return HealthCheckResult.CreateInstance(true, Type,
-                    new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } }, dependencies);
-            }
-
-            return HealthCheckResult.CreateInstance(false, Type,
+            using var response = await _httpClient.GetAsync(_url);
+            return HealthCheckResult.CreateInstance(response.StatusCode == HttpStatusCode.OK, Type,
                 new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } }, dependencies);
         }
 

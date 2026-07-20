@@ -21,14 +21,16 @@ public class ClientHealthCheckProcessor
     /// <returns>The response, with the schema health check annotated with the hash-match verdict.</returns>
     public static IHealthCheckResponse<HealthCheckResult> Process(IHealthCheckResponse<HealthCheckResult> healthCheckResponse, string hashCode)
     {
-        var schemaHealthCheck = healthCheckResponse.HealthChecks
-            .FirstOrDefault(x => x.Value.Type == SchemaHealthCheckConstants.Type).Value;
+        var entry = healthCheckResponse.HealthChecks
+            .FirstOrDefault(x => x.Value.Type == SchemaHealthCheckConstants.Type);
 
         // No schema health check to compare against - nothing to annotate, pass the response through.
-        if (schemaHealthCheck == null)
+        if (entry.Value == null)
         {
             return new HealthCheckResponse(healthCheckResponse.IsHealthy, healthCheckResponse.HealthChecks);
         }
+
+        var schemaHealthCheck = entry.Value;
 
         // The hash is published as a plain string, but after the response is serialized over the wire
         // and deserialized it may arrive boxed as a JsonElement (System.Text.Json) or a JToken
@@ -40,13 +42,30 @@ public class ClientHealthCheckProcessor
 
         var isMatch = serviceHashCode != null && hashCode == serviceHashCode;
 
-        schemaHealthCheck.Data[SchemaHealthCheckConstants.MatchKey] = new ClientHashMatch
+        // Copy the data (don't mutate the caller's result) and record the verdict.
+        var data = new Dictionary<string, object>(schemaHealthCheck.Data)
         {
-            ServiceHashCode = serviceHashCode,
-            ClientHashCode = hashCode,
-            IsMatch = isMatch,
+            [SchemaHealthCheckConstants.MatchKey] = new ClientHashMatch
+            {
+                ServiceHashCode = serviceHashCode,
+                ClientHashCode = hashCode,
+                IsMatch = isMatch,
+            },
         };
 
-        return new HealthCheckResponse(healthCheckResponse.IsHealthy, healthCheckResponse.HealthChecks);
+        // Genuine drift (both hashes present and differing) degrades the schema check to Warning so a
+        // health consumer sees drift as a first-class status, not only buried in Data. Warning does not
+        // flip the aggregate IsHealthy (drift is degraded-but-not-fatal), and a check that already
+        // reports Warning/Failed - or that has no hash to compare against - keeps its own status.
+        var status = serviceHashCode != null && !isMatch && schemaHealthCheck.Status == HealthCheckStatus.Ok
+            ? HealthCheckStatus.Warning
+            : schemaHealthCheck.Status;
+
+        var annotated = new HealthCheckResult(status, schemaHealthCheck.Type, data, schemaHealthCheck.Dependencies);
+
+        var healthChecks = healthCheckResponse.HealthChecks.ToDictionary(x => x.Key, x => x.Value);
+        healthChecks[entry.Key] = annotated;
+
+        return new HealthCheckResponse(healthCheckResponse.IsHealthy, healthChecks);
     }
 }

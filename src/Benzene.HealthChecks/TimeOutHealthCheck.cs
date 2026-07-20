@@ -33,11 +33,28 @@ internal class TimeOutHealthCheck : IHealthCheck
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
         var task = _inner.ExecuteAsync();
-        await Task.WhenAny(Task.Delay(10000), task);
 
-        if (task.IsCompleted)
+        // Cancel the delay as soon as the check wins, so a fast check doesn't leave a 10s timer
+        // registered until it fires (health probes run continuously - those timers add up).
+        using var cts = new CancellationTokenSource();
+        var completed = await Task.WhenAny(task, Task.Delay(10000, cts.Token));
+        if (completed == task)
         {
-            return task.Result;
+            cts.Cancel();
+            // await (not .Result): unwraps to the real exception rather than an AggregateException.
+            // The check may still fault if TimeOutHealthCheck is used without the exception-handling
+            // decorator, so guard defensively rather than relying on composition order.
+            try
+            {
+                return await task;
+            }
+            catch (Exception ex)
+            {
+                return HealthCheckResult.CreateInstance(false, _inner.Type, new Dictionary<string, object>
+                {
+                    { "Exception", ex.GetType().Name }
+                });
+            }
         }
 
         return HealthCheckResult.CreateInstance(false, _inner.Type, new Dictionary<string, object>
