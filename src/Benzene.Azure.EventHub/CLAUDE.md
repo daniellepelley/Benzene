@@ -9,14 +9,17 @@ through a Benzene middleware pipeline. This is the Event Hubs counterpart of
 documented in `docs/hosting.md`, where Benzene owns the process. For events delivered by an Azure
 Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 
-## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result never affects checkpointing
-`EventHubConsumerContext.MessageResult` is recorded for diagnostics/middleware only — there is no
-`RaiseOnFailureStatus`-style option here at all. A handler that returns a failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`) without throwing is checkpointed exactly like a success
-once `CheckpointInterval` is reached; only a **thrown exception**, combined with
-`CatchHandlerExceptions = false`, stops the worker before it checkpoints past that event (see
-`CatchHandlerExceptions` below for the redelivery mechanics). If you need a failed result to
-prevent checkpointing, have the handler throw instead of returning a failure `IMessageResult`.
+## A handler failure result affects checkpointing only when you opt in (`RaiseOnFailureStatus`)
+`EventHubConsumerContext.MessageResult` is recorded for diagnostics/middleware only **by default** —
+a handler that returns a failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) without
+throwing is checkpointed exactly like a success once `CheckpointInterval` is reached. Set
+`BenzeneEventHubConfig.RaiseOnFailureStatus = true` to escalate a non-exception failure result into a
+thrown `EventHubMessageProcessingException`, which takes the same not-checkpointed path as an
+unhandled exception (see `CatchHandlerExceptions` below): the failed event isn't checkpointed, so the
+partition doesn't advance past it and a restart redelivers it. Since Event Hubs is checkpoint-based
+with no per-event abandon, the semantics are "don't checkpoint, reprocess from here" — the handler
+must be idempotent. Mirrors the escalation on the Function triggers (`KafkaOptions.RaiseOnFailureStatus`
+etc.). Default off (purely additive).
 
 ## Key types/interfaces
 - `BenzeneEventHubWorker : IBenzeneWorker` - wires `ProcessEventAsync`/`ProcessErrorAsync` on an

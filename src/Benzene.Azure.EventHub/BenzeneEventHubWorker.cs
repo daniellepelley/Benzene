@@ -97,7 +97,15 @@ public class BenzeneEventHubWorker : IBenzeneWorker
 
         try
         {
-            await _application.HandleAsync(args.Data, _serviceResolverFactory, args.CancellationToken);
+            var messageResult = await _application.HandleAsync(args.Data, _serviceResolverFactory, args.CancellationToken);
+
+            if (_config.RaiseOnFailureStatus && messageResult?.IsSuccessful == false)
+            {
+                // Escalate a non-exception failure result into the same path as a thrown exception:
+                // don't checkpoint past this event, and (if CatchHandlerExceptions is off) stop the
+                // worker so a restart reprocesses from the last checkpoint.
+                throw new EventHubMessageProcessingException(args.Data.SequenceNumber, args.Partition.PartitionId);
+            }
         }
         catch (Exception ex)
         {

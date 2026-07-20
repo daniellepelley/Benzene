@@ -50,4 +50,17 @@ public class BenzeneEventHubConfig
     /// writing a custom topic getter. Keep it in sync with the producer's key.
     /// </summary>
     public string TopicPropertyKey { get; set; } = EventHubConsumerMessageTopicGetter.DefaultTopicProperty;
+
+    /// <summary>
+    /// Gets or sets whether a handler that returns a non-exception failure result (e.g.
+    /// <c>BenzeneResult.ServiceUnavailable(...)</c>) is escalated into a thrown
+    /// <see cref="EventHubMessageProcessingException"/> so it's treated exactly like an unhandled
+    /// exception (see <see cref="CatchHandlerExceptions"/>): the failed event is not checkpointed, so
+    /// the partition doesn't advance past it. Defaults to <c>false</c> - a failure result is recorded
+    /// for diagnostics only and the partition checkpoints past it. Since Event Hubs is checkpoint-based
+    /// with no per-event abandon, the semantics are "don't checkpoint, reprocess from here" - so the
+    /// handler must be idempotent. Mirrors the escalation on the Function triggers
+    /// (<c>KafkaOptions.RaiseOnFailureStatus</c> etc.).
+    /// </summary>
+    public bool RaiseOnFailureStatus { get; set; }
 }
