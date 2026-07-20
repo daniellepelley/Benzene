@@ -62,9 +62,10 @@ public static class Extensions
     /// <param name="action">The action that configures the inner SNS pipeline.</param>
     /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
-        string queueUrl, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute)
+        string queueUrl, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute,
+        SnsPublishOptions? publishOptions = null)
     {
-        return Convert(app, new SnsContextConverter<T>(queueUrl, topicAttributeKey), action);
+        return Convert(app, new SnsContextConverter<T>(queueUrl, topicAttributeKey, publishOptions), action);
     }
 
     /// <summary>
@@ -74,9 +75,10 @@ public static class Extensions
     /// <param name="app">The client pipeline builder to add SNS publishing to.</param>
     /// <param name="queueUrl">The ARN of the SNS topic to publish to.</param>
     /// <returns>The pipeline builder for method chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute,
+        SnsPublishOptions? publishOptions = null)
     {
-        return app.Convert(new SnsContextConverter<T>(queueUrl, topicAttributeKey), builder => builder.UseSnsClient());
+        return app.Convert(new SnsContextConverter<T>(queueUrl, topicAttributeKey, publishOptions), builder => builder.UseSnsClient());
     }
 
     /// <summary>

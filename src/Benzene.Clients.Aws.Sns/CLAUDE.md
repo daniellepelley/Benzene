@@ -28,6 +28,12 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
   plain `SendAsync<T, Void>` with no explicit topic would otherwise emit `topic=""` and fail every
   publish) and skip any header whose value is empty. A real topic still routes as before; only the
   invalid empty case is dropped. Covered by `SnsContextConverterTest` (converter-level, no LocalStack).
+- **FIFO + numeric filter typing (opt-in) — `SnsPublishOptions`.** Passed to `SnsContextConverter<T>` /
+  `.UseSns<T>(..., publishOptions:)`: `MessageGroupIdHeader` → `PublishRequest.MessageGroupId` and
+  `MessageDeduplicationIdHeader` → `MessageDeduplicationId` (both required/used by `.fifo` topics),
+  and `InferNumericAttributeTypes` — when a forwarded header's value parses as a number, publish it
+  with `DataType = "Number"` so numeric subscription filter policies match (default off, to avoid
+  silently changing attribute types). Additive; covered by `SnsContextConverterTest`.
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SNS has only a publish
   acknowledgement, so a topic routed through SNS must be sent via `SendAsync<TRequest, Void>`; any
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at

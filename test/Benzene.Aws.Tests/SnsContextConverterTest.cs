@@ -55,6 +55,66 @@ public class SnsContextConverterTest
     }
 
     [Fact]
+    public async Task CreateRequestAsync_FifoHeaders_MapToGroupAndDeduplicationId()
+    {
+        var converter = new SnsContextConverter<ExampleRequestPayload>(
+            "arn:aws:sns:us-east-1:000000000000:some-topic.fifo",
+            publishOptions: new SnsPublishOptions
+            {
+                MessageGroupIdHeader = "x-group",
+                MessageDeduplicationIdHeader = "x-dedup"
+            });
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "order:created",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            headers: new Dictionary<string, string> { { "x-group", "group-1" }, { "x-dedup", "dedup-1" } });
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.Equal("group-1", result.Request.MessageGroupId);
+        Assert.Equal("dedup-1", result.Request.MessageDeduplicationId);
+    }
+
+    [Fact]
+    public async Task CreateRequestAsync_InferNumericAttributeTypes_SetsNumberDataTypeForNumericHeaders()
+    {
+        var converter = new SnsContextConverter<ExampleRequestPayload>(
+            "arn:aws:sns:us-east-1:000000000000:some-topic",
+            publishOptions: new SnsPublishOptions { InferNumericAttributeTypes = true });
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "order:created",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            headers: new Dictionary<string, string> { { "amount", "42" }, { "region", "us-east-1" } });
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.Equal("Number", result.Request.MessageAttributes["amount"].DataType);
+        Assert.Equal("String", result.Request.MessageAttributes["region"].DataType);
+    }
+
+    [Fact]
+    public async Task CreateRequestAsync_WithoutPublishOptions_LeavesFifoUnsetAndAttributesString()
+    {
+        var converter = new SnsContextConverter<ExampleRequestPayload>(
+            "arn:aws:sns:us-east-1:000000000000:some-topic");
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "order:created",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            headers: new Dictionary<string, string> { { "amount", "42" } });
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.Null(result.Request.MessageGroupId);
+        Assert.Equal("String", result.Request.MessageAttributes["amount"].DataType);
+    }
+
+    [Fact]
     public async Task OutboundConverter_EmptyTopicAndHeaders_EmitsNoMessageAttributes()
     {
         var converter = new OutboundSnsContextConverter(
