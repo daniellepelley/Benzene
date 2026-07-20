@@ -85,13 +85,16 @@ regressing (watch that allocated bytes stay flat, not scaling with `VersionsPerT
   wrapped in a `PipelineMessageHandler` and run once, to show what fraction of total per-message
   dispatch allocation is the (removable) structure rebuild vs. the (inherent) per-invocation cost.
 
-`HandlerMiddlewareCount` is parameterized (0/1/3) because the removable structure-build cost scales
+`HandlerMiddlewareCount` is parameterized (0/1/3) because the structure-build cost *used to* scale
 with it. The pipeline *structure* (which builders, in what order) is fixed after startup — only the
 middleware *instances* are genuinely per-scope — so the top-level `MiddlewarePipeline`'s
-"structure once, instances per request" split *could* apply here but currently doesn't, rebuilding
-the whole structure per message. This suite exists to measure a structure-caching fix (see below),
-not just describe the cost. A long-lived resolver is reused so it isolates build/invoke cost from
-DI-scope-creation cost (which `MiddlewarePipelineBenchmarks` covers separately).
+"structure once, instances per request" split applies here too. `HandlerPipelineBuilder.Create` now
+resolves that structure from a per-(builder-set, request, response) cache
+(`HandlerPipelineStructureCache` / `HandlerMiddlewarePipeline`) and wraps it with the current
+message's handler, instead of rebuilding the `List` + middleware instances + `Func[]` +
+`MiddlewarePipeline` per message. This suite is the regression guard for that fix (see the
+before/after under "Recorded baselines"). A long-lived resolver is reused so it isolates build/invoke
+cost from DI-scope-creation cost (which `MiddlewarePipelineBenchmarks` covers separately).
 
 ### `RouteFindingBenchmarks`
 
@@ -108,30 +111,33 @@ scale with `RouteCount`.
 ## Recorded baselines
 
 Absolute timings from a constrained/virtualized environment are not trustworthy (see the warning
-above — note the wide `Error` bars on the run below). **Allocated bytes/op, however, are
-deterministic** and don't depend on CPU timing, so they are the figures to hold onto and diff
-against. The one baseline captured so far:
+above — note the wide `Error` bars). **Allocated bytes/op, however, are deterministic** and don't
+depend on CPU timing, so they are the figures to hold onto and diff against.
 
-### `HandlerCreationBenchmarks` (ShortRun, allocations are the load-bearing numbers)
+### `HandlerCreationBenchmarks` — before/after the structure-caching fix (ShortRun, allocations)
 
-| Benchmark | HandlerMiddlewareCount | Allocated |
-|-----------|-----------------------:|----------:|
-| Build the handler pipeline (per-message rebuild) | 0 | 408 B |
-| Build the handler pipeline (per-message rebuild) | 1 | 536 B |
-| Build the handler pipeline (per-message rebuild) | 3 | 792 B |
-| Build + invoke (full per-message dispatch)        | 0 | 1312 B |
-| Build + invoke (full per-message dispatch)        | 1 | 1568 B |
-| Build + invoke (full per-message dispatch)        | 3 | 2080 B |
+The per-message handler-pipeline rebuild used to be a **~408 B fixed floor plus ~128 B per
+handler-middleware** — all of it structure that is fixed after startup — which was **~30–40% of the
+total per-message allocation** on the dispatch path. Caching the structure removed it:
 
-Reading: the per-message pipeline rebuild is a **~408 B fixed floor plus ~128 B per
-handler-middleware**, all of it structure that is fixed after startup. That rebuild is **~30–40% of
-the total per-message allocation** on the dispatch path (build vs. build+invoke rows), and it is the
-portion a structure-caching fix would remove. A fix should show the "Build the handler pipeline" row
-drop toward near-zero allocation and stop scaling with `HandlerMiddlewareCount`, with the
-"Build + invoke" row falling by the same amount — while a correctness test still proves two pipelines
-that share a handler (one with an extra middleware) get *distinct* chains. Timings that run: ShortRun
-means/errors were dominated by environment noise (build-only ~190–340 ns, build+invoke ~3.3–3.8 µs)
-and are recorded only as order-of-magnitude context, not a baseline.
+| Benchmark | HandlerMiddlewareCount | Allocated (before) | Allocated (after) |
+|-----------|-----------------------:|-------------------:|------------------:|
+| Build the handler pipeline | 0 | 408 B | **32 B** |
+| Build the handler pipeline | 1 | 536 B | **32 B** |
+| Build the handler pipeline | 3 | 792 B | **32 B** |
+| Build + invoke (full per-message dispatch) | 0 | 1312 B | **968 B** |
+| Build + invoke (full per-message dispatch) | 1 | 1568 B | **1120 B** |
+| Build + invoke (full per-message dispatch) | 3 | 2080 B | **1424 B** |
+
+Reading: the "Build" row is now a flat, non-scaling **32 B** — the single per-message
+`HandlerMiddlewarePipeline` wrapper carrying that message's handler, the one allocation that can't be
+cached away — no longer growing with middleware count. "Build + invoke" fell by the removed build
+cost; its residual growth is the invoke-time chain closures (which the old code also allocated at
+invoke). This is the baseline to diff future changes against: the "Build" row must stay flat and
+small, and `HandlerPipelineBuilderCachingTest` guards the correctness invariants (cache-key
+isolation + per-record scope resolution under concurrency). Timings under this run were dominated by
+environment noise (build ~16–31 ns, build+invoke ~2.9–3.3 µs) and are order-of-magnitude context
+only, not a baseline.
 
 ## Why this project is separate from `Benzene.sln`'s test run
 

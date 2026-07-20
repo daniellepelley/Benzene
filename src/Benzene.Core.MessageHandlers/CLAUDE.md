@@ -95,7 +95,24 @@ Provides complete implementation of message handler infrastructure for command/q
 ### Routing
 - `MessageRouter<TContext>` - Routes messages to handlers
 - `MessageRouterBuilder` - Builds message routing
-- `HandlerPipelineBuilder` - Builds handler pipelines
+- `HandlerPipelineBuilder` - Builds handler pipelines. The pipeline *structure* (which
+  `IHandlerMiddlewareBuilder`s, in what order) is fixed once the builder set is known at startup, so
+  `Create` no longer rebuilds the whole chain per message. It resolves a cached, handler-agnostic
+  structure from `HandlerPipelineStructureCache<TRequest,TResponse>` (a generic-static cache keyed by
+  the **builder-set identity**, per type pair - *not* by `(TRequest,TResponse)` alone, which would let
+  two pipelines sharing a handler but registering different middleware cross-contaminate) and wraps it
+  with the current message's handler in a `HandlerMiddlewarePipeline<TRequest,TResponse>`. That
+  wrapper folds the cached factories into a chain per invocation, resolving each middleware (and the
+  terminal handler middleware) from the **per-call** `IServiceResolver` - the same "structure once,
+  instances per request" split as `MiddlewarePipeline<TContext>`, so a single cached structure is safe
+  to share across concurrent batch records. Non-breaking (no public signature changed);
+  middleware-builder construction is now deferred from build time to invocation (matching the
+  top-level pipeline, so `UseExceptionHandler` covers construction failures). The builder set is fed
+  in once per `UseMessageHandlers` call and hoisted out of the per-message closure (`Extensions.cs`)
+  so the same array reference is the stable cache key. Guarded by
+  `HandlerPipelineBuilderCachingTest` (key isolation + per-record scoped resolution under concurrency)
+  and benchmarked by `HandlerCreationBenchmarks` (per-message build allocation dropped from
+  ~408-792 B, scaling with middleware count, to a flat 32 B).
 - `VersionSelector` - Selects handler versions
 - `HeaderMessageVersionGetter<TContext>` - the default `IMessageVersionGetter<TContext>`: reads the
   payload schema version from the header dictionary, trying each name in an ordered fallback list

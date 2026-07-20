@@ -146,11 +146,16 @@ public static class MiddlewarePipelineExtensions
         app.Register(x => x.AddMessageHandlers(types));
         var builder = new MessageRouterBuilder(new List<IHandlerMiddlewareBuilder>(), app.Register);
         router(builder);
+        // Snapshot the builder set once at wire-up. Passing the same array reference to each message's
+        // scoped IHandlerPipelineBuilder both avoids a per-message GetBuilders().ToArray() and gives the
+        // structure cache a stable key, so the handler pipeline's structure is reused across messages
+        // rather than rebuilt from scratch each time.
+        var handlerMiddlewareBuilders = builder.GetBuilders();
 
         return app.Use(resolver =>
         {
             var routePipelineBuilder = resolver.GetService<IHandlerPipelineBuilder>();
-            routePipelineBuilder.Add(builder.GetBuilders());
+            routePipelineBuilder.Add(handlerMiddlewareBuilders);
             return resolver.GetService<MessageRouter<TContext>>();
         });
     }
