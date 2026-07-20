@@ -34,7 +34,13 @@ public class OpenApiValidationSchemaBuilder : ISchemaBuilder
         {
             foreach (var validationSchema in validationSchemas)
             {
-                var property = schema.Properties[validationSchema.Key];
+                // A validation rule can target a member that isn't a serialized schema property - a
+                // [JsonIgnore] property, or a rule keyed on a non-property member. Skip it rather than
+                // throwing KeyNotFoundException, which would fail the entire spec build.
+                if (!schema.Properties.TryGetValue(validationSchema.Key, out var property))
+                {
+                    continue;
+                }
 
                 property.Description = string.Join(". ", validationSchema.Value.Select(x => x.Description));
 

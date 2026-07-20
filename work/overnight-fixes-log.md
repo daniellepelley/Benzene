@@ -9,6 +9,15 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 4 — spec build crashes on a validation rule for a non-schema member (`OpenApiValidationSchemaBuilder`)
+- **Bug:** `schema.Properties[validationSchema.Key]` (unguarded indexer) threw `KeyNotFoundException`
+  when a FluentValidation `RuleFor` targeted a member that isn't a serialized schema property (e.g. a
+  `[JsonIgnore]` property, or a rule keyed on a non-property member). That failed the ENTIRE spec build
+  (a 500 on the `spec` endpoint), not just that one rule.
+- **Repro:** `AddSchema_ValidationRuleForAMemberNotInTheSchema_DoesNotThrow` (+ mixed real/ghost case) —
+  threw pre-fix, passes post-fix; happy-path decoration test confirms real keys still apply.
+- **Fix:** `TryGetValue(key, out property)` + `continue` on miss. Full core suite green.
+
 ### Cycle 3 — BenzeneMessage bypassed the configurable version getter (`BenzeneMessageGetter.GetTopic`)
 - **Bug:** `GetTopic` baked the raw `"version"` header into the topic version. `MessageRouter` treats a
   topic-getter version as a deliberate preset override and skips `IMessageVersionGetter`, so BenzeneMessage
