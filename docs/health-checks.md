@@ -356,6 +356,11 @@ it resolves every `Benzene.HealthChecks.Core.IHealthCheck` from the container di
 unhealthy if any failed, degraded if any warned, healthy otherwise. A gRPC `Check`/`Watch` call then
 reflects that aggregate as `SERVING`/`NOT_SERVING` per the standard protocol.
 
+To split liveness from readiness over gRPC (so a liveness probe doesn't run your external-dependency
+checks), set `LivenessCheckTypes`/`ReadinessCheckTypes` on `BenzeneGrpcOptions` — Benzene then publishes
+named `"liveness"`/`"readiness"` grpc.health.v1 services reporting only those check `Type`s, alongside
+the overall `""` service. See [Kubernetes Health Checks](kubernetes-health-checks.md#grpc-livenessreadiness-split).
+
 Both health checks and reflection are off by default (`EnableHealthChecks`/`EnableReflection` on
 `BenzeneGrpcOptions`) — see [gRPC Setup](getting-started-grpc.md#10-health-checks-and-reflection-d8)
 for the full walkthrough.

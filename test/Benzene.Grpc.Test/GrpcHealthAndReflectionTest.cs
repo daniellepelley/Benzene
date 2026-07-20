@@ -107,6 +107,69 @@ public class GrpcHealthAndReflectionTest
         return await hostBuilder.StartAsync();
     }
 
+    [Fact]
+    public async Task Health_LivenessReadinessSplit_ReportsPerServiceNameStatus()
+    {
+        using var host = await BuildSplitHostAsync();
+        var client = new Health.HealthClient(CreateChannel(host));
+
+        var liveness = await client.CheckAsync(new HealthCheckRequest { Service = "liveness" });
+        var readiness = await client.CheckAsync(new HealthCheckRequest { Service = "readiness" });
+        var overall = await client.CheckAsync(new HealthCheckRequest());
+
+        // Liveness runs only the healthy live-check; readiness runs only the failing ready-check; the
+        // overall service aggregates both. So the same host serves different statuses per service name.
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.Serving, liveness.Status);
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.NotServing, readiness.Status);
+        Assert.Equal(global::Grpc.Health.V1.HealthCheckResponse.Types.ServingStatus.NotServing, overall.Status);
+    }
+
+    private static async Task<IHost> BuildSplitHostAsync()
+    {
+        var hostBuilder = new HostBuilder()
+            .ConfigureWebHost(webHost =>
+            {
+                webHost.UseTestServer();
+                webHost.ConfigureServices(services =>
+                {
+                    services.AddRouting();
+                    services.AddBenzeneGrpc(o =>
+                    {
+                        o.EnableHealthChecks = true;
+                        o.LivenessCheckTypes = new[] { "live-check" };
+                        o.ReadinessCheckTypes = new[] { "ready-check" };
+                    });
+                    services.AddScoped<IHealthCheck, HealthyLiveCheck>();
+                    services.AddScoped<IHealthCheck, FailingReadyCheck>();
+                    services.UsingBenzene(x => x.AddBenzene().AddBenzeneMessage().AddMessageHandlers(new[] { typeof(EchoMessageHandler) }).AddGrpcMessageHandlers());
+                });
+                webHost.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapGrpcService<TestGrpcService>();
+                        endpoints.MapBenzeneGrpcHealthService();
+                    });
+                    app.UseBenzene(x => x.UseGrpc(grpc => grpc.UseMessageHandlers(typeof(EchoMessageHandler))));
+                });
+            });
+
+        return await hostBuilder.StartAsync();
+    }
+
+    private class HealthyLiveCheck : IHealthCheck
+    {
+        public string Type => "live-check";
+        public Task<IHealthCheckResult> ExecuteAsync() => Task.FromResult(HealthCheckResult.CreateInstance(true, Type));
+    }
+
+    private class FailingReadyCheck : IHealthCheck
+    {
+        public string Type => "ready-check";
+        public Task<IHealthCheckResult> ExecuteAsync() => Task.FromResult(HealthCheckResult.CreateInstance(false, Type));
+    }
+
     private static GrpcChannel CreateChannel(IHost host)
     {
         var testServer = host.GetTestServer();

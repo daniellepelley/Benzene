@@ -15,15 +15,30 @@ namespace Benzene.Grpc.AspNet;
 public class BenzeneHealthCheckBridge : IHealthCheck
 {
     private readonly IEnumerable<IBenzeneHealthCheck> _healthChecks;
+    private readonly ISet<string>? _includeTypes;
 
+    /// <summary>Bridges every registered Benzene health check.</summary>
     public BenzeneHealthCheckBridge(IEnumerable<IBenzeneHealthCheck> healthChecks)
+        : this(healthChecks, null)
+    {
+    }
+
+    /// <summary>
+    /// Bridges only the Benzene health checks whose <see cref="IBenzeneHealthCheck.Type"/> is in
+    /// <paramref name="includeTypes"/> (case-sensitive). Null bridges all - used to map a named
+    /// grpc.health.v1 service (e.g. "liveness"/"readiness") to a subset of checks.
+    /// </summary>
+    public BenzeneHealthCheckBridge(IEnumerable<IBenzeneHealthCheck> healthChecks, ISet<string>? includeTypes)
     {
         _healthChecks = healthChecks;
+        _includeTypes = includeTypes;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        var checks = _healthChecks.ToArray();
+        var checks = _healthChecks
+            .Where(x => _includeTypes == null || _includeTypes.Contains(x.Type))
+            .ToArray();
         if (checks.Length == 0)
         {
             return HealthCheckResult.Healthy("No Benzene health checks are registered.");

@@ -137,14 +137,43 @@ If you'd rather probe over gRPC, see [Health Checks — gRPC (grpc.health.v1)](h
 for `Benzene.Grpc.AspNet`'s standard-protocol bridge, which Kubernetes' native gRPC probe type
 (`grpc.livenessProbe`/`readinessProbe.grpc`) can query directly.
 
-> **Caveat — the gRPC bridge does not split liveness from readiness.** Unlike the HTTP
-> `UseLivenessCheck`/`UseReadinessCheck` topics, `Benzene.Grpc.AspNet`'s bridge aggregates *every*
-> registered `IHealthCheck` into one `grpc.health.v1` service. So a gRPC **liveness** probe would run
-> your external-dependency (readiness) checks too — exactly the restart-on-flaky-dependency
-> anti-pattern the [liveness/readiness split](#liveness-vs-readiness) exists to avoid. Until the
-> bridge supports per-service-name checks, prefer the HTTP `/livez` + `/readyz` split above for the
-> liveness/readiness distinction, and treat the gRPC bridge as a single aggregate health signal
-> (fine for a readiness probe or a plain "is it up" check, not for a dependency-free liveness probe).
+### gRPC liveness/readiness split
+
+By default `Benzene.Grpc.AspNet`'s bridge aggregates *every* registered `IHealthCheck` into the single
+overall `grpc.health.v1` service (empty service name). That's fine for a readiness probe or a plain
+"is it up" check — but a **liveness** probe pointed at it would run your external-dependency (readiness)
+checks too, exactly the restart-on-flaky-dependency anti-pattern the
+[liveness/readiness split](#liveness-vs-readiness) exists to avoid.
+
+To get the same split over gRPC that HTTP `UseLivenessCheck`/`UseReadinessCheck` give you, set
+`LivenessCheckTypes`/`ReadinessCheckTypes` on `BenzeneGrpcOptions` — lists of the check `Type`s that
+belong in each. Benzene then publishes named grpc.health.v1 services `"liveness"` and `"readiness"`
+alongside the overall `""` service, each reporting only its own subset:
+
+```csharp
+services.AddBenzeneGrpc(o =>
+{
+    o.EnableHealthChecks = true;
+    o.LivenessCheckTypes = new[] { "ProcessResponsive" };          // cheap/local checks only
+    o.ReadinessCheckTypes = new[] { "Database", "HttpPing" };       // external-dependency checks
+});
+```
+
+Kubernetes' native gRPC probe type can then target the right service name:
+
+```yaml
+livenessProbe:
+  grpc:
+    port: 8080
+    service: liveness
+readinessProbe:
+  grpc:
+    port: 8080
+    service: readiness
+```
+
+When neither is set, behaviour is unchanged: a single aggregate `"benzene"` check on the overall `""`
+service.
 
 ## What this does not cover
 

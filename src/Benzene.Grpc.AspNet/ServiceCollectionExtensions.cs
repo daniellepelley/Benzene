@@ -2,6 +2,8 @@ using Benzene.Grpc;
 using Grpc.AspNetCore.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using IBenzeneHealthCheck = Benzene.HealthChecks.Core.IHealthCheck;
 
 namespace Benzene.Grpc.AspNet;
 
@@ -55,7 +57,43 @@ public static class ServiceCollectionExtensions
 
         if (options.EnableHealthChecks)
         {
-            services.AddGrpcHealthChecks().AddCheck<BenzeneHealthCheckBridge>("benzene");
+            var hasSplit = options.LivenessCheckTypes != null || options.ReadinessCheckTypes != null;
+
+            var grpcHealthChecks = services.AddGrpcHealthChecks(o =>
+            {
+                if (!hasSplit)
+                {
+                    return; // Default: all checks map to the overall "" service, exactly as before.
+                }
+
+                // Overall "" service stays the aggregate check; named services map by tag.
+                o.Services.Map("", ctx => ctx.Name == "benzene");
+                if (options.LivenessCheckTypes != null)
+                {
+                    o.Services.Map("liveness", ctx => ctx.Tags.Contains("liveness"));
+                }
+                if (options.ReadinessCheckTypes != null)
+                {
+                    o.Services.Map("readiness", ctx => ctx.Tags.Contains("readiness"));
+                }
+            });
+
+            grpcHealthChecks.AddCheck<BenzeneHealthCheckBridge>("benzene");
+
+            if (options.LivenessCheckTypes != null)
+            {
+                var livenessTypes = new HashSet<string>(options.LivenessCheckTypes);
+                grpcHealthChecks.Add(new HealthCheckRegistration("benzene-liveness",
+                    sp => new BenzeneHealthCheckBridge(sp.GetServices<IBenzeneHealthCheck>(), livenessTypes),
+                    failureStatus: null, tags: new[] { "liveness" }));
+            }
+            if (options.ReadinessCheckTypes != null)
+            {
+                var readinessTypes = new HashSet<string>(options.ReadinessCheckTypes);
+                grpcHealthChecks.Add(new HealthCheckRegistration("benzene-readiness",
+                    sp => new BenzeneHealthCheckBridge(sp.GetServices<IBenzeneHealthCheck>(), readinessTypes),
+                    failureStatus: null, tags: new[] { "readiness" }));
+            }
         }
 
         if (options.EnableReflection)

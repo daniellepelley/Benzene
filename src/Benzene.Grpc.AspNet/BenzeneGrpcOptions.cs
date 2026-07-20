@@ -18,6 +18,21 @@ public class BenzeneGrpcOptions
     public bool EnableHealthChecks { get; set; }
 
     /// <summary>
+    /// When set (and <see cref="EnableHealthChecks"/> is on), the named grpc.health.v1 service
+    /// <c>"liveness"</c> reports only the Benzene checks whose <c>Type</c> is in this list, so a gRPC
+    /// liveness probe can be scoped to cheap/local checks (mirrors HTTP <c>UseLivenessCheck</c>). Null
+    /// (the default) publishes no separate liveness service - only the overall <c>""</c> service.
+    /// </summary>
+    public IReadOnlyCollection<string>? LivenessCheckTypes { get; set; }
+
+    /// <summary>
+    /// When set (and <see cref="EnableHealthChecks"/> is on), the named grpc.health.v1 service
+    /// <c>"readiness"</c> reports only the Benzene checks whose <c>Type</c> is in this list (the place
+    /// for external-dependency checks). Null (the default) publishes no separate readiness service.
+    /// </summary>
+    public IReadOnlyCollection<string>? ReadinessCheckTypes { get; set; }
+
+    /// <summary>
     /// When <c>true</c>, registers ASP.NET Core's gRPC server reflection service (grpc.reflection.v1alpha),
     /// letting tools like <c>grpcurl</c> discover services without a local .proto file. Map the service
     /// with <c>MapBenzeneGrpcReflectionService</c>.
