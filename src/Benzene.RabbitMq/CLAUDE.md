@@ -73,8 +73,14 @@ message, handlers must be idempotent - see [Idempotency](../../docs/cookbooks/id
 - `RabbitMqClientMiddleware` / `.UseRabbitMqClient(channel)` - the publish middleware
   (`BasicPublishAsync`); `.UseRabbitMq<T>(exchange, ...)` is the `OutboundRoutingBuilder` conversion
   entry point, mirroring Kafka's `.UseKafka<T>(...)`.
+- Publish is **persistent by default** (delivery mode 2) so a message on a durable queue survives a
+  broker restart; pass `.UseRabbitMqClient(channel, persistent: false)` for transient delivery. This
+  is a behavioral change from earlier versions, which always published transient.
 - Publish is fire-and-forget by default (maps a completed publish to `Accepted`, a thrown publish to
-  `ServiceUnavailable`). Publisher confirms (at-least-once) are a documented future opt-in.
+  `ServiceUnavailable`). Publisher confirms (at-least-once) are opt-in at the **channel** level: build
+  the channel with `CreateChannelOptions { PublisherConfirmationsEnabled = true }` and RabbitMQ.Client
+  v7's `BasicPublishAsync` awaits the broker confirm before completing, so a broker-side rejection
+  surfaces as a thrown publish → `ServiceUnavailable`. The middleware itself needs no change for this.
 
 ## Configurable topic header key
 The topic header key defaults to `RabbitMqConstants.DefaultTopicHeader` (`"topic"`) but is **not

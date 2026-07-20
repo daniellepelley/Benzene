@@ -38,6 +38,28 @@ public class RabbitMqBenzeneMessageClientTest
     }
 
     [Fact]
+    public async Task SendMessageAsync_PublishesPersistentlyByDefault()
+    {
+        BasicProperties? capturedProps = null;
+
+        var mockChannel = new Mock<IChannel>();
+        mockChannel.Setup(x => x.BasicPublishAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(),
+                It.IsAny<BasicProperties>(), It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<CancellationToken>()))
+            .Callback((string _, string _, bool _, BasicProperties props, ReadOnlyMemory<byte> _, CancellationToken _) => capturedProps = props)
+            .Returns(ValueTask.CompletedTask);
+
+        var client = new RabbitMqBenzeneMessageClient(mockChannel.Object,
+            NullLogger<RabbitMqBenzeneMessageClient>.Instance, new NullServiceResolver());
+
+        await client.SendMessageAsync<string, string>("some-topic", "some-message");
+
+        Assert.NotNull(capturedProps);
+        // Persistent (delivery mode 2) so a message on a durable queue survives a broker restart.
+        Assert.True(capturedProps!.Persistent);
+    }
+
+    [Fact]
     public async Task SendMessageAsync_ThrowingChannel_ReturnsServiceUnavailable()
     {
         var mockChannel = new Mock<IChannel>();

@@ -15,11 +15,12 @@ public static class Extensions
     /// <param name="app">The outbound pipeline builder.</param>
     /// <param name="channel">The RabbitMQ channel to publish on.</param>
     /// <param name="mandatory">Whether an unroutable message is returned rather than dropped.</param>
+    /// <param name="persistent">Whether the message is published persistently (delivery mode 2). Defaults to <c>true</c>.</param>
     /// <returns>The same builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<RabbitMqSendMessageContext> UseRabbitMqClient(
-        this IMiddlewarePipelineBuilder<RabbitMqSendMessageContext> app, IChannel channel, bool mandatory = false)
+        this IMiddlewarePipelineBuilder<RabbitMqSendMessageContext> app, IChannel channel, bool mandatory = false, bool persistent = true)
     {
-        return app.Use(_ => new RabbitMqClientMiddleware(channel, mandatory));
+        return app.Use(_ => new RabbitMqClientMiddleware(channel, mandatory, persistent));
     }
 
     /// <summary>

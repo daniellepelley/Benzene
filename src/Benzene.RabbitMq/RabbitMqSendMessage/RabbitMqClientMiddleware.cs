@@ -12,6 +12,7 @@ public class RabbitMqClientMiddleware : IMiddleware<RabbitMqSendMessageContext>
 {
     private readonly IChannel _channel;
     private readonly bool _mandatory;
+    private readonly bool _persistent;
 
     /// <summary>Initializes a new instance of the <see cref="RabbitMqClientMiddleware"/> class.</summary>
     /// <param name="channel">The RabbitMQ channel to publish on.</param>
@@ -19,10 +20,16 @@ public class RabbitMqClientMiddleware : IMiddleware<RabbitMqSendMessageContext>
     /// When <c>true</c>, an unroutable message (no queue bound for the routing key) is returned by the
     /// broker rather than silently dropped. Defaults to <c>false</c>.
     /// </param>
-    public RabbitMqClientMiddleware(IChannel channel, bool mandatory = false)
+    /// <param name="persistent">
+    /// When <c>true</c> (the default), the message is published with delivery mode 2 (persistent), so a
+    /// message on a durable queue survives a broker restart. Set <c>false</c> for transient delivery
+    /// (lower overhead, but the message is lost on restart even on a durable queue).
+    /// </param>
+    public RabbitMqClientMiddleware(IChannel channel, bool mandatory = false, bool persistent = true)
     {
         _channel = channel;
         _mandatory = mandatory;
+        _persistent = persistent;
     }
 
     /// <inheritdoc />
@@ -34,6 +41,7 @@ public class RabbitMqClientMiddleware : IMiddleware<RabbitMqSendMessageContext>
         var properties = new BasicProperties
         {
             Headers = context.Headers,
+            Persistent = _persistent,
         };
 
         await _channel.BasicPublishAsync(context.Exchange, context.RoutingKey, _mandatory, properties, context.Body);
