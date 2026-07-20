@@ -91,6 +91,13 @@ public class BenzeneCosmosChangeFeedWorker<TDocument> : IBenzeneWorker
                 await checkpointAsync();
             }
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Shutdown cancelled the batch mid-flight. Even in skip mode (CatchHandlerExceptions=true),
+            // do NOT checkpoint a partially-processed batch - that silently loses its unprocessed tail.
+            // Propagate so the lease isn't advanced and the batch is redelivered.
+            throw;
+        }
         catch (Exception ex)
         {
             using (var loggingScope = _serviceResolverFactory.CreateScope())

@@ -156,6 +156,27 @@ public class BenzeneCosmosAllVersionsChangeFeedWorkerTest
     }
 
     [Fact]
+    public async Task SkipMode_ShutdownCancellation_Propagates_SoTheBatchIsNotCheckpointed()
+    {
+        // Even with CatchHandlerExceptions=true (skip mode), a genuine shutdown cancellation must
+        // propagate so the automatic-checkpoint processor doesn't checkpoint a partial batch.
+        var harness = new Harness(new BenzeneCosmosAllVersionsChangeFeedConfig { CatchHandlerExceptions = true });
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        harness.MockPipeline
+            .Setup(x => x.HandleAsync(It.IsAny<StreamContext<CosmosChangeFeedItem<OrderDocument>>>(), It.IsAny<IServiceResolver>()))
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+        await harness.Worker.StartAsync(CancellationToken.None);
+
+        var mockContext = new Mock<ChangeFeedProcessorContext>();
+        mockContext.Setup(x => x.LeaseToken).Returns("0");
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            harness.OnChanges(mockContext.Object,
+                new[] { Item(new OrderDocument { Id = "o1" }, null, ChangeFeedOperationType.Create) }, cts.Token));
+    }
+
+    [Fact]
     public async Task StopAsync_AfterStart_StopsTheProcessor()
     {
         var harness = new Harness(new BenzeneCosmosAllVersionsChangeFeedConfig());

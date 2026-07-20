@@ -32,6 +32,14 @@ public class ExceptionHandlerMiddleware<TContext>(Action<TContext, Exception> on
         {
             await next();
         }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            // A genuine cancellation (host shutdown / drain fired the seeded token) is NOT a business
+            // failure to convert into a response. Swallowing it here would let the pipeline return
+            // "success", so a settle/ack/checkpoint transport treats the interrupted, half-finished
+            // unit of work as done and drops the message. Propagate so the transport redelivers it.
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception caught in middleware pipeline");

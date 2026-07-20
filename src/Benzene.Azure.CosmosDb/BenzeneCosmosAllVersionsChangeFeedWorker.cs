@@ -68,13 +68,21 @@ public class BenzeneCosmosAllVersionsChangeFeedWorker<TDocument> : IBenzeneWorke
     private async Task OnChangesAsync(ChangeFeedProcessorContext context,
         IReadOnlyCollection<ChangeFeedItem<TDocument>> changes, CancellationToken cancellationToken)
     {
-        var items = changes.Select(Map).ToArray();
-        var batch = new CosmosAllVersionsChangeFeedBatch<TDocument>(items, context.LeaseToken, cancellationToken);
-
         try
         {
+            // Map inside the try: a mapping failure is a batch that can never succeed, so under skip mode
+            // it must still be checkpointed-and-skipped rather than escaping and redelivering forever.
+            var items = changes.Select(Map).ToArray();
+            var batch = new CosmosAllVersionsChangeFeedBatch<TDocument>(items, context.LeaseToken, cancellationToken);
             await _application.HandleAsync(batch, _serviceResolverFactory, cancellationToken);
             // Automatic-checkpoint mode: returning here lets the processor checkpoint this batch.
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Shutdown cancelled the batch mid-flight. Even in skip mode, do NOT swallow this: returning
+            // normally would let the automatic-checkpoint processor checkpoint a partially-processed
+            // batch, silently losing the unprocessed tail. Propagate so the batch is redelivered.
+            throw;
         }
         catch (Exception ex)
         {
@@ -82,7 +90,7 @@ public class BenzeneCosmosAllVersionsChangeFeedWorker<TDocument> : IBenzeneWorke
             {
                 loggingScope.GetService<ILogger<BenzeneCosmosAllVersionsChangeFeedWorker<TDocument>>>()
                     .LogError(ex, "Processing all-versions change feed batch of {count} changes on lease {leaseToken} failed",
-                        items.Length, context.LeaseToken);
+                        changes.Count, context.LeaseToken);
             }
 
             if (!_config.CatchHandlerExceptions)
