@@ -191,11 +191,11 @@ Fixed this pass (each behavior-preserving; full Core suite green: 1697):
   a real disposable gap.
 
 ### Flag for maintainer (not changed unilaterally — need a scoped decorator / touch the routing hot path)
-- 🚩 **`RouteFinder.Find` invoked 2–3× per HTTP request** — the topic getter, version getter, and
-  request enricher each independently re-match the same method+path (each re-`SplitPath`s + scans).
-  A per-request (scoped) memoizing `IRouteFinder` decorator would collapse it to one match, but adds
-  a DI registration across every HTTP transport and touches the critical routing path — deferred for
-  review rather than risked unattended.
+- ✅ **`RouteFinder.Find` invoked 2–3× per HTTP request** — FIXED. On closer inspection it was a
+  single registration point (`Benzene.Http`'s `AddHttpMessageHandlers`), all consumers scoped, so a
+  scoped `MemoizingRouteFinder` wrapping the singleton `RouteFinder` was low-risk and
+  behavior-preserving (pure memo; a differing call recomputes). `MemoizingRouteFinderTest` added.
+  This also removes the route-lookup cost from the `ActivityMiddlewareDecorator` item below.
 - 🚩 **`ActivityMiddlewareDecorator` re-resolves topic + handler per middleware, per request** — only
   when an `Activity`/OTel listener is attached, but then multiplies route + handler lookup by the
   middleware count. Resolve once per request and tag from a cached value. Diagnostics-path rework.
@@ -211,3 +211,10 @@ Fixed this pass (each behavior-preserving; full Core suite green: 1697):
   `next()`, but a fire-and-forget task after the handler returns is frozen/killed by the Lambda
   runtime, so the self-report it targets at on-demand hosts is unreliable there. Awaiting-with-timeout
   vs. fire-and-forget is a design choice.
+
+Update: the confirmed **captured-singleton disposal** gap was verified — nothing resolves
+`MeshAnnouncer`/`HttpMeshTraceExporter` from DI, so under stock MS DI (lazy singleton realization)
+their `DisposeAsync` never runs on shutdown; the announcer's disposal registration is effectively a
+no-op and the exporter isn't registered for disposal at all. Concrete fix options for this and the
+other three open items (ActivityMiddlewareDecorator per-middleware handler lookup, enrichment churn,
+Lambda fire-and-forget) are written up in **`work/audit-remaining-suggestions.md`**.
