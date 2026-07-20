@@ -50,9 +50,10 @@ public static class Extensions
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseServiceBus<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
         Action<IMiddlewarePipelineBuilder<ServiceBusSendMessageContext>> action,
-        string topicPropertyKey = ServiceBusContextConverter<T>.DefaultTopicProperty)
+        string topicPropertyKey = ServiceBusContextConverter<T>.DefaultTopicProperty,
+        ServiceBusSenderProperties? senderProperties = null)
     {
-        return app.Convert(new ServiceBusContextConverter<T>(topicPropertyKey), action);
+        return app.Convert(new ServiceBusContextConverter<T>(topicPropertyKey, senderProperties), action);
     }
 
     /// <summary>
@@ -64,9 +65,10 @@ public static class Extensions
     /// <param name="sender">The Service Bus sender (bound to a queue or topic) used to send messages.</param>
     /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="ServiceBusContextConverter{T}.DefaultTopicProperty"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseServiceBus<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, ServiceBusSender sender, string topicPropertyKey = ServiceBusContextConverter<T>.DefaultTopicProperty)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseServiceBus<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, ServiceBusSender sender, string topicPropertyKey = ServiceBusContextConverter<T>.DefaultTopicProperty,
+        ServiceBusSenderProperties? senderProperties = null)
     {
-        return app.Convert(new ServiceBusContextConverter<T>(topicPropertyKey), builder => builder.UseServiceBusClient(sender));
+        return app.Convert(new ServiceBusContextConverter<T>(topicPropertyKey, senderProperties), builder => builder.UseServiceBusClient(sender));
     }
 
     /// <summary>

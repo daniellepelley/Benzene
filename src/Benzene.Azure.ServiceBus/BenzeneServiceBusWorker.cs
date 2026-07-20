@@ -73,6 +73,11 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
             PrefetchCount = _config.PrefetchCount,
         };
 
+        if (_config.MaxAutoLockRenewalDuration.HasValue)
+        {
+            options.MaxAutoLockRenewalDuration = _config.MaxAutoLockRenewalDuration.Value;
+        }
+
         _processor = !string.IsNullOrEmpty(_config.QueueName)
             ? _client.CreateProcessor(_config.QueueName, options)
             : _client.CreateProcessor(_config.TopicName!, _config.SubscriptionName!, options);

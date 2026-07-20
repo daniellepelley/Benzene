@@ -26,6 +26,17 @@ converters, `.UseServiceBus(..., topicPropertyKey: "x")`, and
 `AddServiceBusMessageClient(..., topicPropertyKey)`) — keep it in sync with the consumer's key
 (`BenzeneServiceBusConfig.TopicPropertyKey` / `.AddAzureServiceBus(topicPropertyKey)`).
 
+## Broker-level sender properties (opt-in) — `ServiceBusSenderProperties`
+Beyond forwarding headers as application properties, the send path can map specific headers onto
+broker-level `ServiceBusMessage` properties, via an optional `ServiceBusSenderProperties` passed to
+`ServiceBusContextConverter<T>` / `.UseServiceBus<T>(..., senderProperties:)`. Each field names the
+header key to read (null = unset): `MessageIdHeader` → `MessageId` (enables broker-side duplicate
+detection under at-least-once), `SessionIdHeader` → `SessionId` (required to produce to a
+session-enabled entity — pairs with the sessions consumer), `ScheduledEnqueueTimeHeader` →
+`ScheduledEnqueueTime` (ISO-8601 timestamp), `TimeToLiveHeader` → `TimeToLive` (seconds, ISO-8601
+duration like `PT30S`, or a `TimeSpan` string). Additive/opt-in; the header also remains a plain
+application property. Covered by `ServiceBusContextConverterTest`.
+
 ## No `TokenCredential`/connection-string wrapping — deliberately
 Mirrors the ingress `IServiceBusClientFactory` seam: this package takes an already-built
 `ServiceBusSender` (obtained from `ServiceBusClient.CreateSender(queueOrTopicName)`), not a

@@ -38,7 +38,10 @@ tracked separately.)
   `StartAsync` (throws `InvalidOperationException` otherwise - unit-tested without a live bus in
   `test/Benzene.Core.Test/Azure/ServiceBusWorker/BenzeneServiceBusWorkerTest.cs`);
   `MaxConcurrentCalls` (default 5, matching `BenzeneKafkaConfig.ConcurrentRequests`);
-  `PrefetchCount` (default 0, the SDK default); `AckMode`.
+  `PrefetchCount` (default 0, the SDK default); `AckMode`; `MaxAutoLockRenewalDuration` (`TimeSpan?`,
+  default `null` = SDK default of 5 min) — plumbed straight to
+  `ServiceBusProcessorOptions.MaxAutoLockRenewalDuration` so a long-running handler's message lock is
+  renewed past the entity's lock duration instead of being redelivered mid-processing.
 - `ServiceBusConsumerAckMode` - `AutoComplete` (default): the processor completes a message when
   the handler returns and abandons it when the handler throws; a non-exception failure result
   still completes. `Explicit`: the worker turns the processor's auto-complete off and settles each

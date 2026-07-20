@@ -1,3 +1,5 @@
+using System;
+
 namespace Benzene.Azure.ServiceBus;
 
 /// <summary>
@@ -57,4 +59,12 @@ public class BenzeneServiceBusConfig
     /// property, without writing a custom topic getter. Keep it in sync with the producer's key.
     /// </summary>
     public string TopicPropertyKey { get; set; } = ServiceBusConsumerMessageTopicGetter.DefaultTopicProperty;
+
+    /// <summary>
+    /// Gets or sets the maximum total duration the processor renews a message's lock while a handler
+    /// runs (<c>ServiceBusProcessorOptions.MaxAutoLockRenewalDuration</c>). <c>null</c> (the default)
+    /// leaves the SDK default (5 minutes). Raise it for handlers that can legitimately run longer than
+    /// the entity's lock duration, so the message isn't redelivered while still being processed.
+    /// </summary>
+    public TimeSpan? MaxAutoLockRenewalDuration { get; set; }
 }

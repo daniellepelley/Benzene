@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
+using System.Xml;
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
@@ -6,6 +10,7 @@ using Benzene.Abstractions.Results;
 using Benzene.Abstractions.Serialization;
 using Benzene.Clients;
 using Benzene.Results;
+using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Azure.ServiceBus;
 
@@ -25,14 +30,16 @@ public class ServiceBusContextConverter<T> : IContextConverter<IBenzeneClientCon
 
     private readonly ISerializer _serializer;
     private readonly string _topicPropertyKey;
+    private readonly ServiceBusSenderProperties? _senderProperties;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ServiceBusContextConverter{T}"/> class using a
     /// <see cref="JsonSerializer"/> to serialize the outgoing message.
     /// </summary>
     /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
-    public ServiceBusContextConverter(string topicPropertyKey = DefaultTopicProperty)
-        : this(new JsonSerializer(), topicPropertyKey)
+    /// <param name="senderProperties">Optional mapping of headers onto broker-level message properties (MessageId, SessionId, ScheduledEnqueueTime, TimeToLive).</param>
+    public ServiceBusContextConverter(string topicPropertyKey = DefaultTopicProperty, ServiceBusSenderProperties? senderProperties = null)
+        : this(new JsonSerializer(), topicPropertyKey, senderProperties)
     { }
 
     /// <summary>
@@ -40,10 +47,12 @@ public class ServiceBusContextConverter<T> : IContextConverter<IBenzeneClientCon
     /// </summary>
     /// <param name="serializer">The serializer used to serialize the outgoing message.</param>
     /// <param name="topicPropertyKey">The application property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
-    public ServiceBusContextConverter(ISerializer serializer, string topicPropertyKey = DefaultTopicProperty)
+    /// <param name="senderProperties">Optional mapping of headers onto broker-level message properties (MessageId, SessionId, ScheduledEnqueueTime, TimeToLive).</param>
+    public ServiceBusContextConverter(ISerializer serializer, string topicPropertyKey = DefaultTopicProperty, ServiceBusSenderProperties? senderProperties = null)
     {
         _serializer = serializer;
         _topicPropertyKey = topicPropertyKey;
+        _senderProperties = senderProperties;
     }
 
     /// <summary>
@@ -63,7 +72,77 @@ public class ServiceBusContextConverter<T> : IContextConverter<IBenzeneClientCon
 
         message.ApplicationProperties[_topicPropertyKey] = contextIn.Request.Topic;
 
+        ApplySenderProperties(message, contextIn.Request.Headers);
+
         return Task.FromResult(new ServiceBusSendMessageContext(message));
+    }
+
+    private void ApplySenderProperties(ServiceBusMessage message, IDictionary<string, string> headers)
+    {
+        if (_senderProperties == null)
+        {
+            return;
+        }
+
+        if (TryGetHeader(headers, _senderProperties.MessageIdHeader, out var messageId))
+        {
+            message.MessageId = messageId;
+        }
+
+        if (TryGetHeader(headers, _senderProperties.SessionIdHeader, out var sessionId))
+        {
+            message.SessionId = sessionId;
+        }
+
+        if (TryGetHeader(headers, _senderProperties.ScheduledEnqueueTimeHeader, out var scheduled) &&
+            DateTimeOffset.TryParse(scheduled, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var when))
+        {
+            message.ScheduledEnqueueTime = when;
+        }
+
+        if (TryGetHeader(headers, _senderProperties.TimeToLiveHeader, out var ttl) && TryParseTimeToLive(ttl, out var timeToLive))
+        {
+            message.TimeToLive = timeToLive;
+        }
+    }
+
+    private static bool TryGetHeader(IDictionary<string, string> headers, string? key, out string value)
+    {
+        if (!string.IsNullOrEmpty(key) && headers.TryGetValue(key, out var found) && !string.IsNullOrEmpty(found))
+        {
+            value = found;
+            return true;
+        }
+
+        value = string.Empty;
+        return false;
+    }
+
+    private static bool TryParseTimeToLive(string value, out TimeSpan timeToLive)
+    {
+        // A plain number is treated as seconds; otherwise an ISO-8601 duration (PT30S) or a TimeSpan
+        // string (00:00:30).
+        if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var seconds))
+        {
+            timeToLive = TimeSpan.FromSeconds(seconds);
+            return true;
+        }
+
+        if (TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out timeToLive))
+        {
+            return true;
+        }
+
+        try
+        {
+            timeToLive = XmlConvert.ToTimeSpan(value);
+            return true;
+        }
+        catch (FormatException)
+        {
+            timeToLive = default;
+            return false;
+        }
     }
 
     /// <summary>
