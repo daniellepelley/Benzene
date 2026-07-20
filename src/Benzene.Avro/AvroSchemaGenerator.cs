@@ -48,8 +48,12 @@ internal static class AvroSchemaGenerator
     {
         if (type == typeof(bool)) { sb.Append("\"boolean\""); return; }
         if (type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) ||
-            type == typeof(ushort) || type == typeof(int) || type == typeof(uint)) { sb.Append("\"int\""); return; }
-        if (type == typeof(long) || type == typeof(ulong)) { sb.Append("\"long\""); return; }
+            type == typeof(ushort) || type == typeof(int)) { sb.Append("\"int\""); return; }
+        // uint maps to Avro long, not int: its upper half (> int.MaxValue) does not fit int32, so a
+        // legal uint value like 3_000_000_000 threw OverflowException in Convert.ToInt32 on serialize.
+        // long comfortably holds the full uint range; the reverse (long -> uint) goes through
+        // Convert.ChangeType in FromDatum, which is fine for in-range values.
+        if (type == typeof(long) || type == typeof(ulong) || type == typeof(uint)) { sb.Append("\"long\""); return; }
         if (type == typeof(float)) { sb.Append("\"float\""); return; }
         if (type == typeof(double)) { sb.Append("\"double\""); return; }
         if (type == typeof(byte[])) { sb.Append("\"bytes\""); return; }

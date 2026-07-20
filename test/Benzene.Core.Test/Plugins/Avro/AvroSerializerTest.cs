@@ -48,6 +48,25 @@ public class AvroSerializerTest
         Assert.IsAssignableFrom<IPayloadSerializer>(new AvroSerializer());
     }
 
+    public class UIntHolder
+    {
+        public uint Value { get; set; }
+    }
+
+    [Fact]
+    public void RoundTrips_UInt_AboveInt32Max()
+    {
+        var serializer = new AvroSerializer();
+        // 3_000_000_000 is a legal uint but exceeds int.MaxValue - it used to map to Avro int and
+        // throw OverflowException in Convert.ToInt32 on serialize. It now maps to Avro long.
+        var sample = new UIntHolder { Value = 3_000_000_000 };
+
+        var result = serializer.Deserialize<UIntHolder>(serializer.Serialize(sample));
+
+        Assert.NotNull(result);
+        Assert.Equal(3_000_000_000u, result!.Value);
+    }
+
     [Fact]
     public void BytePath_RoundTrips_AllSupportedTypes()
     {
