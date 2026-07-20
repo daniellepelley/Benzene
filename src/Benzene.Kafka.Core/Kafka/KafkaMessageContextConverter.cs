@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.MessageHandlers.Mappers;
+﻿using System.Text;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
@@ -31,13 +32,22 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
         var topic = _messageTopicGetter.GetTopic(contextIn)
             ?? throw new InvalidOperationException($"{typeof(IMessageTopicGetter<TContext>)} returned no topic for {typeof(TContext)}; a Kafka message cannot be produced without one.");
 
+        // Forward headers onto the produced message, matching KafkaContextConverter. Previously
+        // dropped here, which silently lost correlation-id / W3C trace-context on this produce path.
+        var headers = new Headers();
+        foreach (var header in _messageHeadersGetter.GetHeaders(contextIn))
+        {
+            headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
+        }
+
         return Task.FromResult(new KafkaSendMessageContext(
             topic.Id,
             new Message<string, string>
             {
                 // A null body is a legitimate Kafka value (e.g. a tombstone record on a
                 // compacted topic), so this is intentionally not defaulted to string.Empty.
-                Value = _messageBodyGetter.GetBody(contextIn)!
+                Value = _messageBodyGetter.GetBody(contextIn)!,
+                Headers = headers
             }
         ));
     }

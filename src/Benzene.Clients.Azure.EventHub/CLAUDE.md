@@ -28,6 +28,15 @@ Note: the Azure Functions Event Hub *trigger* package routes via a Benzene-envel
 serialize the envelope into the event body yourself rather than relying on this package's
 property-based converter.
 
+## Partition key — per-key ordering
+By default an event is sent with **no partition key**, so Event Hubs round-robins it across
+partitions (no ordering guarantee). To co-locate related events on one partition (the only way to get
+ordered delivery), set `partitionKeyHeader` on `.UseEventHub(..., partitionKeyHeader: "x")` (or the
+converter ctor): the named request header's value becomes the batch's `CreateBatchOptions.PartitionKey`.
+Without this the per-partition ordering the consumer side advertises is unreachable end-to-end. The
+key is carried through `EventHubSendMessageContext.PartitionKey` and applied in
+`EventHubClientMiddleware` at `CreateBatchAsync` time.
+
 ## No `TokenCredential`/connection-string wrapping — deliberately
 Mirrors the ingress `IEventProcessorClientFactory` seam: this package takes an already-built
 `EventHubProducerClient`, not a connection string or `TokenCredential`. The caller builds the

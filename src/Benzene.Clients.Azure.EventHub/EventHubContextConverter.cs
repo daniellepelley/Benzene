@@ -25,14 +25,19 @@ public class EventHubContextConverter<T> : IContextConverter<IBenzeneClientConte
 
     private readonly ISerializer _serializer;
     private readonly string _topicPropertyKey;
+    private readonly string _partitionKeyHeader;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventHubContextConverter{T}"/> class using a
     /// <see cref="JsonSerializer"/> to serialize the outgoing message.
     /// </summary>
     /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
-    public EventHubContextConverter(string topicPropertyKey = DefaultTopicProperty)
-        : this(new JsonSerializer(), topicPropertyKey)
+    /// <param name="partitionKeyHeader">
+    /// The request header whose value becomes the Event Hubs partition key (co-locating related events
+    /// on one partition, preserving their order). <c>null</c> (the default) sends with no partition key.
+    /// </param>
+    public EventHubContextConverter(string topicPropertyKey = DefaultTopicProperty, string partitionKeyHeader = null)
+        : this(new JsonSerializer(), topicPropertyKey, partitionKeyHeader)
     { }
 
     /// <summary>
@@ -40,10 +45,12 @@ public class EventHubContextConverter<T> : IContextConverter<IBenzeneClientConte
     /// </summary>
     /// <param name="serializer">The serializer used to serialize the outgoing message.</param>
     /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="DefaultTopicProperty"/>).</param>
-    public EventHubContextConverter(ISerializer serializer, string topicPropertyKey = DefaultTopicProperty)
+    /// <param name="partitionKeyHeader">The request header whose value becomes the partition key (defaults to <c>null</c> - no key).</param>
+    public EventHubContextConverter(ISerializer serializer, string topicPropertyKey = DefaultTopicProperty, string partitionKeyHeader = null)
     {
         _serializer = serializer;
         _topicPropertyKey = topicPropertyKey;
+        _partitionKeyHeader = partitionKeyHeader;
     }
 
     /// <summary>
@@ -63,7 +70,13 @@ public class EventHubContextConverter<T> : IContextConverter<IBenzeneClientConte
 
         eventData.Properties[_topicPropertyKey] = contextIn.Request.Topic;
 
-        return Task.FromResult(new EventHubSendMessageContext(eventData));
+        string partitionKey = null;
+        if (_partitionKeyHeader != null)
+        {
+            contextIn.Request.Headers.TryGetValue(_partitionKeyHeader, out partitionKey);
+        }
+
+        return Task.FromResult(new EventHubSendMessageContext(eventData, partitionKey));
     }
 
     /// <summary>

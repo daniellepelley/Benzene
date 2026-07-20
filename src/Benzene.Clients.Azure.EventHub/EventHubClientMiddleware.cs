@@ -36,7 +36,13 @@ public class EventHubClientMiddleware : IMiddleware<EventHubSendMessageContext>
     /// <param name="next">Unused; this middleware does not delegate further down the pipeline.</param>
     public async Task HandleAsync(EventHubSendMessageContext context, Func<Task> next)
     {
-        using var batch = await _producerClient.CreateBatchAsync();
+        // A partition key co-locates related events on one partition (preserving their order); without
+        // it Event Hubs round-robins across partitions. The batch's key must be set at creation time.
+        var batchOptions = string.IsNullOrEmpty(context.PartitionKey)
+            ? new CreateBatchOptions()
+            : new CreateBatchOptions { PartitionKey = context.PartitionKey };
+
+        using var batch = await _producerClient.CreateBatchAsync(batchOptions);
         if (!batch.TryAdd(context.EventData))
         {
             throw new InvalidOperationException("The event is too large to fit in a single Event Hubs batch.");

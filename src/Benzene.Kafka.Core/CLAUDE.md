@@ -66,7 +66,12 @@ producer support. This is one of the "self-hosted worker" startup modes document
   `CLAUDE.md` and `work/performance-roadmap-1.0.md`'s 2026-07-15 follow-up entry.
 - `KafkaContextConverter` forwards `IBenzeneClientRequest.Headers` onto the outbound
   `Message.Headers` (UTF-8 encoded, matching Confluent.Kafka's `byte[]`-valued headers) so
-  header-based decorators (correlation ID, W3C trace context) reach the wire.
+  header-based decorators (correlation ID, W3C trace context) reach the wire. It also supports an
+  optional **message key**: pass `.UseKafka<T>(keyHeader: "x")` (or the converter's `keyHeader` ctor
+  arg) and the named header's value becomes `Message.Key` (hash(key) → partition, giving per-key
+  ordering/affinity); `null` (the default) sends a keyless message (round-robin, no ordering). The
+  context-based `KafkaMessageContextConverter` (the re-produce path) now also forwards headers onto
+  `Message.Headers` — previously dropped, silently losing trace context on that path.
 - `KafkaBenzeneMessageClient.SendMessageAsync` reuses a single shared `ISerializer` instance across
   every call (rather than a fresh `JsonSerializer()`/`JsonSerializerOptions` per send) so
   System.Text.Json's per-`JsonSerializerOptions` converter/metadata cache isn't defeated on every

@@ -29,13 +29,13 @@ public static class Extensions
     }
     
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseKafka<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
-        Action<IMiddlewarePipelineBuilder<KafkaSendMessageContext>> action)
+        Action<IMiddlewarePipelineBuilder<KafkaSendMessageContext>> action, string keyHeader = null)
     {
-        return Convert(app, new KafkaContextConverter<T>(), action);
+        return Convert(app, new KafkaContextConverter<T>(new Benzene.Core.MessageHandlers.Serialization.JsonSerializer(), keyHeader), action);
     }
-    
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseKafka<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app)
+
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseKafka<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string keyHeader = null)
     {
-        return app.Convert(new KafkaContextConverter<T>(), builder => builder.UseKafkaClient());
+        return app.Convert(new KafkaContextConverter<T>(new Benzene.Core.MessageHandlers.Serialization.JsonSerializer(), keyHeader), builder => builder.UseKafkaClient());
     }
 }

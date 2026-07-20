@@ -50,9 +50,10 @@ public static class Extensions
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app,
         Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action,
-        string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty)
+        string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty,
+        string partitionKeyHeader = null)
     {
-        return app.Convert(new EventHubContextConverter<T>(topicPropertyKey), action);
+        return app.Convert(new EventHubContextConverter<T>(topicPropertyKey, partitionKeyHeader), action);
     }
 
     /// <summary>
@@ -64,9 +65,9 @@ public static class Extensions
     /// <param name="producerClient">The Event Hubs producer client used to send events.</param>
     /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, EventHubProducerClient producerClient, string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, EventHubProducerClient producerClient, string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty, string partitionKeyHeader = null)
     {
-        return app.Convert(new EventHubContextConverter<T>(topicPropertyKey), builder => builder.UseEventHubClient(producerClient));
+        return app.Convert(new EventHubContextConverter<T>(topicPropertyKey, partitionKeyHeader), builder => builder.UseEventHubClient(producerClient));
     }
 
     /// <summary>
@@ -79,9 +80,10 @@ public static class Extensions
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<OutboundContext> UseEventHub(this IMiddlewarePipelineBuilder<OutboundContext> app,
         Action<IMiddlewarePipelineBuilder<EventHubSendMessageContext>> action,
-        string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty)
+        string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty,
+        string partitionKeyHeader = null)
     {
-        return app.Convert(new OutboundEventHubContextConverter(topicPropertyKey), action);
+        return app.Convert(new OutboundEventHubContextConverter(topicPropertyKey, partitionKeyHeader), action);
     }
 
     /// <summary>

@@ -58,4 +58,41 @@ public class OutboundHeaderForwardingTest
         var header = context.Message.Headers.Single(h => h.Key == HeaderKey);
         Assert.Equal(HeaderValue, Encoding.UTF8.GetString(header.GetValueBytes()));
     }
+
+    [Fact]
+    public async Task KafkaContextConverter_NoKeyHeader_LeavesMessageKeyNull()
+    {
+        var converter = new KafkaContextConverter<string>();
+        var context = await converter.CreateRequestAsync(CreateContext());
+
+        Assert.Null(context.Message.Key);
+    }
+
+    [Fact]
+    public async Task KafkaContextConverter_WithKeyHeader_SetsMessageKeyFromThatHeader()
+    {
+        var converter = new KafkaContextConverter<string>(new Benzene.Core.MessageHandlers.Serialization.JsonSerializer(), HeaderKey);
+        var context = await converter.CreateRequestAsync(CreateContext());
+
+        Assert.Equal(HeaderValue, context.Message.Key);
+    }
+
+    [Fact]
+    public async Task EventHubContextConverter_NoPartitionKeyHeader_LeavesPartitionKeyNull()
+    {
+        var converter = new Benzene.Clients.Azure.EventHub.EventHubContextConverter<string>();
+        var context = await converter.CreateRequestAsync(CreateContext());
+
+        Assert.Null(context.PartitionKey);
+    }
+
+    [Fact]
+    public async Task EventHubContextConverter_WithPartitionKeyHeader_SetsPartitionKeyFromThatHeader()
+    {
+        var converter = new Benzene.Clients.Azure.EventHub.EventHubContextConverter<string>(
+            Benzene.Clients.Azure.EventHub.EventHubContextConverter<string>.DefaultTopicProperty, HeaderKey);
+        var context = await converter.CreateRequestAsync(CreateContext());
+
+        Assert.Equal(HeaderValue, context.PartitionKey);
+    }
 }
