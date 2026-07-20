@@ -61,8 +61,10 @@ for the full Kubernetes wiring guide.
   `Benzene.Core.CancellationTokenAccessor`) is registered by the builder so any check can resolve it
   and observe the ambient token (e.g. `HttpPingHealthCheck` passes it to `GetAsync`). The pipeline
   does not thread a `CancellationToken` (a repo-wide convention - it rides on scoped accessors, like
-  gRPC's `IGrpcServerCallAccessor`); seeding the token from each transport (HTTP request-aborted,
-  worker shutdown) is the remaining framework-wide step - until then it defaults to `None`.
+  gRPC's `IGrpcServerCallAccessor`). The accessor is registered scoped in `AddBenzene` (universally
+  available); `Benzene.AspNet.Core`'s `UseHttp` seeds it from `HttpContext.RequestAborted` per request.
+  Other transports (workers, Lambda) can seed it the same way; until a given transport does, it
+  defaults to `None`.
 - `FailedHealthCheck`/`InlineHealthCheck`/`SimpleHealthCheck` - small `IHealthCheck` helpers (a
   fixed-failure stub, a func-backed wrapper, and an always-healthy default, respectively)
 - `HealthCheckNamer` - dedupes health check names in the aggregated response when multiple checks

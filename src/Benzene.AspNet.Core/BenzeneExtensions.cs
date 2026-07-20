@@ -1,6 +1,7 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
@@ -31,6 +32,20 @@ public static class BenzeneExtensions
         app.Register(x => x
             .AddSingleton<IMiddlewarePipelineBuilder<AspNetContext>, MiddlewarePipelineBuilder<AspNetContext>>()
             .AddAspNetMessageHandlers());
+
+        // Seed the scope's ambient cancellation token from the request's aborted token, so any
+        // component resolving ICancellationTokenAccessor (e.g. a health check) observes a client
+        // disconnect / request abort. Runs first, in the same per-request scope as the rest.
+        pipeline.Use(resolver => new FuncWrapperMiddleware<AspNetContext>("SeedCancellationToken", async (context, next) =>
+        {
+            var accessor = resolver.TryGetService<CancellationTokenAccessor>();
+            if (accessor != null)
+            {
+                accessor.CancellationToken = context.HttpContext.RequestAborted;
+            }
+            await next();
+        }));
+
         action(pipeline);
         app.Add(serviceResolverFactory => new AspNetApplication(pipeline.Build(), serviceResolverFactory));
         return app;

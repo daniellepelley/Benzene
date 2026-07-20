@@ -87,6 +87,12 @@ public static class Extensions
         services.TryAddScoped<ICurrentTransport>(x => x.GetService<CurrentTransportInfo>());
         services.TryAddScoped<ISetCurrentTransport>(x => x.GetService<CurrentTransportInfo>());
 
+        // Scope-level ambient cancellation token any component can resolve (a transport seeds it per
+        // request/message). Registered here so it's universally available, not only where health checks
+        // are wired.
+        services.TryAddScoped<Benzene.Core.CancellationTokenAccessor>();
+        services.TryAddScoped<ICancellationTokenAccessor>(x => x.GetService<Benzene.Core.CancellationTokenAccessor>());
+
         services.TryAddSingleton<IApplicationInfo, BlankApplicationInfo>();
         services.TryAddSingleton<IVersionSelector, VersionSelector>();
         services.TryAddSingleton<ISerializer, JsonSerializer>();
