@@ -15,12 +15,17 @@ variant) `GetAppliedMigrationsAsync()`.
   AND the configured target migration is the LAST applied migration (not merely present among applied
   migrations) - a database that's reachable but hasn't yet had a newer migration applied (or has a
   newer one than expected) reports unhealthy; result `Data` includes `CanConnect`, `AppliedMigrations`,
-  `TargetMigration`, `MigrationMatch` (drives pass/fail), `MigrationContains`, and `Error` (type name,
-  not message); result `Dependencies` includes one `HealthCheckDependency("Database",
+  `TargetMigration`, `MigrationMatch` (drives pass/fail), `MigrationContains`, `Error` (type name,
+  not message), and `MigrationError` (the **type name** of an exception thrown while querying applied
+  migrations, if any - so a failed migration query is distinguishable from a genuinely un-migrated
+  database, which otherwise both report `MigrationMatch=false`; a migration query that threw also
+  makes the check unhealthy); result `Dependencies` includes one `HealthCheckDependency("Database",
   typeof(TDbContext).Name)`
 - `DatabaseHealthCheckFactory<TDbContext>` - factory for `DatabaseHealthCheck<TDbContext>`, resolving
-  `TDbContext` from DI each time the check runs; no equivalent factory exists for
-  `DatabaseConnectionHealthCheck<TDbContext>` today (construct it directly if needed)
+  `TDbContext` from DI each time the check runs
+- `Extensions` - `AddDatabaseHealthCheck<TDbContext>(targetMigration)` and
+  `AddDatabaseConnectionHealthCheck<TDbContext>()` register the two checks on an `IHealthCheckBuilder`,
+  for parity with the other providers' `Add*` extensions (both resolve `TDbContext` from DI at run time)
 
 ## When to use this package
 - `DatabaseConnectionHealthCheck` - simple "is the database reachable" check

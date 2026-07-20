@@ -9,10 +9,11 @@ namespace Benzene.Test.HealthChecks.EntityFramework;
 
 // The EF Core InMemory provider (used here to avoid a real database dependency in tests) does not
 // support relational-only APIs like Database.GetAppliedMigrationsAsync() - it always throws
-// InvalidOperationException, which DatabaseHealthCheck's TryGetAppliedMigrationsAsync catches and
-// treats as "no migrations applied". That means every InMemory-backed scenario below reports
-// MigrationMatch = false regardless of connectivity - there is no way to exercise the "connects AND
-// migration matches" healthy path without a real relational provider (SQL Server/SQLite/Postgres).
+// InvalidOperationException, which DatabaseHealthCheck's TryGetAppliedMigrationsAsync now records as
+// a MigrationError (distinct from an un-migrated database). That means every InMemory-backed scenario
+// below reports MigrationMatch = false regardless of connectivity - there is no way to exercise the
+// "connects AND migration matches" healthy path without a real relational provider (SQL Server/SQLite/
+// Postgres).
 public class DatabaseHealthCheckTest
 {
     private static TestDbContext CreateContext()
@@ -39,6 +40,9 @@ public class DatabaseHealthCheckTest
         Assert.Equal("20260101000000_Initial", result.Data["TargetMigration"]);
         Assert.Equal(false, result.Data["MigrationMatch"]);
         Assert.Equal(false, result.Data["MigrationContains"]);
+        // The migration query threw (InMemory has no relational migrations API) - MigrationError
+        // records that, so this is distinguishable from a database that merely hasn't been migrated.
+        Assert.NotNull(result.Data["MigrationError"]);
         var dependency = Assert.Single(result.Dependencies);
         Assert.Equal("Database", dependency.Kind);
         Assert.Equal(nameof(TestDbContext), dependency.Name);

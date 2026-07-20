@@ -41,12 +41,19 @@ public class DatabaseHealthCheck<TDbContext> : IHealthCheck where TDbContext : D
     public async Task<IHealthCheckResult> ExecuteAsync()
     {
         var canConnect = await TryConnect(_dbContext);
-        var appliedMigrations = await TryGetAppliedMigrationsAsync(_dbContext);
+        var (appliedMigrations, migrationError) = await TryGetAppliedMigrationsAsync(_dbContext);
 
         var migrationContains = appliedMigrations.Contains(_targetMigration);
         var migrationMatch = appliedMigrations.LastOrDefault() == _targetMigration;
 
-        return HealthCheckResult.CreateInstance(canConnect.Item1 && migrationMatch, Type,
+        // A migration query that *threw* is distinct from "connected but behind": both report
+        // MigrationMatch=false, but only the former sets MigrationError, so an operator can tell a
+        // transient/provider error apart from a genuinely un-migrated database (they look identical
+        // otherwise). The check is unhealthy if it can't connect, if the migration query failed, or
+        // if the target isn't the last applied migration.
+        var isHealthy = canConnect.Item1 && migrationError == null && migrationMatch;
+
+        return HealthCheckResult.CreateInstance(isHealthy, Type,
             new Dictionary<string, object>
             {
                 { "CanConnect", canConnect.Item1 },
@@ -54,7 +61,8 @@ public class DatabaseHealthCheck<TDbContext> : IHealthCheck where TDbContext : D
                 { "TargetMigration", _targetMigration },
                 { "MigrationMatch", migrationMatch },
                 { "MigrationContains", migrationContains },
-                { "Error", canConnect.Item2?.GetType().Name }
+                { "Error", canConnect.Item2?.GetType().Name },
+                { "MigrationError", migrationError?.GetType().Name }
             },
             new[] { new HealthCheckDependency("Database", typeof(TDbContext).Name) });
     }
@@ -71,15 +79,17 @@ public class DatabaseHealthCheck<TDbContext> : IHealthCheck where TDbContext : D
         }
     }
 
-    private static async Task<string[]> TryGetAppliedMigrationsAsync(DbContext dbContext)
+    private static async Task<(string[], Exception)> TryGetAppliedMigrationsAsync(DbContext dbContext)
     {
         try
         {
-            return (await dbContext.Database.GetAppliedMigrationsAsync()).ToArray();
+            return ((await dbContext.Database.GetAppliedMigrationsAsync()).ToArray(), null);
         }
-        catch
+        catch (Exception ex)
         {
-            return Array.Empty<string>();
+            // Report the failure type rather than silently returning "no migrations applied", which
+            // is indistinguishable from a genuinely un-migrated database.
+            return (Array.Empty<string>(), ex);
         }
     }
 }
