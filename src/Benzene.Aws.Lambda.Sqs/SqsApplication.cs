@@ -49,7 +49,10 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
     /// </returns>
     public async Task<SQSBatchResponse> HandleAsync(SQSEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
-        var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
+        // Each record's task RETURNS its optional failure rather than appending to a shared List:
+        // the continuations run concurrently under Task.WhenAll, and List<T>.Add is not thread-safe,
+        // so a shared-list append raced - it could drop a failed record's id (SQS then deletes a
+        // message that actually failed - silent message loss), duplicate one, or throw mid-resize.
         var tasks = @event.Records.Select(record => SqsMessageContext.CreateInstance(@event, record)).Select(async context =>
             {
                 try
@@ -63,7 +66,7 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
 
                     if (context.IsSuccessful.HasValue && !context.IsSuccessful.Value)
                     {
-                        batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
+                        return new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId };
                     }
                 }
                 catch (Exception ex)
@@ -74,12 +77,16 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                             .LogError(ex, "Processing SQS message {messageId} failed", context.SqsMessage.MessageId);
                     }
 
-                    batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
+                    return new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId };
                 }
+
+                return null;
             })
             .ToArray();
 
-        await Task.WhenAll(tasks);
+        var batchItemFailures = (await Task.WhenAll(tasks))
+            .Where(failure => failure != null)
+            .ToList();
 
         if (batchItemFailures.Count > 0 && _options.BatchFailureMode == SqsBatchFailureMode.FailWholeBatch)
         {

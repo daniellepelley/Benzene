@@ -16,7 +16,19 @@ public class JsonSerializer : ISerializer
     {
         return JsonConvert.SerializeObject(payload, new JsonSerializerSettings
         {
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
+            // CamelCasePropertyNamesContractResolver's default naming strategy has
+            // ProcessDictionaryKeys = true, so it camel-cases DICTIONARY KEYS too (not just property
+            // names) - corrupting free-form keys ("MyKey" -> "myKey"), and deserialize doesn't undo
+            // it, so a round-trip silently loses the original keys. The default System.Text.Json
+            // serializer does not rename dictionary keys; match it by camel-casing property names only.
+            ContractResolver = new DefaultContractResolver
+            {
+                NamingStrategy = new CamelCaseNamingStrategy
+                {
+                    ProcessDictionaryKeys = false,
+                    OverrideSpecifiedNames = true
+                }
+            }
         });
     }
 

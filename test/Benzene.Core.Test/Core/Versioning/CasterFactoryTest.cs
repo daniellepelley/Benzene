@@ -48,6 +48,54 @@ public class CasterFactoryTest
         Assert.Equal(V2.OrderStatus.Shipped, result.Status);
     }
 
+    private enum Colour { Red, Green }
+    private class NullabilityFrom { public int Quantity { get; set; } public int? Optional { get; set; } public Colour Status { get; set; } }
+    private class NullabilityTo { public int? Quantity { get; set; } public int Optional { get; set; } public Colour? Status { get; set; } }
+
+    [Fact]
+    public void Cast_PropertyNullabilityChange_PreservesTheValue()
+    {
+        // Making a field optional (int->int?) or required (int?->int), and enum<->nullable-enum, are
+        // routine schema-evolution moves. They used to fall through to class-mapping and come back
+        // `default` (null/0), silently dropping the value. Assert the value survives both directions.
+        var caster = new CasterFactory<NullabilityFrom, NullabilityTo>().Build();
+
+        var result = caster.Cast(new NullabilityFrom { Quantity = 5, Optional = 7, Status = Colour.Green });
+
+        Assert.Equal(5, result.Quantity);            // int -> int?
+        Assert.Equal(7, result.Optional);            // int? -> int (has value)
+        Assert.Equal(Colour.Green, result.Status);   // enum -> nullable enum
+    }
+
+    [Fact]
+    public void Cast_NullableToNonNullable_WhenNull_UsesDefault_WithoutThrowing()
+    {
+        var caster = new CasterFactory<NullabilityFrom, NullabilityTo>().Build();
+
+        var result = caster.Cast(new NullabilityFrom { Quantity = 5, Optional = null, Status = Colour.Red });
+
+        Assert.Equal(0, result.Optional);            // int? null -> int : default, not an exception
+    }
+
+    private class LineFrom { public string Sku { get; set; } public int Count { get; set; } }
+    private class LineTo { public string Sku { get; set; } public int Count { get; set; } }
+    private class ArrayFrom { public LineFrom[] Lines { get; set; } }
+    private class ArrayTo { public LineTo[] Lines { get; set; } }
+
+    [Fact]
+    public void Cast_ArrayPropertyWithChangedElementType_MapsElementWise()
+    {
+        // An array property whose element type changes between versions used to throw at startup
+        // (Expression.New(T[]) has no parameterless ctor); it must map element-wise like List<T> does.
+        var caster = new CasterFactory<ArrayFrom, ArrayTo>().Build();
+
+        var result = caster.Cast(new ArrayFrom { Lines = new[] { new LineFrom { Sku = "s1", Count = 2 } } });
+
+        var line = Assert.Single(result.Lines);
+        Assert.Equal("s1", line.Sku);
+        Assert.Equal(2, line.Count);
+    }
+
     [Fact]
     public void Cast_MapsNestedClassesByName()
     {

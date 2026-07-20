@@ -22,6 +22,9 @@ public class VersionSelector : IVersionSelector
     {
         return availableVersions.Contains(requestedVersion)
             ? requestedVersion
-            : availableVersions.MaxBy(x => x);
+            // StringComparer.Ordinal, not the default culture-sensitive comparer - the doc promises
+            // an ordinal fallback, and a culture-sensitive max can pick a different handler and vary
+            // by machine culture (e.g. ["a","B"] -> "a" ordinal vs "B" under most cultures).
+            : availableVersions.MaxBy(x => x, System.StringComparer.Ordinal);
     }
 }
