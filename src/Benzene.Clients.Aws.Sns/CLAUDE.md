@@ -22,7 +22,10 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at
   runtime, naming the topic, the actual (`Void`) and requested response types (release plan Tier
   2.4 — this used to be a bare `InvalidCastException`; fixed in `DefaultBenzeneMessageSender`).
-- **No health check** — SNS has no lightweight liveness probe analogous to SQS `GetQueueAttributes`.
+- **`SnsHealthCheck`** — verifies topic reachability with a read-only `GetTopicAttributes` call (the
+  SNS analogue of `SqsHealthCheck`, but non-side-effecting: it does not publish). `Type => "Sns"`,
+  dependency `("Topic", topicArn)`. Register via `AddSnsHealthCheck(topicArn)`; the consumer registers
+  `IAmazonSimpleNotificationService` in DI (Benzene does not).
 
 ## Dependencies
-`AWSSDK.SimpleNotificationService`; Benzene `Clients`, `Core.Middleware`, `Results`.
+`AWSSDK.SimpleNotificationService`; Benzene `Clients`, `Core.Middleware`, `Results`, `HealthChecks.Core`.

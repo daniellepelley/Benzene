@@ -149,6 +149,8 @@
     <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Tcp\Benzene.HealthChecks.Tcp.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Disk\Benzene.HealthChecks.Disk.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Clients.Aws.Sns\Benzene.Clients.Aws.Sns.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.HealthChecks.DynamoDb\Benzene.HealthChecks.DynamoDb.csproj" />
   </ItemGroup>
 
   <ItemGroup>
