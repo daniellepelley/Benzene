@@ -43,6 +43,16 @@ public class SerializerResponseRenderer<TContext> : IResponseRenderer<TContext> 
     /// <inheritdoc />
     public Task RenderAsync(TContext context, IMessageHandlerResult result, IBenzeneResponseAdapter<TContext> response)
     {
+        // A raw binary payload is written verbatim via the byte-oriented SetBody overload (base64 +
+        // IsBase64Encoded on API Gateway, raw bytes on the self-host server), bypassing serialization
+        // and format negotiation. Text/object payloads take the normal serialized path below.
+        if (result.BenzeneResult.PayloadAsObject is IRawBytesMessage rawBytesMessage)
+        {
+            response.SetBody(context, rawBytesMessage.Content);
+            response.SetContentType(context, rawBytesMessage.ContentType);
+            return Task.CompletedTask;
+        }
+
         var format = _mediaFormatNegotiator.SelectWrite(context);
         var serializer = format.GetSerializer(_serviceResolver);
 

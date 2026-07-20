@@ -55,7 +55,11 @@ Provides complete implementation of message handler infrastructure for command/q
   `IResponseRenderer<TContext>`s in order and delegates to the first whose `CanRender` matches
 - `SerializerResponseRenderer<TContext>` - The catch-all `IResponseRenderer<TContext>` (registered
   last): asks the negotiator for the write format and writes body + content type; honors
-  `IRawContentMessage.ContentType` when the handler's payload implements it
+  `IRawContentMessage.ContentType` when the handler's payload implements it. When the payload is an
+  `IRawBytesMessage` (raw binary — `Benzene.Core.Messages.RawBytesMessage`), it instead writes the
+  bytes verbatim via the byte `SetBody(TContext, ReadOnlyMemory<byte>)` overload and skips
+  serialization/negotiation entirely — the response transport handles the encoding (API Gateway
+  base64 + `IsBase64Encoded`, self-host raw bytes). Covered by `RawBytesResponseRenderingTest`.
 - `ResponseHandlerContainer<TContext>` - Contains response handlers
 - `DefaultResponsePayloadMapper<TContext>` - Maps response payloads
 - `ResponseIfHandledMessageHandlerResultSetter<TContext>` - Sets result if handled

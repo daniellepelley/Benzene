@@ -56,6 +56,21 @@ public class ApiGatewayResponseAdapter : IBenzeneResponseAdapter<ApiGatewayConte
     }
 
     /// <summary>
+    /// Sets a raw binary response body, base64-encoding it and flagging the response
+    /// <see cref="Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse.IsBase64Encoded"/> so API
+    /// Gateway decodes it back to bytes on the way out (the correct path for images, PDFs, and other
+    /// binary payloads a handler returns via <see cref="Benzene.Abstractions.Messages.IRawBytesMessage"/>).
+    /// </summary>
+    /// <param name="context">The API Gateway context to set the body on.</param>
+    /// <param name="body">The raw response bytes.</param>
+    public void SetBody(ApiGatewayContext context, ReadOnlyMemory<byte> body)
+    {
+        context.EnsureResponseExists();
+        context.ApiGatewayProxyResponse.Body = Convert.ToBase64String(body.Span);
+        context.ApiGatewayProxyResponse.IsBase64Encoded = true;
+    }
+
+    /// <summary>
     /// Gets the response body, initializing the response if it doesn't already exist.
     /// </summary>
     /// <param name="context">The API Gateway context to read the body from.</param>

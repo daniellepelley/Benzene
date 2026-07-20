@@ -28,7 +28,11 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
   reading, so a chunked/lying length can't exceed it) — closing the unbounded-buffering DoS. `UseHttp`
   now also registers the config as a singleton so request-scoped components (the body getter) can
   resolve the limit.
-- HTTP context adapter for HttpListener
+- `HttpContextResponseAdapter` - HTTP context adapter for HttpListener. Supports **binary responses**:
+  a handler returning a `Benzene.Abstractions.Messages.IRawBytesMessage` is written verbatim via the
+  byte `SetBody(context, ReadOnlyMemory<byte>)` overload (held as `_bodyBytes` and written directly in
+  `FinalizeAsync`, skipping the UTF-8 encode that would corrupt a true binary payload); the string
+  path is unchanged. Binary request bodies still flow through the string buffer (a follow-up).
 - HTTP server lifecycle management
 
 ### Health checks (`Extensions.cs`)

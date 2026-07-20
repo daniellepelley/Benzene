@@ -18,6 +18,10 @@ types, and the context-predicate helpers used for pipeline branching. There is n
 ### Addressing & raw payloads
 - `Topic : ITopic` - `Id` + `Version` value type (version defaults to empty).
 - `RawStringMessage : IRawStringMessage` - wraps pre-rendered string `Content`.
+- `RawBytesMessage : IRawBytesMessage` - wraps a raw binary `Content` (`ReadOnlyMemory<byte>`) + its
+  `ContentType`, for a handler returning bytes verbatim (image/PDF/zip). `SerializerResponseRenderer`
+  writes it through the byte `SetBody` overload; HTTP transports encode as required (API Gateway
+  base64 + `IsBase64Encoded`, self-host raw bytes).
 
 ### Outbound sending (`Benzene.Core.Messages.MessageSender`)
 - `MessageSender<TMessage>` / `MessageSender<TRequest, TResponse>` - `IMessageSender<...>`

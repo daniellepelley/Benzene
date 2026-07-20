@@ -90,8 +90,13 @@ Parallel `ApiGatewayV2*` set mirroring the v1 adapters against `ApiGatewayV2Cont
   header is written to the v2 response's `Cookies[]` array rather than the header map
   (`ApiGatewayV2ResponseAdapter`). Route-finding, health checks, and media negotiation are all
   `IHttpContext`-generic and reused as-is.
-- Binary request/response bodies are still text-decoded (same as v1 — see the base64 note below);
-  true binary body support is a shared cross-cutting follow-up spanning v1, v2, ALB and self-host.
+- **Binary responses are supported** (v1 and v2): a handler returning a
+  `Benzene.Abstractions.Messages.IRawBytesMessage` (e.g. `new RawBytesMessage(pngBytes, "image/png")`)
+  is written by the shared `SerializerResponseRenderer` through the response adapter's byte `SetBody`
+  overload, which base64-encodes the body and sets `IsBase64Encoded = true` so API Gateway returns
+  real bytes. See `ApiGatewayResponseAdapter`/`ApiGatewayV2ResponseAdapter`'s `SetBody(context,
+  ReadOnlyMemory<byte>)`. Binary **request** bodies are still text-decoded (the base64 note below);
+  a raw-bytes request passthrough is a follow-up.
 
 ## Important conventions
 - **Two payload formats supported.** `APIGatewayProxyRequest` (v1.0, REST APIs and HTTP APIs on
