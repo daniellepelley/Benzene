@@ -53,8 +53,14 @@ a { color: var(--accent); }
 
 .logo-mark { color: var(--accent); flex-shrink: 0; }
 
+.top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+}
+
 .top-nav a {
-  margin-left: 1.25rem;
   text-decoration: none;
   color: var(--fg);
 }
@@ -246,9 +252,8 @@ a { color: var(--accent); }
 }
 
 @media (max-width: 480px) {
-  .site-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-  .top-nav { margin-left: -0.25rem; }
-  .top-nav a { margin-left: 0.25rem; margin-right: 0.75rem; }
+  .site-header { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+  .top-nav { gap: 0.4rem 1rem; }
 }
 
 .content h1 { font-size: 2rem; }
@@ -313,6 +318,28 @@ a { color: var(--accent); }
 }
 
 @media (max-width: 800px) {
-  .layout { flex-direction: column; }
-  .sidebar { position: static; max-height: none; width: 100%; }
+  /* Content first, nav demoted to a labelled directory at the foot of the page - so a docs page
+     opens straight into what you clicked, the way the single-column marketing pages read, instead
+     of dumping the whole nav tree above the content. */
+  .layout { flex-direction: column; gap: 0; }
+  .content { order: 1; padding: 1.25rem 1rem; }
+  .sidebar {
+    order: 2;
+    position: static;
+    max-height: none;
+    width: 100%;
+    margin-top: 2.5rem;
+    padding: 1.25rem 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .sidebar::before {
+    content: "Documentation";
+    display: block;
+    margin-bottom: 0.6rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
 }
