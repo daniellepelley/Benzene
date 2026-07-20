@@ -9,34 +9,34 @@ namespace Benzene.Website.Generator;
 internal static class MarketingContent
 {
     public const string Tagline =
-        "Write your business logic once, then reach it over any transport &mdash; HTTP, SQS, " +
-        "SNS, Kafka, Event Hub, gRPC &mdash; all at once, on the cloud you already run. Putting a " +
-        "queue in front of an HTTP endpoint, or adding a second event source to a worker, becomes " +
-        "a line of wiring instead of a rewrite.";
+        "Write your business logic once and reach it over HTTP, SQS, SNS, Kafka, Event Hub, or " +
+        "gRPC &mdash; all at once, on the cloud you already run. Putting a queue in front of an " +
+        "HTTP endpoint, or adding a second event source to a worker, takes a line of wiring, not " +
+        "a rewrite.";
 
     public sealed record Feature(string Title, string Body);
 
     public static readonly Feature[] Features =
     [
         new("Mix transports without the glue",
-            "Serverless ties your logic to its trigger &mdash; an SNS function can't also take " +
-            "SQS, and putting a queue in front of an HTTP service is bespoke plumbing. A Benzene " +
-            "handler is plain C# against a topic, so the same logic is reachable over HTTP, SQS, " +
-            "SNS, Kafka and more at the same time. You add or change a transport in the wiring, " +
-            "never in the handler."),
+            "Serverless ties your logic to its trigger. An SNS function can't also take SQS, and " +
+            "putting a queue in front of an HTTP service is bespoke plumbing. A Benzene handler is " +
+            "plain C# against a topic, so the same logic is reachable over HTTP, SQS, SNS, Kafka, " +
+            "and more at the same time. You add or change a transport in the wiring, never in the " +
+            "handler."),
         new("See what every service does",
             "Handlers, topics, payloads, and validation rules are introspectable. Benzene " +
-            "generates OpenAPI and AsyncAPI specs and a live service map straight from your code " +
-            "&mdash; a browsable contract and cross-service topology you get for free, not a " +
-            "diagram you maintain by hand."),
+            "generates OpenAPI and AsyncAPI specs and a live service map straight from your code, " +
+            "so your contract and cross-service topology track what actually runs instead of a " +
+            "hand-drawn diagram that drifts."),
         new("Test-first, out of the box",
             "Every transport ships a test host and helpers, so you exercise a handler exactly as " +
-            "SQS, Lambda, or HTTP would invoke it &mdash; in-memory, no cloud, no emulator. Mock " +
-            "a dependency, send a message, assert the result."),
+            "SQS, Lambda, or HTTP would invoke it: in memory, in a normal unit test, with no cloud " +
+            "and no emulator. Mock a dependency, send a message, and assert the result."),
         new("Cross-cutting concerns, once",
             "Correlation IDs, logging, tracing, validation, retries, and health checks are " +
-            "composable middleware shared across every transport &mdash; written once, not " +
-            "scattered across handlers or re-implemented per event source."),
+            "composable middleware shared across every transport. Write them once instead of " +
+            "scattering them across handlers or re-implementing them per event source."),
     ];
 
     public sealed record CodeStep(string Label, string Code);

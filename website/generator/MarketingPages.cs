@@ -30,73 +30,72 @@ internal static class MarketingPages
         Description: "The case for Benzene: lower the cost of change, reduce lock-in and risk, ship "
             + "reliable services your team can test, on infrastructure you already run.",
         HeroLedeHtml:
-            "Adopting a framework is a bet on cost, risk, and longevity as much as on ergonomics. "
-            + "Benzene's bet is simple: your business logic is the asset, and everything else &mdash; "
-            + "the cloud, the transport, the host &mdash; is a detail that should be cheap to change.",
+            "Choosing a framework is a bet on cost, risk, and longevity, not just ergonomics. "
+            + "Benzene's is straightforward: your business logic is the asset, and the cloud, the "
+            + "transport, and the host are details that should be cheap to change.",
         Sections:
         [
             new Section("Lower the cost of change",
-                "Requirements move. New event source, a queue in front of an API, a service split in two. "
-                + "In most stacks each of those is a rewrite; in Benzene it's wiring.",
+                "Requirements move. A new event source, a queue in front of an API, a service split in "
+                + "two. In most stacks each of those is a rewrite; in Benzene it's wiring.",
             [
                 new Card("The handler doesn't change",
                     "Your logic is a plain C# <a href=\"docs/message-handlers.html\">message handler</a> "
-                    + "against a topic. Reaching it over a new transport &mdash; HTTP, a queue, a topic, an "
-                    + "event bus &mdash; is a line in the host wiring, not a change to the code that was "
-                    + "already written and tested."),
+                    + "against a topic. Reaching it over a new transport, whether HTTP, a queue, a topic, "
+                    + "or an event bus, is a line in the host wiring. The code you already wrote and "
+                    + "tested stays untouched."),
                 new Card("Fewer moving parts to run",
-                    "One function can serve HTTP <em>and</em> several queues and topics at once, so a service "
-                    + "is one deployable, not a sprawl of single-purpose functions &mdash; less to deploy, "
-                    + "monitor, and pay for."),
+                    "One function can serve HTTP alongside several queues and topics at once, so a service "
+                    + "is a single deployable rather than a sprawl of single-purpose functions. That's less "
+                    + "to deploy, monitor, and pay for."),
                 new Card("Evolve without a rewrite",
                     "Put a queue in front of a synchronous endpoint, or promote a response into a published "
-                    + "event, by adding middleware &mdash; the kind of change that normally means re-plumbing "
-                    + "a service."),
+                    + "event, by adding middleware. Normally that kind of change means re-plumbing a service."),
             ]),
             new Section("Reduce lock-in and risk",
-                "The expensive kind of lock-in isn't which cloud you're on &mdash; it's how deeply your code "
-                + "is tangled into one vendor's event model. Benzene keeps that boundary thin.",
+                "The expensive lock-in isn't the cloud you're on; it's how deeply your code is tangled into "
+                + "one vendor's event model. Benzene keeps that boundary thin.",
             [
                 new Card("Transport- and vendor-agnostic",
-                    "Handlers, middleware, and topics don't know whether they're behind Lambda, Azure "
-                    + "Functions, a self-hosted worker, or ASP.NET Core. Moving is a "
-                    + "<a href=\"docs/hosting.html\">hosting change</a>, and the SDK is never hidden from you "
-                    + "when you need it."),
+                    "Handlers, middleware, and topics don't know whether they run behind Lambda, Azure "
+                    + "Functions, a self-hosted worker, or ASP.NET Core. Moving between them is a "
+                    + "<a href=\"docs/hosting.html\">hosting change</a>, and the SDK is still there when you "
+                    + "need it."),
                 new Card("Plain C#, no proprietary runtime",
-                    "It's the .NET, dependency injection, and <code>async</code> your team already knows &mdash; "
-                    + "no bespoke DSL or engine to learn or be trapped by. Onboarding is a normal C# "
-                    + "onboarding."),
+                    "It's the .NET, dependency injection, and <code>async</code> your team already knows, "
+                    + "with no bespoke DSL or engine to learn. Onboarding a Benzene service is onboarding a "
+                    + "normal C# codebase."),
                 new Card("Open, and yours to fork",
-                    "MIT-licensed and open source. No per-seat fee, no telemetry phone-home, no vendor whose "
-                    + "roadmap you're hostage to."),
+                    "MIT-licensed and open source. There's no per-seat fee, no telemetry calling home, and "
+                    + "no vendor roadmap you're hostage to."),
             ]),
             new Section("Quality and reliability you can point to",
-                "Two of the biggest drivers of long-run cost are defects that reach production and incidents "
-                + "no one can diagnose. Benzene is built to keep both down.",
+                "Two of the biggest long-run costs are defects that reach production and incidents no one "
+                + "can diagnose. Benzene is built to keep both down.",
             [
                 new Card("Test-first, without the cloud",
-                    "Every transport ships a <a href=\"docs/testing-benzene.html\">test host and helpers</a>, so "
-                    + "a handler is exercised exactly as SQS, Lambda, or HTTP would invoke it &mdash; in memory, "
-                    + "no emulator, in a normal unit test. Quality is built in, not bolted on."),
+                    "Every transport ships a <a href=\"docs/testing-benzene.html\">test host and helpers</a>, "
+                    + "so a handler is exercised exactly as SQS, Lambda, or HTTP would invoke it, in memory "
+                    + "and in a normal unit test with no emulator."),
                 new Card("Observable by construction",
                     "Correlation IDs, structured logs, metrics, and distributed traces come from composable "
-                    + "middleware shared across transports &mdash; see <a href=\"operations.html\">Operations</a> "
-                    + "for the full picture."),
+                    + "middleware shared across transports. The <a href=\"operations.html\">Operations</a> "
+                    + "page has the full picture."),
                 new Card("Reliable under real traffic",
-                    "Health checks, retries, idempotency, and per-message failure handling are first-class, not "
-                    + "afterthoughts. The <a href=\"operations.html\">Operations</a> page lays out exactly what's "
-                    + "in the box &mdash; and, honestly, what you supply yourself."),
+                    "Health checks, retries, idempotency, and per-message failure handling are first-class. "
+                    + "The <a href=\"operations.html\">Operations</a> page lays out what's in the box and what "
+                    + "you supply yourself."),
             ]),
             new Section("Built to last",
                 "A framework you build on should be predictable to upgrade and honest about where it is.",
             [
                 new Card("A versioning policy, not surprises",
-                    "Semantic versioning with written <a href=\"docs/migration-alpha-to-1.0.html\">migration "
-                    + "guides</a> for breaking changes, so upgrades are planned, not archaeology."),
+                    "Semantic versioning, with written <a href=\"docs/migration-alpha-to-1.0.html\">migration "
+                    + "guides</a> for breaking changes, so an upgrade is a planned task rather than archaeology."),
                 new Card("Modern .NET, broad reach",
-                    "Built on .NET 10, with core packages also targeting older runtimes for back-compat. Runs "
-                    + "on the hosts your platform team already chose &mdash; see "
-                    + "<a href=\"architecture.html\">Architecture</a>."),
+                    "Built on .NET 10, with core packages also targeting older runtimes for back-compat. It "
+                    + "runs on the hosts your platform team already chose (see "
+                    + "<a href=\"architecture.html\">Architecture</a>)."),
                 new Card("Pre-1.0, and candid about it",
                     "Benzene is approaching 1.0; packages are published as prerelease (<code>--prerelease</code>) "
                     + "today. The docs mark anything partial or planned as such rather than overselling it."),
@@ -116,30 +115,30 @@ internal static class MarketingPages
         HeroLedeHtml:
             "Benzene separates <em>what your service does</em> from <em>how it's invoked</em>. A handler "
             + "holds your logic; a transport turns a native request into a message and routes it through a "
-            + "shared middleware pipeline. That one idea &mdash; ports and adapters, applied honestly &mdash; "
-            + "is where every other property on this page comes from.",
+            + "shared middleware pipeline. Ports and adapters, applied plainly, is where everything else on "
+            + "this page comes from.",
         Sections:
         [
-            new Section("Ports and adapters, applied honestly",
+            new Section("Ports and adapters",
                 "The <a href=\"docs/specification/design-principles.html\">design principles</a> are explicit "
                 + "and the <a href=\"docs/specification/core-concepts.html\">core concepts</a> are small.",
             [
                 new Card("Handlers are the core",
                     "A <a href=\"docs/message-handlers.html\">message handler</a> is "
-                    + "<code>IMessageHandler&lt;TRequest, TResponse&gt;</code> &mdash; ordinary C# that takes a "
+                    + "<code>IMessageHandler&lt;TRequest, TResponse&gt;</code>: ordinary C# that takes a "
                     + "typed request and returns a typed result. It has no idea what transport carried it."),
                 new Card("Transports are adapters",
-                    "HTTP, SQS, SNS, Kafka, EventBridge, Event Hub, Service Bus, gRPC &mdash; each is an adapter "
-                    + "that maps a native event onto a message and back. Adding a vendor means writing an "
+                    "HTTP, SQS, SNS, Kafka, EventBridge, Event Hub, Service Bus, gRPC. Each is an adapter "
+                    + "that maps a native event onto a message and back, so adding a vendor means writing an "
                     + "adapter, never touching the core."),
                 new Card("One pipeline through all of them",
                     "Every adapter runs the same composable <a href=\"docs/middleware.html\">middleware "
-                    + "pipeline</a>, so cross-cutting behavior is written once and applies everywhere &mdash; not "
-                    + "re-implemented per event source."),
+                    + "pipeline</a>, so cross-cutting behavior is written once and applies everywhere, rather "
+                    + "than being re-implemented per event source."),
             ]),
-            new Section("One model, many transports &mdash; at once",
-                "The differentiator isn't swapping clouds; it's that the same handler is reachable over many "
-                + "transports simultaneously, on the cloud you already run.",
+            new Section("One model, many transports, at once",
+                "The point isn't swapping clouds. It's that the same handler is reachable over many "
+                + "transports at once, on the cloud you already run.",
             [
                 new Card("Mix transports in one service",
                     "Expose a handler over HTTP for callers and over a queue for async work in the same host, "
@@ -147,21 +146,21 @@ internal static class MarketingPages
                     + "trigger-locked functions."),
                 new Card("Host it unchanged",
                     "The same <code>BenzeneStartUp</code> runs on <a href=\"docs/hosting.html\">AWS Lambda, "
-                    + "Azure Functions, a self-hosted worker, or ASP.NET Core</a> &mdash; \"three ways Benzene "
-                    + "starts\", one application definition."),
+                    + "Azure Functions, a self-hosted worker, or ASP.NET Core</a>: one application definition, "
+                    + "several ways to start it."),
                 new Card("Reach the native context when you must",
-                    "Abstractions don't trap you: <code>IBenzeneInvocation</code> and typed features are the "
+                    "Abstractions don't trap you. <code>IBenzeneInvocation</code> and typed features are the "
                     + "escape hatch to the underlying platform object when a handler genuinely needs it."),
             ]),
             new Section("Introspectable by design",
-                "A Benzene service can describe itself &mdash; its topics, payloads, and contracts &mdash; from "
-                + "the same code that handles messages. No hand-maintained diagram drifts out of date.",
+                "A Benzene service describes itself, its topics, payloads, and contracts, from the same code "
+                + "that handles messages. There's no hand-maintained diagram to drift out of date.",
             [
                 new Card("OpenAPI + AsyncAPI from your code",
                     "<a href=\"docs/spec.html\">Spec generation</a> derives OpenAPI (HTTP) and AsyncAPI (events) "
                     + "documents from the handler registry, with example payloads and validation rules included."),
                 new Card("Browse it in the Spec UI",
-                    "A self-contained <a href=\"docs/spec-ui.html\">Spec UI</a> renders that contract &mdash; "
+                    "A self-contained <a href=\"docs/spec-ui.html\">Spec UI</a> renders that contract: "
                     + "topics, payload tables, validation chips, transport chips. "
                     + "<a href=\"demos/spec/index.html\">Open the live demo &rarr;</a>"),
                 new Card("A map across services",
@@ -175,10 +174,10 @@ internal static class MarketingPages
             [
                 new Card("Your DI, your serializers",
                     "Microsoft DI by default, with an Autofac option; System.Text.Json by default, with "
-                    + "Newtonsoft, XML, Avro, and MessagePack available &mdash; chosen per content type, "
+                    + "Newtonsoft, XML, Avro, and MessagePack available, chosen per content type and "
                     + "swappable by registration."),
                 new Card("Middleware is the extension point",
-                    "Auth, validation, resilience, logging, idempotency &mdash; each is middleware you add, "
+                    "Auth, validation, resilience, logging, idempotency: each is middleware you add, "
                     + "reorder, or replace. Your own concerns plug in the same way."),
                 new Card("Interop on open envelopes",
                     "A transport-agnostic wire envelope (topic, headers, body) and standards-based specs let "
@@ -197,9 +196,9 @@ internal static class MarketingPages
             + "metrics, structured logs), health checks, failure handling (retries, idempotency, "
             + "partial-batch failures), and deployment across hosts.",
         HeroLedeHtml:
-            "A service is only as good as your ability to see it and trust it under load. Benzene's "
-            + "operational features are ordinary middleware &mdash; the same on every transport &mdash; and "
-            + "the docs are candid about what's in the box versus what you supply.",
+            "You have to be able to see a service and trust it under load. Benzene's operational features "
+            + "are ordinary middleware, the same on every transport, and the docs are candid about what's in "
+            + "the box versus what you supply.",
         Sections:
         [
             new Section("See everything it's doing",
@@ -210,14 +209,14 @@ internal static class MarketingPages
                     "Every middleware in every pipeline can emit its own <code>Activity</code> span, plus "
                     + "processed-count and duration metrics. Export to Jaeger, Tempo, Prometheus, or App "
                     + "Insights through standard <a href=\"docs/cookbooks/distributed-tracing-opentelemetry.html\">"
-                    + "OpenTelemetry</a> &mdash; Benzene stays exporter-agnostic."),
+                    + "OpenTelemetry</a>; Benzene stays exporter-agnostic."),
                 new Card("Traces that cross service hops",
                     "<code>UseW3CTraceContext()</code> continues a W3C trace from inbound headers and stamps it "
                     + "onto outbound messages, so one request is one trace across HTTP and queue/topic hops "
                     + "(SQS, SNS, Kafka, Event Hub)."),
                 new Card("Structured, correlated logs",
                     "One <code>UseBenzeneEnrichment()</code> attaches invocation id, trace/span id, topic, "
-                    + "transport, and handler to the log scope on every platform &mdash; through standard "
+                    + "transport, and handler to the log scope on every platform, through standard "
                     + "<code>Microsoft.Extensions.Logging</code>, so Serilog or App Insights just work."),
             ]),
             new Section("Know when it's healthy",
@@ -226,42 +225,42 @@ internal static class MarketingPages
             [
                 new Card("Liveness and readiness",
                     "Kubernetes-shaped <a href=\"docs/kubernetes-health-checks.html\">liveness/readiness "
-                    + "probes</a> &mdash; on a topic for any transport, or on <code>GET /livez</code> / "
+                    + "probes</a>, on a topic for any transport or on <code>GET /livez</code> / "
                     + "<code>/readyz</code> for HTTP hosts."),
                 new Card("Dependency checks included",
                     "Ship-ready checks for EF Core database connectivity/migrations, a downstream HTTP ping, "
-                    + "and schema availability &mdash; wired as readiness checks."),
+                    + "and schema availability, wired as readiness checks."),
                 new Card("Aggregated, with timeouts",
                     "Checks run together and report an aggregated status; each is wrapped in a timeout so one "
                     + "slow dependency can't hang the probe (a fixed 10s guard today)."),
             ]),
             new Section("Fail safely",
-                "At-least-once transports redeliver; batches partially fail; dependencies wobble. Benzene gives "
-                + "you first-class handling for each &mdash; and the "
+                "At-least-once transports redeliver, batches partially fail, and dependencies wobble. Benzene "
+                + "has first-class handling for each, and the "
                 + "<a href=\"docs/capability-matrix.html\">capability matrix</a> is the honest what-does-what.",
             [
                 new Card("Retries, and full resilience via Polly",
                     "Retry with exponential backoff is built in (<code>UseRetry()</code>). For circuit breakers, "
                     + "timeouts, hedging, and fallback, Benzene runs <em>your</em> "
-                    + "<a href=\"docs/cookbooks/polly-resilience.html\">Polly pipeline</a> as middleware &mdash; "
+                    + "<a href=\"docs/cookbooks/polly-resilience.html\">Polly pipeline</a> as middleware, "
                     + "exposing Polly rather than re-abstracting it."),
                 new Card("Idempotency for redelivery",
                     "<a href=\"docs/cookbooks/idempotency.html\">Idempotency middleware</a> makes a handler run "
                     + "at most once per message via a pluggable store. In-memory out of the box; back it with "
                     + "DynamoDB or Redis for multi-instance deployments."),
-                new Card("Partial-batch failure, done right",
-                    "On SQS, only the messages that actually failed are reported back for redelivery &mdash; not "
-                    + "the whole batch. Per-transport ack/nack and failure escalation are covered in "
+                new Card("Only the failures redeliver",
+                    "On SQS, only the messages that actually failed are reported back for redelivery, not the "
+                    + "whole batch. Per-transport ack/nack and failure escalation are covered in "
                     + "<a href=\"docs/cookbooks/handling-sqs-failures.html\">Handling SQS failures</a>. (Dead-letter "
                     + "queues remain your infrastructure config.)"),
             ]),
             new Section("Ship it where you run",
-                "Deployment is a wiring choice, not a rewrite &mdash; the hosting reach is in "
+                "Deployment is a wiring choice rather than a rewrite; the hosting reach is in "
                 + "<a href=\"docs/hosting.html\">Hosting</a>.",
             [
                 new Card("Serverless, containers, or bare process",
                     "AWS Lambda and Azure Functions for serverless; ASP.NET Core or a self-hosted worker for "
-                    + "containers, Kubernetes, and VMs &mdash; the same handlers, unchanged."),
+                    + "containers, Kubernetes, and VMs. The handlers are the same in every case."),
                 new Card("Infrastructure as code",
                     "Generate <a href=\"docs/terraform.html\">Terraform</a> for the Lambda and its event-source "
                     + "permissions straight from your handlers, so the deployment surface tracks the code."),
