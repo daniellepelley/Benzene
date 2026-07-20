@@ -37,46 +37,47 @@ public class UrlMatcher
         for (int i = 0; i < routerPathParts.Length; i++)
         {
             var routeParts = SplitRouterPath(routerPathParts[i]);
+            var segment = pathParts[i];
 
-            var parameterKeys = routeParts.Where(x => x.StartsWith("{")).ToArray();
-            var nonParameterKeys = routeParts.Where(x => !x.StartsWith("{")).ToArray();
+            var paramIndex = Array.FindIndex(routeParts, x => x.StartsWith("{"));
 
-            var value = RemoveParts(pathParts[i], nonParameterKeys);
+            if (paramIndex < 0)
+            {
+                // A literal-only segment must match exactly.
+                if (segment != string.Concat(routeParts))
+                {
+                    return null;
+                }
 
-            if (value == null)
+                continue;
+            }
+
+            // The one parameter's value is whatever sits between the anchored literal prefix (the
+            // parts before it) and suffix (the parts after it). Anchoring to the ends - rather than
+            // the old global String.Replace of each literal - is what stops a literal that also appears
+            // inside the parameter value from corrupting it (e.g. "/{slug}s" matching "/dogss" gave
+            // "dog" instead of "dogs") or wrongly failing the match.
+            var prefix = string.Concat(routeParts.Take(paramIndex));
+            var suffix = string.Concat(routeParts.Skip(paramIndex + 1));
+
+            if (segment.Length < prefix.Length + suffix.Length
+                || !segment.StartsWith(prefix)
+                || !segment.EndsWith(suffix))
             {
                 return null;
             }
 
+            var value = segment.Substring(prefix.Length, segment.Length - prefix.Length - suffix.Length);
             if (value == "")
             {
                 continue;
             }
 
-            if (parameterKeys.Any())
-            {
-                output[parameterKeys[0].Replace("{", "").Replace("}", "")] = value;
-                continue;
-            }
-
-            return null;
+            output[routeParts[paramIndex].Replace("{", "").Replace("}", "")] = value;
         }
 
 
         return output;
-    }
-
-    private string RemoveParts(string input, string[] removeParts)
-    {
-        return removeParts.Aggregate(input, (s, s1) =>
-        {
-            if (s.Split(s1, StringSplitOptions.RemoveEmptyEntries).Length > 1)
-            {
-                return null;
-            }
-
-            return s.Replace(s1, "");
-        });
     }
 
     private string[] SplitPath(string path)
