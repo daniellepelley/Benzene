@@ -16,7 +16,9 @@ public static class Extensions
 {
     public static IBenzeneWorkerStartup UseHttp(this IBenzeneWorkerStartup app, BenzeneHttpConfig benzeneHttpConfig, Action<IMiddlewarePipelineBuilder<SelfHostHttpContext>> action)
     {
-        app.Register(x => x.AddHttp());
+        // Register the config so request-scoped components (e.g. the body getter's size limit) can
+        // resolve it, in addition to it being captured by the worker below.
+        app.Register(x => x.AddHttp().AddSingleton<BenzeneHttpConfig>(_ => benzeneHttpConfig));
         var middlewarePipelineBuilder = app.Create<SelfHostHttpContext>();
         // Read the request body asynchronously, once, up front - so the synchronous
         // HttpListenerMessageBodyGetter serves it from memory instead of blocking a thread-pool thread.

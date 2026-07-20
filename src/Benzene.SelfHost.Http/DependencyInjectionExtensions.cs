@@ -29,8 +29,12 @@ public static class DependencyInjectionExtensions
                 resolver.GetService<IMessageHeadersGetter<SelfHostHttpContext>>(),
                 resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
-        services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
-        services.TryAddScoped<IHttpRequestBodyReader<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
+        services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>>(resolver =>
+            new HttpListenerMessageBodyGetter(resolver.GetService<HttpRequestBodyBuffer>(),
+                resolver.TryGetService<BenzeneHttpConfig>()?.MaxRequestBodyBytes));
+        services.TryAddScoped<IHttpRequestBodyReader<SelfHostHttpContext>>(resolver =>
+            new HttpListenerMessageBodyGetter(resolver.GetService<HttpRequestBodyBuffer>(),
+                resolver.TryGetService<BenzeneHttpConfig>()?.MaxRequestBodyBytes));
         services.TryAddScoped<HttpRequestBodyBuffer>();
         services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, HttpListenerMessageHandlerResultSetter>();
         // Registers IResponseHandlerContainer<>, IResponsePayloadMapper<>, IMessageGetter<>, etc. -

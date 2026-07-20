@@ -121,6 +121,83 @@ public class BenzeneHttpWorkerTest
     }
 
     [Fact]
+    public async Task StartAsync_PrefixAlreadyBound_ThrowsFromStartAsync_NotSilently()
+    {
+        var port = GetFreeTcpPort();
+        var config = new BenzeneHttpConfig { Url = $"http://127.0.0.1:{port}/", ConcurrentRequests = 4 };
+
+        var worker1 = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services.AddLogging().AddSingleton<ILogger<BenzeneHttpWorker>>(new CapturingLogger<BenzeneHttpWorker>()))
+            .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
+            .Build();
+
+        await worker1.StartAsync(CancellationToken.None);
+        try
+        {
+            var worker2 = new InlineSelfHostedStartUp()
+                .ConfigureServices(services => services.AddLogging().AddSingleton<ILogger<BenzeneHttpWorker>>(new CapturingLogger<BenzeneHttpWorker>()))
+                .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
+                .Build();
+
+            // The second worker can't bind the already-bound prefix; the failure must propagate out of
+            // StartAsync (host startup fails loudly) rather than faulting an unobserved background task.
+            await Assert.ThrowsAnyAsync<HttpListenerException>(() => worker2.StartAsync(CancellationToken.None));
+        }
+        finally
+        {
+            await worker1.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task StartAsync_RequestBodyExceedsLimit_IsRejectedByRequestBodyTooLargeException()
+    {
+        var port = GetFreeTcpPort();
+        var config = new BenzeneHttpConfig
+        {
+            Url = $"http://127.0.0.1:{port}/",
+            ConcurrentRequests = 4,
+            MaxRequestBodyBytes = 16
+        };
+        var capturingLogger = new CapturingLogger<BenzeneHttpWorker>();
+
+        var worker = new InlineSelfHostedStartUp()
+            .ConfigureServices(services => services
+                .AddLogging()
+                .AddSingleton<ILogger<BenzeneHttpWorker>>(capturingLogger)
+                .UsingBenzene(x => x.AddBenzene()))
+            .Configure(app => app.UseHttp(config, pipeline => pipeline.UseLivenessCheck()))
+            .Build();
+
+        await worker.StartAsync(CancellationToken.None);
+        try
+        {
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            try
+            {
+                // A body far larger than the 16-byte cap: the server rejects it while reading, so the
+                // client sees a reset/error rather than the server buffering it all.
+                await httpClient.PostAsync($"http://127.0.0.1:{port}/livez", new StringContent(new string('x', 4096)));
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                // Expected - the server aborted the oversized request.
+            }
+
+            for (var attempt = 0; attempt < 40 && capturingLogger.LastException == null; attempt++)
+            {
+                await Task.Delay(50);
+            }
+
+            Assert.IsType<RequestBodyTooLargeException>(capturingLogger.LastException);
+        }
+        finally
+        {
+            await worker.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task StartAsync_LivenessCheck_WithQueryString_StillMatches()
     {
         var port = GetFreeTcpPort();

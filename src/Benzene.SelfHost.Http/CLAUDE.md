@@ -15,8 +15,19 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
   `CancellationTokenSource` (which unblocks the loop's pending `GetContextAsync()` via
   `.WaitAsync(token)`, since `HttpListener`'s async API predates `CancellationToken` support), then
   awaits the loop's graceful drain and listener close.
+  **Bind happens synchronously in `StartAsync`**: the `HttpListener` is created, `Prefixes.Add`ed, and
+  `Start()`ed on the calling thread (before the accept loop's background task spins up), so a bind
+  failure (prefix already in use, needs elevation) propagates out of `StartAsync` and fails host
+  startup loudly — previously `Start()` ran inside the detached `Task.Run`, so the exception faulted
+  an unobserved task and only surfaced at `StopAsync` (or never).
 - `BenzeneHttpConfig` - `Url`, `ConcurrentRequests` (max concurrent request handlers), `DrainTimeout`
-  (default 30s - how long `StopAsync` waits for in-flight requests before abandoning them).
+  (default 30s - how long `StopAsync` waits for in-flight requests before abandoning them), and
+  **`MaxRequestBodyBytes`** (default `null` = unbounded, the original behavior). When set,
+  `HttpListenerMessageBodyGetter` rejects an oversized request with a `RequestBodyTooLargeException`
+  *before* buffering the whole body (checked up front against `Content-Length` and enforced while
+  reading, so a chunked/lying length can't exceed it) — closing the unbounded-buffering DoS. `UseHttp`
+  now also registers the config as a singleton so request-scoped components (the body getter) can
+  resolve the limit.
 - HTTP context adapter for HttpListener
 - HTTP server lifecycle management
 

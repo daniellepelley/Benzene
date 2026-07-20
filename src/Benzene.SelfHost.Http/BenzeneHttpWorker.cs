@@ -28,21 +28,26 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
     }
 
     /// <summary>
-    /// Starts the accept loop on a background task and returns immediately - it does not wait for
-    /// the loop to run to completion. Use <see cref="StopAsync"/> to signal shutdown and wait for
-    /// in-flight requests to drain.
+    /// Binds and starts the listener, then runs the accept loop on a background task and returns.
+    /// The listener is bound and started <em>synchronously</em> so a bind failure (port in use,
+    /// access denied) propagates out of this method and fails host startup loudly, rather than
+    /// faulting an unobserved background task that would only surface at <see cref="StopAsync"/>.
+    /// Use <see cref="StopAsync"/> to signal shutdown and wait for in-flight requests to drain.
     /// </summary>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _stoppingCts.Token);
         var runToken = _linkedCts.Token;
 
+        // Bind + start on the calling thread: an HttpListenerException here (e.g. the prefix is
+        // already in use or requires elevation) propagates to the host instead of being swallowed.
+        var httpListener = new HttpListener();
+        httpListener.Prefixes.Add(_benzeneHttpConfig.Url);
+        httpListener.Start();
+        _httpListener = httpListener;
+
         _runTask = Task.Run(async () =>
         {
-            _httpListener = new HttpListener();
-            _httpListener.Prefixes.Add(_benzeneHttpConfig.Url);
-            _httpListener.Start();
-
             var dispatcher = new BoundedConcurrentDispatcher<HttpListenerContext>(
                 _benzeneHttpConfig.ConcurrentRequests,
                 (httpContext, _) => _httpListenerApplication.HandleAsync(httpContext, _serviceResolverFactory, runToken),
@@ -54,7 +59,7 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
                 {
                     try
                     {
-                        var httpContext = await _httpListener.GetContextAsync().WaitAsync(runToken);
+                        var httpContext = await httpListener.GetContextAsync().WaitAsync(runToken);
                         await dispatcher.EnqueueAsync(httpContext, runToken);
                     }
                     catch (HttpListenerException e)
@@ -69,8 +74,8 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
             }
 
             await dispatcher.DrainAsync(_benzeneHttpConfig.DrainTimeout);
-            _httpListener.Stop();
-            _httpListener.Close();
+            httpListener.Stop();
+            httpListener.Close();
         }, CancellationToken.None);
 
         return Task.CompletedTask;
