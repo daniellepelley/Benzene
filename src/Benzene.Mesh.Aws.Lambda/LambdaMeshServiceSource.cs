@@ -59,16 +59,25 @@ public class LambdaMeshServiceSource : IMeshServiceSource
 
     /// <inheritdoc />
     public Task<string> FetchSpecAsync(MeshServiceRegistryEntry entry, CancellationToken cancellationToken) =>
-        InvokeAsync(entry, SpecTopic, cancellationToken);
+        InvokeAsync(entry, SpecTopic, string.Empty, cancellationToken);
 
     /// <inheritdoc />
     public Task<string> FetchHealthAsync(MeshServiceRegistryEntry entry, CancellationToken cancellationToken) =>
-        InvokeAsync(entry, HealthTopic, cancellationToken);
+        InvokeAsync(entry, HealthTopic, string.Empty, cancellationToken);
 
-    private async Task<string> InvokeAsync(MeshServiceRegistryEntry entry, string topic, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public async Task<string?> TryFetchSpecAsync(MeshServiceRegistryEntry entry, string specType, CancellationToken cancellationToken)
+    {
+        // Same spec topic, but this time carrying a SpecRequest body selecting the type (e.g.
+        // asyncapi) - the empty-body invoke FetchSpecAsync sends yields the default benzene spec.
+        var body = System.Text.Json.JsonSerializer.Serialize(new { type = specType, format = "json" });
+        return await InvokeAsync(entry, SpecTopic, body, cancellationToken);
+    }
+
+    private async Task<string> InvokeAsync(MeshServiceRegistryEntry entry, string topic, string body, CancellationToken cancellationToken)
     {
         var functionName = ResolveFunctionName(entry);
-        var request = new BenzeneMessageClientRequest(topic, new Dictionary<string, string>(), string.Empty);
+        var request = new BenzeneMessageClientRequest(topic, new Dictionary<string, string>(), body);
 
         // IAwsLambdaClient.SendMessageAsync has no CancellationToken parameter - WaitAsync races
         // the call against the caller's token so MeshAggregator's PerServiceFetchTimeout is still

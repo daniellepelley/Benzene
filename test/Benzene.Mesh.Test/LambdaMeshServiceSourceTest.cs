@@ -32,6 +32,28 @@ public class LambdaMeshServiceSourceTest
     }
 
     [Fact]
+    public async Task TryFetchSpecAsync_InvokesSpecTopicWithTheRequestedType_ReturnsBody()
+    {
+        // The composite-AsyncAPI feature: the aggregator asks each Lambda-invoke source for the
+        // asyncapi spec, which invokes the same "spec" topic but with a SpecRequest body selecting
+        // the type (the empty-body FetchSpecAsync invoke yields the default benzene spec).
+        BenzeneMessageClientRequest? sent = null;
+        var client = new Mock<IAwsLambdaClient>();
+        client
+            .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
+                It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
+            .Callback<BenzeneMessageClientRequest, string, InvocationType>((request, _, _) => sent = request)
+            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{\"asyncapi\":\"2.0.0\"}"));
+        var source = new LambdaMeshServiceSource(client.Object);
+
+        var result = await source.TryFetchSpecAsync(Entry(), "asyncapi", CancellationToken.None);
+
+        Assert.Equal("{\"asyncapi\":\"2.0.0\"}", result);
+        Assert.Equal("spec", sent!.Topic);
+        Assert.Contains("asyncapi", sent.Body); // the SpecRequest body carries type=asyncapi
+    }
+
+    [Fact]
     public async Task FetchSpecAsync_SendsTheSharedSpecTopic_MatchingBenzeneSchemaOpenApi()
     {
         // Cross-check: LambdaMeshServiceSource hardcodes its topic literal (deliberately, to avoid
