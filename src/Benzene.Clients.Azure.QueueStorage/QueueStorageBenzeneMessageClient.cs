@@ -20,6 +20,9 @@ namespace Benzene.Clients.Azure.QueueStorage;
 /// </summary>
 public class QueueStorageBenzeneMessageClient : IBenzeneMessageClient
 {
+    // Reuse one serializer across sends: a fresh JsonSerializer per call defeats System.Text.Json's
+    // per-options converter/metadata cache (matching the Kafka/RabbitMQ clients).
+    private static readonly JsonSerializer SharedSerializer = new();
     private readonly ILogger<QueueStorageBenzeneMessageClient> _logger;
     private readonly IMiddlewarePipeline<QueueStorageSendMessageContext> _middlewarePipeline;
     private readonly IServiceResolver _serviceResolver;
@@ -71,7 +74,7 @@ public class QueueStorageBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new QueueStorageContextConverter<TRequest>(new JsonSerializer());
+            var converter = new QueueStorageContextConverter<TRequest>(SharedSerializer);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

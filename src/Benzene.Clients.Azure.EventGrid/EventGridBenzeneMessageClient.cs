@@ -19,6 +19,9 @@ namespace Benzene.Clients.Azure.EventGrid;
 /// </summary>
 public class EventGridBenzeneMessageClient : IBenzeneMessageClient
 {
+    // Reuse one serializer across sends: a fresh JsonSerializer per call defeats System.Text.Json's
+    // per-options converter/metadata cache (matching the Kafka/RabbitMQ clients).
+    private static readonly JsonSerializer SharedSerializer = new();
     private readonly ILogger<EventGridBenzeneMessageClient> _logger;
     private readonly string _source;
     private readonly IMiddlewarePipeline<EventGridSendMessageContext> _middlewarePipeline;
@@ -75,7 +78,7 @@ public class EventGridBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new EventGridContextConverter<TRequest>(_source, new JsonSerializer());
+            var converter = new EventGridContextConverter<TRequest>(_source, SharedSerializer);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

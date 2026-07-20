@@ -20,6 +20,9 @@ namespace Benzene.Clients.Aws.EventBridge;
 /// </summary>
 public class EventBridgeBenzeneMessageClient : IBenzeneMessageClient
 {
+    // Reuse one serializer across sends: a fresh JsonSerializer per call defeats System.Text.Json's
+    // per-options converter/metadata cache (matching the Kafka/RabbitMQ clients).
+    private static readonly JsonSerializer SharedSerializer = new();
     private readonly ILogger<EventBridgeBenzeneMessageClient> _logger;
     private readonly string _source;
     private readonly string _eventBusName;
@@ -55,7 +58,7 @@ public class EventBridgeBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new EventBridgeContextConverter<TRequest>(_source, _eventBusName, new JsonSerializer());
+            var converter = new EventBridgeContextConverter<TRequest>(_source, _eventBusName, SharedSerializer);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

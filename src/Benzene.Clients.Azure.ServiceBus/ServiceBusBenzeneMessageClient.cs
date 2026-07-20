@@ -19,6 +19,9 @@ namespace Benzene.Clients.Azure.ServiceBus;
 /// </summary>
 public class ServiceBusBenzeneMessageClient : IBenzeneMessageClient
 {
+    // Reuse one serializer across sends: a fresh JsonSerializer per call rebuilds JsonSerializerOptions
+    // and defeats System.Text.Json's per-options converter/metadata cache (matching the Kafka/RabbitMQ clients).
+    private static readonly JsonSerializer SharedSerializer = new();
     private readonly ILogger<ServiceBusBenzeneMessageClient> _logger;
     private readonly string _topicPropertyKey;
     private readonly IMiddlewarePipeline<ServiceBusSendMessageContext> _middlewarePipeline;
@@ -75,7 +78,7 @@ public class ServiceBusBenzeneMessageClient : IBenzeneMessageClient
     {
         try
         {
-            var converter = new ServiceBusContextConverter<TRequest>(new JsonSerializer(), _topicPropertyKey);
+            var converter = new ServiceBusContextConverter<TRequest>(SharedSerializer, _topicPropertyKey);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);

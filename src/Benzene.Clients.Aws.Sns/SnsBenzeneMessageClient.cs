@@ -19,6 +19,9 @@ namespace Benzene.Clients.Aws.Sns;
 /// </summary>
 public class SnsBenzeneMessageClient : IBenzeneMessageClient
 {
+    // Reuse one serializer across sends: a fresh JsonSerializer per call defeats System.Text.Json's
+    // per-options converter/metadata cache (matching the Kafka/RabbitMQ clients).
+    private static readonly JsonSerializer SharedSerializer = new();
     private readonly ILogger<SnsBenzeneMessageClient> _logger;
     private readonly string _topicArn;
     private readonly IServiceResolver _serviceResolver;
@@ -74,7 +77,7 @@ public class SnsBenzeneMessageClient : IBenzeneMessageClient
     public async Task<IBenzeneResult<TResponse>> SendMessageAsync<TRequest, TResponse>(IBenzeneClientRequest<TRequest> request)
     {
         try
-        {   var converter = new SnsContextConverter<TRequest>(_topicArn, new JsonSerializer());
+        {   var converter = new SnsContextConverter<TRequest>(_topicArn, SharedSerializer);
             var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
             await _middlewarePipeline.HandleAsync(context, _serviceResolver);
