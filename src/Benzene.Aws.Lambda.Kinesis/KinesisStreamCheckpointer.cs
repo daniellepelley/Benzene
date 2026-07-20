@@ -26,7 +26,17 @@ internal class KinesisStreamCheckpointer : IStreamCheckpointer<KinesisEventRecor
     /// <inheritdoc />
     public Task CheckpointAsync(KinesisEventRecord lastProcessed)
     {
-        _lastCheckpointedIndex = _records.IndexOf(lastProcessed);
+        // Only ever advance the watermark, never rewind it. IndexOf returns -1 for a record that isn't
+        // in the batch by reference equality (e.g. a projected/transformed copy the handler passes) -
+        // the old code then set the watermark to -1, silently rewinding the resume point to before the
+        // first record and reprocessing the whole batch. Guarding with `>` ignores that (and any
+        // out-of-order checkpoint that would move the resume point backward).
+        var index = _records.IndexOf(lastProcessed);
+        if (index > _lastCheckpointedIndex)
+        {
+            _lastCheckpointedIndex = index;
+        }
+
         return Task.CompletedTask;
     }
 
