@@ -80,11 +80,6 @@ namespace Benzene.CodeGen.Client.MessageHandlers
 
         public ICodeFile BuildType(Type type)
         {
-            if (type.GetInterfaces().Any(x => x.Name == "IUpdateMessage"))
-            {
-                return BuildPatchType(type);
-            }
-
             return BuildSimpleType(type);
         }
 
@@ -105,43 +100,6 @@ namespace Benzene.CodeGen.Client.MessageHandlers
             foreach (var property in GetProperties(type))
             {
                 lineWriter.WriteLine($"public {property.Value} {property.Key} {{ get; set; }}", 2);
-            }
-
-            lineWriter.WriteLine("}", 1);
-            lineWriter.WriteLine("}");
-
-            return new CodeFile($"{FormatTypeName(type)}.cs", lineWriter.GetLines());
-        }
-
-        private ICodeFile BuildPatchType(Type type)
-        {
-            var lineWriter = new LineWriter();
-
-            foreach (var usingStatement in GetUsingStatements(type))
-            {
-                lineWriter.WriteLine($"using {usingStatement};");
-            }
-            lineWriter.WriteLine("using benzene.Elements.LambdaClients.Core;");
-            lineWriter.WriteLine("");
-            lineWriter.WriteLine($"namespace {_baseNamespace}.{_serviceName}");
-            lineWriter.WriteLine("{");
-            lineWriter.WriteLine($"public class {FormatTypeClassName(type)} : UpdateMessage", 1);
-            lineWriter.WriteLine("{", 1);
-
-            foreach (var property in GetProperties(type))
-            {
-                if (property.Key.ToLowerInvariant() == "updatefields")
-                {
-                    continue;
-                }
-
-                var camelCaseName = CodeGenHelpers.Camelcase(property.Key);
-                lineWriter.WriteLine($"private {property.Value} _{camelCaseName};", 2);
-                lineWriter.WriteLine($"public {property.Value} {property.Key}", 2);
-                lineWriter.WriteLine("{", 2);
-                lineWriter.WriteLine($"get => _{camelCaseName};", 3);
-                lineWriter.WriteLine($"set {{ AddUpdateField(\"{property.Key.ToLowerInvariant()}\"); _{camelCaseName} = value; }}", 3);
-                lineWriter.WriteLine("}", 2);
             }
 
             lineWriter.WriteLine("}", 1);

@@ -113,23 +113,6 @@ public class MessageClientSdkBuilderTest
         Assert.Equal(expected, result["CreateUserMessage.cs"], ignoreLineEndingDifferences: true);
     }
 
-    [Fact(Skip = "Not supported")]
-    public void BuildsSdk_UpdateUserMessage_Test()
-    {
-        var expected = LoadExpected("LambdaService_UpdateUserMessage");
-
-        var dictionary = new Dictionary<string, (Type, Type, Type)>
-        {
-            { "user:update", (typeof(UpdateUserMessage), typeof(UpdateUserMessage), typeof(Guid?)) }
-        };
-
-        var lambdaServiceSdkBuilder = new MessageClientSdkBuilder(UserServiceName, BaseNameSpace);
-
-        var result = lambdaServiceSdkBuilder.Build(dictionary.ToEventServiceDocument());
-
-        Assert.Equal(expected, result["UpdateUserMessage.cs"], ignoreLineEndingDifferences: true);
-    }
-
     [Fact]
     public void BuildsSdk_TenantFull_Test()
     {

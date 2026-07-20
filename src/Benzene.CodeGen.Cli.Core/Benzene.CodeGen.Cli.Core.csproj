@@ -6,6 +6,17 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Benzene.CodeGen.Cli.Core</AssemblyName>
     <RootNamespace>Benzene.CodeGen.Cli.Core</RootNamespace>
+    <!--
+      Not part of the 1.0 NuGet release. This is the internal command layer of the `benzene` CLI
+      tool (Benzene.CodeGen.Cli, PackAsTool) and is not a consumable library: it is referenced only
+      by that tool, has no package metadata, bundles a project-specific reference assembly
+      (Resources/platform-tenant-core-func.dll), and pulls in the still-project-specific
+      Benzene.CodeGen.ApiGateway generator. The tool bundles this assembly regardless of IsPackable,
+      so the readme / api-gateway CLI outputs still work; we just don't publish it as its own
+      package. (This also avoids a dangling package dependency now that Benzene.CodeGen.Markdown is
+      unpacked.)
+    -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

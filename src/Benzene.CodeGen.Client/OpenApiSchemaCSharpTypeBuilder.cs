@@ -53,43 +53,6 @@ public class OpenApiSchemaCSharpTypeBuilder : ICodeBuilder<IDictionary<string, O
         return new CodeFile($"{name}.cs", lineWriter.GetLines());
     }
 
-    private (string, string[]) BuildPatchType(string name, OpenApiSchema type)
-    {
-        var lineWriter = new LineWriter();
-
-        foreach (var usingStatement in GetUsingStatements(type))
-        {
-            lineWriter.WriteLine($"using {usingStatement};");
-        }
-        lineWriter.WriteLine("using benzene.Elements.LambdaClients.Core;");
-        lineWriter.WriteLine("");
-        lineWriter.WriteLine($"namespace {_baseNamespace}");
-        lineWriter.WriteLine("{");
-        lineWriter.WriteLine($"public class {name} : UpdateMessage", 1);
-        lineWriter.WriteLine("{", 1);
-
-        foreach (var property in type.Properties)
-        {
-            if (property.Key.ToLowerInvariant() == "updatefields")
-            {
-                continue;
-            }
-
-            var camelCaseName = CodeGenHelpers.Camelcase(new FormatString(property.Key));
-            lineWriter.WriteLine($"private {property.Value} _{camelCaseName};", 2);
-            lineWriter.WriteLine($"public {property.Value} {property.Key}", 2);
-            lineWriter.WriteLine("{", 2);
-            lineWriter.WriteLine($"get => _{camelCaseName};", 3);
-            lineWriter.WriteLine($"set {{ AddUpdateField(\"{property.Key.ToLowerInvariant()}\"); _{camelCaseName} = value; }}", 3);
-            lineWriter.WriteLine("}", 2);
-        }
-
-        lineWriter.WriteLine("}", 1);
-        lineWriter.WriteLine("}");
-
-        return ($"{name}.cs", lineWriter.GetLines());
-    }
-
     private string[] GetUsingStatements(OpenApiSchema schema)
     {
         var output = new List<string>();

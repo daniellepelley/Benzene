@@ -6,6 +6,14 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Benzene.CodeGen.Markdown</AssemblyName>
     <RootNamespace>Benzene.CodeGen.Markdown</RootNamespace>
+    <!--
+      Not part of the 1.0 NuGet release. The Markdown README generator is superseded by the live
+      HTML docs: Benzene.Spec.Ui already renders per-topic request/response schema, examples, and
+      validation (required / maxLength) from /benzene/spec, and Benzene.Mesh.Ui covers the
+      cross-service view. Its former consumer (the Confluence publisher) has been removed. It stays
+      in the solution (still driven by the `benzene` CLI's readme output) but isn't packed.
+    -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
