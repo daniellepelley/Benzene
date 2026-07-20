@@ -234,7 +234,11 @@ public class ExamplePayloadBuilder : IExamplePayloadBuilder
             return source;
         }
 
-        var upperCount = source.TakeWhile(char.IsUpper).Count();
-        return source.Substring(0, upperCount).ToLowerInvariant() + source.Substring(upperCount);
+        // Must match the wire exactly: the generated example is documented as the shape a caller
+        // sends, and the service deserializes with System.Text.Json's JsonNamingPolicy.CamelCase
+        // (see Benzene.Core.MessageHandlers.Serialization.JsonSerializer). Hand-rolling it (lowercase
+        // the whole leading run of capitals) diverged for acronym-prefixed names - "IPAddress" became
+        // "ipaddress" instead of STJ's "ipAddress", so the example bound to null against its own service.
+        return System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(source);
     }
 }

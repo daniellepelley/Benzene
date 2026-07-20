@@ -28,6 +28,31 @@ public class ExamplePayloadBuilderTest
     }
 
     [Fact]
+    public void Build_AcronymPrefixedProperty_UsesSameCamelCaseAsTheRuntimeSerializer()
+    {
+        // The generated example is documented as the exact shape a caller sends, and the service
+        // deserializes with System.Text.Json's JsonNamingPolicy.CamelCase. That policy keeps the
+        // capital that precedes a lowercase letter, so "IPAddress" -> "ipAddress". The builder used
+        // to lowercase the whole leading run of capitals, producing "ipaddress", which then binds to
+        // null against the real service - an example that doesn't round-trip against its own contract.
+        var objectSchema = new OpenApiSchema
+        {
+            Type = "object",
+            Properties = new Dictionary<string, OpenApiSchema>
+            {
+                ["IPAddress"] = new OpenApiSchema { Type = "string" }
+            }
+        };
+        var schemaGetter = new SchemaGetter(new Dictionary<string, OpenApiSchema>());
+
+        var result = new ExamplePayloadBuilder().Build(objectSchema, schemaGetter);
+
+        Assert.Equal(System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName("IPAddress"), "ipAddress");
+        Assert.True(result.ContainsKey("ipAddress"), "keys: " + string.Join(",", result.Keys));
+        Assert.False(result.ContainsKey("ipaddress"));
+    }
+
+    [Fact]
     public void CreateClientMessage_Test()
     {
         var expected = Load("CreateClientMessage");
