@@ -162,6 +162,26 @@ through `ServiceResult` into the manifest entry, same denormalization treatment 
 missing/unparseable spec, or one predating this field, contributes an empty list rather than
 failing the run.
 
+## Composite AsyncAPI (`asyncapi.json`)
+Each run also fetches every service's own **AsyncAPI 2.0** document (the same `spec` endpoint's
+`type=asyncapi` — `IMeshServiceSource.TryFetchSpecAsync(entry, "asyncapi", ct)`, whose
+`HttpMeshServiceSource` override derives the URL from `SpecUrl` by swapping the `type` query param)
+and merges them into a single fleet-wide `asyncapi.json` loadable in an AsyncAPI editor. The fetch
+is **best-effort and additive**: `TryFetchSpecAsync` is a default-interface method returning `null`
+(so existing `IMeshServiceSource`s don't break), and a failure/absence never affects that service's
+own status — it just contributes no channels. `AsyncApiCompositor.Merge` does the merge purely at
+the JSON level (`System.Text.Json`, no AsyncAPI object-model dependency): Benzene keys channels by
+raw topic id and schemas by bare CLR type name — both collide across services — so each service's
+content is **namespaced** (channel keys → `‹service›/‹topic›`, schema keys → `‹Service›_‹Type›`,
+every `$ref` rewritten to match), reserved/utility topics are dropped (using the `reserved` flag
+already parsed from each benzene spec), and each channel's operations are tagged with the owning
+service. Two services sharing a topic id stay as two attributed channels rather than being forced
+into one. An empty/all-unfetchable run still publishes a valid empty-channels document, so the
+artifact link is always stable. `Benzene.Mesh.Ui` links it (download + AsyncAPI Studio deep-link).
+Real-AsyncAPI-reader validity is covered by an isolated check (the `Benzene.Mesh.Test` project can't
+host the reader — its transitive `KubernetesClient` pulls an incompatible `YamlDotNet`), with
+structural coverage in `AsyncApiCompositorTest`.
+
 ## When to use this package
 - Any Benzene solution that wants a generated catalog of its services' contracts and health,
   refreshed on a schedule or triggered post-deploy - wire `AddMeshAggregator(...)` into a host and

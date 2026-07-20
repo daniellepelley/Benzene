@@ -32,4 +32,19 @@ public interface IMeshServiceSource
     /// service.
     /// </summary>
     Task<string> FetchHealthAsync(MeshServiceRegistryEntry entry, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches <paramref name="entry"/>'s spec in an alternate representation (e.g.
+    /// <c>"asyncapi"</c> — the same <c>spec</c> endpoint's other <c>type</c>), or <c>null</c> when
+    /// this source can't serve that type. This is <em>best-effort and additive</em>: unlike
+    /// <see cref="FetchSpecAsync"/> (whose failure marks the service unreachable), a source that
+    /// doesn't support alternate spec types just returns <c>null</c> and the aggregator omits that
+    /// service from whatever artifact is built on it. The default implementation returns
+    /// <c>null</c>, so existing sources don't have to implement it.
+    /// </summary>
+    /// <param name="entry">The service to fetch for.</param>
+    /// <param name="specType">The spec type to request (e.g. <c>"asyncapi"</c>).</param>
+    /// <param name="cancellationToken">Cancels the fetch (bounded by the aggregator's per-service timeout).</param>
+    Task<string?> TryFetchSpecAsync(MeshServiceRegistryEntry entry, string specType, CancellationToken cancellationToken)
+        => Task.FromResult<string?>(null);
 }

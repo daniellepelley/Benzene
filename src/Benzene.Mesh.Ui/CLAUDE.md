@@ -62,6 +62,10 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   catalog) via the same `resolveUrl()` precedence and renders it as a table (topic, domain-vs-utility
   badge, owning-service chips, HTTP mappings) with a "show utilities" toggle that hides the reserved
   Benzene topics by default. Missing `topics.json` hides the section silently, same as topology.
+- The topics section header links the aggregator's composite **`asyncapi.json`** (the fleet's
+  merged AsyncAPI 2.0 document): a download link plus, when the resolved artifact URL is absolute,
+  an "open in Studio" deep-link to `https://studio.asyncapi.com/?url=…`. Populated in `renderTopics`
+  via the same `resolveUrl()` model as the other artifacts.
 - The per-topic drill-in page (`#topic:<id>`) renders each version's **payload schema** — a "Payload"
   panel showing the Request/Response (or Message) structure with a property tree and validation-rule
   chips (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`,
