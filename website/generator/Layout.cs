@@ -10,6 +10,7 @@ internal static class Layout
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
         var docsHome = RepoPaths.RelativeHref(outputPath, "docs/index.html");
         var gettingStarted = RepoPaths.RelativeHref(outputPath, "docs/getting-started.html");
+        var gettingStartedAws = RepoPaths.RelativeHref(outputPath, "docs/getting-started-aws.html");
         var meshDemo = RepoPaths.RelativeHref(outputPath, "demos/mesh/index.html");
         var specDemo = RepoPaths.RelativeHref(outputPath, "demos/spec/index.html");
 
@@ -90,7 +91,12 @@ internal static class Layout
                   <p class="install-line">
                     <code>{Html(MarketingContent.InstallCommand)}</code>
                   </p>
-                  <p><a href="{gettingStarted}">See the full five-minute walkthrough &rarr;</a></p>
+                  <p>
+                    Add <code>Benzene.Aws.Lambda.Sqs</code>, <code>.Sns</code>, and
+                    <code>.EventBridge</code> the same way for the other transports &mdash;
+                    or a different host entirely.
+                    <a href="{gettingStartedAws}">See the full AWS walkthrough &rarr;</a>
+                  </p>
                 </section>
 
                 <section class="section">

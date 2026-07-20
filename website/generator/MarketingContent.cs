@@ -55,20 +55,25 @@ internal static class MarketingContent
                 }
             }
             """),
-        new("Wired into an ASP.NET Core host",
+        new("Hosted as one AWS Lambda, reached over four transports",
             """
-            var builder = WebApplication.CreateBuilder(args);
+            public class StartUp : BenzeneStartUp
+            {
+                public override void ConfigureServices(IServiceCollection services, IConfiguration config) =&gt;
+                    services.UsingBenzene(x =&gt; x.AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
 
-            builder.Services.UsingBenzene(x =&gt; x
-                .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
+                public override void Configure(IBenzeneApplicationBuilder app, IConfiguration config) =&gt;
+                    app.UseAwsLambda(aws =&gt;
+                    {
+                        // One function, the same handler reached four ways:
+                        aws.UseApiGateway(http =&gt; http.UseMessageHandlers());       // HTTP
+                        aws.UseSqs(sqs =&gt; sqs.UseMessageHandlers());                // SQS queue
+                        aws.UseSns(sns =&gt; sns.UseMessageHandlers());                // SNS topic
+                        aws.UseEventBridge(events =&gt; events.UseMessageHandlers());  // EventBridge
+                    });
+            }
 
-            var app = builder.Build();
-
-            app.UseBenzene(benzene =&gt; benzene
-                .UseHttp(http =&gt; http
-                    .UseMessageHandlers()));
-
-            app.Run();
+            public class Function : AwsLambdaHost&lt;StartUp&gt;;
             """),
     ];
 
@@ -82,5 +87,5 @@ internal static class MarketingContent
         ("Virtual machines / self-hosted", "ASP.NET Core or a long-running worker - consumes Kafka, HTTP, or any custom transport"),
     ];
 
-    public const string InstallCommand = "dotnet add package Benzene.AspNet.Core --prerelease";
+    public const string InstallCommand = "dotnet add package Benzene.Aws.Lambda.ApiGateway --prerelease";
 }
