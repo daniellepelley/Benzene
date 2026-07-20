@@ -71,8 +71,13 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
         }
 
         // Carry the Benzene routing topic as a message attribute so a Benzene SNS Lambda consumer
-        // routes to the right handler — mirroring SQS. Without it the round-trip resolves to a null topic.
-        messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
+        // routes to the right handler — mirroring SQS. Without it the round-trip resolves to a null
+        // topic. Only when non-empty: SNS rejects an empty message-attribute value, and an empty
+        // topic has no routing key to carry (unlike SQS, which accepts empty attribute values).
+        if (!string.IsNullOrEmpty(contextIn.Topic))
+        {
+            messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
+        }
 
         return Task.FromResult(new SnsSendMessageContext(new PublishRequest
         {
