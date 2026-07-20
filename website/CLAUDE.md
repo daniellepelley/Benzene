@@ -16,6 +16,16 @@ project with its own build/run flow, documented in `website/README.md`.
   draws the hexagon-with-six-adapters SVG diagram, and `Layout.RenderMarketingPage` assembles the
   hero/features/code/diagram/platforms sections. A card/hero layout isn't something plain markdown
   can express well, so README.md itself is no longer crawled or rendered as a page at all.
+- **Value-themed marketing sub-pages** (`why.html`, `architecture.html`, `operations.html`) are
+  also hand-authored: content lives in `MarketingPages` (a small data model of pages → sections →
+  cards), rendered by `Layout.RenderValuePage` reusing the home page's `.section`/`.feature-card`
+  shell + a `.page-hero`. They broaden the site past a developer-only audience (architects,
+  DevOps/SRE, decision-makers) **without** audience-labeled pages - the framing is value/theme, not
+  job title. Rationale and audience analysis: `work/website-audience-plan.md`; messaging pillars
+  and honesty gates: `work/website-marketing-aims.md`. `SiteBuilder.Run()` writes one file per
+  `MarketingPages.All` entry and includes each in the broken-link self-check. Every claim links to
+  a real docs page/demo; anything partial or pre-1.0 is said so (retry-only resilience, in-memory
+  idempotency, partial trace-propagation, no perf numbers).
 - `Logo` - the brand mark: a hexagon with an inscribed ring, the standard chemistry shorthand for
   an aromatic ring (benzene's own structure) - used identically as the favicon, header icon, and
   hero graphic, via `currentColor` so it themes with light/dark mode.

@@ -74,9 +74,18 @@ internal sealed class SiteBuilder
         // README.md's markdown - a card/hero layout isn't something plain markdown can express.
         File.WriteAllText(Path.Combine(_outDir, "index.html"), Layout.RenderMarketingPage("index.html"));
 
+        // Hand-authored value-themed marketing sub-pages (Why Benzene / Architecture / Operations),
+        // same rationale as the home page - see MarketingPages.
+        foreach (var valuePage in MarketingPages.All)
+        {
+            File.WriteAllText(Path.Combine(_outDir, valuePage.Slug), Layout.RenderValuePage(valuePage));
+        }
+
         CopyStaticAssets(assetsToCopy);
 
-        var outputPaths = pages.Values.Select(p => p.OutputPath).Append("index.html");
+        var outputPaths = pages.Values.Select(p => p.OutputPath)
+            .Append("index.html")
+            .Concat(MarketingPages.All.Select(p => p.Slug));
         var brokenLinks = SelfCheck(outputPaths);
         if (brokenLinks.Count > 0)
         {
@@ -88,7 +97,7 @@ internal sealed class SiteBuilder
             return 1;
         }
 
-        Console.WriteLine($"Generated {pages.Count + 1} pages to {_outDir}");
+        Console.WriteLine($"Generated {pages.Count + 1 + MarketingPages.All.Length} pages to {_outDir}");
         return 0;
     }
 

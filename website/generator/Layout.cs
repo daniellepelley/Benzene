@@ -9,6 +9,9 @@ internal static class Layout
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
         var docsHome = RepoPaths.RelativeHref(outputPath, "docs/index.html");
+        var whyPage = RepoPaths.RelativeHref(outputPath, "why.html");
+        var architecturePage = RepoPaths.RelativeHref(outputPath, "architecture.html");
+        var operationsPage = RepoPaths.RelativeHref(outputPath, "operations.html");
         var gettingStarted = RepoPaths.RelativeHref(outputPath, "docs/getting-started.html");
         var gettingStartedAws = RepoPaths.RelativeHref(outputPath, "docs/getting-started-aws.html");
         var meshDemo = RepoPaths.RelativeHref(outputPath, "demos/mesh/index.html");
@@ -138,7 +141,88 @@ internal static class Layout
                   </div>
                 </section>
 
+                <section class="section">
+                  <h2>Built for production, not just prototypes</h2>
+                  <p class="section-lede">
+                    The quickstart is five minutes; the reason to adopt Benzene is what happens
+                    after. Three deeper looks, for whoever is asking the question:
+                  </p>
+                  <div class="feature-grid">
+                    <div class="feature-card">
+                      <h3>Why Benzene</h3>
+                      <p>
+                        The case for adopting it &mdash; lower cost of change, less lock-in, quality
+                        by construction, built to last. <a href="{whyPage}">Read on &rarr;</a>
+                      </p>
+                    </div>
+                    <div class="feature-card">
+                      <h3>Architecture</h3>
+                      <p>
+                        Ports and adapters applied honestly: handlers, transports, one pipeline, and
+                        a service that describes itself. <a href="{architecturePage}">See how it fits &rarr;</a>
+                      </p>
+                    </div>
+                    <div class="feature-card">
+                      <h3>Operations</h3>
+                      <p>
+                        Observability, health, failure handling, and deployment &mdash; what it takes
+                        to run it, honestly scoped. <a href="{operationsPage}">Run it in production &rarr;</a>
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
                 <p class="cta"><a class="button" href="{docsHome}">Read the docs &rarr;</a></p>
+              </main>
+              {Footer()}
+            </body>
+            </html>
+            """;
+    }
+
+    public static string RenderValuePage(MarketingPages.ValuePage page)
+    {
+        var outputPath = page.Slug;
+        var css = RepoPaths.RelativeHref(outputPath, "site.css");
+        var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
+        var activeSection = page.Slug[..^".html".Length];
+
+        string RenderCard(MarketingPages.Card card) =>
+            $"<div class=\"feature-card\"><h3>{Html(card.Title)}</h3><p>{card.BodyHtml}</p></div>";
+
+        string RenderSection(MarketingPages.Section section) =>
+            $"""
+             <section class="section">
+               <h2>{Html(section.Heading)}</h2>
+               <p class="section-lede">{section.LedeHtml}</p>
+               <div class="feature-grid">
+                 {string.Join("\n", section.Cards.Select(RenderCard))}
+               </div>
+             </section>
+             """;
+
+        var sections = string.Join("\n", page.Sections.Select(RenderSection));
+
+        return $"""
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>{Html(page.Title)} &mdash; Benzene</title>
+              <meta name="description" content="{Html(page.Description)}">
+              <link rel="icon" href="{favicon}" type="image/svg+xml">
+              <link rel="stylesheet" href="{css}">
+            </head>
+            <body>
+              {Header(outputPath, activeSection)}
+              <main class="content marketing">
+                <section class="page-hero">
+                  <h1>{Html(page.Title)}</h1>
+                  <p class="section-lede">{page.HeroLedeHtml}</p>
+                </section>
+                {sections}
+                <p class="cta">{page.CtaHtml}</p>
               </main>
               {Footer()}
             </body>
@@ -204,13 +288,20 @@ internal static class Layout
     private static string Header(string outputPath, string activeSection)
     {
         var home = RepoPaths.RelativeHref(outputPath, "index.html");
+        var why = RepoPaths.RelativeHref(outputPath, "why.html");
+        var architecture = RepoPaths.RelativeHref(outputPath, "architecture.html");
+        var operations = RepoPaths.RelativeHref(outputPath, "operations.html");
         var docs = RepoPaths.RelativeHref(outputPath, "docs/index.html");
+        string Active(string section) => activeSection == section ? " class=\"active\"" : "";
         return $"""
             <header class="site-header">
               <a class="brand" href="{home}">{Logo.Inline(28)}<span>Benzene</span></a>
               <nav class="top-nav">
-                <a href="{home}"{(activeSection == "home" ? " class=\"active\"" : "")}>Home</a>
-                <a href="{docs}"{(activeSection == "docs" ? " class=\"active\"" : "")}>Docs</a>
+                <a href="{home}"{Active("home")}>Home</a>
+                <a href="{why}"{Active("why")}>Why Benzene</a>
+                <a href="{architecture}"{Active("architecture")}>Architecture</a>
+                <a href="{operations}"{Active("operations")}>Operations</a>
+                <a href="{docs}"{Active("docs")}>Docs</a>
                 <a href="https://github.com/daniellepelley/Benzene">GitHub</a>
                 <a href="https://www.nuget.org/packages/Benzene.AspNet.Core/">NuGet</a>
               </nav>
