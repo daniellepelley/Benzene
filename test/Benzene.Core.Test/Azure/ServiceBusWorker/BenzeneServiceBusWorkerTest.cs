@@ -22,7 +22,7 @@ public class BenzeneServiceBusWorkerTest
     {
         var config = new BenzeneServiceBusConfig();
 
-        Assert.Equal(ServiceBusConsumerAckMode.AutoComplete, config.AckMode);
+        Assert.Equal(ServiceBusConsumerAckMode.Explicit, config.AckMode);
         Assert.Equal(5, config.MaxConcurrentCalls);
         Assert.Equal(0, config.PrefetchCount);
     }

@@ -42,10 +42,13 @@ public class BenzeneServiceBusConfig
     /// <summary>
     /// Gets or sets whether a message's settlement is left to the processor's own auto-complete
     /// behavior, or explicitly controlled from the handler's outcome (including a non-exception
-    /// failure result). Defaults to <see cref="ServiceBusConsumerAckMode.AutoComplete"/> - see the
+    /// failure result). Defaults to <see cref="ServiceBusConsumerAckMode.Explicit"/> - a handler that
+    /// returns a failure result (not just one that throws) abandons the message for redelivery
+    /// instead of silently completing it. Set <see cref="ServiceBusConsumerAckMode.AutoComplete"/> to
+    /// hand settlement back to the processor (a non-exception failure result then completes). See the
     /// enum's own doc comments for the exact semantics of each mode.
     /// </summary>
-    public ServiceBusConsumerAckMode AckMode { get; set; } = ServiceBusConsumerAckMode.AutoComplete;
+    public ServiceBusConsumerAckMode AckMode { get; set; } = ServiceBusConsumerAckMode.Explicit;
 
     /// <summary>
     /// Gets or sets the application property the topic is read from. Defaults to
