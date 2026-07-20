@@ -156,3 +156,58 @@ Tests/tooling added:
   fixing needs an async body-getter interface (API change).
 - 🚩 **HTTP route re-parsing per request** (perf) — `UrlMatcher`/`RouteFinder` re-split routes each
   request; a precompiled matcher is a larger routing refactor.
+
+_All four third-pass flags were subsequently implemented (bounded fan-out; async body buffering;
+ambient-`CancellationToken` seeding — built on the maintainer's later `ICancellationTokenAccessor`,
+so non-breaking; route precompilation to `CompiledRoutePath`). See the git history on `main`._
+
+## Fourth pass — re-audit by antipattern class (different decomposition to catch what a subsystem
+sweep missed)
+
+Fanned out four read-only hunters by **invariant/antipattern** (async & sync-over-async; shared
+mutable state / concurrency; resource lifetime & disposal; hot-path allocations) across all of
+`src/`, plus a manual grep sweep. This deliberately different cut surfaced a cluster the earlier
+subsystem-based passes missed: **per-request waste in the HTTP header-extraction path**. The
+async/concurrency/disposal surface came back essentially clean (the codebase is disciplined — no
+`async void`, no mutable static fields, sync-over-async limited to intentional completed-task reads).
+
+Fixed this pass (each behavior-preserving; full Core suite green: 1697):
+- ✅ **HTTP header-extraction allocations** (perf, per request) — `AspNetMessageHeadersGetter` /
+  `AspNetHeadersToBodyGetter` (AspNet.Core + Azure Functions AspNet) and the `Benzene.Core.Helper.
+  DictionaryUtils` twin used by the API-Gateway/self-host paths rebuilt the same result with a
+  per-header double dictionary lookup (each re-lower-casing the key) + `GroupBy/First/ToDictionary`.
+  Now a single `TryGetValue`/`TryAdd` pass (first-wins dedup preserved exactly); no lower-casing at
+  all when there are no mappings. `DefaultHttpHeaderMappings.GetMappings` returns a shared empty
+  dictionary instead of allocating per call. New `AspNetMessageHeadersGetterTest` + existing
+  `DictionaryUtilsTest`.
+- ✅ **MeshAnnouncer CTS use-after-dispose on shutdown** (Low) — `DisposeAsync` disposed the
+  `CancellationTokenSource` without awaiting the detached announce loop, so an in-flight `SendAsync`
+  could touch the disposed token. Now stores and awaits the loop task (mirrors `HttpMeshTraceExporter`).
+- ✅ **MeshSelfReportState torn read** (Low) — an `AddSingleton` shared across concurrent requests
+  exposed a `DateTimeOffset?` (wider than a pointer) read/written without synchronization. Backed by
+  an interlocked `long` (UTC ticks); public shape unchanged.
+- ✅ **Benzene.Client.Http per-call `HttpRequestMessage`/`HttpResponseMessage` not disposed** (Low) —
+  disposed in the converter's terminal `MapResponseAsync`. Not socket exhaustion today (buffered), but
+  a real disposable gap.
+
+### Flag for maintainer (not changed unilaterally — need a scoped decorator / touch the routing hot path)
+- 🚩 **`RouteFinder.Find` invoked 2–3× per HTTP request** — the topic getter, version getter, and
+  request enricher each independently re-match the same method+path (each re-`SplitPath`s + scans).
+  A per-request (scoped) memoizing `IRouteFinder` decorator would collapse it to one match, but adds
+  a DI registration across every HTTP transport and touches the critical routing path — deferred for
+  review rather than risked unattended.
+- 🚩 **`ActivityMiddlewareDecorator` re-resolves topic + handler per middleware, per request** — only
+  when an `Activity`/OTel listener is attached, but then multiplies route + handler lookup by the
+  middleware count. Resolve once per request and tag from a cached value. Diagnostics-path rework.
+- 🚩 **Enrichment dictionary churn** — residual after the header fixes: each HTTP request still
+  allocates several short-lived dictionaries across the enrichers (query string, `CleanUp` of route
+  params via `.StartsWith("{")` per param). Bounded, lower value; a broader enrichment-path rework.
+- 🚩 **`HttpMeshTraceExporter` / `MeshAnnouncer` disposal only fires if the singleton is resolved** —
+  the CloudService wiring registers them `AddSingleton(_ => instance)` for container disposal, but a
+  captured-instance singleton that nothing ever *resolves* is never tracked for disposal by MS DI.
+  Worth confirming the intended shutdown-disposal actually runs (and, if not, resolving them once or
+  registering an `IHostedService`/`IAsyncDisposable` owner). A DI-lifetime call for the maintainer.
+- 🚩 (design, telemetry) **`MeshSelfReportMiddleware` fire-and-forget on Lambda** — it publishes after
+  `next()`, but a fire-and-forget task after the handler returns is frozen/killed by the Lambda
+  runtime, so the self-report it targets at on-demand hosts is unreliable there. Awaiting-with-timeout
+  vs. fire-and-forget is a design choice.
