@@ -1,0 +1,92 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Benzene.Abstractions.MessageHandlers.Response;
+using Benzene.Core.Helper;
+
+namespace Benzene.Aws.Lambda.ApiGateway;
+
+/// <summary>
+/// Adapts Benzene's transport-agnostic response handling onto an <see cref="ApiGatewayV2Context"/>'s
+/// <see cref="Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse"/>.
+/// </summary>
+public class ApiGatewayV2ResponseAdapter : IBenzeneResponseAdapter<ApiGatewayV2Context>
+{
+    /// <summary>
+    /// Sets a response header, initializing the response if it doesn't already exist. A
+    /// <c>set-cookie</c> header is appended to the v2 response's dedicated <c>Cookies</c> array (the v2
+    /// wire format carries cookies there rather than in the header map); every other header is written
+    /// to the header dictionary.
+    /// </summary>
+    /// <param name="context">The API Gateway v2 context to set the header on.</param>
+    /// <param name="headerKey">The header name.</param>
+    /// <param name="headerValue">The header value.</param>
+    public void SetResponseHeader(ApiGatewayV2Context context, string headerKey, string headerValue)
+    {
+        context.EnsureResponseExists();
+
+        if (string.Equals(headerKey, "set-cookie", StringComparison.OrdinalIgnoreCase))
+        {
+            var response = context.ApiGatewayProxyResponse;
+            response.Cookies = response.Cookies is { Length: > 0 }
+                ? response.Cookies.Append(headerValue).ToArray()
+                : new[] { headerValue };
+            return;
+        }
+
+        DictionaryUtils.Set(context.ApiGatewayProxyResponse.Headers, headerKey, headerValue);
+    }
+
+    /// <summary>
+    /// Sets the response's <c>content-type</c> header.
+    /// </summary>
+    /// <param name="context">The API Gateway v2 context to set the content type on.</param>
+    /// <param name="contentType">The content type value.</param>
+    public void SetContentType(ApiGatewayV2Context context, string contentType)
+    {
+        SetResponseHeader(context, Constants.ContentTypeHeader, contentType);
+    }
+
+    /// <summary>
+    /// Sets the response status code, initializing the response if it doesn't already exist.
+    /// </summary>
+    /// <param name="context">The API Gateway v2 context to set the status code on.</param>
+    /// <param name="statusCode">The status code as a string (e.g. <c>"200"</c>).</param>
+    public void SetStatusCode(ApiGatewayV2Context context, string statusCode)
+    {
+        context.EnsureResponseExists();
+        context.ApiGatewayProxyResponse.StatusCode = Convert.ToInt32(statusCode);
+    }
+
+    /// <summary>
+    /// Sets the response body, initializing the response if it doesn't already exist.
+    /// </summary>
+    /// <param name="context">The API Gateway v2 context to set the body on.</param>
+    /// <param name="body">The response body.</param>
+    public void SetBody(ApiGatewayV2Context context, string body)
+    {
+        context.EnsureResponseExists();
+        context.ApiGatewayProxyResponse.Body = body;
+    }
+
+    /// <summary>
+    /// Gets the response body, initializing the response if it doesn't already exist.
+    /// </summary>
+    /// <param name="context">The API Gateway v2 context to read the body from.</param>
+    /// <returns>The response body.</returns>
+    public string GetBody(ApiGatewayV2Context context)
+    {
+        context.EnsureResponseExists();
+        return context.ApiGatewayProxyResponse.Body;
+    }
+
+    /// <summary>
+    /// Finalizes the response. No-op for API Gateway, since the response is returned directly.
+    /// </summary>
+    /// <param name="context">The API Gateway v2 context being finalized.</param>
+    /// <returns>A completed task.</returns>
+    public Task FinalizeAsync(ApiGatewayV2Context context)
+    {
+        return Task.CompletedTask;
+    }
+}

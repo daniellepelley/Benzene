@@ -1,9 +1,10 @@
 # Benzene.Aws.Lambda.ApiGateway
 
 ## What this package does
-AWS API Gateway Lambda integration for Benzene. Wraps API Gateway proxy events (payload format
-version 1.0 only — the `APIGatewayProxyRequest`/`APIGatewayProxyResponse` types from
-`Amazon.Lambda.APIGatewayEvents`) and runs them through Benzene's HTTP middleware pipeline. Provides
+AWS API Gateway Lambda integration for Benzene. Wraps API Gateway proxy events — both payload format
+version 1.0 (`APIGatewayProxyRequest`/`APIGatewayProxyResponse`) and payload format version 2.0
+(`APIGatewayHttpApiV2ProxyRequest`/`APIGatewayHttpApiV2ProxyResponse`, HTTP APIs) from
+`Amazon.Lambda.APIGatewayEvents` — and runs them through Benzene's HTTP middleware pipeline. Provides
 the request/response context, HTTP request/response adapters, message getters, health-check
 endpoints, and API Gateway custom authorizer handling.
 
@@ -18,7 +19,7 @@ is added to any HTTP-shaped pipeline via `Benzene.Http`'s CORS extension methods
 
 ### Context & Adapters
 - `ApiGatewayContext` - Implements `IHttpContext`; wraps the raw `APIGatewayProxyRequest` and the
-  `APIGatewayProxyResponse` being built (v1.0 payload format only)
+  `APIGatewayProxyResponse` being built (v1.0 payload format)
 - `ApiGatewayHttpRequestAdapter` - Maps the context onto a Benzene `HttpRequest` (path, method, and
   the single-value `Headers` dictionary only — see "Important conventions")
 - `ApiGatewayResponseAdapter` - Writes status code, headers, content-type and body onto the
@@ -72,11 +73,32 @@ is added to any HTTP-shaped pipeline via `Benzene.Http`'s CORS extension methods
 - **Benzene.Aws.Lambda.Core** - AWS Lambda core
 - **Amazon.Lambda.APIGatewayEvents** - API Gateway event types
 
+### API Gateway HTTP API v2 (payload format version 2.0)
+Parallel `ApiGatewayV2*` set mirroring the v1 adapters against `ApiGatewayV2Context` (wraps
+`APIGatewayHttpApiV2ProxyRequest`/`Response`), wired by `Extensions.UseApiGatewayV2(action)` +
+`DependencyInjectionExtensions.AddApiGatewayV2()`:
+- `ApiGatewayV2LambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayHttpApiV2ProxyRequest>` claims an
+  invocation only when the payload declares `version == "2.0"` **or** carries a
+  `RequestContext.Http.Method` — both v2-only discriminants. This is **mutually exclusive** with the
+  v1 handler (which claims on a top-level `HttpMethod`, absent from v2 events), so an app can register
+  **both** `UseApiGateway` and `UseApiGatewayV2` in one Lambda (REST + HTTP API) and each router
+  claims only its own payload shape regardless of registration order. A v2 event sent to a v1-only
+  pipeline is declined (no response written) rather than mis-handled.
+- v2 differences the adapters normalize: method/path come from `RequestContext.Http.{Method,Path}`
+  (see `ApiGatewayV2Context.Method`/`Path`); the dedicated `Cookies[]` request array is folded into a
+  single `cookie` request header (`ApiGatewayV2Context.CombinedHeaders()`); a response `set-cookie`
+  header is written to the v2 response's `Cookies[]` array rather than the header map
+  (`ApiGatewayV2ResponseAdapter`). Route-finding, health checks, and media negotiation are all
+  `IHttpContext`-generic and reused as-is.
+- Binary request/response bodies are still text-decoded (same as v1 — see the base64 note below);
+  true binary body support is a shared cross-cutting follow-up spanning v1, v2, ALB and self-host.
+
 ## Important conventions
-- **Payload format version 1.0 only.** Only `APIGatewayProxyRequest` is wrapped — this covers REST
-  APIs and HTTP APIs configured for payload format 1.0. There is deliberately no v2 support
-  (`APIGatewayHttpApiV2ProxyRequest` is not referenced anywhere in the package); `ApiGatewayLambdaHandler`
-  claims an invocation only when the deserialized payload has a non-null `HttpMethod` (a v1.0-shaped field).
+- **Two payload formats supported.** `APIGatewayProxyRequest` (v1.0, REST APIs and HTTP APIs on
+  payload format 1.0) via `UseApiGateway`, and `APIGatewayHttpApiV2ProxyRequest` (v2.0, HTTP APIs) via
+  `UseApiGatewayV2` — see the v2 section above. `ApiGatewayLambdaHandler` claims an invocation only
+  when the deserialized payload has a non-null `HttpMethod` (a v1.0-shaped field); the v2 handler
+  claims on the v2-only discriminants, so the two never collide.
 - **Single-value headers and query strings only — multi-value entries are dropped.** Query-string
   parameters, path parameters, and headers *are* surfaced onto the request object (by
   `ApiGatewayRequestEnricher`, which reads `QueryStringParameters`/`PathParameters`/`Headers`), but only

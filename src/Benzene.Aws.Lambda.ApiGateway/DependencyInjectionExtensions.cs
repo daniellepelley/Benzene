@@ -68,6 +68,47 @@ public static class DependencyInjectionExtensions
     }
 
     /// <summary>
+    /// Registers the services required to process API Gateway HTTP API (payload format version 2.0)
+    /// requests: request mapping, response handling, routing, and transport info. The v2 counterpart of
+    /// <see cref="AddApiGateway"/>, registered against <see cref="ApiGatewayV2Context"/>.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <returns>The service container for method chaining.</returns>
+    /// <remarks>
+    /// Called automatically by <see cref="Extensions.UseApiGatewayV2"/>; you don't normally need to call
+    /// this directly.
+    /// </remarks>
+    public static IBenzeneServiceContainer AddApiGatewayV2(this IBenzeneServiceContainer services)
+    {
+        services.TryAddScoped<JsonSerializer>();
+
+        services.TryAddScoped<IMessageTopicGetter<ApiGatewayV2Context>, ApiGatewayV2MessageTopicGetter>();
+        services.TryAddScoped<IMessageVersionGetter<ApiGatewayV2Context>>(resolver =>
+            new ApiGatewayV2MessageVersionGetter(resolver.GetService<IRouteFinder>(),
+                resolver.GetService<IMessageHeadersGetter<ApiGatewayV2Context>>(),
+                resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
+        services.TryAddScoped<IMessageHeadersGetter<ApiGatewayV2Context>, ApiGatewayV2MessageHeadersGetter>();
+        services.TryAddScoped<IMessageBodyGetter<ApiGatewayV2Context>, ApiGatewayV2MessageBodyGetter>();
+        services.TryAddScoped<IMessageHandlerResultSetter<ApiGatewayV2Context>, ApiGatewayV2MessageHandlerResultSetter>();
+        services
+            .AddScoped<IRequestMapper<ApiGatewayV2Context>,
+                MultiSerializerOptionsRequestMapper<ApiGatewayV2Context>>();
+        services.AddScoped<IRequestEnricher<ApiGatewayV2Context>, ApiGatewayV2RequestEnricher>();
+        services.AddScoped<IHttpRequestAdapter<ApiGatewayV2Context>, ApiGatewayV2HttpRequestAdapter>();
+        services.AddScoped<IBenzeneResponseAdapter<ApiGatewayV2Context>, ApiGatewayV2ResponseAdapter>();
+        services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
+        services.AddScoped<IResponseHandler<ApiGatewayV2Context>, HttpStatusCodeResponseHandler<ApiGatewayV2Context>>();
+        services.AddScoped<IResponseRenderer<ApiGatewayV2Context>, SerializerResponseRenderer<ApiGatewayV2Context>>();
+        services.AddScoped<IResponseHandler<ApiGatewayV2Context>, RendererResponseHandler<ApiGatewayV2Context>>();
+        services.AddMediaFormatNegotiation<ApiGatewayV2Context>();
+
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.ApiGateway));
+        services.AddHttpMessageHandlers();
+
+        return services;
+    }
+
+    /// <summary>
     /// Adds a health check endpoint at the given method and path, using the default health check topic.
     /// </summary>
     /// <param name="app">The pipeline builder to add the health check to.</param>
