@@ -74,6 +74,15 @@ for the full Kubernetes wiring guide.
   than in a dedicated package (unlike `Benzene.HealthChecks.Disk`/`.Tcp`) because it has no external
   dependency - just `Environment`/`GC`. Covered by
   `test/Benzene.Core.Test/HealthChecks/MemoryHealthCheckTest.cs`.
+- `ShutdownState` + `ShutdownReadinessHealthCheck` (`AddShutdownReadinessCheck(shutdownState)`) -
+  graceful-shutdown drain support. `ShutdownState` is a one-way latch; `LinkTo(CancellationToken)`
+  trips it from the host's shutdown signal (e.g. `IHostApplicationLifetime.ApplicationStopping`, a
+  worker stop token). The check returns `Failed` once the latch is set, so a **readiness** probe
+  (`.UseReadinessCheck(...)`) flips to unhealthy during shutdown and a load balancer / Kubernetes
+  stops routing new traffic while in-flight work drains — **liveness** must NOT use it (a draining
+  instance is healthy, not broken). Dependency-free (BCL `CancellationToken` only), caller-owned
+  state (no DI registration needed). Covered by
+  `test/Benzene.Core.Test/HealthChecks/ShutdownReadinessHealthCheckTest.cs`.
 - `HealthCheckNamer` - dedupes health check names in the aggregated response when multiple checks
   share the same `Type`
 

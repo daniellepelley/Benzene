@@ -212,6 +212,35 @@ Set the ceiling below the container/pod memory limit so a readiness probe flips 
 is OOM-killed. It has no external dependency (only `Environment`/`GC`), so unlike `DiskHealthCheck`
 it ships in `Benzene.HealthChecks` directly rather than a dedicated package.
 
+### `ShutdownReadinessHealthCheck` (`Benzene.HealthChecks`) — graceful drain
+
+Fails a **readiness** probe once graceful shutdown begins, so a load balancer / Kubernetes stops
+routing new traffic to the instance while its in-flight requests finish, *before* the process
+exits. `Type` is `"Shutdown"`; `Data["ShuttingDown"]` is the latch state.
+
+It reads a caller-owned `ShutdownState` latch. Wire the latch to your host's shutdown signal with
+`LinkTo(CancellationToken)` — on the generic host / ASP.NET Core that's
+`IHostApplicationLifetime.ApplicationStopping` (which fires on SIGTERM):
+
+```csharp
+using Benzene.HealthChecks;
+
+var shutdown = new ShutdownState()
+    .LinkTo(app.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+
+app.UseBenzene(benzene => benzene
+    .UseHttp(http => http
+        .UseReadinessCheck(x => x.AddShutdownReadinessCheck(shutdown))
+        .UseLivenessCheck() // deliberately NOT the shutdown check — a draining instance is alive
+        .UseMessageHandlers()));
+```
+
+Add it only to **readiness**, never liveness: a draining instance is healthy (don't restart it),
+just not ready for new traffic. On a host without an `ApplicationStopping` token you can trip the
+latch yourself (`shutdown.MarkShuttingDown()`) from a `PosixSignalRegistration` for `SIGTERM` or any
+shutdown hook. Dependency-free (only a BCL `CancellationToken`), so it also ships in
+`Benzene.HealthChecks` directly.
+
 ### `TimeOutHealthCheck` / `ExceptionHandlingHealthCheck` (internal safety net)
 
 These two are `internal` — you never construct them yourself, but it's worth knowing they run

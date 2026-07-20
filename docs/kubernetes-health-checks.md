@@ -181,8 +181,14 @@ service.
   Benzene wiring — reuse `UseReadinessCheck` (or a separate topic/path of your own) for it; there's
   nothing startup-probe-specific in Benzene today.
 - **Graceful shutdown coordination.** Flipping readiness to unhealthy during pod termination (so
-  Kubernetes stops routing new traffic before `SIGTERM` is sent) is an application-level concern —
-  Benzene doesn't automatically wire your readiness check to the host's shutdown lifecycle.
+  Kubernetes stops routing new traffic while in-flight requests drain) is available as a building
+  block: `ShutdownReadinessHealthCheck` + `ShutdownState.LinkTo(CancellationToken)` — wire the latch
+  to your host's shutdown token (`IHostApplicationLifetime.ApplicationStopping`, which fires on
+  `SIGTERM`) and add the check to your **readiness** probe. See
+  [`ShutdownReadinessHealthCheck`](health-checks.md#shutdownreadinesshealthcheck-benzenehealthchecks--graceful-drain).
+  Benzene still doesn't auto-wire it to the host lifecycle for you (that one `LinkTo` line is yours),
+  and pair it with a `preStop` sleep / `terminationGracePeriodSeconds` so kube-proxy has removed the
+  endpoint before the process exits.
 
 ## See also
 

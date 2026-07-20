@@ -33,7 +33,11 @@ API decisions to make before the freeze, two verified integration bugs, and prov
 > Remaining T3.1 gaps: Azure Event Hub / Queue Storage / Event Grid, Kafka. (Host memory DONE —
 > `MemoryHealthCheck`/`AddMemoryCheck` in `Benzene.HealthChecks`, working-set ceiling with optional
 > warning, no external dependency; `test/Benzene.Core.Test/HealthChecks/MemoryHealthCheckTest.cs`.)
-> T3.2/T3.3 (drain-on-SIGTERM, startup/warmup probe, non-Lambda CLI) still open. Below kept as the record.
+> T3.2 drain-on-SIGTERM DONE — `ShutdownState` (a one-way latch, `LinkTo(CancellationToken)` trips it
+> from the host's `ApplicationStopping`/SIGTERM token) + `ShutdownReadinessHealthCheck`
+> (`AddShutdownReadinessCheck`), for readiness only; dependency-free, no DI registration needed;
+> `test/Benzene.Core.Test/HealthChecks/ShutdownReadinessHealthCheckTest.cs`. T3.3 (startup/warmup
+> probe, non-Lambda CLI) still open. Below kept as the record.
 
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way
