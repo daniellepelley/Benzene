@@ -51,10 +51,15 @@ public class HeaderOrBodyHashIdempotencyKeyStrategy<TContext> : IIdempotencyKeyS
         }
 
         var topic = _topicGetter.GetTopic(context);
-        var topicId = topic == null ? "" : $"{topic.Id}:{topic.Version}";
+        var id = topic?.Id ?? "";
+        var version = topic?.Version ?? "";
         var body = _bodyGetter.GetBody(context) ?? "";
 
-        return _options.KeyPrefix + ComputeHash(topicId + "\n" + body);
+        // Length-prefix each field so distinct (id, version, body) triples can't collide through
+        // separator ambiguity - e.g. id="order"/version="v2:create" and id="order:v2"/version="create"
+        // used to flatten to the same "order:v2:create\n..." string, hashing identical and dropping one
+        // message as a false duplicate. With lengths, the field boundaries are unambiguous.
+        return _options.KeyPrefix + ComputeHash($"{id.Length}:{id}|{version.Length}:{version}|{body.Length}:{body}");
     }
 
     private static string ComputeHash(string input)
