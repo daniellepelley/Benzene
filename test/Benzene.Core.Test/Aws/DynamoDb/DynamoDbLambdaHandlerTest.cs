@@ -97,6 +97,31 @@ public class DynamoDbLambdaHandlerTest
     }
 
     [Fact]
+    public async Task Application_NullResult_IsReportedAsFailure_NotSilentlySkipped()
+    {
+        var processed = new List<string>();
+
+        // A pipeline that never sets IsSuccessful (e.g. a short-circuit before the result setter) must
+        // NOT let the ordered CDC stream advance past that record - that would silently skip it.
+        var pipeline = new MiddlewarePipelineBuilder<DynamoDbRecordContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
+        pipeline.Use(null, (context, next) =>
+        {
+            processed.Add(context.Record.Dynamodb.SequenceNumber);
+            return next(); // leaves context.IsSuccessful null on record "2" onward
+        });
+
+        var application = new DynamoDbApplication(pipeline.Build());
+        var request = MessageBuilder.Create("example-orders:INSERT", Defaults.MessageAsObject).AsDynamoDb(3);
+
+        var response = await application.HandleAsync(request, ServiceResolverMother.CreateServiceResolverFactory());
+
+        // Stops at the first record (null → failure), reporting it for redelivery rather than skipping.
+        Assert.Equal(new[] { "1" }, processed);
+        var failure = Assert.Single(response.BatchItemFailures);
+        Assert.Equal("1", failure.ItemIdentifier);
+    }
+
+    [Fact]
     public async Task Application_MiddlewareThrows_ReportsFailureInsteadOfThrowing()
     {
         var services = ServiceResolverMother.CreateServiceCollection();

@@ -93,7 +93,10 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
                     if (explicitAck)
                     {
                         acked = true;
-                        if (context.MessageResult?.IsSuccessful == false)
+                        // Abandon on failure OR a null result (a pipeline that short-circuited without
+                        // setting one), completing only on genuine success - matching the SQS reference so
+                        // an unestablished outcome errs toward redelivery, not silent completion/loss.
+                        if (context.MessageResult?.IsSuccessful != true)
                         {
                             await messageActions!.AbandonMessageAsync(context.Message);
                         }

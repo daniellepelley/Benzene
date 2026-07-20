@@ -65,7 +65,10 @@ public class DynamoDbApplication : IMiddlewareApplication<DynamoDbEvent, DynamoD
                 context.IsSuccessful = false;
             }
 
-            if (context.IsSuccessful.HasValue && !context.IsSuccessful.Value)
+            // Treat a null result as failure (not just an explicit false), matching the SQS reference:
+            // a record whose pipeline short-circuited without setting a result must NOT be checkpointed
+            // past in an ordered CDC stream - that would silently skip it. Stop here for redelivery.
+            if (context.IsSuccessful != true)
             {
                 return new DynamoDbBatchResponse
                 {

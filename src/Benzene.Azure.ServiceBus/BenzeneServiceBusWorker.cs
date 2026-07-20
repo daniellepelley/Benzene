@@ -214,7 +214,11 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
             }
         }
 
-        if (decision.MessageResult?.IsSuccessful == false)
+        // Abandon on a failure OR a null result (a pipeline that short-circuited without setting one),
+        // completing only on a genuine success - matching the SQS reference's "null errs toward
+        // redelivery, never toward silent loss". Previously `== false` completed a null result, dropping
+        // a message whose outcome was never established.
+        if (decision.MessageResult?.IsSuccessful != true)
         {
             await settler.AbandonMessageAsync();
         }
