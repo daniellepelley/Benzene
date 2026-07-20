@@ -10,11 +10,15 @@ namespace Benzene.Http.Routing;
 /// This class uses an <see cref="IHttpEndpointFinder"/> to discover all available endpoints at construction
 /// time, then matches incoming requests against these endpoints using HTTP method and URL path comparison.
 /// The matching is case-insensitive and supports route parameters (e.g., "/users/{id}").
+/// <para>
+/// Each route's method is lower-cased and its path pattern is compiled to a <see cref="CompiledRoutePath"/>
+/// once, at construction; per request only the incoming path is split (once, not once per route), so the
+/// hot path does no per-route pattern re-splitting or regex work.
+/// </para>
 /// </remarks>
 public class RouteFinder : IRouteFinder
 {
-    private readonly IHttpEndpointDefinition[] _routes;
-    private readonly UrlMatcher _urlMatcher;
+    private readonly CompiledRoute[] _routes;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RouteFinder"/> class.
@@ -29,8 +33,8 @@ public class RouteFinder : IRouteFinder
         // OrderBy is stable, so routes of equal specificity keep their original relative order.
         _routes = httpEndpointFinder.FindDefinitions()
             .OrderBy(CountParameterSegments)
+            .Select(route => new CompiledRoute(route.Method.ToLowerInvariant(), new CompiledRoutePath(route.Path), route.Topic))
             .ToArray();
-        _urlMatcher = new UrlMatcher();
     }
 
     private static int CountParameterSegments(IHttpEndpointDefinition route)
@@ -52,14 +56,16 @@ public class RouteFinder : IRouteFinder
     public HttpTopicRoute? Find(string method, string path)
     {
         var lowerMethod = method.ToLowerInvariant();
+        var pathParts = UrlMatcher.SplitPath(path);
+
         foreach (var route in _routes)
         {
-            if (route.Method.ToLowerInvariant() != lowerMethod)
+            if (route.Method != lowerMethod)
             {
                 continue;
             }
 
-            var parameters = _urlMatcher.MatchUrl(path, route.Path);
+            var parameters = route.Path.Match(pathParts);
 
             if (parameters != null)
             {
@@ -69,5 +75,18 @@ public class RouteFinder : IRouteFinder
 
         return null;
     }
-}
 
+    private sealed class CompiledRoute
+    {
+        public CompiledRoute(string method, CompiledRoutePath path, string topic)
+        {
+            Method = method;
+            Path = path;
+            Topic = topic;
+        }
+
+        public string Method { get; }
+        public CompiledRoutePath Path { get; }
+        public string Topic { get; }
+    }
+}

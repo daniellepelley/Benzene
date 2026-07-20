@@ -2,9 +2,9 @@
 
 BenchmarkDotNet micro-benchmarks for Benzene's hot paths: the middleware pipeline
 (`MiddlewarePipeline<TContext>.HandleAsync`), the request-mapping path
-(`MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>`), and per-message handler routing
-(`MessageHandlerDefinitionLookUp.FindHandler`). This is the first benchmark suite in the repo —
-there is no prior baseline to compare against.
+(`MultiSerializerOptionsRequestMapper<TContext>.GetBody<T>`), per-message handler routing
+(`MessageHandlerDefinitionLookUp.FindHandler`), and HTTP route matching (`RouteFinder.Find`). This is
+the first benchmark suite in the repo — there is no prior baseline to compare against.
 
 ## Running
 
@@ -71,6 +71,18 @@ be folded into the per-candidate `FirstOrDefault` predicate, re-running the whol
 re-allocating its candidate-version array once per candidate — O(n²) work and allocation per
 dispatch — before being hoisted to run once. The suite makes that cost visible and guards it from
 regressing (watch that allocated bytes stay flat, not scaling with `VersionsPerTopic`).
+
+### `RouteFindingBenchmarks`
+
+- **`Find: hit (first route, extracts a parameter)`** / **`Find: miss (scans every route)`** —
+  `RouteFinder.Find` matching an incoming method+path against the registered HTTP routes.
+
+`RouteCount` is parameterized (5/25/100) because a miss scans every route. The cost this targets is
+the per-route pattern work: `RouteFinder` now compiles each route's method (lower-cased) and path
+pattern (split + `Regex.Split`) once at construction and splits only the incoming path per request,
+rather than re-splitting and re-running `Regex.Split` over every route's pattern on every request.
+Watch that per-request allocation stays low and doesn't carry the regex/splitting cost that used to
+scale with `RouteCount`.
 
 ## Why this project is separate from `Benzene.sln`'s test run
 

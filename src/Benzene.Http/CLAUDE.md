@@ -17,8 +17,13 @@ Provides HTTP abstractions and utilities for building HTTP-based Benzene applica
 - `IRouteFinder` - Finds routes by HTTP method and path
 - `HttpEndpointDefinition` - Concrete endpoint definition
 - `HttpTopicRoute` - Route with topic/message name
-- `UrlMatcher` - Matches URLs with route patterns
-- `RouteFinder` - Default route finder implementation
+- `UrlMatcher` - Matches URLs with route patterns (delegates to `CompiledRoutePath`)
+- `CompiledRoutePath` (internal) - a route pattern with its per-segment split/regex parsing done
+  once, up front, so matching an incoming path is cheap string comparisons rather than re-splitting
+  the pattern and running `Regex.Split` over it per request
+- `RouteFinder` - Default route finder implementation; compiles each route's method (lower-cased) and
+  path (to a `CompiledRoutePath`) once at construction, and splits only the incoming path per request
+  (once, not once per route), so the hot path does no per-route regex/splitting work
 
 ### Endpoint Discovery
 - `ReflectionHttpEndpointFinder` - Discovers endpoints via reflection

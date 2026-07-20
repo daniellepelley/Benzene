@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Benzene.Http.Routing;
 
@@ -10,6 +12,11 @@ namespace Benzene.Http.Routing;
 /// from parameterized route segments (e.g., extracting "123" from "/users/123" when matched
 /// against "/users/{id}"). Matching is case-insensitive and supports complex patterns with
 /// multiple parameters and literal text segments.
+/// <para>
+/// The per-request matching is delegated to <see cref="CompiledRoutePath"/>. On the hot path,
+/// <see cref="RouteFinder"/> compiles each route once at construction; this convenience method
+/// compiles the pattern per call, which is fine for one-off callers (e.g. CORS route matching).
+/// </para>
 /// </remarks>
 public class UrlMatcher
 {
@@ -24,63 +31,11 @@ public class UrlMatcher
     /// </returns>
     public IDictionary<string, object>? MatchUrl(string path, string routerPath)
     {
-        var routerPathParts = SplitPath(routerPath);
-        var pathParts = SplitPath(path);
-
-        if (routerPathParts.Length != pathParts.Length)
-        {
-            return null;
-        }
-
-        var output = new Dictionary<string, object>();
-
-        for (int i = 0; i < routerPathParts.Length; i++)
-        {
-            var routeParts = SplitRouterPath(routerPathParts[i]);
-            var segment = pathParts[i];
-
-            var paramIndex = Array.FindIndex(routeParts, x => x.StartsWith("{"));
-
-            if (paramIndex < 0)
-            {
-                // A literal-only segment must match exactly.
-                if (segment != string.Concat(routeParts))
-                {
-                    return null;
-                }
-
-                continue;
-            }
-
-            // The one parameter's value is whatever sits between the anchored literal prefix (the
-            // parts before it) and suffix (the parts after it). Anchoring to the ends - rather than
-            // the old global String.Replace of each literal - is what stops a literal that also appears
-            // inside the parameter value from corrupting it (e.g. "/{slug}s" matching "/dogss" gave
-            // "dog" instead of "dogs") or wrongly failing the match.
-            var prefix = string.Concat(routeParts.Take(paramIndex));
-            var suffix = string.Concat(routeParts.Skip(paramIndex + 1));
-
-            if (segment.Length < prefix.Length + suffix.Length
-                || !segment.StartsWith(prefix)
-                || !segment.EndsWith(suffix))
-            {
-                return null;
-            }
-
-            var value = segment.Substring(prefix.Length, segment.Length - prefix.Length - suffix.Length);
-            if (value == "")
-            {
-                continue;
-            }
-
-            output[routeParts[paramIndex].Replace("{", "").Replace("}", "")] = value;
-        }
-
-
-        return output;
+        return new CompiledRoutePath(routerPath).Match(SplitPath(path));
     }
 
-    private string[] SplitPath(string path)
+    /// <summary>Splits an incoming URL path (dropping any query string) into case-folded segments.</summary>
+    internal static string[] SplitPath(string path)
     {
         return path
             .Split('?', StringSplitOptions.RemoveEmptyEntries)
@@ -89,13 +44,12 @@ public class UrlMatcher
             .Split('/', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    private string[] SplitRouterPath(string routerPath)
+    /// <summary>Splits a single route-pattern segment into its literal and <c>{parameter}</c> parts.</summary>
+    internal static string[] SplitRouterPath(string routerPath)
     {
         return Regex.Split(routerPath
                 .Replace("/", ""), @"(?<=\})|(?=\{)")
             .Where(x => !string.IsNullOrEmpty(x))
             .ToArray();
     }
-
 }
-
