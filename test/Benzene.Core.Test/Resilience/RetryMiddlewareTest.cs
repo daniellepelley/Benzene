@@ -31,6 +31,25 @@ public class RetryMiddlewareTest
     }
 
     [Fact]
+    public async Task HandleAsync_ManyRetries_DoesNotOverflowTimeSpanOnBackoffGrowth()
+    {
+        // With enough retries the uncapped exponential growth would overflow TimeSpan.MaxValue and
+        // TimeSpan.FromMilliseconds would throw OverflowException outside the retry loop. The clamp
+        // keeps the middleware giving up cleanly (propagating the handler's own exception) instead.
+        var attempts = 0;
+        var middleware = new RetryMiddleware<object>(numberOfRetries: 60, initialDelay: TimeSpan.FromSeconds(1),
+            backoffFactor: 2.0, delay: NoDelay);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.HandleAsync(new object(), () =>
+        {
+            attempts++;
+            throw new InvalidOperationException("always fails");
+        }));
+
+        Assert.Equal(61, attempts); // 60 retries + the initial attempt, no OverflowException
+    }
+
+    [Fact]
     public async Task HandleAsync_ExhaustsRetries_PropagatesException()
     {
         var attempts = 0;

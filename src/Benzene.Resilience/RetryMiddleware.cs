@@ -84,7 +84,14 @@ public class RetryMiddleware<TContext> : IMiddleware<TContext>
             // sleep = random(0, min(cap, base * factor^attempt))).
             var cappedDelay = _maxDelay.HasValue && delay > _maxDelay.Value ? _maxDelay.Value : delay;
             await _delay(_jitter(cappedDelay));
-            delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * _backoffFactor);
+            // Grow the exponential curve, but clamp at TimeSpan.MaxValue: with a large numberOfRetries
+            // (or initialDelay/backoffFactor) the uncapped multiply overflows TimeSpan.MaxValue and
+            // TimeSpan.FromMilliseconds throws OverflowException *outside* the try - surfacing as an
+            // unexpected fault instead of a clean retry/give-up. The sleep is already bounded by cappedDelay.
+            var nextDelayMs = delay.TotalMilliseconds * _backoffFactor;
+            delay = nextDelayMs >= TimeSpan.MaxValue.TotalMilliseconds
+                ? TimeSpan.MaxValue
+                : TimeSpan.FromMilliseconds(nextDelayMs);
         }
     }
 
