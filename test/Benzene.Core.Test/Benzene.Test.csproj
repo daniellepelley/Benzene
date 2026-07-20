@@ -147,6 +147,8 @@
     <ProjectReference Include="..\..\src\Benzene.Spec.Ui\Benzene.Spec.Ui.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.HealthChecks.Tcp\Benzene.HealthChecks.Tcp.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.HealthChecks.Disk\Benzene.HealthChecks.Disk.csproj" />
   </ItemGroup>
 
   <ItemGroup>
