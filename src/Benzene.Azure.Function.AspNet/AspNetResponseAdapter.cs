@@ -27,6 +27,7 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
     /// <param name="contentType">The content type.</param>
     public void SetContentType(AspNetContext context, string contentType)
     {
+        context.EnsureResponseExists();
         context.ContentResult.ContentType = contentType;
     }
 
