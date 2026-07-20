@@ -31,6 +31,28 @@ payload yourself and call `QueueClient.SendMessageAsync(serializedPayload)` dire
 wrapper is needed for a one-line SDK call (design philosophy principle 3: rolling your own is easy
 and first-class where Benzene doesn't need to get involved).
 
+## ⚠️ Message encoding must match the consumer — set `MessageEncoding = Base64` for a Functions trigger
+This package sends via a caller-supplied `QueueClient`, and it does **not** set
+`QueueClientOptions.MessageEncoding`. `Azure.Storage.Queues` v12 therefore defaults to
+`QueueMessageEncoding.None` — the envelope text goes onto the queue as **plain UTF-8**. But the
+matching ingress, `Benzene.Azure.Function.QueueStorage` (the Functions `[QueueTrigger] string`
+binding), defaults to **Base64** (`Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues` /
+`host.json` `extensions.queues.messageEncoding`). Left unconfigured, Benzene's own two halves default
+to **opposite encodings**, so the consumer tries to Base64-decode plain text and garbles or
+dead-letters the message — a silent, config-dependent failure.
+
+**When the consumer is a Benzene Functions Queue trigger, build the `QueueClient` with Base64
+encoding** so the two agree:
+
+```csharp
+var queueClient = new QueueClient(connectionString, queueName,
+    new QueueClientOptions { MessageEncoding = QueueMessageEncoding.Base64 });
+```
+
+(Or, conversely, set `host.json` `extensions.queues.messageEncoding` to `none` on the consumer to
+match a plain-text producer.) If both sides are your own non-Functions code, either encoding works as
+long as they match.
+
 ## No `TokenCredential`/connection-string wrapping — deliberately
 This package takes an already-built `QueueClient`, not a connection string or `TokenCredential` — the
 caller chooses how to construct it (connection string, `DefaultAzureCredential`, the emulator).
