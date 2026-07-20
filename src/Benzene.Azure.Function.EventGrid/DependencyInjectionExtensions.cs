@@ -50,12 +50,12 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The Azure Function app builder to add Event Grid handling to.</param>
     /// <param name="action">The action that configures the Event Grid middleware pipeline.</param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseEventGrid(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action)
+    public static IAzureFunctionAppBuilder UseEventGrid(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, int? maxDegreeOfParallelism = null)
     {
         app.Register(x => x.AddAzureEventGrid());
         var pipeline = app.Create<EventGridContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new EventGridApplication(pipeline.Build(), serviceResolverFactory));
+        app.Add(serviceResolverFactory => new EventGridApplication(pipeline.Build(), serviceResolverFactory, maxDegreeOfParallelism));
         return app;
     }
 
@@ -66,11 +66,11 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Event Grid middleware pipeline.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseEventGrid(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action)
+    public static IBenzeneApplicationBuilder UseEventGrid(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, int? maxDegreeOfParallelism = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseEventGrid(action);
+            azureApp.UseEventGrid(action, maxDegreeOfParallelism);
         }
         return app;
     }

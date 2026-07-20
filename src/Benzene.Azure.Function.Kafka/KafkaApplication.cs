@@ -52,7 +52,10 @@ public class KafkaBatchApplication : IMiddlewareApplication<KafkaRecord[]>
 
     public async Task HandleAsync(KafkaRecord[] @event, IServiceResolverFactory serviceResolverFactory)
     {
-        var tasks = @event.Select(kafkaEvent => new KafkaContext(kafkaEvent)).Select(async context =>
+        // BoundedFanOut optionally caps how many records run at once (KafkaOptions.MaxDegreeOfParallelism);
+        // unset leaves the fan-out unbounded, exactly as before.
+        var contexts = @event.Select(kafkaEvent => new KafkaContext(kafkaEvent));
+        await BoundedFanOut.WhenAllAsync(contexts, async context =>
             {
                 try
                 {
@@ -74,9 +77,6 @@ public class KafkaBatchApplication : IMiddlewareApplication<KafkaRecord[]>
                             .LogError(ex, "Processing Kafka record on topic {topic} failed", context.KafkaEvent.Topic);
                     }
                 }
-            })
-            .ToArray();
-
-        await Task.WhenAll(tasks);
+            }, _options.MaxDegreeOfParallelism);
     }
 }

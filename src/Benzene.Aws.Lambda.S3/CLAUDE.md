@@ -62,3 +62,7 @@ results need to be retried, have the handler throw for failures that should retr
 - `CanHandle` only matches invocations where the first record's `EventSource` is
   `"aws:s3"`; otherwise the router defers to the next middleware
 - Transport tagged as `"s3"` for the duration of processing each batch
+- **Bounded batch fan-out**: `UseS3(action, maxDegreeOfParallelism)` (and the `S3Application`
+  constructor) optionally caps how many records run concurrently; `null` (the default) leaves the
+  fan-out unbounded - the original behavior. Threaded straight into the base
+  `MiddlewareMultiApplication`, which routes it through `Benzene.Core.Middleware`'s `BoundedFanOut`.

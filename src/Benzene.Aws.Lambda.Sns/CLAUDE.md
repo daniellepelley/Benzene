@@ -79,6 +79,9 @@ application code changes needed for either fix.
   publish that omits it yields a null topic. The topic is **not** derived from the SNS topic ARN.
 - The message body is `SnsRecord.Sns.Message` as-is — the package does not unwrap a Benzene envelope
 - The raw `SNSEvent.SNSRecord` (subject, message ID, timestamp, etc.) is reachable via the context
+- **Bounded batch fan-out** (`SnsOptions.MaxDegreeOfParallelism`): defaults to `null` (unbounded -
+  every record starts at once, the original behavior). Set a positive value to cap how many records
+  run concurrently. Purely additive/opt-in; routed through `Benzene.Core.Middleware`'s `BoundedFanOut`.
 - No response expected - fire-and-forget pattern
 - Exception/failure-status handling is configurable via `SnsOptions` (`UseSns(..., configure)`),
   defaulting to today's implicit behavior: a handler exception cascades out of the invocation

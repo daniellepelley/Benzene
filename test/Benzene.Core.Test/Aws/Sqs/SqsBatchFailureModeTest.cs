@@ -65,6 +65,53 @@ public class SqsBatchFailureModeTest
     }
 
     [Fact]
+    public void SqsOptions_DefaultMaxDegreeOfParallelism_IsNull()
+    {
+        Assert.Null(new SqsOptions().MaxDegreeOfParallelism);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithMaxDegreeOfParallelism_NeverRunsMoreThanThatManyRecordsAtOnce()
+    {
+        var gate = new object();
+        var current = 0;
+        var maxObserved = 0;
+
+        var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
+        mockPipeline
+            .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
+            .Returns(async (SqsMessageContext _, IServiceResolver __) =>
+            {
+                lock (gate)
+                {
+                    current++;
+                    maxObserved = Math.Max(maxObserved, current);
+                }
+
+                await Task.Delay(50);
+
+                lock (gate)
+                {
+                    current--;
+                }
+            });
+
+        var mockResolver = new Mock<IServiceResolver>();
+        mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
+        var mockResolverFactory = new Mock<IServiceResolverFactory>();
+        mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
+
+        var application = new SqsApplication(mockPipeline.Object, new SqsOptions { MaxDegreeOfParallelism = 3 });
+
+        var records = Enumerable.Range(0, 30).Select(i => new SQSEvent.SQSMessage { MessageId = $"ok-{i}" }).ToList();
+
+        await application.HandleAsync(new SQSEvent { Records = records }, mockResolverFactory.Object);
+
+        Assert.True(maxObserved <= 3, $"Expected at most 3 records concurrently, observed {maxObserved}.");
+        Assert.Equal(3, maxObserved);
+    }
+
+    [Fact]
     public async Task HandleAsync_FailWholeBatch_OneMessageFails_ThrowsSqsBatchProcessingExceptionListingFailedIds()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();

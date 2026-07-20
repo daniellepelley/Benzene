@@ -15,6 +15,21 @@ Provides concrete implementations of Benzene's middleware pipeline system. Inclu
 - `MiddlewareApplication<TEvent, TContext, TResult>` - Single-event with result
 - `MiddlewareMultiApplication<TEvent, TContext>` - Multi-event application
 - `MiddlewareMultiApplication<TEvent, TContext, TResult>` - Multi-event with result
+- `BoundedFanOut` - the shared helper both `MiddlewareMultiApplication` overloads (and every
+  hand-rolled batch fan-out app - SQS/SNS/ServiceBus/Azure-Kafka) route their per-record concurrency
+  through. `WhenAllAsync(source, body, maxDegreeOfParallelism)`: `null`/`<=0` runs every record at
+  once (the original `Select(...).ToArray()` + `Task.WhenAll` behavior), a positive value caps how
+  many run concurrently via a `SemaphoreSlim`. Results come back in source order regardless of the
+  cap or completion order, so a caller's positional/`Where(x => x != null)` filtering is unaffected.
+  This is the opt-in `MaxDegreeOfParallelism` knob's implementation - it exists so a large batch
+  can't start hundreds of pipeline runs (and hundreds of scoped DB connections) simultaneously.
+  `MiddlewareMultiApplication` exposes it as an optional `maxDegreeOfParallelism` constructor arg
+  (default `null` = unbounded), so the delegating transports (S3, Lambda-Kafka, EventHub, EventGrid,
+  QueueStorage) thread it through their own constructor/`Use*` param; the transports with an options
+  object (SQS `SqsOptions`, SNS `SnsOptions`, `SqsConsumerOptions`, `ServiceBusOptions`, Azure
+  `KafkaOptions`) expose it as `MaxDegreeOfParallelism` on that options type instead. Covered by
+  `test/Benzene.Core.Test/Core/Middleware/BoundedFanOutTest.cs` +
+  `MiddlewareMultiApplicationConcurrencyTest.cs`.
 - `EntryPointMiddlewareApplication<TEvent>` - Entry point wrapper
 - `EntryPointMiddlewareApplication<TEvent, TResult>` - Entry point wrapper with result
 

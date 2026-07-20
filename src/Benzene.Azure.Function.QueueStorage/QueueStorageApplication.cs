@@ -20,10 +20,16 @@ public class QueueStorageApplication : EntryPointMiddlewareApplication<QueueStor
     /// </summary>
     /// <param name="pipeline">The built Queue Storage middleware pipeline to run each message through.</param>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
-    public QueueStorageApplication(IMiddlewarePipeline<QueueStorageContext> pipeline, IServiceResolverFactory serviceResolverFactory)
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many messages from a batched delivery run at once; <c>null</c> (the
+    /// default) leaves the fan-out unbounded - the original behavior. Has no effect on the default
+    /// one-message-per-invocation trigger cardinality.
+    /// </param>
+    public QueueStorageApplication(IMiddlewarePipeline<QueueStorageContext> pipeline, IServiceResolverFactory serviceResolverFactory, int? maxDegreeOfParallelism = null)
         : base(new MiddlewareMultiApplication<QueueStorageMessage[], QueueStorageContext>(
                 new TransportMiddlewarePipeline<QueueStorageContext>(TransportNames.QueueStorage, pipeline),
-                messages => messages.Select(message => new QueueStorageContext(message)).ToArray()),
+                messages => messages.Select(message => new QueueStorageContext(message)).ToArray(),
+                maxDegreeOfParallelism),
             serviceResolverFactory)
     { }
 }

@@ -69,6 +69,12 @@ how a poll batch is acknowledged:
 on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
 (`SuccessfulMessages`/`FailedMessages`) that `SqsConsumer` uses to decide what to delete.
 
+### Bounded batch fan-out (`SqsConsumerOptions.MaxDegreeOfParallelism`)
+Defaults to `null` (unbounded - every message in a poll batch starts at once, the original
+behavior). Set a positive value to cap how many messages run concurrently, e.g. so a large poll
+batch can't open more scoped DB connections than the pool allows. Purely additive/opt-in; routed
+through `Benzene.Core.Middleware`'s `BoundedFanOut`, same as `SqsConsumerAckMode`.
+
 ### W3C trace context and invocationId (release plan Tier 3.5)
 `.UseW3CTraceContext<SqsConsumerMessageContext>()` works: `SqsConsumerMessageHeadersGetter` already
 read real message attributes. Separately, `UseSqs(...)` now auto-wires `UseBenzeneInvocation()`

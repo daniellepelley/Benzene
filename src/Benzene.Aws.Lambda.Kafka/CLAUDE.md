@@ -72,6 +72,10 @@ code changes needed for either fix.
   per-record retry/reprocessing mechanism
 - Message key available in context
 - Supports both MSK and self-managed Kafka
+- **Bounded batch fan-out**: `UseKafka(action, maxDegreeOfParallelism)` (and the `KafkaApplication`
+  constructor) optionally caps how many records run concurrently; `null` (the default) leaves the
+  fan-out unbounded - the original behavior. Threaded into the base `MiddlewareMultiApplication`,
+  which routes it through `Benzene.Core.Middleware`'s `BoundedFanOut`.
 
 ## Tests
 - `test/Benzene.Core.Test/Aws/Kafka/KafkaGettersTest.cs` — the three getters directly: body

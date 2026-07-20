@@ -37,14 +37,18 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="app">The Azure Function app builder to add Event Hub handling to.</param>
     /// <param name="action">The action that configures the Event Hub middleware pipeline.</param>
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many events from a batch run at once; <c>null</c> (the default) leaves the
+    /// fan-out unbounded - the original behavior.
+    /// </param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseEventHub(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action)
+    public static IAzureFunctionAppBuilder UseEventHub(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action, int? maxDegreeOfParallelism = null)
     {
         app.Register(x => x.AddAzureEventHub());
         var pipeline = app.Create<EventHubContext>();
         pipeline.UseBenzeneInvocation();
         action(pipeline);
-        app.Add(serviceResolverFactory => new EventHubApplication(pipeline.Build(), serviceResolverFactory));
+        app.Add(serviceResolverFactory => new EventHubApplication(pipeline.Build(), serviceResolverFactory, maxDegreeOfParallelism));
         return app;
     }
 
@@ -54,12 +58,16 @@ public static class DependencyInjectionExtensions
     /// </summary>
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Event Hub middleware pipeline.</param>
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many events from a batch run at once; <c>null</c> (the default) leaves the
+    /// fan-out unbounded - the original behavior.
+    /// </param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseEventHub(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action)
+    public static IBenzeneApplicationBuilder UseEventHub(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventHubContext>> action, int? maxDegreeOfParallelism = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseEventHub(action);
+            azureApp.UseEventHub(action, maxDegreeOfParallelism);
         }
         return app;
     }

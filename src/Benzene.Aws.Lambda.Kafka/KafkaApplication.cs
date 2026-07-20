@@ -18,9 +18,14 @@ public class KafkaApplication : MiddlewareMultiApplication<KafkaEvent, KafkaCont
     /// Initializes a new instance of the <see cref="KafkaApplication"/> class.
     /// </summary>
     /// <param name="pipeline">The built Kafka middleware pipeline to run each record through.</param>
-    public KafkaApplication(IMiddlewarePipeline<KafkaContext> pipeline)
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many records from a batch run at once; <c>null</c> (the default) leaves the
+    /// fan-out unbounded - the original behavior.
+    /// </param>
+    public KafkaApplication(IMiddlewarePipeline<KafkaContext> pipeline, int? maxDegreeOfParallelism = null)
         : base(new TransportMiddlewarePipeline<KafkaContext>(TransportNames.Kafka, pipeline),
-            @event => @event.Records.Values.SelectMany(records => records.Select(record => new KafkaContext(@event, record))).ToArray()
+            @event => @event.Records.Values.SelectMany(records => records.Select(record => new KafkaContext(@event, record))).ToArray(),
+            maxDegreeOfParallelism
         )
     { }
 }

@@ -19,10 +19,16 @@ public class EventGridApplication : EntryPointMiddlewareApplication<EventGridTri
     /// </summary>
     /// <param name="pipeline">The built Event Grid middleware pipeline to run each event through.</param>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
-    public EventGridApplication(IMiddlewarePipeline<EventGridContext> pipeline, IServiceResolverFactory serviceResolverFactory)
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many events from a batched delivery run at once; <c>null</c> (the default)
+    /// leaves the fan-out unbounded - the original behavior. Has no effect on the default one-event-
+    /// per-invocation trigger cardinality.
+    /// </param>
+    public EventGridApplication(IMiddlewarePipeline<EventGridContext> pipeline, IServiceResolverFactory serviceResolverFactory, int? maxDegreeOfParallelism = null)
         : base(new MiddlewareMultiApplication<EventGridTriggerEvent[], EventGridContext>(
                 new TransportMiddlewarePipeline<EventGridContext>(TransportNames.EventGrid, pipeline),
-                events => events.Select(@event => new EventGridContext(@event)).ToArray()),
+                events => events.Select(@event => new EventGridContext(@event)).ToArray(),
+                maxDegreeOfParallelism),
             serviceResolverFactory)
     { }
 }

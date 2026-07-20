@@ -68,6 +68,12 @@ long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
 ## Important conventions
 - Consumption-side only; no producer. Envelope routing (`UseBenzeneMessage`) mirrors the Queue
   Storage adapter; the Kafka adapter has no envelope bridge (its records route by native topic).
+- **Bounded batch fan-out**: `UseEventHub(action, maxDegreeOfParallelism)` (both builder overloads,
+  and the `EventHubApplication` constructor) optionally caps how many events from a batch run
+  concurrently; `null` (the default) leaves the fan-out unbounded - the original behavior. Threaded
+  into the `MiddlewareMultiApplication`, which routes it through `Benzene.Core.Middleware`'s
+  `BoundedFanOut`. The fan-in `UseEventHubStream(...)` path processes the batch as one unit, so it
+  has nothing to bound.
 - No first-class topic/body mappers on `EventHubContext` itself (unlike `Benzene.Azure.EventHub`'s
   worker-mode `EventHubConsumerContext`, which has a full mapper set so `.UseMessageHandlers()`
   works directly) - this package routes by deserializing the event body into a Benzene message

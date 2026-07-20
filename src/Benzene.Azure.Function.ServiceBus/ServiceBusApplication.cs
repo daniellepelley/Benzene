@@ -75,7 +75,11 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
     {
         var explicitAck = messageActions != null && _options.AckMode == ServiceBusAckMode.Explicit;
 
-        var tasks = messages.Select(message => new ServiceBusContext(message)).Select(async context =>
+        // BoundedFanOut optionally caps how many messages run at once
+        // (ServiceBusOptions.MaxDegreeOfParallelism); unset leaves the fan-out unbounded, exactly as
+        // before.
+        var contexts = messages.Select(message => new ServiceBusContext(message));
+        await BoundedFanOut.WhenAllAsync(contexts, async context =>
             {
                 var acked = false;
 
@@ -122,9 +126,6 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
                     await messageActions!.AbandonMessageAsync(context.Message);
                     throw;
                 }
-            })
-            .ToArray();
-
-        await Task.WhenAll(tasks);
+            }, _options.MaxDegreeOfParallelism);
     }
 }

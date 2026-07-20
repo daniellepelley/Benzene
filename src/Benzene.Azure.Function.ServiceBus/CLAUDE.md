@@ -104,6 +104,12 @@ idempotent — see [Capability Matrix](../../docs/capability-matrix.md) and
   ack" below.
 - Supports both single-message triggers (the common case) and batched triggers (`IsBatched = true`) via
   the same `params ServiceBusReceivedMessage[]` dispatch signature.
+- **Bounded batch fan-out** (`ServiceBusOptions.MaxDegreeOfParallelism`): defaults to `null`
+  (unbounded - every message in a batched trigger starts at once, the original behavior). Set a
+  positive value to cap how many messages run concurrently, e.g. so a large batch can't open more
+  scoped DB connections than the pool allows. Applies to a batched trigger; a single-message trigger
+  has nothing to bound. Purely additive/opt-in; routed through `Benzene.Core.Middleware`'s
+  `BoundedFanOut`.
 
 ## Tests
 - `test/Benzene.Core.Test/Azure/ServiceBusPipelineTest.cs` - full pipeline happy path.

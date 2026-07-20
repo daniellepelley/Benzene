@@ -7,6 +7,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
@@ -52,8 +53,11 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
         // List: the continuations run concurrently under Task.WhenAll and List<T>.Add is not
         // thread-safe, so a shared-list append raced - it could drop a failed message's entry (which
         // then lands in successfulMessages below and gets DELETED from the queue despite failing -
-        // silent message loss), duplicate one, or throw mid-resize.
-        var tasks = @event.Messages.Select(message => (Message: message, Context: SqsConsumerMessageContext.CreateInstance(message))).Select(async pair =>
+        // silent message loss), duplicate one, or throw mid-resize. BoundedFanOut optionally caps how
+        // many messages run at once (SqsConsumerOptions.MaxDegreeOfParallelism); unset leaves the
+        // fan-out unbounded, exactly as before.
+        var pairs = @event.Messages.Select(message => (Message: message, Context: SqsConsumerMessageContext.CreateInstance(message)));
+        var results = await BoundedFanOut.WhenAllAsync(pairs, async pair =>
             {
                 try
                 {
@@ -78,10 +82,9 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
                 }
 
                 return null;
-            })
-            .ToArray();
+            }, _options.MaxDegreeOfParallelism);
 
-        var failedMessages = (await Task.WhenAll(tasks))
+        var failedMessages = results
             .Where(message => message != null)
             .ToList();
 

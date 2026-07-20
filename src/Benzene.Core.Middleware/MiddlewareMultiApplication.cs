@@ -13,12 +13,15 @@ namespace Benzene.Core.Middleware;
 /// <remarks>
 /// This application enables batch processing scenarios where a single event produces multiple contexts
 /// that can be processed concurrently through the same pipeline. Each context is processed in its own
-/// service scope, ensuring isolation between concurrent executions.
+/// service scope, ensuring isolation between concurrent executions. <paramref name="maxDegreeOfParallelism"/>
+/// optionally caps how many contexts run at once; <c>null</c> (the default) leaves the fan-out
+/// unbounded, so every context starts immediately - the original behavior.
 /// </remarks>
 public class MiddlewareMultiApplication<TEvent, TContext, TResult>(
     IMiddlewarePipeline<TContext> pipelineBuilder,
     Func<TEvent, TContext[]> mapper,
-    Func<TContext, TResult> resultMapper)
+    Func<TContext, TResult> resultMapper,
+    int? maxDegreeOfParallelism = null)
     : IMiddlewareApplication<TEvent, TResult[]>
 {
     /// <summary>
@@ -29,15 +32,12 @@ public class MiddlewareMultiApplication<TEvent, TContext, TResult>(
     /// <returns>A task that represents the asynchronous operation, containing an array of processing results.</returns>
     public Task<TResult[]> HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
-        var tasks = mapper(@event).Select(async context =>
+        return BoundedFanOut.WhenAllAsync(mapper(@event), async context =>
             {
                 using var scope = serviceResolverFactory.CreateScope();
                 await pipelineBuilder.HandleAsync(context, scope);
                 return resultMapper(context);
-            })
-            .ToArray();
-
-        return Task.WhenAll(tasks);
+            }, maxDegreeOfParallelism);
     }
 }
 
@@ -50,11 +50,14 @@ public class MiddlewareMultiApplication<TEvent, TContext, TResult>(
 /// <remarks>
 /// This application enables batch processing scenarios where a single event produces multiple contexts
 /// that can be processed concurrently through the same pipeline. Each context is processed in its own
-/// service scope, ensuring isolation between concurrent executions.
+/// service scope, ensuring isolation between concurrent executions. <paramref name="maxDegreeOfParallelism"/>
+/// optionally caps how many contexts run at once; <c>null</c> (the default) leaves the fan-out
+/// unbounded, so every context starts immediately - the original behavior.
 /// </remarks>
 public class MiddlewareMultiApplication<TEvent, TContext>(
     IMiddlewarePipeline<TContext> pipeline,
-    Func<TEvent, TContext[]> mapper)
+    Func<TEvent, TContext[]> mapper,
+    int? maxDegreeOfParallelism = null)
     : IMiddlewareApplication<TEvent>
 {
     /// <summary>
@@ -65,14 +68,11 @@ public class MiddlewareMultiApplication<TEvent, TContext>(
     /// <returns>A task representing the asynchronous operation that completes when all contexts are processed.</returns>
     public Task HandleAsync(TEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
-        var tasks = mapper(@event).Select(async context =>
+        return BoundedFanOut.WhenAllAsync(mapper(@event), async context =>
             {
                 using var scope = serviceResolverFactory.CreateScope();
                 await pipeline.HandleAsync(context, scope);
-            })
-            .ToArray();
-
-        return Task.WhenAll(tasks);
+            }, maxDegreeOfParallelism);
     }
 }
 

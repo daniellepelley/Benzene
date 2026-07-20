@@ -66,5 +66,10 @@ every other transport whose `IMessageHeadersGetter<TContext>` reads real headers
 - The Kafka record value is `byte[]`, decoded as UTF-8 JSON like every other transport; there is no
   `UseBenzeneMessage` envelope bridge (that's for Event Hubs and Queue Storage, whose messages
   carry no routable topic of their own — a Kafka record does).
+- **Bounded batch fan-out** (`KafkaOptions.MaxDegreeOfParallelism`): defaults to `null` (unbounded -
+  every record in the trigger batch starts at once, the original behavior). Set a positive value to
+  cap how many records run concurrently, e.g. so a large batch can't open more scoped DB connections
+  than the pool allows. Purely additive/opt-in; routed through `Benzene.Core.Middleware`'s
+  `BoundedFanOut`.
 - Coverage: `KafkaPipelineTest.cs`, `KafkaGettersTest.cs`, `KafkaFailureHandlingTest.cs`,
   `KafkaBatchAndNoOpTest.cs`, `KafkaW3CTraceContextTest.cs`.

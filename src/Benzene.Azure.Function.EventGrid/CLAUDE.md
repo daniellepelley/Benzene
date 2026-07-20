@@ -45,8 +45,11 @@ app.UseEventGrid(eventGrid => eventGrid.UseMessageHandlers());
   drives Event Grid's own retry/dead-letter machinery.
 - `EventGridApplication` — `EntryPointMiddlewareApplication<EventGridTriggerEvent[]>`, fan-out,
   transport tag `"event-grid"`; array shape covers batched ("many"-cardinality) triggers and tests.
-- `UseEventGrid(action)` (both builders, no-op off-Azure), `AddAzureEventGrid()`,
-  `EventGridRegistrations`, `HandleEventGridEvents(params ...)`, `HandleEventGridEvent(string)`.
+- `UseEventGrid(action, maxDegreeOfParallelism = null)` (both builders, no-op off-Azure),
+  `AddAzureEventGrid()`, `EventGridRegistrations`, `HandleEventGridEvents(params ...)`,
+  `HandleEventGridEvent(string)`. `maxDegreeOfParallelism` optionally bounds fan-out concurrency
+  (routed through `Benzene.Core.Middleware`'s `BoundedFanOut`); it only bites on a batched
+  ("many"-cardinality) trigger - the default one-event-per-invocation delivery has nothing to bound.
 
 ## Failure handling
 None in-package: a pipeline exception propagates and Event Grid's delivery retry (with backoff, up

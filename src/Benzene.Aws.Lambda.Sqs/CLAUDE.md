@@ -69,6 +69,10 @@ invocation populated. No application code changes needed for either fix.
   `BatchFailureMode = SqsBatchFailureMode.FailWholeBatch` to instead throw `SqsBatchProcessingException`
   on any failure, failing the whole invocation so SQS retries every message in the batch. Purely
   additive/opt-in - see `docs/cookbooks/handling-sqs-failures.md`
+- **Bounded batch fan-out** (`SqsOptions.MaxDegreeOfParallelism`): defaults to `null` (unbounded -
+  every record in the batch starts at once, the original behavior). Set a positive value to cap how
+  many records run concurrently, e.g. so a large batch can't open more scoped DB connections than the
+  pool allows. Purely additive/opt-in; routed through `Benzene.Core.Middleware`'s `BoundedFanOut`.
 - Message body deserialized to request object
 - The raw `SQSEvent.SQSMessage` (including its receipt handle) is reachable via the context, but this
   package does not delete messages itself — acknowledgment is handled by Lambda's event source mapping,

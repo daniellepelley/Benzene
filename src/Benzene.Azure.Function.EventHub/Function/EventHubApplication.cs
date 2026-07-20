@@ -19,10 +19,15 @@ public class EventHubApplication : EntryPointMiddlewareApplication<EventData[]>
     /// </summary>
     /// <param name="pipelineBuilder">The built Event Hub middleware pipeline to run each event through.</param>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
-    public EventHubApplication(IMiddlewarePipeline<EventHubContext> pipelineBuilder, IServiceResolverFactory serviceResolverFactory)
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many events from a batch run at once; <c>null</c> (the default) leaves the
+    /// fan-out unbounded - the original behavior.
+    /// </param>
+    public EventHubApplication(IMiddlewarePipeline<EventHubContext> pipelineBuilder, IServiceResolverFactory serviceResolverFactory, int? maxDegreeOfParallelism = null)
         : base(new MiddlewareMultiApplication<EventData[], EventHubContext>(
                 new TransportMiddlewarePipeline<EventHubContext>(TransportNames.EventHub, pipelineBuilder),
-        @event => @event.Select(EventHubContext.CreateInstance).ToArray()),
+        @event => @event.Select(EventHubContext.CreateInstance).ToArray(),
+                maxDegreeOfParallelism),
             serviceResolverFactory)
     { }
 }

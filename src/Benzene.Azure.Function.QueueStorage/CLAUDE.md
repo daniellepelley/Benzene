@@ -48,10 +48,13 @@ returns null, and routing comes from exactly two places:
 - `QueueStorageApplication` — `EntryPointMiddlewareApplication<QueueStorageMessage[]>` fanning
   out via `MiddlewareMultiApplication`, transport-tagged `"queue-storage"`. The array event shape
   exists for tests/multi-dispatch; the trigger itself delivers one message per invocation.
-- `UseQueueStorage(action)` (both `IAzureFunctionAppBuilder` and platform-neutral
-  `IBenzeneApplicationBuilder`, no-op off-Azure), `AddAzureQueueStorage()`,
+- `UseQueueStorage(action, maxDegreeOfParallelism = null)` (both `IAzureFunctionAppBuilder` and
+  platform-neutral `IBenzeneApplicationBuilder`, no-op off-Azure), `AddAzureQueueStorage()`,
   `QueueStorageRegistrations`, `HandleQueueMessages(params QueueStorageMessage[])`,
-  `HandleQueueMessage(string messageText)`.
+  `HandleQueueMessage(string messageText)`. `maxDegreeOfParallelism` optionally bounds fan-out
+  concurrency (routed through `Benzene.Core.Middleware`'s `BoundedFanOut`); it only bites on
+  multi-message dispatch - the trigger's default one-message-per-invocation delivery has nothing to
+  bound.
 
 ## Failure handling
 Deliberately none in this package: a pipeline exception propagates to the Functions host, whose

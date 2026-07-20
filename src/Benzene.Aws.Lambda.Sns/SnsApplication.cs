@@ -6,6 +6,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Aws.Lambda.Sns;
@@ -48,7 +49,10 @@ public class SnsApplication : IMiddlewareApplication<SNSEvent>
     /// </returns>
     public async Task HandleAsync(SNSEvent @event, IServiceResolverFactory serviceResolverFactory)
     {
-        var tasks = @event.Records.Select(record => SnsRecordContext.CreateInstance(@event, record)).Select(async context =>
+        // BoundedFanOut optionally caps how many records run at once (SnsOptions.MaxDegreeOfParallelism);
+        // unset leaves the fan-out unbounded, exactly as before.
+        var contexts = @event.Records.Select(record => SnsRecordContext.CreateInstance(@event, record));
+        await BoundedFanOut.WhenAllAsync(contexts, async context =>
             {
                 try
                 {
@@ -70,9 +74,6 @@ public class SnsApplication : IMiddlewareApplication<SNSEvent>
                             .LogError(ex, "Processing SNS message {messageId} failed", context.SnsRecord.Sns.MessageId);
                     }
                 }
-            })
-            .ToArray();
-
-        await Task.WhenAll(tasks);
+            }, _options.MaxDegreeOfParallelism);
     }
 }

@@ -17,9 +17,14 @@ public class S3Application : MiddlewareMultiApplication<S3Event, S3RecordContext
     /// Initializes a new instance of the <see cref="S3Application"/> class.
     /// </summary>
     /// <param name="pipeline">The built S3 middleware pipeline to run each record through.</param>
-    public S3Application(IMiddlewarePipeline<S3RecordContext> pipeline)
+    /// <param name="maxDegreeOfParallelism">
+    /// Optionally caps how many records from a batch run at once; <c>null</c> (the default) leaves the
+    /// fan-out unbounded - the original behavior.
+    /// </param>
+    public S3Application(IMiddlewarePipeline<S3RecordContext> pipeline, int? maxDegreeOfParallelism = null)
         : base(
             new TransportMiddlewarePipeline<S3RecordContext>(TransportNames.S3, pipeline),
-            @event => @event.Records.Select(record => S3RecordContext.CreateInstance(@event, record)).ToArray())
+            @event => @event.Records.Select(record => S3RecordContext.CreateInstance(@event, record)).ToArray(),
+            maxDegreeOfParallelism)
     { }
 }

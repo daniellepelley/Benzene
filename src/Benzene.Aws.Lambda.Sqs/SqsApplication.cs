@@ -6,6 +6,7 @@ using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Aws.Lambda.Sqs;
@@ -53,7 +54,10 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
         // the continuations run concurrently under Task.WhenAll, and List<T>.Add is not thread-safe,
         // so a shared-list append raced - it could drop a failed record's id (SQS then deletes a
         // message that actually failed - silent message loss), duplicate one, or throw mid-resize.
-        var tasks = @event.Records.Select(record => SqsMessageContext.CreateInstance(@event, record)).Select(async context =>
+        // BoundedFanOut optionally caps how many records run at once (SqsOptions.MaxDegreeOfParallelism);
+        // unset leaves the fan-out unbounded, exactly as before.
+        var contexts = @event.Records.Select(record => SqsMessageContext.CreateInstance(@event, record));
+        var results = await BoundedFanOut.WhenAllAsync(contexts, async context =>
             {
                 try
                 {
@@ -81,10 +85,9 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                 }
 
                 return null;
-            })
-            .ToArray();
+            }, _options.MaxDegreeOfParallelism);
 
-        var batchItemFailures = (await Task.WhenAll(tasks))
+        var batchItemFailures = results
             .Where(failure => failure != null)
             .ToList();
 

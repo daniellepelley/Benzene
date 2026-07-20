@@ -32,4 +32,14 @@ public class ServiceBusOptions
     /// that enum's own doc comments for the trigger configuration it requires.
     /// </summary>
     public ServiceBusAckMode AckMode { get; set; } = ServiceBusAckMode.AutoComplete;
+
+    /// <summary>
+    /// Gets or sets the maximum number of messages from a single trigger batch processed concurrently.
+    /// <c>null</c> (the default) leaves the fan-out unbounded - every message in the batch starts at
+    /// once, the original behavior. Set a positive value to cap concurrency, e.g. to stop a large
+    /// batched trigger from opening more scoped database connections than the pool allows. A value
+    /// &lt;= 0 is treated the same as <c>null</c> (unbounded). Applies to a batched trigger
+    /// (<c>IsBatched = true</c>); a single-message trigger has nothing to bound.
+    /// </summary>
+    public int? MaxDegreeOfParallelism { get; set; }
 }

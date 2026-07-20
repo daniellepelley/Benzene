@@ -10,4 +10,13 @@ public class SqsConsumerOptions
     /// <see cref="SqsConsumerAckMode.WholeBatch"/>.
     /// </summary>
     public SqsConsumerAckMode AckMode { get; set; } = SqsConsumerAckMode.WholeBatch;
+
+    /// <summary>
+    /// Gets or sets the maximum number of messages from a single poll batch processed concurrently.
+    /// <c>null</c> (the default) leaves the fan-out unbounded - every message in the batch starts at
+    /// once, the original behavior. Set a positive value to cap concurrency, e.g. to stop a large
+    /// batch from opening more scoped database connections than the pool allows. A value &lt;= 0 is
+    /// treated the same as <c>null</c> (unbounded).
+    /// </summary>
+    public int? MaxDegreeOfParallelism { get; set; }
 }
