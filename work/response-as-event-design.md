@@ -11,7 +11,10 @@ this doc that say `Benzene.Extras.ResponseEvents` are historical) and the rest w
 `IServiceResolver.FindUnmappedResponseHandlers()` / `LogUnmappedResponseHandlers(...)`, advisory
 per the design. **F2 is now fixed** - one-way BenzeneMessage hosts (Event Hub, Queue Storage) skip
 serializing the discarded response via a scoped `BenzeneMessageResponseSuppression` + auto-applied
-`SuppressResponse()`. The outbox remains open as listed in §2.3.
+`SuppressResponse()`. **The outbox is intentionally not a framework feature**: the
+`IResponseEventPublisher` seam (swappable, resolved in the handler's scope so it shares the
+handler's `DbContext`) is enough for a business to plug in its own transactional outbox - see the
+`docs/cookbooks/transactional-outbox.md` cookbook. Nothing from the review remains open.
 **Scope:** (1) audit of every transport binding's result mapping, verifying that fire-and-forget
 transports do not carry or emit response payloads; (2) a design proposal for first-class support
 of the *response-as-event* pattern — a request/response message handler on a fire-and-forget

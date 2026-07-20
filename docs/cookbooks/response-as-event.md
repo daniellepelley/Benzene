@@ -192,10 +192,11 @@ services.AddScoped<IResponseEventPublisher, MyOutboxPublisher>();
   `Accepted` result with no payload, and a mapping never fires without a payload.
 - **This is not an outbox.** The publish happens after the handler's work, in the same
   invocation; a crash between the two can drop the event (or, with `FailMessage`, re-run the
-  handler). If you need transactional guarantees, put an outbox behind
-  `IResponseEventPublisher`.
+  handler). If you need the event to commit atomically with the DB write, put an outbox behind
+  `IResponseEventPublisher` — see [Transactional Outbox](transactional-outbox.md).
 
 ## Related
 
+- [Transactional Outbox](transactional-outbox.md) — publish the event atomically with the DB write.
 - [SNS Fan-Out Pattern](sns-fan-out.md) — publishing the same event to many consumers.
 - [Idempotency](idempotency.md) — required for `FailMessage` redelivery semantics.
