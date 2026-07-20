@@ -1,12 +1,15 @@
+using System;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.Serialization;
 
-namespace Benzene.Extras.Request;
+namespace Benzene.Test.Examples;
 
 /// <summary>
-/// An <see cref="IMediaFormat{TContext}"/> built from inline delegates, for registering a format
-/// without declaring a dedicated class (mirrors the pre-Phase-2 <c>InlineSerializerOption</c>).
+/// Test helper: an <see cref="IMediaFormat{TContext}"/> built from inline delegates, so tests can
+/// stand up a media format without declaring a dedicated class. (Formerly shipped in
+/// <c>Benzene.Extras</c>; relocated here when that package was decommissioned, as tests were its
+/// only consumers.)
 /// </summary>
 /// <typeparam name="TContext">The transport-specific context type this format applies to.</typeparam>
 public class InlineMediaFormat<TContext> : IMediaFormat<TContext>

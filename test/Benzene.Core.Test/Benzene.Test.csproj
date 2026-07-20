@@ -120,7 +120,7 @@
     <ProjectReference Include="..\..\src\Benzene.Core.Versioning\Benzene.Core.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.DataAnnotations\Benzene.DataAnnotations.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.Extras\Benzene.Extras.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.ResponseEvents\Benzene.ResponseEvents.csproj" />
     <ProjectReference Include="..\..\src\Benzene.FluentValidation\Benzene.FluentValidation.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Schema\Benzene.HealthChecks.Schema.csproj" />
     <ProjectReference Include="..\..\src\Benzene.GoogleCloud.Functions.Http\Benzene.GoogleCloud.Functions.Http.csproj" />

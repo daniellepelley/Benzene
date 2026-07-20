@@ -1,4 +1,4 @@
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// What <see cref="ResponseEventsMiddleware{TRequest,TResponse}"/> does when publishing a response

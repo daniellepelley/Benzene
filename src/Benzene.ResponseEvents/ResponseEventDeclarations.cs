@@ -1,6 +1,6 @@
 using Benzene.Abstractions.Messages;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// A set of declaration-only published-event definitions - events this service sends (typically

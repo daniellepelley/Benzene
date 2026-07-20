@@ -1,6 +1,6 @@
 using Benzene.Abstractions.Results;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// Fluent configuration surface for one pipeline's response-event mappings, passed to the callback

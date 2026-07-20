@@ -1,10 +1,10 @@
 using System.Linq;
 using Benzene.Core.Messages;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Benzene.Results;
 using Xunit;
 
-namespace Benzene.Test.Extras.ResponseEvents;
+namespace Benzene.Test.ResponseEvents;
 
 public class ResponseEventMappingTest
 {

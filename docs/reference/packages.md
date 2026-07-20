@@ -220,7 +220,7 @@ topics. See [Terraform](../terraform.md) and [OpenAPI Specification](../spec.md)
 | `Benzene.CodeGen.LambdaTestTool` | Generate per-topic test payload files (BenzeneMessage envelope, SNS, SQS, API Gateway) for the AWS Lambda Test Tool — see [Payload Testing](../payload-testing.md). |
 | `Benzene.CodeGen.SourceGenerators` | Roslyn source generator that discovers message handlers at compile time (an alternative to runtime reflection). |
 | `Benzene.CodeGen.Cli` / `Benzene.CodeGen.Cli.Core` | The `benzene` code-generation command-line tool and its core. |
-| `Benzene.Extras` | Additional/optional middleware — event broadcasting and JSON-patch (`PATCH`) support. |
+| `Benzene.ResponseEvents` | Republish a handler's response payload as a follow-up event on fire-and-forget transports (`UseResponseEvents`) — see [Response as Event](../cookbooks/response-as-event.md). |
 | `Benzene.Tools` | Shared tooling helpers, including inline start-ups and builders used by the test host and CLI. |
 
 ## Testing support

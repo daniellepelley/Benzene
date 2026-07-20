@@ -2,7 +2,7 @@ using Benzene.Abstractions.Results;
 using Benzene.Clients;
 using Void = Benzene.Abstractions.Results.Void;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// The default <see cref="IResponseEventPublisher"/>: publishes through

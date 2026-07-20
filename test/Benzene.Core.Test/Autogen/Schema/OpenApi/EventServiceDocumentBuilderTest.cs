@@ -2,7 +2,7 @@ using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Messages;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Benzene.Http.Routing;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;

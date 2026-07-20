@@ -1,5 +1,5 @@
 using System;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Microsoft.OpenApi;

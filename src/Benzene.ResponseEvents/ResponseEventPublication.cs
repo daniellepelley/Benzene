@@ -1,4 +1,4 @@
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// The outcome of a matched <see cref="IResponseEventMapping"/>: the event topic to publish on and

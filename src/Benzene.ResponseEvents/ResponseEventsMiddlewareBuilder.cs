@@ -2,7 +2,7 @@ using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// <see cref="IHandlerMiddlewareBuilder"/> that contributes a

@@ -1,7 +1,7 @@
 using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Results;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// One rule for turning a handler's response into a follow-up event. Registered per pipeline via

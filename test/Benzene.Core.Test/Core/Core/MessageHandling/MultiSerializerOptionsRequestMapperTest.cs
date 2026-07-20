@@ -8,7 +8,7 @@ using Benzene.Abstractions.Serialization;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
-using Benzene.Extras.Request;
+using Benzene.Test.Examples;
 using Benzene.Test.Examples;
 using Xunit;
 

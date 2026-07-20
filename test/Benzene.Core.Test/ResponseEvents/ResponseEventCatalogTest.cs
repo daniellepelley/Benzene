@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
 using Benzene.Abstractions.Messages;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Xunit;
 
-namespace Benzene.Test.Extras.ResponseEvents;
+namespace Benzene.Test.ResponseEvents;
 
 public class ResponseEventCatalogTest
 {

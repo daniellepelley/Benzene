@@ -8,16 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
-- **BREAKING:** `Benzene.Extras`: deleted the legacy Broadcast mechanism (`Benzene.Extras.Broadcast`) -
-  `UseBroadcastEvent()`, `AddBroadcastEvent(...)`, `IEventSender`, `BroadcastEventMiddleware`,
-  `BroadcastEventMiddlewareBuilder`, `BroadcastEventChecker`, `IBroadcastEventChecker`,
-  `BroadcastEventDefinition`. It hardwired the CRUD create/update/delete → created/updated/deleted
-  mapping, published through an `IEventSender` port that had no shipped implementation, and never
-  enforced its declarations at runtime. Replaced by `Benzene.Extras.ResponseEvents`:
-  `UseResponseEvents(events => events.MapCrudConvention())` reproduces the topic convention through
-  outbound routing (`IBenzeneMessageSender`), and `AddResponseEventDeclarations(...)` +
-  `ResponseEventDefinition` cover the declaration-for-specs use (`AddBroadcastEvent`'s only working
-  role). See `docs/cookbooks/response-as-event.md`.
+- **BREAKING:** decommissioned the `Benzene.Extras` package entirely - it was a grab-bag of
+  code carried over from a third-party project, most of it specialized and unused, which the
+  framework shouldn't ship. The one genuinely-framework capability in it, response events, is
+  promoted to its own **new `Benzene.ResponseEvents` package** (see Added). The rest is deleted:
+  - the legacy Broadcast mechanism (`Benzene.Extras.Broadcast`) - `UseBroadcastEvent()`,
+    `AddBroadcastEvent(...)`, `IEventSender`, `BroadcastEventMiddleware`,
+    `BroadcastEventMiddlewareBuilder`, `BroadcastEventChecker`, `IBroadcastEventChecker`,
+    `BroadcastEventDefinition`. It hardwired the CRUD create/update/delete →
+    created/updated/deleted mapping, published through an `IEventSender` port that had no shipped
+    implementation, and never enforced its declarations at runtime. Superseded by
+    `UseResponseEvents(events => events.MapCrudConvention())` +
+    `AddResponseEventDeclarations(...)`/`ResponseEventDefinition` (the latter covering
+    `AddBroadcastEvent`'s only working role, spec declaration).
+  - JSON merge-patch support (`Benzene.Extras.Patches`: `IPatchMessage`, `PatchMessage`,
+    `PatchExtensions`), the `ResponseBuilder`/`IResponseBuilder` helpers, the
+    `RawJsonMessage`/`Base64JsonMessage` result wrappers, and `Constants` - all specialized and
+    with no consumers in the framework.
+  - `InlineMediaFormat<TContext>` - it had no production consumers (only tests used it as an
+    `IMediaFormat<TContext>` double), so it moved into the test project as a test helper rather
+    than shipping.
+  See `docs/migration-alpha-to-1.0.md` for the mapping.
 - **BREAKING:** `Benzene.Clients` / `Benzene.Clients.Aws`: deleted the alpha-era outbound client
   mechanism (Step 4 of `work/benzene-clients-redesign-plan.md`), `[Obsolete]` for one release cycle
   before removal. Deleted: `ClientsBuilder`, `SingleClientsBuilder`, `IBenzeneMessageClientFactory`,
@@ -42,14 +53,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   around them was removed.
 
 ### Added
-- `Benzene.Extras`: `UseResponseEvents(events => ...)` (`Benzene.Extras.ResponseEvents`) -
-  republish a request/response handler's response payload as a follow-up event on fire-and-forget
-  transports (e.g. SQS `order:create` → broadcast `order:created`). Declarative per-pipeline
-  mappings (`Map`, `Map<TPayload>` with predicate/projector, `MapCrudConvention()`, custom
+- **New package `Benzene.ResponseEvents`**: `UseResponseEvents(events => ...)` - republish a
+  request/response handler's response payload as a follow-up event on fire-and-forget transports
+  (e.g. SQS `order:create` → broadcast `order:created`). Declarative per-pipeline mappings
+  (`Map`, `Map<TPayload>` with predicate/projector, `MapCrudConvention()`, custom
   `IResponseEventMapping`), publishing through `IBenzeneMessageSender` outbound routes
   (correlation/trace stamping, startup validation), `PublishFailureMode.FailMessage`(default)/
-  `LogAndContinue` failure policy, and introspection via `IResponseEventCatalog`, which also feeds
-  generated AsyncAPI/event-service specs. `Benzene.Extras` now references `Benzene.Clients`.
+  `LogAndContinue` failure policy, `AddResponseEventDeclarations(...)` for declaration-only
+  published events, and introspection via `IResponseEventCatalog`, which also feeds generated
+  AsyncAPI/event-service specs. Depends on `Benzene.Clients` + `Benzene.Core.MessageHandlers`.
   Design: `work/response-as-event-design.md`; usage: `docs/cookbooks/response-as-event.md`.
 - `Benzene.Clients.Aws` / `Benzene.Clients`: closed a gap in Step 1 of the outbound redesign
   (`work/benzene-clients-redesign-plan.md`) - the `Benzene.Clients.Aws`-side factory/extension

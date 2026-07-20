@@ -10,7 +10,7 @@ using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
 using Benzene.Test.Examples;
@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 using Xunit;
 using Void = Benzene.Abstractions.Results.Void;
 
-namespace Benzene.Test.Extras.ResponseEvents;
+namespace Benzene.Test.ResponseEvents;
 
 // Note: the handler deliberately reuses ExampleRequestPayload for both request and response (like
 // DynamoDbMessagePipelineTest's handler does), so whole-assembly spec-generation tests

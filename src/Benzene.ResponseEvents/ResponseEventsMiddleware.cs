@@ -4,7 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Results;
 using Microsoft.Extensions.Logging;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// Handler middleware that republishes a handler's response as follow-up events, per the pipeline's

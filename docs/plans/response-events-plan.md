@@ -1,5 +1,11 @@
 # Response Events Plan — `UseResponseEvents`
 
+> **Superseded note (post-implementation):** this plan built `UseResponseEvents` inside
+> `Benzene.Extras`. That package was subsequently decommissioned; the response-events code now
+> lives in its own **`Benzene.ResponseEvents`** package (references below to
+> `Benzene.Extras/ResponseEvents` and `Benzene.Extras.ResponseEvents` are historical). See
+> `docs/migration-alpha-to-1.0.md`.
+
 ## Context
 
 `work/response-as-event-design.md` (2026-07-19) reviewed the transport pipelines' result

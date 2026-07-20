@@ -17,7 +17,7 @@ using Benzene.Core.Middleware;
 using Benzene.Abstractions.Messages;
 using Benzene.Diagnostics;
 using Benzene.Diagnostics.Correlation;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Benzene.FluentValidation;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;

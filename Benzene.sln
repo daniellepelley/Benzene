@@ -172,7 +172,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Abstractions.Messag
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core.Messages", "src\Benzene.Core.Messages\Benzene.Core.Messages.csproj", "{6E34632B-D67E-4EA4-ACF6-D6236615DB55}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Extras", "src\Benzene.Extras\Benzene.Extras.csproj", "{4B747F2C-9B9A-4980-9FBD-B092F3DBA48B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.ResponseEvents", "src\Benzene.ResponseEvents\Benzene.ResponseEvents.csproj", "{4B747F2C-9B9A-4980-9FBD-B092F3DBA48B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Aws.Lambda.Kafka", "src\Benzene.Aws.Lambda.Kafka\Benzene.Aws.Lambda.Kafka.csproj", "{57F93148-FDD9-4FCE-95E1-E75B858D12D1}"
 EndProject

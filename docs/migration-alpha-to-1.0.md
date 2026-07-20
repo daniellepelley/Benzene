@@ -340,15 +340,23 @@ Generated clients from `Benzene.CodeGen.Client` already migrated onto
 `IBenzeneMessageSender` in an earlier 1.0-prep release — if you regenerate
 your client SDKs, no further action is needed there.
 
-## Breaking: removed `UseBroadcastEvent()` / `IEventSender` (Benzene.Extras)
+## Breaking: `Benzene.Extras` decommissioned
+
+`Benzene.Extras` was a grab-bag of code carried over from a third-party
+project. Most of it was specialized and unused, so the package has been
+**removed**. Its one genuinely-framework capability — response events — is
+promoted to a new **`Benzene.ResponseEvents`** package; everything else is
+deleted.
+
+### Response events → `Benzene.ResponseEvents`
 
 The alpha-era Broadcast mechanism — a hardwired create/update/delete →
 created/updated/deleted republish of handler responses through an
-`IEventSender` port that shipped no implementation — has been **removed**,
-superseded by the declarative `Benzene.Extras.ResponseEvents` feature
-(see `docs/cookbooks/response-as-event.md`).
+`IEventSender` port that shipped no implementation — is superseded by the
+declarative `UseResponseEvents` feature, now in its own package
+`Benzene.ResponseEvents` (see `docs/cookbooks/response-as-event.md`).
 
-| Alpha | 1.0 |
+| Alpha (`Benzene.Extras.Broadcast`) | 1.0 (`Benzene.ResponseEvents`) |
 |---|---|
 | `UseBroadcastEvent()` | `UseResponseEvents(events => events.MapCrudConvention())` — same topic convention, published via `IBenzeneMessageSender` outbound routes |
 | `IEventSender` (self-implemented) | `IResponseEventPublisher` (a default over `IBenzeneMessageSender` ships; replace the scoped registration to customize) |
@@ -361,6 +369,19 @@ gives the publish retry, correlation-id and W3C-trace stamping, and startup
 validation). `Benzene.Schema.OpenApi`'s spec-builder surface
 (`AddBroadcastEventDefinitions(...)` on the AsyncAPI/event-service document
 builders) is unchanged — it consumes any `IMessageDefinition`s.
+
+### Everything else in `Benzene.Extras` — deleted
+
+No replacement ships for these; they had no consumers in the framework. If
+you depended on one, copy it from git history into your own project:
+
+| Removed | Notes |
+|---|---|
+| `Benzene.Extras.Patches` (`IPatchMessage`, `PatchMessage`, `PatchExtensions`) | JSON merge-patch helpers |
+| `ResponseBuilder` / `IResponseBuilder` | response-construction helper |
+| `RawJsonMessage` / `Base64JsonMessage` | raw/base64 result payload wrappers |
+| `Constants` | `<missing>`/`<unnamed>`/content-type string constants |
+| `InlineMediaFormat<TContext>` | had no production consumers; relocated into Benzene's own test project as a test helper. Implement `IMediaFormat<TContext>` directly (or copy the class) if you need an inline format |
 
 ## New: unified `BenzeneTestHost`
 

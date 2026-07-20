@@ -1,6 +1,6 @@
 using Benzene.Abstractions.Messages;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// App-wide, queryable view of every response-event mapping registered by any pipeline's

@@ -4,7 +4,7 @@ using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Serialization;
-using Benzene.Extras.Request;
+using Benzene.Test.Examples;
 using Benzene.Xml;
 using Moq;
 using Xunit;

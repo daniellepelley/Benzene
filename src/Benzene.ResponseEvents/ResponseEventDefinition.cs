@@ -1,7 +1,7 @@
 using Benzene.Abstractions.Messages;
 using Benzene.Core.Messages;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// An <see cref="IMessageDefinition"/> describing one event this service publishes as a mapped

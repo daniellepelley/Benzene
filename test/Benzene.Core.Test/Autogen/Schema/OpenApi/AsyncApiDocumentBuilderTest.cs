@@ -1,6 +1,6 @@
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
-using Benzene.Extras.ResponseEvents;
+using Benzene.ResponseEvents;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;
 using LEGO.AsyncAPI;

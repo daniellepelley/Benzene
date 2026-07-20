@@ -1,6 +1,6 @@
 using Benzene.Abstractions.Results;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// The outbound port <see cref="ResponseEventsMiddleware{TRequest,TResponse}"/> publishes matched

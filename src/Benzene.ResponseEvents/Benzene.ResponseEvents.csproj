@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.ResponseEvents</AssemblyName>
+    <RootNamespace>Benzene.ResponseEvents</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions.Messages\Benzene.Abstractions.Messages.csproj" />
+    <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
+    <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Core.Messages\Benzene.Core.Messages.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -12,7 +12,7 @@ system wants — "the order *was* created, here it is." Publishing it by hand fr
 handler works, but couples the handler to messaging concerns and repeats the same boilerplate in
 every handler.
 
-`UseResponseEvents` (in `Benzene.Extras`) does this declaratively: the handler stays a pure
+`UseResponseEvents` (in `Benzene.ResponseEvents`) does this declaratively: the handler stays a pure
 request/response handler (reusable on HTTP, where the same payload *is* the response body), and
 the pipeline decides that on this transport, the response becomes an event.
 
@@ -24,7 +24,7 @@ the pipeline decides that on this transport, the response becomes an event.
 ## Installation
 
 ```bash
-dotnet add package Benzene.Extras
+dotnet add package Benzene.ResponseEvents
 ```
 
 ## Step-by-Step Implementation
@@ -146,8 +146,8 @@ foreach (var mapping in catalog.Mappings)
 ```
 
 Mappings declared with `Map<TPayload>` also appear in generated specs: the catalog is registered
-as an `IMessageDefinitionFinder<IMessageDefinition>`, the same seam spec builders already read
-broadcast-event declarations from.
+as an `IMessageDefinitionFinder<IMessageDefinition>`, the seam spec builders read published-event
+declarations from.
 
 ## Swapping the publisher
 

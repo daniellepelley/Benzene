@@ -1,7 +1,7 @@
 using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Results;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// The standard <see cref="IResponseEventMapping"/>: a fixed source topic mapped to a fixed event

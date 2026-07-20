@@ -2,7 +2,7 @@ using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Results;
 using Benzene.Results;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// The CRUD naming convention as one opt-in <see cref="IResponseEventMapping"/>: a topic whose

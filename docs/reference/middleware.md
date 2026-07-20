@@ -274,7 +274,7 @@ such as authorization.
 
 ### `UseResponseEvents(...)`
 
-**Package:** `Benzene.Extras` (`Benzene.Extras.ResponseEvents`). Republishes a handler's response
+**Package:** `Benzene.ResponseEvents`. Republishes a handler's response
 payload as a follow-up event, per declarative per-pipeline mappings — e.g. an SQS `order:create`
 handler's `OrderCreated` response is broadcast on `order:created`. Events publish through
 `IBenzeneMessageSender`, so each event topic needs an `AddOutboundRouting` route (which also

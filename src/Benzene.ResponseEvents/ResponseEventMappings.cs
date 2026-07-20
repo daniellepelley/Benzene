@@ -1,7 +1,7 @@
 using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Results;
 
-namespace Benzene.Extras.ResponseEvents;
+namespace Benzene.ResponseEvents;
 
 /// <summary>
 /// One pipeline's immutable set of response-event mappings plus its publish-failure policy. Built by
