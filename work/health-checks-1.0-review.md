@@ -30,8 +30,10 @@ API decisions to make before the freeze, two verified integration bugs, and prov
 > (`Benzene.HealthChecks.Disk`), AWS SNS (`SnsHealthCheck` in `Benzene.Clients.Aws.Sns`), DynamoDB
 > (`Benzene.HealthChecks.DynamoDb`), and the first Azure provider — Service Bus
 > (`Benzene.HealthChecks.Azure.ServiceBus`, read-only `PeekMessage` on a queue/subscription).
-> Remaining T3.1 gaps: Azure Event Hub / Queue Storage / Event Grid, Kafka, host memory. T3.2/T3.3
-> (drain-on-SIGTERM, startup/warmup probe, non-Lambda CLI) still open. Below kept as the record.
+> Remaining T3.1 gaps: Azure Event Hub / Queue Storage / Event Grid, Kafka. (Host memory DONE —
+> `MemoryHealthCheck`/`AddMemoryCheck` in `Benzene.HealthChecks`, working-set ceiling with optional
+> warning, no external dependency; `test/Benzene.Core.Test/HealthChecks/MemoryHealthCheckTest.cs`.)
+> T3.2/T3.3 (drain-on-SIGTERM, startup/warmup probe, non-Lambda CLI) still open. Below kept as the record.
 
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way

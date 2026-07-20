@@ -192,6 +192,26 @@ the exception's message in `Data["Exception"]`. `Extensions.BuildHealthCheck(Fun
 uses this to turn a check *construction* failure (e.g. a factory that throws) into a reportable
 result instead of an unhandled exception.
 
+### `MemoryHealthCheck` (`Benzene.HealthChecks`)
+
+A host self-check on this process's memory. `Type` is `"Memory"`; it measures the process working
+set (`Environment.WorkingSet` — the physical memory a container/host OOM-killer watches) and reports
+`Failed` at or above a hard ceiling, an optional `Warning` at or above a soft ceiling (degraded but
+not fatal — does not flip aggregate `IsHealthy`), otherwise healthy. `Data` includes
+`WorkingSetBytes`, `ManagedHeapBytes` (`GC.GetTotalMemory`), `MaximumBytes`, and the GC-reported
+`GcTotalAvailableBytes`/`GcHighLoadThresholdBytes` for diagnostics.
+
+```csharp
+using Benzene.HealthChecks;
+
+app.UseHealthCheck("healthcheck", x => x
+    .AddMemoryCheck(maximumBytes: 900 * 1024 * 1024, warningBytes: 700 * 1024 * 1024));
+```
+
+Set the ceiling below the container/pod memory limit so a readiness probe flips before the runtime
+is OOM-killed. It has no external dependency (only `Environment`/`GC`), so unlike `DiskHealthCheck`
+it ships in `Benzene.HealthChecks` directly rather than a dedicated package.
+
 ### `TimeOutHealthCheck` / `ExceptionHandlingHealthCheck` (internal safety net)
 
 These two are `internal` — you never construct them yourself, but it's worth knowing they run

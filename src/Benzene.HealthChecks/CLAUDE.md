@@ -67,6 +67,13 @@ for the full Kubernetes wiring guide.
   defaults to `None`.
 - `FailedHealthCheck`/`InlineHealthCheck`/`SimpleHealthCheck` - small `IHealthCheck` helpers (a
   fixed-failure stub, a func-backed wrapper, and an always-healthy default, respectively)
+- `MemoryHealthCheck` (`AddMemoryCheck(maximumBytes, warningBytes?)`) - a host self-check on the
+  process working set (`Environment.WorkingSet`, the physical memory a container/host OOM-killer
+  watches); `Failed` at/above the maximum, optional `Warning` at/above a soft ceiling, else `Ok`.
+  Includes managed-heap size and the GC-reported memory limit in the result data. Lives here rather
+  than in a dedicated package (unlike `Benzene.HealthChecks.Disk`/`.Tcp`) because it has no external
+  dependency - just `Environment`/`GC`. Covered by
+  `test/Benzene.Core.Test/HealthChecks/MemoryHealthCheckTest.cs`.
 - `HealthCheckNamer` - dedupes health check names in the aggregated response when multiple checks
   share the same `Type`
 
