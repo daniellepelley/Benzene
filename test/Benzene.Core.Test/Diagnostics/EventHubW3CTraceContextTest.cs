@@ -20,6 +20,7 @@ namespace Benzene.Test.Diagnostics;
 /// <c>Benzene.Test.Diagnostics.W3CTraceContextTest</c>, wired for the Event Hub trigger's
 /// fan-out <see cref="EventHubContext"/> instead of <c>BenzeneMessageContext</c>.
 /// </summary>
+[Collection("W3CTraceContextListeners")]
 public class EventHubW3CTraceContextTest
 {
     private static (List<Activity> Activities, ActivityListener Listener) ListenToBenzeneActivities()

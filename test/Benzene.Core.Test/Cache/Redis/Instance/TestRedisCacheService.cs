@@ -35,6 +35,11 @@ internal class TestRedisCacheService : RedisCacheService
         return CreatePrefixActions("TEST_");
     }
 
+    public ICacheInvalidateActions GetTestPrefixActions(string prefix)
+    {
+        return CreatePrefixActions(prefix);
+    }
+
     public ICacheInvalidateActions GetTestWildcardActions()
     {
         return CreateWildcardActions("TEST_*");

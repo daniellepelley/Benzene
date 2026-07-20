@@ -63,12 +63,20 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
     public async Task HandleAsync(TContext context, Func<Task> next)
     {
         var httpRequest = _httpRequestAdapter.Map(context).AsLowerCase();
-        if (httpRequest.Method.ToLowerInvariant() != "options")
+        var isOptions = httpRequest.Method.ToLowerInvariant() == "options";
+
+        // Set the CORS response headers BEFORE next() runs. next() dispatches the handler and, on the
+        // real-server transports (ASP.NET Core, self-host), writes+flushes/finalizes the response -
+        // after which the headers are read-only and setting them throws. Ordering didn't matter on the
+        // buffered API Gateway transport, which is why this only bit the real servers. AddCorsHeaders
+        // reads only the request, so moving it earlier is behaviour-preserving. OPTIONS never calls
+        // next() (AddCorsHeaders writes the preflight response itself).
+        await AddCorsHeaders(context, httpRequest);
+
+        if (!isOptions)
         {
             await next();
         }
-
-        await AddCorsHeaders(context, httpRequest);
     }
 
     private async Task AddCorsHeaders(TContext context, HttpRequest httpRequest)

@@ -32,10 +32,17 @@ public class ContextDictionaryBuilder<TContext> : IContextDictionaryBuilder<TCon
     /// <returns>A dictionary containing all extracted key-value pairs with non-empty values.</returns>
     public IDictionary<string, string> Build(IServiceResolver serviceResolver, TContext context)
     {
-        return _list.Select(
-                func => func(serviceResolver, context))
-            .SelectMany(x => x)
-            .Where(x => !string.IsNullOrEmpty(x.Value))
-            .ToDictionary(x => x.Key, x => x.Value);
+        // Last-wins on a duplicate key rather than ToDictionary's throw: two configured extractors (or
+        // one returning a key another already produced) would otherwise crash the whole log-scope build
+        // mid-request instead of the later value simply overriding the earlier.
+        var result = new Dictionary<string, string>();
+        foreach (var pair in _list.Select(func => func(serviceResolver, context))
+                     .SelectMany(x => x)
+                     .Where(x => !string.IsNullOrEmpty(x.Value)))
+        {
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
     }
 }

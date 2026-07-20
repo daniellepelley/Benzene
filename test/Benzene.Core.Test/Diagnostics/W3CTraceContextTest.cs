@@ -11,6 +11,10 @@ using Xunit;
 
 namespace Benzene.Test.Diagnostics;
 
+// These W3C test classes each attach a process-global ActivityListener to the "Benzene" source and
+// assert Single(activity where OperationName == "W3CTraceContext.Root"). Run in parallel they capture
+// each other's Root activities and flake, so pin them to one non-parallel collection.
+[Collection("W3CTraceContextListeners")]
 public class W3CTraceContextTest
 {
     private static (List<Activity> Activities, ActivityListener Listener) ListenToBenzeneActivities()

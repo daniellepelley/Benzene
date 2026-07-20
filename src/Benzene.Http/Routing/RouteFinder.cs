@@ -1,4 +1,7 @@
-﻿namespace Benzene.Http.Routing;
+﻿using System;
+using System.Linq;
+
+namespace Benzene.Http.Routing;
 
 /// <summary>
 /// Provides the default implementation of <see cref="IRouteFinder"/> that matches HTTP requests to configured endpoints.
@@ -19,8 +22,22 @@ public class RouteFinder : IRouteFinder
     /// <param name="httpEndpointFinder">The endpoint finder used to discover available HTTP endpoints.</param>
     public RouteFinder(IHttpEndpointFinder httpEndpointFinder)
     {
-        _routes = httpEndpointFinder.FindDefinitions();
+        // Try more-specific routes (fewer {parameter} segments) first, so a literal route like
+        // /users/me is matched ahead of /users/{id} regardless of discovery order. Find returns the
+        // first match, and discovery order is effectively arbitrary (reflection order), so without
+        // this a parameter route could silently shadow a literal one and make it unreachable.
+        // OrderBy is stable, so routes of equal specificity keep their original relative order.
+        _routes = httpEndpointFinder.FindDefinitions()
+            .OrderBy(CountParameterSegments)
+            .ToArray();
         _urlMatcher = new UrlMatcher();
+    }
+
+    private static int CountParameterSegments(IHttpEndpointDefinition route)
+    {
+        return route.Path
+            .Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Count(segment => segment.Contains('{'));
     }
 
     /// <summary>

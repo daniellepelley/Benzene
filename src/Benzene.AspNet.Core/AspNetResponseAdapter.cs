@@ -26,7 +26,10 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
     /// <param name="headerValue">The header value.</param>
     public void SetResponseHeader(AspNetContext context, string headerKey, string headerValue)
     {
-        context.HttpContext.Response.Headers.Add(headerKey, headerValue);
+        // Append, not Add: IHeaderDictionary.Add throws ArgumentException on a duplicate key, so setting
+        // the same header twice (e.g. two Set-Cookie values) crashed. Append builds the multi-value
+        // header, matching the other transports' response adapters.
+        context.HttpContext.Response.Headers.Append(headerKey, headerValue);
     }
 
     /// <summary>
@@ -76,7 +79,12 @@ public class AspNetResponseAdapter : IBenzeneResponseAdapter<AspNetContext>
     public async Task FinalizeAsync(AspNetContext context)
     {
         context.HttpContext.Response.StatusCode = _statusCode;
-        await context.HttpContext.Response.WriteAsync(_body);
+        // No body on 204 No Content (the default status mapper maps Updated/Deleted -> 204). Writing
+        // one is invalid HTTP and Kestrel rejects it; the self-host adapter already guards this.
+        if (_statusCode != 204)
+        {
+            await context.HttpContext.Response.WriteAsync(_body);
+        }
         await context.HttpContext.Response.Body.FlushAsync();
     }
 }

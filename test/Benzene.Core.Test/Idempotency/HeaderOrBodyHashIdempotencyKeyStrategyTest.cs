@@ -97,4 +97,16 @@ public class HeaderOrBodyHashIdempotencyKeyStrategyTest
 
         Assert.Null(key);
     }
+
+    [Fact]
+    public void DistinctTopicTriples_ThatShareASeparatorFlattening_ProduceDifferentKeys()
+    {
+        // Two genuinely different messages whose (id, version) split point differs but whose naive
+        // concatenation is identical: id="order"/version="v2:create" vs id="order:v2"/version="create".
+        // These must NOT collide, or one is silently dropped as a false duplicate of the other.
+        var a = new Ctx { Body = "{}", Topic = new Topic("order", "v2:create") };
+        var b = new Ctx { Body = "{}", Topic = new Topic("order:v2", "create") };
+
+        Assert.NotEqual(Strategy().GetKey(a), Strategy().GetKey(b));
+    }
 }

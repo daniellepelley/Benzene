@@ -144,6 +144,20 @@ public class LogContextTest
     }
 
     [Fact]
+    public async Task OnRequest_DuplicateKey_LastWins_WithoutThrowing()
+    {
+        // Two extractors emitting the same key must not crash the log-scope build (ToDictionary threw);
+        // the later value wins.
+        SetUp(x => x
+            .OnRequest("dup", "first")
+            .OnRequest("dup", "second"));
+
+        await _host.SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, new ExampleRequestPayload()));
+
+        Verify("dup", "second");
+    }
+
+    [Fact]
     public async Task OnResponse()
     {
         SetUp(x => x

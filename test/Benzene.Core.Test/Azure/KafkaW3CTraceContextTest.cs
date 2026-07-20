@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Benzene.Test.Azure;
 
+[Collection("W3CTraceContextListeners")]
 public class KafkaW3CTraceContextTest
 {
     private static (List<Activity> Activities, ActivityListener Listener) ListenToBenzeneActivities()
