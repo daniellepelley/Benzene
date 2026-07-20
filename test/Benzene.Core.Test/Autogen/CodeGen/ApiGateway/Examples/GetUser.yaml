@@ -26,7 +26,7 @@
               method.response.header.X-Content-Type-Options: "'nosniff'"
               method.response.header.Referrer-Policy: "'no-referrer'"
               method.response.header.Access-Control-Allow-Methods: "'GET,PUT,OPTIONS'"
-              method.response.header.Access-Control-Allow-Headers: "'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Api-Key'"
             responseTemplates:
               application/json: |
                 #set($domainWhitelist = [#cors_allowed_origins#])
@@ -74,7 +74,6 @@
         "503":
           $ref: "#/components/responses/503ServiceUnavailable"
       security:
-        - OktaElementsCustomAuthoriser: []
         - api_key: []
       x-amazon-apigateway-integration:
         type: "AWS"
@@ -103,13 +102,7 @@
                 "Content-Type": "application/json",
                 "CorrelationId": "$context.requestId",
                 "SourceIP": "$context.identity.sourceIp",
-                "UserAgent": "$context.identity.userAgent",
-                "x-tenant-id":"$context.authorizer.tenantid",
-                "PlatformTenantId":"$context.authorizer.tenantid",
-                "x-user-id":"$context.authorizer.userid",
-                "x-permissions":"$context.authorizer.permissions",
-                "x-licenses":"$context.authorizer.licenses",
-                "x-subscriptions":"$context.authorizer.subscriptions"
+                "UserAgent": "$context.identity.userAgent"
               },
               "requestContext": {
                 "domainName": "$context.domainName"
@@ -121,7 +114,7 @@
             statusCode: "200"
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
-              method.response.header.Access-Control-Allow-Headers: "'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Api-Key'"
               method.response.header.Cache-Control: "'no-store, no-cache'"
               method.response.header.Content-Security-Policy: "'default-src \\'none\\';'"
               method.response.header.Referrer-Policy: "'no-referrer'"
@@ -176,7 +169,6 @@
         "503":
           $ref: "#/components/responses/503ServiceUnavailable"
       security:
-        - OktaElementsCustomAuthoriser: []
         - api_key: []
       x-amazon-apigateway-integration:
         type: "AWS"
@@ -205,13 +197,7 @@
                 "Content-Type": "application/json",
                 "CorrelationId": "$context.requestId",
                 "SourceIP": "$context.identity.sourceIp",
-                "UserAgent": "$context.identity.userAgent",
-                "x-tenant-id":"$context.authorizer.tenantid",
-                "PlatformTenantId":"$context.authorizer.tenantid",
-                "x-user-id":"$context.authorizer.userid",
-                "x-permissions":"$context.authorizer.permissions",
-                "x-licenses":"$context.authorizer.licenses",
-                "x-subscriptions":"$context.authorizer.subscriptions"
+                "UserAgent": "$context.identity.userAgent"
               },
               "requestContext": {
                 "domainName": "$context.domainName"
@@ -223,7 +209,7 @@
             statusCode: "200"
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'PUT,OPTIONS'"
-              method.response.header.Access-Control-Allow-Headers: "'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Api-Key'"
               method.response.header.Cache-Control: "'no-store, no-cache'"
               method.response.header.Content-Security-Policy: "'default-src \\'none\\';'"
               method.response.header.Referrer-Policy: "'no-referrer'"

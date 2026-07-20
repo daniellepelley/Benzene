@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using Benzene.CodeGen.Core;
 using Benzene.Schema.OpenApi.EventService;
@@ -8,17 +8,27 @@ namespace Benzene.CodeGen.ApiGateway
 {
     public class ApiGatewayBuilderV1 : ICodeBuilder<EventServiceDocument>
     {
-        private readonly string _url;
+        private const string HeaderIndent = "                ";
 
+        private readonly ApiGatewayOptions _options;
+
+        /// <summary>Initializes the builder with generic defaults (see <see cref="ApiGatewayOptions"/>).</summary>
+        /// <param name="url">The backend integration URI token.</param>
         public ApiGatewayBuilderV1(string url)
+            : this(new ApiGatewayOptions(url))
         {
-            _url = url;
         }
-        
+
+        /// <summary>Initializes the builder with explicit options.</summary>
+        public ApiGatewayBuilderV1(ApiGatewayOptions options)
+        {
+            _options = options;
+        }
+
         public ICodeFile[] BuildCodeFiles(EventServiceDocument source)
         {
             var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine($"# AUTOGEN START {_url.ToUpperInvariant()}");
+            stringBuilder.AppendLine($"# AUTOGEN START {_options.Url.ToUpperInvariant()}");
             stringBuilder.AppendLine("");
 
             var paths = source.Requests
@@ -32,10 +42,10 @@ namespace Benzene.CodeGen.ApiGateway
             {
                 stringBuilder.Append(BuildPath(route.Key, route.Select(x => (x.http.Method, x.request.Topic)).ToArray()));
             }
-            
+
             stringBuilder.AppendLine("");
             stringBuilder.AppendLine("# AUTOGEN END");
-            
+
 
             return new ICodeFile[] {
                 new CodeFile("openApi.yaml", stringBuilder.ToString().ToLines())
@@ -84,7 +94,7 @@ namespace Benzene.CodeGen.ApiGateway
             stringBuilder.AppendLine(@"              method.response.header.X-Content-Type-Options: ""'nosniff'""");
             stringBuilder.AppendLine(@"              method.response.header.Referrer-Policy: ""'no-referrer'""");
             stringBuilder.AppendLine(@$"              method.response.header.Access-Control-Allow-Methods: ""'{verbsText},OPTIONS'""");
-            stringBuilder.AppendLine(@"              method.response.header.Access-Control-Allow-Headers: ""'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'""");
+            stringBuilder.AppendLine(@$"              method.response.header.Access-Control-Allow-Headers: ""'{_options.AllowedHeaders}'""");
             stringBuilder.AppendLine(@"            responseTemplates:");
             stringBuilder.AppendLine(@"              application/json: |");
             CorsHeaders(stringBuilder);
@@ -132,13 +142,15 @@ namespace Benzene.CodeGen.ApiGateway
 
             AddResponses(stringBuilder);
             stringBuilder.AppendLine(@"      security:");
-            if (!OptionSecurityExclusion.excludeTopic.Contains(topic))
-            {stringBuilder.AppendLine(@"        - OktaElementsCustomAuthoriser: []");}
+            if (_options.AuthorizerName != null && !_options.UnauthenticatedTopics.Contains(topic))
+            {
+                stringBuilder.AppendLine($@"        - {_options.AuthorizerName}: []");
+            }
             stringBuilder.AppendLine(@"        - api_key: []");
             stringBuilder.AppendLine(@"      x-amazon-apigateway-integration:");
             stringBuilder.AppendLine(@"        type: ""AWS""");
             stringBuilder.AppendLine(@"        httpMethod: POST");
-            stringBuilder.AppendLine(@$"        uri: ""#{_url}#""");
+            stringBuilder.AppendLine(@$"        uri: ""#{_options.Url}#""");
             stringBuilder.AppendLine(@"        passthroughBehavior: ""never""");
             stringBuilder.AppendLine(@"        requestTemplates:");
             stringBuilder.AppendLine(@"          application/json: |");
@@ -159,16 +171,7 @@ namespace Benzene.CodeGen.ApiGateway
             stringBuilder.AppendLine(@"                #end");
             stringBuilder.AppendLine(@"              },");
             stringBuilder.AppendLine(@"              ""headers"": {");
-            stringBuilder.AppendLine(@"                ""Content-Type"": ""application/json"",");
-            stringBuilder.AppendLine(@"                ""CorrelationId"": ""$context.requestId"",");
-            stringBuilder.AppendLine(@"                ""SourceIP"": ""$context.identity.sourceIp"",");
-            stringBuilder.AppendLine(@"                ""UserAgent"": ""$context.identity.userAgent"",");
-            stringBuilder.AppendLine(@"                ""x-tenant-id"":""$context.authorizer.tenantid"",");
-            stringBuilder.AppendLine(@"                ""PlatformTenantId"":""$context.authorizer.tenantid"",");
-            stringBuilder.AppendLine(@"                ""x-user-id"":""$context.authorizer.userid"",");
-            stringBuilder.AppendLine(@"                ""x-permissions"":""$context.authorizer.permissions"",");
-            stringBuilder.AppendLine(@"                ""x-licenses"":""$context.authorizer.licenses"",");
-            stringBuilder.AppendLine(@"                ""x-subscriptions"":""$context.authorizer.subscriptions""");
+            BuildRequestHeaders(stringBuilder);
             stringBuilder.AppendLine(@"              },");
             stringBuilder.AppendLine(@"              ""requestContext"": {");
             stringBuilder.AppendLine(@"                ""domainName"": ""$context.domainName""");
@@ -180,7 +183,7 @@ namespace Benzene.CodeGen.ApiGateway
             stringBuilder.AppendLine(@"            statusCode: ""200""");
             stringBuilder.AppendLine(@"            responseParameters:");
             stringBuilder.AppendLine(@$"              method.response.header.Access-Control-Allow-Methods: ""'{verb},OPTIONS'""");
-            stringBuilder.AppendLine(@"              method.response.header.Access-Control-Allow-Headers: ""'X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key'""");
+            stringBuilder.AppendLine(@$"              method.response.header.Access-Control-Allow-Headers: ""'{_options.AllowedHeaders}'""");
             stringBuilder.AppendLine(@"              method.response.header.Cache-Control: ""'no-store, no-cache'""");
             stringBuilder.AppendLine(@"              method.response.header.Content-Security-Policy: ""'default-src \\'none\\';'""");
             stringBuilder.AppendLine(@"              method.response.header.Referrer-Policy: ""'no-referrer'""");
@@ -197,6 +200,27 @@ namespace Benzene.CodeGen.ApiGateway
 
             stringBuilder.AppendLine(@"");
             return stringBuilder.ToString();
+        }
+
+        // The always-present transport headers plus any configured identity headers, emitted as a JSON
+        // object body with correct comma placement (no trailing comma on the last entry).
+        private void BuildRequestHeaders(StringBuilder stringBuilder)
+        {
+            var entries = new List<string>
+            {
+                @"""Content-Type"": ""application/json""",
+                @"""CorrelationId"": ""$context.requestId""",
+                @"""SourceIP"": ""$context.identity.sourceIp""",
+                @"""UserAgent"": ""$context.identity.userAgent""",
+            };
+
+            entries.AddRange(_options.IdentityHeaders.Select(header => $@"""{header.Key}"":""{header.Value}"""));
+
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var comma = i < entries.Count - 1 ? "," : string.Empty;
+                stringBuilder.AppendLine($"{HeaderIndent}{entries[i]}{comma}");
+            }
         }
 
         private static void AddResponses(StringBuilder stringBuilder)
