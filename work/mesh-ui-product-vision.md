@@ -7,6 +7,31 @@
 
 ---
 
+> **2026-07-20 near-term pressure-test (mesh-ui-product-owner):** critical review of the
+> three near-term items against verified source. Key findings that change sequencing:
+> - **Two data planes, not one.** The static `/mesh-ui` reads aggregator *artifacts*
+>   (`manifest`/`topics`/`topology`/`asyncapi.json`); the live `/fleet-ui` polls the
+>   *collector* (`mesh:query:*` → `FleetView`/`TraceView`). They have different models and
+>   different health vocabularies (`unhealthy`/`unreachable` vs `degraded`/`unknown`). Each
+>   near-term feature must pick a plane, and the choice decides its data honesty.
+> - **`topology.json` is entirely Tempo-gated.** `TopologyEdgeSource` only has `Tempo`
+>   (produced) and `Structural` (defined, produced by *nothing*). No Tempo wired → the file is
+>   absent → an artifact-plane graph has zero edges. Tempo edges are also still UNVERIFIED
+>   against a real backend. The collector's trace-parentage consumer edges (real, conformance-
+>   tested, no Tempo) populate `FleetView`, NOT `topology.json` — so a *verified* graph lives on
+>   the collector plane, not the static one.
+> - **Issue inbox is the shippable-now item:** 4 of 5 legs (unhealthy, unreachable, drift,
+>   schema-mismatch) are already in the static artifacts; pure client-side reduction, no backend,
+>   no graph lib. Only **staleness** is missing — there is still no `MeshServiceStatus.Stale`.
+> - **Flow view's real data already exists** as the collector's `mesh:query:trace` (`TraceView`),
+>   built and conformance-tested but not yet surfaced in the UI; a trace waterfall is self-
+>   contained (no graph lib). AsyncAPI `reply`/operations give the *designed* shape only.
+> - **Revised build order: Issue inbox → Flow view (traced waterfall, collector plane) →
+>   Topology graph (collector-derived edges, self-contained SVG layout).** Full assessment and
+>   filed data requirements returned to the launching agent this pass.
+
+---
+
 ## Vision
 Make the Benzene Mesh UI the place a team **understands, discusses, and improves**
 a platform built on Benzene — an industry-leading product for developers *and*
