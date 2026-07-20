@@ -10,7 +10,7 @@ using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Benzene.Testing;
 using Benzene.Tools.Aws;
-using LEGO.AsyncAPI.Readers;
+using ByteBard.AsyncAPI.Readers;
 using Microsoft.OpenApi.Readers;
 using Xunit;
 

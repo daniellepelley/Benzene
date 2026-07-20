@@ -111,7 +111,7 @@ public class MeshAggregatorTest : IDisposable
         const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
         const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
 
-        // Each service serves its benzene spec (topics) at type=benzene and its AsyncAPI 2.0 doc at
+        // Each service serves its benzene spec (topics) at type=benzene and its AsyncAPI 3.0 doc at
         // the derived type=asyncapi URL. Both declare a "spec" utility topic that must be filtered.
         var ordersBenzene = """{"requests":[{"topic":"order:create"},{"topic":"spec","reserved":true}]}""";
         var paymentsBenzene = """{"requests":[{"topic":"payment:take"},{"topic":"spec","reserved":true}]}""";
@@ -137,26 +137,39 @@ public class MeshAggregatorTest : IDisposable
         var json = await store.TryReadAsync("asyncapi.json");
         Assert.NotNull(json);
 
-        // Both services' channels are present, namespaced by service, and the reserved "spec"
-        // channel is filtered out. (Real AsyncAPI-reader validity is proven in an isolated project -
+        // Both services' channels + operations are present, namespaced by service, and the reserved
+        // "spec" topic is filtered out. (Real AsyncAPI-reader validity is proven in an isolated project -
         // see AsyncApiCompositorTest's note on the YamlDotNet conflict.)
-        var channels = JsonNode.Parse(json!)!["channels"]!.AsObject();
-        Assert.True(channels.ContainsKey("orders-api/order:create"));
-        Assert.True(channels.ContainsKey("payments-api/payment:take"));
+        var parsed = JsonNode.Parse(json!)!;
+        Assert.Equal("3.0.0", parsed["asyncapi"]!.GetValue<string>());
+        var channels = parsed["channels"]!.AsObject();
+        Assert.True(channels.ContainsKey("orders-api_order_create"));
+        Assert.True(channels.ContainsKey("payments-api_payment_take"));
         Assert.DoesNotContain(channels, kv => kv.Key.Contains("spec"));
+        var operations = parsed["operations"]!.AsObject();
+        Assert.True(operations.ContainsKey("orders-api_order_create"));
+        Assert.True(operations.ContainsKey("payments-api_payment_take"));
     }
 
-    private static string AsyncApiDoc(string title, string topic, string schema) => $$"""
+    private static string AsyncApiDoc(string title, string topic, string schema)
     {
-      "asyncapi": "2.0.0",
-      "info": { "title": "{{title}}", "version": "1.0" },
-      "channels": {
-        "{{topic}}": { "subscribe": { "operationId": "{{topic}}", "message": { "name": "{{topic}}", "payload": { "$ref": "#/components/schemas/{{schema}}" } } } },
-        "spec": { "subscribe": { "operationId": "spec" } }
-      },
-      "components": { "schemas": { "{{schema}}": { "type": "object", "properties": { "id": { "type": "string" } } } } }
+        var ch = topic.Replace(":", "_");
+        return $$"""
+        {
+          "asyncapi": "3.0.0",
+          "info": { "title": "{{title}}", "version": "1.0" },
+          "channels": {
+            "{{ch}}": { "address": "{{topic}}", "messages": { "{{schema}}": { "payload": { "$ref": "#/components/schemas/{{schema}}" } } } },
+            "spec": { "address": "spec", "messages": {} }
+          },
+          "operations": {
+            "{{ch}}": { "action": "receive", "channel": { "$ref": "#/channels/{{ch}}" }, "messages": [ { "$ref": "#/channels/{{ch}}/messages/{{schema}}" } ] },
+            "spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" } }
+          },
+          "components": { "schemas": { "{{schema}}": { "type": "object", "properties": { "id": { "type": "string" } } } } }
+        }
+        """;
     }
-    """;
 
     [Fact]
     public async Task RunOnceAsync_TopicWithSchema_InlinesRefsAndCarriesRequestResponseSchema()

@@ -1,8 +1,8 @@
 using Benzene.ResponseEvents;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.AsyncApi;
-using LEGO.AsyncAPI;
-using LEGO.AsyncAPI.Models;
+using ByteBard.AsyncAPI;
+using ByteBard.AsyncAPI.Models;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -35,8 +35,8 @@ public class AsyncApiDocumentBuilderJsonTest
             .AddJsonEvent(Topic, "Inner", json)
             .Build();
 
-        var doc1Json = doc.SerializeAsJson(AsyncApiVersion.AsyncApi2_0);
-        var doc2Json = doc2.SerializeAsJson(AsyncApiVersion.AsyncApi2_0);
+        var doc1Json = doc.SerializeAsJson(AsyncApiVersion.AsyncApi3_0);
+        var doc2Json = doc2.SerializeAsJson(AsyncApiVersion.AsyncApi3_0);
 
         Assert.Equal(doc1Json, doc2Json);
     }
@@ -78,8 +78,8 @@ public class AsyncApiDocumentBuilderJsonTest
             .AddJsonEvent(Topic2, "Inner", json2)
             .Build();
 
-        var doc1Json = doc.SerializeAsJson(AsyncApiVersion.AsyncApi2_0);
-        var doc2Json = doc2.SerializeAsJson(AsyncApiVersion.AsyncApi2_0);
+        var doc1Json = doc.SerializeAsJson(AsyncApiVersion.AsyncApi3_0);
+        var doc2Json = doc2.SerializeAsJson(AsyncApiVersion.AsyncApi3_0);
 
         Assert.Equal(doc1Json, doc2Json);
     }

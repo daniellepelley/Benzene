@@ -163,24 +163,26 @@ missing/unparseable spec, or one predating this field, contributes an empty list
 failing the run.
 
 ## Composite AsyncAPI (`asyncapi.json`)
-Each run also fetches every service's own **AsyncAPI 2.0** document (the same `spec` endpoint's
+Each run also fetches every service's own **AsyncAPI 3.0** document (the same `spec` endpoint's
 `type=asyncapi` — `IMeshServiceSource.TryFetchSpecAsync(entry, "asyncapi", ct)`, whose
 `HttpMeshServiceSource` override derives the URL from `SpecUrl` by swapping the `type` query param)
 and merges them into a single fleet-wide `asyncapi.json` loadable in an AsyncAPI editor. The fetch
 is **best-effort and additive**: `TryFetchSpecAsync` is a default-interface method returning `null`
 (so existing `IMeshServiceSource`s don't break), and a failure/absence never affects that service's
 own status — it just contributes no channels. `AsyncApiCompositor.Merge` does the merge purely at
-the JSON level (`System.Text.Json`, no AsyncAPI object-model dependency): Benzene keys channels by
-raw topic id and schemas by bare CLR type name — both collide across services — so each service's
-content is **namespaced** (channel keys → `‹service›/‹topic›`, schema keys → `‹Service›_‹Type›`,
-operation ids → `‹service›_‹operationId›` — AsyncAPI 2.0 requires `operationId` to be
-document-globally unique, and Benzene keys it per-service by topic so two services on the same topic
-would otherwise collide; a numeric suffix guards any residual dup — every `$ref` rewritten to
-match), reserved/utility topics are dropped (using the `reserved` flag already parsed from each
-benzene spec), and each channel's operations are tagged with the owning service. Two services sharing a topic id stay as two attributed channels rather than being forced
-into one. Because dropping reserved-topic channels can orphan the schemas only they referenced,
-component schemas not reachable from a retained channel (following `$ref`s transitively) are pruned,
-so the doc carries no dangling components (which validators flag as "potentially unused component").
+the JSON level (`System.Text.Json`, no AsyncAPI object-model dependency): AsyncAPI 3.0 keys
+`channels` and top-level `operations` by identifier and schemas by bare CLR type name — all collide
+across services — so each service's content is **namespaced** (channel keys → `‹service›_‹channel›`,
+operation keys → `‹service›_‹operation›`, schema keys → `‹Service›_‹Type›`, with a numeric suffix
+guarding any residual dup), and **every `$ref` is rewritten to match** — schema refs
+(`#/components/schemas/…`), operation channel refs (`#/channels/…`), and channel-scoped message refs
+(`#/channels/…/messages/…`). Reserved/utility topics — and the operations that reference them — are
+dropped (using the `reserved` flag already parsed from each benzene spec; matched on the channel's
+`address`), and each operation is tagged with the owning service. Two services sharing a topic stay
+as two attributed channels+operations rather than being forced into one. Because dropping
+reserved-topic channels can orphan the schemas only their messages referenced, component schemas not
+reachable from a retained channel (following `$ref`s transitively) are pruned, so the doc carries no
+dangling components (which validators flag as "potentially unused component").
 The envelope also carries `id` (`urn:benzene:mesh:composite`) and `defaultContentType`
 (`application/json`). An empty/all-unfetchable run still publishes a valid empty-channels document, so the
 artifact link is always stable. `Benzene.Mesh.Ui` links it (download + AsyncAPI Studio deep-link).

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AsyncAPI.NET" Version="4.1.0" />
+    <PackageReference Include="ByteBard.AsyncAPI.NET" Version="3.0.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.10" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.10" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

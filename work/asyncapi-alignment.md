@@ -1,7 +1,7 @@
 # AsyncAPI alignment — is Benzene using AsyncAPI correctly?
 
-**Status:** Stage 1 (correct the 2.0 output) implemented. Stage 2 (3.0 migration) and F5 (reply-channel
-gating) remain open follow-ups.
+**Status:** Stage 1 (correct the 2.0 output) **and Stage 2 (3.0 migration)** implemented. Only F5
+(reply-channel gating) remains an open follow-up.
 **Scope:** `Benzene.Schema.OpenApi`'s `AsyncApi/` builder (per-service `spec?type=asyncapi`) and, downstream,
 `Benzene.Mesh.Aggregator`'s `AsyncApiCompositor` (the fleet composite).
 
@@ -111,11 +111,26 @@ cleaner either way).
    still pass (the compositor is verb-agnostic). Composite still validates against the real AsyncAPI.NET
    reader with 0 errors.
 
-**Stage 2 — 3.0 migration (separate, needs a dependency decision):**
-- Swap to ByteBard.AsyncAPI.NET (or emit 3.0 JSON directly), move to `action: send/receive`, model the
-  reply with the native `reply` object, revisit F5. Larger, and changes the artifact consumers read —
-  do it deliberately, not as a drive-by.
+**Stage 2 — 3.0 migration (DONE):**
+- ✅ Swapped `AsyncAPI.NET` 4.1.0 → **`ByteBard.AsyncAPI.NET` 3.0.0** (2.0-only → 3.0 model+serializer;
+  test project uses `ByteBard.AsyncAPI.NET.Readers`).
+- ✅ `Mapper` now targets ByteBard's `AsyncApiJsonSchema`; `AsyncApiDocumentBuilder` emits 3.0 —
+  channels (`address` + `messages`), top-level operations with `action: receive/send`, and the native
+  `reply` object for a handler's request→`:benzeneResult`. Channel/operation/message map keys sanitized
+  to `^[A-Za-z0-9.\-_]+$` (topic kept in `address`).
+- ✅ `AsyncApiCompositor` rewritten to namespace + merge the 3.0 structure (channels, top-level
+  operations, channel-scoped message refs, schema refs; reserved-topic + operation filtering; unused-
+  schema pruning; per-operation service tags). Composite emits `asyncapi: 3.0.0`.
+- ✅ Verified end-to-end against the real `ByteBard.AsyncAPI.NET.Readers` reader (parses + resolves
+  fully) on both a single service and a two-service composite. **Caveat:** ByteBard's
+  `AsyncApiOperationRules` "messages MUST be a subset of the referenced channel's messages" validation
+  is a false positive — it also fails the AsyncAPI spec's own request/reply example — so it's not a
+  signal; the documents are structurally correct and all refs resolve.
+- Serializes as `3.1.0` (ByteBard's latest 3.x patch), which also clears Studio's "use the latest
+  version" recommendation.
 
-## Decision needed
-- **Direction:** Stage 1 now (correct 2.0), and treat Stage 2 (3.0) as a follow-up? Or go straight to 3.0?
-- **F5:** keep emitting a reply channel per handler, or gate it on request/reply-capable transports?
+## Remaining open question
+- **F5:** Benzene still emits a `reply` (and its `:benzeneResult` channel) for **every** handler, even
+  fire-and-forget pub/sub consumers with no reply on the wire. Decide whether to gate the `reply` on a
+  request/reply-capable transport (benzene-message / HTTP-invoke / gRPC) being wired. Needs transport
+  info at spec-build time; not done.

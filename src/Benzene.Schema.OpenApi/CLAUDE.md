@@ -8,7 +8,7 @@ topic. Despite the package name it produces **three** spec formats, selected per
   events, HTTP mappings, validation rules, generated example payloads). This is the **default** and
   the format `Benzene.Spec.Ui` renders.
 - `openapi` - OpenAPI 3.0 (via `Microsoft.OpenApi`), for HTTP endpoints.
-- `asyncapi` - AsyncAPI 2.0 (via `AsyncAPI.NET` / `LEGO.AsyncAPI`), for topic/event channels.
+- `asyncapi` - AsyncAPI 3.0 (via `ByteBard.AsyncAPI.NET`), for topic/event channels.
 
 Each format can be emitted as JSON or YAML. The package also includes a backward-compatibility gate
 for the `benzene` contract.
@@ -46,18 +46,21 @@ for the `benzene` contract.
 - `OpenApi/OpenApiDocumentBuilder` - OpenAPI 3.0 (`SerializeAsJson/Yaml(OpenApiSpecVersion.OpenApi3_0)`).
   Builds paths/operations from HTTP endpoint definitions, request/response schemas, and a fixed set of
   error responses (400/401/403/404/422/500/503) whose bodies reference `ErrorPayload`.
-- `AsyncApi/AsyncApiDocumentBuilder` - AsyncAPI 2.0 (`AsyncApiVersion.AsyncApi2_0`); channels per topic
-  plus `:benzeneResult` response channels, broadcast events, and message-sender definitions.
-  **Operation perspective (important):** AsyncAPI 2.x names operations from the *application's* view,
-  counter-intuitively — `publish` = messages the app **receives/consumes**, `subscribe` = messages it
-  **sends/produces**. So a handler's request channel uses `publish` (it receives the request), its
-  `:benzeneResult` reply uses `subscribe` (it sends the reply), and broadcast/egress-sender channels use
-  `subscribe` (produced outbound). Getting this backwards makes every consumer read the service inside-out;
-  a builder test (`Operations_UseTheCorrectAsyncApiPerspective`) pins it. The document also carries `id`
-  (`urn:benzene:service:<title>`) and `defaultContentType` (`application/json`). AsyncAPI **3.0** (with
-  `action: send/receive` + a native `reply` object, which fits Benzene's request/reply far better) is a
-  documented follow-up — it needs a different library (the current `AsyncAPI.NET` 4.1.0 is 2.0-only); see
-  `work/asyncapi-alignment.md`.
+- `AsyncApi/AsyncApiDocumentBuilder` - AsyncAPI **3.0** (`AsyncApiVersion.AsyncApi3_0`, via
+  `ByteBard.AsyncAPI.NET`; serializes as `3.1.0`, the latest 3.x patch). Emits **channels** (each with
+  an `address` = the topic and a `messages` map) and top-level **operations** that reference them.
+  **Operation perspective:** 3.0 names direction explicitly with `action` from the *application's* view —
+  a handler **`receive`s** its request and its reply is modelled with the native **`reply`** object
+  (pointing at the `:benzeneResult` channel); broadcast events and egress message-senders are things the
+  app **`send`s**. This replaces 2.x's notoriously back-to-front `publish`/`subscribe` (see
+  `work/asyncapi-alignment.md` for why the old output was inverted). Channel/operation/message **map keys
+  are sanitized** to `^[A-Za-z0-9.\-_]+$` (3.0 requires it; the raw topic, which can contain `:`, is kept
+  in the channel's `address`). The document also carries `id` (`urn:benzene:service:<title>`) and
+  `defaultContentType` (`application/json`). A builder test (`Operations_UseTheCorrectAsyncApiPerspective`)
+  pins the action/reply shape. **Note on the ByteBard reader:** its `AsyncApiOperationRules` "messages MUST
+  be a subset of the referenced channel's messages" validation is a false positive that also rejects the
+  spec's own request/reply example — Benzene's output parses and resolves fully; that one validation rule
+  is not a signal.
 - `EventService/EventServiceDocumentBuilder` - the `benzene` `EventServiceDocument`; requests, events,
   HTTP mappings, an optional top-level `messageEndpoint`, and deterministic generated example payloads.
 - Builders implement the "consumer" seam interfaces in `Abstractions/` -
@@ -126,7 +129,8 @@ for the `benzene` contract.
   `ValidationConstants`, consumed by `OpenApiValidationSchemaBuilder`.
 - **Benzene.Http** - HTTP endpoint definitions/routing and the BenzeneMessage endpoint info.
 - **Benzene.Results** - `BenzeneResult`, `ErrorPayload`.
-- NuGet: **Microsoft.OpenApi**(+**.Readers**), **AsyncAPI.NET**, **Swashbuckle.AspNetCore.SwaggerGen**
+- NuGet: **Microsoft.OpenApi**(+**.Readers**), **ByteBard.AsyncAPI.NET** (AsyncAPI 3.0 model+serializer;
+  the maintained continuation of `LEGO.AsyncAPI.NET`, which was 2.0-only), **Swashbuckle.AspNetCore.SwaggerGen**
   (schema generation only - no Swagger UI is bundled), **Newtonsoft.Json**.
 - Note: this package does **not** depend on `Benzene.JsonSchema`; schema generation is done via
   Swashbuckle's `SchemaGenerator`, not that package.
@@ -142,7 +146,7 @@ for the `benzene` contract.
   renamed reserved topic isn't auto-flagged (it's a presentation aid, not a security boundary).
 - Schemas are generated from handler request/response types and keyed by type name; validation
   constraints are merged in only when an `IValidationSchemaBuilder` is registered.
-- OpenAPI output is version 3.0; AsyncAPI output is 2.0.
+- OpenAPI output is version 3.0; AsyncAPI output is 3.0.
 
 ## Tests
 - Example payload generation: `test/Benzene.Core.Test/Autogen/Schema/OpenApi/Examples/ExamplePayloadBuilderTest.cs`
