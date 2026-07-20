@@ -66,7 +66,11 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
                         await _pipeline.HandleAsync(pair.Context, scope);
                     }
 
-                    if (pair.Context.MessageResult?.IsSuccessful == false)
+                    // Only an explicit success is deleted. A failure result OR an unset outcome
+                    // (null MessageResult - e.g. an unroutable message whose result setter never ran)
+                    // is reported as failed, so it stays on the queue for redelivery/DLQ redrive
+                    // instead of being silently deleted. At-least-once: err toward redelivery.
+                    if (pair.Context.MessageResult?.IsSuccessful != true)
                     {
                         return pair.Message;
                     }

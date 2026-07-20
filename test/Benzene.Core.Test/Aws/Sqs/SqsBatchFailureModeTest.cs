@@ -33,6 +33,9 @@ public class SqsBatchFailureModeTest
                 {
                     throw new InvalidOperationException("boom");
                 }
+                // The real SqsMessageHandlerResultSetter sets IsSuccessful from the handler result;
+                // a successfully-handled message is an explicit success, not an unset outcome.
+                context.IsSuccessful = true;
             });
 
         var mockResolver = new Mock<IServiceResolver>();
@@ -56,6 +59,31 @@ public class SqsBatchFailureModeTest
             var reported = response.BatchItemFailures.Select(f => f.ItemIdentifier).OrderBy(id => id).ToArray();
             Assert.Equal(expectedFailures, reported);
         }
+    }
+
+    [Fact]
+    public async Task HandleAsync_MessageOutcomeNeverSet_ReportedAsFailure_NotSilentlyDeleted()
+    {
+        // A message that runs without throwing but whose outcome is never set - e.g. an unroutable
+        // message whose topic attribute matched no handler, so the result setter never ran - must be
+        // reported as a batch-item failure so SQS redrives it to the DLQ, not silently deleted.
+        var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
+        mockPipeline
+            .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
+            .Returns(Task.CompletedTask); // never sets context.IsSuccessful
+
+        var mockResolver = new Mock<IServiceResolver>();
+        mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
+        var mockResolverFactory = new Mock<IServiceResolverFactory>();
+        mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
+
+        var application = new SqsApplication(mockPipeline.Object);
+
+        var response = await application.HandleAsync(
+            new SQSEvent { Records = [new SQSEvent.SQSMessage { MessageId = "unrouted" }] },
+            mockResolverFactory.Object);
+
+        Assert.Equal("unrouted", Assert.Single(response.BatchItemFailures).ItemIdentifier);
     }
 
     [Fact]
@@ -120,6 +148,7 @@ public class SqsBatchFailureModeTest
             .ThrowsAsync(new InvalidOperationException("boom"));
         mockPipeline
             .Setup(x => x.HandleAsync(It.Is<SqsMessageContext>(c => c.SqsMessage.MessageId == "succeeds"), It.IsAny<IServiceResolver>()))
+            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.IsSuccessful = true)
             .Returns(Task.CompletedTask);
 
         var mockResolver = new Mock<IServiceResolver>();
@@ -151,6 +180,7 @@ public class SqsBatchFailureModeTest
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
         mockPipeline
             .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
+            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.IsSuccessful = true)
             .Returns(Task.CompletedTask);
 
         var mockResolver = new Mock<IServiceResolver>();

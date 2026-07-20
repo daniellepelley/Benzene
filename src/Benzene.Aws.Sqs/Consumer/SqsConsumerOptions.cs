@@ -7,9 +7,12 @@ public class SqsConsumerOptions
 {
     /// <summary>
     /// Gets or sets whether messages are deleted as a whole batch or individually. Defaults to
-    /// <see cref="SqsConsumerAckMode.WholeBatch"/>.
+    /// <see cref="SqsConsumerAckMode.PerMessage"/> - only messages that actually succeeded are
+    /// deleted, so a failed or unrouted message stays on the queue for redelivery/DLQ redrive rather
+    /// than being deleted along with the batch. Set <see cref="SqsConsumerAckMode.WholeBatch"/> for
+    /// the older all-or-nothing-on-throw behavior.
     /// </summary>
-    public SqsConsumerAckMode AckMode { get; set; } = SqsConsumerAckMode.WholeBatch;
+    public SqsConsumerAckMode AckMode { get; set; } = SqsConsumerAckMode.PerMessage;
 
     /// <summary>
     /// Gets or sets the maximum number of messages from a single poll batch processed concurrently.

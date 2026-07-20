@@ -51,9 +51,30 @@ public class SqsConsumerAckModeTest
     }
 
     [Fact]
-    public void SqsConsumerOptions_DefaultAckMode_IsWholeBatch()
+    public void SqsConsumerOptions_DefaultAckMode_IsPerMessage()
     {
-        Assert.Equal(SqsConsumerAckMode.WholeBatch, new SqsConsumerOptions().AckMode);
+        Assert.Equal(SqsConsumerAckMode.PerMessage, new SqsConsumerOptions().AckMode);
+    }
+
+    [Fact]
+    public async Task HandleAsync_MessageOutcomeNeverSet_ExcludedFromSuccessfulMessages_NotSilentlyDeleted()
+    {
+        // An unrouted message whose result setter never ran (null MessageResult) must NOT be counted
+        // as successful (which would delete it) - it stays for redelivery/DLQ redrive.
+        var mockPipeline = new Mock<IMiddlewarePipeline<SqsConsumerMessageContext>>();
+        mockPipeline
+            .Setup(x => x.HandleAsync(It.IsAny<SqsConsumerMessageContext>(), It.IsAny<IServiceResolver>()))
+            .Returns(Task.CompletedTask); // never sets context.MessageResult
+
+        var (_, resolverFactory) = CreateResolver();
+        var application = new SqsConsumerApplication(mockPipeline.Object, new SqsConsumerOptions { AckMode = SqsConsumerAckMode.PerMessage });
+
+        var result = await application.HandleAsync(
+            new ReceiveMessageResponse { Messages = new List<Message> { new Message { MessageId = "unrouted", ReceiptHandle = "r1" } } },
+            resolverFactory.Object);
+
+        Assert.Empty(result.SuccessfulMessages);
+        Assert.Equal("unrouted", Assert.Single(result.FailedMessages).MessageId);
     }
 
     private static (Mock<IServiceResolver> Resolver, Mock<IServiceResolverFactory> ResolverFactory) CreateResolver()
@@ -78,7 +99,7 @@ public class SqsConsumerAckModeTest
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultWholeBatch_OneMessageThrows_PropagatesException()
+    public async Task HandleAsync_WholeBatch_OneMessageThrows_PropagatesException()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsConsumerMessageContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "fails"), It.IsAny<IServiceResolver>()))
@@ -87,7 +108,7 @@ public class SqsConsumerAckModeTest
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
-        var application = new SqsConsumerApplication(mockPipeline.Object);
+        var application = new SqsConsumerApplication(mockPipeline.Object, new SqsConsumerOptions { AckMode = SqsConsumerAckMode.WholeBatch });
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => application.HandleAsync(CreateTwoMessageResponse(), resolverFactory.Object));
     }
@@ -99,6 +120,7 @@ public class SqsConsumerAckModeTest
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "fails"), It.IsAny<IServiceResolver>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "succeeds"), It.IsAny<IServiceResolver>()))
+            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
