@@ -17,6 +17,15 @@ public interface IAzureFunctionAppBuilder : IRegisterDependency
     void Add(Func<IServiceResolverFactory, IEntryPointMiddlewareApplication> func);
 
     /// <summary>
+    /// Registers a factory under a discriminator <paramref name="key"/>, so multiple entry points of
+    /// the same request type (e.g. two <c>[QueueTrigger]</c> functions on different queues) can coexist
+    /// and be dispatched to by name. A <c>null</c> key registers a type-only entry point.
+    /// </summary>
+    /// <param name="key">The discriminator key (typically the function/queue/topic name), or <c>null</c>.</param>
+    /// <param name="func">A factory that creates the entry point application given the current invocation's service resolver factory.</param>
+    void Add(string? key, Func<IServiceResolverFactory, IEntryPointMiddlewareApplication> func);
+
+    /// <summary>
     /// Creates a new middleware pipeline builder for a given context type, sharing this builder's
     /// underlying service container.
     /// </summary>

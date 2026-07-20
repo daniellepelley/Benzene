@@ -55,6 +55,21 @@ public static class Extensions
     }
 
     /// <summary>
+    /// Dispatches Queue Storage messages to the <paramref name="name"/>-keyed Queue Storage entry
+    /// point - use when more than one <c>[QueueTrigger]</c> function is registered (each via
+    /// <c>UseQueueStorage(..., name: "queue")</c>). The <c>[QueueTrigger("queue")]</c> method passes
+    /// its own queue name here.
+    /// </summary>
+    /// <param name="source">The built Azure Function app to dispatch to.</param>
+    /// <param name="name">The discriminator name matching the registered <c>UseQueueStorage(..., name)</c>.</param>
+    /// <param name="messages">The Queue Storage messages to handle.</param>
+    /// <returns>A task that completes when the messages have been handled.</returns>
+    public static Task HandleQueueMessages(this IAzureFunctionApp source, string name, params QueueStorageMessage[] messages)
+    {
+        return source.HandleAsync(messages, name);
+    }
+
+    /// <summary>
     /// Dispatches a single Queue Storage message, bound as its message text - the common
     /// <c>[QueueTrigger] string</c> binding - to the Azure Function app's Queue Storage entry point
     /// application.
@@ -65,5 +80,18 @@ public static class Extensions
     public static Task HandleQueueMessage(this IAzureFunctionApp source, string messageText)
     {
         return source.HandleQueueMessages(new QueueStorageMessage(messageText));
+    }
+
+    /// <summary>
+    /// Dispatches a single Queue Storage message to the <paramref name="name"/>-keyed entry point -
+    /// use when more than one <c>[QueueTrigger]</c> function is registered.
+    /// </summary>
+    /// <param name="source">The built Azure Function app to dispatch to.</param>
+    /// <param name="name">The discriminator name matching the registered <c>UseQueueStorage(..., name)</c>.</param>
+    /// <param name="messageText">The queue message's text.</param>
+    /// <returns>A task that completes when the message has been handled.</returns>
+    public static Task HandleQueueMessage(this IAzureFunctionApp source, string name, string messageText)
+    {
+        return source.HandleQueueMessages(name, new QueueStorageMessage(messageText));
     }
 }

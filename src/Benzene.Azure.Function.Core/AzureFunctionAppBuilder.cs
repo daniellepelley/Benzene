@@ -15,7 +15,7 @@ public class AzureFunctionAppBuilder : BenzeneApplicationBuilder, IAzureFunction
     /// <summary>The platform identifier reported by <see cref="BenzeneApplicationBuilder.Platform"/>.</summary>
     public const string PlatformName = "AzureFunctions";
 
-    private readonly List<Func<IServiceResolverFactory, IEntryPointMiddlewareApplication>> _apps = new();
+    private readonly List<(string? Key, Func<IServiceResolverFactory, IEntryPointMiddlewareApplication> Factory)> _apps = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AzureFunctionAppBuilder"/> class.
@@ -33,7 +33,19 @@ public class AzureFunctionAppBuilder : BenzeneApplicationBuilder, IAzureFunction
     /// <param name="func">A factory that creates the entry point application given the current invocation's service resolver factory.</param>
     public void Add(Func<IServiceResolverFactory, IEntryPointMiddlewareApplication> func)
     {
-        _apps.Add(func);
+        Add(null, func);
+    }
+
+    /// <summary>
+    /// Registers a factory under a discriminator <paramref name="key"/>, so multiple entry points of
+    /// the same request type (e.g. two <c>[QueueTrigger]</c> functions) can coexist and be dispatched
+    /// to by name. A <c>null</c> key registers a type-only entry point (the default).
+    /// </summary>
+    /// <param name="key">The discriminator key (typically the function/queue/topic name), or <c>null</c>.</param>
+    /// <param name="func">A factory that creates the entry point application given the current invocation's service resolver factory.</param>
+    public void Add(string? key, Func<IServiceResolverFactory, IEntryPointMiddlewareApplication> func)
+    {
+        _apps.Add((key, func));
     }
 
     /// <summary>

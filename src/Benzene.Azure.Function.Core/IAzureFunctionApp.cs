@@ -13,15 +13,17 @@ public interface IAzureFunctionApp
     /// <typeparam name="TRequest">The request type.</typeparam>
     /// <typeparam name="TResponse">The response type.</typeparam>
     /// <param name="request">The request to handle.</param>
+    /// <param name="name">The discriminator key to match (for multiple entry points of the same type), or <c>null</c>.</param>
     /// <returns>A task that resolves to the response produced by the matching entry point application.</returns>
-    Task<TResponse> HandleAsync<TRequest, TResponse>(TRequest request);
+    Task<TResponse> HandleAsync<TRequest, TResponse>(TRequest request, string? name = null);
 
     /// <summary>
     /// Handles a fire-and-forget request, dispatching to the registered entry point application whose
-    /// request type matches.
+    /// request type matches (and whose discriminator key equals <paramref name="name"/>, when given).
     /// </summary>
     /// <typeparam name="TRequest">The request type.</typeparam>
     /// <param name="request">The request to handle.</param>
+    /// <param name="name">The discriminator key to match (for multiple entry points of the same type), or <c>null</c>.</param>
     /// <returns>A task that completes when the matching entry point application has finished handling the request.</returns>
-    Task HandleAsync<TRequest>(TRequest request);
+    Task HandleAsync<TRequest>(TRequest request, string? name = null);
 }

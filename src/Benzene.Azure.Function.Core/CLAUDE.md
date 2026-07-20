@@ -50,8 +50,13 @@ no Azure service SDK, only `Microsoft.Azure.Functions.Worker.*` for the host int
 
 ## Important conventions
 - Isolated-worker only — no `Microsoft.Azure.WebJobs` (the old in-process model) anywhere.
-- One entry point application per trigger request type; dispatch is by request (and response) type,
-  so two trigger types coexist in one app as long as their request types differ.
+- Dispatch is by request (and response) type, so two trigger types coexist in one app as long as
+  their request types differ. When two triggers share a request type (e.g. two `[QueueTrigger]`
+  functions, both `QueueStorageMessage[]`), disambiguate with an optional **discriminator key**:
+  register each via `Use...(..., name: "queue-a")` and dispatch with the matching
+  `Handle...(name, …)` — `AzureFunctionApp.HandleAsync<T>(request, name)` matches on key then type,
+  and a `null` name keeps the type-only first-match behaviour (fully backward-compatible). See
+  `AzureFunctionAppDispatchTest.cs`.
 - Coverage: `AzureUnifiedStartUpTest.cs` (host-builder glue), `AzureFunctionAppErrorMessageTest.cs`
   (the no-entry-point diagnostic), and every trigger package's `*PipelineTest.cs` exercise this
   builder end to end.

@@ -50,14 +50,14 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The Azure Function app builder to add Event Grid handling to.</param>
     /// <param name="action">The action that configures the Event Grid middleware pipeline.</param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseEventGrid(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, Action<EventGridOptions> configure = null)
+    public static IAzureFunctionAppBuilder UseEventGrid(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, Action<EventGridOptions> configure = null, string name = null)
     {
         app.Register(x => x.AddAzureEventGrid());
         var pipeline = app.Create<EventGridContext>();
         action(pipeline);
         var options = new EventGridOptions();
         configure?.Invoke(options);
-        app.Add(serviceResolverFactory => new EventGridApplication(pipeline.Build(), serviceResolverFactory, options));
+        app.Add(name, serviceResolverFactory => new EventGridApplication(pipeline.Build(), serviceResolverFactory, options));
         return app;
     }
 
@@ -68,11 +68,11 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Event Grid middleware pipeline.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseEventGrid(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, Action<EventGridOptions> configure = null)
+    public static IBenzeneApplicationBuilder UseEventGrid(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, Action<EventGridOptions> configure = null, string name = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseEventGrid(action, configure);
+            azureApp.UseEventGrid(action, configure, name);
         }
         return app;
     }
