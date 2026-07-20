@@ -149,6 +149,10 @@ public class AsyncApiCompositorTest
     [Fact]
     public void Merge_SkipsReservedTopicChannelsAndOperations()
     {
+        // The reserved "spec" operation carries a reply on a "spec:response" channel. Dropping the
+        // operation must also drop BOTH its request and its reply channel - and the compositor does
+        // this by keeping only channels a surviving operation references, so it needs no knowledge of
+        // the reply suffix (":response" here, but it could be anything a service configures).
         var doc = """
         {
           "asyncapi": "3.0.0",
@@ -156,11 +160,11 @@ public class AsyncApiCompositorTest
           "channels": {
             "order_create": { "address": "order:create", "messages": {} },
             "spec": { "address": "spec", "messages": {} },
-            "spec_benzeneResult": { "address": "spec:benzeneResult", "messages": {} }
+            "spec_response": { "address": "spec:response", "messages": {} }
           },
           "operations": {
             "order_create": { "action": "receive", "channel": { "$ref": "#/channels/order_create" } },
-            "spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" } }
+            "spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" }, "reply": { "channel": { "$ref": "#/channels/spec_response" } } }
           },
           "components": { "schemas": {} }
         }
@@ -172,7 +176,7 @@ public class AsyncApiCompositorTest
         var operations = parsed["operations"]!.AsObject();
 
         Assert.True(channels.ContainsKey("orders-api_order_create"));
-        // The reserved "spec" topic, its :benzeneResult reply channel, and its operation are all dropped.
+        // The reserved "spec" topic, its reply channel, and its operation are all dropped.
         Assert.DoesNotContain(channels, kv => kv.Key.Contains("spec"));
         Assert.DoesNotContain(operations, kv => kv.Key.Contains("spec"));
     }

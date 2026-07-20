@@ -79,7 +79,7 @@ public class AsyncApiDocumentBuilderTest
         Assert.Equal(AsyncApiAction.Receive, handle.Action);
         Assert.NotNull(handle.Reply);
         Assert.Equal("tenant:create", doc.Channels["tenant_create"].Address);
-        Assert.Equal("tenant:create:benzeneResult", doc.Channels["tenant_create_benzeneResult"].Address);
+        Assert.Equal("tenant:create:response", doc.Channels["tenant_create_response"].Address);
 
         // Broadcast event and egress sender are produced/sent.
         Assert.Equal(AsyncApiAction.Send, doc.Operations["tenant_created"].Action);
@@ -89,6 +89,24 @@ public class AsyncApiDocumentBuilderTest
         // Document-root metadata is populated, and it's an AsyncAPI 3.x document.
         Assert.Equal("application/json", doc.DefaultContentType);
         Assert.False(string.IsNullOrEmpty(doc.Id));
+    }
+
+    [Fact]
+    public void ReplyChannelSuffix_DefaultsToResponse_AndIsOverridable()
+    {
+        var handler = MessageHandlerDefinition.CreateInstance("shipping:get-all", typeof(Example), typeof(Inner));
+
+        // Default: the reply channel address reads <topic>:response (not the old internal :benzeneResult).
+        var byDefault = new AsyncApiDocumentBuilder(new SchemaBuilder())
+            .AddMessageHandlerDefinitions(new[] { handler }).Build();
+        Assert.Contains(byDefault.Channels.Values, c => c.Address == "shipping:get-all:response");
+        Assert.DoesNotContain(byDefault.Channels.Values, c => c.Address == "shipping:get-all:benzeneResult");
+
+        // Overridable via the constructor (wired app-wide through AsyncApiSpecOptions).
+        var custom = new AsyncApiDocumentBuilder(new SchemaBuilder(), "reply")
+            .AddMessageHandlerDefinitions(new[] { handler }).Build();
+        Assert.Contains(custom.Channels.Values, c => c.Address == "shipping:get-all:reply");
+        Assert.DoesNotContain(custom.Channels.Values, c => c.Address == "shipping:get-all:response");
     }
 }
 

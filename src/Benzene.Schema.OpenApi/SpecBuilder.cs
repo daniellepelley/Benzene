@@ -32,7 +32,8 @@ public class SpecBuilder
         return type switch
         {
             "openapi" => CreateSpec(resolver, new OpenApiDocumentBuilder(CreateSchemaBuilder(resolver))),
-            "asyncapi" => CreateSpec(resolver, new AsyncApiDocumentBuilder(CreateSchemaBuilder(resolver))),
+            "asyncapi" => CreateSpec(resolver, new AsyncApiDocumentBuilder(CreateSchemaBuilder(resolver),
+                resolver.TryGetService<AsyncApiSpecOptions>()?.ResponseTopicSuffix)),
             "benzene" => CreateSpec(resolver, new EventServiceDocumentBuilder(CreateSchemaBuilder(resolver))),
             _ => CreateSpec(resolver, new EventServiceDocumentBuilder(CreateSchemaBuilder(resolver)))
         };

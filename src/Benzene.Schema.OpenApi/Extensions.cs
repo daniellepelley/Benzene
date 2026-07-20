@@ -3,12 +3,26 @@ using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages;
+using Benzene.Schema.OpenApi.AsyncApi;
 using Benzene.Schema.OpenApi.TestPayloads;
 
 namespace Benzene.Schema.OpenApi;
 
 public static class Extensions
 {
+    /// <summary>
+    /// Overrides the suffix used to name a handled topic's reply channel in the generated AsyncAPI
+    /// document (default <see cref="AsyncApiDocumentBuilder.DefaultResponseTopicSuffix"/>, i.e.
+    /// <c>&lt;topic&gt;:response</c>). For example, passing <c>"reply"</c> makes a handler on
+    /// <c>shipping:get-all</c> reply on <c>shipping:get-all:reply</c>.
+    /// </summary>
+    public static IBenzeneServiceContainer SetAsyncApiResponseTopicSuffix(
+        this IBenzeneServiceContainer services, string responseTopicSuffix)
+    {
+        services.AddSingleton(new AsyncApiSpecOptions { ResponseTopicSuffix = responseTopicSuffix });
+        return services;
+    }
+
     /// <summary>
     /// Registers the <c>test-payloads</c> handler, which serves ready-to-fire example payloads for the
     /// service's domain topics (see <see cref="TestPayloadsMessageHandler"/>). Opt-in by design - like

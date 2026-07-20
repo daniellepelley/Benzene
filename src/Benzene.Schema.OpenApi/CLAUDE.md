@@ -51,8 +51,10 @@ for the `benzene` contract.
   an `address` = the topic and a `messages` map) and top-level **operations** that reference them.
   **Operation perspective:** 3.0 names direction explicitly with `action` from the *application's* view —
   a handler **`receive`s** its request and its reply is modelled with the native **`reply`** object
-  (pointing at the `:benzeneResult` channel); broadcast events and egress message-senders are things the
-  app **`send`s**. This replaces 2.x's notoriously back-to-front `publish`/`subscribe` (see
+  (pointing at a reply channel whose address is `<topic>:response` by default — configurable via
+  `AsyncApiSpecOptions.ResponseTopicSuffix` / `Extensions.SetAsyncApiResponseTopicSuffix(...)`, defaulting
+  to `AsyncApiDocumentBuilder.DefaultResponseTopicSuffix`); broadcast events and egress message-senders are
+  things the app **`send`s**. This replaces 2.x's notoriously back-to-front `publish`/`subscribe` (see
   `work/asyncapi-alignment.md` for why the old output was inverted). Channel/operation/message **map keys
   are sanitized** to `^[A-Za-z0-9.\-_]+$` (3.0 requires it; the raw topic, which can contain `:`, is kept
   in the channel's `address`). The document also carries `id` (`urn:benzene:service:<title>`) and

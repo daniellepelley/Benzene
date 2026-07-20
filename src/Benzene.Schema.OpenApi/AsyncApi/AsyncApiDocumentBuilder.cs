@@ -28,18 +28,30 @@ public class AsyncApiDocumentBuilder :
     IProducesJson,
     IProducesYaml
 {
+    /// <summary>
+    /// The default suffix appended to a handled topic to name its reply channel's address
+    /// (<c>&lt;topic&gt;:response</c>), e.g. <c>shipping:get-all:response</c>. Override per-app via
+    /// <see cref="AsyncApiSpecOptions.ResponseTopicSuffix"/>.
+    /// </summary>
+    public const string DefaultResponseTopicSuffix = "response";
+
     private readonly ISchemaBuilder _schemaBuilder = new SchemaBuilder();
+    private readonly string _responseTopicSuffix;
     private AsyncApiInfo _openApiInfo = new();
     private readonly List<AsyncApiTag> _tags = new();
     private readonly Dictionary<string, AsyncApiChannel> _channels = new();
     private readonly Dictionary<string, AsyncApiOperation> _operations = new();
 
-    public AsyncApiDocumentBuilder(ISchemaBuilder? schemaBuilder = null)
+    public AsyncApiDocumentBuilder(ISchemaBuilder? schemaBuilder = null, string? responseTopicSuffix = null)
     {
         if (schemaBuilder != null)
         {
             _schemaBuilder = schemaBuilder;
         }
+
+        _responseTopicSuffix = string.IsNullOrWhiteSpace(responseTopicSuffix)
+            ? DefaultResponseTopicSuffix
+            : responseTopicSuffix;
     }
 
     public AsyncApiDocument Build()
@@ -112,14 +124,14 @@ public class AsyncApiDocumentBuilder :
     public void AddMessageHandlerDefinition(string topic, IMessageHandlerDefinition[] messageHandlerDefinitions)
     {
         // The application RECEIVES the request on the topic channel; the reply it sends back is
-        // modelled with AsyncAPI 3.0's native `reply` (pointing at the `:benzeneResult` channel).
+        // modelled with AsyncAPI 3.0's native `reply` (pointing at the `<topic>:<suffix>` channel).
         var requestChannelKey = GetOrAddChannel(topic);
         var requestChannel = _channels[requestChannelKey];
         var requestMessageRefs = messageHandlerDefinitions
             .Select(x => MessageRef(requestChannelKey, AddMessage(requestChannel, x.RequestType, MessageName(topic, x.Topic.Version))))
             .ToList();
 
-        var replyChannelKey = GetOrAddChannel($"{topic}:benzeneResult");
+        var replyChannelKey = GetOrAddChannel($"{topic}:{_responseTopicSuffix}");
         var replyChannel = _channels[replyChannelKey];
         var replyMessageRefs = messageHandlerDefinitions
             .Select(x => MessageRef(replyChannelKey, AddMessage(replyChannel, x.ResponseType, MessageName(topic, x.Topic.Version))))

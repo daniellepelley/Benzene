@@ -81,9 +81,13 @@ public static class AsyncApiCompositor
                 }
             }
 
-            // 2) Namespace channels (dropping reserved ones), tracking old->new channel keys so the
-            //    operations that reference them can be rewritten.
+            // 2) Map ALL channel keys old->new (namespaced), capturing each channel's address and a
+            //    clone. Channels are emitted below only if a surviving (non-reserved) operation
+            //    references them - so reserved request channels AND their reply channels fall away
+            //    regardless of the reply-suffix a service happens to use.
             var channelKeyMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            var channelAddress = new Dictionary<string, string>(StringComparer.Ordinal);
+            var clonedChannels = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
             if (doc["channels"] is JsonObject serviceChannels)
             {
                 foreach (var channel in serviceChannels.ToList())
@@ -93,20 +97,18 @@ public static class AsyncApiCompositor
                         continue;
                     }
 
-                    var address = channelObj["address"]?.GetValue<string>() ?? channel.Key;
-                    if (service.ReservedTopics.Contains(BaseTopic(address)))
-                    {
-                        continue; // drop utility topics (spec/health/mesh) and their reply channels
-                    }
-
                     var newKey = $"{ns}_{channel.Key}";
                     channelKeyMap[channel.Key] = newKey;
-                    channels[newKey] = channelObj.DeepClone();
+                    channelAddress[channel.Key] = channelObj["address"]?.GetValue<string>() ?? channel.Key;
+                    clonedChannels[newKey] = (JsonObject)channelObj.DeepClone();
                 }
             }
 
-            // 3) Namespace operations, dropping any that target a dropped (reserved) channel, and
-            //    rewriting their channel/message $refs onto the namespaced channel keys.
+            // 3) Namespace operations, dropping any whose channel is a reserved (utility) topic, and
+            //    rewriting their channel/message/reply $refs onto the namespaced channel keys. An
+            //    operation's primary channel address IS the topic id, so reserved detection needs no
+            //    suffix knowledge. Track which channels a surviving operation references.
+            var referencedChannelKeys = new HashSet<string>(StringComparer.Ordinal);
             if (doc["operations"] is JsonObject serviceOperations)
             {
                 foreach (var operation in serviceOperations.ToList())
@@ -116,13 +118,43 @@ public static class AsyncApiCompositor
                         continue;
                     }
 
-                    if (!TryRewriteOperation(operationObj, channelKeyMap))
+                    var primaryKey = ChannelKeyOf(operationObj["channel"]);
+                    if (primaryKey == null || !channelKeyMap.ContainsKey(primaryKey)
+                        || service.ReservedTopics.Contains(channelAddress[primaryKey]))
                     {
-                        continue; // operation targets a reserved/dropped channel
+                        continue; // no resolvable channel, or a reserved/utility operation - drop it
+                    }
+
+                    RewriteChannelRef(operationObj["channel"], channelKeyMap);
+                    RewriteMessageRefs(operationObj["messages"], channelKeyMap);
+                    referencedChannelKeys.Add(channelKeyMap[primaryKey]);
+
+                    if (operationObj["reply"] is JsonObject reply)
+                    {
+                        var replyKey = ChannelKeyOf(reply["channel"]);
+                        if (replyKey != null && channelKeyMap.ContainsKey(replyKey))
+                        {
+                            RewriteChannelRef(reply["channel"], channelKeyMap);
+                            RewriteMessageRefs(reply["messages"], channelKeyMap);
+                            referencedChannelKeys.Add(channelKeyMap[replyKey]);
+                        }
+                        else
+                        {
+                            operationObj.Remove("reply");
+                        }
                     }
 
                     TagOperation(operationObj, service.ServiceName);
                     operations[UniqueKey($"{ns}_{operation.Key}", usedOperationKeys)] = operationObj;
+                }
+            }
+
+            // 4) Emit only the channels a surviving operation references.
+            foreach (var referenced in referencedChannelKeys)
+            {
+                if (clonedChannels.TryGetValue(referenced, out var channelObj))
+                {
+                    channels[referenced] = channelObj;
                 }
             }
         }
@@ -166,37 +198,6 @@ public static class AsyncApiCompositor
         {
             return null;
         }
-    }
-
-    // Rewrites an operation's channel/message/reply $refs onto the namespaced channel keys. Returns
-    // false (drop the operation) if its channel resolves to a dropped (reserved) channel.
-    private static bool TryRewriteOperation(JsonObject operation, IReadOnlyDictionary<string, string> channelKeyMap)
-    {
-        var channelKey = ChannelKeyOf(operation["channel"]);
-        if (channelKey == null || !channelKeyMap.ContainsKey(channelKey))
-        {
-            return false;
-        }
-
-        RewriteChannelRef(operation["channel"], channelKeyMap);
-        RewriteMessageRefs(operation["messages"], channelKeyMap);
-
-        if (operation["reply"] is JsonObject reply)
-        {
-            // Only keep the reply if its channel survived; otherwise drop the reply but keep the operation.
-            var replyChannelKey = ChannelKeyOf(reply["channel"]);
-            if (replyChannelKey != null && channelKeyMap.ContainsKey(replyChannelKey))
-            {
-                RewriteChannelRef(reply["channel"], channelKeyMap);
-                RewriteMessageRefs(reply["messages"], channelKeyMap);
-            }
-            else
-            {
-                operation.Remove("reply");
-            }
-        }
-
-        return true;
     }
 
     private static string? ChannelKeyOf(JsonNode? channelRefNode)
@@ -260,16 +261,6 @@ public static class AsyncApiCompositor
         }
 
         tags.Add(new JsonObject { ["name"] = serviceName });
-    }
-
-    // Benzene emits a handled topic's reply on a "<topic>:benzeneResult" channel address - strip that
-    // suffix so the reserved-topic check matches the base topic id.
-    private static string BaseTopic(string address)
-    {
-        const string resultSuffix = ":benzeneResult";
-        return address.EndsWith(resultSuffix, StringComparison.Ordinal)
-            ? address.Substring(0, address.Length - resultSuffix.Length)
-            : address;
     }
 
     private static string UniqueKey(string candidate, ISet<string> used)

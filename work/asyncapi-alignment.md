@@ -116,8 +116,11 @@ cleaner either way).
   test project uses `ByteBard.AsyncAPI.NET.Readers`).
 - ✅ `Mapper` now targets ByteBard's `AsyncApiJsonSchema`; `AsyncApiDocumentBuilder` emits 3.0 —
   channels (`address` + `messages`), top-level operations with `action: receive/send`, and the native
-  `reply` object for a handler's request→`:benzeneResult`. Channel/operation/message map keys sanitized
-  to `^[A-Za-z0-9.\-_]+$` (topic kept in `address`).
+  `reply` object for a handler's request→reply channel (address `<topic>:response` by default,
+  configurable via `AsyncApiSpecOptions.ResponseTopicSuffix` — replaces the old internal-looking
+  `:benzeneResult`). Channel/operation/message map keys sanitized to `^[A-Za-z0-9.\-_]+$` (topic kept
+  in `address`). The Mesh `AsyncApiCompositor` drops reserved topics operation-first (by request-channel
+  address) and keeps only channels a surviving operation references, so it's suffix-agnostic.
 - ✅ `AsyncApiCompositor` rewritten to namespace + merge the 3.0 structure (channels, top-level
   operations, channel-scoped message refs, schema refs; reserved-topic + operation filtering; unused-
   schema pruning; per-operation service tags). Composite emits `asyncapi: 3.0.0`.
@@ -130,7 +133,7 @@ cleaner either way).
   version" recommendation.
 
 ## Remaining open question
-- **F5:** Benzene still emits a `reply` (and its `:benzeneResult` channel) for **every** handler, even
+- **F5:** Benzene still emits a `reply` (and its `<topic>:response` channel) for **every** handler, even
   fire-and-forget pub/sub consumers with no reply on the wire. Decide whether to gate the `reply` on a
   request/reply-capable transport (benzene-message / HTTP-invoke / gRPC) being wired. Needs transport
   info at spec-build time; not done.
