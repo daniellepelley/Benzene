@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -27,10 +28,27 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
             Tag(activity, context);
         }
 
-        await _inner.HandleAsync(context, next);
+        try
+        {
+            await _inner.HandleAsync(context, next);
+        }
+        catch (Exception ex)
+        {
+            // Without this, a span that threw looks identical to one that succeeded in a trace
+            // viewer (Jaeger/Tempo/App Insights) - no error flag, no exception. Marking the span
+            // (at every level the exception propagates through) is what lets a trace point at the
+            // failing stage. Then rethrow untouched - this only observes, it doesn't handle.
+            if (activity is not null)
+            {
+                activity.AddException(ex);
+                activity.SetStatus(ActivityStatusCode.Error, ex.Message);
+            }
+
+            throw;
+        }
     }
 
-    private void Tag(System.Diagnostics.Activity activity, TContext context)
+    private void Tag(Activity activity, TContext context)
     {
         var transport = _serviceResolver.TryGetService<ICurrentTransport>();
         if (transport is not null)

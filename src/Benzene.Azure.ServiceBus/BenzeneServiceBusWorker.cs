@@ -128,8 +128,17 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
                 await args.CompleteMessageAsync(args.Message, args.CancellationToken);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            // The rethrow surfaces the exception to OnProcessErrorAsync, but that only has the
+            // entity/error-source - not which message failed. Log here with the message id so a
+            // failure is diagnosable to a specific message, matching the other workers (SQS/Kafka).
+            using (var loggingScope = _serviceResolverFactory.CreateScope())
+            {
+                loggingScope.GetService<ILogger<BenzeneServiceBusWorker>>()
+                    .LogError(ex, "Processing Service Bus message {messageId} failed", args.Message.MessageId);
+            }
+
             await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
             throw;
         }

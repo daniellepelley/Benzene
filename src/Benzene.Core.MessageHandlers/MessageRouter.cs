@@ -116,6 +116,18 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         _logger.LogDebug("Handler mapped to topic");
 
         var result = await handler.HandleAsync(new DeferredRequestMapper<TContext>(_requestMapper, context));
+
+        // A baseline failure signal even when no logging middleware is wired: an unsuccessful handler
+        // result (BadRequest/NotFound/UnexpectedError/...) is otherwise invisible in logs - the router
+        // only logged routing failures, and UseLogResult logs every result at Information. Warn once,
+        // with the topic, status, and any error messages, so "show me the errors" surfaces it.
+        if (!result.IsSuccessful)
+        {
+            _logger.LogWarning("Handler {handler} for topic {topic} returned unsuccessful status {status}{errors}",
+                messageHandlerDefinition.HandlerType.Name, topic.Id, result.Status,
+                result.Errors.Length > 0 ? " - " + string.Join("; ", result.Errors) : string.Empty);
+        }
+
         await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, result));
     }
 }

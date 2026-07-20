@@ -38,7 +38,23 @@ public static class LoggerExtensions
                 var stopwatch = Stopwatch.StartNew();
                 using (logger.BeginScope(builder.BuildRequestScope(resolver, context)))
                 {
-                    await next();
+                    try
+                    {
+                        await next();
+                    }
+                    catch (Exception ex)
+                    {
+                        // A throw short-circuits before the success line below, so without this the
+                        // one "log every message" line silently skips exactly the messages that most
+                        // need logging. Emit an Error (with the exception) and rethrow untouched. The
+                        // response scope is deliberately not built here - the result isn't set.
+                        using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = stopwatch.ElapsedMilliseconds }))
+                        {
+                            logger.LogError(ex, "BenzeneResult faulted");
+                        }
+
+                        throw;
+                    }
 
                     using (logger.BeginScope(builder.BuildResponseScope(resolver, context)))
                     using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = stopwatch.ElapsedMilliseconds }))

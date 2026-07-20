@@ -111,12 +111,13 @@ So the default DX is: failure results invisible, exceptions visible only via wha
 does, spans unmarked. The good stack exists but is undiscoverable unless you read `monitoring.md`
 and assemble it yourself.
 
-### G5 — One transport catches an exception without logging it
+### G5 — One transport's per-message failure isn't attributed to a message
 `BenzeneServiceBusWorker` (self-hosted Azure Service Bus,
-`src/Benzene.Azure.ServiceBus/BenzeneServiceBusWorker.cs:131`) does
-`catch (Exception) { await args.AbandonMessageAsync(...); throw; }` — abandons the message and
-rethrows **without a `LogError`**. The rethrow means it isn't fully lost, but Benzene adds no
-error log with topic/message context; you're relying on whatever hosts the worker loop.
+`src/Benzene.Azure.ServiceBus/BenzeneServiceBusWorker.cs`) *does* log receive-side errors — the
+rethrow surfaces to `OnProcessErrorAsync`, which `LogError`s with the entity path and error source.
+But that handler only has the entity/error-source, **not which message failed**, so a per-message
+handler fault couldn't be tied back to a specific message id the way the SQS/Kafka workers do. The
+per-message `catch` abandoned and rethrew without its own log.
 
 ### G6 — Ordering footguns fail silently
 `UseW3CTraceContext()` must be the first middleware, and enrichment's `invocationId` needs
@@ -145,17 +146,23 @@ far more useful in a plain log tail.
 | AWS Lambda DynamoDb / Kinesis | catch → checkpoint/stop | **Yes** — `LogError(ex, …)` |
 | AWS Lambda S3 / EventBridge / Kafka | **no catch** — propagates to Lambda host | Only the Lambda runtime's raw CloudWatch error (no Benzene context; whole invocation fails) |
 | Self-hosted SQS / Kafka / RabbitMQ / Event Hub / Cosmos / HTTP workers | catch per message → ack/nack | **Yes** — `LogError(ex, …)` |
-| Self-hosted Azure Service Bus (`BenzeneServiceBusWorker`) | catch → abandon + **rethrow** | **No** — abandons and rethrows without logging (G5) |
+| Self-hosted Azure Service Bus (`BenzeneServiceBusWorker`) | catch → abandon + **rethrow** | **Yes** — per-message `LogError` with message id, plus the receive-side `OnProcessErrorAsync` log (was entity-level only before the G5 fix) |
 | Azure Functions triggers | `RaiseOnFailureStatus` escalation → Functions host | Host logs; Benzene adds structured log only where the app catches |
 | HTTP (ASP.NET Core / API Gateway / SelfHost) | maps to status code | Exception → the app's error path / `UseExceptionHandler` if wired |
 
 Net: the **AWS batch family and the self-hosted workers are good**; the **single-event AWS Lambda
-sources (S3/EventBridge/Kafka) lean on the platform host**, and **self-hosted Service Bus is the one
-outright gap**.
+sources (S3/EventBridge/Kafka) lean on the platform host**. (Self-hosted Service Bus was the one
+per-message-attribution gap — now closed by the G5 fix below.)
 
 ---
 
 ## Recommendations (quick wins first)
+
+> **Status:** quick wins 1–4 are **implemented**. Spans now carry `Error` status + an exception
+> event (`ActivityMiddlewareDecorator`); `UseLogResult` logs a throw at `Error` with the exception
+> and rethrows; `MessageRouter` warns once on an unsuccessful handler result with topic/status/errors;
+> and `BenzeneServiceBusWorker`'s per-message catch now `LogError`s with the message id. 5–7 (default
+> scaffolding, the diagnosing-failures doc, the ordering-check) remain open.
 
 1. **Mark failed spans (G1).** In `ActivityMiddlewareDecorator` and `ActivityProcessTimer`, wrap
    `next()`/the scope in try/catch, call `activity?.AddException(ex)` +

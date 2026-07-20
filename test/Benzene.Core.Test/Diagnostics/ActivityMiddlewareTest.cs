@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -93,6 +94,32 @@ public class ActivityMiddlewareTest
         Assert.Single(services.Where(d =>
             d.ServiceType == typeof(IMiddlewareWrapper) &&
             d.ImplementationType == typeof(ActivityMiddlewareWrapper)));
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_MarksTheSpanAsErrorWhenAMiddlewareThrows()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+
+        var builder = new MiddlewarePipelineBuilder<object>(container);
+        builder.Use("boom", (_, _) => throw new InvalidOperationException("kaboom"));
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.HandleAsync(new object(), resolver));
+
+        // Without the fix a thrown span looks identical to a successful one - it must carry Error
+        // status and an exception event so a trace viewer can point at the failing stage.
+        Assert.Contains(activities, a =>
+            a.Status == ActivityStatusCode.Error && a.Events.Any(e => e.Name == "exception"));
     }
 
     [Fact]
