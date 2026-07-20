@@ -50,12 +50,14 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The Azure Function app builder to add Queue Storage handling to.</param>
     /// <param name="action">The action that configures the Queue Storage middleware pipeline.</param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseQueueStorage(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<QueueStorageContext>> action, int? maxDegreeOfParallelism = null)
+    public static IAzureFunctionAppBuilder UseQueueStorage(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<QueueStorageContext>> action, Action<QueueStorageOptions> configure = null)
     {
         app.Register(x => x.AddAzureQueueStorage());
         var pipeline = app.Create<QueueStorageContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new QueueStorageApplication(pipeline.Build(), serviceResolverFactory, maxDegreeOfParallelism));
+        var options = new QueueStorageOptions();
+        configure?.Invoke(options);
+        app.Add(serviceResolverFactory => new QueueStorageApplication(pipeline.Build(), serviceResolverFactory, options));
         return app;
     }
 
@@ -66,11 +68,11 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Queue Storage middleware pipeline.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseQueueStorage(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<QueueStorageContext>> action, int? maxDegreeOfParallelism = null)
+    public static IBenzeneApplicationBuilder UseQueueStorage(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<QueueStorageContext>> action, Action<QueueStorageOptions> configure = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseQueueStorage(action, maxDegreeOfParallelism);
+            azureApp.UseQueueStorage(action, configure);
         }
         return app;
     }

@@ -6,14 +6,16 @@ worker): delivers a queue message to a Benzene middleware pipeline. The Azure co
 `Benzene.Aws.Lambda.Sqs` in spirit, but structurally closer to `Benzene.Azure.Function.EventHub` —
 see "Routing" below for why.
 
-## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result is always silently dropped
-There is no `Options` class here (unlike `Benzene.Aws.Lambda.Sqs`, whose `SqsOptions.BatchFailureMode`
-defaults to retrying failed records). If a handler returns a non-exception failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`), nothing in this package inspects it — the message is
-deleted like any success. Queue Storage's own poison-queue/`maxDequeueCount` machinery (see
-"Failure handling" below) only ever sees an **unhandled exception**, never a returned failure
-result — so a handler that "fails gracefully" via `IBenzeneResult` instead of throwing gets none of
-that retry/poison-queue protection.
+## Failure handling: a returned failure result is not retried by default (opt in via `QueueStorageOptions`)
+By default, if a handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), the message is deleted like any success — Queue Storage's
+poison-queue/`maxDequeueCount` machinery only ever sees an **unhandled exception**. To retry on
+failure *results* too, set `QueueStorageOptions.RaiseOnFailureStatus = true` (via
+`UseQueueStorage(action, configure)`), which escalates a failure result into a thrown
+`QueueStorageMessageProcessingException` so the host's `maxDequeueCount` retry/poison handling
+applies the same way it would for an exception — mirroring `Benzene.Azure.Function.Kafka`.
+`QueueStorageOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions.
+Both default off (purely additive). If you enable `RaiseOnFailureStatus`, the handler must be idempotent.
 
 ## Zero dependencies — deliberately
 References only `Benzene.Azure.Function.Core` + `Benzene.Core.MessageHandlers` — no storage SDK,
@@ -57,10 +59,11 @@ returns null, and routing comes from exactly two places:
   bound.
 
 ## Failure handling
-Deliberately none in this package: a pipeline exception propagates to the Functions host, whose
-own retry (`maxDequeueCount`, visibility timeout in `host.json`) and poison-queue machinery is the
-per-message failure story. There is no options class — unlike Service Bus there's no
-settlement/batching dimension to configure.
+A pipeline exception propagates to the Functions host, whose own retry (`maxDequeueCount`,
+visibility timeout in `host.json`) and poison-queue machinery is the per-message failure story.
+`QueueStorageOptions.RaiseOnFailureStatus` additionally escalates a non-exception failure result
+into a throw so the host's retry/poison handling engages for those too (see the top-of-file
+section). There is still no per-message settlement dimension (the host owns delete/retry).
 
 ## No TestHelpers package
 Deliberate: the transport message is a plain string, so

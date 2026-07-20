@@ -50,12 +50,14 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The Azure Function app builder to add Event Grid handling to.</param>
     /// <param name="action">The action that configures the Event Grid middleware pipeline.</param>
     /// <returns>The Azure Function app builder, for method chaining.</returns>
-    public static IAzureFunctionAppBuilder UseEventGrid(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, int? maxDegreeOfParallelism = null)
+    public static IAzureFunctionAppBuilder UseEventGrid(this IAzureFunctionAppBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, Action<EventGridOptions> configure = null)
     {
         app.Register(x => x.AddAzureEventGrid());
         var pipeline = app.Create<EventGridContext>();
         action(pipeline);
-        app.Add(serviceResolverFactory => new EventGridApplication(pipeline.Build(), serviceResolverFactory, maxDegreeOfParallelism));
+        var options = new EventGridOptions();
+        configure?.Invoke(options);
+        app.Add(serviceResolverFactory => new EventGridApplication(pipeline.Build(), serviceResolverFactory, options));
         return app;
     }
 
@@ -66,11 +68,11 @@ public static class DependencyInjectionExtensions
     /// <param name="app">The application builder passed to <c>BenzeneStartUp.Configure</c>.</param>
     /// <param name="action">The action that configures the Event Grid middleware pipeline.</param>
     /// <returns><paramref name="app"/>, for method chaining.</returns>
-    public static IBenzeneApplicationBuilder UseEventGrid(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, int? maxDegreeOfParallelism = null)
+    public static IBenzeneApplicationBuilder UseEventGrid(this IBenzeneApplicationBuilder app, Action<IMiddlewarePipelineBuilder<EventGridContext>> action, Action<EventGridOptions> configure = null)
     {
         if (app is IAzureFunctionAppBuilder azureApp)
         {
-            azureApp.UseEventGrid(action, maxDegreeOfParallelism);
+            azureApp.UseEventGrid(action, configure);
         }
         return app;
     }

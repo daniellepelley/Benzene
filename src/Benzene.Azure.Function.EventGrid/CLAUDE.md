@@ -7,12 +7,16 @@ counterpart of `Benzene.Aws.Lambda.S3`/`EventBridge` routing on the event name. 
 schemas Event Grid can deliver: the Event Grid schema (`eventType`/`topic`) and CloudEvents 1.0
 (`type`/`source`, detected by `specversion`).
 
-## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result is always silently dropped
-There is no `Options` class here. If a handler returns a non-exception failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`), nothing in this package inspects it — the invocation
-always reports success, so Event Grid considers the event delivered and never retries it. Only an
-unhandled exception propagating out of the pipeline drives Event Grid's own delivery retry (with
-backoff, up to 24h) and optional dead-letter destination — see "Failure handling" below.
+## Failure handling: a returned failure result is not retried by default (opt in via `EventGridOptions`)
+By default, if a handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), the invocation reports success, so Event Grid considers the
+event delivered and never retries it — only an unhandled exception drives Event Grid's own delivery
+retry (backoff, up to 24h) + optional dead-letter destination. To retry on failure *results* too, set
+`EventGridOptions.RaiseOnFailureStatus = true` (via `UseEventGrid(action, configure)`), which
+escalates a failure result into a thrown `EventGridMessageProcessingException` so Event Grid's retry
+applies the same way it would for an exception — mirroring `Benzene.Azure.Function.Kafka`.
+`EventGridOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions. Both
+default off (purely additive). If you enable `RaiseOnFailureStatus`, the handler must be idempotent.
 
 ## Zero dependencies — deliberately
 References only `Benzene.Azure.Function.Core` + `Benzene.Core.MessageHandlers` — no
