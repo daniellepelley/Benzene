@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Benzene.Abstractions.Results;
@@ -11,6 +12,12 @@ namespace Benzene.Clients.Aws.Lambda;
 /// <summary>
 /// A health check that verifies connectivity to a Lambda function by invoking it with a "ping" message.
 /// </summary>
+/// <remarks>
+/// ⚠️ Side-effecting: every probe <b>really invokes</b> the target function (topic <c>ping</c>), which
+/// the function must recognise and no-op. At probe cadence that is a continuous stream of real
+/// invocations (cost, cold-start noise). Probe infrequently, or confirm reachability another way if you
+/// don't need to actually invoke the function.
+/// </remarks>
 public class AwsLambdaHealthCheck : IHealthCheck
 {
     private readonly AwsLambdaBenzeneMessageClient _awsLambdaBenzeneMessageClient;
@@ -43,23 +50,36 @@ public class AwsLambdaHealthCheck : IHealthCheck
     {
         var dependencies = new[] { new HealthCheckDependency("Lambda", _lambdaName) };
 
-        var delay = Task.Delay(TimeOut);
         var pingLambdaTask = _awsLambdaBenzeneMessageClient.SendMessageAsync<Void, Void>("ping", null);
 
-        await Task.WhenAny(delay, pingLambdaTask);
+        using var cts = new CancellationTokenSource();
+        var completed = await Task.WhenAny(pingLambdaTask, Task.Delay(TimeOut, cts.Token));
 
-        if (pingLambdaTask.IsCompleted && pingLambdaTask.Result.Status == BenzeneResultStatus.Accepted)
-        {
-            return HealthCheckResult.CreateInstance(true, Type, new Dictionary<string, object>(), dependencies);
-        }
-
-        if (delay.IsCompleted)
+        if (completed != pingLambdaTask)
         {
             return HealthCheckResult.CreateInstance(false, Type,
                 new Dictionary<string, object>
                 {
                     { "TimeOut", TimeOut }
                 }, dependencies);
+        }
+
+        cts.Cancel();
+
+        // IsCompletedSuccessfully, not IsCompleted: a faulted invoke is also "completed", and reading
+        // .Result on it would rethrow (losing the Lambda dependency to the outer exception wrapper).
+        if (pingLambdaTask.IsFaulted)
+        {
+            return HealthCheckResult.CreateInstance(false, Type,
+                new Dictionary<string, object>
+                {
+                    { "Error", (pingLambdaTask.Exception?.InnerException ?? pingLambdaTask.Exception)?.GetType().Name }
+                }, dependencies);
+        }
+
+        if (pingLambdaTask.Result.Status == BenzeneResultStatus.Accepted)
+        {
+            return HealthCheckResult.CreateInstance(true, Type, new Dictionary<string, object>(), dependencies);
         }
 
         return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>

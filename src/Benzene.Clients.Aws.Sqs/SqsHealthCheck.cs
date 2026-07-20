@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
@@ -10,6 +11,12 @@ namespace Benzene.Clients.Aws.Sqs;
 /// <summary>
 /// A health check that verifies connectivity to an SQS queue by sending a "ping" message to it.
 /// </summary>
+/// <remarks>
+/// ⚠️ Side-effecting: every probe <b>sends a real message</b> (topic <c>ping</c>) to the live queue,
+/// so the queue's consumer must be built to recognise and ignore it. If you don't want a probe-rate
+/// stream of ping messages on a production queue, probe infrequently, or use a read-only check (e.g.
+/// <c>GetQueueAttributes</c>) when you only need to confirm the queue is reachable.
+/// </remarks>
 public class SqsHealthCheck : IHealthCheck
 {
     private readonly IAmazonSQS _amazonSqs;
@@ -43,7 +50,6 @@ public class SqsHealthCheck : IHealthCheck
     {
         var dependencies = new[] { new HealthCheckDependency("Queue", _queueUrl) };
 
-        var delay = Task.Delay(TimeOut);
         var pingQueue = _amazonSqs.SendMessageAsync(new SendMessageRequest(_queueUrl, "{}")
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
@@ -57,17 +63,10 @@ public class SqsHealthCheck : IHealthCheck
             }
         });
 
-        await Task.WhenAny(delay, pingQueue);
+        using var cts = new CancellationTokenSource();
+        var completed = await Task.WhenAny(pingQueue, Task.Delay(TimeOut, cts.Token));
 
-        if (pingQueue.IsCompleted && pingQueue.Result.HttpStatusCode == HttpStatusCode.OK)
-        {
-            return HealthCheckResult.CreateInstance(true, Type,
-                new Dictionary<string, object>
-                {
-                    { "QueueUrl", _queueUrl },
-                }, dependencies);
-        }
-        if (delay.IsCompleted)
+        if (completed != pingQueue)
         {
             return HealthCheckResult.CreateInstance(false, Type,
                 new Dictionary<string, object>
@@ -76,10 +75,32 @@ public class SqsHealthCheck : IHealthCheck
                     { "Error", $"Timed out, {TimeOut}ms" }
                 }, dependencies);
         }
+
+        cts.Cancel();
+
+        // IsCompletedSuccessfully, not IsCompleted: a faulted send is also "completed", and reading
+        // .Result on it would rethrow (losing the Queue dependency to the outer exception wrapper).
+        if (pingQueue.IsFaulted)
+        {
+            return HealthCheckResult.CreateInstance(false, Type,
+                new Dictionary<string, object>
+                {
+                    { "QueueUrl", _queueUrl },
+                    { "Error", (pingQueue.Exception?.InnerException ?? pingQueue.Exception)?.GetType().Name }
+                }, dependencies);
+        }
+
+        var statusCode = pingQueue.Result.HttpStatusCode;
+        if (statusCode == HttpStatusCode.OK)
+        {
+            return HealthCheckResult.CreateInstance(true, Type,
+                new Dictionary<string, object> { { "QueueUrl", _queueUrl } }, dependencies);
+        }
+
         return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
         {
-            { "Error", $"Returned a status of {pingQueue.Result.HttpStatusCode}" },
-            { "QueueUrl", _queueUrl }
+            { "QueueUrl", _queueUrl },
+            { "Error", $"Returned a status of {statusCode}" }
         }, dependencies);
     }
 

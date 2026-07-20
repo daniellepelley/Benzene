@@ -14,7 +14,12 @@ API decisions to make before the freeze, two verified integration bugs, and prov
 > duration, `HealthCheckNamer` internal, unused `topic` dropped; cancellation via the scoped
 > `ICancellationTokenAccessor` any component can resolve — `HttpPingHealthCheck` consumes it, OCE
 > reported distinctly. Remaining framework-wide step: seed the token from each transport). Tier 1
-> DONE (probe R3, drift loop, TimeOutHealthCheck, HttpPing dispose). Below kept as the record.
+> DONE (probe R3, drift loop, TimeOutHealthCheck, HttpPing dispose).
+> Tier 2 IN PROGRESS: DONE — T2.1 (OCE), T2.3 (EF Add* extensions + migration-error detail),
+> T2.4 (AWS side-effect warnings on Sqs/StepFunctions/Lambda checks), T2.6 (faulted-`.Result`
+> dependency loss fixed in Sqs/StepFunctions/Lambda; `ContinueWith` already fixed; Http URL
+> userinfo note still open). REMAINING — T2.2 (shared-scope concurrency: document/child-scope),
+> T2.5 (gRPC liveness/readiness split + doc fix), T2.7 (caching/throttling). Below kept as the record.
 
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way

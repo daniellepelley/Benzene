@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
@@ -11,6 +12,13 @@ namespace Benzene.Clients.Aws.StepFunctions;
 /// Checks the health of a Step Functions state machine by starting an execution with an empty input
 /// and confirming it's accepted within a timeout.
 /// </summary>
+/// <remarks>
+/// ⚠️ Side-effecting: every probe <b>starts a real execution</b> of the state machine. At a typical
+/// Kubernetes/LB probe cadence (e.g. every 10s) that is a continuous stream of real executions - cost,
+/// noise, and history-retention pressure. Point it at a cheap no-op state machine, probe it
+/// infrequently, or prefer a read-only reachability check (e.g. <c>DescribeStateMachine</c>) if you
+/// only need to confirm the service/ARN is reachable rather than executable.
+/// </remarks>
 public class StepFunctionsHealthCheck : IHealthCheck
 {
     private readonly IAmazonStepFunctions _amazonStepFunctions;
@@ -40,24 +48,16 @@ public class StepFunctionsHealthCheck : IHealthCheck
     {
         var dependencies = new[] { new HealthCheckDependency("StateMachine", _stateMachineArn) };
 
-        var delay = Task.Delay(TimeOut);
         var pingState = _amazonStepFunctions.StartExecutionAsync(new StartExecutionRequest
         {
             StateMachineArn = _stateMachineArn,
             Input = "{}"
         });
 
-        await Task.WhenAny(delay, pingState);
+        using var cts = new CancellationTokenSource();
+        var completed = await Task.WhenAny(pingState, Task.Delay(TimeOut, cts.Token));
 
-        if (pingState.IsCompleted && pingState.Result.HttpStatusCode == HttpStatusCode.OK)
-        {
-            return HealthCheckResult.CreateInstance(true, Type,
-                new Dictionary<string, object>
-                {
-                    { "StateMachineArn", _stateMachineArn },
-                }, dependencies);
-        }
-        if (delay.IsCompleted)
+        if (completed != pingState)
         {
             return HealthCheckResult.CreateInstance(false, Type,
                 new Dictionary<string, object>
@@ -66,10 +66,32 @@ public class StepFunctionsHealthCheck : IHealthCheck
                     { "Error", $"Timed out, {TimeOut}ms" }
                 }, dependencies);
         }
+
+        cts.Cancel();
+
+        // IsCompletedSuccessfully, not IsCompleted: a faulted start is also "completed", and reading
+        // .Result on it would rethrow (losing the StateMachine dependency to the outer exception wrapper).
+        if (pingState.IsFaulted)
+        {
+            return HealthCheckResult.CreateInstance(false, Type,
+                new Dictionary<string, object>
+                {
+                    { "StateMachineArn", _stateMachineArn },
+                    { "Error", (pingState.Exception?.InnerException ?? pingState.Exception)?.GetType().Name }
+                }, dependencies);
+        }
+
+        var statusCode = pingState.Result.HttpStatusCode;
+        if (statusCode == HttpStatusCode.OK)
+        {
+            return HealthCheckResult.CreateInstance(true, Type,
+                new Dictionary<string, object> { { "StateMachineArn", _stateMachineArn } }, dependencies);
+        }
+
         return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
         {
-            { "Error", $"Returned a status of {pingState.Result.HttpStatusCode}" },
-            { "StateMachineArn", _stateMachineArn }
+            { "StateMachineArn", _stateMachineArn },
+            { "Error", $"Returned a status of {statusCode}" }
         }, dependencies);
     }
 
