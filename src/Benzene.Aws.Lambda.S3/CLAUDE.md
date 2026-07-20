@@ -12,17 +12,18 @@ middleware pipeline as a fire-and-forget, no-response transport.
 > it actually does. Real EventBridge support now lives in the separate
 > `Benzene.Aws.Lambda.EventBridge` package.
 
-## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result is always silently dropped
-`S3Application` is a plain `MiddlewareMultiApplication<S3Event, S3RecordContext>` fan-out — there
-is **no `Options` class** and no equivalent of `Benzene.Aws.Lambda.Sns`'s `RaiseOnFailureStatus`.
-If a handler returns a non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`),
-nothing in this package inspects it — the Lambda invocation always reports success, so the S3
-event notification is considered delivered and is never retried. Only an unhandled exception
-propagating out of the pipeline fails the invocation, which is what lets Lambda's own async-invoke
-retry (2 automatic retries) and configured on-failure destination/DLQ take over — S3 event
-notifications invoke Lambda asynchronously, so this is governed entirely by the function's own
-`MaximumRetryAttempts`/destination configuration, not by anything in this package. If failure
-results need to be retried, have the handler throw for failures that should retry.
+## Failure handling: a returned failure result is not retried by default (opt in via `S3Options`)
+By default, if a handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), the Lambda invocation still reports success, so the S3
+event notification is considered delivered and is never retried — only an unhandled exception fails
+the invocation and lets Lambda's own async-invoke retry (2 automatic retries) + on-failure
+destination/DLQ take over. To retry on failure *results* too, set
+`S3Options.RaiseOnFailureStatus = true` (via `UseS3(action, configure)`), which escalates a failure
+result into a thrown `S3MessageProcessingException` so the async-invoke retry applies the same way it
+would for an exception — mirroring `Benzene.Aws.Lambda.Sns`. `S3Options.CatchExceptions` (default
+`false`) conversely swallows/logs handler exceptions instead of cascading them. Both default off
+(purely additive). If you enable `RaiseOnFailureStatus`, the handler must be idempotent (a retried
+S3 delivery re-runs it).
 
 ## Key types/interfaces
 

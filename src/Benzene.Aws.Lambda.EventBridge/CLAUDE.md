@@ -6,20 +6,18 @@ Benzene message handlers. The event's `detail-type` is the message topic — Eve
 routing key, so no `topic` attribute needs bolting on the way SQS/SNS require — and `detail` is
 the message body. See `docs/plans/eventbridge-plan.md` for the design decisions (E1–E7).
 
-## ⚠️ Unsafe by default, and there is no opt-out: a handler failure result is always silently dropped
-`EventBridgeApplication` is a plain `MiddlewareApplication<EventBridgeEvent, EventBridgeContext>` —
-unlike `Benzene.Aws.Lambda.Sns`/`Benzene.Azure.Function.ServiceBus`, **there is no `Options` class
-and no equivalent of `RaiseOnFailureStatus`.** If your handler returns a non-exception failure
-result (e.g. `BenzeneResult.ServiceUnavailable(...)`), nothing in this package ever inspects it —
-the Lambda invocation always reports success, so EventBridge always considers the event delivered
-and never retries it, with no way to opt into different behavior short of the handler itself
-throwing. Only an unhandled exception propagating out of the pipeline cascades to fail the
-invocation, which is what lets a target's Lambda destination/DLQ (`MaximumRetryAttempts`,
-`OnFailure` destination on the EventBridge rule target) take over. If failure results need to be
-retried, either have the handler throw for failures you want retried, or wrap the handler call in
-your own middleware that escalates `EventBridgeContext.MessageResult?.IsSuccessful == false` into
-a thrown exception (see `Benzene.Aws.Lambda.Sns`'s `SnsMessageProcessingException` for the
-pattern this package doesn't (yet) provide out of the box).
+## Failure handling: a returned failure result is not retried by default (opt in via `EventBridgeOptions`)
+By default, if your handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), the Lambda invocation still reports success, so EventBridge
+considers the event delivered and never retries it — only an unhandled exception cascades to fail the
+invocation and lets the rule target's Lambda destination/DLQ (`MaximumRetryAttempts`, `OnFailure`
+destination) take over. To retry on failure *results* too, set
+`EventBridgeOptions.RaiseOnFailureStatus = true` (via `UseEventBridge(action, configure)`), which
+escalates a failure result into a thrown `EventBridgeMessageProcessingException` so the target's
+retry applies the same way it would for an exception — mirroring `Benzene.Aws.Lambda.Sns`.
+`EventBridgeOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions
+instead of cascading them. Both default off (purely additive). If you enable `RaiseOnFailureStatus`,
+the handler must be idempotent.
 
 ## Key types/interfaces
 - `EventBridgeEvent` — Benzene's own model of the EventBridge envelope (`detail-type`, `source`,

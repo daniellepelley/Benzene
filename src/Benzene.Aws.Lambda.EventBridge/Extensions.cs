@@ -17,11 +17,20 @@ public static class Extensions
     /// </summary>
     /// <param name="app">The AWS event stream pipeline builder to add EventBridge handling to.</param>
     /// <param name="action">The action that configures the inner EventBridge pipeline.</param>
+    /// <param name="configure">
+    /// Optionally configures <see cref="EventBridgeOptions"/> - e.g. set
+    /// <see cref="EventBridgeOptions.RaiseOnFailureStatus"/> to escalate a non-exception failure result
+    /// into a thrown exception so the EventBridge rule target retries it, or
+    /// <see cref="EventBridgeOptions.CatchExceptions"/> to swallow handler exceptions instead of
+    /// cascading them.
+    /// </param>
     /// <returns>The pipeline builder for method chaining.</returns>
-    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseEventBridge(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<EventBridgeContext>> action)
+    public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseEventBridge(this IMiddlewarePipelineBuilder<AwsEventStreamContext> app, Action<IMiddlewarePipelineBuilder<EventBridgeContext>> action, Action<EventBridgeOptions> configure = null)
     {
         app.Register(x => x.AddEventBridge());
         var pipeline = app.CreateMiddlewarePipeline(action);
-        return app.Use(resolver => new EventBridgeLambdaHandler(new EventBridgeApplication(pipeline), resolver));
+        var options = new EventBridgeOptions();
+        configure?.Invoke(options);
+        return app.Use(resolver => new EventBridgeLambdaHandler(new EventBridgeApplication(pipeline, options), resolver));
     }
 }
