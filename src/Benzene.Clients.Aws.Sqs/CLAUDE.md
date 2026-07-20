@@ -23,6 +23,10 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
   key is a configurable default, not hard-coded (`topicAttributeKey` on the converters,
   `.UseSqs(queueUrl, topicAttributeKey: "x")`, `AddSqsMessageClient(..., topicAttributeKey)`, and
   `AddSqsHealthCheck(queueUrl, topicAttributeKey)`) — keep it in sync with the consumer's key.
+- **Empty attribute values are skipped.** SQS rejects a message attribute whose value is empty, so
+  both converters omit the `topic` attribute when `Topic` is null/empty and skip any header whose
+  value is empty. LocalStack tolerates empty values (so the live LocalStack tests passed either way),
+  but real SQS does not — this mirrors the SNS converters' guard. Covered by `SqsContextConverterTest`.
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SQS has only a send
   acknowledgement, so a topic routed through SQS must be sent via `SendAsync<TRequest, Void>`; any
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at

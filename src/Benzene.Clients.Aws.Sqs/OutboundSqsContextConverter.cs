@@ -68,10 +68,20 @@ public class OutboundSqsContextConverter : IContextConverter<OutboundContext, Sq
         var messageAttributes = new Dictionary<string, MessageAttributeValue>();
         foreach (var header in contextIn.Headers)
         {
-            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
+            // SQS rejects a message attribute whose value is empty, so skip empty headers rather than
+            // fail the whole send (LocalStack tolerates them, but real SQS does not).
+            if (!string.IsNullOrEmpty(header.Value))
+            {
+                messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
+            }
         }
 
-        messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
+        // Only emit the routing-topic attribute for a non-empty topic: SQS rejects an empty attribute
+        // value, and an empty topic carries no routing information anyway.
+        if (!string.IsNullOrEmpty(contextIn.Topic))
+        {
+            messageAttributes[_topicAttributeKey] = new MessageAttributeValue { StringValue = contextIn.Topic, DataType = "String" };
+        }
 
         return Task.FromResult(new SqsSendMessageContext(new SendMessageRequest
         {

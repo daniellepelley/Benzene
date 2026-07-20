@@ -22,6 +22,12 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
   made a Benzene→Benzene SNS round-trip resolve to a null topic and fail to route. The attribute key
   is a configurable default (`topicAttributeKey` on the converters and `.UseSns(..., topicAttributeKey:)`),
   `SnsContextConverter<T>.DefaultTopicAttribute` = `"topic"` — keep it in sync with the consumer's key.
+- **Empty attribute values are skipped.** SNS rejects a message attribute whose value is empty
+  ("must contain non-empty message attribute value"), so both converters omit the `topic` attribute
+  when `Request.Topic` is null/empty (the default `DefaultGetTopic` returns `string.Empty`, so a
+  plain `SendAsync<T, Void>` with no explicit topic would otherwise emit `topic=""` and fail every
+  publish) and skip any header whose value is empty. A real topic still routes as before; only the
+  invalid empty case is dropped. Covered by `SnsContextConverterTest` (converter-level, no LocalStack).
 - Both outbound response mappers hardcode `IBenzeneResult<Void>` — SNS has only a publish
   acknowledgement, so a topic routed through SNS must be sent via `SendAsync<TRequest, Void>`; any
   other `TResponse` compiles but throws `Benzene.Clients.OutboundResponseTypeMismatchException` at
