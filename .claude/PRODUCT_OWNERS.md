@@ -137,6 +137,28 @@ This document describes the product ownership structure for the Benzene library.
 
 ---
 
+### Mesh UI Product Owner
+**Agent**: `mesh-ui-product-owner`
+**Focus**: The Mesh UI as a human-facing **product** — the front end where developers and product owners monitor, understand, discuss, and improve a platform built on Benzene. Owns the *experience and product vision*; `mesh-product-owner` owns the underlying data/packages.
+**Surface**: `Benzene.Mesh.Ui` (product value; the package's technical mechanics stay with `mesh-product-owner`), and the `work/mesh-ui-product-vision.md` living doc.
+
+**Key Responsibilities:**
+- Own `work/mesh-ui-product-vision.md` and drive toward an industry-leading product (benchmark vs. Datadog service maps, Grafana/Kibana, Moesif, AsyncAPI Studio, Backstage)
+- Deliver the six user outcomes: understand the domain, see message flows, spot issues, see usage, judge value vs. deprecation, and discuss/decide in the UI
+- Turn signal into **insight and action**, not more JSON; serve both developers and product owners
+- Write and route data requirements the vision needs (usage history, staleness, contract diffs, deprecation signal, annotation storage) into `mesh-product-owner` / `observability-product-owner` / `core-product-owner`
+- Protect the static explorer's zero-dependency floor; when a feature needs a backend (usage history, discussion), decide the vessel *with* `mesh-product-owner` rather than breaking the static-host guarantee
+
+**Contact for:**
+- Mesh UI product direction, new views/workflows, and collaboration features
+- "How do we surface X so a developer/PO can act on it?" questions
+- Deprecation/value analysis and usage-insight requirements
+- Coordination when a UI need requires new mesh/observability data
+
+**Boundary with `mesh-product-owner`:** data & package mechanics = Mesh PO; experience & product vision = Mesh UI PO. Overlap on `Benzene.Mesh.Ui` is expected; escalate disagreements per this doc.
+
+---
+
 ### Performance & Reliability Champion
 **Agent**: `performance-champion`
 **Focus**: Cross-cutting — not a package owner. Hot-path latency/allocations in the
@@ -304,6 +326,12 @@ Product owners are living documents that evolve with the product:
 - **Phase 4 — field-level contract compatibility**: structural per-field schema diffing between a caller's expectation and a callee's current contract; worth checking whether `Benzene.Schema.OpenApi/Compatibility` already covers this before building from scratch
 - **Phase 5 — polish**: mesh-level health rollup, historical trend storage, alerting — unstarted
 
+### Mesh UI PO
+- **Vision established**: `work/mesh-ui-product-vision.md` created — the six user outcomes (understand the domain, see message flows, spot issues, see usage, judge value vs. deprecation, discuss/decide) and a sequenced roadmap
+- **Near term (mostly static, low data risk)**: interactive topology graph (replaces the v1 table), end-to-end flow view over the AsyncAPI 3.0 operations+reply model, and an "issue inbox" promoting failing/drifting/stale services into a triage list — the staleness signal is still OPEN in the mesh data layer (file the requirement)
+- **Mid term (needs data layer)**: usage analytics over time and a value-vs-deprecation view — gated on usage-history production (route to Observability + Mesh POs; Tempo metric-name convention remains unverified against a real backend)
+- **Long term (crosses the static constraint)**: discussion/annotations — backend-backed; decide vessel with `mesh-product-owner`, keep the static explorer working without it
+
 ### Performance & Reliability Champion
 - **Benchmark infrastructure**: ✅ `benchmarks/Benzene.Benchmarks` covers the
   middleware pipeline and request mapping (no recorded baseline numbers yet —
@@ -357,7 +385,13 @@ Product owners are living documents that evolve with the product:
 package-scoped. Loop it in on any hot-path or reliability-sensitive change
 regardless of which package it lands in.
 
+`mesh-ui-product-owner` also has no row by design — it's not a package owner but
+a *product* owner for the Mesh UI experience. `Benzene.Mesh.Ui` stays under **Mesh**
+for package/technical mechanics; loop in `mesh-ui-product-owner` on the UI's product
+direction, new views/workflows, usage/value/deprecation insight, and collaboration
+features (see `work/mesh-ui-product-vision.md`).
+
 ---
 
-**Last Updated**: 2026-07-15
-**Version**: 1.2
+**Last Updated**: 2026-07-20
+**Version**: 1.3
