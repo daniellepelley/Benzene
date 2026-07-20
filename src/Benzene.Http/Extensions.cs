@@ -36,7 +36,11 @@ public static class Extensions
             x.GetService<ReflectionHttpEndpointFinder>()),
             x.GetService<ListHttpEndpointFinder>(),
             x.GetService<DependencyHttpEndpointFinder>()));
-        services.TryAddSingleton<IRouteFinder, RouteFinder>();
+        // The route table is compiled once in the singleton RouteFinder; a scoped MemoizingRouteFinder
+        // wraps it so the topic getter, version getter, and enricher that each resolve the route for
+        // one request share a single match instead of re-running it 2-3x per request.
+        services.TryAddSingleton<RouteFinder>();
+        services.TryAddScoped<IRouteFinder>(x => new MemoizingRouteFinder(x.GetService<RouteFinder>()));
         
         services.TryAddScoped<IHttpStatusCodeMapper, DefaultHttpStatusCodeMapper>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
