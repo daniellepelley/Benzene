@@ -20,8 +20,18 @@ API decisions to make before the freeze, two verified integration bugs, and prov
 > warnings), T2.5 (gRPC doc fixed — bridge doesn't split liveness/readiness; the code split is
 > deferred), T2.6 (faulted-`.Result` fixed in Sqs/StepFunctions/Lambda; Http URL userinfo stripped;
 > `ContinueWith` fixed), T2.7 (CachingHealthCheckProcessor — opt-in TTL cache keyed by check-set).
-> Tier 2 COMPLETE except the gRPC per-service-name **code** split (doc fixed; the code split and
-> transport token-seeding remain as their own features). Below kept as the record.
+> Tier 2 COMPLETE (the gRPC per-service-name **code** split is now DONE too:
+> `BenzeneGrpcOptions.LivenessCheckTypes`/`ReadinessCheckTypes` publish named grpc.health.v1
+> `"liveness"`/`"readiness"` services via a filterable `BenzeneHealthCheckBridge`; docs updated).
+> Transport token-seeding: DONE for ASP.NET (`UseHttp` prepends a seeding middleware that sets
+> `ICancellationTokenAccessor` from `HttpContext.RequestAborted`); other transports (workers, Lambda,
+> gRPC) can seed the same accessor as follow-ups.
+> Tier 3 IN PROGRESS: DONE — T3.1 providers TCP (`Benzene.HealthChecks.Tcp`), Disk
+> (`Benzene.HealthChecks.Disk`), AWS SNS (`SnsHealthCheck` in `Benzene.Clients.Aws.Sns`), DynamoDB
+> (`Benzene.HealthChecks.DynamoDb`), and the first Azure provider — Service Bus
+> (`Benzene.HealthChecks.Azure.ServiceBus`, read-only `PeekMessage` on a queue/subscription).
+> Remaining T3.1 gaps: Azure Event Hub / Queue Storage / Event Grid, Kafka, host memory. T3.2/T3.3
+> (drain-on-SIGTERM, startup/warmup probe, non-Lambda CLI) still open. Below kept as the record.
 
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way
