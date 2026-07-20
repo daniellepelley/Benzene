@@ -180,7 +180,8 @@ real checks.
 ### `InlineHealthCheck` (`Benzene.HealthChecks`)
 
 Wraps a `Func<Task<IHealthCheckResult>>` with an optional explicit `Type` (defaults to
-`string.Empty`, which the response namer then treats as `"HealthCheck"` — see
+`string.Empty`, which the response namer then names `"HealthCheck-1"` — the bare `"HealthCheck"`
+key is pre-reserved, so an empty type never lands on it; see
 [naming](#result-naming-and-deduplication)). This is what every inline `AddHealthCheck(...)`
 overload above constructs for you.
 
@@ -439,7 +440,9 @@ Each entry's key in `healthChecks` comes from `HealthCheckNamer`, run against th
 - On exception or timeout, the internal `ExceptionHandlingHealthCheck`/`TimeOutHealthCheck` wrappers
   build their fallback result using the wrapped check's own `Type` property (`_inner.Type`) — so a
   named class-based check keeps its name even when it fails or times out.
-- An empty/`null` `Type` on the executed result is named `"HealthCheck"`.
+- An empty/`null` `Type` on the executed result is named `"HealthCheck-1"` — the bare `"HealthCheck"`
+  key is pre-seeded as already-used, so the first empty-type check is suffixed rather than taking it
+  (a second empty-type check becomes `"HealthCheck-2"`, and so on).
 - If a name has already been used, `HealthCheckNamer` appends `-2`, `-3`, ... to keep keys unique
   rather than one check's result silently overwriting another's — e.g. two `SimpleHealthCheck`s in
   the same call show up as `"Simple"` and `"Simple-2"`.

@@ -28,8 +28,11 @@ public static class W3CTraceContextExtensions
     /// this middleware itself (its parent context isn't known until this middleware's body runs) -- that
     /// span has no children and can be ignored in exported traces.
     /// <para>
-    /// Only wired for HTTP-based transports today (ASP.NET Core, Azure Functions' ASP.NET-style trigger,
-    /// API Gateway) -- SQS/SNS/Kafka/Event Hub inbound extraction is not yet implemented.
+    /// Transport-agnostic: it works on any pipeline whose context has an
+    /// <c>IMessageHeadersGetter&lt;TContext&gt;</c> registered -- HTTP (ASP.NET Core, Azure Functions'
+    /// ASP.NET-style trigger, API Gateway) <b>and</b> the async transports (SQS, SNS, Kafka, and Event
+    /// Hub, on AWS Lambda, Azure Functions, and the self-hosted workers). See
+    /// <c>docs/monitoring.md</c>'s "W3C Trace Context" section.
     /// </para>
     /// </remarks>
     public static IMiddlewarePipelineBuilder<TContext> UseW3CTraceContext<TContext>(

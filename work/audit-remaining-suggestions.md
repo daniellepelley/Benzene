@@ -44,6 +44,29 @@ registration reflects a specific intent I shouldn't silently rewire.
 
 **Effort:** small–medium. **Risk:** low, but touches wiring/host semantics → wants your eyes.
 
+**Follow-up investigation (2026-07-20) — this is deeper than a CloudService-local fix; two hard
+blockers make the "force realization" option (B) unsound on its own:**
+
+1. **`MicrosoftServiceResolverFactory.Dispose()` is a no-op** (`src/Benzene.Microsoft.Dependencies/
+   MicrosoftServiceResolverFactory.cs` — literally `// Nothing to dispose`). On the AWS Lambda and
+   self-host paths the factory *builds its own* provider (`container.BuildServiceProvider()`) and
+   never disposes it, so **no singleton is ever disposed there regardless of realization** — option
+   B is inert on exactly the serverless hosts that matter. On ASP.NET Core the host owns and disposes
+   the shared provider, so realization *would* work there, but only there.
+2. **`MeshAnnouncer` and `HttpMeshTraceExporter` implement `IAsyncDisposable` but not `IDisposable`.**
+   MS DI's **synchronous** `ServiceProvider.Dispose()` throws `InvalidOperationException` when it
+   meets an async-only-disposable. So realizing them and then letting a host **sync-dispose** the
+   provider turns today's silent leak into a **shutdown exception** — strictly worse on any sync
+   disposal path. (Empirically confirmed: a factory singleton is only disposed once *resolved*, and
+   only via `DisposeAsync`.)
+
+**Net:** the real fix is a **core DI decision**, not a CloudService tweak — e.g. make
+`MicrosoftServiceResolverFactory` own and `await`-dispose the provider it builds (and be
+`IAsyncDisposable`), *then* realize the mesh singletons; or register them as an `IHostedService` on
+hosts that have one; or give both types an `IDisposable` path. A realize-only change was drafted and
+**reverted** once these two blockers surfaced. Recommend deciding the disposal contract (who owns the
+provider, sync vs async) first.
+
 ---
 
 ## 2. `ActivityMiddlewareDecorator` re-resolves the handler per middleware, per request (tracing on)
