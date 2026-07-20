@@ -30,7 +30,7 @@ internal class MessageHandlerFactory : IMessageHandlerFactory
     private readonly IMessageHandlerWrapper _messageHandlerWrapper;
     private readonly IServiceResolver _serviceResolver;
     private readonly ILoggerFactory _loggerFactory;
-    private IDefaultStatuses _defaultStatuses;
+    private readonly IDefaultStatuses _defaultStatuses;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageHandlerFactory"/> class.

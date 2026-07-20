@@ -123,5 +123,9 @@ AWS Lambda (no `ILambdaContext` token) and the Azure Functions non-HTTP triggers
 - `FuncWrapperMiddleware` enables inline middleware without custom classes
 - `MiddlewareMultiApplication` handles multiple event types in one application
 - Context converters must be explicitly registered between pipeline stages
-- Pipeline builder is immutable - each call returns new builder instance
+- Pipeline builder is **mutable and fluent**: `.Use()`/`.OnRequest()`/`.OnResponse()`/etc. append to
+  a shared list and return the same builder (`this`) - do NOT fork one builder into divergent
+  pipelines (a second `.Use()` on a "base" builder mutates the base, not a copy). Only `Create<T>()`
+  allocates a fresh builder; `Build()` snapshots the items at call time. (Internal `.Split()`/
+  `.Convert()` are safe because they call `Create<T>()` for each branch.)
 - Async/await used throughout for I/O-bound operations

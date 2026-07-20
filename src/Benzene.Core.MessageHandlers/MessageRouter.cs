@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
@@ -96,7 +95,6 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         }
 
         _logger.LogDebug("Finding message handler for {topic}", topic.Id);
-        Debug.WriteLine($"Finding message handler for {topic.Id}");
         var messageHandlerDefinition = _messageHandlerDefinitionLookUp.FindHandler(topic);
         if (messageHandlerDefinition == null)
         {

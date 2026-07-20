@@ -26,7 +26,7 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
 {
     private readonly IMessageHandler<TRequest, TResponse> _inner;
     private readonly ILogger _logger;
-    private IDefaultStatuses _defaultStatuses;
+    private readonly IDefaultStatuses _defaultStatuses;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageHandler{TRequest,TResponse}"/> class.

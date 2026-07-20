@@ -43,11 +43,15 @@ public class SqsMessageTopicGetter : IMessageTopicGetter<SqsMessageContext>
 
     private static string GetFromAttributes(SqsMessageContext context, string key)
     {
-        if (!context.SqsMessage.MessageAttributes.ContainsKey(key))
+        // Null-guard the attribute map (a message deserialized from a payload with no attributes can
+        // yield null) - the sibling SqsMessageHeadersGetter was already hardened this way; this getter
+        // on the same context was not, leaving a latent NRE on the exact attribute-less case.
+        var attributes = context.SqsMessage.MessageAttributes;
+        if (attributes == null || !attributes.TryGetValue(key, out var value))
         {
             return null;
         }
 
-        return context.SqsMessage.MessageAttributes[key].StringValue;
+        return value.StringValue;
     }
 }
