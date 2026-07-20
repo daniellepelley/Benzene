@@ -43,6 +43,9 @@ public static class AsyncApiCompositor
         var channels = new JsonObject();
         var schemas = new JsonObject();
         var tags = new JsonArray();
+        // AsyncAPI 2.0 requires operationId to be unique across the WHOLE document; track the ones
+        // already emitted so namespacing (and, if needed, a numeric suffix) keeps every one distinct.
+        var usedOperationIds = new HashSet<string>(StringComparer.Ordinal);
         var merged = 0;
 
         foreach (var service in services)
@@ -93,7 +96,7 @@ public static class AsyncApiCompositor
                         continue;
                     }
 
-                    TagOperations(cloned, service.ServiceName);
+                    TagAndNamespaceOperations(cloned, service.ServiceName, ns, usedOperationIds);
                     channels[$"{ns}/{channel.Key}"] = cloned;
                 }
             }
@@ -165,7 +168,7 @@ public static class AsyncApiCompositor
         }
     }
 
-    private static void TagOperations(JsonObject channel, string serviceName)
+    private static void TagAndNamespaceOperations(JsonObject channel, string serviceName, string ns, ISet<string> usedOperationIds)
     {
         foreach (var operationName in new[] { "publish", "subscribe" })
         {
@@ -181,7 +184,27 @@ public static class AsyncApiCompositor
             }
 
             tags.Add(new JsonObject { ["name"] = serviceName });
+
+            // operationId is document-global in AsyncAPI 2.0. Benzene keys it per-service (by topic),
+            // so two services handling the same topic emit the same id — namespace it by service (to
+            // match the channel key), then guard any residual collision with a numeric suffix.
+            if (operation["operationId"] is JsonValue idValue && idValue.TryGetValue<string>(out var operationId))
+            {
+                operation["operationId"] = UniqueOperationId($"{ns}_{operationId}", usedOperationIds);
+            }
         }
+    }
+
+    private static string UniqueOperationId(string candidate, ISet<string> used)
+    {
+        var unique = candidate;
+        var suffix = 2;
+        while (!used.Add(unique))
+        {
+            unique = $"{candidate}_{suffix++}";
+        }
+
+        return unique;
     }
 
     // Benzene emits a handled topic's response on a "<topic>:benzeneResult" channel - strip that

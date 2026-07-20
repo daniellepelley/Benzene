@@ -60,6 +60,36 @@ public class AsyncApiCompositorTest
         // Each channel's operation is tagged with its owning service.
         var tag = channels["fulfilment-api/order:create"]!["subscribe"]!["tags"]!.AsArray()[0]!["name"]!.GetValue<string>();
         Assert.Equal("fulfilment-api", tag);
+
+        // AsyncAPI 2.0 requires a document-globally-unique operationId. Both services key theirs by
+        // the same topic ("order:create"), so the merge must namespace them apart, not collide.
+        var ordersOpId = channels["orders-api/order:create"]!["subscribe"]!["operationId"]!.GetValue<string>();
+        var fulfilmentOpId = channels["fulfilment-api/order:create"]!["subscribe"]!["operationId"]!.GetValue<string>();
+        Assert.Equal("orders-api_order:create", ordersOpId);
+        Assert.Equal("fulfilment-api_order:create", fulfilmentOpId);
+        Assert.NotEqual(ordersOpId, fulfilmentOpId);
+    }
+
+    [Fact]
+    public void Merge_AllOperationIdsAreUniqueAcrossTheDocument()
+    {
+        // Two services sharing a topic id AND a second pair sharing another — every emitted
+        // operationId must still be distinct across the whole composite document.
+        var merged = AsyncApiCompositor.Merge(new[]
+        {
+            Service("orders-api", ServiceDoc("orders-api", "order:create", "Order")),
+            Service("fulfilment-api", ServiceDoc("fulfilment-api", "order:create", "Order")),
+            Service("billing-api", ServiceDoc("billing-api", "order:create", "Order")),
+        }, At);
+
+        var channels = JsonNode.Parse(merged)!["channels"]!.AsObject();
+        var operationIds = channels
+            .Select(c => c.Value!["subscribe"]?["operationId"]?.GetValue<string>())
+            .Where(id => id != null)
+            .ToList();
+
+        Assert.Equal(3, operationIds.Count);
+        Assert.Equal(operationIds.Count, operationIds.Distinct().Count());
     }
 
     [Fact]

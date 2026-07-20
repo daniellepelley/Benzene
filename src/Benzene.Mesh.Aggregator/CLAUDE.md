@@ -173,9 +173,11 @@ own status — it just contributes no channels. `AsyncApiCompositor.Merge` does 
 the JSON level (`System.Text.Json`, no AsyncAPI object-model dependency): Benzene keys channels by
 raw topic id and schemas by bare CLR type name — both collide across services — so each service's
 content is **namespaced** (channel keys → `‹service›/‹topic›`, schema keys → `‹Service›_‹Type›`,
-every `$ref` rewritten to match), reserved/utility topics are dropped (using the `reserved` flag
-already parsed from each benzene spec), and each channel's operations are tagged with the owning
-service. Two services sharing a topic id stay as two attributed channels rather than being forced
+operation ids → `‹service›_‹operationId›` — AsyncAPI 2.0 requires `operationId` to be
+document-globally unique, and Benzene keys it per-service by topic so two services on the same topic
+would otherwise collide; a numeric suffix guards any residual dup — every `$ref` rewritten to
+match), reserved/utility topics are dropped (using the `reserved` flag already parsed from each
+benzene spec), and each channel's operations are tagged with the owning service. Two services sharing a topic id stay as two attributed channels rather than being forced
 into one. An empty/all-unfetchable run still publishes a valid empty-channels document, so the
 artifact link is always stable. `Benzene.Mesh.Ui` links it (download + AsyncAPI Studio deep-link).
 Real-AsyncAPI-reader validity is covered by an isolated check (the `Benzene.Mesh.Test` project can't
