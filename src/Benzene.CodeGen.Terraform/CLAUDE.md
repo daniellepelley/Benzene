@@ -1,5 +1,17 @@
 # Benzene.CodeGen.Terraform
 
+## ⚠️ Release status: NOT part of the 1.0 release (`IsPackable=false`)
+This package is deliberately excluded from the NuGet release (see the csproj comment). It is at a
+fork in the road: either it grows into a complete, opinionated infra generator that covers a real
+deployment end-to-end, or it stays a separate/experimental artifact on its own lifecycle. Until
+that call is made it must not ship as a full-release package. It also still carries
+**project-specific AWS conventions** that would need de-companying before any general release — the
+`DarwinTopicNamer` topic allowlist (`platform-eventbus_*`), the `terraform_remote_state.sns` and
+`terraform_remote_state.practice_suite` cross-stack assumptions, and the `AutoTag_*` tagging
+convention in `TerraformLambdaBuilder`. The EventBridge builder and `TerraformDirectoryMerger` are
+clean and generic; the Lambda/SNS builders are the project-specific part. It stays in the solution
+so it keeps compiling and its tests keep running.
+
 ## What this package does
 Generates Terraform (`.tf`) configuration for AWS Lambda functions hosting Benzene services, so
 the infrastructure that delivers events to a service is derived from the service's code instead
