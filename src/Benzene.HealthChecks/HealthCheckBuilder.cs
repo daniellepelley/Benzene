@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.DI;
+using Benzene.Core;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.HealthChecks;
@@ -24,6 +25,12 @@ public class HealthCheckBuilder : IHealthCheckBuilder
         // Registered with TryAdd so a consumer can register their own IHealthCheckProcessor first
         // (e.g. with a non-default timeout) and have it win.
         _register.Register(x => x.TryAddSingleton<IHealthCheckProcessor>(_ => new HealthCheckProcessor()));
+        // Scoped cancellation-token accessor so a check can observe the ambient token. TryAdd, and
+        // mapped so the same scoped instance is resolvable as both the concrete (settable, for a
+        // seeder) and the read-only interface (for checks).
+        _register.Register(x => x
+            .TryAddScoped<CancellationTokenAccessor>()
+            .TryAddScoped<ICancellationTokenAccessor>(r => r.GetService<CancellationTokenAccessor>()));
     }
 
     /// <inheritdoc />

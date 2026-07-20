@@ -50,7 +50,14 @@ for the full Kubernetes wiring guide.
 - `TimeOutHealthCheck` - enforces the 10s timeout via `Task.WhenAny`; note the inner check keeps
   running in the background after a timeout is reported (it isn't cancelled)
 - `ExceptionHandlingHealthCheck` - catches any exception from the wrapped check and reports it as a
-  failed result instead of throwing
+  failed result instead of throwing; an `OperationCanceledException` is reported distinctly as
+  `Error=Cancelled` (a cancelled/shutting-down check is not a broken dependency).
+- **Cancellation** - a scoped `ICancellationTokenAccessor` (`Benzene.Abstractions.DI`, default impl
+  `Benzene.Core.CancellationTokenAccessor`) is registered by the builder so any check can resolve it
+  and observe the ambient token (e.g. `HttpPingHealthCheck` passes it to `GetAsync`). The pipeline
+  does not thread a `CancellationToken` (a repo-wide convention - it rides on scoped accessors, like
+  gRPC's `IGrpcServerCallAccessor`); seeding the token from each transport (HTTP request-aborted,
+  worker shutdown) is the remaining framework-wide step - until then it defaults to `None`.
 - `FailedHealthCheck`/`InlineHealthCheck`/`SimpleHealthCheck` - small `IHealthCheck` helpers (a
   fixed-failure stub, a func-backed wrapper, and an always-healthy default, respectively)
 - `HealthCheckNamer` - dedupes health check names in the aggregated response when multiple checks

@@ -22,6 +22,7 @@ public class HttpPingHealthCheckFactory : IHealthCheckFactory
     public IHealthCheck Create(IServiceResolver resolver)
     {
         var httpClient = resolver.GetService<HttpClient>();
-        return new HttpPingHealthCheck(httpClient, _url);
+        var cancellation = resolver.TryGetService<ICancellationTokenAccessor>();
+        return new HttpPingHealthCheck(httpClient, _url, cancellation);
     }
 }

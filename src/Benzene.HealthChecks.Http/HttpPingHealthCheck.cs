@@ -1,4 +1,6 @@
 ﻿using System.Net;
+using System.Threading;
+using Benzene.Abstractions.DI;
 using Benzene.HealthChecks.Core;
 
 namespace Benzene.HealthChecks.Http
@@ -15,16 +17,19 @@ namespace Benzene.HealthChecks.Http
     {
         private readonly HttpClient _httpClient;
         private readonly string _url;
+        private readonly ICancellationTokenAccessor? _cancellation;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpPingHealthCheck"/> class.
         /// </summary>
         /// <param name="httpClient">The client used to issue the ping request.</param>
         /// <param name="url">The URL to GET.</param>
-        public HttpPingHealthCheck(HttpClient httpClient, string url)
+        /// <param name="cancellation">Supplies the ambient cancellation token to pass to the request; null observes no cancellation.</param>
+        public HttpPingHealthCheck(HttpClient httpClient, string url, ICancellationTokenAccessor? cancellation = null)
         {
             _url = url;
             _httpClient = httpClient;
+            _cancellation = cancellation;
         }
 
         /// <summary>
@@ -36,7 +41,8 @@ namespace Benzene.HealthChecks.Http
         {
             var dependencies = new[] { new HealthCheckDependency("Http", _url) };
 
-            using var response = await _httpClient.GetAsync(_url);
+            var token = _cancellation?.CancellationToken ?? CancellationToken.None;
+            using var response = await _httpClient.GetAsync(_url, token);
             return HealthCheckResult.CreateInstance(response.StatusCode == HttpStatusCode.OK, Type,
                 new Dictionary<string, object> { { "Url", _url }, { "StatusCode", response.StatusCode } }, dependencies);
         }

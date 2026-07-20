@@ -35,6 +35,16 @@ internal class ExceptionHandlingHealthCheck : IHealthCheck
         {
             return await _inner.ExecuteAsync();
         }
+        catch (OperationCanceledException)
+        {
+            // Cancellation (ambient token / shutdown) is not a dependency failure - report it as a
+            // distinct "Cancelled" outcome rather than an opaque "OperationCanceledException" so
+            // operators aren't misled into treating a graceful shutdown as a broken dependency.
+            return HealthCheckResult.CreateInstance(false, _inner.Type, new Dictionary<string, object>
+            {
+                { "Error", "Cancelled" }
+            });
+        }
         catch (Exception ex)
         {
             return HealthCheckResult.CreateInstance(false, _inner.Type, new Dictionary<string, object>

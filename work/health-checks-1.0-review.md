@@ -10,6 +10,12 @@ code, Warning/Failed aggregation is correct, liveness/readiness guidance matches
 `HealthCheckNamer` collision bug is already fixed with a regression test. The risk is a few one-way-door
 API decisions to make before the freeze, two verified integration bugs, and provider polish + gaps.
 
+> **Status:** Tier 0 DONE (injectable `IHealthCheckProcessor`, configurable timeout, per-check
+> duration, `HealthCheckNamer` internal, unused `topic` dropped; cancellation via the scoped
+> `ICancellationTokenAccessor` any component can resolve — `HttpPingHealthCheck` consumes it, OCE
+> reported distinctly. Remaining framework-wide step: seed the token from each transport). Tier 1
+> DONE (probe R3, drift loop, TimeOutHealthCheck, HttpPing dispose). Below kept as the record.
+
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way
   door. Without it the timeout cannot cancel the inner work (it runs to completion in the background),

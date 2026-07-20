@@ -76,6 +76,21 @@ public class HealthCheckTests
     }
 
     [Fact]
+    public async Task Processor_CancelledCheck_IsReportedAsCancelled_NotAnOpaqueException()
+    {
+        var check = new Mock<IHealthCheck>();
+        check.Setup(x => x.Type).Returns("c");
+        check.Setup(x => x.ExecuteAsync()).ThrowsAsync(new OperationCanceledException());
+
+        var result = await HealthCheckProcessor.PerformHealthChecksAsync(Defaults.HealthCheckTopic, new[] { check.Object });
+
+        var response = result.PayloadAsObject as HealthCheckResponse;
+        var c = response.HealthChecks["c"];
+        Assert.Equal(HealthCheckStatus.Failed, c.Status);
+        Assert.Equal("Cancelled", c.Data["Error"]);
+    }
+
+    [Fact]
     public async Task Processor_WithShortTimeout_ReportsSlowCheckAsTimedOut()
     {
         var slow = new DelayHealthCheck("slow", TimeSpan.FromSeconds(5));

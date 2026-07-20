@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Benzene.Core;
 using Benzene.HealthChecks.Core;
 using Benzene.HealthChecks.Http;
 using Xunit;
@@ -11,6 +12,20 @@ namespace Benzene.Test.HealthChecks.Http;
 
 public class HttpPingHealthCheckTest
 {
+    [Fact]
+    public async Task ExecuteAsync_ObservesCancellation_WhenTheAmbientTokenIsCancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var accessor = new CancellationTokenAccessor { CancellationToken = cts.Token };
+        var healthCheck = new HttpPingHealthCheck(new HttpClient(new StubHttpMessageHandler(HttpStatusCode.OK)),
+            "https://example.test/ping", accessor);
+
+        // A cancelled ambient token cancels the request - the exception isolation wrapper turns this
+        // into a "Cancelled" result at the processor level; here we assert the check observes it.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => healthCheck.ExecuteAsync());
+    }
+
     [Fact]
     public async Task ExecuteAsync_ReturnsHealthy_WhenResponseIsOk()
     {
@@ -62,6 +77,7 @@ public class HttpPingHealthCheckTest
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(new HttpResponseMessage(_statusCode));
         }
     }
