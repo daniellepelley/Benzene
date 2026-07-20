@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
@@ -43,16 +44,33 @@ public class StepFunctionsClient : IStepFunctionsClient
     /// A task that resolves to an accepted result if the execution started successfully, or a
     /// service-unavailable result if starting it threw.
     /// </returns>
-    public async Task<IBenzeneResult<TResponse>> StartExecutionAsync<TMessage, TResponse>(TMessage message)
+    public Task<IBenzeneResult<TResponse>> StartExecutionAsync<TMessage, TResponse>(TMessage message)
     {
+        return StartExecutionAsync<TMessage, TResponse>(message, executionName: null);
+    }
+
+    /// <inheritdoc />
+    public async Task<IBenzeneResult<TResponse>> StartExecutionAsync<TMessage, TResponse>(TMessage message, string executionName)
+    {
+        var name = SanitizeExecutionName(executionName);
+
         try
         {
             await _amazonStepFunctionsClient.StartExecutionAsync(new StartExecutionRequest
             {
                 StateMachineArn = _stateMachineArn,
-                Input = _serializer.Serialize(message)
+                Input = _serializer.Serialize(message),
+                // Null Name lets AWS generate a UUID (the original behavior); a supplied name makes the
+                // start idempotent for the same (state machine, name, input).
+                Name = name
             });
 
+            return BenzeneResult.Accepted<TResponse>();
+        }
+        catch (ExecutionAlreadyExistsException)
+        {
+            // The idempotency name was already used: a prior attempt (e.g. before a lost response)
+            // already started this execution. Treat the retry as success rather than a failure.
             return BenzeneResult.Accepted<TResponse>();
         }
         catch (Exception ex)
@@ -60,6 +78,31 @@ public class StepFunctionsClient : IStepFunctionsClient
             _logger.LogError(ex, "Sending message to {receiver} failed", _stateMachineArn);
             return BenzeneResult.ServiceUnavailable<TResponse>(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Sanitizes an idempotency token into a valid Step Functions execution name: Step Functions
+    /// rejects whitespace, control characters, and the set <c>&lt; &gt; { } [ ] ? * " # % \ ^ | ~ ` $ &amp; , ; : /</c>,
+    /// and caps the name at 80 characters. Disallowed characters are replaced with <c>-</c>. Returns
+    /// <c>null</c> for a null/empty token so AWS generates a UUID name.
+    /// </summary>
+    private static string SanitizeExecutionName(string executionName)
+    {
+        if (string.IsNullOrEmpty(executionName))
+        {
+            return null;
+        }
+
+        var builder = new StringBuilder(executionName.Length);
+        foreach (var c in executionName)
+        {
+            var allowed = !char.IsWhiteSpace(c) && !char.IsControl(c) &&
+                          "<>{}[]?*\"#%\\^|~`$&,;:/".IndexOf(c) < 0;
+            builder.Append(allowed ? c : '-');
+        }
+
+        var sanitized = builder.ToString();
+        return sanitized.Length > 80 ? sanitized.Substring(0, 80) : sanitized;
     }
 
     /// <summary>

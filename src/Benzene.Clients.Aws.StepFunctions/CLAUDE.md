@@ -6,7 +6,13 @@ Functions health check. Pins **only** `AWSSDK.StepFunctions`.
 
 ## Key types
 - `IStepFunctionsClient` / `StepFunctionsClient` — `StartExecutionAsync<TMessage, TResponse>` starts
-  an execution with the serialized message as input.
+  an execution with the serialized message as input. An overload
+  `StartExecutionAsync<TMessage, TResponse>(message, executionName)` sets the execution's idempotency
+  name (`StartExecutionRequest.Name`) from a caller-supplied stable token (e.g. a correlation id),
+  sanitized to Step Functions' allowed name charset/length — so a retry after a lost response won't
+  start a duplicate execution. An `ExecutionAlreadyExistsException` (the name was already used) is
+  treated as an idempotent success (`Accepted`), not a failure. The no-name overload is unchanged
+  (AWS generates a UUID name).
 - `StepFunctionsClientFactory` — builds a client for a given state-machine ARN.
 - `StepFunctionsHealthCheck` — starts an execution as a liveness probe; reports
   `HealthCheckDependency` (`Kind = "StateMachine"`, `Name` = ARN).

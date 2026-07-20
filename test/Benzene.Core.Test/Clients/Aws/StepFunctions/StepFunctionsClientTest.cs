@@ -56,4 +56,39 @@ public class StepFunctionsClientTest
 
         Assert.Equal(BenzeneResultStatus.ServiceUnavailable, result.Status);
     }
+
+    [Fact]
+    public async Task Start_WithExecutionName_SetsSanitizedNameForIdempotency()
+    {
+        var mockAmazonStepFunctions = new Mock<IAmazonStepFunctions>();
+        mockAmazonStepFunctions.Setup(x => x.StartExecutionAsync(It.IsAny<StartExecutionRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new StartExecutionResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var client = new StepFunctionsClientFactory(Defaults.StateMachineArn, mockAmazonStepFunctions.Object, NullLogger<StepFunctionsClient>.Instance).Create();
+
+        // A correlation id containing characters Step Functions disallows in a name.
+        var result = await client.StartExecutionAsync<ExampleRequestPayload, ExampleResponsePayload>(
+            new ExampleRequestPayload { Id = 42, Name = "hi" }, "corr id/with:bad*chars");
+
+        mockAmazonStepFunctions.Verify(x => x.StartExecutionAsync(
+            It.Is<StartExecutionRequest>(message => message.Name == "corr-id-with-bad-chars"),
+            It.IsAny<CancellationToken>()));
+        Assert.Equal(BenzeneResultStatus.Accepted, result.Status);
+    }
+
+    [Fact]
+    public async Task Start_ExecutionAlreadyExists_IsTreatedAsIdempotentSuccess()
+    {
+        var mockAmazonStepFunctions = new Mock<IAmazonStepFunctions>();
+        mockAmazonStepFunctions.Setup(x => x.StartExecutionAsync(It.IsAny<StartExecutionRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ExecutionAlreadyExistsException("already started"));
+
+        var client = new StepFunctionsClientFactory(Defaults.StateMachineArn, mockAmazonStepFunctions.Object, NullLogger<StepFunctionsClient>.Instance).Create();
+
+        var result = await client.StartExecutionAsync<ExampleRequestPayload, ExampleResponsePayload>(
+            new ExampleRequestPayload { Id = 42, Name = "hi" }, "stable-token");
+
+        // A retry after a lost response must not surface as a failure - the execution already exists.
+        Assert.Equal(BenzeneResultStatus.Accepted, result.Status);
+    }
 }
