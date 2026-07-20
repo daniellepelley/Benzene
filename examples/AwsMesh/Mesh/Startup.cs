@@ -6,6 +6,7 @@ using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics;
+using Benzene.Http.Cors;
 using Benzene.Mesh.Aws.Lambda;
 using Benzene.Mesh.Aws.S3;
 using Benzene.Mesh.Contracts;
@@ -94,7 +95,10 @@ public class Startup : BenzeneStartUp
                 .UseBenzeneEnrichment()
                 .UseBenzeneMetrics()
                 .UseMeshUi("/mesh-ui", "manifest.json")
-                .UseMeshArtifacts()
+                // Allow the AsyncAPI Studio deep-link to fetch asyncapi.json cross-origin. Uses
+                // Benzene's own CORS support (Benzene.Http.Cors.CorsSettings); "*" would open it to
+                // any origin, but scoping to Studio's origin keeps the example tight.
+                .UseMeshArtifacts(new CorsSettings { AllowedDomains = new[] { "https://studio.asyncapi.com" } })
                 .UseMessageHandlers(handlers));
         });
     }
