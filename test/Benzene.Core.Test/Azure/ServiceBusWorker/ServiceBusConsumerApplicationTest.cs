@@ -39,8 +39,8 @@ public class ServiceBusConsumerApplicationTest
 
         var result = await application.HandleAsync(CreateMessage(), CreateResolverFactory().Object);
 
-        Assert.NotNull(result);
-        Assert.False(result.IsSuccessful);
+        Assert.NotNull(result.MessageResult);
+        Assert.False(result.MessageResult.IsSuccessful);
     }
 
     [Fact]
@@ -54,7 +54,36 @@ public class ServiceBusConsumerApplicationTest
 
         var result = await application.HandleAsync(CreateMessage(), CreateResolverFactory().Object);
 
-        Assert.Null(result);
+        Assert.Null(result.MessageResult);
+    }
+
+    [Fact]
+    public async Task HandleAsync_HandlerRequestsDeadLetter_SurfacesTheOverrideInTheDecision()
+    {
+        var holder = new ServiceBusSettlementHolder();
+
+        var mockResolver = new Mock<IServiceResolver>();
+        mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
+        mockResolver.Setup(x => x.TryGetService<ServiceBusSettlementHolder>()).Returns(holder);
+        var mockResolverFactory = new Mock<IServiceResolverFactory>();
+        mockResolverFactory.Setup(x => x.CreateScope()).Returns(mockResolver.Object);
+
+        var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusConsumerContext>>();
+        mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusConsumerContext>(), It.IsAny<IServiceResolver>()))
+            .Callback<ServiceBusConsumerContext, IServiceResolver>((_, __) =>
+            {
+                // A handler resolves the scoped holder and requests dead-lettering.
+                holder.Override = ServiceBusSettlement.DeadLetter;
+                holder.DeadLetterReason = "unprocessable";
+            })
+            .Returns(Task.CompletedTask);
+
+        var application = new ServiceBusConsumerApplication(mockPipeline.Object);
+
+        var result = await application.HandleAsync(CreateMessage(), mockResolverFactory.Object);
+
+        Assert.Equal(ServiceBusSettlement.DeadLetter, result.Settlement!.Override);
+        Assert.Equal("unprocessable", result.Settlement.DeadLetterReason);
     }
 
     [Fact]

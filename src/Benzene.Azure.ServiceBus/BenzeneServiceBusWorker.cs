@@ -122,16 +122,9 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
 
         try
         {
-            var messageResult = await _application.HandleAsync(args.Message, _serviceResolverFactory, args.CancellationToken);
+            var decision = await _application.HandleAsync(args.Message, _serviceResolverFactory, args.CancellationToken);
 
-            if (messageResult?.IsSuccessful == false)
-            {
-                await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
-            }
-            else
-            {
-                await args.CompleteMessageAsync(args.Message, args.CancellationToken);
-            }
+            await SettleAsync(args, decision);
         }
         catch (Exception ex)
         {
@@ -146,6 +139,41 @@ public class BenzeneServiceBusWorker : IBenzeneWorker
 
             await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
             throw;
+        }
+    }
+
+    private static async Task SettleAsync(ProcessMessageEventArgs args, ServiceBusSettlementDecision decision)
+    {
+        // An explicit settlement the handler requested wins; otherwise fall back to the
+        // outcome-based default (unsuccessful result → abandon, else complete).
+        var settlement = decision.Settlement?.Override;
+        if (settlement != null)
+        {
+            switch (settlement.Value)
+            {
+                case ServiceBusSettlement.Complete:
+                    await args.CompleteMessageAsync(args.Message, args.CancellationToken);
+                    return;
+                case ServiceBusSettlement.Abandon:
+                    await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+                    return;
+                case ServiceBusSettlement.DeadLetter:
+                    await args.DeadLetterMessageAsync(args.Message, decision.Settlement!.DeadLetterReason,
+                        decision.Settlement.DeadLetterDescription, args.CancellationToken);
+                    return;
+                case ServiceBusSettlement.Defer:
+                    await args.DeferMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+                    return;
+            }
+        }
+
+        if (decision.MessageResult?.IsSuccessful == false)
+        {
+            await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
+        }
+        else
+        {
+            await args.CompleteMessageAsync(args.Message, args.CancellationToken);
         }
     }
 

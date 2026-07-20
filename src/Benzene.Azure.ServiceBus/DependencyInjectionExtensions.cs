@@ -41,6 +41,9 @@ public static class DependencyInjectionExtensions
     {
         services.TryAddScoped<JsonSerializer>();
         services.TryAddScoped<PresetTopicHolder>();
+        // Scoped per message, so a handler can request an explicit settlement (dead-letter/defer);
+        // the worker reads it after the pipeline. Default (no override) unless the handler sets it.
+        services.TryAddScoped<ServiceBusSettlementHolder>();
 
         services.AddScoped<IMessageTopicGetter<ServiceBusConsumerContext>>(resolver =>
             new PresetTopicMessageTopicGetter<ServiceBusConsumerContext>(new ServiceBusConsumerMessageTopicGetter(topicPropertyKey), resolver.GetService<PresetTopicHolder>()));

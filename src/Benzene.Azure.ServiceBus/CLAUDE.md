@@ -20,9 +20,19 @@ abandoned). Set `AckMode = ServiceBusConsumerAckMode.AutoComplete` to hand settl
 processor if you specifically want a non-exception failure result to complete the message. Because a
 failure now redelivers, the handler needs to be idempotent — see
 [Capability Matrix](../../docs/capability-matrix.md) /
-[Idempotency](../../docs/cookbooks/idempotency.md). (Explicit-abandon is a transient-retry lever, not
-a dead-letter — a poison message abandon-loops until max delivery count; explicit dead-lettering is
-tracked separately.)
+[Idempotency](../../docs/cookbooks/idempotency.md).
+
+**Explicit settlement override (`ServiceBusSettlementHolder`).** Beyond the outcome-based default, a
+handler can request a specific settlement by resolving the scoped `ServiceBusSettlementHolder` (a
+"scoped DI state, not context" holder like `PresetTopicHolder`, registered by `AddServiceBusConsumer`)
+and setting `Override` to `ServiceBusSettlement.{Complete,Abandon,DeadLetter,Defer}` (plus
+`DeadLetterReason`/`DeadLetterDescription`). The worker applies it in `Explicit` mode: `DeadLetter` →
+`DeadLetterMessageAsync(reason, description)` (quarantines a poison message instead of abandon-looping
+to max-delivery-count), `Defer` → `DeferMessageAsync` (receiving deferred messages back by sequence
+number is the caller's own advanced path), else Complete/Abandon. The application surfaces the holder
+to the worker via `ServiceBusSettlementDecision` (it owns its DI scope so it can read the holder the
+handler mutated). Only honored in `Explicit` mode — in `AutoComplete` the processor settles itself.
+Additive/opt-in; a handler that never sets the holder keeps the outcome-based default.
 
 ## Key types/interfaces
 - `BenzeneServiceBusWorker : IBenzeneWorker` - creates a `ServiceBusProcessor` from
