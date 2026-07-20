@@ -14,6 +14,7 @@ using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Middleware;
 using Benzene.Http;
+using Benzene.Http.RequestBody;
 using Benzene.Http.Routing;
 
 namespace Benzene.AspNet.Core;
@@ -44,6 +45,8 @@ public static class DependencyInjectionExtensions
                 resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
+        services.AddScoped<IHttpRequestBodyReader<AspNetContext>, AspNetMessageBodyGetter>();
+        services.AddScoped<HttpRequestBodyBuffer>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspMessageHandlerResultSetter>();
         services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
         services.AddScoped<IResponseRenderer<AspNetContext>, SerializerResponseRenderer<AspNetContext>>();

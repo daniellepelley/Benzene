@@ -12,6 +12,7 @@ using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Http;
+using Benzene.Http.RequestBody;
 using Benzene.Http.Routing;
 
 namespace Benzene.SelfHost.Http;
@@ -29,6 +30,8 @@ public static class DependencyInjectionExtensions
                 resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.TryAddScoped<IMessageHeadersGetter<SelfHostHttpContext>, HttpListenerMessageHeadersGetter>();
         services.TryAddScoped<IMessageBodyGetter<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
+        services.TryAddScoped<IHttpRequestBodyReader<SelfHostHttpContext>, HttpListenerMessageBodyGetter>();
+        services.TryAddScoped<HttpRequestBodyBuffer>();
         services.TryAddScoped<IMessageHandlerResultSetter<SelfHostHttpContext>, HttpListenerMessageHandlerResultSetter>();
         // Registers IResponseHandlerContainer<>, IResponsePayloadMapper<>, IMessageGetter<>, etc. -
         // otherwise only available when .UseMessageHandlers()/.AddMessageHandlers() is also called,

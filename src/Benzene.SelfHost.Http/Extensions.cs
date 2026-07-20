@@ -6,6 +6,7 @@ using Benzene.Core.Middleware;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Benzene.Http.RequestBody;
 using Microsoft.Extensions.Logging;
 using Constants = Benzene.HealthChecks.Constants;
 
@@ -17,6 +18,9 @@ public static class Extensions
     {
         app.Register(x => x.AddHttp());
         var middlewarePipelineBuilder = app.Create<SelfHostHttpContext>();
+        // Read the request body asynchronously, once, up front - so the synchronous
+        // HttpListenerMessageBodyGetter serves it from memory instead of blocking a thread-pool thread.
+        middlewarePipelineBuilder.UseBufferedRequestBody();
         action(middlewarePipelineBuilder);
         var pipeline = middlewarePipelineBuilder.Build();
 

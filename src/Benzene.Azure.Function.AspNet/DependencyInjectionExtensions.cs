@@ -10,6 +10,7 @@ using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Http;
+using Benzene.Http.RequestBody;
 using Benzene.Http.Routing;
 
 namespace Benzene.Azure.Function.AspNet;
@@ -31,6 +32,9 @@ public static class DependencyInjectionExtensions
     {
         app.Register(x => x.AddAspNet());
         var pipeline = app.Create<AspNetContext>();
+        // Read the request body asynchronously, once, up front - so the synchronous
+        // AspNetMessageBodyGetter serves it from memory instead of blocking a thread-pool thread.
+        pipeline.UseBufferedRequestBody();
         action(pipeline);
         app.Add(serviceResolverFactory => new AspNetApplication(pipeline.Build(), serviceResolverFactory));
         return app;
@@ -69,6 +73,8 @@ public static class DependencyInjectionExtensions
                 resolver.TryGetService<MessageVersionHeaderNames>()?.HeaderNames));
         services.AddScoped<IMessageHeadersGetter<AspNetContext>, AspNetMessageHeadersGetter>();
         services.AddScoped<IMessageBodyGetter<AspNetContext>, AspNetMessageBodyGetter>();
+        services.AddScoped<IHttpRequestBodyReader<AspNetContext>, AspNetMessageBodyGetter>();
+        services.AddScoped<HttpRequestBodyBuffer>();
         services.AddScoped<IMessageHandlerResultSetter<AspNetContext>, AspNetMessageHandlerResultSetter>();
         services.AddScoped<IHttpRequestAdapter<AspNetContext>, AspNetHttpRequestAdapter>();
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();

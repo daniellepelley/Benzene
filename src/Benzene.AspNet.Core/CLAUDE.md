@@ -41,3 +41,9 @@ and does not aim for minimal-API/MVC feature parity.
   app; or wire `IApplicationBuilder.UseBenzene(builder => builder.UseHttp(...))` by hand.
 - Uses ASP.NET Core's built-in (MEL) DI container.
 - Async/await throughout.
+- **Async request-body read**: `UseHttp(...)` auto-wires `Benzene.Http.RequestBody`'s
+  `BufferRequestBodyMiddleware<AspNetContext>` as the first middleware, so the request body is read
+  asynchronously once up front and `AspNetMessageBodyGetter` (which now serves from the scoped
+  `HttpRequestBodyBuffer`) never blocks a thread-pool thread on `ReadToEndAsync().Result`. The reader
+  calls `EnableBuffering()` so the body stays re-readable downstream. Non-breaking - if the middleware
+  isn't wired, the getter falls back to the original synchronous read.

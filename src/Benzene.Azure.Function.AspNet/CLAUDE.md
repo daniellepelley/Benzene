@@ -45,4 +45,9 @@ use `Benzene.AspNet.Core`).
   Troubleshooting entry.
 - Test helpers (`TestHttpRequest`, `HttpBuilderExtensions`) live in
   `Benzene.Azure.Function.AspNet.TestHelpers`, not in this production package.
+- **Async request-body read**: `UseHttp(...)` auto-wires `Benzene.Http.RequestBody`'s
+  `BufferRequestBodyMiddleware<AspNetContext>` first, so the body is read asynchronously once up
+  front and `AspNetMessageBodyGetter` serves it from the scoped `HttpRequestBodyBuffer` instead of
+  blocking a thread on `ReadToEndAsync().Result`. `EnableBuffering()` keeps the body re-readable
+  downstream. Non-breaking - falls back to the synchronous read if the middleware isn't wired.
 - Coverage: `AspNetPipelineTest.cs` and, for the unified host-builder path, `AzureUnifiedStartUpTest.cs`.

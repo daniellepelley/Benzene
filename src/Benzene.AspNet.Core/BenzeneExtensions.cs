@@ -4,6 +4,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Core;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
+using Benzene.Http.RequestBody;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -32,7 +33,6 @@ public static class BenzeneExtensions
         app.Register(x => x
             .AddSingleton<IMiddlewarePipelineBuilder<AspNetContext>, MiddlewarePipelineBuilder<AspNetContext>>()
             .AddAspNetMessageHandlers());
-
         // Seed the scope's ambient cancellation token from the request's aborted token, so any
         // component resolving ICancellationTokenAccessor (e.g. a health check) observes a client
         // disconnect / request abort. Runs first, in the same per-request scope as the rest.
@@ -46,6 +46,9 @@ public static class BenzeneExtensions
             await next();
         }));
 
+        // Read the request body asynchronously, once, up front - so the synchronous
+        // AspNetMessageBodyGetter serves it from memory instead of blocking a thread-pool thread.
+        pipeline.UseBufferedRequestBody();
         action(pipeline);
         app.Add(serviceResolverFactory => new AspNetApplication(pipeline.Build(), serviceResolverFactory));
         return app;

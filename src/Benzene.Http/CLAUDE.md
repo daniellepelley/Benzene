@@ -75,6 +75,25 @@ matching, credential-safe wildcards, preflight header validation, Vary caching h
 - `CorsOriginChecker` - Validates CORS origins; always echoes the actual `Origin` value (never a
   literal `"*"`), which is what makes wildcard + credentials safe to combine
 
+### Request body buffering (`RequestBody/`)
+Removes the sync-over-async block from the stream-reading HTTP body getters (ASP.NET Core, Azure
+Functions ASP.NET, self-hosted HttpListener), which used to call `ReadToEndAsync().Result` /
+`ReadToEnd()` and tie up a thread-pool thread per request.
+- `HttpRequestBodyBuffer` - scoped, per-request holder for a body already read from the stream
+  (`IsBuffered`/`Body`/`Set`). Same "scoped DI state, not context" pattern as `PresetTopicHolder`:
+  the context type stays a pure message description, this per-request state lives in the scope.
+- `IHttpRequestBodyReader<TContext>` - transport-specific async body reader; each stream-based
+  transport's body getter implements it (`Task<string?> ReadBodyAsync(context)`).
+- `BufferRequestBodyMiddleware<TContext>` - front-of-pipeline middleware that awaits
+  `IHttpRequestBodyReader<TContext>.ReadBodyAsync` once and stores the result in the scoped buffer,
+  so the synchronous `IMessageBodyGetter<TContext>.GetBody` serves it from memory (no thread block).
+- `BufferRequestBodyExtensions.UseBufferedRequestBody<TContext>()` - wires the middleware. Each HTTP
+  transport auto-adds it as the first middleware in its `UseHttp(...)`, so existing apps get the
+  non-blocking read with no code change. If the middleware isn't wired, `GetBody` falls back to the
+  original synchronous read, so the behavior is identical either way. Note: the body is read up front
+  (before other pipeline middleware); the ASP.NET readers call `EnableBuffering()` so anything
+  downstream can still re-read `Request.Body`.
+
 ### Other
 - `HttpEndpointAttribute` - Marks HTTP endpoints
 - `HttpRegistrations` - Registers HTTP services

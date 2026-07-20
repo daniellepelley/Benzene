@@ -68,6 +68,11 @@ Provides HTTP server capabilities for self-hosted Benzene applications. Enables 
 - **Benzene.Http** - HTTP abstractions / response adapters
 
 ## Important conventions
+- **Async request-body read**: `UseHttp(...)` auto-wires `Benzene.Http.RequestBody`'s
+  `BufferRequestBodyMiddleware<SelfHostHttpContext>` first, so the request body is read
+  asynchronously once up front and `HttpListenerMessageBodyGetter` serves it from the scoped
+  `HttpRequestBodyBuffer` instead of blocking a thread on a synchronous `ReadToEnd()`. Non-breaking -
+  falls back to the synchronous read if the middleware isn't wired.
 - Uses System.Net.HttpListener under the hood
 - Requires admin privileges for port binding on Windows
 - Suitable for development and testing
