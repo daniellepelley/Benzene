@@ -9,7 +9,7 @@ namespace Benzene.Website.Generator;
 internal static class MarketingContent
 {
     public const string Tagline =
-        "Write your message handlers once, then reach them over any transport &mdash; HTTP, SQS, " +
+        "Write your business logic once, then reach it over any transport &mdash; HTTP, SQS, " +
         "SNS, Kafka, Event Hub, gRPC &mdash; all at once, on the cloud you already run. Putting a " +
         "queue in front of an HTTP endpoint, or adding a second event source to a worker, becomes " +
         "a line of wiring instead of a rewrite.";
