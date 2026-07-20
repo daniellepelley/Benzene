@@ -40,8 +40,8 @@ internal static class Layout
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>Benzene &mdash; one middleware pipeline, every cloud</title>
-              <meta name="description" content="A hexagonal (ports-and-adapters) framework for C# built around a shared middleware pipeline. Write your message handlers once, run them on AWS, Azure, Google Cloud, Cloudflare, Kubernetes, or ASP.NET Core, and swap transports with minimal reconfiguration.">
+              <title>Benzene &mdash; one handler, every transport</title>
+              <meta name="description" content="A hexagonal (ports-and-adapters) framework for C#. Write a message handler once and reach it over HTTP, SQS, SNS, Kafka, Event Hub and more at the same time &mdash; mix transports on the cloud you already run, with a live service map and a test host for everything you build.">
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -78,7 +78,8 @@ internal static class Layout
                     Benzene separates <em>what your service does</em> from <em>how it's invoked</em>.
                     A message handler contains your logic. A transport turns an incoming request
                     into a message and routes it to the matching handler through the middleware
-                    pipeline &mdash; the same pipeline, whichever cloud is on the other end.
+                    pipeline &mdash; the same pipeline, whichever transport is on the other end, and
+                    however many of them at once.
                   </p>
                   <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
                 </section>
@@ -93,12 +94,12 @@ internal static class Layout
                 </section>
 
                 <section class="section">
-                  <h2>Runs everywhere you need it to</h2>
+                  <h2>And it runs wherever you already are</h2>
                   <p class="section-lede">
-                    And that's only half of it: wherever it runs, the same handler can be
-                    reached over HTTP, Lambda events, SQS, SNS, Kafka, EventBridge, Event Hub,
-                    Service Bus, or gRPC &mdash; swap between them with minimal reconfiguration,
-                    not a rewrite.
+                    Cloud portability is the bonus, not the pitch &mdash; most teams pick one
+                    platform and stay. The point is that Benzene meets whichever one your platform
+                    team already chose: the same handlers run unchanged on any of these, so "which
+                    host" stays a deployment detail rather than an architecture decision.
                   </p>
                   <div class="platform-grid">
                     {platforms}

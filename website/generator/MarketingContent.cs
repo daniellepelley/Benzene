@@ -9,28 +9,34 @@ namespace Benzene.Website.Generator;
 internal static class MarketingContent
 {
     public const string Tagline =
-        "One codebase. Every cloud. Every transport. Write your message handlers once, then run " +
-        "the same service on AWS, Azure, Google Cloud, Cloudflare, Kubernetes, or a plain " +
-        "ASP.NET Core host &mdash; and swap between HTTP, Lambda, SQS, Kafka, and more with " +
-        "minimal reconfiguration, not a rewrite.";
+        "Write your message handlers once, then reach them over any transport &mdash; HTTP, SQS, " +
+        "SNS, Kafka, Event Hub, gRPC &mdash; all at once, on the cloud you already run. Putting a " +
+        "queue in front of an HTTP endpoint, or adding a second event source to a worker, becomes " +
+        "a line of wiring instead of a rewrite.";
 
     public sealed record Feature(string Title, string Body);
 
     public static readonly Feature[] Features =
     [
-        new("Swap transports, not code",
-            "A message handler is plain C# against a topic. Move it from HTTP to Lambda to SQS " +
-            "to Kafka with a hosting/wiring change &mdash; minimal reconfiguration, never a " +
-            "rewrite of the handler itself."),
+        new("Mix transports without the glue",
+            "Serverless ties your logic to its trigger &mdash; an SNS function can't also take " +
+            "SQS, and putting a queue in front of an HTTP service is bespoke plumbing. A Benzene " +
+            "handler is plain C# against a topic, so the same logic is reachable over HTTP, SQS, " +
+            "SNS, Kafka and more at the same time. You add or change a transport in the wiring, " +
+            "never in the handler."),
+        new("See what every service does",
+            "Handlers, topics, payloads, and validation rules are introspectable. Benzene " +
+            "generates OpenAPI and AsyncAPI specs and a live service map straight from your code " +
+            "&mdash; a browsable contract and cross-service topology you get for free, not a " +
+            "diagram you maintain by hand."),
+        new("Test-first, out of the box",
+            "Every transport ships a test host and helpers, so you exercise a handler exactly as " +
+            "SQS, Lambda, or HTTP would invoke it &mdash; in-memory, no cloud, no emulator. Mock " +
+            "a dependency, send a message, assert the result."),
         new("Cross-cutting concerns, once",
-            "Correlation IDs, logging, validation, and health checks live in composable " +
-            "middleware, not scattered across every handler."),
-        new("No routing tables to maintain",
-            "Handlers are discovered automatically by reflection and mapped to their topic and " +
-            "HTTP route by attribute, so there's nothing to wire up by hand."),
-        new("Runs anywhere you need it to",
-            "The same handlers run on AWS, Azure, Google Cloud, Cloudflare, Kubernetes, a plain " +
-            "VM, or ASP.NET Core &mdash; pick per-service, change your mind later."),
+            "Correlation IDs, logging, tracing, validation, retries, and health checks are " +
+            "composable middleware shared across every transport &mdash; written once, not " +
+            "scattered across handlers or re-implemented per event source."),
     ];
 
     public sealed record CodeStep(string Label, string Code);

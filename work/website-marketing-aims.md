@@ -137,6 +137,32 @@ card and/or platform-adjacent section), and possibly a dedicated screenshot/asse
 
 ---
 
+## 7b. Repositioning applied this pass (2026-07 review)
+
+Owner feedback that the site still led with the weakest advantage. The correction, now reflected
+in `MarketingContent.cs`/`Layout.cs`, re-ranks the pillars:
+
+- **Transport mixing is the headline, not cloud portability.** The real pain Benzene removes is
+  *transport lock-in within a single cloud*: on serverless, an SNS-triggered function can't also
+  take SQS, a SQS worker won't take SNS, and putting a queue in front of an HTTP service is
+  bespoke plumbing. Benzene exposes the *same* handler over HTTP + SQS + SNS + Kafka + … **at the
+  same time** (see `examples/AwsMesh/Shared/MeshServiceWiring.Configure` — one handler array, five
+  transports). Cloud-provider swapping — the old lede — is real but rarely exercised: a team
+  already on AWS won't move. So §2.2's transport claim is now the hero and card 1; §2.1's "runs
+  everywhere" is demoted to a closing "and it runs wherever you already are" section explicitly
+  framed as the bonus, not the pitch.
+- **Introspectability is a top-tier advantage, promoted to its own card** ("See what every service
+  does"): OpenAPI/AsyncAPI specs + the live service map/mesh generated from code. Previously only
+  implied by the bottom-of-page "Try it live" demos.
+- **Testability is a top-tier advantage, promoted to its own card** ("Test-first, out of the
+  box"): per-transport test hosts + `*.TestHelpers`. Previously absent from the cards entirely.
+- **Demoted from cards:** "No routing tables / auto-discovery" (a nice-to-have, not a reason to
+  adopt) and "Runs anywhere" (folded into the closing platforms section). Consistent-DX-across-
+  transports is carried implicitly by cards 1 and 4 rather than its own card.
+
+Card order is now the priority order: (1) mix transports, (2) introspect, (3) test, (4)
+cross-cutting concerns.
+
 ## 8. Related documents
 
 - [`work/benzene-vision.md`](benzene-vision.md) — the engineering philosophy this messaging
