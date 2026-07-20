@@ -18,4 +18,11 @@ public interface IHealthCheckResult
     /// source- and binary-compatible, defaulting to no reported dependencies.
     /// </summary>
     HealthCheckDependency[] Dependencies => Array.Empty<HealthCheckDependency>();
+
+    /// <summary>
+    /// How long the check took to run, filled in by the aggregating processor (an individual check
+    /// need not set it). A default interface member so existing implementers stay source- and
+    /// binary-compatible, defaulting to <see cref="TimeSpan.Zero"/>.
+    /// </summary>
+    TimeSpan Duration => TimeSpan.Zero;
 }

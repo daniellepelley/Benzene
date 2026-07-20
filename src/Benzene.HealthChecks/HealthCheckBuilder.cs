@@ -21,6 +21,9 @@ public class HealthCheckBuilder : IHealthCheckBuilder
     {
         _register = register;
         _register.Register(x => x.AddSingleton<IHealthCheckFinder, HealthCheckFinder>());
+        // Registered with TryAdd so a consumer can register their own IHealthCheckProcessor first
+        // (e.g. with a non-default timeout) and have it win.
+        _register.Register(x => x.TryAddSingleton<IHealthCheckProcessor>(_ => new HealthCheckProcessor()));
     }
 
     /// <inheritdoc />

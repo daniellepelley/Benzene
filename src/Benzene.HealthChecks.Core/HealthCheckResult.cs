@@ -84,12 +84,13 @@ public class HealthCheckResult : IHealthCheckResult
     /// deserializers (e.g. <c>Newtonsoft.Json</c>, which requires exactly one constructor to bind to
     /// when a type has no default constructor) keep working unambiguously.
     /// </remarks>
-    public HealthCheckResult(string status, string type, IDictionary<string, object> data, HealthCheckDependency[]? dependencies = null)
+    public HealthCheckResult(string status, string type, IDictionary<string, object> data, HealthCheckDependency[]? dependencies = null, TimeSpan duration = default)
     {
         Status = status;
         Type = type;
         Data = data;
         Dependencies = dependencies ?? Array.Empty<HealthCheckDependency>();
+        Duration = duration;
     }
 
     /// <inheritdoc />
@@ -103,4 +104,7 @@ public class HealthCheckResult : IHealthCheckResult
 
     /// <inheritdoc />
     public HealthCheckDependency[] Dependencies { get; }
+
+    /// <inheritdoc />
+    public TimeSpan Duration { get; }
 }

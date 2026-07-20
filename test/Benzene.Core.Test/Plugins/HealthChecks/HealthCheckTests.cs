@@ -76,6 +76,43 @@ public class HealthCheckTests
     }
 
     [Fact]
+    public async Task Processor_WithShortTimeout_ReportsSlowCheckAsTimedOut()
+    {
+        var slow = new DelayHealthCheck("slow", TimeSpan.FromSeconds(5));
+
+        var result = await new HealthCheckProcessor(TimeSpan.FromMilliseconds(50)).PerformHealthChecksAsync(new IHealthCheck[] { slow });
+
+        var response = result.PayloadAsObject as HealthCheckResponse;
+        Assert.False(response.IsHealthy);
+        var check = response.HealthChecks["slow"];
+        Assert.Equal(HealthCheckStatus.Failed, check.Status);
+        Assert.Equal("Timed Out", check.Data["Error"]);
+    }
+
+    [Fact]
+    public async Task Processor_WithinTimeout_ReturnsTheChecksActualResult()
+    {
+        var fast = new DelayHealthCheck("fast", TimeSpan.Zero);
+
+        var result = await new HealthCheckProcessor(TimeSpan.FromSeconds(5)).PerformHealthChecksAsync(new IHealthCheck[] { fast });
+
+        var response = result.PayloadAsObject as HealthCheckResponse;
+        Assert.True(response.IsHealthy);
+        Assert.Equal(HealthCheckStatus.Ok, response.HealthChecks["fast"].Status);
+    }
+
+    [Fact]
+    public async Task Processor_CapturesPerCheckDuration()
+    {
+        var check = new DelayHealthCheck("timed", TimeSpan.FromMilliseconds(20));
+
+        var result = await new HealthCheckProcessor().PerformHealthChecksAsync(new IHealthCheck[] { check });
+
+        var response = result.PayloadAsObject as HealthCheckResponse;
+        Assert.True(response.HealthChecks["timed"].Duration > TimeSpan.Zero);
+    }
+
+    [Fact]
     public async Task Dependencies_SurviveAggregation()
     {
         var dependencies = new[] { new HealthCheckDependency("Queue", "some-queue-url") };
@@ -174,6 +211,27 @@ public class ExceptionThrowingHealthCheck : IHealthCheck
     public Task<IHealthCheckResult> ExecuteAsync()
     {
         throw new Exception();
+    }
+}
+
+public class DelayHealthCheck : IHealthCheck
+{
+    private readonly TimeSpan _delay;
+    public DelayHealthCheck(string type, TimeSpan delay)
+    {
+        Type = type;
+        _delay = delay;
+    }
+
+    public string Type { get; }
+
+    public async Task<IHealthCheckResult> ExecuteAsync()
+    {
+        if (_delay > TimeSpan.Zero)
+        {
+            await Task.Delay(_delay);
+        }
+        return HealthCheckResult.CreateInstance(true, Type);
     }
 }
 

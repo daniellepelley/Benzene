@@ -7,7 +7,7 @@ namespace Benzene.HealthChecks;
 /// checks with the same (or an empty) <see cref="IHealthCheck.Type"/> don't collide. Not thread-safe - a
 /// new instance is created per health check run (see <see cref="HealthCheckProcessor"/>).
 /// </summary>
-public class HealthCheckNamer
+internal class HealthCheckNamer
 {
     private readonly Dictionary<string, int> _existingNames = new() {{ "HealthCheck", 0 }};
 

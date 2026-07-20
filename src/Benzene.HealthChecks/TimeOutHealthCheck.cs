@@ -15,15 +15,18 @@ namespace Benzene.HealthChecks;
 internal class TimeOutHealthCheck : IHealthCheck
 {
     private readonly IHealthCheck _inner;
+    private readonly TimeSpan _timeout;
 
     /// <inheritdoc />
     public string Type => _inner.Type;
 
     /// <summary>Initializes a new instance of the <see cref="TimeOutHealthCheck"/> class.</summary>
     /// <param name="inner">The health check to run under a timeout.</param>
-    public TimeOutHealthCheck(IHealthCheck inner)
+    /// <param name="timeout">The maximum time to wait for the check before reporting a timeout.</param>
+    public TimeOutHealthCheck(IHealthCheck inner, TimeSpan timeout)
     {
         _inner = inner;
+        _timeout = timeout;
     }
 
     /// <summary>
@@ -37,7 +40,7 @@ internal class TimeOutHealthCheck : IHealthCheck
         // Cancel the delay as soon as the check wins, so a fast check doesn't leave a 10s timer
         // registered until it fires (health probes run continuously - those timers add up).
         using var cts = new CancellationTokenSource();
-        var completed = await Task.WhenAny(task, Task.Delay(10000, cts.Token));
+        var completed = await Task.WhenAny(task, Task.Delay(_timeout, cts.Token));
         if (completed == task)
         {
             cts.Cancel();

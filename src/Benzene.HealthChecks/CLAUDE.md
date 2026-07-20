@@ -31,9 +31,14 @@ for the full Kubernetes wiring guide.
   (as opposed to ones added inline through the builder)
 
 ### Execution
-- `HealthCheckProcessor.PerformHealthChecksAsync` - runs every check wrapped in
-  `TimeOutHealthCheck(ExceptionHandlingHealthCheck(check))` (10s hardcoded timeout, not configurable;
-  exceptions become a failed result instead of propagating) and aggregates into a `HealthCheckResponse`.
+- `IHealthCheckProcessor`/`HealthCheckProcessor` - the injectable execution engine (was a static class).
+  Runs every check wrapped in `TimeOutHealthCheck(ExceptionHandlingHealthCheck(check))` and aggregates
+  into a `HealthCheckResponse`. The per-check timeout is **configurable** via the constructor
+  (`new HealthCheckProcessor(TimeSpan)`, default 10s); the middleware resolves `IHealthCheckProcessor`
+  from DI, registered by the builder with `TryAddSingleton` so a consumer can register their own
+  (e.g. a different timeout) and have it win. Each check is **timed** and its duration stamped onto the
+  result (`IHealthCheckResult.Duration`). A static `PerformHealthChecksAsync(topic, checks)` shim
+  remains for source-compatibility (the `topic` arg is unused).
   Each check's `Dependencies` (see `Benzene.HealthChecks.Core`) survives this aggregation - the
   processor explicitly rebuilds a `HealthCheckResult` per check, and threads `Dependencies` through
   that rebuild alongside `Status`/`Type`/`Data`. Known limitation: if `TimeOutHealthCheck`/

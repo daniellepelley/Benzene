@@ -61,7 +61,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, string topic, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { topic, Constants.DefaultHealthCheckTopic }, topic, builder);
+        return app.UseHealthCheckMiddleware(new[] { topic, Constants.DefaultHealthCheckTopic }, builder);
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultLivenessTopic }, Constants.DefaultLivenessTopic, builder);
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultLivenessTopic }, builder);
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultReadinessTopic }, Constants.DefaultReadinessTopic, builder);
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultReadinessTopic }, builder);
     }
 
     /// <summary>
@@ -170,7 +170,7 @@ public static class Extensions
     /// otherwise passes through to <c>next()</c>.
     /// </summary>
     private static IMiddlewarePipelineBuilder<TContext> UseHealthCheckMiddleware<TContext>(
-        this IMiddlewarePipelineBuilder<TContext> app, string[] matchTopics, string reportedTopic, IHealthCheckBuilder builder)
+        this IMiddlewarePipelineBuilder<TContext> app, string[] matchTopics, IHealthCheckBuilder builder)
     {
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
@@ -181,9 +181,8 @@ public static class Extensions
 
             if (matchTopics.Contains(messageTopic.Id))
             {
-                var result =
-                    await HealthCheckProcessor.PerformHealthChecksAsync(reportedTopic,
-                        builder.GetHealthChecks(resolver));
+                var processor = resolver.GetService<IHealthCheckProcessor>();
+                var result = await processor.PerformHealthChecksAsync(builder.GetHealthChecks(resolver));
                 await resultSetter.SetResultAsync(context, new MessageHandlerResult( messageTopic, MessageHandlerDefinition.Empty(), result));
             }
             else
