@@ -38,6 +38,11 @@ public class UrlMatcherTest
     [InlineData( "/EXample/", "/foo/EXAMPLE")]
     [InlineData( "example", "/example/{id}")]
     [InlineData( "example/34/action", "/example/{id}")]
+    // A literal prefix/suffix around a parameter must not match a URL that supplies no value for it -
+    // the required parameter would otherwise be absent and the handler would bind it to null/default.
+    [InlineData( "example--foo", "/example-{id}-foo")]
+    [InlineData( "x", "/x{id}")]
+    [InlineData( "-foo", "/{id}-foo")]
     public void DoesNotMatchPath(string path, string handlerPath)
     {
         var parameters = _urlMatcher.MatchUrl(path, handlerPath);

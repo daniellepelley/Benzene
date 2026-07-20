@@ -79,7 +79,11 @@ internal sealed class CompiledRoutePath
             var value = segment.Substring(seg.Prefix.Length, segment.Length - seg.Prefix.Length - seg.Suffix.Length);
             if (value == "")
             {
-                continue;
+                // The literal prefix/suffix matched but the parameter itself is empty (e.g.
+                // "/example--foo" against "/example-{id}-foo"). A required parameter with no value is
+                // not a match - returning the dictionary here would dispatch to the handler with the
+                // parameter absent (bound to null/default). Treat it as no match (404).
+                return null;
             }
 
             output[seg.ParamName] = value;

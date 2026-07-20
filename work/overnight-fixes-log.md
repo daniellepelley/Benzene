@@ -9,6 +9,17 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 6 — route with a literal prefix/suffix matched an empty param value (`CompiledRoutePath`)
+- **Bug:** for a parameter with a literal prefix and/or suffix (`/example-{id}-foo`, `/x{id}`,
+  `/{id}-foo`), a URL that supplied no value for the parameter (`/example--foo`, `/x`, `/-foo`) still
+  matched — the empty extracted value hit a `continue` that skipped adding the param but let the segment
+  count as a match. The handler was then dispatched with the required route parameter absent (bound to
+  null/default), instead of a 404.
+- **Repro:** three new `UrlMatcherTest.DoesNotMatchPath` cases — returned an empty dict pre-fix, return
+  null post-fix. All existing match/no-match cases unchanged (49 route tests green).
+- **Fix:** `return null` on an empty extracted value (a required param with no value is not a match).
+  `RouteFinder` and `UrlMatcher.MatchUrl` both go through `CompiledRoutePath.Match`, so both are fixed.
+
 ### Cycle 5 — XML responses declared `encoding="utf-16"` but shipped as UTF-8 (`Benzene.Xml.XmlSerializer`)
 - **Bug:** `Serialize` wrote via a `StringWriter` (always UTF-16), so `XmlWriter` stamped
   `<?xml ... encoding="utf-16"?>` into the declaration. The body is returned as a string and transmitted
