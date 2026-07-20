@@ -80,6 +80,37 @@ public class MiddlewareTest
     }
 
     [Fact]
+    public async Task ShortCircuit_DoesNotResolveDownstreamMiddleware()
+    {
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        var builder = new MiddlewarePipelineBuilder<object>(container);
+
+        var downstreamResolved = false;
+        // First middleware short-circuits (never calls next).
+        builder.Use((_, _) => Task.CompletedTask);
+        // Second middleware's factory records whether it was ever resolved.
+        builder.Use((Benzene.Abstractions.DI.IServiceResolver _) =>
+        {
+            downstreamResolved = true;
+            return (_, next) => next();
+        });
+
+        var pipeline = builder.Build();
+
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await pipeline.HandleAsync(new object(), resolver);
+
+        // A middleware the pipeline never reaches must not be constructed - the chain used to resolve
+        // (and factory-wrap) every middleware up front, so a short-circuited downstream still ran its
+        // constructor/DI resolution, its ctor-injected dependencies had to be resolvable before the
+        // pipeline even started, and UseExceptionHandler couldn't cover a downstream construction throw.
+        Assert.False(downstreamResolved);
+    }
+
+    [Fact]
     public void Builder_Clear()
     {
         var services = new ServiceCollection();

@@ -40,14 +40,17 @@ public class MiddlewarePipeline<TContext>(Func<IServiceResolver, IMiddleware<TCo
     {
         var factory = GetMiddlewareFactory(serviceResolver);
 
+        // Each middleware is resolved from DI and factory-wrapped INSIDE the returned closure, so it
+        // happens only when the chain actually reaches that link - not eagerly for every middleware
+        // while the chain is still being built. Building it eagerly (evaluating middleware(resolver)
+        // and factory.Create as arguments during the Aggregate) meant a middleware that a short-circuit
+        // never reaches was still constructed, its constructor-injected dependencies had to be
+        // resolvable before the pipeline even ran, and UseExceptionHandler couldn't cover a downstream
+        // construction failure. Deferring keeps per-request resolution (Scoped/Transient still get a
+        // fresh instance) while only touching middleware that actually runs.
         return _reversedItems
-            .Aggregate(() => Task.CompletedTask, (current, middleware) =>
-                CreateChainItem(context, factory.Create(serviceResolver, middleware(serviceResolver)).HandleAsync, current));
-    }
-
-    private static Func<Task> CreateChainItem(TContext context, Func<TContext, Func<Task>, Task> function, Func<Task> next)
-    {
-        return () => function(context, next);
+            .Aggregate((Func<Task>)(() => Task.CompletedTask), (next, middleware) =>
+                () => factory.Create(serviceResolver, middleware(serviceResolver)).HandleAsync(context, next));
     }
 
     private static IMiddlewareFactory GetMiddlewareFactory(IServiceResolver serviceResolver)
