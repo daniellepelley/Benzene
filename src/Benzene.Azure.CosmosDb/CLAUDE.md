@@ -59,6 +59,36 @@ evaluation; a handler wanting finer-grained safety does its own within-batch boo
   envelope, so the pipeline is a streaming pipeline over the document type (`UseStream(...)`),
   exactly like the trigger adapter.
 
+## All-versions-and-deletes mode (2026-07-20, #30.6)
+A parallel path so **deletes and intermediate versions** surface, not just the latest version:
+- `BenzeneCosmosAllVersionsChangeFeedWorker<TDocument>` + `UseCosmosDbAllVersionsChangeFeed<TDocument>`
+  + `BenzeneCosmosAllVersionsChangeFeedConfig` + `CosmosAllVersionsChangeFeedApplication<TDocument>`
+  + `CosmosAllVersionsChangeFeedBatch<TDocument>`. The pipeline streams
+  `StreamContext<CosmosChangeFeedItem<TDocument>>` instead of `StreamContext<TDocument>`, where
+  `CosmosChangeFeedItem<TDocument>` carries `Current`, `Previous` (when retention captured it), and a
+  Benzene-owned `CosmosChangeType` (Create/Replace/Delete) projected from the SDK's
+  `ChangeFeedOperationType`. Built via `ICosmosChangeFeedProcessorFactory.CreateAllVersionsAndDeletes`
+  (a **default-interface method** that throws `NotSupportedException` — the built-in
+  `CosmosChangeFeedProcessorFactory` implements it via
+  `GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes`; pre-existing custom factories keep
+  compiling but must implement it to use this mode).
+- **Why a dedicated worker, not a `CosmosChangeFeedMode` enum on the existing worker** (a deliberate
+  deviation from the design doc's §30.6 sketch): the Cosmos SDK 3.62 has **no manual-checkpoint
+  all-versions builder** — `GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes` is
+  **automatic-checkpoint only** (it checkpoints after the handler returns successfully). That's a
+  fundamentally different checkpoint model from the manual-checkpoint `BenzeneCosmosChangeFeedWorker`
+  (whose whole reason to exist over the Functions trigger is the per-batch checkpointer). Forcing
+  both models through one worker would mean a `StreamContext` whose checkpointer is a no-op in one
+  mode and load-bearing in the other, and a different streamed item type per mode — so the honest
+  shape is two workers. The all-versions config therefore has **no `AutoCheckpointOnSuccess`** and the
+  context uses `NullStreamCheckpointer`; the only knob is `CatchHandlerExceptions` (default `false` =
+  rethrow, no checkpoint, batch redelivered/at-least-once; `true` = swallow, checkpoint advances,
+  poison batch skipped). Requires the caller to configure container/account retention (otherwise
+  deletes/intermediate versions don't surface). Tests:
+  `test/Benzene.Core.Test/Azure/CosmosDbWorker/BenzeneCosmosAllVersionsChangeFeedWorkerTest.cs`
+  (all-versions processor created + started; change items mapped incl. delete + previous state;
+  skip-vs-retry on failure), no live Cosmos (same rationale as the latest-version worker).
+
 ## Dependencies
 - **Microsoft.Azure.Cosmos** (3.62.0) + **Newtonsoft.Json** (13.0.3, required explicitly by the
   Cosmos SDK's build check; same pin as `Benzene.NewtonsoftJson`) — the only Benzene package

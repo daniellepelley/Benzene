@@ -63,4 +63,37 @@ public static class Extensions
             serviceResolverFactory, application, config, processorFactory));
         return app;
     }
+
+    /// <summary>
+    /// Adds a Cosmos DB Change Feed consumer in <em>all-versions-and-deletes</em> mode: the pipeline is
+    /// a streaming pipeline over <see cref="CosmosChangeFeedItem{TDocument}"/> (current + previous +
+    /// change type), so deletes and intermediate versions surface (requires caller-configured
+    /// container/account retention). Because the SDK's all-versions processor is automatic-checkpoint
+    /// only, there is no per-batch checkpointer - progress advances when the handler returns without
+    /// throwing; the only failure knob is
+    /// <see cref="BenzeneCosmosAllVersionsChangeFeedConfig.CatchHandlerExceptions"/>.
+    /// </summary>
+    /// <typeparam name="TDocument">The document type the change items are deserialized into.</typeparam>
+    /// <param name="app">The worker startup to add the change feed consumer to.</param>
+    /// <param name="config">The failure-handling behavior to use.</param>
+    /// <param name="processorFactory">
+    /// The factory used to create the underlying all-versions <c>ChangeFeedProcessor</c>; must support
+    /// <c>CreateAllVersionsAndDeletes</c> (the built-in <see cref="CosmosChangeFeedProcessorFactory{TDocument}"/> does).
+    /// </param>
+    /// <param name="action">Configures the stream pipeline (add <c>UseStream(...)</c> etc.).</param>
+    /// <returns>The worker startup for method chaining.</returns>
+    public static IBenzeneWorkerStartup UseCosmosDbAllVersionsChangeFeed<TDocument>(this IBenzeneWorkerStartup app,
+        BenzeneCosmosAllVersionsChangeFeedConfig config, ICosmosChangeFeedProcessorFactory<TDocument> processorFactory,
+        Action<IMiddlewarePipelineBuilder<StreamContext<CosmosChangeFeedItem<TDocument>>>> action)
+    {
+        app.Register(x => x.AddCosmosDbChangeFeed());
+        var middlewarePipelineBuilder = app.Create<StreamContext<CosmosChangeFeedItem<TDocument>>>();
+        action(middlewarePipelineBuilder);
+        var pipeline = middlewarePipelineBuilder.Build();
+
+        var application = new CosmosAllVersionsChangeFeedApplication<TDocument>(pipeline);
+        app.Add(serviceResolverFactory => new BenzeneCosmosAllVersionsChangeFeedWorker<TDocument>(
+            serviceResolverFactory, application, config, processorFactory));
+        return app;
+    }
 }

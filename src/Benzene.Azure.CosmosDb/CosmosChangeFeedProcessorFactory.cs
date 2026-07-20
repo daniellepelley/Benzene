@@ -60,4 +60,20 @@ public class CosmosChangeFeedProcessorFactory<TDocument> : ICosmosChangeFeedProc
 
         return builder.Build();
     }
+
+    /// <inheritdoc />
+    public ChangeFeedProcessor CreateAllVersionsAndDeletes(
+        Container.ChangeFeedHandler<ChangeFeedItem<TDocument>> onChanges,
+        Container.ChangeFeedMonitorErrorDelegate onError)
+    {
+        var builder = _monitoredContainer
+            .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(_processorName, onChanges)
+            .WithInstanceName(_instanceName)
+            .WithLeaseContainer(_leaseContainer)
+            .WithErrorNotification(onError);
+
+        _configure?.Invoke(builder);
+
+        return builder.Build();
+    }
 }
