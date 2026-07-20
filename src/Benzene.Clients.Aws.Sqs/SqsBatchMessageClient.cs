@@ -66,9 +66,14 @@ public class SqsBatchMessageClient : IBenzeneBatchMessageClient
                 Entries = entries,
             });
 
-            foreach (var failed in response.Failed)
+            // Guard the collection: AWS SDK v3.7 auto-initializes it to empty, but a v4 upgrade leaves
+            // an unset collection null (would NRE on every all-success batch). Matches EventBridge.
+            if (response.Failed != null)
             {
-                failures.Add(new FailedBatchEntry(int.Parse(failed.Id), failed.Code, failed.Message));
+                foreach (var failed in response.Failed)
+                {
+                    failures.Add(new FailedBatchEntry(int.Parse(failed.Id), failed.Code, failed.Message));
+                }
             }
         }
 

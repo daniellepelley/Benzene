@@ -16,8 +16,11 @@ public class SqsConsumerMessageHeadersGetter : IMessageHeadersGetter<SqsConsumer
     /// <returns>A dictionary of header names to values, limited to attributes with a <c>String</c> data type.</returns>
     public IDictionary<string, string> GetHeaders(SqsConsumerMessageContext context)
     {
-        return context.Message.MessageAttributes
+        // Null-guard the attribute map (a message deserialized from a payload with no attributes can
+        // yield null), matching the SNS getter's hardening rather than NRE-ing out of the invocation.
+        return context.Message.MessageAttributes?
             .Where(x => x.Value.DataType == "String")
-            .ToDictionary(x => x.Key, x => x.Value.StringValue);
+            .ToDictionary(x => x.Key, x => x.Value.StringValue)
+            ?? new Dictionary<string, string>();
     }
 }

@@ -23,6 +23,6 @@ public class KafkaMessageHeadersGetter : IMessageHeadersGetter<KafkaContext>
             return new Dictionary<string, string>();
         }
 
-        return headers.ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.Value));
+        return headers.ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.Value ?? System.Array.Empty<byte>()));
     }
 }

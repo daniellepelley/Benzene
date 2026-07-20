@@ -8,6 +8,6 @@ public class KafkaSendMessageHeadersGetter : IMessageHeadersGetter<KafkaSendMess
     public IDictionary<string, string> GetHeaders(KafkaSendMessageContext context)
     {
         return context.Message.Headers
-            .ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.GetValueBytes()));
+            .ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.GetValueBytes() ?? System.Array.Empty<byte>()));
     }
 }
