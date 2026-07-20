@@ -167,6 +167,74 @@ public class KafkaWorkerDeadLetterAndDrainTest
         Assert.Equal("1", HeaderValue("orig-h")); // original headers preserved
     }
 
+    [Fact]
+    public async Task DeadLetter_WhenProduceFails_StopsWorkerWithoutStoringTheOffset()
+    {
+        // Auto-store is off under dead-lettering, and the offset is stored only AFTER a successful
+        // produce. If the dead-letter produce fails, the record's offset must never be stored (so it is
+        // redelivered on restart, not silently skipped) and the worker must stop.
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        var builder = new MiddlewarePipelineBuilder<KafkaRecordContext<string, string>>(container);
+        builder.Use((_, _) => throw new InvalidOperationException("boom"));
+        using var resolverFactory = new MicrosoftServiceResolverFactory(services);
+        var kafkaApplication = new KafkaApplication<string, string>(builder.Build());
+
+        var record = new ConsumeResult<string, string>
+        {
+            Message = new Message<string, string> { Key = "k", Value = "v", Headers = new Headers() },
+            TopicPartitionOffset = new TopicPartitionOffset("orders", new Partition(0), new Offset(7)),
+        };
+        var mockConsumer = ConsumerYielding(record);
+        var mockFactory = new Mock<IKafkaConsumerFactory<string, string>>();
+        mockFactory.Setup(x => x.Create(It.IsAny<ConsumerConfig>())).Returns(mockConsumer.Object);
+
+        var produceAttempted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var mockProducer = new Mock<IProducer<string, string>>();
+        mockProducer.Setup(p => p.ProduceAsync(It.IsAny<string>(), It.IsAny<Message<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback(() => produceAttempted.TrySetResult())
+            .ThrowsAsync(new Exception("dead-letter broker down"));
+
+        var deadLetter = new KafkaDeadLetterOptions<string, string>
+        {
+            DeadLetterTopic = "orders.DLT",
+            MaxAttempts = 1,
+            Producer = mockProducer.Object,
+        };
+
+        using var worker = new BenzeneKafkaWorker<string, string>(resolverFactory, kafkaApplication,
+            Config(), Mock.Of<ILogger<BenzeneKafkaWorker<string, string>>>(), mockFactory.Object, deadLetter);
+
+        await worker.StartAsync(CancellationToken.None);
+        var completed = await Task.WhenAny(produceAttempted.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+        Assert.Same(produceAttempted.Task, completed);
+        await worker.StopAsync(CancellationToken.None); // worker stopped itself; StopAsync completes (bounded)
+
+        mockConsumer.Verify(x => x.StoreOffset(It.IsAny<ConsumeResult<string, string>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeadLetter_WithoutPreserveOrderPerPartition_ThrowsAtStartAsync()
+    {
+        var config = Config();
+        config.PreserveOrderPerPartition = false; // manual-offset watermark would be unsafe out of order
+
+        var deadLetter = new KafkaDeadLetterOptions<string, string>
+        {
+            DeadLetterTopic = "orders.DLT",
+            MaxAttempts = 1,
+            Producer = Mock.Of<IProducer<string, string>>(),
+        };
+
+        using var worker = new BenzeneKafkaWorker<string, string>(
+            Mock.Of<Benzene.Abstractions.DI.IServiceResolverFactory>(),
+            new KafkaApplication<string, string>(Mock.Of<Benzene.Abstractions.Middleware.IMiddlewarePipeline<KafkaRecordContext<string, string>>>()),
+            config, Mock.Of<ILogger<BenzeneKafkaWorker<string, string>>>(),
+            Mock.Of<IKafkaConsumerFactory<string, string>>(), deadLetter);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => worker.StartAsync(CancellationToken.None));
+    }
+
     private static byte[] GetHeaderBytes(Headers headers, string key)
     {
         Assert.True(headers.TryGetLastBytes(key, out var bytes), $"Expected header '{key}' on the dead-lettered message.");

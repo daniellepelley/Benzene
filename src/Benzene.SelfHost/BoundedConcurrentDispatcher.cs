@@ -176,6 +176,25 @@ public sealed class BoundedConcurrentDispatcher<T>
     private async Task ConsumeLoopAsync(int laneIndex, Func<T, CancellationToken, Task> handle, ILogger logger,
         bool catchExceptions, Action<Exception>? onFault)
     {
+        try
+        {
+            await ConsumeLaneAsync(laneIndex, handle, logger, catchExceptions, onFault);
+        }
+        finally
+        {
+            // The lane consumer is exiting - either normal completion (DrainAsync completed the writer
+            // and the channel drained, so the count is already 0) or a rethrown fault with
+            // catchExceptions=false. On the fault path any item still queued in this lane's bounded
+            // channel was counted at enqueue and will never be read now (the consumer is dead), so
+            // clear the phantom count - otherwise a later DrainLanesAsync on this lane would see a
+            // permanently-nonzero outstanding count and burn its full timeout every time.
+            Volatile.Write(ref _laneOutstanding[laneIndex], 0);
+        }
+    }
+
+    private async Task ConsumeLaneAsync(int laneIndex, Func<T, CancellationToken, Task> handle, ILogger logger,
+        bool catchExceptions, Action<Exception>? onFault)
+    {
         await foreach (var item in _lanes[laneIndex].Reader.ReadAllAsync())
         {
             try

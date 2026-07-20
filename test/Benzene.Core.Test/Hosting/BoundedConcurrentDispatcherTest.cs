@@ -262,6 +262,38 @@ public class BoundedConcurrentDispatcherTest
     }
 
     [Fact]
+    public async Task DrainLanesAsync_AfterLaneFaultsWithAQueuedItem_ReturnsPromptly()
+    {
+        // Regression: with catchExceptions=false a faulting handler kills its lane consumer; an item
+        // already queued in that lane's channel was counted at enqueue and will never be read. Before
+        // the fix its phantom outstanding count made every later DrainLanesAsync on that lane burn its
+        // full timeout. The lane-exit reset clears it.
+        var logger = CreateLogger(out _);
+        var gate = new TaskCompletionSource();
+
+        var dispatcher = new BoundedConcurrentDispatcher<int>(laneCount: 1, async (item, ct) =>
+        {
+            if (item == 1)
+            {
+                await gate.Task;
+                throw new InvalidOperationException("boom");
+            }
+        }, logger, keySelector: item => item, catchExceptions: false, onFault: _ => { });
+
+        await dispatcher.EnqueueAsync(1, CancellationToken.None); // read, now in flight awaiting the gate
+        await dispatcher.EnqueueAsync(2, CancellationToken.None); // sits in the channel behind item 1
+        gate.SetResult();                                          // item 1 throws -> lane consumer dies
+        await Task.Delay(100);                                     // let the lane fault and exit
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await dispatcher.DrainLanesAsync(new[] { 0 }, TimeSpan.FromSeconds(5));
+        sw.Stop();
+
+        Assert.True(sw.ElapsedMilliseconds < 2000,
+            $"DrainLanesAsync should return promptly after the lane died, not burn the timeout; took {sw.ElapsedMilliseconds}ms.");
+    }
+
+    [Fact]
     public async Task DrainLanesAsync_ReturnsOnTimeoutWhenWorkNeverFinishes()
     {
         var logger = CreateLogger(out _);

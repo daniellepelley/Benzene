@@ -85,8 +85,18 @@ producer support. This is one of the "self-hosted worker" startup modes document
   (`IsEnabled`); the worker ctor throws if a topic is set without a producer. This keeps a poison
   record from either wedging the partition (the `CatchHandlerExceptions=false` failure mode) or being
   silently skipped (`CatchHandlerExceptions=true`): the dead-letter handle catches the handler fault
-  itself, so only a failure to *produce* the dead-letter propagates. Tests:
-  `KafkaWorkerDeadLetterAndDrainTest.DeadLetter_RetriesThenProducesOriginalRecordWithDiagnosticHeaders`.
+  itself, so only a failure to *produce* the dead-letter propagates. **Dead-lettering manages offsets
+  the same way `CommitOnlyOnSuccess` does** (2026-07-20 hardening): it forces
+  `EnableAutoOffsetStore=false`, requires `PreserveOrderPerPartition=true` (enforced at startup), and
+  stores the offset only after a record is handled or successfully dead-lettered. If the dead-letter
+  *produce* itself fails, the offset is **not** stored and the worker stops (`_stoppingCts.Cancel()`),
+  so the record is redelivered on restart rather than silently lost when the next record on the
+  partition would advance the watermark past it — trading availability for no-loss (a persistently
+  unreachable DLT wedges the worker loudly instead of dropping poison records). This closes a
+  silent-loss gap under the default `CommitOnlyOnSuccess=false` config. Tests:
+  `KafkaWorkerDeadLetterAndDrainTest` (`DeadLetter_RetriesThenProducesOriginalRecordWithDiagnosticHeaders`,
+  `DeadLetter_WhenProduceFails_StopsWorkerWithoutStoringTheOffset`,
+  `DeadLetter_WithoutPreserveOrderPerPartition_ThrowsAtStartAsync`).
 - `KafkaApplication<TKey,TValue>` - wraps the built middleware pipeline; `HandleAsync` is what the
   dispatcher calls per message, via its base `MiddlewareApplication<TEvent,TContext>` (`Benzene.Core.Middleware`),
   which creates a new DI scope per message and disposes it once the pipeline finishes - previously a

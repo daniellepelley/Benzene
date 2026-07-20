@@ -17,6 +17,7 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
     private readonly IKafkaConsumerFactory<TKey, TValue> _consumerFactory;
     private readonly KafkaDeadLetterOptions<TKey, TValue>? _deadLetterOptions;
     private readonly CancellationTokenSource _stoppingCts = new();
+    private bool _managesOffsetsManually;
     private IConsumer<TKey, TValue>? _consumer;
     private Task? _runTask;
     private CancellationTokenSource? _linkedCts;
@@ -49,28 +50,55 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
     /// </summary>
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (_benzeneKafkaConfig.CommitOnlyOnSuccess)
-        {
-            if (_benzeneKafkaConfig.CatchHandlerExceptions)
-            {
-                throw new InvalidOperationException(
-                    $"{nameof(BenzeneKafkaConfig.CommitOnlyOnSuccess)} requires " +
-                    $"{nameof(BenzeneKafkaConfig.CatchHandlerExceptions)} = false - otherwise a handler " +
-                    "exception is swallowed and the message's offset would never be stored, but later, " +
-                    "successful messages on the same partition would still advance the commit watermark " +
-                    "past it.");
-            }
+        var deadLetterEnabled = _deadLetterOptions is { IsEnabled: true };
 
+        if (_benzeneKafkaConfig.CommitOnlyOnSuccess && _benzeneKafkaConfig.CatchHandlerExceptions)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(BenzeneKafkaConfig.CommitOnlyOnSuccess)} requires " +
+                $"{nameof(BenzeneKafkaConfig.CatchHandlerExceptions)} = false - otherwise a handler " +
+                "exception is swallowed and the message's offset would never be stored, but later, " +
+                "successful messages on the same partition would still advance the commit watermark " +
+                "past it.");
+        }
+
+        // CommitOnlyOnSuccess and dead-lettering both manage offsets by hand - StoreOffset only after a
+        // record is genuinely done (handled successfully, or re-produced to the dead-letter topic). Both
+        // therefore need auto-store off and per-partition ordering: StoreOffset is a last-write-wins
+        // watermark with no gap tracking, so out-of-order handling would let a later record's offset
+        // advance the commit watermark past an earlier one that hasn't actually succeeded / been
+        // dead-lettered yet (silent loss on the next commit).
+        _managesOffsetsManually = _benzeneKafkaConfig.CommitOnlyOnSuccess || deadLetterEnabled;
+        if (_managesOffsetsManually)
+        {
             if (!_benzeneKafkaConfig.PreserveOrderPerPartition)
             {
+                var feature = _benzeneKafkaConfig.CommitOnlyOnSuccess
+                    ? nameof(BenzeneKafkaConfig.CommitOnlyOnSuccess)
+                    : "Dead-lettering";
                 throw new InvalidOperationException(
-                    $"{nameof(BenzeneKafkaConfig.CommitOnlyOnSuccess)} requires " +
-                    $"{nameof(BenzeneKafkaConfig.PreserveOrderPerPartition)} = true - otherwise a " +
-                    "partition's messages can be handled out of order, and storing a later message's " +
-                    "offset first would advance the commit watermark past an earlier one still in flight.");
+                    $"{feature} requires {nameof(BenzeneKafkaConfig.PreserveOrderPerPartition)} = true - " +
+                    "otherwise a partition's messages can be handled out of order, and storing a later " +
+                    "message's offset first would advance the commit watermark past an earlier one still " +
+                    "in flight.");
             }
 
             _benzeneKafkaConfig.ConsumerConfig.EnableAutoOffsetStore = false;
+        }
+
+        if (_benzeneKafkaConfig.ShouldDrainOnRevoke && _consumerFactory is not KafkaConsumerFactory<TKey, TValue>)
+        {
+            // The rebalance-drain handler is wired via the IKafkaConsumerFactory.Create(config,
+            // configureBuilder) overload (a default-interface method). A custom factory written before
+            // that overload existed silently drops the callback, so draining would be a no-op with no
+            // other signal - warn loudly instead.
+            _logger.LogWarning(
+                "{Config}.{DrainOnRevoke} is enabled but the supplied {Factory} does not honor the " +
+                "builder-configuration overload (Create(config, configureBuilder)); the partitions-revoked " +
+                "drain handler will NOT be registered and draining is disabled. Use the built-in " +
+                "{DefaultFactory} or implement the two-argument Create overload.",
+                nameof(BenzeneKafkaConfig), nameof(BenzeneKafkaConfig.DrainOnRevoke),
+                _consumerFactory.GetType().Name, nameof(KafkaConsumerFactory<TKey, TValue>));
         }
 
         _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _stoppingCts.Token);
@@ -88,12 +116,19 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
 
                 var handle = BuildHandle(runToken);
 
+                // When dead-lettering is on, the handle catches every handler exception itself (retry
+                // then re-produce), so the only thing that can reach the dispatcher is a failure to
+                // PRODUCE the dead-letter. That must stop the worker (catchExceptions=false → onFault),
+                // because the poison record's offset was deliberately not stored: swallowing it would let
+                // the next record on the partition advance the watermark past the lost record.
+                var catchHandlerExceptions = !deadLetterEnabled && _benzeneKafkaConfig.CatchHandlerExceptions;
+
                 dispatcher = new BoundedConcurrentDispatcher<ConsumeResult<TKey, TValue>>(
                     _benzeneKafkaConfig.ConcurrentRequests,
                     handle,
                     _logger,
                     keySelector,
-                    _benzeneKafkaConfig.CatchHandlerExceptions,
+                    catchHandlerExceptions,
                     onFault: _ => _stoppingCts.Cancel());
 
                 // The dispatcher must exist before the consumer so the partitions-revoked handler can
@@ -175,6 +210,10 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                 : (consumeResult, _) => _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory, runToken);
         }
 
+        // With dead-lettering on, auto-offset-store is off (see StartAsync), so the worker must store
+        // the offset itself once a record is genuinely done - handled successfully OR re-produced to the
+        // dead-letter topic. A record whose dead-letter PRODUCE fails is never stored (ProduceToDeadLetter
+        // stops the worker), so it is redelivered rather than silently dropped.
         var maxAttempts = Math.Max(1, deadLetter.MaxAttempts);
         return async (consumeResult, _) =>
         {
@@ -184,11 +223,7 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                 try
                 {
                     await _kafkaApplication.HandleAsync(consumeResult, _serviceResolverFactory, runToken);
-                    if (commitOnSuccess)
-                    {
-                        _consumer!.StoreOffset(consumeResult);
-                    }
-
+                    _consumer!.StoreOffset(consumeResult);
                     return;
                 }
                 catch (Exception ex)
@@ -200,11 +235,8 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
             }
 
             await ProduceToDeadLetterAsync(deadLetter, consumeResult, lastError!, runToken);
-            if (commitOnSuccess)
-            {
-                // Advance past the poison record now that it's safely re-produced to the dead-letter topic.
-                _consumer!.StoreOffset(consumeResult);
-            }
+            // Advance past the poison record now that it's safely re-produced to the dead-letter topic.
+            _consumer!.StoreOffset(consumeResult);
         };
     }
 
@@ -242,7 +274,23 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
         _logger.LogError(error, "Dead-lettering {TopicPartitionOffset} to {DeadLetterTopic} after {MaxAttempts} attempt(s)",
             consumeResult.TopicPartitionOffset, deadLetter.DeadLetterTopic, Math.Max(1, deadLetter.MaxAttempts));
 
-        await deadLetter.Producer!.ProduceAsync(deadLetter.DeadLetterTopic, message, cancellationToken);
+        try
+        {
+            await deadLetter.Producer!.ProduceAsync(deadLetter.DeadLetterTopic, message, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // If we can't even dead-letter the record, do NOT store its offset (the caller only stores
+            // after this returns) - stop the worker so the record is redelivered on restart rather than
+            // being silently skipped when the next record on the partition advances the watermark. This
+            // trades availability for no-loss: a persistently unreachable dead-letter topic wedges the
+            // worker (loudly) instead of dropping poison records.
+            _logger.LogCritical(ex, "Failed to produce {TopicPartitionOffset} to dead-letter topic {DeadLetterTopic}; " +
+                "stopping the worker to avoid losing the record (it will be redelivered on restart).",
+                consumeResult.TopicPartitionOffset, deadLetter.DeadLetterTopic);
+            _stoppingCts.Cancel();
+            throw;
+        }
     }
 
     /// <summary>
@@ -270,9 +318,17 @@ public class BenzeneKafkaWorker<TKey, TValue> : IBenzeneWorker, IDisposable
                 // a rebalance.
                 dispatcher.DrainLanesAsync(partitions, _benzeneKafkaConfig.DrainTimeout).GetAwaiter().GetResult();
 
-                // Commit the offsets stored (by CommitOnlyOnSuccess's StoreOffset) for the drained
-                // records, so the partition's next owner resumes after them rather than reprocessing.
-                consumer.Commit();
+                // Only commit when offsets are managed manually (CommitOnlyOnSuccess / dead-letter):
+                // there, stored = last genuinely-processed offset per partition, so committing is safe.
+                // Under plain auto-store, the stored offset is the consumer's *position* (including
+                // records still in flight on OTHER, non-revoked partitions), and a blanket Commit() would
+                // mark those in-flight records as done - a silent loss if the worker later crashes. In
+                // that mode we only drain (wait for the revoked partitions' handlers to finish) and let
+                // the broker's own rebalance commit handle offsets.
+                if (_managesOffsetsManually)
+                {
+                    consumer.Commit();
+                }
             }
             catch (KafkaException ex)
             {
