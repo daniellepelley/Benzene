@@ -25,6 +25,10 @@ vocabulary the outbound (`Benzene.Clients`) and inbound message-handler pipeline
   negotiation).
 - `IRawContentMessage : IRawStringMessage` - adds `ContentType`, so a handler can deliver
   pre-rendered HTML/etc. with an explicit content type regardless of negotiated format.
+- `IRawBytesMessage` - the binary counterpart: raw `Content` (`ReadOnlyMemory<byte>`) + `ContentType`,
+  for a handler returning bytes verbatim (image/PDF/zip). `SerializerResponseRenderer` writes it via
+  the byte `SetBody` overload, skipping serialization; HTTP transports encode as needed (API Gateway
+  base64 + `IsBase64Encoded`, self-host raw bytes). Concrete: `Benzene.Core.Messages.RawBytesMessage`.
 
 ### Mappers (the transport-read/write seam), namespace `...Messages.Mappers`
 - `IMessageBodyGetter<TContext>` (`GetBody`) / `IMessageBodyBytesGetter<TContext>` /
