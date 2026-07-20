@@ -12,6 +12,11 @@
          when you run `dotnet add package` yourself. -->
     <PackageReference Include="Benzene.Aws.Lambda.Core" Version="*-*" />
     <PackageReference Include="Benzene.Aws.Lambda.ApiGateway" Version="*-*" />
+    <!-- Adds AddDiagnostics() (Activity span per middleware) and UseBenzeneEnrichment() (log/trace
+         enrichment). See docs/monitoring.md and docs/diagnosing-failures.md. -->
+    <PackageReference Include="Benzene.Diagnostics" Version="*-*" />
+    <!-- Console logging provider so ILogger output reaches CloudWatch. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
     <!-- Only Benzene's own GetConfiguration() needs a concrete Microsoft.Extensions.Configuration
          implementation - only its abstractions come in transitively via Benzene. -->
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />

@@ -12,6 +12,7 @@ using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Diagnostics;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.Aws.Logging;
 using Benzene.FluentValidation;
@@ -62,6 +63,7 @@ public class StartUp : BenzeneStartUp
             var benzeneMessagePipeline =
                 aws.Create<BenzeneMessageContext>()
                     .UseTimer("benzene-message-application")
+                    .UseBenzeneEnrichment()
                     .UseXml()
                     .UseHealthCheck(healthCheckTopic, healthChecks)
                     .UseMessageHandlers(router => router
@@ -73,6 +75,7 @@ public class StartUp : BenzeneStartUp
             aws.UseApiGateway(apiGatewayApp => apiGatewayApp
                 .UseBenzeneMessage(benzeneMessagePipeline)
                 .UseTimer("api-gateway-application")
+                .UseBenzeneEnrichment()
                 .UseXml()
                 .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
                 .UseMessageHandlers(router => router
@@ -82,6 +85,7 @@ public class StartUp : BenzeneStartUp
 
             aws.UseSns(snsApp => snsApp
                 .UseTimer("sns-application")
+                .UseBenzeneEnrichment()
                 .UseXml()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router
@@ -91,6 +95,7 @@ public class StartUp : BenzeneStartUp
 
             aws.UseSqs(sqsApp => sqsApp
                 .UseTimer("sqs-application")
+                .UseBenzeneEnrichment()
                 .UseXml()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router
@@ -100,6 +105,7 @@ public class StartUp : BenzeneStartUp
 
             aws.UseKafka(kafkaApp => kafkaApp
                 .UseTimer("kafka-application")
+                .UseBenzeneEnrichment()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router.UseFluentValidation())
             );
@@ -107,6 +113,7 @@ public class StartUp : BenzeneStartUp
             // EventBridge routes by the event's detail-type; detail is JSON, so no XML mapping needed.
             aws.UseEventBridge(eventBridgeApp => eventBridgeApp
                 .UseTimer("event-bridge-application")
+                .UseBenzeneEnrichment()
                 .UseHealthCheck(healthCheckTopic, healthChecks)
                 .UseMessageHandlers(router => router
                     .UseFluentValidation()

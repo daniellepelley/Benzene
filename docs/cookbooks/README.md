@@ -9,6 +9,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 ## Available Cookbooks
 
 ### Observability
+- [Diagnosing Failures](../diagnosing-failures.md) - A message failed in production: the recommended middleware stack, the log fields you get, and how a failure shows up across logs, traces, and metrics
 - [Logging to Application Insights](logging-application-insights.md) - Send structured logs to Azure Application Insights
 - [Distributed Tracing with OpenTelemetry](distributed-tracing-opentelemetry.md) - Set up end-to-end tracing across services
 - [Custom Metrics with OpenTelemetry](custom-metrics-opentelemetry.md) - Track business and performance metrics

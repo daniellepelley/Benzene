@@ -60,6 +60,22 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
   case-insensitive/multi-key-fallback lookup are unit-tested in
   `test/Benzene.Core.Test/Diagnostics/CorrelationIdTest.cs`/`CorrelationExtensionsTest.cs`.
 
+### Ordering diagnostic (opt-in, advisory)
+- `PipelineOrderingDiagnosticsExtensions` - `IServiceResolver.FindPipelineOrderingIssues(builder)` /
+  `LogPipelineOrderingIssues(builder, logger?)` (→ `PipelineOrderingIssue[]`). Reads each
+  middleware's `Name` by resolving it against the resolver (try/catch per item - a middleware that
+  can't be resolved just for name inspection is skipped, never fails the check) and warns when
+  `UseW3CTraceContext()` ("W3CTraceContext") is present but not at index 0 of the builder it was
+  added to. **Advisory, never throws** - mirrors `Benzene.ResponseEvents`' F1 diagnostic and
+  `Benzene.Clients`' `ValidateOutboundRouting` (call once after wiring). Deliberately checks only the
+  W3C-first rule: the "enrichment needs `UseBenzeneInvocation` upstream" footgun can't be machine-
+  checked here because the batch transports (SQS/SNS/Kafka/Event Hub) auto-wire `UseBenzeneInvocation`
+  inside a per-message *sub*-pipeline (a different builder), so a check on the visible builder would
+  false-positive on exactly the transports where `invocationId` is correct - that rule stays a
+  documented footgun in `docs/diagnosing-failures.md`. Needs the concrete
+  `MiddlewarePipelineBuilder<TContext>` (returns empty for any other `IMiddlewarePipelineBuilder`).
+  Covered by `test/Benzene.Core.Test/Diagnostics/PipelineOrderingDiagnosticsTest.cs`.
+
 ### Enrichment
 - `UseBenzeneEnrichment<TContext>()` (`EnrichmentExtensions.cs`) - one portable, explicit-opt-in
   middleware that attaches `invocationId` (from `IBenzeneInvocation`), `traceId`/`spanId` (from

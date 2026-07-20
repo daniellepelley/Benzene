@@ -20,6 +20,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Health Checks](health-checks.md)
   - [Kubernetes Health Checks](kubernetes-health-checks.md)
   - [Monitoring & Diagnostics](monitoring.md)
+  - [Diagnosing Failures](diagnosing-failures.md) — a message failed in production; how to find out why, across logs, traces, and metrics
   - [Sampling Strategies](sampling-strategies.md)
   - [Privacy & Data Handling](privacy-and-data-handling.md)
 

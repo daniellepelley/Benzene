@@ -16,6 +16,7 @@ using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Diagnostics;
 using Benzene.Diagnostics.Timers;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.App.Handlers;
@@ -85,6 +86,10 @@ public static class DependenciesBuilder
         services.AddValidatorsFromAssemblyContaining<GetOrderMessageValidator>();
         services.UsingBenzene(x => x
             .AddBenzene()
+            // Span per middleware, so a failing stage is marked Error in a trace viewer. The focused
+            // opt-in (not AddDiagnostics()) because this example registers its own IProcessTimerFactory
+            // below - see docs/diagnosing-failures.md.
+            .AddActivityPerMiddleware()
             .AddBenzeneMessage()
             // .AddXml()
             // .AddSerializer<XmlSerializer>("application/xml")

@@ -187,3 +187,25 @@ per-message-attribution gap — now closed by the G5 fix below.)
 
 None of these change the architecture; they raise the *default* floor to meet the ceiling the
 framework already reaches when fully wired.
+
+### Recommendation 7 — feasibility findings (partial implementation)
+
+A spike into rec 7 found the ordering rules split into a tractable one and an intractable one, so
+only the safe rule was shipped (opt-in, advisory, mirroring F1's `LogUnmappedResponseHandlers`):
+
+- **Shipped: "`UseW3CTraceContext` must be first."** `IServiceResolver.LogPipelineOrderingIssues(builder)`
+  (`Benzene.Diagnostics`, `PipelineOrderingDiagnosticsExtensions`) resolves each middleware in a
+  builder just far enough to read its `Name` (guarded in try/catch — a middleware that can't be
+  resolved for inspection is skipped, never fails the check), and warns if a middleware named
+  `"W3CTraceContext"` is present but not at index 0. This rule has no false-positive surface: the
+  middleware is checked against the exact builder it was added to, and anything before it genuinely
+  won't inherit the remote trace parent. Advisory only — it never throws.
+- **Deferred: "enrichment needs `UseBenzeneInvocation` upstream."** This *cannot* be checked on the
+  builder the developer sees, because the batch/per-message transports (SQS, SNS, Kafka, Event Hub)
+  auto-wire `UseBenzeneInvocation` as the first middleware of their **per-message sub-pipeline** — a
+  different `IMiddlewarePipelineBuilder` instance than the outer one. A check on the visible builder
+  would warn on exactly the transports where `invocationId` is correctly populated. A correct
+  version needs a pipeline-introspection seam that spans the sub-pipeline boundary (the outer app
+  would have to expose the sub-builder it constructs), which is the larger design this item was
+  always flagged as. Until then the [Diagnosing Failures](../docs/diagnosing-failures.md) doc's
+  "Ordering footguns" section is the mitigation.

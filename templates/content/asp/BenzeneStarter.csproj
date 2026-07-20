@@ -11,6 +11,9 @@
          published version (including prereleases) on every restore, matching what the prerelease flag means
          when you run `dotnet add package` yourself. See README.md in this project for details. -->
     <PackageReference Include="Benzene.AspNet.Core" Version="*-*" />
+    <!-- Adds AddDiagnostics() (Activity span per middleware) and UseBenzeneEnrichment() (log/trace
+         enrichment). See docs/monitoring.md and docs/diagnosing-failures.md. -->
+    <PackageReference Include="Benzene.Diagnostics" Version="*-*" />
   </ItemGroup>
 
 </Project>

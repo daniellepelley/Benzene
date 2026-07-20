@@ -12,6 +12,9 @@
          when you run `dotnet add package` yourself. Confluent.Kafka comes in transitively
          from Benzene.Kafka.Core. -->
     <PackageReference Include="Benzene.Kafka.Core" Version="*-*" />
+    <!-- Adds AddDiagnostics() (Activity span per middleware) and UseBenzeneEnrichment() (log/trace
+         enrichment). See docs/monitoring.md and docs/diagnosing-failures.md. -->
+    <PackageReference Include="Benzene.Diagnostics" Version="*-*" />
     <PackageReference Include="Benzene.HostedService" Version="*-*" />
     <PackageReference Include="Benzene.SelfHost" Version="*-*" />
     <!-- Benzene.HostedService/Benzene.SelfHost only bring in the .Abstractions packages

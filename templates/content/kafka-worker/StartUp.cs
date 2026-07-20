@@ -1,6 +1,8 @@
 using Benzene.Abstractions.Hosting;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.Middleware;
+using Benzene.Diagnostics;
 using Benzene.Kafka.Core;
 using Benzene.Microsoft.Dependencies;
 using Benzene.SelfHost;
@@ -21,9 +23,13 @@ public class StartUp : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
+        // AddDiagnostics() wraps every middleware in an Activity span and marks failing stages Error
+        // - a no-op until an OpenTelemetry exporter is attached. The generic host (Program.cs) wires
+        // console logging for you. See docs/monitoring.md and docs/diagnosing-failures.md.
         services.UsingBenzene(x => x
             .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly)
-            .AddKafka<Ignore, string>());
+            .AddKafka<Ignore, string>()
+            .AddDiagnostics());
     }
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
@@ -44,7 +50,14 @@ public class StartUp : BenzeneStartUp
             ConcurrentRequests = 5
         };
 
+        // UseBenzeneEnrichment + UseLogResult give day-one visibility: a structured log line per
+        // message (Info on success, Error on a thrown exception) tagged topic/transport/handler. To
+        // also settle a thrown exception yourself, add .UseExceptionHandler((ctx, ex) => ...) - see
+        // docs/diagnosing-failures.md and docs/cookbooks/global-error-handling.md.
         app.UseWorker(worker =>
-            worker.UseKafka<Ignore, string>(kafkaConfig, kafka => kafka.UseMessageHandlers()));
+            worker.UseKafka<Ignore, string>(kafkaConfig, kafka => kafka
+                .UseBenzeneEnrichment()
+                .UseLogResult(_ => { })
+                .UseMessageHandlers()));
     }
 }

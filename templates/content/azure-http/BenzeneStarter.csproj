@@ -23,6 +23,9 @@
          when you run `dotnet add package` yourself. -->
     <PackageReference Include="Benzene.Azure.Function.Core" Version="*-*" />
     <PackageReference Include="Benzene.Azure.Function.AspNet" Version="*-*" />
+    <!-- Adds AddDiagnostics() (Activity span per middleware) and UseBenzeneEnrichment() (log/trace
+         enrichment). See docs/monitoring.md and docs/diagnosing-failures.md. -->
+    <PackageReference Include="Benzene.Diagnostics" Version="*-*" />
   </ItemGroup>
 
   <ItemGroup>

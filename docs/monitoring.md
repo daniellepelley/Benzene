@@ -2,6 +2,10 @@
 
 Benzene includes built-in support for common monitoring and diagnostic patterns, ensuring your services are observable and easy to debug. Detailed information on core middleware can be found in the [Common Middleware](common-middleware.md) section.
 
+> Trying to work out **why a specific message failed** rather than set up observability from scratch?
+> See [Diagnosing Failures](diagnosing-failures.md) — the recommended middleware stack, the log
+> fields each layer adds, and how a failure shows up across logs, traces, and metrics.
+
 ## Correlation IDs
 
 > Cross-service correlation is handled by automatic [W3C trace context](#w3c-trace-context)
