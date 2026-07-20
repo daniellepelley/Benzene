@@ -275,6 +275,25 @@ public class RedisCacheServiceTest
     }
 
     [Fact]
+    public async Task CachePrefix_EscapesGlobMetacharactersInTheLiteralPrefix()
+    {
+        var connectionFactory = new MockConnectionFactory();
+        connectionFactory.DataBaseMock.Setup(x => x.ExecuteAsync("KEYS", It.IsAny<string>()))
+            .ReturnsAsync(RedisResult.Create(System.Array.Empty<RedisResult>()));
+        connectionFactory.DataBaseMock.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey[]>(), CommandFlags.None)).ReturnsAsync(0);
+
+        var service = new TestRedisCacheService(NullLogger<RedisCacheService>.Instance, new DebugTimerFactory(), connectionFactory);
+        // A prefix containing a glob metacharacter ("[") - e.g. derived from a tenant id.
+        var actions = service.GetTestPrefixActions("TEST_[a");
+
+        await actions.WriteThroughInvalidateAsync(() => Task.FromResult(BenzeneResult.Deleted()));
+
+        // The "[" must be escaped so KEYS matches it literally rather than as an (unterminated) char
+        // class - unescaped, "TEST_[a*" matches nothing and the invalidation silently no-ops.
+        connectionFactory.DataBaseMock.Verify(x => x.ExecuteAsync("KEYS", @"TEST_\[a*"));
+    }
+
+    [Fact]
     public async Task CacheWildcardTest()
     {
         var connectionFactory = new MockConnectionFactory();

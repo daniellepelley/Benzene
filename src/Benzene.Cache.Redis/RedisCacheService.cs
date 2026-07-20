@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text;
+using Microsoft.Extensions.Logging;
 using Benzene.Cache.Core;
 using Benzene.Diagnostics.Timers;
 using StackExchange.Redis;
@@ -58,11 +59,32 @@ public abstract class RedisCacheService : ICacheService
 
     protected ICacheInvalidateActions CreatePrefixActions(string prefix)
     {
-        return new RedisWildcardActions(this, prefix + "*");
+        // Escape glob metacharacters in the LITERAL prefix before appending the wildcard. Redis KEYS
+        // treats * ? [ ] \ as glob syntax, so a prefix derived from data (tenant id, email, ...) that
+        // contains one would otherwise match the wrong keys - under-invalidating (an unterminated "["
+        // matches nothing, leaving stale data) or over-invalidating (a "*" matches unrelated keys).
+        // CreateWildcardActions is left unescaped by design: its caller is passing an actual pattern.
+        return new RedisWildcardActions(this, EscapeGlobLiteral(prefix) + "*");
     }
 
     protected ICacheInvalidateActions CreateWildcardActions(string pattern)
     {
         return new RedisWildcardActions(this, pattern);
+    }
+
+    private static string EscapeGlobLiteral(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (c is '\\' or '*' or '?' or '[' or ']')
+            {
+                builder.Append('\\');
+            }
+
+            builder.Append(c);
+        }
+
+        return builder.ToString();
     }
 }
