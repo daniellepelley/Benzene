@@ -50,4 +50,28 @@ public class AwsLambdaClientTest
 
         Assert.Equal("some-response", result);
     }
+
+    [Fact]
+    public async Task SendMessageAsync_FunctionErrorSet_ThrowsInsteadOfMisDeserializingTheErrorPayload()
+    {
+        // A RequestResponse invoke where the function threw returns HTTP 200 with FunctionError set and
+        // an error object as the payload - not the normal output. It must not be deserialized as TResponse.
+        var mockLambdaClient = new Mock<IAmazonLambda>();
+        mockLambdaClient
+            .Setup(x => x.InvokeAsync(It.IsAny<InvokeRequest>(), default))
+            .ReturnsAsync(new InvokeResponse
+            {
+                FunctionError = "Unhandled",
+                Payload = ToPayloadStream("{\"errorType\":\"NullReferenceException\",\"errorMessage\":\"boom\"}")
+            });
+
+        var client = new AwsLambdaClient(mockLambdaClient.Object);
+
+        var exception = await Assert.ThrowsAsync<AwsLambdaFunctionErrorException>(
+            () => client.SendMessageAsync<string, string>("some-request", "some-function", InvocationType.RequestResponse));
+
+        Assert.Equal("some-function", exception.FunctionName);
+        Assert.Equal("Unhandled", exception.FunctionError);
+        Assert.Contains("NullReferenceException", exception.ErrorPayload);
+    }
 }

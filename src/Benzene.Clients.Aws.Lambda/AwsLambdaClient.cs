@@ -49,9 +49,22 @@ namespace Benzene.Clients.Aws.Lambda
             };
 
             var lambdaResponse = await _amazonLambda.InvokeAsync(invokeRequest);
-            return InvocationType.Event == invocationType
-                    ? default
-                    : StreamToObject<TResponse>(lambdaResponse.Payload);
+
+            if (InvocationType.Event == invocationType)
+            {
+                return default;
+            }
+
+            // A RequestResponse invoke where the function threw returns HTTP 200 with FunctionError set
+            // and an error object (not the normal output) as the payload. Surface that as a failure
+            // rather than mis-deserializing the error object into TResponse.
+            if (!string.IsNullOrEmpty(lambdaResponse.FunctionError))
+            {
+                throw new AwsLambdaFunctionErrorException(functionName, lambdaResponse.FunctionError,
+                    StreamToString(lambdaResponse.Payload));
+            }
+
+            return StreamToObject<TResponse>(lambdaResponse.Payload);
         }
 
         private T StreamToObject<T>(Stream stream)
