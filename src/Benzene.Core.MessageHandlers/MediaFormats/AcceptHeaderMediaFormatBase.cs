@@ -42,7 +42,7 @@ public abstract class AcceptHeaderMediaFormatBase<TContext> : IMediaFormat<TCont
     public bool CanWrite(TContext context, IServiceResolver serviceResolver)
     {
         var headers = GetHeaders(context, serviceResolver);
-        if (headers == null || !headers.TryGetValue(AcceptHeader, out var accept) || string.IsNullOrEmpty(accept))
+        if (headers == null || !TryGetHeader(headers, AcceptHeader, out var accept) || string.IsNullOrEmpty(accept))
         {
             return false;
         }
@@ -54,8 +54,31 @@ public abstract class AcceptHeaderMediaFormatBase<TContext> : IMediaFormat<TCont
     {
         var headers = GetHeaders(context, serviceResolver);
         return headers != null
-               && headers.TryGetValue(headerKey, out var value)
+               && TryGetHeader(headers, headerKey, out var value)
                && MediaType.Matches(value, ContentType);
+    }
+
+    // Header keys are case-insensitive on read regardless of the concrete IMessageHeadersGetter's
+    // dictionary comparer (wire-contracts.md §2), matching HeaderMessageVersionGetter. The fast path
+    // hits when the comparer is already case-insensitive or the key is lower-case as SHOULD-written.
+    private static bool TryGetHeader(IDictionary<string, string> headers, string key, out string? value)
+    {
+        if (headers.TryGetValue(key, out value))
+        {
+            return true;
+        }
+
+        foreach (var header in headers)
+        {
+            if (string.Equals(header.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                value = header.Value;
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
     }
 
     private static IDictionary<string, string>? GetHeaders(TContext context, IServiceResolver serviceResolver)

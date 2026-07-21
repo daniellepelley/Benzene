@@ -107,6 +107,31 @@ public class MediaFormatNegotiatorTest
     }
 
     [Fact]
+    public void SelectRead_MatchesContentType_RegardlessOfHeaderKeyCasing()
+    {
+        // wire-contracts.md §2: header keys are case-insensitive on read, regardless of the
+        // header dictionary's comparer. A canonically-cased "Content-Type" in an ordinal dictionary
+        // must still select the negotiated format rather than silently falling back to JSON.
+        var context = new TestContext();
+        context.Headers["Content-Type"] = "application/xml";
+
+        var negotiator = CreateNegotiator(new XmlMediaFormat<TestContext>(new XmlSerializer()));
+
+        Assert.Equal("application/xml", negotiator.SelectRead(context).ContentType);
+    }
+
+    [Fact]
+    public void SelectWrite_MatchesAccept_RegardlessOfHeaderKeyCasing()
+    {
+        var context = new TestContext();
+        context.Headers["Accept"] = "application/xml";
+
+        var negotiator = CreateNegotiator(new XmlMediaFormat<TestContext>(new XmlSerializer()));
+
+        Assert.Equal("application/xml", negotiator.SelectWrite(context).ContentType);
+    }
+
+    [Fact]
     public void SelectRead_IsMemoizedPerNegotiatorInstance()
     {
         var context = new TestContext();

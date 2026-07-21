@@ -19,6 +19,20 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 16 — content negotiation missed canonically-cased headers (`AcceptHeaderMediaFormatBase`)
+- **Bug:** `CanRead`/`CanWrite` looked up `content-type`/`accept` with a plain `IDictionary.TryGetValue`
+  and hard-coded lowercase keys, so a header dictionary with an ordinal (case-sensitive) comparer and a
+  canonically-cased key (`Content-Type`, `Accept`) missed. wire-contracts.md §2 requires header keys to be
+  case-insensitive on read regardless of the dictionary's comparer, and the sibling
+  `HeaderMessageVersionGetter` deliberately implements exactly that (with a comment citing the same rule).
+  Effect: a client sending `Content-Type: application/xml` (or `Accept:`) against a case-sensitive header
+  dict silently fell back to the default JSON format instead of the negotiated one.
+- **Repro:** two new `MediaFormatNegotiatorTest` cases — `SelectRead`/`SelectWrite` with a canonically-cased
+  key in the default (ordinal) dictionary — returned `application/json` pre-fix, `application/xml` post-fix.
+- **Fix:** a `TryGetHeader` helper that tries the fast path then falls back to a case-insensitive scan,
+  matching the version getter. 39 media-format tests green; full suite 1890. (Found by a parallel
+  serialization/validation hunt.)
+
 ### Cycle 15 — mesh collector aborted a whole trace batch on a null status (`MeshCollectorStore.AddEvents`)
 - **Bug:** `topic.StatusCounts[traceEvent.Status]` / `GetValueOrDefault(traceEvent.Status)` used the
   status as a `Dictionary<string,long>` key without coalescing. `MeshTraceEvent.Status` is a non-nullable
