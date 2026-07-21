@@ -66,6 +66,10 @@ public static class Extensions
                     typeof(RawStringMessage),
                     typeof(SpecMessageHandler)));
             x.AddScoped<SpecMessageHandler>();
+            // Memoize the generated spec per (type, format) - it's deterministic for the process
+            // lifetime, so repeated polling (e.g. the mesh aggregator) doesn't re-run the full
+            // schema-generation build each time. TryAdd so a second UseSpec call is a no-op.
+            x.TryAddSingleton<SpecCache>();
         });
         return app;
     }

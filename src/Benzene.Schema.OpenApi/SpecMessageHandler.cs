@@ -17,7 +17,16 @@ public class SpecMessageHandler : IMessageHandler<SpecRequest, RawStringMessage>
     
     public Task<IBenzeneResult<RawStringMessage>> HandleAsync(SpecRequest request)
     {
-        var output = CreateSpec(_serviceResolver, request ?? new SpecRequest("asyncapi", "json"));
+        var specRequest = request ?? new SpecRequest("asyncapi", "json");
+
+        // The spec is deterministic for a given (type, format), so serve it from the memoizing
+        // SpecCache when one is registered (UseSpec registers a singleton) - only the first request
+        // for each combination pays the full schema-generation/serialization cost. Fall back to a
+        // direct build if no cache is registered, so behaviour is unchanged when it isn't.
+        var cache = _serviceResolver.TryGetService<SpecCache>();
+        var output = cache != null
+            ? cache.GetOrBuild(specRequest, r => CreateSpec(_serviceResolver, r))
+            : CreateSpec(_serviceResolver, specRequest);
 
         return BenzeneResult.Ok(new RawStringMessage(output)).AsTask();
     }

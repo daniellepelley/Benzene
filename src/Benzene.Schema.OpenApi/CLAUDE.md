@@ -24,6 +24,18 @@ for the `benzene` contract.
   (unknown/empty ⇒ `benzene`); `Format` selects `yaml` vs `json` (default `json`).
 - `SpecBuilder` - dispatches a `SpecRequest` to the right document builder and calls
   `GenerateJson()`/`GenerateYaml()`.
+- `SpecCache` - process-lifetime memoization of the generated document, keyed by (type, format), so
+  a spec request re-runs the full build (Swashbuckle schema generation over every request/response
+  CLR type + example-payload generation + serialization) only on the first request for each
+  combination. Registered as a singleton by `UseSpec`; `SpecMessageHandler` serves from it when
+  present and falls back to a direct build otherwise. The spec is derived only from startup
+  registrations (handlers/endpoints/transports/validation), so it's stable for the process lifetime -
+  the same assumption the handler/endpoint finder caches already make. This is the fix for repeated
+  polling of the `spec` endpoint (the mesh aggregator) rebuilding the whole document each time.
+  **Key nuance:** `Type` is keyed case-insensitively (the builder lower-cases it) but `Format` is
+  keyed verbatim (the builder matches `== "yaml"` exactly, so `"YAML"` → JSON must not share a key
+  with `"yaml"`). The finders (`IMessageHandlersFinder`/`IHttpEndpointFinder`) were already cached;
+  this closes the remaining per-request rebuild one level up at the finished document.
 
 ### Test payloads (runtime, opt-in)
 - `Extensions.UseTestPayloads<TContext>()` / `UseTestPayloads<TContext>(string topic)` - registers
