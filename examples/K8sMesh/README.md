@@ -79,18 +79,24 @@ and the same per-account S3 state bucket (key `k8s-mesh/`). The workflow:
    ~10–15 minutes.
 2. builds the two images and pushes them to ECR, tagged with the commit SHA.
 3. applies the **unchanged** `k8s/` manifests through the `deploy/eks` kustomize overlay, which swaps
-   in the ECR images and turns the mesh's NodePort Service into an internet-facing **LoadBalancer**.
-4. waits for the ELB, `POST`s `/mesh/refresh`, asserts `{"discovered":3}`, and prints
-   `http://<elb-hostname>/mesh-ui` — open it to watch the mesh discover the pods, exactly like the
-   AwsMesh example's Lambda catalog.
+   in the ECR images and turns the mesh's NodePort Service into an internet-facing **LoadBalancer** —
+   and does the same for each `benzene`-labelled Service, so orders/payments/shipping are directly
+   callable from the internet as well.
+4. waits for the ELBs, `POST`s `/mesh/refresh`, asserts `{"discovered":3}`, and prints
+   `http://<elb-hostname>/mesh-ui` plus each service's `http://<elb-hostname>/benzene/spec-ui` URL
+   (all in the run summary) — open the Mesh UI to watch the mesh discover the pods, exactly like the
+   AwsMesh example's Lambda catalog, or hit a service's `/benzene/spec-ui`, `/benzene/health`, or
+   `POST /benzene/invoke` directly.
 
 Same dogfooding, different substrate: discovery is still `Benzene.Mesh.Discovery.Kubernetes` listing
 `benzene`-labelled Services via the cluster API — EKS needs no code or manifest changes, only images
 it can pull and a route in.
 
-**Costs & teardown:** an EKS control plane bills ~$0.10/hour plus two `t3.small` nodes and a classic
-ELB. Re-run the workflow with **destroy = true** to tear it all down (it deletes the namespace first
-so Kubernetes releases the ELB, then `terraform destroy`).
+**Costs & teardown:** an EKS control plane bills ~$0.10/hour plus two `t3.small` nodes and four
+classic ELBs (mesh + the three services, one per LoadBalancer Service). Re-run the workflow with
+**destroy = true** to tear it all down (it deletes the namespace first so Kubernetes releases the
+ELBs, then `terraform destroy`). Note the services are exposed **unauthenticated** — fine for this
+throwaway demo, not a pattern to copy for real workloads.
 
 To deploy from a laptop instead of CI, run the same four steps by hand: `terraform apply` in
 `deploy/`, push the images to the ECR repositories it outputs, `aws eks update-kubeconfig`, then
