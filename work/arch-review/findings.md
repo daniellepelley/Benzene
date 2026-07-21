@@ -202,3 +202,35 @@ Deferred for maintainer decision (policy / larger surface, not silently changed)
   adapters write header values through without stripping CR/LF. Header values are Benzene- or
   handler-sourced today (not raw request echoes), so it's not a confirmed live vector; worth a
   central strip if a handler ever reflects request data into a response header.
+
+---
+
+## 2026-07-21 (round 2) — fresh hunt: workers / resilience / cache / serialization
+
+Three parallel hunters (worker loops+resilience+cache; serialization; core pipeline+DI+auth).
+Core pipeline / DI / auth came back **clean** (scopes disposed per message, no auth fall-through,
+no timing-comparison, algorithm-confusion already closed).
+
+Implemented + pushed:
+- **Redis cache faulted-connection lock-in** — Lazy<Task<IConnectionMultiplexer>> cached a faulted
+  connect task for the process lifetime, permanently bypassing the cache after one startup blip.
+  Replaced with a lock-guarded task recreated on fault/cancel.
+- **MessagePack TrustedData DoS** — the negotiable msgpack media format deserialized untrusted
+  bodies under MessagePackSecurity.TrustedData (deep-nesting → StackOverflow crash, hash-collision
+  DoS). Switched the DI ctor to UntrustedData (depth cap 500 + collision-resistant hashing).
+- **Retry backoff Task.Delay overflow** — with no maxDelay the exponential sleep crossed
+  Task.Delay's int.MaxValue-ms ceiling (~attempt 25) and threw ArgumentOutOfRangeException outside
+  the try, masking the real failure. Clamp the actual sleep to a Task.Delay-safe value.
+- **RabbitMq failed-startup lane leak** — dispatcher lanes start at construction, before the
+  fallible connect; a failed StartAsync leaked ConcurrentRequests idle tasks. Run StopAsync teardown
+  on failure.
+- **XmlSerializer.Serialize(Type,object) null guard** — API consistency with the generic + sibling
+  serializers.
+
+Deferred (documented, not changed — inherent to the library / edge case):
+- **Avro deserialize unbounded length-prefix allocation** — Apache.Avro's BinaryDecoder allocates
+  from a payload-declared length prefix before reading; a tiny malicious body can declare a multi-GB
+  length → OutOfMemory. Exposed to untrusted bodies via the application/avro media format. Bounding
+  it means wrapping/limiting the decoder (no clean size knob on GenericDatumReader). MEDIUM.
+- **Avro AvroDatumConverter.FromRecord** — `schema.Fields.First(name==...)` throws if an explicit
+  .avsc omits a CLR property (default reflection schemas can't hit it). LOW.
