@@ -20,7 +20,16 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
 
 ## Layout (one folder per host/transport)
 - **`App/`** — shared handlers/validators/services (above); the reused core.
-- **`Asp/`** — ASP.NET Core host. Also where the Spec UI (`/spec-ui`) and the `spec` endpoint are wired.
+- **`Asp/`** — ASP.NET Core host. Two projects:
+  - `Benzene.Example.Asp.Minimal` — the smallest thing that works: the runnable version of
+    [docs/getting-started.md](../docs/getting-started.md) (`GET /hello/{name}` only), using the
+    documented `BenzeneStartUp` + `WebApplicationBuilder.UseBenzene<StartUp>()` model. Start newcomers here.
+  - `Benzene.Example.Asp` — the fuller host: Spec UI (`/spec-ui`) + `spec` endpoint, FluentValidation,
+    Serilog, controllers, and an OAuth2-protected `/protected/ping` route. It wires Benzene by hand via
+    `IApplicationBuilder.UseBenzene(builder => builder.UseHttp(...))` (the other documented ASP.NET path,
+    see [docs/hosting.md](../docs/hosting.md)) because it needs native ASP.NET plumbing —
+    `UseRouting`/`UseAuthorization`/`MapControllers` and an `app.Map("/protected", ...)` branch — that a
+    single `BenzeneStartUp.Configure(IBenzeneApplicationBuilder, …)` can't reach.
 - **`Aws/`** — AWS Lambda host demonstrating multiple event sources (API Gateway + custom authorizer,
   SNS, SQS, Kafka, EventBridge) in one function. Also demonstrates **egress** alongside ingress:
   `PublishOrderCreatedMessageHandler` + `DependenciesBuilder`'s `AddOutboundRouting(...)` wiring —
@@ -70,10 +79,18 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
   `Benzene.Examples.Kafka.Producer` — release plan 4.1.)
 
 ## Startup model
-All host examples use the platform-neutral `BenzeneStartUp` (`Configure(IBenzeneApplicationBuilder app, …)`),
-wired onto a transport inside `app.UseAwsLambda(…)` / `app.UseWorker(…)` etc. The old host-specific
-startup base classes (`AwsLambdaStartUp`, `BenzeneWorkerStartup`, `BenzeneHostedServiceStartup`, and the
-example-local `AutofacAwsStartUp`) have been removed.
+Host examples use the platform-neutral `BenzeneStartUp` (`Configure(IBenzeneApplicationBuilder app, …)`),
+wired onto a transport inside `app.UseAwsLambda(…)` / `app.UseHttp(…)` / `app.UseWorker(…)` etc. The old
+host-specific startup base classes (`AwsLambdaStartUp`, `BenzeneWorkerStartup`,
+`BenzeneHostedServiceStartup`, and the example-local `AutofacAwsStartUp`) have been removed.
+- **`Asp/Benzene.Example.Asp.Minimal`** — `StartUp : BenzeneStartUp` hosted via
+  `WebApplicationBuilder.UseBenzene<StartUp>()` + `app.UseBenzene()` in `Program.cs`. The canonical ASP.NET
+  reference for a newcomer.
+- **`Asp/Benzene.Example.Asp`** — the one deliberate exception: it wires Benzene by hand with
+  `IApplicationBuilder.UseBenzene(builder => builder.UseHttp(...))` rather than a `BenzeneStartUp`, because
+  its controllers, Spec UI, and `app.Map("/protected", ...)` auth branch need native ASP.NET plumbing a
+  `BenzeneStartUp.Configure(IBenzeneApplicationBuilder, …)` can't express. Its integration tests use
+  ASP.NET Core's `WebApplicationFactory<Startup>`, which discovers that `Startup` class by convention.
 - **`Aws/`** — `StartUp : BenzeneStartUp` hosted by `Function : AwsLambdaHost<StartUp>` (the Lambda handler
   entry point). Tests build the host with `BenzeneTestHost.Create<StartUp>().BuildAwsLambdaHost()`.
 - **`Kafka/`** — `StartUp : BenzeneStartUp` run via `Host…UseBenzene<StartUp>()` (registers the worker as an

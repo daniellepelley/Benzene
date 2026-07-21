@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The only Benzene package this example needs: it brings the middleware pipeline, the
+         message-handler infrastructure, and the ASP.NET Core HTTP integration in transitively. -->
+    <ProjectReference Include="..\..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
+  </ItemGroup>
+
+</Project>
