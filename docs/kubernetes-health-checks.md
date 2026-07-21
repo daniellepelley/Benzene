@@ -29,6 +29,34 @@ Kubernetes' guidance is specific about what belongs in each, and Benzene doesn't
 `Benzene.HealthChecks.Http`'s `HttpPingHealthCheck` are all external-dependency checks — register
 them under readiness, not liveness.
 
+### Client / contract-drift checks belong in *neither* probe
+
+A generated CodeGen client's `HealthCheckAsync()` (the consumer side of the
+[runtime contract-drift check](cookbooks/contract-testing.md#mechanism-1--runtime-contract-drift-check))
+is **not** an ordinary external-dependency check, and it does not belong in a liveness *or* a
+readiness probe. It calls a *downstream provider's* health endpoint and compares contract hashes, so
+it fails the two tests above harder than a database check does:
+
+- **It is transitive.** The thing it checks — another service's health endpoint — may itself
+  aggregate *that* service's dependencies and clients. Put it in a liveness probe and one slow leaf
+  service **restarts** healthy consumer pods across the fleet (a restart storm one hop removed from
+  the actual problem); put it in a readiness probe and the outage **propagates upstream** — the
+  failing provider's consumers look unready to *their* consumers, de-routing an entire dependency
+  chain over a single leaf failure.
+- **Contract drift is a versioning signal, not a serve-traffic signal.** A drifted-but-working
+  provider reports `Warning`, which deliberately does not flip `IsHealthy`. A pod that is one
+  contract revision behind can still serve traffic perfectly — restarting it or pulling it from
+  rotation over that annotation is never the right response.
+
+So keep `HealthCheckAsync()` off `/livez` and `/readyz`. Wire it to a **separate, probe-less
+diagnostic topic** (e.g. `app.UseHealthCheck("get", "dependencies", …)` — an ordinary health-check
+topic Kubernetes has no probe pointed at) and let the **mesh / your alerting** consume it: contract
+drift surfaces as a mesh drift badge (see [Mesh UI](mesh-ui.md)) or an alert, not a restart. The one
+narrow exception is a *hard synchronous* dependency you genuinely cannot serve any traffic without —
+a targeted **reachability-only** check against that one provider may go in **readiness** (never
+liveness), but even then exclude the contract-drift portion, which is never a reason to stop serving
+traffic. See `work/client-health-checks-design.md` for the full rationale.
+
 ## Topic-based wiring (every transport): `UseLivenessCheck` / `UseReadinessCheck`
 
 ```csharp
