@@ -22,6 +22,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Ship the ADOT collector config into the Lambda zip (published to /var/task/collector.yaml),
+         selected via OPENTELEMETRY_COLLECTOR_CONFIG_URI so the collector forwards traces to X-Ray. -->
+    <Content Include="..\collector.yaml" Link="collector.yaml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.EventBridge\Benzene.Aws.Lambda.EventBridge.csproj" />

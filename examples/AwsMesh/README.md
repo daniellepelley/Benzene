@@ -79,14 +79,24 @@ Two things are different from a typical Generic-Host app, because a bare AWS Lam
 **X-Ray active tracing** (`tracing_config { mode = "Active" }`) is turned on for every function
 automatically — but note it only captures the **AWS-level** segments (the `AWS::Lambda::Function`
 segments and their `Overhead` subsegments). Benzene's **per-middleware** spans are OpenTelemetry spans
-that leave the process over **OTLP**, a separate pipe that needs a collector to reach X-Ray. To bridge
-them, set **`var.adot_collector_layer_arn`** to the ADOT collector Lambda layer for your region: the
-Terraform attaches it to every function and points `OTEL_EXPORTER_OTLP_ENDPOINT` at the layer's
-in-process collector (`http://localhost:4317`), whose default config forwards OTLP traces to X-Ray —
-so the middleware spans show up as subsegments in the same trace as the AWS-level segments. (No
-`AWS_LAMBDA_EXEC_WRAPPER` is set: these custom-runtime functions already emit their own spans, so only
-the collector half of the layer is used.) `var.otlp_endpoint` is an escape hatch for pointing at an
-out-of-process collector instead. With neither set, spans are recorded but exported nowhere.
+that leave the process over **OTLP**, a separate pipe that needs a collector to reach X-Ray.
+
+To bridge them, **`var.adot_collector_layer_arn`** (defaulted to the eu-west-1 amd64 ADOT collector
+layer) attaches the collector to every function and points `OTEL_EXPORTER_OTLP_ENDPOINT` at its
+in-process receiver (`http://localhost:4317`). The layer's *default* config is **metrics-only** (it
+drops traces), so the Terraform also sets `OPENTELEMETRY_COLLECTOR_CONFIG_URI=/var/task/collector.yaml`
+to select the [`collector.yaml`](collector.yaml) shipped in each Lambda zip, which adds the
+`traces → awsxray` pipeline. (No `AWS_LAMBDA_EXEC_WRAPPER` is set: these custom-runtime functions
+already emit their own spans, so only the collector half of the layer is used.) `var.otlp_endpoint` is
+an escape hatch for pointing at an out-of-process collector instead. With neither set, spans are
+recorded but exported nowhere.
+
+Because Benzene builds its **own** W3C trace across the whole mesh run (its `traceparent` propagation),
+these spans arrive in X-Ray as their **own** traces — grouped by OTel service name (`orders-api`,
+`payments-api`, `benzene-mesh`) — rather than nested inside the per-invocation `AWS::Lambda` segments,
+which carry X-Ray's own (different) trace ids. Nesting them there would require the AWS X-Ray id
+generator/propagator seeded from `_X_AMZN_TRACE_ID`, a larger change that trades away Benzene's own
+cross-mesh trace on the invoke path.
 
 ## What each service shows off
 

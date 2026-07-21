@@ -1,0 +1,40 @@
+# Custom ADOT collector config for the AwsMesh example Lambdas.
+#
+# The ADOT collector layer's DEFAULT config (/opt/collector-config/config.yaml) is metrics-only: an OTLP
+# receiver feeding a single `debug` exporter, with NO traces pipeline and NO awsxray exporter. So
+# Benzene's spans were received by the collector and then dropped — never forwarded to X-Ray. (You can
+# see this in the collector's own CloudWatch logs: only `"data_type":"metrics" ... "name":"debug"` lines.)
+#
+# This config adds the missing `traces -> awsxray` pipeline so the per-middleware spans reach the X-Ray
+# console. It is selected via OPENTELEMETRY_COLLECTOR_CONFIG_URI=/var/task/collector.yaml, set by the
+# Terraform whenever the ADOT layer is attached. The awsxray exporter needs only
+# xray:PutTraceSegments / xray:PutTelemetryRecords, already granted by AWSXRayDaemonWriteAccess — so no
+# extra IAM. Metrics keep going to the `debug` exporter (as the default did), needing no CloudWatch perms.
+#
+# Note: Benzene emits its spans into its own W3C trace (one trace across the whole mesh run, linked by
+# Benzene's traceparent propagation), which is a different trace id from the per-Lambda X-Ray trace. So
+# these spans show up in X-Ray as their OWN traces (grouped by the OTel service name — orders-api,
+# payments-api, benzene-mesh), not nested inside the AWS::Lambda::Function segments. Nesting them there
+# would need the AWS X-Ray id generator/propagator seeded from _X_AMZN_TRACE_ID (a larger change that
+# trades away Benzene's own cross-mesh trace on the invoke path).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+
+exporters:
+  awsxray:
+  debug:
+    verbosity: normal
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [awsxray]
+    metrics:
+      receivers: [otlp]
+      exporters: [debug]

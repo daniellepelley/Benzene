@@ -35,7 +35,13 @@ locals {
   # flowing. Empty = no exporter attached at all (spans recorded but exported nowhere).
   otlp_endpoint = var.otlp_endpoint != "" ? var.otlp_endpoint : (var.adot_collector_layer_arn != "" ? "http://localhost:4317" : "")
 
-  otlp_env = local.otlp_endpoint != "" ? { OTEL_EXPORTER_OTLP_ENDPOINT = local.otlp_endpoint } : {}
+  # OTEL_EXPORTER_OTLP_ENDPOINT points the app at the collector. When the ADOT layer is attached, also
+  # override its metrics-only default config with the one shipped in the zip (traces -> awsxray), so the
+  # per-middleware spans actually reach X-Ray rather than being dropped.
+  otlp_env = local.otlp_endpoint != "" ? merge(
+    { OTEL_EXPORTER_OTLP_ENDPOINT = local.otlp_endpoint },
+    var.adot_collector_layer_arn != "" ? { OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml" } : {}
+  ) : {}
 
   # The ADOT collector Lambda layer, attached to every function when configured. Its default collector
   # config runs an OTLP receiver and exports traces to X-Ray (awsxray) out of the box, so Benzene's
