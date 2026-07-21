@@ -64,7 +64,7 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                     using (var scope = serviceResolverFactory.CreateScope())
                     {
                         var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
-                        setCurrentTransport.SetTransport("sqs");
+                        setCurrentTransport.SetTransport(TransportNames.Sqs);
                         await _pipeline.HandleAsync(context, scope);
                     }
 

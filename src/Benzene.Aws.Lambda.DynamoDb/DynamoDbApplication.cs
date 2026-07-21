@@ -50,7 +50,7 @@ public class DynamoDbApplication : IMiddlewareApplication<DynamoDbEvent, DynamoD
                 using (var scope = serviceResolverFactory.CreateScope())
                 {
                     var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
-                    setCurrentTransport.SetTransport("dynamodb");
+                    setCurrentTransport.SetTransport(TransportNames.DynamoDb);
                     await _pipeline.HandleAsync(context, scope);
                 }
             }
