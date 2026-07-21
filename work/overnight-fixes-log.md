@@ -40,6 +40,23 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 24 — versioned enum nullability change corrupted the value or threw at startup (`CasterFuncBuilder`)
+- **Bug:** the payload caster's `IsEnum` guard returned true only when both sides were non-nullable enums or
+  both nullable enums, missing the *mixed* case; and the equal-underlying-type value block only rescues the
+  *same* CLR enum type. Per the schema convention, `V1.OrderStatus` and `V2.OrderStatus` are distinct
+  per-version CLR types, so the routine "make the enum field optional/required" evolution produced a
+  different-typed enum with a nullability change that hit neither guard and fell through to class-mapping:
+  downcast (`V2.Status?`→`V1.Status`) came back `default(0)` — silent corruption on the response path
+  (`CastingResponsePayloadMapper`); upcast (`V1.Status`→`V2.Status?`) threw `Expression.Constant(null,
+  <non-nullable enum>)` `ArgumentException` at caster-build (startup).
+- **Repro:** three new `CasterFactoryTest` cases with two distinct enum CLR types — upcast (threw at Build
+  pre-fix), downcast (returned default pre-fix), and a null-source guard.
+- **Fix:** `IsEnum` now matches an enum-or-nullable-enum on both sides (any nullability combo), and
+  `CreateEnumExpression` is nullability-aware — a lifted `Convert` for →nullable/both, and a
+  `HasValue ? (T)value : default` branch for nullable→non-nullable so a null never throws (mirroring the
+  value-type block). 49 versioning tests green; suite 1904. (Found by a parallel auth/validation hunt,
+  which also cleared Auth.Core/OAuth2/DataAnnotations as correct.)
+
 ### Cycle 23 — Prometheus client threw on a valid-but-unexpected JSON body (`PrometheusQueryClient.QueryAsync`)
 - **Bug:** the parse was wrapped in `catch (JsonException)`, but `JsonException` only covers syntactically
   invalid JSON. Once the body is valid JSON, the strongly-typed `JsonElement` accessors (`GetString`,

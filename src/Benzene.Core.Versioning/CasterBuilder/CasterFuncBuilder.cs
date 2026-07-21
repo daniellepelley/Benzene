@@ -221,14 +221,40 @@ public class CasterFuncBuilder
         PropertyInfo toProp)
     {
         var fromValue = Expression.Property(fromExpression, fromProp);
-        var toValue = Expression.Convert(fromValue, toProp.PropertyType);
+        var toType = toProp.PropertyType;
+        var fromIsNullable = Nullable.GetUnderlyingType(fromProp.PropertyType) != null;
+        var toIsNullable = Nullable.GetUnderlyingType(toType) != null;
+
+        Expression toValue;
+        if (fromIsNullable && !toIsNullable)
+        {
+            // nullable enum -> non-nullable enum (of a different version's CLR type): convert the value
+            // when present, otherwise the target default - never throw on null, matching the value-type
+            // nullability block. A raw Expression.Convert would throw at runtime on a null source.
+            toValue = Expression.Condition(
+                Expression.Property(fromValue, "HasValue"),
+                Expression.Convert(Expression.Property(fromValue, "Value"), toType),
+                Expression.Default(toType));
+        }
+        else
+        {
+            // both non-nullable, both nullable, or non-nullable -> nullable: a (lifted) Convert handles it.
+            toValue = Expression.Convert(fromValue, toType);
+        }
+
         return Expression.Bind(toProp, toValue);
     }
 
+    // True when both sides are an enum or a nullable enum (in any nullability combination). The mixed
+    // nullable/non-nullable case must be included so a versioned enum whose field became optional/required
+    // is value-cast here rather than falling through to class-mapping (which silently returned default or
+    // threw at build time). Same-CLR-type nullability changes are already handled by the earlier
+    // equal-underlying-type value block, so only genuinely different enum types reach here.
     private static bool IsEnum(PropertyInfo fromProp, PropertyInfo toProp) =>
-        fromProp.PropertyType.IsEnum && toProp.PropertyType.IsEnum ||
-        Nullable.GetUnderlyingType(fromProp.PropertyType)?.IsEnum == true &&
-         Nullable.GetUnderlyingType(toProp.PropertyType)?.IsEnum == true;
+        IsEnumOrNullableEnum(fromProp.PropertyType) && IsEnumOrNullableEnum(toProp.PropertyType);
+
+    private static bool IsEnumOrNullableEnum(Type type) =>
+        (Nullable.GetUnderlyingType(type) ?? type).IsEnum;
 
     private static bool IsNullable(PropertyInfo fromProp, PropertyInfo toProp) =>
         Nullable.GetUnderlyingType(fromProp.PropertyType) != null &&

@@ -77,6 +77,48 @@ public class CasterFactoryTest
         Assert.Equal(0, result.Optional);            // int? null -> int : default, not an exception
     }
 
+    // Distinct enum CLR types, as versioned schemas produce (V1.Status vs V2.Status live in per-version
+    // namespaces), combined with a nullability change - the routine "make the enum field optional/required"
+    // move. The equal-underlying-type rescue only covers the same enum type, so these fell through to
+    // class-mapping: the downcast came back default(0) (silent corruption) and the upcast threw
+    // Expression.Constant(null, <non-nullable enum>) at Build() time.
+    private enum FromColour { Red, Green, Blue }
+    private enum ToColour { Red, Green, Blue }
+    private class VerEnumNonNull { public FromColour Status { get; set; } }
+    private class VerEnumNullable { public ToColour? Status { get; set; } }
+    private class VerEnumNullableFrom { public ToColour? Status { get; set; } }
+    private class VerEnumNonNullTo { public FromColour Status { get; set; } }
+
+    [Fact]
+    public void Cast_VersionedEnum_NonNullableToNullable_PreservesValue()
+    {
+        var caster = new CasterFactory<VerEnumNonNull, VerEnumNullable>().Build();  // threw at Build() today
+
+        var result = caster.Cast(new VerEnumNonNull { Status = FromColour.Green });
+
+        Assert.Equal(ToColour.Green, result.Status);
+    }
+
+    [Fact]
+    public void Cast_VersionedEnum_NullableToNonNullable_PreservesValue()
+    {
+        var caster = new CasterFactory<VerEnumNullableFrom, VerEnumNonNullTo>().Build();
+
+        var result = caster.Cast(new VerEnumNullableFrom { Status = ToColour.Blue });
+
+        Assert.Equal(FromColour.Blue, result.Status);   // came back Red (default 0) today
+    }
+
+    [Fact]
+    public void Cast_VersionedEnum_NullableToNonNullable_WhenNull_UsesDefault_WithoutThrowing()
+    {
+        var caster = new CasterFactory<VerEnumNullableFrom, VerEnumNonNullTo>().Build();
+
+        var result = caster.Cast(new VerEnumNullableFrom { Status = null });
+
+        Assert.Equal(default(FromColour), result.Status);
+    }
+
     private class LineFrom { public string Sku { get; set; } public int Count { get; set; } }
     private class LineTo { public string Sku { get; set; } public int Count { get; set; } }
     private class ArrayFrom { public LineFrom[] Lines { get; set; } }
