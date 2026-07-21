@@ -210,6 +210,16 @@ shared representation of a trace span, superseding the old
   automatically (see below), and any of these three backends can be
   reached through the OpenTelemetry exporter of your choice instead of a
   dedicated Benzene package per vendor.
+  - **Update (X-Ray reintroduced):** `Benzene.Aws.XRay` is back as
+    **`Benzene.Aws.Lambda.XRay`** / `AddXRayTracing()` — see that package's
+    `CLAUDE.md`. The OTel-only assumption didn't hold for one case: OTel spans
+    carry their own W3C trace ids, so exported to X-Ray via a collector they land
+    as *separate* traces rather than nested under the Lambda's `AWS::Lambda`
+    segment. Going straight through the X-Ray SDK (a subsegment per middleware)
+    is what puts the middleware timeline back inside the Lambda's X-Ray trace,
+    with no collector. It registers an `IMiddlewareWrapper` (today's model),
+    not a timer factory, and composes with `AddDiagnostics()`. Datadog/Zipkin
+    remain deleted — reach those through an OTel exporter as described.
 - **`Benzene.Diagnostics`'s `AddDiagnostics()`** now registers
   `ActivityMiddlewareWrapper` (replacing the old `TimerMiddleware`/timer
   wrapper stack), which automatically wraps *every* middleware in *every*

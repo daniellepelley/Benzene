@@ -92,11 +92,19 @@ an escape hatch for pointing at an out-of-process collector instead. With neithe
 recorded but exported nowhere.
 
 Because Benzene builds its **own** W3C trace across the whole mesh run (its `traceparent` propagation),
-these spans arrive in X-Ray as their **own** traces — grouped by OTel service name (`orders-api`,
+these OTLP spans arrive in X-Ray as their **own** traces — grouped by OTel service name (`orders-api`,
 `payments-api`, `benzene-mesh`) — rather than nested inside the per-invocation `AWS::Lambda` segments,
-which carry X-Ray's own (different) trace ids. Nesting them there would require the AWS X-Ray id
-generator/propagator seeded from `_X_AMZN_TRACE_ID`, a larger change that trades away Benzene's own
-cross-mesh trace on the invoke path.
+which carry X-Ray's own (different) trace ids.
+
+### Middleware spans nested *inside* the X-Ray segments — `AddXRayTracing()`
+If what you want is the middleware breakdown **nested under the `AWS::Lambda::Function` segment** (the
+classic X-Ray view), that's what **`Benzene.Aws.Lambda.XRay`** is for. Every service and the mesh wire
+`AddXRayTracing()` alongside `AddDiagnostics()`: it wraps each middleware in an AWS **X-Ray subsegment**
+via the X-Ray SDK, which attaches to the Lambda's own segment (`_X_AMZN_TRACE_ID`) — so the stages nest
+directly under it, in the same trace as the AWS-level segments, **with no OTLP collector at all**. It
+needs only X-Ray active tracing (on) + the X-Ray write IAM (granted); the ADOT collector / `collector.yaml`
+path above is then just the *alternative* for shipping the same pipeline's OTel spans to a non-X-Ray
+backend (Tempo/Jaeger/Honeycomb). Wire one or both — they coexist.
 
 ## What each service shows off
 

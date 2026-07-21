@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Benzene.Aws.Lambda.XRay</AssemblyName>
+    <RootNamespace>Benzene.Aws.Lambda.XRay</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Benzene middleware tracing straight into AWS X-Ray: wraps every pipeline middleware in an X-Ray subsegment (via the AWS X-Ray SDK) so each stage nests under the Lambda's X-Ray segment - no OpenTelemetry collector required.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Same AWS X-Ray SDK version already used by Benzene.Tools' test host. -->
+    <PackageReference Include="AWSXRayRecorder.Core" Version="2.13.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions.Middleware\Benzene.Abstractions.Middleware.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+  </ItemGroup>
+
+</Project>

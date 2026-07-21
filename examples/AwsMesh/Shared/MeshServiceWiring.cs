@@ -8,6 +8,7 @@ using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
+using Benzene.Aws.Lambda.XRay;
 using Benzene.CloudService;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Sqs;
@@ -72,6 +73,12 @@ public static class MeshServiceWiring
                 // tracing with no per-stage code. (For spans-only, AddActivityPerMiddleware() is the
                 // focused opt-in.)
                 .AddDiagnostics()
+                // AddXRayTracing() ALSO wraps every middleware, but in an AWS X-Ray subsegment via the
+                // X-Ray SDK, so each stage nests directly under the Lambda's X-Ray segment — the
+                // middleware breakdown shows up inside the same X-Ray trace as the AWS-level segments,
+                // with no OTLP collector in between. Wired alongside AddDiagnostics() so this service
+                // emits both X-Ray subsegments and OTel spans; drop either to pick one backend.
+                .AddXRayTracing()
                 .AddMessageHandlers(domainAssembly)
                 .AddHttpMessageHandlers();
 
