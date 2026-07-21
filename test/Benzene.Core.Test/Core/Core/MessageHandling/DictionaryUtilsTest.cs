@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Benzene.Core.MessageHandlers.Helper;
 using Xunit;
@@ -11,6 +12,60 @@ public class DictionaryUtilsTest
         public string Name { get; set; }
         public int Age { get; set; }
         public string Untouched { get; set; } = "default";
+    }
+
+    private enum Colour
+    {
+        Red,
+        Green,
+        Blue
+    }
+
+    private class TypedEnrichable
+    {
+        public Guid Id { get; set; }
+        public Guid? OptionalId { get; set; }
+        public int? Age { get; set; }
+        public Colour Colour { get; set; }
+    }
+
+    [Fact]
+    public void Enrich_GuidPropertyFromString_Assigns()
+    {
+        // A route parameter/header arrives as a string; the DTO property is a Guid.
+        var id = Guid.NewGuid();
+        var result = DictionaryUtils.Enrich(new TypedEnrichable(),
+            new Dictionary<string, object> { { "Id", id.ToString() } });
+
+        Assert.Equal(id, result.Id);
+    }
+
+    [Fact]
+    public void Enrich_NullableGuidPropertyFromString_Assigns()
+    {
+        var id = Guid.NewGuid();
+        var result = DictionaryUtils.Enrich(new TypedEnrichable(),
+            new Dictionary<string, object> { { "OptionalId", id.ToString() } });
+
+        Assert.Equal(id, result.OptionalId);
+    }
+
+    [Fact]
+    public void Enrich_NullableIntPropertyFromString_Assigns()
+    {
+        var result = DictionaryUtils.Enrich(new TypedEnrichable(),
+            new Dictionary<string, object> { { "Age", "42" } });
+
+        Assert.Equal(42, result.Age);
+    }
+
+    [Fact]
+    public void Enrich_EnumPropertyFromString_Assigns()
+    {
+        var result = DictionaryUtils.Enrich(new TypedEnrichable(),
+            new Dictionary<string, object> { { "Colour", "Green" } });
+
+        Assert.Equal(Colour.Green, result.Colour);
     }
 
     [Fact]

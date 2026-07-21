@@ -188,12 +188,36 @@ public static class DictionaryUtils
 
     private static object GetValue(object originalValue, Type propertyType)
     {
-        if (originalValue.GetType() != propertyType)
+        if (originalValue.GetType() == propertyType)
         {
-            return Convert.ChangeType(originalValue, propertyType);
+            return originalValue;
         }
 
-        return originalValue;
+        // Enrichers feed string values (route params, query-string, headers, claims) that need to be
+        // coerced to the DTO's property type. Convert.ChangeType only handles the IConvertible
+        // primitives, so Guid, enum and any Nullable<T> target threw InvalidCastException. Unwrap the
+        // nullable, and parse Guid/enum explicitly; the compiled setter boxes the value back to the
+        // declared property type.
+        var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
+        if (originalValue.GetType() == targetType)
+        {
+            return originalValue;
+        }
+
+        if (targetType == typeof(Guid))
+        {
+            return originalValue is Guid guid ? guid : Guid.Parse(originalValue.ToString());
+        }
+
+        if (targetType.IsEnum)
+        {
+            return originalValue is string enumText
+                ? Enum.Parse(targetType, enumText, ignoreCase: true)
+                : Enum.ToObject(targetType, originalValue);
+        }
+
+        return Convert.ChangeType(originalValue, targetType);
     }
 
     /// <summary>

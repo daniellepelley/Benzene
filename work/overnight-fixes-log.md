@@ -19,6 +19,20 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 14 — request enrichment threw on Guid/enum/Nullable properties (`DictionaryUtils.GetValue`)
+- **Bug:** `GetValue` coerced enricher-supplied string values to the DTO property type with
+  `Convert.ChangeType`, which only supports the IConvertible primitives. A `Guid` (e.g. a route `{id}`
+  onto `Guid Id`), an `enum` from a string, or any `Nullable<T>` target (`int?`, `Guid?`, …) threw
+  `InvalidCastException`, surfacing as an unhandled error for the whole message. Guid ids and nullable
+  fields on request DTOs are extremely common; only string→string / string→int were covered, so the
+  gap was untested. Reachable via `EnrichingRequestMapper` (the default request mapper) fed by the real
+  enrichers (ApiGateway/AspNet route, query, header, claim values).
+- **Repro:** four new `DictionaryUtilsTest` cases — Guid, Guid?, int?, enum from string — all threw
+  `InvalidCastException` pre-fix.
+- **Fix:** unwrap `Nullable<T>` to its underlying type, parse `Guid`/`enum` explicitly, and only then
+  fall back to `Convert.ChangeType`; the compiled setter boxes the value back to the declared property
+  type. Full core suite green (1888). (Found by a parallel serialization/validation hunt.)
+
 ### Cycle 13 — Autofac adapter ignored the supplied instance in `AddScoped(instance)`/`AddTransient(instance)`
 - **Bug:** both instance overloads called `RegisterType<TImplementation>()` (which tells Autofac to
   *construct a new* object), discarding the caller-supplied `implementation`. The `IBenzeneServiceContainer`
