@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -70,7 +71,7 @@ public class KafkaFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<KafkaContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<KafkaContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<KafkaContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<KafkaContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -86,7 +87,7 @@ public class KafkaFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<KafkaContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<KafkaContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<KafkaContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<KafkaContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -100,7 +101,7 @@ public class KafkaFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<KafkaContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<KafkaContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<KafkaContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<KafkaContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();

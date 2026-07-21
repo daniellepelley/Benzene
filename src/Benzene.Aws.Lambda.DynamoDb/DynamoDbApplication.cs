@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.MessageHandlers;
+using Benzene.Results;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Aws.Lambda.DynamoDb;
@@ -63,7 +63,7 @@ public class DynamoDbApplication : IMiddlewareApplication<DynamoDbEvent, DynamoD
                         .LogError(ex, "Processing DynamoDB stream record {sequenceNumber} failed", record.Dynamodb?.SequenceNumber);
                 }
 
-                context.MessageResult = new MessageResult(false);
+                context.MessageResult = BenzeneResult.UnexpectedError();
             }
 
             // Treat a null result as failure (not just an explicit false), matching the SQS reference:

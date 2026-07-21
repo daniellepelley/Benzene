@@ -8,7 +8,7 @@ public class KafkaMessageHandlerResultSetter<TKey, TValue> : IMessageHandlerResu
 {
     public Task SetResultAsync(KafkaRecordContext<TKey, TValue> context, IMessageHandlerResult messageHandlerResult)
     {
-        context.MessageResult = new MessageResult(messageHandlerResult.BenzeneResult.IsSuccessful);
+        context.MessageResult = messageHandlerResult.BenzeneResult;
         return Task.CompletedTask;
     }
 }

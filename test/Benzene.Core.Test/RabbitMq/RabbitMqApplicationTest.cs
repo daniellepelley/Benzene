@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Text;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
@@ -35,7 +36,7 @@ public class RabbitMqApplicationTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<RabbitMqContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.Is<RabbitMqContext>(c => c.DeliverEventArgs.RoutingKey == "orderCreated"), It.IsAny<IServiceResolver>()))
-            .Callback<RabbitMqContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<RabbitMqContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new RabbitMqApplication(mockPipeline.Object);

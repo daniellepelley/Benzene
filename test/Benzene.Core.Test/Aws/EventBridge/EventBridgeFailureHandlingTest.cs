@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -51,7 +52,7 @@ public class EventBridgeFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventBridgeContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventBridgeContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<EventBridgeContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<EventBridgeContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new EventBridgeApplication(mockPipeline.Object, new EventBridgeOptions { RaiseOnFailureStatus = true });
@@ -66,7 +67,7 @@ public class EventBridgeFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventBridgeContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventBridgeContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<EventBridgeContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<EventBridgeContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new EventBridgeApplication(mockPipeline.Object);

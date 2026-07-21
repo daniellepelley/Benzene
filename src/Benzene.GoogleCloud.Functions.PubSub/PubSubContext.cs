@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Google.Events.Protobuf.Cloud.PubSub.V1;
 
 namespace Benzene.GoogleCloud.Functions.PubSub;
@@ -32,5 +33,5 @@ public class PubSubContext : IHasMessageResult
     /// <summary>
     /// Gets or sets the result of handling this message.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

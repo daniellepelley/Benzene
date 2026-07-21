@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Lambda.DynamoDb;
 
@@ -39,5 +40,5 @@ public class DynamoDbRecordContext : IHasMessageResult
     /// <see cref="DynamoDbMessageHandlerResultSetter"/>; null if no result has been set yet, which
     /// <see cref="DynamoDbApplication"/> treats as a failure (stop at this record and redeliver).
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

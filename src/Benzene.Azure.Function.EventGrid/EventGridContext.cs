@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.Function.EventGrid;
 
@@ -27,5 +28,5 @@ public class EventGridContext : IHasMessageResult
     /// from the handler's perspective (a thrown exception is what triggers Event Grid's own
     /// retry/dead-letter machinery), so this is recorded for middleware/diagnostics only.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

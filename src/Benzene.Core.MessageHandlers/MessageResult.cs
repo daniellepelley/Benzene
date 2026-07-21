@@ -29,24 +29,3 @@ public interface IDefaultStatuses
     /// </summary>
     public string BadRequest { get; }
 }
-
-/// <summary>
-/// Legacy pass/fail result of routing and handling a message, recording only whether the handler
-/// completed successfully. Prefer <see cref="IMessageHandlerResult"/> for full result details
-/// (status, payload, errors).
-/// </summary>
-public class MessageResult : IMessageResult
-{
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MessageResult"/> class.
-    /// </summary>
-    /// <param name="isSuccessful">Whether the message was handled successfully.</param>
-    public MessageResult(bool isSuccessful)
-    {
-        IsSuccessful = isSuccessful;
-    }
-
-    /// <inheritdoc />
-    public bool IsSuccessful { get; }
-
-}

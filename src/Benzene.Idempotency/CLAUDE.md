@@ -59,8 +59,8 @@ permanently suppresses a message:
   reprocesses.
 - otherwise (no throw, and either no result signal or a successful one) → recorded **completed**.
 
-On a duplicate of a completed key, the middleware sets a **synthetic** successful `MessageResult`
-(when the context is `IHasMessageResult`) so the transport acknowledges/completes the duplicate rather
+On a duplicate of a completed key, the middleware sets a **synthetic** successful `IBenzeneResult`
+(`BenzeneResult.Ok()`, when the context is `IHasMessageResult`) so the transport acknowledges/completes the duplicate rather
 than looping. Note this is a fresh success signal — the original first-attempt response/payload is
 **not** stored or replayed; a duplicate HTTP-style caller does not get the original body back.
 
@@ -86,7 +86,7 @@ default header/body-hash strategy (resolving the transport's `IMessageHeadersGet
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions.Middleware** — `IMiddleware`/pipeline builder.
 - **Benzene.Core.MessageHandlers** — transport-agnostic message accessors (`IMessageHeadersGetter`,
-  `IMessageBodyGetter`, `IMessageTopicGetter`), `IHasMessageResult`/`MessageResult`.
+  `IMessageBodyGetter`, `IMessageTopicGetter`), `IHasMessageResult` carrying an `IBenzeneResult`.
 
 ## Conventions
 - Engine is transport-agnostic; persistence is pluggable (mirrors how `Benzene.Saga` keeps state

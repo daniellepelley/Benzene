@@ -21,7 +21,7 @@ public enum ServiceBusConsumerAckMode
     /// <summary>
     /// The default. Benzene settles each message itself from the handler's outcome: completed after a
     /// successful outcome, abandoned after a failed one - either a thrown exception or a non-exception
-    /// failure result (<c>IMessageResult.IsSuccessful == false</c>). Matching
+    /// failure result (<c>IBenzeneResult.IsSuccessful == false</c>). Matching
     /// <c>Benzene.Azure.Function.ServiceBus</c>'s <c>ServiceBusAckMode.Explicit</c>, except no
     /// trigger configuration is needed here - the worker owns the processor, so it turns the
     /// processor's auto-complete off itself.

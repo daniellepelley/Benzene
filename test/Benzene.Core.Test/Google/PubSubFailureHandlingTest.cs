@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -71,7 +72,7 @@ public class PubSubFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<PubSubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<PubSubContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<PubSubContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<PubSubContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -87,7 +88,7 @@ public class PubSubFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<PubSubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<PubSubContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<PubSubContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<PubSubContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -101,7 +102,7 @@ public class PubSubFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<PubSubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<PubSubContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<PubSubContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<PubSubContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();

@@ -7,7 +7,7 @@ public enum RabbitMqAckMode
 {
     /// <summary>
     /// The worker acknowledges each delivery from the handler's outcome: <c>BasicAck</c> on success,
-    /// <c>BasicNack</c> on a thrown exception or an unsuccessful <c>IMessageResult</c>. Whether a
+    /// <c>BasicNack</c> on a thrown exception or an unsuccessful <c>IBenzeneResult</c>. Whether a
     /// nacked delivery is requeued or routed to a dead-letter exchange is governed by
     /// <see cref="RabbitMqConfig.RequeueOnFailure"/>. This is the default and the safe choice - a
     /// failed message is redelivered or dead-lettered rather than silently lost.

@@ -1,5 +1,6 @@
 using Azure.Messaging.EventHubs;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.EventHub;
 
@@ -35,5 +36,5 @@ public class EventHubConsumerContext : IHasMessageResult
     /// settlement, so an unsuccessful result doesn't affect checkpointing - it's recorded for
     /// middleware/diagnostics only.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

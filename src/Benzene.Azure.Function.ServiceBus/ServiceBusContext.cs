@@ -1,5 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.Function.ServiceBus;
 
@@ -26,5 +27,5 @@ public class ServiceBusContext : IHasMessageResult
     /// <summary>
     /// Gets or sets the result of handling this message.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

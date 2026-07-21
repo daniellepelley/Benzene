@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
@@ -80,7 +81,7 @@ public class DynamoDbLambdaHandlerTest
         pipeline.Use(null, (context, next) =>
         {
             processed.Add(context.Record.Dynamodb.SequenceNumber);
-            context.MessageResult = new MessageResult(context.Record.Dynamodb.SequenceNumber != "2");
+            context.MessageResult = (context.Record.Dynamodb.SequenceNumber != "2" ? BenzeneResult.Ok() : BenzeneResult.UnexpectedError());
             return next();
         });
 

@@ -11,7 +11,7 @@ unlike the Lambda/Functions triggers.
 
 ## ⚠️ Ack policy: safe by default, unlike the Kafka/ServiceBus triggers
 `RabbitMqConfig.AckMode` defaults to `RabbitMqAckMode.Explicit`: a delivery is `BasicAck`ed on
-handler success and `BasicNack`ed on a failure `IMessageResult` **or** a thrown exception. RabbitMQ's
+handler success and `BasicNack`ed on a failure `IBenzeneResult` **or** a thrown exception. RabbitMQ's
 first-class per-message ack (the Service Bus `Explicit` model, not Kafka's offset watermark) makes
 this the natural default and a real advantage - a failed message is redelivered or dead-lettered
 rather than silently lost. `RabbitMqAckMode.AutoAck` (broker acks on dispatch, before the handler
@@ -30,9 +30,9 @@ message, handlers must be idempotent - see [Idempotency](../../docs/cookbooks/id
   `DrainTimeout`), then closes the channel and connection. The delivery body is a rented buffer only
   valid for the consumer callback, so the worker **copies it** (`Body.ToArray()`) before handing off
   to a dispatcher lane - do not remove that copy.
-- `RabbitMqApplication : MiddlewareApplication<BasicDeliverEventArgs, RabbitMqContext, IMessageResult?>` -
+- `RabbitMqApplication : MiddlewareApplication<BasicDeliverEventArgs, RabbitMqContext, IBenzeneResult?>` -
   maps each delivery to a `RabbitMqContext`, runs it through the pipeline (tagged transport
-  `"rabbitmq"`) in one DI scope per message, and returns the recorded `IMessageResult` the worker
+  `"rabbitmq"`) in one DI scope per message, and returns the recorded `IBenzeneResult` the worker
   reads for ack. Mirrors `ServiceBusConsumerApplication`.
 - `RabbitMqContext : IHasMessageResult` - wraps `BasicDeliverEventArgs` (context purity: transport
   shape only), carries `MessageResult`.

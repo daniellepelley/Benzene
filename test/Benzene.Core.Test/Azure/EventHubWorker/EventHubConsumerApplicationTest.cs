@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Azure.Messaging.EventHubs;
 using Benzene.Abstractions.DI;
@@ -32,7 +33,7 @@ public class EventHubConsumerApplicationTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventHubConsumerContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventHubConsumerContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<EventHubConsumerContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<EventHubConsumerContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var application = new EventHubConsumerApplication(mockPipeline.Object);

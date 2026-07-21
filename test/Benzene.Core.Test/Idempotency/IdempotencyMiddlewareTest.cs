@@ -1,4 +1,6 @@
 using System;
+using Benzene.Abstractions.Results;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.MessageHandlers;
@@ -11,7 +13,7 @@ public class IdempotencyMiddlewareTest
 {
     private class TestContext : IHasMessageResult
     {
-        public IMessageResult MessageResult { get; set; } = null!;
+        public IBenzeneResult MessageResult { get; set; } = null!;
     }
 
     private class FixedKeyStrategy : IIdempotencyKeyStrategy<TestContext>
@@ -92,7 +94,7 @@ public class IdempotencyMiddlewareTest
         // Handler runs without throwing but the pipeline reports an unsuccessful result.
         await Middleware(store).HandleAsync(ctx, () =>
         {
-            ctx.MessageResult = new MessageResult(false);
+            ctx.MessageResult = BenzeneResult.UnexpectedError();
             return Task.CompletedTask;
         });
 

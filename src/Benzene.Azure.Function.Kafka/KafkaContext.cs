@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Microsoft.Azure.Functions.Worker;
 
 namespace Benzene.Azure.Function.Kafka;
@@ -26,5 +27,5 @@ public class KafkaContext : IHasMessageResult
     /// <summary>
     /// Gets or sets the result of handling this record's message.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

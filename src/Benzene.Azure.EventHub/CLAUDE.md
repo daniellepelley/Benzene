@@ -60,7 +60,7 @@ recorded for diagnostics/middleware). Mirrors the escalation on the Function tri
   shape only) plus `MessageResult`. Event Hubs has no per-event settlement, so an unsuccessful
   result is recorded for middleware/diagnostics only - it doesn't affect checkpointing.
 - `EventHubConsumerApplication` - `MiddlewareApplication<EventData, EventHubConsumerContext,
-  IMessageResult?>` wrapping the pipeline in `TransportMiddlewarePipeline("event-hub")`; one DI
+  IBenzeneResult?>` wrapping the pipeline in `TransportMiddlewarePipeline("event-hub")`; one DI
   scope per event via the base class.
 - Mappers (`EventHubConsumerMessage{TopicGetter,HeadersGetter,BodyGetter}`) - topic from the
   event's `"topic"` property (wrapped in `PresetTopicMessageTopicGetter`/`PresetTopicHolder`),

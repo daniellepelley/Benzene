@@ -1,5 +1,6 @@
 using Amazon.Lambda.KafkaEvents;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Lambda.Kafka;
 
@@ -32,5 +33,5 @@ public class KafkaContext : IHasMessageResult
     /// <summary>
     /// Gets or sets the result of handling this record. Set by <see cref="KafkaMessageHandlerResultSetter"/>.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

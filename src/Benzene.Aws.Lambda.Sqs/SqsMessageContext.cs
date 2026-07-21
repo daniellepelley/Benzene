@@ -1,5 +1,6 @@
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Lambda.Sqs;
 
@@ -40,5 +41,5 @@ public class SqsMessageContext : IHasMessageResult
     /// <see cref="SqsMessageHandlerResultSetter"/>; null if no result has been set yet (e.g. an
     /// unrouted message), which <see cref="SqsApplication"/> treats as a failure so it isn't acked.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

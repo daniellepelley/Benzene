@@ -1,5 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.ServiceBus;
 
@@ -34,5 +35,5 @@ public class ServiceBusConsumerContext : IHasMessageResult
     /// <see cref="ServiceBusConsumerMessageHandlerResultSetter"/>; read by
     /// <see cref="BenzeneServiceBusWorker"/> to support <see cref="ServiceBusConsumerAckMode.Explicit"/>.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

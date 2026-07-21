@@ -15,7 +15,6 @@ Provides complete implementation of message handler infrastructure for command/q
 ### Results
 - `MessageHandlerResult` - Non-generic result implementation
 - `MessageHandlerResult<TResponse>` - Generic result with response
-- `MessageResult` - Legacy result type
 - `DefaultStatuses` - Standard HTTP/message status codes
 
 ### Handler Discovery

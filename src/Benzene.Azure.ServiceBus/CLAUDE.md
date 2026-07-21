@@ -75,9 +75,10 @@ through the shared internal `IServiceBusMessageSettler` adapter over `ProcessMes
 - `ServiceBusConsumerContext` - pipeline context wrapping one `ServiceBusReceivedMessage`
   (context purity: transport shape only), plus `MessageResult` recorded by
   `ServiceBusConsumerMessageHandlerResultSetter` and read by the worker for `Explicit` ack.
-- `ServiceBusConsumerApplication` - `MiddlewareApplication<ServiceBusReceivedMessage,
-  ServiceBusConsumerContext, IMessageResult?>` wrapping the pipeline in
-  `TransportMiddlewarePipeline("service-bus")`; one DI scope per message via the base class.
+- `ServiceBusConsumerApplication` - owns its own DI scope per message (rather than extending
+  `MiddlewareApplication`) so it can read the scoped `ServiceBusSettlementHolder`, and returns a
+  `ServiceBusSettlementDecision` carrying the handler's recorded `IBenzeneResult` (plus any explicit
+  settlement override), wrapping the pipeline in `TransportMiddlewarePipeline("service-bus")`.
 - Mappers (`ServiceBusConsumerMessage{TopicGetter,HeadersGetter,BodyGetter}`) - same conventions
   as `Benzene.Azure.Function.ServiceBus`: topic from the `"topic"` application property (wrapped
   in `PresetTopicMessageTopicGetter`/`PresetTopicHolder` for per-pipeline presets), headers from

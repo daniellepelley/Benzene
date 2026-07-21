@@ -1,6 +1,6 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Middleware;
-using Benzene.Core.MessageHandlers;
+using Benzene.Results;
 
 namespace Benzene.Idempotency;
 
@@ -94,7 +94,7 @@ public class IdempotencyMiddleware<TContext> : IMiddleware<TContext>
         // so the duplicate is acknowledged and removed from the queue rather than redelivered again.
         if (context is IHasMessageResult hasResult)
         {
-            hasResult.MessageResult = new MessageResult(true);
+            hasResult.MessageResult = BenzeneResult.Ok();
         }
     }
 

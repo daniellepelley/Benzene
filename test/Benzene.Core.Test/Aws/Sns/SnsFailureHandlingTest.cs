@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.DI;
@@ -82,7 +83,7 @@ public class SnsFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<SnsRecordContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<SnsRecordContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<SnsRecordContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<SnsRecordContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -98,7 +99,7 @@ public class SnsFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<SnsRecordContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<SnsRecordContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<SnsRecordContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<SnsRecordContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -112,7 +113,7 @@ public class SnsFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<SnsRecordContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<SnsRecordContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<SnsRecordContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<SnsRecordContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();

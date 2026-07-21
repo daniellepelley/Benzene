@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Azure.Messaging.EventHubs;
@@ -101,7 +102,7 @@ public class EventHubFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventHubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventHubContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<EventHubContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<EventHubContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new EventHubBatchApplication(mockPipeline.Object, new EventHubOptions { RaiseOnFailureStatus = true });
@@ -116,7 +117,7 @@ public class EventHubFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventHubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventHubContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<EventHubContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<EventHubContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new EventHubBatchApplication(mockPipeline.Object);
@@ -131,7 +132,7 @@ public class EventHubFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventHubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventHubContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<EventHubContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<EventHubContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var application = new EventHubBatchApplication(mockPipeline.Object, new EventHubOptions { RaiseOnFailureStatus = true });

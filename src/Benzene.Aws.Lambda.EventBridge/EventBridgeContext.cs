@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Lambda.EventBridge;
 
@@ -16,5 +17,5 @@ public class EventBridgeContext : IHasMessageResult
 
     public EventBridgeEvent Event { get; }
 
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

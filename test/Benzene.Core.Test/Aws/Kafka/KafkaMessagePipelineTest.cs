@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using Benzene.Abstractions.Results;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,7 +45,7 @@ public class KafkaMessagePipelineTest
 
         var pipelineBuilder = new MiddlewarePipelineBuilder<KafkaContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         pipelineBuilder
                 .OnResponse("Check Response", context =>
@@ -76,7 +77,7 @@ public class KafkaMessagePipelineTest
 
         var pipelineBuilder = new MiddlewarePipelineBuilder<KafkaContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         pipelineBuilder
                 .OnResponse("Check Response", context =>
@@ -108,7 +109,7 @@ public class KafkaMessagePipelineTest
 
         var pipeline = new MiddlewarePipelineBuilder<KafkaContext>(new MicrosoftBenzeneServiceContainer(services));
 
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         pipeline
                 .OnResponse("Check Response", context =>

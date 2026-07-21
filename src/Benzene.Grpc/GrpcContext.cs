@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Grpc.Core;
 
@@ -31,7 +32,7 @@ public class GrpcContext : IHasMessageResult
         CallContext = callContext;
     }
 
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
     public IMessageHandlerResult? MessageHandlerResult { get; set; }
 }
 

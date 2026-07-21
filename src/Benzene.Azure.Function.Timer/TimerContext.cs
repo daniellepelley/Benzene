@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.Function.Timer;
 
@@ -26,5 +27,5 @@ public class TimerContext : IHasMessageResult
     /// Gets or sets the result of handling this tick. A timer tick has no caller to answer, so this
     /// is recorded for middleware/diagnostics only.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

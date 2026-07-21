@@ -15,7 +15,7 @@ namespace Benzene.Azure.ServiceBus;
 /// <see cref="ServiceBusConsumerContext"/> and running it through the middleware pipeline in its own
 /// service scope, tagging the transport as <c>"service-bus"</c> for the duration. Returns a
 /// <see cref="ServiceBusSettlementDecision"/> carrying the handler's recorded
-/// <see cref="Benzene.Abstractions.MessageHandlers.IMessageResult"/> and any explicit settlement the
+/// <see cref="Benzene.Abstractions.Results.IBenzeneResult"/> and any explicit settlement the
 /// handler requested via <see cref="ServiceBusSettlementHolder"/>, which
 /// <see cref="BenzeneServiceBusWorker"/> reads for <see cref="ServiceBusConsumerAckMode.Explicit"/>.
 /// </summary>

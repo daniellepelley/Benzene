@@ -1,4 +1,5 @@
 ﻿using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Confluent.Kafka;
 
 namespace Benzene.Kafka.Core.KafkaMessage;
@@ -11,5 +12,5 @@ public class KafkaRecordContext<TKey, TValue> :  IHasMessageResult
     }
 
     public ConsumeResult<TKey, TValue> ConsumeResult { get; }
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

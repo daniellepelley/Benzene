@@ -1,5 +1,6 @@
 using Amazon.Lambda.SNSEvents;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Lambda.Sns;
 
@@ -38,5 +39,5 @@ public class SnsRecordContext : IHasMessageResult
     /// <summary>
     /// Gets or sets the result of handling this record. Set by <see cref="SnsMessageHandlerResultSetter"/>.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

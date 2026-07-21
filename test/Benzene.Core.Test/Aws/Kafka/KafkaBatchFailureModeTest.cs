@@ -1,4 +1,5 @@
 using System;
+using Benzene.Abstractions.Results;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -57,7 +58,7 @@ public class KafkaBatchFailureModeTest
             .Returns((KafkaContext context, IServiceResolver _) =>
             {
                 processedOffsets.Add(context.KafkaEventRecord.Offset);
-                context.MessageResult = Mock.Of<IMessageResult>(r => r.IsSuccessful == true);
+                context.MessageResult = Mock.Of<IBenzeneResult>(r => r.IsSuccessful == true);
                 return Task.CompletedTask;
             });
 
@@ -84,7 +85,7 @@ public class KafkaBatchFailureModeTest
                 processedOffsets.Add(context.KafkaEventRecord.Offset);
                 // Offset 1 in the failing partition returns an unsuccessful result.
                 var succeeded = !(context.KafkaEventRecord.Topic == "fail" && context.KafkaEventRecord.Offset == 1);
-                context.MessageResult = Mock.Of<IMessageResult>(r => r.IsSuccessful == succeeded);
+                context.MessageResult = Mock.Of<IBenzeneResult>(r => r.IsSuccessful == succeeded);
                 return Task.CompletedTask;
             });
 
@@ -130,7 +131,7 @@ public class KafkaBatchFailureModeTest
                     throw new InvalidOperationException("boom");
                 }
 
-                context.MessageResult = Mock.Of<IMessageResult>(r => r.IsSuccessful == true);
+                context.MessageResult = Mock.Of<IBenzeneResult>(r => r.IsSuccessful == true);
                 return Task.CompletedTask;
             });
 
@@ -173,7 +174,7 @@ public class KafkaBatchFailureModeTest
             .Returns((KafkaContext context, IServiceResolver _) =>
             {
                 var succeeded = context.KafkaEventRecord.Topic != "fail";
-                context.MessageResult = Mock.Of<IMessageResult>(r => r.IsSuccessful == succeeded);
+                context.MessageResult = Mock.Of<IBenzeneResult>(r => r.IsSuccessful == succeeded);
                 return Task.CompletedTask;
             });
 
@@ -197,7 +198,7 @@ public class KafkaBatchFailureModeTest
             .Setup(x => x.HandleAsync(It.IsAny<KafkaContext>(), It.IsAny<IServiceResolver>()))
             .Returns((KafkaContext context, IServiceResolver _) =>
             {
-                context.MessageResult = Mock.Of<IMessageResult>(r => r.IsSuccessful == true);
+                context.MessageResult = Mock.Of<IBenzeneResult>(r => r.IsSuccessful == true);
                 return Task.CompletedTask;
             });
 

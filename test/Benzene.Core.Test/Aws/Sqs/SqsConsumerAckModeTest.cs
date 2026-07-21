@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ public class SqsConsumerAckModeTest
             .Returns(async (SqsConsumerMessageContext context, IServiceResolver _) =>
             {
                 await Task.Yield();
-                context.MessageResult = new MessageResult(!context.Message.MessageId.StartsWith("fail"));
+                context.MessageResult = (!context.Message.MessageId.StartsWith("fail") ? BenzeneResult.Ok() : BenzeneResult.UnexpectedError());
             });
 
         var (_, resolverFactory) = CreateResolver();
@@ -120,7 +121,7 @@ public class SqsConsumerAckModeTest
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "fails"), It.IsAny<IServiceResolver>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "succeeds"), It.IsAny<IServiceResolver>()))
-            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -139,10 +140,10 @@ public class SqsConsumerAckModeTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsConsumerMessageContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "fails"), It.IsAny<IServiceResolver>()))
-            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
         mockPipeline.Setup(x => x.HandleAsync(It.Is<SqsConsumerMessageContext>(c => c.Message.MessageId == "succeeds"), It.IsAny<IServiceResolver>()))
-            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<SqsConsumerMessageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();

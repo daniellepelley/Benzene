@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using RabbitMQ.Client.Events;
 
 namespace Benzene.RabbitMq.RabbitMqMessage;
@@ -33,5 +34,5 @@ public class RabbitMqContext : IHasMessageResult
     /// <see cref="RabbitMqMessageHandlerResultSetter"/>; read by <see cref="RabbitMqWorker"/> to
     /// decide ack vs nack under <see cref="RabbitMqAckMode.Explicit"/>.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

@@ -1,4 +1,6 @@
 using System;
+using Benzene.Abstractions.Results;
+using Benzene.Results;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -14,14 +16,9 @@ namespace Benzene.Test.Diagnostics;
 
 public class BenzeneMetricsTest
 {
-    private class FakeMessageResult : IMessageResult
-    {
-        public bool IsSuccessful { get; init; }
-    }
-
     private class FakeMessageContext : IHasMessageResult
     {
-        public IMessageResult MessageResult { get; set; } = new FakeMessageResult { IsSuccessful = true };
+        public IBenzeneResult MessageResult { get; set; } = BenzeneResult.Ok();
     }
 
     private static (List<(string Name, IReadOnlyList<KeyValuePair<string, object>> Tags)> LongMeasurements,

@@ -82,7 +82,6 @@ Defines abstractions for message-based request/response handling in Benzene. Pro
 
 ### Other
 - `IMessageHandlerWrapper` - Wraps handlers with additional behavior
-- `IMessageResult` - Legacy result interface
 
 ## When to use this package
 - When implementing custom message transport adapters

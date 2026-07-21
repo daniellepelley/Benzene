@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.S3Events;
@@ -66,7 +67,7 @@ public class S3FailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<S3RecordContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<S3RecordContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<S3RecordContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<S3RecordContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new S3Application(mockPipeline.Object, new S3Options { RaiseOnFailureStatus = true });
@@ -81,7 +82,7 @@ public class S3FailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<S3RecordContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<S3RecordContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<S3RecordContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<S3RecordContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new S3Application(mockPipeline.Object);

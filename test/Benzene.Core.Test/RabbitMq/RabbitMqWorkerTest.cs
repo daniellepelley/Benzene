@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,7 +44,7 @@ public class RabbitMqWorkerTest
             {
                 if (result.HasValue)
                 {
-                    context.MessageResult = new MessageResult(result.Value);
+                    context.MessageResult = (result.Value ? BenzeneResult.Ok() : BenzeneResult.UnexpectedError());
                 }
             }).Returns(Task.CompletedTask);
         }

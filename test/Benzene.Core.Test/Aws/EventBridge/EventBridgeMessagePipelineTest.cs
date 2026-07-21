@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.EventBridge.TestHelpers;
 using Benzene.Core.MessageHandlers;
@@ -17,7 +18,7 @@ public class EventBridgeMessagePipelineTest
     [Fact]
     public async Task Send()
     {
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         var host = new EntryPointMiddleApplicationBuilder<EventBridgeEvent, EventBridgeContext>()
             .ConfigureServices(services =>
@@ -44,7 +45,7 @@ public class EventBridgeMessagePipelineTest
     [Fact]
     public async Task Send_UnknownDetailType_ReturnsNotFoundResult()
     {
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         var host = new EntryPointMiddleApplicationBuilder<EventBridgeEvent, EventBridgeContext>()
             .ConfigureServices(services =>

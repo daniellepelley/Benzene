@@ -1,5 +1,6 @@
 using Amazon.SQS.Model;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Sqs.Consumer;
 
@@ -46,5 +47,5 @@ public class SqsConsumerMessageContext : IHasMessageResult
     /// <see cref="SqsConsumerMessageHandlerResultSetter"/>; read by <see cref="SqsConsumerApplication"/>
     /// to support <see cref="SqsConsumerAckMode.PerMessage"/>.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

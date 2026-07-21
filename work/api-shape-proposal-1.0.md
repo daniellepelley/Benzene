@@ -4,12 +4,17 @@
 > (TransportNames constants for SQS/DynamoDB), **4a** (Avro deserialize allocation bound —
 > `BoundedBinaryDecoder` + `AvroOptions.MaxDeserializeBytes`), and **2b** (SQS/DynamoDB converged onto
 > `IHasMessageResult` + `MessageHandlerResultSetterBase` — the whole library now represents a message
-> outcome one way; the `bool?` fork is gone). **Held for a focused reviewed change: the rest of 1b** —
-> `[Obsolete]`-ing the legacy `IMessageResult` and rerouting settlement through `IBenzeneResult`. After
-> 2b the outcome representation is already uniform (`IHasMessageResult` everywhere), so the practical
-> consolidation value is banked; the residual `IMessageResult`→`IBenzeneResult` type migration touches
-> the just-shipped settlement path at ~36 read sites and is best done deliberately, not right on top of
-> the settlement flip. **3** (schema-compat policy) and **4b** (Avro map support) remain post-1.0.
+> outcome one way; the `bool?` fork is gone).
+>
+> **Update (2026-07-21, "the iMessage results can just be deleted … it's obsolete").** The result
+> consolidation is now finished via **option 1c** (not 1b): the legacy `IMessageResult` interface and
+> the `MessageResult` class have been **deleted outright** (a hard breaking change, acceptable pre-1.0)
+> and `IHasMessageResult.MessageResult` now carries `IBenzeneResult` directly. Settlement reads the
+> same `IsSuccessful` off the canonical result; every transport's result-setter assigns the handler's
+> `IBenzeneResult` straight onto the context (no wrapper allocation). ~19 context types, the RabbitMq/
+> EventHub/ServiceBus application return-types + `ServiceBusSettlementDecision`, and ~23 test files were
+> migrated; full solution builds clean and the 1965-test Core suite is green. Only **3** (schema-compat
+> policy) and **4b** (Avro map support) remain post-1.0.
 
 
 These are the Tier-2 items that are **API/architecture decisions**, not mechanical fixes. Each is

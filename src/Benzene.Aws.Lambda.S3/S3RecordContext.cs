@@ -1,5 +1,6 @@
 using Amazon.Lambda.S3Events;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Aws.Lambda.S3;
 
@@ -40,5 +41,5 @@ public class S3RecordContext : IHasMessageResult
     /// <see cref="S3MessageHandlerResultSetter"/>. S3 events are fire-and-forget, so this is
     /// recorded for diagnostics rather than written back to a response.
     /// </summary>
-    public IMessageResult MessageResult { get; set; }
+    public IBenzeneResult MessageResult { get; set; }
 }

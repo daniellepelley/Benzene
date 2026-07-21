@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ public class SqsBatchFailureModeTest
                 }
                 // The real SqsMessageHandlerResultSetter sets IsSuccessful from the handler result;
                 // a successfully-handled message is an explicit success, not an unset outcome.
-                context.MessageResult = new MessageResult(true);
+                context.MessageResult = BenzeneResult.Ok();
             });
 
         var mockResolver = new Mock<IServiceResolver>();
@@ -149,7 +150,7 @@ public class SqsBatchFailureModeTest
             .ThrowsAsync(new InvalidOperationException("boom"));
         mockPipeline
             .Setup(x => x.HandleAsync(It.Is<SqsMessageContext>(c => c.SqsMessage.MessageId == "succeeds"), It.IsAny<IServiceResolver>()))
-            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var mockResolver = new Mock<IServiceResolver>();
@@ -181,7 +182,7 @@ public class SqsBatchFailureModeTest
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
         mockPipeline
             .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var mockResolver = new Mock<IServiceResolver>();

@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
@@ -51,7 +52,7 @@ public class QueueStorageFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<QueueStorageContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<QueueStorageContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<QueueStorageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<QueueStorageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new QueueStorageBatchApplication(mockPipeline.Object, new QueueStorageOptions { RaiseOnFailureStatus = true });
@@ -66,7 +67,7 @@ public class QueueStorageFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<QueueStorageContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<QueueStorageContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<QueueStorageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<QueueStorageContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new QueueStorageBatchApplication(mockPipeline.Object);

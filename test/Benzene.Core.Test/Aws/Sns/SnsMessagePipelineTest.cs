@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Benzene.Abstractions.Results;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -54,7 +55,7 @@ public class SnsMessagePipelineTest
     [Fact]
     public async Task Send()
     {
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
@@ -81,7 +82,7 @@ public class SnsMessagePipelineTest
     [Fact]
     public async Task Send_Xml()
     {
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
@@ -123,7 +124,7 @@ public class SnsMessagePipelineTest
 
         var pipeline = new MiddlewarePipelineBuilder<SnsRecordContext>(new MicrosoftBenzeneServiceContainer(new ServiceCollection()));
 
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         pipeline
             .OnResponse("Check Response", context =>
@@ -239,7 +240,7 @@ public class SnsMessagePipelineTest
     [Fact]
     public async Task Send_Enricher()
     {
-        IMessageResult messageResult = null;
+        IBenzeneResult messageResult = null;
 
         var host = new EntryPointMiddleApplicationBuilder<SNSEvent, SnsRecordContext>()
             .ConfigureServices(services =>
@@ -284,7 +285,7 @@ public class SnsMessagePipelineTest
                 {
                     Body = x.SnsRecord.Sns.Message,
                     Headers = x.SnsRecord.Sns.MessageAttributes.ToDictionary(d => d.Key, d => d.Value.Value)
-                }), (x1, x2) => x1.MessageResult = new MessageResult(true)), builder =>
+                }), (x1, x2) => x1.MessageResult = BenzeneResult.Ok()), builder =>
                 {
                     Benzene.Core.Middleware.Extensions.Convert(builder, new InlineContextConverter<BenzeneMessageContext, SqsSendMessageContext>(x =>
                             new SqsSendMessageContext(new SendMessageRequest

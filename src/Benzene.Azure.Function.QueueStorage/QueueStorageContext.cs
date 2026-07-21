@@ -1,4 +1,5 @@
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.Function.QueueStorage;
 
@@ -27,5 +28,5 @@ public class QueueStorageContext : IHasMessageResult
     /// per-message settlement (the host deletes the message when the invocation succeeds and
     /// retries/poisons it when it throws), so this is recorded for middleware/diagnostics only.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

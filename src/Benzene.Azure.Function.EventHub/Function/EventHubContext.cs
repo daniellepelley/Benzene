@@ -1,5 +1,6 @@
 using Azure.Messaging.EventHubs;
 using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 
 namespace Benzene.Azure.Function.EventHub.Function;
 
@@ -36,5 +37,5 @@ public class EventHubContext : IHasMessageResult
     /// via <c>UseBenzeneMessage</c> (whose response is suppressed), so nothing populates this in the
     /// default envelope path today - see the package CLAUDE.md "Failure handling" section.
     /// </summary>
-    public IMessageResult MessageResult { get; set; } = null!;
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +35,7 @@ public class EventHubWorkerRaiseOnFailureTest
             {
                 if (handlerSuccess.HasValue)
                 {
-                    context.MessageResult = new MessageResult(handlerSuccess.Value);
+                    context.MessageResult = (handlerSuccess.Value ? BenzeneResult.Ok() : BenzeneResult.UnexpectedError());
                 }
             })
             .Returns(Task.CompletedTask);

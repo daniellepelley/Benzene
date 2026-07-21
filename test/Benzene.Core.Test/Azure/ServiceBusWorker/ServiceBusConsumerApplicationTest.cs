@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.DI;
@@ -32,7 +33,7 @@ public class ServiceBusConsumerApplicationTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusConsumerContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.Is<ServiceBusConsumerContext>(c => c.Message.MessageId == "msg-1"), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusConsumerContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<ServiceBusConsumerContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var application = new ServiceBusConsumerApplication(mockPipeline.Object);

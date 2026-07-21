@@ -1,4 +1,5 @@
 using System;
+using Benzene.Results;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
@@ -73,7 +74,7 @@ public class ServiceBusFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -89,7 +90,7 @@ public class ServiceBusFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -103,7 +104,7 @@ public class ServiceBusFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -124,7 +125,7 @@ public class ServiceBusFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -144,7 +145,7 @@ public class ServiceBusFailureHandlingTest
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(false))
+            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.UnexpectedError())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
@@ -204,7 +205,7 @@ public class ServiceBusFailureHandlingTest
         // must behave exactly as AutoComplete mode always has, even when AckMode is Explicit.
         var mockPipeline = new Mock<IMiddlewarePipeline<ServiceBusContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<ServiceBusContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
+            .Callback<ServiceBusContext, IServiceResolver>((context, _) => context.MessageResult = BenzeneResult.Ok())
             .Returns(Task.CompletedTask);
 
         var (_, resolverFactory) = CreateResolver();
