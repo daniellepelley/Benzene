@@ -30,6 +30,20 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 19 — API Gateway `resource` leaked segments after a path parameter (`ApiGatewayBuilderV1.BuildVerb`)
+- **Bug:** the emitted VTL `resource` is meant to be the static path prefix up to the first path
+  parameter (`TakeWhile(x => !x.Contains("{"))`). But a parameter part (ASP.NET `TemplateParser`) has
+  `Text == null`, so the segment flattened to `""` and was dropped by the `Where(!IsNullOrEmpty)` *before*
+  the `TakeWhile` ran — leaving only literal segments, none containing `{`, so `TakeWhile` never stopped
+  (dead code). A literal segment after a parameter (`users/{id}/orders`) leaked in, producing
+  `/users/orders/` instead of `/users/`. Trailing-parameter routes (the only shape in the golden files)
+  happened to be correct, hiding it. Reachable via `build --output api-gateway`.
+- **Repro:** new `LambdaOpenApiBuilderTest.BuildVerb_LiteralSegmentAfterParameter_ResourceStopsAtTheParameter`
+  (`/users/orders/` pre-fix, `/users/` post-fix) + a trailing-parameter regression guard.
+- **Fix:** `TakeWhile` over the original segments using each segment's `IsParameter` flag, so the prefix
+  truly stops at the first parameter. Both golden files unchanged; 47 ApiGateway tests green; suite 1898.
+  (Found by a parallel CLI/codegen hunt.)
+
 ### Cycle 18 — CLI option default discarded for a value-less flag (`Parsing/Extensions.GetValue`)
 - **Bug:** `GetValue` returned `source.Attributes.TryGetValue(key, out var value) ? value : NotNull(default)`.
   The attribute dictionary is `IDictionary<string, string?>`, and a bare value-less flag (`--format`) is

@@ -63,6 +63,28 @@ public class LambdaOpenApiBuilderTest
     }
 
     [Fact]
+    public void BuildVerb_LiteralSegmentAfterParameter_ResourceStopsAtTheParameter()
+    {
+        // The emitted "resource" is the static path prefix up to the first path parameter. A literal
+        // segment that follows a parameter (users/{id}/orders) must NOT leak into it. The original
+        // TakeWhile was dead code (parameter segments are filtered out before it runs), so a
+        // mid-path parameter produced "/users/orders/".
+        var verb = new ApiGatewayBuilderV1("URI").BuildVerb("GET", "users/{id}/orders", "orders:list");
+
+        Assert.Contains("\"resource\": \"/users/\",", verb);
+        Assert.DoesNotContain("/users/orders/", verb);
+    }
+
+    [Fact]
+    public void BuildVerb_TrailingParameter_ResourceIsTheLiteralPrefix()
+    {
+        // Regression guard: a trailing parameter (the shape the golden files cover) is unchanged.
+        var verb = new ApiGatewayBuilderV1("URI").BuildVerb("GET", "rbac/user/{id}", "user:get");
+
+        Assert.Contains("\"resource\": \"/rbac/user/\",", verb);
+    }
+
+    [Fact]
     public void Options_ApplyAuthorizerIdentityHeadersAndExclusions()
     {
         var messageHandlerDefinitions = new IMessageHandlerDefinition[]{

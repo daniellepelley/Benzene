@@ -123,12 +123,17 @@ namespace Benzene.CodeGen.ApiGateway
         {
             var routeTemplate = TemplateParser.Parse(path);
 
-            var parts = routeTemplate.Segments
-                .Select(x => string.Join("", x.Parts.Select(x1 => x1.Text?.Replace("/", ""))))
-                .Where(x => !string.IsNullOrEmpty(x))
-                .ToArray();
+            // The "resource" is the static path prefix up to the first path parameter. Stop at the
+            // first segment containing a parameter, using the segment's own IsParameter flag: a
+            // parameter part has Text == null, so it would otherwise be flattened to "" and dropped
+            // before any check could see it (which made the old TakeWhile dead and leaked literal
+            // segments that follow a parameter into the prefix).
+            var literalPrefix = routeTemplate.Segments
+                .TakeWhile(segment => segment.Parts.All(part => !part.IsParameter))
+                .Select(segment => string.Join("", segment.Parts.Select(part => part.Text?.Replace("/", ""))))
+                .Where(text => !string.IsNullOrEmpty(text));
 
-            var resource = "/" + string.Join("/", parts.TakeWhile(x => !x.Contains("{"))) + "/";
+            var resource = "/" + string.Join("/", literalPrefix) + "/";
 
             var tag = CreateTag(path);
 
