@@ -25,6 +25,13 @@ public class XmlSerializer : ISerializer
 
     public string Serialize(Type type, object payload)
     {
+        // Match the generic Serialize<T> and the sibling serializers (Avro/MessagePack): a null
+        // payload serializes to empty rather than throwing inside the BCL XmlSerializer.
+        if (payload == null)
+        {
+            return string.Empty;
+        }
+
         var xsSubmit = GetSerializer(type);
 
         using var sww = new Utf8StringWriter();
