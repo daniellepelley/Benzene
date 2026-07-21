@@ -5,6 +5,14 @@ commit+push to main. Adversarial verification: no fix ships without a test that 
 passes after. Staying clear of the actively-churning #29/#30 cloud series (Aws/Azure/Kafka/Grpc/
 Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
+**Tally so far: 25 cycles shipped** (each failing-test-first + full-suite green). Coverage swept via
+parallel adversarial hunters across Core/Results/Abstractions, serialization/validation/message-handlers,
+mesh (collector/aggregator/reporting/tempo/contracts/ui), cache/resilience/DI, HTTP/CORS, CLI/codegen,
+observability/serializers, auth/oauth2/versioning, health-checks, idempotency/saga, and cloud-service.
+Auth (Auth.Core/OAuth2/Basic) verified security-sound. Remaining candidates are all in the deferred
+list below (design decisions, browser-mitigated JS hardening, or memory-model fixes with no
+deterministic repro) — nothing left that meets the failing-test-first bar without a maintainer decision.
+
 ## Deferred / noted (not fixed — need a decision, a real repro, or are intentional)
 - **`Utils.GetTypes` swallows `ReflectionTypeLoadException`** (3 copies: `Benzene.Core.MessageHandlers/
   Utils.cs`, `.../Helper/Utils.cs`, `Benzene.Core/Helper/Utils.cs`) — `catch { return Type.EmptyTypes; }`
@@ -32,6 +40,13 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
   type-multiset but different check instances/URLs can serve each other's cached result for up to the TTL.
   Real keying flaw but bounded (requires opting into caching AND colliding type-sets); a correct fix needs
   probe identity threaded into the key, which isn't cleanly available at that layer. Deferred.
+- **`CloudServiceDescriptorSource._descriptor` uses non-volatile double-checked locking** — read lock-free
+  in `Get`'s fast path and in `TryGet()`, written under `_gate`. On a weak memory model (ARM64/Graviton,
+  common for AWS-hosted .NET) the reference publish can become visible before the descriptor's own field
+  writes, exposing a partially-constructed descriptor to a concurrent first-invocation reader; benign on
+  x86/x64. The canonical one-word fix is `private volatile MeshServiceDescriptor? _descriptor;`. Deferred
+  only because it can't be failing-test-first verified (the race won't reproduce on x64 CI, and the type is
+  `internal` with no `InternalsVisibleTo` to the test assembly) — a maintainer can apply the keyword trivially.
 - **`mesh-ui.html` sets `specUrl`/`healthUrl` anchor `href` from the self-reported manifest without a
   scheme allow-list**, so a hostile service reporting `"specUrl":"javascript:…"` yields a clickable
   script-executing link. Browser-mitigated (anchors are `target="_blank"`; modern Chromium/Firefox block
