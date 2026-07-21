@@ -7,10 +7,50 @@ the Functions-trigger counterpart of the self-hosted `Benzene.Azure.EventHub` wo
 its own `EventProcessorClient`); there is no producer here. For consuming Event Hubs in a
 long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
 
+## Failure handling: per-event isolation and failure escalation are opt-in via `EventHubOptions`
+By default the fan-out is all-or-nothing: every event in the triggered batch runs concurrently, but
+if any handler **throws**, the exception cascades, fails the whole Functions invocation, and the
+Event Hubs trigger re-delivers the **entire** batch — so every already-succeeded sibling re-runs.
+And if a handler returns a non-exception **failure result** (e.g.
+`BenzeneResult.ServiceUnavailable(...)`) the batch checkpoints like a success and the message is
+silently gone. Both are opt-in to change (mirroring `Benzene.Azure.Function.EventGrid` /
+`Benzene.Azure.Function.QueueStorage` / `Benzene.Azure.Function.Kafka`):
+
+- `EventHubOptions.CatchExceptions = true` (via `UseEventHub(action, configure)`) catches/logs a
+  handler exception per event so its siblings still complete and the batch checkpoints — trading the
+  all-or-nothing re-delivery for **sibling isolation**. **Ordering tradeoff:** Event Hub records
+  within a partition are ordered; catch-and-continue trades that ordering (and the poison event's
+  re-delivery) for isolation, the same tradeoff `S3`/`EventGrid` already accept. The poison event is
+  **not** retried once caught. Default `false` preserves today's behavior exactly.
+- `EventHubOptions.RaiseOnFailureStatus = true` escalates a non-exception failure result into a
+  thrown `EventHubMessageProcessingException`, so the Event Hubs trigger re-delivers the batch the
+  same way it would for an exception (at-least-once; the handler must then be idempotent). Default
+  `false`. **Caveat:** this reads `EventHubContext.MessageResult` (`EventHubContext : IHasMessageResult`),
+  but this package's default routing path (`UseBenzeneMessage`) runs handlers on the inner
+  `BenzeneMessageContext` with its response **suppressed** (`SuppressResponse()`), so nothing
+  populates `EventHubContext.MessageResult` in that path today — the flag is wired structurally
+  (and unit-tested) but only bites when a middleware/result-setter records a result directly on the
+  `EventHubContext`. Fully surfacing the inner envelope handler's failure result to the outer context
+  would need a new propagation mechanism (the response is suppressed) — deferred, flagged for a
+  maintainer decision. This is the same envelope-path limitation `QueueStorage`'s
+  `RaiseOnFailureStatus` has; `QueueStorage`/`EventGrid` only work fully because they *also* run
+  handlers directly on their own context (preset-topic / by-event-type routing), which this package
+  does not expose.
+
+Both flags default off (purely additive, non-breaking). The existing `maxDegreeOfParallelism` knob
+is folded into `EventHubOptions.MaxDegreeOfParallelism`; the original `UseEventHub(action,
+maxDegreeOfParallelism)` / `EventHubApplication(pipeline, srf, int?)` signatures are unchanged (the
+options form is an **additional** overload). The batch fan-out lives in `EventHubBatchApplication`
+(which `EventHubApplication` delegates to, like `EventGridApplication` → `EventGridBatchApplication`).
+Covered by `test/Benzene.Core.Test/Azure/EventHubFailureHandlingTest.cs`. The fan-in
+`UseEventHubStream(...)` path is batch-level and out of scope.
+
 ## Two dispatch shapes (both under `Benzene.Azure.Function.EventHub.Function`)
-1. **Fan-out (default), `UseEventHub(...)`** — `EventHubApplication` maps the batch to one
-   `EventHubContext` per event via `MiddlewareMultiApplication` and processes them, transport-tagged
-   `"event-hub"`. Inside it, `UseBenzeneMessage(...)` routes an event whose body deserializes into a
+1. **Fan-out (default), `UseEventHub(...)`** — `EventHubApplication` delegates to
+   `EventHubBatchApplication`, which maps the batch to one `EventHubContext` per event and runs each
+   (in its own DI scope, via `Benzene.Core.Middleware`'s `BoundedFanOut`) with a per-event
+   try/catch + failure-escalation governed by `EventHubOptions` (see "Failure handling" above),
+   transport-tagged `"event-hub"`. Inside it, `UseBenzeneMessage(...)` routes an event whose body deserializes into a
    **Benzene message envelope** (`{"topic","headers","body"}`) to the direct-message pipeline via
    `BenzeneMessageEventHubHandler` (a `MiddlewareRouter` that defers a non-envelope body to the next
    middleware rather than failing). This is the routing path the getting-started guide shows.
@@ -24,7 +64,14 @@ long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
 ## Key types
 - `EventHubContext` — wraps a single `Azure.Messaging.EventHubs.EventData` (created via
   `CreateInstance`); transport shape only.
-- `EventHubApplication : EntryPointMiddlewareApplication<EventData[]>` — the fan-out entry point.
+- `EventHubApplication : EntryPointMiddlewareApplication<EventData[]>` — the fan-out entry point;
+  delegates the batch fan-out to `EventHubBatchApplication : IMiddlewareApplication<EventData[]>`
+  (the per-record try/catch + `RaiseOnFailureStatus` escalation live there), mirroring
+  `EventGridApplication` → `EventGridBatchApplication`.
+- `EventHubOptions` (`CatchExceptions`, `RaiseOnFailureStatus`, `MaxDegreeOfParallelism`) +
+  `EventHubMessageProcessingException` — the failure-handling knobs and the escalation exception (see
+  "Failure handling" above). `EventHubContext` implements `IHasMessageResult` to carry the result
+  `RaiseOnFailureStatus` reads.
 - `BenzeneMessageEventHubHandler` — the envelope router used by `UseBenzeneMessage`.
 - `EventHubMessageHeadersGetter : IMessageHeadersGetter<EventHubContext>` — reads string-typed
   `EventData.Properties` back as headers (same shape `EventHubContextConverter`/
@@ -49,7 +96,7 @@ long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
   `Function/BenzeneInvocationExtensions.cs`'s `UseBenzeneInvocation()` as the first middleware, so
   `IBenzeneInvocation` resolves inside each event's dispatch (`InvocationId` = the event's
   service-assigned `SequenceNumber`) - each event in the trigger's batch is dispatched through its
-  own DI scope via `MiddlewareMultiApplication`'s per-event `CreateScope()`, disconnected from
+  own DI scope via `EventHubBatchApplication`'s per-event `CreateScope()`, disconnected from
   whatever `IBenzeneInvocation` the outer Azure Functions invocation populated. No application code
   changes needed.
 
@@ -70,10 +117,10 @@ long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
   Storage adapter; the Kafka adapter has no envelope bridge (its records route by native topic).
 - **Bounded batch fan-out**: `UseEventHub(action, maxDegreeOfParallelism)` (both builder overloads,
   and the `EventHubApplication` constructor) optionally caps how many events from a batch run
-  concurrently; `null` (the default) leaves the fan-out unbounded - the original behavior. Threaded
-  into the `MiddlewareMultiApplication`, which routes it through `Benzene.Core.Middleware`'s
-  `BoundedFanOut`. The fan-in `UseEventHubStream(...)` path processes the batch as one unit, so it
-  has nothing to bound.
+  concurrently; `null` (the default) leaves the fan-out unbounded - the original behavior. Folded
+  into `EventHubOptions.MaxDegreeOfParallelism` and routed through `Benzene.Core.Middleware`'s
+  `BoundedFanOut` inside `EventHubBatchApplication`. The fan-in `UseEventHubStream(...)` path
+  processes the batch as one unit, so it has nothing to bound.
 - No first-class topic/body mappers on `EventHubContext` itself (unlike `Benzene.Azure.EventHub`'s
   worker-mode `EventHubConsumerContext`, which has a full mapper set so `.UseMessageHandlers()`
   works directly) - this package routes by deserializing the event body into a Benzene message
