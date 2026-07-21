@@ -164,6 +164,52 @@ public static class Extensions
     }
 
     /// <summary>
+    /// Adds contract-check middleware to the pipeline: runs the given <paramref name="healthChecks"/>
+    /// whenever an incoming message's topic matches <see cref="Constants.DefaultContractsTopic"/>.
+    /// This is a <em>diagnostic</em> surface for consumer-side contract-drift / downstream-provider
+    /// checks (see <c>Benzene.Clients.HealthChecks.AddContractCheck</c>), deliberately separate from
+    /// the liveness/readiness probes: a contract check calls a downstream service and reports drift,
+    /// so putting it in a probe would let one struggling dependency restart or de-route
+    /// otherwise-healthy pods. Wire this to monitoring/the mesh, not to a Kubernetes probe. Like
+    /// <see cref="UseLivenessCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>,
+    /// it does NOT also respond to <see cref="Constants.DefaultHealthCheckTopic"/>.
+    /// </summary>
+    /// <typeparam name="TContext">The pipeline's message-handling context type.</typeparam>
+    /// <param name="app">The pipeline builder to add the middleware to.</param>
+    /// <param name="healthChecks">The checks to run - typically consumer-side contract-drift checks against downstream services.</param>
+    /// <returns>The same pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<TContext> UseContractsCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, params IHealthCheck[] healthChecks)
+    {
+        return app.UseContractsCheck(builder => builder.AddHealthChecks(healthChecks));
+    }
+
+    /// <summary>See <see cref="UseContractsCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>; configures the checks to run via <paramref name="action"/> against a new <see cref="IHealthCheckBuilder"/>.</summary>
+    /// <typeparam name="TContext">The pipeline's message-handling context type.</typeparam>
+    /// <param name="app">The pipeline builder to add the middleware to.</param>
+    /// <param name="action">Configures the health checks to register.</param>
+    /// <returns>The same pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<TContext> UseContractsCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, Action<IHealthCheckBuilder> action)
+    {
+        var builder = app.GetHealthCheckerBuilder();
+        action(builder);
+
+        return app.UseContractsCheck(builder);
+    }
+
+    /// <summary>See <see cref="UseContractsCheck{TContext}(IMiddlewarePipelineBuilder{TContext}, IHealthCheck[])"/>; uses an already-configured <paramref name="builder"/>.</summary>
+    /// <typeparam name="TContext">The pipeline's message-handling context type.</typeparam>
+    /// <param name="app">The pipeline builder to add the middleware to.</param>
+    /// <param name="builder">Supplies the health checks to run, resolved per-request against the current <c>IServiceResolver</c>.</param>
+    /// <returns>The same pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<TContext> UseContractsCheck<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
+    {
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultContractsTopic }, builder);
+    }
+
+    /// <summary>
     /// Shared middleware implementation behind every <c>UseHealthCheck</c>/<c>UseLivenessCheck</c>/
     /// <c>UseReadinessCheck</c> overload: runs <paramref name="builder"/>'s checks and sets the
     /// aggregated result whenever the incoming message's topic is in <paramref name="matchTopics"/>,
