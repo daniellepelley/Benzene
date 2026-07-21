@@ -13,15 +13,15 @@ public class HttpRequest
     /// <summary>
     /// Gets or sets the HTTP method (GET, POST, PUT, DELETE, PATCH, etc.).
     /// </summary>
-    public string Method { get; set; }
+    public string Method { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the URL path of the request, excluding query string parameters.
     /// </summary>
-    public string Path { get; set; }
+    public string Path { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the HTTP headers included in the request.
     /// </summary>
-    public IDictionary<string, string> Headers { get; set; }
+    public IDictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
 }

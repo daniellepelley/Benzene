@@ -156,6 +156,26 @@ away.
   does; the `"topic"` default-attribute const is redeclared in several places.
 - `readonly`-able fields never reassigned (`MessageHandler._defaultStatuses`, etc.).
 
+### Low / cleanup — resolution (2026-07-21)
+Most of this list was already resolved by earlier passes; verified each against current `main`:
+- **Already fixed (no action needed):** `SqsMessageTopicGetter.GetFromAttributes` is now null-guarded;
+  the Autofac adapter's duplicate `IServiceResolver` block is gone, `Dispose` no longer assigns null,
+  and both adapters' `TryGetService` use the non-throwing primitive (`ResolveOptional`/`GetService`);
+  `MessageRouter`'s hot-path `Debug.WriteLine` is gone; the `MiddlewarePipelineBuilder` CLAUDE.md now
+  says "mutable and fluent"; `MessageHandler._defaultStatuses` (and `MessageHandlerFactory`'s) are
+  already `readonly`.
+- **Actioned this pass:** removed the dead reflection-era code in `MessageClientSdkBuilder`
+  (`_propertyTypeMapping` + both unreachable `GetTypeName` overloads); gave `HttpRequest.{Method,
+  Path,Headers}` non-null initializers so the public type no longer lies about nullability.
+- **Left as-is (compiled out):** the remaining adapter `Debug.WriteLine`s are `[Conditional("DEBUG")]`
+  and sit immediately before a throw, so they have zero cost in shipped (Release) packages.
+- **Deferred — not "cheap/low-risk" despite the heading (need a maintainer call):** the S3
+  `Benzene.Aws.S3` → `Benzene.Aws.Lambda.*` namespace/assembly rename is a **breaking** package change;
+  the `KafkaMessageHeadersGetter` synthetic `"topic"` header and `ValidateOutboundRouting`'s
+  marker-less type scan are behavioral/contract changes; the Microsoft-vs-Autofac
+  `IServiceResolverFactory` special-casing drift is a subtle behavior nuance. These want explicit
+  sign-off rather than a silent cleanup commit.
+
 ---
 
 ## Verified clean / deliberate (reassurance — not smells)

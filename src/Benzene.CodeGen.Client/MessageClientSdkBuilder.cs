@@ -9,13 +9,6 @@ namespace Benzene.CodeGen.Client;
 
 public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
 {
-    private readonly IDictionary<string, string> _propertyTypeMapping = new Dictionary<string, string>
-    {
-        { "String", "string" },
-        { "String[]", "string[]" },
-        { "Object", "object" }
-    };
-
     private readonly string _serviceName;
     private readonly string _baseNamespace;
     private readonly ICodeBuilder<IDictionary<string, OpenApiSchema>> _typeBuilder;
@@ -210,27 +203,5 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
     private static string GetTopicFunction(string topic)
     {
         return topic.Split(':').LastOrDefault();
-    }
-
-    private string GetTypeName(Type type, bool useHasValue)
-    {
-        if (useHasValue && type.GetInterfaces().Any(x => x.Name.ToLowerInvariant().Contains("ihasid")))
-        {
-            return GetTypeName(type.GetProperty("Id").PropertyType);
-        }
-
-        return GetTypeName(type);
-    }
-
-    private string GetTypeName(Type type)
-    {
-        if (type.Name == "Nullable`1")
-        {
-            return $"{type.GenericTypeArguments[0].Name}?";
-        }
-
-        return _propertyTypeMapping.ContainsKey(type.Name)
-            ? _propertyTypeMapping[type.Name]
-            : type.Name;
     }
 }
