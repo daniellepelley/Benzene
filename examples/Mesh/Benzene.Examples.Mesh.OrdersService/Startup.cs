@@ -1,6 +1,10 @@
 using Benzene.AspNet.Core;
 using Benzene.CloudService;
+using Benzene.Clients.HealthChecks;
+using Benzene.Examples.Mesh.OrdersService.Clients;
 using Benzene.Examples.Mesh.OrdersService.HealthChecks;
+using Benzene.HealthChecks;
+using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,7 +15,13 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-        services.UsingBenzene();
+        services.UsingBenzene(x => x
+            // The generated-style downstream client whose contract orders-api checks (see below), and
+            // the HTTP route that lets a raw GET /contracts resolve to the "contracts" topic - the
+            // ASP.NET wiring pattern from docs/kubernetes-health-checks.md.
+            .AddSingleton<PaymentsContractClient>(_ => new PaymentsContractClient())
+            .AddSingleton<IHttpEndpointDefinition>(_ =>
+                new HttpEndpointDefinition("GET", "/contracts", Constants.DefaultContractsTopic)));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -30,6 +40,14 @@ public class Startup
         // flags R7 for that deliberate relocation.
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
+                // A SEPARATE diagnostic surface for orders-api's consumer-side contract-drift check
+                // against payments-api, on the "contracts" topic (GET /contracts) - deliberately NOT
+                // on /healthcheck. A contract check calls a downstream service, so keeping it out of
+                // the health/readiness surface is what stops a drifted or slow payments-api from
+                // de-routing orders-api. Added before the (terminal) cloud-service call, per its
+                // "app middleware goes first" contract. See docs/kubernetes-health-checks.md and
+                // work/client-health-checks-design.md.
+                .UseContractsCheck(x => x.AddContractCheck<PaymentsContractClient>("payments-api"))
                 .UseBenzeneCloudService("orders-api", cloud => cloud
                     .WithServiceVersion("1.0.0")
                     .WithInstanceId("orders-api-1")
