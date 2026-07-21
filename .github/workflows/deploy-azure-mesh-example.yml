@@ -12,10 +12,12 @@ on:
         default: "westeurope"
       acr_name:
         description: "ACR name (globally unique, alphanumeric)"
-        required: true
+        required: false
+        default: "benzenemesh"
       storage_account:
         description: "Storage account for artifacts (globally unique, lowercase alphanumeric)"
-        required: true
+        required: false
+        default: "benzenemesh"
 
 permissions:
   contents: read

@@ -19,11 +19,13 @@ variable "resource_group" {
 variable "acr_name" {
   description = "Azure Container Registry name (globally unique, alphanumeric)."
   type        = string
+  default     = "benzenemesh"
 }
 
 variable "storage_account" {
   description = "Storage account for the mesh catalog artifacts (globally unique, lowercase alphanumeric)."
   type        = string
+  default     = "benzenemesh"
 }
 
 variable "discovery_tag_key" {
