@@ -39,6 +39,31 @@ public class AwsLambdaBenzeneMessageClientTest
         Assert.NotNull(result);
     }
 
+    // A user type that is coincidentally named "Void" but is NOT Benzene.Abstractions.Results.Void.
+    private static class Other
+    {
+        public class Void { }
+    }
+
+    [Fact]
+    public async Task ResponseTypeNamedVoidButNotBenzeneVoid_UsesRequestResponse()
+    {
+        // Invocation type must be chosen by type identity, not by the type's simple name. A user type
+        // merely named "Void" must still be a request/response invocation, not silently fire-and-forget
+        // (which would drop the response).
+        InvokeRequest captured = null;
+        var mockInnerAwsLambdaClient = new Mock<IAmazonLambda>();
+        mockInnerAwsLambdaClient
+            .Setup(x => x.InvokeAsync(It.IsAny<InvokeRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<InvokeRequest, CancellationToken>((request, _) => captured = request);
+
+        var client = new AwsLambdaBenzeneMessageClient(Defaults.LambdaName, mockInnerAwsLambdaClient.Object, NullLogger.Instance);
+        await client.SendMessageAsync<ExamplePayload, Other.Void>("some-topic", new ExamplePayload());
+
+        Assert.NotNull(captured);
+        Assert.Equal(InvocationType.RequestResponse, captured.InvocationType);
+    }
+
     [Fact]
     public async Task Failure()
     {

@@ -57,7 +57,9 @@ namespace Benzene.Clients.Aws.Lambda
             {
                 var lambdaRequest = new BenzeneMessageClientRequest(request.Topic, request.Headers, _serializer.Serialize(request.Message));
 
-                var invocationType = typeof(TResponse).Name == "Void"
+                // Compare by type identity, not the simple name: an unrelated user type merely named
+                // "Void" must not be mistaken for the fire-and-forget marker (which would drop the response).
+                var invocationType = typeof(TResponse) == typeof(Benzene.Abstractions.Results.Void)
                     ? InvocationType.Event
                     : InvocationType.RequestResponse;
 

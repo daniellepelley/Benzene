@@ -72,6 +72,17 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 
 (newest first)
 
+### Cycle 31 — Lambda client chose invocation type by type NAME, not identity (`AwsLambdaBenzeneMessageClient`)
+- **Bug:** `var invocationType = typeof(TResponse).Name == "Void" ? Event : RequestResponse`. Comparing the
+  simple type name means any unrelated user type merely named `Void` (in any namespace) is treated as
+  fire-and-forget (`InvocationType.Event`), silently dropping the response instead of awaiting it. Should
+  compare type identity against `Benzene.Abstractions.Results.Void`.
+- **Repro:** new `AwsLambdaBenzeneMessageClientTest.ResponseTypeNamedVoidButNotBenzeneVoid_UsesRequestResponse`
+  — a nested test type named `Void` produced `InvocationType.Event` pre-fix, `RequestResponse` post-fix.
+- **Fix:** `typeof(TResponse) == typeof(Benzene.Abstractions.Results.Void)` (fully qualified to avoid the
+  `Void`-class-vs-`void`-keyword ambiguity). Full core suite green (1919). (Found by a parallel
+  outbound-clients hunt.)
+
 ### Cycle 30 — SNS numeric-attribute inference produced SNS-invalid `Number` values (`SnsContextConverter.DataTypeFor`)
 - **Bug:** with `InferNumericAttributeTypes = true`, `DataTypeFor` used `decimal.TryParse(value,
   NumberStyles.Number, ...)`, which accepts leading/trailing whitespace and thousands separators. The
