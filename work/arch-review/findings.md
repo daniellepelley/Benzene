@@ -168,3 +168,37 @@ discipline is strong and consistently applied** (`PresetTopicHolder`/`ServiceBus
 `HttpRequestBodyBuffer` scoped holders instead of context markers; `IHasMessageResult` is the one
 documented, deliberate purity carve-out). The many documented tradeoffs (AckMode defaults, fan-in vs
 fan-out, SDK-free packages, no Cosmos egress, non-generic `OutboundContext`) are sound.
+
+---
+
+## 2026-07-21 — Fresh security/correctness hunt (implemented + deferred)
+
+Implemented and pushed to main this pass:
+- Native AMQP batch leak (ServiceBus/EventHub batch clients) — try/finally around the
+  ServiceBusMessageBatch/EventDataBatch lifetime.
+- XML entity-expansion DoS (Benzene.Xml) — XmlReader.Create with DtdProcessing.Prohibit +
+  null XmlResolver on the untrusted deserialize path.
+- Path traversal in FileSystemMeshArtifactStore — resolve-and-contain check on both
+  PublishAsync/TryReadAsync (report.Name flows in from an untrusted push body).
+- SSRF/URL-restructuring in the Azure/Kubernetes discovery providers — sanitize host (bare
+  authority), scheme (http/https only), and path overrides (must start with '/'); fall back to
+  the safe default rather than aborting the sweep.
+- Codegen: CSharpTypeName NRE on plain object + int64→int truncation; MessageHandlerSourceGenerator
+  made genuinely incremental (dropped unused CompilationProvider.Combine, IEquatable model) and
+  emitted topic/version literals escaped via SymbolDisplay.FormatLiteral.
+- CORS: refuse Access-Control-Allow-Credentials when AllowedDomains contains "*" (origin-reflection
+  hole; matches ASP.NET Core). Corrected the CorsSettings/Http docs that called it "safe".
+
+Deferred for maintainer decision (policy / larger surface, not silently changed):
+- **SchemaCompatibilityComparer gaps** — the backward-compat gate only diffs
+  type/format/properties/required. It does NOT flag enum-value changes (removing an allowed value
+  is breaking), nullable flips (required non-null → nullable on a response, or nullable → required
+  on a request), or facet tightening (maxLength shrink, minLength/minimum raise, pattern add). These
+  are false-negatives: a breaking contract change can pass the gate. Extending it means new public
+  SchemaChangeKind values + default rule classifications per direction (request vs response), which
+  is a policy call (what counts as breaking for whom). Left to the maintainer; the comparison
+  scaffold (CompareSchemas recursion, SchemaChangeKind, SchemaCompatibilityRules) is where it'd slot in.
+- **CRLF response-header injection (defence-in-depth, LOW)** — the API Gateway/self-host response
+  adapters write header values through without stripping CR/LF. Header values are Benzene- or
+  handler-sourced today (not raw request echoes), so it's not a confirmed live vector; worth a
+  central strip if a handler ever reflects request data into a response header.
