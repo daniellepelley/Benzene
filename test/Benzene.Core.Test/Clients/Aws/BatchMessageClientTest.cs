@@ -84,6 +84,26 @@ public class BatchMessageClientTest
         Assert.Equal("boom", failure.ErrorMessage);
     }
 
+    [Fact]
+    public async Task Sqs_ChunkTransportThrow_RecordsThatChunkAsFailures_KeepsEarlierChunkSuccesses()
+    {
+        // 11 requests -> two chunks. The first sends fine; the second's SendMessageBatch throws (a
+        // throttle/network error). The throw must NOT escape and discard the first chunk's successes -
+        // it becomes a recorded failure for only the second chunk's entry (index 10).
+        var mockSqs = new Mock<IAmazonSQS>();
+        mockSqs.SetupSequence(x => x.SendMessageBatchAsync(It.IsAny<SendMessageBatchRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMessageBatchResponse { HttpStatusCode = HttpStatusCode.OK })
+            .ThrowsAsync(new AmazonSQSException("throttled"));
+
+        var client = new SqsBatchMessageClient("https://queue", mockSqs.Object);
+
+        var result = await client.SendBatchAsync(Requests(11));
+
+        var failure = Assert.Single(result.Failures);
+        Assert.Equal(10, failure.Index);
+        Assert.Equal(nameof(AmazonSQSException), failure.ErrorCode);
+    }
+
     // ---- SNS ----
 
     [Fact]

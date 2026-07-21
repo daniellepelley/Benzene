@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.SQS;
@@ -50,29 +51,57 @@ public class SqsBatchMessageClient : IBenzeneBatchMessageClient
             var entries = new List<SendMessageBatchRequestEntry>(chunk.Count);
             foreach (var (request, index) in chunk)
             {
-                var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
-                entries.Add(new SendMessageBatchRequestEntry
+                try
                 {
-                    // The entry id carries the caller's index so a failure maps straight back.
-                    Id = index.ToString(),
-                    MessageBody = context.Request.MessageBody,
-                    MessageAttributes = context.Request.MessageAttributes,
-                });
+                    var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+                    entries.Add(new SendMessageBatchRequestEntry
+                    {
+                        // The entry id carries the caller's index so a failure maps straight back.
+                        Id = index.ToString(),
+                        MessageBody = context.Request.MessageBody,
+                        MessageAttributes = context.Request.MessageAttributes,
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // A single entry that can't be built (e.g. a serialization failure) fails just that
+                    // entry, rather than aborting the whole batch after earlier chunks already sent.
+                    failures.Add(new FailedBatchEntry(index, ex.GetType().Name, ex.Message));
+                }
             }
 
-            var response = await _amazonSqs.SendMessageBatchAsync(new SendMessageBatchRequest
+            if (entries.Count == 0)
             {
-                QueueUrl = _queueUrl,
-                Entries = entries,
-            });
+                continue;
+            }
 
-            // Guard the collection: AWS SDK v3.7 auto-initializes it to empty, but a v4 upgrade leaves
-            // an unset collection null (would NRE on every all-success batch). Matches EventBridge.
-            if (response.Failed != null)
+            try
             {
-                foreach (var failed in response.Failed)
+                var response = await _amazonSqs.SendMessageBatchAsync(new SendMessageBatchRequest
                 {
-                    failures.Add(new FailedBatchEntry(int.Parse(failed.Id), failed.Code, failed.Message));
+                    QueueUrl = _queueUrl,
+                    Entries = entries,
+                });
+
+                // Guard the collection: AWS SDK v3.7 auto-initializes it to empty, but a v4 upgrade leaves
+                // an unset collection null (would NRE on every all-success batch). Matches EventBridge.
+                if (response.Failed != null)
+                {
+                    foreach (var failed in response.Failed)
+                    {
+                        failures.Add(new FailedBatchEntry(int.Parse(failed.Id), failed.Code, failed.Message));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // A chunk-level transport failure (throttle, network, expired credentials) fails this
+                // chunk's entries rather than escaping and discarding the successes and failures already
+                // recorded for earlier chunks. The caller then resends only what's reported failed,
+                // instead of the whole collection (which would re-deliver everything that did succeed).
+                foreach (var entry in entries)
+                {
+                    failures.Add(new FailedBatchEntry(int.Parse(entry.Id), ex.GetType().Name, ex.Message));
                 }
             }
         }

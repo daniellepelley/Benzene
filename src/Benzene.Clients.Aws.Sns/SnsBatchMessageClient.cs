@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
@@ -53,31 +54,58 @@ public class SnsBatchMessageClient : IBenzeneBatchMessageClient
             var entries = new List<PublishBatchRequestEntry>(chunk.Count);
             foreach (var (request, index) in chunk)
             {
-                var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
-                var publish = context.Request;
-                entries.Add(new PublishBatchRequestEntry
+                try
                 {
-                    Id = index.ToString(),
-                    Message = publish.Message,
-                    MessageAttributes = publish.MessageAttributes,
-                    MessageGroupId = publish.MessageGroupId,
-                    MessageDeduplicationId = publish.MessageDeduplicationId,
-                });
+                    var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+                    var publish = context.Request;
+                    entries.Add(new PublishBatchRequestEntry
+                    {
+                        Id = index.ToString(),
+                        Message = publish.Message,
+                        MessageAttributes = publish.MessageAttributes,
+                        MessageGroupId = publish.MessageGroupId,
+                        MessageDeduplicationId = publish.MessageDeduplicationId,
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // A single entry that can't be built (e.g. a serialization failure) fails just that
+                    // entry, rather than aborting the whole batch after earlier chunks already sent.
+                    failures.Add(new FailedBatchEntry(index, ex.GetType().Name, ex.Message));
+                }
             }
 
-            var response = await _amazonSns.PublishBatchAsync(new PublishBatchRequest
+            if (entries.Count == 0)
             {
-                TopicArn = _topicArn,
-                PublishBatchRequestEntries = entries,
-            });
+                continue;
+            }
 
-            // Guard the collection: AWS SDK v3.7 auto-initializes it to empty, but a v4 upgrade leaves
-            // an unset collection null (would NRE on every all-success batch). Matches EventBridge.
-            if (response.Failed != null)
+            try
             {
-                foreach (var failed in response.Failed)
+                var response = await _amazonSns.PublishBatchAsync(new PublishBatchRequest
                 {
-                    failures.Add(new FailedBatchEntry(int.Parse(failed.Id), failed.Code, failed.Message));
+                    TopicArn = _topicArn,
+                    PublishBatchRequestEntries = entries,
+                });
+
+                // Guard the collection: AWS SDK v3.7 auto-initializes it to empty, but a v4 upgrade leaves
+                // an unset collection null (would NRE on every all-success batch). Matches EventBridge.
+                if (response.Failed != null)
+                {
+                    foreach (var failed in response.Failed)
+                    {
+                        failures.Add(new FailedBatchEntry(int.Parse(failed.Id), failed.Code, failed.Message));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // A chunk-level transport failure (throttle, network, expired credentials) fails this
+                // chunk's entries rather than escaping and discarding the successes and failures already
+                // recorded for earlier chunks - so the caller resends only what's reported failed.
+                foreach (var entry in entries)
+                {
+                    failures.Add(new FailedBatchEntry(int.Parse(entry.Id), ex.GetType().Name, ex.Message));
                 }
             }
         }

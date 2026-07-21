@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
@@ -51,29 +53,57 @@ public class EventBridgeBatchMessageClient : IBenzeneBatchMessageClient
 
         foreach (var chunk in BatchSend.Chunk(requests, MaxBatchSize))
         {
-            var entries = new List<PutEventsRequestEntry>(chunk.Count);
-            foreach (var (request, _) in chunk)
+            // Track each built entry with its original request index so the positional response
+            // mapping stays correct even when a conversion failure removes an entry from the batch.
+            var built = new List<(PutEventsRequestEntry Entry, int Index)>(chunk.Count);
+            foreach (var (request, index) in chunk)
             {
-                var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
-                // The converter builds a single-entry request; lift that entry into the batch.
-                entries.Add(context.Request.Entries[0]);
+                try
+                {
+                    var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+                    // The converter builds a single-entry request; lift that entry into the batch.
+                    built.Add((context.Request.Entries[0], index));
+                }
+                catch (Exception ex)
+                {
+                    // A single entry that can't be built fails just that entry, rather than aborting the
+                    // whole batch after earlier chunks already sent.
+                    failures.Add(new FailedBatchEntry(index, ex.GetType().Name, ex.Message));
+                }
             }
 
-            var response = await _amazonEventBridge.PutEventsAsync(new PutEventsRequest
+            if (built.Count == 0)
             {
-                Entries = entries,
-            });
+                continue;
+            }
 
-            if (response.FailedEntryCount > 0 && response.Entries != null)
+            try
             {
-                // PutEvents responds positionally: response entry i corresponds to request entry i.
-                for (var i = 0; i < response.Entries.Count && i < chunk.Count; i++)
+                var response = await _amazonEventBridge.PutEventsAsync(new PutEventsRequest
                 {
-                    var entry = response.Entries[i];
-                    if (!string.IsNullOrEmpty(entry.ErrorCode))
+                    Entries = built.Select(b => b.Entry).ToList(),
+                });
+
+                if (response.FailedEntryCount > 0 && response.Entries != null)
+                {
+                    // PutEvents responds positionally: response entry i corresponds to built entry i.
+                    for (var i = 0; i < response.Entries.Count && i < built.Count; i++)
                     {
-                        failures.Add(new FailedBatchEntry(chunk[i].Index, entry.ErrorCode, entry.ErrorMessage));
+                        var entry = response.Entries[i];
+                        if (!string.IsNullOrEmpty(entry.ErrorCode))
+                        {
+                            failures.Add(new FailedBatchEntry(built[i].Index, entry.ErrorCode, entry.ErrorMessage));
+                        }
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                // A chunk-level transport failure fails this chunk's built entries rather than escaping
+                // and discarding the successes and failures already recorded for earlier chunks.
+                foreach (var b in built)
+                {
+                    failures.Add(new FailedBatchEntry(b.Index, ex.GetType().Name, ex.Message));
                 }
             }
         }
