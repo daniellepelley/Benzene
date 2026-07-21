@@ -21,17 +21,23 @@ namespace Benzene.Avro;
 public class AvroSerializer : ISerializer, IPayloadSerializer
 {
     private readonly IAvroSchemaResolver _schemaResolver;
+    private readonly long? _maxDeserializeBytes;
 
     /// <summary>Initializes a new instance backed by an explicit schema resolver.</summary>
     /// <param name="schemaResolver">Resolves the Avro schema for a CLR type.</param>
-    public AvroSerializer(IAvroSchemaResolver schemaResolver)
+    /// <param name="maxDeserializeBytes">
+    /// Optional tighter cap on any single length-prefixed field on deserialize
+    /// (see <see cref="AvroOptions.MaxDeserializeBytes"/>); the input-size bound always applies.
+    /// </param>
+    public AvroSerializer(IAvroSchemaResolver schemaResolver, long? maxDeserializeBytes = null)
     {
         _schemaResolver = schemaResolver;
+        _maxDeserializeBytes = maxDeserializeBytes;
     }
 
     /// <summary>Initializes a new instance from options (reflection schemas on by default).</summary>
     /// <param name="options">The Avro options controlling schema resolution.</param>
-    public AvroSerializer(AvroOptions options) : this(new AvroSchemaResolver(options))
+    public AvroSerializer(AvroOptions options) : this(new AvroSchemaResolver(options), options.MaxDeserializeBytes)
     {
     }
 
@@ -99,7 +105,13 @@ public class AvroSerializer : ISerializer, IPayloadSerializer
         var datumReader = new GenericDatumReader<object>(schema, schema);
 
         using var memoryStream = new MemoryStream(avroBytes.ToArray());
-        var decoder = new BinaryDecoder(memoryStream);
+        // Bound every length-prefixed field at the input size (no legitimate field can be longer than
+        // the whole message), tightened by MaxDeserializeBytes when set. This rejects a hostile
+        // length prefix before the underlying BinaryDecoder allocates a buffer of that size.
+        var maxLength = _maxDeserializeBytes.HasValue
+            ? System.Math.Min(_maxDeserializeBytes.Value, avroBytes.Length)
+            : avroBytes.Length;
+        var decoder = new BoundedBinaryDecoder(new BinaryDecoder(memoryStream), maxLength);
         var datum = datumReader.Read(null!, decoder);
 
         return AvroDatumConverter.FromDatum(schema, datum, type);

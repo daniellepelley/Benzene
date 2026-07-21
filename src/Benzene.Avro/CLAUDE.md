@@ -61,3 +61,14 @@ explicit schema.
 - Registered as an `IMediaFormat<TContext>` (not by replacing the default `ISerializer`), so Avro is
   negotiated alongside JSON/XML rather than replacing the process default.
 - The serializer is a stateless singleton; schema parsing/generation is cached per type.
+- **Deserialize is allocation-bounded (`BoundedBinaryDecoder`).** Avro binary length-prefixes each
+  `bytes`/`string` field, so a hostile `application/avro` body can declare a huge length and drive a
+  large allocation before any data is read (`BinaryDecoder.ReadBytes`/`ReadString` does `new byte[len]`
+  up front). `AvroSerializer` wraps the decoder in `BoundedBinaryDecoder`, which reads the length
+  prefix, rejects it (`AvroPayloadTooLargeException`) when it exceeds the bound, then reads the data.
+  The bound is **always** the decoded input size (no legitimate field can be longer than the whole
+  message — this stops the classic "tiny input, huge prefix" OOM with no configuration), tightened by
+  `AvroOptions.MaxDeserializeBytes` (`long?`, default `null`) for untrusted producers. `fixed` fields
+  are schema-sized (not payload-controlled) and array/map blocks fail at EOF, so neither needs the
+  guard. Covered by `AvroSerializerTest` (`Deserialize_HostileLengthPrefix_ThrowsInsteadOfAllocating`
+  plus every existing round-trip, which now exercises the bounded decoder).

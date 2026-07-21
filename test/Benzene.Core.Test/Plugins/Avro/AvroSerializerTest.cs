@@ -106,6 +106,36 @@ public class AvroSerializerTest
     }
 
     [Fact]
+    public void Deserialize_HostileLengthPrefix_ThrowsInsteadOfAllocating()
+    {
+        // A tiny Avro payload declaring a ~1 GB string length but carrying no data. Without the
+        // bounded decoder, BinaryDecoder would allocate ~1 GB before reading a byte. It must be
+        // rejected: no legitimate field can be longer than the whole (few-byte) input.
+        using var ms = new System.IO.MemoryStream();
+        var encoder = new global::Avro.IO.BinaryEncoder(ms);
+        encoder.WriteLong(1_000_000_000); // hostile length prefix; no string bytes follow
+        encoder.Flush();
+        var base64 = Convert.ToBase64String(ms.ToArray());
+
+        var serializer = new AvroSerializer(new AvroOptions().RegisterSchema<string>("\"string\""));
+
+        Assert.Throws<AvroPayloadTooLargeException>(() => serializer.Deserialize<string>(base64));
+    }
+
+    [Fact]
+    public void Deserialize_LengthWithinConfiguredMax_StillRoundTrips()
+    {
+        // A tight MaxDeserializeBytes must not break a legitimate payload whose fields fit under it.
+        var serializer = new AvroSerializer(new AvroOptions { MaxDeserializeBytes = 4096 });
+        var sample = CreateSample();
+
+        var result = serializer.Deserialize<SampleOrderDto>(serializer.Serialize(sample));
+
+        Assert.NotNull(result);
+        AssertEqual(sample, result!);
+    }
+
+    [Fact]
     public void StringPath_RoundTrips_ViaBase64()
     {
         var serializer = new AvroSerializer();
