@@ -31,11 +31,11 @@ public class KafkaFailureHandlingTest
     }
 
     [Fact]
-    public void KafkaOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void KafkaOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new KafkaOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]

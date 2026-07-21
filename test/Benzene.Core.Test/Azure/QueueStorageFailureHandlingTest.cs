@@ -27,11 +27,11 @@ public class QueueStorageFailureHandlingTest
     }
 
     [Fact]
-    public void QueueStorageOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void QueueStorageOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new QueueStorageOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class QueueStorageFailureHandlingTest
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_DoesNotThrow()
+    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_ThrowsQueueStorageMessageProcessingException()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<QueueStorageContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<QueueStorageContext>(), It.IsAny<IServiceResolver>()))
@@ -71,6 +71,8 @@ public class QueueStorageFailureHandlingTest
 
         var application = new QueueStorageBatchApplication(mockPipeline.Object);
 
-        await application.HandleAsync(CreateEvent(), CreateResolverFactory().Object);
+        // Safe-by-default: a returned failure result is escalated so the message is redelivered.
+        await Assert.ThrowsAsync<QueueStorageMessageProcessingException>(
+            () => application.HandleAsync(CreateEvent(), CreateResolverFactory().Object));
     }
 }

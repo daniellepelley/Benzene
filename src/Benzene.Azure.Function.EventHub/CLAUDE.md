@@ -7,13 +7,14 @@ the Functions-trigger counterpart of the self-hosted `Benzene.Azure.EventHub` wo
 its own `EventProcessorClient`); there is no producer here. For consuming Event Hubs in a
 long-running process instead of an Azure Function, use `Benzene.Azure.EventHub`.
 
-## Failure handling: per-event isolation and failure escalation are opt-in via `EventHubOptions`
+## Failure handling: safe-by-default failure escalation, opt-in per-event isolation (`EventHubOptions`)
 By default the fan-out is all-or-nothing: every event in the triggered batch runs concurrently, but
 if any handler **throws**, the exception cascades, fails the whole Functions invocation, and the
-Event Hubs trigger re-delivers the **entire** batch — so every already-succeeded sibling re-runs.
-And if a handler returns a non-exception **failure result** (e.g.
-`BenzeneResult.ServiceUnavailable(...)`) the batch checkpoints like a success and the message is
-silently gone. Both are opt-in to change (mirroring `Benzene.Azure.Function.EventGrid` /
+Event Hubs trigger re-delivers the **entire** batch — so every already-succeeded sibling re-runs. A
+handler returning a non-exception **failure result** (e.g. `BenzeneResult.ServiceUnavailable(...)`)
+is now **escalated** the same way by default (`RaiseOnFailureStatus` defaults to `true`, flipped
+2026-07-21 — see `work/settlement-contract-1.0.md`, and the caveat below about the envelope path).
+`CatchExceptions` (per-event isolation) stays opt-in (mirroring `Benzene.Azure.Function.EventGrid` /
 `Benzene.Azure.Function.QueueStorage` / `Benzene.Azure.Function.Kafka`):
 
 - `EventHubOptions.CatchExceptions = true` (via `UseEventHub(action, configure)`) catches/logs a
@@ -22,10 +23,10 @@ silently gone. Both are opt-in to change (mirroring `Benzene.Azure.Function.Even
   within a partition are ordered; catch-and-continue trades that ordering (and the poison event's
   re-delivery) for isolation, the same tradeoff `S3`/`EventGrid` already accept. The poison event is
   **not** retried once caught. Default `false` preserves today's behavior exactly.
-- `EventHubOptions.RaiseOnFailureStatus = true` escalates a non-exception failure result into a
-  thrown `EventHubMessageProcessingException`, so the Event Hubs trigger re-delivers the batch the
-  same way it would for an exception (at-least-once; the handler must then be idempotent). Default
-  `false`. **Caveat:** this reads `EventHubContext.MessageResult` (`EventHubContext : IHasMessageResult`),
+- `EventHubOptions.RaiseOnFailureStatus` (default `true`) escalates a non-exception failure result
+  into a thrown `EventHubMessageProcessingException`, so the Event Hubs trigger re-delivers the batch
+  the same way it would for an exception (at-least-once; the handler must then be idempotent). Set
+  `false` for at-most-once. **Caveat:** this reads `EventHubContext.MessageResult` (`EventHubContext : IHasMessageResult`),
   but this package's default routing path (`UseBenzeneMessage`) runs handlers on the inner
   `BenzeneMessageContext` with its response **suppressed** (`SuppressResponse()`), so nothing
   populates `EventHubContext.MessageResult` in that path today — the flag is wired structurally

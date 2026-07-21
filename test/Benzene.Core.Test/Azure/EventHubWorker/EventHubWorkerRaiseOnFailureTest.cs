@@ -99,8 +99,8 @@ public class EventHubWorkerRaiseOnFailureTest
     }
 
     [Fact]
-    public void BenzeneEventHubConfig_RaiseOnFailureStatus_DefaultsFalse()
+    public void BenzeneEventHubConfig_RaiseOnFailureStatus_DefaultsTrue()
     {
-        Assert.False(new BenzeneEventHubConfig().RaiseOnFailureStatus);
+        Assert.True(new BenzeneEventHubConfig().RaiseOnFailureStatus);
     }
 }

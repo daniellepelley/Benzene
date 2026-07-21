@@ -7,15 +7,15 @@ worker): delivers a queue message to a Benzene middleware pipeline. The Azure co
 see "Routing" below for why.
 
 ## Failure handling: a returned failure result is not retried by default (opt in via `QueueStorageOptions`)
-By default, if a handler returns a non-exception failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`), the message is deleted like any success — Queue Storage's
-poison-queue/`maxDequeueCount` machinery only ever sees an **unhandled exception**. To retry on
-failure *results* too, set `QueueStorageOptions.RaiseOnFailureStatus = true` (via
-`UseQueueStorage(action, configure)`), which escalates a failure result into a thrown
-`QueueStorageMessageProcessingException` so the host's `maxDequeueCount` retry/poison handling
-applies the same way it would for an exception — mirroring `Benzene.Azure.Function.Kafka`.
+Safe-by-default (`QueueStorageOptions.RaiseOnFailureStatus` defaults to `true`, flipped 2026-07-21 —
+see `work/settlement-contract-1.0.md`): if a handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), it is escalated into a thrown
+`QueueStorageMessageProcessingException` so the host's `maxDequeueCount` retry/poison-queue handling
+takes over — the same treatment an unhandled exception already got. Set
+`QueueStorageOptions.RaiseOnFailureStatus = false` (via `UseQueueStorage(action, configure)`) for
+at-most-once (a failure result deletes the message like a success, no retry).
 `QueueStorageOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions.
-Both default off (purely additive). If you enable `RaiseOnFailureStatus`, the handler must be idempotent.
+Because a returned failure is now retried by default, the handler must be idempotent.
 
 ## Zero dependencies — deliberately
 References only `Benzene.Azure.Function.Core` + `Benzene.Core.MessageHandlers` — no storage SDK,

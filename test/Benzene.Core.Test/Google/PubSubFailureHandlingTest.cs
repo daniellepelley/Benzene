@@ -32,11 +32,11 @@ public class PubSubFailureHandlingTest
     }
 
     [Fact]
-    public void PubSubOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void PubSubOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new PubSubOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]

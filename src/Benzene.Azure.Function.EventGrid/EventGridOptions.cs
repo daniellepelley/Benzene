@@ -19,11 +19,11 @@ public class EventGridOptions
     /// Gets or sets whether a message handler returning a non-exception failure result is escalated
     /// into a thrown <see cref="EventGridMessageProcessingException"/>, so Event Grid retries the
     /// event the same way it would for an unhandled exception (its retry runs with backoff up to 24h,
-    /// then dead-letters). Defaults to <c>false</c> - a failure result usually reflects a
+    /// then dead-letters). Defaults to <c>true</c> (safe-by-default: a returned failure is escalated and redelivered; set <c>false</c> for at-most-once, and keep the handler idempotent). Historically the reasoning was that a failure result usually reflects a
     /// permanent/business failure retrying won't fix. Turn it on for at-least-once semantics; the
     /// handler must then be idempotent.
     /// </summary>
-    public bool RaiseOnFailureStatus { get; set; } = false;
+    public bool RaiseOnFailureStatus { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the maximum number of events from a single batched delivery processed concurrently.

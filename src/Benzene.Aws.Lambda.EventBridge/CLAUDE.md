@@ -7,17 +7,16 @@ routing key, so no `topic` attribute needs bolting on the way SQS/SNS require �
 the message body. See `docs/plans/eventbridge-plan.md` for the design decisions (E1–E7).
 
 ## Failure handling: a returned failure result is not retried by default (opt in via `EventBridgeOptions`)
-By default, if your handler returns a non-exception failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`), the Lambda invocation still reports success, so EventBridge
-considers the event delivered and never retries it — only an unhandled exception cascades to fail the
-invocation and lets the rule target's Lambda destination/DLQ (`MaximumRetryAttempts`, `OnFailure`
-destination) take over. To retry on failure *results* too, set
-`EventBridgeOptions.RaiseOnFailureStatus = true` (via `UseEventBridge(action, configure)`), which
-escalates a failure result into a thrown `EventBridgeMessageProcessingException` so the target's
-retry applies the same way it would for an exception — mirroring `Benzene.Aws.Lambda.Sns`.
+Safe-by-default (`RaiseOnFailureStatus` defaults to `true`, flipped 2026-07-21 — see
+`work/settlement-contract-1.0.md`): if your handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), it is escalated into a thrown
+`EventBridgeMessageProcessingException` so the invocation fails and the rule target's Lambda
+destination/DLQ (`MaximumRetryAttempts`, `OnFailure` destination) retries it — the same treatment an
+unhandled exception already got. Set `EventBridgeOptions.RaiseOnFailureStatus = false` (via
+`UseEventBridge(action, configure)`) for at-most-once (a failure result reports success, no retry).
 `EventBridgeOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions
-instead of cascading them. Both default off (purely additive). If you enable `RaiseOnFailureStatus`,
-the handler must be idempotent.
+instead of cascading them. Because a returned failure is now retried by default, the handler must be
+idempotent.
 
 ## Key types/interfaces
 - `EventBridgeEvent` — Benzene's own model of the EventBridge envelope (`detail-type`, `source`,

@@ -7,18 +7,24 @@ Service Bus message (or batch, if the trigger is configured with `IsBatched = tr
 `[Message("topic")]`-attributed handlers and `.UseMessageHandlers()` topic-based routing work exactly
 as they do for HTTP, Event Hubs, and Kafka.
 
-## ⚠️ Unsafe by default: a handler failure result is silently completed, not retried
-With both `ServiceBusOptions.AckMode` at its default (`AutoComplete`) and `RaiseOnFailureStatus`
-at its default (`false`), a handler that returns a failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`) without throwing is **auto-completed** — the message is
-removed from the queue/subscription and Service Bus never redelivers it. Only a thrown exception
-is retried by default. Fix: set `ServiceBusOptions.AckMode = ServiceBusAckMode.Explicit` (abandons
-a failed message for redelivery) and/or `RaiseOnFailureStatus = true` (escalates it into a thrown
-exception so the whole invocation fails too) — see "True per-message ack" and "Exception/
-failure-status handling" below for the full detail and the trigger configuration `Explicit`
-requires. Either fix means Service Bus may redeliver the same message, so the handler needs to be
-idempotent — see [Capability Matrix](../../docs/capability-matrix.md) and
-[Idempotency](../../docs/cookbooks/idempotency.md).
+## Settlement: safe-by-default (a handler failure result is retried, not completed)
+**`ServiceBusOptions.RaiseOnFailureStatus` defaults to `true`** (flipped from `false`, 2026-07-21 —
+see `work/settlement-contract-1.0.md`). Under the default `AckMode = AutoComplete`, a handler that
+returns a failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) is escalated into a thrown
+`ServiceBusMessageProcessingException`; the Functions host (which abandons on a thrown exception under
+`AutoCompleteMessages = true`) then **abandons** the message → redelivery (respecting the entity's
+max-delivery-count before auto-dead-lettering). **No trigger reconfiguration is needed** for this safe
+default — `AutoCompleteMessages` can stay `true`.
+
+`AckMode = ServiceBusAckMode.Explicit` remains an opt-in for real per-message complete/abandon control
+(it abandons a failed message itself; that path still needs `AutoCompleteMessages = false` + bound
+`ServiceBusMessageActions`, see "True per-message ack"). Under Explicit the escalation is **skipped**
+(the message is already abandoned, so re-throwing would needlessly fail the whole batched invocation).
+
+Either way Service Bus may redeliver the same message, so the handler must be idempotent — see
+[Capability Matrix](../../docs/capability-matrix.md) and
+[Idempotency](../../docs/cookbooks/idempotency.md). Opt back into at-most-once with
+`RaiseOnFailureStatus = false`.
 
 ## Key types/interfaces
 - `ServiceBusContext` - wraps a single `Azure.Messaging.ServiceBus.ServiceBusReceivedMessage`; a
@@ -92,16 +98,15 @@ idempotent — see [Capability Matrix](../../docs/capability-matrix.md) and
   `ServiceBusContext.MessageResult` (it's not a no-op) - that's what both `RaiseOnFailureStatus` and
   `AckMode = Explicit` read to decide a message's outcome.
 - **Exception/failure-status handling is configurable via `ServiceBusOptions`**
-  (`UseServiceBus(..., configure)`), defaulting to today's original behavior: a handler exception
-  cascades and fails the whole trigger invocation, and a non-exception failure result is silently
-  accepted. Set `ServiceBusOptions.CatchExceptions = true` to catch and log an exception instead of
-  cascading it (that message's failure doesn't affect the rest of the batch or fail the invocation);
-  set `ServiceBusOptions.RaiseOnFailureStatus = true` to escalate a non-exception failure result into
-  a thrown `ServiceBusMessageProcessingException` too. Both default to `false`
-  (purely additive/opt-in). On their own (with `AckMode` left at the default `AutoComplete`), these
-  only control whether the *whole invocation* is reported as failed to the Functions host - true
-  per-message completion needs `AckMode = ServiceBusAckMode.Explicit` too, see "True per-message
-  ack" below.
+  (`UseServiceBus(..., configure)`). A handler exception cascades and fails the whole trigger
+  invocation; a non-exception failure result is **escalated** into a thrown
+  `ServiceBusMessageProcessingException` (`RaiseOnFailureStatus` defaults to `true` — see "Settlement"
+  above), which under the default `AutoComplete` makes the host abandon → redelivery. Set
+  `ServiceBusOptions.CatchExceptions = true` to catch and log an exception instead of cascading it
+  (that message's failure doesn't affect the rest of the batch or fail the invocation); set
+  `RaiseOnFailureStatus = false` for at-most-once (a failure result is accepted, not retried). The
+  escalation is skipped under `AckMode = ServiceBusAckMode.Explicit`, where the per-message abandon
+  already handles redelivery — see "True per-message ack" below.
 - Supports both single-message triggers (the common case) and batched triggers (`IsBatched = true`) via
   the same `params ServiceBusReceivedMessage[]` dispatch signature.
 - **Bounded batch fan-out** (`ServiceBusOptions.MaxDegreeOfParallelism`): defaults to `null`

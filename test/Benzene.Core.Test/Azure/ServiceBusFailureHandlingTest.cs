@@ -34,11 +34,11 @@ public class ServiceBusFailureHandlingTest
     }
 
     [Fact]
-    public void ServiceBusOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void ServiceBusOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new ServiceBusOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]

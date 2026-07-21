@@ -3,25 +3,22 @@
 ## What this package does
 AWS SNS Lambda integration for Benzene. Processes SNS events from Lambda triggers through Benzene's message handler pipeline. Handles SNS message structure, attributes, and notification processing.
 
-## ⚠️ Unsafe-by-default: a handler failure result is silently dropped, not retried
-**`SnsOptions.RaiseOnFailureStatus` defaults to `false`.** If your message handler returns a
-non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`), `SnsApplication`
-still reports the Lambda invocation as **successful** — SNS sees a delivered notification and
-**never retries it**. The message is gone; nothing dead-letters it. This is different from a
-thrown exception, which *does* cascade out of the invocation by default and lets SNS's
-subscription-level retry/redrive policy do its job.
+## Settlement: safe-by-default (a handler failure result is retried, not dropped)
+**`SnsOptions.RaiseOnFailureStatus` defaults to `true`** (flipped from `false`, 2026-07-21 — see
+`work/settlement-contract-1.0.md`). A handler that returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`) is escalated into a thrown `SnsMessageProcessingException`,
+so the Lambda invocation fails and SNS's subscription-level retry/redrive policy redelivers it (and
+eventually dead-letters it) — the same at-least-once treatment a thrown exception already got. This
+means **your handler must be idempotent**: a retried SNS delivery re-runs it with the same message,
+and SNS provides no dedup — see the idempotency row in
+[Capability Matrix](../../docs/capability-matrix.md) and [Idempotency](../../docs/cookbooks/idempotency.md).
 
-If you want at-least-once/retry-on-failure semantics for business-logic failures too, set:
+To opt back into the old at-most-once behavior (a failure result is accepted, no retry):
 ```csharp
 app.UseAwsLambda(eventPipeline => eventPipeline
     .UseSns(snsApp => snsApp.UseMessageHandlers(),
-        options => options.RaiseOnFailureStatus = true));
+        options => options.RaiseOnFailureStatus = false));
 ```
-This escalates a failure result into a thrown `SnsMessageProcessingException`, so SNS retries it
-the same way it would an unhandled exception. **If you turn this on, your handler must be
-idempotent** — a retried SNS delivery re-runs the same handler with the same message, and SNS
-itself provides no dedup — see the idempotency row in
-[Capability Matrix](../../docs/capability-matrix.md) and [Idempotency](../../docs/cookbooks/idempotency.md).
 Full detail (including the interaction with `CatchExceptions`): `docs/cookbooks/sns-fan-out.md`
 §"Configuring exception and retry behavior with `SnsOptions`" and `docs/message-result.md` §"AWS SNS".
 
@@ -83,10 +80,10 @@ application code changes needed for either fix.
   every record starts at once, the original behavior). Set a positive value to cap how many records
   run concurrently. Purely additive/opt-in; routed through `Benzene.Core.Middleware`'s `BoundedFanOut`.
 - No response expected - fire-and-forget pattern
-- Exception/failure-status handling is configurable via `SnsOptions` (`UseSns(..., configure)`),
-  defaulting to today's implicit behavior: a handler exception cascades out of the invocation
-  (SNS's own subscription retry policy applies) and a non-exception failure result is silently
-  accepted (no retry). Set `SnsOptions.CatchExceptions = true` to catch and log exceptions instead
-  of cascading them; set `SnsOptions.RaiseOnFailureStatus = true` to escalate a non-exception
-  failure result into a thrown `SnsMessageProcessingException` so SNS retries it too. Both default
-  to `false` (purely additive/opt-in) - see `docs/cookbooks/sns-fan-out.md`
+- Exception/failure-status handling is configurable via `SnsOptions` (`UseSns(..., configure)`).
+  A handler exception cascades out of the invocation (SNS's own subscription retry policy applies);
+  a non-exception failure result is **escalated** into a thrown `SnsMessageProcessingException` so
+  SNS retries it too (`RaiseOnFailureStatus` defaults to `true` - see "Settlement" above). Set
+  `SnsOptions.CatchExceptions = true` to catch and log exceptions instead of cascading them; set
+  `SnsOptions.RaiseOnFailureStatus = false` for at-most-once (a failure result is accepted, no
+  retry) - see `docs/cookbooks/sns-fan-out.md`

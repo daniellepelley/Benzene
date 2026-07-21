@@ -29,11 +29,11 @@ public class EventHubFailureHandlingTest
     }
 
     [Fact]
-    public void EventHubOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void EventHubOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new EventHubOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
         Assert.Null(options.MaxDegreeOfParallelism);
     }
 
@@ -112,7 +112,7 @@ public class EventHubFailureHandlingTest
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_DoesNotThrow()
+    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_ThrowsEventHubMessageProcessingException()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventHubContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventHubContext>(), It.IsAny<IServiceResolver>()))
@@ -121,7 +121,9 @@ public class EventHubFailureHandlingTest
 
         var application = new EventHubBatchApplication(mockPipeline.Object);
 
-        await application.HandleAsync(CreateEvent(), CreateResolverFactory().Object);
+        // Safe-by-default: a returned failure result is escalated so the batch isn't checkpointed past it.
+        await Assert.ThrowsAsync<EventHubMessageProcessingException>(
+            () => application.HandleAsync(CreateEvent(), CreateResolverFactory().Object));
     }
 
     [Fact]

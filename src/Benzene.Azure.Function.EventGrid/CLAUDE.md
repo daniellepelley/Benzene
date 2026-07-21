@@ -7,16 +7,16 @@ counterpart of `Benzene.Aws.Lambda.S3`/`EventBridge` routing on the event name. 
 schemas Event Grid can deliver: the Event Grid schema (`eventType`/`topic`) and CloudEvents 1.0
 (`type`/`source`, detected by `specversion`).
 
-## Failure handling: a returned failure result is not retried by default (opt in via `EventGridOptions`)
-By default, if a handler returns a non-exception failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`), the invocation reports success, so Event Grid considers the
-event delivered and never retries it — only an unhandled exception drives Event Grid's own delivery
-retry (backoff, up to 24h) + optional dead-letter destination. To retry on failure *results* too, set
-`EventGridOptions.RaiseOnFailureStatus = true` (via `UseEventGrid(action, configure)`), which
-escalates a failure result into a thrown `EventGridMessageProcessingException` so Event Grid's retry
-applies the same way it would for an exception — mirroring `Benzene.Azure.Function.Kafka`.
-`EventGridOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions. Both
-default off (purely additive). If you enable `RaiseOnFailureStatus`, the handler must be idempotent.
+## Failure handling: a returned failure result is retried by default (safe-by-default)
+`EventGridOptions.RaiseOnFailureStatus` defaults to `true` (flipped 2026-07-21 — see
+`work/settlement-contract-1.0.md`): if a handler returns a non-exception failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`), it is escalated into a thrown
+`EventGridMessageProcessingException` so the invocation fails and Event Grid's own delivery retry
+(backoff, up to 24h) + optional dead-letter destination take over — the same treatment an unhandled
+exception already got. Set `EventGridOptions.RaiseOnFailureStatus = false` (via
+`UseEventGrid(action, configure)`) for at-most-once (a failure result reports success, no retry).
+`EventGridOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions.
+Because a returned failure is now retried by default, the handler must be idempotent.
 
 ## Zero dependencies — deliberately
 References only `Benzene.Azure.Function.Core` + `Benzene.Core.MessageHandlers` — no

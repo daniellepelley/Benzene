@@ -106,7 +106,12 @@ public class ServiceBusBatchApplication : IMiddlewareApplication<ServiceBusRecei
                         }
                     }
 
-                    if (_options.RaiseOnFailureStatus && context.MessageResult?.IsSuccessful == false)
+                    // Escalate a failure result to a thrown exception only under AutoComplete: the
+                    // Functions host (AutoCompleteMessages=true) then abandons the message, which is the
+                    // only redelivery lever there. Under Explicit ack the message was already abandoned
+                    // above, so throwing again would be redundant and would needlessly fail the whole
+                    // (possibly batched) invocation even though every message was settled individually.
+                    if (!explicitAck && _options.RaiseOnFailureStatus && context.MessageResult?.IsSuccessful == false)
                     {
                         throw new ServiceBusMessageProcessingException(context.Message.MessageId);
                     }

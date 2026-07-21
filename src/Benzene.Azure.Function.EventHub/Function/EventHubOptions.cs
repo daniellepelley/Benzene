@@ -41,8 +41,8 @@ public class EventHubOptions
     /// Gets or sets whether a message handler returning a non-exception failure result is escalated
     /// into a thrown <see cref="EventHubMessageProcessingException"/>, so the invocation fails and the
     /// Event Hubs trigger re-delivers the batch the same way it would for an unhandled exception.
-    /// Defaults to <c>false</c> - a failure result usually reflects a permanent/business failure
-    /// retrying won't fix. Turn it on for at-least-once semantics; the handler must then be idempotent.
+    /// Defaults to <c>true</c> - a returned failure is escalated and redelivered (at-least-once). Set <c>false</c> for
+    /// at-most-once (a failure result is accepted, not retried); either way the handler must be idempotent.
     /// </summary>
     /// <remarks>
     /// This reads <see cref="EventHubContext.MessageResult"/>. In this package's default envelope
@@ -51,7 +51,7 @@ public class EventHubOptions
     /// there today - meaning this flag only bites when a middleware/setter records a result directly on
     /// the <see cref="EventHubContext"/>. See the package CLAUDE.md "Failure handling" section.
     /// </remarks>
-    public bool RaiseOnFailureStatus { get; set; } = false;
+    public bool RaiseOnFailureStatus { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the maximum number of events from a single triggered batch processed concurrently.

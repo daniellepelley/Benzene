@@ -19,11 +19,14 @@ public class SnsOptions
     /// <summary>
     /// Gets or sets whether a message handler returning a non-exception failure result (e.g. a
     /// validation error) is escalated into a thrown exception, so SNS retries the notification the
-    /// same way it would for an unhandled exception. Defaults to <c>false</c> - a failure result
-    /// usually reflects a permanent/business-logic failure that retrying won't fix, so escalating it
-    /// would waste invocations and delay visibility into the real problem.
+    /// same way it would for an unhandled exception. Defaults to <c>true</c> - a returned failure is
+    /// not silently settled, so the message is redelivered (and eventually dead-lettered via the
+    /// subscription's redrive policy) rather than lost: at-least-once out of the box. Because a
+    /// retried delivery re-runs the handler with the same message (SNS provides no dedup), the
+    /// handler must be idempotent. Set to <c>false</c> for at-most-once, where a failure result is
+    /// accepted and the notification is not retried.
     /// </summary>
-    public bool RaiseOnFailureStatus { get; set; } = false;
+    public bool RaiseOnFailureStatus { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the maximum number of records from a single batch processed concurrently.

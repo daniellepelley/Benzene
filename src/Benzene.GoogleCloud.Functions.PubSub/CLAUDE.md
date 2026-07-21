@@ -55,13 +55,14 @@ package wired through `UseMessageHandlers()` exactly like every other transport,
   `MessagePublishedData`/`PubsubMessage`.
 
 ## Important conventions
-- Exception/failure-status handling is configurable via `PubSubOptions` (`UsePubSub(..., configure)`),
-  defaulting to today's natural behavior for a CloudEvent trigger: a handler exception cascades and
-  fails the invocation (Cloud Functions Framework turns an unhandled exception into a non-2xx
-  response, so the subscription's own retry/dead-letter policy notices), and a non-exception failure
-  result is silently accepted. Set `PubSubOptions.CatchExceptions = true` to catch and log an
-  exception instead; set `PubSubOptions.RaiseOnFailureStatus = true` to escalate a non-exception
-  failure result into a thrown `PubSubMessageProcessingException` too. Both default to `false`.
+- Exception/failure-status handling is configurable via `PubSubOptions` (`UsePubSub(..., configure)`).
+  A handler exception cascades and fails the invocation (Cloud Functions Framework turns an unhandled
+  exception into a non-2xx response, so the subscription's own retry/dead-letter policy notices); a
+  non-exception failure result is **escalated** into a thrown `PubSubMessageProcessingException` too,
+  so the message is nacked and redelivered (`RaiseOnFailureStatus` defaults to `true`, safe-by-default
+  — see `work/settlement-contract-1.0.md`). Set `PubSubOptions.CatchExceptions = true` to catch and
+  log an exception instead; set `RaiseOnFailureStatus = false` for at-most-once (a failure result is
+  accepted, not retried). A redelivered message must be handled idempotently.
 - **Preset-topic override is not implemented for this package yet** - unlike
   `Benzene.Aws.Sqs`/`Benzene.Aws.Lambda.Sqs`/`Benzene.Azure.Function.ServiceBus`, there's no
   `UsePresetTopic()` wiring here. A subscription whose producer never sets a `"topic"` attribute

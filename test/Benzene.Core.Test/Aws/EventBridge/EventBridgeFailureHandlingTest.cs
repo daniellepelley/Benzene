@@ -27,11 +27,11 @@ public class EventBridgeFailureHandlingTest
     }
 
     [Fact]
-    public void EventBridgeOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void EventBridgeOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new EventBridgeOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class EventBridgeFailureHandlingTest
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_DoesNotThrow()
+    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_ThrowsEventBridgeMessageProcessingException()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventBridgeContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventBridgeContext>(), It.IsAny<IServiceResolver>()))
@@ -71,6 +71,8 @@ public class EventBridgeFailureHandlingTest
 
         var application = new EventBridgeApplication(mockPipeline.Object);
 
-        await application.HandleAsync(CreateEvent(), CreateResolverFactory().Object);
+        // Safe-by-default: a returned failure result is escalated so AWS retries it, not silently accepted.
+        await Assert.ThrowsAsync<EventBridgeMessageProcessingException>(
+            () => application.HandleAsync(CreateEvent(), CreateResolverFactory().Object));
     }
 }

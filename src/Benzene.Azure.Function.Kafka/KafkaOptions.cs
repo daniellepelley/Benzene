@@ -19,10 +19,10 @@ public class KafkaOptions
     /// <summary>
     /// Gets or sets whether a message handler returning a non-exception failure result is escalated
     /// into a thrown exception, so a failure is treated the same as an unhandled exception for retry
-    /// purposes. Defaults to <c>false</c> - a failure result usually reflects a permanent/business-logic
+    /// purposes. Defaults to <c>true</c> (safe-by-default: a returned failure is escalated and redelivered; set <c>false</c> for at-most-once, and keep the handler idempotent). Historically the reasoning was that a failure result usually reflects a permanent/business-logic
     /// failure that retrying won't fix.
     /// </summary>
-    public bool RaiseOnFailureStatus { get; set; } = false;
+    public bool RaiseOnFailureStatus { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the maximum number of records from a single trigger batch processed concurrently.

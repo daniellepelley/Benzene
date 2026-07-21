@@ -41,11 +41,13 @@ public class SnsFailureHandlingTest
     }
 
     [Fact]
-    public void SnsOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void SnsOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
+        // Safe-by-default: a handler exception cascades (CatchExceptions off) and a returned failure
+        // result is escalated to a thrown exception so SNS redelivers it (RaiseOnFailureStatus on).
         var options = new SnsOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]

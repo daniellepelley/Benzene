@@ -27,11 +27,11 @@ public class EventGridFailureHandlingTest
     }
 
     [Fact]
-    public void EventGridOptions_Defaults_AreCascadeAndDoNotEscalate()
+    public void EventGridOptions_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new EventGridOptions();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class EventGridFailureHandlingTest
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_DoesNotThrow()
+    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_ThrowsEventGridMessageProcessingException()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<EventGridContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<EventGridContext>(), It.IsAny<IServiceResolver>()))
@@ -71,6 +71,8 @@ public class EventGridFailureHandlingTest
 
         var application = new EventGridBatchApplication(mockPipeline.Object);
 
-        await application.HandleAsync(CreateEvent(), CreateResolverFactory().Object);
+        // Safe-by-default: a returned failure result is escalated so Event Grid retries it.
+        await Assert.ThrowsAsync<EventGridMessageProcessingException>(
+            () => application.HandleAsync(CreateEvent(), CreateResolverFactory().Object));
     }
 }

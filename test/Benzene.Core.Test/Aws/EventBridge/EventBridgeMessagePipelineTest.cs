@@ -59,7 +59,9 @@ public class EventBridgeMessagePipelineTest
                     messageResult = context.MessageResult;
                 })
                 .UseMessageHandlers())
-            .Build(x => new EventBridgeApplication(x));
+            // This test is about routing (unknown detail-type -> NotFound result), not settlement, so
+            // disable the default failure-result escalation that would otherwise throw before we assert.
+            .Build(x => new EventBridgeApplication(x, new EventBridgeOptions { RaiseOnFailureStatus = false }));
 
         var request = MessageBuilder.Create("no.such.detail-type", Defaults.MessageAsObject).AsEventBridge();
 

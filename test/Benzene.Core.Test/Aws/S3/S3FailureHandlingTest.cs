@@ -41,11 +41,11 @@ public class S3FailureHandlingTest
     }
 
     [Fact]
-    public void S3Options_Defaults_AreCascadeAndDoNotEscalate()
+    public void S3Options_Defaults_CascadeExceptions_AndEscalateFailureResults()
     {
         var options = new S3Options();
         Assert.False(options.CatchExceptions);
-        Assert.False(options.RaiseOnFailureStatus);
+        Assert.True(options.RaiseOnFailureStatus);
         Assert.Null(options.MaxDegreeOfParallelism);
     }
 
@@ -77,7 +77,7 @@ public class S3FailureHandlingTest
     }
 
     [Fact]
-    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_DoesNotThrow()
+    public async Task HandleAsync_DefaultOptions_HandlerReturnsFailureResult_ThrowsS3MessageProcessingException()
     {
         var mockPipeline = new Mock<IMiddlewarePipeline<S3RecordContext>>();
         mockPipeline.Setup(x => x.HandleAsync(It.IsAny<S3RecordContext>(), It.IsAny<IServiceResolver>()))
@@ -86,7 +86,8 @@ public class S3FailureHandlingTest
 
         var application = new S3Application(mockPipeline.Object);
 
-        // Default: a failure result is not escalated (fire-and-forget), so this completes.
-        await application.HandleAsync(CreateEvent(), CreateResolverFactory().Object);
+        // Safe-by-default: a returned failure result is escalated so AWS retries it, not silently accepted.
+        await Assert.ThrowsAsync<S3MessageProcessingException>(
+            () => application.HandleAsync(CreateEvent(), CreateResolverFactory().Object));
     }
 }

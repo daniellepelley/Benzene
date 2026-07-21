@@ -9,17 +9,18 @@ through a Benzene middleware pipeline. This is the Event Hubs counterpart of
 documented in `docs/hosting.md`, where Benzene owns the process. For events delivered by an Azure
 Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 
-## A handler failure result affects checkpointing only when you opt in (`RaiseOnFailureStatus`)
-`EventHubConsumerContext.MessageResult` is recorded for diagnostics/middleware only **by default** —
-a handler that returns a failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) without
-throwing is checkpointed exactly like a success once `CheckpointInterval` is reached. Set
-`BenzeneEventHubConfig.RaiseOnFailureStatus = true` to escalate a non-exception failure result into a
-thrown `EventHubMessageProcessingException`, which takes the same not-checkpointed path as an
-unhandled exception (see `CatchHandlerExceptions` below): the failed event isn't checkpointed, so the
-partition doesn't advance past it and a restart redelivers it. Since Event Hubs is checkpoint-based
-with no per-event abandon, the semantics are "don't checkpoint, reprocess from here" — the handler
-must be idempotent. Mirrors the escalation on the Function triggers (`KafkaOptions.RaiseOnFailureStatus`
-etc.). Default off (purely additive).
+## A handler failure result stops the partition checkpointing past it by default (`RaiseOnFailureStatus`)
+**`BenzeneEventHubConfig.RaiseOnFailureStatus` defaults to `true`** (flipped 2026-07-21 — see
+`work/settlement-contract-1.0.md`). A handler that returns a failure result (e.g.
+`BenzeneResult.ServiceUnavailable(...)`) without throwing is escalated into a thrown
+`EventHubMessageProcessingException`, which takes the same not-checkpointed path as an unhandled
+exception (see `CatchHandlerExceptions` below): the failed event isn't checkpointed, so the partition
+doesn't advance past it and a restart redelivers it. Since Event Hubs is checkpoint-based with no
+per-event abandon, the semantics are "don't checkpoint, reprocess from here" — the handler must be
+idempotent. Set `RaiseOnFailureStatus = false` for at-most-once (a failure result is checkpointed like
+a success once `CheckpointInterval` is reached; `EventHubConsumerContext.MessageResult` is then only
+recorded for diagnostics/middleware). Mirrors the escalation on the Function triggers
+(`KafkaOptions.RaiseOnFailureStatus` etc.).
 
 ## Key types/interfaces
 - `BenzeneEventHubWorker : IBenzeneWorker` - wires `ProcessEventAsync`/`ProcessErrorAsync` on an
