@@ -39,7 +39,7 @@ public class HeaderOrBodyHashIdempotencyKeyStrategy<TContext> : IIdempotencyKeyS
     {
         var headers = _headersGetter.GetHeaders(context);
         if (headers != null
-            && headers.TryGetValue(_options.HeaderName, out var headerKey)
+            && TryGetHeader(headers, _options.HeaderName, out var headerKey)
             && !string.IsNullOrWhiteSpace(headerKey))
         {
             return _options.KeyPrefix + headerKey;
@@ -60,6 +60,30 @@ public class HeaderOrBodyHashIdempotencyKeyStrategy<TContext> : IIdempotencyKeyS
         // used to flatten to the same "order:v2:create\n..." string, hashing identical and dropping one
         // message as a false duplicate. With lengths, the field boundaries are unambiguous.
         return _options.KeyPrefix + ComputeHash($"{id.Length}:{id}|{version.Length}:{version}|{body.Length}:{body}");
+    }
+
+    // Header keys are case-insensitive on read regardless of the concrete IMessageHeadersGetter's
+    // dictionary comparer (wire-contracts.md §2). Without this, a canonically-cased header (e.g.
+    // "Idempotency-Key") in an ordinal dictionary would be missed and the caller's explicit key
+    // silently ignored in favour of body-hashing.
+    private static bool TryGetHeader(IDictionary<string, string> headers, string key, out string? value)
+    {
+        if (headers.TryGetValue(key, out value))
+        {
+            return true;
+        }
+
+        foreach (var header in headers)
+        {
+            if (string.Equals(header.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                value = header.Value;
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
     }
 
     private static string ComputeHash(string input)

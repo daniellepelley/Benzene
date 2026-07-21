@@ -30,6 +30,18 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 17 — idempotency key strategy missed a canonically-cased header (`HeaderOrBodyHashIdempotencyKeyStrategy`)
+- **Bug:** same class as Cycle 16 — `headers.TryGetValue(_options.HeaderName, ...)` (default
+  `idempotency-key`) is case-sensitive via the dictionary comparer, but wire-contracts.md §2 requires
+  case-insensitive header reads regardless of comparer. A caller sending `Idempotency-Key` (canonical
+  casing) against an ordinal header dict was missed, so the strategy silently fell through to
+  body-hashing — ignoring the caller's *explicit* key. That both loses dedup of two different requests
+  the caller tagged with the same key, and wrongly dedups two identical bodies tagged with different keys.
+- **Repro:** new `HeaderOrBodyHashIdempotencyKeyStrategyTest.Uses_HeaderKey_RegardlessOfHeaderKeyCasing`
+  — returned a body hash pre-fix, returns the header key post-fix.
+- **Fix:** a `TryGetHeader` helper (fast path + case-insensitive scan), matching Cycle 16 and
+  `HeaderMessageVersionGetter`. 25 idempotency tests green; full suite 1893.
+
 ### Cycle 16 — content negotiation missed canonically-cased headers (`AcceptHeaderMediaFormatBase`)
 - **Bug:** `CanRead`/`CanWrite` looked up `content-type`/`accept` with a plain `IDictionary.TryGetValue`
   and hard-coded lowercase keys, so a header dictionary with an ordinal (case-sensitive) comparer and a

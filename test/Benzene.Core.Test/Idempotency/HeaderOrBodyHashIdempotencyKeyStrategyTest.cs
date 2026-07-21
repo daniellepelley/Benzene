@@ -50,6 +50,22 @@ public class HeaderOrBodyHashIdempotencyKeyStrategyTest
     }
 
     [Fact]
+    public void Uses_HeaderKey_RegardlessOfHeaderKeyCasing()
+    {
+        // wire-contracts.md §2: header keys are case-insensitive on read, regardless of the header
+        // dictionary's comparer. A canonically-cased "Idempotency-Key" must still be honoured rather
+        // than silently falling through to body-hashing (which would ignore the caller's explicit key).
+        var ctx = new Ctx
+        {
+            Headers = new Dictionary<string, string> { ["Idempotency-Key"] = "abc-123" },
+            Body = "{\"id\":1}",
+            Topic = new Topic("order:create", "1")
+        };
+
+        Assert.Equal("abc-123", Strategy().GetKey(ctx));
+    }
+
+    [Fact]
     public void RespectsKeyPrefix()
     {
         var ctx = new Ctx { Headers = new Dictionary<string, string> { ["idempotency-key"] = "abc-123" } };
