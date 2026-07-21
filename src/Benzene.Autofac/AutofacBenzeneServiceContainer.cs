@@ -53,7 +53,9 @@ public class AutofacBenzeneServiceContainer : IBenzeneServiceContainer
 
     public IBenzeneServiceContainer AddScoped<TImplementation>(TImplementation implementation) where TImplementation : class
     {
-        _containerBuilder.RegisterType<TImplementation>().InstancePerLifetimeScope();
+        // Register the supplied instance, not a freshly-constructed TImplementation (RegisterType),
+        // to honour the "using an existing instance" contract and match the Microsoft adapter.
+        _containerBuilder.Register(_ => implementation).InstancePerLifetimeScope();
         return this;
     }
 
@@ -121,7 +123,9 @@ public class AutofacBenzeneServiceContainer : IBenzeneServiceContainer
 
     public IBenzeneServiceContainer AddTransient<TImplementation>(TImplementation implementation) where TImplementation : class
     {
-        _containerBuilder.RegisterType<TImplementation>().InstancePerDependency();
+        // Register the supplied instance, not a freshly-constructed TImplementation (RegisterType),
+        // to honour the "using an existing instance" contract and match the Microsoft adapter.
+        _containerBuilder.Register(_ => implementation).InstancePerDependency();
         return this;
     }
 

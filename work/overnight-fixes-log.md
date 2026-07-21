@@ -19,6 +19,20 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 13 — Autofac adapter ignored the supplied instance in `AddScoped(instance)`/`AddTransient(instance)`
+- **Bug:** both instance overloads called `RegisterType<TImplementation>()` (which tells Autofac to
+  *construct a new* object), discarding the caller-supplied `implementation`. The `IBenzeneServiceContainer`
+  contract documents them as "using an existing instance", the Microsoft adapter honours it
+  (`AddScoped(_ => implementation)`), and Autofac's own singleton overload does it right
+  (`RegisterInstance`). Resolving returned a different object (losing the caller's configured state) —
+  or threw `DependencyResolutionException` if the type had no Autofac-resolvable constructor. A silent
+  cross-adapter divergence: identical Benzene code behaved correctly on Microsoft DI and wrongly on Autofac.
+- **Repro:** new `ServiceContainerInstanceRegistrationTest` — `Assert.Same(instance, resolved)` for scoped
+  and transient, on both adapters. Autofac cases failed pre-fix (different object); Microsoft cases pass
+  as the parity guard.
+- **Fix:** register the captured instance via `Register(_ => implementation)` with the matching lifetime.
+  Full core suite green. (Found by a parallel DI/cache/resilience hunt.)
+
 ### Cycle 12 — CLI command splitter crashed on an unterminated quote (`CommandSplitter`)
 - **Bug:** `Split`'s quote branch did `i++` then read `args[i]` without a bounds check, so a command
   string with a missing closing quote (`command -name "value one`) ran the inner loop past the end of
