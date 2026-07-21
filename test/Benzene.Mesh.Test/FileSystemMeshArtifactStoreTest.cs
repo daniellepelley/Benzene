@@ -49,6 +49,29 @@ public class FileSystemMeshArtifactStoreTest : IDisposable
         Assert.Equal("{\"version\":2}", await store.TryReadAsync("manifest.json"));
     }
 
+    [Theory]
+    [InlineData("../escape.json")]
+    [InlineData("services/../../escape.json")]
+    [InlineData("../../etc/passwd")]
+    public async Task PublishAsync_PathEscapingRoot_IsRejected(string relativePath)
+    {
+        // The relative path can carry a service name from an untrusted push report, so a traversal
+        // sequence must not let a write escape the store root.
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => store.PublishAsync(relativePath, "{}"));
+    }
+
+    [Fact]
+    public async Task TryReadAsync_PathEscapingRoot_IsRejected()
+    {
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => store.TryReadAsync("../../etc/passwd"));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_rootDirectory))
