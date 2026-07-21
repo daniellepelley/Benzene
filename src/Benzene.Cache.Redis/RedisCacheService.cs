@@ -11,7 +11,9 @@ public abstract class RedisCacheService : ICacheService
     public ILogger Logger { get; }
     public IProcessTimerFactory ProcessTimerFactory { get; }
 
-    private readonly Lazy<Task<IConnectionMultiplexer>> _redisConnection;
+    private readonly IRedisConnectionFactory _connectionFactory;
+    private readonly object _connectionLock = new();
+    private Task<IConnectionMultiplexer>? _redisConnectionTask;
 
     public virtual TimeSpan DefaultCacheLifespan => TimeSpan.FromMinutes(5);
 
@@ -19,24 +21,45 @@ public abstract class RedisCacheService : ICacheService
     {
         Logger = logger;
         ProcessTimerFactory = processTimerFactory;
-        _redisConnection = new Lazy<Task<IConnectionMultiplexer>>(() => Task.Run(async () =>
-        {
-            using var scope = processTimerFactory.Create("RedisCacheService_Connect");
-            var options = await GetConfigurationOptionsAsync() ?? throw new InvalidOperationException("Redis configuration options are not set");
-            return await connectionFactory.ConnectAsync(options);
-        }));
+        _connectionFactory = connectionFactory;
     }
 
     protected abstract Task<ConfigurationOptions> GetConfigurationOptionsAsync();
 
+    // Returns the shared connect task, (re)starting it if we've never connected or the previous
+    // attempt faulted/was cancelled. A Lazy<Task<T>> would memoize the FIRST task object, so a
+    // single connection blip at startup (Redis and the app coming up together, AbortOnConnectFail
+    // default true) cached a faulted task for the process lifetime - the cache then stayed bypassed
+    // and the health check red forever, even after Redis recovered. A successful multiplexer is kept
+    // (StackExchange.Redis reconnects internally); only a failed connect is retried. The lock
+    // serialises recreation so a fault can't spawn duplicate connects, and an in-flight (incomplete)
+    // task is shared rather than restarted.
+    private Task<IConnectionMultiplexer> GetConnectionTask()
+    {
+        lock (_connectionLock)
+        {
+            if (_redisConnectionTask is null || _redisConnectionTask.IsFaulted || _redisConnectionTask.IsCanceled)
+            {
+                _redisConnectionTask = Task.Run(async () =>
+                {
+                    using var scope = ProcessTimerFactory.Create("RedisCacheService_Connect");
+                    var options = await GetConfigurationOptionsAsync() ?? throw new InvalidOperationException("Redis configuration options are not set");
+                    return await _connectionFactory.ConnectAsync(options);
+                });
+            }
+
+            return _redisConnectionTask;
+        }
+    }
+
     protected void StartConnection()
     {
-        _ = _redisConnection.Value;
+        _ = GetConnectionTask();
     }
 
     internal async Task<IDatabase> RedisSetup()
     {
-        var multiplexer = await _redisConnection.Value;
+        var multiplexer = await GetConnectionTask();
         return multiplexer.GetDatabase();
     }
 
