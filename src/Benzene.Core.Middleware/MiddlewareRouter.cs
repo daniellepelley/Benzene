@@ -16,9 +16,12 @@ namespace Benzene.Core.Middleware;
 public abstract class MiddlewareRouter<TRequest, TContext>(IServiceResolver serviceResolver) : IMiddleware<TContext>
 {
     /// <summary>
-    /// Gets the name of this middleware component.
+    /// Gets the name of this middleware component. Defaults to the concrete router's own type name
+    /// (via <see cref="object.GetType"/>) rather than a fixed <c>"MiddlewareRouter"</c>, so tracing
+    /// shows which flavour of router ran (e.g. <c>SqsLambdaHandler</c>, <c>ApiGatewayLambdaHandler</c>)
+    /// instead of the same generic label for every one. Override to supply a custom name.
     /// </summary>
-    public string Name => "MiddlewareRouter";
+    public virtual string Name => GetType().Name;
 
     /// <summary>
     /// Handles the middleware execution by extracting the request, checking if it can be handled,

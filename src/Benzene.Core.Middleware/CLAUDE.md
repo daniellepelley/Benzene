@@ -71,7 +71,11 @@ AWS Lambda (no `ILambdaContext` token) and the Azure Functions non-HTTP triggers
 ### Middleware Components
 - `FuncWrapperMiddleware<TContext>` - Wraps Func as middleware
 - `ContextConverterMiddleware<TContext, TContextOut>` - Converts context types
-- `MiddlewareRouter<TRequest, TContext>` - abstract base for routing to different pipelines
+- `MiddlewareRouter<TRequest, TContext>` - abstract base for routing to different pipelines. Its
+  `Name` (used in tracing) defaults to the concrete router's own type name (`GetType().Name`), not a
+  fixed `"MiddlewareRouter"`, so each flavour (`SqsLambdaHandler`, `ApiGatewayLambdaHandler`, ...) is
+  distinguishable in traces without any per-inheritor change; `Name` is `virtual` so an inheritor can
+  still override it
 - `ExceptionHandlerMiddleware<TContext>` - Centralized exception handling
 - `StreamContext<TItem>` / `StreamMiddlewareApplication<...>` / `IStreamCheckpointer<TItem>` /
   `NullStreamCheckpointer<TItem>` - stream-record processing (used by `.UseStream()`)
