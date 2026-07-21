@@ -49,6 +49,27 @@ public class XmlSerializerTest
     }
 
     [Fact]
+    public void Deserialize_PayloadWithDoctype_IsRejected_NoEntityExpansion()
+    {
+        // The deserialize path reads an untrusted, content-negotiated request body. A DOCTYPE with
+        // nested internal entities ("billion laughs") would expand exponentially and exhaust memory
+        // if DTD processing were allowed. The hardened reader prohibits DTDs outright, so the parse
+        // fails fast instead of expanding - guarding against the entity-expansion DoS.
+        const string billionLaughs =
+            "<?xml version=\"1.0\"?>" +
+            "<!DOCTYPE ExampleRequestPayload [" +
+            "<!ENTITY a \"aaaaaaaaaa\">" +
+            "<!ENTITY b \"&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;\">" +
+            "<!ENTITY c \"&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;\">" +
+            "]>" +
+            "<ExampleRequestPayload><Name>&c;</Name></ExampleRequestPayload>";
+
+        var serializer = new XmlSerializer();
+
+        Assert.ThrowsAny<System.Exception>(() => serializer.Deserialize<ExampleRequestPayload>(billionLaughs));
+    }
+
+    [Fact]
     public void Serialize_DeclaresUtf8_SoTheUtf8WireBytesParse()
     {
         // The body is returned as a string and transmitted as UTF-8 (like every other body). A

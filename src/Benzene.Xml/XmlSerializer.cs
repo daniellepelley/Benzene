@@ -40,11 +40,22 @@ public class XmlSerializer : ISerializer
             : Serialize(typeof(T), payload);
     }
 
+    // XML is deserialized from an untrusted, content-negotiated request body, so the reader is
+    // hardened against the classic entity-expansion DoS ("billion laughs"): DtdProcessing.Prohibit
+    // rejects any inline DOCTYPE outright, and XmlResolver = null blocks external-entity/DTD fetches
+    // (SSRF / local-file disclosure) as defence in depth. A serializer deserialize path never needs
+    // a DTD, so prohibiting it costs nothing.
+    private static readonly XmlReaderSettings SafeReaderSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null,
+    };
+
     public object? Deserialize(Type type, string payload)
     {
         using var stringReader = new StringReader(payload);
-        using var xmlTextReader = new XmlTextReader(stringReader);
-        return GetSerializer(type).Deserialize(xmlTextReader);
+        using var xmlReader = XmlReader.Create(stringReader, SafeReaderSettings);
+        return GetSerializer(type).Deserialize(xmlReader);
     }
 
     public T? Deserialize<T>(string payload)
