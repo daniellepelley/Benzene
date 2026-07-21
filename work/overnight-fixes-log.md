@@ -40,6 +40,20 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 23 — Prometheus client threw on a valid-but-unexpected JSON body (`PrometheusQueryClient.QueryAsync`)
+- **Bug:** the parse was wrapped in `catch (JsonException)`, but `JsonException` only covers syntactically
+  invalid JSON. Once the body is valid JSON, the strongly-typed `JsonElement` accessors (`GetString`,
+  `GetArrayLength`, indexer) throw `InvalidOperationException` on a wrong `ValueKind` — e.g. `{"status":1}`,
+  a non-array `value`, or a numeric value element. The class doc + CLAUDE.md explicitly promise a
+  "malformed/unexpected body" surfaces as an empty result, but these escaped, faulting the whole
+  `mesh:topology` build (one bad query defeats the "one bad query shouldn't block the rest" design).
+  Reachable when the configured Prometheus URL returns 200 with valid JSON of an unexpected shape
+  (misconfigured URL, a proxy's JSON error object, a Thanos/Cortex/Mimir/VictoriaMetrics variant).
+- **Repro:** new `PrometheusQueryClientTest.QueryAsync_ValidJsonUnexpectedShape_ReturnsEmpty` (3 cases) —
+  threw `InvalidOperationException` pre-fix, return empty post-fix.
+- **Fix:** `catch (Exception ex) when (ex is JsonException or InvalidOperationException)`. 8 client tests +
+  163 mesh tests green. (Found by a parallel mesh reporting/tempo hunt.)
+
 ### Cycle 22 — CLI help name/description indentation was silently dropped (`HelpGenerator`)
 - **Bug (low severity, cosmetic):** the intended indentation of the command name/description was written
   as `$"{  name}"` / `$"{    description}"` — the spaces sit *inside* the interpolation braces, where

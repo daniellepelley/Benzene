@@ -40,8 +40,12 @@ public class PrometheusQueryClient
         {
             return ParseVectorResult(body);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
+            // JsonException = syntactically invalid JSON; InvalidOperationException = valid JSON of an
+            // unexpected shape (a JsonElement accessor like GetString/GetArrayLength on the wrong
+            // ValueKind). Both are the "malformed/unexpected body" the contract promises to swallow as
+            // an empty result rather than fault the whole topology build.
             return Array.Empty<PrometheusSample>();
         }
     }

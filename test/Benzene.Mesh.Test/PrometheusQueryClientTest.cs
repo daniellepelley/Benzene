@@ -100,4 +100,20 @@ public class PrometheusQueryClientTest
 
         Assert.Empty(samples);
     }
+
+    [Theory]
+    // Valid JSON but a structurally-unexpected shape: the strongly-typed JsonElement accessors throw
+    // InvalidOperationException (not JsonException), which the documented "malformed/unexpected body ->
+    // empty" contract must still swallow rather than fault the whole topology build.
+    [InlineData("{ \"status\": 1 }")]                                                                    // status not a string -> GetString()
+    [InlineData("{ \"status\": \"success\", \"data\": { \"result\": [ { \"metric\": {}, \"value\": \"oops\" } ] } }")] // value not an array -> GetArrayLength()
+    [InlineData("{ \"status\": \"success\", \"data\": { \"result\": [ { \"metric\": {}, \"value\": [1700000000, 42.5] } ] } }")] // numeric value element -> GetString()
+    public async Task QueryAsync_ValidJsonUnexpectedShape_ReturnsEmpty(string body)
+    {
+        var client = CreateClient(HttpStatusCode.OK, body);
+
+        var samples = await client.QueryAsync(PrometheusUrl, "up");
+
+        Assert.Empty(samples);
+    }
 }
