@@ -1,0 +1,18 @@
+# EKS overlay over the unchanged examples/K8sMesh/k8s manifests: the deploy workflow points the two
+# image names at the ECR repositories (`kustomize edit set image benzene-k8smesh-service=<repo>:<tag>`
+# etc. — which appends an `images:` block here at deploy time), and the patch below turns the mesh's
+# NodePort Service into an internet-facing LoadBalancer so the Mesh UI gets a public URL. Everything
+# else — discovery RBAC, labels, probes, the three service Deployments — is exactly what kind runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../k8s
+patches:
+  - patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: mesh
+        namespace: benzene-mesh
+      spec:
+        type: LoadBalancer

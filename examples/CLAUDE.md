@@ -51,6 +51,12 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
   dashboard via `UseMeshUi`; Tempo integration is demonstrated against a bundled fake Prometheus
   endpoint, not a real Tempo stack — see `FakePrometheus.cs`); has its own `README.md` and `run.sh`.
   Does **not** use the shared `App` domain.
+- **`K8sMesh/`** — the Kubernetes counterpart of `AwsMesh`: three Cloud Service pods (one image,
+  `MESH_SERVICE` selects the domain) discovered by label via `Benzene.Mesh.Discovery.Kubernetes`,
+  plus a mesh pod serving the Mesh UI. The same `k8s/` manifests (a kustomize base) deploy two ways:
+  credential-free on kind (`deploy-k8s-mesh-example.yml`) and on real AWS EKS via `deploy/`
+  (Terraform: EKS + ECR) + the `deploy/eks` overlay (`deploy-eks-mesh-example.yml`, which ends with
+  the Mesh UI on a public ELB URL). Has its own `README.md`. Does **not** use the shared `App` domain.
 
 ## How these build (important)
 - Examples build via **`Benzene.Examples.sln`** at the repo root — **not** the main `Benzene.sln`.

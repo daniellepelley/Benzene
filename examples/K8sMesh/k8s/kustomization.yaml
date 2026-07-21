@@ -1,0 +1,10 @@
+# Kustomize base over the three manifests, so a deployment target can override images and Service
+# type without forking them — deploy/eks/ swaps in the ECR images and exposes the mesh via a
+# LoadBalancer. Applying this base directly (`kubectl apply -k examples/K8sMesh/k8s`) deploys the
+# :local images unchanged, exactly as the kind workflow does per-file.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - services.yaml
+  - mesh.yaml
