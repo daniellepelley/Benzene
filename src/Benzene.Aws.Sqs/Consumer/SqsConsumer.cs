@@ -91,24 +91,37 @@ public class SqsConsumer : IBenzeneWorker
                 {
                     var batchResult = await _sqsConsumerApplication.HandleAsync(result, _serviceResolverFactory);
 
-                    // Under WholeBatch (the default), a thrown exception above already skipped this
-                    // whole block via the outer catch, so reaching here means every message
-                    // succeeded (or failed only via a non-throwing result, which WholeBatch still
-                    // deletes along with the rest, unchanged from prior behavior) - delete everything.
-                    // Under PerMessage, delete only what actually succeeded.
+                    // Under PerMessage (the default), delete only the messages that actually
+                    // succeeded; a failed or unrouted message stays on the queue. Under WholeBatch, a
+                    // thrown exception above already skipped this whole block via the outer catch, so
+                    // reaching here means every message succeeded (or failed only via a non-throwing
+                    // result, which WholeBatch still deletes along with the rest) - delete everything.
                     var messagesToDelete = _options.AckMode == SqsConsumerAckMode.PerMessage
                         ? batchResult.SuccessfulMessages
                         : result.Messages;
 
                     if (messagesToDelete.Count > 0)
                     {
-                        await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
+                        var deleteResult = await client.DeleteMessageBatchAsync(new DeleteMessageBatchRequest
                         {
                             QueueUrl = _sqsConsumerConfig.QueueUrl,
                             Entries = messagesToDelete
                                 .Select(x => new DeleteMessageBatchRequestEntry(x.MessageId, x.ReceiptHandle))
                                 .ToList()
                         }, cancellationToken);
+
+                        // A batch delete can partially fail: the call succeeds while individual entries
+                        // land in Failed. Those messages were NOT removed and will reappear after the
+                        // visibility timeout, so surface it rather than let the redelivery look
+                        // unexplained.
+                        if (deleteResult.Failed is { Count: > 0 })
+                        {
+                            using var loggingScope = _serviceResolverFactory.CreateScope();
+                            loggingScope.GetService<ILogger<SqsConsumer>>()
+                                .LogError("Failed to delete {failedCount} handled SQS message(s) from queue {queueUrl}; they will be redelivered: {messageIds}",
+                                    deleteResult.Failed.Count, _sqsConsumerConfig.QueueUrl,
+                                    string.Join(", ", deleteResult.Failed.Select(x => x.Id)));
+                        }
                     }
                 }
             }

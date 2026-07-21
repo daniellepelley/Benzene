@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
@@ -231,6 +232,71 @@ public class SqsConsumerMessagePipelineTest
         Assert.NotNull(deletedEntries);
         Assert.Single(deletedEntries);
         Assert.Equal(succeedingMessage.MessageId, deletedEntries[0].Id);
+    }
+
+    [Fact]
+    public async Task StartAsync_DeleteBatchPartiallyFails_LogsTheUndeletedMessages()
+    {
+        // A batch delete can succeed as a call while individual entries land in Failed - those
+        // messages were NOT removed and will be redelivered. The worker must log that rather than
+        // let the redelivery look unexplained.
+        var mockSqsClient = new Mock<IAmazonSQS>();
+
+        var mockSqsClientFactory = new Mock<ISqsClientFactory>();
+        mockSqsClientFactory.Setup(x => x.Create())
+            .Returns(mockSqsClient.Object);
+
+        var message = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsSqsMessage();
+        message.MessageId = "undeleted-message-id";
+
+        mockSqsClient
+            .SetupSequence(x => x.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new ReceiveMessageResponse { Messages = new List<Message> { message } })
+            .ReturnsAsync(() => new ReceiveMessageResponse { Messages = new List<Message>() });
+
+        var tokenSource = new CancellationTokenSource(5000);
+        mockSqsClient
+            .Setup(x => x.DeleteMessageBatchAsync(It.IsAny<DeleteMessageBatchRequest>(), It.IsAny<CancellationToken>()))
+            // Stop the poll loop once we've observed the one delete we care about.
+            .Callback<DeleteMessageBatchRequest, CancellationToken>((_, __) => tokenSource.Cancel())
+            .ReturnsAsync(new DeleteMessageBatchResponse
+            {
+                Failed = new List<BatchResultErrorEntry> { new BatchResultErrorEntry { Id = message.MessageId } }
+            });
+
+        var mockLogger = new Mock<ILogger<SqsConsumer>>();
+
+        var services = ServiceResolverMother.CreateServiceCollection();
+        services
+            .AddTransient<ILogger<MessageRouter<SqsConsumerMessageContext>>>(_ =>
+                NullLogger<MessageRouter<SqsConsumerMessageContext>>.Instance)
+            .AddTransient<ILogger>(_ => NullLogger.Instance)
+            .UsingBenzene(x => x.AddSqsConsumer());
+        // Register after UsingBenzene so this closed ILogger<SqsConsumer> is what the worker resolves.
+        services.AddSingleton(mockLogger.Object);
+
+        var pipeline =
+            new MiddlewarePipelineBuilder<SqsConsumerMessageContext>(new MicrosoftBenzeneServiceContainer(services));
+        pipeline.UseMessageHandlers();
+
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        // WholeBatch deletes every received message that ran without throwing, so the delete is reached.
+        var application = new SqsConsumerApplication(pipeline.Build(), new SqsConsumerOptions { AckMode = SqsConsumerAckMode.WholeBatch });
+
+        var consumer = new SqsConsumer(serviceResolverFactory, application, new SqsConsumerConfig
+        {
+            MaxNumberOfMessages = 10,
+            QueueUrl = "some-url"
+        }, mockSqsClientFactory.Object, new SqsConsumerOptions { AckMode = SqsConsumerAckMode.WholeBatch });
+
+        await consumer.StartAsync(tokenSource.Token);
+
+        mockLogger.Verify(x => x.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString().Contains(message.MessageId)),
+            It.IsAny<Exception>(),
+            (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()), Times.Once);
     }
 
     [Fact]
