@@ -324,6 +324,40 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_SameRequest_OneConsumerDeclaresResponseOtherDoesnt_NoMismatch()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+
+        // Both consumers declare the SAME request payload. orders-api also declares a response;
+        // fulfilment-api declares none. "No response declared" is no-signal, not a contradiction, so
+        // this must NOT be a schema mismatch (it used to be, because a null response was folded into
+        // the compare string and differed from orders-api's declared one).
+        var ordersSpec = """{"requests":[{"topic":"order:submitted","request":{"$ref":"#/components/schemas/S"},"response":{"$ref":"#/components/schemas/R"}}],"components":{"schemas":{"S":{"type":"object","properties":{"id":{"type":"string"}}},"R":{"type":"object","properties":{"ok":{"type":"boolean"}}}}}}""";
+        var fulfilmentSpec = """{"requests":[{"topic":"order:submitted","request":{"$ref":"#/components/schemas/S"}}],"components":{"schemas":{"S":{"type":"object","properties":{"id":{"type":"string"}}}}}}""";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, fulfilmentSpec)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("fulfilment-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+        var submitted = Assert.Single(catalog.Topics, t => t.Topic == "order:submitted");
+
+        Assert.Equal(2, submitted.Consumers.Length);
+        Assert.False(submitted.SchemaMismatch);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_ProducerEvent_CarriesMessageSchema()
     {
         var ordersSpec = """{"events":[{"topic":"order:shipped","message":{"$ref":"#/components/schemas/Shipped"}}],"components":{"schemas":{"Shipped":{"type":"object","properties":{"trackingId":{"type":"string"}}}}}}""";

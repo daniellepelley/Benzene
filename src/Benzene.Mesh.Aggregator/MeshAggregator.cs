@@ -147,7 +147,9 @@ public class MeshAggregator
         }
 
         var edges = new List<TopologyEdge>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        // Dedup on the (client, server) pair itself, not a space-joined string: a service name can
+        // contain a space, so "a b"+"c" and "a"+"b c" would otherwise collide onto one key.
+        var seen = new HashSet<(string Client, string Server)>();
         for (var i = 0; i < entries.Length; i++)
         {
             var client = entries[i].Name;
@@ -165,7 +167,7 @@ public class MeshAggregator
                     {
                         continue; // a service calling itself isn't a mesh edge
                     }
-                    if (seen.Add($"{client} {server}"))
+                    if (seen.Add((client, server)))
                     {
                         edges.Add(new TopologyEdge(client, server, TopologyEdgeSource.Structural,
                             requestsPerMinute: null, errorRate: null,
@@ -276,11 +278,20 @@ public class MeshAggregator
 
         // Only consumers that actually declared a request schema are compared - a consumer whose spec
         // predates schema-in-spec contributes no schema rather than a spurious "differs from" signal.
-        var mismatch = !aggregate.Reserved && aggregate.ConsumerSchemas
+        // Request and Response are guarded independently: folding a null Response into the compare
+        // string made a consumer that declared a request but no response look like a mismatch against
+        // one that declared both, when it is really just "no signal" on the response side.
+        var distinctRequests = aggregate.ConsumerSchemas
             .Where(pair => pair.Request != null)
-            .Select(pair => Canonical(pair.Request) + " " + Canonical(pair.Response))
+            .Select(pair => Canonical(pair.Request))
             .Distinct(StringComparer.Ordinal)
-            .Count() > 1;
+            .Count();
+        var distinctResponses = aggregate.ConsumerSchemas
+            .Where(pair => pair.Response != null)
+            .Select(pair => Canonical(pair.Response))
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        var mismatch = !aggregate.Reserved && (distinctRequests > 1 || distinctResponses > 1);
 
         return new MeshTopicEntry(
             topic, version, aggregate.Reserved,
