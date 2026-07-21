@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Benzene.Examples.AzureFunctionsMesh.Mesh</RootNamespace>
+    <AssemblyName>Benzene.Examples.AzureFunctionsMesh.Mesh</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Timer\Benzene.Azure.Function.Timer.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Discovery.Azure\Benzene.Mesh.Discovery.Azure.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Azure.Blob\Benzene.Mesh.Azure.Blob.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Results\Benzene.Results.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+  </ItemGroup>
+</Project>

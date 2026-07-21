@@ -57,6 +57,21 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
   credential-free on kind (`deploy-k8s-mesh-example.yml`) and on real AWS EKS via `deploy/`
   (Terraform: EKS + ECR) + the `deploy/eks` overlay (`deploy-eks-mesh-example.yml`, which ends with
   the Mesh UI on a public ELB URL). Has its own `README.md`. Does **not** use the shared `App` domain.
+- **`AzureMesh/`** — the Azure counterpart: three Cloud Services as **Azure Web Apps for Containers**
+  (reusing the `K8sMesh/Service` image) discovered by resource **tag** via
+  `Benzene.Mesh.Discovery.Azure`, plus a mesh Web App that serves the Mesh UI and persists the catalog
+  to **Blob Storage** (`Benzene.Mesh.Azure.Blob`). `deploy/` is Terraform (App Service, storage,
+  managed identity + role assignments). Has its own `README.md`.
+- **`AzureFunctionsMesh/`** — the **purely Azure Functions** counterpart of `AzureMesh`: the same three
+  Cloud Services and the mesh, each an isolated-worker **Function App**. Services are HTTP-triggered and
+  expose the Cloud Service Profile via `UseBenzeneCloudService` (works because the Functions HTTP
+  context is an `IHttpContext`); `host.json` clears the `/api` route prefix so `/benzene/*` sits at the
+  root discovery expects. The mesh Function has an HTTP trigger (UI + artifacts + `/mesh/refresh`) and a
+  **timer trigger** driving aggregation (the Consumption-plan replacement for the Web App's
+  `BackgroundService`). Discovery is the **same** `Benzene.Mesh.Discovery.Azure` — a Function App is a
+  `Microsoft.Web/sites`, so tagged Function Apps are found identically to Web Apps. Own `.sln`,
+  `README.md`, and Terraform `deploy/` (zip-deployed Function Apps, no container registry). Does **not**
+  use the shared `App` domain.
 
 ## How these build (important)
 - Examples build via **`Benzene.Examples.sln`** at the repo root — **not** the main `Benzene.sln`.

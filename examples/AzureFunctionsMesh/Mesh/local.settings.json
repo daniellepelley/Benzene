@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "MESH_BLOB_URI": "https://REPLACE_ME.blob.core.windows.net",
+    "MESH_BLOB_CONTAINER": "mesh"
+  }
+}
