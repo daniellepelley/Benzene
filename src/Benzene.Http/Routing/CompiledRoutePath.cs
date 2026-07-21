@@ -12,9 +12,10 @@ namespace Benzene.Http.Routing;
 /// lifetime.
 /// </summary>
 /// <remarks>
-/// The parsing preserves <see cref="UrlMatcher"/>'s original semantics exactly (case-folded segments,
-/// a single parameter per segment with an optional literal prefix/suffix, empty parameter values
-/// skipped) - it only moves the constant, per-pattern work off the request path.
+/// Semantics: literal segments (and a parameter's literal prefix/suffix) match case-insensitively,
+/// while a parameter's extracted <em>value</em> is preserved verbatim (case-sensitive ids/slugs/tokens);
+/// a single parameter per segment with an optional literal prefix/suffix; and a parameter that resolves
+/// to an empty value is not a match. This only moves the constant, per-pattern work off the request path.
 /// </remarks>
 internal sealed class CompiledRoutePath
 {
@@ -61,7 +62,9 @@ internal sealed class CompiledRoutePath
 
             if (seg.IsLiteral)
             {
-                if (segment != seg.Literal)
+                // Case-insensitive literal matching, but against the original-case incoming segment
+                // (not a pre-folded copy) so a parameter value in a sibling segment keeps its case.
+                if (!string.Equals(segment, seg.Literal, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }
@@ -70,8 +73,8 @@ internal sealed class CompiledRoutePath
             }
 
             if (segment.Length < seg.Prefix.Length + seg.Suffix.Length
-                || !segment.StartsWith(seg.Prefix)
-                || !segment.EndsWith(seg.Suffix))
+                || !segment.StartsWith(seg.Prefix, StringComparison.OrdinalIgnoreCase)
+                || !segment.EndsWith(seg.Suffix, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

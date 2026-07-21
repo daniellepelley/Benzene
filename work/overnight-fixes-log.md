@@ -9,6 +9,18 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 7 — HTTP route parameter values were lowercased (`UrlMatcher.SplitPath` / `CompiledRoutePath`)
+- **Bug:** `SplitPath` lowercased the whole incoming path (`.ToLowerInvariant()`) so literal matching
+  could compare both sides folded. But the same lowercased segments were the source of extracted
+  parameter values, so `/users/JohnDoe` on `/users/{id}` handed the handler `id = "johndoe"` — corrupting
+  case-sensitive ids, slugs, base64/hex tokens, and uppercase GUIDs against case-sensitive stores.
+- **Repro:** two new `FindWithParameters_ValueOverlapsSegmentLiteral` cases (`JohnDoe`, `AbC-123`) —
+  returned lowercased pre-fix, verbatim post-fix.
+- **Fix:** `SplitPath` no longer folds case; `CompiledRoutePath.Match` compares literals/prefix/suffix
+  with `StringComparison.OrdinalIgnoreCase` against the original-case segment. Matching stays
+  case-insensitive (identical behavior); only the extracted value is now preserved. 137 route/HTTP/
+  CORS/pipeline tests green.
+
 ### Cycle 6 — route with a literal prefix/suffix matched an empty param value (`CompiledRoutePath`)
 - **Bug:** for a parameter with a literal prefix and/or suffix (`/example-{id}-foo`, `/x{id}`,
   `/{id}-foo`), a URL that supplied no value for the parameter (`/example--foo`, `/x`, `/-foo`) still

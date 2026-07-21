@@ -34,13 +34,17 @@ public class UrlMatcher
         return new CompiledRoutePath(routerPath).Match(SplitPath(path));
     }
 
-    /// <summary>Splits an incoming URL path (dropping any query string) into case-folded segments.</summary>
+    /// <summary>
+    /// Splits an incoming URL path (dropping any query string) into segments, preserving their
+    /// original case. Literal matching is done case-insensitively by <see cref="CompiledRoutePath"/>,
+    /// but the segments must stay verbatim so an extracted parameter value (a case-sensitive id, slug,
+    /// token, or GUID) isn't corrupted by folding it to lower case.
+    /// </summary>
     internal static string[] SplitPath(string path)
     {
         return path
             .Split('?', StringSplitOptions.RemoveEmptyEntries)
             .First()
-            .ToLowerInvariant()
             .Split('/', StringSplitOptions.RemoveEmptyEntries);
     }
 

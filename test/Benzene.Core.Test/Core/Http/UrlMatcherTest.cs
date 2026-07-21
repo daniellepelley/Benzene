@@ -67,6 +67,10 @@ public class UrlMatcherTest
     // is "dogs" (not "dog"), "xax" against "/x{id}" is "ax" (not "a").
     [InlineData("dogss", "/{slug}s", "slug", "dogs")]
     [InlineData("xax", "/x{id}", "id", "ax")]
+    // Literal matching stays case-insensitive, but the extracted VALUE must be preserved verbatim -
+    // lowercasing it corrupts case-sensitive ids, slugs, base64/hex tokens, and uppercase GUIDs.
+    [InlineData("Users/JohnDoe", "/users/{id}", "id", "JohnDoe")]
+    [InlineData("example/AbC-123", "/example/{id}", "id", "AbC-123")]
     public void FindWithParameters_ValueOverlapsSegmentLiteral(string path, string handlerPath, string key, string expected)
     {
         var parameters = _urlMatcher.MatchUrl(path, handlerPath);
