@@ -56,10 +56,16 @@ wildcard+credentials and full Fetch-spec preflight compliance; spec-output cachi
 None of these is a clean self-contained bug; each changes behaviour, a public API, or a policy.
 
 ### Settlement / at-least-once semantics
-- **[DECISION] Kinesis up-to checkpointing unsafe under out-of-order `PartitionBy`** — a single
-  last-record-up-to watermark (`KinesisStreamCheckpointer`) can jump past an earlier, unprocessed
-  partition's record. Needs a per-partition/set checkpoint model or a documented "checkpoint in batch
-  order only" constraint. The monotonic guard (`21f7333`) does not close it.
+- **[RESOLVED / doc] Kinesis "partition checkpoint model"** — *previously listed as an unsafe
+  up-to-checkpoint hazard needing a new model; that was an over-statement.* Kinesis's
+  `ReportBatchItemFailures` contract is inherently a **single shard-order resume point** — AWS reads
+  only the first reported sequence number and retries every record from there to the end; there is no
+  per-record/per-partition skip (design doc §2). So a "retain partition A, retry partition B" model is
+  **impossible by construction**, not a missing feature. The checkpointer implements the only correct
+  model: a single monotonic shard-order watermark (`21f7333` prevents rewind) + `AutoCheckpointOnSuccess`
+  (closes never-checkpoint-reprocess-forever). The one residual was **documentation** — that a
+  `PartitionBy` handler must checkpoint the shard-order frontier, not each partition's latest record —
+  now added to the package CLAUDE.md. Nothing further to implement.
 - **[DECISION] Kinesis & DynamoDB streams swallow the pipeline exception** — both return a batch
   response and rely on the ESM having `ReportBatchItemFailures`, which Benzene can't see. Consider a
   thrown-exception fallback or a startup warning. (`KinesisStreamApplication.cs:101`, `DynamoDbApplication.cs:57`.)

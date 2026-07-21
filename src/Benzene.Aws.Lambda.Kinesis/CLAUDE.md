@@ -60,6 +60,20 @@ app.UseKinesisStream(kinesis => kinesis
 
 ## Important conventions
 - Transport name: `"kinesis"`.
+- **Checkpoint in shard order — the resume point is a single sequence number.** Kinesis's retry
+  contract is not "skip the bad records" — the event source mapping reads only the *first* reported
+  failure and retries **every** record from that sequence number to the end of the batch (see
+  `work/kinesis-batch-failure-handling-design.md` §2). So `CheckpointAsync(record)` means
+  "everything up to this record **in shard/batch order** is safe", and the checkpointer keeps a
+  single monotonic watermark (it never rewinds; an out-of-shard-order or projected-copy checkpoint
+  that would move the resume point backward is ignored). **Consequence for a `PartitionBy` handler:**
+  do **not** checkpoint each partition's own latest record independently — checkpointing a
+  later-in-the-batch record marks *every* earlier record done, including interleaved records from
+  other partitions you may not have processed yet, and Kinesis cannot skip them (there is no
+  per-record redelivery). Checkpoint the **shard-order frontier** — the highest record index `N`
+  such that every record `0..N` is complete — or just let `AutoCheckpointOnSuccess` checkpoint the
+  whole batch at the end. A per-partition/set-based "retain A, retry B" model is impossible within
+  Kinesis's contract, not a missing feature.
 - **Real checkpointing and per-record failure containment** (2026-07-17, closing the gap flagged
   below this line previously): the batch's `StreamContext<KinesisEventRecord>` is wired with a real
   `KinesisStreamCheckpointer`, not `NullStreamCheckpointer`. A handler calls
