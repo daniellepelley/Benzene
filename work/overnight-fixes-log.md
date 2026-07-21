@@ -32,6 +32,12 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
   type-multiset but different check instances/URLs can serve each other's cached result for up to the TTL.
   Real keying flaw but bounded (requires opting into caching AND colliding type-sets); a correct fix needs
   probe identity threaded into the key, which isn't cleanly available at that layer. Deferred.
+- **`mesh-ui.html` sets `specUrl`/`healthUrl` anchor `href` from the self-reported manifest without a
+  scheme allow-list**, so a hostile service reporting `"specUrl":"javascript:…"` yields a clickable
+  script-executing link. Browser-mitigated (anchors are `target="_blank"`; modern Chromium/Firefox block
+  `javascript:` navigation into a new tab), and the sibling `specUiLink()` already round-trips through
+  `new URL(...)`. A one-line `^https?:`/relative allow-list would harden it, but it's client-side JS with
+  no test harness in the repo (no failing-test-first possible), so deferred rather than shipping untested.
 - **`BenzeneResultExtensions.IsSuccess()`** returns true only for `Ok`, disagreeing with
   `IBenzeneResult.IsSuccessful` (true for all six success statuses). No production caller in `src/`; likely
   an intentional narrow `Ok`-alias. Left alone (would need a maintainer decision on intended semantics).
@@ -39,6 +45,17 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 ## Cycle log
 
 (newest first)
+
+### Cycle 25 — Fleet UI middleware matched its path case-sensitively (`MeshFleetUiMiddleware`)
+- **Bug:** `NormalizePath` ended with `trimmed.TrimEnd('/')` but — unlike the two sibling middlewares
+  (`MeshUiMiddleware`, `SpecUiMiddleware`), which both end with `.ToLowerInvariant()` — omitted the final
+  lowercasing. So a canonically-cased request (`/MESH-FLEET-UI`, or a configured path with different case)
+  didn't match `_path` and fell through to `next()` (a 404), even though the sibling UI pages serve
+  regardless of path case (a convention pinned by `SpecUiMiddlewareTest`'s `[InlineData("/spec-ui",
+  "/SPEC-UI")]`). No `MeshFleetUiMiddlewareTest` existed, which is why it slipped through.
+- **Repro:** new `MeshFleetUiMiddlewareTest` — case/trailing-slash-insensitive matching cases failed pre-fix.
+- **Fix:** lowercase the normalized path, matching the siblings. 168 mesh tests green. (Found by a parallel
+  mesh-UI/tools hunt; that hunt also noted a client-side JS hardening item — see deferred.)
 
 ### Cycle 24 — versioned enum nullability change corrupted the value or threw at startup (`CasterFuncBuilder`)
 - **Bug:** the payload caster's `IsEnum` guard returned true only when both sides were non-nullable enums or

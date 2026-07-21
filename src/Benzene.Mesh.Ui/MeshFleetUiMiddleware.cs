@@ -65,6 +65,10 @@ public class MeshFleetUiMiddleware<TContext> : IMiddleware<TContext> where TCont
         {
             trimmed = "/" + trimmed;
         }
-        return trimmed.Length > 1 ? trimmed.TrimEnd('/') : trimmed;
+
+        // Case- and trailing-slash-insensitive, matching the sibling MeshUiMiddleware/SpecUiMiddleware
+        // convention (the final ToLowerInvariant was previously missing here).
+        var normalized = trimmed.Length > 1 ? trimmed.TrimEnd('/') : trimmed;
+        return normalized.ToLowerInvariant();
     }
 }
