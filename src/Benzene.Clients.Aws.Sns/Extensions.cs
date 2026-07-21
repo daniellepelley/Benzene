@@ -90,9 +90,10 @@ public static class Extensions
     /// <param name="action">A callback used to configure the converted SNS publish pipeline.</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app,
-        string topicArn, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute)
+        string topicArn, Action<IMiddlewarePipelineBuilder<SnsSendMessageContext>> action, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute,
+        SnsPublishOptions? publishOptions = null)
     {
-        return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey), action);
+        return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey, publishOptions), action);
     }
 
     /// <summary>
@@ -102,8 +103,9 @@ public static class Extensions
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app, string topicArn, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute)
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app, string topicArn, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute,
+        SnsPublishOptions? publishOptions = null)
     {
-        return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey), builder => builder.UseSnsClient());
+        return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey, publishOptions), builder => builder.UseSnsClient());
     }
 }

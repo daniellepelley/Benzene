@@ -129,4 +129,70 @@ public class OutboundSnsContextConverterTest
                 message.MessageAttributes["tenantId"].StringValue == "tenant-1"
             ), It.IsAny<CancellationToken>()));
     }
+
+    [Fact]
+    public async Task SendAsync_WithPublishOptions_AppliesFifoGroupAndDedupFromHeaders()
+    {
+        // Regression: the OutboundContext SNS path had drifted from SnsContextConverter<T> and could
+        // not set MessageGroupId/MessageDeduplicationId, so it silently couldn't publish to a .fifo topic.
+        var mockAmazonSns = new Mock<IAmazonSimpleNotificationService>();
+        mockAmazonSns.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var publishOptions = new SnsPublishOptions
+        {
+            MessageGroupIdHeader = "group",
+            MessageDeduplicationIdHeader = "dedup"
+        };
+
+        var services = new ServiceCollection();
+        services.AddSingleton(mockAmazonSns.Object);
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddOutboundRouting(routing => routing
+            .Route(Defaults.Topic, pipeline => pipeline.UseSns(TopicArn, publishOptions: publishOptions)));
+
+        var resolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+        var sender = resolver.GetService<IBenzeneMessageSender>();
+
+        await sender.SendAsync<ExampleRequestPayload, Void>(
+            Defaults.Topic, new ExampleRequestPayload { Id = 42, Name = "foo" },
+            new Dictionary<string, string> { { "group", "orders" }, { "dedup", "abc-123" } });
+
+        mockAmazonSns.Verify(x => x.PublishAsync(
+            It.Is<PublishRequest>(message =>
+                message.MessageGroupId == "orders" &&
+                message.MessageDeduplicationId == "abc-123"
+            ), It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
+    public async Task SendAsync_WithInferNumericAttributeTypes_TypesNumericHeaderAsNumber()
+    {
+        // Regression: the OutboundContext SNS path hardcoded DataType="String" for every attribute, so
+        // numeric subscription filter policies could never match on a header it forwarded.
+        var mockAmazonSns = new Mock<IAmazonSimpleNotificationService>();
+        mockAmazonSns.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var publishOptions = new SnsPublishOptions { InferNumericAttributeTypes = true };
+
+        var services = new ServiceCollection();
+        services.AddSingleton(mockAmazonSns.Object);
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddOutboundRouting(routing => routing
+            .Route(Defaults.Topic, pipeline => pipeline.UseSns(TopicArn, publishOptions: publishOptions)));
+
+        var resolver = new MicrosoftServiceResolverAdapter(services.BuildServiceProvider());
+        var sender = resolver.GetService<IBenzeneMessageSender>();
+
+        await sender.SendAsync<ExampleRequestPayload, Void>(
+            Defaults.Topic, new ExampleRequestPayload { Id = 42, Name = "foo" },
+            new Dictionary<string, string> { { "priority", "5" }, { "tenantId", "tenant-1" } });
+
+        mockAmazonSns.Verify(x => x.PublishAsync(
+            It.Is<PublishRequest>(message =>
+                message.MessageAttributes["priority"].DataType == "Number" &&
+                message.MessageAttributes["tenantId"].DataType == "String"
+            ), It.IsAny<CancellationToken>()));
+    }
 }

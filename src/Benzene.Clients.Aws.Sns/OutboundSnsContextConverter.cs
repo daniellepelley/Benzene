@@ -33,6 +33,7 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
     private readonly ISerializer _serializer;
     private readonly string _topicArn;
     private readonly string _topicAttributeKey;
+    private readonly SnsPublishOptions? _publishOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutboundSnsContextConverter"/> class, using the
@@ -40,8 +41,9 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
     /// </summary>
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <param name="topicAttributeKey">The message attribute the Benzene topic is written to (defaults to <see cref="DefaultTopicAttribute"/>).</param>
-    public OutboundSnsContextConverter(string topicArn, string topicAttributeKey = DefaultTopicAttribute)
-        : this(topicArn, new JsonSerializer(), topicAttributeKey)
+    /// <param name="publishOptions">Optional FIFO/numeric-typing publish options.</param>
+    public OutboundSnsContextConverter(string topicArn, string topicAttributeKey = DefaultTopicAttribute, SnsPublishOptions? publishOptions = null)
+        : this(topicArn, new JsonSerializer(), topicAttributeKey, publishOptions)
     { }
 
     /// <summary>
@@ -50,11 +52,13 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <param name="serializer">The serializer used to serialize the message payload.</param>
     /// <param name="topicAttributeKey">The message attribute the Benzene topic is written to (defaults to <see cref="DefaultTopicAttribute"/>).</param>
-    public OutboundSnsContextConverter(string topicArn, ISerializer serializer, string topicAttributeKey = DefaultTopicAttribute)
+    /// <param name="publishOptions">Optional FIFO/numeric-typing publish options.</param>
+    public OutboundSnsContextConverter(string topicArn, ISerializer serializer, string topicAttributeKey = DefaultTopicAttribute, SnsPublishOptions? publishOptions = null)
     {
         _topicArn = topicArn;
         _serializer = serializer;
         _topicAttributeKey = topicAttributeKey;
+        _publishOptions = publishOptions;
     }
 
     /// <summary>
@@ -74,7 +78,11 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
                 continue;
             }
 
-            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = "String" };
+            messageAttributes[header.Key] = new MessageAttributeValue
+            {
+                StringValue = header.Value,
+                DataType = SnsContextConverter<object>.DataTypeFor(_publishOptions, header.Value)
+            };
         }
 
         // Carry the Benzene routing topic as a message attribute so a Benzene SNS Lambda consumer
@@ -88,12 +96,16 @@ public class OutboundSnsContextConverter : IContextConverter<OutboundContext, Sn
 
         SnsContextConverter<object>.GuardAttributeLimit(messageAttributes.Count);
 
-        return Task.FromResult(new SnsSendMessageContext(new PublishRequest
+        var publishRequest = new PublishRequest
         {
             TopicArn = _topicArn,
             Message = _serializer.Serialize(contextIn.Request),
             MessageAttributes = messageAttributes
-        }));
+        };
+
+        SnsContextConverter<object>.ApplyFifoProperties(publishRequest, contextIn.Headers, _publishOptions);
+
+        return Task.FromResult(new SnsSendMessageContext(publishRequest));
     }
 
     /// <summary>

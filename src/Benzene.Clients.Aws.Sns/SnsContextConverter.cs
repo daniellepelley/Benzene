@@ -74,7 +74,7 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
                 continue;
             }
 
-            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = DataTypeFor(header.Value) };
+            messageAttributes[header.Key] = new MessageAttributeValue { StringValue = header.Value, DataType = DataTypeFor(_publishOptions, header.Value) };
         }
 
         // Carry the Benzene routing topic as a message attribute so a Benzene SNS Lambda consumer
@@ -97,7 +97,7 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
             MessageAttributes = messageAttributes
         };
 
-        ApplyFifoProperties(publishRequest, contextIn.Request.Headers);
+        ApplyFifoProperties(publishRequest, contextIn.Request.Headers, _publishOptions);
 
         return Task.FromResult(new SnsSendMessageContext(publishRequest));
     }
@@ -118,19 +118,21 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         }
     }
 
-    private void ApplyFifoProperties(PublishRequest publishRequest, IDictionary<string, string> headers)
+    // Shared by SnsContextConverter and OutboundSnsContextConverter so the FIFO group/dedup behaviour
+    // can't drift between the two egress entry points (it previously had).
+    internal static void ApplyFifoProperties(PublishRequest publishRequest, IDictionary<string, string> headers, SnsPublishOptions? publishOptions)
     {
-        if (_publishOptions == null)
+        if (publishOptions == null)
         {
             return;
         }
 
-        if (TryGetHeader(headers, _publishOptions.MessageGroupIdHeader, out var groupId))
+        if (TryGetHeader(headers, publishOptions.MessageGroupIdHeader, out var groupId))
         {
             publishRequest.MessageGroupId = groupId;
         }
 
-        if (TryGetHeader(headers, _publishOptions.MessageDeduplicationIdHeader, out var dedupId))
+        if (TryGetHeader(headers, publishOptions.MessageDeduplicationIdHeader, out var dedupId))
         {
             publishRequest.MessageDeduplicationId = dedupId;
         }
@@ -142,9 +144,10 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
     // (" 42 ", "1,000"), which SNS rejects - typing those as Number failed the whole Publish.
     private const NumberStyles SnsNumberStyles = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
 
-    private string DataTypeFor(string value)
+    // Shared by both SNS egress converters so numeric-attribute typing can't drift between them.
+    internal static string DataTypeFor(SnsPublishOptions? publishOptions, string value)
     {
-        return _publishOptions?.InferNumericAttributeTypes == true &&
+        return publishOptions?.InferNumericAttributeTypes == true &&
                decimal.TryParse(value, SnsNumberStyles, CultureInfo.InvariantCulture, out _)
             ? "Number"
             : "String";
