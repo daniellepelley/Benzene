@@ -3,9 +3,17 @@
 > **How to read this.** Every item from the prior triage was **re-verified against current `main`
 > source** (four parallel review passes, cross-checked with git history). The large majority are now
 > **RESOLVED** — either by the #29/#30 review series, the overnight-fixes series, the fresh
-> security/concurrency hunt, or this reconciliation pass. What genuinely remains is almost entirely
+> security/concurrency hunt, this reconciliation pass, or the API-shape track
+> (`work/api-shape-proposal-1.0.md`, items 2a/2b/4a shipped). What genuinely remains is almost entirely
 > **maintainer decisions** (behaviour/API/policy calls) plus **perf hygiene** — there are effectively
 > **no clean-cut correctness bugs left unfixed**. Items are cited with `file:line` where useful.
+>
+> **Re-check note (2026-07-21, later).** Since the four-pass verification, `main` advanced and closed
+> three more items that were briefly listed open: **Avro deserialize OOM** (`BoundedBinaryDecoder`),
+> **SQS/DynamoDB → `IHasMessageResult`** convergence, and **transport-tag constants**. This file has
+> been updated to match. Two earlier characterisations here were corrected against source: the Kinesis
+> "partition checkpoint model" (inherent to Kinesis's single-resume-point contract, not a bug — now
+> RESOLVED/doc) and the Avro OOM ("library-limited" was wrong — a bounded decoder fixed it).
 
 Legend: **[DECISION]** real issue, fix is a behaviour/API/policy call (needs a maintainer's decision
 first). **[PERF]** performance hygiene, not a correctness bug. **[RESOLVED]** verified fixed in source.
@@ -42,6 +50,9 @@ These were previously listed as open. They are now confirmed fixed — do **not*
 - **`mesh-ui.html` unvalidated href scheme** — `safeHttpUrl()` allow-lists http/https.
 - **Outbound Kafka `GetBytes(null)`** — `header.Value ?? string.Empty`.
 - **Kafka body getter `.ToString()` on `byte[]`** — now UTF-8 decodes byte payloads.
+- **Avro deserialize OOM** — `BoundedBinaryDecoder` guards the length prefix before allocation (`482af8ad`).
+- **SQS/DynamoDB adapter convergence** — onto `IHasMessageResult` (`92f4c459`) + `TransportNames` tags (`ee342f7e`).
+- **Kinesis "partition checkpoint model"** — inherent to Kinesis's single-resume-point contract (design doc §2); checkpointer already correct, shard-order guidance added to CLAUDE.md (`822cabf4`).
 
 ### Security/concurrency (fresh-hunt series, done)
 Native AMQP batch leak; XML entity-expansion DoS; MessagePack `TrustedData` DoS; Redis faulted-connection
@@ -90,14 +101,19 @@ None of these is a clean self-contained bug; each changes behaviour, a public AP
   and facets (`MaxLength`/`Pattern`/`Minimum`…), so enum-value removal, nullable flips, and facet
   tightening pass the backward-compat gate. Closing it needs new `SchemaChangeKind` values + a
   per-direction breaking-vs-warning classification (policy). (`Compatibility/SchemaCompatibilityComparer.cs:106-177`.)
-- **[DECISION] Avro map round-trip + unbounded deserialize allocation** — `Dictionary`/map doesn't
-  round-trip (`KeyValuePair` is read-only → empty record); and a tiny untrusted `application/avro`
-  body can declare a huge internal length prefix, driving a `new byte[hugeLength]` OOM **before** any
-  read. Apache.Avro exposes no per-field cap, so a wire-`Length` check is only partial — the real fix
-  is a bounded decoder or an accepted, documented limitation. Both are feature/design work.
-- **[DECISION] Overlapping result abstractions** — `IBenzeneResult<T>` / `IMessageHandlerResult<T>` /
-  legacy `IMessageResult` coexist and the ack/settlement path runs on the legacy type. No `[Obsolete]`
-  anywhere; consolidation is an API call.
+- **[RESOLVED] Avro unbounded deserialize allocation (OOM)** — fixed by `BoundedBinaryDecoder`
+  (`482af8ad`): it guards the `bytes`/`string` length prefix **before** the `new byte[length]`
+  allocation, bounded by the decoded input size and tightened by `AvroOptions.MaxDeserializeBytes`.
+  (My earlier "library-limited, wire-cap only partial" note was wrong — the bounded-decoder approach
+  closes it properly.) **[DECISION, post-1.0] Avro `Dictionary`/map round-trip** still unsupported
+  (`KeyValuePair` is read-only → empty record) — a bidirectional map-schema feature, per
+  `work/api-shape-proposal-1.0.md` item 4b.
+- **[PARTLY RESOLVED / DECISION] Overlapping result abstractions** — SQS/DynamoDB converged onto
+  `IHasMessageResult` (`92f4c459`), so the outcome representation is now **uniform** across the
+  library (the `bool?` fork is gone). The residual — `[Obsolete]`-ing the legacy `IMessageResult` and
+  rerouting settlement through `IBenzeneResult` (proposal 1b) — is **deliberately held** as its own
+  reviewed change because it touches the just-shipped settlement path at ~36 read sites; the practical
+  consolidation value is already banked. See `work/api-shape-proposal-1.0.md`.
 - **[DECISION] Cache null-payload negative-caching & version unknown-version passthrough** — a null
   deserialized value is a cache miss and a null payload is still written back (`CacheEntry.cs:64-83`);
   an unknown requested version silently falls back to the max version (`VersionSelector.cs:21-29`).
@@ -109,8 +125,9 @@ None of these is a clean self-contained bug; each changes behaviour, a public AP
   statuses fail is the policy call. (`DynamoDbHealthCheck.cs:36-40`.)
 - **[DECISION] `CachingHealthCheckProcessor` cache key is the sorted Type-set** — two probes (liveness
   vs readiness) with the same type-set but different instances collide for the TTL. (`CachingHealthCheckProcessor.cs:49`.)
-- **[DECISION] SQS/DynamoDb two-generation adapter + magic-string transport tags** — `SetTransport("sqs"/"dynamodb")`
-  literals + bare `bool? IsSuccessful` instead of `IHasMessageResult`. Convergence debt.
+- **[RESOLVED] SQS/DynamoDb two-generation adapter + magic-string transport tags** — both converged
+  onto `IHasMessageResult` (`92f4c459`, the `bool?` fork gone) and the tags now use
+  `TransportNames.Sqs`/`.DynamoDb` (`ee342f7e`). (proposal items 2a + 2b)
 - **[DECISION] `BenzeneResultExtensions.IsSuccess()` true only for `Ok`** — identical to `IsOk()`,
   disagrees with `IBenzeneResult.IsSuccessful` (all six success statuses). Intended semantics is the call.
 - **[DECISION] CR/LF response-header injection (defence-in-depth)** — API-Gateway/self-host/AspNet
