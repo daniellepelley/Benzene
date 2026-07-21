@@ -34,14 +34,27 @@ variable "aggregate_schedule" {
   default     = "rate(5 minutes)"
 }
 
+variable "adot_collector_layer_arn" {
+  description = <<-EOT
+    ARN of the AWS Distro for OpenTelemetry (ADOT) collector Lambda layer, region-specific. When set,
+    it is attached to every function and Benzene's OTLP exporter is pointed at the layer's in-process
+    collector (http://localhost:4317) automatically — the collector's default config forwards OTLP
+    traces to X-Ray (awsxray), so the per-middleware spans land as subsegments in the same X-Ray trace
+    as the AWS-level segments. Look up the current ARN for your region/architecture from
+    https://github.com/aws-observability/aws-otel-lambda (e.g. the aws-otel-collector layer). No
+    AWS_LAMBDA_EXEC_WRAPPER is set — these are custom-runtime functions that already emit their own
+    spans, so only the collector half of the layer is used. Leave empty to not attach it.
+  EOT
+  type        = string
+  default     = ""
+}
+
 variable "otlp_endpoint" {
   description = <<-EOT
-    OTLP endpoint for Benzene's OpenTelemetry spans/metrics, passed to every function as
-    OTEL_EXPORTER_OTLP_ENDPOINT. Leave empty to record spans but export nowhere (no collector).
-    X-Ray active tracing (always on) captures the AWS-level segments on its own; to see Benzene's
-    per-middleware spans in X-Ray / CloudWatch Application Signals, point this at the in-process
-    Application Signals / ADOT collector (typically http://localhost:4316/v1/traces) whose layer
-    forwards OTLP to X-Ray.
+    Explicit override for OTEL_EXPORTER_OTLP_ENDPOINT on every function. Usually leave empty and set
+    adot_collector_layer_arn instead (which points the exporter at the layer's localhost collector).
+    Set this only to target an out-of-process / external collector. Empty AND no ADOT layer = spans are
+    recorded but exported nowhere.
   EOT
   type        = string
   default     = ""

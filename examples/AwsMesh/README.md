@@ -76,12 +76,17 @@ Two things are different from a typical Generic-Host app, because a bare AWS Lam
   execution environment freezes, so the current invocation's spans aren't delayed to the next invocation
   or dropped on scale-in.
 
-Point the OTLP exporter at a collector with the standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var (unset,
-the exporter no-ops and spans are recorded but exported nowhere). The Terraform sets this from
-`var.otlp_endpoint` and turns on **X-Ray active tracing** (`tracing_config { mode = "Active" }`) for
-every function automatically. Note X-Ray active tracing alone captures the AWS-level segments; to see
-Benzene's **per-middleware** spans in X-Ray / CloudWatch Application Signals, `var.otlp_endpoint` must
-point at the in-process Application Signals / ADOT collector that forwards OTLP to X-Ray.
+**X-Ray active tracing** (`tracing_config { mode = "Active" }`) is turned on for every function
+automatically — but note it only captures the **AWS-level** segments (the `AWS::Lambda::Function`
+segments and their `Overhead` subsegments). Benzene's **per-middleware** spans are OpenTelemetry spans
+that leave the process over **OTLP**, a separate pipe that needs a collector to reach X-Ray. To bridge
+them, set **`var.adot_collector_layer_arn`** to the ADOT collector Lambda layer for your region: the
+Terraform attaches it to every function and points `OTEL_EXPORTER_OTLP_ENDPOINT` at the layer's
+in-process collector (`http://localhost:4317`), whose default config forwards OTLP traces to X-Ray —
+so the middleware spans show up as subsegments in the same trace as the AWS-level segments. (No
+`AWS_LAMBDA_EXEC_WRAPPER` is set: these custom-runtime functions already emit their own spans, so only
+the collector half of the layer is used.) `var.otlp_endpoint` is an escape hatch for pointing at an
+out-of-process collector instead. With neither set, spans are recorded but exported nowhere.
 
 ## What each service shows off
 

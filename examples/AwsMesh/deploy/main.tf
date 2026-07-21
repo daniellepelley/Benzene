@@ -29,9 +29,20 @@ locals {
     shipping = { zip = var.shipping_zip, name = "${var.project}-shipping" }
   }
 
-  # When an OTLP endpoint is configured, hand it to every function as OTEL_EXPORTER_OTLP_ENDPOINT so
-  # Benzene's OpenTelemetry providers export spans/metrics there (empty map = feature off, no export).
-  otlp_env = var.otlp_endpoint != "" ? { OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint } : {}
+  # The OTLP endpoint Benzene's providers export to. An explicit var.otlp_endpoint wins; otherwise, when
+  # the ADOT collector layer is attached, default to its in-process gRPC receiver on localhost:4317 (the
+  # OpenTelemetry .NET exporter's default protocol), so attaching the layer is all it takes to get spans
+  # flowing. Empty = no exporter attached at all (spans recorded but exported nowhere).
+  otlp_endpoint = var.otlp_endpoint != "" ? var.otlp_endpoint : (var.adot_collector_layer_arn != "" ? "http://localhost:4317" : "")
+
+  otlp_env = local.otlp_endpoint != "" ? { OTEL_EXPORTER_OTLP_ENDPOINT = local.otlp_endpoint } : {}
+
+  # The ADOT collector Lambda layer, attached to every function when configured. Its default collector
+  # config runs an OTLP receiver and exports traces to X-Ray (awsxray) out of the box, so Benzene's
+  # per-middleware spans arrive in the same X-Ray trace view as the AWS-level segments. No auto-instrument
+  # wrapper (AWS_LAMBDA_EXEC_WRAPPER) is set: these are provided.al2023 custom-runtime functions that
+  # already produce their own spans, so only the collector half of the layer is used.
+  collector_layers = var.adot_collector_layer_arn != "" ? [var.adot_collector_layer_arn] : []
 }
 
 # ---------------------------------------------------------------------------------------------------
@@ -148,6 +159,7 @@ resource "aws_lambda_function" "service" {
   architectures    = [var.lambda_architecture]
   memory_size      = 512
   timeout          = 30
+  layers           = local.collector_layers
 
   # Always emit exactly one environment block with a non-empty variables map. A *conditional*
   # (dynamic) environment block whose values are only known after apply (the SQS queue URLs, created
@@ -162,7 +174,7 @@ resource "aws_lambda_function" "service" {
   # X-Ray active tracing — the Terraform equivalent of the "AWS X-Ray Active tracing" toggle in the
   # Lambda console, so every service gets it on deploy instead of being ticked by hand per function.
   # This captures the AWS-level segments; Benzene's per-middleware spans are exported over OTLP (set
-  # var.otlp_endpoint to point at the Application Signals / ADOT collector that forwards OTLP to X-Ray).
+  # var.adot_collector_layer_arn to attach the ADOT collector layer that forwards OTLP to X-Ray).
   tracing_config {
     mode = "Active"
   }
@@ -240,6 +252,7 @@ resource "aws_lambda_function" "mesh" {
   architectures    = [var.lambda_architecture]
   memory_size      = 1024
   timeout          = 60
+  layers           = local.collector_layers
 
   environment {
     variables = merge({
@@ -249,7 +262,8 @@ resource "aws_lambda_function" "mesh" {
   }
 
   # X-Ray active tracing for the mesh Lambda too, so its scheduled aggregation run shows up as a trace
-  # (and, with an OTLP collector wired via var.otlp_endpoint, its per-middleware spans alongside it).
+  # (and, with the ADOT collector layer wired via var.adot_collector_layer_arn, its per-middleware
+  # spans alongside it).
   tracing_config {
     mode = "Active"
   }
