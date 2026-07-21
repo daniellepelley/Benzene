@@ -5,7 +5,7 @@ commit+push to main. Adversarial verification: no fix ships without a test that 
 passes after. Staying clear of the actively-churning #29/#30 cloud series (Aws/Azure/Kafka/Grpc/
 Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
-**Tally so far: 25 cycles shipped** (each failing-test-first + full-suite green). Coverage swept via
+**Tally so far: 26 cycles shipped** (each failing-test-first + full-suite green). Coverage swept via
 parallel adversarial hunters across Core/Results/Abstractions, serialization/validation/message-handlers,
 mesh (collector/aggregator/reporting/tempo/contracts/ui), cache/resilience/DI, HTTP/CORS, CLI/codegen,
 observability/serializers, auth/oauth2/versioning, health-checks, idempotency/saga, and cloud-service.
@@ -40,6 +40,17 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
   type-multiset but different check instances/URLs can serve each other's cached result for up to the TTL.
   Real keying flaw but bounded (requires opting into caching AND colliding type-sets); a correct fix needs
   probe identity threaded into the key, which isn't cleanly available at that layer. Deferred.
+- **`AwsLambdaBenzeneTestHost.SendEventAsync` leaks an X-Ray segment on the exception path** —
+  `AWSXRayRecorder.Instance.BeginSegment("Test")` then `FunctionHandlerAsync(...)` then `EndSegment()`, with
+  no `try/finally`. If the handler throws (unhandled), the global recorder's "Test" segment is left open, so
+  every later `.BuildHost()` test stacks on a dangling segment (order-dependent, can throw under
+  `ContextMissingStrategy.RUNTIME_ERROR`). Correct fix is a `finally` around `EndSegment()`. Deferred: latent
+  (no in-suite test drives an unhandled throw through the host), and a robust failing test couples to
+  AWS X-Ray global recorder internals (`GetEntity()`/`EntityNotAvailableException`), which is environment-
+  brittle — not a clean failing-test-first fix. Noted for a maintainer.
+- **`MessageBuilderExtensions.AsRawHttpRequest` emits LF, not CRLF** (`AppendLine` uses `Environment.NewLine`
+  = `\n` on Linux), violating RFC 7230 for a raw wire-format HTTP request. Dead code — no caller anywhere in
+  `src/`, `test/`, or `examples/` — so not fixed (nothing to reproduce against).
 - **`CloudServiceDescriptorSource._descriptor` uses non-volatile double-checked locking** — read lock-free
   in `Get`'s fast path and in `TryGet()`, written under `_gate`. On a weak memory model (ARM64/Graviton,
   common for AWS-hosted .NET) the reference publish can become visible before the descriptor's own field
@@ -60,6 +71,19 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 ## Cycle log
 
 (newest first)
+
+### Cycle 26 — test header builders threw on duplicate keys and clobbered/aliased headers (`Benzene.Testing`)
+- **Bug:** `MessageBuilder.WithHeader`/`HttpBuilder.WithHeader` used `Dictionary.Add`, so setting a header
+  twice (a default then an override) threw `ArgumentException` instead of last-wins like a real header map.
+  `HttpBuilder.WithHeaders` assigned the caller's dictionary by reference — dropping any earlier `WithHeader`
+  values, coupling later mutations to the caller's collection, and throwing on a read-only source — diverging
+  from the additive-copy sibling `MessageBuilderExtensions.WithHeaders`. Latent (no current call site hits the
+  buggy branch) but a real defect in a shipped test-helper API.
+- **Repro:** new `BenzeneTestBuildersTest` (4 cases) — duplicate-key set threw, and `WithHeaders` dropped a
+  prior header / aliased the caller dict, pre-fix.
+- **Fix:** `WithHeader` overwrites via the indexer (last-wins); `HttpBuilder.WithHeaders` merges into the
+  builder's own dictionary (additive, last-wins), matching the sibling. Suite 1908. (Found by a parallel
+  Testing/Tools hunt; AspNet.Core hunt came back clean.)
 
 ### Cycle 25 — Fleet UI middleware matched its path case-sensitively (`MeshFleetUiMiddleware`)
 - **Bug:** `NormalizePath` ended with `trimmed.TrimEnd('/')` but — unlike the two sibling middlewares

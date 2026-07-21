@@ -17,7 +17,8 @@ public class MessageBuilder<T> : IMessageBuilder<T>
 
     public MessageBuilder<T> WithHeader(string key, string value)
     {
-        Headers.Add(key, value);
+        // Overwrite (last-wins), like a real header map; Dictionary.Add threw on a duplicate key.
+        Headers[key] = value;
         return this;
     }
 }

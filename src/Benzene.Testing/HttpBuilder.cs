@@ -25,13 +25,21 @@ public class HttpBuilder<T> : IHttpBuilder<T>
 
     public HttpBuilder<T> WithHeaders(IDictionary<string, string> headers)
     {
-        Headers = headers;
+        // Merge into our own dictionary (additive, last-wins) rather than aliasing the caller's
+        // collection - matching the sibling MessageBuilderExtensions.WithHeaders. Aliasing dropped any
+        // earlier WithHeader values and coupled later mutations to the caller's (possibly read-only) dict.
+        foreach (var header in headers)
+        {
+            Headers[header.Key] = header.Value;
+        }
+
         return this;
     }
 
     public HttpBuilder<T> WithHeader(string key, string value)
     {
-        Headers.Add(key, value);
+        // Overwrite (last-wins), like a real header map; Dictionary.Add threw on a duplicate key.
+        Headers[key] = value;
         return this;
     }
 }
