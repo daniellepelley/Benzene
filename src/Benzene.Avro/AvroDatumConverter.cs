@@ -34,7 +34,7 @@ internal static class AvroDatumConverter
             case Schema.Type.Int:
                 return value == null ? 0 : Convert.ToInt32(value, Inv);
             case Schema.Type.Long:
-                return value == null ? 0L : Convert.ToInt64(value, Inv);
+                return value == null ? 0L : ToAvroLong(value);
             case Schema.Type.Float:
                 return value == null ? 0f : Convert.ToSingle(value, Inv);
             case Schema.Type.Double:
@@ -92,6 +92,14 @@ internal static class AvroDatumConverter
         }
 
         return items.ToArray()!;
+    }
+
+    private static long ToAvroLong(object value)
+    {
+        // ulong maps to the signed Avro long; its upper half (> long.MaxValue) doesn't fit positively,
+        // so reinterpret the bits (Convert.ToInt64 would throw OverflowException). FromDatum reverses
+        // this for a ulong target. uint and long stay on the plain Convert path.
+        return value is ulong u ? unchecked((long)u) : Convert.ToInt64(value, Inv);
     }
 
     private static string ToAvroString(object value)
@@ -208,6 +216,13 @@ internal static class AvroDatumConverter
         if (type == typeof(byte[]) || type.IsInstanceOfType(datum))
         {
             return datum;
+        }
+
+        // Reverse the ulong-as-signed-long bit reinterpretation from ToAvroLong: a value above
+        // long.MaxValue comes back as a negative long, which Convert.ChangeType would reject.
+        if (type == typeof(ulong) && datum is long l)
+        {
+            return unchecked((ulong)l);
         }
 
         return Convert.ChangeType(datum, type, Inv);

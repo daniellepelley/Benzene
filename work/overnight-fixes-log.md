@@ -30,6 +30,19 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 21 — Avro serializer overflowed on `ulong` values above `long.MaxValue` (`AvroDatumConverter`)
+- **Bug:** the schema generator maps `ulong` to Avro `long` (documented `ulong→long`), but `ToDatum`'s
+  Long case used `Convert.ToInt64`, which throws `OverflowException` for a `ulong` in the upper half of
+  its range (> `long.MaxValue`) on serialize; the reverse `long→ulong` via `Convert.ChangeType` would also
+  overflow on the resulting negative long. The same bug class as the earlier `uint` fix, which stopped at
+  32 bits and left the top half of `ulong` broken.
+- **Repro:** new `AvroSerializerTest.RoundTrips_ULong_AboveInt64Max` (`10_000_000_000_000_000_000UL`) —
+  threw `OverflowException` on serialize pre-fix, round-trips post-fix.
+- **Fix:** bit-reinterpret the full 64-bit range — `ToAvroLong` uses `unchecked((long)u)` for a `ulong`,
+  and `ConvertPrimitive` reverses it with `unchecked((ulong)l)` for a `ulong` target; `uint`/`long` stay on
+  the plain Convert path. 24 Avro tests green (incl. the uint regression); suite 1900. (Found by a parallel
+  observability/serializer hunt.)
+
 ### Cycle 20 — metrics middleware NRE'd on a null message result (`MetricsExtensions.UseBenzeneMetrics`)
 - **Bug:** the result-tag computation ran `context is IHasMessageResult r ? (r.MessageResult.IsSuccessful ...)`.
   `IHasMessageResult.MessageResult` is a settable, nullable property (several contexts leave it null until

@@ -67,6 +67,26 @@ public class AvroSerializerTest
         Assert.Equal(3_000_000_000u, result!.Value);
     }
 
+    public class ULongHolder
+    {
+        public ulong Value { get; set; }
+    }
+
+    [Fact]
+    public void RoundTrips_ULong_AboveInt64Max()
+    {
+        var serializer = new AvroSerializer();
+        // ulong maps to Avro long (signed 64-bit); a value above long.MaxValue doesn't fit positively
+        // and used to throw OverflowException in Convert.ToInt64 on serialize (and would overflow the
+        // reverse long->ulong on deserialize). The full 64-bit range must round-trip via bit reinterpretation.
+        var sample = new ULongHolder { Value = 10_000_000_000_000_000_000UL };
+
+        var result = serializer.Deserialize<ULongHolder>(serializer.Serialize(sample));
+
+        Assert.NotNull(result);
+        Assert.Equal(10_000_000_000_000_000_000UL, result!.Value);
+    }
+
     [Fact]
     public void BytePath_RoundTrips_AllSupportedTypes()
     {
