@@ -43,6 +43,17 @@ public class MessageHandlerDefinitionLookUp : IMessageHandlerDefinitionLookUp
             return null;
         }
 
+        // Fast path for the overwhelmingly common single-registered-version topic: version selection is
+        // a no-op there (VersionSelector returns the requested version if it matches, else the max of the
+        // available set - and the max of a one-element set is that element), so it always resolves to the
+        // sole handler regardless of the requested version. Skip the candidate-version array + selector +
+        // FirstOrDefault scan entirely. This runs on every dispatch (and, with the tracing wrappers, several
+        // times per message via their tag lookups), so the saved per-call array allocation adds up.
+        if (handlers.Length == 1)
+        {
+            return handlers[0];
+        }
+
         // Resolve the target version once. Folding this into the FirstOrDefault predicate re-ran the
         // whole version selection (and re-allocated the candidate-version array) for every handler in
         // the list - O(n^2) work and allocation per dispatch for a value that doesn't vary across the

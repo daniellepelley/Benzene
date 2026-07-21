@@ -32,7 +32,8 @@ public static class MetricsExtensions
         return app
             .Use("BenzeneMetrics", resolver => async (context, next) =>
             {
-                var stopwatch = Stopwatch.StartNew();
+                // Allocation-free timing: a timestamp long, not a heap-allocated Stopwatch per message.
+                var startTimestamp = Stopwatch.GetTimestamp();
                 // Record in a finally so a throwing pipeline is still counted and timed - an escaped
                 // exception is the most important thing to observe, yet without this it was never
                 // recorded (the "failure" result tag was only ever reachable for a handler that
@@ -49,21 +50,27 @@ public static class MetricsExtensions
                 }
                 finally
                 {
-                    var result = threw
-                        ? "failure"
-                        : context is IHasMessageResult { MessageResult: not null } r
-                            ? (r.MessageResult.IsSuccessful ? "success" : "failure")
-                            : "<missing>";  // no result signal set on a non-throwing completion
-
-                    var tags = new TagList
+                    // Unlike Activity, Counter/Histogram have no automatic no-op when nothing is
+                    // listening, so gate on Enabled: with no Meter exporter wired this middleware then
+                    // costs nothing beyond the timestamp read (no tag build, no DI resolves, no record).
+                    if (BenzeneDiagnostics.MessagesProcessed.Enabled || BenzeneDiagnostics.MessageDuration.Enabled)
                     {
-                        { "topic", resolver.TryGetService<IMessageGetter<TContext>>()?.GetTopic(context)?.Id ?? "<missing>" },
-                        { "transport", resolver.TryGetService<ICurrentTransport>()?.Name ?? "<missing>" },
-                        { "result", result },
-                    };
+                        var result = threw
+                            ? "failure"
+                            : context is IHasMessageResult { MessageResult: not null } r
+                                ? (r.MessageResult.IsSuccessful ? "success" : "failure")
+                                : "<missing>";  // no result signal set on a non-throwing completion
 
-                    BenzeneDiagnostics.MessagesProcessed.Add(1, tags);
-                    BenzeneDiagnostics.MessageDuration.Record(stopwatch.Elapsed.TotalMilliseconds, tags);
+                        var tags = new TagList
+                        {
+                            { "topic", resolver.TryGetService<IMessageGetter<TContext>>()?.GetTopic(context)?.Id ?? "<missing>" },
+                            { "transport", resolver.TryGetService<ICurrentTransport>()?.Name ?? "<missing>" },
+                            { "result", result },
+                        };
+
+                        BenzeneDiagnostics.MessagesProcessed.Add(1, tags);
+                        BenzeneDiagnostics.MessageDuration.Record(Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds, tags);
+                    }
                 }
             });
     }

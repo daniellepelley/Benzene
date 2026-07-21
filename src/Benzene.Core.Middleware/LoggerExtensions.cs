@@ -35,7 +35,8 @@ public static class LoggerExtensions
             .Use("LogResult", resolver => async (context, next) =>
             {
                 var logger = resolver.GetService<ILoggerFactory>().CreateLogger(LoggerCategory);
-                var stopwatch = Stopwatch.StartNew();
+                // Allocation-free timing: a timestamp long, not a heap-allocated Stopwatch per message.
+                var startTimestamp = Stopwatch.GetTimestamp();
                 using (logger.BeginScope(builder.BuildRequestScope(resolver, context)))
                 {
                     try
@@ -48,7 +49,7 @@ public static class LoggerExtensions
                         // one "log every message" line silently skips exactly the messages that most
                         // need logging. Emit an Error (with the exception) and rethrow untouched. The
                         // response scope is deliberately not built here - the result isn't set.
-                        using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = stopwatch.ElapsedMilliseconds }))
+                        using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds }))
                         {
                             logger.LogError(ex, "BenzeneResult faulted");
                         }
@@ -57,7 +58,7 @@ public static class LoggerExtensions
                     }
 
                     using (logger.BeginScope(builder.BuildResponseScope(resolver, context)))
-                    using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = stopwatch.ElapsedMilliseconds }))
+                    using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds }))
                     {
                         logger.LogInformation("BenzeneResult");
                     }

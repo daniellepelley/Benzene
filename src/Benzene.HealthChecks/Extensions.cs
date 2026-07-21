@@ -175,12 +175,13 @@ public static class Extensions
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
             var mapper = resolver.GetService<IMessageGetter<TContext>>();
-            var resultSetter = resolver.GetService<IMessageHandlerResultSetter<TContext>>();
-
             var messageTopic = mapper.GetTopic(context);
 
             if (matchTopics.Contains(messageTopic.Id))
             {
+                // Resolve the result setter + processor only on the (rare) health-check topic - every
+                // other message just passes through, so resolving these on that path was dead weight.
+                var resultSetter = resolver.GetService<IMessageHandlerResultSetter<TContext>>();
                 var processor = resolver.GetService<IHealthCheckProcessor>();
                 var result = await processor.PerformHealthChecksAsync(builder.GetHealthChecks(resolver));
                 await resultSetter.SetResultAsync(context, new MessageHandlerResult( messageTopic, MessageHandlerDefinition.Empty(), result));
