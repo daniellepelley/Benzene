@@ -24,6 +24,18 @@ public class SqsConsumerMessageTopicGetterTest
     }
 
     [Fact]
+    public void GetTopic_NullMessageAttributes_ReturnsMissingTopicIdWithoutThrowing()
+    {
+        // A Message with no MessageAttributes bag at all (null, not an empty dict) must not NRE - it
+        // resolves to the missing topic, matching an empty bag. Hardening the sibling getters missed this one.
+        var context = SqsConsumerMessageContext.CreateInstance(new Message { MessageAttributes = null });
+
+        var topic = new SqsConsumerMessageTopicGetter().GetTopic(context);
+
+        Assert.Equal(Constants.Missing, topic.Id);
+    }
+
+    [Fact]
     public void PresetTopicMessageTopicGetter_PresetSet_OverridesMissingTopicAttribute()
     {
         var context = SqsConsumerMessageContext.CreateInstance(new Message
