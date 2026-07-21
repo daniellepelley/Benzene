@@ -14,6 +14,17 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
   may be an intentional defensive default — left for a maintainer call.
 - **`VersionSelector` ordinal fallback** (`"9" > "10"` lexicographically) — DOCUMENTED and intentional
   (deterministic, culture-independent; versions are opaque strings). Not a bug.
+- **`MeshAggregator.BuildTopicEntry` SchemaMismatch folds Response into the compare string** without the
+  request-side "no schema ⇒ no signal" guard, so consumer A (`Request=X, Response=null`) vs B (`Request=X,
+  Response=Y`) flags a mismatch though inbound payloads are identical. GENUINELY AMBIGUOUS — the property's
+  second doc sentence says "request/response", and a mixed one-way/two-way set could be a real divergence.
+  Left for a maintainer call (behaviour decision, not a clear bug).
+- **`MeshAggregator` structural-edge dedup key** `$"{client} {server}"` can collide if a service name
+  contains a space. Service names are normally identifiers → latent/low; a `HashSet<(string,string)>` or a
+  non-name separator would fix it. Deferred (no realistic repro).
+- **`BenzeneResultExtensions.IsSuccess()`** returns true only for `Ok`, disagreeing with
+  `IBenzeneResult.IsSuccessful` (true for all six success statuses). No production caller in `src/`; likely
+  an intentional narrow `Ok`-alias. Left alone (would need a maintainer decision on intended semantics).
 
 ## Cycle log
 
