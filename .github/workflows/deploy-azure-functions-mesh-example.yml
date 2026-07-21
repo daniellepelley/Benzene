@@ -94,18 +94,63 @@ jobs:
             -var "resource_group=$RG" \
             -var "storage_account=${{ inputs.storage_account }}"
 
-      # The three services share one deployable — MESH_SERVICE (set per app by Terraform) selects the
-      # domain — so the same Service project is published to all three Function Apps.
-      - name: Publish the service Function Apps
-        working-directory: examples/AzureFunctionsMesh/Service
+      # Publish the built code to each Function App. `func azure functionapp publish` ends with a
+      # "sync triggers" call that asks the Functions host to start the worker and enumerate its
+      # triggers; on Linux Consumption that call can return a transient BadRequest before the freshly
+      # deployed content is consistent. The package upload has already succeeded at that point, so on a
+      # publish failure we retry the sync-triggers ARM call with backoff instead of failing the whole
+      # deploy on a transient hiccup. The three services share one deployable — MESH_SERVICE (set per
+      # app by Terraform) selects the domain — so the same Service project publishes to all three.
+      - name: Publish Function App code (resilient sync-triggers)
+        working-directory: examples/AzureFunctionsMesh
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
         run: |
-          for svc in orders payments shipping; do
-            func azure functionapp publish "${PROJECT}-${svc}"
-          done
+          set -uo pipefail
+          SUB="$(az account show --query id -o tsv)"
 
-      - name: Publish the mesh Function App
-        working-directory: examples/AzureFunctionsMesh/Mesh
-        run: func azure functionapp publish "${PROJECT}-mesh"
+          # Retry the ARM sync-triggers endpoint with backoff; returns 0 as soon as one call succeeds.
+          sync_triggers() {
+            local app="$1"
+            local url="https://management.azure.com/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Web/sites/$app/syncfunctiontriggers?api-version=2023-12-01"
+            for attempt in 1 2 3 4 5 6; do
+              if az rest --method post --url "$url" >/dev/null 2>&1; then
+                echo "sync-triggers OK for $app (attempt $attempt)"
+                return 0
+              fi
+              echo "sync-triggers for $app returned an error (attempt $attempt); retrying after backoff..."
+              sleep $((attempt * 15))
+            done
+            return 1
+          }
+
+          publish() {
+            local app="$1" dir="$2"
+            echo "::group::func publish $app"
+            local ok=0
+            (cd "$dir" && func azure functionapp publish "$app") || ok=1
+            echo "::endgroup::"
+            if [ "$ok" -eq 0 ]; then
+              return 0
+            fi
+            echo "func publish reported a failure for $app (typically only the trailing sync-triggers call - the package upload precedes it). Retrying sync-triggers via ARM..."
+            if sync_triggers "$app"; then
+              return 0
+            fi
+            echo "::error::Publishing $app failed: sync-triggers kept erroring after retries."
+            echo "::error::The package uploaded, but the Functions host could not enumerate the app's triggers -"
+            echo "::error::most often the isolated worker can't start (e.g. the region's Functions host does not yet"
+            echo "::error::support the targeted .NET version). See examples/AzureFunctionsMesh/README.md"
+            echo "::error::'Known first-deploy iteration points' about pinning dotnet_version to a supported runtime."
+            return 1
+          }
+
+          rc=0
+          for svc in orders payments shipping; do
+            publish "${PROJECT}-${svc}" Service || rc=1
+          done
+          publish "${PROJECT}-mesh" Mesh || rc=1
+          exit "$rc"
 
       - name: Show URLs
         working-directory: examples/AzureFunctionsMesh/deploy
