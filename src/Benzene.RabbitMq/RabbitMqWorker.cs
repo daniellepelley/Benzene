@@ -66,20 +66,33 @@ public class RabbitMqWorker : IBenzeneWorker, IDisposable
     {
         var autoAck = _config.AckMode == RabbitMqAckMode.AutoAck;
 
+        // The dispatcher starts its lane tasks as soon as it is constructed, before the (fallible)
+        // connection is opened. If any step below throws, StartAsync propagates but those lanes keep
+        // running - so tear everything back down on failure (StopAsync is null-guarded on the
+        // channel/connection/tag it may not have set yet) rather than leaking ConcurrentRequests idle
+        // lane tasks on a failed startup.
         _dispatcher = new BoundedConcurrentDispatcher<BasicDeliverEventArgs>(
             _config.ConcurrentRequests,
             (delivery, _) => HandleDeliveryAsync(delivery, autoAck),
             _logger);
 
-        _connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
-        _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        try
+        {
+            _connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
+            _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
-        await _channel.BasicQosAsync(0, _config.PrefetchCount, false, cancellationToken);
+            await _channel.BasicQosAsync(0, _config.PrefetchCount, false, cancellationToken);
 
-        var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += OnReceivedAsync;
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            consumer.ReceivedAsync += OnReceivedAsync;
 
-        _consumerTag = await _channel.BasicConsumeAsync(_config.QueueName, autoAck, consumer, cancellationToken);
+            _consumerTag = await _channel.BasicConsumeAsync(_config.QueueName, autoAck, consumer, cancellationToken);
+        }
+        catch
+        {
+            await StopAsync(CancellationToken.None);
+            throw;
+        }
     }
 
     /// <summary>
