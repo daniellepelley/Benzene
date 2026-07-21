@@ -30,6 +30,18 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 18 — CLI option default discarded for a value-less flag (`Parsing/Extensions.GetValue`)
+- **Bug:** `GetValue` returned `source.Attributes.TryGetValue(key, out var value) ? value : NotNull(default)`.
+  The attribute dictionary is `IDictionary<string, string?>`, and a bare value-less flag (`--format`) is
+  stored as `key -> null`. `TryGetValue` then returns `true` with `value == null`, so the method returned
+  `null` — bypassing the configured default despite a non-null return type — and `PayloadMapper.Map` set
+  that `null` straight into a `string` payload property (e.g. `Format` got `null` instead of `"json"`).
+  The `NotNull` guard only covered the missing-key branch.
+- **Repro:** new `ArgumentExtensionsTest.GetValue_KeyPresentWithNullValue_ReturnsDefault` — returned null
+  pre-fix, returns the default post-fix (plus present-value and missing-key regression guards).
+- **Fix:** fall back to the default when the found value is null, not only when the key is absent. 303
+  CLI/parser tests green; full suite 1896. (Found by a parallel CLI/codegen hunt.)
+
 ### Cycle 17 — idempotency key strategy missed a canonically-cased header (`HeaderOrBodyHashIdempotencyKeyStrategy`)
 - **Bug:** same class as Cycle 16 — `headers.TryGetValue(_options.HeaderName, ...)` (default
   `idempotency-key`) is case-sensitive via the dictionary comparer, but wire-contracts.md §2 requires
