@@ -1,5 +1,6 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Request;
 using Benzene.Abstractions.MessageHandlers.Response;
@@ -8,6 +9,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
 using Benzene.Core;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.Middleware;
@@ -95,6 +97,11 @@ public static class DependencyInjectionExtensions
 
         // services.AddScoped<ResponseMiddleware<AspNetContext>>();
         services.AddScoped<IRequestEnricher<AspNetContext>, AspNetContextRequestEnricher>();
+
+        // Declare this transport for ITransportsInfo (the same name the per-invocation current-transport
+        // records), matching Benzene.AspNet.Core - it was previously omitted here.
+        services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.Asp));
+
         services.AddHttpMessageHandlers();
         return services;
     }
