@@ -33,14 +33,26 @@ namespace Benzene.CodeGen.Client
                 return "Guid?";
             }
 
-            if (openApiSchema.Type == "object" && openApiSchema.AdditionalProperties.Type == "string")
+            // A free-form object (a map) is modelled by additionalProperties. Guard the null case first:
+            // a plain "object" schema with no additionalProperties leaves the property null, so reading
+            // .Type off it threw a NullReferenceException. When it is present, type the dictionary value
+            // from it (string -> Dictionary<string, string>, an int64 map -> Dictionary<string, long>,
+            // a $ref -> Dictionary<string, Thing>) instead of only recognising the string case.
+            if (openApiSchema.Type == "object" && openApiSchema.AdditionalProperties != null)
             {
-                return "Dictionary<string, string>";
+                var valueType = GetName(openApiSchema.AdditionalProperties);
+                if (!string.IsNullOrEmpty(valueType))
+                {
+                    return $"Dictionary<string, {valueType}>";
+                }
             }
 
             if (openApiSchema.Type == "integer")
             {
-                return openApiSchema.Nullable ? "int?" : "int";
+                // An int64-format integer must map to long, not int, or generated clients silently
+                // truncate 64-bit ids/amounts.
+                var integerType = openApiSchema.Format == "int64" ? "long" : "int";
+                return openApiSchema.Nullable ? $"{integerType}?" : integerType;
             }
 
             if (openApiSchema.Type == "number")

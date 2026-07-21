@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Immutable;
@@ -25,9 +26,12 @@ namespace Benzene.CodeGen.SourceGenerators
                     transform: (ctx, _) => GetMessageHandlerInfo(ctx))
                 .Where(t => t is not null);
 
-            var compilation = context.CompilationProvider.Combine(provider.Collect());
-
-            context.RegisterSourceOutput(compilation, (spc, source) => Execute(spc, source.Left, source.Right!));
+            // Drive the output straight off the collected handlers. Combining with CompilationProvider
+            // (as this used to) re-runs the whole output on every compilation - i.e. every keystroke -
+            // defeating the incremental generator's caching, and the Compilation was never even used by
+            // Execute. With the handler model now a value-equality record, an unchanged set of handlers
+            // produces an equal collected array, so RegisterSourceOutput's cache short-circuits.
+            context.RegisterSourceOutput(provider.Collect(), (spc, handlers) => Execute(spc, handlers!));
         }
 
         private static MessageHandlerInfo? GetMessageHandlerInfo(GeneratorSyntaxContext context)
@@ -99,7 +103,7 @@ namespace Benzene.CodeGen.SourceGenerators
             );
         }
 
-        private static void Execute(SourceProductionContext context, Compilation compilation, ImmutableArray<MessageHandlerInfo> handlers)
+        private static void Execute(SourceProductionContext context, ImmutableArray<MessageHandlerInfo> handlers)
         {
             if (handlers.IsDefaultOrEmpty)
                 return;
@@ -142,8 +146,13 @@ namespace Benzene.CodeGen.SourceGenerators
 
             foreach (var handler in handlers)
             {
+                // Topic/Version come from a user-authored [Message] attribute, so they can contain a
+                // quote, backslash or other character that would break (or inject into) the generated
+                // string literal. FormatLiteral produces a correctly-escaped, quoted C# literal.
+                var topicLiteral = SymbolDisplay.FormatLiteral(handler.Topic, quote: true);
+                var versionLiteral = SymbolDisplay.FormatLiteral(handler.Version, quote: true);
                 sb.AppendLine($"            services.AddScoped<{handler.HandlerFullType}>();");
-                sb.AppendLine($"            list.Add(MessageHandlerDefinition.CreateInstance(\"{handler.Topic}\", \"{handler.Version}\", typeof({handler.RequestFullType}), typeof({handler.ResponseFullType}), typeof({handler.HandlerFullType})));");
+                sb.AppendLine($"            list.Add(MessageHandlerDefinition.CreateInstance({topicLiteral}, {versionLiteral}, typeof({handler.RequestFullType}), typeof({handler.ResponseFullType}), typeof({handler.HandlerFullType})));");
             }
 
             sb.AppendLine("");
@@ -156,7 +165,12 @@ namespace Benzene.CodeGen.SourceGenerators
         }
     }
 
-    internal class MessageHandlerInfo
+    // Value equality is what lets the incremental pipeline cache: RegisterSourceOutput re-runs only
+    // when the collected array of these actually differs. As a plain reference-equality class every
+    // syntax pass produced "different" instances and the generator re-ran every time. Location is
+    // included so a duplicate diagnostic still moves with the code, at the cost of a cache miss when a
+    // handler's line shifts - still far better than never caching.
+    internal sealed class MessageHandlerInfo : IEquatable<MessageHandlerInfo>
     {
         public string Topic { get; }
         public string Version { get; }
@@ -173,6 +187,34 @@ namespace Benzene.CodeGen.SourceGenerators
             ResponseFullType = responseFullType;
             HandlerFullType = handlerFullType;
             Location = location;
+        }
+
+        public bool Equals(MessageHandlerInfo? other)
+        {
+            return other is not null
+                && Topic == other.Topic
+                && Version == other.Version
+                && RequestFullType == other.RequestFullType
+                && ResponseFullType == other.ResponseFullType
+                && HandlerFullType == other.HandlerFullType
+                && Location.Equals(other.Location);
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as MessageHandlerInfo);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = 17;
+                hash = hash * 31 + (Topic?.GetHashCode() ?? 0);
+                hash = hash * 31 + (Version?.GetHashCode() ?? 0);
+                hash = hash * 31 + (RequestFullType?.GetHashCode() ?? 0);
+                hash = hash * 31 + (ResponseFullType?.GetHashCode() ?? 0);
+                hash = hash * 31 + (HandlerFullType?.GetHashCode() ?? 0);
+                hash = hash * 31 + (Location?.GetHashCode() ?? 0);
+                return hash;
+            }
         }
     }
 }
