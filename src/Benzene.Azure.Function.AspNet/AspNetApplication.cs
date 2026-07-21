@@ -1,5 +1,7 @@
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +21,8 @@ public class AspNetApplication : EntryPointMiddlewareApplication<HttpRequest, IA
     /// <param name="pipelineBuilder">The built HTTP middleware pipeline to run the request through.</param>
     /// <param name="serviceResolverFactory">The service resolver factory used to process the request.</param>
     public AspNetApplication(IMiddlewarePipeline<AspNetContext> pipelineBuilder, IServiceResolverFactory serviceResolverFactory)
-        : base(new MiddlewareApplication<HttpRequest, AspNetContext, IActionResult>(pipelineBuilder,
+        : base(new MiddlewareApplication<HttpRequest, AspNetContext, IActionResult>(
+                new TransportMiddlewarePipeline<AspNetContext>(TransportNames.Asp, pipelineBuilder),
                 @event => new AspNetContext(@event),
                     context => context.ContentResult
                 ),

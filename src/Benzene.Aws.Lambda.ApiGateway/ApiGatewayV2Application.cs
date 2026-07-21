@@ -1,5 +1,7 @@
 using Amazon.Lambda.APIGatewayEvents;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Lambda.ApiGateway;
@@ -17,7 +19,7 @@ public class ApiGatewayV2Application : MiddlewareApplication<APIGatewayHttpApiV2
     /// </summary>
     /// <param name="pipeline">The built API Gateway v2 middleware pipeline.</param>
     public ApiGatewayV2Application(IMiddlewarePipeline<ApiGatewayV2Context> pipeline)
-        : base(pipeline,
+        : base(new TransportMiddlewarePipeline<ApiGatewayV2Context>(TransportNames.ApiGateway, pipeline),
             @event => new ApiGatewayV2Context(@event),
             context => context.ApiGatewayProxyResponse)
     { }

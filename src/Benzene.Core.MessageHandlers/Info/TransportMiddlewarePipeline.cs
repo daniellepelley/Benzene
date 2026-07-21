@@ -37,8 +37,11 @@ public class TransportMiddlewarePipeline<TContext> : IMiddlewarePipeline<TContex
     /// <param name="serviceResolver">Resolver used to resolve the registered <see cref="ISetCurrentTransport"/>, then passed through to the inner pipeline.</param>
     public Task HandleAsync(TContext context, IServiceResolver serviceResolver)
     {
-        var setCurrentTransport = serviceResolver.GetService<ISetCurrentTransport>();
-        setCurrentTransport.SetTransport(_transport);
+        // Best-effort: the current-transport value is observability metadata (it feeds the
+        // benzene.transport span tag / metrics dimension), so if ISetCurrentTransport isn't registered
+        // - e.g. a minimal container that never called AddBenzene() - skip recording it rather than
+        // failing the whole pipeline over a diagnostics concern.
+        serviceResolver.TryGetService<ISetCurrentTransport>()?.SetTransport(_transport);
         return _pipeline.HandleAsync(context, serviceResolver);
     }
 }

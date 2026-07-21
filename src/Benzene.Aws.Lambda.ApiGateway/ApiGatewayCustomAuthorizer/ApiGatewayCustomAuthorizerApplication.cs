@@ -1,5 +1,7 @@
 using Amazon.Lambda.APIGatewayEvents;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 
 namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
@@ -16,7 +18,7 @@ public class ApiGatewayCustomAuthorizerApplication : MiddlewareApplication<APIGa
     /// </summary>
     /// <param name="pipeline">The built custom authorizer middleware pipeline.</param>
     public ApiGatewayCustomAuthorizerApplication(IMiddlewarePipeline<ApiGatewayCustomAuthorizerContext> pipeline)
-        : base(pipeline,
+        : base(new TransportMiddlewarePipeline<ApiGatewayCustomAuthorizerContext>(TransportNames.ApiGateway, pipeline),
             @event => new ApiGatewayCustomAuthorizerContext(@event),
             context => context.ApiGatewayCustomAuthorizerResponse
         )
