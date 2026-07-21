@@ -3,10 +3,10 @@ using Microsoft.Extensions.Hosting;
 namespace Benzene.Examples.AzureMesh.Mesh;
 
 /// <summary>
-/// Runs a discovery + aggregation pass on an interval (the Kubernetes analogue of the AWS
+/// Runs a discovery + aggregation pass on an interval (the Azure App Service analogue of the AWS
 /// EventBridge schedule), so the catalog stays fresh without anyone hitting <c>/mesh/refresh</c>.
 /// Failures are swallowed and retried next tick — a transient API/interrogation error must not crash
-/// the mesh pod.
+/// the mesh Web App.
 /// </summary>
 public class MeshAggregationBackgroundService : BackgroundService
 {

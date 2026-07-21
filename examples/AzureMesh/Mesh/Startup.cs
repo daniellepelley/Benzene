@@ -62,7 +62,12 @@ public class Startup : BenzeneStartUp
             // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in Blob Storage.
             .AddMeshAggregatorWithBlob(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()),
                 new Uri(blobServiceUri), container, prefix)
-            .AddMeshAzureDiscovery());
+            // Scope discovery to this deployment's subscription + resource group so a subscription-scoped
+            // Reader identity doesn't discover every benzene-tagged site in the subscription. Both are
+            // optional — unset falls back to the credential's default subscription, whole-subscription sweep.
+            .AddMeshAzureDiscovery(
+                subscriptionId: Environment.GetEnvironmentVariable("MESH_SUBSCRIPTION_ID"),
+                resourceGroup: Environment.GetEnvironmentVariable("MESH_RESOURCE_GROUP")));
 
         services.AddSingleton<MeshAggregationService>();
         services.AddHostedService<MeshAggregationBackgroundService>();

@@ -56,6 +56,26 @@ The mesh Web App wires **full OpenTelemetry** (`AddOpenTelemetry` + Benzene trac
 plus `UseW3CTraceContext`/`UseBenzeneEnrichment`/`UseBenzeneMetrics` on the pipeline). Set
 `OTEL_EXPORTER_OTLP_ENDPOINT` (app setting) to export to a collector; unset, it no-ops.
 
+## Discovery scope
+
+Discovery is pinned to this deployment's subscription and resource group via two app settings on the
+mesh Web App (`MESH_SUBSCRIPTION_ID`, `MESH_RESOURCE_GROUP`, both set by Terraform). This keeps the
+sweep constrained even if the mesh identity is later granted `Reader` at subscription scope — without
+them, `DefaultAzureCredential`'s *default* subscription is used and the sweep spans every
+benzene-tagged site the identity can see. `MESH_REGION` narrows further by region.
+
+## Discovering Azure Functions
+
+The example hosts the three services as **Web Apps for Containers**, but discovery is hosting-model
+agnostic: a Function App is a `Microsoft.Web/sites` resource, so a benzene-tagged Function App is
+discovered exactly like a Web App. To make one *interrogable* it must expose the Cloud Service Profile
+endpoints the aggregator fetches — `/benzene/spec` and `/benzene/health` — over HTTP, which means:
+(1) HTTP-triggered `/benzene/*` endpoints via `Benzene.Azure.Function.*`; (2) either an empty
+`routePrefix` in `host.json` or the `benzene:spec-path`/`benzene:health-path` resource tags pointed at
+`/api/benzene/...`; and (3) `authLevel: anonymous` on those two triggers (the aggregator carries no
+function key). A Consumption-plan Function may cold-start past the aggregator's 10s fetch timeout and
+flash *Unreachable* until warm.
+
 ## Known first-deploy iteration points
 
 Like the AWS example, the live Azure behaviour is only verifiable on a real deploy; the likely
@@ -64,7 +84,10 @@ first-run tweaks (all localized):
   the exact tag your registry has if `10.0` doesn't resolve.
 - **Web App container port** — set via `WEBSITES_PORT=8080` (the container listens on `PORT=8080`);
   if a site returns 502 on cold start this is the first thing to check.
-- **Role-assignment propagation** — the mesh identity's Reader/Blob roles can take a minute to take
-  effect; an early discovery pass may return `0` until they propagate (the background pass retries).
+- **Role-assignment propagation** — a `time_sleep` gives the mesh identity's principal time to
+  propagate before its Reader/Blob role assignments apply (removing the first-apply `PrincipalNotFound`
+  race). The roles themselves can still take a minute to take *effect*, so an early discovery pass may
+  return `0` until they propagate (the background pass retries).
 - **Managed-identity blob auth** — `DefaultAzureCredential` uses the Web App's managed identity in
-  Azure; ensure the identity has **Storage Blob Data Contributor**, not just control-plane access.
+  Azure; ensure the identity has **Storage Blob Data Contributor**, not just control-plane access (a
+  missing data-plane role surfaces as a 403 on the first blob write).

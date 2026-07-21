@@ -17,11 +17,14 @@ public static class Extensions
     /// <c>Reader</c> on the resources it enumerates.
     /// </summary>
     /// <param name="services">The service container to register with.</param>
-    public static IBenzeneServiceContainer AddMeshAzureDiscovery(this IBenzeneServiceContainer services)
+    /// <param name="subscriptionId">The subscription to enumerate; null uses the credential's default subscription.</param>
+    /// <param name="resourceGroup">If set, discovery is constrained to this resource group (recommended when the identity holds Reader at subscription scope).</param>
+    public static IBenzeneServiceContainer AddMeshAzureDiscovery(this IBenzeneServiceContainer services,
+        string? subscriptionId = null, string? resourceGroup = null)
     {
         services.AddSingleton(_ => new ArmClient(new DefaultAzureCredential()));
         services.AddSingleton<IAzureResourceLister>(resolver =>
-            new AzureArmResourceLister(resolver.GetService<ArmClient>()));
+            new AzureArmResourceLister(resolver.GetService<ArmClient>(), subscriptionId, resourceGroup));
         services.AddSingleton<IMeshDiscoveryProvider>(resolver =>
             new AzureAppServiceDiscoveryProvider(resolver.GetService<IAzureResourceLister>()));
         services.AddSingleton(resolver => new MeshDiscoveryRunner(resolver.GetServices<IMeshDiscoveryProvider>()));

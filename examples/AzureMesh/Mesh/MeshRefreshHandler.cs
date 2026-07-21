@@ -24,8 +24,17 @@ public class MeshRefreshHandler : IMessageHandler<Void, MeshRefreshResult>
 
     public async Task<IBenzeneResult<MeshRefreshResult>> HandleAsync(Void request)
     {
-        var discovered = await _aggregation.RunAsync();
-        return BenzeneResult.Created(new MeshRefreshResult(discovered));
+        try
+        {
+            var discovered = await _aggregation.RunAsync();
+            return BenzeneResult.Created(new MeshRefreshResult(discovered));
+        }
+        catch (Exception ex)
+        {
+            // A transient ARM throttle / interrogation error must not surface as a raw 500. Report it as
+            // a 503 (the background pass keeps retrying regardless) — never leak the exception message.
+            return BenzeneResult.ServiceUnavailable<MeshRefreshResult>($"Mesh refresh failed: {ex.GetType().Name}");
+        }
     }
 }
 
