@@ -75,7 +75,9 @@ resource "azurerm_linux_function_app" "service" {
 
   site_config {
     # The mesh (and the platform) probe the Cloud Service's own health endpoint.
-    health_check_path = "/benzene/health"
+    # azurerm requires the eviction window whenever a health_check_path is set.
+    health_check_path                 = "/benzene/health"
+    health_check_eviction_time_in_min = 5
     application_stack {
       dotnet_version              = "10.0"
       use_dotnet_isolated_runtime = true
@@ -101,7 +103,9 @@ resource "azurerm_linux_function_app" "mesh" {
 
   site_config {
     # The static Mesh UI returns 200, so the platform can detect and recycle a wedged mesh instance.
-    health_check_path = "/mesh-ui"
+    # azurerm requires the eviction window whenever a health_check_path is set.
+    health_check_path                 = "/mesh-ui"
+    health_check_eviction_time_in_min = 5
     application_stack {
       dotnet_version              = "10.0"
       use_dotnet_isolated_runtime = true

@@ -89,7 +89,9 @@ resource "azurerm_linux_web_app" "service" {
   site_config {
     # App Service recycles an instance that stops returning 2xx here. Point it at the Cloud Service's
     # own health endpoint (the same one the mesh interrogates and K8s uses as its readiness probe).
-    health_check_path = "/benzene/health"
+    # azurerm requires the eviction window whenever a health_check_path is set.
+    health_check_path                 = "/benzene/health"
+    health_check_eviction_time_in_min = 5
 
     application_stack {
       # In azurerm v4 the registry URL/credentials are owned by application_stack, not app_settings —
@@ -120,7 +122,9 @@ resource "azurerm_linux_web_app" "mesh" {
 
   site_config {
     # The static Mesh UI returns 200, so App Service can detect and recycle a wedged mesh instance.
-    health_check_path = "/mesh-ui"
+    # azurerm requires the eviction window whenever a health_check_path is set.
+    health_check_path                 = "/mesh-ui"
+    health_check_eviction_time_in_min = 5
 
     application_stack {
       # As above: registry URL/credentials live in application_stack, not app_settings, on azurerm v4.
