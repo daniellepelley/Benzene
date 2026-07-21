@@ -72,6 +72,18 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 
 (newest first)
 
+### Cycle 29 — Kafka header getters threw on duplicate header keys (`ToDictionary`) — three sites
+- **Bug:** `KafkaMessageHeadersGetter<TKey,TValue>` (Kafka.Core inbound), `KafkaSendMessageHeadersGetter`
+  (Kafka.Core outbound), and `Azure.Function.Kafka.KafkaMessageHeadersGetter` all built their dictionary
+  with `.ToDictionary(x => x.Key, ...)`. Kafka headers are an ordered list that legitimately permits
+  repeated keys, so `ToDictionary` threw `ArgumentException` on the second occurrence — making a valid
+  consumed record unprocessable (dropped/at-most-once under `CatchHandlerExceptions`, or a poison record
+  under commit-on-success). The sibling RabbitMq/gRPC getters already use a last-wins indexer.
+- **Repro:** three new tests (Kafka.Core inbound + outbound in `KafkaCoreMappersTest`, Azure in
+  `KafkaGettersTest`) — each threw `ArgumentException` on a duplicate `trace` header pre-fix.
+- **Fix:** build the dictionary with a last-wins indexer loop in all three, matching RabbitMq/gRPC (and
+  the Cycle 28 AWS Lambda Kafka fix). Full core suite green (1913). (Found by three parallel transport hunts.)
+
 ### Cycle 28 — AWS Lambda Kafka header getter dropped all headers but the first (`KafkaMessageHeadersGetter`)
 - **Bug:** `context.KafkaEventRecord.Headers.FirstOrDefault()` took only element [0] of the header list. In
   the AWS MSK/Kafka Lambda wire format each record header is a SEPARATE single-entry element in that list

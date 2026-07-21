@@ -69,6 +69,22 @@ public class KafkaCoreMappersTest
     }
 
     [Fact]
+    public void KafkaMessageHeadersGetter_DuplicateHeaderKeys_TakesLastValue_DoesNotThrow()
+    {
+        // Kafka headers are an ordered list that legitimately permits repeated keys; ToDictionary threw
+        // ArgumentException on the second occurrence, making a valid record unprocessable. Last-wins,
+        // matching the RabbitMq/gRPC header getters.
+        var headers = new Headers();
+        headers.Add("trace", Encoding.UTF8.GetBytes("a"));
+        headers.Add("trace", Encoding.UTF8.GetBytes("b"));
+        var context = new KafkaRecordContext<string, string>(CreateConsumeResult("my-topic", "hello", headers));
+
+        var result = new KafkaMessageHeadersGetter<string, string>().GetHeaders(context);
+
+        Assert.Equal("b", result["trace"]);
+    }
+
+    [Fact]
     public async Task KafkaMessageHandlerResultSetter_ReflectsSuccessOnTheMessageResult()
     {
         var context = new KafkaRecordContext<string, string>(CreateConsumeResult("my-topic", "hello"));
@@ -115,6 +131,19 @@ public class KafkaCoreMappersTest
         var result = new KafkaSendMessageHeadersGetter().GetHeaders(context);
 
         Assert.Equal("abc-123", result["traceparent"]);
+    }
+
+    [Fact]
+    public void KafkaSendMessageHeadersGetter_DuplicateHeaderKeys_TakesLastValue_DoesNotThrow()
+    {
+        var headers = new Headers();
+        headers.Add("trace", Encoding.UTF8.GetBytes("a"));
+        headers.Add("trace", Encoding.UTF8.GetBytes("b"));
+        var context = new KafkaSendMessageContext("my-topic", new Message<string, string> { Value = "hello", Headers = headers });
+
+        var result = new KafkaSendMessageHeadersGetter().GetHeaders(context);
+
+        Assert.Equal("b", result["trace"]);
     }
 
     [Fact]

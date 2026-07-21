@@ -7,7 +7,15 @@ public class KafkaMessageHeadersGetter<TKey, TValue> : IMessageHeadersGetter<Kaf
 {
     public IDictionary<string, string> GetHeaders(KafkaRecordContext<TKey, TValue> context)
     {
-        return context.ConsumeResult.Message.Headers
-            .ToDictionary(x => x.Key, x => Encoding.UTF8.GetString(x.GetValueBytes() ?? System.Array.Empty<byte>()));
+        // Kafka headers are an ordered list that legitimately permits repeated keys, so build the
+        // dictionary with a last-wins indexer rather than ToDictionary (which throws on a duplicate
+        // key, making a valid record unprocessable). Matches the RabbitMq/gRPC header getters.
+        var dictionary = new Dictionary<string, string>();
+        foreach (var header in context.ConsumeResult.Message.Headers)
+        {
+            dictionary[header.Key] = Encoding.UTF8.GetString(header.GetValueBytes() ?? System.Array.Empty<byte>());
+        }
+
+        return dictionary;
     }
 }
