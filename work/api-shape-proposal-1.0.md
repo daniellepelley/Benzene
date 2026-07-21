@@ -1,5 +1,17 @@
 # Larger API-shape items — proposal for review (1.0)
 
+> **Status (2026-07-21, after "implement the recommendation").** Done and pushed: **2a**
+> (TransportNames constants for SQS/DynamoDB), **4a** (Avro deserialize allocation bound —
+> `BoundedBinaryDecoder` + `AvroOptions.MaxDeserializeBytes`), and **2b** (SQS/DynamoDB converged onto
+> `IHasMessageResult` + `MessageHandlerResultSetterBase` — the whole library now represents a message
+> outcome one way; the `bool?` fork is gone). **Held for a focused reviewed change: the rest of 1b** —
+> `[Obsolete]`-ing the legacy `IMessageResult` and rerouting settlement through `IBenzeneResult`. After
+> 2b the outcome representation is already uniform (`IHasMessageResult` everywhere), so the practical
+> consolidation value is banked; the residual `IMessageResult`→`IBenzeneResult` type migration touches
+> the just-shipped settlement path at ~36 read sites and is best done deliberately, not right on top of
+> the settlement flip. **3** (schema-compat policy) and **4b** (Avro map support) remain post-1.0.
+
+
 These are the Tier-2 items that are **API/architecture decisions**, not mechanical fixes. Each is
 laid out as: problem → current state (file-cited) → options → recommendation → breaking-ness + effort.
 Nothing here is implemented yet — this doc is for a maintainer decision. Ordered by value-for-1.0.
