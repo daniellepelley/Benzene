@@ -63,10 +63,10 @@ public class AzureAppServiceDiscoveryProvider : IMeshDiscoveryProvider
                 continue;
             }
 
-            var host = TagOrDefault(resource.Tags, HostTag,
-                resource.DefaultHost ?? $"{resource.Name}.azurewebsites.net");
-            var specPath = TagOrDefault(resource.Tags, SpecPathTag, DefaultSpecPath);
-            var healthPath = TagOrDefault(resource.Tags, HealthPathTag, DefaultHealthPath);
+            var defaultHost = resource.DefaultHost ?? $"{resource.Name}.azurewebsites.net";
+            var host = SanitizeHost(TagOrDefault(resource.Tags, HostTag, defaultHost), defaultHost);
+            var specPath = SanitizePath(TagOrDefault(resource.Tags, SpecPathTag, DefaultSpecPath), DefaultSpecPath);
+            var healthPath = SanitizePath(TagOrDefault(resource.Tags, HealthPathTag, DefaultHealthPath), DefaultHealthPath);
 
             entries.Add(new MeshServiceRegistryEntry(
                 resource.Name,
@@ -79,4 +79,36 @@ public class AzureAppServiceDiscoveryProvider : IMeshDiscoveryProvider
 
     private static string TagOrDefault(IReadOnlyDictionary<string, string> tags, string key, string fallback)
         => tags.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : fallback;
+
+    // A host tag carries an attacker-influenceable value (anyone who can tag the resource). Reject
+    // anything that isn't a bare host[:port] authority: a value carrying a path, scheme, userinfo, or
+    // whitespace/CRLF could otherwise restructure the "https://{host}{path}" URL and point the
+    // aggregator's fetch at a different host (SSRF). An invalid override falls back to the safe
+    // default host rather than aborting the whole discovery sweep.
+    private static string SanitizeHost(string host, string fallback)
+        => IsBareAuthority(host) ? host : fallback;
+
+    private static bool IsBareAuthority(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        foreach (var c in value)
+        {
+            if (c is '/' or '\\' or '@' or '?' or '#' || char.IsWhiteSpace(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // A path override must be a real path (start with '/'); otherwise "{host}{path}" would graft the
+    // value onto the host - e.g. ".evil.com/spec" makes "myapp.azurewebsites.net.evil.com/spec" - and
+    // redirect the fetch off-host. An invalid override falls back to the safe default path.
+    private static string SanitizePath(string path, string fallback)
+        => path.StartsWith('/') ? path : fallback;
 }

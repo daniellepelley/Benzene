@@ -52,6 +52,37 @@ public class AzureAppServiceDiscoveryProviderTest
     }
 
     [Fact]
+    public async Task Discover_HostTagRestructuringTheUrl_FallsBackToDefaultHost()
+    {
+        // A host tag carrying a path/scheme/userinfo could restructure "https://{host}{path}" and
+        // redirect the aggregator's fetch off-host (SSRF). Such a value is rejected in favour of the
+        // safe default host; only a bare host[:port] authority is honoured.
+        var lister = ListerWith(Site("orders", "westeurope",
+            ("benzene", "true"),
+            (AzureAppServiceDiscoveryProvider.HostTag, "evil.com/@orders.azurewebsites.net")));
+
+        var provider = new AzureAppServiceDiscoveryProvider(lister.Object);
+        var entry = Assert.Single(await provider.DiscoverAsync(new MeshDiscoveryFilter()));
+
+        Assert.Equal("https://orders.azurewebsites.net/benzene/spec?type=benzene", entry.SpecUrl);
+    }
+
+    [Fact]
+    public async Task Discover_SpecPathTagNotStartingWithSlash_FallsBackToDefault()
+    {
+        // A path override that doesn't start with '/' would graft onto the host
+        // ("orders.azurewebsites.net.evil.com/...") and redirect off-host; it falls back to default.
+        var lister = ListerWith(Site("orders", "westeurope",
+            ("benzene", "true"),
+            (AzureAppServiceDiscoveryProvider.SpecPathTag, ".evil.com/spec")));
+
+        var provider = new AzureAppServiceDiscoveryProvider(lister.Object);
+        var entry = Assert.Single(await provider.DiscoverAsync(new MeshDiscoveryFilter()));
+
+        Assert.Equal("https://orders.azurewebsites.net/benzene/spec?type=benzene", entry.SpecUrl);
+    }
+
+    [Fact]
     public async Task Discover_RegionFilter_ExcludesOtherRegions()
     {
         var lister = ListerWith(

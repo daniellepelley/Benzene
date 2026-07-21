@@ -78,6 +78,37 @@ public class KubernetesServiceDiscoveryProviderTest
     }
 
     [Fact]
+    public async Task Discover_SchemeLabelInjectingAnotherHost_FallsBackToHttp()
+    {
+        // A scheme label like "https://evil.com/" would restructure the URL and redirect the
+        // aggregator's fetch off-cluster (SSRF). Only http/https are honoured; anything else falls
+        // back to the safe http default so the authority stays the in-cluster DNS name.
+        var lister = ListerWith(Svc("orders", 80,
+            ("benzene", "true"),
+            (KubernetesServiceDiscoveryProvider.SchemeLabel, "https://evil.com/")));
+
+        var provider = new KubernetesServiceDiscoveryProvider(lister.Object);
+        var entry = Assert.Single(await provider.DiscoverAsync(new MeshDiscoveryFilter()));
+
+        Assert.Equal("http://orders.default.svc.cluster.local/benzene/spec?type=benzene", entry.SpecUrl);
+    }
+
+    [Fact]
+    public async Task Discover_PathLabelNotStartingWithSlash_FallsBackToDefault()
+    {
+        // A path override that doesn't start with '/' would graft onto the authority and redirect the
+        // fetch off-host; it falls back to the safe default path.
+        var lister = ListerWith(Svc("orders", 80,
+            ("benzene", "true"),
+            (KubernetesServiceDiscoveryProvider.SpecPathLabel, ".evil.com/spec")));
+
+        var provider = new KubernetesServiceDiscoveryProvider(lister.Object);
+        var entry = Assert.Single(await provider.DiscoverAsync(new MeshDiscoveryFilter()));
+
+        Assert.Equal("http://orders.default.svc.cluster.local/benzene/spec?type=benzene", entry.SpecUrl);
+    }
+
+    [Fact]
     public void BuildLabelSelector_PresentAndValued()
     {
         Assert.Equal("benzene", KubernetesServiceDiscoveryProvider.BuildLabelSelector(new MeshDiscoveryFilter()));

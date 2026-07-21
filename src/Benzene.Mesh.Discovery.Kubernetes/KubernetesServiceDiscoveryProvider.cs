@@ -59,10 +59,10 @@ public class KubernetesServiceDiscoveryProvider : IMeshDiscoveryProvider
                 continue;
             }
 
-            var scheme = LabelOrDefault(service.Labels, SchemeLabel, "http");
+            var scheme = SanitizeScheme(LabelOrDefault(service.Labels, SchemeLabel, "http"));
             var authority = $"{service.Name}.{service.Namespace}.svc.cluster.local{PortSuffix(scheme, service.Port)}";
-            var specPath = LabelOrDefault(service.Labels, SpecPathLabel, DefaultSpecPath);
-            var healthPath = LabelOrDefault(service.Labels, HealthPathLabel, DefaultHealthPath);
+            var specPath = SanitizePath(LabelOrDefault(service.Labels, SpecPathLabel, DefaultSpecPath), DefaultSpecPath);
+            var healthPath = SanitizePath(LabelOrDefault(service.Labels, HealthPathLabel, DefaultHealthPath), DefaultHealthPath);
 
             entries.Add(new MeshServiceRegistryEntry(
                 service.Name,
@@ -88,6 +88,22 @@ public class KubernetesServiceDiscoveryProvider : IMeshDiscoveryProvider
         var defaultPort = string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase) ? 443 : 80;
         return port == defaultPort || port <= 0 ? "" : $":{port}";
     }
+
+    // The scheme label carries an attacker-influenceable value (anyone who can label the Service).
+    // Only http/https may be used: a value like "https://evil.com/" would otherwise restructure the
+    // "{scheme}://{authority}{path}" URL and redirect the aggregator's fetch off-cluster (SSRF). An
+    // unrecognised scheme falls back to the safe http default rather than aborting discovery.
+    private static string SanitizeScheme(string scheme)
+        => string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase)
+            ? scheme
+            : "http";
+
+    // A path override must be a real path (start with '/'); otherwise "{authority}{path}" would graft
+    // the value onto the authority and redirect the fetch off the in-cluster host. An invalid override
+    // falls back to the safe default path.
+    private static string SanitizePath(string path, string fallback)
+        => path.StartsWith('/') ? path : fallback;
 
     private static string LabelOrDefault(IReadOnlyDictionary<string, string> labels, string key, string fallback)
         => labels.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : fallback;
