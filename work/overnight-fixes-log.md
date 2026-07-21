@@ -19,6 +19,20 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 15 — mesh collector aborted a whole trace batch on a null status (`MeshCollectorStore.AddEvents`)
+- **Bug:** `topic.StatusCounts[traceEvent.Status]` / `GetValueOrDefault(traceEvent.Status)` used the
+  status as a `Dictionary<string,long>` key without coalescing. `MeshTraceEvent.Status` is a non-nullable
+  `string` at compile time, but a wire payload with `"status": null` deserializes to an actual null
+  (NRT isn't runtime-enforced), and a null dictionary key throws `ArgumentNullException`. The line just
+  above (`IsSuccess(traceEvent.Status)`) is deliberately null-tolerant, so the author anticipated null —
+  the counts line was missed. The exception propagates out of the single-locked loop, aborting the batch
+  mid-way (partial, non-transactional mutation) and returning an error, violating the §6 "no missing feed
+  ever fails ingestion" rule. Reachable from the `mesh:traces` handler over an untrusted transport.
+- **Repro:** new `MeshCollectorStoreTest.AddEvents_EventWithNullStatus_IsAcceptedAndCountedAsFailure` —
+  threw `ArgumentNullException` pre-fix; post-fix the event is accepted and counted as a failure.
+- **Fix:** coalesce `traceEvent.Status ?? string.Empty` before the key path (mirroring `TopicVersion ??
+  string.Empty` one line up). 160 mesh + 129 conformance tests green. (Found by a parallel mesh hunt.)
+
 ### Cycle 14 — request enrichment threw on Guid/enum/Nullable properties (`DictionaryUtils.GetValue`)
 - **Bug:** `GetValue` coerced enricher-supplied string values to the DTO property type with
   `Convert.ChangeType`, which only supports the IConvertible primitives. A `Guid` (e.g. a route `{id}`

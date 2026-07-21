@@ -26,6 +26,24 @@ public class MeshCollectorStoreTest
     }
 
     [Fact]
+    public void AddEvents_EventWithNullStatus_IsAcceptedAndCountedAsFailure()
+    {
+        // A wire payload can deserialize "status": null into an actual null (nullable-reference
+        // annotations are not enforced at runtime). The §6 degradation rule requires ingestion to
+        // accept it rather than throw ArgumentNullException on the null status-count key.
+        var store = new MeshCollectorStore();
+        var evt = Event("trace-1", "span-1", "svc", "topic", DateTimeOffset.UtcNow, status: null!);
+
+        var accepted = store.AddEvents(new[] { evt });
+
+        Assert.Equal(1, accepted);
+        var topic = store.Topic("topic", null);
+        Assert.NotNull(topic);
+        Assert.Equal(1, topic!.Invocations);
+        Assert.Equal(1, topic.Errors);
+    }
+
+    [Fact]
     public void RingEviction_DropsTheWindowButKeepsCumulativeStats()
     {
         var store = new MeshCollectorStore(maxTraceEvents: 2);

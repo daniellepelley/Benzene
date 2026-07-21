@@ -113,9 +113,13 @@ public class MeshCollectorStore
 
                 var failed = !BenzeneResultStatusExtensions.IsSuccess(traceEvent.Status);
 
+                // A wire payload can carry a null status; coalesce it (like TopicVersion above) so it
+                // never reaches the Dictionary key path as null (ArgumentNullException would abort the
+                // whole batch mid-loop, against the §6 "no feed fails ingestion" rule).
+                var status = traceEvent.Status ?? string.Empty;
                 var topic = EnsureTopic((traceEvent.Topic, traceEvent.TopicVersion ?? string.Empty));
                 topic.Invocations++;
-                topic.StatusCounts[traceEvent.Status] = topic.StatusCounts.GetValueOrDefault(traceEvent.Status) + 1;
+                topic.StatusCounts[status] = topic.StatusCounts.GetValueOrDefault(status) + 1;
                 topic.TotalDurationMs += traceEvent.DurationMs;
                 topic.LastSeen = DateTimeOffset.UtcNow;
                 if (failed)
