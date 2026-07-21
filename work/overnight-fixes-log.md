@@ -22,6 +22,16 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 - **`MeshAggregator` structural-edge dedup key** `$"{client} {server}"` can collide if a service name
   contains a space. Service names are normally identifiers → latent/low; a `HashSet<(string,string)>` or a
   non-name separator would fix it. Deferred (no realistic repro).
+- **`DynamoDbHealthCheck` verdict is driven only by the DescribeTable HTTP 200**, ignoring `TableStatus`,
+  so a table in `INACCESSIBLE_ENCRYPTION_CREDENTIALS` (KMS key disabled → all I/O fails), `DELETING`,
+  `ARCHIVED`, etc. reports healthy. Arguably wrong for a readiness probe, BUT the class doc + package
+  CLAUDE.md explicitly document "healthy on a 200", and which `TableStatus` values should fail is a
+  policy decision (ACTIVE-only? allow UPDATING?). Touches the AWS SDK enum. Left for a maintainer call.
+- **`CachingHealthCheckProcessor` cache key is just the sorted check `Type` set** (`string.Join(",",
+  types)`), so two probes (e.g. liveness vs readiness) sharing the singleton processor with the same
+  type-multiset but different check instances/URLs can serve each other's cached result for up to the TTL.
+  Real keying flaw but bounded (requires opting into caching AND colliding type-sets); a correct fix needs
+  probe identity threaded into the key, which isn't cleanly available at that layer. Deferred.
 - **`BenzeneResultExtensions.IsSuccess()`** returns true only for `Ok`, disagreeing with
   `IBenzeneResult.IsSuccessful` (true for all six success statuses). No production caller in `src/`; likely
   an intentional narrow `Ok`-alias. Left alone (would need a maintainer decision on intended semantics).
