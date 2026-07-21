@@ -177,6 +177,11 @@ public static class Extensions
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services,
         Type[] types)
     {
+        // Record the scanned candidates (cumulatively, one record per call) so cross-cutting
+        // diagnostics can see the types discovery skipped - e.g. Benzene.Http's
+        // UnroutedHttpEndpointCheck flagging an [HttpEndpoint] handler missing its [Message].
+        services.AddSingleton(new MessageHandlerCandidateTypes(types));
+
         var cacheMessageHandlersFinder = new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(types));
         foreach (var handler in cacheMessageHandlersFinder.FindDefinitions())
         {

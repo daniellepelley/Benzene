@@ -31,6 +31,13 @@ Provides HTTP abstractions and utilities for building HTTP-based Benzene applica
 - `CompositeHttpEndpointFinder` - Combines multiple finders
 - `DependencyHttpEndpointFinder` - Discovers from DI container
 - `ListHttpEndpointFinder` - Manual endpoint list
+- `UnroutedHttpEndpointCheck` - fail-fast diagnostic wired first in `AddHttpMessageHandlers`'
+  composite: contributes no endpoints, but throws a `BenzeneException` when a scanned handler type
+  (from `MessageHandlerCandidateTypes`, recorded by Core's `AddMessageHandlers(Type[])`) carries
+  `[HttpEndpoint]` but no `[Message]` and no explicit registration — handler discovery skips such
+  types, so the route would otherwise just silently not exist (a 404 with no hint why). Explicitly
+  registered handlers (`AddMessageHandler<THandler,...>("topic")`) appear among the discovered
+  definitions and are not flagged; abstract types are ignored.
 
 ### Status Codes
 - `IHttpStatusCodeMapper` - Maps result status to HTTP status codes

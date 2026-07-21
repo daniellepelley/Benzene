@@ -25,6 +25,10 @@ Provides complete implementation of message handler infrastructure for command/q
 - `MessageHandlersList` - List of discovered handlers
 - `MessageHandlerDefinition` - Metadata about a handler
 - `MessageHandlerDefinitionLookUp` - Looks up handlers by topic
+- `MessageHandlerCandidateTypes` - records the candidate types of one reflection-scanning
+  `AddMessageHandlers(Type[])` call (registered cumulatively, one instance per call) so
+  cross-cutting diagnostics can see the types discovery *skipped* — consumed by `Benzene.Http`'s
+  `UnroutedHttpEndpointCheck` to flag `[HttpEndpoint]` handlers missing their `[Message]`
 
 ### Request Mapping
 - `RequestMapper<TContext>` - Maps transport context to request; prefers the byte-oriented path

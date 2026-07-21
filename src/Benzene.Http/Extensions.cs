@@ -30,8 +30,14 @@ public static class Extensions
         services.TryAddSingleton<ListHttpEndpointFinder>();
         services.TryAddSingleton<DependencyHttpEndpointFinder>();
         services.TryAddSingleton<IListHttpEndpointFinder, ListHttpEndpointFinder>();
+        // The UnroutedHttpEndpointCheck runs first: it contributes no endpoints but throws when a
+        // scanned handler carries [HttpEndpoint] without [Message] (and no explicit registration),
+        // turning the silently-missing-route failure mode into a clear error when routes are built.
         services.TryAddSingleton<IHttpEndpointFinder>(x =>
             new CompositeHttpEndpointFinder(
+            new UnroutedHttpEndpointCheck(
+            x.GetServices<Core.MessageHandlers.MessageHandlerCandidateTypes>(),
+            x.GetService<Abstractions.MessageHandlers.IMessageHandlersFinder>()),
             new CacheHttpEndpointFinder(
             x.GetService<ReflectionHttpEndpointFinder>()),
             x.GetService<ListHttpEndpointFinder>(),
