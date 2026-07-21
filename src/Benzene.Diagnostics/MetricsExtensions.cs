@@ -51,7 +51,9 @@ public static class MetricsExtensions
                 {
                     var result = threw
                         ? "failure"
-                        : context is IHasMessageResult r ? (r.MessageResult.IsSuccessful ? "success" : "failure") : "<missing>";
+                        : context is IHasMessageResult { MessageResult: not null } r
+                            ? (r.MessageResult.IsSuccessful ? "success" : "failure")
+                            : "<missing>";  // no result signal set on a non-throwing completion
 
                     var tags = new TagList
                     {

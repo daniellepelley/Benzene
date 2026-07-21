@@ -30,6 +30,18 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 20 — metrics middleware NRE'd on a null message result (`MetricsExtensions.UseBenzeneMetrics`)
+- **Bug:** the result-tag computation ran `context is IHasMessageResult r ? (r.MessageResult.IsSuccessful ...)`.
+  `IHasMessageResult.MessageResult` is a settable, nullable property (several contexts leave it null until
+  a handler sets one). A non-throwing completion that set no result (e.g. a short-circuit, or no matching
+  handler) made `r.MessageResult.IsSuccessful` throw `NullReferenceException` — inside the recording
+  `finally`, replacing the real successful outcome with a spurious exception escaping the metrics layer.
+- **Repro:** new `BenzeneMetricsTest.UseBenzeneMetrics_NullMessageResult_RecordsMissingWithoutThrowing` —
+  NRE pre-fix; post-fix the message is recorded once, tagged `result="<missing>"`.
+- **Fix:** a `{ MessageResult: not null }` property pattern, so a null result falls to the existing
+  `"<missing>"` sentinel like a context that carries no result signal at all. 3 metrics tests green;
+  suite 1899. (Found by a parallel observability hunt.)
+
 ### Cycle 19 — API Gateway `resource` leaked segments after a path parameter (`ApiGatewayBuilderV1.BuildVerb`)
 - **Bug:** the emitted VTL `resource` is meant to be the static path prefix up to the first path
   parameter (`TakeWhile(x => !x.Contains("{"))`). But a parameter part (ASP.NET `TemplateParser`) has
