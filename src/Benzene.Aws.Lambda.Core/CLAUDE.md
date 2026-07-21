@@ -53,3 +53,10 @@ Core AWS Lambda integration for Benzene. Provides base classes and abstractions 
 - AWS Lambda context passed through middleware pipeline
 - Cold start optimization via startup caching
 - Async/await used throughout
+- `AwsLambdaMiddlewareRouter<TRequest>`'s `DefaultLambdaJsonSerializer` is shared (static) across
+  router instances, because the pipeline constructs middleware fresh per invocation and
+  System.Text.Json caches its reflection-built type metadata per `JsonSerializerOptions` instance —
+  a per-instance serializer re-paid the full metadata build for `TRequest` (tens of ms for the large
+  AWS event types) on every invocation. The `protected JsonSerializer` field is still per-instance
+  assignable for overrides. Regression-guarded by
+  `test/Benzene.Core.Test/Aws/AwsLambdaMiddlewareRouterSerializerTest.cs`.

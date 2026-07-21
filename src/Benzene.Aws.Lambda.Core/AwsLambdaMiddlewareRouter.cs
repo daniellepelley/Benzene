@@ -17,10 +17,18 @@ namespace Benzene.Aws.Lambda.Core;
 /// </remarks>
 public abstract class AwsLambdaMiddlewareRouter<TRequest> : MiddlewareRouter<TRequest, AwsEventStreamContext>
 {
+    // Shared across every instance of a closed router type: the pipeline resolves middleware fresh
+    // per invocation, and System.Text.Json caches its reflection-built type metadata per
+    // JsonSerializerOptions instance - so a per-instance serializer re-paid the full metadata build
+    // for TRequest (tens of milliseconds for the large AWS event types) on every single invocation.
+    private static readonly DefaultLambdaJsonSerializer SharedJsonSerializer = new();
+
     /// <summary>
-    /// The JSON serializer used to deserialize the request and serialize the response.
+    /// The JSON serializer used to deserialize the request and serialize the response. Shared across
+    /// router instances by default (the serializer is thread-safe and stateless per call); assign a
+    /// different instance to override it for one router.
     /// </summary>
-    protected DefaultLambdaJsonSerializer JsonSerializer = new();
+    protected DefaultLambdaJsonSerializer JsonSerializer = SharedJsonSerializer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AwsLambdaMiddlewareRouter{TRequest}"/> class.
