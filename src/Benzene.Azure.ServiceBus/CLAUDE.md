@@ -65,11 +65,11 @@ through the shared internal `IServiceBusMessageSettler` adapter over `ProcessMes
   default `null` = SDK default of 5 min) — plumbed straight to
   `ServiceBusProcessorOptions.MaxAutoLockRenewalDuration` so a long-running handler's message lock is
   renewed past the entity's lock duration instead of being redelivered mid-processing.
-- `ServiceBusConsumerAckMode` - `AutoComplete` (default): the processor completes a message when
-  the handler returns and abandons it when the handler throws; a non-exception failure result
-  still completes. `Explicit`: the worker turns the processor's auto-complete off and settles each
-  message itself from the handler's outcome - abandoned on a thrown exception **or** an
-  unsuccessful `IMessageResult`, completed otherwise. Mirrors
+- `ServiceBusConsumerAckMode` - `Explicit` (**default**, see the "Settlement default" section above):
+  the worker turns the processor's auto-complete off and settles each message itself from the
+  handler's outcome - abandoned on a thrown exception **or** a non-exception failure result.
+  `AutoComplete` (opt-in): the processor completes a message when the handler returns and abandons it
+  when the handler throws; a non-exception failure result still completes. Mirrors
   `Benzene.Azure.Function.ServiceBus.ServiceBusAckMode`, minus the trigger configuration that
   package needs (here the worker owns the processor).
 - `ServiceBusConsumerContext` - pipeline context wrapping one `ServiceBusReceivedMessage`
