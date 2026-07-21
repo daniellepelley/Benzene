@@ -138,8 +138,10 @@ jobs:
           done
 
       # The LoadBalancer hostname appears on the Service once AWS provisions the ELB, and the DNS
-      # name takes a couple of minutes to start resolving — poll for both before asserting.
-      - name: Wait for the public URL and assert 3 services discovered
+      # name takes a couple of minutes to start resolving — poll for both before asserting. The
+      # advertised URL is the UI itself, so assert GET /mesh-ui answers too, not just the refresh
+      # endpoint (a broken handler wiring can 404 one but not the other).
+      - name: Wait for the mesh ELB and assert 3 services discovered
         if: ${{ ! inputs.destroy }}
         run: |
           echo "Waiting for the mesh Service's LoadBalancer hostname..."
@@ -160,18 +162,21 @@ jobs:
           echo "refresh -> $RESP"
           echo "$RESP" | grep -q '"discovered":3' \
             || { echo "::error::expected 3 discovered, got: $RESP"; exit 1; }
+          curl -fsS -m 10 -o /dev/null "http://$HOST/mesh-ui" \
+            || { echo "::error::Mesh UI did not answer at http://$HOST/mesh-ui"; exit 1; }
           echo "--- manifest.json ---"; curl -fsS "http://$HOST/manifest.json"
           echo ""
-          echo "Mesh UI: http://$HOST/mesh-ui"
-          echo "### Mesh UI: http://$HOST/mesh-ui" >> "$GITHUB_STEP_SUMMARY"
+          echo "MESH_HOST=$HOST" >> "$GITHUB_ENV"
 
       # The eks overlay also exposes each benzene-labelled Service through its own internet-facing
       # LoadBalancer — resolve those hostnames, prove each answers over the public internet, and put
-      # the URLs in the run summary next to the Mesh UI link.
-      - name: Print the public service URLs
+      # every URL (Mesh UI + services) in the run summary as one list.
+      - name: Print the public URLs
         if: ${{ ! inputs.destroy }}
         run: |
-          echo "### Service URLs" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Public URLs" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mesh UI: http://$MESH_HOST/mesh-ui"
+          echo "- Mesh UI: http://$MESH_HOST/mesh-ui" >> "$GITHUB_STEP_SUMMARY"
           for s in orders payments shipping; do
             HOST=""
             for i in $(seq 1 30); do

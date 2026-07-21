@@ -40,7 +40,7 @@ the Mesh UI on the public internet (see "Deploy to AWS (EKS)" below).
 | `deploy/` | Terraform for the AWS leg: EKS cluster + node group + the two ECR repositories |
 | `deploy/eks/` | kustomize overlay over `k8s/`: ECR images (set by the workflow) + a LoadBalancer mesh Service |
 | `.github/workflows/deploy-k8s-mesh-example.yml` | build images → kind → deploy → assert 3 discovered |
-| `.github/workflows/deploy-eks-mesh-example.yml` | terraform apply → push images to ECR → deploy → assert 3 discovered → print the public Mesh UI URL |
+| `.github/workflows/deploy-eks-mesh-example.yml` | terraform apply → push images to ECR → deploy → assert 3 discovered → print the public URLs (Mesh UI + services) |
 
 ## Run it in CI (no credentials)
 
