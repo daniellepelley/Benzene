@@ -53,8 +53,8 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
 - **Resilience**: `Benzene.Resilience` — **retry only** (`RetryMiddleware`).
 - **Observability**: `Benzene.OpenTelemetry`, `Benzene.Diagnostics`, correlation IDs, W3C
   trace-context propagation on outbound `Clients`.
-- **Health / ops**: `Benzene.HealthChecks` (+ EntityFramework, Http), k8s probes
-  (`Benzene.CloudService.Probe`).
+- **Health / ops**: `Benzene.HealthChecks` (+ EntityFramework, Http), `Benzene.Clients.HealthChecks`
+  (consumer-side contract-drift check on the `contracts` topic), k8s probes (`Benzene.CloudService.Probe`).
 - **Outbound / integration**: `Benzene.Clients` (+ `.Aws`, `Client.Http`), mid-redesign
   (`benzene-clients-redesign-plan.md`).
 - **Service visibility & contracts**: `Benzene.Mesh.*` — catalog, topology, **contract-drift**;
@@ -106,8 +106,10 @@ thousands of businesses**, event-driven, multi-cloud. Its non-negotiables:
 - **Current state (already half-there).** Providers expose a contract `hashCode` via a `"schema"`
   health check and a `MeshManifestEntry.ContractDrift` flag; consumers already compare a
   downstream hash against their built-in expectation (`ClientHealthCheckProcessor` → `ClientHashMatch`).
-  But it's **runtime-only** (surfaces as a health-check warning) and **coarse** (whole-spec hash →
-  can't tell breaking from additive).
+  This now has a first-class runtime surface: `ClientHealthCheck` + `AddContractCheck<TClient>(serviceName)`
+  (`Benzene.Clients.HealthChecks`) on a dedicated **`contracts`** topic (`UseContractsCheck`), which
+  monitoring/the mesh scrape — kept off the liveness/readiness probes. But it remains **runtime-only**
+  (surfaces as a health-check warning) and **coarse** (whole-spec hash → can't tell breaking from additive).
 - **The gap.** No build/CI-time check; no breaking-vs-non-breaking discrimination; consumer
   expectations aren't captured as CI artifacts.
 - **Proposed work.** Capture each consumer's expected provider contracts (topics + hashes/specs)
@@ -286,7 +288,7 @@ decision, and revisiting after A.1.
 | ID | Item | Category | Vehicle | Status |
 |----|------|----------|---------|--------|
 | A.1 | Sagas / distributed rollback ★ | Build | `Benzene.Saga` | **Shipped** — engine + tests + example; fast-follows shipped: `SagaRetryPolicy` (whole-saga retry on clean rollback) + pluggable `ISagaStateStore` (progress/outcome recording, in-memory default); user cookbook `docs/cookbooks/sagas.md`. In-process (no durable resume by design) |
-| A.2 | Contract testing / CI gate | Build | `Benzene.HealthChecks.Schema` + `Clients.HealthChecks` + `Schema.OpenApi.Compatibility` | **Shipped** — A.2a runtime drift check (provider `SchemaHealthCheck` + hardened consumer processor) and A.2b CI gate (`SchemaCompatibility.EnsureBackwardCompatible`); cookbook `docs/cookbooks/contract-testing.md` |
+| A.2 | Contract testing / CI gate | Build | `Benzene.HealthChecks.Schema` + `Clients.HealthChecks` + `Schema.OpenApi.Compatibility` | **Shipped** — A.2a runtime drift check (provider `SchemaHealthCheck` + hardened consumer processor, now a first-class `ClientHealthCheck`/`AddContractCheck` on the probe-less `contracts` topic) and A.2b CI gate (`SchemaCompatibility.EnsureBackwardCompatible`); cookbook `docs/cookbooks/contract-testing.md` |
 | A.3 | Idempotency | Build | `Benzene.Idempotency` | **Shipped** — `IdempotencyMiddleware<TContext>` + pluggable `IIdempotencyStore` + in-memory store + header/body-hash key strategy; 20 tests; cookbook `docs/cookbooks/idempotency.md` (Redis store as copy-paste `SET NX`) |
 | A.4 | Authorization depth | Build | `Benzene.Auth.Core` | **Shipped** — `RequireRole`/`RequirePolicy`/`RequireAuthorization<TResource>` + `IAuthorizationPolicy`/`IAuthorizationHandler<TResource>` seams (BCL-only, no new NuGet); 8 tests; cookbook section in `docs/cookbooks/auth-patterns.md` |
 | A.5 | Secrets & multi-cloud config | Build | `Benzene.Configuration.Core` | **Shipped** — neutral `ISecretStore` seam + env/file/in-memory/composite/caching providers, `SecretResolver` (typed fail-fast) + `SecretValidation` (startup); BCL-only, no new NuGet; 17 tests; cookbook `docs/cookbooks/secrets-configuration.md` (copy-paste cloud adapters) |

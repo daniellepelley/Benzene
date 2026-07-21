@@ -369,6 +369,13 @@ each only matches its own topic (`Constants.DefaultLivenessTopic`/`DefaultReadin
 registering both in the same pipeline doesn't have one silently shadow the other on a shared fallback
 topic.
 
+There is a third purpose-built method, `.UseContractsCheck()`, that answers a probe-less **`contracts`**
+diagnostic topic (`Constants.DefaultContractsTopic`) — for consumer-side **contract-drift** checks
+(`Benzene.Clients.HealthChecks`' `ClientHealthCheck` / `AddContractCheck<TClient>(serviceName)`) that
+call a downstream service. These belong in **neither** liveness nor readiness — a struggling downstream
+would otherwise restart or de-route otherwise-healthy pods — so monitoring/the mesh scrape `contracts`
+directly. See [Kubernetes Health Checks](kubernetes-health-checks.md#client--contract-drift-checks-belong-in-neither-probe).
+
 `Benzene.SelfHost.Http` and `Benzene.Aws.Lambda.ApiGateway` additionally expose HTTP-path versions,
 defaulting to the conventional Kubernetes probe paths:
 

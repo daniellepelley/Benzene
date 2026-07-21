@@ -634,7 +634,7 @@ test above is picked up
 **Issues (2026-07-14 re-verification — API surface above still matches current source exactly):**
 1. ~~❌ **Missing PackageVersion in csproj**~~ ✅ MOOT — centralized versioning, see Current State Assessment above
 2. ~~❌ No XML documentation~~ ✅ RESOLVED 2026-07-14 (second pass) — `GenerateDocumentationFile=true` now set in the csproj, 0 CS1591/CS1574 on rebuild, every public member across all 9 files documented
-3. ⚠️ No timeout support in interface (implemented in Benzene.HealthChecks) — still true (`TimeOutHealthCheck` in `Benzene.HealthChecks` hard-codes a 10000ms delay, not interface-level or configurable)
+3. ⚠️ No timeout support on the `IHealthCheck` interface itself — still true. (The per-check timeout **is** now configurable at the processor level via `new HealthCheckProcessor(TimeSpan)` (default 10s); it is just not expressible per-check on the interface — see `work/client-health-checks-design.md` §3.5 for the proposed `Ttl`/`Timeout` DIMs.)
 4. ⚠️ No tags/labels for health check categorization — still true
 5. ⚠️ No dependency graph for health checks — still true
 6. ⚠️ No critical vs non-critical distinction — still true
@@ -687,9 +687,9 @@ test above is picked up
 2. ✅ **RESOLVED 2026-07-14** — No XML documentation — all 14 files documented, 0 CS1591 on clean rebuild
 3. ⚠️ HealthCheckProcessor.PerformHealthChecksAsync has topic parameter but doesn't use it — **still true**, verified: `topic` is accepted but never referenced in the method body
 4. ⚠️ No graceful degradation (fails if any check fails) — still true
-5. ✅ **RESOLVED 2026-07-14** — No separate readiness vs liveness endpoints. `Benzene.HealthChecks.Extensions.UseLivenessCheck`/`UseReadinessCheck` now exist (topic-based, every transport, responding only to `Constants.DefaultLivenessTopic`/`DefaultReadinessTopic`), with HTTP-path convenience wrappers in `Benzene.SelfHost.Http`/`Benzene.Aws.Lambda.ApiGateway` defaulting to the conventional `/livez`/`/readyz` paths. While implementing this, also found and fixed a real bug that would have made HTTP-based Kubernetes probes non-functional even with the split: `HealthCheckProcessor.PerformHealthChecksAsync` always returned HTTP 200 regardless of `isHealthy` — now returns 503 when unhealthy. Full guide: `docs/kubernetes-health-checks.md`. This package's `CLAUDE.md` no longer describes an aspiration — it's now accurate (also fixed the `/health` HTTP-endpoint overclaim it separately had).
-6. ⚠️ TimeOutHealthCheck has hard-coded timeout (needs documentation) — **still true**, verified: `Task.Delay(10000)` is a magic number in `TimeOutHealthCheck.cs`, not configurable (unlike the analogous `WaitTimeSeconds` fix made configurable in `Benzene.Aws.Sqs`'s `SqsConsumerConfig` per the AWS roadmap's 2026-07-12 changelog — no equivalent fix landed here)
-7. ⚠️ No caching for health check results — still true
+5. ✅ **RESOLVED 2026-07-14** — No separate readiness vs liveness endpoints. `Benzene.HealthChecks.Extensions.UseLivenessCheck`/`UseReadinessCheck` now exist (topic-based, every transport, responding only to `Constants.DefaultLivenessTopic`/`DefaultReadinessTopic`), with HTTP-path convenience wrappers in `Benzene.SelfHost.Http`/`Benzene.Aws.Lambda.ApiGateway` defaulting to the conventional `/livez`/`/readyz` paths. While implementing this, also found and fixed a real bug that would have made HTTP-based Kubernetes probes non-functional even with the split: `HealthCheckProcessor.PerformHealthChecksAsync` always returned HTTP 200 regardless of `isHealthy` — now returns 503 when unhealthy. Full guide: `docs/kubernetes-health-checks.md`. This package's `CLAUDE.md` no longer describes an aspiration — it's now accurate (also fixed the `/health` HTTP-endpoint overclaim it separately had). **Update (contracts topic):** a *third* purpose-built probe-topic method now exists — `UseContractsCheck` (topic `"contracts"`, `Constants.DefaultContractsTopic`) — for consumer-side contract-drift checks (`Benzene.Clients.HealthChecks.ClientHealthCheck` / `AddContractCheck<TClient>`) that must stay off **both** liveness and readiness probes (a downstream call would restart or de-route otherwise-healthy pods). See `work/client-health-checks-design.md` §7.
+6. ✅ **RESOLVED** — TimeOutHealthCheck timeout is now configurable: `HealthCheckProcessor(TimeSpan? timeout = null)` (default 10s) flows into `new TimeOutHealthCheck(inner, _timeout)`, which uses `Task.Delay(_timeout, …)` — no `Task.Delay(10000)` magic number remains. A consumer can also register their own `IHealthCheckProcessor` (e.g. a different timeout) and have it win.
+7. ✅ **RESOLVED** — `CachingHealthCheckProcessor` (opt-in TTL cache, keyed by the set of check `Type`s) decorates `IHealthCheckProcessor`, so a probe polling every few seconds doesn't re-run every check.
 8. ⚠️ No progress reporting for long-running checks — still true
 
 **1.0 Requirements:**
@@ -698,8 +698,8 @@ test above is picked up
 - [ ] Fix or document unused topic parameter — documented (XML doc now notes it), not fixed
 - [ ] Add configurable health threshold (some failures OK)
 - [x] Add readiness vs liveness endpoint support — done 2026-07-14, `UseLivenessCheck`/`UseReadinessCheck`
-- [ ] Document timeout configuration — the 10s hardcoded timeout is documented as non-configurable, not made configurable
-- [ ] Add health check result caching
+- [x] Document timeout configuration — the per-check timeout is now configurable via `HealthCheckProcessor(TimeSpan)` (default 10s)
+- [x] Add health check result caching — `CachingHealthCheckProcessor`
 - [x] Document health check best practices — `docs/kubernetes-health-checks.md`'s liveness-vs-readiness guidance
 - [x] Add examples for common patterns — `docs/kubernetes-health-checks.md`
 - [x] Integration with Kubernetes health probes — done 2026-07-14, including verifying the HTTP status
@@ -1775,8 +1775,8 @@ public class CreditCardFilter : ISensitiveDataFilter
   a Benzene-specific propagation scheme
 - **Impact:** Low - additive change — confirmed additive; `UseCorrelationId()` still works, just `[Obsolete]`
 
-**8. Add Timeout to IHealthCheck Interface** — still open, unchanged
-- Add optional timeout parameter — **not done**; `TimeOutHealthCheck` in `Benzene.HealthChecks` still hard-codes a 10000ms `Task.Delay`, not an interface-level or configurable timeout
+**8. Add Timeout to IHealthCheck Interface** — partially addressed
+- Add optional timeout parameter — the *processor-level* timeout is now configurable (`HealthCheckProcessor(TimeSpan)`, default 10s → `TimeOutHealthCheck(inner, _timeout)`), so no `Task.Delay(10000)` magic number remains. Still open: a *per-check* timeout expressed on the `IHealthCheck` interface itself (see `work/client-health-checks-design.md` §3.5's `Ttl`/`Timeout` DIMs)
 - **Impact:** Medium - interface change
 - **Migration:** Implement new interface member
 
@@ -1793,7 +1793,7 @@ public class CreditCardFilter : ISensitiveDataFilter
    documents the real `AddOpenTelemetry()` → `AddBenzeneInstrumentation()` change
 2. ~~Zipkin service name must be configured~~ — moot, package deleted; migration guide documents the deletion instead
 3. ✅ Documented — "Correlation IDs automatically propagated" undersells what shipped (full W3C trace context propagation, not just correlation IDs); migration guide covers it under "New: UseBenzeneEnrichment(), UseBenzeneMetrics(), W3C trace context" and "Correlation ID: UseCorrelationId() obsoleted..."
-4. ❌ Not documented — health check timeout is still not configurable, so there's nothing to document yet
+4. ✅ The health-check timeout is now configurable (`HealthCheckProcessor(TimeSpan)`, default 10s); the per-check duration is stamped on each result. A dedicated migration-guide entry is still optional (additive, non-breaking)
 
 **New Required Dependencies:**
 - ✅ Ensure latest OpenTelemetry SDK versions — 1.16.0, current
@@ -2066,7 +2066,7 @@ All observability packages reference:
 
 **Benzene.HealthChecks:**
 - `C:\Users\pelled\source\libs\Benzene\src\Benzene.HealthChecks\HealthCheckProcessor.cs` (unused `topic` parameter still present, re-verified)
-- `C:\Users\pelled\source\libs\Benzene\src\Benzene.HealthChecks\TimeOutHealthCheck.cs` (hard-coded `Task.Delay(10000)` still present, re-verified)
+- `src/Benzene.HealthChecks/TimeOutHealthCheck.cs` (timeout now configurable — `Task.Delay(_timeout, …)`, fed from `HealthCheckProcessor(TimeSpan)`; the old hard-coded `Task.Delay(10000)` is gone)
 
 **~~Benzene.Aws.XRay~~:** ✅ Deleted 2026-07-13 — `Extensions.cs` no longer exists; see `work/aws-roadmap-1.0.md` section 8 for the authoritative writeup
 

@@ -38,6 +38,16 @@ API decisions to make before the freeze, two verified integration bugs, and prov
 > (`AddShutdownReadinessCheck`), for readiness only; dependency-free, no DI registration needed;
 > `test/Benzene.Core.Test/HealthChecks/ShutdownReadinessHealthCheckTest.cs`. T3.3 (startup/warmup
 > probe, non-Lambda CLI) still open. Below kept as the record.
+>
+> **Update — client contract-drift check shipped (see `work/client-health-checks-design.md` §7):**
+> T1.2's "surface drift as `Warning`" has grown into a first-class construct. The consumer-side check
+> is now `ClientHealthCheck` (`Benzene.Clients.HealthChecks`) + `AddContractCheck<TClient>(serviceName)`,
+> folding a generated client's drift-annotated `HealthCheckAsync()` into one result (reachable+match →
+> `Ok`, reachable+drift → `Warning` that never flips `IsHealthy`, unreachable → `Failed`; attaches
+> `HealthCheckDependency("Service", name)`). Crucially it runs on a **dedicated `contracts` topic**
+> (`UseContractsCheck`, `Constants.DefaultContractsTopic`) that is **off both** the liveness and
+> readiness probes — a contract check calls a downstream, so a probe including it would restart or
+> de-route otherwise-healthy pods. So the probe topics are now three: `liveness`/`readiness`/`contracts`.
 
 ## Tier 0 — decide before the API freeze (one-way doors)
 - **T0.1 `CancellationToken` in `IHealthCheck.ExecuteAsync()`** (`IHealthCheck.cs:18`). Biggest one-way

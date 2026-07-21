@@ -135,6 +135,11 @@
 >   by an HTTP-polling aggregator (it's a compile-time/source fact); a workable alternative
 >   (matching `HealthCheckDependency` entries against other registered services' identifiers)
 >   is a real design question of its own, not yet done.
+>   **Update:** the shipped `ClientHealthCheck` (`Benzene.Clients.HealthChecks`, on the `contracts`
+>   topic — see `work/client-health-checks-design.md` §7) now emits a `HealthCheckDependency("Service",
+>   name)` per downstream, i.e. consumer→provider edges are becoming expressible in health output. The
+>   *edge-derivation* step (joining those to provider identities) is still the unbuilt piece; the
+>   resource-identity join key it needs is co-designed with the deferred §10.16/§10.18 per-topic binding.
 > - Per an explicit "dogfood Benzene" steer: the aggregator is exposed as a genuine Benzene
 >   message handler (`[Message("mesh:aggregate")]`/`[HttpEndpoint("POST", "/mesh/aggregate")]`),
 >   not a bare service class or standalone CLI — a design choice this document didn't

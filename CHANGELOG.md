@@ -370,6 +370,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `workflow_dispatch`, publishes to GHCR - the first Docker image publish in this repo). Completes
   the four-phase multi-transport mesh data collection epic (Phases A-D) - see
   `work/service-mesh-roadmap-1.0.md`.
+- `Benzene.Mesh.Discovery.Azure`: `AzureAppServiceDiscoveryProvider`/`AzureArmResourceLister` and
+  `AddMeshAzureDiscovery(subscriptionId?, resourceGroup?)` now take optional subscription + resource-group
+  scoping (additive; both default to null → the credential's default subscription, subscription-wide
+  sweep) so a subscription-scoped Reader identity doesn't discover every benzene-tagged site.
+- `examples/AzureFunctionsMesh`: new example - the mesh on purely Azure Functions (services and the
+  mesh as isolated-worker Function Apps; HTTP-triggered Cloud Service Profile + timer-triggered
+  aggregation), discovered by the same `Benzene.Mesh.Discovery.Azure` as the Web App example. Own
+  `.sln`, README, Terraform `deploy/`, and `deploy-azure-functions-mesh-example.yml`.
 - RetryMiddleware component for exponential backoff retry logic
 - FluentValidation extensions
 - Source generators for message handlers
