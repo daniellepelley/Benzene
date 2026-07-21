@@ -5,7 +5,9 @@ commit+push to main. Adversarial verification: no fix ships without a test that 
 passes after. Staying clear of the actively-churning #29/#30 cloud series (Aws/Azure/Kafka/Grpc/
 Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
-**Tally so far: 27 cycles shipped** (each failing-test-first + full-suite green). Coverage swept via
+**Tally so far: 31 cycles shipped** (Cycles 28–31 are a second push over the transport adapters — AWS/Azure/
+Kafka/gRPC/RabbitMq/SelfHost/GoogleCloud/Clients — previously skipped to avoid colliding with the #29/#30
+review series; now swept via 6+ parallel hunters, rebasing before each push.) (each failing-test-first + full-suite green). Coverage swept via
 parallel adversarial hunters across Core/Results/Abstractions, serialization/validation/message-handlers,
 mesh (collector/aggregator/reporting/tempo/contracts/ui), cache/resilience/DI, HTTP/CORS, CLI/codegen,
 observability/serializers, auth/oauth2/versioning, health-checks, idempotency/saga, and cloud-service.
@@ -51,6 +53,23 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 - **`MessageBuilderExtensions.AsRawHttpRequest` emits LF, not CRLF** (`AppendLine` uses `Environment.NewLine`
   = `\n` on Linux), violating RFC 7230 for a raw wire-format HTTP request. Dead code — no caller anywhere in
   `src/`, `test/`, or `examples/` — so not fixed (nothing to reproduce against).
+- **AWS batch clients (`SqsBatchMessageClient`/`SnsBatchMessageClient`/`EventBridgeBatchMessageClient`) let a
+  whole-request transport exception escape** rather than converting it to per-entry `BatchSendResult`
+  failures the way the Azure batch clients do. On a throttle/network throw mid-chunk, earlier successes and
+  recorded per-entry failures are lost and the caller must resend everything (duplicate deliveries).
+  Genuinely a design decision ("let transport errors throw" vs "always return a BatchSendResult") — needs a
+  maintainer call, so deferred/triaged.
+- **`SnsMessageBodyGetter`/`SqsMessageTopicMapper` un-hardened null-guard stragglers** — `SnsRecord.Sns` and
+  `Message.MessageAttributes` are dereferenced without the `?.` guard the sibling getters got in the review
+  pass. Real SNS/SQS SDK paths always populate these, so not reachable in production; low-value hardening,
+  deferred.
+- **`Benzene.SelfHost.Http.BenzeneHttpWorker` accept loop lacks the catch-all + `finally`** the Kafka worker
+  has, so a non-`HttpListenerException`/`OperationCanceledException` escaping the loop could fault `_runTask`
+  silently and leak the listener. No definite trigger under normal operation (realistic exceptions are
+  already caught) — robustness inconsistency, deferred.
+- **`Benzene.Kafka.Core` inbound/outbound body getters `.ToString()` a non-string `TValue`** (e.g. `byte[]`
+  → `"System.Byte[]"`). Not reachable via the shipped/tested `<Ignore,string>` path; latent generic sharp
+  edge, deferred.
 - **`CloudServiceDescriptorSource._descriptor` uses non-volatile double-checked locking** — read lock-free
   in `Get`'s fast path and in `TryGet()`, written under `_gate`. On a weak memory model (ARM64/Graviton,
   common for AWS-hosted .NET) the reference publish can become visible before the descriptor's own field
