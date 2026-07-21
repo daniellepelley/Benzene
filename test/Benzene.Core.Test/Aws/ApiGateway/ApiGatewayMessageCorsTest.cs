@@ -56,8 +56,11 @@ public class ApiGatewayMessageCorsTest
     [Fact]
     public async Task Option()
     {
+        // A real CORS preflight carries Access-Control-Request-Method (Fetch standard); only then are
+        // the Allow-Methods/Allow-Headers/Max-Age response headers emitted.
         var request = HttpBuilder.Create("OPTIONS", "/example?key=value")
-            .WithHeader("origin", "https://example.com");
+            .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-method", "GET");
         var response = await _host.SendApiGatewayAsync(request);
 
         Assert.NotNull(response);
@@ -69,6 +72,26 @@ public class ApiGatewayMessageCorsTest
         Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
         Assert.Equal("true", response.Headers[AccessControlAllowCredentials]);
         Assert.Equal("600", response.Headers[AccessControlMaxAge]);
+        Assert.Equal("Origin", response.Headers[Vary]);
+    }
+
+    [Fact]
+    public async Task Option_BareOptionsWithoutRequestMethod_IsNotTreatedAsAPreflight()
+    {
+        // Without Access-Control-Request-Method this is not a preflight, so the preflight-only
+        // headers (Allow-Methods/Allow-Headers/Max-Age) must NOT be emitted. The origin is still
+        // acknowledged (Allow-Origin) and the response varies by Origin.
+        var request = HttpBuilder.Create("OPTIONS", "/example")
+            .WithHeader("origin", "https://example.com");
+        var response = await _host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.Equal(200, response.StatusCode);
+
+        Assert.Equal("https://example.com", response.Headers[AccessControlAllowOrigin]);
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
+        Assert.False(response.Headers.ContainsKey(AccessControlMaxAge));
         Assert.Equal("Origin", response.Headers[Vary]);
     }
 
@@ -107,12 +130,13 @@ public class ApiGatewayMessageCorsTest
         Assert.Equal(200, response.StatusCode);
 
         Assert.Equal("example.com", response.Headers[AccessControlAllowOrigin]);
-        Assert.Equal("X-Query-Id,X-Tenant-Id,Authorization,Content-Type,X-Api-Key", response.Headers[AccessControlAllowHeaders]);
-        Assert.Equal("OPTIONS,GET", response.Headers[AccessControlAllowMethods]);
         Assert.Equal("true", response.Headers[AccessControlAllowCredentials]);
         Assert.Equal("X-Total-Count", response.Headers[AccessControlExposeHeaders]);
         Assert.Equal("Origin", response.Headers[Vary]);
-        // Access-Control-Max-Age is only meaningful on preflight (OPTIONS) responses.
+        // Access-Control-Allow-Methods / Allow-Headers / Max-Age are preflight-only response headers
+        // (the browser ignores them on an actual response), so they must NOT appear on a real request.
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowMethods));
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowHeaders));
         Assert.False(response.Headers.ContainsKey(AccessControlMaxAge));
     }
 
@@ -138,6 +162,7 @@ public class ApiGatewayMessageCorsTest
     {
         var request = HttpBuilder.Create("OPTIONS", "/example")
             .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-method", "GET")
             .WithHeader("access-control-request-headers", "X-Query-Id, X-Not-Allowed");
         var response = await _host.SendApiGatewayAsync(request);
 
@@ -157,6 +182,7 @@ public class ApiGatewayMessageCorsTest
     {
         var request = HttpBuilder.Create("OPTIONS", "/example")
             .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-method", "GET")
             .WithHeader("access-control-request-headers", "X-Query-Id, Authorization");
         var response = await _host.SendApiGatewayAsync(request);
 
@@ -195,7 +221,8 @@ public class ApiGatewayMessageCorsWildcardOriginCredentialsTest
     public async Task WildcardOrigin_WithCredentials_ReflectsOriginButOmitsCredentialsHeader()
     {
         var request = HttpBuilder.Create("OPTIONS", "/example")
-            .WithHeader("origin", "https://attacker.example");
+            .WithHeader("origin", "https://attacker.example")
+            .WithHeader("access-control-request-method", "GET");
         var response = await _host.SendApiGatewayAsync(request);
 
         Assert.NotNull(response);
@@ -237,6 +264,7 @@ public class ApiGatewayMessageCorsWildcardHeadersTest
     {
         var request = HttpBuilder.Create("OPTIONS", "/example")
             .WithHeader("origin", "https://example.com")
+            .WithHeader("access-control-request-method", "GET")
             .WithHeader("access-control-request-headers", "X-Anything, X-Something-Else");
         var response = await _host.SendApiGatewayAsync(request);
 

@@ -81,55 +81,72 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
 
     private async Task AddCorsHeaders(TContext context, HttpRequest httpRequest)
     {
-        if (httpRequest.Headers.Any(header => header.Key.ToLowerInvariant() == "origin"))
+        // Not a CORS request at all (no Origin) - nothing to add. Per the Fetch standard a CORS
+        // response is only meaningful when the request carries an Origin.
+        if (!httpRequest.Headers.Any(header => header.Key.ToLowerInvariant() == "origin"))
         {
-            var methods = FindMethods(httpRequest.Path);
+            return;
+        }
 
-            if (!methods.Any())
+        var methods = FindMethods(httpRequest.Path);
+
+        if (!methods.Any())
+        {
+            return;
+        }
+
+        // A CORS-preflight request is specifically an OPTIONS request carrying
+        // Access-Control-Request-Method (Fetch standard §3.2.2). A bare OPTIONS without it is not a
+        // preflight, and the Access-Control-Allow-Methods / Access-Control-Allow-Headers /
+        // Access-Control-Max-Age response headers are preflight-only - a browser ignores them on an
+        // actual (GET/POST/...) response, so emitting them there is off-spec noise.
+        var isPreflight = httpRequest.Method == "options"
+                          && httpRequest.Headers.ContainsKey("access-control-request-method");
+
+        // The response for this path differs by Origin (allowed vs. rejected, or which origin is
+        // echoed back), so caches sitting in front of this endpoint must not conflate responses for
+        // different origins.
+        _responseAdapter.SetResponseHeader(context, "Vary", "Origin");
+
+        var origin = _corsOriginChecker.MatchOrigin(_corsSettings.AllowedDomains, httpRequest);
+        // On a preflight the requested headers (Access-Control-Request-Headers) must also be within
+        // the allow-list; on an actual request there is no such header to validate.
+        var isAllowed = origin != null && (!isPreflight || AreRequestedHeadersAllowed(httpRequest));
+
+        if (isAllowed)
+        {
+            _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Origin", origin);
+
+            if (_corsSettings.AllowCredentials && !AllowsAnyOrigin())
             {
-                return;
+                _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Credentials", "true");
             }
 
-            // The response for this path differs by Origin (allowed vs. rejected, or which
-            // origin is echoed back), so caches sitting in front of this endpoint must not
-            // conflate responses for different origins.
-            _responseAdapter.SetResponseHeader(context, "Vary", "Origin");
-
-            var origin = _corsOriginChecker.MatchOrigin(_corsSettings.AllowedDomains, httpRequest);
-            var isAllowed = origin != null && AreRequestedHeadersAllowed(httpRequest);
-
-            if (isAllowed)
+            if (isPreflight)
             {
-                _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Origin", origin);
-                _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Headers",
-                    ResolveAllowedHeaders(httpRequest));
+                // Preflight-only response headers.
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Methods",
                     "OPTIONS," + string.Join(",", methods));
+                _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Headers",
+                    ResolveAllowedHeaders(httpRequest));
 
-                if (_corsSettings.AllowCredentials && !AllowsAnyOrigin())
+                if (_corsSettings.MaxAgeSeconds.HasValue)
                 {
-                    _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Credentials", "true");
-                }
-
-                if (httpRequest.Method == "options")
-                {
-                    if (_corsSettings.MaxAgeSeconds.HasValue)
-                    {
-                        _responseAdapter.SetResponseHeader(context, "Access-Control-Max-Age",
-                            _corsSettings.MaxAgeSeconds.Value.ToString());
-                    }
-                }
-                else if (_corsSettings.ExposedHeaders is { Length: > 0 })
-                {
-                    _responseAdapter.SetResponseHeader(context, "Access-Control-Expose-Headers",
-                        string.Join(",", _corsSettings.ExposedHeaders));
+                    _responseAdapter.SetResponseHeader(context, "Access-Control-Max-Age",
+                        _corsSettings.MaxAgeSeconds.Value.ToString());
                 }
             }
-
-            if (httpRequest.Method == "options")
+            else if (_corsSettings.ExposedHeaders is { Length: > 0 })
             {
-                await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), BenzeneResult.Ok()));
+                // Actual-response-only header: which response headers browser JS may read.
+                _responseAdapter.SetResponseHeader(context, "Access-Control-Expose-Headers",
+                    string.Join(",", _corsSettings.ExposedHeaders));
             }
+        }
+
+        if (httpRequest.Method == "options")
+        {
+            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(new Topic("cors"), MessageHandlerDefinition.CreateInstance("cors", typeof(Void), typeof(Void)), BenzeneResult.Ok()));
         }
     }
 

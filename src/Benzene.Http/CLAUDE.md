@@ -74,9 +74,14 @@ matching, credential-safe wildcards, preflight header validation, Vary caching h
   - `AllowedHeaders` - explicit list, or `"*"` to allow any header (`AllowAnyHeader()` equivalent)
   - `ExposedHeaders` - sets `Access-Control-Expose-Headers` on actual (non-preflight) responses
   - `AllowCredentials`/`MaxAgeSeconds` - control `Access-Control-Allow-Credentials`/`Access-Control-Max-Age`
-- `CorsMiddleware<TContext>` - CORS middleware; sets `Vary: Origin` on every response it processes;
-  rejects (no CORS headers at all) a preflight whose `Access-Control-Request-Headers` includes a
-  header outside a non-wildcard `AllowedHeaders` list
+- `CorsMiddleware<TContext>` - CORS middleware; sets `Vary: Origin` on every response it processes.
+  A **preflight** is detected the way the Fetch standard defines it: an `OPTIONS` request carrying
+  `Access-Control-Request-Method`. Only a preflight response carries the preflight-only headers
+  (`Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`, `Access-Control-Max-Age`); an
+  actual (non-preflight) response carries only `Access-Control-Allow-Origin`,
+  `Access-Control-Allow-Credentials` and `Access-Control-Expose-Headers` (a browser ignores the
+  preflight-only headers elsewhere). A preflight is rejected (no CORS headers at all) when its
+  `Access-Control-Request-Headers` includes a header outside a non-wildcard `AllowedHeaders` list
 - `CorsOriginChecker` - Validates CORS origins; always echoes the actual `Origin` value (never a
   literal `"*"`), which is what makes a *specific* origin allow-list + credentials safe to combine.
   A wildcard (`"*"`) origin + credentials is refused, not reflected: when `AllowedDomains` contains
