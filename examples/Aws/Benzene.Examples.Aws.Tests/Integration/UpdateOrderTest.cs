@@ -6,6 +6,7 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Aws.Lambda.Core.TestHelpers;
+using Benzene.Aws.Lambda.Sns;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
 using Benzene.Testing;
 using Benzene.Tools.Aws;
@@ -99,29 +100,23 @@ public class UpdateOrderTest : InMemoryOrdersTestBase
     {
         var snsUpdateEvent = AwsEventBuilder.CreateSnsEvent(UpdateOrder, new UpdateOrderMessage { Status = "" });
 
-        await TestLambdaHosting.SendEventAsync(snsUpdateEvent);
-
-        // var messages = await SqsSetUp.GetAllMessagesAsync();
-        // Assert.Equal($"{UpdateOrder}:result", messages[0].GetTopic());
-        // var errorPayload = messages[0].Body<ErrorPayload>();
-        // Assert.Equal(Defaults.ErrorStatus.ValidationError, errorPayload.Status);
-        // Assert.NotEmpty(errorPayload.Errors);
-        //
-        // Assert.Single(messages);
+        // Settlement is safe-by-default: a handler that returns a failure result is escalated to a
+        // thrown exception so SNS redelivers the message instead of silently acking it.
+        await Assert.ThrowsAsync<SnsMessageProcessingException>(
+            () => TestLambdaHosting.SendEventAsync(snsUpdateEvent));
     }
 
     [Fact]
     public async Task UpdateOrder_InvalidFKi_NotFound()
     {
-        //Update order
+        //Update an order that was never created
         var updatedJsonStr = new { Defaults.Order.Id, Status = UpdatedStatus, Name = UpdatedName };
         var snsUpdateEvent = AwsEventBuilder.CreateSnsEvent(UpdateOrder, updatedJsonStr);
-        await TestLambdaHosting.SendEventAsync(snsUpdateEvent);
 
-        // var messages = await SqsSetUp.GetAllMessagesAsync();
-        // Assert.Equal($"{UpdateOrder}:result", messages[0].GetTopic());
-        // var errorPayload = messages[0].Body<ErrorPayload>();
-        // Assert.Equal(Defaults.ErrorStatus.NotFound, errorPayload.Status);
+        await Assert.ThrowsAsync<SnsMessageProcessingException>(
+            () => TestLambdaHosting.SendEventAsync(snsUpdateEvent));
+
+        Assert.Empty(GetPersistedOrders());
     }
 
     [Fact]
