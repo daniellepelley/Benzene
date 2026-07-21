@@ -72,6 +72,20 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 
 (newest first)
 
+### Cycle 28 — AWS Lambda Kafka header getter dropped all headers but the first (`KafkaMessageHeadersGetter`)
+- **Bug:** `context.KafkaEventRecord.Headers.FirstOrDefault()` took only element [0] of the header list. In
+  the AWS MSK/Kafka Lambda wire format each record header is a SEPARATE single-entry element in that list
+  (`IList<IDictionary<string,byte[]>>`, preserving Kafka's ordered multimap), so a record with N headers
+  surfaced only the first — every header after it (very commonly `traceparent`, which follows
+  app/correlation headers) was silently dropped. This broke W3C trace continuation, schema-version routing,
+  correlation, and any handler header read on the Kafka Lambda transport. The doc-comment ("first header
+  batch") and the single-element test helper both encoded the same misconception, so CI stayed green.
+- **Repro:** new `KafkaGettersTest.HeadersGetter_MultipleHeaderEntries_DecodesAllOfThem` — `traceparent`
+  (second entry) was `KeyNotFound` pre-fix.
+- **Fix:** flatten every list element (last-wins indexer, which also stops a duplicate Kafka key from
+  throwing) and add the synthetic `topic` entry; preserve the empty-list → empty-dict behaviour. Full core
+  suite green (1909). (Found — and independently corroborated — by two parallel transport hunts.)
+
 ### Cycle 27 — mesh trace read traceparent/correlation-id case-sensitively, breaking cross-language join (`Mesh.Wire/Extensions.UseMeshTrace`)
 - **Bug:** the trace middleware read `traceparent` and `x-correlation-id` with plain `TryGetValue`. The
   envelope headers deserialize into an ordinal `Dictionary<string,string>`, so a canonically-cased key —
