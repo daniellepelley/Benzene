@@ -52,6 +52,7 @@ These were previously listed as open. They are now confirmed fixed — do **not*
 - **Kafka body getter `.ToString()` on `byte[]`** — now UTF-8 decodes byte payloads.
 - **Avro deserialize OOM** — `BoundedBinaryDecoder` guards the length prefix before allocation (`482af8ad`).
 - **SQS/DynamoDB adapter convergence** — onto `IHasMessageResult` (`92f4c459`) + `TransportNames` tags (`ee342f7e`).
+- **Overlapping result abstractions** — legacy `IMessageResult` deleted, settlement routed through `IBenzeneResult` (`6424cde9`).
 - **Kinesis "partition checkpoint model"** — inherent to Kinesis's single-resume-point contract (design doc §2); checkpointer already correct, shard-order guidance added to CLAUDE.md (`822cabf4`).
 
 ### Security/concurrency (fresh-hunt series, done)
@@ -108,12 +109,11 @@ None of these is a clean self-contained bug; each changes behaviour, a public AP
   closes it properly.) **[DECISION, post-1.0] Avro `Dictionary`/map round-trip** still unsupported
   (`KeyValuePair` is read-only → empty record) — a bidirectional map-schema feature, per
   `work/api-shape-proposal-1.0.md` item 4b.
-- **[PARTLY RESOLVED / DECISION] Overlapping result abstractions** — SQS/DynamoDB converged onto
-  `IHasMessageResult` (`92f4c459`), so the outcome representation is now **uniform** across the
-  library (the `bool?` fork is gone). The residual — `[Obsolete]`-ing the legacy `IMessageResult` and
-  rerouting settlement through `IBenzeneResult` (proposal 1b) — is **deliberately held** as its own
-  reviewed change because it touches the just-shipped settlement path at ~36 read sites; the practical
-  consolidation value is already banked. See `work/api-shape-proposal-1.0.md`.
+- **[RESOLVED] Overlapping result abstractions** — SQS/DynamoDB first converged onto
+  `IHasMessageResult` (`92f4c459`, the `bool?` fork gone), then the **legacy `IMessageResult` was
+  deleted outright and settlement rerouted through `IBenzeneResult`** (`6424cde9`, touching
+  `IHasMessageResult` + every transport context). The three-way overlap is gone; the library now
+  represents a message outcome one way. (proposal items 1b + 2b)
 - **[DECISION] Cache null-payload negative-caching & version unknown-version passthrough** — a null
   deserialized value is a cache miss and a null payload is still written back (`CacheEntry.cs:64-83`);
   an unknown requested version silently falls back to the max version (`VersionSelector.cs:21-29`).
