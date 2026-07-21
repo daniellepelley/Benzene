@@ -67,17 +67,24 @@ cd Service && MESH_SERVICE=orders func start
 cd ../Mesh && func start
 ```
 
-## Deploy it (Terraform)
+## Deploy it (GitHub Actions)
+
+The **Deploy Azure Functions Mesh Example** workflow
+(`.github/workflows/deploy-azure-functions-mesh-example.yml`) is manual-only
+(**Actions → Deploy Azure Functions Mesh Example → Run workflow**). Put an Azure service principal in
+the **`test`** GitHub Environment as `AZURE_CREDENTIALS` (the `azure/login` JSON), with rights to
+create the resource group, storage, App Service plan, Function Apps, and **to assign roles** (Owner or
+User Access Administrator). Supply a globally-unique storage-account name; it runs `terraform apply`,
+then `func azure functionapp publish` for each of the four apps, and prints the URLs
+(`mesh_ui_url`, `mesh_refresh_url`, `service_spec_ui_urls`).
 
 `deploy/` provisions a storage account (Functions runtime + the `mesh` blob container), a Linux
 Consumption plan, the four Function Apps (3 tagged services + the mesh), and the mesh identity's role
 assignments (**Reader** on the resource group to list sites, **Storage Blob Data Contributor** on the
-storage account to read/write the catalog). The service Function Apps are published from one build with
-`MESH_SERVICE` set per app; the mesh is scoped to this subscription + resource group via
-`MESH_SUBSCRIPTION_ID` / `MESH_RESOURCE_GROUP`.
-
-Deploy the app code with your preferred Functions publish flow (`func azure functionapp publish <name>`
-or a zip deploy) after `terraform apply`.
+storage account to read/write the catalog). The three services share one deployable with `MESH_SERVICE`
+set per app; the mesh is scoped to this subscription + resource group via `MESH_SUBSCRIPTION_ID` /
+`MESH_RESOURCE_GROUP`. To deploy by hand, `terraform apply` then
+`func azure functionapp publish <name>` from each project.
 
 ## Known first-deploy iteration points
 

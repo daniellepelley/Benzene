@@ -1,0 +1,97 @@
+name: Deploy Azure Functions Mesh Example
+
+# Manual-only: deploys examples/AzureFunctionsMesh (3 Cloud Service Function Apps + the mesh Function
+# App) to Azure via Terraform, then publishes the built code to each app with the Functions Core Tools.
+# Needs an Azure service principal in the "test" GitHub Environment: AZURE_CREDENTIALS (azure/login
+# JSON) with rights to create the resource group, storage, App Service plan, Function Apps, and to
+# assign roles (Owner or User Access Administrator on the subscription/RG). Nothing here runs on push.
+on:
+  workflow_dispatch:
+    inputs:
+      location:
+        description: "Azure region"
+        required: true
+        default: "westeurope"
+      storage_account:
+        description: "Storage account for the Functions runtime + mesh catalog (globally unique, lowercase alphanumeric)"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  RG: benzene-fnmesh-rg
+  PROJECT: benzene-fnmesh
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Azure Functions Core Tools
+        run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Terraform's provider is set to resource_provider_registrations = "none", so register the
+      # handful of resource providers this stack needs up front (idempotent; safe to re-run).
+      - name: Register required Azure resource providers
+        run: |
+          for rp in Microsoft.Storage Microsoft.Web Microsoft.ManagedIdentity; do
+            az provider register --namespace "$rp"
+          done
+
+      - uses: hashicorp/setup-terraform@v3
+
+      # Remote state in a per-subscription storage account, created on first use (idempotent). The RG is
+      # created here to hold the state storage account; Terraform reads it as a data source.
+      - name: Terraform init (remote azurerm state)
+        working-directory: examples/AzureFunctionsMesh/deploy
+        env:
+          LOCATION: ${{ inputs.location }}
+          STATE_SA: ${{ inputs.storage_account }}tfstate
+        run: |
+          az group create -n "$RG" -l "$LOCATION" >/dev/null
+          az storage account create -n "$STATE_SA" -g "$RG" -l "$LOCATION" --sku Standard_LRS >/dev/null 2>&1 || true
+          az storage container create -n tfstate --account-name "$STATE_SA" --auth-mode login >/dev/null 2>&1 || true
+          terraform init -input=false \
+            -backend-config="resource_group_name=$RG" \
+            -backend-config="storage_account_name=$STATE_SA" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=azure-functions-mesh.tfstate"
+
+      # Create the storage, plan, the four Function Apps, the mesh identity, and its role assignments.
+      # Remote state (above) makes re-runs after a partial failure resume cleanly.
+      - name: Terraform apply
+        working-directory: examples/AzureFunctionsMesh/deploy
+        run: |
+          terraform apply -input=false -auto-approve \
+            -var "location=${{ inputs.location }}" \
+            -var "project=$PROJECT" \
+            -var "resource_group=$RG" \
+            -var "storage_account=${{ inputs.storage_account }}"
+
+      # The three services share one deployable — MESH_SERVICE (set per app by Terraform) selects the
+      # domain — so the same Service project is published to all three Function Apps.
+      - name: Publish the service Function Apps
+        working-directory: examples/AzureFunctionsMesh/Service
+        run: |
+          for svc in orders payments shipping; do
+            func azure functionapp publish "${PROJECT}-${svc}"
+          done
+
+      - name: Publish the mesh Function App
+        working-directory: examples/AzureFunctionsMesh/Mesh
+        run: func azure functionapp publish "${PROJECT}-mesh"
+
+      - name: Show URLs
+        working-directory: examples/AzureFunctionsMesh/deploy
+        run: terraform output
