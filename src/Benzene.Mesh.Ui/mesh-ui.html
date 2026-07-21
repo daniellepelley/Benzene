@@ -641,9 +641,21 @@
   function specUiLink(specUrl) {
     try {
       var u = new URL(specUrl, location.href);
+      // A self-reported manifest is untrusted; only derive a link from an http(s) spec URL.
+      if (u.protocol !== "http:" && u.protocol !== "https:") return null;
       var specUiPath = u.pathname.replace(/\/spec$/, "/spec-ui");
       if (specUiPath === u.pathname) return null;
       return u.origin + specUiPath + "?url=" + encodeURIComponent(specUrl);
+    } catch (e) { return null; }
+  }
+  /* Only allow http(s) URLs to become anchor hrefs. specUrl/healthUrl come from an untrusted
+     self-reported manifest, so a javascript:/data: URL would otherwise execute on click (target
+     _blank does not neutralize a javascript: href). Returns the absolute URL if its scheme is
+     http/https, else null. */
+  function safeHttpUrl(raw) {
+    try {
+      var u = new URL(raw, location.href);
+      return (u.protocol === "http:" || u.protocol === "https:") ? u.href : null;
     } catch (e) { return null; }
   }
 
@@ -818,8 +830,10 @@
     if (svc.owningTeam) head.appendChild(el("span", "svc-team", svc.owningTeam));
 
     var links = el("div", "svc-links");
-    if (svc.specUrl) { var a1 = el("a", null, "spec"); a1.href = svc.specUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
-    if (svc.healthUrl) { var a2 = el("a", null, "health"); a2.href = svc.healthUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
+    var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
+    if (specHref) { var a1 = el("a", null, "spec"); a1.href = specHref; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
+    var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
+    if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
     var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
     if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; a3.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a3); }
     var a4 = el("button", "svc-topics-link", "topics");
