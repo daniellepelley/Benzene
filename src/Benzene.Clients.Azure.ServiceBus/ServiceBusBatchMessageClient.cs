@@ -52,51 +52,62 @@ public class ServiceBusBatchMessageClient : IBenzeneBatchMessageClient
         var converter = new ServiceBusContextConverter<TRequest>(_serializer, _topicPropertyKey, _senderProperties);
         var failures = new List<FailedBatchEntry>();
 
-        var batch = await _sender.CreateMessageBatchAsync();
+        // Hold the native batch (unmanaged AMQP memory) in a try/finally: converter.CreateRequestAsync
+        // (serialization) or TryAddMessage can throw mid-loop, and without the finally the batch would
+        // leak on that path. On a roll, the old batch is disposed and the local nulled before creating
+        // the next, so a failed CreateMessageBatchAsync can't leave the finally double-disposing it.
+        ServiceBusMessageBatch? batch = await _sender.CreateMessageBatchAsync();
         var batchIndices = new List<int>();
         var index = 0;
 
-        foreach (var request in requests)
+        try
         {
-            var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
-
-            if (!batch.TryAddMessage(context.Message))
+            foreach (var request in requests)
             {
-                if (batchIndices.Count == 0)
-                {
-                    // The message can't fit even an empty batch: it is individually too large.
-                    failures.Add(new FailedBatchEntry(index, "MessageTooLarge",
-                        "The message is too large to fit in a single Service Bus batch."));
-                    index++;
-                    continue;
-                }
-
-                // The current batch is full: flush it, then start a fresh batch for this message.
-                await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
-                batch.Dispose();
-
-                batch = await _sender.CreateMessageBatchAsync();
-                batchIndices = new List<int>();
+                var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
 
                 if (!batch.TryAddMessage(context.Message))
                 {
-                    failures.Add(new FailedBatchEntry(index, "MessageTooLarge",
-                        "The message is too large to fit in a single Service Bus batch."));
-                    index++;
-                    continue;
+                    if (batchIndices.Count == 0)
+                    {
+                        // The message can't fit even an empty batch: it is individually too large.
+                        failures.Add(new FailedBatchEntry(index, "MessageTooLarge",
+                            "The message is too large to fit in a single Service Bus batch."));
+                        index++;
+                        continue;
+                    }
+
+                    // The current batch is full: flush it, then start a fresh batch for this message.
+                    await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
+                    batch.Dispose();
+                    batch = null;
+
+                    batch = await _sender.CreateMessageBatchAsync();
+                    batchIndices = new List<int>();
+
+                    if (!batch.TryAddMessage(context.Message))
+                    {
+                        failures.Add(new FailedBatchEntry(index, "MessageTooLarge",
+                            "The message is too large to fit in a single Service Bus batch."));
+                        index++;
+                        continue;
+                    }
                 }
+
+                batchIndices.Add(index);
+                index++;
             }
 
-            batchIndices.Add(index);
-            index++;
+            if (batchIndices.Count > 0)
+            {
+                await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
+            }
         }
-
-        if (batchIndices.Count > 0)
+        finally
         {
-            await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
+            batch?.Dispose();
         }
 
-        batch.Dispose();
         return new BatchSendResult(failures);
     }
 

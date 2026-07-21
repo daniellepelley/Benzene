@@ -83,43 +83,53 @@ public class EventHubBatchMessageClient : IBenzeneBatchMessageClient
             ? new CreateBatchOptions()
             : new CreateBatchOptions { PartitionKey = partitionKey };
 
-        var batch = await _producerClient.CreateBatchAsync(batchOptions);
+        // Hold the native EventDataBatch (unmanaged AMQP memory) in a try/finally: TryAdd can throw on a
+        // malformed event, and without the finally the batch would leak on that path. On a roll the old
+        // batch is disposed and the local nulled before the next is created, so a failed CreateBatchAsync
+        // can't leave the finally double-disposing it.
+        EventDataBatch? batch = await _producerClient.CreateBatchAsync(batchOptions);
         var batchIndices = new List<int>();
 
-        foreach (var (context, itemIndex) in group)
+        try
         {
-            if (!batch.TryAdd(context.EventData))
+            foreach (var (context, itemIndex) in group)
             {
-                if (batchIndices.Count == 0)
-                {
-                    failures.Add(new FailedBatchEntry(itemIndex, "EventTooLarge",
-                        "The event is too large to fit in a single Event Hubs batch."));
-                    continue;
-                }
-
-                await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
-                batch.Dispose();
-
-                batch = await _producerClient.CreateBatchAsync(batchOptions);
-                batchIndices = new List<int>();
-
                 if (!batch.TryAdd(context.EventData))
                 {
-                    failures.Add(new FailedBatchEntry(itemIndex, "EventTooLarge",
-                        "The event is too large to fit in a single Event Hubs batch."));
-                    continue;
+                    if (batchIndices.Count == 0)
+                    {
+                        failures.Add(new FailedBatchEntry(itemIndex, "EventTooLarge",
+                            "The event is too large to fit in a single Event Hubs batch."));
+                        continue;
+                    }
+
+                    await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
+                    batch.Dispose();
+                    batch = null;
+
+                    batch = await _producerClient.CreateBatchAsync(batchOptions);
+                    batchIndices = new List<int>();
+
+                    if (!batch.TryAdd(context.EventData))
+                    {
+                        failures.Add(new FailedBatchEntry(itemIndex, "EventTooLarge",
+                            "The event is too large to fit in a single Event Hubs batch."));
+                        continue;
+                    }
                 }
+
+                batchIndices.Add(itemIndex);
             }
 
-            batchIndices.Add(itemIndex);
+            if (batchIndices.Count > 0)
+            {
+                await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
+            }
         }
-
-        if (batchIndices.Count > 0)
+        finally
         {
-            await SendBatchAndTrackFailuresAsync(batch, batchIndices, failures);
+            batch?.Dispose();
         }
-
-        batch.Dispose();
     }
 
     private async Task SendBatchAndTrackFailuresAsync(EventDataBatch batch, List<int> batchIndices, List<FailedBatchEntry> failures)
