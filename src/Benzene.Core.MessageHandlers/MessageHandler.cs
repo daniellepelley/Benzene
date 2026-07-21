@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Results;
 using Benzene.Results;
@@ -69,7 +68,6 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"Message is not valid: {ex}");
             _logger.LogWarning(ex, "Message is not valid");
             return BenzeneResult.Set(_defaultStatuses.BadRequest, "Message is not valid", ex.Message);
         }
@@ -86,7 +84,6 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         }
         catch(ArgumentException ex)
         {
-            Debug.WriteLine($"Message handler threw argument exception: {ex}");
             _logger.LogError(ex, "Message handler threw argument exception");
             return BenzeneResult.Set(_defaultStatuses.ValidationError, ex.Message);
         }
@@ -100,7 +97,6 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"Message handler threw an exception: {ex}");
             _logger.LogError(ex, "Message handler threw an exception");
             return BenzeneResult.ServiceUnavailable("Message handler threw an exception", ex.Message);
         }

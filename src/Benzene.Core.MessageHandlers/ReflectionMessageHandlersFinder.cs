@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Reflection;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Core.Exceptions;
@@ -66,7 +65,6 @@ public class ReflectionMessageHandlersFinder : IMessageHandlersFinder
 
                 if (attribute == null)
                 {
-                    Debug.WriteLine($"{messageHandlerInterface.FullName} does not have a topic attribute");
                     return null;
                 }
 

@@ -19,16 +19,18 @@ public static class MessageBuilderExtensions
         where T : class
     {
         var stringBuilder = new StringBuilder();
+        // HTTP messages use CRLF line endings on the wire (RFC 7230), not the platform newline that
+        // AppendLine emits (LF on Linux) - so write "\r\n" explicitly.
         // Start line
-        stringBuilder.AppendLine($"{source.Method} {source.Path} HTTP/1.1");
+        stringBuilder.Append($"{source.Method} {source.Path} HTTP/1.1\r\n");
         // Headers
         foreach (var header in source.Headers)
         {
-            stringBuilder.AppendLine($"{header.Key}: {header.Value}");
+            stringBuilder.Append($"{header.Key}: {header.Value}\r\n");
         }
 
         // Empty line to separate headers and body
-        stringBuilder.AppendLine();
+        stringBuilder.Append("\r\n");
         // Body
         var body = serializer.Serialize(source.Message);
         stringBuilder.Append(body);
