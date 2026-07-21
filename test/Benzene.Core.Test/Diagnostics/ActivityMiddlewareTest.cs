@@ -144,4 +144,35 @@ public class ActivityMiddlewareTest
 
         Assert.Contains(activities, a => a.OperationName == "my-timer");
     }
+
+    [Fact]
+    public async Task UseTimer_MarksTheTimerSpanAsErrorWhenWrappedWorkThrows()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        // Register only the timer factory, not the full AddDiagnostics per-middleware wrapper, so the
+        // timer's own span is the sole "my-timer" activity (AddDiagnostics would also wrap the timer
+        // middleware itself in a same-named span, making the assertion ambiguous).
+        services.AddSingleton<IProcessTimerFactory, ActivityProcessTimerFactory>();
+
+        var builder = new MiddlewarePipelineBuilder<object>(container);
+        builder.UseTimer("my-timer");
+        builder.Use("boom", (_, _) => throw new InvalidOperationException("kaboom"));
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.HandleAsync(new object(), resolver));
+
+        // The timer's Dispose() can't see the throw, so without the wrapper's try/catch the "my-timer"
+        // span would end as successful. It must carry Error status and an exception event.
+        var timerSpan = Assert.Single(activities, a => a.OperationName == "my-timer");
+        Assert.Equal(ActivityStatusCode.Error, timerSpan.Status);
+        Assert.Contains(timerSpan.Events, e => e.Name == "exception");
+    }
 }
