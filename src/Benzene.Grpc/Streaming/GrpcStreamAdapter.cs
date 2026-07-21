@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Benzene.Grpc.Serialization;
 using Grpc.Core;
 
@@ -15,7 +16,7 @@ internal static class GrpcStreamAdapter
         .GetMethod(nameof(Convert), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     /// <summary>Adapts an inbound gRPC request stream to an <see cref="IAsyncEnumerable{T}"/>.</summary>
-    internal static async IAsyncEnumerable<T> ReadAll<T>(IAsyncStreamReader<T> reader, CancellationToken cancellationToken)
+    internal static async IAsyncEnumerable<T> ReadAll<T>(IAsyncStreamReader<T> reader, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         while (await reader.MoveNext(cancellationToken))
         {
@@ -58,7 +59,7 @@ internal static class GrpcStreamAdapter
             .Invoke(null, new object?[] { source, adapter, isResponseDirection, cancellationToken });
     }
 
-    private static async IAsyncEnumerable<TOut> Convert<TIn, TOut>(IAsyncEnumerable<TIn> source, IGrpcMessageAdapter adapter, bool isResponseDirection, CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<TOut> Convert<TIn, TOut>(IAsyncEnumerable<TIn> source, IGrpcMessageAdapter adapter, bool isResponseDirection, [EnumeratorCancellation] CancellationToken cancellationToken)
         where TOut : class
     {
         await foreach (var item in source.WithCancellation(cancellationToken))
