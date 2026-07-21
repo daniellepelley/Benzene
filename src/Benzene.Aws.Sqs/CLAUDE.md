@@ -58,12 +58,12 @@ Distinct from the message-publishing client above - a long-running worker that p
 directly (for `Benzene.HostedService`/`Benzene.SelfHost`, not Lambda). `SqsConsumerOptions.AckMode`
 (via `UseSqs(config, clientFactory, action, configure)`'s optional `configure` parameter) controls
 how a poll batch is acknowledged:
-- `SqsConsumerAckMode.WholeBatch` (default, unchanged from prior behavior) - the whole batch is
+- `SqsConsumerAckMode.PerMessage` (**default**) - only the messages that actually succeeded (no
+  thrown exception, and no unsuccessful `IBenzeneResult`) are deleted; failed messages are left on
+  the queue individually, and one message's exception no longer aborts the whole poll iteration.
+- `SqsConsumerAckMode.WholeBatch` (the older all-or-nothing-on-throw behavior) - the whole batch is
   deleted together, only once every message has run without throwing; any thrown exception leaves
   the entire batch on the queue.
-- `SqsConsumerAckMode.PerMessage` - only the messages that actually succeeded (no thrown exception,
-  and no unsuccessful `IBenzeneResult`) are deleted; failed messages are left on the queue
-  individually, and one message's exception no longer aborts the whole poll iteration.
 `SqsConsumerMessageHandlerResultSetter` now records the outcome onto
 `SqsConsumerMessageContext.MessageResult` (previously a no-op, since deletion never used to depend
 on it) - `SqsConsumerApplication.HandleAsync` reads it to build the `SqsConsumerBatchResult`
