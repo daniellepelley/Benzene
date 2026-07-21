@@ -13,8 +13,9 @@ on:
         required: true
         default: "westeurope"
       storage_account:
-        description: "Storage account for the Functions runtime + mesh catalog (globally unique, lowercase alphanumeric)"
+        description: "Storage account for the Functions runtime + mesh catalog (globally unique, lowercase alphanumeric, <=24 chars). The remote state uses <name>tfstate, so this MUST differ from other examples' value (e.g. the AzureMesh example's 'benzenemesh')."
         required: true
+        default: "benzenefnmesh"
 
 permissions:
   contents: read
@@ -60,7 +61,21 @@ jobs:
           STATE_SA: ${{ inputs.storage_account }}tfstate
         run: |
           az group create -n "$RG" -l "$LOCATION" >/dev/null
+
+          # The state storage account name is GLOBALLY unique, so a create can legitimately fail
+          # because the name is already taken - most commonly by the sibling AzureMesh example when
+          # both are run with the same `storage_account` (each derives <name>tfstate). Do NOT let that
+          # be swallowed: after the create attempt, require the account to exist in THIS resource
+          # group, otherwise fail here with an actionable message rather than letting `terraform init`
+          # surface it downstream as an opaque 404 ResourceNotFound.
           az storage account create -n "$STATE_SA" -g "$RG" -l "$LOCATION" --sku Standard_LRS >/dev/null 2>&1 || true
+          if ! az storage account show -g "$RG" -n "$STATE_SA" >/dev/null 2>&1; then
+            echo "::error::Remote-state storage account '$STATE_SA' is not available in resource group '$RG'."
+            echo "::error::Storage-account names are globally unique - '$STATE_SA' is most likely already taken elsewhere"
+            echo "::error::(e.g. by the AzureMesh example, which also derives <storage_account>tfstate from its input)."
+            echo "::error::Re-run this workflow with a different, globally-unique 'storage_account' value."
+            exit 1
+          fi
           az storage container create -n tfstate --account-name "$STATE_SA" --auth-mode login >/dev/null 2>&1 || true
           terraform init -input=false \
             -backend-config="resource_group_name=$RG" \
