@@ -18,7 +18,10 @@ internal sealed class CloudServiceDescriptorSource
     private readonly object _gate = new();
     private readonly MeshServiceInfo _info;
     private readonly CloudServiceProfileReport _report;
-    private MeshServiceDescriptor? _descriptor;
+    // volatile: _descriptor is published via double-checked locking (read at Get()/TryGet() outside
+    // the lock). Without it, a weak memory model (ARM64/Graviton) could make the non-null reference
+    // visible before the writes inside Build() that populated the object - a torn read. Benign on x86/x64.
+    private volatile MeshServiceDescriptor? _descriptor;
 
     public CloudServiceDescriptorSource(MeshServiceInfo info, CloudServiceProfileReport report, Type[]? handlerTypes)
     {
