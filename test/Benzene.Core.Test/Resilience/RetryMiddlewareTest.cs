@@ -204,6 +204,33 @@ public class RetryMiddlewareTest
     }
 
     [Fact]
+    public async Task HandleAsync_NoMaxDelay_ClampsTheSleepToATaskDelaySafeCeiling()
+    {
+        // With no maxDelay the uncapped exponential sleep grows past Task.Delay's ~24.8-day
+        // (int.MaxValue ms) ceiling; the real Task.Delay would then throw ArgumentOutOfRangeException
+        // outside the retry loop. Every sleep handed to _delay must stay within that ceiling.
+        var recordedDelays = new List<TimeSpan>();
+        var middleware = new RetryMiddleware<object>(
+            numberOfRetries: 40,
+            initialDelay: TimeSpan.FromSeconds(1),
+            backoffFactor: 2.0,
+            delay: delay =>
+            {
+                recordedDelays.Add(delay);
+                return Task.CompletedTask;
+            });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.HandleAsync(new object(), () =>
+            throw new InvalidOperationException("always fails")));
+
+        var maxSafe = TimeSpan.FromMilliseconds(int.MaxValue);
+        Assert.All(recordedDelays, d => Assert.True(d <= maxSafe, $"delay {d} exceeded Task.Delay's ceiling"));
+        // The tail attempts must actually reach the clamp, proving it engaged rather than the growth
+        // just never getting large enough.
+        Assert.Contains(recordedDelays, d => d == maxSafe);
+    }
+
+    [Fact]
     public async Task HandleAsync_MaxDelay_CapsTheActualSleepButNotTheUnderlyingGrowth()
     {
         var recordedDelays = new List<TimeSpan>();

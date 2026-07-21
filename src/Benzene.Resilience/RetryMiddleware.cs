@@ -35,6 +35,12 @@ public class RetryMiddleware<TContext> : IMiddleware<TContext>
     private readonly Func<TimeSpan, TimeSpan> _jitter;
     private readonly Func<TimeSpan, Task> _delay;
 
+    // Task.Delay rejects a delay above int.MaxValue milliseconds (~24.8 days). With no maxDelay set
+    // the uncapped exponential sleep crosses that ceiling around attempt ~25, so the actual sleep is
+    // clamped here. This is distinct from the TimeSpan.FromMilliseconds overflow clamp below, which
+    // only guards the much larger TimeSpan.MaxValue boundary used to grow the next attempt's delay.
+    private static readonly TimeSpan MaxSleep = TimeSpan.FromMilliseconds(int.MaxValue);
+
     public RetryMiddleware(
         int numberOfRetries = 3,
         TimeSpan? initialDelay = null,
@@ -83,7 +89,8 @@ public class RetryMiddleware<TContext> : IMiddleware<TContext>
             // off the true exponential curve (matching AWS's documented "full jitter" algorithm:
             // sleep = random(0, min(cap, base * factor^attempt))).
             var cappedDelay = _maxDelay.HasValue && delay > _maxDelay.Value ? _maxDelay.Value : delay;
-            await _delay(_jitter(cappedDelay));
+            var sleep = _jitter(cappedDelay);
+            await _delay(sleep > MaxSleep ? MaxSleep : sleep);
             // Grow the exponential curve, but clamp at TimeSpan.MaxValue: with a large numberOfRetries
             // (or initialDelay/backoffFactor) the uncapped multiply overflows TimeSpan.MaxValue and
             // TimeSpan.FromMilliseconds throws OverflowException *outside* the try - surfacing as an
