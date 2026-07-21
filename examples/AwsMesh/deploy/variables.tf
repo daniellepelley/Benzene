@@ -36,17 +36,20 @@ variable "aggregate_schedule" {
 
 variable "adot_collector_layer_arn" {
   description = <<-EOT
-    ARN of the AWS Distro for OpenTelemetry (ADOT) collector Lambda layer, region-specific. When set,
-    it is attached to every function and Benzene's OTLP exporter is pointed at the layer's in-process
-    collector (http://localhost:4317) automatically — the collector's default config forwards OTLP
-    traces to X-Ray (awsxray), so the per-middleware spans land as subsegments in the same X-Ray trace
-    as the AWS-level segments. Look up the current ARN for your region/architecture from
-    https://github.com/aws-observability/aws-otel-lambda (e.g. the aws-otel-collector layer). No
-    AWS_LAMBDA_EXEC_WRAPPER is set — these are custom-runtime functions that already emit their own
-    spans, so only the collector half of the layer is used. Leave empty to not attach it.
+    ARN of the AWS Distro for OpenTelemetry (ADOT) collector Lambda layer. When set, it is attached to
+    every function and Benzene's OTLP exporter is pointed at the layer's in-process collector
+    (http://localhost:4317) automatically — the collector's default config forwards OTLP traces to X-Ray
+    (awsxray), so the per-middleware spans land as subsegments in the same X-Ray trace as the AWS-level
+    segments. No AWS_LAMBDA_EXEC_WRAPPER is set — these are custom-runtime functions that already emit
+    their own spans, so only the collector half of the layer is used. Set empty ("") to not attach it.
+
+    The default is the amd64 collector layer in eu-west-1, matching this config's default region + x86_64
+    architecture. A Lambda layer is regional and arch-specific, so if you change var.region or
+    var.lambda_architecture you MUST change this ARN to match (swap the region substring, and
+    amd64<->arm64). Bump the ver-X-Y-Z from https://github.com/aws-observability/aws-otel-lambda/releases.
   EOT
   type        = string
-  default     = ""
+  default     = "arn:aws:lambda:eu-west-1:901920570463:layer:aws-otel-collector-amd64-ver-0-117-0:1"
 }
 
 variable "otlp_endpoint" {
