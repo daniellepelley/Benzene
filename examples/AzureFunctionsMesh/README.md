@@ -74,7 +74,10 @@ The **Deploy Azure Functions Mesh Example** workflow
 (**Actions → Deploy Azure Functions Mesh Example → Run workflow**). Put an Azure service principal in
 the **`test`** GitHub Environment as `AZURE_CREDENTIALS` (the `azure/login` JSON), with rights to
 create the resource group, storage, App Service plan, Function Apps, and **to assign roles** (Owner or
-User Access Administrator). Supply a globally-unique storage-account name; it runs `terraform apply`,
+User Access Administrator). Supply a globally-unique storage-account name (it defaults to
+`benzenefnmesh` and **must differ from other examples'** — the remote state is kept in a
+`<name>tfstate` account, so reusing the AzureMesh example's `benzenemesh` collides on that globally-
+unique name and fails `terraform init` with a 404); it runs `terraform apply`,
 then `func azure functionapp publish` for each of the four apps, and prints the URLs
 (`mesh_ui_url`, `mesh_refresh_url`, `service_spec_ui_urls`).
 
