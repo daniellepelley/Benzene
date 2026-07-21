@@ -19,6 +19,19 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 12 — CLI command splitter crashed on an unterminated quote (`CommandSplitter`)
+- **Bug:** `Split`'s quote branch did `i++` then read `args[i]` without a bounds check, so a command
+  string with a missing closing quote (`command -name "value one`) ran the inner loop past the end of
+  the string → `IndexOutOfRangeException`, crashing the CLI on malformed user input. Two secondary
+  defects: the unconditional final-word flush appended a spurious empty `""` token whenever the input
+  ended in a quoted argument or a trailing space (existing tests only used inputs ending in a bare
+  token, so they never hit any of these).
+- **Repro:** three new `CommandSplitterTest` cases — unterminated quote (threw pre-fix), quoted-final
+  arg and trailing-space (each emitted a trailing `""` pre-fix).
+- **Fix:** the inner loop breaks and flushes on `i >= args.Length` instead of indexing past the end; the
+  final flush is gated on `currentWord.Any()` so a already-flushed word doesn't append `""`. Reachable
+  from `ConsoleApplication.ExecuteAsync(string)`. 293 CLI/parser tests green; full suite 1879.
+
 ### Cycle 11 — markdown builder crashed on inline-object arrays and dropped referenced-array fields (`MarkdownTypeBuilder`)
 - **Bug:** `MapProperty`'s array branch guarded with `if (Items.Reference != null || Items.Reference.ReferenceV2 == reference)`.
   Two defects in one contradictory condition: (a) the `||` short-circuits on `Items.Reference != null`, so

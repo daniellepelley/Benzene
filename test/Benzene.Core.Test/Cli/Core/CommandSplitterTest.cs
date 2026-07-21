@@ -50,5 +50,39 @@ namespace Benzene.Test.Cli.Core
             Assert.Equal("-attr2", output.ElementAt(4));
             Assert.Equal("value2", output.ElementAt(5));
         }
+
+        [Fact]
+        public void Split_UnterminatedQuote_DoesNotThrowAndTreatsRestAsQuotedContent()
+        {
+            // A missing closing quote must not crash the parser (was an IndexOutOfRangeException
+            // when the inner loop ran past the end of the string looking for the closing quote).
+            var input = "command -name \"value one";
+
+            var output = new CommandSplitter().Split(input);
+
+            Assert.Equal("command", output.ElementAt(0));
+            Assert.Equal("-name", output.ElementAt(1));
+            Assert.Equal("value one", output.ElementAt(2));
+        }
+
+        [Fact]
+        public void Split_QuotedFinalArgument_DoesNotEmitTrailingEmptyToken()
+        {
+            var input = "command -name \"value\"";
+
+            var output = new CommandSplitter().Split(input);
+
+            Assert.Equal(new[] { "command", "-name", "value" }, output);
+        }
+
+        [Fact]
+        public void Split_TrailingSpace_DoesNotEmitTrailingEmptyToken()
+        {
+            var input = "command value ";
+
+            var output = new CommandSplitter().Split(input);
+
+            Assert.Equal(new[] { "command", "value" }, output);
+        }
     }
 }

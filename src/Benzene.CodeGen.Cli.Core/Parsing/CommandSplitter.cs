@@ -22,7 +22,9 @@ public class CommandSplitter : ICommandSplitter
                     while (i < args.Length)
                     {
                         i++;
-                        if (args.ElementAtOrDefault(i) == '\"')
+                        // End of string with no closing quote: flush what we have rather than
+                        // reading past the end of the array (was an IndexOutOfRangeException).
+                        if (i >= args.Length || args[i] == '\"')
                         {
                             list.Add(string.Join("", currentWord));
                             currentWord.Clear();
@@ -40,7 +42,13 @@ public class CommandSplitter : ICommandSplitter
             i++;
 
         }
-        list.Add(string.Join("", currentWord));
+
+        // Only flush a final word when there is one; a quoted final argument (or a trailing space)
+        // already flushed and cleared it, so an unconditional Add would append a spurious "" token.
+        if (currentWord.Any())
+        {
+            list.Add(string.Join("", currentWord));
+        }
 
         return list.ToArray();
     }
