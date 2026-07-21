@@ -153,8 +153,14 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
 - **Benzene.Core.Middleware** - Middleware implementations
 
 ## Important conventions
-- `ActivitySource.StartActivity` is a documented no-op (returns `null`) when nothing is listening —
-  `AddDiagnostics()` has effectively zero cost with no OTel exporter wired up, same as before
+- `ActivitySource.StartActivity` is a documented no-op (returns `null`) when nothing is listening, and
+  `ActivityMiddlewareDecorator` fast-paths that case: it returns the inner middleware's task **directly**
+  (no tag work, no try/catch, and no per-stage async state machine allocated), so `AddDiagnostics()` is
+  genuinely — not just "effectively" — near-free per stage with no OTel exporter wired. Measured
+  (`benchmarks/…/TracingMiddlewareBenchmarks`, 8 stages): armed-but-not-listening dropped from
+  ~4,600 ns / ~6 KB to ~600 ns / ~1.5 KB per message. When a listener **is** attached (an exporter is
+  wired) the full span-per-stage cost is paid (~4,600 ns / ~6 KB for 8 stages) — inherent to
+  per-middleware spans, and separate from the fast-path
 - Every middleware gets its own `Activity`, forming a real trace tree via `Activity.Current`'s
   ambient parent-tracking — this is the *automatic* behavior, not something you opt into per call
 - `DebugMiddlewareWrapper` is separate from tracing; it's `Debug.WriteLine`-only dev output
