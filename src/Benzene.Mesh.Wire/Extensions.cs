@@ -74,7 +74,7 @@ public static class Extensions
             var topic = messageGetter.GetTopic(context);
             var headers = messageGetter.GetHeaders(context);
 
-            headers.TryGetValue("traceparent", out var traceparent);
+            TryGetHeader(headers, "traceparent", out var traceparent);
             if (!Traceparent.TryParse(traceparent, out var traceId, out var parentSpanId))
             {
                 traceId = Traceparent.NewId(16);
@@ -91,7 +91,7 @@ public static class Extensions
                 Topic = topic?.Id ?? string.Empty,
                 TopicVersion = string.IsNullOrEmpty(topic?.Version) ? null : topic!.Version,
                 StartedAt = DateTimeOffset.UtcNow,
-                CorrelationId = headers.TryGetValue("x-correlation-id", out var correlationId) ? correlationId : null
+                CorrelationId = TryGetHeader(headers, "x-correlation-id", out var correlationId) ? correlationId : null
             };
 
             var stopwatch = Stopwatch.StartNew();
@@ -116,5 +116,29 @@ public static class Extensions
                 }
             }
         }));
+    }
+
+    // Header keys are case-insensitive on read regardless of the envelope dictionary's comparer
+    // (wire-contracts.md §2). The envelope headers deserialize into an ordinal Dictionary, so a
+    // cross-language participant (e.g. a Go service whose net/http canonicalizes "traceparent" to
+    // "Traceparent") would otherwise be missed and its trace not joined.
+    private static bool TryGetHeader(IDictionary<string, string> headers, string key, out string? value)
+    {
+        if (headers.TryGetValue(key, out value))
+        {
+            return true;
+        }
+
+        foreach (var header in headers)
+        {
+            if (string.Equals(header.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                value = header.Value;
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
     }
 }

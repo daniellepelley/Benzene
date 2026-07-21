@@ -5,7 +5,7 @@ commit+push to main. Adversarial verification: no fix ships without a test that 
 passes after. Staying clear of the actively-churning #29/#30 cloud series (Aws/Azure/Kafka/Grpc/
 Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
-**Tally so far: 26 cycles shipped** (each failing-test-first + full-suite green). Coverage swept via
+**Tally so far: 27 cycles shipped** (each failing-test-first + full-suite green). Coverage swept via
 parallel adversarial hunters across Core/Results/Abstractions, serialization/validation/message-handlers,
 mesh (collector/aggregator/reporting/tempo/contracts/ui), cache/resilience/DI, HTTP/CORS, CLI/codegen,
 observability/serializers, auth/oauth2/versioning, health-checks, idempotency/saga, and cloud-service.
@@ -71,6 +71,19 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 ## Cycle log
 
 (newest first)
+
+### Cycle 27 — mesh trace read traceparent/correlation-id case-sensitively, breaking cross-language join (`Mesh.Wire/Extensions.UseMeshTrace`)
+- **Bug:** the trace middleware read `traceparent` and `x-correlation-id` with plain `TryGetValue`. The
+  envelope headers deserialize into an ordinal `Dictionary<string,string>`, so a canonically-cased key —
+  exactly what a cross-language mesh participant sends (a Go service's `net/http` canonicalizes to
+  `Traceparent`) — was missed: the service started a fresh trace instead of joining the caller's, silently
+  breaking distributed tracing across the fleet (this package's whole reason for existing). Same §2
+  case-insensitive-read violation fixed in Cycles 16/17, and inconsistent with `W3CTraceContextExtensions`,
+  which already reads `traceparent` case-insensitively.
+- **Repro:** two new `ExtensionsTest` cases — a `Traceparent` header didn't join, and an `X-Correlation-Id`
+  header wasn't captured, pre-fix.
+- **Fix:** a `TryGetHeader` helper (fast path + case-insensitive fallback scan) for both reads. 170 mesh +
+  129 conformance tests green. (Found by a cross-cutting sibling-pattern sweep after the package hunts.)
 
 ### Cycle 26 — test header builders threw on duplicate keys and clobbered/aliased headers (`Benzene.Testing`)
 - **Bug:** `MessageBuilder.WithHeader`/`HttpBuilder.WithHeader` used `Dictionary.Add`, so setting a header

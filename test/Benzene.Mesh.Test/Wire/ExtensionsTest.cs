@@ -162,6 +162,48 @@ public class ExtensionsTest
     }
 
     [Fact]
+    public async Task UseMeshTrace_CanonicalCasedTraceparent_JoinsTheExistingTrace()
+    {
+        // wire-contracts.md §2: header keys are case-insensitive on read. A cross-language mesh
+        // participant (e.g. a Go service, whose net/http canonicalizes the key to "Traceparent")
+        // must still join the trace rather than the reader missing the header and starting fresh.
+        var (pipeline, services) = NewPipeline();
+        MeshTraceEvent? exported = null;
+        var mockExporter = new Mock<IMeshTraceExporter>();
+        mockExporter.Setup(x => x.Export(It.IsAny<MeshTraceEvent>())).Callback<MeshTraceEvent>(e => exported = e);
+
+        pipeline.UseMeshTrace(new MeshServiceInfo("orders-service"), mockExporter.Object);
+
+        var traceId = new string('a', 32);
+        var parentSpanId = new string('b', 16);
+        var headers = new Dictionary<string, string> { ["Traceparent"] = $"00-{traceId}-{parentSpanId}-01" };
+
+        await SendAsync(pipeline, services, "some-topic", headers);
+
+        Assert.NotNull(exported);
+        Assert.Equal(traceId, exported!.TraceId);
+        Assert.Equal(parentSpanId, exported.ParentSpanId);
+    }
+
+    [Fact]
+    public async Task UseMeshTrace_CanonicalCasedCorrelationIdHeader_IsCaptured()
+    {
+        var (pipeline, services) = NewPipeline();
+        MeshTraceEvent? exported = null;
+        var mockExporter = new Mock<IMeshTraceExporter>();
+        mockExporter.Setup(x => x.Export(It.IsAny<MeshTraceEvent>())).Callback<MeshTraceEvent>(e => exported = e);
+
+        pipeline.UseMeshTrace(new MeshServiceInfo("orders-service"), mockExporter.Object);
+
+        var headers = new Dictionary<string, string> { ["X-Correlation-Id"] = "corr-123" };
+
+        await SendAsync(pipeline, services, "some-topic", headers);
+
+        Assert.NotNull(exported);
+        Assert.Equal("corr-123", exported!.CorrelationId);
+    }
+
+    [Fact]
     public async Task UseMeshTrace_MalformedTraceparent_StartsANewTraceInstead()
     {
         var (pipeline, services) = NewPipeline();
