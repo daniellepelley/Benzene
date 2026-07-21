@@ -47,6 +47,9 @@ public class XRayMiddlewareDecorator<TContext> : IMiddleware<TContext>
         if (!TryBeginSubsegment(recorder))
         {
             // No active X-Ray segment (not on Lambda, or active tracing off) - trace nothing, just run on.
+            // (Kept as a single async method rather than a sync fast-path: the X-Ray SDK's subsegment
+            // Begin/End must sit in the same async-flow/ExecutionContext, and on Lambda with active tracing
+            // a segment is always present so this branch is off the production hot path anyway.)
             await _inner.HandleAsync(context, next);
             return;
         }

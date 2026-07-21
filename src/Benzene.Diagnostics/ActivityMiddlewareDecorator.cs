@@ -20,31 +20,42 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
 
     public string Name => _inner.Name;
 
-    public async Task HandleAsync(TContext context, Func<Task> next)
+    public Task HandleAsync(TContext context, Func<Task> next)
     {
-        using var activity = BenzeneDiagnostics.ActivitySource.StartActivity(Name);
-        if (activity is not null)
+        var activity = BenzeneDiagnostics.ActivitySource.StartActivity(Name);
+        if (activity is null)
+        {
+            // Nothing is listening (no exporter/listener wired), so there is no span to record. Return
+            // the inner middleware's task directly - no tag work, no try/catch, and crucially no async
+            // state machine allocated for this stage. This is what makes AddDiagnostics genuinely
+            // (not just "effectively") free per stage when tracing isn't being exported.
+            return _inner.HandleAsync(context, next);
+        }
+
+        return HandleTracedAsync(activity, context, next);
+    }
+
+    private async Task HandleTracedAsync(Activity activity, TContext context, Func<Task> next)
+    {
+        using (activity)
         {
             Tag(activity, context);
-        }
 
-        try
-        {
-            await _inner.HandleAsync(context, next);
-        }
-        catch (Exception ex)
-        {
-            // Without this, a span that threw looks identical to one that succeeded in a trace
-            // viewer (Jaeger/Tempo/App Insights) - no error flag, no exception. Marking the span
-            // (at every level the exception propagates through) is what lets a trace point at the
-            // failing stage. Then rethrow untouched - this only observes, it doesn't handle.
-            if (activity is not null)
+            try
             {
+                await _inner.HandleAsync(context, next);
+            }
+            catch (Exception ex)
+            {
+                // Without this, a span that threw looks identical to one that succeeded in a trace
+                // viewer (Jaeger/Tempo/App Insights) - no error flag, no exception. Marking the span
+                // (at every level the exception propagates through) is what lets a trace point at the
+                // failing stage. Then rethrow untouched - this only observes, it doesn't handle.
                 activity.AddException(ex);
                 activity.SetStatus(ActivityStatusCode.Error, ex.Message);
-            }
 
-            throw;
+                throw;
+            }
         }
     }
 
