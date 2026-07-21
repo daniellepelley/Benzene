@@ -88,7 +88,11 @@ public class MarkdownTypeBuilder
         }
         else if (openApiSchema.Type == "array" && (openApiSchema.Items.Reference != null || openApiSchema.Items.Type == "object"))
         {
-            if (openApiSchema.Items.Reference != null || openApiSchema.Items.Reference.ReferenceV2 == reference)
+            // Collapse to "{...}[]" only for a genuine reference cycle (the item points back at a
+            // type we're already rendering), mirroring the single-object branch below. The original
+            // `||` collapsed every referenced-object array (losing the item's fields) and, for an
+            // inline-object array (Items.Reference == null), dereferenced the null Reference -> NRE.
+            if (openApiSchema.Items.Reference != null && openApiSchema.Items.Reference.ReferenceV2 == reference)
             {
                 lineWriter.WriteLine($"{CodeGenHelpers.Camelcase(name)}: {{...}}[]");
             }

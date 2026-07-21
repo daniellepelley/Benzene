@@ -19,6 +19,21 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 11 — markdown builder crashed on inline-object arrays and dropped referenced-array fields (`MarkdownTypeBuilder`)
+- **Bug:** `MapProperty`'s array branch guarded with `if (Items.Reference != null || Items.Reference.ReferenceV2 == reference)`.
+  Two defects in one contradictory condition: (a) the `||` short-circuits on `Items.Reference != null`, so
+  EVERY array of a referenced object (`List<TenantDto>`) collapsed to `{...}[]` and its item fields never
+  rendered — even when it wasn't a cycle; (b) for an inline-object array (`Items.Reference == null`,
+  reached via the enclosing `Items.Type == "object"` test), the second operand dereferenced the null
+  `Items.Reference.ReferenceV2` → `NullReferenceException`, crashing the whole doc build.
+- **Repro:** two new `MarkdownTypeBuilderTest` cases — `BuildType_ArrayOfReferencedObjects_ExpandsItemProperties`
+  (collapsed to `{...}[]` pre-fix, expands `TenantDto`'s fields post-fix) and
+  `BuildType_ArrayOfInlineObjects_DoesNotThrow` (NRE pre-fix, expands the inline field post-fix). New model
+  `TenantListDto`. No existing golden model has an object array, so the 6 golden files are unaffected.
+- **Fix:** `&&` instead of `||`, mirroring the sibling single-object branch (`Reference.ReferenceV2 == reference`):
+  collapse to `{...}[]` only on a genuine reference cycle; otherwise expand the item schema. Full core suite
+  green (1872).
+
 ### Cycle 10 — markdown doc property keys diverged from the wire for acronym names (`CodeGenHelpers.Camelcase`)
 - **Bug:** the same acronym-lowercasing algorithm fixed in Cycle 2's `ExamplePayloadBuilder`, but here it
   IS on a production path — `CodeGenHelpers.Camelcase` is called by the Markdown doc builders
