@@ -106,7 +106,7 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
                 _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Methods",
                     "OPTIONS," + string.Join(",", methods));
 
-                if (_corsSettings.AllowCredentials)
+                if (_corsSettings.AllowCredentials && !AllowsAnyOrigin())
                 {
                     _responseAdapter.SetResponseHeader(context, "Access-Control-Allow-Credentials", "true");
                 }
@@ -132,6 +132,16 @@ public class CorsMiddleware<TContext> : IMiddleware<TContext> where TContext : I
             }
         }
     }
+
+    // A literal "*" in AllowedDomains is "allow any origin". Echoing the request's own Origin back
+    // (as this middleware always does) does NOT make that safe to combine with credentials: it just
+    // reflects every attacker origin with Access-Control-Allow-Credentials: true, defeating the
+    // browser rule that blocks "*" + credentials. ASP.NET Core refuses the combination outright; we
+    // do the graceful equivalent - drop the credentials header when any-origin is configured, so a
+    // specific-origin allow-list + credentials still works but any-origin + credentials cannot leak a
+    // credentialed response to an arbitrary site.
+    private bool AllowsAnyOrigin()
+        => _corsSettings.AllowedDomains != null && _corsSettings.AllowedDomains.Contains("*");
 
     private bool AreRequestedHeadersAllowed(HttpRequest httpRequest)
     {

@@ -61,10 +61,13 @@ public class CorsSettings
     /// permitting cross-origin requests to include cookies or HTTP authentication.
     /// </summary>
     /// <remarks>
-    /// Defaults to <c>false</c>. This is safe to combine with a wildcard entry in
-    /// <see cref="AllowedDomains"/> because the middleware always echoes back the specific
-    /// request's <c>Origin</c> value rather than a literal <c>"*"</c>, which is what the CORS
-    /// specification requires when credentials are allowed.
+    /// Defaults to <c>false</c>. Combine it with a <b>specific</b> origin allow-list, not a wildcard:
+    /// the middleware echoes back the request's own <c>Origin</c> (never a literal <c>"*"</c>, which
+    /// browsers reject for credentialed requests), so a named allow-list plus credentials is safe.
+    /// A wildcard entry (<c>"*"</c> in <see cref="AllowedDomains"/>) is <b>not</b> safe to combine
+    /// with credentials - reflecting every origin with <c>Access-Control-Allow-Credentials: true</c>
+    /// is the classic origin-reflection hole. When any-origin is configured the middleware therefore
+    /// omits the credentials header (matching ASP.NET Core, which refuses the combination outright).
     /// </remarks>
     public bool AllowCredentials { get; set; }
 }

@@ -166,6 +166,48 @@ public class ApiGatewayMessageCorsTest
     }
 }
 
+public class ApiGatewayMessageCorsWildcardOriginCredentialsTest
+{
+    private const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
+    private const string AccessControlAllowCredentials = "Access-Control-Allow-Credentials";
+    private readonly AwsLambdaBenzeneTestHost _host;
+
+    public ApiGatewayMessageCorsWildcardOriginCredentialsTest()
+    {
+        _host = new InlineAwsLambdaStartUp()
+            .ConfigureServices(services => services
+                .ConfigureServiceCollection()
+            )
+            .Configure(app => app
+                .UseApiGateway(apiGateway => apiGateway
+                    .UseCors(new CorsSettings
+                    {
+                        // Any-origin plus credentials is the dangerous combination.
+                        AllowedDomains = new[] { "*" },
+                        AllowCredentials = true
+                    })
+                    .UseMessageHandlers()
+                )
+            ).BuildHost();
+    }
+
+    [Fact]
+    public async Task WildcardOrigin_WithCredentials_ReflectsOriginButOmitsCredentialsHeader()
+    {
+        var request = HttpBuilder.Create("OPTIONS", "/example")
+            .WithHeader("origin", "https://attacker.example");
+        var response = await _host.SendApiGatewayAsync(request);
+
+        Assert.NotNull(response);
+        Assert.Equal(200, response.StatusCode);
+        // The origin is still echoed (any-origin is allowed), but the credentials header is refused:
+        // reflecting an arbitrary origin *with* Access-Control-Allow-Credentials: true is the
+        // origin-reflection hole that ASP.NET Core forbids. A specific allow-list keeps credentials.
+        Assert.Equal("https://attacker.example", response.Headers[AccessControlAllowOrigin]);
+        Assert.False(response.Headers.ContainsKey(AccessControlAllowCredentials));
+    }
+}
+
 public class ApiGatewayMessageCorsWildcardHeadersTest
 {
     private const string AccessControlAllowHeaders = "Access-Control-Allow-Headers";

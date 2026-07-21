@@ -78,7 +78,10 @@ matching, credential-safe wildcards, preflight header validation, Vary caching h
   rejects (no CORS headers at all) a preflight whose `Access-Control-Request-Headers` includes a
   header outside a non-wildcard `AllowedHeaders` list
 - `CorsOriginChecker` - Validates CORS origins; always echoes the actual `Origin` value (never a
-  literal `"*"`), which is what makes wildcard + credentials safe to combine
+  literal `"*"`), which is what makes a *specific* origin allow-list + credentials safe to combine.
+  A wildcard (`"*"`) origin + credentials is refused, not reflected: when `AllowedDomains` contains
+  `"*"` the middleware omits `Access-Control-Allow-Credentials` (matching ASP.NET Core, which throws
+  on `AllowAnyOrigin()` + `AllowCredentials()`) so a credentialed response can't leak to any origin
 
 ### Request body buffering (`RequestBody/`)
 Removes the sync-over-async block from the stream-reading HTTP body getters (ASP.NET Core, Azure
