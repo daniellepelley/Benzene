@@ -69,6 +69,27 @@ public class MessagePackSerializerTest
     }
 
     [Fact]
+    public void Deserialize_DeeplyNestedPayload_ThrowsInsteadOfCrashing()
+    {
+        // Deserialize consumes attacker-controlled bodies (application/msgpack is a negotiable media
+        // format). Under MessagePack's default TrustedData options a deeply-nested payload recurses
+        // into an uncatchable StackOverflowException. UntrustedData caps depth (500), so an
+        // over-deep payload surfaces as an ordinary catchable exception instead. Build 1000 nested
+        // single-element arrays (0x91) terminated by nil (0xc0) - well past the cap.
+        var msgpack = new byte[1001];
+        for (var i = 0; i < 1000; i++)
+        {
+            msgpack[i] = 0x91; // fixarray of length 1
+        }
+        msgpack[1000] = 0xc0; // nil
+
+        var serializer = new MessagePackSerializer();
+        var base64 = Convert.ToBase64String(msgpack);
+
+        Assert.ThrowsAny<Exception>(() => serializer.Deserialize<object>(base64));
+    }
+
+    [Fact]
     public void Serialize_ProducesBase64Text_NotRawBytes()
     {
         // The whole point of the Base64-armoring design: the string output must be valid Base64,

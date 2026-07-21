@@ -33,7 +33,16 @@ public class MessagePackSerializer : IPayloadSerializer
     /// any POCO" expectation <c>JsonSerializer</c>/<c>XmlSerializer</c> already meet.
     /// </summary>
     public MessagePackSerializer()
-        : this(global::MessagePack.MessagePackSerializerOptions.Standard.WithResolver(ContractlessStandardResolver.Instance))
+        : this(global::MessagePack.MessagePackSerializerOptions.Standard
+            // This serializer is a negotiable media format, so Deserialize consumes attacker-
+            // controlled request bodies (content-type: application/msgpack). Standard options default
+            // to MessagePackSecurity.TrustedData, under which a deeply-nested payload recurses into an
+            // uncatchable StackOverflowException (process crash) and map payloads enable hash-collision
+            // DoS. UntrustedData caps depth (500) and uses collision-resistant hashing - the guard
+            // MessagePack-CSharp documents for any data crossing a trust boundary. Valid payloads are
+            // unaffected.
+            .WithSecurity(global::MessagePack.MessagePackSecurity.UntrustedData)
+            .WithResolver(ContractlessStandardResolver.Instance))
     {
     }
 
