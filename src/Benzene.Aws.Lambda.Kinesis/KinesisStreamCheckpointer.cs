@@ -40,6 +40,16 @@ internal class KinesisStreamCheckpointer : IStreamCheckpointer<KinesisEventRecor
         return Task.CompletedTask;
     }
 
+    /// <summary>Whether the handler has checkpointed at least one record.</summary>
+    public bool HasCheckpointed => _lastCheckpointedIndex >= 0;
+
+    /// <summary>
+    /// Advances the checkpoint to the last record in the batch, marking the whole batch processed.
+    /// Used by <see cref="KinesisStreamOptions.AutoCheckpointOnSuccess"/> when a batch completes
+    /// without the handler checkpointing anything itself.
+    /// </summary>
+    public void CheckpointAll() => _lastCheckpointedIndex = _records.Count - 1;
+
     /// <summary>
     /// Gets the sequence number of the first record after the last checkpointed one - the record AWS
     /// should resume the batch from - or <c>null</c> if every record has been checkpointed (or the

@@ -33,7 +33,7 @@ public class KinesisStreamApplicationTest
     }
 
     private static KinesisStreamApplication BuildApplication(
-        Func<StreamContext<KinesisEventRecord>, Task> process)
+        Func<StreamContext<KinesisEventRecord>, Task> process, KinesisStreamOptions options = null)
     {
         var services = ServiceResolverMother.CreateServiceCollection();
         var pipeline = new MiddlewarePipelineBuilder<StreamContext<KinesisEventRecord>>(
@@ -41,7 +41,7 @@ public class KinesisStreamApplicationTest
             .UseStream(process)
             .Build();
 
-        return new KinesisStreamApplication(pipeline);
+        return new KinesisStreamApplication(pipeline, options);
     }
 
     private static IServiceResolverFactory ServiceResolverFactory()
@@ -123,6 +123,38 @@ public class KinesisStreamApplicationTest
         var application = BuildApplication(_ => throw new InvalidOperationException("boom"));
 
         var response = await application.HandleAsync(CreateKinesisEvent("1", "2"), ServiceResolverFactory());
+
+        var failure = Assert.Single(response.BatchItemFailures);
+        Assert.Equal("1", failure.ItemIdentifier);
+    }
+
+    [Fact]
+    public async Task HandleAsync_SucceedsWithoutCheckpointing_AutoCheckpointOnSuccessDefault_ReturnsEmpty()
+    {
+        // The UseStream callback overload never checkpoints. A batch that runs to completion without
+        // throwing must advance its resume point (default AutoCheckpointOnSuccess) so AWS treats it as
+        // done, rather than redelivering the whole batch forever.
+        var application = BuildApplication(async context =>
+        {
+            await foreach (var _ in context.Items) { }
+        });
+
+        var response = await application.HandleAsync(CreateKinesisEvent("1", "2", "3"), ServiceResolverFactory());
+
+        Assert.Empty(response.BatchItemFailures);
+    }
+
+    [Fact]
+    public async Task HandleAsync_SucceedsWithoutCheckpointing_AutoCheckpointDisabled_ReturnsFirstRecord()
+    {
+        // With AutoCheckpointOnSuccess off, a successful batch that checkpointed nothing itself leaves
+        // the resume point at the start (full manual control) - the pre-auto-checkpoint behavior.
+        var application = BuildApplication(async context =>
+        {
+            await foreach (var _ in context.Items) { }
+        }, new KinesisStreamOptions { AutoCheckpointOnSuccess = false });
+
+        var response = await application.HandleAsync(CreateKinesisEvent("1", "2", "3"), ServiceResolverFactory());
 
         var failure = Assert.Single(response.BatchItemFailures);
         Assert.Equal("1", failure.ItemIdentifier);

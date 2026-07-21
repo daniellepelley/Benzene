@@ -33,9 +33,15 @@ public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent
     /// Initializes a new instance of the <see cref="KinesisStreamApplication"/> class.
     /// </summary>
     /// <param name="pipeline">The built stream pipeline to run the batch through.</param>
-    public KinesisStreamApplication(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline)
+    /// <param name="options">
+    /// Checkpointing options. Defaults to a new <see cref="KinesisStreamOptions"/>
+    /// (<see cref="KinesisStreamOptions.AutoCheckpointOnSuccess"/> on) if omitted.
+    /// </param>
+    public KinesisStreamApplication(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline, KinesisStreamOptions options = null)
         : base(
-            new CatchAndCheckpointPipeline(new TransportMiddlewarePipeline<StreamContext<KinesisEventRecord>>(TransportNames.Kinesis, pipeline)),
+            new CatchAndCheckpointPipeline(
+                new TransportMiddlewarePipeline<StreamContext<KinesisEventRecord>>(TransportNames.Kinesis, pipeline),
+                (options ?? new KinesisStreamOptions()).AutoCheckpointOnSuccess),
             @event => BuildContext(@event.Records),
             context => BuildResponse((KinesisStreamCheckpointer)context.Checkpointer))
     { }
@@ -68,10 +74,12 @@ public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent
     private class CatchAndCheckpointPipeline : IMiddlewarePipeline<StreamContext<KinesisEventRecord>>
     {
         private readonly IMiddlewarePipeline<StreamContext<KinesisEventRecord>> _pipeline;
+        private readonly bool _autoCheckpointOnSuccess;
 
-        public CatchAndCheckpointPipeline(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline)
+        public CatchAndCheckpointPipeline(IMiddlewarePipeline<StreamContext<KinesisEventRecord>> pipeline, bool autoCheckpointOnSuccess)
         {
             _pipeline = pipeline;
+            _autoCheckpointOnSuccess = autoCheckpointOnSuccess;
         }
 
         public async Task HandleAsync(StreamContext<KinesisEventRecord> context, IServiceResolver serviceResolver)
@@ -79,6 +87,16 @@ public class KinesisStreamApplication : StreamMiddlewareApplication<KinesisEvent
             try
             {
                 await _pipeline.HandleAsync(context, serviceResolver);
+
+                // Success (no throw): if the handler never checkpointed anything itself, advance the
+                // checkpoint to the end so a fully-processed batch isn't redelivered forever - the
+                // UseStream callback overload never checkpoints on its own. A handler that manages its
+                // own checkpoints is left untouched. Never runs on the throwing path below, where the
+                // resume point must stay at the handler's last explicit checkpoint.
+                if (_autoCheckpointOnSuccess && context.Checkpointer is KinesisStreamCheckpointer checkpointer && !checkpointer.HasCheckpointed)
+                {
+                    checkpointer.CheckpointAll();
+                }
             }
             catch (Exception ex)
             {

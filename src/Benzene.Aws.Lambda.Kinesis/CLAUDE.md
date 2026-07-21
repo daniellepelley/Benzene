@@ -75,9 +75,20 @@ app.UseKinesisStream(kinesis => kinesis
   previous silent no-op via `NullStreamCheckpointer`. This is purely additive/more-correct (no code
   changes needed to adopt it), but changes what AWS does on retry, so it's worth knowing about even
   if you never call `CheckpointAsync` yourself.
+- **`AutoCheckpointOnSuccess` (default `true`, `KinesisStreamOptions`):** a batch whose pipeline
+  completes without throwing and whose handler never checkpointed anything itself is checkpointed to
+  the end, so a fully-processed batch advances its resume point instead of being redelivered by
+  Kinesis forever. This closes the `UseStream((records, ct) => ...)` callback-overload gap: that
+  overload exposes no checkpointer, so without this a successful batch reported record 0 as failed and
+  AWS re-ran it indefinitely. Mirrors Cosmos's `BenzeneCosmosChangeFeedConfig.AutoCheckpointOnSuccess`.
+  It only runs on the success path and only when the handler checkpointed nothing — a handler managing
+  its own checkpoints is left untouched, and on a thrown exception the resume point stays at the
+  handler's last explicit checkpoint. Set `AutoCheckpointOnSuccess = false`
+  (`UseKinesisStream(action, new KinesisStreamOptions { AutoCheckpointOnSuccess = false })`) for full
+  manual control. Covered by `KinesisStreamApplicationTest`.
 - No automatic `UseCheckpointAfterEach()` operator exists yet (streaming Phase 2, see
-  `docs/plans/streaming-plan.md`) — handlers must checkpoint explicitly at the right point in their
-  own stream-processing logic.
+  `docs/plans/streaming-plan.md`) — a handler that wants per-record (rather than whole-batch-on-success)
+  checkpointing must still checkpoint explicitly at the right point in its own stream-processing logic.
 
 ## Tests
 - `test/Benzene.Core.Test/Aws/Kinesis/UseKinesisStreamTest.cs` — full pipeline happy path, routing

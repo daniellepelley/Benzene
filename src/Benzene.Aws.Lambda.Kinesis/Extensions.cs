@@ -18,6 +18,10 @@ public static class Extensions
     /// </summary>
     /// <param name="app">The AWS event stream pipeline builder to add Kinesis handling to.</param>
     /// <param name="action">The action that configures the inner Kinesis stream pipeline.</param>
+    /// <param name="options">
+    /// Checkpointing options. Defaults to a new <see cref="KinesisStreamOptions"/>
+    /// (<see cref="KinesisStreamOptions.AutoCheckpointOnSuccess"/> on) if omitted.
+    /// </param>
     /// <returns>The pipeline builder for method chaining.</returns>
     /// <example>
     /// <code>
@@ -33,10 +37,11 @@ public static class Extensions
     /// </example>
     public static IMiddlewarePipelineBuilder<AwsEventStreamContext> UseKinesisStream(
         this IMiddlewarePipelineBuilder<AwsEventStreamContext> app,
-        Action<IMiddlewarePipelineBuilder<StreamContext<KinesisEventRecord>>> action)
+        Action<IMiddlewarePipelineBuilder<StreamContext<KinesisEventRecord>>> action,
+        KinesisStreamOptions options = null)
     {
         app.Register(x => x.AddKinesis());
         var pipeline = app.CreateMiddlewarePipeline(action);
-        return app.Use(resolver => new KinesisLambdaHandler(new KinesisStreamApplication(pipeline), resolver));
+        return app.Use(resolver => new KinesisLambdaHandler(new KinesisStreamApplication(pipeline, options), resolver));
     }
 }
