@@ -11,6 +11,7 @@ namespace Benzene.Examples.AzureMesh.Mesh;
 /// On-demand discovery + aggregation trigger: <c>POST /mesh/refresh</c> runs a pass and returns 201
 /// with the number of services discovered (a pass creates/refreshes the catalog artifacts).
 /// </summary>
+[Message("mesh:refresh")]
 [HttpEndpoint("POST", "/mesh/refresh")]
 public class MeshRefreshHandler : IMessageHandler<Void, MeshRefreshResult>
 {

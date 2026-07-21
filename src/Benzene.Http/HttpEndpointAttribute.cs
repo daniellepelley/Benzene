@@ -7,9 +7,12 @@
 /// This attribute can be applied multiple times to the same class to define multiple HTTP endpoints
 /// that route to the same handler. It is used by reflection-based endpoint discovery to automatically
 /// register HTTP routes. The URL pattern can include route parameters (e.g., "/users/{id}").
+/// The handler must also carry a <c>[Message("topic")]</c> attribute — handler discovery skips
+/// classes without one, so an <see cref="HttpEndpointAttribute"/> on its own registers no route.
 /// </remarks>
 /// <example>
 /// <code>
+/// [Message("users:get")]
 /// [HttpEndpoint("GET", "/users/{id}")]
 /// [HttpEndpoint("GET", "/api/users/{id}")]
 /// public class GetUserHandler : IMessageHandler&lt;GetUserRequest, GetUserResponse&gt;
