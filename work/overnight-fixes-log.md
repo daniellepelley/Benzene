@@ -21,6 +21,16 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 8 — JSON-schema validation threw on a malformed body instead of rejecting it (`JsonSchemaMiddleware`)
+- **Bug:** `JsonDocument.Parse(body)` was unguarded. A `null` body and a schema-failing body both return
+  `ValidationError`, but a syntactically-invalid body (`"{"`, `"not json"`, `""`) threw `JsonException`
+  that escaped the pipeline as an internal error - the most clearly-invalid input was the only one that
+  crashed. The sibling `IsJsonValidator` already guards the identical parse.
+- **Repro:** `ValidationTest_MalformedJsonBody_ReturnsValidationError` — threw pre-fix, returns
+  ValidationError post-fix.
+- **Fix:** parse inside try/catch(JsonException); a parse failure is treated as a validation failure like
+  the null/non-conforming cases. 8 JsonSchema tests green.
+
 ### Cycle 7 — HTTP route parameter values were lowercased (`UrlMatcher.SplitPath` / `CompiledRoutePath`)
 - **Bug:** `SplitPath` lowercased the whole incoming path (`.ToLowerInvariant()`) so literal matching
   could compare both sides folded. But the same lowercased segments were the source of extracted

@@ -78,6 +78,37 @@ public class JsonSchemaPipelineTest
     }
 
     [Fact]
+    public async Task ValidationTest_MalformedJsonBody_ReturnsValidationError()
+    {
+        // A syntactically invalid body is the most clearly-invalid case, yet it used to be the only
+        // one that escaped as an unhandled JsonException (JsonDocument.Parse) instead of a validation
+        // result - unlike a null body or a schema-failing body, both of which return ValidationError.
+        var serviceCollection = ServiceResolverMother.CreateServiceCollection();
+        serviceCollection.UsingBenzene(x => x.AddBenzeneMessage());
+        serviceCollection
+            .AddScoped<IJsonSchemaProvider<BenzeneMessageContext>>(x => new SimpleJsonSchemaProvider<BenzeneMessageContext>(Schema));
+
+        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(new MicrosoftBenzeneServiceContainer(serviceCollection));
+
+        pipeline
+            .UseJsonSchema()
+            .UseMessageHandlers();
+
+        var aws = new BenzeneMessageApplication(pipeline.Build());
+
+        var request = new BenzeneMessageRequest
+        {
+            Topic = Defaults.Topic,
+            Headers = new System.Collections.Generic.Dictionary<string, string>(),
+            Body = "{ this is not valid json"
+        };
+
+        var response = await aws.HandleAsync(request, new MicrosoftServiceResolverFactory(serviceCollection.BuildServiceProvider()));
+
+        Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ValidationTest_NoBody()
     {
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();

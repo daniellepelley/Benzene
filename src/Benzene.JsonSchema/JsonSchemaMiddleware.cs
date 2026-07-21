@@ -37,28 +37,45 @@ public class JsonSchemaMiddleware<TContext> : IMiddleware<TContext> where TConte
         
         var body = _messageBodyGetter.GetBody(context);
 
-        if (body == null)
+        JsonDocument? jsonDocument = null;
+        if (body != null)
+        {
+            try
+            {
+                jsonDocument = JsonDocument.Parse(body);
+            }
+            catch (JsonException)
+            {
+                // Malformed JSON is the most clearly-invalid body of all - treat it as a validation
+                // failure (like a null or schema-failing body) rather than letting the exception
+                // escape the pipeline as an internal error. Mirrors IsJsonValidator.
+                jsonDocument = null;
+            }
+        }
+
+        if (jsonDocument == null)
         {
             await _messageHandlerResultSetter.SetResultAsync(context,
                 new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
             return;
         }
 
-        using var jsonDocument = JsonDocument.Parse(body);
-
+        using (jsonDocument)
+        {
         var schemaResult = jsonSchema.Evaluate(jsonDocument.RootElement, new EvaluationOptions
         {
             OutputFormat = OutputFormat.List
         });
 
-        if (schemaResult.IsValid)
-        {
-            await next();
-        }
-        else
-        {
-            await _messageHandlerResultSetter.SetResultAsync(context,
-                new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
+            if (schemaResult.IsValid)
+            {
+                await next();
+            }
+            else
+            {
+                await _messageHandlerResultSetter.SetResultAsync(context,
+                    new MessageHandlerResult(BenzeneResult.Set(_defaultStatuses.ValidationError, false)));
+            }
         }
     }
 }
