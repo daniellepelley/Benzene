@@ -51,7 +51,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                     .OnResponse("Check Response", context =>
                     {
-                        isSuccessful = context.IsSuccessful;
+                        isSuccessful = context.MessageResult?.IsSuccessful;
                     }).UseMessageHandlers()
             )
         ).BuildHost();
@@ -84,7 +84,7 @@ public class SqsMessagePipelineTest
                     .UsePresetTopic(Defaults.Topic)
                     .OnResponse("Check Response", context =>
                     {
-                        isSuccessful = context.IsSuccessful;
+                        isSuccessful = context.MessageResult?.IsSuccessful;
                     }).UseMessageHandlers()
             )
         ).BuildHost();
@@ -118,7 +118,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                     .OnResponse("Check Response", context =>
                     {
-                        isSuccessful = context.IsSuccessful;
+                        isSuccessful = context.MessageResult?.IsSuccessful;
                     }).UseMessageHandlers()
             )
         ).BuildHost();
@@ -157,7 +157,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                     .OnResponse("Check Response", context =>
                     {
-                        isSuccessful = context.IsSuccessful;
+                        isSuccessful = context.MessageResult?.IsSuccessful;
                     }).UseMessageHandlers()
             )
         ).BuildHost();
@@ -193,7 +193,7 @@ public class SqsMessagePipelineTest
                 .UseSqs(sqs => sqs
                     .OnResponse("Check Response", context =>
                     {
-                        isSuccessful = context.IsSuccessful;
+                        isSuccessful = context.MessageResult?.IsSuccessful;
                     }).UseMessageHandlers()
             )
         ).BuildHost();
@@ -226,7 +226,7 @@ public class SqsMessagePipelineTest
         pipeline
                 .OnResponse("Check Response", context =>
                 {
-                    isSuccessful = context.IsSuccessful;
+                    isSuccessful = context.MessageResult?.IsSuccessful;
                 }).UseMessageHandlers();
 
         var aws = new SqsApplication(pipeline.Build());

@@ -11,7 +11,9 @@ AWS SQS Lambda integration for Benzene. Processes SQS events from Lambda trigger
 
 ### Context
 - `SqsMessageContext` - Context for a single record within an SQS batch event; exposes both the full
-  `SQSEvent` and the specific `SQSEvent.SQSMessage`, plus a nullable `IsSuccessful` outcome flag
+  `SQSEvent` and the specific `SQSEvent.SQSMessage`, and carries the handler outcome via
+  `IHasMessageResult.MessageResult` (converged onto the shared `MessageHandlerResultSetterBase`, like
+  every other batch transport - it no longer exposes a bespoke `bool? IsSuccessful`)
 
 ### Message Handling
 - `SqsMessageBodyGetter` - Extracts message body from SQS event

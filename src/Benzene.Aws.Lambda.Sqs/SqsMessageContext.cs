@@ -1,11 +1,12 @@
 using Amazon.Lambda.SQSEvents;
+using Benzene.Abstractions.MessageHandlers;
 
 namespace Benzene.Aws.Lambda.Sqs;
 
 /// <summary>
 /// Provides the middleware pipeline context for a single record within an SQS batch event.
 /// </summary>
-public class SqsMessageContext
+public class SqsMessageContext : IHasMessageResult
 {
     private SqsMessageContext(SQSEvent sqsEvent, SQSEvent.SQSMessage sqsMessage)
     {
@@ -35,8 +36,9 @@ public class SqsMessageContext
     public SQSEvent.SQSMessage SqsMessage { get; }
 
     /// <summary>
-    /// Gets or sets whether this record was handled successfully. Set by
-    /// <see cref="SqsMessageHandlerResultSetter"/>; null if no result has been set yet.
+    /// Gets or sets the outcome of handling this record. Set by
+    /// <see cref="SqsMessageHandlerResultSetter"/>; null if no result has been set yet (e.g. an
+    /// unrouted message), which <see cref="SqsApplication"/> treats as a failure so it isn't acked.
     /// </summary>
-    public bool? IsSuccessful { get; set; }
+    public IMessageResult MessageResult { get; set; }
 }

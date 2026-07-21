@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Aws.Lambda.DynamoDb;
 using Benzene.Aws.Lambda.DynamoDb.TestHelpers;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Aws.Helpers;
@@ -79,7 +80,7 @@ public class DynamoDbLambdaHandlerTest
         pipeline.Use(null, (context, next) =>
         {
             processed.Add(context.Record.Dynamodb.SequenceNumber);
-            context.IsSuccessful = context.Record.Dynamodb.SequenceNumber != "2";
+            context.MessageResult = new MessageResult(context.Record.Dynamodb.SequenceNumber != "2");
             return next();
         });
 
@@ -107,7 +108,7 @@ public class DynamoDbLambdaHandlerTest
         pipeline.Use(null, (context, next) =>
         {
             processed.Add(context.Record.Dynamodb.SequenceNumber);
-            return next(); // leaves context.IsSuccessful null on record "2" onward
+            return next(); // leaves context.MessageResult?.IsSuccessful null on record "2" onward
         });
 
         var application = new DynamoDbApplication(pipeline.Build());

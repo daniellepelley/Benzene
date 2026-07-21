@@ -68,12 +68,12 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                         await _pipeline.HandleAsync(context, scope);
                     }
 
-                    // Only an explicit success (IsSuccessful == true) is acked. A failure result
-                    // (false) OR an unset outcome (null - e.g. an unroutable message whose topic
+                    // Only an explicit success (MessageResult.IsSuccessful == true) is acked. A failure
+                    // result (false) OR an unset outcome (null - e.g. an unroutable message whose topic
                     // attribute matched no handler, so the result setter never ran) is reported as a
                     // batch-item failure, so SQS redrives it to the DLQ instead of silently deleting
                     // it. At-least-once: err toward redelivery, never toward loss.
-                    if (context.IsSuccessful != true)
+                    if (context.MessageResult?.IsSuccessful != true)
                     {
                         return new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId };
                     }

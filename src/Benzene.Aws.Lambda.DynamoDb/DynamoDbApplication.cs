@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers;
 using Microsoft.Extensions.Logging;
 
 namespace Benzene.Aws.Lambda.DynamoDb;
@@ -62,13 +63,13 @@ public class DynamoDbApplication : IMiddlewareApplication<DynamoDbEvent, DynamoD
                         .LogError(ex, "Processing DynamoDB stream record {sequenceNumber} failed", record.Dynamodb?.SequenceNumber);
                 }
 
-                context.IsSuccessful = false;
+                context.MessageResult = new MessageResult(false);
             }
 
             // Treat a null result as failure (not just an explicit false), matching the SQS reference:
             // a record whose pipeline short-circuited without setting a result must NOT be checkpointed
             // past in an ordered CDC stream - that would silently skip it. Stop here for redelivery.
-            if (context.IsSuccessful != true)
+            if (context.MessageResult?.IsSuccessful != true)
             {
                 return new DynamoDbBatchResponse
                 {

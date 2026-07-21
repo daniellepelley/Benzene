@@ -1,9 +1,11 @@
+using Benzene.Abstractions.MessageHandlers;
+
 namespace Benzene.Aws.Lambda.DynamoDb;
 
 /// <summary>
 /// Provides the middleware pipeline context for a single record within a DynamoDB Streams batch.
 /// </summary>
-public class DynamoDbRecordContext
+public class DynamoDbRecordContext : IHasMessageResult
 {
     private DynamoDbRecordContext(DynamoDbEvent dynamoDbEvent, DynamoDbStreamRecord record)
     {
@@ -33,8 +35,9 @@ public class DynamoDbRecordContext
     public DynamoDbStreamRecord Record { get; }
 
     /// <summary>
-    /// Gets or sets whether this record was handled successfully. Set by
-    /// <see cref="DynamoDbMessageHandlerResultSetter"/>; null if no result has been set yet.
+    /// Gets or sets the outcome of handling this record. Set by
+    /// <see cref="DynamoDbMessageHandlerResultSetter"/>; null if no result has been set yet, which
+    /// <see cref="DynamoDbApplication"/> treats as a failure (stop at this record and redeliver).
     /// </summary>
-    public bool? IsSuccessful { get; set; }
+    public IMessageResult MessageResult { get; set; }
 }

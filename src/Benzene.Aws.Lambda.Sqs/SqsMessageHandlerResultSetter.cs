@@ -1,24 +1,10 @@
-using System.Threading.Tasks;
-using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.MessageHandlers.Mappers;
+using Benzene.Core.MessageHandlers;
 
 namespace Benzene.Aws.Lambda.Sqs;
 
 /// <summary>
-/// Records whether a message handler result was successful onto the SQS context, so
-/// <see cref="SqsApplication"/> can report failed records back to SQS for retry.
+/// Records the message handler result onto an <see cref="SqsMessageContext"/>'s
+/// <see cref="SqsMessageContext.MessageResult"/>, so <see cref="SqsApplication"/> can report failed
+/// records back to SQS for retry.
 /// </summary>
-public class SqsMessageHandlerResultSetter : IMessageHandlerResultSetter<SqsMessageContext>
-{
-    /// <summary>
-    /// Sets the success flag on the context from the message handler result.
-    /// </summary>
-    /// <param name="context">The SQS message context to record the result on.</param>
-    /// <param name="messageHandlerResult">The result produced by the message handler.</param>
-    /// <returns>A completed task.</returns>
-    public Task SetResultAsync(SqsMessageContext context, IMessageHandlerResult messageHandlerResult)
-    {
-        context.IsSuccessful = messageHandlerResult.BenzeneResult.IsSuccessful;
-        return Task.CompletedTask;
-    }
-}
+public class SqsMessageHandlerResultSetter : MessageHandlerResultSetterBase<SqsMessageContext>;

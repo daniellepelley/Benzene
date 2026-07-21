@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
+using Benzene.Core.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Sqs;
@@ -35,7 +36,7 @@ public class SqsBatchFailureModeTest
                 }
                 // The real SqsMessageHandlerResultSetter sets IsSuccessful from the handler result;
                 // a successfully-handled message is an explicit success, not an unset outcome.
-                context.IsSuccessful = true;
+                context.MessageResult = new MessageResult(true);
             });
 
         var mockResolver = new Mock<IServiceResolver>();
@@ -70,7 +71,7 @@ public class SqsBatchFailureModeTest
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
         mockPipeline
             .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
-            .Returns(Task.CompletedTask); // never sets context.IsSuccessful
+            .Returns(Task.CompletedTask); // never sets context.MessageResult?.IsSuccessful
 
         var mockResolver = new Mock<IServiceResolver>();
         mockResolver.Setup(x => x.GetService<ISetCurrentTransport>()).Returns(Mock.Of<ISetCurrentTransport>());
@@ -148,7 +149,7 @@ public class SqsBatchFailureModeTest
             .ThrowsAsync(new InvalidOperationException("boom"));
         mockPipeline
             .Setup(x => x.HandleAsync(It.Is<SqsMessageContext>(c => c.SqsMessage.MessageId == "succeeds"), It.IsAny<IServiceResolver>()))
-            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.IsSuccessful = true)
+            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
             .Returns(Task.CompletedTask);
 
         var mockResolver = new Mock<IServiceResolver>();
@@ -180,7 +181,7 @@ public class SqsBatchFailureModeTest
         var mockPipeline = new Mock<IMiddlewarePipeline<SqsMessageContext>>();
         mockPipeline
             .Setup(x => x.HandleAsync(It.IsAny<SqsMessageContext>(), It.IsAny<IServiceResolver>()))
-            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.IsSuccessful = true)
+            .Callback<SqsMessageContext, IServiceResolver>((context, _) => context.MessageResult = new MessageResult(true))
             .Returns(Task.CompletedTask);
 
         var mockResolver = new Mock<IServiceResolver>();

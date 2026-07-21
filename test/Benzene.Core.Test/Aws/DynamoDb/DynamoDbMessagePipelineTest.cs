@@ -49,7 +49,7 @@ public class DynamoDbMessagePipelineTest
     public async Task Send()
     {
         bool? isSuccessful = null;
-        var (application, factory) = BuildApplication(context => isSuccessful = context.IsSuccessful);
+        var (application, factory) = BuildApplication(context => isSuccessful = context.MessageResult?.IsSuccessful);
 
         var request = MessageBuilder
             .Create("example-orders:INSERT", new ExampleRequestPayload { Name = "some-name" })
@@ -65,7 +65,7 @@ public class DynamoDbMessagePipelineTest
     public async Task Send_UnknownTopic_ReportsSequenceNumberAsBatchFailure()
     {
         bool? isSuccessful = null;
-        var (application, factory) = BuildApplication(context => isSuccessful = context.IsSuccessful);
+        var (application, factory) = BuildApplication(context => isSuccessful = context.MessageResult?.IsSuccessful);
 
         var request = MessageBuilder
             .Create("example-orders:UNKNOWN", new ExampleRequestPayload { Name = "some-name" })

@@ -41,7 +41,10 @@ format into plain JSON, so handlers receive ordinary POCOs. See
 - **Benzene.Aws.Lambda.Core** — `AwsLambdaMiddlewareRouter`, `AwsEventStreamContext`
 
 ## Important conventions
-- Transport name: `"dynamodb"`.
+- Transport name: `TransportNames.DynamoDb` (`"dynamodb"`); the handler outcome is carried on
+  `DynamoDbRecordContext` via `IHasMessageResult.MessageResult` (converged onto the shared
+  `MessageHandlerResultSetterBase`, like SQS and the other batch transports - no bespoke
+  `bool? IsSuccessful` anymore).
 - There is no outbound client — writing to the table *is* the publish operation (AWS SDK /
   application data layer); the stream is read-only.
 - `Benzene.Aws.Lambda.DynamoDb.TestHelpers` has the reverse marshaller
