@@ -1,4 +1,6 @@
-﻿using Benzene.Abstractions.DI;
+﻿using System;
+using System.Threading.Tasks;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.Exceptions;
 using Benzene.Core.MessageHandlers.DI;
@@ -12,6 +14,67 @@ namespace Benzene.Test.Core.Core.DI;
 
 public class MicrosoftDependencyInjectionTest
 {
+    private sealed class DisposalSpy : IDisposable, IAsyncDisposable
+    {
+        public bool Disposed { get; private set; }
+        public bool DisposedAsync { get; private set; }
+        public void Dispose() => Disposed = true;
+        public ValueTask DisposeAsync() { DisposedAsync = true; return ValueTask.CompletedTask; }
+    }
+
+    [Fact]
+    public void Dispose_ProviderBuiltByFactory_DisposesSingletons()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<DisposalSpy>();
+
+        // The factory built the provider (IServiceCollection ctor), so it owns and disposes it - which
+        // runs the container's IDisposable singletons. Previously Dispose() was a no-op and they leaked.
+        var factory = new MicrosoftServiceResolverFactory(services);
+        DisposalSpy spy;
+        using (var scope = factory.CreateScope())
+        {
+            spy = scope.GetService<DisposalSpy>();
+        }
+        factory.Dispose();
+
+        Assert.True(spy.Disposed);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_ProviderBuiltByFactory_AsyncDisposesSingletons()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<DisposalSpy>();
+
+        var factory = new MicrosoftServiceResolverFactory(services);
+        DisposalSpy spy;
+        using (var scope = factory.CreateScope())
+        {
+            spy = scope.GetService<DisposalSpy>();
+        }
+        await factory.DisposeAsync();
+
+        Assert.True(spy.DisposedAsync);
+    }
+
+    [Fact]
+    public void Dispose_ExternallySuppliedProvider_IsNotDisposedByTheFactory()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<DisposalSpy>();
+        var provider = services.BuildServiceProvider();
+        var spy = provider.GetService<DisposalSpy>();
+
+        // The factory was handed a provider it did not build (IServiceProvider ctor); disposing the
+        // factory must NOT dispose that provider - the caller owns its lifetime.
+        var factory = new MicrosoftServiceResolverFactory(provider);
+        factory.Dispose();
+
+        Assert.False(spy.Disposed);
+        provider.Dispose(); // now the real owner disposes it
+        Assert.True(spy.Disposed);
+    }
     [Fact]
     public void AddMessageHandlers()
     {
