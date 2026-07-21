@@ -170,4 +170,72 @@ public class BatchMessageClientTest
         Assert.Equal(3, result.Failures.Count);
         Assert.Equal(new[] { 0, 1, 2 }, result.Failures.Select(f => f.Index).OrderBy(i => i).ToArray());
     }
+
+    // ---- Per-entry conversion failures (isolated, not whole-batch aborting) ----
+
+    // System.Text.Json serializes public get-only properties, so an instance with Explode set throws
+    // when its payload is serialized inside converter.CreateRequestAsync - simulating one entry that
+    // can't be built while the rest are fine.
+    private class BatchConversionTestPayload
+    {
+        public int Id { get; set; }
+        public bool Explode { get; set; }
+        public string Value => Explode ? throw new InvalidOperationException("cannot serialize this entry") : "ok";
+    }
+
+    private static IReadOnlyCollection<IBenzeneClientRequest<BatchConversionTestPayload>> MixedRequests(int count, int explodeAt)
+    {
+        return Enumerable.Range(0, count)
+            .Select(i => (IBenzeneClientRequest<BatchConversionTestPayload>)new BenzeneClientRequest<BatchConversionTestPayload>(
+                Defaults.Topic, new BatchConversionTestPayload { Id = i, Explode = i == explodeAt },
+                new Dictionary<string, string>()))
+            .ToList();
+    }
+
+    [Fact]
+    public async Task ServiceBus_WhenOneEntryFailsToSerialize_ReportsOnlyThatEntry()
+    {
+        var mockSender = new Mock<ServiceBusSender>();
+        mockSender.Setup(s => s.CreateMessageBatchAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => CapacityBatch(100));
+        mockSender.Setup(s => s.SendMessagesAsync(It.IsAny<ServiceBusMessageBatch>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var client = new ServiceBusBatchMessageClient(mockSender.Object);
+
+        var result = await client.SendBatchAsync(MixedRequests(3, explodeAt: 1));
+
+        // The one un-serializable entry is its own failure; the other two still send successfully.
+        Assert.Equal(1, result.Failures.Single().Index);
+    }
+
+    [Fact]
+    public async Task EventHub_WhenOneEntryFailsToSerialize_ReportsOnlyThatEntry()
+    {
+        var mockProducer = new Mock<EventHubProducerClient>();
+        mockProducer.Setup(p => p.CreateBatchAsync(It.IsAny<CreateBatchOptions>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateBatchOptions o, CancellationToken _) => CapacityEventBatch(100, o));
+        mockProducer.Setup(p => p.SendAsync(It.IsAny<EventDataBatch>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var client = new EventHubBatchMessageClient(mockProducer.Object);
+
+        var result = await client.SendBatchAsync(MixedRequests(3, explodeAt: 1));
+
+        Assert.Equal(1, result.Failures.Single().Index);
+    }
+
+    [Fact]
+    public async Task EventGrid_WhenOneEntryFailsToSerialize_ReportsOnlyThatEntry()
+    {
+        var mockPublisher = new Mock<EventGridPublisherClient>();
+        mockPublisher.Setup(p => p.SendEventsAsync(It.IsAny<IEnumerable<CloudEvent>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((global::Azure.Response)null);
+
+        var client = new EventGridBatchMessageClient("com.example.orders", mockPublisher.Object, batchSize: 10);
+
+        var result = await client.SendBatchAsync(MixedRequests(3, explodeAt: 1));
+
+        Assert.Equal(1, result.Failures.Single().Index);
+    }
 }

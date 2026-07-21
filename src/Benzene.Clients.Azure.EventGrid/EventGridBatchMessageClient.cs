@@ -55,10 +55,27 @@ public class EventGridBatchMessageClient : IBenzeneBatchMessageClient
         foreach (var chunk in BatchSend.Chunk(requests, _batchSize))
         {
             var events = new List<CloudEvent>(chunk.Count);
-            foreach (var (request, _) in chunk)
+            var sentIndices = new List<int>(chunk.Count);
+            foreach (var (request, itemIndex) in chunk)
             {
-                var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
-                events.Add(context.CloudEvent!);
+                // Build (serialize) each event individually so a single bad entry becomes that
+                // entry's failure rather than aborting the whole SendBatchAsync after earlier chunks
+                // already published - matching the AWS batch clients' per-entry contract.
+                try
+                {
+                    var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+                    events.Add(context.CloudEvent!);
+                    sentIndices.Add(itemIndex);
+                }
+                catch (System.Exception ex)
+                {
+                    failures.Add(new FailedBatchEntry(itemIndex, ex.GetType().Name, ex.Message));
+                }
+            }
+
+            if (events.Count == 0)
+            {
+                continue;
             }
 
             try
@@ -67,7 +84,9 @@ public class EventGridBatchMessageClient : IBenzeneBatchMessageClient
             }
             catch (System.Exception ex)
             {
-                foreach (var (_, itemIndex) in chunk)
+                // Atomic send: on a throw every event that actually made it into this request failed
+                // (the conversion failures above are already recorded and are not re-counted here).
+                foreach (var itemIndex in sentIndices)
                 {
                     failures.Add(new FailedBatchEntry(itemIndex, ex.GetType().Name, ex.Message));
                 }

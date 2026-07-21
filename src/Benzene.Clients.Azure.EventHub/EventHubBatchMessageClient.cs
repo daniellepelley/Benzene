@@ -57,7 +57,21 @@ public class EventHubBatchMessageClient : IBenzeneBatchMessageClient
         var index = 0;
         foreach (var request in requests)
         {
-            var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+            // Build (serialize) each event individually so a single bad entry becomes that entry's
+            // failure rather than aborting the whole SendBatchAsync - matching the AWS batch clients'
+            // per-entry contract.
+            EventHubSendMessageContext context;
+            try
+            {
+                context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+            }
+            catch (System.Exception ex)
+            {
+                failures.Add(new FailedBatchEntry(index, ex.GetType().Name, ex.Message));
+                index++;
+                continue;
+            }
+
             var key = context.PartitionKey ?? string.Empty;
             if (!groups.TryGetValue(key, out var group))
             {

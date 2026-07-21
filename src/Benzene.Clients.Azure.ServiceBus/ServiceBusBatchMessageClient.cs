@@ -64,9 +64,23 @@ public class ServiceBusBatchMessageClient : IBenzeneBatchMessageClient
         {
             foreach (var request in requests)
             {
-                var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+                // Build (serialize) each message individually so a single bad entry becomes that
+                // entry's failure rather than aborting the whole SendBatchAsync after earlier full
+                // batches already sent - matching the AWS batch clients' per-entry contract.
+                ServiceBusMessage message;
+                try
+                {
+                    var context = await converter.CreateRequestAsync(new BenzeneClientContext<TRequest, Void>(request));
+                    message = context.Message;
+                }
+                catch (System.Exception ex)
+                {
+                    failures.Add(new FailedBatchEntry(index, ex.GetType().Name, ex.Message));
+                    index++;
+                    continue;
+                }
 
-                if (!batch.TryAddMessage(context.Message))
+                if (!batch.TryAddMessage(message))
                 {
                     if (batchIndices.Count == 0)
                     {
@@ -85,7 +99,7 @@ public class ServiceBusBatchMessageClient : IBenzeneBatchMessageClient
                     batch = await _sender.CreateMessageBatchAsync();
                     batchIndices = new List<int>();
 
-                    if (!batch.TryAddMessage(context.Message))
+                    if (!batch.TryAddMessage(message))
                     {
                         failures.Add(new FailedBatchEntry(index, "MessageTooLarge",
                             "The message is too large to fit in a single Service Bus batch."));
