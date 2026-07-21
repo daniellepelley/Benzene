@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Amazon.Lambda;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Lambda;
@@ -77,7 +78,7 @@ public class LambdaMeshServiceSource : IMeshServiceSource
     private async Task<string> InvokeAsync(MeshServiceRegistryEntry entry, string topic, string body, CancellationToken cancellationToken)
     {
         var functionName = ResolveFunctionName(entry);
-        var request = new BenzeneMessageClientRequest(topic, new Dictionary<string, string>(), body);
+        var request = new BenzeneMessageClientRequest(topic, BuildHeaders(), body);
 
         // IAwsLambdaClient.SendMessageAsync has no CancellationToken parameter - WaitAsync races
         // the call against the caller's token so MeshAggregator's PerServiceFetchTimeout is still
@@ -89,6 +90,28 @@ public class LambdaMeshServiceSource : IMeshServiceSource
             .WaitAsync(cancellationToken);
 
         return response.Body;
+    }
+
+    // Propagate the current W3C trace context onto the invoke so the target service (which reads
+    // `traceparent`/`tracestate` via UseW3CTraceContext) continues THIS trace instead of starting a
+    // disconnected root - so a mesh aggregation run shows each interrogated service as a linked child
+    // of the run's own span rather than an opaque gap. A plain AWS Lambda Invoke carries no headers of
+    // its own, so unlike an HttpClient (which auto-injects traceparent) the mesh must set it explicitly
+    // in the BenzeneMessage envelope. No current Activity -> no headers, exactly as before.
+    private static IDictionary<string, string> BuildHeaders()
+    {
+        var headers = new Dictionary<string, string>();
+        var activity = Activity.Current;
+        if (activity?.Id != null)
+        {
+            headers["traceparent"] = activity.Id;
+            if (!string.IsNullOrEmpty(activity.TraceStateString))
+            {
+                headers["tracestate"] = activity.TraceStateString!;
+            }
+        }
+
+        return headers;
     }
 
     private static string ResolveFunctionName(MeshServiceRegistryEntry entry)

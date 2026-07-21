@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Amazon.Lambda;
 using Benzene.Clients;
 using Benzene.Clients.Aws.Lambda;
@@ -29,6 +30,37 @@ public class LambdaMeshServiceSourceTest
         var result = await source.FetchSpecAsync(Entry(), CancellationToken.None);
 
         Assert.Equal("{\"info\":{\"title\":\"orders-api\"}}", result);
+    }
+
+    [Fact]
+    public async Task Invoke_PropagatesW3CTraceContext_SoTheTargetServiceContinuesTheTrace()
+    {
+        // Without this, the Lambda-invoke carries an empty header dict, the target service's
+        // UseW3CTraceContext finds no traceparent and starts a disconnected root trace, and the mesh
+        // run's trace shows an opaque gap instead of a linked child span per interrogated service.
+        BenzeneMessageClientRequest? sent = null;
+        var client = new Mock<IAwsLambdaClient>();
+        client
+            .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
+                It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
+            .Callback<BenzeneMessageClientRequest, string, InvocationType>((request, _, _) => sent = request)
+            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{}"));
+        var source = new LambdaMeshServiceSource(client.Object);
+
+        using var activitySource = new ActivitySource("mesh-test-source");
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = _ => true,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+        };
+        ActivitySource.AddActivityListener(listener);
+        using var activity = activitySource.StartActivity("mesh-aggregate");
+
+        await source.FetchSpecAsync(Entry(), CancellationToken.None);
+
+        Assert.NotNull(activity); // the listener makes StartActivity return a real Activity
+        Assert.True(sent!.Headers.ContainsKey("traceparent"), "traceparent should be propagated onto the invoke");
+        Assert.Equal(activity!.Id, sent.Headers["traceparent"]);
     }
 
     [Fact]

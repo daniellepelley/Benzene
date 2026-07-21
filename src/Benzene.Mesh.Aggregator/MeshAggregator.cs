@@ -295,51 +295,72 @@ public class MeshAggregator
     {
         var source = ResolveSource(entry.Source);
 
-        string? specJson = null;
-        string? error = null;
+        // The spec, health and (best-effort) AsyncAPI fetches are independent, so run them
+        // concurrently rather than one-after-another - three serial round-trips per service (each a
+        // full Lambda invoke / HTTP call on the shipped sources) was up to 3x the per-service latency
+        // for no reason. Each fetch still gets its own PerServiceFetchTimeout, and the whole set of
+        // services already fans out via Task.WhenAll in RunOnceAsync.
+        var specTask = FetchSpecAsync(source, entry);
+        var healthTask = FetchHealthAsync(source, entry);
+        var asyncApiTask = FetchAsyncApiAsync(source, entry);
+        await Task.WhenAll(specTask, healthTask, asyncApiTask);
 
+        var (specJson, specError) = specTask.Result;
+        var (health, healthError) = healthTask.Result;
+        var asyncApiJson = asyncApiTask.Result;
+
+        // Preserve the previous precedence: a spec-fetch error is recorded first, otherwise the health one.
+        var error = specError ?? healthError;
+
+        var snapshot = await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
+        return new ServiceResult(snapshot, ParseTopics(specJson), ParseOutboundTopics(specJson), ParseTransports(specJson), asyncApiJson);
+    }
+
+    private static async Task<(string? SpecJson, string? Error)> FetchSpecAsync(IMeshServiceSource source, MeshServiceRegistryEntry entry)
+    {
         try
         {
-            using var specTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
-            specJson = await source.FetchSpecAsync(entry, specTimeout.Token);
+            using var timeout = new CancellationTokenSource(PerServiceFetchTimeout);
+            return (await source.FetchSpecAsync(entry, timeout.Token), null);
         }
         catch (Exception ex)
         {
             // Type name only, never the message - this artifact aggregates across services into
-            // something with broader visibility than one service's own health endpoint (same
-            // posture as the Data["Error"] fix across the HealthChecks family). A timeout surfaces
-            // here as TaskCanceledException, same as any other fetch failure.
-            error = ex.GetType().Name;
+            // something with broader visibility than one service's own health endpoint (same posture
+            // as the Data["Error"] fix across the HealthChecks family). A timeout surfaces here as
+            // TaskCanceledException, same as any other fetch failure.
+            return (null, ex.GetType().Name);
         }
+    }
 
-        HealthCheckResponse? health = null;
+    private static async Task<(HealthCheckResponse? Health, string? Error)> FetchHealthAsync(IMeshServiceSource source, MeshServiceRegistryEntry entry)
+    {
         try
         {
-            using var healthTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
-            var healthJson = await source.FetchHealthAsync(entry, healthTimeout.Token);
-            health = JsonSerializer.Deserialize<HealthCheckResponse>(healthJson, JsonOptions);
+            using var timeout = new CancellationTokenSource(PerServiceFetchTimeout);
+            var healthJson = await source.FetchHealthAsync(entry, timeout.Token);
+            return (JsonSerializer.Deserialize<HealthCheckResponse>(healthJson, JsonOptions), null);
         }
         catch (Exception ex)
         {
-            error ??= ex.GetType().Name;
+            return (null, ex.GetType().Name);
         }
+    }
 
-        // AsyncAPI is fetched best-effort and additively: a failure here (or a source that can't
-        // serve type=asyncapi) never affects this service's own status/snapshot - it just means the
-        // service contributes no channels to the composite asyncapi.json.
-        string? asyncApiJson = null;
+    private static async Task<string?> FetchAsyncApiAsync(IMeshServiceSource source, MeshServiceRegistryEntry entry)
+    {
+        // AsyncAPI is fetched best-effort and additively: a failure here (or a source that can't serve
+        // type=asyncapi) never affects this service's own status/snapshot - it just means the service
+        // contributes no channels to the composite asyncapi.json.
         try
         {
-            using var asyncApiTimeout = new CancellationTokenSource(PerServiceFetchTimeout);
-            asyncApiJson = await source.TryFetchSpecAsync(entry, "asyncapi", asyncApiTimeout.Token);
+            using var timeout = new CancellationTokenSource(PerServiceFetchTimeout);
+            return await source.TryFetchSpecAsync(entry, "asyncapi", timeout.Token);
         }
         catch
         {
-            asyncApiJson = null;
+            return null;
         }
-
-        var snapshot = await MeshSnapshotBuilder.BuildAsync(_store, entry.Name, _clock(), specJson, health, error);
-        return new ServiceResult(snapshot, ParseTopics(specJson), ParseOutboundTopics(specJson), ParseTransports(specJson), asyncApiJson);
     }
 
     private readonly record struct ServiceResult(
