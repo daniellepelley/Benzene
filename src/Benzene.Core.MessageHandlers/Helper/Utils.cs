@@ -50,6 +50,13 @@ public static class Utils
         {
             return assembly.GetTypes();
         }
+        catch (ReflectionTypeLoadException ex)
+        {
+            // Keep the types that DID load rather than dropping the whole assembly. One unloadable
+            // type (e.g. a missing optional dependency) would otherwise make every handler in the
+            // assembly undiscoverable - a silent 404. Mirrors ValidateOutboundRoutingExtensions.
+            return ex.Types.OfType<Type>().ToArray();
+        }
         catch
         {
             return Type.EmptyTypes;
