@@ -38,4 +38,4 @@ public class Startup : BenzeneStartUp
 }
 
 /// <summary>AWS Lambda entry point hosting <see cref="Startup"/>.</summary>
-public class Function : AwsLambdaHost<Startup>;
+public class Function : TracingLambdaHost<Startup>;

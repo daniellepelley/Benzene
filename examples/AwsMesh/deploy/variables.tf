@@ -34,6 +34,19 @@ variable "aggregate_schedule" {
   default     = "rate(5 minutes)"
 }
 
+variable "otlp_endpoint" {
+  description = <<-EOT
+    OTLP endpoint for Benzene's OpenTelemetry spans/metrics, passed to every function as
+    OTEL_EXPORTER_OTLP_ENDPOINT. Leave empty to record spans but export nowhere (no collector).
+    X-Ray active tracing (always on) captures the AWS-level segments on its own; to see Benzene's
+    per-middleware spans in X-Ray / CloudWatch Application Signals, point this at the in-process
+    Application Signals / ADOT collector (typically http://localhost:4316/v1/traces) whose layer
+    forwards OTLP to X-Ray.
+  EOT
+  type        = string
+  default     = ""
+}
+
 # Paths to the built Lambda zip files (each contains a `bootstrap` executable). Produced by CI
 # (dotnet publish self-contained -> add bootstrap -> zip). Defaults assume the CI layout.
 variable "orders_zip" {

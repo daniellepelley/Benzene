@@ -13,12 +13,9 @@ using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Aws;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
-using Benzene.OpenTelemetry;
+using Benzene.Examples.AwsMesh.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 
 namespace Benzene.Examples.AwsMesh.Mesh;
 
@@ -40,22 +37,10 @@ public class Startup : BenzeneStartUp
         var prefix = Environment.GetEnvironmentVariable("MESH_ARTIFACT_PREFIX") ?? "";
 
         // Full OpenTelemetry for the mesh Lambda too, so its discovery/aggregation + UI pipelines are
-        // traced and metered alongside the services. The OTLP exporter is only attached when
-        // OTEL_EXPORTER_OTLP_ENDPOINT is set — otherwise the instrumentation is armed but nothing tries to
-        // reach a collector, so there are no connection-refused errors in CloudWatch without one.
-        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-        services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource.AddService("benzene-mesh"))
-            .WithTracing(tracing =>
-            {
-                tracing.SetSampler(new AlwaysOnSampler()).AddBenzeneInstrumentation();
-                if (!string.IsNullOrEmpty(otlpEndpoint)) tracing.AddOtlpExporter();
-            })
-            .WithMetrics(metrics =>
-            {
-                metrics.AddBenzeneInstrumentation();
-                if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
-            });
+        // traced and metered alongside the services. Built eagerly (not via services.AddOpenTelemetry())
+        // so the providers actually exist under a bare Lambda host, and force-flushed per invocation by
+        // TracingLambdaHost — see LambdaTelemetry for why the usual hosting integration records nothing here.
+        LambdaTelemetry.Configure(services, "benzene-mesh");
 
         services.UsingBenzene(benzene =>
         {
@@ -104,5 +89,5 @@ public class Startup : BenzeneStartUp
     }
 }
 
-/// <summary>AWS Lambda entry point hosting <see cref="Startup"/>.</summary>
-public class Function : AwsLambdaHost<Startup>;
+/// <summary>AWS Lambda entry point hosting <see cref="Startup"/>, force-flushing OpenTelemetry per invocation.</summary>
+public class Function : TracingLambdaHost<Startup>;

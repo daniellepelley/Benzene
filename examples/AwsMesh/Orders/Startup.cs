@@ -41,5 +41,5 @@ public class Startup : BenzeneStartUp
     }
 }
 
-/// <summary>AWS Lambda entry point hosting <see cref="Startup"/>.</summary>
-public class Function : AwsLambdaHost<Startup>;
+/// <summary>AWS Lambda entry point hosting <see cref="Startup"/>, force-flushing OpenTelemetry per invocation.</summary>
+public class Function : TracingLambdaHost<Startup>;

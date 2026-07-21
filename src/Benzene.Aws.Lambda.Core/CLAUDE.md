@@ -10,7 +10,13 @@ Core AWS Lambda integration for Benzene. Provides base classes and abstractions 
 - `AwsLambdaEntryPoint` - Base entry point implementation
 - `IAwsEntryPointBuilder` - Builds Lambda entry points
 - `InlineAwsLambdaStartUp` - Inline startup configuration
-- `AwsLambdaHost<TStartUp>` - Hosts a platform-neutral `BenzeneStartUp` as a Lambda entry point
+- `AwsLambdaHost<TStartUp>` - Hosts a platform-neutral `BenzeneStartUp` as a Lambda entry point.
+  Exposes a `protected virtual Task OnInvocationCompleteAsync()` hook (default no-op) run in a `finally`
+  after every invocation — override it for end-of-invocation work that must complete while the process
+  is still running, most notably force-flushing a batched OpenTelemetry exporter before the Lambda
+  environment freezes (a background export thread stops on freeze, so without a per-invocation flush the
+  invocation's spans can be delayed to the next invocation or lost on scale-in). Core stays OTel-agnostic
+  — the flush itself lives in the host that opts in; see `examples/AwsMesh/Shared` `TracingLambdaHost`.
 
 ### Context & Routing
 - `AwsEventStreamContext` - AWS event stream context

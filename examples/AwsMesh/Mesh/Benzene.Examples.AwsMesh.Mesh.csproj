@@ -34,6 +34,9 @@
     <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.OpenTelemetry\Benzene.OpenTelemetry.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+    <!-- For LambdaTelemetry / TracingLambdaHost: the same eager-build + per-invocation force-flush the
+         service Lambdas use, so the mesh's own pipeline spans are recorded and exported the same way. -->
+    <ProjectReference Include="..\Shared\Benzene.Examples.AwsMesh.Shared.csproj" />
   </ItemGroup>
 
 </Project>

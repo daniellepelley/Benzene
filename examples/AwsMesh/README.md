@@ -56,16 +56,32 @@ on the **`provided.al2023`** custom runtime (self-contained publish).
 
 ## OpenTelemetry (traces + metrics)
 
-Every Lambda (the three services and the mesh) wires **full OpenTelemetry**: `AddOpenTelemetry()` with
-Benzene's instrumentation (`AddBenzeneInstrumentation`) for traces and metrics, exported over **OTLP**,
-plus the pipeline middleware `UseW3CTraceContext` → `UseBenzeneEnrichment` → `UseBenzeneMetrics` on
-every transport. The W3C trace-context propagation is what stitches the **order → payment → shipment**
-spans (across the SQS hops) into a single distributed trace — feed it to Grafana Tempo and the mesh's
-Topology can show *observed* edges on top of the structural ones.
+Every Lambda (the three services and the mesh) wires **full OpenTelemetry**: Benzene's instrumentation
+(`AddBenzeneInstrumentation`) for traces and metrics, exported over **OTLP**, plus the pipeline
+middleware `UseW3CTraceContext` → `UseBenzeneEnrichment` → `UseBenzeneMetrics` on every transport. The
+W3C trace-context propagation is what stitches the **order → payment → shipment** spans (across the SQS
+hops) into a single distributed trace — feed it to Grafana Tempo and the mesh's Topology can show
+*observed* edges on top of the structural ones.
 
-Point it at a collector with the standard `OTEL_EXPORTER_OTLP_ENDPOINT` Lambda env var (unset, the
-exporter simply no-ops). On the `provided.al2023` custom runtime, reliable span export also wants the
-ADOT layer or a per-invocation force-flush — a deploy-infra concern, not a code change.
+Two things are different from a typical Generic-Host app, because a bare AWS Lambda host has no `IHost`
+(see `Shared/LambdaTelemetry.cs`):
+
+- **The providers are built eagerly.** `services.AddOpenTelemetry()` only *constructs* the
+  `TracerProvider`/`MeterProvider` from a hosted service that never runs under a Lambda host — so the
+  `"Benzene"` `ActivitySource` would get no listener and **no middleware spans would ever be recorded**.
+  `LambdaTelemetry.Configure` builds them with `Sdk.Create*ProviderBuilder().Build()` at startup instead,
+  which attaches the listener immediately.
+- **Spans are force-flushed per invocation.** `TracingLambdaHost` (the `AwsLambdaHost` subclass every
+  `Function` uses) overrides `OnInvocationCompleteAsync` to `ForceFlush` the batched exporters before the
+  execution environment freezes, so the current invocation's spans aren't delayed to the next invocation
+  or dropped on scale-in.
+
+Point the OTLP exporter at a collector with the standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var (unset,
+the exporter no-ops and spans are recorded but exported nowhere). The Terraform sets this from
+`var.otlp_endpoint` and turns on **X-Ray active tracing** (`tracing_config { mode = "Active" }`) for
+every function automatically. Note X-Ray active tracing alone captures the AWS-level segments; to see
+Benzene's **per-middleware** spans in X-Ray / CloudWatch Application Signals, `var.otlp_endpoint` must
+point at the in-process Application Signals / ADOT collector that forwards OTLP to X-Ray.
 
 ## What each service shows off
 

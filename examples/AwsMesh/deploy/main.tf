@@ -28,6 +28,10 @@ locals {
     payments = { zip = var.payments_zip, name = "${var.project}-payments" }
     shipping = { zip = var.shipping_zip, name = "${var.project}-shipping" }
   }
+
+  # When an OTLP endpoint is configured, hand it to every function as OTEL_EXPORTER_OTLP_ENDPOINT so
+  # Benzene's OpenTelemetry providers export spans/metrics there (empty map = feature off, no export).
+  otlp_env = var.otlp_endpoint != "" ? { OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint } : {}
 }
 
 # ---------------------------------------------------------------------------------------------------
@@ -82,6 +86,12 @@ resource "aws_iam_role_policy_attachment" "service_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# X-Ray active tracing needs the function's role to be able to write trace segments.
+resource "aws_iam_role_policy_attachment" "service_xray" {
+  role       = aws_iam_role.service.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
 resource "aws_iam_role" "mesh" {
   name               = "${var.project}-mesh-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
@@ -90,6 +100,12 @@ resource "aws_iam_role" "mesh" {
 resource "aws_iam_role_policy_attachment" "mesh_logs" {
   role       = aws_iam_role.mesh.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# X-Ray active tracing needs the mesh function's role to be able to write trace segments.
+resource "aws_iam_role_policy_attachment" "mesh_xray" {
+  role       = aws_iam_role.mesh.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 data "aws_iam_policy_document" "mesh" {
@@ -137,9 +153,18 @@ resource "aws_lambda_function" "service" {
   # (dynamic) environment block whose values are only known after apply (the SQS queue URLs, created
   # in this same apply) trips the AWS provider's "inconsistent final plan: block count changed from
   # 0 to 1" bug. So every service gets a stable MESH_SERVICE var, merged with its chain-specific
-  # queue URL where it has one (orders → payments, payments → shipping; shipping is terminal).
+  # queue URL where it has one (orders → payments, payments → shipping; shipping is terminal), plus
+  # the shared OTLP endpoint when one is configured (so Benzene's spans/metrics reach a collector).
   environment {
-    variables = merge({ MESH_SERVICE = each.key }, local.service_env[each.key])
+    variables = merge({ MESH_SERVICE = each.key }, local.service_env[each.key], local.otlp_env)
+  }
+
+  # X-Ray active tracing — the Terraform equivalent of the "AWS X-Ray Active tracing" toggle in the
+  # Lambda console, so every service gets it on deploy instead of being ticked by hand per function.
+  # This captures the AWS-level segments; Benzene's per-middleware spans are exported over OTLP (set
+  # var.otlp_endpoint to point at the Application Signals / ADOT collector that forwards OTLP to X-Ray).
+  tracing_config {
+    mode = "Active"
   }
 
   # Discovery finds services by this tag; the mesh Lambda deliberately does NOT carry it.
@@ -217,10 +242,16 @@ resource "aws_lambda_function" "mesh" {
   timeout          = 60
 
   environment {
-    variables = {
+    variables = merge({
       MESH_ARTIFACT_BUCKET = aws_s3_bucket.artifacts.id
       MESH_ARTIFACT_PREFIX = "mesh"
-    }
+    }, local.otlp_env)
+  }
+
+  # X-Ray active tracing for the mesh Lambda too, so its scheduled aggregation run shows up as a trace
+  # (and, with an OTLP collector wired via var.otlp_endpoint, its per-middleware spans alongside it).
+  tracing_config {
+    mode = "Active"
   }
 }
 

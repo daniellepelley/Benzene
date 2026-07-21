@@ -42,8 +42,28 @@ public class AwsLambdaHost<TStartUp> : IAwsLambdaEntryPoint where TStartUp : Ben
     /// <param name="stream">The raw invocation payload stream.</param>
     /// <param name="lambdaContext">The Lambda runtime's invocation context.</param>
     /// <returns>The raw response payload stream.</returns>
-    public Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext) =>
-        _entryPoint.FunctionHandlerAsync(stream, lambdaContext);
+    public async Task<Stream> FunctionHandlerAsync(Stream stream, ILambdaContext lambdaContext)
+    {
+        try
+        {
+            return await _entryPoint.FunctionHandlerAsync(stream, lambdaContext);
+        }
+        finally
+        {
+            await OnInvocationCompleteAsync();
+        }
+    }
+
+    /// <summary>
+    /// Runs after every invocation completes (whether it succeeded or threw), before the response is
+    /// returned and the Lambda execution environment is frozen. The default is a no-op. Override it to
+    /// do end-of-invocation work that must complete while the process is still running — most notably
+    /// flushing a batched telemetry exporter (an OpenTelemetry <c>TracerProvider</c>/<c>MeterProvider</c>
+    /// buffers spans/metrics on a background thread that stops when the environment freezes, so without
+    /// a per-invocation force-flush the current invocation's spans can be delayed until the next
+    /// invocation or lost entirely on scale-in).
+    /// </summary>
+    protected virtual Task OnInvocationCompleteAsync() => Task.CompletedTask;
 
     /// <summary>
     /// Disposes the underlying entry point (and, transitively, its service resolver factory).
