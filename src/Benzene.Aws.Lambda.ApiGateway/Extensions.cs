@@ -51,7 +51,7 @@ public static class Extensions
     public static void EnsureResponseExists(this ApiGatewayContext context)
     {
         context.ApiGatewayProxyResponse ??= new APIGatewayProxyResponse();
-        context.ApiGatewayProxyResponse.Headers ??= new Dictionary<string, string>();
+        context.ApiGatewayProxyResponse.Headers ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -61,6 +61,6 @@ public static class Extensions
     public static void EnsureResponseExists(this ApiGatewayV2Context context)
     {
         context.ApiGatewayProxyResponse ??= new APIGatewayHttpApiV2ProxyResponse();
-        context.ApiGatewayProxyResponse.Headers ??= new Dictionary<string, string>();
+        context.ApiGatewayProxyResponse.Headers ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 }
