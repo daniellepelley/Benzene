@@ -34,7 +34,10 @@ public class KafkaContextConverter<T> : IContextConverter<IBenzeneClientContext<
         var headers = new Headers();
         foreach (var header in contextIn.Request.Headers)
         {
-            headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
+            // A null header value is a valid dictionary state but Encoding.UTF8.GetBytes(null) throws,
+            // which would hard-fail the whole produce. Coalesce to empty, matching the inbound getters'
+            // null->empty convention.
+            headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value ?? string.Empty));
         }
 
         string key = null;

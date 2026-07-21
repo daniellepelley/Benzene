@@ -55,7 +55,8 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
                     continue;
                 }
 
-                headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value));
+                // Coalesce a null value to empty; GetBytes(null) would otherwise throw and fail the produce.
+                headers.Add(header.Key, Encoding.UTF8.GetBytes(header.Value ?? string.Empty));
             }
         }
 
