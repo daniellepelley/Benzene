@@ -27,7 +27,7 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
     /// <param name="pipeline">The built SQS middleware pipeline to run each message through.</param>
     /// <param name="options">
     /// Configures how the batch is acknowledged. Defaults to a new <see cref="SqsConsumerOptions"/>
-    /// instance (<see cref="SqsConsumerAckMode.WholeBatch"/>) if omitted.
+    /// instance (<see cref="SqsConsumerAckMode.PerMessage"/>) if omitted.
     /// </param>
     public SqsConsumerApplication(IMiddlewarePipeline<SqsConsumerMessageContext> pipeline, SqsConsumerOptions options = null)
     {
@@ -41,11 +41,11 @@ public class SqsConsumerApplication : IMiddlewareApplication<ReceiveMessageRespo
     /// <param name="event">The poll batch to process.</param>
     /// <param name="serviceResolverFactory">The service resolver factory used to create a scope per message.</param>
     /// <returns>
-    /// A task that resolves to the batch's per-message outcome. Under <see cref="SqsConsumerAckMode.WholeBatch"/>
-    /// (the default), a message's handler throwing propagates out of this call entirely - the returned
-    /// result is only reached when every message ran without throwing. Under
-    /// <see cref="SqsConsumerAckMode.PerMessage"/>, a message's exception is contained (logged nowhere
-    /// by this class - the message is just reported as failed) and never propagates out of this call.
+    /// A task that resolves to the batch's per-message outcome. Under <see cref="SqsConsumerAckMode.PerMessage"/>
+    /// (the default), a message's exception is contained (logged nowhere by this class - the message is
+    /// just reported as failed) and never propagates out of this call. Under
+    /// <see cref="SqsConsumerAckMode.WholeBatch"/>, a message's handler throwing propagates out of this
+    /// call entirely - the returned result is only reached when every message ran without throwing.
     /// </returns>
     public async Task<SqsConsumerBatchResult> HandleAsync(ReceiveMessageResponse @event, IServiceResolverFactory serviceResolverFactory)
     {
