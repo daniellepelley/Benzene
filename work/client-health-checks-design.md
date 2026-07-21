@@ -8,9 +8,12 @@ This extends `work/health-checks-1.0-review.md` (which already tracks the provid
 open items T3.1) and `work/service-mesh-roadmap-1.0.md` (which defines but never built the
 `TopologyEdgeSource.Structural` producer). Read those two first.
 
-> **Status:** DESIGN / investigation complete. No code changed yet. Positions gathered from the
-> infrastructure, observability, mesh, and DX product owners — all four APPROVE the direction with
-> conditions captured below. Awaiting a scope decision before implementation.
+> **Status:** Investigation complete; **first increment SHIPPED** — the consumer-side contract-drift
+> check on a dedicated `contracts` topic (PR #32, see §7). Product-owner positions gathered
+> (infrastructure, observability, mesh, DX) — all four APPROVE the direction. What remains open: the
+> transport-client **auto-wiring** work (Phases 0–4) and the mesh/interop work (Phase 5). The shipped
+> increment is orthogonal to and compatible with them (it needs none of the `HealthCheckFinder`
+> harvesting; it registers checks explicitly on its own topic).
 
 ---
 
@@ -260,12 +263,23 @@ this pass.
 
 ## 4. Phased implementation plan
 
+> **✅ Shipped ahead of the phases (PR #32, §7):** the consumer-side **contract-drift** check on a
+> dedicated **`contracts`** topic (`UseContractsCheck` + `ClientHealthCheck`/`AddContractCheck`). This
+> is the CodeGen-client contract half of the vision, off every Kubernetes probe. The phases below are
+> the remaining **transport-client auto-wiring** work (SNS/SQS/… contributing a reachability check when
+> configured) — independent of the shipped increment.
+
 **Phase 0 — lock the one-way doors (do before any API freeze; small, foundational)**
 - 0a. Extend `IHealthCheck` with DIM `Tags` / `IsCritical` / `Ttl` / `Timeout` (§3.5); make the
   engine (`HealthCheckProcessor`/`TimeOutHealthCheck`/`CachingHealthCheckProcessor`) honor per-check
   overrides.
 - 0b. Introduce the **readiness scope category** and filter `.UseLivenessCheck`'s harvest to exclude
-  it (§3.2).
+  it (§3.2). **Decide the probe-separation axis first (one-way door):** the shipped `contracts`
+  increment (§7) separates by **dedicated topic**, matching the existing `liveness`/`readiness` topic
+  pattern — so the codebase is currently **topic-based**. Keeping auto-wired dependency separation
+  topic-based (rather than the `"readiness"` **tag** this section originally floated) is the simpler,
+  already-consistent path and may make the `Tags` DIM unnecessary *for separation* — `Tags`/`IsCritical`/
+  `Ttl` still earn their place for criticality/caching (0a). Don't ship both axes.
 - 0c. Confirm/build the **config-time service-collection seam** reachable from the client
   `IMiddlewarePipelineBuilder` extensions (§3.1). Fix the dedup key to `(Type, Name)`.
 
@@ -304,7 +318,11 @@ read-only, readiness-scoped.
    shipping in the same release. Without those two, downgrade to opt-in (default-on liveness leakage
    is a restart-storm hazard).
 2. **Extend `IHealthCheck` now** (§3.5) — one-way door; needed before a 1.0 API freeze.
-3. **Scope of the first increment** — recommend Phase 0 + Phase 1.
+3. **Scope of the first increment** — ✅ resolved: the `contracts`-topic increment shipped first (§7).
+   Recommend **Phase 0 + Phase 1** next for the transport-client auto-wiring.
+4. **Probe-separation axis: topic vs tag** (§4 Phase 0b, §7.2) — the shipped increment chose a
+   dedicated **topic**. Recommend keeping separation topic-based to match `contracts`/`liveness`/
+   `readiness`, and reserving `Tags` for criticality/caching rather than routing.
 
 ## 6. One-way doors to get right (summary)
 - The DI-registration contract (`IHealthCheck` into the finder's collection) — every future client
@@ -313,6 +331,7 @@ read-only, readiness-scoped.
 - Error→status classification (permission→Warning; unreachable-critical→Failed) (§3.4).
 - A single global opt-out knob, not per-client bespoke bools.
 - The `IHealthCheck` DIM extension shape (§3.5).
+- Probe-separation axis — topic vs tag (§4 Phase 0b). Shipped increment set the precedent: **topic**.
 - `(Type, Name)` dedup key.
 - Mesh: reuse existing statuses; resource-identity join key co-designed with the deferred per-topic
   binding key.
