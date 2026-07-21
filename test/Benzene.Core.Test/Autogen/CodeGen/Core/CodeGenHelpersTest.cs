@@ -8,10 +8,14 @@ public class CodeGenHelpersTest
     [Theory]
     [InlineData("HelloWorld", "helloWorld")]
     [InlineData("ID", "id")]
-    [InlineData("IDValue", "idvalue")]
+    // Must match System.Text.Json's JsonNamingPolicy.CamelCase (the wire policy): a capital that
+    // precedes a lowercase letter is kept, so "IDValue" -> "idValue" and "IPAddress" -> "ipAddress",
+    // not "idvalue"/"ipaddress". These keys are shown in generated markdown docs as the wire shape.
+    [InlineData("IDValue", "idValue")]
+    [InlineData("IPAddress", "ipAddress")]
     [InlineData("already", "already")]
     [InlineData("", "")]
-    public void Camelcase_LowercasesLeadingUppercaseRun(string input, string expected)
+    public void Camelcase_MatchesJsonNamingPolicy(string input, string expected)
     {
         Assert.Equal(expected, input.Camelcase().ToString());
     }

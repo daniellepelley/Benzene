@@ -20,10 +20,11 @@ namespace Benzene.CodeGen.Core
             if (string.IsNullOrEmpty(source.Value))
                 return source;
 
-            var numberUpper = source.Value.ToCharArray().TakeWhile(char.IsUpper).Count();
-
-            return new FormatString(source.Value.Substring(0, numberUpper).ToLowerInvariant() +
-                   source.Value.Substring(numberUpper, source.Value.Length - numberUpper));
+            // Match System.Text.Json's JsonNamingPolicy.CamelCase (the wire policy the runtime
+            // serializer uses), so property keys shown in generated markdown docs are the exact
+            // wire shape: a capital that precedes a lowercase letter is kept ("IPAddress" ->
+            // "ipAddress", not "ipaddress"). See Benzene.Schema.OpenApi ExamplePayloadBuilder.
+            return new FormatString(System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(source.Value));
         }
 
         public static FormatString Pascalcase(this FormatString source)

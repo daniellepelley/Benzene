@@ -14,12 +14,25 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
   may be an intentional defensive default — left for a maintainer call.
 - **`VersionSelector` ordinal fallback** (`"9" > "10"` lexicographically) — DOCUMENTED and intentional
   (deterministic, culture-independent; versions are opaque strings). Not a bug.
-- **`CodeGenHelpers.Camelcase`** has the same acronym-lowercasing quirk fixed in `ExamplePayloadBuilder`,
-  but is unused by any production path (only its own unit test) — no active bug.
 
 ## Cycle log
 
 (newest first)
+
+### Cycle 10 — markdown doc property keys diverged from the wire for acronym names (`CodeGenHelpers.Camelcase`)
+- **Bug:** the same acronym-lowercasing algorithm fixed in Cycle 2's `ExamplePayloadBuilder`, but here it
+  IS on a production path — `CodeGenHelpers.Camelcase` is called by the Markdown doc builders
+  (`MarkdownTypeBuilder`, `LambdaServiceMarkdownBuilder`) to render property keys. It lowercased the whole
+  leading run of capitals, so `IPAddress` → `ipaddress`, whereas the runtime serializer (STJ
+  `JsonNamingPolicy.CamelCase`) yields `ipAddress` (keeps the capital before a lowercase). Any
+  acronym-prefixed property (`IPAddress`, `IOStream`, `URLPath`, …) was documented with a key that binds
+  to null against its own service. (Earlier wrongly logged as "unused" — the grep missed the
+  `CodeGenHelpers.Camelcase(...)` static-call form.)
+- **Repro:** `CodeGenHelpersTest.Camelcase_MatchesJsonNamingPolicy` — `IDValue`→`idvalue`/`IPAddress`→
+  `ipaddress` pre-fix, `idValue`/`ipAddress` post-fix. No CodeGen test model has a 2+-leading-capital
+  property, so the golden markdown files are unaffected (27 codegen/markdown tests green).
+- **Fix:** replaced the hand-rolled logic with `JsonNamingPolicy.CamelCase.ConvertName` (exactly the
+  runtime serializer's policy), matching the Cycle 2 fix. Full core suite green (1870).
 
 ### Cycle 9 — backward-compat gate let breaking EVENT changes pass as warnings (`SchemaCompatibilityRules`)
 - **Bug:** `DefaultFor` special-cased only `SchemaDirection.Response` for the consumer-side rules; `Event`
