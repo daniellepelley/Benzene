@@ -1,4 +1,4 @@
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Configures how <see cref="S3Application"/> handles a message handler's exceptions and failure

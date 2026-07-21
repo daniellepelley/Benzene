@@ -1,7 +1,7 @@
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Builds the message body for an S3 record by serializing its bucket, object, and event metadata

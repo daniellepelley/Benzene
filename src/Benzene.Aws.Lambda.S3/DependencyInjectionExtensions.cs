@@ -9,7 +9,7 @@ using Benzene.Core.MessageHandlers.MediaFormats;
 using Benzene.Core.MessageHandlers.Request;
 using Benzene.Core.MessageHandlers.Serialization;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Provides extension methods for registering S3 event notification services.

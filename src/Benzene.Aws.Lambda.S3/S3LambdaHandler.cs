@@ -6,7 +6,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Routes AWS Lambda invocations whose payload deserializes into an <see cref="S3Event"/> to the S3

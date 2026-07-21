@@ -3,7 +3,7 @@ using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.Middleware;
 
-namespace Benzene.Aws.S3
+namespace Benzene.Aws.Lambda.S3
 {
     /// <summary>
     /// Provides extension methods for adding S3 event notification handling to an AWS Lambda middleware pipeline.

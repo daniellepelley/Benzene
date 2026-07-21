@@ -2,7 +2,7 @@ using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages;
 using Benzene.Core.Messages;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Extracts the message topic from an S3 event notification record's event name (e.g.

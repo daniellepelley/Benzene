@@ -2,8 +2,8 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<AssemblyName>Benzene.Aws.S3</AssemblyName>
-		<RootNamespace>Benzene.Aws.S3</RootNamespace>
+		<AssemblyName>Benzene.Aws.Lambda.S3</AssemblyName>
+		<RootNamespace>Benzene.Aws.Lambda.S3</RootNamespace>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 

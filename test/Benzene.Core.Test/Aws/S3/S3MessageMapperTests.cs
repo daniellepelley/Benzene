@@ -1,5 +1,5 @@
 using Amazon.Lambda.S3Events;
-using Benzene.Aws.S3;
+using Benzene.Aws.Lambda.S3;
 using Xunit;
 
 namespace Benzene.Test.Aws.S3;

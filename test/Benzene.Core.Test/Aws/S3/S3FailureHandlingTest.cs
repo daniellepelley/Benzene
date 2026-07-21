@@ -5,7 +5,7 @@ using Amazon.Lambda.S3Events;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
-using Benzene.Aws.S3;
+using Benzene.Aws.Lambda.S3;
 using Benzene.Core.MessageHandlers;
 using Microsoft.Extensions.Logging;
 using Moq;

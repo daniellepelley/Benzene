@@ -9,7 +9,7 @@ using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Processes an S3 event notification batch by mapping each record to an <see cref="S3RecordContext"/>

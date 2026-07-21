@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Benzene.Abstractions.Messages.Mappers;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Exposes an S3 record's bucket, key, event name, and region as message headers.

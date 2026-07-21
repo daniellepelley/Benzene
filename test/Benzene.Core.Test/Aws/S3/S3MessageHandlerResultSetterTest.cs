@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.S3Events;
-using Benzene.Aws.S3;
+using Benzene.Aws.Lambda.S3;
 using Benzene.Core.MessageHandlers;
 using Benzene.Results;
 using Xunit;

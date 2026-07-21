@@ -1,6 +1,6 @@
 using System;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Thrown by <see cref="S3Application"/> when <see cref="S3Options.RaiseOnFailureStatus"/> is enabled

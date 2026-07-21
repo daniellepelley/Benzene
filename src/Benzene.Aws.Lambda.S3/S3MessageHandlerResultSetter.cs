@@ -1,6 +1,6 @@
 using Benzene.Core.MessageHandlers;
 
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// Records the message handler result onto an <see cref="S3RecordContext"/>'s

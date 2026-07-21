@@ -1,4 +1,4 @@
-namespace Benzene.Aws.S3;
+namespace Benzene.Aws.Lambda.S3;
 
 /// <summary>
 /// The message payload an S3 event notification is deserialized into for message handlers. A handler
