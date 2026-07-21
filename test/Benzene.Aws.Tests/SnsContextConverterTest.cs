@@ -153,6 +153,29 @@ public class SnsContextConverterTest
         Assert.Equal("String", result.Request.MessageAttributes["region"].DataType);
     }
 
+    [Theory]
+    [InlineData("1,000")] // thousands separator - not an SNS-valid Number
+    [InlineData(" 42 ")]  // surrounding whitespace - not an SNS-valid Number
+    public async Task CreateRequestAsync_InferNumericAttributeTypes_DoesNotTypeNonSnsNumbersAsNumber(string headerValue)
+    {
+        // The attribute value is sent verbatim (the original string) with the inferred DataType. SNS
+        // validates a "Number" value strictly (no whitespace, no grouping), so anything it would reject
+        // as a Number must stay "String" or the entire Publish fails with InvalidParameter.
+        var converter = new SnsContextConverter<ExampleRequestPayload>(
+            "arn:aws:sns:us-east-1:000000000000:some-topic",
+            publishOptions: new SnsPublishOptions { InferNumericAttributeTypes = true });
+
+        var request = new BenzeneClientRequest<ExampleRequestPayload>(
+            topic: "order:created",
+            message: new ExampleRequestPayload { Name = "some-name" },
+            headers: new Dictionary<string, string> { { "amount", headerValue } });
+        var context = new BenzeneClientContext<ExampleRequestPayload, Void>(request);
+
+        var result = await converter.CreateRequestAsync(context);
+
+        Assert.Equal("String", result.Request.MessageAttributes["amount"].DataType);
+    }
+
     [Fact]
     public async Task CreateRequestAsync_WithoutPublishOptions_LeavesFifoUnsetAndAttributesString()
     {

@@ -136,10 +136,16 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
         }
     }
 
+    // SNS validates a "Number" attribute value strictly and the original header string is sent verbatim
+    // as the value, so only accept forms SNS itself accepts: an optional leading sign and a decimal
+    // point. NumberStyles.Number also allowed leading/trailing whitespace and thousands separators
+    // (" 42 ", "1,000"), which SNS rejects - typing those as Number failed the whole Publish.
+    private const NumberStyles SnsNumberStyles = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
+
     private string DataTypeFor(string value)
     {
         return _publishOptions?.InferNumericAttributeTypes == true &&
-               decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out _)
+               decimal.TryParse(value, SnsNumberStyles, CultureInfo.InvariantCulture, out _)
             ? "Number"
             : "String";
     }

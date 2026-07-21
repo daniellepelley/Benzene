@@ -72,6 +72,20 @@ deterministic repro) — nothing left that meets the failing-test-first bar with
 
 (newest first)
 
+### Cycle 30 — SNS numeric-attribute inference produced SNS-invalid `Number` values (`SnsContextConverter.DataTypeFor`)
+- **Bug:** with `InferNumericAttributeTypes = true`, `DataTypeFor` used `decimal.TryParse(value,
+  NumberStyles.Number, ...)`, which accepts leading/trailing whitespace and thousands separators. The
+  attribute is then sent with `DataType = "Number"` but `StringValue = value` (the ORIGINAL string), and
+  SNS validates a Number value strictly — so a header like `" 42 "` or `"1,000"` was typed Number with a
+  value SNS rejects, failing the entire `Publish`/`PublishBatch` with InvalidParameter. Opt-in feature;
+  the only test used the clean value `"42"`.
+- **Repro:** new `SnsContextConverterTest.CreateRequestAsync_..._DoesNotTypeNonSnsNumbersAsNumber` theory
+  (`"1,000"`, `" 42 "`) — typed `Number` pre-fix, `String` post-fix.
+- **Fix:** parse with `NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint` (what SNS accepts),
+  so grouped/whitespaced values stay `String`. 12 SNS converter tests green; build clean. (The AWS test
+  project's 10 docker-compose/LocalStack integration tests fail only for lack of Docker in this
+  environment — pre-existing and unrelated.) Found by a parallel outbound-clients hunt.
+
 ### Cycle 29 — Kafka header getters threw on duplicate header keys (`ToDictionary`) — three sites
 - **Bug:** `KafkaMessageHeadersGetter<TKey,TValue>` (Kafka.Core inbound), `KafkaSendMessageHeadersGetter`
   (Kafka.Core outbound), and `Azure.Function.Kafka.KafkaMessageHeadersGetter` all built their dictionary
