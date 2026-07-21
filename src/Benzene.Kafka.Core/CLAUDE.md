@@ -110,7 +110,11 @@ producer support. This is one of the "self-hosted worker" startup modes document
   arg) and the named header's value becomes `Message.Key` (hash(key) → partition, giving per-key
   ordering/affinity); `null` (the default) sends a keyless message (round-robin, no ordering). The
   context-based `KafkaMessageContextConverter` (the re-produce path) now also forwards headers onto
-  `Message.Headers` — previously dropped, silently losing trace context on that path.
+  `Message.Headers` — previously dropped, silently losing trace context on that path — **except the
+  routing-topic key** (`"topic"`), which it deliberately excludes: the outbound produce topic is set
+  explicitly (from the topic getter), so an inbound `topic` header (a Benzene SQS/SNS source surfaces
+  its routing topic as a header) must not ride onto the produced message and re-route it to the topic
+  being consumed. An outbound topic is always explicit, never inherited from the handled message's headers.
 - `KafkaBenzeneMessageClient.SendMessageAsync` reuses a single shared `ISerializer` instance across
   every call (rather than a fresh `JsonSerializer()`/`JsonSerializerOptions` per send) so
   System.Text.Json's per-`JsonSerializerOptions` converter/metadata cache isn't defeated on every

@@ -245,10 +245,15 @@ public class KafkaMessagePipelineTest
         var sqsEvent = MessageBuilder.Create(Defaults.Topic, exampleRequestPayload).AsAwsKafkaEvent();
         await entryPoint.SendAsync(sqsEvent);
         
-        mockAmazonSimpleNotificationService.Verify(x => 
+        // The body is forwarded to SNS, but the inbound Kafka topic is NOT carried onto the outbound
+        // publish as a routing "topic" attribute: the topic is resolved by KafkaMessageTopicGetter for
+        // routing (which is why WhenIsTopic matched above), not propagated as a header. Propagating it
+        // would re-route the published message to the very topic this service consumes - a loop. An
+        // outbound topic must be set explicitly by the sender, never inherited from the handled message.
+        mockAmazonSimpleNotificationService.Verify(x =>
             x.PublishAsync(It.Is<PublishRequest>(x => x
                 .Message.Contains("foo") &&
-                x.MessageAttributes["topic"].StringValue == Defaults.Topic
+                !x.MessageAttributes.ContainsKey("topic")
             ), It.IsAny<CancellationToken>()));
     }
 

@@ -585,8 +585,13 @@ public class SqsMessageContextConverter<TContext> : IContextConverter<TContext, 
             return Task.CompletedTask;
         }
 
+        // The "topic" attribute may legitimately be absent - e.g. a message bridged from Kafka, where
+        // the topic is a routing concept (KafkaMessageTopicGetter), not a header/attribute.
+        var topicValue = contextOut.Request.MessageAttributes.TryGetValue("topic", out var topicAttribute)
+            ? topicAttribute.StringValue
+            : string.Empty;
         _messageHandlerResultSetter.SetResultAsync(contextIn,
-            new MessageHandlerResult(new Topic(contextOut.Request.MessageAttributes["topic"].StringValue),
+            new MessageHandlerResult(new Topic(topicValue),
                 MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.Response.HttpStatusCode.ToString())));
 
         return Task.CompletedTask;
@@ -625,8 +630,13 @@ public class SnsMessageContextConverter<TContext> : IContextConverter<TContext, 
             return Task.CompletedTask;
         }
 
+        // The "topic" attribute may legitimately be absent - e.g. a message bridged from Kafka, where
+        // the topic is a routing concept (KafkaMessageTopicGetter), not a header/attribute.
+        var topicValue = contextOut.Request.MessageAttributes.TryGetValue("topic", out var topicAttribute)
+            ? topicAttribute.StringValue
+            : string.Empty;
         _messageHandlerResultSetter.SetResultAsync(contextIn,
-            new MessageHandlerResult(new Topic(contextOut.Request.MessageAttributes["topic"].StringValue),
+            new MessageHandlerResult(new Topic(topicValue),
                 MessageHandlerDefinition.Empty(), BenzeneResult.Set(contextOut.Response.HttpStatusCode.ToString())));
 
         return Task.CompletedTask;

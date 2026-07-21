@@ -74,7 +74,14 @@ code changes needed for either fix.
 ## Important conventions
 - Processes Kafka records in batches, **per-partition-sequential in offset order, fan-out across
   partitions** (see the top-of-file section) — not a flat all-records fan-out.
-- Kafka headers mapped to Benzene headers
+- Kafka headers mapped to Benzene headers. The **routing topic is NOT one of them**:
+  `KafkaMessageHeadersGetter` decodes only the record's actual headers; the topic is resolved
+  separately by `KafkaMessageTopicGetter` (from the record's `Topic`). Surfacing the topic as a
+  header (as this getter previously did) let it silently ride onto an outbound send when a handler
+  forwarded the message's headers — and if that send targets a topic the same service consumes, that
+  is an infinite loop. An outbound topic is always set explicitly by the sender, never inherited from
+  the message being handled. Mirrored in `Benzene.Kafka.Core`'s `KafkaMessageContextConverter`, which
+  also excludes the routing-topic key when forwarding an inbound message's headers onto a produced one.
 - Topic name extracted from Kafka record
 - Partition and offset available in context
 - **Failure handling** (`KafkaOptions`, passed via `UseKafka(action, configure)`):
@@ -93,8 +100,9 @@ code changes needed for either fix.
 
 ## Tests
 - `test/Benzene.Core.Test/Aws/Kafka/KafkaGettersTest.cs` — the three getters directly: body
-  (UTF-8 decode), topic, and headers (empty-header-batch case returning `{}`, plus the positive
-  case asserting both the decoded header value and the injected `topic` entry).
+  (UTF-8 decode), topic (resolved by `KafkaMessageTopicGetter` from the record's `Topic`), and
+  headers (empty-header-batch case returning `{}`, plus the multi-entry case decoding every header
+  and asserting the routing topic is **not** surfaced as a `topic` header — see below).
 - `test/Benzene.Core.Test/Aws/Kafka/KafkaMessagePipelineTest.cs` — end-to-end sends (JSON, XML,
   unprocessable-entity, Kafka-in/SNS-out fan-out), `CanHandle` routing (`Send_FromStream` for the
   matching `aws:kafka` event source, `Send_FromStream_NonKafkaEvent_DoesNotRoute` for a mismatched

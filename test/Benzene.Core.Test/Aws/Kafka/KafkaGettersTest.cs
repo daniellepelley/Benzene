@@ -65,7 +65,10 @@ public class KafkaGettersTest
         var headers = new KafkaMessageHeadersGetter().GetHeaders(context);
 
         Assert.Equal("abc-123", headers["x-correlation-id"]);
-        Assert.Equal("my-topic", headers["topic"]);
+        // The Kafka topic is a routing concept (KafkaMessageTopicGetter reads it from the record's
+        // Topic); it is deliberately NOT surfaced as a header, so it can't silently ride onto an
+        // outbound send and loop back to the topic being consumed.
+        Assert.False(headers.ContainsKey("topic"));
     }
 
     [Fact]
@@ -90,6 +93,6 @@ public class KafkaGettersTest
 
         Assert.Equal("abc-123", headers["x-correlation-id"]);
         Assert.Equal("00-tid-sid-01", headers["traceparent"]);
-        Assert.Equal("my-topic", headers["topic"]);
+        Assert.False(headers.ContainsKey("topic"));
     }
 }
