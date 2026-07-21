@@ -9,8 +9,8 @@ public static class HelpGenerator
     {
         var stringBuilder = new StringBuilder();
         stringBuilder.AppendLine();
-        stringBuilder.AppendLine($"{  name}");
-        stringBuilder.AppendLine($"{    description}");
+        stringBuilder.AppendLine($"  {name}");
+        stringBuilder.AppendLine($"    {description}");
         stringBuilder.AppendLine();
         stringBuilder.AppendLine("  Parameters");
         

@@ -30,6 +30,14 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 22 — CLI help name/description indentation was silently dropped (`HelpGenerator`)
+- **Bug (low severity, cosmetic):** the intended indentation of the command name/description was written
+  as `$"{  name}"` / `$"{    description}"` — the spaces sit *inside* the interpolation braces, where
+  they're part of the (whitespace-insignificant) expression and discarded. Both printed flush-left,
+  misaligned with the indented `"  Parameters"` / `"    --…"` lines below.
+- **Repro:** new `HelpGeneratorTest.Generate_IndentsNameAndDescription` — no leading spaces pre-fix.
+- **Fix:** move the spaces outside the braces (`$"  {name}"` / `$"    {description}"`). 7 help tests green.
+
 ### Cycle 21 — Avro serializer overflowed on `ulong` values above `long.MaxValue` (`AvroDatumConverter`)
 - **Bug:** the schema generator maps `ulong` to Avro `long` (documented `ulong→long`), but `ToDatum`'s
   Long case used `Convert.ToInt64`, which throws `OverflowException` for a `ulong` in the upper half of

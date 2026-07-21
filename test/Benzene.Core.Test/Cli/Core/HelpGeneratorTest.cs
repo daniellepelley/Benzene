@@ -19,5 +19,17 @@ namespace Benzene.Test.Cli.Core
             Assert.Contains("--lambda-name", help);
             Assert.Contains(Constants.LambdaNameDescription, help);
         }
+
+        [Fact]
+        public void Generate_IndentsNameAndDescription()
+        {
+            // The name/description were meant to be indented (like "  Parameters" and "    --…"), but
+            // the spaces were placed inside the interpolation braces ($"{  name}") where they are
+            // discarded, so both printed flush-left, misaligned with the rest of the output.
+            var help = HelpGenerator.Generate<HealthCheckPayload>("health-check", "Checks the health of a lambda");
+
+            Assert.Contains("  health-check", help);
+            Assert.Contains("    Checks the health of a lambda", help);
+        }
     }
 }
