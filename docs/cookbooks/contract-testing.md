@@ -35,6 +35,15 @@ same `CodeGenHelpers.GenerateHash`, so the hashes are directly comparable.
 
 This is reactive — it tells you drift has already happened. For a pre-merge stop, use mechanism 2.
 
+> **Wire the contract check to monitoring, not to a Kubernetes probe.** It calls a *downstream*
+> service and reports contract drift, so it belongs on the dedicated, probe-less **`contracts`**
+> diagnostic topic the mesh / alerting consume — **not** in a liveness or readiness probe. Coupling
+> it to a probe lets a struggling dependency (or a compatible-but-changed contract) restart or
+> de-route pods that are themselves healthy. Register it with `UseContractsCheck` +
+> `AddContractCheck<IOrderServiceClient>("OrderService")` (`Benzene.Clients.HealthChecks`) rather than
+> calling `HealthCheckAsync()` from a probe path. See
+> [Kubernetes Health Checks — client/contract-drift checks belong in neither probe](../kubernetes-health-checks.md#client--contract-drift-checks-belong-in-neither-probe).
+
 ## Mechanism 2 — CI compatibility gate
 
 `SchemaCompatibility.EnsureBackwardCompatible(...)` compares the current contract against a committed

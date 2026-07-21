@@ -316,3 +316,61 @@ read-only, readiness-scoped.
 - `(Type, Name)` dedup key.
 - Mesh: reuse existing statuses; resource-identity join key co-designed with the deferred per-topic
   binding key.
+
+---
+
+## 7. Refinement & shipped increment — contract-drift checks belong on **neither** probe
+
+> This section was authored on the `contracts` topic branch and folds into the investigation above.
+> §3.2 locks auto-wired *dependency* checks to **readiness, never liveness**. Consumer-side
+> **contract-drift** checks — a generated client's `HealthCheckAsync()` reachability + hash
+> comparison (`Benzene.Clients.HealthChecks`) — go one step further: they belong on **neither**
+> probe, because they are a sharper case of the §3.2 hazard.
+
+**Why stricter than §3.2.** A contract check calls *another service's* health endpoint, which may
+itself aggregate that service's dependencies and clients — so it is **transitive**: in liveness it
+restarts healthy consumer pods when a *downstream* is slow (a restart storm one hop removed, §3.2's
+failure mode amplified); in readiness it propagates the outage *upstream* (the failing provider's
+consumers look unready to their consumers, de-routing an entire dependency chain). And **drift is a
+versioning signal, not a serve-traffic signal**: a drifted-but-working provider reports `Warning`,
+which never flips `IsHealthy` — a pod one contract revision behind serves traffic fine, so neither
+restarting nor de-routing it is a sane response. Contract drift belongs in the mesh / alerting, never
+a probe verdict.
+
+**Where they go instead — a dedicated `contracts` diagnostic topic** that monitoring/the mesh scrape
+and no Kubernetes probe points at. This is the readiness-scope discipline of §3.2 taken to its
+conclusion: not "readiness not liveness," but "off the probes entirely." The one narrow exception is
+a *hard synchronous* dependency a service genuinely cannot serve traffic without — a targeted
+**reachability-only** check may go in **readiness** (never liveness), but the drift portion is still
+excluded.
+
+### 7.1 Shipped (this increment)
+Additive only — no existing signature changed, safe under the 1.0 API freeze. Sits ahead of the
+Phase 0–1 auto-wiring work above (it needs none of the `HealthCheckFinder` harvesting; checks are
+registered explicitly on the `contracts` topic), and is compatible with it: when auto-wiring lands,
+the readiness-scope category (§3.2) and this contracts topic are distinct surfaces.
+
+- **`Constants.DefaultContractsTopic = "contracts"`** + **`UseContractsCheck(...)`**
+  (`Benzene.HealthChecks`) — three overloads mirroring `UseLivenessCheck`/`UseReadinessCheck`;
+  responds only to `contracts`, never the healthcheck/probe topics.
+- **`ClientHealthCheck`** (`Benzene.Clients.HealthChecks`) — folds a generated client's aggregated,
+  drift-annotated `HealthCheckAsync()` response into one `IHealthCheck` result: reachable + matching
+  contract → `Ok`, reachable + drift → `Warning` (degraded-not-fatal, does not flip `IsHealthy`),
+  unreachable / throws → `Failed`; attaches a `HealthCheckDependency("Service", name)`. Tracks the
+  contract relationship, not the provider's transient internal health.
+- **`AddContractCheck<TClient>(serviceName)` / `AddContractCheck(serviceName, client)`** — register
+  one per downstream service.
+- **Tests** (12): adapter outcomes incl. the drift-doesn't-flip-aggregate-`IsHealthy` guarantee, and
+  topic-separation (`UseContractsCheck` answers only `contracts`; readiness/liveness/healthcheck never
+  trigger it and it never runs under readiness).
+- **Docs**: `docs/kubernetes-health-checks.md` (new subsection), `docs/cookbooks/contract-testing.md`,
+  both package `CLAUDE.md`s, `CHANGELOG.md`.
+- **Runnable example**: the Mesh example's orders-api exposes a consumer-side contract check against
+  payments-api at `GET /contracts` (separate from `/healthcheck`) — verified at runtime to report the
+  `payments-api` check as `warning` while `/healthcheck` carries only the DB/cache/queue checks.
+
+### 7.2 Naming note
+Earlier drafts of this refinement used the placeholder `dependencies` topic / `UseDependencyCheck` /
+`AddClientHealthCheck`. The shipped names are **`contracts`** / `UseContractsCheck` /
+`AddContractCheck` — "contracts" reads truer to what the check compares (this is contract testing),
+and keeps the topic distinct from the §3.2 dependency-readiness scope.

@@ -19,6 +19,25 @@ side that publishes the hash is `Benzene.HealthChecks.Schema`.
 - `ClientHashMatch` - the verdict: `ServiceHashCode`, `ClientHashCode`, `IsMatch`.
 - `IHasHealthCheck` - `HashCode` + `Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()`, the
   contract a generated client exposes so its baked-in hash and a health call are available together.
+- `ClientHealthCheck` - an `IHealthCheck` adapter over one generated client (`IHasHealthCheck` + a
+  service name). It calls `HealthCheckAsync()` (whose response is already drift-annotated by
+  `ClientHealthCheckProcessor`) and folds that aggregated response into one check result: reachable +
+  matching contract -> `Ok`, reachable + drift -> `Warning` (degraded-not-fatal, does not flip
+  `IsHealthy`), unreachable/throws -> `Failed`; attaches a `HealthCheckDependency("Service", name)`.
+  It tracks the *contract* relationship, not the provider's transient internal health (that's the
+  provider's own readiness concern).
+- `ContractHealthCheckExtensions` - `AddContractCheck<TClient>(serviceName)` (resolves the generated
+  client from DI) / `AddContractCheck(serviceName, client)` (explicit instance) register a
+  `ClientHealthCheck` on a health-check builder.
+
+## Wiring: the `contracts` topic, NEVER a probe
+Register contract checks on the dedicated **`contracts`** diagnostic topic via
+`UseContractsCheck(x => x.AddContractCheck<IOrderServiceClient>("OrderService"))`
+(`UseContractsCheck` lives in `Benzene.HealthChecks`; `Constants.DefaultContractsTopic = "contracts"`).
+This topic is deliberately kept off the Kubernetes liveness/readiness probes: a contract check calls a
+downstream service and reports drift, so putting it in a probe would let one struggling dependency (or
+a compatible-but-changed contract) restart or de-route otherwise-healthy pods. Feed it to monitoring /
+the mesh instead. See `docs/kubernetes-health-checks.md` and `work/client-health-checks-design.md`.
 
 ## When to use this package
 - On a consumer service that uses a CodeGen-generated typed client, to turn a fetched provider health

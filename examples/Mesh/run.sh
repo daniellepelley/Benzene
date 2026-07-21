@@ -73,6 +73,12 @@ curl -sf -X POST http://localhost:5300/mesh/aggregate >/dev/null || true
 echo "Running mesh topology query (mocked Tempo/Prometheus service-graph data)..."
 curl -sf -X POST http://localhost:5300/mesh/topology >/dev/null || true
 
+echo
+echo "orders-api consumer-side contract check vs payments-api (GET /contracts, a SEPARATE"
+echo "diagnostic topic - NOT part of /healthcheck, so it can never de-route orders-api):"
+curl -s http://localhost:5310/contracts || true
+echo
+
 cat <<'EOF'
 
 Mesh Explorer:   http://localhost:5300/mesh-ui
@@ -80,6 +86,7 @@ Fleet view NEW:  http://localhost:5300/benzene/fleet-ui
 Manifest JSON:   http://localhost:5300/artifacts/manifest.json
 Topology JSON:   http://localhost:5300/artifacts/topology.json
 Orders spec:     http://localhost:5310/spec?type=benzene
+Orders contracts: http://localhost:5310/contracts   (consumer-side contract-drift check, off /healthcheck)
 Payments spec:   http://localhost:5311/spec?type=benzene
 
 The NEW Fleet view (http://localhost:5300/benzene/fleet-ui) is the live collector - everything on it

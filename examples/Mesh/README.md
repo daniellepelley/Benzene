@@ -33,6 +33,20 @@ per-check status at once** - no manual steps needed to see them:
 - `shipping-api` **unreachable** - deliberately never started, so it shows an
   `error` line instead of health-check detail.
 
+`orders-api` also exposes a **consumer-side contract-drift check** against
+payments-api at `GET /contracts` - a *separate* diagnostic surface from its
+`/healthcheck`. `run.sh` curls it and you'll see the `payments-api` check report
+`warning` with the drift verdict (the client was generated against
+`payments-contract-v1`, payments-api now publishes `payments-contract-v2`).
+This is deliberately **off** the `/healthcheck` (readiness) surface: a contract
+check calls a downstream service, so wiring it into a liveness/readiness probe
+would let a drifted or slow payments-api de-route or restart otherwise-healthy
+orders-api pods (`UseContractsCheck` + `AddContractCheck`, see
+[docs/kubernetes-health-checks.md](../../docs/kubernetes-health-checks.md) and
+`work/client-health-checks-design.md`). Compare `GET /contracts` (has the
+`payments-api` check) with `GET /healthcheck` (only the DB/cache/queue checks) -
+that split is the whole point.
+
 Behind the dashboard:
 
 - `Benzene.Mesh.Aggregator.MeshAggregator` polls each demo service's `/spec`

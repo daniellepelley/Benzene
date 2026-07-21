@@ -53,6 +53,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   around them was removed.
 
 ### Added
+- **Contract health-check topic, separate from liveness/readiness probes.** Consumer-side
+  contract-drift checks now run on their own probe-less **`contracts`** diagnostic topic
+  (`Constants.DefaultContractsTopic`), wired with `UseContractsCheck(...)` (`Benzene.HealthChecks`,
+  three overloads mirroring `UseLivenessCheck`/`UseReadinessCheck`; responds only to `contracts`).
+  `Benzene.Clients.HealthChecks` gains `ClientHealthCheck` - an `IHealthCheck` that folds a generated
+  client's aggregated, drift-annotated `HealthCheckAsync()` into one result (reachable+match → `Ok`,
+  reachable+drift → `Warning`, unreachable → `Failed`) - plus `AddContractCheck<TClient>(serviceName)`
+  / `AddContractCheck(serviceName, client)`. This structurally keeps contract/downstream checks off
+  the Kubernetes probes, where a struggling dependency or a compatible-but-changed contract could
+  otherwise restart or de-route healthy pods. See `docs/kubernetes-health-checks.md` and
+  `work/client-health-checks-design.md`. Additive; no existing API changed.
 - **New package `Benzene.ResponseEvents`**: `UseResponseEvents(events => ...)` - republish a
   request/response handler's response payload as a follow-up event on fire-and-forget transports
   (e.g. SQS `order:create` → broadcast `order:created`). Declarative per-pipeline mappings

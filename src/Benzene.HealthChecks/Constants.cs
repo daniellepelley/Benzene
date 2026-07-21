@@ -27,4 +27,16 @@ public static class Constants
     /// <see cref="DefaultHealthCheckTopic"/>.
     /// </summary>
     public const string DefaultReadinessTopic = "readiness";
+
+    /// <summary>
+    /// The message topic used by <see cref="Extensions"/>'s <c>UseContractsCheck</c> overloads: a
+    /// <em>diagnostic</em> topic for consumer-side contract-drift / downstream-provider checks, not a
+    /// Kubernetes probe topic. Like <see cref="DefaultLivenessTopic"/>/<see cref="DefaultReadinessTopic"/>,
+    /// it matches only its own topic (not <see cref="DefaultHealthCheckTopic"/>). Contract checks call
+    /// downstream services and report contract drift; wiring them into a liveness or readiness probe
+    /// lets one struggling dependency restart or de-route otherwise-healthy pods, so they belong on a
+    /// separate topic consumed by monitoring/the mesh - never on a probe. See
+    /// <c>docs/kubernetes-health-checks.md</c>.
+    /// </summary>
+    public const string DefaultContractsTopic = "contracts";
 }
