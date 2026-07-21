@@ -11,7 +11,8 @@ namespace Benzene.Clients;
 public static class ValidateOutboundRoutingExtensions
 {
     /// <summary>
-    /// Reflects over every loaded assembly for a <c>*Routing</c> type exposing a public static
+    /// Reflects over every loaded assembly for a type carrying
+    /// <see cref="OutboundRoutingContractAttribute"/> and exposing a public static
     /// <c>string[] RequiredTopics</c> field (emitted by <c>Benzene.CodeGen.Client</c>'s generated
     /// clients) and throws <see cref="MissingOutboundRoutesException"/> listing every required
     /// topic with no route registered via <see cref="OutboundRoutingBuilder.Route"/>. Call once,
@@ -53,7 +54,12 @@ public static class ValidateOutboundRoutingExtensions
 
             foreach (var type in types)
             {
-                var field = type?.GetField("RequiredTopics", BindingFlags.Public | BindingFlags.Static);
+                if (type?.GetCustomAttribute<OutboundRoutingContractAttribute>() == null)
+                {
+                    continue;
+                }
+
+                var field = type.GetField("RequiredTopics", BindingFlags.Public | BindingFlags.Static);
                 if (field?.GetValue(null) is string[] topics)
                 {
                     foreach (var topic in topics)

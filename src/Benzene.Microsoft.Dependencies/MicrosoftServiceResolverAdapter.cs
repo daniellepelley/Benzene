@@ -9,6 +9,13 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceScope? _scope;
+    private MicrosoftServiceResolverFactory? _serviceResolverFactory;
+
+    // Return a stable factory instance for the adapter's lifetime rather than allocating a fresh one
+    // on every IServiceResolverFactory resolution - matching the Autofac adapter, which returns its
+    // stored factory. Both GetService and TryGetService go through here so they can't diverge.
+    private MicrosoftServiceResolverFactory ResolverFactory
+        => _serviceResolverFactory ??= new MicrosoftServiceResolverFactory(_serviceProvider);
 
     public MicrosoftServiceResolverAdapter(IServiceProvider serviceProvider)
     {
@@ -37,7 +44,7 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
 
         if (typeof(T) == typeof(IServiceResolverFactory))
         {
-            return new MicrosoftServiceResolverFactory(_serviceProvider) as T ?? throw new InvalidOperationException();
+            return ResolverFactory as T ?? throw new InvalidOperationException();
         }
 
         try
@@ -64,7 +71,7 @@ public sealed class MicrosoftServiceResolverAdapter : IServiceResolver
 
         if (typeof(T) == typeof(IServiceResolverFactory))
         {
-            return new MicrosoftServiceResolverFactory(_serviceProvider) as T;
+            return ResolverFactory as T;
         }
 
         try

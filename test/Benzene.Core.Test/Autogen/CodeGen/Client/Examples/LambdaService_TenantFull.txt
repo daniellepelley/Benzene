@@ -53,6 +53,7 @@ namespace Benzene.Service.Clients.Tenant
         }
     }
 
+    [OutboundRoutingContract]
     public static class TenantServiceClientRouting
     {
         public static readonly string[] RequiredTopics = { "tenant:get", "tenant:create", "healthcheck" };

@@ -169,12 +169,23 @@ Most of this list was already resolved by earlier passes; verified each against 
   Path,Headers}` non-null initializers so the public type no longer lies about nullability.
 - **Left as-is (compiled out):** the remaining adapter `Debug.WriteLine`s are `[Conditional("DEBUG")]`
   and sit immediately before a throw, so they have zero cost in shipped (Release) packages.
-- **Deferred — not "cheap/low-risk" despite the heading (need a maintainer call):** the S3
-  `Benzene.Aws.S3` → `Benzene.Aws.Lambda.*` namespace/assembly rename is a **breaking** package change;
-  the `KafkaMessageHeadersGetter` synthetic `"topic"` header and `ValidateOutboundRouting`'s
-  marker-less type scan are behavioral/contract changes; the Microsoft-vs-Autofac
-  `IServiceResolverFactory` special-casing drift is a subtle behavior nuance. These want explicit
-  sign-off rather than a silent cleanup commit.
+- **Previously deferred, now actioned (2026-07-21, with maintainer sign-off):**
+  - **S3 namespace/assembly rename — DONE.** `Benzene.Aws.S3` → `Benzene.Aws.Lambda.S3`
+    (`AssemblyName`/`RootNamespace` + every source `namespace` + the 5 test `using`s). The dir/csproj
+    were already `Benzene.Aws.Lambda.S3`; only the assembly/namespace still said `Benzene.Aws.S3`.
+    Safe to do now (no external consumers yet); it's a breaking package-id change if any appear later.
+  - **`ValidateOutboundRouting` marker-less scan — DONE.** Now gated on a real
+    `[OutboundRoutingContract]` marker attribute (new, `Benzene.Clients`); the codegen generator emits
+    it, golden files + a negative test updated. A stray `RequiredTopics` field is no longer swept in.
+  - **Microsoft-vs-Autofac `IServiceResolverFactory` drift — DONE.** The Microsoft adapter now returns
+    a cached factory instance for its lifetime (via a `ResolverFactory` accessor used by both
+    `GetService`/`TryGetService`) instead of allocating a fresh one per call, matching Autofac's stored-factory behavior.
+  - **Kafka synthetic `"topic"` header — NOT actioned (investigated, load-bearing).** Removing it broke
+    `KafkaMessagePipelineTest.KafkaInSnsOut`: the AWS Lambda Kafka→SNS bridge relies on the Kafka topic
+    riding as a `"topic"` header into the SNS publish. "No sibling does it" is *by design* — only this
+    path bridges Kafka-in→SNS-out. Left as-is; the bare `"topic"` literal is the only residual smell,
+    and consolidating the per-package `DefaultTopicAttribute` consts is a breaking public-API change out
+    of proportion to the benefit.
 
 ---
 

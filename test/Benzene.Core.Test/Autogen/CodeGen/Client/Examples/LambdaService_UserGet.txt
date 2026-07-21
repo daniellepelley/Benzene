@@ -43,6 +43,7 @@ namespace Benzene.Service.Clients.User
         }
     }
 
+    [OutboundRoutingContract]
     public static class UserServiceClientRouting
     {
         public static readonly string[] RequiredTopics = { "user:get", "healthcheck" };

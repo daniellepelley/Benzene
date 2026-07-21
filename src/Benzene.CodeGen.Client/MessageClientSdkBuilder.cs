@@ -101,6 +101,7 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
 
         var lineWriter = new LineWriter();
         lineWriter.WriteLine();
+        lineWriter.WriteLine("[OutboundRoutingContract]", 1);
         lineWriter.WriteLine($"public static class {_serviceName}ServiceClientRouting", 1);
         lineWriter.WriteLine("{", 1);
         lineWriter.WriteLine($"public static readonly string[] RequiredTopics = {{ {requiredTopics} }};", 2);

@@ -76,15 +76,22 @@ an `OutboundRoutingBuilder.Route(...)` pipeline:
   the requested one (release plan Tier 2.4; replaced a bare `InvalidCastException` at this exact
   call site that named neither).
 - `ValidateOutboundRouting()` (on `IServiceResolver`) - per design §2.5: reflects over every loaded
-  assembly for a `*Routing` type with a public static `string[] RequiredTopics` field (what
+  assembly for a type carrying `[OutboundRoutingContract]` (`OutboundRoutingContractAttribute`, this
+  package) that also has a public static `string[] RequiredTopics` field (what
   `Benzene.CodeGen.Client`'s generated `{Service}ServiceClientRouting` classes emit) and throws
   `MissingOutboundRoutesException` listing every required topic with no registered route. Opt-in -
-  call once, typically right after resolving `IBenzeneMessageSender`. **Caveat for test authors**:
-  the reflection scan is genuinely global (`AppDomain.CurrentDomain.GetAssemblies()`), so a
-  test-local `*Routing` type with a `RequiredTopics` field stays loaded and visible to every other
-  `ValidateOutboundRouting()` call for the rest of that test process, once JIT-touched - see
-  `test/Benzene.Core.Test/Clients/ValidateOutboundRoutingTest.cs`'s own `OrderServiceClientRouting`
-  for the one that currently exists.
+  call once, typically right after resolving `IBenzeneMessageSender`. The scan is **attribute-gated**
+  (2026-07-21): a type is only inspected when it carries `[OutboundRoutingContract]`, so an unrelated
+  type that merely happens to declare a `RequiredTopics` field is no longer swept in. **One behavior
+  change**: a hand-rolled `*Routing` holder that relied on the old field-name-only scan must now also
+  carry `[OutboundRoutingContract]` to be discovered (generated clients already emit it, so codegen
+  consumers need no change). **Caveat for test authors**: the reflection scan is still global
+  (`AppDomain.CurrentDomain.GetAssemblies()`), so the cross-test pollution is now largely resolved -
+  a stray `RequiredTopics` field no longer leaks. An *attributed* test-local `*Routing` type still
+  stays loaded and visible to every other `ValidateOutboundRouting()` call for the rest of that test
+  process once JIT-touched, so keep test holders' topics namespaced - see
+  `test/Benzene.Core.Test/Clients/ValidateOutboundRoutingTest.cs`'s `OrderServiceClientRouting`
+  (attributed, discovered) and `PhantomServiceClientRouting` (unattributed, proven ignored).
 - Transport-specific route-registration extensions on the outbound pipeline builder **now exist**:
   `.UseSqs(...)` / `.UseSns(...)` are the `IMiddlewarePipelineBuilder<OutboundContext>` overloads in
   **`Benzene.Clients.Aws`** (`Sqs/Extensions.cs`, `Sns/Extensions.cs`) - not in this package, since
@@ -100,8 +107,9 @@ it's the primary consumer of the outbound routing mechanism above) now generates
 `{Service}ServiceClient`'s constructor takes `IBenzeneMessageSender sender`, and every generated
 `XAsync(message, headers)` method body is `return _sender.SendAsync<TRequest,TResponse>("topic", message, headers);`
 - no more per-call `using (var client = _clientFactory.Create(...))`. Each generated client also
-now emits a sibling `{Service}ServiceClientRouting` static class with a `RequiredTopics` array
-(every request topic plus `"healthcheck"`), for `ValidateOutboundRouting()` above. The generated
+now emits a sibling `{Service}ServiceClientRouting` static class - carrying
+`[OutboundRoutingContract]` (2026-07-21) - with a `RequiredTopics` array (every request topic plus
+`"healthcheck"`), for `ValidateOutboundRouting()` above. The generated
 *interface* (`I{Service}ServiceClient`) is unchanged - this is purely an implementation-detail
 change in the generated class body.
 
