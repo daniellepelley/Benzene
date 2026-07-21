@@ -21,6 +21,18 @@ Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
 (newest first)
 
+### Cycle 9 — backward-compat gate let breaking EVENT changes pass as warnings (`SchemaCompatibilityRules`)
+- **Bug:** `DefaultFor` special-cased only `SchemaDirection.Response` for the consumer-side rules; `Event`
+  fell into the producer (Request) branch. But the client CONSUMES events (the service produces them),
+  so `Event` is consumer-side like `Response`. Result: removing a property from an event payload was
+  classified `Warning` (not `Breaking`), so `EnsureBackwardCompatible` didn't throw and a genuinely
+  breaking event-contract change passed the CI gate. (And the inverse false-positives: a new required
+  event field was flagged Breaking instead of Compatible, etc.)
+- **Repro:** `SchemaCompatibilityRulesTest.DefaultFor_Event_MatchesTheResponseConsumerSide` (4 cases) —
+  wrong pre-fix, correct post-fix; a Request regression theory confirms the producer side is unchanged.
+- **Fix:** the four consumer-side branches now test `direction != SchemaDirection.Request` (Response +
+  Event), so Event shares the Response rules. 21 compatibility tests green.
+
 ### Cycle 8 — JSON-schema validation threw on a malformed body instead of rejecting it (`JsonSchemaMiddleware`)
 - **Bug:** `JsonDocument.Parse(body)` was unguarded. A `null` body and a schema-failing body both return
   `ValidationError`, but a syntactically-invalid body (`"{"`, `"not json"`, `""`) threw `JsonException`

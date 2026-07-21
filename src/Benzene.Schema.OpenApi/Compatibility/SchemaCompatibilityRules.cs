@@ -61,7 +61,9 @@ public class SchemaCompatibilityRules
 
     /// <summary>
     /// The built-in default classification. Encodes that the client <em>produces</em> requests and
-    /// <em>consumes</em> responses, so the same change is breaking on one side and safe on the other.
+    /// <em>consumes</em> responses <b>and events</b> (both are produced by the service), so the same
+    /// structural change is breaking on the consumer side and safe on the producer side. Response and
+    /// Event share the consumer-side rules; only Request is the producer side.
     /// </summary>
     public static ChangeCompatibility DefaultFor(SchemaChangeKind kind, SchemaDirection direction)
     {
@@ -82,23 +84,23 @@ public class SchemaCompatibilityRules
 
             case SchemaChangeKind.RequiredPropertyAdded:
                 // A new required field breaks the producer of the object.
-                return direction == SchemaDirection.Response
+                return direction != SchemaDirection.Request
                     ? ChangeCompatibility.Compatible   // client tolerates an extra field it wasn't expecting
                     : ChangeCompatibility.Breaking;    // service now demands a field the client won't send
 
             case SchemaChangeKind.PropertyRemoved:
                 // Removing a field breaks the consumer of the object.
-                return direction == SchemaDirection.Response
+                return direction != SchemaDirection.Request
                     ? ChangeCompatibility.Breaking     // client may read the removed response field
                     : ChangeCompatibility.Warning;     // service ignores a field the client still sends
 
             case SchemaChangeKind.PropertyBecameRequired:
-                return direction == SchemaDirection.Response
+                return direction != SchemaDirection.Request
                     ? ChangeCompatibility.Compatible
                     : ChangeCompatibility.Breaking;
 
             case SchemaChangeKind.PropertyBecameOptional:
-                return direction == SchemaDirection.Response
+                return direction != SchemaDirection.Request
                     ? ChangeCompatibility.Warning      // client may rely on the field always being present
                     : ChangeCompatibility.Compatible;
 
