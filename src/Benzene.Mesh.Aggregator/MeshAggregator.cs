@@ -60,12 +60,17 @@ public class MeshAggregator
         var entries = registry.Services;
         var results = await Task.WhenAll(entries.Select(BuildServiceAsync));
 
+        // Build every artifact's content first (cheap, in-memory), then publish them all concurrently.
+        // The artifacts are independent blobs, so writing them one-await-at-a-time cost one S3 round-trip
+        // each in series (the dominant part of a run once the services had responded); a single
+        // Task.WhenAll collapses that to roughly one round-trip's wall-clock.
         var manifestEntries = new List<MeshManifestEntry>(entries.Length);
+        var writes = new List<Task>(entries.Length + 4);
         for (var i = 0; i < entries.Length; i++)
         {
             var entry = entries[i];
             var snapshot = results[i].Snapshot;
-            await _store.PublishAsync($"services/{entry.Name}.json", JsonSerializer.Serialize(snapshot, JsonOptions));
+            writes.Add(_store.PublishAsync($"services/{entry.Name}.json", JsonSerializer.Serialize(snapshot, JsonOptions)));
 
             manifestEntries.Add(new MeshManifestEntry(
                 entry.Name, DetermineStatus(snapshot), snapshot.ContractDrift, entry.SpecUrl, entry.HealthUrl,
@@ -73,20 +78,22 @@ public class MeshAggregator
         }
 
         var manifest = new MeshManifest(_clock(), manifestEntries.ToArray());
-        await _store.PublishAsync("manifest.json", JsonSerializer.Serialize(manifest, JsonOptions));
+        writes.Add(_store.PublishAsync("manifest.json", JsonSerializer.Serialize(manifest, JsonOptions)));
 
         // Cross-service topic catalog: every topic across the mesh -> which service(s) expose it.
         var catalog = BuildTopicCatalog(entries, results);
-        await _store.PublishAsync("topics.json", JsonSerializer.Serialize(catalog, JsonOptions));
+        writes.Add(_store.PublishAsync("topics.json", JsonSerializer.Serialize(catalog, JsonOptions)));
 
         // Structural ("designed to call") topology: an edge from each service that *sends* a domain
         // topic to each service that *handles* it, derived from the specs (no tracing backend needed).
         var topology = BuildTopology(entries, results);
-        await _store.PublishAsync("topology.json", JsonSerializer.Serialize(topology, JsonOptions));
+        writes.Add(_store.PublishAsync("topology.json", JsonSerializer.Serialize(topology, JsonOptions)));
 
         // Composite AsyncAPI: merge every service's own AsyncAPI 2.0 doc (fetched from its spec
         // endpoint) into one fleet-wide document loadable in an AsyncAPI editor.
-        await _store.PublishAsync("asyncapi.json", BuildCompositeAsyncApi(entries, results));
+        writes.Add(_store.PublishAsync("asyncapi.json", BuildCompositeAsyncApi(entries, results)));
+
+        await Task.WhenAll(writes);
 
         return manifest;
     }

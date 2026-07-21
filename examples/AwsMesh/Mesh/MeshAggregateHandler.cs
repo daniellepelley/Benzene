@@ -32,12 +32,15 @@ public class MeshAggregateHandler : IMessageHandler<Void, MeshAggregateSummary>
 
     public async Task<IBenzeneResult<MeshAggregateSummary>> HandleAsync(Void request)
     {
-        // 1. Discover benzene-tagged services (default filter) and persist the config to S3.
+        // 1. Discover benzene-tagged services (default filter).
         var registry = await _discovery.DiscoverAsync(new MeshDiscoveryFilter());
-        await _store.PublishAsync("registry.json", MeshRegistryJson.Serialize(registry));
 
-        // 2. Interrogate each discovered service and publish the catalog artifacts to S3.
-        await _aggregator.RunOnceAsync(registry);
+        // 2. Persist the discovered config to S3 AND interrogate each service + publish the catalog
+        //    concurrently - the registry.json write is independent of the aggregation run (which takes
+        //    the registry object directly, not from S3), so there's no reason to serialise them.
+        await Task.WhenAll(
+            _store.PublishAsync("registry.json", MeshRegistryJson.Serialize(registry)),
+            _aggregator.RunOnceAsync(registry));
 
         // A pass creates/refreshes the catalog artifacts (a state change), so signal 201 rather than
         // 200 on the POST /mesh/refresh surface. (On the EventBridge path the status is irrelevant.)
