@@ -89,8 +89,13 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
 
         if (string.IsNullOrEmpty(topic?.Id))
         {
-            _logger.LogWarning("Topic is missing");
-            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set( _defaultStatuses.ValidationError, "Topic is missing")));
+            // Name the remedy: a newcomer whose producer isn't a Benzene client (never sets the topic
+            // attribute/header) otherwise has nothing actionable to go on.
+            const string topicMissing = "Topic is missing - no topic could be resolved from the message. " +
+                "Set the transport's topic attribute/header on the producer, or configure UsePresetTopic(...) " +
+                "for this pipeline to route every message to a fixed topic.";
+            _logger.LogWarning(topicMissing);
+            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, MessageHandlerDefinition.Empty(), BenzeneResult.Set( _defaultStatuses.ValidationError, topicMissing)));
             return;
         }
 
@@ -106,8 +111,16 @@ public class MessageRouter<TContext> : IMiddleware<TContext>
         var handler = _messageHandlerFactory.Create(messageHandlerDefinition);
         if (handler == null)
         {
-            _logger.LogWarning("No handler found for topic {topic}", topic.Id);
-            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.Set(_defaultStatuses.NotFound, $"No handler found for topic {topic.Id}")));
+            // A definition WAS found and its handler type resolved from DI, but the instance
+            // implements neither IMessageHandler<TRequest,TResponse> nor IMessageHandler<TRequest> for
+            // the definition's declared request/response types - a wiring/signature bug, not a routing
+            // miss. Report it as such (naming the type and expected interface) so the developer fixes
+            // the handler rather than hunting for a missing [Message] registration that isn't the cause.
+            var mismatch = $"Handler {messageHandlerDefinition.HandlerType.Name} for topic {topic.Id} does not implement " +
+                $"IMessageHandler<{messageHandlerDefinition.RequestType.Name}, {messageHandlerDefinition.ResponseType.Name}> " +
+                $"(nor IMessageHandler<{messageHandlerDefinition.RequestType.Name}>) - check the handler's declared request/response types.";
+            _logger.LogWarning(mismatch);
+            await _messageHandlerResultSetter.SetResultAsync(context, new MessageHandlerResult(topic, messageHandlerDefinition, BenzeneResult.UnexpectedError(mismatch)));
             return;
         }
 

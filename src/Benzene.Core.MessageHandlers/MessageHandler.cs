@@ -59,6 +59,14 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         {
             messageObject = deferredRequestMapper.GetRequest<TRequest>();
         }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            // A genuine cancellation (host shutdown / drain fired the seeded token) is not a
+            // "message is not valid" outcome to convert into a BadRequest - propagate so the one
+            // place that reasons about it, ExceptionHandlerMiddleware, lets a settle/ack/checkpoint
+            // transport redeliver the interrupted work. See ExceptionHandlerMiddleware's remarks.
+            throw;
+        }
         catch(Exception ex)
         {
             Debug.WriteLine($"Message is not valid: {ex}");
@@ -81,6 +89,14 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
             Debug.WriteLine($"Message handler threw argument exception: {ex}");
             _logger.LogError(ex, "Message handler threw argument exception");
             return BenzeneResult.Set(_defaultStatuses.ValidationError, ex.Message);
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            // A genuine cancellation is host shutdown / drain, not a handler failure. Propagate it
+            // (rather than reporting ServiceUnavailable and logging a scary "handler threw" error for
+            // every in-flight message on every deploy) so ExceptionHandlerMiddleware can let the
+            // transport redeliver the interrupted work. Mirrors ExceptionHandlerMiddleware's guard.
+            throw;
         }
         catch(Exception ex)
         {

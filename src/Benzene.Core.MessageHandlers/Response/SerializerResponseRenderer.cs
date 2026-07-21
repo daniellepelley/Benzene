@@ -3,6 +3,7 @@ using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.MediaFormats;
 using Benzene.Abstractions.MessageHandlers.Response;
 using Benzene.Abstractions.Messages;
+using Benzene.Core.Exceptions;
 
 namespace Benzene.Core.MessageHandlers.Response;
 
@@ -56,7 +57,26 @@ public class SerializerResponseRenderer<TContext> : IResponseRenderer<TContext> 
         var format = _mediaFormatNegotiator.SelectWrite(context);
         var serializer = format.GetSerializer(_serviceResolver);
 
-        response.SetBody(context, _responsePayloadMapper.Map(context, result, serializer));
+        string body;
+        try
+        {
+            body = _responsePayloadMapper.Map(context, result, serializer);
+        }
+        catch (Exception ex) when (ex is not BenzeneException)
+        {
+            // The handler ran successfully but its response can't be serialized (cyclic graph,
+            // unsupported type, a custom serializer that throws). The raw serializer exception names
+            // nothing the operator can act on - and on an ack transport (SQS/DynamoDB) the message
+            // redelivers forever into the same failure. Rethrow with the root cause named so the
+            // failure is diagnosable; still throws, so the exception handler / transport retry engages.
+            var payloadType = result.BenzeneResult.PayloadAsObject?.GetType().Name ?? "null";
+            throw new BenzeneException(
+                $"Failed to serialize the response for topic '{result.Topic?.Id ?? "(unknown)"}' " +
+                $"(payload type {payloadType}, format {format.ContentType}). The handler ran, but its " +
+                "response could not be written - check the response type is serializable in this format.", ex);
+        }
+
+        response.SetBody(context, body);
         response.SetContentType(context,
             result.BenzeneResult.PayloadAsObject is IRawContentMessage rawContentMessage
                 ? rawContentMessage.ContentType
