@@ -8,7 +8,13 @@ Microsoft.Extensions.DependencyInjection integration for Benzene. Adapts Benzene
   the entry point (also calls `services.AddLogging()`).
 - `MicrosoftBenzeneServiceContainer : IBenzeneServiceContainer` - a Benzene container view over an
   `IServiceCollection` (Benzene scoped/singleton/transient map directly to MEL lifetimes).
-- `MicrosoftServiceResolverAdapter : IServiceResolver` - resolves from an `IServiceProvider` scope.
+- `MicrosoftServiceResolverAdapter : IServiceResolver` - resolves from an `IServiceProvider` scope. On a
+  failed `GetService<T>()` it wraps the container's exception in a `BenzeneException` enriched with a
+  missing-registration hint via `RegistrationErrorHandler.Describe(typeof(T), ex)` - keyed on the
+  requested type (not by parsing MEL's message text), and throw-safe, so the original error is always
+  preserved as `InnerException` and never masked. See `Benzene.Core`'s `RegistrationCheck`.
+- `RegistrationErrorHandler` - thin, cached (`Lazy<RegistrationCheck>`) entry point for the above;
+  delegates to `Benzene.Core.DI.RegistrationCheck`. No longer matches on MEL-specific message wording.
 - `MicrosoftServiceResolverFactory : IServiceResolverFactory` - builds the provider and opens a MEL scope
   (`IServiceProvider.CreateScope()`) per Benzene scope.
 - `BenzeneStartUp` - abstract `IStartUp<IServiceCollection, IConfiguration, IBenzeneApplicationBuilder>`

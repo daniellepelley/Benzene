@@ -70,4 +70,52 @@ public class RegistrationsTest
         Assert.Contains("IMiddlewareFactory", result);
         Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
     }
+
+    [Fact]
+    public void RegistrationTest_Exception_ThirdPartyContainer_UnquotedMessage()
+    {
+        // A container other than Microsoft DI / Autofac phrases its message differently and may not
+        // quote the type at all (this is SimpleInjector-shaped). The scan is wording-agnostic, so the
+        // hint still resolves rather than silently going missing.
+        var result = RegistrationErrorHandler.CheckException(new Exception(
+            "No registration for type Benzene.Abstractions.Middleware.IMiddlewareFactory could be found "
+            + "and an implicit registration could not be made."));
+
+        Assert.Contains("IMiddlewareFactory", result);
+        Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
+    }
+
+    [Fact]
+    public void RegistrationTest_Exception_MalformedMessage_ReturnsEmpty_DoesNotThrow()
+    {
+        // A message that begins like Microsoft DI's but has no quoted type used to make the old parser
+        // throw IndexOutOfRange from Split('\'')[1] - inside the resolver's catch block, which then
+        // replaced the real DI error. It must now degrade to an empty hint, never throw.
+        var result = RegistrationErrorHandler.CheckException(new Exception("Unable to resolve service for type"));
+
+        Assert.Equal(string.Empty, result);
+    }
+
+    [Fact]
+    public void Describe_PrefersRequestedType_RegardlessOfExceptionWording()
+    {
+        // The requested type is always known, so guidance works even when the exception message is
+        // unrecognizable (a third-party container, a localized message, a changed wording).
+        var result = RegistrationErrorHandler.Describe(typeof(IMiddlewareFactory), new Exception("something inscrutable"));
+
+        Assert.Contains("IMiddlewareFactory", result);
+        Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
+    }
+
+    [Fact]
+    public void Describe_FallsBackToExceptionScan_ForATransitiveMissingDependency()
+    {
+        // The requested type itself is fine (not a Benzene registration), but its construction needed a
+        // Benzene type the container names in the message - Describe still surfaces that.
+        var result = RegistrationErrorHandler.Describe(typeof(string),
+            new Exception("No service for type 'Benzene.Abstractions.Middleware.IMiddlewareFactory' has been registered."));
+
+        Assert.Contains("IMiddlewareFactory", result);
+        Assert.Contains(".UsingBenzene(x => x.AddBenzene())", result);
+    }
 }

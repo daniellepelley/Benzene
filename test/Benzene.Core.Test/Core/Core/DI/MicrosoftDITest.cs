@@ -1,4 +1,6 @@
 ﻿using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Middleware;
+using Benzene.Core.Exceptions;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
@@ -56,5 +58,21 @@ public class MicrosoftDependencyInjectionTest
         Assert.NotNull(serviceResolver.TryGetService<IServiceResolver>());
         Assert.NotNull(serviceResolver.TryGetService<IServiceResolverFactory>());
         Assert.NotNull(serviceResolver.GetService<IServiceResolverFactory>());
+    }
+
+    [Fact]
+    public void GetService_Unregistered_ThrowsBenzeneException_WithHint_PreservingTheOriginalError()
+    {
+        var services = new ServiceCollection();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var serviceResolver = factory.CreateScope();
+
+        var ex = Assert.Throws<BenzeneException>(() => serviceResolver.GetService<IMiddlewareFactory>());
+
+        // The container's real error is preserved (never masked by the diagnostic), and the message
+        // carries the actionable registration hint derived from the requested type itself.
+        Assert.NotNull(ex.InnerException);
+        Assert.Contains("IMiddlewareFactory", ex.Message);
+        Assert.Contains(".UsingBenzene(x => x.AddBenzene())", ex.Message);
     }
 }

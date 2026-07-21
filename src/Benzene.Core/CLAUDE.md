@@ -15,7 +15,19 @@ the scope-state builders used by `UseLogResult`/`UseLogContext`:
 ### DI Registration
 - `IRegistrations` - Interface for registration modules
 - `IRegistrationCheck` - Validates registrations are complete
-- `RegistrationCheck` - Default registration validation
+- `RegistrationCheck` - Default registration diagnostics. Given a **missing-registration failure** it
+  produces the actionable "you might be missing `.UsingBenzene(x => x.AddXxx())`" hint. Three entry
+  points, in increasing robustness:
+  - `CheckType(typeName)` - guidance for a specific type name (used by the resolver adapters, keyed on
+    `typeof(T)`, so it's **container-independent** - it never parses a container's exception text).
+  - `CheckException(Exception)` - best-effort scan of a container's resolve exception (and its inner
+    exceptions) for any known type name. Deliberately **wording-agnostic** (quoted-token first, then
+    namespaced whitespace tokens) so it works across Microsoft DI, Autofac, and third-party containers,
+    across framework versions, and across cultures - not tied to one container's message prefix. All
+    parsing is bounds-safe and it **never throws**, so a diagnostic can't replace the real error.
+  - `Describe(requestedType, Exception)` - what the adapters call: prefer `CheckType(requestedType)`
+    (reliable everywhere) and fall back to `CheckException` for a missing *transitive* dependency the
+    container names. Also never throws.
 - `RegistrationsBase` - Base class for registration modules
 - `RegistrationRecorder` - Records registration operations for validation
 - `RegistrationMatch` - Matches registered types

@@ -13,6 +13,11 @@ registrations land in your Autofac container and Benzene resolves services throu
   `AddScoped` → `InstancePerLifetimeScope`, `AddSingleton` → `SingleInstance`, `AddTransient` →
   `InstancePerDependency` (open generics via `RegisterGeneric`).
 - `AutofacServiceResolverAdapter : IServiceResolver` - resolves from an Autofac `IComponentContext`/scope.
+  On a failed `GetService<T>()` it wraps Autofac's exception in a `BenzeneException` enriched with a
+  missing-registration hint via `RegistrationErrorHandler.Describe(typeof(T), ex)` - keyed on the
+  requested type (not by parsing Autofac's message text), and throw-safe, so the original error is always
+  preserved as `InnerException`. The diagnostic logic is shared with the Microsoft adapter in
+  `Benzene.Core.DI.RegistrationCheck`; this package no longer matches Autofac-specific message wording.
 - `AutofacServiceResolverFactory : IServiceResolverFactory` - calls `containerBuilder.Build()` and opens a
   lifetime scope per Benzene scope.
 

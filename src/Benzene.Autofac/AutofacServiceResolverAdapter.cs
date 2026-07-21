@@ -53,9 +53,12 @@ public class AutofacServiceResolverAdapter : IServiceResolver
         }
         catch (Exception ex)
         {
-            var str = RegistrationErrorHandler.CheckException(ex);
-            Debug.WriteLine($"Unable to resolve type {typeof(T).FullName}, {str}, Exception: {ex}");
-            throw new BenzeneException($"Unable to resolve type {typeof(T).FullName}, {str}", ex);
+            // Enrich from the requested type first (always known, so this works on any container) and
+            // fall back to scanning the exception; Describe never throws, so it can't mask the real
+            // failure, which is preserved as the InnerException either way.
+            var hint = RegistrationErrorHandler.Describe(typeof(T), ex);
+            Debug.WriteLine($"Unable to resolve type {typeof(T).FullName}{hint}, Exception: {ex}");
+            throw new BenzeneException($"Unable to resolve type {typeof(T).FullName}{hint}", ex);
         }
     }
 

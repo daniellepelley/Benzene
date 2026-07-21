@@ -63,6 +63,99 @@ public class RegistrationCheck : IRegistrationCheck
         return FormatResponse(matches);
     }
 
+    /// <summary>
+    /// Best-effort, container-agnostic enrichment for a resolve failure: scans the exception and its
+    /// inner exceptions for any type name Benzene knows how to register, and returns registration
+    /// guidance for the first match. Unlike matching a single container's exact message wording, this
+    /// works across DI containers, framework versions, and cultures. It never throws - a diagnostic aid
+    /// must not be able to surface its own failure in place of the real resolution error.
+    /// </summary>
+    /// <param name="exception">The resolve exception thrown by the underlying container.</param>
+    /// <returns>Registration guidance, or an empty string if nothing recognizable was found.</returns>
+    public string CheckException(Exception exception)
+    {
+        try
+        {
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                foreach (var candidate in ExtractCandidateTypeNames(current.Message))
+                {
+                    var result = CheckType(candidate);
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        return result;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Never let the diagnostic replace the real error it was meant to explain.
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Registration guidance for a failed resolve, preferring the requested type itself - which the
+    /// caller always knows, so this branch is reliable on <em>any</em> container regardless of its
+    /// exception wording - and falling back to a type named in the exception chain, which additionally
+    /// catches a missing <em>transitive</em> dependency. Never throws.
+    /// </summary>
+    /// <param name="requestedType">The type the caller was trying to resolve.</param>
+    /// <param name="exception">The resolve exception thrown by the underlying container.</param>
+    /// <returns>Registration guidance, or an empty string if nothing recognizable was found.</returns>
+    public string Describe(Type requestedType, Exception exception)
+    {
+        try
+        {
+            var direct = requestedType?.FullName is { } name ? CheckType(name) : string.Empty;
+            return !string.IsNullOrEmpty(direct) ? direct : CheckException(exception);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    // Pulls likely type names out of a container's error message without assuming any one container's
+    // wording. Quoted tokens first (Microsoft DI and Autofac, like most containers, quote the type),
+    // then whitespace-delimited tokens that look namespaced (e.g. SimpleInjector's unquoted "No
+    // registration for type Namespace.Type ..."). All parsing is bounds-safe, so a message in any shape
+    // yields candidates or nothing, never an exception.
+    private static IEnumerable<string> ExtractCandidateTypeNames(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            yield break;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var quote in new[] { '\'', '"' })
+        {
+            var parts = message.Split(quote);
+            // Odd segments are the quoted contents.
+            for (var i = 1; i < parts.Length; i += 2)
+            {
+                var token = parts[i].Trim();
+                if (token.Length > 0 && seen.Add(token))
+                {
+                    yield return token;
+                }
+            }
+        }
+
+        foreach (var raw in message.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var token = raw.Trim('.', ',', ';', ':', '(', ')');
+            if (token.Contains('.') && seen.Add(token))
+            {
+                yield return token;
+            }
+        }
+    }
+
     private static RegistrationMatch[] GetMatches(string type, string typeNameToMatch, KeyValuePair<string, string[]> typeRegistrations)
     {
         return typeRegistrations.Value
