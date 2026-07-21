@@ -70,12 +70,21 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
             }
             catch (OperationCanceledException)
             {
-                // Expected on shutdown - fall through to drain and close below.
+                // Expected on shutdown - the finally still drains and closes below.
             }
-
-            await dispatcher.DrainAsync(_benzeneHttpConfig.DrainTimeout);
-            httpListener.Stop();
-            httpListener.Close();
+            catch (Exception e)
+            {
+                // Any other error escaping the loop would otherwise fault the detached _runTask
+                // silently and leak the listener. Log it at Critical (the loop is ending) and let the
+                // finally close the listener - matching BenzeneKafkaWorker's catch-all + finally.
+                _logger.LogCritical(e, "HTTP accept loop terminated unexpectedly");
+            }
+            finally
+            {
+                await dispatcher.DrainAsync(_benzeneHttpConfig.DrainTimeout);
+                httpListener.Stop();
+                httpListener.Close();
+            }
         }, CancellationToken.None);
 
         return Task.CompletedTask;
