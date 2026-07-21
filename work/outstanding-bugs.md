@@ -32,6 +32,37 @@ or perf-hygiene. Each item cites the file and the source doc(s).
 | 11 | LOW | **Dead reflection-era code + stray `Debug.WriteLine` leftovers** — `MessageClientSdkBuilder` `_propertyTypeMapping`/`GetTypeName(Type,..)` have no external caller; `Debug.WriteLine` diagnostics remain on handler exception paths (`MessageHandler.cs:64,81,87`, `HandlerPipelineBuilder.cs:52`, `ReflectionMessageHandlersFinder.cs:69`). Cleanup. | see cells | arch-review |
 | 12 | LOW | **`AsRawHttpRequest` emits LF not CRLF** (RFC 7230) — **dead code** (no caller in src/test/examples), noted for completeness. | `Benzene.Testing/MessageBuilderExtensions.cs` | overnight-log |
 
+### Tier 1 — resolution (2026-07-21)
+Fixed this pass (build + full `Benzene.Core.Test` green, 1938 passed):
+- **#1 FIXED** — all three `Utils.GetTypes` now catch `ReflectionTypeLoadException` and return
+  `ex.Types.Where(t => t != null)`, recovering the loadable types instead of dropping the whole
+  assembly (no more silent handler/endpoint 404s), keeping the total-failure `catch` as a fallback.
+- **#3 FIXED** — the `UseTimer(string)` wrapper now catches, marks the timer's span failed
+  (`otel.status_code=ERROR` + description, which the OTel SDK reads for span status), and rethrows —
+  the timer's `Dispose` couldn't observe the exception.
+- **#5 FIXED** (earlier pass) — `HttpRequest.{Method,Path,Headers}` given non-null initializers.
+- **#6 FIXED (partial)** — `[EnumeratorCancellation]` added to `GrpcStreamAdapter.ReadAll`/`Convert`
+  so a consumer's `WithCancellation(token)` is honoured. The "OK-no-payload → Unknown" sub-item is
+  deferred: current `DefaultGrpcStatusCodeMapper` maps a null status to `Internal` (not `Unknown`),
+  so the described path looks stale — left for a clearer repro rather than a speculative change.
+- **#8 FIXED** — `AwsLambdaBenzeneTestHost.SendEventAsync` now `EndSegment`s in a `finally`, so a
+  throwing handler no longer leaks the process-global X-Ray segment into later tests.
+- **#9 FIXED** — `SnsMessageBodyGetter` (`Sns?.Message`) and `SqsMessageTopicMapper`
+  (null-guarded + `TryGetValue`) hardened to match their sibling getters.
+- **#10 FIXED** — `BenzeneHttpWorker`'s accept loop got a catch-all + `finally`, so an unexpected
+  fault no longer skips the drain/listener-close (matching the Kafka worker).
+- **#11 FIXED (partial, earlier pass)** — dead `MessageClientSdkBuilder` reflection code removed;
+  the remaining `Debug.WriteLine`s are `[Conditional("DEBUG")]` (compiled out of Release), left as-is.
+
+Deliberately deferred (need a maintainer call / not "just fix it"):
+- **#2 OutboundSnsContextConverter drift** — parity with `SnsContextConverter`'s FIFO/numeric/attr-cap
+  logic; overlaps the maintainer's active SNS work and is an `OutboundContext` API/plumbing decision (T2-ish).
+- **#4 MiddlewareRouter value-type null-check** — the clean fix is a `where TRequest : class`
+  public-API constraint (breaking); no in-repo value-type router triggers it. Needs sign-off.
+- **#7 Cosmos `MapChangeType` `_ => Replace`** — what an unknown change-feed op *should* do
+  (crash-loud vs. skip vs. map) is a policy call; latent against today's SDK.
+- **#12** dead code (LF/CRLF) — left as noted.
+
 ---
 
 ## Tier 2 — Design decisions (real issue; need a maintainer's call, then fix)

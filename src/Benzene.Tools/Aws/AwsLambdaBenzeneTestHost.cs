@@ -45,9 +45,17 @@ public sealed class AwsLambdaBenzeneTestHost : IBenzeneTestHost, IDisposable
     {
         lambdaContext ??= new TestLambdaContext();
         AWSXRayRecorder.Instance.BeginSegment("Test");
-        var response = await _awsLambdaEntryPoint.FunctionHandlerAsync(ObjectToStream(awsEvent), lambdaContext);
-        AWSXRayRecorder.Instance.EndSegment();
-        return response;
+        try
+        {
+            return await _awsLambdaEntryPoint.FunctionHandlerAsync(ObjectToStream(awsEvent), lambdaContext);
+        }
+        finally
+        {
+            // End the segment even when the handler throws. Otherwise the process-global recorder is
+            // left with an open segment, and a later test's BeginSegment/BuildHost stacks on it -
+            // an order-dependent failure (can throw under ContextMissingStrategy.RUNTIME_ERROR).
+            AWSXRayRecorder.Instance.EndSegment();
+        }
     }
 
     public Task<Stream> SendEventAsync(object awsEvent)

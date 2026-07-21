@@ -72,10 +72,19 @@ public class BenzeneHttpWorker : IBenzeneWorker, IDisposable
             {
                 // Expected on shutdown - fall through to drain and close below.
             }
-
-            await dispatcher.DrainAsync(_benzeneHttpConfig.DrainTimeout);
-            httpListener.Stop();
-            httpListener.Close();
+            catch (Exception e)
+            {
+                // Any other exception escaping the accept loop would otherwise fault this detached
+                // task silently and skip the drain/close, leaking the listener. Log it and still
+                // clean up via the finally - matching the Kafka worker's catch-all + teardown.
+                _logger.LogError(e, "HTTP accept loop faulted unexpectedly");
+            }
+            finally
+            {
+                await dispatcher.DrainAsync(_benzeneHttpConfig.DrainTimeout);
+                httpListener.Stop();
+                httpListener.Close();
+            }
         }, CancellationToken.None);
 
         return Task.CompletedTask;

@@ -46,11 +46,14 @@ public class SqsConsumerMessageTopicGetter : IMessageTopicGetter<SqsConsumerMess
 
     private static string GetFromAttributes(SqsConsumerMessageContext context, string key)
     {
-        if (!context.Message.MessageAttributes.ContainsKey(key))
+        // Null-guard the attribute map (a message deserialized from a payload with no attributes can
+        // yield null), matching the sibling getters' hardening rather than NRE-ing out of the poll loop.
+        var attributes = context.Message.MessageAttributes;
+        if (attributes == null || !attributes.TryGetValue(key, out var value))
         {
             return null;
         }
 
-        return context.Message.MessageAttributes[key].StringValue;
+        return value.StringValue;
     }
 }

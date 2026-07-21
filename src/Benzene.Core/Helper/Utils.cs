@@ -45,6 +45,13 @@ public static class Utils
         {
             return assembly.GetTypes();
         }
+        catch (ReflectionTypeLoadException ex)
+        {
+            // Recover the types that DID load. Dropping the whole assembly here made every handler
+            // (or endpoint) in a partially-loadable assembly silently undiscoverable - a 404 with no
+            // explanation. Mirrors ValidateOutboundRoutingExtensions' handling of the same exception.
+            return ex.Types.Where(t => t != null).ToArray()!;
+        }
         catch
         {
             return Type.EmptyTypes;
