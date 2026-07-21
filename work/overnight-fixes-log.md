@@ -5,6 +5,18 @@ commit+push to main. Adversarial verification: no fix ships without a test that 
 passes after. Staying clear of the actively-churning #29/#30 cloud series (Aws/Azure/Kafka/Grpc/
 Clients/RabbitMq/SelfHost.Http) to avoid collisions with other sessions.
 
+## Deferred / noted (not fixed — need a decision, a real repro, or are intentional)
+- **`Utils.GetTypes` swallows `ReflectionTypeLoadException`** (3 copies: `Benzene.Core.MessageHandlers/
+  Utils.cs`, `.../Helper/Utils.cs`, `Benzene.Core/Helper/Utils.cs`) — `catch { return Type.EmptyTypes; }`
+  drops ALL of an assembly's types if one type fails to load, making every handler in it undiscoverable.
+  A `ReflectionTypeLoadException`-specific catch returning `ex.Types.Where(t => t != null)` is strictly
+  better, but a clean failing test needs a real partially-loadable assembly (hard to synthesize), and it
+  may be an intentional defensive default — left for a maintainer call.
+- **`VersionSelector` ordinal fallback** (`"9" > "10"` lexicographically) — DOCUMENTED and intentional
+  (deterministic, culture-independent; versions are opaque strings). Not a bug.
+- **`CodeGenHelpers.Camelcase`** has the same acronym-lowercasing quirk fixed in `ExamplePayloadBuilder`,
+  but is unused by any production path (only its own unit test) — no active bug.
+
 ## Cycle log
 
 (newest first)
