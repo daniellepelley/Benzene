@@ -25,6 +25,13 @@ for the full Kubernetes wiring guide.
   NOT also match `DefaultHealthCheckTopic`, so registering both in one pipeline doesn't have one
   silently shadow the other on a shared fallback topic. Share the same underlying middleware
   (`UseHealthCheckMiddleware`, private) as `.UseHealthCheck(...)`.
+- `.UseContractsCheck(...)` - same 3 overload shapes again, responding ONLY to
+  `Constants.DefaultContractsTopic` ("contracts"). A **diagnostic** topic for consumer-side
+  contract-drift / downstream-provider checks (`Benzene.Clients.HealthChecks`'s `AddContractCheck`),
+  deliberately separate from the liveness/readiness **probes**: a contract check calls a downstream
+  service and reports drift, so wiring it into a probe would let one struggling dependency restart or
+  de-route otherwise-healthy pods. Wire it to monitoring/the mesh, never a Kubernetes probe - see
+  `docs/kubernetes-health-checks.md` and `work/client-health-checks-design.md`.
 - `HealthCheckBuilder : IHealthCheckBuilder` - collects health checks (DI-resolved types, inline
   factory functions) and, via `IHealthCheckFinder`, DI-registered `IHealthCheck` implementations
 - `IHealthCheckFinder`/`HealthCheckFinder` - resolves every `IHealthCheck` registered directly in DI

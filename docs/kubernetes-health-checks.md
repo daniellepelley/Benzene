@@ -48,10 +48,26 @@ it fails the two tests above harder than a database check does:
   contract revision behind can still serve traffic perfectly — restarting it or pulling it from
   rotation over that annotation is never the right response.
 
-So keep `HealthCheckAsync()` off `/livez` and `/readyz`. Wire it to a **separate, probe-less
-diagnostic topic** (e.g. `app.UseHealthCheck("get", "dependencies", …)` — an ordinary health-check
-topic Kubernetes has no probe pointed at) and let the **mesh / your alerting** consume it: contract
-drift surfaces as a mesh drift badge (see [Mesh UI](mesh-ui.md)) or an alert, not a restart. The one
+So keep `HealthCheckAsync()` off `/livez` and `/readyz`. `Benzene.HealthChecks` provides a dedicated
+**`contracts`** diagnostic topic for exactly this — a probe-less surface Kubernetes never points at,
+which the **mesh / your alerting** consume instead. Register your generated clients' contract checks
+with `UseContractsCheck` + `AddContractCheck` (from `Benzene.Clients.HealthChecks`):
+
+```csharp
+using Benzene.HealthChecks;
+using Benzene.Clients.HealthChecks;
+
+app.UseContractsCheck(x => x
+    .AddContractCheck<IOrderServiceClient>("OrderService")   // resolves the generated client from DI
+    .AddContractCheck<IPaymentServiceClient>("PaymentService"));
+```
+
+`UseContractsCheck` answers only the `contracts` topic (`Constants.DefaultContractsTopic`) — like
+`UseLivenessCheck`/`UseReadinessCheck` it does **not** also match the generic `healthcheck` topic, and
+no probe is pointed at it. Each `ClientHealthCheck` reports the downstream contract relationship:
+reachable + matching contract is `Ok`, reachable + drifted is `Warning` (degraded-but-not-fatal, does
+not flip `IsHealthy`), and only an unreachable provider is `Failed` — so contract drift surfaces as a
+mesh drift badge (see [Mesh UI](mesh-ui.md)) or an alert, never a restart. The one
 narrow exception is a *hard synchronous* dependency you genuinely cannot serve any traffic without —
 a targeted **reachability-only** check against that one provider may go in **readiness** (never
 liveness), but even then exclude the contract-drift portion, which is never a reason to stop serving
