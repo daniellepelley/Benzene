@@ -1,5 +1,25 @@
 # Outstanding bugs requiring action — consolidated triage (2026-07-21)
 
+> **Action status update (2026-07-21, later pass).** Tier 1 has been worked through and pushed to
+> `main`. Actioned with tests: #1 (`Utils.GetTypes` keeps loadable types, 3 copies), #2
+> (`OutboundSnsContextConverter` FIFO/numeric parity), #3 (`ActivityProcessTimer`/`UseTimer` marks a
+> failed span), #8 (X-Ray segment try/finally in the Lambda test host), #9-part (`SqsConsumerMessageTopicGetter`
+> null-`MessageAttributes` guard), #10 (`BenzeneHttpWorker` catch-all + finally), #6-part (gRPC
+> `[EnumeratorCancellation]` on `ReadAll`/`Convert`). Already fixed in current source: #5
+> (`HttpRequest` properties now have initializers). **Deferred with rationale (not release-blocking as
+> mechanical fixes):** #4 `MiddlewareRouter` needs a `where TRequest : class` **public-API constraint** —
+> a source-breaking change to hold for the 1.0 API-freeze decision, not applied unilaterally; #6-second-clause
+> ("OK unary response with no payload → Unknown") not reproduced in current source (`status` comes from
+> `BenzeneResult.Status`, which is `"Ok"` for an OK result — only a *null* `MessageHandlerResult` yields
+> `"Unknown"`); #7 Cosmos `MapChangeType` unknown-op→`Replace` is latent and safe against the shipped SDK
+> (a "fix" means either a risky throw in the change-feed hot path or a new `CosmosChangeType.Unknown`
+> enum value — an API/behaviour decision); #9a `SnsMessageBodyGetter` returns a non-null `string`, so a
+> `?.` would weaken its contract and isn't production-reachable; #11 the `Debug.WriteLine` leftovers are
+> `[Conditional("DEBUG")]` and compiled out of the Release NuGet (cosmetic; dead-reflection-code removal
+> is cleanup, not a bug); #12 `AsRawHttpRequest` CR/LF is on dead code with no caller. Tier 2/Tier 3
+> remain maintainer decisions / perf-hygiene as noted below.
+
+
 Synthesised from every bug-tracking doc under `work/` (`bughunt/findings.md`, `arch-review/findings.md`,
 `cloud-review/*.md`, `overnight-bug-hunt-findings.md`, `audit-remaining-suggestions.md`,
 `debuggability-assessment.md`, `health-checks-1.0-review.md`, `designs/*.md`, and this session's
