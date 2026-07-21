@@ -50,6 +50,21 @@ public class KafkaCoreMappersTest
     }
 
     [Fact]
+    public void KafkaMessageBodyGetter_ByteArrayValue_IsUtf8Decoded_NotToStringed()
+    {
+        // A byte[] TValue must be UTF-8 decoded to its real text, not .ToString()'d (which yields
+        // "System.Byte[]"). Covers the generic getter for the common raw-bytes Kafka value shape.
+        var consumeResult = new ConsumeResult<string, byte[]>
+        {
+            Topic = "my-topic",
+            Message = new Message<string, byte[]> { Value = Encoding.UTF8.GetBytes("hello-bytes") }
+        };
+        var context = new KafkaRecordContext<string, byte[]>(consumeResult);
+
+        Assert.Equal("hello-bytes", new KafkaMessageBodyGetter<string, byte[]>().GetBody(context));
+    }
+
+    [Fact]
     public void KafkaMessageTopicGetter_ReturnsTheConsumeResultTopic()
     {
         var context = new KafkaRecordContext<string, string>(CreateConsumeResult("my-topic", "hello"));
