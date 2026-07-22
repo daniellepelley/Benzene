@@ -139,7 +139,16 @@ passive-declare as the default (it verifies the actual queue), `IsOpen` as a doc
 
 ---
 
-## 3. gRPC (`Benzene.Grpc.Client`, Grpc.Net.Client) — **two distinct checks, don't conflate**
+## 3. gRPC (`Benzene.Grpc.Client`, Grpc.Net.Client) — ✅ **IMPLEMENTED (transport tier)**
+
+Shipped: `GrpcHealthCheck` — the **transport-reachability** tier (a) — `GrpcChannel.ConnectAsync` against
+the caller's DI-registered channel, `Type = "Grpc"`, dependency `("Grpc", channel.Target)`, auto-wired on
+`AddGrpcClient(configureRoutes, healthCheck: true)`. An unreachable target times out → Failed; an
+`RpcException` classifies by status (PermissionDenied/Unauthenticated → Warning). The `grpc.health.v1`
+tier (b) is intentionally **not** shipped: it is transitive (belongs on `contracts`, not a probe/default)
+and needs the `Grpc.HealthCheck` package (a new dependency). Original two-tier design retained below.
+
+
 
 gRPC is the one where "health check" is genuinely ambiguous, and the choice interacts with §3.2 / the
 `contracts` topic (§7 of the main plan).
