@@ -200,15 +200,28 @@ resource "azurerm_eventgrid_topic" "this" {
 # event type (= the Benzene topic). NOTE: the Azure-function endpoint must already exist, so these
 # subscriptions are created only after the code has been published (see the deploy workflow's second
 # terraform apply) - a first apply before publish will leave them to a later run.
+# The Event Grid extension's system key for each consumer app, used to build its webhook URL below.
+# Read only when we're wiring subscriptions (the apps must be published + warm by then).
+data "azurerm_function_app_host_keys" "consumer" {
+  for_each            = var.wire_eventgrid_subscriptions ? toset([for r in local.eventgrid_routes : r.service]) : []
+  name                = azurerm_linux_function_app.service[each.value].name
+  resource_group_name = data.azurerm_resource_group.this.name
+}
+
+# Subscribe via the Functions Event Grid extension **webhook** rather than azure_function_endpoint:
+# the latter validates the endpoint through an ARM control-plane lookup of the function, which is
+# unreliable for isolated-worker functions on a Consumption plan ("Destination endpoint not found …
+# should pre-exist"). The webhook is validated against the *live* running function, which the Functions
+# EG extension auto-answers - so the deploy must warm the consumer apps just before this apply (it does).
 resource "azurerm_eventgrid_event_subscription" "route" {
-  for_each             = var.wire_eventgrid_subscriptions ? local.eventgrid_routes : {}
-  name                 = replace(each.key, "_", "-")
-  scope                = azurerm_eventgrid_topic.this.id
-  included_event_types = [each.value.event_type]
+  for_each              = var.wire_eventgrid_subscriptions ? local.eventgrid_routes : {}
+  name                  = replace(each.key, "_", "-")
+  scope                 = azurerm_eventgrid_topic.this.id
+  included_event_types  = [each.value.event_type]
   event_delivery_schema = "CloudEventSchemaV1_0"
 
-  azure_function_endpoint {
-    function_id = "${azurerm_linux_function_app.service[each.value.service].id}/functions/${each.value.function}"
+  webhook_endpoint {
+    url = "https://${azurerm_linux_function_app.service[each.value.service].default_hostname}/runtime/webhooks/eventgrid?functionName=${each.value.function}&code=${data.azurerm_function_app_host_keys.consumer[each.value.service].event_grid_extension_config_key}"
   }
 }
 

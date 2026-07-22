@@ -173,12 +173,19 @@ jobs:
           done
           exit "$rc"
 
-      # Now that the consumer Functions exist, wire the Event Grid subscriptions onto them (an
-      # azure-function event subscription requires its target function to already exist, so this is a
-      # second apply after publish - see var.wire_eventgrid_subscriptions).
+      # Now that the consumer Functions exist, wire the Event Grid subscriptions onto them. They're
+      # subscribed via the Functions Event Grid extension WEBHOOK (validated against the live function,
+      # not an ARM lookup), so the consumer apps must be up: warm each one first (an anonymous HTTP hit
+      # cold-starts the worker, so the EG extension answers the subscription-validation handshake and the
+      # host-keys data source can read the extension system key). Consumption apps stay warm ~20 min,
+      # covering the whole apply. See var.wire_eventgrid_subscriptions + README iteration points.
       - name: Terraform apply (wire Event Grid subscriptions)
         working-directory: examples/AzureFunctionsMesh/deploy
         run: |
+          for svc in inventory notifications analytics; do
+            echo "warming ${PROJECT}-${svc}"
+            curl -sS -o /dev/null --max-time 120 "https://${PROJECT}-${svc}.azurewebsites.net/" 2>/dev/null || true
+          done
           terraform apply -input=false -auto-approve \
             -var "location=${{ inputs.location }}" \
             -var "project=$PROJECT" \

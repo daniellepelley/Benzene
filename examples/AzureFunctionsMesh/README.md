@@ -140,12 +140,16 @@ first-run tweaks:
   HTTP GET forces the worker up) before every sync-triggers attempt and widens the retry window; a
   manual `func azure functionapp publish <name>`, or simply hitting any anonymous route once, has the
   same effect.
-- **Event Grid subscriptions need their target function first** — an `azure_function_endpoint` event
-  subscription requires the consumer Function's function to already exist, but Terraform runs before the
-  code is published. So the deploy does one apply **without** the subscriptions
-  (`wire_eventgrid_subscriptions=false`), publishes, then a second apply with them `true`. If a
-  subscription apply fails with the endpoint not found, the function name (the `BenzeneEventGridTrigger`
-  `Name`, e.g. `inventory-eg`) or the publish of that app is the thing to check.
+- **Event Grid subscriptions are wired via the extension webhook, after publish + warm** — Event Grid's
+  `azure_function_endpoint` validates through an ARM control-plane lookup of the function, which is
+  unreliable for isolated-worker functions on a Consumption plan (it fails with *"Destination endpoint
+  not found … should pre-exist"* even once the code is deployed). So the subscriptions instead point at
+  the Functions **Event Grid extension webhook**
+  (`/runtime/webhooks/eventgrid?functionName=<fn>&code=<system-key>`), which is validated against the
+  *live* running function — the deploy publishes first, then **warms** each consumer app (an anonymous
+  HTTP hit cold-starts the worker so the extension answers the validation handshake and its system key
+  exists), then does the second apply (`wire_eventgrid_subscriptions=true`). If a subscription still
+  fails validation, the consumer app was likely cold — warm it (hit any route) and re-run.
 - **Event Hub / Service Bus / Event Grid connection strings** — each service gets the connection strings
   it needs as app settings from the namespaces Terraform creates (`ServiceBusConnection`,
   `EventHubConnection`, `EventGridEndpoint`/`EventGridKey`). A missing/blank one only fails the *send*
