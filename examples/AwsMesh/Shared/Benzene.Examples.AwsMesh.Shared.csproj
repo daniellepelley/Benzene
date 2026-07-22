@@ -24,6 +24,8 @@
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sns\Benzene.Aws.Lambda.Sns.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Clients\Benzene.Clients.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Clients.Aws.Sqs\Benzene.Clients.Aws.Sqs.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Clients.Aws.Sns\Benzene.Clients.Aws.Sns.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Clients.Aws.EventBridge\Benzene.Clients.Aws.EventBridge.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />

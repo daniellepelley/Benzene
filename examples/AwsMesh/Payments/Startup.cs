@@ -23,8 +23,12 @@ public class Startup : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         => MeshServiceWiring.ConfigureServices(services, "payments", typeof(Startup).Assembly,
-            // payments-api → shipping-api: on capture, send shipping:book to the shipping SQS queue.
-            new OutboundSend("shipping:book", typeof(OutboundShipmentBook), "SHIPPING_QUEUE_URL"));
+            // payments-api → shipping-api: on capture, send shipping:book to the shipping SQS queue
+            // (a point-to-point command — one consumer, must arrive).
+            OutboundSend.Sqs("shipping:book", typeof(OutboundShipmentBook), "SHIPPING_QUEUE_URL"),
+            // payments-api → notifications-api + analytics-api: publish payment:captured to EventBridge,
+            // routed to interested consumers by rule (an integration event).
+            OutboundSend.EventBridge("payment:captured", typeof(OutboundPaymentCaptured), "EVENT_BUS_NAME"));
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {

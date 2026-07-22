@@ -1,0 +1,13 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "Sns": {
+        "Message": "{\"orderId\":\"ord-1\",\"item\":\"Espresso Machine\",\"quantity\":2}",
+        "MessageAttributes": {
+          "topic": { "Type": "String", "Value": "order:placed" }
+        }
+      }
+    }
+  ]
+}

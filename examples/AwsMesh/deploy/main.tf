@@ -21,12 +21,16 @@ data "aws_caller_identity" "current" {}
 locals {
   bucket_name = var.artifact_bucket_name != "" ? var.artifact_bucket_name : "${var.project}-${data.aws_caller_identity.current.account_id}"
 
-  # The three Cloud Service Lambdas. Each is tagged so discovery finds it; each gets its own HTTP API
-  # so its Spec UI's relative fetches resolve cleanly.
+  # The Cloud Service Lambdas. Each is tagged so discovery finds it; each gets its own HTTP API so its
+  # Spec UI's relative fetches resolve cleanly. orders/payments/shipping form the command chain and
+  # publish events; inventory/notifications/analytics are pure event consumers (SNS/EventBridge).
   services = {
-    orders   = { zip = var.orders_zip, name = "${var.project}-orders" }
-    payments = { zip = var.payments_zip, name = "${var.project}-payments" }
-    shipping = { zip = var.shipping_zip, name = "${var.project}-shipping" }
+    orders        = { zip = var.orders_zip, name = "${var.project}-orders" }
+    payments      = { zip = var.payments_zip, name = "${var.project}-payments" }
+    shipping      = { zip = var.shipping_zip, name = "${var.project}-shipping" }
+    inventory     = { zip = var.inventory_zip, name = "${var.project}-inventory" }
+    notifications = { zip = var.notifications_zip, name = "${var.project}-notifications" }
+    analytics     = { zip = var.analytics_zip, name = "${var.project}-analytics" }
   }
 
   # The OTLP endpoint Benzene's providers export to. An explicit var.otlp_endpoint wins; otherwise, when
@@ -190,18 +194,43 @@ resource "aws_lambda_function" "service" {
 }
 
 # ---------------------------------------------------------------------------------------------------
-# Runtime interconnectivity: SQS ingress queues for the order → payment → shipment chain. orders sends
-# payments:capture to the payments queue; payments sends shipping:book to the shipping queue; each
-# queue triggers its service Lambda (which already handles SQS via the shared wiring).
+# Runtime interconnectivity — each transport used for what it's good at:
+#   • SQS (point-to-point commands): orders → payments (payments:capture), payments → shipping
+#     (shipping:book). Each queue triggers its service Lambda (event-source mapping).
+#   • SNS (fan-out event): orders publishes order:placed → inventory AND notifications (subscriptions).
+#   • EventBridge (routed integration events on a custom bus): payments publishes payment:captured,
+#     shipping publishes shipping:dispatched → routed by rule to notifications/inventory/analytics.
+# Env vars hand each producer its target (queue URL / topic ARN / bus name); consumers just receive.
 # ---------------------------------------------------------------------------------------------------
 locals {
   service_env = {
-    orders   = { PAYMENTS_QUEUE_URL = aws_sqs_queue.payments.url }
-    payments = { SHIPPING_QUEUE_URL = aws_sqs_queue.shipping.url }
-    shipping = {}
+    orders        = { PAYMENTS_QUEUE_URL = aws_sqs_queue.payments.url, ORDER_PLACED_TOPIC_ARN = aws_sns_topic.order_placed.arn }
+    payments      = { SHIPPING_QUEUE_URL = aws_sqs_queue.shipping.url, EVENT_BUS_NAME = aws_cloudwatch_event_bus.bus.name }
+    shipping      = { EVENT_BUS_NAME = aws_cloudwatch_event_bus.bus.name }
+    inventory     = {}
+    notifications = {}
+    analytics     = {}
   }
+
+  # SNS fan-out: order:placed is delivered to each of these service Lambdas.
+  sns_order_placed_subscribers = toset(["inventory", "notifications"])
+
+  # EventBridge routing: one rule per integration event (matched on detail-type = the Benzene topic),
+  # fanned out to the listed consumer Lambdas. Rule keys are slugs (no ':') for valid resource names.
+  eventbridge_rules = {
+    payment_captured    = { detail_type = "payment:captured", targets = ["notifications", "analytics"] }
+    shipping_dispatched = { detail_type = "shipping:dispatched", targets = ["inventory", "notifications", "analytics"] }
+  }
+
+  # Flatten {rule → [targets]} to individual (rule, service) pairs for the per-target resources.
+  eventbridge_targets = merge([
+    for rule_key, rule in local.eventbridge_rules : {
+      for svc in rule.targets : "${rule_key}-${svc}" => { rule_key = rule_key, service = svc }
+    }
+  ]...)
 }
 
+# --- SQS: the point-to-point command hops -----------------------------------------------------------
 resource "aws_sqs_queue" "payments" {
   name                       = "${var.project}-payments-queue"
   visibility_timeout_seconds = 60
@@ -224,8 +253,61 @@ resource "aws_lambda_event_source_mapping" "shipping" {
   batch_size       = 1
 }
 
+# --- SNS: the order:placed fan-out ------------------------------------------------------------------
+resource "aws_sns_topic" "order_placed" {
+  name = "${var.project}-order-placed"
+}
+
+# Deliver the topic straight to each subscriber Lambda (SNS → Lambda), and allow SNS to invoke them.
+resource "aws_sns_topic_subscription" "order_placed" {
+  for_each  = local.sns_order_placed_subscribers
+  topic_arn = aws_sns_topic.order_placed.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.service[each.key].arn
+}
+
+resource "aws_lambda_permission" "sns_invoke" {
+  for_each      = local.sns_order_placed_subscribers
+  statement_id  = "AllowSnsInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.service[each.key].function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.order_placed.arn
+}
+
+# --- EventBridge: the routed integration events on a dedicated bus -----------------------------------
+resource "aws_cloudwatch_event_bus" "bus" {
+  name = "${var.project}-bus"
+}
+
+resource "aws_cloudwatch_event_rule" "integration" {
+  for_each       = local.eventbridge_rules
+  name           = "${var.project}-${each.key}"
+  event_bus_name = aws_cloudwatch_event_bus.bus.name
+  # The Benzene EventBridge sender maps the topic onto detail-type, so route on that.
+  event_pattern = jsonencode({ "detail-type" = [each.value.detail_type] })
+}
+
+resource "aws_cloudwatch_event_target" "integration" {
+  for_each       = local.eventbridge_targets
+  rule           = aws_cloudwatch_event_rule.integration[each.value.rule_key].name
+  event_bus_name = aws_cloudwatch_event_bus.bus.name
+  target_id      = each.value.service
+  arn            = aws_lambda_function.service[each.value.service].arn
+}
+
+resource "aws_lambda_permission" "eventbridge_invoke" {
+  for_each      = local.eventbridge_targets
+  statement_id  = "AllowEventBridge-${each.key}"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.service[each.value.service].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.integration[each.value.rule_key].arn
+}
+
+# --- IAM: the shared service role's producer permissions --------------------------------------------
 # The shared service role can send to both queues (as a producer) and consume them (the event-source
-# mapping polls with the function's role).
+# mapping polls with the function's role), publish the SNS topic, and put events on the custom bus.
 data "aws_iam_policy_document" "service_sqs" {
   statement {
     actions = [
@@ -236,10 +318,18 @@ data "aws_iam_policy_document" "service_sqs" {
     ]
     resources = [aws_sqs_queue.payments.arn, aws_sqs_queue.shipping.arn]
   }
+  statement {
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.order_placed.arn]
+  }
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.bus.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "service_sqs" {
-  name   = "${var.project}-service-sqs"
+  name   = "${var.project}-service-messaging"
   role   = aws_iam_role.service.id
   policy = data.aws_iam_policy_document.service_sqs.json
 }

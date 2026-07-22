@@ -1,4 +1,6 @@
 using System.Reflection;
+using Amazon.EventBridge;
+using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Middleware;
@@ -11,6 +13,8 @@ using Benzene.Aws.Lambda.Sqs;
 using Benzene.Aws.Lambda.XRay;
 using Benzene.CloudService;
 using Benzene.Clients;
+using Benzene.Clients.Aws.EventBridge;
+using Benzene.Clients.Aws.Sns;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
@@ -84,21 +88,56 @@ public static class MeshServiceWiring
 
             if (outboundSends.Length > 0)
             {
-                // Declare each send in the spec's events → the mesh's structural topology edge.
+                // Declare each send in the spec's events → the mesh's structural topology edge. This is
+                // transport-agnostic on purpose: an SQS command, an SNS event and an EventBridge event all
+                // surface the same way, so the mesh topology shows every edge regardless of how it's carried.
                 x.AddResponseEventDeclarations(outboundSends
                     .Select(s => (IMessageDefinition)new ResponseEventDefinition(s.Topic, s.MessageType))
                     .ToArray());
 
-                // The runtime route: an IBenzeneMessageSender that sends each topic to its target
-                // service's SQS ingress queue. Lazy IAmazonSQS so the client is only built on a real
-                // send (so a service without queue env vars — e.g. the Lambda test tool — still starts).
-                x.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient());
+                // Only register the AWS clients for the transports this service actually sends over. Lazy
+                // factories so a client is only built on a real send — a service with no target env vars
+                // (e.g. the Lambda test tool) still starts.
+                if (outboundSends.Any(s => s.Transport == OutboundTransport.Sqs))
+                {
+                    x.AddSingleton<IAmazonSQS>(_ => new AmazonSQSClient());
+                }
+                if (outboundSends.Any(s => s.Transport == OutboundTransport.Sns))
+                {
+                    x.AddSingleton<IAmazonSimpleNotificationService>(_ => new AmazonSimpleNotificationServiceClient());
+                }
+                if (outboundSends.Any(s => s.Transport == OutboundTransport.EventBridge))
+                {
+                    x.AddSingleton<IAmazonEventBridge>(_ => new AmazonEventBridgeClient());
+                }
+
+                // The runtime route: one IBenzeneMessageSender pipeline per topic, each publishing over the
+                // send's chosen transport to the target the env var names (the ingress the target already
+                // consumes). Every transport is fire-and-acknowledge here — the handlers send
+                // SendAsync<T, Void>.
                 x.AddOutboundRouting(routing =>
                 {
                     foreach (var send in outboundSends)
                     {
-                        var queueUrl = Environment.GetEnvironmentVariable(send.QueueUrlEnvVar) ?? "";
-                        routing.Route(send.Topic, pipeline => pipeline.UseSqs(queueUrl));
+                        var target = Environment.GetEnvironmentVariable(send.TargetEnvVar) ?? "";
+                        routing.Route(send.Topic, pipeline =>
+                        {
+                            switch (send.Transport)
+                            {
+                                case OutboundTransport.Sqs:
+                                    pipeline.UseSqs(target);
+                                    break;
+                                case OutboundTransport.Sns:
+                                    pipeline.UseSns(target);
+                                    break;
+                                case OutboundTransport.EventBridge:
+                                    // Source = the sending service (matches its OTel service name); the
+                                    // bus name comes from the env var. EventBridge rules route on detail-type
+                                    // (the Benzene topic) + source.
+                                    pipeline.UseEventBridge($"{serviceName}-api", eventBusName: target);
+                                    break;
+                            }
+                        });
                     }
                 });
             }

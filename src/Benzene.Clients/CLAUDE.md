@@ -94,11 +94,14 @@ an `OutboundRoutingBuilder.Route(...)` pipeline:
   (attributed, discovered) and `PhantomServiceClientRouting` (unattributed, proven ignored).
 - Transport-specific route-registration extensions on the outbound pipeline builder **now exist**:
   `.UseSqs(...)` / `.UseSns(...)` are the `IMiddlewarePipelineBuilder<OutboundContext>` overloads in
-  **`Benzene.Clients.Aws`** (`Sqs/Extensions.cs`, `Sns/Extensions.cs`) - not in this package, since
-  they carry the AWS SDK dependency. The cross-cutting middleware (`.UseRetry(...)` from
-  `Benzene.Resilience`, `.UseCorrelationId(...)`, `.UseW3CTraceContext()`) are the ones documented
-  under "Outbound middleware" above. Only `.UseAwsLambda(...)` on the `OutboundContext` builder
-  remains deferred (see `Benzene.Clients.Aws`'s `CLAUDE.md`).
+  **`Benzene.Clients.Aws`** (`Sqs/Extensions.cs`, `Sns/Extensions.cs`), and `.UseEventBridge(...)` is
+  the same overload in **`Benzene.Clients.Aws.EventBridge`** (`Extensions.cs`, added 2026-07-22 via
+  `OutboundEventBridgeContextConverter` - topic → `DetailType`, `source`/`eventBusName` args, default-on
+  dependency health check) - none in this package, since they carry the AWS SDK dependency. The
+  cross-cutting middleware (`.UseRetry(...)` from `Benzene.Resilience`, `.UseCorrelationId(...)`,
+  `.UseW3CTraceContext()`) are the ones documented under "Outbound middleware" above. Only
+  `.UseAwsLambda(...)` on the `OutboundContext` builder remains deferred (see `Benzene.Clients.Aws`'s
+  `CLAUDE.md`).
 
 ### Benzene.CodeGen.Client generated clients (current, 2026-07-17)
 `MessageClientSdkBuilder` (in `Benzene.CodeGen.Client`, not this package, but documented here since

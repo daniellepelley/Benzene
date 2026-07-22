@@ -1,0 +1,5 @@
+{
+  "detail-type": "payment:captured",
+  "source": "payments-api",
+  "detail": { "orderId": "ord-1", "paymentId": "pay-ord-1", "amount": 20.00, "currency": "GBP" }
+}

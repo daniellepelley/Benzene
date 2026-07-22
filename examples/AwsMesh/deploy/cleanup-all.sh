@@ -16,7 +16,7 @@ ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 ARTIFACT_BUCKET="${PROJECT}-${ACCOUNT}"       # NOTE: distinct from ${PROJECT}-tfstate-${ACCOUNT}
 
 echo "== Deleting HTTP APIs (all duplicates by name) =="
-for name in orders payments shipping mesh; do
+for name in orders payments shipping inventory notifications analytics mesh; do
   api_name="${PROJECT}-${name}-api"
   for api in $(aws apigatewayv2 get-apis --region "$REGION" \
       --query "Items[?Name=='${api_name}'].ApiId" --output text 2>/dev/null); do
@@ -27,15 +27,28 @@ for name in orders payments shipping mesh; do
 done
 
 echo "== Deleting Lambda functions =="
-for name in orders payments shipping mesh; do
+for name in orders payments shipping inventory notifications analytics mesh; do
   fn="${PROJECT}-${name}"
   echo "· delete-function $fn"
   aws lambda delete-function --function-name "$fn" --region "$REGION" 2>/dev/null || true
 done
 
-echo "== Deleting EventBridge schedule =="
+echo "== Deleting EventBridge schedule (default bus) =="
 aws events remove-targets --rule "${PROJECT}-aggregate" --ids mesh --region "$REGION" 2>/dev/null || true
 aws events delete-rule --name "${PROJECT}-aggregate" --region "$REGION" 2>/dev/null || true
+
+echo "== Deleting the SNS fan-out topic (removes its subscriptions too) =="
+aws sns delete-topic --topic-arn "arn:aws:sns:${REGION}:${ACCOUNT}:${PROJECT}-order-placed" --region "$REGION" 2>/dev/null || true
+
+echo "== Deleting the custom EventBridge bus (its rules + targets first) =="
+BUS="${PROJECT}-bus"
+for rule in "${PROJECT}-payment_captured" "${PROJECT}-shipping_dispatched"; do
+  ids="$(aws events list-targets-by-rule --rule "$rule" --event-bus-name "$BUS" --region "$REGION" \
+    --query 'Targets[].Id' --output text 2>/dev/null || true)"
+  [ -n "$ids" ] && aws events remove-targets --rule "$rule" --event-bus-name "$BUS" --ids $ids --region "$REGION" 2>/dev/null || true
+  aws events delete-rule --name "$rule" --event-bus-name "$BUS" --region "$REGION" 2>/dev/null || true
+done
+aws events delete-event-bus --name "$BUS" --region "$REGION" 2>/dev/null || true
 
 echo "== Deleting IAM roles =="
 for role in "${PROJECT}-service-role" "${PROJECT}-mesh-role"; do

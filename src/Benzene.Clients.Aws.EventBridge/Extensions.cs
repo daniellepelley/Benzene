@@ -3,6 +3,7 @@ using Amazon.EventBridge;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
+using Benzene.Clients;
 using Benzene.Core.Middleware;
 using Benzene.HealthChecks.Core;
 using Void = Benzene.Abstractions.Results.Void;
@@ -61,6 +62,46 @@ public static class Extensions
             app.RegisterEventBridgeDependencyHealthCheck(EventBridgeHealthCheck.DefaultEventBusName);
         }
         return app.Convert(new EventBridgeContextConverter<T>(source), builder => builder.UseEventBridgeClient());
+    }
+
+    /// <summary>
+    /// Converts an outbound route pipeline (<c>OutboundRoutingBuilder.Route</c>) to publish via EventBridge,
+    /// using a custom middleware configuration. The EventBridge twin of <c>.UseSqs(...)</c>/<c>.UseSns(...)</c>
+    /// on <see cref="OutboundContext"/>.
+    /// </summary>
+    /// <param name="app">The outbound pipeline builder to convert.</param>
+    /// <param name="source">The EventBridge event <c>source</c> stamped on published events.</param>
+    /// <param name="action">A callback used to configure the converted EventBridge publish pipeline.</param>
+    /// <param name="eventBusName">The event bus to publish to; null/empty targets the default bus.</param>
+    /// <returns>The pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseEventBridge(this IMiddlewarePipelineBuilder<OutboundContext> app,
+        string source, Action<IMiddlewarePipelineBuilder<EventBridgeSendMessageContext>> action, string eventBusName = null)
+    {
+        return app.Convert(new OutboundEventBridgeContextConverter(source, eventBusName), action);
+    }
+
+    /// <summary>
+    /// Converts an outbound route pipeline (<c>OutboundRoutingBuilder.Route</c>) to publish via EventBridge,
+    /// using the default <see cref="EventBridgeClientMiddleware"/> configuration. The EventBridge twin of
+    /// <c>.UseSqs(...)</c>/<c>.UseSns(...)</c> on <see cref="OutboundContext"/>.
+    /// </summary>
+    /// <param name="app">The outbound pipeline builder to convert.</param>
+    /// <param name="source">The EventBridge event <c>source</c> stamped on published events.</param>
+    /// <param name="eventBusName">The event bus to publish to; null/empty targets the default bus.</param>
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive EventBridge reachability check for
+    /// <paramref name="eventBusName"/> (null = default bus) is auto-registered on the deep <c>healthcheck</c>
+    /// layer (never a Kubernetes probe — see <see cref="IDependencyHealthCheck"/>). Pass <c>false</c> to opt out.
+    /// </param>
+    /// <returns>The pipeline builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseEventBridge(this IMiddlewarePipelineBuilder<OutboundContext> app,
+        string source, string eventBusName = null, bool healthCheck = true)
+    {
+        if (healthCheck)
+        {
+            app.RegisterEventBridgeDependencyHealthCheck(eventBusName ?? EventBridgeHealthCheck.DefaultEventBusName);
+        }
+        return app.Convert(new OutboundEventBridgeContextConverter(source, eventBusName), builder => builder.UseEventBridgeClient());
     }
 
     /// <summary>
