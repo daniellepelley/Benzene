@@ -196,6 +196,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `work/batch-failure-handling.md`'s deferred table.
 
 ### Changed
+- `Benzene.Core.MessageHandlers`: the default `JsonSerializer` now serializes with
+  `JavaScriptEncoder.UnsafeRelaxedJsonEscaping` instead of System.Text.Json's HTML-safe default
+  encoder. Benzene emits JSON to API clients/browsers, never HTML, so the default encoder's
+  escaping of `<` `>` `&` `'` into `\uXXXX` sequences only made wire bodies unreadable — a NotFound
+  detail like `No handler found for topic '<missing>'` rendered in a browser as
+  `{"detail":"No handler found for topic '<missing>'"}`. Response bodies now read
+  literally. Behaviour change for all default-serialized responses (not a public API change);
+  registering your own concrete `JsonSerializer`/`JsonSerializerOptions` before `AddBenzene()` still
+  wins, so set your own `Encoder` if you serve Benzene JSON unescaped into an HTML context. The
+  `MessageRouter` "no handler found" wire detail also now single-quotes the topic id for legibility.
 - `Benzene.Core.MessageHandlers` / `Benzene.Azure.Function.EventHub` / `Benzene.Azure.Function.QueueStorage`:
   BenzeneMessage pipelines hosted on a one-way transport (Event Hub, Queue Storage) no longer
   serialize a response the host immediately discards - wasted work on a hot batch path. New scoped

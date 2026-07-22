@@ -208,3 +208,10 @@ Provides complete implementation of message handler infrastructure for command/q
   `Benzene.Xml` for the pattern). Payload models annotated with STJ's
   `[JsonPolymorphic]`/`[JsonDerivedType]` polymorphism attributes work with the default serializer
   as-is (STJ honors model attributes under any options)
+- The default `JsonSerializer()` options use `JavaScriptEncoder.UnsafeRelaxedJsonEscaping`, **not**
+  STJ's default HTML-safe encoder. Benzene writes JSON to API clients/browsers, never HTML, so the
+  default encoder's escaping of `<` `>` `&` `'` (to `\uXXXX`) only produces unreadable wire bodies —
+  e.g. a framework error `detail` like `No handler found for topic '<missing>'` would otherwise
+  serialize into the body as `No handler found for topic \u0027\u003Cmissing\u003E\u0027`. Relaxed
+  escaping writes those characters literally. Supplying custom `JsonSerializerOptions` via the other ctor overrides
+  this (set your own `Encoder` if you serve Benzene JSON unescaped into an HTML context)

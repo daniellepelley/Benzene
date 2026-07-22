@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Benzene.Abstractions.Serialization;
 
@@ -13,20 +14,33 @@ namespace Benzene.Core.MessageHandlers.Serialization;
 /// the request/response body (see <c>IMessageBodyBytesGetter{TContext}</c>) can skip the intermediate
 /// string allocation the <see cref="ISerializer"/> members require.
 /// </summary>
+/// <remarks>
+/// The default options use <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/>. Benzene emits
+/// JSON to API clients (and to browsers hitting an endpoint directly), never HTML, so the standard
+/// encoder's HTML-safety escaping only hurts here: characters like <c>&lt;</c>, <c>&gt;</c>,
+/// <c>&amp;</c> and <c>'</c> would otherwise render as <c>\uXXXX</c> escape sequences in the body -
+/// e.g. a framework error detail carrying the <c>&lt;missing&gt;</c> topic sentinel comes out as an
+/// unreadable escape run. The relaxed encoder writes those characters literally so response bodies
+/// read cleanly on the wire. This is the Microsoft-recommended setting for JSON that isn't
+/// embedded in HTML; if you serve Benzene JSON into an HTML context unescaped, supply your own
+/// <see cref="JsonSerializerOptions"/> via the other constructor.
+/// </remarks>
 public class JsonSerializer : ISerializer, IPayloadSerializer
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonSerializer"/> class with the default options:
-    /// camelCase property names and case-insensitive property matching on deserialization.
+    /// camelCase property names, case-insensitive property matching on deserialization, and relaxed
+    /// (non-HTML) character escaping so wire messages render without <c>\uXXXX</c> sequences.
     /// </summary>
     public JsonSerializer()
     {
         _jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
     }
 
@@ -66,7 +80,10 @@ public class JsonSerializer : ISerializer, IPayloadSerializer
     /// <inheritdoc />
     public virtual void Serialize(Type type, object payload, IBufferWriter<byte> writer)
     {
-        using var utf8JsonWriter = new Utf8JsonWriter(writer);
+        // The Utf8JsonWriter's own options - not _jsonSerializerOptions - govern character escaping,
+        // so carry the configured encoder across or the byte path would escape (e.g. <, >, ') where
+        // the string path does not, diverging on the wire.
+        using var utf8JsonWriter = new Utf8JsonWriter(writer, new JsonWriterOptions { Encoder = _jsonSerializerOptions.Encoder });
         System.Text.Json.JsonSerializer.Serialize(utf8JsonWriter, payload, type, _jsonSerializerOptions);
     }
 
