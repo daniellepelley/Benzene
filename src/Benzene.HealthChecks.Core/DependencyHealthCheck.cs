@@ -7,9 +7,17 @@ namespace Benzene.HealthChecks.Core;
 /// for why a dependency check must stay off the Kubernetes probes). Concrete client checks
 /// (<c>SqsHealthCheck</c>, …) stay plain <see cref="IHealthCheck"/> implementations; the auto-wiring
 /// registers <c>AddScoped&lt;IDependencyHealthCheck&gt;(r =&gt; new DependencyHealthCheck(build(r), dedupKey))</c>.
-/// All the check's own members — including the <see cref="IHealthCheck.Tags"/>/<see cref="IHealthCheck.IsNonCritical"/>/
-/// <see cref="IHealthCheck.Ttl"/>/<see cref="IHealthCheck.Timeout"/> overrides — are delegated through
-/// unchanged, so wrapping does not alter behaviour.
+/// The check's <see cref="IHealthCheck.Tags"/>/<see cref="IHealthCheck.Ttl"/>/<see cref="IHealthCheck.Timeout"/>
+/// overrides are delegated through unchanged.
+/// <para>
+/// <b>The category is non-critical by default</b> (<see cref="IsNonCritical"/> is forced <c>true</c>): an
+/// unreachable dependency <em>degrades</em> the deep <c>healthcheck</c> report to a
+/// <see cref="HealthCheckStatus.Warning"/> rather than flipping the aggregate unhealthy. That layer is a
+/// monitoring surface, not a probe (it takes no automated Kubernetes action), so a downstream blip must
+/// not turn the endpoint into a 503 — the per-dependency Warning is still visible to monitoring / the mesh.
+/// A caller who wants a dependency to be fatal registers an explicit critical check instead of relying on
+/// the auto-wired default.
+/// </para>
 /// </summary>
 public class DependencyHealthCheck : IDependencyHealthCheck
 {
@@ -36,8 +44,12 @@ public class DependencyHealthCheck : IDependencyHealthCheck
     /// <inheritdoc />
     public string[] Tags => _inner.Tags;
 
-    /// <inheritdoc />
-    public bool IsNonCritical => _inner.IsNonCritical;
+    /// <summary>
+    /// Always <c>true</c>: a dependency-category check is non-critical, so a failure degrades the deep
+    /// <c>healthcheck</c> report to a Warning rather than flipping the aggregate unhealthy (see the type
+    /// remarks). This overrides the inner check's value — the category, not the individual check, decides.
+    /// </summary>
+    public bool IsNonCritical => true;
 
     /// <inheritdoc />
     public TimeSpan? Ttl => _inner.Ttl;

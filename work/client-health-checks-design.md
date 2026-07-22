@@ -150,6 +150,12 @@ default — the false-negative (healthy-but-can't-write) is rarer than the failu
 cache key with the reachability check) and the existing `⚠️ Side-effecting` docs. Not deleted, not a
 flag on the default check.
 
+> **Implemented refinement:** auto-wired dependency-category checks are **non-critical by default**
+> (`DependencyHealthCheck` forces `IsNonCritical => true`). A down auto-wired dependency degrades the deep
+> `healthcheck` report to a Warning rather than flipping the endpoint to 503 — that layer is monitoring,
+> not a probe. This also keeps healthcheck integration tests green when the real dependency isn't
+> reachable (surfaced by the AWS example: configuring egress to a queue must not 503 the healthcheck).
+
 ### 3.4 Result semantics — criticality-driven Warning vs Failed
 Reuse the existing three-state model (no new statuses — mesh condition):
 
