@@ -50,9 +50,16 @@ for the `benzene` contract.
   body via the runtime-safe `Examples.ExamplePayloadBuilder` and wraps it in the portable
   BenzeneMessage envelope (`{ topic, headers, body }`) - the exact shape a caller POSTs to
   `/benzene-message` - plus the transports each topic is reachable on (`EventServiceDocument.Transports`
-  + per-topic HTTP mappings). Deliberately AWS-free; per-transport SNS/SQS/API-Gateway event
-  envelopes are a separate opt-in concern (see `work/runtime-test-payloads-plan.md`). Tests:
-  `test/Benzene.Core.Test/Autogen/Schema/OpenApi/TestPayloads/TestPayloadsBuilderTest.cs`.
+  + per-topic HTTP mappings). Deliberately AWS-free.
+- `ITestPayloadDresser` / `TestPayloadDressingContext` - the **per-transport dressing seam** (decision
+  1(c) of `work/runtime-test-payloads-plan.md`). `TestPayloadsBuilder` resolves every registered
+  `ITestPayloadDresser` (via `IServiceResolver.GetServices`) and folds each one's output into a topic's
+  `Payloads[transport]` alongside the always-present `benzene-message` entry, reusing the same
+  serialized body so all transports agree. A dresser returns `null` to skip (host not wired for the
+  transport, or an HTTP dresser on a non-HTTP topic). The core carries **no** dresser implementations
+  and stays AWS-free; the SNS/SQS/API-Gateway dressers live in the opt-in **`Benzene.Aws.Lambda.TestPayloads`**
+  package (`UseAwsTestPayloads()`), which references the `Amazon.Lambda.*Events` contracts so this core
+  never does. Tests: `test/Benzene.Core.Test/Autogen/Schema/OpenApi/TestPayloads/TestPayloadsBuilderTest.cs`.
 
 ### Document builders (one per format)
 - `OpenApi/OpenApiDocumentBuilder` - OpenAPI 3.0 (`SerializeAsJson/Yaml(OpenApiSpecVersion.OpenApi3_0)`).

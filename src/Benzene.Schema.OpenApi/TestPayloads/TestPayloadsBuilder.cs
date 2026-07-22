@@ -32,18 +32,38 @@ public class TestPayloadsBuilder
     };
 
     private readonly IExamplePayloadBuilder _examplePayloadBuilder;
+    private readonly IReadOnlyList<ITestPayloadDresser> _dressers;
+
+    /// <summary>Initializes a new instance using the default example generator and no transport dressers.</summary>
+    public TestPayloadsBuilder()
+        : this(new ExamplePayloadBuilder(), null)
+    {
+    }
 
     /// <summary>Initializes a new instance using the default example generator.</summary>
-    public TestPayloadsBuilder()
-        : this(new ExamplePayloadBuilder())
+    /// <param name="examplePayloadBuilder">The example generator used for payload bodies.</param>
+    public TestPayloadsBuilder(IExamplePayloadBuilder examplePayloadBuilder)
+        : this(examplePayloadBuilder, null)
+    {
+    }
+
+    /// <summary>Initializes a new instance with transport dressers (default example generator).</summary>
+    /// <param name="dressers">
+    /// Per-transport dressers that add SNS/SQS/API-Gateway (etc.) payloads alongside the always-present
+    /// portable <c>benzene-message</c> envelope. Registered from opt-in transport packages.
+    /// </param>
+    public TestPayloadsBuilder(IEnumerable<ITestPayloadDresser> dressers)
+        : this(new ExamplePayloadBuilder(), dressers)
     {
     }
 
     /// <summary>Initializes a new instance.</summary>
     /// <param name="examplePayloadBuilder">The example generator used for payload bodies.</param>
-    public TestPayloadsBuilder(IExamplePayloadBuilder examplePayloadBuilder)
+    /// <param name="dressers">Per-transport dressers, or <c>null</c> for the portable envelope only.</param>
+    public TestPayloadsBuilder(IExamplePayloadBuilder examplePayloadBuilder, IEnumerable<ITestPayloadDresser>? dressers)
     {
         _examplePayloadBuilder = examplePayloadBuilder;
+        _dressers = dressers?.ToArray() ?? Array.Empty<ITestPayloadDresser>();
     }
 
     /// <summary>Builds the manifest for every domain topic (reserved utility topics are skipped).</summary>
@@ -71,25 +91,52 @@ public class TestPayloadsBuilder
     private TestPayloadTopic BuildTopic(EventServiceDocument document, RequestResponse request, ISchemaGetter schemaGetter)
     {
         var body = _examplePayloadBuilder.Build(request.Request, schemaGetter);
+        var serializedBody = JsonConvert.SerializeObject(body);
+        var transports = TransportsFor(document, request);
+        var httpMappings = request.HttpMappings
+            .Select(mapping => new TestPayloadHttpMapping { Method = mapping.Method, Path = mapping.Path })
+            .ToArray();
+
+        var payloads = new Dictionary<string, object>
+        {
+            // The portable BenzeneMessage envelope - POST this to the service's /benzene-message
+            // endpoint to invoke the topic. Matches the "benzene-message" Lambda-test-tool dressing.
+            [BenzeneMessageTransport] = new BenzeneMessagePayload
+            {
+                Topic = request.Topic,
+                Headers = new Dictionary<string, string>(),
+                Body = serializedBody,
+            },
+        };
+
+        // Fold in any registered transport dressers (SNS/SQS/API-Gateway from opt-in packages). Each
+        // decides its own applicability (returns null to skip - e.g. api-gateway for a non-HTTP topic),
+        // reusing the same serialized body so every transport agrees on the payload.
+        if (_dressers.Count > 0)
+        {
+            var context = new TestPayloadDressingContext(
+                request.Topic,
+                new Dictionary<string, string>(),
+                serializedBody,
+                transports,
+                httpMappings);
+
+            foreach (var dresser in _dressers)
+            {
+                var dressed = dresser.Dress(context);
+                if (dressed != null)
+                {
+                    payloads[dresser.Transport] = dressed;
+                }
+            }
+        }
 
         return new TestPayloadTopic
         {
             Topic = request.Topic,
-            Transports = TransportsFor(document, request),
-            HttpMappings = request.HttpMappings
-                .Select(mapping => new TestPayloadHttpMapping { Method = mapping.Method, Path = mapping.Path })
-                .ToArray(),
-            Payloads = new Dictionary<string, object>
-            {
-                // The portable BenzeneMessage envelope - POST this to the service's /benzene-message
-                // endpoint to invoke the topic. Matches the "benzene-message" Lambda-test-tool dressing.
-                [BenzeneMessageTransport] = new BenzeneMessagePayload
-                {
-                    Topic = request.Topic,
-                    Headers = new Dictionary<string, string>(),
-                    Body = JsonConvert.SerializeObject(body),
-                },
-            },
+            Transports = transports,
+            HttpMappings = httpMappings,
+            Payloads = payloads,
         };
     }
 

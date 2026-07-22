@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.XRay\Benzene.Aws.Lambda.XRay.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.TestPayloads\Benzene.Aws.Lambda.TestPayloads.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -343,7 +343,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Aws.Lambda.XRay", "src\Benzene.Aws.Lambda.XRay\Benzene.Aws.Lambda.XRay.csproj", "{A6C6C06E-9013-497C-A434-F46B34971D40}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Azure.Function.SourceGenerators", "src\Benzene.Azure.Function.SourceGenerators\Benzene.Azure.Function.SourceGenerators.csproj", "{8E72A10B-D32F-415D-9AA8-9C2BE87068CA}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.RateLimiting", "src\Benzene.RateLimiting\Benzene.RateLimiting.csproj", "{983B18E2-A9D6-4656-A05A-33E7CE2E2C61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Aws.Lambda.TestPayloads", "src\Benzene.Aws.Lambda.TestPayloads\Benzene.Aws.Lambda.TestPayloads.csproj", "{212BC272-CCB8-4766-922A-6D5E98EA5CDB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -2143,6 +2146,18 @@ Global
 		{983B18E2-A9D6-4656-A05A-33E7CE2E2C61}.Release|x64.Build.0 = Release|Any CPU
 		{983B18E2-A9D6-4656-A05A-33E7CE2E2C61}.Release|x86.ActiveCfg = Release|Any CPU
 		{983B18E2-A9D6-4656-A05A-33E7CE2E2C61}.Release|x86.Build.0 = Release|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Debug|x64.Build.0 = Debug|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Debug|x86.Build.0 = Debug|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Release|x64.ActiveCfg = Release|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Release|x64.Build.0 = Release|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Release|x86.ActiveCfg = Release|Any CPU
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -2296,6 +2311,7 @@ Global
 		{A6C6C06E-9013-497C-A434-F46B34971D40} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8E72A10B-D32F-415D-9AA8-9C2BE87068CA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{983B18E2-A9D6-4656-A05A-33E7CE2E2C61} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{212BC272-CCB8-4766-922A-6D5E98EA5CDB} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}

@@ -70,6 +70,59 @@ public class TestPayloadsBuilderTest
         Assert.Equal("user:create", manifest.Topics[0].Topic);
     }
 
+    private sealed class StubDresser : Benzene.Schema.OpenApi.TestPayloads.ITestPayloadDresser
+    {
+        private readonly Func<Benzene.Schema.OpenApi.TestPayloads.TestPayloadDressingContext, object?> _dress;
+
+        public StubDresser(string transport, Func<Benzene.Schema.OpenApi.TestPayloads.TestPayloadDressingContext, object?> dress)
+        {
+            Transport = transport;
+            _dress = dress;
+        }
+
+        public string Transport { get; }
+
+        public object? Dress(Benzene.Schema.OpenApi.TestPayloads.TestPayloadDressingContext context) => _dress(context);
+    }
+
+    [Fact]
+    public void AppliesRegisteredDressers_AlongsideBenzeneMessage()
+    {
+        var document = DocumentWith(new[] { "sqs" }, ("user:get", typeof(GetUserMessage), typeof(UserDto)));
+        var dresser = new StubDresser("sqs", ctx => new { dressed = ctx.Topic, body = ctx.SerializedBody });
+
+        var manifest = new TestPayloadsBuilder(new[] { dresser }).Build(document);
+
+        var topic = manifest.Topics.Single();
+        Assert.True(topic.Payloads.ContainsKey("benzene-message"));
+        Assert.True(topic.Payloads.ContainsKey("sqs"));
+    }
+
+    [Fact]
+    public void DresserReturningNull_IsSkipped()
+    {
+        var document = DocumentWith(Array.Empty<string>(), ("user:get", typeof(GetUserMessage), typeof(UserDto)));
+        var dresser = new StubDresser("api-gateway", _ => null);
+
+        var manifest = new TestPayloadsBuilder(new[] { dresser }).Build(document);
+
+        var topic = manifest.Topics.Single();
+        Assert.False(topic.Payloads.ContainsKey("api-gateway"));
+        Assert.True(topic.Payloads.ContainsKey("benzene-message"));
+    }
+
+    [Fact]
+    public void Dresser_SeesSupportedTransports_ForItsSkipDecision()
+    {
+        var document = DocumentWith(new[] { "sqs" }, ("user:get", typeof(GetUserMessage), typeof(UserDto)));
+        // Only applies when the host is wired for "sns" - it isn't here, so the dresser skips it.
+        var sns = new StubDresser("sns", ctx => ctx.SupportsTransport("sns") ? new { present = true } : null);
+
+        var manifest = new TestPayloadsBuilder(new[] { sns }).Build(document);
+
+        Assert.False(manifest.Topics.Single().Payloads.ContainsKey("sns"));
+    }
+
     [Fact]
     public void BuildJson_IsValidCamelCasedJson()
     {
