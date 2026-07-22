@@ -191,6 +191,9 @@ resource "azurerm_eventgrid_topic" "this" {
   name                = "${var.project}-eg"
   resource_group_name = data.azurerm_resource_group.this.name
   location            = data.azurerm_resource_group.this.location
+  # Benzene's Event Grid sender publishes CloudEvents 1.0 (EventGridPublisherClient.SendEventsAsync with
+  # CloudEvent), so the topic must accept that schema - the default "EventGridSchema" would reject them.
+  input_schema = "CloudEventSchemaV1_0"
 }
 
 # Route each integration event to the consuming Function's EventGrid-trigger function, filtered by the
