@@ -625,6 +625,17 @@ public class MeshAggregator
                 case "additionalProperties" when property.Value.ValueKind == JsonValueKind.Object:
                     result["additionalProperties"] = InlineSchema(property.Value, components, visiting, depth + 1);
                     break;
+                // Composition keywords hold arrays of schemas (each usually a bare $ref, e.g. a
+                // polymorphic oneOf union or an allOf base) - inline each branch so the published
+                // topic schema stays self-contained instead of carrying dangling refs.
+                case "oneOf" or "allOf" or "anyOf" when property.Value.ValueKind == JsonValueKind.Array:
+                    var branches = new JsonArray();
+                    foreach (var branch in property.Value.EnumerateArray())
+                    {
+                        branches.Add(InlineSchema(branch, components, visiting, depth + 1));
+                    }
+                    result[property.Name] = branches;
+                    break;
                 default:
                     result[property.Name] = CloneValue(property.Value);
                     break;

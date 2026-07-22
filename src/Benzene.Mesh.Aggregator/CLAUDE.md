@@ -101,7 +101,9 @@ once can answer that, which is exactly what this file is for.
 already fetch: the `request`/`response` of a `requests` entry and the `message` of an `events`
 entry. Each is **inlined** by `InlineSchema` — every `$ref` into the spec's `components.schemas` is
 replaced by the referenced schema (tagged with a `title` of the ref name; recursion cut with a
-`title`-only marker, bounded by `MaxSchemaDepth`) — producing a self-contained `JsonObject` on the
+`title`-only marker, bounded by `MaxSchemaDepth`; recursion covers `properties`/`items`/
+`additionalProperties` **and the composition arrays `oneOf`/`allOf`/`anyOf`**, so polymorphic
+contracts inline fully too) — producing a self-contained `JsonObject` on the
 `MeshTopicEntry` (`RequestSchema`/`ResponseSchema`/`MessageSchema`), so a consumer (the UI) never
 has to resolve a ref or carry a components catalog. Nodes are detached from the source
 `JsonDocument` (via `JsonNode.Parse`) so they outlive its `using` scope. Schemas are inlined rather

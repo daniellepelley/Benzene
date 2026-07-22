@@ -29,8 +29,11 @@ public class OpenApiValidationSchemaBuilder : ISchemaBuilder
 
         var schemas = _schemaBuilder.Build();
 
-
-        if (schemas.TryGetValue(type.Name, out var schema))
+        // Look the catalogued schema up by the id the inner builder actually returned - for a
+        // generic type Swashbuckle's id is arg-prefixed (MessageWrapper<Foo> => FooMessageWrapper),
+        // so raw type.Name would miss it and validation facets would silently not be applied.
+        var schemaId = output.Reference?.Id ?? type.Name;
+        if (schemas.TryGetValue(schemaId, out var schema))
         {
             foreach (var validationSchema in validationSchemas)
             {

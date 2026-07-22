@@ -58,7 +58,42 @@ namespace Benzene.Schema.OpenApi.AsyncApi
                 schema.Enum.Add(MapAny(value));
             }
 
+            // Composition keywords: carry polymorphism (oneOf + discriminator) and inheritance
+            // (allOf base $ref) through instead of silently flattening them out of the AsyncAPI
+            // document - they're emitted by SchemaBuilder when SchemaGenerationOptions enables
+            // them, and by hand-authored (supplied) schemas.
+            MapComposition(input.OneOf, schema.OneOf);
+            MapComposition(input.AllOf, schema.AllOf);
+            MapComposition(input.AnyOf, schema.AnyOf);
+
+            if (input.AdditionalProperties != null)
+            {
+                schema.AdditionalProperties = Map(input.AdditionalProperties);
+            }
+
+            if (input.Discriminator?.PropertyName is { Length: > 0 } discriminatorProperty)
+            {
+                schema.Discriminator = discriminatorProperty;
+            }
+
             return schema;
+        }
+
+        private static void MapComposition(IList<OpenApiSchema>? input, IList<AsyncApiJsonSchema> output)
+        {
+            if (input == null)
+            {
+                return;
+            }
+
+            foreach (var branch in input)
+            {
+                var mapped = Map(branch);
+                if (mapped != null)
+                {
+                    output.Add(mapped);
+                }
+            }
         }
 
         public static AsyncApiAny MapAny(IOpenApiAny openApiAny)

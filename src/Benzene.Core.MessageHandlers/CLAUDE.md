@@ -198,4 +198,13 @@ Provides complete implementation of message handler infrastructure for command/q
 - Filters run before handlers and can short-circuit execution
 - Handler versioning allows multiple versions to coexist
 - Default status codes map to HTTP conventions but work with any transport
-- JsonSerializer uses System.Text.Json (can be replaced via DI)
+- JsonSerializer uses System.Text.Json (can be replaced via DI) — **but note which registration
+  the negotiated path actually uses**: `JsonMediaFormat<TContext>` binds to the **concrete
+  `JsonSerializer`**, not `ISerializer`, so replacing only the `ISerializer` registration does NOT
+  change what the default JSON request/response path serializes with. To install custom
+  `JsonSerializerOptions` globally (e.g. polymorphism config), register the concrete
+  `JsonSerializer` (its ctor takes options) **before** `AddBenzene()` — both registrations are
+  `TryAdd`, so the earlier one wins — or plug a custom `IMediaFormat<TContext>` (see
+  `Benzene.Xml` for the pattern). Payload models annotated with STJ's
+  `[JsonPolymorphic]`/`[JsonDerivedType]` polymorphism attributes work with the default serializer
+  as-is (STJ honors model attributes under any options)

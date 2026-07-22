@@ -258,6 +258,42 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_PolymorphicSchema_InlinesRefsInsideOneOfAndAllOfBranches()
+    {
+        // A polymorphic contract: the request's "payment" is a oneOf union whose branches are
+        // $refs, and each derived component composes its base via allOf [$ref]. Every ref must be
+        // inlined so topics.json stays self-contained (no dangling refs for the UI to choke on).
+        var ordersSpec = """{"requests":[{"topic":"order:pay","request":{"$ref":"#/components/schemas/PayOrder"}}],"components":{"schemas":{"PayOrder":{"type":"object","properties":{"payment":{"oneOf":[{"$ref":"#/components/schemas/CardPayment"},{"$ref":"#/components/schemas/BankPayment"}]}}},"CardPayment":{"type":"object","allOf":[{"$ref":"#/components/schemas/PaymentMethod"}],"properties":{"cardNumber":{"type":"string"}}},"BankPayment":{"type":"object","allOf":[{"$ref":"#/components/schemas/PaymentMethod"}],"properties":{"iban":{"type":"string"}}},"PaymentMethod":{"type":"object","properties":{"currency":{"type":"string"}}}}}}""";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+        var pay = Assert.Single(catalog.Topics, t => t.Topic == "order:pay");
+
+        var payment = pay.RequestSchema!["properties"]!["payment"]!.AsObject();
+        var oneOf = payment["oneOf"]!.AsArray();
+        Assert.Equal(2, oneOf.Count);
+
+        // Each oneOf branch is the inlined component (title-tagged), not a dangling $ref...
+        var card = oneOf[0]!.AsObject();
+        Assert.Null(card["$ref"]);
+        Assert.Equal("CardPayment", card["title"]!.GetValue<string>());
+        Assert.Equal("string", card["properties"]!["cardNumber"]!["type"]!.GetValue<string>());
+
+        // ...and refs nested inside a branch's allOf are inlined too.
+        var cardBase = card["allOf"]!.AsArray()[0]!.AsObject();
+        Assert.Null(cardBase["$ref"]);
+        Assert.Equal("PaymentMethod", cardBase["title"]!.GetValue<string>());
+        Assert.Equal("string", cardBase["properties"]!["currency"]!["type"]!.GetValue<string>());
+    }
+
+    [Fact]
     public async Task RunOnceAsync_TwoConsumersSameTopicVersion_DifferentPayloads_FlagsSchemaMismatch()
     {
         const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
