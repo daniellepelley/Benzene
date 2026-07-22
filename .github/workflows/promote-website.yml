@@ -1,0 +1,36 @@
+name: Promote Website (dev -> live)
+
+# Manual promotion: copies exactly what's live on dev.benzene.app to the production bucket
+# (benzene.app) with an S3 server-side copy, then invalidates the production CloudFront distribution.
+# No rebuild — it ships the exact bytes you reviewed on dev, so what you tested is what goes live.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "promote" to confirm copying dev -> live.'
+        required: true
+        default: ''
+
+jobs:
+  promote:
+    if: ${{ inputs.confirm == 'promote' }}
+    environment: test
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.WEBSITE_AWS_REGION }}
+
+    steps:
+    - name: Copy dev bucket -> live bucket
+      run: |
+        aws s3 sync "s3://${{ vars.WEBSITE_DEV_BUCKET }}" "s3://${{ vars.WEBSITE_LIVE_BUCKET }}" --delete
+
+    - name: Invalidate the production CloudFront distribution
+      run: |
+        aws cloudfront create-invalidation \
+          --distribution-id "${{ vars.WEBSITE_LIVE_DISTRIBUTION_ID }}" \
+          --paths "/*"
+
+    - name: Summary
+      run: echo "Promoted dev -> https://benzene.app" >> "$GITHUB_STEP_SUMMARY"

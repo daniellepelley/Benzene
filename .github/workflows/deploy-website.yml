@@ -1,5 +1,8 @@
-name: Deploy Website
+name: Deploy Website (dev)
 
+# Builds the static site and publishes it to the DEV bucket (dev.benzene.app) on every push to main
+# that touches the site sources, then invalidates the dev CloudFront distribution. Promotion to
+# production (benzene.app) is a separate, manual step — see promote-website.yml.
 on:
   push:
     branches: [main]
@@ -11,7 +14,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-dev:
     environment: test
     runs-on: ubuntu-latest
     env:
@@ -31,5 +34,14 @@ jobs:
     - name: Generate site
       run: dotnet run --project website/generator -- --out website/dist
 
-    - name: Sync to S3
-      run: aws s3 sync website/dist "s3://${{ vars.WEBSITE_S3_BUCKET }}" --delete
+    - name: Sync to the dev bucket
+      run: aws s3 sync website/dist "s3://${{ vars.WEBSITE_DEV_BUCKET }}" --delete
+
+    - name: Invalidate the dev CloudFront distribution
+      run: |
+        aws cloudfront create-invalidation \
+          --distribution-id "${{ vars.WEBSITE_DEV_DISTRIBUTION_ID }}" \
+          --paths "/*"
+
+    - name: Summary
+      run: echo "Deployed to https://dev.benzene.app — promote with the 'Promote Website (dev -> live)' workflow." >> "$GITHUB_STEP_SUMMARY"

@@ -43,16 +43,22 @@ actual output file — a cheap built-in broken-link check, so a bad rewrite can'
 
 ## Deployment
 
-`.github/workflows/deploy-website.yml` runs the generator and syncs `website/dist/` to an S3
-bucket on every push to `main` that touches `docs/**`, `README.md`, or `website/**` (plus manual
-`workflow_dispatch`). It expects these repo variables/secrets to already be configured:
+The site is hosted on AWS at **[benzene.app](https://benzene.app)** with a dev/live split:
 
-- `vars.WEBSITE_S3_BUCKET` — target bucket name
-- `vars.WEBSITE_AWS_REGION` — bucket region
-- `vars.AWS_ACCESS_KEY_ID` / `secrets.AWS_SECRET_ACCESS_KEY` — reuses the same static-credential
-  pattern as `deploy-aws-example.yml`
+- **`.github/workflows/deploy-website.yml`** — on every push to `main` touching `docs/**`,
+  `README.md`, or `website/**` (plus manual `workflow_dispatch`), it runs the generator and syncs
+  `website/dist/` to the **dev** bucket, then invalidates the dev CloudFront distribution →
+  **[dev.benzene.app](https://dev.benzene.app)**.
+- **`.github/workflows/promote-website.yml`** — a manual promotion that copies the dev bucket to the
+  **live** bucket (an S3 `dev → live` copy, no rebuild) and invalidates the production distribution →
+  **[benzene.app](https://benzene.app)**. So what you review on dev is exactly what goes live.
 
-Creating the bucket, enabling static website hosting, the bucket policy, and pointing a custom
-domain's DNS at it (a CNAME to the bucket's website endpoint) are all done outside this repo.
-Note plain S3 static website hosting is HTTP-only — for HTTPS on a custom domain, put CloudFront
-in front of the bucket (the bucket stays the origin; nothing here needs to change).
+Both reuse the same static-credential pattern as `deploy-aws-example.yml`
+(`vars.AWS_ACCESS_KEY_ID` / `secrets.AWS_SECRET_ACCESS_KEY`, `vars.WEBSITE_AWS_REGION`) plus the
+bucket/distribution variables listed in [`deploy/README.md`](deploy/README.md).
+
+The AWS infrastructure — two private S3 buckets, CloudFront distributions (HTTPS is mandatory: `.app`
+is HSTS-preloaded, so plain S3 website endpoints won't do), an ACM certificate, the Route 53 zone, and
+the `www → apex` redirect — is Terraform under **[`deploy/`](deploy/)**. See
+[`deploy/README.md`](deploy/README.md) for the one-time setup (apply, GoDaddy nameserver switch, repo
+variables, CI IAM policy).
