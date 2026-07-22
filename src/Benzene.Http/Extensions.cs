@@ -1,4 +1,5 @@
-﻿using Benzene.Abstractions.DI;
+﻿using System;
+using Benzene.Abstractions.DI;
 using Benzene.Http.Routing;
 
 namespace Benzene.Http;
@@ -33,7 +34,8 @@ public static class Extensions
         // The UnroutedHttpEndpointCheck runs first: it contributes no endpoints but throws when a
         // scanned handler carries [HttpEndpoint] without [Message] (and no explicit registration),
         // turning the silently-missing-route failure mode into a clear error when routes are built.
-        services.TryAddSingleton<IHttpEndpointFinder>(x =>
+        // Registered as the concrete CompositeHttpEndpointFinder too, so AddHttpVersioning() can wrap it.
+        services.TryAddSingleton<CompositeHttpEndpointFinder>(x =>
             new CompositeHttpEndpointFinder(
             new UnroutedHttpEndpointCheck(
             x.GetServices<Core.MessageHandlers.MessageHandlerCandidateTypes>(),
@@ -42,6 +44,7 @@ public static class Extensions
             x.GetService<ReflectionHttpEndpointFinder>()),
             x.GetService<ListHttpEndpointFinder>(),
             x.GetService<DependencyHttpEndpointFinder>()));
+        services.TryAddSingleton<IHttpEndpointFinder>(x => x.GetService<CompositeHttpEndpointFinder>());
         // The route table is compiled once in the singleton RouteFinder; a scoped MemoizingRouteFinder
         // wraps it so the topic getter, version getter, and enricher that each resolve the route for
         // one request share a single match instead of re-running it 2-3x per request.
@@ -50,6 +53,29 @@ public static class Extensions
         
         services.TryAddScoped<IHttpStatusCodeMapper, DefaultHttpStatusCodeMapper>();
         services.TryAddScoped<IHttpHeaderMappings, DefaultHttpHeaderMappings>();
+        return services;
+    }
+
+    /// <summary>
+    /// Opts this app into path-based HTTP versioning: every <see cref="HttpEndpointAttribute"/> route is
+    /// additionally exposed under a version segment (default <c>/v{version}/…</c>), so <c>/v1/orders</c> and
+    /// <c>/v2/orders</c> both reach the same topic and the matched <c>version</c> route parameter drives
+    /// version dispatch / payload upcasting. Off unless this is called. Call <b>after</b>
+    /// <see cref="AddHttpMessageHandlers"/> (it replaces the endpoint finder it registers).
+    /// </summary>
+    /// <param name="services">The Benzene service container.</param>
+    /// <param name="configure">Optional policy tweaks (segment template, whether to keep the unversioned route).</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddHttpVersioning(this IBenzeneServiceContainer services, Action<HttpVersioningOptions>? configure = null)
+    {
+        var options = new HttpVersioningOptions();
+        configure?.Invoke(options);
+
+        services.AddSingleton(_ => options);
+        // Replace the endpoint finder with the versioning decorator wrapping the composite the base
+        // registration built - last registration wins, and RouteFinder/spec both read IHttpEndpointFinder.
+        services.AddSingleton<IHttpEndpointFinder>(x =>
+            new VersionedHttpEndpointFinder(x.GetService<CompositeHttpEndpointFinder>(), x.GetService<HttpVersioningOptions>()));
         return services;
     }
     
