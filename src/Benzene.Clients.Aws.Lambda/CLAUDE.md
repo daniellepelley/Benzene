@@ -19,6 +19,11 @@ fixed during the Tier 2.1 split).
   (`Type = "Lambda.Active"`, side-effecting). See `HealthCheckMode` in `Benzene.HealthChecks.Core`.
   Failures are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a
   **Warning**, not a failure; the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the message.
+  - **No auto-wiring — explicit-only (by design).** Unlike SQS/SNS/EventBridge, the Lambda client is a
+    **dynamic-target invoker**: `.UseAwsLambda<T>()` carries no function name (the target is supplied
+    per-invocation), so there is no fixed dependency to auto-register a check for at config time. Register
+    it yourself with `AddLambdaHealthCheck(name)` where you know the function. If a fixed-target Lambda
+    client is ever introduced, auto-wire it there. See `work/client-health-checks-remaining-designs.md` §5.
 - `LocalAwsLambdaClientFactory` — builds an `IAmazonLambda` from a local AWS profile for dev/test.
 - `Extensions` — `UseAwsLambdaClient`, `UseAwsLambda<T>`, and **`AddLambdaHealthCheck`**.
 

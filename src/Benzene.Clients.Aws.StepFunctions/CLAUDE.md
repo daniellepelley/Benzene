@@ -21,7 +21,12 @@ Functions health check. Pins **only** `AWSSDK.StepFunctions`.
   See `HealthCheckMode` in `Benzene.HealthChecks.Core`. Failures are classified via
   `HealthCheckError.Classify` (§3.9): a permission error (403) is a **Warning**, not a failure; the SDK
   `ErrorCode`/`StatusCode` are surfaced in `Data`, never the exception message.
-- `Extensions` — **`AddStepFunctionHealthCheck`**.
+- `Extensions` — **`AddStepFunctionsClient(arn)`** (the DI-registration seam this package previously
+  lacked: registers `IStepFunctionsClientFactory`/`IStepFunctionsClient` for a fixed ARN, resolving
+  `IAmazonStepFunctions` from DI, and — unless `healthCheck: false` — **auto-wires** a non-destructive
+  `DescribeStateMachine` check on the **dependency** category, dedup `"StepFunctions:{arn}"`, deep
+  `healthcheck` layer only; see `IDependencyHealthCheck`) and **`AddStepFunctionHealthCheck`** (the
+  explicit builder helper, unchanged).
 
 ## Scope / honesty (release plan Tier 2.5 — decided 2026-07-19: honest fire-and-forget for 1.0)
 `StartExecutionAsync<TMessage, TResponse>` is **fire-and-forget**. On success it returns an empty

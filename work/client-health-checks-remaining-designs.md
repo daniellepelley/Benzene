@@ -175,7 +175,14 @@ DIM — already shipped).
 
 ---
 
-## 4. Azure Event Grid (`Benzene.Clients.Azure.EventGrid`) — **explicit-only; no cheap check exists**
+## 4. Azure Event Grid (`Benzene.Clients.Azure.EventGrid`) — ✅ **RESOLVED: no check (documented)**
+
+Decision shipped: **no** health check (documented in the package CLAUDE.md). `EventGridPublisherClient`
+is publish-only — no data-plane read exists — and every alternative (management-plane `GetTopic`,
+synthetic publish, TCP/DNS) is either the wrong dependency, side-effecting, or meaningless. An opt-in
+`Active` synthetic-publish check remains a future option if demand appears. Rationale below.
+
+
 
 `EventGridPublisherClient` is **publish-only** — there is no data-plane read (no describe/get-properties on
 the topic endpoint). So there is no non-destructive reachability check analogous to the others:
@@ -193,7 +200,14 @@ read exists"). If demand appears, offer an explicit opt-in `Active` synthetic-pu
 
 ---
 
-## 5. AWS Lambda (`Benzene.Clients.Aws.Lambda`) — **explicit-only (dynamic target)**
+## 5. AWS Lambda (`Benzene.Clients.Aws.Lambda`) — ✅ **RESOLVED: explicit-only (documented)**
+
+Decision shipped: the Lambda client is a dynamic-target invoker (no fixed function at config time), so
+auto-wiring doesn't apply — documented in the package CLAUDE.md. The explicit non-destructive
+`AddLambdaHealthCheck(name)` (already §3.9-classified) is the path; a fixed-target client, if ever
+added, would auto-wire there. Rationale below.
+
+
 
 `.UseAwsLambda<T>()` carries **no function name** — the target function is supplied per-invocation
 (`AwsLambdaClient.SendMessageAsync(request, lambdaName, …)`), i.e. the client is a *dynamic-target* invoker,
@@ -208,7 +222,15 @@ real use case, not added just to hang a check on.
 
 ---
 
-## 6. AWS Step Functions (`Benzene.Clients.Aws.StepFunctions`) — **needs a registration seam first**
+## 6. AWS Step Functions (`Benzene.Clients.Aws.StepFunctions`) — ✅ **IMPLEMENTED**
+
+Shipped both steps: (1) added the missing `AddStepFunctionsClient(arn)` DI-registration seam
+(`IStepFunctionsClientFactory`/`IStepFunctionsClient`, resolving `IAmazonStepFunctions` from DI), and
+(2) it auto-wires the existing non-destructive `DescribeStateMachine` check on the dependency category
+(dedup `"StepFunctions:{arn}"`, `healthCheck: false` opt-out). The explicit `AddStepFunctionHealthCheck`
+remains. Original design retained below.
+
+
 
 Unlike the others there is **no `.Use*` pipeline extension** at all — the client is
 `StepFunctionsClientFactory(stateMachineArn, …)`, constructed directly, and there is no
@@ -255,6 +277,14 @@ queue or topic+subscription — exactly what `ServiceBusHealthCheck` (already sh
    reference `Benzene.HealthChecks.Azure.ServiceBus` directly (lighter than a breaking namespace move).
 
 ---
+
+## Status: all designed transports resolved ✅
+
+Every transport in this document is now either **implemented** (Kafka, RabbitMQ, gRPC transport tier,
+Step Functions, Service Bus consumer) or **resolved as intentionally check-less** (Event Grid — no
+data-plane read; Lambda — dynamic target). The only deliberately-deferred item is gRPC's `grpc.health.v1`
+tier (b), which needs the `Grpc.HealthCheck` dependency and belongs on the `contracts` topic, not an
+auto-wired default. The original recommended sequencing is kept below for history.
 
 ## Recommended sequencing
 

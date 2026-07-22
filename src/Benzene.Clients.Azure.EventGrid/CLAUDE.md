@@ -53,5 +53,16 @@ This package takes an already-built `EventGridPublisherClient`, not a connection
 overload (for Managed Identity) — that choice is the caller's, made when constructing the client,
 consistent with every other egress package in this family.
 
+## No health check — deliberately (no cheap non-destructive reachability read exists)
+Unlike the other broker send-clients (SQS/SNS/Queue Storage/Event Hub), Event Grid ships **no** health
+check. `EventGridPublisherClient` is **publish-only** — the data plane has no describe/get-properties
+call to probe. The alternatives are all worse than nothing: a **management-plane** `GetTopic` needs a
+whole new SDK + `Manage` credentials the publisher doesn't have; a **synthetic publish** is
+side-effecting (it fans out to real subscribers), so it could only ever be an opt-in `Active` check,
+never the non-destructive default; a bare TCP/DNS reach of the endpoint proves almost nothing (shared
+Azure front-end). If a real need appears, the right shape is an explicit opt-in `Active`
+synthetic-publish check pointed at a dedicated no-subscriber probe topic, with the ⚠️ side-effecting
+treatment — not an auto-wired default. See `work/client-health-checks-remaining-designs.md` §4.
+
 ## Dependencies
 `Azure.Messaging.EventGrid`; Benzene `Clients`, `Core.Middleware`, `Results`.
