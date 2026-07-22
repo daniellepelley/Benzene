@@ -14,8 +14,12 @@ Functions health check. Pins **only** `AWSSDK.StepFunctions`.
   treated as an idempotent success (`Accepted`), not a failure. The no-name overload is unchanged
   (AWS generates a UUID name).
 - `StepFunctionsClientFactory` — builds a client for a given state-machine ARN.
-- `StepFunctionsHealthCheck` — starts an execution as a liveness probe; reports
-  `HealthCheckDependency` (`Kind = "StateMachine"`, `Name` = ARN).
+- `StepFunctionsHealthCheck` — verifies a state machine; reports `HealthCheckDependency`
+  (`Kind = "StateMachine"`, `Name` = ARN). Default `HealthCheckMode.Reachability` is a
+  **non-destructive** read-only `DescribeStateMachine` call (`Type = "StepFunctions"`);
+  `HealthCheckMode.Active` starts a real execution (`Type = "StepFunctions.Active"`, side-effecting).
+  See `HealthCheckMode` in `Benzene.HealthChecks.Core`. Failures report the exception **type**, never
+  the message.
 - `Extensions` — **`AddStepFunctionHealthCheck`**.
 
 ## Scope / honesty (release plan Tier 2.5 — decided 2026-07-19: honest fire-and-forget for 1.0)

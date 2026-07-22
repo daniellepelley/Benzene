@@ -13,7 +13,11 @@ fixed during the Tier 2.1 split).
 - `AwsLambdaClientMiddleware` / `LambdaSendMessageContext` — terminal invoke middleware and context.
 - `LambdaContextConverter<T>` (in `SqsContextConverter.cs` — historically misnamed file) —
   `IBenzeneClientContext<T, Void>` → invoke context, used by `UseAwsLambda()`.
-- `AwsLambdaHealthCheck` — pings a function; reports `HealthCheckDependency` (`Kind = "Lambda"`).
+- `AwsLambdaHealthCheck` — verifies a function; reports `HealthCheckDependency` (`Kind = "Lambda"`).
+  Default `HealthCheckMode.Reachability` is a **non-destructive** read-only `GetFunctionConfiguration`
+  call (`Type = "Lambda"`); `HealthCheckMode.Active` really invokes the function with a `ping`
+  (`Type = "Lambda.Active"`, side-effecting). See `HealthCheckMode` in `Benzene.HealthChecks.Core`.
+  Failures report the exception **type**, never the message.
 - `LocalAwsLambdaClientFactory` — builds an `IAmazonLambda` from a local AWS profile for dev/test.
 - `Extensions` — `UseAwsLambdaClient`, `UseAwsLambda<T>`, and **`AddLambdaHealthCheck`**.
 

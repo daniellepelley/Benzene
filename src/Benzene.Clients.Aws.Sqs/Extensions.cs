@@ -121,18 +121,21 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Adds a health check that pings an SQS queue.
+    /// Adds an SQS queue health check. By default (<see cref="HealthCheckMode.Reachability"/>) this is a
+    /// non-destructive read-only <c>GetQueueAttributes</c> probe; pass <see cref="HealthCheckMode.Active"/>
+    /// to send a real ping message instead (side-effecting — the queue's consumer must recognise and drop it).
     /// </summary>
     /// <param name="builder">The health check builder to add the check to.</param>
-    /// <param name="queueUrl">The URL of the queue to ping.</param>
+    /// <param name="queueUrl">The URL of the queue to check.</param>
     /// <param name="topicAttributeKey">
-    /// The message attribute the ping topic is written to (defaults to
+    /// Active mode only: the message attribute the ping topic is written to (defaults to
     /// <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/>) — pass the same key the queue's
     /// consumer routes on.
     /// </param>
+    /// <param name="mode">Reachability (default, read-only) or Active (sends a ping — side-effecting).</param>
     /// <returns>The health check builder for method chaining.</returns>
-    public static IHealthCheckBuilder AddSqsHealthCheck(this IHealthCheckBuilder builder, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
+    public static IHealthCheckBuilder AddSqsHealthCheck(this IHealthCheckBuilder builder, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute, HealthCheckMode mode = HealthCheckMode.Reachability)
     {
-        return builder.AddHealthCheck(resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>(), topicAttributeKey));
+        return builder.AddHealthCheck(resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>(), mode, topicAttributeKey));
     }
 }

@@ -10,7 +10,11 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
 - `SqsContextConverter<T>` — `IBenzeneClientContext<T, Void>` → send context.
 - `OutboundSqsContextConverter` — the `Benzene.Clients.OutboundContext` counterpart, used by the
   `OutboundContext` overloads of `.UseSqs(queueUrl, …)` for `AddOutboundRouting(...).Route(topic, …)`.
-- `SqsHealthCheck` — pings the queue; reports `HealthCheckDependency` (`Kind = "Queue"`, `Name` = URL).
+- `SqsHealthCheck` — verifies the queue; reports `HealthCheckDependency` (`Kind = "Queue"`, `Name` = URL).
+  Default `HealthCheckMode.Reachability` is a **non-destructive** read-only `GetQueueAttributes` call
+  (`Type = "Sqs"`); `HealthCheckMode.Active` sends a real `ping` message (`Type = "Sqs.Active"`,
+  side-effecting — the consumer must recognise and drop it). See `HealthCheckMode` in
+  `Benzene.HealthChecks.Core`. Failures report the exception **type**, never the message.
 - `SqsBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); sends a collection
   via `SendMessageBatch` (≤10/call). Reuses `SqsContextConverter<T>` per entry, chunks with
   `BatchSend.Chunk`, and maps `response.Failed` back to caller indices in a `BatchSendResult`. The

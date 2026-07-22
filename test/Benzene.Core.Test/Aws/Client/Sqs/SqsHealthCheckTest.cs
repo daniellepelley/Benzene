@@ -13,12 +13,12 @@ namespace Benzene.Test.Aws.Client.Sqs;
 public class SqsHealthCheckTest
 {
     [Fact]
-    public async Task ExecuteAsync_OkResponse_ReturnsHealthy()
+    public async Task Reachability_OkResponse_ReturnsHealthy_NonDestructively()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();
         mockSqsClient
-            .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SendMessageResponse { HttpStatusCode = HttpStatusCode.OK });
+            .Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetQueueAttributesResponse { HttpStatusCode = HttpStatusCode.OK });
 
         var healthCheck = new SqsHealthCheck("some-queue-url", mockSqsClient.Object);
 
@@ -29,40 +29,53 @@ public class SqsHealthCheckTest
         var dependency = Assert.Single(result.Dependencies);
         Assert.Equal("Queue", dependency.Kind);
         Assert.Equal("some-queue-url", dependency.Name);
+        // The default probe is read-only — it must NOT send a message.
+        mockSqsClient.Verify(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task ExecuteAsync_NonOkResponse_ReturnsUnhealthy()
+    public async Task Reachability_NonOkResponse_ReturnsUnhealthy()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();
         mockSqsClient
-            .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SendMessageResponse { HttpStatusCode = HttpStatusCode.InternalServerError });
+            .Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetQueueAttributesResponse { HttpStatusCode = HttpStatusCode.InternalServerError });
 
-        var healthCheck = new SqsHealthCheck("some-queue-url", mockSqsClient.Object);
-
-        var result = await healthCheck.ExecuteAsync();
+        var result = await new SqsHealthCheck("some-queue-url", mockSqsClient.Object).ExecuteAsync();
 
         Assert.Equal(HealthCheckStatus.Failed, result.Status);
     }
 
     [Fact]
-    public async Task ExecuteAsync_SendFaults_ReturnsUnhealthy_AndKeepsTheQueueDependency()
+    public async Task Reachability_Faults_ReturnsUnhealthy_AndKeepsTheQueueDependency()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();
         mockSqsClient
-            .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new AmazonSQSException("connection refused"));
 
-        var healthCheck = new SqsHealthCheck("some-queue-url", mockSqsClient.Object);
+        var result = await new SqsHealthCheck("some-queue-url", mockSqsClient.Object).ExecuteAsync();
+
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        // The structured result (incl. the Queue dependency and the failure TYPE, never the message) survives the fault.
+        Assert.Equal("AmazonSQSException", result.Data["Error"]);
+        Assert.Equal("some-queue-url", Assert.Single(result.Dependencies).Name);
+    }
+
+    [Fact]
+    public async Task Active_SendsAPing_AndReportsUnderTheActiveType()
+    {
+        var mockSqsClient = new Mock<IAmazonSQS>();
+        mockSqsClient
+            .Setup(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SendMessageResponse { HttpStatusCode = HttpStatusCode.OK });
+
+        var healthCheck = new SqsHealthCheck("some-queue-url", mockSqsClient.Object, HealthCheckMode.Active);
 
         var result = await healthCheck.ExecuteAsync();
 
-        Assert.Equal(HealthCheckStatus.Failed, result.Status);
-        // The structured result (incl. the Queue dependency and the failure type) survives the fault,
-        // rather than being lost when .Result rethrows to the outer exception wrapper.
-        Assert.Equal("AmazonSQSException", result.Data["Error"]);
-        var dependency = Assert.Single(result.Dependencies);
-        Assert.Equal("some-queue-url", dependency.Name);
+        Assert.Equal(HealthCheckStatus.Ok, result.Status);
+        Assert.Equal("Sqs.Active", healthCheck.Type);
+        mockSqsClient.Verify(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

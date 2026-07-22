@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Benzene.HealthChecks.Core;
@@ -9,103 +11,108 @@ using Benzene.HealthChecks.Core;
 namespace Benzene.Clients.Aws.Sqs;
 
 /// <summary>
-/// A health check that verifies connectivity to an SQS queue by sending a "ping" message to it.
+/// Verifies connectivity to an SQS queue. In the default <see cref="HealthCheckMode.Reachability"/> mode
+/// this is a <b>non-destructive</b> read-only <c>GetQueueAttributes</c> call; in
+/// <see cref="HealthCheckMode.Active"/> mode it sends a real <c>ping</c> message (side-effecting — the
+/// queue's consumer must recognise and drop it).
 /// </summary>
 /// <remarks>
-/// ⚠️ Side-effecting: every probe <b>sends a real message</b> (topic <c>ping</c>) to the live queue,
-/// so the queue's consumer must be built to recognise and ignore it. If you don't want a probe-rate
-/// stream of ping messages on a production queue, probe infrequently, or use a read-only check (e.g.
-/// <c>GetQueueAttributes</c>) when you only need to confirm the queue is reachable.
+/// The reachability check proves the queue exists, is reachable, and the credentials can read it
+/// (<c>sqs:GetQueueAttributes</c>) — it does <b>not</b> prove a send would succeed (<c>sqs:SendMessage</c>
+/// is a different permission). Use <see cref="HealthCheckMode.Active"/> only when you need to exercise the
+/// send path, and keep it off a frequent poll and off liveness/readiness probes.
 /// </remarks>
 public class SqsHealthCheck : IHealthCheck
 {
     private readonly IAmazonSQS _amazonSqs;
     private readonly string _queueUrl;
+    private readonly HealthCheckMode _mode;
     private readonly string _topicAttributeKey;
     private const int TimeOut = 10000;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SqsHealthCheck"/> class.
-    /// </summary>
-    /// <param name="queueUrl">The URL of the queue to ping.</param>
-    /// <param name="amazonSqs">The SQS client used to send the ping message.</param>
+    /// <summary>Initializes a new instance of the <see cref="SqsHealthCheck"/> class.</summary>
+    /// <param name="queueUrl">The URL of the queue to check.</param>
+    /// <param name="amazonSqs">The SQS client used to run the check.</param>
+    /// <param name="mode">Reachability (default, read-only) or Active (sends a ping — side-effecting).</param>
     /// <param name="topicAttributeKey">
-    /// The message attribute the ping topic is written to. Defaults to
+    /// Active mode only: the message attribute the ping topic is written to. Defaults to
     /// <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/> (<c>"topic"</c>) — pass the same
     /// key the queue's consumer routes on so the ping is routable there too.
     /// </param>
-    public SqsHealthCheck(string queueUrl, IAmazonSQS amazonSqs, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
+    public SqsHealthCheck(string queueUrl, IAmazonSQS amazonSqs,
+        HealthCheckMode mode = HealthCheckMode.Reachability,
+        string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
     {
         _queueUrl = queueUrl;
         _amazonSqs = amazonSqs;
+        _mode = mode;
         _topicAttributeKey = topicAttributeKey;
     }
 
-    /// <summary>
-    /// Sends a "ping" message to the configured queue, failing if the send does not complete
-    /// successfully within the timeout.
-    /// </summary>
-    /// <returns>A task that resolves to the outcome of the health check.</returns>
-    public async Task<IHealthCheckResult> ExecuteAsync()
+    /// <summary>Runs the check and reports the outcome.</summary>
+    public Task<IHealthCheckResult> ExecuteAsync()
     {
         var dependencies = new[] { new HealthCheckDependency("Queue", _queueUrl) };
+        var call = _mode == HealthCheckMode.Active
+            ? MapStatus(SendPingAsync())
+            : MapStatus(_amazonSqs.GetQueueAttributesAsync(new GetQueueAttributesRequest
+            {
+                QueueUrl = _queueUrl,
+                AttributeNames = new List<string> { "QueueArn" }
+            }));
 
-        var pingQueue = _amazonSqs.SendMessageAsync(new SendMessageRequest(_queueUrl, "{}")
+        return RunAsync(call, dependencies);
+    }
+
+    private Task<SendMessageResponse> SendPingAsync()
+        => _amazonSqs.SendMessageAsync(new SendMessageRequest(_queueUrl, "{}")
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
-                { _topicAttributeKey, new MessageAttributeValue
-                    {
-                        DataType = "String",
-                        StringValue = "ping"
-                    }
-                }
+                { _topicAttributeKey, new MessageAttributeValue { DataType = "String", StringValue = "ping" } }
             }
         });
 
-        using var cts = new CancellationTokenSource();
-        var completed = await Task.WhenAny(pingQueue, Task.Delay(TimeOut, cts.Token));
+    // Project any AWS response to its HttpStatusCode without losing the task's faulted-ness.
+    private static async Task<HttpStatusCode> MapStatus<TResponse>(Task<TResponse> call) where TResponse : AmazonWebServiceResponse
+        => (await call).HttpStatusCode;
 
-        if (completed != pingQueue)
+    private async Task<IHealthCheckResult> RunAsync(Task<HttpStatusCode> call, HealthCheckDependency[] dependencies)
+    {
+        using var cts = new CancellationTokenSource();
+        var completed = await Task.WhenAny(call, Task.Delay(TimeOut, cts.Token));
+
+        if (completed != call)
         {
             return HealthCheckResult.CreateInstance(false, Type,
-                new Dictionary<string, object>
-                {
-                    { "QueueUrl", _queueUrl },
-                    { "Error", $"Timed out, {TimeOut}ms" }
-                }, dependencies);
+                new Dictionary<string, object> { { "QueueUrl", _queueUrl }, { "Error", $"Timed out, {TimeOut}ms" } }, dependencies);
         }
 
         cts.Cancel();
 
-        // IsCompletedSuccessfully, not IsCompleted: a faulted send is also "completed", and reading
-        // .Result on it would rethrow (losing the Queue dependency to the outer exception wrapper).
-        if (pingQueue.IsFaulted)
+        // IsFaulted, not .Result on a faulted task: reading .Result would rethrow and lose the Queue
+        // dependency to the outer exception wrapper. Report the failure type, never the message.
+        if (call.IsFaulted)
         {
             return HealthCheckResult.CreateInstance(false, Type,
                 new Dictionary<string, object>
                 {
                     { "QueueUrl", _queueUrl },
-                    { "Error", (pingQueue.Exception?.InnerException ?? pingQueue.Exception)?.GetType().Name }
+                    { "Error", (call.Exception?.InnerException ?? call.Exception)?.GetType().Name }
                 }, dependencies);
         }
 
-        var statusCode = pingQueue.Result.HttpStatusCode;
+        var statusCode = call.Result;
         if (statusCode == HttpStatusCode.OK)
         {
             return HealthCheckResult.CreateInstance(true, Type,
                 new Dictionary<string, object> { { "QueueUrl", _queueUrl } }, dependencies);
         }
 
-        return HealthCheckResult.CreateInstance(false, Type, new Dictionary<string, object>
-        {
-            { "QueueUrl", _queueUrl },
-            { "Error", $"Returned a status of {statusCode}" }
-        }, dependencies);
+        return HealthCheckResult.CreateInstance(false, Type,
+            new Dictionary<string, object> { { "QueueUrl", _queueUrl }, { "Error", $"Returned a status of {statusCode}" } }, dependencies);
     }
 
-    /// <summary>
-    /// Gets the health check type identifier, <c>"Sqs"</c>.
-    /// </summary>
-    public string Type => "Sqs";
+    /// <summary>The check's identifier: <c>"Sqs"</c> in reachability mode, <c>"Sqs.Active"</c> in active mode.</summary>
+    public string Type => _mode == HealthCheckMode.Active ? "Sqs.Active" : "Sqs";
 }

@@ -112,7 +112,7 @@ marker, so it doesn't offend context purity. Liveness keeps only process-local s
 (`MemoryHealthCheck`). `ShutdownReadinessHealthCheck` already models exactly this discipline. A
 developer may re-route a check explicitly, but the default is readiness and docs discourage overriding.
 
-### 3.3 Non-destructive default + opt-in "active" tier
+### 3.3 Non-destructive default + opt-in "active" tier ✅ *implemented*
 Fix the three destructive checks to read-only control-plane calls:
 
 | Check | Destructive today | Non-destructive default |
@@ -289,10 +289,12 @@ scope + the Warning-on-permission / `ErrorCode`/`StatusCode` classification (§3
 `.UseHealthCheck("healthcheck")` pick them all up. Add `healthCheck: false` opt-out on the client
 extensions. Default them under `CachingHealthCheckProcessor` (§3.6).
 
-**Phase 2 — non-destructive fixes + BYO helper**
-- Read-only swaps for SQS/Lambda/StepFunctions; carve out the opt-in active tier with a distinct
-  `Type` (§3.3).
-- `AddHealthCheck(kind, name, Func<Task>)` lambda helper + `Func<Task<bool>>` sibling (§3.8).
+**Phase 2 — non-destructive fixes + BYO helper** ✅ *done*
+- ✅ Read-only swaps for SQS/Lambda/StepFunctions; carve out the opt-in active tier with a distinct
+  `Type` (§3.3). Added `HealthCheckMode` (`Reachability` default / `Active`); reachability probes are
+  `GetQueueAttributes` / `GetFunctionConfiguration` / `DescribeStateMachine`; active tier reports
+  under `"<Type>.Active"`. Failures report the exception **type**, never the message.
+- ✅ `AddHealthCheck(kind, name, Func<Task>)` lambda helper + `Func<Task<bool>>` sibling (§3.8).
 
 **Phase 3 — DX: make it discoverable (without this the capability stays unused, like today)**
 - Rework `examples/Aws/Benzene.Examples.Aws/StartUp.cs` to show both halves (auto-covered clients +

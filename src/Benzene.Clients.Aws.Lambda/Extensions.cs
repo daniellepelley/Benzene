@@ -63,13 +63,16 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Adds a health check that pings an AWS Lambda function.
+    /// Adds an AWS Lambda function health check. By default (<see cref="HealthCheckMode.Reachability"/>) this
+    /// is a non-destructive read-only <c>GetFunctionConfiguration</c> probe; pass
+    /// <see cref="HealthCheckMode.Active"/> to really invoke the function with a ping instead (side-effecting).
     /// </summary>
     /// <param name="builder">The health check builder to add the check to.</param>
-    /// <param name="lambdaName">The name of the Lambda function to ping.</param>
+    /// <param name="lambdaName">The name of the Lambda function to check.</param>
+    /// <param name="mode">Reachability (default, read-only) or Active (invokes the function — side-effecting).</param>
     /// <returns>The health check builder for method chaining.</returns>
-    public static IHealthCheckBuilder AddLambdaHealthCheck(this IHealthCheckBuilder builder, string lambdaName)
+    public static IHealthCheckBuilder AddLambdaHealthCheck(this IHealthCheckBuilder builder, string lambdaName, HealthCheckMode mode = HealthCheckMode.Reachability)
     {
-        return builder.AddHealthCheck(resolver => new AwsLambdaHealthCheck(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<ILogger<AwsLambdaHealthCheck>>()));
+        return builder.AddHealthCheck(resolver => new AwsLambdaHealthCheck(lambdaName, resolver.GetService<IAmazonLambda>(), resolver.GetService<ILogger<AwsLambdaHealthCheck>>(), mode));
     }
 }
