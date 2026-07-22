@@ -1,10 +1,13 @@
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.MessageHandlers.Info;
+using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Azure.Function.Core;
+using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Info;
+using Benzene.Core.MessageHandlers.Serialization;
 
 namespace Benzene.Azure.Function.EventHub.Function;
 
@@ -20,13 +23,29 @@ public static class DependencyInjectionExtensions
     /// <returns>The service container, for method chaining.</returns>
     /// <remarks>
     /// Called automatically by <see cref="UseEventHub(IAzureFunctionAppBuilder, Action{IMiddlewarePipelineBuilder{EventHubContext}})"/>;
-    /// you don't normally need to call this directly. This package has no first-class mappers of its
-    /// own beyond headers - it routes Benzene message envelopes via <c>UseBenzeneMessage</c> instead
-    /// of first-class topic/body mappers on <see cref="EventHubContext"/> itself.
+    /// you don't normally need to call this directly. Registers first-class topic/body/headers mappers on
+    /// <see cref="EventHubContext"/> so a trigger can route with <c>UseMessageHandlers()</c> directly (the
+    /// property-based path, matching the <c>OutboundContext</c> Event Hub sender), in addition to the
+    /// Benzene-message-envelope <c>UseBenzeneMessage</c> path.
     /// </remarks>
     public static IBenzeneServiceContainer AddAzureEventHub(this IBenzeneServiceContainer services)
+        => services.AddAzureEventHub(EventHubMessageTopicGetter.DefaultTopicProperty);
+
+    /// <summary>
+    /// Registers the services required to process Event Hub-triggered events, with the topic getter
+    /// reading the given event-property key.
+    /// </summary>
+    /// <param name="services">The service container to register services with.</param>
+    /// <param name="topicPropertyKey">The event property the topic is read from.</param>
+    /// <returns>The service container, for method chaining.</returns>
+    public static IBenzeneServiceContainer AddAzureEventHub(this IBenzeneServiceContainer services, string topicPropertyKey)
     {
+        services.TryAddScoped<JsonSerializer>();
+        services.AddScoped<IMessageTopicGetter<EventHubContext>>(_ => new EventHubMessageTopicGetter(topicPropertyKey));
+        services.AddHeaderMessageVersionGetter<EventHubContext>();
         services.AddScoped<IMessageHeadersGetter<EventHubContext>, EventHubMessageHeadersGetter>();
+        services.AddScoped<IMessageBodyGetter<EventHubContext>, EventHubMessageBodyGetter>();
+        services.AddScoped<IMessageHandlerResultSetter<EventHubContext>, EventHubMessageHandlerResultSetter>();
         services.AddSingleton<ITransportInfo>(_ => new TransportInfo(TransportNames.EventHub));
         return services;
     }

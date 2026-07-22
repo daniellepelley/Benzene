@@ -51,6 +51,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   around them was removed.
 
 ### Added
+- **Property-based routing for the Azure Functions Event Hub trigger.** `Benzene.Azure.Function.EventHub`
+  now registers first-class `EventHubContext` mappers (`EventHubMessageTopicGetter` reading the topic from
+  an event property, `EventHubMessageBodyGetter`, `EventHubMessageHandlerResultSetter`), so an Event Hub
+  trigger can route with `UseEventHub(eh => eh.UseMessageHandlers())` directly — matching what the
+  `OutboundContext` Event Hub **sender** (`OutboundEventHubContextConverter`) writes (topic → event
+  property, raw serialized body). Previously the only ingress path was the Benzene-message-envelope
+  `UseBenzeneMessage`, which the property-writing sender did **not** round-trip to — so a Benzene→Benzene
+  Event Hub hop over Azure Functions didn't route. Surfaced by dogfooding the AzureFunctionsMesh example.
+  The envelope path is unchanged. Covered by `EventHubPipelineTest.Send_PropertyBasedRouting_...`.
 - **`.UseEventBridge(...)` on the outbound-routing model.** `Benzene.Clients.Aws.EventBridge` now has an
   `IMiddlewarePipelineBuilder<OutboundContext>` overload (`UseEventBridge(source, eventBusName?,
   healthCheck?)` + an inner-pipeline-configuring overload), backed by a new

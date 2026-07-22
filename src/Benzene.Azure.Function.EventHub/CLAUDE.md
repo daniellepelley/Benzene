@@ -51,10 +51,17 @@ Covered by `test/Benzene.Core.Test/Azure/EventHubFailureHandlingTest.cs`. The fa
    `EventHubBatchApplication`, which maps the batch to one `EventHubContext` per event and runs each
    (in its own DI scope, via `Benzene.Core.Middleware`'s `BoundedFanOut`) with a per-event
    try/catch + failure-escalation governed by `EventHubOptions` (see "Failure handling" above),
-   transport-tagged `"event-hub"`. Inside it, `UseBenzeneMessage(...)` routes an event whose body deserializes into a
-   **Benzene message envelope** (`{"topic","headers","body"}`) to the direct-message pipeline via
-   `BenzeneMessageEventHubHandler` (a `MiddlewareRouter` that defers a non-envelope body to the next
-   middleware rather than failing). This is the routing path the getting-started guide shows.
+   transport-tagged `"event-hub"`. Two routing paths compose inside it:
+   - **Envelope**, `UseBenzeneMessage(...)` — routes an event whose body deserializes into a **Benzene
+     message envelope** (`{"topic","headers","body"}`) to the direct-message pipeline via
+     `BenzeneMessageEventHubHandler` (a `MiddlewareRouter` that defers a non-envelope body to the next
+     middleware rather than failing). This is the routing path the getting-started guide shows.
+   - **Property-based**, `UseMessageHandlers()` **directly on `EventHubContext`** (added 2026-07-22) — routes
+     by the topic **event property** (`EventHubMessageTopicGetter`, default key `"topic"`) with the raw
+     serialized payload as the body (`EventHubMessageBodyGetter`), mirroring
+     `Benzene.Azure.Function.ServiceBus`. This is what the `OutboundContext` Event Hub **sender**
+     (`OutboundEventHubContextConverter`, topic → same property) round-trips to — so a Benzene→Benzene Event
+     Hub hop over Functions works without the sender wrapping an envelope.
 2. **Fan-in (streaming), `UseEventHubStream(...)`** — `StreamingExtensions` presents the whole
    batch as one `StreamContext<EventData>` (from `Benzene.Core.Middleware`'s streaming engine), for
    windowing/aggregation over the batch. Batch-level only: the Functions Event Hub trigger
@@ -79,9 +86,10 @@ Covered by `test/Benzene.Core.Test/Azure/EventHubFailureHandlingTest.cs`. The fa
   `OutboundEventHubContextConverter` in `Benzene.Clients.Azure.EventHub` write: `eventData
   .Properties[header.Key] = header.Value`, plus a `"topic"` property this getter doesn't filter
   out - mirrors `Benzene.Azure.EventHub`'s `EventHubConsumerMessageHeadersGetter`). Registered by
-  `AddAzureEventHub()` (called automatically by `UseEventHub(...)`). This is the only first-class
-  mapper this package registers for `EventHubContext` itself (see "Important conventions" below for
-  why there's no topic/body getter here) - it exists so `.UseW3CTraceContext<EventHubContext>()`
+  `AddAzureEventHub()` (called automatically by `UseEventHub(...)`), alongside the property-based
+  `EventHubMessageTopicGetter`/`EventHubMessageBodyGetter`/`EventHubMessageHandlerResultSetter` (added
+  2026-07-22, so `UseMessageHandlers()` can route directly on `EventHubContext`) - it exists so
+  `.UseW3CTraceContext<EventHubContext>()`
   works: a `traceparent`/`tracestate` property set by an upstream producer round-trips through the
   trigger and becomes the pipeline's root `Activity`'s parent. Covered by `EventHubGettersTest.cs`
   (string-typed filtering, `traceparent` round-trip) and `EventHubW3CTraceContextTest.cs`
