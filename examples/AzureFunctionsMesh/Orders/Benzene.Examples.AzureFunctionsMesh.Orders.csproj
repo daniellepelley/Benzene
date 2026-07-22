@@ -5,10 +5,9 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Benzene.Examples.AzureFunctionsMesh.Service</RootNamespace>
-    <AssemblyName>Benzene.Examples.AzureFunctionsMesh.Service</AssemblyName>
-    <!-- Required for Benzene's trigger source generator; shipped via buildTransitive in the packaged
-         Benzene.Azure.Function.Core, set here because examples use ProjectReferences. -->
+    <RootNamespace>Benzene.Examples.AzureFunctionsMesh.Orders</RootNamespace>
+    <AssemblyName>Benzene.Examples.AzureFunctionsMesh.Orders</AssemblyName>
+    <!-- Required for Benzene's trigger source generator (reflection metadata/executor, not worker indexing). -->
     <FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>
   </PropertyGroup>
 
@@ -30,13 +29,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Shared\Benzene.Examples.AzureFunctionsMesh.Shared.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.SourceGenerators\Benzene.Azure.Function.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
   </ItemGroup>
 </Project>

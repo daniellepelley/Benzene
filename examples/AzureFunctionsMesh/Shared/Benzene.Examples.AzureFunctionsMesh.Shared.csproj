@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Examples.AzureFunctionsMesh.Shared</AssemblyName>
+    <RootNamespace>Benzene.Examples.AzureFunctionsMesh.Shared</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.18.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.ServiceBus\Benzene.Azure.Function.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.HealthChecks\Benzene.HealthChecks.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Http\Benzene.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Clients\Benzene.Clients.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.ResponseEvents\Benzene.ResponseEvents.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Clients.Azure.ServiceBus\Benzene.Clients.Azure.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+  </ItemGroup>
+
+</Project>
