@@ -60,10 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and Timer. Declare e.g. `[assembly: BenzeneHttpTrigger(Name = "orders", Route = "{*restOfPath}")]`
   or `[assembly: BenzeneServiceBusTrigger(Name = "orders", QueueName = "orders")]` — you own every
   binding value; the generator writes the boilerplate that forwards into `IAzureFunctionApp`. Each
-  `Benzene*TriggerAttribute` ships in its transport's package. `Benzene.Azure.Function.Core` now ships
-  `FunctionsEnableWorkerIndexing=false` via `buildTransitive` (required so the Functions SDK uses the
-  reflection metadata/executor that can see generated code). The hand-written `[Function]` form still
-  works and both coexist. See `docs/azure-functions.md` and `work/azure-functions-trigger-codegen-design.md`.
+  `Benzene*TriggerAttribute` ships in its transport's package. The generator itself, and the required
+  `FunctionsEnableWorkerIndexing=false` MSBuild prop (so the Functions SDK uses the reflection
+  metadata/executor that can see generated code), both ship **inside `Benzene.Azure.Function.Core`**
+  (the universal Azure Functions dependency) — no extra package to reference. The hand-written
+  `[Function]` form still works and both coexist. See `docs/azure-functions.md` and
+  `work/azure-functions-trigger-codegen-design.md`.
 - **Contract health-check topic, separate from liveness/readiness probes.** Consumer-side
   contract-drift checks now run on their own probe-less **`contracts`** diagnostic topic
   (`Constants.DefaultContractsTopic`), wired with `UseContractsCheck(...)` (`Benzene.HealthChecks`,

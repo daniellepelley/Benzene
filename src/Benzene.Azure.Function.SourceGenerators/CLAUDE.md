@@ -1,9 +1,13 @@
 # Benzene.Azure.Function.SourceGenerators
 
 ## What this package does
-A Roslyn incremental source generator (packaged as an analyzer, `analyzers/dotnet/cs`) that emits the
-Azure Functions `[Function]`/`[…Trigger]` boilerplate class per transport from a user-authored
-**assembly-attribute declaration**. The developer declares *what* triggers they want and their
+A Roslyn incremental source generator that emits the Azure Functions `[Function]`/`[…Trigger]`
+boilerplate class per transport from a user-authored **assembly-attribute declaration**. It does
+**not** ship as its own NuGet package (`IsPackable=false`): it's a separate project only because
+analyzers must target `netstandard2.0`, and its built DLL is **packed into
+`Benzene.Azure.Function.Core`** (`analyzers/dotnet/cs`). Core is the universal Azure Functions
+dependency, so referencing any `Benzene.Azure.Function.*` package brings the generator (and the
+`FunctionsEnableWorkerIndexing=false` prop it needs) automatically — no separate reference. The developer declares *what* triggers they want and their
 bindings (route, queue, hub, container, schedule, …); the generator writes the ceremony that forwards
 each trigger invocation into the built `IAzureFunctionApp`. Mirrors `Benzene.CodeGen.SourceGenerators`'
 packaging. Design: `work/azure-functions-trigger-codegen-design.md`.
