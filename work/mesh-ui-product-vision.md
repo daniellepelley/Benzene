@@ -7,7 +7,46 @@
 
 ---
 
-> **2026-07-22 (latest) P5 SHIPPED — the value & deprecation view, and data requirement 2
+> **2026-07-22 (latest) P6 SHIPPED — discussion & annotations. The 2026-07-22 roadmap (P1–P6)
+> is complete.**
+> - **The vessel ruling (the "hard constraint" decision, now made):** discussion is split
+>   across the two halves the architecture already had. The **read path is a static artifact**
+>   — `annotations.json`, published into the same `IMeshArtifactStore` as `manifest.json`, so
+>   any static host serves recorded discussion with zero backend. The **write path is a
+>   dogfooded handler** — `mesh:annotations:add` (`POST /mesh/annotations`) on the aggregator
+>   host, `mesh:report`'s exact opt-in shape, spoken to by the explorer through the wire
+>   envelope and **feature-detected** (`?annotations=` / `data-annotations-url`). Degradation
+>   ladder: no artifact + no endpoint → the feature leaves no trace (the static floor,
+>   untouched); artifact only → read-only threads with the state explicitly labeled; endpoint →
+>   composer. Of the three candidate vessels, this is "enhancement layer in the existing pages"
+>   — no companion app, no new collector contract, nothing added to the Cloud Service spec.
+> - **The identity ruling (the open question, now answered):** authoring is **self-declared
+>   display names**; authenticating who may post — and verifying who they are — belongs to the
+>   gateway in front of the annotations endpoint. This is the `Benzene.RateLimiting` boundary
+>   ruling applied to writes: Benzene ships the mechanism and says so plainly (the composer
+>   carries the caveat in-line), the deployment's edge owns access control. The mesh packages
+>   stay identity-free; the handler enforces shape only (required fields, 200/80/4000 bounds).
+> - **Contracts:** `MeshAnnotation`/`MeshAnnotationLog`/`MeshAnnotationRequest`/
+>   `MeshAnnotationThread`; entity ids reuse the explorer's own model (`service:<name>`,
+>   `topic:<id>`). Durability note: notes are the one artifact that can't be regenerated from
+>   the fleet, so a corrupt log is parked to a timestamped sibling, never silently discarded.
+> - **UI:** Discussion sections on the topic and service pages — the decisions the evidence
+>   provokes recorded next to the evidence. The demo now shows the full arc on
+>   `order:legacy-export`: deprecation-candidate badge + zero observed usage (P5's evidence)
+>   with the retirement decision thread beneath it (P6's record).
+> - Verified: 10 new unit tests (publisher round-trip/corruption-parking, handler
+>   validation/bounds/thread response — 211 Mesh tests green) and 62 Playwright checks
+>   including a stub write path over the envelope (composer feature-detection, post → thread
+>   re-render, cache survival across navigation, required-field guard), zero console errors.
+> - **Roadmap status: P1 (three-entity model), P2 (flow view + staleness), P3 (topology
+>   graphs), P4 (usage feed), P5 (value & deprecation), P6 (discussion) — all shipped.**
+>   Follow-ups parked, not planned: threaded replies/resolution states on notes, field-level
+>   per-service spec diffing (P5's scope ruling), metrics-backend usage adapters (App
+>   Insights/CloudWatch, need their SDKs), structural-vs-observed topology edge merging.
+>
+> ---
+>
+> **2026-07-22 (earlier) P5 SHIPPED — the value & deprecation view, and data requirement 2
 > closed at topic granularity:**
 > - **Drift substance (req. 2):** the aggregator now diffs each run's catalog against its own
 >   previous `topics.json` (the snapshot read-back pattern, catalog-wide) and annotates what

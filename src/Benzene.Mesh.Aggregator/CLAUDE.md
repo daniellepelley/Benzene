@@ -188,6 +188,26 @@ comparer) was deliberately not pulled in here: it needs the typed `EventServiceD
 (+ `Microsoft.OpenApi`), which cross-language (e.g. Go-emitted) specs aren't guaranteed to
 round-trip, against this package's best-effort JSON-level parsing convention.
 
+## Discussion (`annotations.json` + `mesh:annotations:add`)
+The mesh discussion feature's write half (2026-07-22; the read half is the artifact itself -
+see `docs/mesh-ui.md`'s "Discussion & annotations"). `MeshAnnotationPublisher` appends one
+`MeshAnnotation` per call to the `annotations.json` log in the shared `IMeshArtifactStore` (same
+store as `manifest.json`, so a static host serves recorded discussion with zero backend) and
+returns the annotated entity's full thread. Read-modify-write is serialized per process with a
+semaphore - concurrent writers in separate hosts are out of scope, the same single-writer
+assumption the drift comparison already makes. A corrupt existing log never bricks discussion but
+is never silently discarded either: notes are the one artifact that can't be regenerated from the
+fleet, so the unreadable content is parked to a timestamped `annotations.unreadable-*.json`
+sibling before starting fresh. `MeshAnnotationsMessageHandler`
+(`[Message("mesh:annotations:add")]`/`[HttpEndpoint("POST", "/mesh/annotations")]`,
+`IMessageHandler<MeshAnnotationRequest, MeshAnnotationThread>`, returns `Created`) enforces
+**shape only**: required entity/author/text (trimmed) and size bounds (`MaxEntityLength` 200 /
+`MaxAuthorLength` 80 / `MaxTextLength` 4000 - one post can't bloat the artifact every reader
+downloads). Identity is deliberately not enforced: `Author` is a self-declared display name, and
+who may post is the fronting gateway's decision (the `Benzene.RateLimiting` boundary ruling).
+Registered by `AddMeshAggregator` but, like `mesh:report`, reachable only if the host's own
+`.AddMessageHandlers()` discovers the handler - an undiscovering deployment is strictly read-only.
+
 ## Observed usage (`usage.json`)
 Each run also polls every registered `Benzene.Mesh.Contracts.IMeshUsageSource` (usage adapters -
 the full standard is `docs/mesh-usage-feed.md`), concurrently with the service polling and each

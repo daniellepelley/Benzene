@@ -72,6 +72,21 @@
 > page's spec links had rotted when the estate cards moved to `meshSpecUiHref` (the removed
 > `specUiLink` was still referenced, throwing on every service-page render post-merge) - the
 > service page now uses the same mesh-hosted spec / raw / health link set as the cards.
+>
+> **2026-07-22 (P6 of the vision doc's roadmap): discussion & annotations.**
+> Topic and service pages carry a **Discussion** section, built as the "hard constraint" vessel
+> ruling: the **read path is static** - `buildDiscussionSection` renders `annotations.json`
+> (fetched via the usual `resolveUrl()` precedence, the same artifact store as `manifest.json`) -
+> and only the **write path** needs a live endpoint: posting goes through the aggregator host's
+> `mesh:annotations:add` over the wire envelope (the same POST shape the Fleet view speaks),
+> feature-detected via `?annotations=<envelope-url>` or a `data-annotations-url` attribute on the
+> document root. Degradation ladder: no artifact + no endpoint → no trace of the feature (the
+> static floor); artifact only → threads render with an explicit "read-only" note; endpoint
+> present → composer (name + note, client-side required check, `Created`/`Ok` accepted, the
+> response's authoritative thread folded into the local cache so the new note survives
+> navigation). Notes render newest-first via `textContent` only (no HTML injection path), with
+> `humanAge` timestamps. Identity is self-declared by design - the composer says so in-line, and
+> access control is the fronting gateway's job (the RateLimiting boundary ruling).
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the

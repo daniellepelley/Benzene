@@ -69,7 +69,16 @@ data types - no HTTP, no file I/O, no execution logic.
   each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for a
   future "designed to call" derivation). Pure shapes only - actually populated by
   `Benzene.Mesh.Tracing.Tempo`, not by anything in this package.
-- `MeshTopicChange`/`MeshTopicChangeKind`/`MeshRemovedTopic` (2026-07-22) - the topic-level
+- `MeshAnnotation`/`MeshAnnotationLog`/`MeshAnnotationRequest`/`MeshAnnotationThread` (2026-07-22)
+  - the discussion shapes: one note attached to one entity of the estate (`Entity` is
+  `"service:<name>"`/`"topic:<topicId>"`, mirroring the explorer's own hash-entity model).
+  `MeshAnnotationLog` is the `annotations.json` artifact (the READ path - static, zero backend);
+  `MeshAnnotationRequest`/`MeshAnnotationThread` are the `mesh:annotations:add` payload/response
+  (the WRITE path, `Benzene.Mesh.Aggregator.MeshAnnotationsMessageHandler`). `Author` is a
+  **self-declared display name by design** - authenticating who may post belongs to the gateway
+  in front of the endpoint (the `Benzene.RateLimiting` boundary ruling applied to writes); the
+  mesh packages stay identity-free. `MeshAnnotationRequest` uses settable properties (wire input,
+  the `MeshServiceReport` convention) - validation/bounds are the handler's job.
   contract-drift **substance** ("what changed since the previous aggregator run", not just a hash
   flip): `MeshTopicEntry` gained an optional trailing `Changes` array (kinds `topic-added`/
   `schema-changed`/`producers-changed`/`consumers-changed` - loose strings, the

@@ -1,0 +1,26 @@
+{
+  "generatedAtUtc": "2026-07-16T09:15:00Z",
+  "annotations": [
+    {
+      "id": "a1",
+      "entity": "topic:order:legacy-export",
+      "author": "Dani (PO)",
+      "text": "Usage feed shows zero traffic since it was wired and there are no declared consumers — proposing we retire this after the July finance close.",
+      "createdAtUtc": "2026-07-14T10:02:00Z"
+    },
+    {
+      "id": "a2",
+      "entity": "topic:order:legacy-export",
+      "author": "Sam (finance systems)",
+      "text": "Confirmed: the nightly export moved to the warehouse pull in May. Nothing reads this anymore — fine to retire from our side.",
+      "createdAtUtc": "2026-07-15T16:41:00Z"
+    },
+    {
+      "id": "a3",
+      "entity": "service:payments-api",
+      "author": "Priya",
+      "text": "The contract drift flagged here is the planned v2 capture payload (PAY-118) — expected. The schema mismatch on shipping:book is the real issue to chase.",
+      "createdAtUtc": "2026-07-16T08:30:00Z"
+    }
+  ]
+}

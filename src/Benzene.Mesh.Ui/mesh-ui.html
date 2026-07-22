@@ -488,6 +488,28 @@
   .tp-changes { margin: 6px 0 10px; }
   .tp-change-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 3px 0; }
   .tp-change-row .d { color: var(--ink-soft); }
+  .disc-note {
+    padding: 10px 14px; margin-bottom: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+  }
+  .disc-head { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+  .disc-author { font-weight: 650; font-size: 13px; }
+  .disc-when { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
+  .disc-text { font-size: 13px; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .disc-composer { margin-top: 10px; max-width: 640px; }
+  .disc-name, .disc-textarea {
+    display: block; width: 100%; box-sizing: border-box; margin-bottom: 8px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 8px 10px; font: inherit; font-size: 13px;
+  }
+  .disc-textarea { resize: vertical; }
+  .disc-foot { display: flex; gap: 12px; align-items: center; }
+  .disc-send {
+    background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm);
+    padding: 7px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .disc-send:disabled { opacity: .6; cursor: default; }
+  .disc-err { color: var(--req); font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -1109,6 +1131,7 @@
     loadTopics();
     loadTopology();
     loadUsage();
+    loadAnnotations();
   }
 
   /* ---------- topics (cross-service catalog) ---------- */
@@ -1209,6 +1232,9 @@
 
     var usage = buildTopicUsageSection(topicId);
     if (usage) body.appendChild(usage);
+
+    var discussion = buildDiscussionSection("topic:" + topicId);
+    if (discussion) body.appendChild(discussion);
 
     showView("topic-page");
   }
@@ -1340,6 +1366,9 @@
 
     var topo = buildServiceTopologySection(name);
     if (topo) body.appendChild(topo);
+
+    var discussion = buildDiscussionSection("service:" + name);
+    if (discussion) body.appendChild(discussion);
 
     showView("service-page");
   }
@@ -2021,6 +2050,114 @@
       "This usage feed doesn't attribute counts per service — showing fleet-wide counts for the topics " + name + " handles."));
     section.appendChild(buildUsagePanel(fleetWide, { perTopic: true }));
     return section;
+  }
+
+  /* ---------- discussion (annotations) ----------
+     The vessel decision for the roadmap's "hard constraint": the READ path is a plain static
+     artifact - annotations.json, published into the same store as manifest.json - so recorded
+     discussion renders on any static host with zero backend. Only the WRITE path (the
+     aggregator host's mesh:annotations:add handler, spoken to through the wire envelope like
+     the Fleet view speaks to the collector) needs a live endpoint, which this page
+     feature-detects (?annotations= query param, or data-annotations-url on the document root)
+     and without which the section is read-only - or, with no artifact either, absent entirely.
+     Identity is self-declared by design; verifying who may post belongs to the gateway in
+     front of the endpoint (the RateLimiting boundary ruling, applied to writes). */
+  var currentAnnotations = null; // null = no annotations.json; [] = artifact present, no notes
+  function annotationsEndpoint() {
+    return new URLSearchParams(location.search).get("annotations")
+      || document.documentElement.getAttribute("data-annotations-url") || null;
+  }
+  function loadAnnotations() {
+    fetch(resolveUrl("annotations.json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (log) {
+        currentAnnotations = (log && log.annotations) || [];
+        syncViewFromHash(); // an open entity page gains its recorded discussion
+      })
+      .catch(function () { currentAnnotations = null; });
+  }
+
+  function buildDiscussionSection(entityId) {
+    var endpoint = annotationsEndpoint();
+    if (currentAnnotations == null && !endpoint) return null; // the static floor: no trace of the feature
+    var section = el("div", "sp-section");
+    section.appendChild(el("h2", null, "Discussion"));
+    var thread = el("div", "disc-thread");
+    section.appendChild(thread);
+    renderThread(thread, (currentAnnotations || []).filter(function (a) { return a.entity === entityId; }));
+    if (endpoint) {
+      section.appendChild(buildComposer(entityId, endpoint, thread));
+    } else {
+      section.appendChild(el("div", "usage-note",
+        "Read-only — no annotations endpoint is configured for this explorer (?annotations= or data-annotations-url), so notes can be read here but recorded only through the aggregator host."));
+    }
+    return section;
+  }
+
+  function renderThread(box, notes) {
+    box.innerHTML = "";
+    if (!notes.length) {
+      box.appendChild(el("div", "sp-empty", "No notes on this yet."));
+      return;
+    }
+    notes.slice()
+      .sort(function (a, b) { return String(b.createdAtUtc || "").localeCompare(String(a.createdAtUtc || "")); })
+      .forEach(function (n) {
+        var row = el("div", "disc-note");
+        var head = el("div", "disc-head");
+        head.appendChild(el("span", "disc-author", n.author || "unknown"));
+        var age = n.createdAtUtc ? Date.now() - new Date(n.createdAtUtc).getTime() : NaN;
+        head.appendChild(el("span", "disc-when", isNaN(age) ? String(n.createdAtUtc || "") : humanAge(Math.max(0, age)) + " ago"));
+        row.appendChild(head);
+        row.appendChild(el("div", "disc-text", n.text || ""));
+        box.appendChild(row);
+      });
+  }
+
+  function buildComposer(entityId, endpoint, threadBox) {
+    var form = el("div", "disc-composer");
+    var name = document.createElement("input");
+    name.type = "text"; name.placeholder = "Your name"; name.maxLength = 80; name.className = "disc-name";
+    var text = document.createElement("textarea");
+    text.placeholder = "Add a note — record the decision next to the evidence…";
+    text.maxLength = 4000; text.rows = 3; text.className = "disc-textarea";
+    var send = el("button", "disc-send", "Add note");
+    send.type = "button";
+    var err = el("div", "disc-err", "");
+    send.addEventListener("click", function () {
+      var author = name.value.trim(), body = text.value.trim();
+      if (!author || !body) { err.textContent = "Name and note are both required."; return; }
+      send.disabled = true; err.textContent = "";
+      fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ topic: "mesh:annotations:add", headers: {},
+          body: JSON.stringify({ entity: entityId, author: author, text: body }) })
+      })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (envelope) {
+          if (envelope.statusCode !== "Created" && envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+          var thread = JSON.parse(envelope.body);
+          // Fold the authoritative thread into the local cache, so navigating away and back
+          // keeps the new note without re-fetching the artifact (which may lag the write).
+          currentAnnotations = (currentAnnotations || [])
+            .filter(function (a) { return a.entity !== entityId; })
+            .concat(thread.annotations || []);
+          renderThread(threadBox, thread.annotations || []);
+          text.value = "";
+        })
+        .catch(function (ex) { err.textContent = "Could not post: " + (ex.message || ex); })
+        .then(function () { send.disabled = false; });
+    });
+    form.appendChild(name);
+    form.appendChild(text);
+    var foot = el("div", "disc-foot");
+    foot.appendChild(send);
+    foot.appendChild(err);
+    form.appendChild(foot);
+    form.appendChild(el("div", "usage-note",
+      "Attribution is the name you enter — self-declared by design. Controlling who may post belongs to the gateway in front of the annotations endpoint."));
+    return form;
   }
 
   /* ---------- topology ---------- */

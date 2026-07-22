@@ -14,6 +14,15 @@ offline (Mesh Explorer) or behind strict CSPs (both).
 
 ## Mesh Explorer
 
+> **2026-07-22:** the explorer has grown into a three-entity product — **Estate**, **Topic**
+> (`#topic:<id>`), and **Service** (`#service:<name>`) pages, all hash-deep-linkable — with a
+> node-link topology graph above the edge table, per-entity **usage** sections fed by the
+> [mesh usage feed](mesh-usage-feed.md) (`usage.json`), an estate-level **Value & deprecation**
+> ranking (structural + observed-usage evidence, run-over-run change flags, topics removed since
+> the previous run), and per-entity **Discussion** (below). Every artifact stays optional: a
+> missing file hides its sections, never breaks the page. The sections below describe the
+> original core; see `src/Benzene.Mesh.Ui/CLAUDE.md` for the full, current feature inventory.
+
 Shows a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
 service cards — name, an optional owning-team label, status badge, drift badge, links to the
 service's raw spec/health URLs, and (when its spec advertised any) a chip row of the transports
@@ -69,6 +78,28 @@ consumer service name — useful once a fleet has more topics than fit on screen
 the reverse cross-link: every service card also has a **topics** link that pre-fills this search
 with that service's name and scrolls to the table, answering "which topics does `orders-api`
 touch" from the service side instead of hunting through rows by hand.
+
+### Discussion & annotations
+
+Topic and service pages carry a **Discussion** section — the decisions the explorer's evidence
+provokes ("retire this after finance signs off", "this drift is the planned v2 migration") get
+recorded next to the evidence instead of evaporating into chat. It is split across the two data
+planes so the static floor survives:
+
+- **Reading is static.** Notes live in `annotations.json`, published into the same artifact store
+  as `manifest.json` — any static host serves recorded discussion with zero backend. No artifact
+  and no endpoint → the section doesn't exist at all.
+- **Writing needs a live endpoint.** Posting goes through the aggregator host's
+  `mesh:annotations:add` handler (`POST /mesh/annotations` over HTTP, or the topic on any
+  transport the host runs — same dogfooded shape as `mesh:report`, and the same opt-in: a host
+  that doesn't discover the handler has no write surface). The explorer feature-detects it via a
+  `?annotations=<envelope-url>` query parameter or a `data-annotations-url` attribute, and shows
+  the composer only then; otherwise the section is explicitly read-only.
+- **Identity is self-declared by design.** A note records the display name the author typed.
+  Authenticating who may post — and verifying who they are — belongs to the gateway in front of
+  the annotations endpoint, the same boundary ruling as [rate limiting](rate-limiting.md): Benzene
+  ships the mechanism, the deployment's edge owns access control. The handler enforces only
+  shape (required fields, size bounds).
 
 ### Serving it
 

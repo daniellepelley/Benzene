@@ -45,6 +45,10 @@ public static class Extensions
         // The default push-path IMeshReportPublisher - MeshReportMessageHandler resolves this, but
         // only becomes reachable if the host's own .AddMessageHandlers() discovers it.
         services.AddSingleton<IMeshReportPublisher>(resolver => new ArtifactStoreMeshReportPublisher(resolver.GetService<IMeshArtifactStore>()));
+        // The discussion write path (MeshAnnotationsMessageHandler) - same opt-in: registered
+        // here, reachable only if the host discovers the handler; without it, discussion is
+        // strictly read-only (the static annotations.json artifact).
+        services.AddSingleton(resolver => new MeshAnnotationPublisher(resolver.GetService<IMeshArtifactStore>()));
         services.AddSingleton<MeshAggregator>();
         return services;
     }
