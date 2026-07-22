@@ -9,6 +9,17 @@ BlobStorage, EventGrid, Timer) depends on this one and registers its entry point
 `IAzureFunctionAppBuilder` defined here. It is not Azure-SDK-specific — it deliberately references
 no Azure service SDK, only `Microsoft.Azure.Functions.Worker.*` for the host integration.
 
+## Trigger source generator (shipped in this package)
+This package's NuGet **also carries the trigger source generator** (`analyzers/dotnet/cs`, built from
+the separate netstandard2.0 `Benzene.Azure.Function.SourceGenerators` project) plus a `buildTransitive`
+props file setting `FunctionsEnableWorkerIndexing=false`. Because every `Benzene.Azure.Function.*`
+package depends on Core, referencing any of them brings both automatically. The generator emits the
+`[Function]`/`[…Trigger]` class for a `[assembly: Benzene…Trigger(...)]` declaration (each transport
+package defines its own attribute); the worker-indexing prop is required so the generated `[Function]`
+is picked up by the reflection metadata/executor rather than the SDK's worker-indexing generators
+(which can't see another generator's output). See `Benzene.Azure.Function.SourceGenerators`'s
+`CLAUDE.md`, `docs/azure-functions.md`, and `work/azure-functions-trigger-codegen-design.md`.
+
 ## Key types/interfaces
 - `IAzureFunctionApp` / `AzureFunctionApp` — the built app the trigger function methods dispatch
   to. `HandleAsync<TRequest, TResponse>(request)` and `HandleAsync<TRequest>(request)` look up the

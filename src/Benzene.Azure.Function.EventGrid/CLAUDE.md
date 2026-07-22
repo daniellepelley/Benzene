@@ -41,6 +41,15 @@ app.UseEventGrid(eventGrid => eventGrid.UseMessageHandlers());
 // [Message("Microsoft.Storage.BlobCreated")] handlers receive the event's data payload
 ```
 
+## Declared triggers (source-generated)
+Instead of hand-writing the `[Function]`/`[…Trigger]` class, declare the trigger and let
+Benzene's source generator (shipped in `Benzene.Azure.Function.Core`) emit it:
+`[assembly: BenzeneEventGridTrigger(Name = "events")]`.
+`BenzeneEventGridTriggerAttribute` (assembly-scoped, `AllowMultiple`) lives in this package; you own every
+binding value. Still reference this transport's `Microsoft.Azure.Functions.Worker.Extensions.*`
+package directly, and note `FunctionsEnableWorkerIndexing=false` (auto via Core's
+buildTransitive). The hand-written form still works. See `docs/azure-functions.md`.
+
 ## Key types
 - `EventGridTriggerEvent` — Benzene's own dependency-free model (`Id`, `EventType`, `Subject`,
   `Source`, `EventTime`, `DataVersion`, `Data` as `JsonElement?`) + `Parse(string)` covering both

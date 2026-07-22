@@ -53,6 +53,15 @@ Either way Service Bus may redeliver the same message, so the handler must be id
   complete/abandon control - see "True per-message ack" below)
 - `DependencyInjectionExtensions.AddAzureServiceBus()` / `UseServiceBus(...)` - registration and pipeline wiring
 
+## Declared triggers (source-generated)
+Instead of hand-writing the `[Function]`/`[…Trigger]` class, declare the trigger and let
+Benzene's source generator (shipped in `Benzene.Azure.Function.Core`) emit it:
+`[assembly: BenzeneServiceBusTrigger(Name = "orders", QueueName = "orders")]  // or TopicName + SubscriptionName`.
+`BenzeneServiceBusTriggerAttribute` (assembly-scoped, `AllowMultiple`) lives in this package; you own every
+binding value. Still reference this transport's `Microsoft.Azure.Functions.Worker.Extensions.*`
+package directly, and note `FunctionsEnableWorkerIndexing=false` (auto via Core's
+buildTransitive). The hand-written form still works. See `docs/azure-functions.md`.
+
 ## When to use this package
 - When consuming messages from an Azure Service Bus queue or topic/subscription via an Azure Functions
   isolated-worker `[ServiceBusTrigger]` method

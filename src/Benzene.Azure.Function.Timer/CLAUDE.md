@@ -27,6 +27,15 @@ packages here without asking first (repo NuGet policy).
 The builder extension is **`UseTimerTrigger`** — NOT `UseTimer`, which already exists in
 `Benzene.Diagnostics` (`Timers/Extensions.cs`) as the timing middleware. Keep it that way.
 
+## Declared triggers (source-generated)
+Instead of hand-writing the `[Function]`/`[…Trigger]` class, declare the trigger and let
+Benzene's source generator (shipped in `Benzene.Azure.Function.Core`) emit it:
+`[assembly: BenzeneTimerTrigger(Name = "nightly", Schedule = "0 0 2 * * *")]`.
+`BenzeneTimerTriggerAttribute` (assembly-scoped, `AllowMultiple`) lives in this package; you own every
+binding value. Still reference this transport's `Microsoft.Azure.Functions.Worker.Extensions.*`
+package directly, and note `FunctionsEnableWorkerIndexing=false` (auto via Core's
+buildTransitive). The hand-written form still works. See `docs/azure-functions.md`.
+
 ## Key types
 - `TimerTriggerInfo` / `TimerScheduleStatus` — dependency-free models (`IsPastDue`,
   `Last`/`Next`/`LastUpdated`).

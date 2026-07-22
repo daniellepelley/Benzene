@@ -54,6 +54,15 @@ app.UseCosmosDbChangeFeed<OrderDocument>(feed => feed
     }));
 ```
 
+## Declared triggers (source-generated)
+Instead of hand-writing the `[Function]`/`[…Trigger]` class, declare the trigger and let
+Benzene's source generator (shipped in `Benzene.Azure.Function.Core`) emit it:
+`[assembly: BenzeneCosmosDbTrigger(Name = "orders", DatabaseName = "shop", ContainerName = "orders", DocumentType = typeof(OrderDoc))]`.
+`BenzeneCosmosDbTriggerAttribute` (assembly-scoped, `AllowMultiple`) lives in this package; you own every
+binding value. Still reference this transport's `Microsoft.Azure.Functions.Worker.Extensions.*`
+package directly, and note `FunctionsEnableWorkerIndexing=false` (auto via Core's
+buildTransitive). The hand-written form still works. See `docs/azure-functions.md`.
+
 ## When to use this package
 - Consuming a Cosmos DB container's change feed in Azure Functions: CDC fan-in, materialized
   views, cache invalidation, event sourcing projections.
