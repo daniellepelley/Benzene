@@ -6,7 +6,15 @@
       "version": "",
       "reserved": false,
       "consumers": [
-        { "service": "orders-api", "httpMappings": [ { "method": "GET", "path": "/orders" } ] }
+        {
+          "service": "orders-api",
+          "httpMappings": [
+            {
+              "method": "GET",
+              "path": "/orders"
+            }
+          ]
+        }
       ],
       "producers": [],
       "status": null,
@@ -17,12 +25,31 @@
           "title": "OrderDto",
           "type": "object",
           "properties": {
-            "id": { "type": "string", "format": "uuid" },
-            "customerEmail": { "type": "string", "format": "email" },
-            "total": { "type": "number", "minimum": 0 },
-            "status": { "type": "string", "enum": [ "pending", "paid", "shipped" ] }
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "customerEmail": {
+              "type": "string",
+              "format": "email"
+            },
+            "total": {
+              "type": "number",
+              "minimum": 0
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "shipped"
+              ]
+            }
           },
-          "required": [ "id", "total" ]
+          "required": [
+            "id",
+            "total"
+          ]
         }
       },
       "messageSchema": null,
@@ -33,7 +60,15 @@
       "version": "",
       "reserved": false,
       "consumers": [
-        { "service": "orders-api", "httpMappings": [ { "method": "POST", "path": "/orders" } ] }
+        {
+          "service": "orders-api",
+          "httpMappings": [
+            {
+              "method": "POST",
+              "path": "/orders"
+            }
+          ]
+        }
       ],
       "producers": [],
       "status": null,
@@ -41,21 +76,37 @@
         "title": "CreateOrder",
         "type": "object",
         "properties": {
-          "customerEmail": { "type": "string", "format": "email" },
+          "customerEmail": {
+            "type": "string",
+            "format": "email"
+          },
           "lines": {
             "type": "array",
             "items": {
               "title": "OrderLine",
               "type": "object",
               "properties": {
-                "sku": { "type": "string", "pattern": "^[A-Z]{3}-[0-9]{4}$" },
-                "quantity": { "type": "integer", "minimum": 1, "maximum": 99 }
+                "sku": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}-[0-9]{4}$"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 99
+                }
               },
-              "required": [ "sku", "quantity" ]
+              "required": [
+                "sku",
+                "quantity"
+              ]
             }
           }
         },
-        "required": [ "customerEmail", "lines" ]
+        "required": [
+          "customerEmail",
+          "lines"
+        ]
       },
       "responseSchema": null,
       "messageSchema": null,
@@ -66,58 +117,111 @@
       "version": "",
       "reserved": false,
       "consumers": [
-        { "service": "payments-api", "httpMappings": [] }
+        {
+          "service": "payments-api",
+          "httpMappings": []
+        }
       ],
       "producers": [
-        { "service": "orders-api" }
+        {
+          "service": "orders-api"
+        }
       ],
       "status": null,
       "requestSchema": {
         "title": "CapturePayment",
         "type": "object",
         "properties": {
-          "orderId": { "type": "string", "format": "uuid" },
-          "amount": { "type": "number", "minimum": 0.01 },
-          "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.01
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          }
         },
-        "required": [ "orderId", "amount", "currency" ]
+        "required": [
+          "orderId",
+          "amount",
+          "currency"
+        ]
       },
       "responseSchema": null,
       "messageSchema": null,
-      "schemaMismatch": false
+      "schemaMismatch": false,
+      "changes": [
+        {
+          "kind": "consumers-changed",
+          "description": "Consumers changed: +payments-api, -payments-api-legacy"
+        }
+      ]
     },
     {
       "topic": "shipping:book",
       "version": "",
       "reserved": false,
       "consumers": [
-        { "service": "shipping-api", "httpMappings": [] }
+        {
+          "service": "shipping-api",
+          "httpMappings": []
+        }
       ],
       "producers": [
-        { "service": "orders-api" },
-        { "service": "payments-api" }
+        {
+          "service": "orders-api"
+        },
+        {
+          "service": "payments-api"
+        }
       ],
       "status": null,
       "requestSchema": {
         "title": "BookShipment",
         "type": "object",
         "properties": {
-          "orderId": { "type": "string", "format": "uuid" },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "address": {
             "title": "Address",
             "type": "object",
             "properties": {
-              "line1": { "type": "string", "maxLength": 120 },
-              "postcode": { "type": "string", "maxLength": 12 }
+              "line1": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "postcode": {
+                "type": "string",
+                "maxLength": 12
+              }
             },
-            "required": [ "line1", "postcode" ]
+            "required": [
+              "line1",
+              "postcode"
+            ]
           }
         },
-        "required": [ "orderId", "address" ]
+        "required": [
+          "orderId",
+          "address"
+        ]
       },
       "responseSchema": null,
       "messageSchema": null,
-      "schemaMismatch": true
+      "schemaMismatch": true,
+      "changes": [
+        {
+          "kind": "schema-changed",
+          "description": "Payload schema changed (request)"
+        }
+      ]
     },
     {
       "topic": "order:legacy-export",
@@ -125,7 +229,9 @@
       "reserved": false,
       "consumers": [],
       "producers": [
-        { "service": "orders-api" }
+        {
+          "service": "orders-api"
+        }
       ],
       "status": "deprecation-candidate",
       "requestSchema": null,
@@ -134,8 +240,13 @@
         "title": "LegacyOrderExport",
         "type": "object",
         "properties": {
-          "orderId": { "type": "string" },
-          "exportedAt": { "type": "string", "format": "date-time" }
+          "orderId": {
+            "type": "string"
+          },
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "schemaMismatch": false
@@ -145,9 +256,18 @@
       "version": "",
       "reserved": true,
       "consumers": [
-        { "service": "orders-api", "httpMappings": [] },
-        { "service": "payments-api", "httpMappings": [] },
-        { "service": "shipping-api", "httpMappings": [] }
+        {
+          "service": "orders-api",
+          "httpMappings": []
+        },
+        {
+          "service": "payments-api",
+          "httpMappings": []
+        },
+        {
+          "service": "shipping-api",
+          "httpMappings": []
+        }
       ],
       "producers": [],
       "status": null,
@@ -155,6 +275,12 @@
       "responseSchema": null,
       "messageSchema": null,
       "schemaMismatch": false
+    }
+  ],
+  "removedTopics": [
+    {
+      "topic": "order:export",
+      "version": "v0"
     }
   ]
 }

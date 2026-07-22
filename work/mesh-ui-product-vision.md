@@ -7,7 +7,43 @@
 
 ---
 
-> **2026-07-22 (latest) P4 SHIPPED — usage analytics, and data requirement 1 closed:**
+> **2026-07-22 (latest) P5 SHIPPED — the value & deprecation view, and data requirement 2
+> closed at topic granularity:**
+> - **Drift substance (req. 2):** the aggregator now diffs each run's catalog against its own
+>   previous `topics.json` (the snapshot read-back pattern, catalog-wide) and annotates what
+>   changed: `MeshTopicEntry.Changes` (`topic-added`/`schema-changed` with the changed side
+>   named/`producers-changed`/`consumers-changed` with `+`/`-` deltas) plus
+>   `MeshTopicCatalog.RemovedTopics` for topics that vanished entirely. First run claims
+>   nothing; reserved churn never flagged. **Scope ruling recorded:** req. 2 is closed at topic
+>   granularity — the roadmap's "check `Schema.OpenApi/Compatibility` first" was checked, and
+>   deliberately not used: the comparer needs the typed `EventServiceDocument` model, which
+>   cross-language (Go-emitted) specs aren't guaranteed to round-trip; the aggregator stays on
+>   its best-effort JSON-level convention. Field-level per-service diff (the service page's
+>   "what changed inside this service's contract") remains open as a follow-up, now clearly a
+>   nice-to-have rather than a gate.
+> - **The view (estate-level, the roadmap's "defend a deprecation" ranking):** every domain
+>   topic tiered by retirement evidence, evidence spelled out per row — the view argues from
+>   data, it never decides. Tiers: Removed since the previous run / Retirement candidates (no
+>   declared consumers, and/or zero observed usage while a feed is wired) / Verify externally
+>   (`gap` topics — fleet data alone can't defend retiring something fed from outside the
+>   fleet) / No retirement signal. Least-used first within a tier; rows carry status badges,
+>   change badges, producer/consumer counts, and observed volume; everything links through to
+>   the topic page, which now renders the change lines in full above its payload panel.
+>   Honesty rule: with no usage feed wired the header says "structural evidence only" — disuse
+>   is never claimed without the feed that could prove it.
+> - **Also fixed:** the service page's spec links had rotted in the `mesh-spec-ui` merge (the
+>   removed `specUiLink` was still referenced — every service-page render threw). Caught by
+>   this phase's browser verification; the service page now shares the estate card's
+>   mesh-hosted spec / raw / health link set.
+> - Verified: 7 new aggregator diff tests (201 Mesh tests green) and 56 Playwright checks
+>   against the refreshed demo (topics.json now carries `changes` + `removedTopics` fixtures),
+>   zero console errors.
+> - Remaining roadmap: P6 discussion/annotations (backend + auth vessel decision per "The hard
+>   constraint" — the static explorer must keep working without it).
+>
+> ---
+>
+> **2026-07-22 (earlier) P4 SHIPPED — usage analytics, and data requirement 1 closed:**
 > - **The C.1 usage feed now exists end to end.** The emission half turned out to already be
 >   shipped: `Benzene.Diagnostics`' `UseBenzeneMetrics()` emits `benzene.messages.processed` /
 >   `benzene.message.duration` per handled message, tagged `topic`/`transport`/`result` — exactly

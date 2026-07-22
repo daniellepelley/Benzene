@@ -69,6 +69,14 @@ data types - no HTTP, no file I/O, no execution logic.
   each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for a
   future "designed to call" derivation). Pure shapes only - actually populated by
   `Benzene.Mesh.Tracing.Tempo`, not by anything in this package.
+- `MeshTopicChange`/`MeshTopicChangeKind`/`MeshRemovedTopic` (2026-07-22) - the topic-level
+  contract-drift **substance** ("what changed since the previous aggregator run", not just a hash
+  flip): `MeshTopicEntry` gained an optional trailing `Changes` array (kinds `topic-added`/
+  `schema-changed`/`producers-changed`/`consumers-changed` - loose strings, the
+  `MeshServiceStatus` convention, so an older reader renders an unknown kind's description) and
+  `MeshTopicCatalog` an optional trailing `RemovedTopics` (declared in the previous run, declared
+  nowhere now - it can't sit on a current entry because there isn't one). Both purely additive
+  and computed by `Benzene.Mesh.Aggregator`'s run-over-run catalog diff; empty on a first run.
 - `MeshUsage`/`MeshUsageEntry`/`IMeshUsageSource`/`MeshUsageSource` - the `usage.json` shape and
   its adapter port (`docs/mesh-usage-feed.md`): observed per-topic message counts at whatever
   dimensions the adapter's backend can supply — `Topic` required, `Version`/`Service`/`Transport`/

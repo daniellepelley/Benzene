@@ -92,8 +92,10 @@ public class MeshAggregator
         var manifest = new MeshManifest(_clock(), manifestEntries.ToArray());
         writes.Add(_store.PublishAsync("manifest.json", JsonSerializer.Serialize(manifest, JsonOptions)));
 
-        // Cross-service topic catalog: every topic across the mesh -> which service(s) expose it.
-        var catalog = BuildTopicCatalog(entries, results);
+        // Cross-service topic catalog: every topic across the mesh -> which service(s) expose it,
+        // diffed against the previous run's own catalog for the topic-level "what changed"
+        // substance (added/removed topics, schema/participant changes) a drift hash can't give.
+        var catalog = await ApplyCatalogDiffAsync(BuildTopicCatalog(entries, results));
         writes.Add(_store.PublishAsync("topics.json", JsonSerializer.Serialize(catalog, JsonOptions)));
 
         // Structural ("designed to call") topology: an edge from each service that *sends* a domain
@@ -292,6 +294,113 @@ public class MeshAggregator
             .ToArray();
 
         return new MeshTopicCatalog(_clock(), topics);
+    }
+
+    /// <summary>
+    /// Annotates the freshly-built catalog with what changed since the previous run, by reading
+    /// back the store's own last <c>topics.json</c> (the <see cref="MeshSnapshotBuilder"/>
+    /// read-back pattern, catalog-wide): per non-reserved (topic, version) - newly declared,
+    /// payload schema changed (compared over the same <see cref="Canonical"/> normalization the
+    /// mismatch flag uses), producer/consumer set changed - plus, on the catalog itself, the
+    /// topics that vanished entirely (<see cref="MeshTopicCatalog.RemovedTopics"/>). A first run,
+    /// or an unreadable/unparseable previous catalog, claims no changes at all - never a wall of
+    /// "added" noise, and never a failed run.
+    /// </summary>
+    private async Task<MeshTopicCatalog> ApplyCatalogDiffAsync(MeshTopicCatalog catalog)
+    {
+        MeshTopicCatalog? previous = null;
+        try
+        {
+            var previousJson = await _store.TryReadAsync("topics.json");
+            if (previousJson != null)
+            {
+                previous = JsonSerializer.Deserialize<MeshTopicCatalog>(previousJson, JsonOptions);
+            }
+        }
+        catch
+        {
+            // No previous catalog to diff against this run; the fresh catalog still publishes.
+        }
+
+        if (previous == null)
+        {
+            return catalog;
+        }
+
+        var previousByKey = new Dictionary<(string Topic, string Version), MeshTopicEntry>();
+        foreach (var entry in previous.Topics)
+        {
+            previousByKey.TryAdd((entry.Topic, entry.Version), entry);
+        }
+
+        var topics = catalog.Topics.Select(entry => DiffTopicEntry(entry, previousByKey)).ToArray();
+
+        var currentKeys = catalog.Topics.Select(entry => (entry.Topic, entry.Version)).ToHashSet();
+        var removed = previous.Topics
+            .Where(entry => !entry.Reserved && !currentKeys.Contains((entry.Topic, entry.Version)))
+            .Select(entry => new MeshRemovedTopic(entry.Topic, entry.Version))
+            .OrderBy(entry => entry.Topic, StringComparer.Ordinal)
+            .ThenBy(entry => entry.Version, StringComparer.Ordinal)
+            .ToArray();
+
+        return new MeshTopicCatalog(catalog.GeneratedAtUtc, topics, removed);
+    }
+
+    private static MeshTopicEntry DiffTopicEntry(
+        MeshTopicEntry entry, IReadOnlyDictionary<(string Topic, string Version), MeshTopicEntry> previousByKey)
+    {
+        if (entry.Reserved)
+        {
+            return entry; // utility topic churn is noise, same carve-out as Status/SchemaMismatch
+        }
+
+        if (!previousByKey.TryGetValue((entry.Topic, entry.Version), out var previous))
+        {
+            return WithChanges(entry, new[]
+            {
+                new MeshTopicChange(MeshTopicChangeKind.Added, "Not declared anywhere in the previous run"),
+            });
+        }
+
+        var changes = new List<MeshTopicChange>();
+
+        var changedSides = new List<string>();
+        if (Canonical(entry.RequestSchema) != Canonical(previous.RequestSchema)) changedSides.Add("request");
+        if (Canonical(entry.ResponseSchema) != Canonical(previous.ResponseSchema)) changedSides.Add("response");
+        if (Canonical(entry.MessageSchema) != Canonical(previous.MessageSchema)) changedSides.Add("message");
+        if (changedSides.Count > 0)
+        {
+            changes.Add(new MeshTopicChange(MeshTopicChangeKind.SchemaChanged,
+                "Payload schema changed (" + string.Join(", ", changedSides) + ")"));
+        }
+
+        AddParticipantSetChange(changes, MeshTopicChangeKind.ProducersChanged, "Producers",
+            previous.Producers.Select(producer => producer.Service), entry.Producers.Select(producer => producer.Service));
+        AddParticipantSetChange(changes, MeshTopicChangeKind.ConsumersChanged, "Consumers",
+            previous.Consumers.Select(consumer => consumer.Service), entry.Consumers.Select(consumer => consumer.Service));
+
+        return changes.Count > 0 ? WithChanges(entry, changes.ToArray()) : entry;
+    }
+
+    private static void AddParticipantSetChange(List<MeshTopicChange> changes, string kind, string label,
+        IEnumerable<string> before, IEnumerable<string> after)
+    {
+        var beforeSet = before.ToHashSet(StringComparer.Ordinal);
+        var afterSet = after.ToHashSet(StringComparer.Ordinal);
+        var added = afterSet.Except(beforeSet).OrderBy(name => name, StringComparer.Ordinal).Select(name => "+" + name);
+        var removed = beforeSet.Except(afterSet).OrderBy(name => name, StringComparer.Ordinal).Select(name => "-" + name);
+        var deltas = added.Concat(removed).ToArray();
+        if (deltas.Length > 0)
+        {
+            changes.Add(new MeshTopicChange(kind, label + " changed: " + string.Join(", ", deltas)));
+        }
+    }
+
+    private static MeshTopicEntry WithChanges(MeshTopicEntry entry, MeshTopicChange[] changes)
+    {
+        return new MeshTopicEntry(
+            entry.Topic, entry.Version, entry.Reserved, entry.Consumers, entry.Producers, entry.Status,
+            entry.RequestSchema, entry.ResponseSchema, entry.MessageSchema, entry.SchemaMismatch, changes);
     }
 
     /// <summary>

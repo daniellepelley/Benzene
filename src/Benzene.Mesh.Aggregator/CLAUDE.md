@@ -172,6 +172,22 @@ same treatment as `OwningTeam`/`Transports`; the aggregator does **not** compute
 `work/service-mesh-roadmap-1.0.md` 2026-07-20 ruling, staleness is a read-time UI derivation over
 this raw timestamp, not a status). Consumed by `Benzene.Mesh.Ui`'s issue inbox.
 
+### Run-over-run catalog diff (drift substance, 2026-07-22)
+Each run also diffs the fresh catalog against the store's own previous `topics.json`
+(`ApplyCatalogDiffAsync` - the `MeshSnapshotBuilder` read-back pattern, catalog-wide) and
+annotates **what** changed, not just that something did: per non-reserved (topic, version) a
+`MeshTopicEntry.Changes` array (`MeshTopicChange`, kinds `topic-added`/`schema-changed` - compared
+over the same `Canonical` normalization the mismatch flag uses, naming the changed request/
+response/message side - /`producers-changed`/`consumers-changed` with `+name`/`-name` deltas),
+plus `MeshTopicCatalog.RemovedTopics` for topics declared in the previous run but nowhere now. A
+first run, or an unreadable/unparseable previous catalog, claims no changes at all (never a wall
+of "added" noise, never a failed run); reserved-topic churn is never flagged (the same carve-out
+as `Status`/`SchemaMismatch`). This closes the vision doc's data requirement 2 at **topic
+granularity** - field-level per-service spec diffing (`Benzene.Schema.OpenApi/Compatibility`'s
+comparer) was deliberately not pulled in here: it needs the typed `EventServiceDocument` model
+(+ `Microsoft.OpenApi`), which cross-language (e.g. Go-emitted) specs aren't guaranteed to
+round-trip, against this package's best-effort JSON-level parsing convention.
+
 ## Observed usage (`usage.json`)
 Each run also polls every registered `Benzene.Mesh.Contracts.IMeshUsageSource` (usage adapters -
 the full standard is `docs/mesh-usage-feed.md`), concurrently with the service polling and each

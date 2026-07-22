@@ -474,6 +474,20 @@
   .usage-note { color: var(--ink-faint); font-size: 12px; margin-top: 10px; max-width: 640px; }
   .usage-h { font-weight: 600; }
   .usage-topics { margin-top: 8px; }
+  .vd-group-h { font-size: 11.5px; font-family: var(--mono); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); margin: 16px 0 2px; }
+  .vd-group-h:first-child { margin-top: 4px; }
+  .vd-group-sub { font-size: 12px; color: var(--ink-faint); margin: 0 0 8px; }
+  .vd-row {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    padding: 9px 14px; margin-bottom: 6px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+  }
+  .vd-evidence { font-size: 12px; color: var(--ink-faint); }
+  .vd-removed { font-family: var(--mono); font-size: 12.5px; }
+  .t-change { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
+  .tp-changes { margin: 6px 0 10px; }
+  .tp-change-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 3px 0; }
+  .tp-change-row .d { color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -554,6 +568,14 @@
         <tbody id="topics-tbody"></tbody>
       </table>
     </div>
+  </section>
+
+  <section id="value-section" style="display:none">
+    <div class="topo-head">
+      <h2>Value &amp; deprecation</h2>
+      <span class="topo-generated" id="value-note"></span>
+    </div>
+    <div id="value-body"></div>
   </section>
 
   <section id="topology-section" style="display:none">
@@ -711,18 +733,16 @@
       return new URL(relative, base).toString();
     } catch (e) { return relative; }
   }
-  /* Best-effort: derive a Benzene.Spec.Ui link from a service's specUrl - not guaranteed to
-     resolve for every hosting layout, since it assumes /spec-ui sits next to /spec on the same
-     host. */
-  function specUiLink(specUrl) {
-    try {
-      var u = new URL(specUrl, location.href);
-      // A self-reported manifest is untrusted; only derive a link from an http(s) spec URL.
-      if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-      var specUiPath = u.pathname.replace(/\/spec$/, "/spec-ui");
-      if (specUiPath === u.pathname) return null;
-      return u.origin + specUiPath + "?url=" + encodeURIComponent(specUrl);
-    } catch (e) { return null; }
+  /* The mesh-hosted Spec UI link for a service. The spec page lives next to this one - as a static
+     file (mesh-spec-ui.html) or, when this page is served from a pipeline at /mesh-ui, at
+     /mesh-spec-ui.html - so a single relative href resolves in both. We pass the service name, the
+     manifest URL this page loaded from (so the spec page resolves services/{name}.json from the same
+     place), and this page's own URL for the spec page's "back to Mesh" link. */
+  function meshSpecUiHref(serviceName) {
+    var qs = "?service=" + encodeURIComponent(serviceName);
+    if (manifestUrl) qs += "&manifest=" + encodeURIComponent(manifestUrl);
+    qs += "&mesh=" + encodeURIComponent(location.pathname + location.search);
+    return "mesh-spec-ui.html" + qs;
   }
   /* Only allow http(s) URLs to become anchor hrefs. specUrl/healthUrl come from an untrusted
      self-reported manifest, so a javascript:/data: URL would otherwise execute on click (target
@@ -915,12 +935,18 @@
     if (svc.owningTeam) head.appendChild(el("span", "svc-team", svc.owningTeam));
 
     var links = el("div", "svc-links");
+    // "spec" opens the mesh-hosted Spec UI (mesh-spec-ui.html), which renders the spec the aggregator
+    // captured into this same origin's services/{name}.json - so the service itself only ever serves
+    // JSON, never any HTML. A single relative link works whether this page is a static file or served
+    // from a pipeline at /mesh-ui (the spec page answers at /mesh-spec-ui.html in that case). The raw
+    // JSON stays one click away via the separate "raw" link.
+    var a1 = el("a", null, "spec"); a1.href = meshSpecUiHref(svc.name);
+    a1.title = "View this service's spec in the mesh-hosted Spec UI";
+    a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1);
     var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
-    if (specHref) { var a1 = el("a", null, "spec"); a1.href = specHref; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
+    if (specHref) { var aRaw = el("a", null, "raw"); aRaw.href = specHref; aRaw.target = "_blank"; aRaw.rel = "noopener"; aRaw.title = "The service's raw spec JSON (the Cloud Service contract)"; aRaw.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(aRaw); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
-    var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
-    if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; a3.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a3); }
     var a4 = el("button", "svc-topics-link", "topics");
     a4.type = "button";
     a4.title = "Find topics " + svc.name + " produces or consumes";
@@ -1095,6 +1121,7 @@
   }
   function renderTopics(cat) {
     currentTopics = (cat && cat.topics) || [];
+    currentRemovedTopics = (cat && cat.removedTopics) || [];
     var section = document.getElementById("topics-section");
     if (!currentTopics.length) { section.style.display = "none"; return; }
     section.style.display = "";
@@ -1102,6 +1129,7 @@
     updateAsyncApiLinks();
     renderTopicRows();
     renderIssues(); // topic-derived issues (schema mismatch, deprecation/gap) join once topics load
+    renderValueView();
     syncViewFromHash(); // a page loaded with #topic:/#service: in the URL opens straight to it (and an open service page re-renders with the topics now loaded)
   }
 
@@ -1276,13 +1304,17 @@
       svc.transports.forEach(function (t) { chips.appendChild(el("span", "chip", t)); });
       idSection.appendChild(chips);
     }
+    // Same link set as the estate card: "spec" opens the mesh-hosted Spec UI (mesh-spec-ui.html,
+    // rendering the spec the aggregator captured into same-origin services/{name}.json), "raw" is
+    // the service's own spec JSON, "health" its health endpoint.
     var links = el("div", "sp-links");
+    var a1 = el("a", null, "spec"); a1.href = meshSpecUiHref(svc.name);
+    a1.title = "View this service's spec in the mesh-hosted Spec UI";
+    links.appendChild(a1);
     var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
-    if (specHref) { var a1 = el("a", null, "spec"); a1.href = specHref; a1.target = "_blank"; a1.rel = "noopener"; links.appendChild(a1); }
+    if (specHref) { var a3 = el("a", null, "raw"); a3.href = specHref; a3.target = "_blank"; a3.rel = "noopener"; a3.title = "The service's raw spec JSON (the Cloud Service contract)"; links.appendChild(a3); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; links.appendChild(a2); }
-    var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
-    if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; links.appendChild(a3); }
     if (links.childNodes.length) idSection.appendChild(links);
     if (idSection.childNodes.length) body.appendChild(idSection);
 
@@ -1566,6 +1598,19 @@
     }
     block.appendChild(head);
 
+    // Run-over-run drift substance from the aggregator's catalog diff: what changed, not just
+    // that something did. Absent on an unchanged topic (and always on a first run).
+    if (t.changes && t.changes.length) {
+      var changesBox = el("div", "tp-changes");
+      t.changes.forEach(function (c) {
+        var row = el("div", "tp-change-row");
+        row.appendChild(el("span", "t-badge t-change", c.kind));
+        row.appendChild(el("span", "d", c.description));
+        changesBox.appendChild(row);
+      });
+      block.appendChild(changesBox);
+    }
+
     var payload = buildTopicPayloadSection(t);
     if (payload) block.appendChild(payload);
 
@@ -1718,6 +1763,114 @@
   document.getElementById("topics-show-utils").addEventListener("change", renderTopicRows);
   document.getElementById("topics-filter").addEventListener("input", renderTopicRows);
 
+  /* ---------- value & deprecation view ----------
+     The estate-level "defend a deprecation" ranking: every domain topic tiered by the evidence
+     available for retiring it, with the evidence itself spelled out on each row - this view
+     argues from data, it never decides. Structural signals come from topics.json (declared
+     consumers/producers, deprecation-candidate/gap status, run-over-run changes incl. topics
+     removed since the last run), observed usage from usage.json when a feed is wired. Honesty
+     rules: with no usage feed, "unused" is never claimed (the header says structural-only);
+     a gap topic is "verify externally", not a candidate - its producer is outside this fleet's
+     declarations by definition, so fleet data alone can't defend retiring it. */
+  var currentRemovedTopics = [];
+  var VD_TIERS = [
+    { key: "candidate", label: "Retirement candidates",
+      sub: "Showing no sign of use — the evidence to defend a retirement decision, per row." },
+    { key: "verify", label: "Verify externally",
+      sub: "Involves parties outside this fleet's own declarations — confirm with them before acting." },
+    { key: "ok", label: "No retirement signal",
+      sub: "Actively used, or no evidence of disuse." }
+  ];
+  function renderValueView() {
+    var section = document.getElementById("value-section");
+    var domainTopics = currentTopics.filter(function (t) { return !t.reserved; });
+    if (!domainTopics.length && !currentRemovedTopics.length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    var feedWired = !!currentUsage;
+    document.getElementById("value-note").textContent = feedWired
+      ? "structural + observed-usage evidence · candidates first"
+      : "structural evidence only — no usage feed wired, so “unused” can't be proven here";
+    var body = document.getElementById("value-body");
+    body.innerHTML = "";
+
+    if (currentRemovedTopics.length) {
+      body.appendChild(el("div", "vd-group-h", "Removed since the previous run (" + currentRemovedTopics.length + ")"));
+      body.appendChild(el("div", "vd-group-sub", "Declared in the previous aggregator run, declared nowhere now — a retirement that just completed, or a disappearance to confirm."));
+      currentRemovedTopics.forEach(function (r) {
+        var row = el("div", "vd-row");
+        row.appendChild(el("span", "vd-removed", r.topic + (r.version ? " @ " + r.version : "")));
+        row.appendChild(el("span", "vd-evidence", "no longer declared by any service"));
+        body.appendChild(row);
+      });
+    }
+
+    var tiers = { candidate: [], verify: [], ok: [] };
+    domainTopics.forEach(function (t) {
+      var usageTotal = feedWired
+        ? usageEntriesForTopic(t.topic, t.version || null).reduce(function (a, e) { return a + (e.count || 0); }, 0)
+        : null;
+      var consumers = (t.consumers || []).length;
+      var evidence = [];
+      var tier;
+      if (t.status === "gap") {
+        tier = "verify";
+        evidence.push("produced outside this fleet (gap)");
+        if (feedWired && usageTotal === 0) evidence.push("no traffic observed");
+      } else if (feedWired && usageTotal > 0) {
+        tier = "ok";
+      } else if (!consumers || (feedWired && usageTotal === 0)) {
+        tier = "candidate";
+        if (!consumers) evidence.push("no declared consumers");
+        if (feedWired && usageTotal === 0) evidence.push("no traffic observed while the usage feed is wired");
+      } else {
+        tier = "ok";
+        evidence.push("declared consumers, no usage feed to check against");
+      }
+      tiers[tier].push({ t: t, usageTotal: usageTotal, evidence: evidence });
+    });
+
+    // Within a tier: least-used first (the strongest candidates float up), then by name.
+    Object.keys(tiers).forEach(function (k) {
+      tiers[k].sort(function (a, b) {
+        var au = a.usageTotal == null ? -1 : a.usageTotal, bu = b.usageTotal == null ? -1 : b.usageTotal;
+        return au - bu || a.t.topic.localeCompare(b.t.topic);
+      });
+    });
+
+    VD_TIERS.forEach(function (tierDef) {
+      var rows = tiers[tierDef.key];
+      if (!rows.length) return;
+      body.appendChild(el("div", "vd-group-h", tierDef.label + " (" + rows.length + ")"));
+      body.appendChild(el("div", "vd-group-sub", tierDef.sub));
+      rows.forEach(function (r) { body.appendChild(buildValueRow(r)); });
+    });
+  }
+
+  function buildValueRow(r) {
+    var t = r.t;
+    var row = el("div", "vd-row");
+    row.appendChild(topicLink(t.topic));
+    row.appendChild(el("span", "sp-topic-ver", t.version || "unversioned"));
+    row.appendChild(el("span", "vd-evidence",
+      (t.producers || []).length + " producer" + ((t.producers || []).length === 1 ? "" : "s")
+      + " · " + (t.consumers || []).length + " consumer" + ((t.consumers || []).length === 1 ? "" : "s")));
+    if (t.status && TOPIC_STATUS_LABELS[t.status]) {
+      var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
+      badge.title = TOPIC_STATUS_TITLES[t.status] || "";
+      row.appendChild(badge);
+    }
+    (t.changes || []).forEach(function (c) {
+      var cb = el("span", "t-badge t-change", c.kind);
+      cb.title = c.description;
+      row.appendChild(cb);
+    });
+    if (r.evidence.length) row.appendChild(el("span", "vd-evidence", r.evidence.join(" · ")));
+    if (r.usageTotal != null && r.usageTotal > 0) {
+      row.appendChild(el("span", "sp-edge-stats", fmtCount(r.usageTotal) + " msgs observed"));
+    }
+    return row;
+  }
+
   /* ---------- usage (observed traffic) ----------
      usage.json is the aggregator's merge of every registered usage adapter's report - counts of
      messages actually handled, per topic, at whatever dimensions (version/service/transport/
@@ -1734,6 +1887,7 @@
       .then(function (u) {
         currentUsage = (u && u.entries) ? u : null;
         renderTopicRows();  // the estate table's Usage column joins once the feed loads
+        renderValueView();  // observed-usage evidence joins the value/deprecation ranking
         syncViewFromHash(); // an open topic/service page gains its usage section
       })
       .catch(function () { currentUsage = null; });

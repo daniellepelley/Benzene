@@ -755,6 +755,116 @@ public class MeshAggregatorTest : IDisposable
         }
     }
 
+    private MeshAggregator CatalogDiffAggregator(string specJson, IMeshArtifactStore store)
+    {
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, specJson)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        return new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+    }
+
+    private async Task<MeshTopicCatalog> ReadCatalogAsync(IMeshArtifactStore store)
+    {
+        return JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_FirstRun_ClaimsNoTopicChanges()
+    {
+        // With no previous topics.json there is nothing to diff against - a first run must not
+        // render the whole estate as a wall of "topic-added" noise.
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        await CatalogDiffAggregator("""{"requests":[{"topic":"order:create"}]}""", store).RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = await ReadCatalogAsync(store);
+
+        Assert.Empty(Assert.Single(catalog.Topics, t => t.Topic == "order:create").Changes);
+        Assert.Empty(catalog.RemovedTopics);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_SecondRun_FlagsANewlyDeclaredTopic()
+    {
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        await CatalogDiffAggregator("""{"requests":[{"topic":"order:create"}]}""", store).RunOnceAsync(SingleServiceRegistry());
+        await CatalogDiffAggregator("""{"requests":[{"topic":"order:create"},{"topic":"order:refund"}]}""", store).RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = await ReadCatalogAsync(store);
+
+        var refund = Assert.Single(catalog.Topics, t => t.Topic == "order:refund");
+        Assert.Equal(MeshTopicChangeKind.Added, Assert.Single(refund.Changes).Kind);
+        // The unchanged topic carries no changes - the diff is per-entry, not run-wide.
+        Assert.Empty(Assert.Single(catalog.Topics, t => t.Topic == "order:create").Changes);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_SecondRun_FlagsASchemaChangeWithTheChangedSide()
+    {
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        await CatalogDiffAggregator(
+            """{"requests":[{"topic":"order:create","request":{"type":"object","properties":{"id":{"type":"string"}}}}]}""",
+            store).RunOnceAsync(SingleServiceRegistry());
+        await CatalogDiffAggregator(
+            """{"requests":[{"topic":"order:create","request":{"type":"object","properties":{"id":{"type":"integer"}}}}]}""",
+            store).RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = await ReadCatalogAsync(store);
+
+        var change = Assert.Single(Assert.Single(catalog.Topics, t => t.Topic == "order:create").Changes);
+        Assert.Equal(MeshTopicChangeKind.SchemaChanged, change.Kind);
+        Assert.Contains("request", change.Description);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_SecondRun_FlagsAConsumerSetChange()
+    {
+        // The same topic handled by a differently-named service across runs (a rename, or a
+        // handoff between services) is a consumer-set change worth reviewing, not silence.
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var spec = """{"requests":[{"topic":"order:create"}]}""";
+        await CatalogDiffAggregator(spec, store).RunOnceAsync(SingleServiceRegistry());
+        await CatalogDiffAggregator(spec, store).RunOnceAsync(
+            new MeshServiceRegistry(new[] { new MeshServiceRegistryEntry("orders-api-v2", SpecUrl, HealthUrl) }));
+
+        var catalog = await ReadCatalogAsync(store);
+
+        var change = Assert.Single(Assert.Single(catalog.Topics, t => t.Topic == "order:create").Changes);
+        Assert.Equal(MeshTopicChangeKind.ConsumersChanged, change.Kind);
+        Assert.Contains("+orders-api-v2", change.Description);
+        Assert.Contains("-orders-api", change.Description);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_SecondRun_RecordsAVanishedTopicOnTheCatalog()
+    {
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        await CatalogDiffAggregator("""{"requests":[{"topic":"order:create"},{"topic":"order:legacy-export","version":"v1"}]}""", store)
+            .RunOnceAsync(SingleServiceRegistry());
+        await CatalogDiffAggregator("""{"requests":[{"topic":"order:create"}]}""", store).RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = await ReadCatalogAsync(store);
+
+        var removed = Assert.Single(catalog.RemovedTopics);
+        Assert.Equal("order:legacy-export", removed.Topic);
+        Assert.Equal("v1", removed.Version);
+        Assert.DoesNotContain(catalog.Topics, t => t.Topic == "order:legacy-export");
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_SecondRun_ReservedTopicChurnIsNeverFlagged()
+    {
+        // Utility topics (spec/health/...) churn with framework versions, not with anyone's domain
+        // contract - the same carve-out Status and SchemaMismatch already apply.
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        await CatalogDiffAggregator("""{"requests":[{"topic":"spec","reserved":true}]}""", store).RunOnceAsync(SingleServiceRegistry());
+        await CatalogDiffAggregator("""{"requests":[{"topic":"spec","reserved":true},{"topic":"healthcheck","reserved":true}]}""", store)
+            .RunOnceAsync(SingleServiceRegistry());
+
+        var catalog = await ReadCatalogAsync(store);
+
+        Assert.All(catalog.Topics, t => Assert.Empty(t.Changes));
+    }
+
     [Fact]
     public async Task RunOnceAsync_NoUsageSources_PublishesNoUsageArtifact()
     {

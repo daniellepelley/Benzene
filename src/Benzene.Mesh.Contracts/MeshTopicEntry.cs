@@ -21,10 +21,11 @@ public class MeshTopicEntry
     /// <param name="responseSchema">The response payload's JSON Schema (from a consumer's spec), <c>$ref</c>s inlined; <c>null</c> when unknown.</param>
     /// <param name="messageSchema">The broadcast message's JSON Schema (from a producer's spec <c>events</c>), <c>$ref</c>s inlined; <c>null</c> when unknown.</param>
     /// <param name="schemaMismatch">True when the topic's consumers do not all declare the same inbound payload — likely a contract error. See <see cref="SchemaMismatch"/>.</param>
+    /// <param name="changes">What changed for this (topic, version) since the previous aggregator run — see <see cref="Changes"/>. Empty when nothing did (or on a first run).</param>
     public MeshTopicEntry(string topic, string version, bool reserved,
         MeshTopicService[] consumers, MeshTopicProducer[] producers, string? status,
         JsonObject? requestSchema = null, JsonObject? responseSchema = null, JsonObject? messageSchema = null,
-        bool schemaMismatch = false)
+        bool schemaMismatch = false, MeshTopicChange[]? changes = null)
     {
         Topic = topic;
         Version = version;
@@ -36,6 +37,7 @@ public class MeshTopicEntry
         ResponseSchema = responseSchema;
         MessageSchema = messageSchema;
         SchemaMismatch = schemaMismatch;
+        Changes = changes ?? Array.Empty<MeshTopicChange>();
     }
 
     /// <summary>The topic id.</summary>
@@ -96,4 +98,13 @@ public class MeshTopicEntry
     /// utility topic.
     /// </summary>
     public bool SchemaMismatch { get; }
+
+    /// <summary>
+    /// What changed for this (topic, version) since the previous aggregator run - the topic-level
+    /// contract-drift <em>substance</em> ("what changed", not just "something changed"), computed
+    /// by diffing against the previous run's own <c>topics.json</c>. Empty when nothing changed,
+    /// on a first run (no previous catalog to diff against - never a wall of "added" noise), and
+    /// always for reserved utility topics.
+    /// </summary>
+    public MeshTopicChange[] Changes { get; }
 }

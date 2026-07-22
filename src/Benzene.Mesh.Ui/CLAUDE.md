@@ -55,6 +55,23 @@
 > (deprecation evidence, not an error); a dimension null across the panel's entries → a
 > data-quality footnote inside the panel naming the gap (findable, off the primary screen, fix is
 > adapter-side) - counts are never invented and a missing dimension is never guessed.
+>
+> **2026-07-22 (P5 of the vision doc's roadmap): the value & deprecation view.**
+> A new estate section (`#value-section`, `renderValueView()`) - the "defend a deprecation"
+> ranking: every domain topic tiered by the evidence available for retiring it, with the evidence
+> spelled out on each row (this view argues from data, it never decides). Tiers: **Removed since
+> the previous run** (`MeshTopicCatalog.RemovedTopics` - a retirement that just completed, or a
+> disappearance to confirm), **Retirement candidates** (no declared consumers, and/or zero
+> observed usage while a usage feed is wired), **Verify externally** (`gap` topics - their
+> producer is outside this fleet's declarations by definition, so fleet data alone can't defend
+> retiring them), **No retirement signal**. Least-used first within a tier. Honesty rule: with no
+> usage feed wired the header says "structural evidence only" and disuse is never claimed. Rows
+> carry the run-over-run **change badges** (`MeshTopicEntry.Changes`, hover for the description),
+> and the topic page renders the same changes as full "what changed" lines above the payload
+> panel - the aggregator's catalog-diff drift substance surfaced. Also fixed here: the service
+> page's spec links had rotted when the estate cards moved to `meshSpecUiHref` (the removed
+> `specUiLink` was still referenced, throwing on every service-page render post-merge) - the
+> service page now uses the same mesh-hosted spec / raw / health link set as the cards.
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
