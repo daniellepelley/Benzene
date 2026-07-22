@@ -7,6 +7,8 @@ using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Results;
 using Microsoft.Extensions.Logging;
+using V1 = Benzene.Examples.K8sMesh.Service.Model.V1;
+using V2 = Benzene.Examples.K8sMesh.Service.Model.V2;
 
 namespace Benzene.Examples.K8sMesh.Service;
 
@@ -52,23 +54,27 @@ public class CreateOrderHandler : IMessageHandler<CreateOrderRequest, OrderCreat
         var order = new OrderCreated("order-1", "created");
 
         // Chain the next hop over HTTP: ask the payments service to take payment, addressing it by its
-        // in-cluster Kubernetes DNS name (DOWNSTREAM_MSG_URL). Best-effort — HttpBenzeneMessageClient never
-        // throws (a transport error maps to ServiceUnavailable), and with no downstream wired the null client
-        // just returns Accepted, so order creation is never blocked by a downstream blip.
-        var payment = new TakePaymentRequest(order.OrderId, request.Quantity * 10m, "GBP");
-        var result = await _downstream.SendMessageAsync<TakePaymentRequest, PaymentTaken>("payment:take", payment);
-        _logger.LogInformation("order {orderId} created; payment:take -> {status}", order.OrderId, result.Status);
+        // in-cluster Kubernetes DNS name (DOWNSTREAM_MSG_URL). orders-api is pinned to payment:take VERSION 1
+        // (no currency) - it sends the v1 payload declaring version "1", which travels in the benzene-version
+        // envelope header; payments-api's single v2 handler never sees v1, the caster upcasts it first
+        // (docs/specification/versioning.md). Best-effort - HttpBenzeneMessageClient never throws.
+        var payment = new V1.TakePaymentRequest { OrderId = order.OrderId, Amount = request.Quantity * 10m };
+        var result = await _downstream.SendMessageAsync<V1.TakePaymentRequest, PaymentTaken>("payment:take", payment, version: "1");
+        _logger.LogInformation("order {orderId} created; payment:take (v1) -> {status}", order.OrderId, result.Status);
 
         return BenzeneResult.Created(order);
     }
 }
 
-public record TakePaymentRequest(string OrderId, decimal Amount, string Currency);
 public record PaymentTaken(string PaymentId, string Status);
 
-[Message("payment:take")]
+// The SINGLE payment:take handler, written against version 2 only ([Message("payment:take", "2")], taking
+// V2.TakePaymentRequest). A v1 payload from orders-api is upcast to v2 before this runs (Startup wires the
+// V1->V2 caster + UsePayloadVersionCasting for the payments service), so request.Currency is always present -
+// seeded by the upcast when the producer was on v1. This is the "send v1 -> upcast -> one v2 handler" story.
+[Message("payment:take", "2")]
 [HttpEndpoint("POST", "/payments")]
-public class TakePaymentHandler : IMessageHandler<TakePaymentRequest, PaymentTaken>
+public class TakePaymentHandler : IMessageHandler<V2.TakePaymentRequest, PaymentTaken>
 {
     private readonly IBenzeneMessageClient _downstream;
     private readonly ILogger<TakePaymentHandler> _logger;
@@ -79,14 +85,16 @@ public class TakePaymentHandler : IMessageHandler<TakePaymentRequest, PaymentTak
         _logger = logger;
     }
 
-    public async Task<IBenzeneResult<PaymentTaken>> HandleAsync(TakePaymentRequest request)
+    public async Task<IBenzeneResult<PaymentTaken>> HandleAsync(V2.TakePaymentRequest request)
     {
         var payment = new PaymentTaken("pay-1", "captured");
+        // Currency is always set even for a v1 producer - proof the upcast ran (v1 carried no currency).
+        _logger.LogInformation("payment {paymentId} captured in {currency} (v2 handler)", payment.PaymentId, request.Currency);
 
         // Second hop: once captured, ask the shipping service to book the shipment.
         var shipment = new BookShipmentRequest(request.OrderId, "123 Example St", "royal-mail");
         var result = await _downstream.SendMessageAsync<BookShipmentRequest, ShipmentBooked>("shipment:book", shipment);
-        _logger.LogInformation("payment {paymentId} captured; shipment:book -> {status}", payment.PaymentId, result.Status);
+        _logger.LogInformation("shipment:book -> {status}", result.Status);
 
         return BenzeneResult.Created(payment);
     }

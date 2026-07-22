@@ -62,6 +62,30 @@ Design + trade-offs (why HTTP-envelope over gRPC/TCP for internal calls):
 `work/lightweight-non-http-transport-design.md`. The quickest way to see the whole chain **without
 Kubernetes** is the `compose/` variant (`DOWNSTREAM_MSG_URL` is pre-wired there too).
 
+### Message versioning over the chain (send v1 → upcast → one v2 handler)
+
+The `payment:take` hop also demonstrates [payload versioning](../../docs/specification/versioning.md):
+
+- `payments` runs a **single v2 handler** (`[Message("payment:take", "2")]`, taking `V2.TakePaymentRequest`,
+  which added a `currency` field over V1) and registers a **V1→V2 upcaster** + `UsePayloadVersionCasting`.
+- `orders` is pinned to **v1**: it sends `V1.TakePaymentRequest` (no currency) declaring `version: "1"`
+  (`SendMessageAsync(..., version: "1")`), which travels in the `benzene-version` envelope header.
+- So a v1 payload is **upcast to v2 before the handler runs** — the handler always sees a currency (seeded
+  by the upcast), never the v1 shape. `orders` also declares producing `payment:take@1` (spec `events`), so
+  the Mesh UI's **Version compatibility** panel shows the producer-v1 / consumer-v2 skew the upcaster bridges.
+
+Run the two-hop chain locally (no cluster) and watch the upcast in the payments log:
+
+```bash
+# from examples/K8sMesh/Service, after `dotnet build`
+MESH_SERVICE=payments PORT=8091 dotnet bin/Debug/net10.0/Benzene.Examples.K8sMesh.Service.dll &
+MESH_SERVICE=orders  PORT=8090 DOWNSTREAM_MSG_URL=http://localhost:8091/benzene-message \
+  dotnet bin/Debug/net10.0/Benzene.Examples.K8sMesh.Service.dll &
+curl -XPOST localhost:8090/orders -H 'content-type: application/json' \
+     -d '{"customerId":"c1","sku":"espresso","quantity":2}'
+# payments logs: "payment pay-1 captured in GBP (v2 handler)"  ← currency the v1 payload never carried
+```
+
 - Discovery is `Benzene.Mesh.Discovery.Kubernetes` (`KubernetesServiceDiscoveryProvider`): it lists
   Services carrying the `benzene` label and emits **HTTP** registry entries at their in-cluster DNS —
   so the aggregator's existing `HttpMeshServiceSource` interrogates them, no K8s-specific fetch source.

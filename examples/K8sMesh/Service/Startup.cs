@@ -1,10 +1,15 @@
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.AspNet.Core;
 using Benzene.Client.Http;
 using Benzene.Clients;
 using Benzene.CloudService;
 using Benzene.Core.MessageHandlers;
+using Benzene.Core.MessageHandlers.BenzeneMessage;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Core.Versioning;
+using Benzene.Core.Versioning.Schemas;
 using Benzene.Diagnostics;
 using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
@@ -12,6 +17,7 @@ using Benzene.Http;
 using Benzene.Http.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Benzene.OpenTelemetry;
+using Benzene.ResponseEvents;
 using Benzene.Spec.Ui;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,7 +87,41 @@ public class Startup : BenzeneStartUp
             {
                 x.AddScoped<IBenzeneMessageClient>(_ => new NullBenzeneMessageClient());
             }
+
+            ConfigureVersioning(x);
         });
+    }
+
+    // Message versioning across the payment:take hop (docs/specification/versioning.md):
+    //  - payments-api runs a single V2 handler and registers the V1->V2 upcaster + payload casting, so a v1
+    //    payload from orders-api is upcast (currency seeded) before the handler sees it. The version travels
+    //    in the benzene-version envelope header (orders sends SendMessageAsync(..., version: "1")).
+    //  - orders-api declares it produces payment:take@1 (spec events), so the mesh's version compatibility
+    //    view surfaces the producer-v1 / consumer-v2 skew the upcaster bridges.
+    private static void ConfigureVersioning(IBenzeneServiceContainer x)
+    {
+        if (ServiceName == "payments")
+        {
+            x.RegisterSchemaCastDefinitions(builder => builder
+                    .Add<Model.V1.TakePaymentRequest, Model.V2.TakePaymentRequest>("payment:take", "1", "2",
+                        f => f.RegisterInitValue(r => r.Currency, "GBP")))
+                .RegisterPayloadSchemaVersions(new[]
+                {
+                    new PayloadSchemaVersions
+                    {
+                        Topic = "payment:take",
+                        FromSchemas = new[] { "1", "2" }, // versions that may arrive on the wire
+                        ToSchemas = new[] { "2" },        // the single handler only understands v2
+                    },
+                })
+                .UsePayloadVersionCasting<BenzeneMessageContext>();
+        }
+        else if (ServiceName == "orders")
+        {
+            x.AddResponseEventDeclarations(
+                new ResponseEventDefinition(new Benzene.Core.Messages.Topic("payment:take", "1"),
+                    typeof(Model.V1.TakePaymentRequest)));
+        }
     }
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
