@@ -196,8 +196,8 @@ internal sealed class SiteBuilder
 
     private static Page? ResolveLinkTarget(string currentSourcePath, string hrefPathPart, Dictionary<string, Page> pages)
     {
-        // Some doc slugs contain dots (e.g. "migration-alpha-to-1.0"), so Path.HasExtension can't
-        // reliably tell whether ".md" is already present - just try both forms unconditionally.
+        // A doc slug could contain a dot (e.g. a version number like "1.0"), so Path.HasExtension
+        // can't reliably tell whether ".md" is already present - just try both forms unconditionally.
         var combined = RepoPaths.CombineRepoRelative(currentSourcePath, hrefPathPart);
         if (pages.TryGetValue(combined, out var exact)) return exact;
         if (pages.TryGetValue(combined + ".md", out var withExt)) return withExt;

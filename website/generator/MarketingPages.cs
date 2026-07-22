@@ -90,8 +90,8 @@ internal static class MarketingPages
                 "A framework you build on should be predictable to upgrade and honest about where it is.",
             [
                 new Card("A versioning policy, not surprises",
-                    "Semantic versioning, with written <a href=\"docs/migration-alpha-to-1.0.html\">migration "
-                    + "guides</a> for breaking changes, so an upgrade is a planned task rather than archaeology."),
+                    "Semantic versioning, with breaking changes documented in the changelog, so an "
+                    + "upgrade is a planned task rather than archaeology."),
                 new Card("Modern .NET, broad reach",
                     "Built on .NET 10, with core packages also targeting older runtimes for back-compat. It "
                     + "runs on the hosts your platform team already chose (see "

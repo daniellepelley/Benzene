@@ -121,7 +121,7 @@ You do not theorize about DX; you experience it and act.
 
 - `docs/` — the getting-started guides (`getting-started-aws.md`,
   `getting-started-worker.md`, `getting-started-kafka.md`), `hosting.md`,
-  `testing-benzene.md`, `migration-alpha-to-1.0.md`, and `docs/cookbooks/`.
+  `testing-benzene.md`, and `docs/cookbooks/`.
 - `examples/` — one folder per host/transport, sharing `examples/App` for the
   domain; `examples/CLAUDE.md` explains the layout, the build story, and the
   known quirks. `Asp/` and `Aws/` are the fullest.

@@ -28,7 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `InlineMediaFormat<TContext>` - it had no production consumers (only tests used it as an
     `IMediaFormat<TContext>` double), so it moved into the test project as a test helper rather
     than shipping.
-  See `docs/migration-alpha-to-1.0.md` for the mapping.
 - **BREAKING:** `Benzene.Clients` / `Benzene.Clients.Aws`: deleted the alpha-era outbound client
   mechanism (Step 4 of `work/benzene-clients-redesign-plan.md`), `[Obsolete]` for one release cycle
   before removal. Deleted: `ClientsBuilder`, `SingleClientsBuilder`, `IBenzeneMessageClientFactory`,
@@ -45,8 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `AddBenzeneMessageClient`/`AddLambdaClients` (all `Benzene.Clients.Aws`). Replaced by
   `IBenzeneMessageSender`/`OutboundRoutingBuilder`/`AddOutboundRouting(...)` and outbound
   `IMiddleware<OutboundContext>` (`.UseRetry(...)`, `.UseCorrelationId(...)`,
-  `.UseW3CTraceContext()`, `.UseSqs(...)`, `.UseSns(...)`) - see
-  `docs/migration-alpha-to-1.0.md` for the full mapping. `IBenzeneMessageClient` itself and its
+  `.UseW3CTraceContext()`, `.UseSqs(...)`, `.UseSns(...)`). `IBenzeneMessageClient` itself and its
   concrete transport clients (`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`,
   `AwsLambdaBenzeneMessageClient`, `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`,
   `KafkaBenzeneMessageClient`) are **unaffected** - only the resolution/factory/decorator layer
@@ -620,10 +618,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   It was unreachable dead code — `IBenzeneServiceContainer` declares its own
   `AddScoped<T>(T instance)` member with the same signature, so normal call syntax
   always resolved to that (unconditional) method instead of this "Try" extension's
-  dedup logic. See [Migration Guide](docs/migration-alpha-to-1.0.md) for details.
+  dedup logic.
 
-See the [Migration Guide](docs/migration-alpha-to-1.0.md) for a full list of API
-renames between alpha and 1.0, and notes on the two critical bug fixes above.
+The `**BREAKING:**`-prefixed entries above list the API renames between alpha and 1.0,
+alongside notes on the two critical bug fixes.
 
 ## [0.x.x-alpha] - Historical
 

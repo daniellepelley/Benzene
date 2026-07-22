@@ -13,7 +13,7 @@ This is the modern reintroduction of the old **`Benzene.Aws.XRay`** package (its
 OpenTelemetry would cover everything. It doesn't cover this specific case cleanly: OTel spans carry
 their own W3C trace ids, so exported to X-Ray via a collector they land as *separate* traces rather than
 nested under the Lambda segment. Going straight through the X-Ray SDK is what puts the middleware
-timeline where an X-Ray user expects it. See `docs/migration-alpha-to-1.0.md` and the AwsMesh example.
+timeline where an X-Ray user expects it. See the AwsMesh example.
 
 ## Key types
 - `XRayMiddlewareWrapper : IMiddlewareWrapper` / `XRayMiddlewareDecorator<TContext>` — the X-Ray twin of
