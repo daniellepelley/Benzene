@@ -5,6 +5,7 @@ using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients;
 using Benzene.Core.Middleware;
+using Benzene.HealthChecks.Core;
 using Microsoft.Extensions.Logging;
 using Void = Benzene.Abstractions.Results.Void;
 
@@ -64,9 +65,20 @@ public static class Extensions
     /// <param name="app">The pipeline builder to convert.</param>
     /// <param name="producerClient">The Event Hubs producer client used to send events.</param>
     /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="EventHubContextConverter{T}.DefaultTopicProperty"/>).</param>
+    /// <param name="partitionKeyHeader">The request header whose value becomes the batch partition key (null = no key).</param>
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive Event Hubs reachability check for
+    /// <paramref name="producerClient"/>'s hub is auto-registered on the deep <c>healthcheck</c> layer
+    /// (never a Kubernetes probe — see <see cref="IDependencyHealthCheck"/>). Pass <c>false</c> to opt out.
+    /// Reuses the given <paramref name="producerClient"/> instance directly.
+    /// </param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, EventHubProducerClient producerClient, string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty, string partitionKeyHeader = null)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseEventHub<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, EventHubProducerClient producerClient, string topicPropertyKey = EventHubContextConverter<T>.DefaultTopicProperty, string partitionKeyHeader = null, bool healthCheck = true)
     {
+        if (healthCheck)
+        {
+            app.RegisterEventHubDependencyHealthCheck(producerClient);
+        }
         return app.Convert(new EventHubContextConverter<T>(topicPropertyKey, partitionKeyHeader), builder => builder.UseEventHubClient(producerClient));
     }
 
@@ -94,9 +106,18 @@ public static class Extensions
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="producerClient">The Event Hubs producer client used to send events.</param>
     /// <param name="topicPropertyKey">The event property the topic is written to (defaults to <see cref="OutboundEventHubContextConverter.DefaultTopicProperty"/>).</param>
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive Event Hubs reachability check for
+    /// <paramref name="producerClient"/>'s hub is auto-registered on the deep <c>healthcheck</c> layer
+    /// (never a Kubernetes probe). Pass <c>false</c> to opt out.
+    /// </param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<OutboundContext> UseEventHub(this IMiddlewarePipelineBuilder<OutboundContext> app, EventHubProducerClient producerClient, string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty)
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseEventHub(this IMiddlewarePipelineBuilder<OutboundContext> app, EventHubProducerClient producerClient, string topicPropertyKey = OutboundEventHubContextConverter.DefaultTopicProperty, bool healthCheck = true)
     {
+        if (healthCheck)
+        {
+            app.RegisterEventHubDependencyHealthCheck(producerClient);
+        }
         return app.Convert(new OutboundEventHubContextConverter(topicPropertyKey), builder => builder.UseEventHubClient(producerClient));
     }
 
@@ -117,5 +138,27 @@ public static class Extensions
         services.AddScoped(x => new EventHubBenzeneMessageClient(pipeline,
             x.GetService<ILogger<EventHubBenzeneMessageClient>>(), x.GetService<IServiceResolver>(), topicPropertyKey));
         return services;
+    }
+
+    /// <summary>
+    /// Registers an <see cref="EventHubHealthCheck"/> for <paramref name="producerClient"/>'s hub.
+    /// </summary>
+    /// <param name="builder">The health check builder to register against.</param>
+    /// <param name="producerClient">The producer client whose hub to check.</param>
+    /// <returns>The health check builder for method chaining.</returns>
+    public static IHealthCheckBuilder AddEventHubHealthCheck(this IHealthCheckBuilder builder, EventHubProducerClient producerClient)
+    {
+        return builder.AddHealthCheck(_ => new EventHubHealthCheck(producerClient, producerClient.EventHubName));
+    }
+
+    // Auto-registers a non-destructive Event Hubs reachability check on the DEPENDENCY category (deep
+    // healthcheck layer only, never a k8s probe - shared-fate). Deduped by (Type, Name) via the hub name.
+    // Captures the caller's EventHubProducerClient instance directly (no DI round-trip - Event Hubs clients
+    // are passed, not resolved).
+    private static void RegisterEventHubDependencyHealthCheck<TContext>(this IMiddlewarePipelineBuilder<TContext> app, EventHubProducerClient producerClient)
+    {
+        app.Register(x => x.AddDependencyHealthCheck(
+            _ => new EventHubHealthCheck(producerClient, producerClient.EventHubName),
+            $"EventHub:{producerClient.EventHubName}"));
     }
 }

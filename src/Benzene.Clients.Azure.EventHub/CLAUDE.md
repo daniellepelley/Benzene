@@ -14,7 +14,20 @@ only `Azure.Messaging.EventHubs` (5.11.5, matching the ingress packages' `.Proce
 - `OutboundEventHubContextConverter` — the `Benzene.Clients.OutboundContext` counterpart, used by
   the `OutboundContext` overloads of `.UseEventHub(...)` for `AddOutboundRouting(...).Route(topic, …)`.
 - `Extensions` — `UseEventHubClient`, `UseEventHub<T>`/`UseEventHub` (both the
-  `IBenzeneClientContext<T,Void>` and `OutboundContext` overloads), `AddEventHubMessageClient`.
+  `IBenzeneClientContext<T,Void>` and `OutboundContext` overloads), `AddEventHubMessageClient`, and
+  **`AddEventHubHealthCheck`**.
+- `EventHubHealthCheck` — verifies a hub with a read-only `GetEventHubProperties` call (`Type =
+  "EventHub"`, dependency `("EventHub", producerClient.EventHubName)`; non-destructive — no send).
+  Failures go through `HealthCheckError.Classify` (§3.9). Event Hubs is **AMQP, not HTTP**, so there is
+  no status code: the SDK's `EventHubsException.FailureReason` is surfaced as `ErrorCode`, and an
+  `UnauthorizedAccessException` (a bad credential/claim) is mapped to `403` so it degrades to a
+  **Warning** like the HTTP-based checks. The message is never included.
+  - **Auto-wired (Phase 4, default-on).** The two `producerClient`-instance `UseEventHub`/`UseEventHub<T>`
+    overloads take `bool healthCheck = true`: unless opted out they register the check on the
+    **dependency category** (`AddDependencyHealthCheck`, dedup `"EventHub:{name}"`), **capturing the
+    passed `EventHubProducerClient` directly** (Event Hubs clients are passed, not DI-resolved). Deep
+    `healthcheck` layer only — never a probe (shared-fate; see `IDependencyHealthCheck`). The
+    `action`-based overloads don't auto-wire.
 - `EventHubBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); sends a
   collection via a native `EventDataBatch` (`CreateBatchAsync` + `TryAdd` until full, then one
   `SendAsync`; rolls to a new batch when full). A batch's partition key is fixed at creation, so
