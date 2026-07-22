@@ -1,0 +1,20 @@
+<Project>
+
+  <!--
+    Benzene's Azure Functions trigger source generator emits the [Function] trigger classes. The
+    Functions SDK's worker-indexing source generators (metadata + executor) run in the same
+    compilation and cannot see another generator's output, so a generated [Function] would be listed
+    in functions.metadata (produced by the post-compile reflection task, which DOES see it) yet be
+    invisible to the worker's generated executor - a host/worker mismatch. Disabling worker indexing
+    falls back to the reflection-based metadata AND executor, both of which see generated code, making
+    the generated triggers work end to end.
+
+    Set only when the app hasn't chosen a value, so it stays overridable. Flows transitively to any app
+    referencing a Benzene.Azure.Function.* package (all reference Core). Repo examples use
+    ProjectReferences, which don't process buildTransitive, so they set the property in their csproj.
+  -->
+  <PropertyGroup>
+    <FunctionsEnableWorkerIndexing Condition="'$(FunctionsEnableWorkerIndexing)' == ''">false</FunctionsEnableWorkerIndexing>
+  </PropertyGroup>
+
+</Project>

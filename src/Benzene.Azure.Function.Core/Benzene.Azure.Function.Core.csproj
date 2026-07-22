@@ -10,6 +10,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Ships FunctionsEnableWorkerIndexing=false to consumers so the generated triggers work (see the props). -->
+    <None Include="buildTransitive\Benzene.Azure.Function.Core.props" Pack="true" PackagePath="buildTransitive\" />
+  </ItemGroup>
+
+  <!-- The trigger source generator ships INSIDE this package (analyzers/dotnet/cs) rather than as its
+       own NuGet: Core is the universal Azure Functions dependency, so referencing any Benzene.Azure.
+       Function.* package brings the generator + its worker-indexing prop automatically. The generator
+       is a separate netstandard2.0 project (analyzers must be); the ProjectReference builds it first,
+       and the target packs its DLL into this package. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Azure.Function.SourceGenerators\Benzene.Azure.Function.SourceGenerators.csproj"
+                      PrivateAssets="all" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <Target Name="_PackTriggerGenerator" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="$(MSBuildThisFileDirectory)..\Benzene.Azure.Function.SourceGenerators\bin\$(Configuration)\netstandard2.0\Benzene.Azure.Function.SourceGenerators.dll"
+            Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.2.0" />
   </ItemGroup>

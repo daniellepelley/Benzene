@@ -53,6 +53,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   around them was removed.
 
 ### Added
+- **Azure Functions triggers can be declared instead of hand-written.** New
+  `Benzene.Azure.Function.SourceGenerators` (a Roslyn analyzer) emits the `[Function]`/`[…Trigger]`
+  class for you from a one-line assembly-attribute declaration, for every transport Benzene supports:
+  HTTP, Service Bus, Event Hubs, Kafka, Queue Storage, Blob Storage, Event Grid, Cosmos DB Change Feed,
+  and Timer. Declare e.g. `[assembly: BenzeneHttpTrigger(Name = "orders", Route = "{*restOfPath}")]`
+  or `[assembly: BenzeneServiceBusTrigger(Name = "orders", QueueName = "orders")]` — you own every
+  binding value; the generator writes the boilerplate that forwards into `IAzureFunctionApp`. Each
+  `Benzene*TriggerAttribute` ships in its transport's package. The generator itself, and the required
+  `FunctionsEnableWorkerIndexing=false` MSBuild prop (so the Functions SDK uses the reflection
+  metadata/executor that can see generated code), both ship **inside `Benzene.Azure.Function.Core`**
+  (the universal Azure Functions dependency) — no extra package to reference. The hand-written
+  `[Function]` form still works and both coexist. See `docs/azure-functions.md` and
+  `work/azure-functions-trigger-codegen-design.md`.
 - **Contract health-check topic, separate from liveness/readiness probes.** Consumer-side
   contract-drift checks now run on their own probe-less **`contracts`** diagnostic topic
   (`Constants.DefaultContractsTopic`), wired with `UseContractsCheck(...)` (`Benzene.HealthChecks`,

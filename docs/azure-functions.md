@@ -211,6 +211,34 @@ it calls the generic `IAzureFunctionApp.HandleAsync<HttpRequest, IActionResult>(
 dispatches to whichever entry point application your `Configure` method registered for that
 request/response type pairing (here, the one `UseHttp` added).
 
+### Let Benzene generate the trigger (declarative triggers)
+
+Writing that `[Function]`/`[HttpTrigger]` class by hand is pure ceremony — and it's the part that
+has to be exactly right for the Functions host to register and dispatch the trigger. Benzene ships a
+source generator that writes it for you from a one-line **declaration**. Delete the class above and
+instead declare the trigger at assembly scope (anywhere in the project, e.g. a `Triggers.cs`):
+
+```csharp
+using Benzene.Azure.Function.AspNet;
+
+[assembly: BenzeneHttpTrigger(Name = "orders", Route = "{*restOfPath}")]
+```
+
+That's it — the generator emits the same catch-all HTTP trigger, forwarding into your built
+`IAzureFunctionApp`. You own the `Name` and `Route` (and `AuthorizationLevel`/`Methods` if you want
+them); nothing is hard-coded. A bare `[assembly: BenzeneHttpTrigger]` works too (a `benzene`-named
+anonymous catch-all). Every transport has an equivalent attribute — see
+[Non-HTTP triggers](#non-http-triggers).
+
+**One required setting.** The generator relies on `FunctionsEnableWorkerIndexing=false` (the Functions
+SDK's worker-indexing source generators can't see another generator's output). Benzene's NuGet
+packages set this for you via `buildTransitive`; nothing to do. (If you consume Benzene via
+`ProjectReference` — e.g. inside this repo — set `<FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>`
+in your csproj, since `buildTransitive` props don't flow across project references.)
+
+The hand-written form still works and both can coexist — the generator only *adds* a path. Reach for
+a hand-written `[Function]` when you need a binding shape the attribute doesn't expose.
+
 ## 6. Configuration
 
 `GetConfiguration()` runs once on cold start, before any services are registered, and its result
@@ -315,6 +343,28 @@ sub-pipeline, exactly as with any other Benzene host:
 - **Blob Storage**: `app.UseBlobStorage(...)`, in `Benzene.Azure.Function.BlobStorage`
 - **Event Grid**: `app.UseEventGrid(...)`, in `Benzene.Azure.Function.EventGrid`
 - **Timer**: `app.UseTimerTrigger(...)`, in `Benzene.Azure.Function.Timer`
+
+Each per-transport section below shows the hand-written trigger function. As with HTTP
+([Let Benzene generate the trigger](#let-benzene-generate-the-trigger-declarative-triggers)),
+you can **declare** the trigger instead and let the generator write it — one assembly attribute,
+you own every binding value:
+
+```csharp
+[assembly: BenzeneServiceBusTrigger(Name = "orders", QueueName = "orders", Connection = "ServiceBusConnection")]
+// or a topic:  TopicName = "audit", SubscriptionName = "svc"
+[assembly: BenzeneEventHubTrigger(Name = "telemetry", EventHubName = "telemetry", Connection = "EventHubConnection")]
+[assembly: BenzeneKafkaTrigger(Name = "orders", BrokerList = "BrokerList", Topic = "orders", ConsumerGroup = "svc")]
+[assembly: BenzeneQueueTrigger(Name = "orders", QueueName = "orders")]                       // Connection defaults to AzureWebJobsStorage
+[assembly: BenzeneBlobTrigger(Name = "ingest", Path = "incoming/{name}")]                    // {name} binds the blob name
+[assembly: BenzeneEventGridTrigger(Name = "events")]
+[assembly: BenzeneCosmosDbTrigger(Name = "orders", DatabaseName = "shop", ContainerName = "orders", DocumentType = typeof(OrderDocument))]
+[assembly: BenzeneTimerTrigger(Name = "nightly", Schedule = "0 0 2 * * *")]
+```
+
+Each attribute lives in that transport's `Benzene.Azure.Function.*` package. You still reference the
+transport's `Microsoft.Azure.Functions.Worker.Extensions.*` package directly (a Functions tooling
+requirement — the trigger isn't registered from a transitive reference), and the
+`FunctionsEnableWorkerIndexing=false` note from the HTTP section applies to all of them.
 
 ### Event Hubs
 
