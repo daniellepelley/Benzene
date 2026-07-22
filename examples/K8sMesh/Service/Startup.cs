@@ -66,16 +66,30 @@ public class Startup : BenzeneStartUp
         var name = ServiceName;
         IHealthCheck[] healthChecks = { new ServiceHealthCheck(name) };
 
+        // When a collector is reachable (MESH_COLLECTOR_ENVELOPE_URL, set by the k8s/compose manifests
+        // to the mesh's /benzene/invoke), the Cloud Service reports to it: register + heartbeat +
+        // per-invocation traces. This is what populates the mesh's live Fleet view. It's best-effort -
+        // an unreachable collector reduces the mesh, never the service - so it stays unset-safe (the
+        // service runs identically with no collector, e.g. the aggregator-only setups).
+        var collectorEnvelopeUrl = Environment.GetEnvironmentVariable("MESH_COLLECTOR_ENVELOPE_URL");
+
         app.UseHttp(asp => asp
             .UseW3CTraceContext()
             .UseBenzeneEnrichment()
             .UseBenzeneMetrics()
             .UseSpecUi("/benzene/spec-ui", "/benzene/spec?type=benzene")
-            .UseBenzeneCloudService($"{name}-api", cloud => cloud
-                .WithServiceVersion("1.0.0")
-                .WithInstanceId(name)
-                .WithPlacement("kubernetes", "in-cluster")
-                .WithHealthChecks(healthChecks)
-                .WithHandlers(Domain.HandlersFor(name))));
+            .UseBenzeneCloudService($"{name}-api", cloud =>
+            {
+                cloud
+                    .WithServiceVersion("1.0.0")
+                    .WithInstanceId(name)
+                    .WithPlacement("kubernetes", "in-cluster")
+                    .WithHealthChecks(healthChecks)
+                    .WithHandlers(Domain.HandlersFor(name));
+                if (!string.IsNullOrWhiteSpace(collectorEnvelopeUrl))
+                {
+                    cloud.WithCollector(collectorEnvelopeUrl);
+                }
+            }));
     }
 }

@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Benzene Mesh — Service Spec</title>
+<style>
+  /* ---------- Design tokens (mirrors Benzene.Spec.Ui's spec-ui.html verbatim, so the mesh-hosted
+       spec view is visually identical to the standalone Spec UI) ---------- */
+  :root {
+    color-scheme: light dark;
+
+    --bg:        #eef0f6;
+    --surface:   #ffffff;
+    --surface-2: #f5f6fb;
+    --sunken:    #eceef6;
+    --ink:       #1b1d2a;
+    --ink-soft:  #4a4e63;
+    --ink-faint: #767b93;
+    --line:      #dde0ee;
+    --line-soft: #e8eaf4;
+
+    --accent:      #5b54f0;
+    --accent-ink:  #ffffff;
+    --accent-tint: #ecebfe;
+    --accent-soft: #6a63f5;
+
+    --m-get:    #2f6fed;  --m-get-bg:    #e6efff;
+    --m-post:   #159a6b;  --m-post-bg:   #e2f6ee;
+    --m-put:    #c47d10;  --m-put-bg:    #fbf0da;
+    --m-patch:  #0d94a8;  --m-patch-bg:  #dcf4f7;
+    --m-delete: #d6453f;  --m-delete-bg: #fce4e3;
+    --m-msg:    #6a54c9;  --m-msg-bg:    #ece7fa;
+    --m-event:  #b0338f;  --m-event-bg:  #fbe3f2;
+
+    --req:      #d6453f;
+    --ok:       #159a6b;
+    --chip-bg:  #eceef8;
+    --chip-ink: #414763;
+
+    --radius: 11px;
+    --radius-sm: 7px;
+    --shadow: 0 1px 2px rgba(24,27,49,.05), 0 8px 24px -14px rgba(24,27,49,.28);
+    --mono: "JetBrains Mono","SFMono-Regular","SF Mono",Menlo,Consolas,"Cascadia Code",ui-monospace,monospace;
+    --sans: ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #0e0f17;
+      --surface:   #171926;
+      --surface-2: #1c1f2e;
+      --sunken:    #12131d;
+      --ink:       #e7e8f2;
+      --ink-soft:  #a9adc6;
+      --ink-faint: #6e7391;
+      --line:      #262a3d;
+      --line-soft: #20233284;
+
+      --accent:      #8a83ff;
+      --accent-ink:  #0e0f17;
+      --accent-tint: #211f45;
+      --accent-soft: #9a93ff;
+
+      --m-get:    #6ea0ff;  --m-get-bg:    #16233f;
+      --m-post:   #46c98f;  --m-post-bg:   #133026;
+      --m-put:    #e0a848;  --m-put-bg:    #33270f;
+      --m-patch:  #3cc3d6;  --m-patch-bg:  #0f2c31;
+      --m-delete: #f4756f;  --m-delete-bg: #351b1a;
+      --m-msg:    #a693ff;  --m-msg-bg:    #221d3d;
+      --m-event:  #eb74c4;  --m-event-bg:  #331833;
+
+      --req:      #f4756f;
+      --ok:       #46c98f;
+      --chip-bg:  #232739;
+      --chip-ink: #b6bad4;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -18px rgba(0,0,0,.8);
+    }
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg:#eef0f6; --surface:#ffffff; --surface-2:#f5f6fb; --sunken:#eceef6;
+    --ink:#1b1d2a; --ink-soft:#4a4e63; --ink-faint:#767b93; --line:#dde0ee; --line-soft:#e8eaf4;
+    --accent:#5b54f0; --accent-ink:#ffffff; --accent-tint:#ecebfe; --accent-soft:#6a63f5;
+    --m-get:#2f6fed;--m-get-bg:#e6efff;--m-post:#159a6b;--m-post-bg:#e2f6ee;--m-put:#c47d10;--m-put-bg:#fbf0da;
+    --m-patch:#0d94a8;--m-patch-bg:#dcf4f7;--m-delete:#d6453f;--m-delete-bg:#fce4e3;
+    --m-msg:#6a54c9;--m-msg-bg:#ece7fa;--m-event:#b0338f;--m-event-bg:#fbe3f2;
+    --req:#d6453f;--ok:#159a6b;--chip-bg:#eceef8;--chip-ink:#414763;
+    --shadow:0 1px 2px rgba(24,27,49,.05),0 8px 24px -14px rgba(24,27,49,.28);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#0e0f17; --surface:#171926; --surface-2:#1c1f2e; --sunken:#12131d;
+    --ink:#e7e8f2; --ink-soft:#a9adc6; --ink-faint:#6e7391; --line:#262a3d; --line-soft:#202332;
+    --accent:#8a83ff; --accent-ink:#0e0f17; --accent-tint:#211f45; --accent-soft:#9a93ff;
+    --m-get:#6ea0ff;--m-get-bg:#16233f;--m-post:#46c98f;--m-post-bg:#133026;--m-put:#e0a848;--m-put-bg:#33270f;
+    --m-patch:#3cc3d6;--m-patch-bg:#0f2c31;--m-delete:#f4756f;--m-delete-bg:#351b1a;
+    --m-msg:#a693ff;--m-msg-bg:#221d3d;--m-event:#eb74c4;--m-event-bg:#331833;
+    --req:#f4756f;--ok:#46c98f;--chip-bg:#232739;--chip-ink:#b6bad4;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -18px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  code, .mono { font-family: var(--mono); font-feature-settings: "liga" 0; }
+
+  /* ---------- Top bar ---------- */
+  header.topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; gap: 18px;
+    padding: 12px 22px;
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand svg { display: block; flex: none; }
+  .brand .ring { color: var(--accent); }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .brand-text b { font-size: 15px; letter-spacing: -.01em; }
+  .brand-text span { font-size: 11.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .14em; }
+
+  .spec-title { margin-left: 6px; padding-left: 18px; border-left: 1px solid var(--line); min-width: 0; }
+  .spec-title .t { font-weight: 640; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spec-title .v { font-size: 12.5px; color: var(--ink-faint); font-family: var(--mono); }
+
+  .topbar .grow { flex: 1 1 auto; }
+
+  .tb-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 34px; padding: 0 13px;
+    background: var(--surface-2); color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 13px; cursor: pointer; text-decoration: none;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .tb-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .tb-btn svg { width: 15px; height: 15px; }
+  .tb-btn:focus-visible, a:focus-visible, input:focus-visible, .op:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Shell ---------- */
+  .shell { display: grid; grid-template-columns: 288px minmax(0,1fr); align-items: start; }
+  @media (max-width: 940px) { .shell { grid-template-columns: 1fr; } aside.nav { display: none; } }
+
+  aside.nav {
+    position: sticky; top: 59px; align-self: start;
+    height: calc(100vh - 59px); overflow-y: auto;
+    padding: 18px 14px 40px;
+    border-right: 1px solid var(--line);
+  }
+  .search { position: relative; margin-bottom: 16px; }
+  .search input {
+    width: 100%; height: 36px; padding: 0 12px 0 34px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 13.5px;
+  }
+  .search input::placeholder { color: var(--ink-faint); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
+
+  .nav-group { margin-bottom: 20px; }
+  .nav-group > h4 {
+    margin: 0 0 7px; padding: 0 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-faint);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .nav-group > h4 .count {
+    margin-left: auto; font-family: var(--mono); font-weight: 600; letter-spacing: 0;
+    background: var(--sunken); color: var(--ink-faint); padding: 1px 7px; border-radius: 20px; font-size: 11px;
+  }
+  .nav-link {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 8px; border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--ink-soft); text-decoration: none;
+    font-family: var(--mono); font-size: 12.5px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link.active { background: var(--accent-tint); color: var(--accent); }
+  .nav-link .label { overflow: hidden; text-overflow: ellipsis; }
+  .nav-link.hidden { display: none; }
+
+  /* ---------- Main ---------- */
+  main { padding: 26px clamp(18px, 4vw, 44px) 90px; max-width: 1080px; }
+
+  .lede { margin-bottom: 22px; }
+  .lede h1 { margin: 0 0 6px; font-size: 25px; letter-spacing: -.02em; text-wrap: balance; }
+  .lede p { margin: 0; color: var(--ink-soft); max-width: 62ch; }
+  .lede-transports { margin-top: 10px; }
+  .mesh-note {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--ink-faint); font-family: var(--mono);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; padding: 3px 11px;
+  }
+  .mesh-note svg { width: 13px; height: 13px; color: var(--accent); flex: none; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 30px; }
+  .stat {
+    flex: 1 1 130px; min-width: 130px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 23px; font-weight: 680; font-family: var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); margin-top: 1px; }
+  .stat.accent .n { color: var(--accent); }
+  .stat.event .n { color: var(--m-event); }
+
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 34px 0 14px; }
+  .section-head h2 { margin: 0; font-size: 15px; letter-spacing: .02em; text-transform: uppercase; }
+  .section-head .rule { flex: 1; height: 1px; background: var(--line); }
+  .section-head .expand-all {
+    font: inherit; font-size: 12px; color: var(--ink-faint); background: none; border: none; cursor: pointer;
+    font-family: var(--mono);
+  }
+  .section-head .expand-all:hover { color: var(--accent); }
+
+  /* ---------- Benzene utilities (reserved topics) ---------- */
+  .utility-head { display: flex; align-items: center; gap: 12px; margin: 34px 0 14px; }
+  .utility-head .utility-toggle {
+    font: inherit; font-size: 13px; font-family: var(--mono); color: var(--ink-faint);
+    background: none; border: none; cursor: pointer; padding: 0; letter-spacing: .02em;
+  }
+  .utility-head .utility-toggle:hover { color: var(--accent); }
+  .utility-head .utility-hint { font-size: 11.5px; color: var(--ink-faint); font-style: italic; }
+  .utility-box { border-left: 2px solid var(--line); padding-left: 12px; margin-bottom: 8px; }
+
+  /* ---------- Operation card ---------- */
+  .op {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    margin-bottom: 11px; overflow: hidden; box-shadow: var(--shadow);
+    transition: border-color .13s;
+  }
+  .op.open { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .op-head {
+    display: flex; align-items: center; gap: 13px;
+    padding: 12px 15px; cursor: pointer; user-select: none;
+  }
+  .op-head:hover { background: var(--surface-2); }
+  .badges { display: flex; gap: 5px; flex: none; }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    padding: 3px 8px; border-radius: 5px; text-transform: uppercase; line-height: 1.35;
+  }
+  .b-get{color:var(--m-get);background:var(--m-get-bg)} .b-post{color:var(--m-post);background:var(--m-post-bg)}
+  .b-put{color:var(--m-put);background:var(--m-put-bg)} .b-patch{color:var(--m-patch);background:var(--m-patch-bg)}
+  .b-delete{color:var(--m-delete);background:var(--m-delete-bg)} .b-msg{color:var(--m-msg);background:var(--m-msg-bg)}
+  .b-event{color:var(--m-event);background:var(--m-event-bg)}
+  .op-topic { font-family: var(--mono); font-size: 14px; font-weight: 620; letter-spacing: -.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .op-io { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; color: var(--ink-faint); font-size: 12px; font-family: var(--mono); }
+  .op-io .arrow { color: var(--ink-faint); }
+  .chev { flex: none; color: var(--ink-faint); transition: transform .16s; }
+  .op.open .chev { transform: rotate(90deg); }
+  @media (max-width: 620px) { .op-io { display: none; } }
+
+  .op-body { display: none; padding: 4px 15px 17px; border-top: 1px solid var(--line-soft); }
+  .op.open .op-body { display: block; }
+
+  .http-lines { display: flex; flex-direction: column; gap: 4px; margin: 13px 0 4px; }
+  .http-line { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+
+  .io-grid { display: grid; gap: 14px; margin-top: 15px; }
+  .io-block > .io-label {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--ink-faint);
+  }
+  .io-label .tag { font-family: var(--mono); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--accent); }
+
+  /* ---------- Example payload ---------- */
+  .io-label .copy-btn {
+    margin-left: auto;
+    font: inherit; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: none;
+    color: var(--ink-faint); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 5px; padding: 2px 9px; cursor: pointer;
+    transition: color .12s, border-color .12s;
+  }
+  .io-label .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .example-json {
+    margin: 0; padding: 11px 14px; overflow-x: auto;
+    background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--ink-soft);
+    tab-size: 2; white-space: pre;
+  }
+
+  /* ---------- Schema tree ---------- */
+  .schema { background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
+  .schema.empty { padding: 11px 14px; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; }
+  .prop { display: block; border-top: 1px solid var(--line-soft); }
+  .prop:first-child { border-top: none; }
+  .prop-row { display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; flex-wrap: wrap; }
+  .prop-row .pname { font-family: var(--mono); font-size: 13px; font-weight: 620; color: var(--ink); }
+  .prop-row .preq { color: var(--req); font-weight: 700; font-size: 12px; transform: translateY(-1px); }
+  .prop-row .ptype {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    cursor: default;
+  }
+  .prop-row .ptype.ref { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .prop-row .ptype.ref:hover { color: var(--accent-soft); }
+  .prop-row .pdesc { flex-basis: 100%; color: var(--ink-soft); font-size: 12.5px; margin-top: -1px; }
+
+  .chips { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 5px; background: var(--chip-bg); color: var(--chip-ink);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.5;
+  }
+  .chip b { font-weight: 700; color: var(--ink); }
+  .chip.fmt { background: var(--accent-tint); color: var(--accent); }
+  .chip.enum { background: var(--m-put-bg); color: var(--m-put); }
+  .nested { margin: 0 0 10px 14px; border-left: 2px solid var(--line); padding-left: 0; }
+  .nested .schema { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+  /* schema catalog cards */
+  .schema-def { scroll-margin-top: 72px; margin-bottom: 11px; }
+  .schema-def > .sd-head {
+    display: flex; align-items: center; gap: 10px; padding: 11px 15px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .schema-def.open > .sd-head { border-radius: var(--radius) var(--radius) 0 0; border-bottom-color: var(--line-soft); }
+  .sd-head .sd-name { font-family: var(--mono); font-weight: 640; }
+  .sd-head .sd-kind { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .schema-def > .sd-body { display: none; border: 1px solid var(--line); border-top: none; border-radius: 0 0 var(--radius) var(--radius); }
+  .schema-def.open > .sd-body { display: block; }
+  .schema-def .schema { background: var(--surface); border: none; border-radius: 0; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
+  .empty-state .mono { color: var(--ink-soft); }
+  .empty-state.error .mono { color: var(--req); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="ring" width="26" height="28" viewBox="0 0 26 28" fill="none" aria-hidden="true">
+      <path d="M13 1.5 24 7.9v12.2L13 26.5 2 20.1V7.9L13 1.5Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/>
+      <circle cx="13" cy="14" r="5.2" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".55"/>
+    </svg>
+    <div class="brand-text">
+      <b>Benzene</b><span>Mesh · Spec</span>
+    </div>
+  </div>
+  <div class="spec-title">
+    <div class="t" id="doc-title">&nbsp;</div>
+    <div class="v" id="doc-version">&nbsp;</div>
+  </div>
+  <div class="grow"></div>
+  <a class="tb-btn" id="back-btn" href="mesh-ui.html" title="Back to the Mesh Explorer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+    <span>Mesh</span>
+  </a>
+  <button class="tb-btn" id="theme-btn" title="Toggle theme" aria-label="Toggle theme">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M4.5 12h-2M21.5 12h-2M6 6 4.6 4.6M19.4 19.4 18 18M18 6l1.4-1.4M4.6 19.4 6 18"/></svg>
+  </button>
+</header>
+
+<div class="shell">
+  <aside class="nav">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+      <input type="search" id="filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <main>
+    <div class="lede">
+      <h1 id="lede-title">Benzene Mesh — Service Spec</h1>
+      <p id="lede-desc"></p>
+      <div class="lede-transports chips" id="lede-transports"></div>
+      <div class="mesh-note" id="mesh-note" style="display:none"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var spec = {};
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById("theme-btn");
+  themeBtn.addEventListener("click", function () {
+    var root = document.documentElement;
+    var current = root.getAttribute("data-theme");
+    if (!current) current = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    root.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+  });
+
+  /* ---------- helpers ---------- */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function schemas() { return (spec.components && spec.components.schemas) || {}; }
+  function refName(s) { return s && s.$ref ? s.$ref.split("/").pop() : null; }
+  function resolve(s) {
+    var r = refName(s);
+    if (r) return { name: r, schema: schemas()[r] || {} };
+    return { name: null, schema: s || {} };
+  }
+  function typeLabel(s) {
+    if (!s) return "any";
+    var r = refName(s);
+    if (r) return r;
+    if (s.type === "array") return "array<" + typeLabel(s.items) + ">";
+    if (s.type) return s.type;
+    if (s.properties) return "object";
+    return "any";
+  }
+  function slug(s) { return String(s).replace(/[^a-z0-9]+/gi, "-").toLowerCase(); }
+
+  /* constraint chips for a property schema */
+  function constraintChips(s) {
+    var out = [];
+    function chip(label, val, cls) {
+      var c = el("span", "chip" + (cls ? " " + cls : ""));
+      if (val === undefined) { c.textContent = label; }
+      else {
+        c.appendChild(document.createTextNode(label + " "));
+        var b = el("b", null, String(val)); c.appendChild(b);
+      }
+      out.push(c);
+    }
+    if (s.format) chip(s.format, undefined, "fmt");
+    if (s.enum && s.enum.length) {
+      var ec = el("span", "chip enum");
+      ec.appendChild(document.createTextNode("enum "));
+      ec.appendChild(el("b", null, s.enum.join(" · ")));
+      out.push(ec);
+    }
+    if (s.minLength != null && s.maxLength != null) chip("length", s.minLength + "–" + s.maxLength);
+    else { if (s.minLength != null) chip("min len", s.minLength); if (s.maxLength != null) chip("max len", s.maxLength); }
+    if (s.minimum != null && s.maximum != null) chip("range", s.minimum + "–" + s.maximum);
+    else { if (s.minimum != null) chip("≥", s.minimum); if (s.maximum != null) chip("≤", s.maximum); }
+    if (s.pattern) chip("pattern " + s.pattern);
+    if (s.nullable === true) chip("nullable");
+    if (s["default"] !== undefined) chip("default", s["default"]);
+    return out;
+  }
+
+  /* render a schema (object → property table); returns element */
+  function renderSchema(schemaOrRef, path) {
+    var res = resolve(schemaOrRef);
+    var s = res.schema;
+    path = path || [];
+
+    if (s.type === "array" && s.items) {
+      var wrap = el("div");
+      var note = el("div", "schema empty");
+      note.textContent = "array of " + typeLabel(s.items);
+      wrap.appendChild(note);
+      var itemRes = resolve(s.items);
+      if (itemRes.schema && itemRes.schema.properties) wrap.appendChild(renderSchema(s.items, path));
+      return wrap;
+    }
+
+    if (!s.properties) {
+      var e = el("div", "schema empty");
+      e.textContent = s.type ? (typeLabel(s) + (s.format ? " (" + s.format + ")" : "")) : "no schema";
+      return e;
+    }
+
+    var required = s.required || [];
+    var box = el("div", "schema");
+    Object.keys(s.properties).forEach(function (key) {
+      var p = s.properties[key];
+      var pr = el("div", "prop");
+      var row = el("div", "prop-row");
+
+      var nm = el("span", "pname", key); row.appendChild(nm);
+      if (required.indexOf(key) >= 0) { var star = el("span", "preq", "*"); star.title = "required"; row.appendChild(star); }
+
+      var isRef = !!refName(p) || (p.type === "array" && !!refName(p.items));
+      var tp = el("span", "ptype" + (isRef ? " ref" : ""), typeLabel(p));
+      row.appendChild(tp);
+
+      var cc = constraintChips(p);
+      if (cc.length) { var chips = el("span", "chips"); cc.forEach(function (c) { chips.appendChild(c); }); row.appendChild(chips); }
+
+      if (p.description) { var d = el("div", "pdesc", p.description); row.appendChild(d); }
+      pr.appendChild(row);
+
+      var childRefName = refName(p) || (p.type === "array" ? refName(p.items) : null);
+      if (childRefName && path.indexOf(childRefName) < 0) {
+        var childRes = resolve(refName(p) ? p : p.items);
+        if (childRes.schema && childRes.schema.properties) {
+          var nested = el("div", "nested");
+          nested.style.display = "none";
+          nested.appendChild(renderSchema(refName(p) ? p : p.items, path.concat([childRefName])));
+          pr.appendChild(nested);
+          tp.addEventListener("click", function () {
+            var showing = nested.style.display !== "none";
+            nested.style.display = showing ? "none" : "block";
+            tp.textContent = (showing ? typeLabel(p) : "▾ " + typeLabel(p));
+          });
+        }
+      }
+      box.appendChild(pr);
+    });
+    return box;
+  }
+
+  function methodBadge(method) {
+    var m = String(method || "").toLowerCase();
+    var cls = ({ get: "b-get", post: "b-post", put: "b-put", patch: "b-patch", delete: "b-delete" })[m] || "b-msg";
+    var b = el("span", "badge " + cls, m.toUpperCase());
+    return b;
+  }
+
+  /* ---------- build a request/event operation card ---------- */
+  function buildOp(kind, item) {
+    var isEvent = kind === "event";
+    var topic = item.topic;
+    var op = el("article", "op");
+    op.id = "op-" + slug((isEvent ? "event-" : "") + topic);
+    op.tabIndex = 0;
+
+    var head = el("div", "op-head");
+    var badges = el("div", "badges");
+    var https = (item.httpMappings || []);
+    if (isEvent) {
+      badges.appendChild(el("span", "badge b-event", "EVENT"));
+    } else if (https.length) {
+      https.forEach(function (h) { badges.appendChild(methodBadge(h.method)); });
+    } else {
+      badges.appendChild(el("span", "badge b-msg", "MSG"));
+    }
+    head.appendChild(badges);
+    head.appendChild(el("span", "op-topic", topic));
+
+    var io = el("div", "op-io");
+    if (isEvent) {
+      io.appendChild(el("span", null, typeLabel(item.message)));
+    } else {
+      io.appendChild(el("span", null, typeLabel(item.request)));
+      var ar = el("span", "arrow", "→"); io.appendChild(ar);
+      io.appendChild(el("span", null, typeLabel(item.response)));
+    }
+    head.appendChild(io);
+
+    var chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chev.setAttribute("class", "chev"); chev.setAttribute("width", "16"); chev.setAttribute("height", "16");
+    chev.setAttribute("viewBox", "0 0 24 24"); chev.setAttribute("fill", "none");
+    chev.setAttribute("stroke", "currentColor"); chev.setAttribute("stroke-width", "2.2");
+    chev.innerHTML = '<path d="m9 6 6 6-6 6"/>';
+    head.appendChild(chev);
+    op.appendChild(head);
+
+    var body = el("div", "op-body");
+    if (https.length) {
+      var hl = el("div", "http-lines");
+      https.forEach(function (h) {
+        var line = el("div", "http-line");
+        line.appendChild(methodBadge(h.method));
+        line.appendChild(el("span", null, h.path));
+        hl.appendChild(line);
+      });
+      body.appendChild(hl);
+    }
+
+    var grid = el("div", "io-grid");
+    if (isEvent) {
+      grid.appendChild(ioBlock("Message", item.message));
+    } else {
+      grid.appendChild(ioBlock("Request", item.request));
+      grid.appendChild(ioBlock("Response", item.response));
+    }
+    if (item.example !== undefined) {
+      grid.appendChild(exampleBlock(isEvent ? "Example message" : "Example request", item.example));
+    }
+    body.appendChild(grid);
+    op.appendChild(body);
+
+    function toggle() { op.classList.toggle("open"); }
+    head.addEventListener("click", toggle);
+    op.addEventListener("keydown", function (e) {
+      if ((e.key === "Enter" || e.key === " ") && e.target === op) { e.preventDefault(); toggle(); }
+    });
+    return op;
+  }
+
+  function ioBlock(label, schemaRef) {
+    var block = el("div", "io-block");
+    var lab = el("div", "io-label");
+    lab.appendChild(document.createTextNode(label));
+    var nm = refName(schemaRef) || typeLabel(schemaRef);
+    if (nm) { var tag = el("span", "tag", nm); lab.appendChild(tag); }
+    block.appendChild(lab);
+    block.appendChild(renderSchema(schemaRef, []));
+    return block;
+  }
+
+  function exampleBlock(label, example) {
+    var json = JSON.stringify(example, null, 2);
+    var block = el("div", "io-block");
+    var lab = el("div", "io-label");
+    lab.appendChild(document.createTextNode(label));
+    var btn = el("button", "copy-btn", "copy");
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      copyText(json, btn);
+    });
+    lab.appendChild(btn);
+    block.appendChild(lab);
+    block.appendChild(el("pre", "example-json", json));
+    return block;
+  }
+
+  function copyText(text, btn) {
+    var done = function () {
+      btn.textContent = "copied";
+      setTimeout(function () { btn.textContent = "copy"; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else {
+      fallbackCopy(text); done();
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* best effort */ }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- render everything ---------- */
+  function render() {
+    var info = spec.info || {};
+    document.getElementById("lede-title").textContent = info.title || "Service Spec";
+    document.getElementById("lede-desc").textContent = info.description || "";
+
+    var ledeTransports = document.getElementById("lede-transports");
+    ledeTransports.innerHTML = "";
+    (spec.transports || []).forEach(function (t) {
+      ledeTransports.appendChild(el("span", "chip", t));
+    });
+
+    var allRequests = spec.requests || [];
+    var requests = allRequests.filter(function (r) { return !r.reserved; });
+    var utilityRequests = allRequests.filter(function (r) { return r.reserved; });
+    var events = spec.events || [];
+    var schemaKeys = Object.keys(schemas());
+    var httpCount = requests.filter(function (r) { return (r.httpMappings || []).length; }).length;
+
+    var stats = document.getElementById("stats");
+    stats.innerHTML = "";
+    var statDefs = [
+      ["accent", requests.length, requests.length === 1 ? "Topic" : "Topics"],
+      ["", httpCount, "HTTP-mapped"],
+      ["event", events.length, events.length === 1 ? "Event" : "Events"],
+      ["", schemaKeys.length, "Schemas"]
+    ];
+    if (utilityRequests.length) {
+      statDefs.push(["", utilityRequests.length, "Utilities"]);
+    }
+    statDefs.forEach(function (t) {
+      var c = el("div", "stat" + (t[0] ? " " + t[0] : ""));
+      c.appendChild(el("div", "n", String(t[1])));
+      c.appendChild(el("div", "l", t[2]));
+      stats.appendChild(c);
+    });
+
+    var content = document.getElementById("content");
+    content.innerHTML = "";
+    var nav = document.getElementById("nav");
+    nav.innerHTML = "";
+
+    if (!allRequests.length && !events.length && !schemaKeys.length) {
+      var es = el("div", "empty-state");
+      es.innerHTML = 'Nothing to show. <span class="mono">This service exposed no message contract.</span>';
+      content.appendChild(es);
+      return;
+    }
+
+    if (requests.length) {
+      content.appendChild(sectionHead("Message topics", content));
+      var navReq = navGroup("Topics", requests.length);
+      requests.forEach(function (r) {
+        var op = buildOp("request", r);
+        content.appendChild(op);
+        navReq.body.appendChild(navLink(op.id, r.topic, (r.httpMappings || []).length ? "http" : "msg"));
+      });
+      nav.appendChild(navReq.group);
+    }
+
+    if (utilityRequests.length) {
+      var uHead = el("div", "utility-head");
+      var uToggle = el("button", "utility-toggle");
+      var uBox = el("div", "utility-box");
+      uBox.style.display = "none";
+      var uOpen = false;
+      var setUToggle = function () {
+        uToggle.textContent = (uOpen ? "▾" : "▸") + " Benzene utilities (" + utilityRequests.length + ")";
+      };
+      setUToggle();
+      uToggle.addEventListener("click", function () {
+        uOpen = !uOpen;
+        uBox.style.display = uOpen ? "" : "none";
+        setUToggle();
+      });
+      uHead.appendChild(uToggle);
+      uHead.appendChild(el("span", "utility-hint", "Cloud Service Profile endpoints — not part of the service domain"));
+      content.appendChild(uHead);
+      utilityRequests.forEach(function (r) { uBox.appendChild(buildOp("request", r)); });
+      content.appendChild(uBox);
+    }
+
+    if (events.length) {
+      content.appendChild(sectionHead("Broadcast events", content));
+      var navEv = navGroup("Events", events.length);
+      events.forEach(function (ev) {
+        var op = buildOp("event", ev);
+        content.appendChild(op);
+        navEv.body.appendChild(navLink(op.id, ev.topic, "event"));
+      });
+      nav.appendChild(navEv.group);
+    }
+
+    if (schemaKeys.length) {
+      content.appendChild(sectionHead("Schemas", content));
+      var navSc = navGroup("Schemas", schemaKeys.length);
+      schemaKeys.forEach(function (key) {
+        var def = el("section", "schema-def"); def.id = "schema-" + slug(key);
+        var h = el("div", "sd-head");
+        h.appendChild(el("span", "sd-name", key));
+        var s = schemas()[key];
+        h.appendChild(el("span", "sd-kind", typeLabel(s) + (s.properties ? " · " + Object.keys(s.properties).length + " fields" : "")));
+        var sb = el("div", "sd-body"); sb.appendChild(renderSchema({ $ref: "#/components/schemas/" + key }, [key]));
+        def.appendChild(h); def.appendChild(sb);
+        h.addEventListener("click", function () { def.classList.toggle("open"); });
+        content.appendChild(def);
+        navSc.body.appendChild(navLink(def.id, key, "schema"));
+      });
+      nav.appendChild(navSc.group);
+    }
+
+    wireNavHighlight();
+  }
+
+  function sectionHead(title, content) {
+    var h = el("div", "section-head");
+    h.appendChild(el("h2", null, title));
+    h.appendChild(el("div", "rule"));
+    var btn = el("button", "expand-all", "expand all");
+    var expanded = false;
+    btn.addEventListener("click", function () {
+      expanded = !expanded;
+      var sib = h.nextElementSibling;
+      while (sib && !sib.classList.contains("section-head")) {
+        if (sib.classList.contains("op") || sib.classList.contains("schema-def")) sib.classList.toggle("open", expanded);
+        sib = sib.nextElementSibling;
+      }
+      btn.textContent = expanded ? "collapse all" : "expand all";
+    });
+    h.appendChild(btn);
+    return h;
+  }
+
+  function navGroup(title, count) {
+    var group = el("div", "nav-group");
+    var h = el("h4"); h.appendChild(document.createTextNode(title));
+    h.appendChild(el("span", "count", String(count)));
+    group.appendChild(h);
+    var body = el("div"); group.appendChild(body);
+    return { group: group, body: body };
+  }
+  function navLink(targetId, label, kind) {
+    var a = el("a", "nav-link"); a.href = "#" + targetId; a.dataset.target = targetId;
+    var dot = { http: "b-get", msg: "b-msg", event: "b-event", schema: "b-put" }[kind] || "b-msg";
+    var d = el("span", "badge " + dot); d.style.padding = "2px 5px"; d.style.fontSize = "8px";
+    d.textContent = kind === "http" ? "≡" : kind === "event" ? "◆" : kind === "schema" ? "{}" : "·";
+    a.appendChild(d);
+    a.appendChild(el("span", "label", label));
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      var t = document.getElementById(targetId);
+      if (t) {
+        if (t.classList.contains("op") || t.classList.contains("schema-def")) t.classList.add("open");
+        t.scrollIntoView({ block: "start" });
+        history.replaceState(null, "", "#" + targetId);
+      }
+    });
+    return a;
+  }
+
+  /* ---------- filter ---------- */
+  document.getElementById("filter").addEventListener("input", function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(".nav-link").forEach(function (a) {
+      var match = a.textContent.toLowerCase().indexOf(q) >= 0;
+      a.classList.toggle("hidden", !match);
+    });
+    document.querySelectorAll(".op, .schema-def").forEach(function (card) {
+      var id = card.id;
+      var text = (card.querySelector(".op-topic, .sd-name") || {}).textContent || "";
+      card.style.display = (!q || text.toLowerCase().indexOf(q) >= 0) ? "" : "none";
+    });
+  });
+
+  /* ---------- scroll spy ---------- */
+  var spyObserver;
+  function wireNavHighlight() {
+    if (spyObserver) spyObserver.disconnect();
+    var links = {};
+    document.querySelectorAll(".nav-link").forEach(function (a) { links[a.dataset.target] = a; });
+    spyObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          Object.values(links).forEach(function (l) { l.classList.remove("active"); });
+          var a = links[en.target.id]; if (a) a.classList.add("active");
+        }
+      });
+    }, { rootMargin: "-70px 0px -75% 0px", threshold: 0 });
+    document.querySelectorAll(".op, .schema-def").forEach(function (c) { spyObserver.observe(c); });
+  }
+
+  /* ---------- apply / errors ---------- */
+  function applySpec(obj) {
+    spec = obj || {};
+    render();
+    var first = document.querySelector(".op");
+    if (first) first.classList.add("open");
+  }
+  function showError(title, detail) {
+    document.getElementById("stats").innerHTML = "";
+    document.getElementById("content").innerHTML = "";
+    document.getElementById("nav").innerHTML = "";
+    var es = el("div", "empty-state error");
+    es.appendChild(document.createTextNode(title + " "));
+    if (detail) es.appendChild(el("span", "mono", detail));
+    document.getElementById("content").appendChild(es);
+  }
+
+  /* Resolve an artifact path the same way mesh-ui.html does: the manifest URL is itself often
+     relative (a bare filename, or root-relative like "/artifacts/manifest.json"), so resolve it
+     against the current page first, then resolve the artifact path against that. */
+  function resolveArtifactUrl(manifestUrl, relative) {
+    try {
+      var base = manifestUrl ? new URL(manifestUrl, location.href) : new URL(location.href);
+      return new URL(relative, base).toString();
+    } catch (e) { return relative; }
+  }
+
+  function setDocTitle(serviceName, info) {
+    var t = serviceName || (info && info.title) || "Service Spec";
+    document.getElementById("doc-title").textContent = t;
+    document.getElementById("doc-version").textContent = (info && info.version) ? "v" + info.version : "";
+  }
+
+  function setMeshNote(text) {
+    var note = document.getElementById("mesh-note");
+    if (!text) { note.style.display = "none"; return; }
+    note.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 1.5 24 7.9v12.2L13 26.5 2 20.1V7.9L13 1.5Z"/></svg>';
+    note.appendChild(document.createTextNode(text));
+    note.style.display = "";
+  }
+
+  /* Load a service's spec from the mesh's own same-origin snapshot artifact
+     (services/{name}.json), unwrapping the verbatim spec the aggregator captured. The individual
+     service only has to serve JSON (the Cloud Service contract) — it never has to host any HTML;
+     this page is the spec UI, hosted by the mesh. */
+  function loadFromMesh(serviceName, manifestUrl) {
+    setDocTitle(serviceName, null);
+    var snapshotUrl = resolveArtifactUrl(manifestUrl, "services/" + serviceName + ".json");
+    fetch(snapshotUrl, { headers: { accept: "application/json" } })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + snapshotUrl);
+        return r.text();
+      })
+      .then(function (txt) {
+        var snapshot = JSON.parse(txt);
+        if (!snapshot || snapshot.specJson == null) {
+          showError("The mesh has no spec for this service.",
+            snapshot && snapshot.error ? "last fetch error: " + snapshot.error : "the aggregator could not fetch its spec.");
+          return;
+        }
+        var parsed = JSON.parse(snapshot.specJson);
+        // The spec is a captured snapshot, not a live endpoint we own, so drop any messageEndpoint
+        // (a cross-origin "try it" against the service is out of scope for the mesh view).
+        if (parsed && typeof parsed === "object") delete parsed.messageEndpoint;
+        setDocTitle(serviceName, parsed.info || null);
+        setMeshNote("captured by the mesh" + (snapshot.fetchedAtUtc ? " · " + snapshot.fetchedAtUtc : ""));
+        applySpec(parsed);
+      })
+      .catch(function (ex) {
+        showError("Couldn't load this service's spec from the mesh.", String((ex && ex.message) || ex));
+      });
+  }
+
+  /* Direct spec URL fallback (a bare benzene spec document), for pointing this page at any spec. */
+  function loadFromUrl(url) {
+    fetch(url, { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching spec"); return r.text(); })
+      .then(function (txt) {
+        var parsed = JSON.parse(txt);
+        if (parsed && typeof parsed === "object") delete parsed.messageEndpoint;
+        setDocTitle(null, parsed.info || null);
+        applySpec(parsed);
+      })
+      .catch(function (ex) { showError("Couldn't load the spec.", String((ex && ex.message) || ex)); });
+  }
+
+  /* Only allow a same-origin or relative back link (the mesh page URL comes in via a query param). */
+  function safeBackHref(raw, fallback) {
+    if (!raw) return fallback;
+    try {
+      var u = new URL(raw, location.href);
+      return u.origin === location.origin ? u.href : fallback;
+    } catch (e) { return fallback; }
+  }
+
+  /* ---------- boot ---------- */
+  (function boot() {
+    var params = new URLSearchParams(location.search);
+    var service = params.get("service");
+    // ?manifest= names where the artifacts live; falls back to a data-manifest-url injected by
+    // MeshSpecUiPage.GetHtml(manifestUrl), else the page resolves services/{name}.json relatively.
+    var manifest = params.get("manifest") || document.documentElement.getAttribute("data-manifest-url");
+    var url = params.get("url");
+    var mesh = params.get("mesh");
+
+    document.getElementById("back-btn").href =
+      safeBackHref(mesh, resolveArtifactUrl(manifest, "mesh-ui.html"));
+
+    if (service) { loadFromMesh(service, manifest); return; }
+    if (url) { loadFromUrl(url); return; }
+    showError("No service selected.", "open this page from the Mesh Explorer's per-service “spec” link.");
+  })();
+})();
+</script>
+</body>
+</html>

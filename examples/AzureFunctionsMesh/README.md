@@ -4,11 +4,15 @@ The all-**Azure Functions** counterpart of `examples/AzureMesh` (which hosts the
 Apps for Containers). Here **every** component is an isolated-worker Azure Function:
 
 - **3 Cloud Services** (`orders` / `payments` / `shipping`) — one deployable, `MESH_SERVICE` selects
-  the domain — each an HTTP-triggered Function exposing the full Cloud Service Profile
-  (`/benzene/spec`, `/benzene/health`, `/benzene/invoke`, `/benzene/spec-ui`). Each Function App is
-  tagged `benzene = "true"` for discovery.
+  the domain — each an HTTP-triggered Function exposing the Cloud Service Profile as **JSON only**
+  (`/benzene/spec`, `/benzene/health`, `/benzene/invoke`). It hosts **no HTML of its own** — the
+  browsable spec view is served by the mesh (see below), not the service — which is the whole point:
+  the Cloud Service contract is JSON, not a UI. Each Function App is tagged `benzene = "true"` for
+  discovery.
 - **1 mesh** — a Function App with **two** triggers: a catch-all **HTTP trigger** serving the Mesh UI
-  (`/mesh-ui`) + catalog artifacts, and a **timer trigger** running the discovery + aggregation pass
+  (`/mesh-ui`), the mesh-hosted per-service **Spec UI** (`/mesh-spec-ui.html`, the target of each
+  service's *spec* link — it renders the spec the aggregator captured, so services need no UI), and the
+  catalog artifacts; and a **timer trigger** running the discovery + aggregation pass
   on a schedule. It discovers the tagged sites via Azure Resource Manager (managed identity),
   interrogates each over HTTPS, and persists the catalog to **Blob Storage**.
 
@@ -36,7 +40,7 @@ here:
 |---|---|---|
 | Cloud Service host | ASP.NET Core container, `app.UseHttp(...)` | HTTP-triggered Function, `app.UseHttp(...)` (identical pipeline) |
 | Cloud Service Profile | `UseBenzeneCloudService(...)` | **the same** `UseBenzeneCloudService(...)` — it only needs an `IHttpContext` |
-| Mesh UI + artifacts | ASP.NET Core container | HTTP-triggered Function (`UseMeshUi` + `UseMeshArtifacts`) |
+| Mesh UI + artifacts | ASP.NET Core container | HTTP-triggered Function (`UseMeshUi` + `UseMeshSpecUi` + `UseMeshArtifacts`) |
 | Periodic aggregation | `BackgroundService` (always-on) | **timer trigger** (`UseTimerTrigger`) — a Consumption Function has no always-on thread |
 | On-demand refresh | `POST /mesh/refresh` | **the same** `POST /mesh/refresh` handler |
 | Discovery | `Benzene.Mesh.Discovery.Azure` | **the same** package |
