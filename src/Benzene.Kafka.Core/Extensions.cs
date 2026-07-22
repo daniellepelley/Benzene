@@ -23,12 +23,23 @@ public static class Extensions
     /// diagnostics) to <c>DeadLetterTopic</c> via the caller's producer, and skipped past. Off unless
     /// supplied with a topic and producer.
     /// </param>
-    public static IBenzeneWorkerStartup UseKafka<TKey, TValue>(this IBenzeneWorkerStartup app, BenzeneKafkaConfig benzeneKafkaConfig, Action<IMiddlewarePipelineBuilder<KafkaRecordContext<TKey, TValue>>> action, IKafkaConsumerFactory<TKey, TValue>? consumerFactory = null, KafkaDeadLetterOptions<TKey, TValue>? deadLetterOptions = null)
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive Kafka reachability check (cluster metadata +
+    /// subscribed-topic existence) is auto-registered on the deep <c>healthcheck</c> layer — never a
+    /// Kubernetes probe (a broker being unreachable is shared-fate; see <c>IDependencyHealthCheck</c>).
+    /// Pass <c>false</c> to opt out.
+    /// </param>
+    public static IBenzeneWorkerStartup UseKafka<TKey, TValue>(this IBenzeneWorkerStartup app, BenzeneKafkaConfig benzeneKafkaConfig, Action<IMiddlewarePipelineBuilder<KafkaRecordContext<TKey, TValue>>> action, IKafkaConsumerFactory<TKey, TValue>? consumerFactory = null, KafkaDeadLetterOptions<TKey, TValue>? deadLetterOptions = null, bool healthCheck = true)
     {
         app.Register(x => x
             .AddBenzeneMessage()
             .AddKafka<TKey, TValue>()
         );
+
+        if (healthCheck)
+        {
+            app.Register(x => x.AddKafkaDependencyHealthCheck(benzeneKafkaConfig));
+        }
         var middlewarePipelineBuilder = app.Create<KafkaRecordContext<TKey, TValue>>();
         middlewarePipelineBuilder.UseBenzeneInvocation();
         action(middlewarePipelineBuilder);

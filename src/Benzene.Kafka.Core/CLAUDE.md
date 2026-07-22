@@ -8,6 +8,22 @@ producer support. This is one of the "self-hosted worker" startup modes document
 (triggered by infrastructure) or ASP.NET Core (embedded in an existing listener).
 
 ## Key types/interfaces
+- `KafkaHealthCheck` — verifies the consumer can reach its cluster and that its subscribed topics
+  exist, via a read-only **cluster** `AdminClient.GetMetadata(timeout)` (cluster-level, not per-topic,
+  so it never triggers broker-side auto-topic-creation) + a local check that each `Topics` entry is
+  present. `Type = "Kafka"`, dependencies `("Broker", bootstrapServers)` + one `("Topic", t)` each.
+  Non-destructive (no consume/commit/produce). A Kafka authorization failure is classified as a
+  **Warning** via `HealthCheckError.Classify` (§3.9); the error code is surfaced, never the message.
+  `IKafkaAdminClientFactory` / `KafkaAdminClientFactory` supply the admin client — **one is built and
+  reused** across probes (the factory is captured at registration; its `Lazy<IAdminClient>` builds on
+  first probe), never per probe. It copies only the connection/auth settings off the `ConsumerConfig`
+  (bootstrap + common SASL/SSL); a `configure` callback / custom factory handles OAUTHBEARER etc.
+  **Auto-wired (Phase 4, default-on):** `UseKafka(..., healthCheck: true)` calls
+  `AddKafkaDependencyHealthCheck(config)` — registers on the **dependency** category (deep `healthcheck`
+  layer only, never a probe — a broker blip is shared-fate; see `IDependencyHealthCheck`), dedup
+  `"Kafka:{bootstrapServers}"`. `healthCheck: false` opts out; explicit `AddKafkaHealthCheck(config)` on
+  an `IHealthCheckBuilder` is the manual path. The worker-startup seam supports this because
+  `IBenzeneWorkerStartup : IRegisterDependency`.
 - `IKafkaConsumerFactory<TKey,TValue>` / `KafkaConsumerFactory<TKey,TValue>` (2026-07-17,
   additive public API) - the seam through which the worker creates its `IConsumer`, mirroring the
   Azure workers' client-factory seams (`IEventProcessorClientFactory` etc.). `Create(ConsumerConfig)`

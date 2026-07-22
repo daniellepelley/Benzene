@@ -55,7 +55,18 @@ per-library extraction and calls the shared `HealthCheckError.Classify`.
 
 ---
 
-## 1. Kafka (`Benzene.Kafka.Core`, Confluent.Kafka) — **auto-wireable, recommended first**
+## 1. Kafka (`Benzene.Kafka.Core`, Confluent.Kafka) — ✅ **IMPLEMENTED**
+
+Shipped as designed: `KafkaHealthCheck` (cluster `GetMetadata` + subscribed-topic existence, `Type =
+"Kafka"`, deps `("Broker", bootstrap)` + `("Topic", t)`), `IKafkaAdminClientFactory`/
+`KafkaAdminClientFactory` (one admin client, lazily built + reused — captured at registration, not
+per-probe), §3.9 auth→Warning classification, and auto-wiring on `UseKafka(..., healthCheck: true)` via
+`AddKafkaDependencyHealthCheck` (dependency category, dedup `"Kafka:{bootstrap}"`). One refinement vs
+the design below: **cluster-level** `GetMetadata` (not per-topic) — a per-topic metadata request can
+trigger broker-side auto-topic-creation, so it would not be non-destructive; the cluster read + local
+topic verification is safe. Original design notes retained below for context.
+
+
 
 **What "reachable" means:** the consumer can reach the cluster's bootstrap brokers and its subscribed
 topics exist. This is exactly what a Kafka consumer needs to make progress.
