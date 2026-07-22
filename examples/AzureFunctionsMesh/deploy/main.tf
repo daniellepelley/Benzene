@@ -79,7 +79,9 @@ resource "azurerm_linux_function_app" "service" {
     health_check_path                 = "/benzene/health"
     health_check_eviction_time_in_min = 5
     application_stack {
-      dotnet_version              = "10.0"
+      # The deployables are self-contained (they bring their own .NET runtime), so this pin only
+      # has to be a version the plan's host supports - see var.dotnet_version.
+      dotnet_version              = var.dotnet_version
       use_dotnet_isolated_runtime = true
     }
   }
@@ -107,7 +109,9 @@ resource "azurerm_linux_function_app" "mesh" {
     health_check_path                 = "/mesh-ui"
     health_check_eviction_time_in_min = 5
     application_stack {
-      dotnet_version              = "10.0"
+      # The deployables are self-contained (they bring their own .NET runtime), so this pin only
+      # has to be a version the plan's host supports - see var.dotnet_version.
+      dotnet_version              = var.dotnet_version
       use_dotnet_isolated_runtime = true
     }
   }

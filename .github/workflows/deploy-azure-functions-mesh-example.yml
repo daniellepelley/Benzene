@@ -35,9 +35,6 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Install Azure Functions Core Tools
-        run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
-
       - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -94,62 +91,70 @@ jobs:
             -var "resource_group=$RG" \
             -var "storage_account=${{ inputs.storage_account }}"
 
-      # Publish the built code to each Function App. `func azure functionapp publish` ends with a
-      # "sync triggers" call that asks the Functions host to start the worker and enumerate its
-      # triggers; on Linux Consumption that call can return a transient BadRequest before the freshly
-      # deployed content is consistent. The package upload has already succeeded at that point, so on a
-      # publish failure we retry the sync-triggers ARM call with backoff instead of failing the whole
-      # deploy on a transient hiccup. The three services share one deployable — MESH_SERVICE (set per
-      # app by Terraform) selects the domain — so the same Service project publishes to all three.
-      - name: Publish Function App code (resilient sync-triggers)
+      # Publish the built code to each Function App. The apps are published SELF-CONTAINED (they
+      # carry their own .NET runtime), because classic Linux Consumption (Y1) does not offer the
+      # newest .NET stacks - the host only has to start the worker executable, so the Terraform
+      # stack pin (var.dotnet_version) stays on a version the plan supports while the apps run
+      # .NET 10. Deployment is a plain zip deploy via az (no Functions Core Tools needed), followed
+      # by the ARM sync-triggers call - retried with backoff since on Linux Consumption it can
+      # return transient errors before freshly deployed content is consistent, and its error BODY
+      # is printed on every failed attempt (it names the real cause; never swallow it). The three
+      # services share one deployable - MESH_SERVICE (set per app by Terraform) selects the domain.
+      - name: Publish Function App code (self-contained, resilient sync-triggers)
         working-directory: examples/AzureFunctionsMesh
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
         run: |
           set -uo pipefail
           SUB="$(az account show --query id -o tsv)"
 
-          # Retry the ARM sync-triggers endpoint with backoff; returns 0 as soon as one call succeeds.
+          echo "::group::dotnet publish (self-contained linux-x64)"
+          dotnet publish Service -c Release -r linux-x64 --self-contained true -o publish/service
+          dotnet publish Mesh    -c Release -r linux-x64 --self-contained true -o publish/mesh
+          (cd publish/service && zip -qr ../service.zip .)
+          (cd publish/mesh    && zip -qr ../mesh.zip .)
+          echo "::endgroup::"
+
+          # Retry the ARM sync-triggers endpoint with backoff; returns 0 as soon as one call
+          # succeeds. Prints each failed attempt's response body - that's the actual diagnosis.
           sync_triggers() {
-            local app="$1"
+            local app="$1" out
             local url="https://management.azure.com/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Web/sites/$app/syncfunctiontriggers?api-version=2023-12-01"
             for attempt in 1 2 3 4 5 6; do
-              if az rest --method post --url "$url" >/dev/null 2>&1; then
+              if out="$(az rest --method post --url "$url" 2>&1)"; then
                 echo "sync-triggers OK for $app (attempt $attempt)"
                 return 0
               fi
-              echo "sync-triggers for $app returned an error (attempt $attempt); retrying after backoff..."
+              echo "sync-triggers for $app failed (attempt $attempt): ${out:0:600}"
               sleep $((attempt * 15))
             done
             return 1
           }
 
-          publish() {
-            local app="$1" dir="$2"
-            echo "::group::func publish $app"
+          deploy() {
+            local app="$1" zipfile="$2"
+            echo "::group::zip deploy $app"
             local ok=0
-            (cd "$dir" && func azure functionapp publish "$app") || ok=1
+            az functionapp deployment source config-zip -g "$RG" -n "$app" --src "$zipfile" --timeout 600 || ok=1
             echo "::endgroup::"
-            if [ "$ok" -eq 0 ]; then
-              return 0
+            if [ "$ok" -ne 0 ]; then
+              echo "zip deploy reported a failure for $app (the package usually uploaded; the trailing trigger sync is the fragile part). Verifying via ARM sync-triggers..."
             fi
-            echo "func publish reported a failure for $app (typically only the trailing sync-triggers call - the package upload precedes it). Retrying sync-triggers via ARM..."
             if sync_triggers "$app"; then
               return 0
             fi
-            echo "::error::Publishing $app failed: sync-triggers kept erroring after retries."
-            echo "::error::The package uploaded, but the Functions host could not enumerate the app's triggers -"
-            echo "::error::most often the isolated worker can't start (e.g. the region's Functions host does not yet"
-            echo "::error::support the targeted .NET version). See examples/AzureFunctionsMesh/README.md"
-            echo "::error::'Known first-deploy iteration points' about pinning dotnet_version to a supported runtime."
+            echo "::error::Publishing $app failed: sync-triggers kept erroring after retries (error bodies above)."
+            echo "::error::The Functions host could not enumerate the app's triggers - most often the isolated"
+            echo "::error::worker can't start. See examples/AzureFunctionsMesh/README.md 'Known first-deploy"
+            echo "::error::iteration points'. Diagnostics for $app:"
+            az functionapp show -g "$RG" -n "$app" --query "{state:state,lastModified:lastModifiedTimeUtc}" -o json || true
+            az functionapp config show -g "$RG" -n "$app" --query "linuxFxVersion" -o tsv || true
             return 1
           }
 
           rc=0
           for svc in orders payments shipping; do
-            publish "${PROJECT}-${svc}" Service || rc=1
+            deploy "${PROJECT}-${svc}" publish/service.zip || rc=1
           done
-          publish "${PROJECT}-mesh" Mesh || rc=1
+          deploy "${PROJECT}-mesh" publish/mesh.zip || rc=1
           exit "$rc"
 
       - name: Show URLs

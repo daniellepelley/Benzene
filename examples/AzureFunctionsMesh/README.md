@@ -101,5 +101,11 @@ first-run tweaks:
 - **Managed-identity propagation** — a `time_sleep` gives the mesh identity time to propagate before
   its role assignments apply; the roles can still take a minute to take effect (an early pass returns
   `0`, the timer retries).
-- **`.NET 10` isolated on Functions** — pin `dotnet_version`/`functions_extension_version` to what your
-  region's Functions host supports.
+- **`.NET 10` isolated on Functions** — classic Linux Consumption (Y1) does not offer the newest
+  .NET stacks (those land on Flex Consumption first), which made a framework-dependent .NET 10
+  deploy fail its trigger sync on every app (the host couldn't start the worker). The workflow
+  therefore publishes the apps **self-contained** (`dotnet publish -r linux-x64 --self-contained`) —
+  the package carries its own .NET 10 runtime — and the Terraform stack pin (`var.dotnet_version`,
+  default `8.0`) only needs to be a version the plan supports, not the version the apps target.
+  If your region's plan does support the apps' .NET version natively, setting `dotnet_version` to
+  it also works with a framework-dependent deploy.

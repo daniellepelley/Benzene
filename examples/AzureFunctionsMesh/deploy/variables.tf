@@ -4,6 +4,18 @@ variable "location" {
   default     = "westeurope"
 }
 
+variable "dotnet_version" {
+  description = <<-EOT
+    The .NET version pinned on the Functions host stack (linuxFxVersion). The apps are published
+    SELF-CONTAINED, carrying their own .NET runtime, so this does NOT need to match the version the
+    apps target - it only needs to be a version the plan's host supports, so the host can start the
+    isolated worker process. Classic Linux Consumption (Y1) does not offer the newest .NET versions
+    (those land on Flex Consumption), which is why this defaults to the 8.0 LTS rather than 10.0.
+  EOT
+  type        = string
+  default     = "8.0"
+}
+
 variable "project" {
   description = "Name prefix for all resources (must yield globally-unique Function App names)."
   type        = string
