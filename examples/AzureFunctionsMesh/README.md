@@ -150,6 +150,17 @@ first-run tweaks:
   HTTP hit cold-starts the worker so the extension answers the validation handshake and its system key
   exists), then does the second apply (`wire_eventgrid_subscriptions=true`). If a subscription still
   fails validation, the consumer app was likely cold — warm it (hit any route) and re-run.
+  - **The second apply must not strip the deployed package.** On Linux Consumption the zip-deploy step
+    sets `WEBSITE_RUN_FROM_PACKAGE` to the uploaded package URL. That setting is *not* declared in the
+    Terraform `app_settings`, so without care the second apply treats it as drift and removes it —
+    un-deploying every function *in the same apply* that then wires the subscriptions. Even with the
+    webhook approach above that is fatal: an un-deployed app can't answer the Event Grid validation
+    handshake, and its Event Grid extension system key can't be read (`azurerm_function_app_host_keys`
+    fails). Both Function App resources therefore carry
+    `lifecycle { ignore_changes = [app_settings["WEBSITE_RUN_FROM_PACKAGE"]] }` so the publish step owns
+    that key and the post-publish apply leaves the deployed code in place. Re-running the whole workflow
+    after this fix self-heals a previously stripped environment (publish re-sets it; the wire apply
+    leaves it alone).
 - **Event Hub / Service Bus / Event Grid connection strings** — each service gets the connection strings
   it needs as app settings from the namespaces Terraform creates (`ServiceBusConnection`,
   `EventHubConnection`, `EventGridEndpoint`/`EventGridKey`). A missing/blank one only fails the *send*

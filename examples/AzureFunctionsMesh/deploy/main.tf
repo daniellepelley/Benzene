@@ -129,6 +129,16 @@ resource "azurerm_linux_function_app" "service" {
     { FUNCTIONS_WORKER_RUNTIME = "dotnet-isolated" },
     local.service_app_settings[each.value]
   )
+
+  # The code is published out-of-band by the workflow's zip-deploy step, which (on Linux Consumption,
+  # where run-from-package is mandatory) sets WEBSITE_RUN_FROM_PACKAGE to the uploaded package's URL.
+  # That setting is deliberately NOT declared above, so ignore it here: otherwise the second apply -
+  # the one that wires the Event Grid subscriptions after publish - sees it as drift and strips it,
+  # which un-deploys the functions. The Event Grid subscriptions target those functions by id, so
+  # their creation then fails endpoint validation with "Destination endpoint not found".
+  lifecycle {
+    ignore_changes = [app_settings["WEBSITE_RUN_FROM_PACKAGE"]]
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------
@@ -257,6 +267,12 @@ resource "azurerm_linux_function_app" "mesh" {
     # Scope discovery explicitly to this deployment so a subscription-scoped Reader can't widen the sweep.
     MESH_SUBSCRIPTION_ID = data.azurerm_client_config.current.subscription_id
     MESH_RESOURCE_GROUP  = data.azurerm_resource_group.this.name
+  }
+
+  # Same as the service apps: the mesh code is zip-deployed out-of-band, setting WEBSITE_RUN_FROM_PACKAGE.
+  # Ignore it so the post-publish apply doesn't strip the package and blank the mesh UI.
+  lifecycle {
+    ignore_changes = [app_settings["WEBSITE_RUN_FROM_PACKAGE"]]
   }
 }
 
