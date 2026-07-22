@@ -61,6 +61,25 @@ message, handlers must be idempotent - see [Idempotency](../../docs/cookbooks/id
 - `Extensions.UseRabbitMq(IBenzeneWorkerStartup, config, connectionFactory, action)` - the worker
   wiring, mirroring `UseKafka`/`UseServiceBus`; registers `AddBenzeneMessage().AddRabbitMq()`.
 
+### Health check
+- `RabbitMqHealthCheck` - verifies the broker is reachable and the consumed queue exists, via a
+  **passive** `QueueDeclarePassiveAsync` (read-only: it neither creates nor mutates the queue; a missing
+  queue is a channel-level `404`). `Type = "RabbitMq"`, dependency `("Queue", config.QueueName)`.
+  Non-destructive (no publish/get/ack). AMQP reply codes align with §3.9: `403 access-refused` -> a
+  **Warning** (permission), `404 not-found` -> Failed; classified via `HealthCheckError.Classify`, never
+  the message.
+- `IRabbitMqConnectionProvider` / `RabbitMqConnectionProvider` - supplies the connection the check uses.
+  It opens **one** connection (via `IRabbitMqConnectionFactory`) and reuses it across probes, opening
+  only a cheap short-lived **channel** per probe. It does **not** share the worker's private connection
+  (a deliberate simplification, consistent with the Kafka admin client's dedicated-reused-handle) - so
+  there is one extra idle connection, not a per-probe connect. Unlike a `Lazy<Task>`, a failed connect is
+  not memoised (the next probe retries) and a dropped connection is re-opened.
+- **Auto-wired (Phase 4, default-on):** `UseRabbitMq(..., healthCheck: true)` calls
+  `AddRabbitMqDependencyHealthCheck(config, connectionFactory)` - registers on the **dependency**
+  category (deep `healthcheck` layer only, never a probe - a broker blip is shared-fate; see
+  `IDependencyHealthCheck`), dedup `"RabbitMq:{queue}"`. `healthCheck: false` opts out; explicit
+  `AddRabbitMqHealthCheck(config, factory)` on an `IHealthCheckBuilder` is the manual path.
+
 ### Outbound (`RabbitMqSendMessage/`)
 - `RabbitMqBenzeneMessageClient : IBenzeneMessageClient` - publishes so business logic depends only
   on `IBenzeneMessageSender`/`IBenzeneMessageClient`. Mirrors `KafkaBenzeneMessageClient`, including

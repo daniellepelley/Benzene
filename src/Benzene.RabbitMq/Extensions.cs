@@ -20,14 +20,26 @@ public static class Extensions
     /// <param name="config">The queue to consume and the processing behavior to use.</param>
     /// <param name="connectionFactory">The factory used to open the RabbitMQ connection.</param>
     /// <param name="action">Configures the inner RabbitMQ message pipeline.</param>
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive RabbitMQ reachability check (passive declare of
+    /// the consumed queue) is auto-registered on the deep <c>healthcheck</c> layer — never a Kubernetes
+    /// probe (a broker being unreachable is shared-fate; see <c>IDependencyHealthCheck</c>). Pass
+    /// <c>false</c> to opt out.
+    /// </param>
     /// <returns>The worker startup for method chaining.</returns>
     public static IBenzeneWorkerStartup UseRabbitMq(this IBenzeneWorkerStartup app, RabbitMqConfig config,
-        IRabbitMqConnectionFactory connectionFactory, Action<IMiddlewarePipelineBuilder<RabbitMqContext>> action)
+        IRabbitMqConnectionFactory connectionFactory, Action<IMiddlewarePipelineBuilder<RabbitMqContext>> action,
+        bool healthCheck = true)
     {
         app.Register(x => x
             .AddBenzeneMessage()
             .AddRabbitMq(config.TopicHeaderKey)
         );
+
+        if (healthCheck)
+        {
+            app.Register(x => x.AddRabbitMqDependencyHealthCheck(config, connectionFactory));
+        }
 
         var middlewarePipelineBuilder = app.Create<RabbitMqContext>();
         // Seed the scope's ambient cancellation token from the delivery's token, so any component

@@ -100,7 +100,18 @@ list from `config.Topics`.
 
 ---
 
-## 2. RabbitMQ (`Benzene.RabbitMq`, RabbitMQ.Client v7 async) — **auto-wireable**
+## 2. RabbitMQ (`Benzene.RabbitMq`, RabbitMQ.Client v7 async) — ✅ **IMPLEMENTED**
+
+Shipped: `RabbitMqHealthCheck` (passive `QueueDeclarePassiveAsync`, `Type = "RabbitMq"`, dep
+`("Queue", config.QueueName)`), §3.9 via AMQP reply codes (403 → Warning, 404 → Failed), auto-wired on
+`UseRabbitMq(..., healthCheck: true)`. The connection-reuse design work resolved as
+`IRabbitMqConnectionProvider`/`RabbitMqConnectionProvider`: **one dedicated connection reused across
+probes** (a cheap channel per probe), rather than sharing the worker's private connection — the same
+dedicated-reused-handle trade-off as the Kafka admin client, chosen over a more invasive worker change.
+The provider retries a failed connect (not a memoised `Lazy<Task>`) and re-opens a dropped connection.
+Original design notes retained below.
+
+
 
 **What "reachable" means:** the broker connection is up and the consumed queue exists.
 

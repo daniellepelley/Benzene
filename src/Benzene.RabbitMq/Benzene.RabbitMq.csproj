@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Benzene.Clients\Benzene.Clients.csproj" />
     <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
     <ProjectReference Include="..\Benzene.SelfHost\Benzene.SelfHost.csproj" />
+    <ProjectReference Include="..\Benzene.HealthChecks.Core\Benzene.HealthChecks.Core.csproj" />
   </ItemGroup>
 
 </Project>
