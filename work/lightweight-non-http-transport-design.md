@@ -7,7 +7,17 @@
 > involve a different port or wrapping the message in HTTP. Investigate the options.
 
 This is an **investigation**, not an implementation. It surveys what Benzene already has, lays out four
-concrete options with trade-offs, and recommends a phased path. Nothing here is built yet.
+concrete options with trade-offs, and recommends a phased path.
+
+> **Update (2026-07-22): Phase 1 / Option A is implemented.** The envelope client landed in the existing
+> **`Benzene.Client.Http`** package (not a new `Benzene.Clients.Http` — that package was already the
+> outbound-HTTP home, and its pre-existing content was a *plain-REST* caller, not the envelope client, so
+> the gap below held exactly). New: `HttpBenzeneMessageClient : IBenzeneMessageClient` (POSTs
+> `{ topic, headers, body }`, maps the `{ statusCode, headers, body }` response), `HttpBenzeneMessageHealthCheck`
+> (non-destructive `healthcheck`-topic reachability, §3.9 permission→Warning), and
+> `AddHttpBenzeneMessageClient(url, healthCheck: true)` which auto-wires the check onto the dependency
+> category. Same-port per the maintainer's decision (it's ordinary middleware on the existing HTTP port).
+> Phase 2 (generic gRPC envelope) remains unstarted.
 
 ---
 
