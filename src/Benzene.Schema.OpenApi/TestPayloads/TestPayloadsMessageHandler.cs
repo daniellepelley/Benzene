@@ -29,7 +29,10 @@ public class TestPayloadsMessageHandler : IMessageHandler<TestPayloadsRequest, R
         var documentBuilder = (EventServiceDocumentBuilder)new SpecBuilder().CreateBuilder(_serviceResolver, "benzene");
         var document = documentBuilder.Build();
 
-        var json = new TestPayloadsBuilder().BuildJson(document, request?.Topic);
+        // Any transport dressers a host has opted into (e.g. Benzene.Aws.Lambda.TestPayloads) are picked
+        // up here; with none registered the manifest carries just the portable benzene-message envelope.
+        var dressers = _serviceResolver.GetServices<ITestPayloadDresser>();
+        var json = new TestPayloadsBuilder(dressers).BuildJson(document, request?.Topic);
 
         return BenzeneResult.Ok(new RawStringMessage(json)).AsTask();
     }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>Benzene.Aws.Lambda.TestPayloads</AssemblyName>
+		<RootNamespace>Benzene.Aws.Lambda.TestPayloads</RootNamespace>
+		<Description>Opt-in AWS transport dressing (SNS/SQS/API Gateway) for Benzene's runtime test-payloads endpoint. Keeps the AWS event contracts out of the runtime-safe core.</Description>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.6.0" />
+		<PackageReference Include="Amazon.Lambda.SNSEvents" Version="2.0.0" />
+		<PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
+	</ItemGroup>
+
+</Project>
