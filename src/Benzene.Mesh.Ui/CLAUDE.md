@@ -7,6 +7,23 @@
 > reduced-feed markers, topic catalog with observed consumers, recent flows). Same embedded-HTML
 > pattern (`mesh-fleet-ui.html`, attribute-injected config, no JS framework); see
 > `examples/Mesh/run.sh` for it running against live services.
+>
+> **2026-07-22 (P2 of the vision doc's roadmap): the Fleet view now has the flow view + staleness.**
+> - **Flow view (traced waterfall):** each "Recent flows" row is clickable (button + Enter/Space on
+>   the row) and expands an inline waterfall of the flow's events, fetched from the collector's
+>   `mesh:query:trace` through the same envelope endpoint. One row per handled message: service +
+>   `topic@version` label, a time-positioned bar (offset = start within the flow, width = duration),
+>   colored by the status's **wire-vocabulary success class** (`Ok`/`Created`/`Accepted`/`Updated`/
+>   `Deleted`/`Ignored` = success; everything else - and unknown statuses - render as failure,
+>   matching the collector's own error counting), with parentage shown by indenting children under
+>   their parent span (cycle-guarded, capped at depth 8 visually). A trace is immutable once
+>   captured, so the `TraceView` is cached per trace id (a transient fetch failure is not cached);
+>   the open waterfall survives the 2s poll's table rebuild, and an empty `events` answer renders
+>   the "aged out of the ring buffer" note. Self-contained CSS bars - no chart/graph library.
+> - **Staleness (the roadmap's 2026-07-20 ruling, collector-plane half):** a new "Last seen" column
+>   renders each service's heartbeat age, and a service whose `lastSeen` exceeds `STALE_AFTER_MS`
+>   (90s default - a few missed heartbeats; a JS knob, deliberately not a contract value) has its
+>   health mark downgraded to "◌ stale" (amber) - an old "healthy" verdict is not a current one.
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the

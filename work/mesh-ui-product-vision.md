@@ -7,6 +7,23 @@
 
 ---
 
+> **2026-07-22 (later still) P2 SHIPPED — flow view + fleet staleness:**
+> - **Flow view:** the collector's conformance-tested `mesh:query:trace`/`TraceView` is finally
+>   surfaced — every "Recent flows" row in `mesh-fleet-ui.html` expands an inline traced
+>   waterfall (per-event time-positioned bars, wire-vocabulary success-class coloring, parentage
+>   indentation, per-trace caching, poll-rebuild survival, ring-buffer-aged-out empty state).
+>   Self-contained CSS, no chart library — the static/no-dependency floor holds on the collector
+>   plane too.
+> - **Fleet staleness:** the 2026-07-20 ruling's pending collector-plane half is done — "Last
+>   seen" column + health mark downgraded to "◌ stale" past a 90s UI knob (a few missed
+>   heartbeats), never a contract value.
+> - Verified against a stub collector speaking the envelope contract (Playwright + Chromium,
+>   light + dark): 12 checks green, zero console errors, including indentation depths, the
+>   failed-span coloring, cache single-fetch, and open-waterfall poll survival.
+> - P3 (topology graph over collector-derived edges) is next.
+>
+> ---
+>
 > **2026-07-22 (later) P1 SHIPPED + usage-feed requirement refined by the owner:**
 > - **P1 (three-entity exploration model) is built and verified.** `#service:<name>` page +
 >   generic hash router + full link closure, exactly per §B below; the topic page's embedded

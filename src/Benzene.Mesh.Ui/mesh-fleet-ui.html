@@ -44,7 +44,34 @@
   .h-degraded { color: var(--serious); }
   .h-unknown, .missing { color: var(--muted); }
   .failed { color: var(--crit); }
+  .stale { color: var(--warn); }
   .empty { color: var(--muted); padding: 12px; font-size: 12.5px; }
+
+  /* ---------- flow view: the traced waterfall (mesh:query:trace) ---------- */
+  tr.flow-row { cursor: pointer; }
+  tr.flow-row:hover td { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  tr.flow-row.open td { border-bottom: none; }
+  .flow-link { background: none; border: none; padding: 0; font: inherit; color: inherit;
+               cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .flow-link:hover, .flow-link:focus-visible { color: var(--good); outline: none; }
+  td.flow-detail { padding: 4px 11px 14px; white-space: normal; }
+  .wf { margin-top: 4px; }
+  .wf-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin: 4px 0 10px; }
+  .wf-head .tid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--ink-2); word-break: break-all; }
+  .wf-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+  .wf-label { flex: 0 0 300px; min-width: 0; display: flex; align-items: baseline; gap: 7px;
+              font-size: 12px; overflow: hidden; }
+  .wf-label .svc { color: var(--ink-2); flex: none; }
+  .wf-label .top { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wf-track { flex: 1 1 auto; position: relative; height: 16px; background: color-mix(in srgb, var(--ink) 5%, transparent);
+              border-radius: 4px; overflow: hidden; }
+  .wf-bar { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; min-width: 3px; background: var(--good); opacity: .85; }
+  .wf-bar.err { background: var(--crit); }
+  .wf-stat { flex: 0 0 150px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+             font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+  .wf-stat .st-err { color: var(--crit); }
+  .wf-note { color: var(--muted); font-size: 12px; padding: 6px 0; }
 </style>
 </head>
 <body>
@@ -63,7 +90,7 @@
 
   <h2>Services</h2>
   <div class="tablewrap"><table>
-    <thead><tr><th>Service</th><th>Health</th><th>Runtime</th><th>Cloud</th><th>Binding</th>
+    <thead><tr><th>Service</th><th>Health</th><th>Last seen</th><th>Runtime</th><th>Cloud</th><th>Binding</th>
       <th>Topics</th><th>Instances</th><th>Invocations</th><th>Errors</th><th>Reduced feeds</th></tr></thead>
     <tbody id="services"></tbody>
   </table></div>
@@ -76,6 +103,8 @@
   </table></div>
 
   <h2>Recent flows</h2>
+  <p class="sub">Click a flow to open its traced waterfall — every handled message in the flow, per
+    service, laid out over time (from the collector's <span class="mono">mesh:query:trace</span>).</p>
   <div class="tablewrap"><table>
     <thead><tr><th>Trace</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
     <tbody id="traces"></tbody>
@@ -125,7 +154,21 @@
     fill(document.getElementById("services"), services, function (tr, s) {
       cell(tr, s.service);
       var marks = { healthy: "✓ healthy", degraded: "▲ degraded", unknown: "◌ unknown" };
-      cell(tr, marks[s.health] || s.health, "h-" + s.health);
+      // Staleness is a viewing-time derivation over lastSeen (the roadmap's 2026-07-20 ruling:
+      // no Stale status in the contract; the threshold is a UI knob). On this live plane a few
+      // missed heartbeats is the signal - a "healthy" verdict from an old heartbeat is not a
+      // current verdict, so the health mark itself is downgraded to stale.
+      var age = ageMs(s.lastSeen);
+      var isStale = age != null && age > STALE_AFTER_MS;
+      if (isStale) {
+        var hc = cell(tr, "◌ stale", "stale");
+        hc.title = "Last heartbeat " + humanAge(age) + " ago (stale after " + humanAge(STALE_AFTER_MS)
+          + ") - the '" + s.health + "' verdict is that old, not current.";
+      } else {
+        cell(tr, marks[s.health] || s.health, "h-" + s.health);
+      }
+      var seen = cell(tr, age == null ? "-" : humanAge(age) + " ago", "num" + (isStale ? " stale" : ""));
+      if (s.lastSeen) seen.title = s.lastSeen;
       cell(tr, s.runtime);
       cell(tr, (s.placement || {}).cloud);
       cell(tr, s.binding);
@@ -134,7 +177,7 @@
       cell(tr, s.invocations, "num");
       cell(tr, s.errors, "num" + (s.errors > 0 ? " failed" : ""));
       cell(tr, (s.missingFeeds || []).join(", "), "missing");
-    }, 10);
+    }, 11);
 
     fill(document.getElementById("topics"), topics, function (tr, t) {
       cell(tr, t.topic + (t.version ? "@" + t.version : ""), "mono");
@@ -149,13 +192,201 @@
       cell(tr, statuses);
     }, 7);
 
-    fill(document.getElementById("traces"), traces, function (tr, f) {
-      cell(tr, f.traceId.slice(0, 16), "mono");
+    var tbody = document.getElementById("traces");
+    fill(tbody, traces, function (tr, f) {
+      tr.className = "flow-row";
+      tr.tabIndex = 0;
+      var tdId = document.createElement("td");
+      var link = document.createElement("button");
+      link.className = "flow-link mono";
+      link.type = "button";
+      link.textContent = f.traceId.slice(0, 16);
+      link.title = "Open this flow's traced waterfall";
+      tdId.appendChild(link);
+      tr.appendChild(tdId);
       cell(tr, (f.services || []).join(" → "));
       cell(tr, f.events, "num");
       cell(tr, f.durationMs.toFixed(1), "num");
       cell(tr, f.failed ? "✕ failed" : "✓ ok", f.failed ? "failed" : "h-healthy");
+      var open = function () { toggleFlow(tr, f.traceId); };
+      tr.addEventListener("click", open);
+      tr.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      });
     }, 5);
+    // The 2s poll rebuilds the table; keep the flow the user is reading open across rebuilds.
+    if (openTraceId) {
+      var rows = tbody.querySelectorAll("tr.flow-row");
+      for (var i = 0; i < rows.length; i++) {
+        var link2 = rows[i].querySelector(".flow-link");
+        if (link2 && traces[i] && traces[i].traceId === openTraceId) { expandFlow(rows[i], openTraceId); break; }
+      }
+    }
+  }
+
+  /* ---------- flow view: the traced waterfall ----------
+     One row per handled message in the flow (the collector returns the events in start order):
+     bar position = start offset within the flow, width = duration, color = the status's success
+     class per the wire vocabulary; parentage shown by indenting children under their parent
+     span. A trace is immutable once captured, so the TraceView is cached per trace id. */
+  var openTraceId = null;
+  var traceCache = {};
+  // The wire-contracts §3 success class - only these statuses count as success (everything
+  // unknown is rendered as failure, matching the collector's own error counting).
+  var SUCCESS_STATUSES = { Ok: 1, Created: 1, Accepted: 1, Updated: 1, Deleted: 1, Ignored: 1 };
+
+  // Staleness knob: a few missed heartbeats on this live plane (heartbeat cadence is
+  // deployment-specific; 90s catches a quiet service without flapping on a slow sender).
+  var STALE_AFTER_MS = 90 * 1000;
+  function ageMs(iso) {
+    if (!iso) return null;
+    var t = Date.parse(iso);
+    return isNaN(t) ? null : Math.max(0, Date.now() - t);
+  }
+  function humanAge(ms) {
+    if (ms < 90 * 1000) return Math.round(ms / 1000) + "s";
+    if (ms < 90 * 60 * 1000) return Math.round(ms / 60000) + "m";
+    return Math.round(ms / 3600000) + "h";
+  }
+
+  function toggleFlow(tr, traceId) {
+    var wasOpen = openTraceId === traceId;
+    collapseFlows();
+    if (!wasOpen) expandFlow(tr, traceId);
+  }
+  function collapseFlows() {
+    openTraceId = null;
+    document.querySelectorAll("tr.flow-detail-row").forEach(function (r) { r.remove(); });
+    document.querySelectorAll("tr.flow-row.open").forEach(function (r) { r.classList.remove("open"); });
+  }
+  function expandFlow(tr, traceId) {
+    openTraceId = traceId;
+    tr.classList.add("open");
+    var detailRow = document.createElement("tr");
+    detailRow.className = "flow-detail-row";
+    var td = document.createElement("td");
+    td.className = "flow-detail";
+    td.colSpan = 5;
+    td.appendChild(buildWaterfallPlaceholder());
+    detailRow.appendChild(td);
+    tr.parentNode.insertBefore(detailRow, tr.nextSibling);
+
+    var cached = traceCache[traceId];
+    var promise = cached || fetch(ENVELOPE_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ topic: "mesh:query:trace", headers: {}, body: JSON.stringify({ traceId: traceId }) })
+    }).then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    }).then(function (envelope) {
+      if (envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+      return JSON.parse(envelope.body);
+    });
+    traceCache[traceId] = promise;
+    promise.then(function (view) {
+      if (openTraceId !== traceId || !detailRow.isConnected) return;
+      td.textContent = "";
+      td.appendChild(buildWaterfall(view));
+    }).catch(function (err) {
+      delete traceCache[traceId]; // a transient failure shouldn't poison the cache
+      if (!detailRow.isConnected) return;
+      td.textContent = "";
+      var note = document.createElement("div");
+      note.className = "wf-note failed";
+      note.textContent = "Could not load this flow's trace: " + (err.message || err);
+      td.appendChild(note);
+    });
+  }
+  function buildWaterfallPlaceholder() {
+    var note = document.createElement("div");
+    note.className = "wf-note";
+    note.textContent = "Loading trace…";
+    return note;
+  }
+
+  function spanDepths(events) {
+    var byId = {};
+    events.forEach(function (e) { if (e.spanId) byId[e.spanId] = e; });
+    var depths = {};
+    events.forEach(function (e) {
+      var depth = 0, seen = {}, p = e.parentSpanId;
+      while (p && byId[p] && !seen[p] && depth < 32) { seen[p] = 1; depth++; p = byId[p].parentSpanId; }
+      depths[e.spanId || ""] = depth;
+    });
+    return depths;
+  }
+
+  function buildWaterfall(view) {
+    var events = view.events || [];
+    var wrap = document.createElement("div");
+    wrap.className = "wf";
+
+    var head = document.createElement("div");
+    head.className = "wf-head";
+    var tid = document.createElement("span");
+    tid.className = "tid";
+    tid.textContent = view.traceId;
+    head.appendChild(tid);
+    wrap.appendChild(head);
+
+    if (!events.length) {
+      var note = document.createElement("div");
+      note.className = "wf-note";
+      note.textContent = "No events for this trace — it may have aged out of the collector's ring buffer.";
+      wrap.appendChild(note);
+      return wrap;
+    }
+
+    var starts = events.map(function (e) { return Date.parse(e.startedAt) || 0; });
+    var t0 = Math.min.apply(null, starts);
+    var t1 = Math.max.apply(null, events.map(function (e, i) { return starts[i] + (e.durationMs || 0); }));
+    var span = Math.max(1, t1 - t0);
+    var depths = spanDepths(events);
+
+    events.forEach(function (e, i) {
+      var row = document.createElement("div");
+      row.className = "wf-row";
+
+      var label = document.createElement("div");
+      label.className = "wf-label";
+      var depth = depths[e.spanId || ""] || 0;
+      label.style.paddingLeft = Math.min(depth, 8) * 14 + "px";
+      var svc = document.createElement("span");
+      svc.className = "svc";
+      svc.textContent = e.service || "?";
+      label.appendChild(svc);
+      var top = document.createElement("span");
+      top.className = "top";
+      top.textContent = e.topic + (e.topicVersion ? "@" + e.topicVersion : "");
+      top.title = top.textContent;
+      label.appendChild(top);
+      row.appendChild(label);
+
+      var track = document.createElement("div");
+      track.className = "wf-track";
+      var bar = document.createElement("div");
+      var ok = SUCCESS_STATUSES[e.status] === 1;
+      bar.className = "wf-bar" + (ok ? "" : " err");
+      bar.style.left = (((starts[i] - t0) / span) * 100).toFixed(2) + "%";
+      bar.style.width = Math.max(0.4, ((e.durationMs || 0) / span) * 100).toFixed(2) + "%";
+      bar.title = (e.durationMs || 0).toFixed(1) + "ms · " + e.status;
+      track.appendChild(bar);
+      row.appendChild(track);
+
+      var stat = document.createElement("div");
+      stat.className = "wf-stat";
+      var st = document.createElement("span");
+      st.className = ok ? "" : "st-err";
+      st.textContent = e.status;
+      stat.appendChild(st);
+      stat.appendChild(document.createTextNode(" · " + (e.durationMs || 0).toFixed(1) + "ms"));
+      row.appendChild(stat);
+
+      wrap.appendChild(row);
+    });
+
+    return wrap;
   }
 
   function refresh() {
