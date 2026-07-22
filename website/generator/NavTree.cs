@@ -75,7 +75,11 @@ internal static class NavTreeBuilder
             return new NavNode { Title = MarkdownText.GetPlainText(link).Trim(), Href = link.Url };
         }
 
-        var text = MarkdownText.GetPlainText(inline).Trim();
+        // A group header is conventionally "- **Title**", optionally followed by descriptive prose
+        // ("- **Title** — why this section exists"). The prose belongs on the docs home page, not
+        // in the sidebar - so when the bullet carries a bold run, that alone is the title.
+        var strong = inline.Descendants<EmphasisInline>().FirstOrDefault(x => x.DelimiterCount == 2);
+        var text = (strong != null ? MarkdownText.GetPlainText(strong) : MarkdownText.GetPlainText(inline)).Trim();
         return text.Length == 0 ? null : new NavNode { Title = text };
     }
 }
