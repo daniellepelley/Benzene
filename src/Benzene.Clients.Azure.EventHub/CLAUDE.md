@@ -20,8 +20,10 @@ only `Azure.Messaging.EventHubs` (5.11.5, matching the ingress packages' `.Proce
   "EventHub"`, dependency `("EventHub", producerClient.EventHubName)`; non-destructive — no send).
   Failures go through `HealthCheckError.Classify` (§3.9). Event Hubs is **AMQP, not HTTP**, so there is
   no status code: the SDK's `EventHubsException.FailureReason` is surfaced as `ErrorCode`, and an
-  `UnauthorizedAccessException` (a bad credential/claim) is mapped to `403` so it degrades to a
-  **Warning** like the HTTP-based checks. The message is never included.
+  `UnauthorizedAccessException` (a bad credential/claim) is mapped to `403` so it classifies as a
+  **persistent `Failed`** — surfacing as unhealthy rather than being softened to a Warning (§3.9,
+  reversed; a deterministic misconfiguration that won't self-heal) — like the HTTP-based checks. The
+  message is never included.
   - **Auto-wired (Phase 4, default-on).** The two `producerClient`-instance `UseEventHub`/`UseEventHub<T>`
     overloads take `bool healthCheck = true`: unless opted out they register the check on the
     **dependency category** (`AddDependencyHealthCheck`, dedup `"EventHub:{name}"`), **capturing the

@@ -827,8 +827,10 @@
     return { healthy: "b-healthy", unhealthy: "b-unhealthy", unreachable: "b-unreachable" }[status] || "b-unhealthy";
   }
   /* A per-check status uses its own vocabulary (ok/warning/failed) - warning is a real, distinct tier
-     from failed (a 401/403 permission blip degrades to warning, not failed), so give it its own amber
-     badge rather than folding it into the service-level "unhealthy" fallback. */
+     from failed (e.g. contract drift, or a non-critical dependency degraded rather than de-serviced),
+     so give it its own amber badge rather than folding it into the service-level "unhealthy" fallback.
+     Note: a 401/403 permission failure is NOT a warning - it's a persistent failed (deterministic IAM
+     misconfiguration), so it renders red. */
   function checkBadgeClass(status) {
     return { ok: "b-healthy", warning: "b-warning", failed: "b-failed" }[status] || "b-warning";
   }

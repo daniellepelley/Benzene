@@ -68,7 +68,10 @@ for the full Kubernetes wiring guide.
   remains for source-compatibility (the `topic` arg is unused). **Per-check overrides are honoured:** a
   check's `IHealthCheck.Timeout` replaces the processor-wide timeout for that check, and a non-critical
   check (`IsNonCritical == true`) has a `Failed` result downgraded to `Warning` so it never flips the
-  probe unhealthy (§3.4).
+  probe unhealthy (§3.4) — **except a persistent `Failed`** (`IHealthCheckResult.IsPersistent`, which
+  `HealthCheckError.Classify` sets for an authorization/permission denial), which is exempt from the
+  downgrade and stays `Failed` even for a non-critical dependency check, so a deterministic IAM
+  misconfiguration surfaces as unhealthy rather than being softened to a Warning (§3.9).
 - `CachingHealthCheckProcessor` - an opt-in `IHealthCheckProcessor` decorator that caches the
   aggregated result for a TTL (keyed by the set of check `Type`s, so liveness/readiness cache
   independently), so a probe polling every few seconds doesn't re-run every check and re-hit every

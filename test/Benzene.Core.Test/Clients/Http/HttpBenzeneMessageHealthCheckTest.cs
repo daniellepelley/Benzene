@@ -53,14 +53,16 @@ public class HttpBenzeneMessageHealthCheckTest
     [Theory]
     [InlineData(HttpStatusCode.Unauthorized)]
     [InlineData(HttpStatusCode.Forbidden)]
-    public async Task ExecuteAsync_ReturnsWarning_OnAPermissionResponse(HttpStatusCode statusCode)
+    public async Task ExecuteAsync_ReturnsPersistentFailure_OnAPermissionResponse(HttpStatusCode statusCode)
     {
-        // "I can't probe it" is not "it's down" - a permission error degrades to Warning, not Failed (§3.9).
+        // A permission response (401/403) is a persistent, deterministic fault - it surfaces as unhealthy
+        // even for the auto-wired dependency check rather than being softened to a Warning (§3.9).
         var check = new HttpBenzeneMessageHealthCheck(new HttpClient(new CapturingHandler(statusCode)), Url);
 
         var result = await check.ExecuteAsync();
 
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
     }
 
     [Theory]

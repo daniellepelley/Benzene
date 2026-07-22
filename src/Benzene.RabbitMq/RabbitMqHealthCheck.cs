@@ -11,7 +11,9 @@ namespace Benzene.RabbitMq;
 /// counts, or a channel-level <c>404</c> if the queue is gone). Reported on the <b>dependency</b> category
 /// (deep <c>healthcheck</c> layer only — a broker being unreachable is shared-fate; see
 /// <see cref="IDependencyHealthCheck"/>). A permission failure (AMQP <c>403 access-refused</c>) is a
-/// <see cref="HealthCheckStatus.Warning"/> (§3.9); the exception message is never included.
+/// <b>persistent</b> <see cref="HealthCheckStatus.Failed"/> — it surfaces as unhealthy even for the
+/// auto-wired dependency check rather than being softened to a Warning (§3.9, reversed), since a missing
+/// permission is a deterministic misconfiguration that won't self-heal; the exception message is never included.
 /// </summary>
 public class RabbitMqHealthCheck : IHealthCheck
 {
@@ -56,7 +58,8 @@ public class RabbitMqHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             // Expected failures (broker unreachable, queue missing, no permission) are a classified result,
-            // not a throw. HealthCheckError applies the shared policy: 401/403 -> Warning, else Failed,
+            // not a throw. HealthCheckError applies the shared policy: an authorization failure (401/403,
+            // or a known auth error code) is a persistent Failed, anything else a transient Failed,
             // enriched with the AMQP reply code, never the exception message.
             var (errorCode, statusCode) = RabbitMqErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,
@@ -73,8 +76,9 @@ public class RabbitMqHealthCheck : IHealthCheck
     }
 
     // RabbitMQ is not HTTP, but AMQP reply codes are 3-digit and align with the shared policy: 403
-    // (access-refused) -> Warning, 404 (not-found) -> Failed. Report the reply code as both the error
-    // code and the status; null for a non-AMQP exception (e.g. a raw socket failure or a timeout).
+    // (access-refused) -> persistent Failed, 404 (not-found) -> transient Failed. Report the reply code
+    // as both the error code and the status; null for a non-AMQP exception (e.g. a raw socket failure or
+    // a timeout).
     private static (string? ErrorCode, int? StatusCode) RabbitMqErrorDetails(Exception ex)
     {
         if (ex is OperationInterruptedException oie && oie.ShutdownReason is not null)

@@ -18,8 +18,10 @@ namespace Benzene.Client.Http;
 /// without side effects.
 /// </summary>
 /// <remarks>
-/// Failures follow the shared §3.9 policy: a permission response (HTTP 401/403) is a
-/// <see cref="HealthCheckStatus.Warning"/> ("I can't probe it" is not "it's down"), a transport exception is
+/// Failures follow the shared §3.9 policy (reversed): a permission response (HTTP 401/403) is a
+/// <b>persistent</b> <see cref="HealthCheckStatus.Failed"/> (<see cref="IHealthCheckResult.IsPersistent"/>) —
+/// it surfaces as unhealthy even for the auto-wired dependency check rather than being softened to a Warning,
+/// because a denied probe is a deterministic misconfiguration that won't self-heal — a transport exception is
 /// classified via <see cref="HealthCheckError.Classify"/> (<see cref="HealthCheckStatus.Failed"/>), and any
 /// other mapped non-2xx (e.g. a target that doesn't route <c>healthcheck</c> → 404) is reported unhealthy so a
 /// mis-wired target surfaces. The reported <c>Url</c>/<see cref="HealthCheckDependency"/> have any basic-auth
@@ -78,10 +80,12 @@ public class HttpBenzeneMessageHealthCheck : IHealthCheck
             var statusCode = (int)response.StatusCode;
             var data = new Dictionary<string, object> { { "Url", reportedUrl }, { "StatusCode", statusCode } };
 
-            // A permission error probing the endpoint (401/403) degrades to Warning, not Failed - §3.9.
-            if (HealthCheckError.IsPermissionStatus(statusCode))
+            // A permission response probing the endpoint (401/403) is a persistent, deterministic fault
+            // (§3.9) - it surfaces as unhealthy even for the auto-wired dependency check, rather than being
+            // softened to a Warning that hides a real access break.
+            if (HealthCheckError.IsAuthorizationFailure(statusCode))
             {
-                return HealthCheckResult.CreateWarning(Type, data, dependencies);
+                return HealthCheckResult.CreatePersistentFailure(Type, data, dependencies);
             }
 
             return HealthCheckResult.CreateInstance(response.IsSuccessStatusCode, Type, data, dependencies);

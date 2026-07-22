@@ -51,9 +51,11 @@ row for the `IHttpClientFactory`/lifetime story (yours to own on both paths).
   `BenzeneMessageEnvelope` (defined here so the package keeps **no** dependency on `Benzene.Clients.Aws.Lambda`,
   where the identically-shaped invoke-path `BenzeneMessageClientRequest` happens to live).
 - `HttpBenzeneMessageHealthCheck` - `IHealthCheck`; non-destructive reachability that POSTs a
-  `healthcheck`-topic envelope and treats a 2xx envelope response as healthy. Follows the shared §3.9 policy:
-  a 401/403 permission response → `Warning`, a transport exception → `Failed` via `HealthCheckError.Classify`
-  (reports the exception **type**, never its message), any other mapped non-2xx → unhealthy. Reports a
+  `healthcheck`-topic envelope and treats a 2xx envelope response as healthy. Follows the shared §3.9 policy
+  (reversed): a 401/403 permission response → a **persistent `Failed`** (surfaces as unhealthy even for the
+  auto-wired dependency check rather than being softened to a Warning — a deterministic misconfiguration that
+  won't self-heal), a transport exception → `Failed` via `HealthCheckError.Classify` (reports the exception
+  **type**, never its message), any other mapped non-2xx → unhealthy. Reports a
   `HealthCheckDependency("Http", url)` with basic-auth userinfo stripped from the reported URL. `Type` =
   `"HttpBenzeneMessage"`.
 - `Extensions.AddHttpBenzeneMessageClient(services, url, healthCheck = true)` - registers a scoped

@@ -36,8 +36,13 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
   a failing auto-wired check *degrades* the deep report to a `Warning` (still visible per-dependency)
   rather than flipping the aggregate unhealthy / the endpoint to 503 — that layer is monitoring, not a
   probe, so a downstream blip must not turn it red, and it keeps a healthcheck endpoint green in
-  integration tests where the real dependency isn't reachable. A caller who wants a dependency to be
-  fatal adds an explicit critical check.
+  integration tests where the real dependency isn't reachable. **Exception (§3.9):** a **persistent**
+  failure (`IHealthCheckResult.IsPersistent`, which `HealthCheckError.Classify` sets for an
+  authorization/permission denial) is *exempt* from this downgrade and stays `Failed` (unhealthy) even
+  here — a missing IAM permission / bad credential is a deterministic misconfiguration that won't
+  self-heal, so it must show red; opt the auto-wired check out with `healthCheck: false` where the read
+  permission is legitimately absent. A caller who wants a dependency to be fatal adds an explicit
+  critical check.
 - `IHealthCheckResult`/`HealthCheckResult` - `Status`, `Type`, `Data` (arbitrary diagnostic dictionary),
   `Dependencies` (structured `HealthCheckDependency[]` describing the external resources the check
   verifies - e.g. a specific queue, database, or downstream service; a default interface member on
@@ -57,10 +62,16 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
 - `IHealthCheckFactory` - builds a check from constructor arguments not themselves resolved from DI
   (e.g. a URL, a target migration name) - see `Benzene.HealthChecks.Http`/`.EntityFramework`'s factories
 - `HealthCheckError` - the shared failure-classification policy (§3.4/§3.9). `Classify(type, exception,
-  dependencies, errorCode?, statusCode?, data?)` returns a `Warning` for a permission error (HTTP
-  401/403) and `Failed` otherwise, enriching `Data` with the exception **type** plus the SDK's
-  `ErrorCode`/`StatusCode` when supplied - **never the exception message** (secret-safety). Cloud-SDK
-  exception types (`AmazonServiceException`, Azure's `RequestFailedException`) are extracted by the
+  dependencies, errorCode?, statusCode?, data?)` returns a **persistent** `Failed`
+  (`IHealthCheckResult.IsPersistent`) for an authorization/permission denial — detected by *meaning*
+  (HTTP 401/403 **or** a known authorization error code, via `IsAuthorizationFailure`, so an
+  `AccessDeniedException` surfaced as HTTP 400 still classifies) — and a transient `Failed` otherwise,
+  enriching `Data` with the exception **type** plus the SDK's `ErrorCode`/`StatusCode` when supplied -
+  **never the exception message** (secret-safety). The persistent flag makes the authorization case
+  escape the non-critical downgrade (`HealthCheckProcessor`), so a real IAM break shows unhealthy even
+  for an auto-wired dependency check rather than being softened to a Warning (a reversal of the earlier
+  §3.9 rule, which made a permission error a Warning so a least-privilege publisher stayed green).
+  Cloud-SDK exception types (`AmazonServiceException`, Azure's `RequestFailedException`) are extracted by the
   *caller* in its own client package and passed in, so this core helper stays cloud-agnostic.
 
 ## When to use this package

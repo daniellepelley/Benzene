@@ -9,8 +9,10 @@ namespace Benzene.Kafka.Core;
 /// (it neither consumes, commits, nor produces). Proves the bootstrap brokers are reachable, the
 /// credentials authenticate, and each configured topic is present. Reported on the <b>dependency</b>
 /// category (deep <c>healthcheck</c> layer only — a broker being unreachable is shared-fate; see
-/// <see cref="IDependencyHealthCheck"/>). A Kafka authorization failure is reported as a
-/// <see cref="HealthCheckStatus.Warning"/> (§3.9); the exception message is never included.
+/// <see cref="IDependencyHealthCheck"/>). A Kafka authorization failure is reported as a <b>persistent</b>
+/// <see cref="HealthCheckStatus.Failed"/> — it surfaces as unhealthy even for the auto-wired dependency
+/// check rather than being softened to a Warning (§3.9, reversed), since a bad credential/ACL is a
+/// deterministic misconfiguration that won't self-heal; the exception message is never included.
 /// </summary>
 public class KafkaHealthCheck : IHealthCheck
 {
@@ -77,8 +79,9 @@ public class KafkaHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             // Expected failures (broker unreachable, timed out, not authorized) are a classified result,
-            // not a throw. HealthCheckError applies the shared policy: an authorization failure -> Warning,
-            // else Failed, enriched with the Kafka error code, never the exception message.
+            // not a throw. HealthCheckError applies the shared policy: an authorization failure is a
+            // persistent Failed, anything else a transient Failed, enriched with the Kafka error code,
+            // never the exception message.
             var (errorCode, statusCode) = KafkaErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, deps, errorCode, statusCode,
                 new Dictionary<string, object> { { "Broker", _bootstrapServers } });
@@ -86,7 +89,8 @@ public class KafkaHealthCheck : IHealthCheck
     }
 
     // Kafka is not HTTP; failures surface as KafkaException with an ErrorCode. Report the code name, and
-    // map the authorization codes to 403 so the shared policy degrades them to Warning; null otherwise.
+    // map the authorization codes to 403 so the shared policy classifies them as a persistent Failed;
+    // null otherwise.
     private static (string? ErrorCode, int? StatusCode) KafkaErrorDetails(Exception ex)
     {
         if (ex is KafkaException kex)

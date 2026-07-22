@@ -30,8 +30,10 @@ Outbound EventBridge client for a Benzene app: put events on an EventBridge bus.
   dependency category, mirroring `.UseSns(...)`.
 - `EventBridgeHealthCheck` — verifies an event bus with a read-only `DescribeEventBus` call
   (`Type = "EventBridge"`, dependency `("EventBus", name)`; null name = the `"default"` bus). Failures
-  are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a **Warning**, and
-  the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the exception message.
+  are classified via `HealthCheckError.Classify` (§3.9, reversed): an authorization/permission failure
+  is a **persistent `Failed`** — it surfaces as unhealthy even for the auto-wired dependency check rather
+  than being softened to a Warning, because a missing IAM permission is a deterministic misconfiguration
+  that won't self-heal. The SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the exception message.
   - **Auto-wired (Phase 4, default-on).** The `source` overload of `UseEventBridge<T>` takes
     `bool healthCheck = true`: unless opted out it auto-registers the check for the **default bus** on the
     **dependency category** (`AddDependencyHealthCheck`, dedup `"EventBridge:default"`), reusing the
@@ -46,6 +48,9 @@ Outbound EventBridge client for a Benzene app: put events on an EventBridge bus.
 - The health check is **reachability-only** (`DescribeEventBus`) — there is no `Active` mode, because a
   "publish a real event" probe would fire live rules/targets. `DescribeEventBus` proves reachability +
   `events:DescribeEventBus`, not that `events:PutEvents` would succeed (the usual reachability tradeoff).
+  Because an authorization failure now surfaces as a persistent unhealthy result, a publisher that can
+  `PutEvents` but genuinely lacks `DescribeEventBus` should opt the auto-wired check out with
+  `healthCheck: false` — a false-red a human can see and fix beats a false-green that hides a real IAM break.
 
 ## Dependencies
 `AWSSDK.EventBridge`; Benzene `Clients`, `Core.Middleware`, `Results`.

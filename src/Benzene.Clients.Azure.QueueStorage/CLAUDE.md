@@ -18,9 +18,11 @@ of `Benzene.Azure.Function.QueueStorage` (release plan Tier 2.2, §5.2). This pa
   **`AddQueueStorageHealthCheck`**.
 - `QueueStorageHealthCheck` — verifies a queue with a read-only `GetProperties` call (`Type =
   "QueueStorage"`, dependency `("Queue", queueClient.Name)`; non-destructive — no send/receive/peek).
-  Failures are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a
-  **Warning**; the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the exception message
-  (which can carry a SAS token). Azure discriminators come off `RequestFailedException`.
+  Failures are classified via `HealthCheckError.Classify` (§3.9, reversed): an authorization/permission
+  failure (403) is a **persistent `Failed`**, surfacing as unhealthy even for the auto-wired dependency
+  check (a deterministic misconfiguration that won't self-heal; opt out with `healthCheck: false` where a
+  send-only SAS legitimately lacks read); the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never
+  the exception message (which can carry a SAS token). Azure discriminators come off `RequestFailedException`.
   - **Auto-wired (Phase 4, default-on).** The two `queueClient`-instance `UseQueueStorage`/`UseQueueStorage<T>`
     overloads take `bool healthCheck = true`: unless opted out they auto-register the check on the
     **dependency category** (`AddDependencyHealthCheck`, dedup `"QueueStorage:{name}"`), **capturing the

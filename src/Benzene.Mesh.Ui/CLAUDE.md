@@ -209,8 +209,10 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   lazily fetches that service's `services/{name}.json` (resolved relative to the manifest's own
   URL, via `resolveUrl()`) and renders its health-check detail: per check, its name, `type`, a
   status badge (`ok`/`warning`/`failed` via `checkBadgeClass` - `warning` is a distinct amber tier
-  from `failed`'s red, mirroring the `Benzene.HealthChecks.Core` model where a 401/403 permission
-  blip degrades to `warning`, not `failed`), and dependency chips. For any **non-ok** check it also
+  from `failed`'s red, mirroring the `Benzene.HealthChecks.Core` model where a degraded but non-fatal
+  signal — contract drift, or a non-critical dependency blip — reports `warning`, not `failed`; note a
+  401/403 permission failure is *not* a warning but a persistent `failed`, a deterministic IAM
+  misconfiguration), and dependency chips. For any **non-ok** check it also
   renders the check's `data` bag as a key/value **root-cause** block - the "why" behind the
   warning/failure (e.g. `Error`/`ErrorCode`/`StatusCode` from the shared classification policy) - so
   a reader doesn't have to leave the mesh to find out what's wrong. An ok check stays a single clean

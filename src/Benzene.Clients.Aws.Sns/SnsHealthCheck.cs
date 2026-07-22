@@ -11,9 +11,12 @@ namespace Benzene.Clients.Aws.Sns;
 /// <summary>
 /// Verifies connectivity to an SNS topic with a read-only <c>GetTopicAttributes</c> call - the SNS
 /// analogue of <c>SqsHealthCheck</c>'s queue check, but non-side-effecting (it does not publish).
-/// A permission error (e.g. missing <c>sns:GetTopicAttributes</c>) is reported as a
-/// <see cref="HealthCheckStatus.Warning"/>, not a failure (§3.9), and the SDK's error code + HTTP status
-/// are surfaced in <c>Data</c> (never the exception message).
+/// A permission error (e.g. missing <c>sns:GetTopicAttributes</c>) is reported as a <b>persistent</b>
+/// <see cref="HealthCheckStatus.Failed"/> — it surfaces as unhealthy even for an auto-wired dependency
+/// check rather than being softened to a Warning (§3.9, reversed), because a missing IAM permission is a
+/// deterministic misconfiguration that won't self-heal; opt the auto-wired check out with
+/// <c>healthCheck: false</c> where a read permission is legitimately absent. The SDK's error code + HTTP
+/// status are surfaced in <c>Data</c> (never the exception message).
 /// </summary>
 public class SnsHealthCheck : IHealthCheck
 {
@@ -46,7 +49,8 @@ public class SnsHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             // Expected failures (topic missing, no connectivity, no permission) are a classified result,
-            // not a throw. HealthCheckError applies the shared policy: 401/403 -> Warning, else Failed,
+            // not a throw. HealthCheckError applies the shared policy: an authorization failure (401/403,
+            // or a known auth error code) is a persistent Failed, anything else a transient Failed —
             // enriched with the SDK's error code + status, never the exception message.
             var (errorCode, statusCode) = AwsErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,

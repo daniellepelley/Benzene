@@ -70,7 +70,7 @@ public class ServiceBusHealthCheckTest
     }
 
     [Fact]
-    public async Task ExecuteAsync_Unauthorized_DegradesToWarning()
+    public async Task ExecuteAsync_Unauthorized_IsPersistentFailure()
     {
         var receiver = new Mock<ServiceBusReceiver>();
         receiver.Setup(x => x.PeekMessageAsync(It.IsAny<long?>(), It.IsAny<CancellationToken>()))
@@ -82,7 +82,8 @@ public class ServiceBusHealthCheckTest
         var result = await new ServiceBusHealthCheck(client.Object, "orders").ExecuteAsync();
 
         // Lacking the Listen claim is a permission problem: Warning, not a failure (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("Unauthorized", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
     }

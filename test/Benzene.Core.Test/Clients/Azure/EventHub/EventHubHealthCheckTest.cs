@@ -51,7 +51,7 @@ public class EventHubHealthCheckTest
     }
 
     [Fact]
-    public async Task ExecuteAsync_Unauthorized_DegradesToWarning_AndMapsTo403()
+    public async Task ExecuteAsync_Unauthorized_IsPersistentFailure_AndMapsTo403()
     {
         var mock = ProducerMock();
         mock.Setup(x => x.GetEventHubPropertiesAsync(It.IsAny<CancellationToken>()))
@@ -61,7 +61,8 @@ public class EventHubHealthCheckTest
 
         // Event Hubs has no HTTP status; a bad credential surfaces as UnauthorizedAccessException, mapped
         // to 403 so the shared policy degrades it to Warning (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("Unauthorized", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
     }

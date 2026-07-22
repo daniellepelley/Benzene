@@ -53,7 +53,7 @@ public class QueueStorageHealthCheckTest
     }
 
     [Fact]
-    public async Task ExecuteAsync_PermissionDenied_DegradesToWarning_AndSurfacesTheDiscriminators()
+    public async Task ExecuteAsync_PermissionDenied_IsPersistentFailure_AndSurfacesTheDiscriminators()
     {
         var mock = QueueClientMock();
         mock.Setup(x => x.GetPropertiesAsync(It.IsAny<CancellationToken>()))
@@ -62,7 +62,8 @@ public class QueueStorageHealthCheckTest
         var result = await new QueueStorageHealthCheck(mock.Object).ExecuteAsync();
 
         // Lacking read permission on the queue is a Warning, not a failure (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("AuthorizationFailure", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
     }

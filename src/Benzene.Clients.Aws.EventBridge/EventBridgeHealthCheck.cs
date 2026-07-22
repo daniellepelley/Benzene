@@ -14,9 +14,13 @@ namespace Benzene.Clients.Aws.EventBridge;
 /// EventBridge analogue of <c>SqsHealthCheck</c>/<c>SnsHealthCheck</c>, non-side-effecting (it does not
 /// <c>PutEvents</c>, which would fire real rules/targets). Proves the bus exists, is reachable, and the
 /// credentials can read it (<c>events:DescribeEventBus</c>) — not that a publish would succeed
-/// (<c>events:PutEvents</c> is a different permission). A permission error is reported as a
-/// <see cref="HealthCheckStatus.Warning"/> (§3.9), and the SDK's error code + HTTP status are surfaced in
-/// <c>Data</c> (never the exception message).
+/// (<c>events:PutEvents</c> is a different permission). An authorization/permission failure is a
+/// <b>persistent</b> <see cref="HealthCheckStatus.Failed"/> — it surfaces as unhealthy even for an
+/// auto-wired dependency check rather than being softened to a Warning (§3.9, reversed), because a
+/// missing IAM permission is a deterministic misconfiguration that won't self-heal. Where the probe
+/// legitimately lacks the read permission it needs (it can <c>PutEvents</c> but not
+/// <c>DescribeEventBus</c>), opt the auto-wired check out with <c>healthCheck: false</c>. The SDK's error
+/// code + HTTP status are surfaced in <c>Data</c> (never the exception message).
 /// </summary>
 public class EventBridgeHealthCheck : IHealthCheck
 {
@@ -52,8 +56,10 @@ public class EventBridgeHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             // Expected failures (bus missing, no connectivity, no permission) are a classified result,
-            // not a throw. HealthCheckError applies the shared policy: 401/403 -> Warning, else Failed,
-            // enriched with the SDK's error code + status, never the exception message.
+            // not a throw. HealthCheckError applies the shared policy: an authorization failure (401/403,
+            // or a known auth error code like EventBridge's AccessDeniedException surfaced as HTTP 400) is
+            // a persistent Failed, anything else a transient Failed — enriched with the SDK's error code +
+            // status, never the exception message.
             var (errorCode, statusCode) = AwsErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,
                 new Dictionary<string, object> { { "EventBus", _eventBusName } });

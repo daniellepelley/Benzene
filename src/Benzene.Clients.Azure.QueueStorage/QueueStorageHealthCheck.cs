@@ -11,9 +11,13 @@ namespace Benzene.Clients.Azure.QueueStorage;
 /// Verifies an Azure Storage queue is reachable with a read-only <c>GetProperties</c> call — the Queue
 /// Storage analogue of <c>SqsHealthCheck</c>, non-side-effecting (it reads queue metadata; it does not
 /// send, receive, peek, or delete a message). Proves the queue exists, is reachable, and the credential
-/// can read it — not that a send would succeed (a send-only SAS may lack read). A permission error is
-/// reported as a <see cref="HealthCheckStatus.Warning"/> (§3.9), and the SDK's error code + HTTP status
-/// are surfaced in <c>Data</c> (never the exception message, which can carry a SAS token).
+/// can read it — not that a send would succeed (a send-only SAS may lack read). An authorization/permission
+/// failure is reported as a <b>persistent</b> <see cref="HealthCheckStatus.Failed"/> — it surfaces as
+/// unhealthy even for an auto-wired dependency check rather than being softened to a Warning (§3.9,
+/// reversed), because a missing permission is a deterministic misconfiguration that won't self-heal; where
+/// a send-only SAS legitimately lacks read, opt the auto-wired check out with <c>healthCheck: false</c>.
+/// The SDK's error code + HTTP status are surfaced in <c>Data</c> (never the exception message, which can
+/// carry a SAS token).
 /// </summary>
 public class QueueStorageHealthCheck : IHealthCheck
 {
@@ -45,7 +49,8 @@ public class QueueStorageHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             // Expected failures (queue missing, no connectivity, no permission) are a classified result,
-            // not a throw. HealthCheckError applies the shared policy: 401/403 -> Warning, else Failed,
+            // not a throw. HealthCheckError applies the shared policy: an authorization failure (401/403,
+            // or a known auth error code) is a persistent Failed, anything else a transient Failed,
             // enriched with the SDK's error code + status, never the exception message.
             var (errorCode, statusCode) = AzureErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,

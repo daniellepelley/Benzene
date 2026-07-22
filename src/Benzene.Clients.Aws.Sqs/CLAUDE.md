@@ -14,9 +14,11 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
   Default `HealthCheckMode.Reachability` is a **non-destructive** read-only `GetQueueAttributes` call
   (`Type = "Sqs"`); `HealthCheckMode.Active` sends a real `ping` message (`Type = "Sqs.Active"`,
   side-effecting — the consumer must recognise and drop it). See `HealthCheckMode` in
-  `Benzene.HealthChecks.Core`. Failures are classified via `HealthCheckError.Classify` (§3.9): a
-  permission error (403) is a **Warning**, not a failure; the SDK `ErrorCode`/`StatusCode` are surfaced
-  in `Data`, never the exception message.
+  `Benzene.HealthChecks.Core`. Failures are classified via `HealthCheckError.Classify` (§3.9, reversed):
+  an authorization/permission failure (403) is a **persistent `Failed`**, surfacing as unhealthy even for
+  the auto-wired dependency check (a deterministic misconfiguration that won't self-heal; opt out with
+  `healthCheck: false` where the read permission is legitimately absent); the SDK `ErrorCode`/`StatusCode`
+  are surfaced in `Data`, never the exception message.
 - `SqsBatchMessageClient` — `IBenzeneBatchMessageClient` (from `Benzene.Clients`); sends a collection
   via `SendMessageBatch` (≤10/call). Reuses `SqsContextConverter<T>` per entry, chunks with
   `BatchSend.Chunk`, and maps `response.Failed` back to caller indices in a `BatchSendResult`. The

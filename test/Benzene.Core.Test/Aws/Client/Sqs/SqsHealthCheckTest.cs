@@ -63,7 +63,7 @@ public class SqsHealthCheckTest
     }
 
     [Fact]
-    public async Task Reachability_PermissionDenied_DegradesToWarning_AndSurfacesTheDiscriminators()
+    public async Task Reachability_PermissionDenied_IsPersistentFailure_AndSurfacesTheDiscriminators()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();
         mockSqsClient
@@ -77,7 +77,8 @@ public class SqsHealthCheckTest
         var result = await new SqsHealthCheck("some-queue-url", mockSqsClient.Object).ExecuteAsync();
 
         // "I can't probe this" (403) is a Warning, not a Failed - a least-privilege caller stays green (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("AccessDenied", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
         Assert.Equal("AmazonSQSException", result.Data["Error"]);

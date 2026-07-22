@@ -6,9 +6,9 @@ using Xunit;
 namespace Benzene.Test.HealthChecks;
 
 /// <summary>
-/// Coverage for the shared failure-classification policy (§3.4 / §3.9): permission errors degrade to
-/// Warning, everything else fails, the non-sensitive discriminators are surfaced, and the exception
-/// message never is.
+/// Coverage for the shared failure-classification policy (§3.4 / §3.9): an authorization denial is a
+/// persistent failure (detected by meaning, not just the HTTP number), every other failure is a transient
+/// failure, the non-sensitive discriminators are surfaced, and the exception message never is.
 /// </summary>
 public class HealthCheckErrorTest
 {
@@ -17,25 +17,38 @@ public class HealthCheckErrorTest
     [Theory]
     [InlineData(401)]
     [InlineData(403)]
-    public void PermissionStatus_DegradesToWarning(int status)
+    public void AuthorizationStatus_IsPersistentFailure(int status)
     {
         var result = HealthCheckError.Classify("Sqs", new Exception(), Deps, "AuthorizationError", status);
 
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("AuthorizationError", result.Data["ErrorCode"]);
         Assert.Equal(status, result.Data["StatusCode"]);
         Assert.Equal("orders", Assert.Single(result.Dependencies).Name);
+    }
+
+    [Fact]
+    public void AuthorizationErrorCode_OnANonAuthStatus_IsStillPersistentFailure()
+    {
+        // AWS EventBridge surfaces AccessDeniedException as HTTP 400, so keying on the status number alone
+        // would misclassify it - the error *code* still marks it as a persistent authorization failure.
+        var result = HealthCheckError.Classify("EventBridge", new Exception(), Deps, "AccessDeniedException", 400);
+
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
     }
 
     [Theory]
     [InlineData(404)]
     [InlineData(500)]
     [InlineData(503)]
-    public void NonPermissionStatus_Fails(int status)
+    public void TransientStatus_IsANonPersistentFailure(int status)
     {
         var result = HealthCheckError.Classify("Sqs", new Exception(), Deps, "InternalFailure", status);
 
         Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.False(result.IsPersistent);
     }
 
     [Fact]
@@ -70,6 +83,7 @@ public class HealthCheckErrorTest
         var result = HealthCheckError.Classify("Sns", new Exception(), Deps, "AccessDenied", 403, data);
 
         Assert.Equal("arn:aws:sns:eu-west-1:1:orders", result.Data["TopicArn"]);
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
     }
 }

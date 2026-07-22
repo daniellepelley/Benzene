@@ -54,8 +54,9 @@ public class GrpcHealthCheck : IHealthCheck
         }
         catch (Exception ex)
         {
-            // Unreachable target -> the timeout fires (OperationCanceledException) -> Failed. Any RpcException
-            // is classified by its gRPC status (PermissionDenied/Unauthenticated -> Warning), never its message.
+            // Unreachable target -> the timeout fires (OperationCanceledException) -> transient Failed. Any
+            // RpcException is classified by its gRPC status (PermissionDenied -> 403 / Unauthenticated -> 401,
+            // both a persistent Failed), never its message.
             var (errorCode, statusCode) = GrpcErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,
                 new Dictionary<string, object> { { "Target", _channel.Target } });

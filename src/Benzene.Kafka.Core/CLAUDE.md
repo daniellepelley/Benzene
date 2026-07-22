@@ -13,7 +13,9 @@ producer support. This is one of the "self-hosted worker" startup modes document
   so it never triggers broker-side auto-topic-creation) + a local check that each `Topics` entry is
   present. `Type = "Kafka"`, dependencies `("Broker", bootstrapServers)` + one `("Topic", t)` each.
   Non-destructive (no consume/commit/produce). A Kafka authorization failure is classified as a
-  **Warning** via `HealthCheckError.Classify` (§3.9); the error code is surfaced, never the message.
+  **persistent `Failed`** via `HealthCheckError.Classify` (§3.9, reversed) — surfacing as unhealthy
+  rather than being softened to a Warning, since a bad credential/ACL is a deterministic misconfiguration
+  that won't self-heal; the error code is surfaced, never the message.
   `IKafkaAdminClientFactory` / `KafkaAdminClientFactory` supply the admin client — **one is built and
   reused** across probes (the factory is captured at registration; its `Lazy<IAdminClient>` builds on
   first probe), never per probe. It copies only the connection/auth settings off the `ConsumerConfig`

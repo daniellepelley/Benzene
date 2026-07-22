@@ -23,6 +23,15 @@ public class HealthCheckProcessorTest
         public Task<IHealthCheckResult> ExecuteAsync() => Task.FromResult(HealthCheckResult.CreateInstance(_ok, Type));
     }
 
+    // A check that fails with a persistent (deterministic, won't-self-heal) result, e.g. an authorization denial.
+    private sealed class PersistentFailCheck : IHealthCheck
+    {
+        public PersistentFailCheck(string type) { Type = type; }
+        public string Type { get; }
+        public Task<IHealthCheckResult> ExecuteAsync()
+            => Task.FromResult(HealthCheckResult.CreatePersistentFailure(Type, new System.Collections.Generic.Dictionary<string, object>(), Array.Empty<HealthCheckDependency>()));
+    }
+
     // A check that takes _delay to complete, with a configurable Timeout override.
     private sealed class SlowCheck : IHealthCheck
     {
@@ -76,6 +85,20 @@ public class HealthCheckProcessorTest
 
         Assert.True(response.IsHealthy);
         Assert.Equal(HealthCheckStatus.Warning, response.HealthChecks["dep"].Status);
+    }
+
+    [Fact]
+    public async Task DependencyCategoryCheck_WithAPersistentFailure_FlipsUnhealthy_EscapingTheDowngrade()
+    {
+        // A persistent failure (e.g. an authorization denial) is deterministic and won't self-heal, so it
+        // escapes the non-critical downgrade even under the dependency category: it stays Failed and flips
+        // the deep healthcheck report unhealthy, rather than sitting yellow forever hiding a real IAM break.
+        var wrapped = new DependencyHealthCheck(new PersistentFailCheck("dep"));
+
+        var response = await RunAsync(new HealthCheckProcessor(), wrapped);
+
+        Assert.False(response.IsHealthy);
+        Assert.Equal(HealthCheckStatus.Failed, response.HealthChecks["dep"].Status);
     }
 
     [Fact]

@@ -17,8 +17,10 @@ fixed during the Tier 2.1 split).
   Default `HealthCheckMode.Reachability` is a **non-destructive** read-only `GetFunctionConfiguration`
   call (`Type = "Lambda"`); `HealthCheckMode.Active` really invokes the function with a `ping`
   (`Type = "Lambda.Active"`, side-effecting). See `HealthCheckMode` in `Benzene.HealthChecks.Core`.
-  Failures are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a
-  **Warning**, not a failure; the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the message.
+  Failures are classified via `HealthCheckError.Classify` (§3.9, reversed): an authorization/permission
+  failure (403) is a **persistent `Failed`**, surfacing as unhealthy rather than being softened to a
+  Warning (a deterministic misconfiguration that won't self-heal); the SDK `ErrorCode`/`StatusCode` are
+  surfaced in `Data`, never the message.
   - **No auto-wiring — explicit-only (by design).** Unlike SQS/SNS/EventBridge, the Lambda client is a
     **dynamic-target invoker**: `.UseAwsLambda<T>()` carries no function name (the target is supplied
     per-invocation), so there is no fixed dependency to auto-register a check for at config time. Register
