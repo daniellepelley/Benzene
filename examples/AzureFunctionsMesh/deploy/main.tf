@@ -140,7 +140,8 @@ resource "azurerm_linux_function_app" "service" {
 #     shipment:dispatched → routed by event type to inventory/notifications/analytics.
 # ---------------------------------------------------------------------------------------------------
 resource "azurerm_servicebus_namespace" "this" {
-  name                = "${var.project}-sb"
+  # NB: a Service Bus namespace name may not end with "-sb" or "-mgmt" (reserved), so this is "-bus".
+  name                = "${var.project}-bus"
   resource_group_name = data.azurerm_resource_group.this.name
   location            = data.azurerm_resource_group.this.location
   sku                 = "Standard" # Standard is the cheapest SKU that supports queues (Basic has no topics/sessions)
