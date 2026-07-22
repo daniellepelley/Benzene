@@ -1,0 +1,160 @@
+{
+  "generatedAtUtc": "2026-07-16T09:15:00Z",
+  "topics": [
+    {
+      "topic": "orders:get-all",
+      "version": "",
+      "reserved": false,
+      "consumers": [
+        { "service": "orders-api", "httpMappings": [ { "method": "GET", "path": "/orders" } ] }
+      ],
+      "producers": [],
+      "status": null,
+      "requestSchema": null,
+      "responseSchema": {
+        "type": "array",
+        "items": {
+          "title": "OrderDto",
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "customerEmail": { "type": "string", "format": "email" },
+            "total": { "type": "number", "minimum": 0 },
+            "status": { "type": "string", "enum": [ "pending", "paid", "shipped" ] }
+          },
+          "required": [ "id", "total" ]
+        }
+      },
+      "messageSchema": null,
+      "schemaMismatch": false
+    },
+    {
+      "topic": "orders:create",
+      "version": "",
+      "reserved": false,
+      "consumers": [
+        { "service": "orders-api", "httpMappings": [ { "method": "POST", "path": "/orders" } ] }
+      ],
+      "producers": [],
+      "status": null,
+      "requestSchema": {
+        "title": "CreateOrder",
+        "type": "object",
+        "properties": {
+          "customerEmail": { "type": "string", "format": "email" },
+          "lines": {
+            "type": "array",
+            "items": {
+              "title": "OrderLine",
+              "type": "object",
+              "properties": {
+                "sku": { "type": "string", "pattern": "^[A-Z]{3}-[0-9]{4}$" },
+                "quantity": { "type": "integer", "minimum": 1, "maximum": 99 }
+              },
+              "required": [ "sku", "quantity" ]
+            }
+          }
+        },
+        "required": [ "customerEmail", "lines" ]
+      },
+      "responseSchema": null,
+      "messageSchema": null,
+      "schemaMismatch": false
+    },
+    {
+      "topic": "payment:capture",
+      "version": "",
+      "reserved": false,
+      "consumers": [
+        { "service": "payments-api", "httpMappings": [] }
+      ],
+      "producers": [
+        { "service": "orders-api" }
+      ],
+      "status": null,
+      "requestSchema": {
+        "title": "CapturePayment",
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "amount": { "type": "number", "minimum": 0.01 },
+          "currency": { "type": "string", "minLength": 3, "maxLength": 3 }
+        },
+        "required": [ "orderId", "amount", "currency" ]
+      },
+      "responseSchema": null,
+      "messageSchema": null,
+      "schemaMismatch": false
+    },
+    {
+      "topic": "shipping:book",
+      "version": "",
+      "reserved": false,
+      "consumers": [
+        { "service": "shipping-api", "httpMappings": [] }
+      ],
+      "producers": [
+        { "service": "orders-api" },
+        { "service": "payments-api" }
+      ],
+      "status": null,
+      "requestSchema": {
+        "title": "BookShipment",
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string", "format": "uuid" },
+          "address": {
+            "title": "Address",
+            "type": "object",
+            "properties": {
+              "line1": { "type": "string", "maxLength": 120 },
+              "postcode": { "type": "string", "maxLength": 12 }
+            },
+            "required": [ "line1", "postcode" ]
+          }
+        },
+        "required": [ "orderId", "address" ]
+      },
+      "responseSchema": null,
+      "messageSchema": null,
+      "schemaMismatch": true
+    },
+    {
+      "topic": "order:legacy-export",
+      "version": "v1",
+      "reserved": false,
+      "consumers": [],
+      "producers": [
+        { "service": "orders-api" }
+      ],
+      "status": "deprecation-candidate",
+      "requestSchema": null,
+      "responseSchema": null,
+      "messageSchema": {
+        "title": "LegacyOrderExport",
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string" },
+          "exportedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "schemaMismatch": false
+    },
+    {
+      "topic": "spec",
+      "version": "",
+      "reserved": true,
+      "consumers": [
+        { "service": "orders-api", "httpMappings": [] },
+        { "service": "payments-api", "httpMappings": [] },
+        { "service": "shipping-api", "httpMappings": [] }
+      ],
+      "producers": [],
+      "status": null,
+      "requestSchema": null,
+      "responseSchema": null,
+      "messageSchema": null,
+      "schemaMismatch": false
+    }
+  ]
+}

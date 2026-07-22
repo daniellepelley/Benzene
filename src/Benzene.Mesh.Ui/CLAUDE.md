@@ -80,6 +80,25 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   merged AsyncAPI 3.0 document): a download link plus, when the resolved artifact URL is absolute,
   an "open in Studio" deep-link to `https://studio.asyncapi.com/?url=…`. Populated in `renderTopics`
   via the same `resolveUrl()` model as the other artifacts.
+- **Three-entity exploration model (2026-07-22, P1 of the vision doc's revised roadmap):** the page
+  now has three first-class, hash-deep-linkable views — **Estate** (`#main-view`), **Topic**
+  (`#topic:<id>`), and **Service** (`#service:<name>`) — mutually exclusive, with `location.hash` as
+  the single source of truth (one generic `syncViewFromHash()` router; browser Back/Forward and
+  bookmarks work across all three). The **service page** (`renderServicePage`) is maximally
+  informative from data already shipped: identity/badges/team/freshness + transports + external
+  links (manifest), the **functional map as the centerpiece** — topics consumed/produced with
+  version/status/mismatch badges and the service's own HTTP mappings, derived by filtering
+  `topics.json` — then About & health (snapshot time, fetch error, drift hash-pair evidence, the
+  spec's own `info.description`/`version` parsed best-effort from the verbatim `specJson`, full
+  health-check detail via the shared `renderHealthChecks`), and its topology position
+  (calls/called-by with rate/error/p50, from `topology.json`). Every section degrades
+  independently: no `topics.json` → explicit empty state; no edges → section hidden; unknown
+  service name (stale bookmark / out-of-fleet participant) → placeholder page.
+  **Full link closure:** estate card names, topic-page producer/consumer rows (now compact linked
+  rows — the embedded full cards are gone; the service page is the canonical depth), topology
+  table client/server cells, and issue-inbox service rows all navigate to `#service:`; every topic
+  id links to `#topic:`; `goToService` now navigates to the service page (the old scroll+flash
+  card behavior is retired).
 - The per-topic drill-in page (`#topic:<id>`) renders each version's **payload schema** — a "Payload"
   panel showing the Request/Response (or Message) structure with a property tree and validation-rule
   chips (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`,

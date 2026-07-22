@@ -7,6 +7,32 @@
 
 ---
 
+> **2026-07-22 (later) P1 SHIPPED + usage-feed requirement refined by the owner:**
+> - **P1 (three-entity exploration model) is built and verified.** `#service:<name>` page +
+>   generic hash router + full link closure, exactly per §B below; the topic page's embedded
+>   service cards became compact linked rows; unknown-service deep links degrade to a placeholder
+>   page. Verified in a real browser (Playwright + Chromium over the demo fixtures): estate →
+>   service → topic → service round trip, browser Back/Forward, direct deep links, Escape,
+>   topology-cell links, light + dark — all green, zero console errors. `website/demos/mesh/`
+>   refreshed (and gained a hand-authored, contract-shaped `topics.json` so the demo now
+>   showcases all three entities).
+> - **Requirement C.1 (usage per topic + transport) refined by the owner:** usage reporting is
+>   deliberately **not** part of the Cloud Service spec — it is not the service's request/response
+>   surface but an **observability concern**: each service emits, per handled message, metrics
+>   with a **standard metadata set** (at minimum topic, transport, status). That metadata standard
+>   is the load-bearing piece: it's what lets **adapters** (Application Insights, CloudWatch, an
+>   OTel collector, …) extract the same usage signal from different backends and feed it to the
+>   mesh. Where a backend's data is missing part of the standard (e.g. no transport dimension),
+>   the Mesh UI **degrades gracefully** — it shows what it can, and surfaces the data gap as a
+>   visible data-quality note (not on the primary screen, but findable) rather than failing or
+>   silently pretending. Explicitly: this adds **no new required endpoints** to a service — the
+>   Cloud Service Profile's surface (spec/health/…) is untouched. Routed: metadata standard +
+>   emission → `observability-product-owner` (with mesh PO co-owning the standard's field set);
+>   backend adapters + ingestion → mesh data layer (collector path); UI presentation +
+>   degradation rules → here (P4).
+>
+> ---
+>
 > **2026-07-22 three-entity exploration model — current-state review + revised roadmap
 > (mesh-product-owner):** The owner's direction: three first-class entities — **Estate, Service,
 > Topic** — each with its own maximally-informative page, every mention of another entity a
