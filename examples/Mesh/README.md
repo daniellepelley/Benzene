@@ -47,6 +47,25 @@ orders-api pods (`UseContractsCheck` + `AddContractCheck`, see
 `payments-api` check) with `GET /healthcheck` (only the DB/cache/queue checks) -
 that split is the whole point.
 
+### Message versioning (payload upcasting + `/v{version}` routes + mesh compatibility)
+
+`payments-api` demonstrates Benzene's [message versioning](../../docs/specification/versioning.md)
+end to end, with a **single handler**:
+
+- Its `payments:get` handler is written against the **V2** payload only (`[Message("payments:get", "2")]`,
+  returning `V2.PaymentDto`, which added a `currency` field over V1). `AddHttpVersioning()` exposes it at
+  three routes, and the payload caster bridges the versions from that one handler:
+  - `GET /payments/{id}` → latest (V2, includes `"currency":"GBP"`)
+  - `GET /v2/payments/{id}` → V2 (with currency)
+  - `GET /v1/payments/{id}` → the V2 response **downcast to V1** (currency dropped) — same handler
+- `orders-api` is still pinned to **v1**: it declares it produces `payments:get@1` (spec `events`), so the
+  mesh sees a producer on v1 and a consumer on v2. The aggregator's **version compatibility** reconciliation
+  (`topics.json` `versionCompatibility`) flags the skew, and the Mesh UI renders a **"Version compatibility"**
+  panel on the `payments:get` topic page (produced `1`, consumed `2`, "produced, not consumed: 1"). The
+  honest caveat the mesh states: an upcaster on the consumer — which the mesh can't see — bridges it, which
+  is exactly what payments-api's V1→V2 caster does. Curl the three routes above to see one handler serve both
+  wire versions, then open the topic page in the Mesh UI to see the skew surfaced.
+
 Behind the dashboard:
 
 - `Benzene.Mesh.Aggregator.MeshAggregator` polls each demo service's `/spec`
