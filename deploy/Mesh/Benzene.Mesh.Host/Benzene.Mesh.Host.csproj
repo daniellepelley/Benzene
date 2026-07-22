@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aws.Lambda\Benzene.Mesh.Aws.Lambda.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Dispatch\Benzene.Mesh.Dispatch.csproj" />
   </ItemGroup>
 
 </Project>
