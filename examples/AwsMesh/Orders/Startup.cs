@@ -24,8 +24,9 @@ public class Startup : BenzeneStartUp
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         => MeshServiceWiring.ConfigureServices(services, "orders", typeof(Startup).Assembly,
-            // orders-api → payments-api: on create, send payments:capture to the payments SQS queue.
-            new OutboundSend("payments:capture", typeof(OutboundPaymentCapture), "PAYMENTS_QUEUE_URL"));
+            // orders-api → payments-api: on create, send payments:capture to the payments SQS queue
+            // (a point-to-point command — one consumer, must arrive).
+            OutboundSend.Sqs("payments:capture", typeof(OutboundPaymentCapture), "PAYMENTS_QUEUE_URL"));
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {
