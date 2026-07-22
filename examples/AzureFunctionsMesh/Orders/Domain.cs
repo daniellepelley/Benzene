@@ -20,6 +20,13 @@ public record OrderCreated(string OrderId, string Status);
 /// </summary>
 public record OutboundTakePayment(string OrderId, decimal Amount, string Currency);
 
+/// <summary>
+/// The event orders-api streams to <b>Event Hub</b> (topic <c>order:placed</c>) once an order is placed.
+/// Event Hub fans it out to every consumer group — inventory-api and notifications-api each read their own.
+/// Declared in the spec's <c>events</c> → structural edges orders → inventory / notifications.
+/// </summary>
+public record OutboundOrderPlaced(string OrderId, string Sku, int Quantity, decimal Amount);
+
 /// <summary>Places an order, then commands payments-api to take payment over Service Bus.</summary>
 [Message("order:create")]
 [HttpEndpoint("POST", "/orders")]
@@ -48,6 +55,18 @@ public class CreateOrderHandler : IMessageHandler<CreateOrderRequest, OrderCreat
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "downstream payment:take send failed for {orderId}", order.OrderId);
+        }
+
+        // Fan-out event over Event Hub: every consumer group (inventory, notifications) reads it.
+        try
+        {
+            await _sender.SendAsync<OutboundOrderPlaced, Void>("order:placed",
+                new OutboundOrderPlaced(order.OrderId, request.Sku, request.Quantity, request.Quantity * 10m));
+            _logger.LogInformation("order {orderId} created; published order:placed", order.OrderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "order:placed publish failed for {orderId}", order.OrderId);
         }
 
         return BenzeneResult.Created(order);

@@ -1,3 +1,6 @@
+using Azure;
+using Azure.Messaging.EventGrid;
+using Azure.Messaging.EventHubs.Producer;
 using Azure.Messaging.ServiceBus;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
@@ -73,12 +76,41 @@ public static class MeshServiceWiring
     /// <c>ServiceBusConnection</c> app setting — created on first send (via <c>UseServiceBusClient()</c>),
     /// so a service still starts locally with no connection configured (the send just fails and is logged).
     /// </summary>
-    public static void AddServiceBusSender(this IBenzeneServiceContainer services, string queueName)
+    public static void AddServiceBusSender(this IBenzeneServiceContainer services, string queueOrTopicName)
     {
         services.AddSingleton(_ =>
         {
             var connection = Environment.GetEnvironmentVariable("ServiceBusConnection") ?? "";
-            return new ServiceBusClient(connection).CreateSender(queueName);
+            return new ServiceBusClient(connection).CreateSender(queueOrTopicName);
+        });
+    }
+
+    /// <summary>
+    /// Registers a lazy <see cref="EventHubProducerClient"/> for <paramref name="eventHubName"/> off the
+    /// <c>EventHubConnection</c> app setting — created on first send, so the service still starts locally
+    /// with no connection configured.
+    /// </summary>
+    public static void AddEventHubProducer(this IBenzeneServiceContainer services, string eventHubName)
+    {
+        services.AddSingleton(_ =>
+        {
+            var connection = Environment.GetEnvironmentVariable("EventHubConnection") ?? "";
+            return new EventHubProducerClient(connection, eventHubName);
+        });
+    }
+
+    /// <summary>
+    /// Registers a lazy <see cref="EventGridPublisherClient"/> off the <c>EventGridEndpoint</c> +
+    /// <c>EventGridKey</c> app settings — created on first send, so the service still starts locally with
+    /// no endpoint configured.
+    /// </summary>
+    public static void AddEventGridPublisher(this IBenzeneServiceContainer services)
+    {
+        services.AddSingleton(_ =>
+        {
+            var endpoint = Environment.GetEnvironmentVariable("EventGridEndpoint") ?? "https://localhost";
+            var key = Environment.GetEnvironmentVariable("EventGridKey") ?? "";
+            return new EventGridPublisherClient(new Uri(endpoint), new AzureKeyCredential(key));
         });
     }
 }

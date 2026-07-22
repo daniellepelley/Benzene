@@ -10,11 +10,15 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.18.2" />
+    <PackageReference Include="Azure.Messaging.EventHubs" Version="5.11.5" />
+    <PackageReference Include="Azure.Messaging.EventGrid" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.ServiceBus\Benzene.Azure.Function.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.EventHub\Benzene.Azure.Function.EventHub.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.EventGrid\Benzene.Azure.Function.EventGrid.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.CloudService\Benzene.CloudService.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
@@ -24,6 +28,8 @@
     <ProjectReference Include="..\..\..\src\Benzene.Clients\Benzene.Clients.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.ResponseEvents\Benzene.ResponseEvents.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Clients.Azure.ServiceBus\Benzene.Clients.Azure.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Clients.Azure.EventHub\Benzene.Clients.Azure.EventHub.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Clients.Azure.EventGrid\Benzene.Clients.Azure.EventGrid.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
   </ItemGroup>

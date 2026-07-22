@@ -1,6 +1,7 @@
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Messages;
 using Benzene.Clients;
+using Benzene.Clients.Azure.EventHub;
 using Benzene.Clients.Azure.ServiceBus;
 using Benzene.Examples.AzureFunctionsMesh.Shared;
 using Benzene.HealthChecks.Core;
@@ -26,13 +27,17 @@ public class StartUp : BenzeneStartUp
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         => MeshServiceWiring.ConfigureServices(services, "orders", Handlers, x =>
         {
-            // Declare the send in the spec's events → the mesh's structural edge orders → payments.
-            x.AddResponseEventDeclarations((IMessageDefinition)new ResponseEventDefinition("payment:take", typeof(OutboundTakePayment)));
+            // Declare both sends in the spec's events → the mesh's structural edges.
+            x.AddResponseEventDeclarations(
+                (IMessageDefinition)new ResponseEventDefinition("payment:take", typeof(OutboundTakePayment)),
+                new ResponseEventDefinition("order:placed", typeof(OutboundOrderPlaced)));
 
-            // Lazy Service Bus sender for the payments queue; the route publishes through it.
+            // Lazy Service Bus sender (payments command queue) + Event Hub producer (order:placed fan-out).
             x.AddServiceBusSender(Environment.GetEnvironmentVariable("PAYMENTS_QUEUE") ?? "payments");
+            x.AddEventHubProducer(Environment.GetEnvironmentVariable("ORDER_PLACED_HUB") ?? "order-placed");
             x.AddOutboundRouting(routing => routing
-                .Route("payment:take", pipeline => pipeline.UseServiceBus(sb => sb.UseServiceBusClient())));
+                .Route("payment:take", pipeline => pipeline.UseServiceBus(sb => sb.UseServiceBusClient()))
+                .Route("order:placed", pipeline => pipeline.UseEventHub(eh => eh.UseEventHubClient())));
         });
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)

@@ -2,6 +2,7 @@ using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.Messages;
 using Benzene.Azure.Function.ServiceBus;
 using Benzene.Clients;
+using Benzene.Clients.Azure.EventGrid;
 using Benzene.Clients.Azure.ServiceBus;
 using Benzene.Core.MessageHandlers;
 using Benzene.Diagnostics;
@@ -28,10 +29,14 @@ public class StartUp : BenzeneStartUp
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         => MeshServiceWiring.ConfigureServices(services, "payments", Handlers, x =>
         {
-            x.AddResponseEventDeclarations((IMessageDefinition)new ResponseEventDefinition("shipment:book", typeof(OutboundBookShipment)));
+            x.AddResponseEventDeclarations(
+                (IMessageDefinition)new ResponseEventDefinition("shipment:book", typeof(OutboundBookShipment)),
+                new ResponseEventDefinition("payment:captured", typeof(OutboundPaymentCaptured)));
             x.AddServiceBusSender(Environment.GetEnvironmentVariable("SHIPPING_QUEUE") ?? "shipping");
+            x.AddEventGridPublisher();
             x.AddOutboundRouting(routing => routing
-                .Route("shipment:book", pipeline => pipeline.UseServiceBus(sb => sb.UseServiceBusClient())));
+                .Route("shipment:book", pipeline => pipeline.UseServiceBus(sb => sb.UseServiceBusClient()))
+                .Route("payment:captured", pipeline => pipeline.UseEventGrid("payments-api", eg => eg.UseEventGridClient())));
         });
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)

@@ -21,6 +21,13 @@ public record PaymentTaken(string PaymentId, string Status);
 public record OutboundBookShipment(string OrderId, string Carrier);
 
 /// <summary>
+/// The integration event payments-api publishes to <b>Event Grid</b> (topic <c>payment:captured</c>)
+/// once payment settles. Event Grid routes it by subscription to notifications-api and analytics-api.
+/// Declared in the spec's <c>events</c> → structural edges payments → notifications / analytics.
+/// </summary>
+public record OutboundPaymentCaptured(string OrderId, string PaymentId, decimal Amount, string Currency);
+
+/// <summary>
 /// Takes payment (arriving as <c>payment:take</c> over Service Bus or HTTP), then commands shipping-api
 /// to book over Service Bus. Best-effort onward send.
 /// </summary>
@@ -50,6 +57,18 @@ public class TakePaymentHandler : IMessageHandler<TakePaymentRequest, PaymentTak
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "downstream shipment:book send failed for {orderId}", request.OrderId);
+        }
+
+        // Integration event over Event Grid: routed by subscription to notifications + analytics.
+        try
+        {
+            await _sender.SendAsync<OutboundPaymentCaptured, Void>("payment:captured",
+                new OutboundPaymentCaptured(request.OrderId, payment.PaymentId, request.Amount, request.Currency));
+            _logger.LogInformation("payment taken for {orderId}; published payment:captured", request.OrderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "payment:captured publish failed for {orderId}", request.OrderId);
         }
 
         return BenzeneResult.Created(payment);
