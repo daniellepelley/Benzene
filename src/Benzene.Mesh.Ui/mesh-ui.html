@@ -851,6 +851,37 @@
     } catch (e) { return null; }
   }
 
+  /* F3b-revised (2a) - the §10.7-clean live-HTTP answer. Rather than the mesh calling a service
+     cross-origin itself, it deep-links out to the service's OWN Spec UI, whose "Try it" POSTs
+     same-origin to that service (see Benzene.Spec.Ui). The Spec UI lives at the service origin's
+     /spec-ui when it hosts UseSpecUi() (that extension's default path); derived from specUrl's
+     origin, best-effort (null when specUrl is missing/unsafe). Requires the service to host its
+     own Spec UI - recommended as part of the service standard, but optional today. */
+  function specUiTryItHref(svc) {
+    var specHref = (svc && svc.specUrl) ? safeHttpUrl(svc.specUrl) : null;
+    if (!specHref) return null;
+    try { return new URL(specHref).origin + "/spec-ui"; } catch (e) { return null; }
+  }
+  function svcIsHttpReachable(svc) {
+    var t = (svc && svc.transports) || [];
+    for (var i = 0; i < t.length; i++) { if (String(t[i]).toLowerCase() === "http") return true; }
+    return t.length === 0; // older manifests carry no transport info - show best-effort
+  }
+  /* Appends the "try it" deep-link to a service's link row. Gated behind the same compose toggle as
+     the payload composer (a live-testing affordance, off in a production deploy by default) and only
+     for HTTP-reachable services. It's just an outbound link to the service's own same-origin Spec UI -
+     the mesh never calls the service itself, so it needs no §10.7 exception. */
+  function appendTryItLink(links, svc) {
+    if (!composeEnabled() || !svcIsHttpReachable(svc)) return;
+    var href = specUiTryItHref(svc);
+    if (!href) return;
+    var a = el("a", null, "try it ↗");
+    a.href = href; a.target = "_blank"; a.rel = "noopener";
+    a.title = "Open this service's own Spec UI to send a live test request (its same-origin “Try it”). Requires the service to host UseSpecUi().";
+    a.addEventListener("click", function (e) { e.stopPropagation(); });
+    links.appendChild(a);
+  }
+
   /* ---------- render ---------- */
   function render() {
     var services = manifest.services || [];
@@ -1043,6 +1074,7 @@
     if (specHref) { var aRaw = el("a", null, "raw"); aRaw.href = specHref; aRaw.target = "_blank"; aRaw.rel = "noopener"; aRaw.title = "The service's raw spec JSON (the Cloud Service contract)"; aRaw.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(aRaw); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
+    appendTryItLink(links, svc);
     var a4 = el("button", "svc-topics-link", "topics");
     a4.type = "button";
     a4.title = "Find topics " + svc.name + " produces or consumes";
@@ -1638,6 +1670,7 @@
     if (specHref) { var a3 = el("a", null, "raw"); a3.href = specHref; a3.target = "_blank"; a3.rel = "noopener"; a3.title = "The service's raw spec JSON (the Cloud Service contract)"; links.appendChild(a3); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; links.appendChild(a2); }
+    appendTryItLink(links, svc);
     if (links.childNodes.length) idSection.appendChild(links);
     if (idSection.childNodes.length) body.appendChild(idSection);
 
