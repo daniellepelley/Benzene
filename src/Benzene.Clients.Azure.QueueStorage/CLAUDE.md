@@ -14,7 +14,19 @@ of `Benzene.Azure.Function.QueueStorage` (release plan Tier 2.2, §5.2). This pa
 - `OutboundQueueStorageContextConverter` — the `Benzene.Clients.OutboundContext` counterpart, used by
   the `OutboundContext` overloads of `.UseQueueStorage(...)` for `AddOutboundRouting(...).Route(topic, …)`.
 - `Extensions` — `UseQueueStorageClient`, `UseQueueStorage<T>`/`UseQueueStorage` (both the
-  `IBenzeneClientContext<T,Void>` and `OutboundContext` overloads), `AddQueueStorageMessageClient`.
+  `IBenzeneClientContext<T,Void>` and `OutboundContext` overloads), `AddQueueStorageMessageClient`, and
+  **`AddQueueStorageHealthCheck`**.
+- `QueueStorageHealthCheck` — verifies a queue with a read-only `GetProperties` call (`Type =
+  "QueueStorage"`, dependency `("Queue", queueClient.Name)`; non-destructive — no send/receive/peek).
+  Failures are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a
+  **Warning**; the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the exception message
+  (which can carry a SAS token). Azure discriminators come off `RequestFailedException`.
+  - **Auto-wired (Phase 4, default-on).** The two `queueClient`-instance `UseQueueStorage`/`UseQueueStorage<T>`
+    overloads take `bool healthCheck = true`: unless opted out they auto-register the check on the
+    **dependency category** (`AddDependencyHealthCheck`, dedup `"QueueStorage:{name}"`), **capturing the
+    passed `QueueClient` directly** (no DI round-trip — Queue Storage clients are passed, not resolved).
+    Deep `healthcheck` layer only — never a probe (shared-fate; see `IDependencyHealthCheck`). The
+    `action`-based overloads don't auto-wire.
 
 ## Routing — there is no property to set; the envelope IS the routing
 A Queue Storage message has no properties/attributes at all, so unlike Service Bus/Event Hubs there

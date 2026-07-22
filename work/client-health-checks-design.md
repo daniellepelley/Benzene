@@ -368,14 +368,20 @@ Warning-on-permission / `ErrorCode`/`StatusCode` classification (§3.4, §3.9) i
 **Phase 4 — fill coverage gaps (born correct with the standard pattern)** 🚧 *in progress*
 EventBridge, Event Hub, Event Grid, Queue Storage, gRPC, Kafka, RabbitMQ — co-located, auto-wired,
 read-only, on the **dependency category** (deep layer, per the §3.2 revision — not readiness).
-- ✅ **EventBridge** — `EventBridgeHealthCheck` (read-only `DescribeEventBus`, `Type = "EventBridge"`,
+- ✅ **EventBridge** (AWS) — `EventBridgeHealthCheck` (read-only `DescribeEventBus`, `Type = "EventBridge"`,
   dependency `("EventBus", name)`, §3.9 classification, no `Active` mode — a publish probe would fire live
   rules). Auto-wired on the `source` overload of `.UseEventBridge<T>` (default bus, dedup
-  `"EventBridge:default"`, `healthCheck: false` opt-out) + explicit `AddEventBridgeHealthCheck`. Added the
-  `HealthChecks.Core` project reference to the client package (co-location, like SQS/SNS).
-- ⬜ Event Hub, Event Grid, Queue Storage, gRPC, Kafka, RabbitMQ — each needs a client package with a
-  cheap non-mutating reachability call + a config-time hook to auto-wire (some may be explicit-only, like
-  the §4 Phase-1 findings).
+  `"EventBridge:default"`, `healthCheck: false` opt-out) + explicit `AddEventBridgeHealthCheck`.
+- ✅ **Queue Storage** (Azure) — `QueueStorageHealthCheck` (read-only `GetProperties`, `Type =
+  "QueueStorage"`, dependency `("Queue", name)`, §3.9 via `RequestFailedException`). Auto-wired on the two
+  `QueueClient`-instance `.UseQueueStorage`/`.UseQueueStorage<T>` overloads (dedup `"QueueStorage:{name}"`,
+  opt-out) + explicit `AddQueueStorageHealthCheck`. Unlike AWS, **captures the passed client instance**
+  (Queue Storage clients are handed in, not DI-resolved) — which also yields the queue name for dedup.
+- ⬜ Event Hub, Event Grid, gRPC, Kafka, RabbitMQ — remaining. Event Hub has a clean read-only path
+  (`EventHubProducerClient.GetEventHubProperties`); Event Grid's publisher has **no data-plane read**
+  (likely explicit-only); Kafka/RabbitMQ/gRPC are broker/RPC-connection checks (more involved, separate
+  investigation).
+- Each check co-locates in its client package (adds a `HealthChecks.Core` project reference).
 
 **Phase 5 — mesh + interop**
 - Mesh dependency-inventory increment (pull-plane render of each snapshot's `HealthCheckDependency[]`
