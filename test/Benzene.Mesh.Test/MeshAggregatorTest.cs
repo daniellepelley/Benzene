@@ -159,6 +159,46 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_ReconcilesVersions_AcrossProducersAndConsumers()
+    {
+        const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
+        const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
+
+        // orders-api DECLARES it produces payments:get at version "1" (spec events); payments-api HANDLES
+        // payments:get at version "2" (a single v2 handler). Structurally that's a skew: v1 is emitted but
+        // no service handles v1 - the exact "producer emits vN, is anyone consuming vN?" question. (At
+        // runtime an upcaster on payments bridges it, which the mesh can't see - hence a "look" signal.)
+        var ordersSpec = "{\"requests\":[{\"topic\":\"order:create\"}],\"events\":[{\"topic\":\"payments:get\",\"version\":\"1\"}]}";
+        var paymentsSpec = "{\"requests\":[{\"topic\":\"payments:get\",\"version\":\"2\"}]}";
+
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true))
+            .MapGet(paymentsSpecUrl, HttpStatusCode.OK, paymentsSpec)
+            .MapGet(paymentsHealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(new[]
+        {
+            new MeshServiceRegistryEntry("orders-api", SpecUrl, HealthUrl),
+            new MeshServiceRegistryEntry("payments-api", paymentsSpecUrl, paymentsHealthUrl),
+        }));
+
+        var catalog = JsonSerializer.Deserialize<MeshTopicCatalog>((await store.TryReadAsync("topics.json"))!, JsonOptions)!;
+
+        var compat = Assert.Single(catalog.VersionCompatibility, v => v.Topic == "payments:get");
+        Assert.Equal(new[] { "1" }, compat.ProducedVersions);
+        Assert.Equal(new[] { "2" }, compat.ConsumedVersions);
+        Assert.Equal(new[] { "1" }, compat.ProducedNotConsumed); // v1 emitted, nobody handles v1
+        Assert.Equal(new[] { "2" }, compat.ConsumedNotProduced); // v2 handled, nobody emits v2
+        Assert.False(compat.IsCompatible);
+
+        // A single-version, single-side topic (order:create) has no compatibility question, so no entry.
+        Assert.DoesNotContain(catalog.VersionCompatibility, v => v.Topic == "order:create");
+    }
+
+    [Fact]
     public async Task RunOnceAsync_PublishesCompositeAsyncApi_FromEachServicesAsyncApiEndpoint()
     {
         const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";

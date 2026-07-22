@@ -136,6 +136,24 @@ this fleet's own registry, can't be distinguished from here; that stronger signa
 collector/trace path (`docs/specification/mesh.md`, `Benzene.Mesh.Collector`'s Fleet view) adds
 when it's wired up, deliberately deferred rather than required for this artifact to be useful.
 
+### Cross-version compatibility (`topics.json` `versionCompatibility`, 2026-07-22)
+Because `Status`/`SchemaMismatch` reason within one exact (topic, version), they can't answer "the
+producers moved to v2, are the consumers still on v1?" — each (topic, version) is otherwise an
+island. `BuildVersionCompatibility` (in `BuildTopicCatalog`) closes that: it groups the per-(topic,
+version) aggregates by **topic id** and, for any non-reserved topic that exists at **more than one
+version**, emits a `MeshTopicVersionCompatibility` (`Benzene.Mesh.Contracts`) reconciling the set of
+versions any service **produces** (spec `events`) against the set any service **consumes** (spec
+`requests`): `ProducedVersions`/`ConsumedVersions`, plus `ProducedNotConsumed` (the load-bearing
+signal — a version emitted but handled by nobody at that version, a forward-compat risk) and
+`ConsumedNotProduced` (a handler for a version nobody emits). A single-version topic — even one with
+a producer- or consumer-side gap — is deliberately **excluded** (that's `Status`'s job, and an
+unversioned HTTP topic with an external producer must not read as a version skew). The honest caveat
+the mesh can't see: an **upcaster** (`Benzene.Core.Versioning`) on the consumer may bridge an older
+produced version to the handler's schema, so `ProducedNotConsumed` is a "confirm the upcaster exists"
+prompt, not a proven break. Published on `MeshTopicCatalog.VersionCompatibility` (additive/optional);
+carried through the run-over-run diff unchanged (it's derived from the current fleet, not the diff).
+`Benzene.Mesh.Ui` renders it as a "Version compatibility" panel on the topic drill-in page.
+
 ## Breaking change (pre-1.0, flagged per repo convention)
 `MeshAggregator`'s constructor changed from `(HttpClient httpClient, IMeshArtifactStore store,
 Func<DateTimeOffset>? clock = null)` to `(IEnumerable<IMeshServiceSource> sources, IMeshArtifactStore
