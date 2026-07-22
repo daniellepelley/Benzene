@@ -7,7 +7,281 @@
 
 ---
 
-> **2026-07-22 (latest) P6 SHIPPED — discussion & annotations. The 2026-07-22 roadmap (P1–P6)
+> **2026-07-22 (latest) FEEDBACK TRIAGE — three maintainer asks turned into requirements
+> (mesh-product-owner). No shipping code changed; this is PO triage + written requirements. The
+> P1–P6 roadmap remains complete; these are the next backlog items, sized and sequenced.
+> **Maintainer answers incorporated 2026-07-22:** F1, F2 (Removed = distinct grey, not red), and
+> F3a are APPROVED. The live-dispatch ask was NOT authorized as the queue-injection version that
+> reopened §10.7; the maintainer steered it to a narrower direct-to-consumer / Swagger-for-HTTP
+> direction captured as **F3b-revised** (explore-and-design, §10.7 NOT reopened, still pending a
+> ruling before any build).**
+>
+> **Raw feedback (verbatim):** (1) "Unversioned should be implied not expressly mentioned." (2)
+> "Value and depreciation should have green, amber and red." (3) "Should be able to send in demo
+> payloads but this should be feature toggleable, as in users will not want that on production.
+> The payloads will be for different payloads, so should be able to choice supported payloads.
+> Should be able to build them from topic, headers and payload fields, and construct those into an
+> SQS for instance. There will be the ability to define custom payloads in the code somewhere.
+> Sending payload might be it's own screen."
+>
+> ---
+>
+> **F1 — "Unversioned" is implied, not labelled. SIZE: SMALL. PRIORITY: P7 (do first — trivial,
+> pure polish). APPROVED (maintainer confirmed 2026-07-22).**
+> - **User & job:** every audience. Reading the estate/topic/value views, an unversioned topic
+>   currently reads `unversioned` as if that were a version string — noise that competes with the
+>   real signal (which topics *do* carry versions, and drift between them).
+> - **Verified current state:** `mesh-ui.html` renders `t.version || "unversioned"` in three
+>   places — the estate topics table (`renderTopicRows`, ~line 1454), the topic-page version
+>   header (`renderTopicPage`, ~line 1654), and the value-view row (`buildValueRow`, ~line 1920).
+>   The literal `"unversioned"` is the fallback whenever `MeshTopicEntry.Version` is empty/null.
+> - **Requirement / acceptance criteria:**
+>   - When a topic has a version, render the version (unchanged).
+>   - When a topic has no version, render **nothing** where the version chip would be — no
+>     `unversioned` label, no empty pill box. Absence of a version *is* the signal.
+>   - Applies to all three render sites; the topic-page header must still render cleanly (no
+>     dangling separator/`@`) with the chip omitted.
+>   - The value-view `usageEntriesForTopic(t.topic, t.version || null)` join key is unchanged —
+>     this is a **display-only** change; `null`/empty version still keys usage correctly.
+>   - Playwright: a fixture topic with no version shows no `unversioned` text in estate table,
+>     topic page, and value view; a versioned topic still shows its version; light + dark.
+> - **Decision-framework note:** no spec impact, no data change, static floor untouched. Pure
+>   time-to-understanding win (noise reduction). This is the cheapest item in the whole doc.
+>
+> ---
+>
+> **F2 — Value & deprecation as RAG (green / amber / red). SIZE: SMALL–MEDIUM. PRIORITY: P8.
+APPROVED (maintainer confirmed 2026-07-22), with the Removed-tier ruling below.**
+> - **User & job:** the product owner defending a deprecation ("can I retire `order:legacy-export`
+>   this quarter?"). Today the value view (`renderValueView`, P5) already tiers every domain topic
+>   — *Retirement candidates* / *Verify externally* / *No retirement signal*, plus *Removed since
+>   the previous run* — but the tiers are **text headers with no colour encoding** (verified:
+>   `VD_TIERS` labels + `vd-group-h`/`vd-group-sub` classes; the only coloured badge on a row is
+>   the neutral `t-status-deprecation-candidate` chip, `chip-bg`/`chip-ink` — not RAG). A PO can't
+>   scan the estate and see red/amber/green at a glance.
+> - **Requirement / acceptance criteria:**
+>   - Map the **existing** four tiers to a RAG scale (no new data, no new tier logic — this is a
+>     visual encoding of what P5 already computes):
+>     - **Red** = *Retirement candidates* (strongest disuse evidence — a live proposal to act on).
+>     - **Grey / "gone" (DISTINCT from red — maintainer ruling 2026-07-22)** = *Removed since the
+>       previous run*. It is past-tense fact, not a live proposal, so it gets its own muted
+>       gone/grey treatment rather than sharing red with Candidates. Keep it visually calm (it's a
+>       record, not an alarm) but still clearly a distinct tier.
+>     - **Amber** = *Verify externally* (`gap` topics — fleet data alone can't defend retiring
+>       them; needs a human check outside the fleet).
+>     - **Green** = *No retirement signal* (actively used, or no evidence of disuse).
+>   - **Colour is never the only signal (accessibility, table stakes per the quality bar):** keep
+>     the tier text label; add a non-colour cue (a leading status glyph/shape or a text status
+>     word) so the RAG reading survives colour-blindness and monochrome/high-contrast. Reuse the
+>     existing design-token palette (the health badges already have red/amber/green tokens —
+>     `statusBadgeClass`, the `warning` amber tier) rather than introducing new colours; verify in
+>     light **and** dark and under forced-colors/strict-CSP.
+>   - **Honesty rule preserved (P5):** with no usage feed wired, the header still says "structural
+>     evidence only" and *disuse is never claimed*. RAG must not turn a structural-only "no
+>     declared consumers" into a confident red "unused" — when the feed is absent, a candidate row
+>     is amber-with-caveat, not red, OR the header's structural-only banner stays load-bearing and
+>     the row text keeps "no usage feed to check against". Do not let colour overstate certainty
+>     the data can't support. (This is the one place F2 has real subtlety — resolve it toward the
+>     P5 honesty ruling, not toward a prettier traffic light.)
+> - **Decision-framework note:** no spec impact, no new data, static floor untouched. Small unless
+>   the feed-absent honesty nuance is done properly, which nudges it to S–M. Consider extending the
+>   same RAG vocabulary to the issue inbox severity groups later for consistency — noted, not
+>   scoped here.
+> - **Sub-decision (RESOLVED, maintainer 2026-07-22):** *Removed* gets its own distinct gone/grey
+>   treatment, separate from red *Retirement candidates*. No open questions remain on F2.
+>
+> ---
+>
+> **F3 — Send demo payloads. This is TWO capabilities, and they must be split — one is
+> static-safe and near-ready, the other reopens a settled security decision. Read the split before
+> the sizing.**
+>
+> The feedback bundles: *compose a message from topic + headers + payload fields, dress it for a
+> transport (their example: SQS), choose among supported payloads incl. custom ones defined in
+> code* — **and** *actually send it into the mesh, feature-toggled off in prod*. The composition
+> half is static-floor-compatible and reuses machinery that already exists. The **send** half
+> cannot be done from the static UI at all (a browser cannot put a message on SQS without a
+> server-side proxy holding cloud credentials) and directly contradicts roadmap §10.7 item 1,
+> which **de-scoped live multi-protocol dispatch from the centralized/aggregated view on
+> blast-radius grounds**, restricting any live "reach into a system" affordance to a single
+> service's *own* self-hosted Spec UI. So:
+>
+> **F3a — Compose & copy a transport-dressed payload (the "build it into an SQS" half).
+> SIZE: MEDIUM. PRIORITY: P9. Static-floor-safe. APPROVED (maintainer confirmed 2026-07-22 — keep
+> as-is regardless of F3b's direction; compose+copy is valuable on its own and covers the
+> queue/stream transports that F3b-revised excludes).**
+> - **User & job:** a developer (and a technical BA) validating a service — "give me a correctly
+>   shaped SQS/SNS/API-Gateway/raw-envelope message for `order:placed` so I can paste it into the
+>   AWS CLI / console / Lambda Test Tool and exercise the handler," without hand-authoring envelope
+>   boilerplate or reading C#.
+> - **This already mostly exists — do not rebuild it (roadmap §10.2):** `Benzene.CodeGen.
+>   LambdaTestTool`'s `LambdaTestFilesBuilder` already dresses per-topic example payloads as
+>   `benzene-message` / `sns` / `sqs` / `api-gateway` envelopes, off the **deterministic**
+>   `Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder` (`DefaultExampleBuilders`) — the same
+>   generator the spec embeds. `work/runtime-test-payloads-plan.md` already designed the runtime,
+>   opt-in, introspect-and-dress endpoint (`UseTestPayloads()`), split by the transports a service
+>   is actually wired to (`EventServiceDocument.Transports`).
+> - **"Supported payloads" discovery = schema-derived defaults + code-registered custom ones:**
+>   - *Schema-derived default:* generated by `ExamplePayloadBuilder` from the topic's own schema —
+>     the mesh already carries these inlined per (topic, version) as `MeshTopicEntry.RequestSchema`/
+>     `ResponseSchema`/`MessageSchema`, so the UI can render a field skeleton **with zero backend**.
+>   - *Custom payloads "defined in code":* map to the existing BYO-schema seam —
+>     `SuppliedSchemaCatalog` / `AddSuppliedSchemas` (see
+>     `work/complex-payloads-byo-schema-plan.md`). A code-registered example is the natural sibling
+>     of a code-registered schema. Requirement: a "supported payloads" list per topic = the
+>     schema-derived default **plus** any code-registered named examples, the user picks one.
+> - **Where the logic lives (architecture ruling — do NOT put envelope-dressing in the static
+>   UI):** the C# envelope builders can't run in `mesh-ui.html`. Two acceptable vessels, pick one:
+>   1. **Artifact/endpoint on the host** (preferred): the aggregator/`deploy/Mesh/Benzene.Mesh.Host`
+>      publishes or serves the dressed example payloads (the `UseTestPayloads()` design), and the
+>      static UI *displays + copies* them — feature-detected exactly like annotations/usage, so the
+>      static floor holds when absent.
+>   2. **Client-side skeleton only** (degraded fallback): the UI generates a raw-envelope JSON
+>      skeleton from the inlined `MeshTopicEntry` schema it already has, and offers copy — no
+>      SQS/SNS dressing (that stays host-side). Ship this as the always-available floor even if (1)
+>      isn't wired.
+> - **Dependency discipline:** transport-dressing must not pull AWS test-helper packages into a
+>   service's runtime or into `Contracts`/`Ui`. Adopt `runtime-test-payloads-plan.md`'s
+>   recommendation 1(c): a runtime-clean core + AWS dressing in a separate opt-in
+>   `Benzene.*.TestPayloads.Aws` package. Azure (Service Bus / Event Hub) dressing is a documented
+>   follow-up, **not** silently shipped AWS-only-and-called-done (honesty convention).
+> - **Acceptance criteria:** per non-reserved topic, list supported payloads (schema default +
+>   code-registered customs); pick a transport from the ones that topic actually supports
+>   (intersection of the service's `Transports` + `HttpMappings` for `api-gateway`); render the
+>   dressed message; **copy** (not send). Static floor: with no host endpoint, the UI still offers
+>   the raw-envelope skeleton from inlined schema. "Its own screen": yes — a dedicated compose view
+>   (`#compose:<topic>` hash, consistent with the three-entity router) rather than bolted onto the
+>   catalog.
+> - **Spec impact:** none. Everything needed (topic schemas, transports, HTTP mappings) is already
+>   in the spec / already fetched by the aggregator. No Cloud Service spec widening. Taut.
+>
+> **F3b (SUPERSEDED — the queue-injection framing below was NOT authorized).** The original F3b
+> asked to reverse §10.7 and let the centralized UI inject messages into shared infrastructure
+> (SQS/SNS). The maintainer (2026-07-22) **did not authorize that** — §10.7 stands as-is for
+> queue/stream injection — and instead steered to a narrower, explore-and-design direction
+> captured as **F3b-revised** below. The queue-injection posture is retained here only as the
+> rejected baseline the new direction is measured against; it is not on the backlog.
+>
+> **F3b-revised — DIRECT-TO-CONSUMER dispatch + Swagger-for-HTTP. STATUS: EXPLORE & DESIGN
+> (NOT build, NOT approved to build). §10.7 is NOT reopened — this is a *candidate that might
+> clear its bar*, pending an explicit maintainer ruling. Maintainer words (2026-07-22): "the
+> payloads would be sent straight to the consumer, such as the Lambda and not to the SQS. this
+> might take more thinking about. A possible other solution for http is to provide a wired in
+> swagger interface."**
+>
+> This splits by transport into three cleanly-separated cases — that partition is the key product
+> insight, because it decides which transports can ever get a live-send and which stay compose+copy
+> (F3a) only:
+>
+> **(1) Direct-invokable transports — Lambda direct `Invoke`, HTTP, BenzeneMessage — CANDIDATE
+> that plausibly clears §10.7's bar. SIZE: MEDIUM–LARGE.**
+> - **Why the blast-radius calculus genuinely changes vs. the rejected queue version:**
+>   - **The access path already exists and is already trusted.** The aggregator *already* reaches
+>     each service directly to interrogate it — spec/health via Lambda `Invoke` or HTTPS. "Invoke
+>     the target service directly with a chosen payload" reuses the *same* access grant (same
+>     `lambda:InvokeFunction` action / same HTTP POST to the service's own invoke endpoint the
+>     Fleet view already speaks) — it changes the *payload*, not the *permission*. **No new
+>     credential type** (notably: no queue-write / `sqs:SendMessage` grant, which the rejected
+>     version required).
+>   - **It targets exactly one known service**, the one the mesh is already talking to — not a
+>     shared queue that fans out to arbitrary other systems. §10.7's specific objection ("reaches
+>     into 'different systems' from a central, aggregated view") is about unbounded fan-out into
+>     shared infra; direct-to-consumer is bounded to a single declared endpoint.
+> - **Residual blast radius (state it honestly — it is NOT zero):** the invoked handler runs *for
+>   real* and executes real side-effects (DB writes, downstream calls, possibly its own publishes
+>   to SQS/SNS as part of handling). So fan-out isn't eliminated — it's one hop removed and
+>   *mediated by real handler logic* rather than raw infrastructure injection. This is materially
+>   smaller and more predictable than queue injection, but it is "a real handler ran with test
+>   data," which is exactly why it must stay off production.
+> - **Posture (lighter than the rejected version, but still gated):**
+>   - **Toggle still required:** opt-in registration **and** an explicit `AllowInProduction`/env
+>     gate (`runtime-test-payloads-plan.md` decision 3). Off by default, loudly — because real
+>     side-effects execute. The *credential* posture is lighter (reuses the existing invoke path,
+>     no new queue-write creds), but the *side-effect* posture is unchanged, so the gate stays.
+>   - **Vessel:** for **Lambda direct-invoke** and **BenzeneMessage**, still
+>     `deploy/Mesh/Benzene.Mesh.Host` — a browser cannot perform a Lambda `Invoke`, so it goes
+>     through a host proxy that reuses the aggregator's existing invoke path. For **HTTP**, see
+>     case (2): the browser can POST directly given CORS/auth, which is the Swagger option and may
+>     need no host proxy at all.
+>   - **Static floor:** unchanged — `Benzene.Mesh.Ui` feature-detects the host dispatch endpoint
+>     and degrades to F3a compose+copy when absent; default "not present" = off in prod by
+>     construction.
+> - **My PO read: this candidate plausibly clears the bar the queue version didn't**, because it
+>   reuses an already-trusted access path, is bounded to one known service, and adds no new
+>   credential type. I am **recommending** it to the maintainer as clearing §10.7's intent — but
+>   NOT treating §10.7 as reopened, and NOT building, until the maintainer rules, because the
+>   residual "real handler side-effects" risk is a real product judgment call, and they said "this
+>   might take more thinking about."
+>
+> **(2) HTTP transport — "wired-in Swagger" — this is the HTTP-shaped live-send answer, and it may
+> need NO §10.7 exception at all. SIZE: SMALL (deep-link) to MEDIUM (centralized cross-origin).**
+> - **Building block already exists:** `Benzene.Spec.Ui`'s `spec-ui.html` already has a live
+>   "Try it" (`tryItBlock`) that POSTs the raw envelope **same-origin** to the service that serves
+>   it. The mesh's own `mesh-spec-ui.html` deliberately has **no** "Try it" — its CLAUDE.md states
+>   this is exactly *because* calling the service would be cross-origin from the mesh. So the live
+>   HTTP-call capability is already built; the only question is where it's hosted relative to the
+>   service's origin.
+> - **Two framings, with very different §10.7 implications:**
+>   - **(2a) Deep-link to the service's own self-hosted Spec UI — §10.7-CLEAN BY CONSTRUCTION,
+>     RECOMMENDED.** The mesh links out to each HTTP service's own `UseSpecUi()` "Try it." This is
+>     *literally* where §10.7 said live dispatch belongs ("scoped to a single service's own
+>     self-hosted Spec UI, where 'this page can reach this one service' is unremarkable"). Zero new
+>     blast radius, no reopening, no centralized credential. Cost: the service must host its own
+>     Spec UI (optional today) and the mesh must know its base URL (a link, not a fetch). This is
+>     the cheapest live-HTTP answer and needs no maintainer security ruling.
+>   - **(2b) Centralized cross-origin Swagger that calls the service from the dashboard —
+>     HEAVIER, separately decided.** A Swagger UI hosted in the mesh that POSTs cross-origin to the
+>     service. This needs the target service to serve **CORS** headers allow-listing the dashboard
+>     origin on its invoke endpoint (roadmap §10.5 already flagged CORS as the prerequisite for
+>     centralized cross-service calls) **and** the browser to carry the service's **auth** (bearer
+>     injection; cookies don't cross origin cleanly). This reintroduces exactly the cross-origin +
+>     auth coupling `mesh-spec-ui.html` and §10.5 were cautious about. Viable, but it's a real
+>     decision, not a free win — and (2a) delivers the same user job without it.
+> - **Does Swagger subsume F3a for HTTP? No — it complements it.** Swagger/Try-it is the *live
+>   send* for HTTP; F3a (compose + transport-dress + copy) still has independent value: it works
+>   with zero backend, produces copy-paste artifacts for CLI/CI/scripts, and covers the
+>   queue/stream transports Swagger can't. Keep both.
+>
+> **(3) Queue/stream transports — SQS, SNS, Event Hub, Kinesis, Event Grid — OUT OF SCOPE for any
+> live send.** "Send straight to the consumer" does not apply to shared infrastructure; these are
+> precisely what §10.7 excluded and the maintainer did not authorize. For these, the answer stays
+> **F3a compose + copy only** (dress the payload, copy it, paste into the CLI/console). This is the
+> honest boundary of the direct-to-consumer model.
+>
+> **Convergence note:** for HTTP, case (1)'s "send straight to consumer" and case (2)'s Swagger are
+> the *same* operation (POST to the service's HTTP endpoint). The genuinely *new* capability in (1)
+> is the **Lambda direct-invoke** (and BenzeneMessage) path a browser can't perform — that's the
+> piece that needs the host proxy and the §10.7 judgment. HTTP is best served by (2a).
+>
+> **Open decisions the maintainer still owns (F3b-revised):**
+> 1. **Does direct-to-consumer clear §10.7's bar?** My recommendation: yes for case (1) — it
+>    reuses an already-trusted access path, is bounded to one service, adds no new credential type.
+>    But the residual "real handler side-effects execute" risk is a product call only the
+>    maintainer makes. Ruling needed before any build. §10.7 remains NOT reopened until then.
+> 2. **Posture for case (1):** confirm opt-in registration **+** `AllowInProduction`/env gate (my
+>    recommendation), or a lighter posture given the lighter credential footprint? My steer: keep
+>    both gates — side-effects, not credentials, are the reason.
+> 3. **Swagger framing:** (2a) deep-link to the service's own Spec UI (recommended, §10.7-clean,
+>    cheap) vs. (2b) centralized cross-origin Swagger (needs CORS + browser-carried auth). If (2a),
+>    do we make `UseSpecUi()` a recommended part of the service standard so the deep-link target
+>    reliably exists? If (2b), that CORS/auth prerequisite needs writing into `design-principles.md`
+>    §5 (as §10.5 already anticipated).
+> 4. **Scope of the first design cut:** HTTP-only via (2a) first (smallest, §10.7-clean, ships
+>    value immediately), with Lambda direct-invoke (case 1) as a follow-on once its §10.7 ruling
+>    lands? My recommendation: yes — sequence (2a) → (1-Lambda), F3a in parallel.
+> - **If the maintainer approves a build:** case (1) Lambda/BenzeneMessage dispatch is a
+>   `deploy/Mesh/Benzene.Mesh.Host` feature and gets its own design doc (cross-ref §10.2/§10.7 +
+>   `runtime-test-payloads-plan.md`); case (2a) is a `Benzene.Mesh.Ui` deep-link + a service-URL
+>   the mesh already has; case (2b) is a host + CORS/auth design.
+>
+> **Cross-reference:** the data-layer / packages side of F3 (runtime `UseTestPayloads()` endpoint,
+> transport-dressing package split, direct-to-consumer host dispatch endpoint, Swagger wiring) is
+> recorded in `work/service-mesh-roadmap-1.0.md` (dated block at top, and §10.2/§10.7) and
+> `work/runtime-test-payloads-plan.md`. F1/F2 are UI-only and live here.
+>
+> ---
+>
+> **2026-07-22 P6 SHIPPED — discussion & annotations. The 2026-07-22 roadmap (P1–P6)
 > is complete.**
 > - **The vessel ruling (the "hard constraint" decision, now made):** discussion is split
 >   across the two halves the architecture already had. The **read path is a static artifact**
