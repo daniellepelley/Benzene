@@ -111,6 +111,7 @@
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Markdown\Benzene.CodeGen.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.LambdaTestTool\Benzene.CodeGen.LambdaTestTool.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.SourceGenerators\Benzene.CodeGen.SourceGenerators.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Azure.Function.SourceGenerators\Benzene.Azure.Function.SourceGenerators.csproj" />
     <ProjectReference Include="..\..\src\Benzene.CodeGen.Terraform\Benzene.CodeGen.Terraform.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
