@@ -172,6 +172,24 @@ same treatment as `OwningTeam`/`Transports`; the aggregator does **not** compute
 `work/service-mesh-roadmap-1.0.md` 2026-07-20 ruling, staleness is a read-time UI derivation over
 this raw timestamp, not a status). Consumed by `Benzene.Mesh.Ui`'s issue inbox.
 
+## Observed usage (`usage.json`)
+Each run also polls every registered `Benzene.Mesh.Contracts.IMeshUsageSource` (usage adapters -
+the full standard is `docs/mesh-usage-feed.md`), concurrently with the service polling and each
+bounded by the same 10-second per-fetch timeout (a throwing/hung adapter contributes nothing and
+never fails the run). The reports are merged into one `MeshUsage` - entries concatenated (each
+already carries its own per-entry `Source`), window bounds widened to cover every report, stamped
+with the run's clock - and published as `usage.json`. **Published only when at least one source
+reported**: the artifact's absence keeps meaning "no usage feed wired" (the UI hides its usage
+surfaces), while a present-but-empty `entries` array means "feed wired, no traffic observed" -
+two different product statements. With no sources registered (the default -
+`AddMeshAggregator` registers none) the artifact is never written.
+
+**2026-07-22, `MeshAggregator` ctor (pre-1.0, flagged per repo convention):** gained an optional
+trailing `IEnumerable<IMeshUsageSource>? usageSources = null` parameter - source-compatible for
+direct construction, and container-resolvable the same way the existing optional `clock`
+parameter already is. Usage adapters register themselves as `IMeshUsageSource` alongside
+`AddMeshAggregator(...)`, the same additive pattern as extra `IMeshServiceSource`s.
+
 ## Composite AsyncAPI (`asyncapi.json`)
 Each run also fetches every service's own **AsyncAPI 3.0** document (the same `spec` endpoint's
 `type=asyncapi` — `IMeshServiceSource.TryFetchSpecAsync(entry, "asyncapi", ct)`, whose

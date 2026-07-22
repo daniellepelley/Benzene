@@ -40,6 +40,21 @@
 >   the fleet health vocabulary including the P2 staleness downgrade; the section hides itself
 >   when no edges can be derived. Fleet nodes are tooltip-only (no service page exists on this
 >   plane to link to).
+>
+> **2026-07-22 (P4 of the vision doc's roadmap): usage analytics on all three entity pages.**
+> `mesh-ui.html` now fetches `usage.json` (the aggregator's merge of every registered
+> `IMeshUsageSource` adapter's report - the full standard is `docs/mesh-usage-feed.md`) via the
+> same `resolveUrl()` precedence as the other artifacts. Sections, not a separate dashboard:
+> a **Usage column** on the estate's topics table (total observed messages per topic row, `–`
+> when unexercised), a **usage panel on the topic page** (total + window + per-source
+> attribution, chip rows split by transport and by status), and a **usage section on the service
+> page** directly under the functional map (the service's own entries when the feed attributes
+> per service; otherwise clearly-labeled fleet-wide counts for the topics it handles). The
+> degradation rules are normative: artifact absent → every usage surface hidden ("no feed
+> wired"); present with empty entries → the explicit "feed is wired, no traffic observed" state
+> (deprecation evidence, not an error); a dimension null across the panel's entries → a
+> data-quality footnote inside the panel naming the gap (findable, off the primary screen, fix is
+> adapter-side) - counts are never invented and a missing dimension is never guessed.
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the

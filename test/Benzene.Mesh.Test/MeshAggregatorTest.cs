@@ -755,6 +755,129 @@ public class MeshAggregatorTest : IDisposable
         }
     }
 
+    [Fact]
+    public async Task RunOnceAsync_NoUsageSources_PublishesNoUsageArtifact()
+    {
+        // usage.json's absence must keep meaning "no usage feed wired" - a run without any
+        // registered IMeshUsageSource never writes the artifact, so the UI hides its usage surfaces.
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store);
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Null(await store.TryReadAsync("usage.json"));
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_UsageSourceReports_PublishesUsageJson()
+    {
+        var at = new DateTimeOffset(2026, 7, 22, 9, 0, 0, TimeSpan.Zero);
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var report = new MeshUsage(at.AddMinutes(-1), at.AddDays(-1), at,
+            new[] { new MeshUsageEntry("orders:create", "v1", "orders-api", "Sqs", "Created", 42, 12.5, "stub") });
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, () => at,
+            new IMeshUsageSource[] { new StubUsageSource(report) });
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        var usage = JsonSerializer.Deserialize<MeshUsage>((await store.TryReadAsync("usage.json"))!, JsonOptions)!;
+        Assert.Equal(at, usage.GeneratedAtUtc); // the merged report is stamped by the run, not the source
+        Assert.Equal(at.AddDays(-1), usage.WindowStartUtc);
+        var entry = Assert.Single(usage.Entries);
+        Assert.Equal("orders:create", entry.Topic);
+        Assert.Equal("Sqs", entry.Transport);
+        Assert.Equal(42, entry.Count);
+        Assert.Equal("stub", entry.Source);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_MergesUsageSources_ConcatenatingEntriesAndWideningTheWindow()
+    {
+        var at = new DateTimeOffset(2026, 7, 22, 9, 0, 0, TimeSpan.Zero);
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var narrow = new MeshUsage(at, at.AddHours(-1), at,
+            new[] { new MeshUsageEntry("orders:create", null, null, "AspNet", "Created", 10, null, "a") });
+        var wide = new MeshUsage(at, at.AddDays(-2), at.AddHours(-2),
+            new[] { new MeshUsageEntry("orders:create", null, null, null, "Ok", 5, null, "b") });
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, () => at,
+            new IMeshUsageSource[] { new StubUsageSource(narrow), new StubUsageSource(wide) });
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        var usage = JsonSerializer.Deserialize<MeshUsage>((await store.TryReadAsync("usage.json"))!, JsonOptions)!;
+        Assert.Equal(at.AddDays(-2), usage.WindowStartUtc);
+        Assert.Equal(at, usage.WindowEndUtc);
+        Assert.Equal(2, usage.Entries.Length);
+        Assert.Equal(new[] { "a", "b" }, usage.Entries.Select(e => e.Source).OrderBy(s => s).ToArray());
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_ThrowingUsageSource_ContributesNothingWithoutFailingTheRun()
+    {
+        // The per-service fetch rule applies to usage adapters too: one broken backend loses its
+        // own entries, never the run, and never the other adapters' entries.
+        var at = new DateTimeOffset(2026, 7, 22, 9, 0, 0, TimeSpan.Zero);
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var good = new MeshUsage(at, null, null,
+            new[] { new MeshUsageEntry("orders:create", null, null, null, null, 7, null, "good") });
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, () => at,
+            new IMeshUsageSource[] { new StubUsageSource(new InvalidOperationException("backend down")), new StubUsageSource(good) });
+
+        var manifest = await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Equal(MeshServiceStatus.Healthy, Assert.Single(manifest.Services).Status);
+        var usage = JsonSerializer.Deserialize<MeshUsage>((await store.TryReadAsync("usage.json"))!, JsonOptions)!;
+        Assert.Equal("good", Assert.Single(usage.Entries).Source);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_AllUsageSourcesReturnNull_PublishesNoUsageArtifact()
+    {
+        // null from a source means "nothing to report this run"; if every source says so there is
+        // no report at all - distinct from a wired feed reporting an empty entries array.
+        var handler = new RoutingHttpMessageHandler()
+            .MapGet(SpecUrl, HttpStatusCode.OK, "{\"info\":{\"title\":\"orders-api\"}}")
+            .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, null,
+            new IMeshUsageSource[] { new StubUsageSource((MeshUsage?)null) });
+
+        await aggregator.RunOnceAsync(SingleServiceRegistry());
+
+        Assert.Null(await store.TryReadAsync("usage.json"));
+    }
+
+    private class StubUsageSource : IMeshUsageSource
+    {
+        private readonly MeshUsage? _report;
+        private readonly Exception? _exception;
+
+        public StubUsageSource(MeshUsage? report) => _report = report;
+
+        public StubUsageSource(Exception exception) => _exception = exception;
+
+        public Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default)
+        {
+            return _exception != null ? Task.FromException<MeshUsage?>(_exception) : Task.FromResult(_report);
+        }
+    }
+
     private class FakeMeshServiceSource : IMeshServiceSource
     {
         private readonly string _specJson;

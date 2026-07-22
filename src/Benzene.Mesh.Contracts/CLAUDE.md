@@ -69,6 +69,19 @@ data types - no HTTP, no file I/O, no execution logic.
   each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for a
   future "designed to call" derivation). Pure shapes only - actually populated by
   `Benzene.Mesh.Tracing.Tempo`, not by anything in this package.
+- `MeshUsage`/`MeshUsageEntry`/`IMeshUsageSource`/`MeshUsageSource` - the `usage.json` shape and
+  its adapter port (`docs/mesh-usage-feed.md`): observed per-topic message counts at whatever
+  dimensions the adapter's backend can supply — `Topic` required, `Version`/`Service`/`Transport`/
+  `Status` nullable (**null = "backend doesn't have this dimension", never "all"**), each entry
+  tagged with its own `Source` (the `TopologyEdge.Source` precedent, constants in
+  `MeshUsageSource`). Granularity rule: an entry is a count at exactly the dimensions it states,
+  entries from one source never overlap, consumers group over whichever stated dimensions they
+  need. `IMeshUsageSource.FetchUsageAsync` returning `null` means "nothing to report this run" —
+  distinct from an empty `Entries` array ("feed wired, no traffic observed"), which the
+  aggregator still publishes. The port lives here (not in the aggregator) for the same reason as
+  `IMeshReportPublisher`: an adapter depends on this package alone. First shipped implementation:
+  `Benzene.Mesh.Collector.CollectorUsageSource`; metrics-backend adapters (App Insights,
+  CloudWatch) ship as their own packages since they need their backend SDKs.
 - `MeshServiceStatus` - string constants `Healthy`/`Unhealthy`/`Unreachable`, mirroring
   `HealthCheckStatus`'s loose-string convention (not an enum).
 - `MeshHashing.ComputeHash(string json)` - the contract-drift hash. Deliberately reimplements

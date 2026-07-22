@@ -25,6 +25,17 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   per service ("descriptor"/"health"/"traces"); `hashMatches` surfaces an instance running a
   different contract than its registration; health is `healthy`/`degraded`/`unknown` from the
   latest heartbeats.
+- `CollectorUsageSource : Benzene.Mesh.Contracts.IMeshUsageSource` (2026-07-22) - the
+  collector→aggregator usage bridge, the "`IMeshArtifactStore` bridge to the aggregator pipeline"
+  extension point below made real for the usage feed (`docs/mesh-usage-feed.md`). Reports the
+  store's cumulative per-topic stats as one `MeshUsageEntry` per (topic, version, status), window
+  = since `MeshCollectorStore.StartedAtUtc` (in-memory stats are cumulative since process start).
+  `Transport`/`Service` are deliberately `null` - the trace wire shape carries no transport, and
+  per-status counts aren't attributed per handling service - so a collector-fed `usage.json`
+  exercises the UI's missing-dimension degradation path honestly rather than guessing. Register
+  it alongside `AddMeshAggregator` in a host that also runs the collector's handlers (they share
+  the singleton store). Never returns `null`: an idle collector is a wired feed with an empty
+  entries array, not an absent one. This added the package's `Benzene.Mesh.Contracts` reference.
 
 ## Important conventions
 - **Degradation is normative (spec §6, collector side)**: partial fleets are accepted and
@@ -42,5 +53,6 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
 
 ## Dependencies on other Benzene packages
 - **Benzene.Mesh.Wire** - the wire shapes it ingests.
+- **Benzene.Mesh.Contracts** - `IMeshUsageSource`/`MeshUsage` for `CollectorUsageSource`.
 - **Benzene.Core.MessageHandlers** / **Abstractions.MessageHandlers** - handler idiom.
 - **Benzene.Results** - statuses (the wire-contracts §3 success class drives error counting).

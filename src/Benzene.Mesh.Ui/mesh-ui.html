@@ -467,6 +467,13 @@
   .sp-topic-ver { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
   .sp-empty { color: var(--ink-faint); font-size: 12.5px; }
   .sp-edge-stats { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); margin-left: auto; white-space: nowrap; }
+  .usage-meta { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); margin: 2px 0 8px; }
+  .usage-chip-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+  .usage-dim { font-size: 12px; color: var(--ink-faint); min-width: 86px; }
+  .usage-count { font-family: var(--mono); font-weight: 600; }
+  .usage-note { color: var(--ink-faint); font-size: 12px; margin-top: 10px; max-width: 640px; }
+  .usage-h { font-weight: 600; }
+  .usage-topics { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -541,6 +548,7 @@
             <th>Consumers</th>
             <th>HTTP</th>
             <th>Status</th>
+            <th id="topics-usage-th" style="display:none" title="Observed messages handled in the usage feed's window (usage.json)">Usage</th>
           </tr>
         </thead>
         <tbody id="topics-tbody"></tbody>
@@ -1078,6 +1086,7 @@
     render();
     loadTopics();
     loadTopology();
+    loadUsage();
   }
 
   /* ---------- topics (cross-service catalog) ---------- */
@@ -1173,6 +1182,9 @@
     var body = document.getElementById("tp-body");
     body.innerHTML = "";
     versions.forEach(function (t) { body.appendChild(buildTopicPageVersionSection(t)); });
+
+    var usage = buildTopicUsageSection(topicId);
+    if (usage) body.appendChild(usage);
 
     showView("topic-page");
   }
@@ -1279,6 +1291,11 @@
     if (idSection.childNodes.length) body.appendChild(idSection);
 
     body.appendChild(buildServiceTopicsSection(name));
+
+    // Usage sits directly under the functional map: "what does it do" then "how much is it
+    // actually used" - the two questions the estate-comprehension product leads with.
+    var usageSection = buildServiceUsageSection(name);
+    if (usageSection) body.appendChild(usageSection);
 
     var about = el("div", "sp-section");
     about.appendChild(el("h2", null, "About & health"));
@@ -1621,11 +1638,12 @@
     });
     var tbody = document.getElementById("topics-tbody");
     tbody.innerHTML = "";
+    document.getElementById("topics-usage-th").style.display = currentUsage ? "" : "none";
 
     if (!rows.length) {
       var emptyRow = el("tr");
       var emptyCell = el("td", "topics-empty", q ? "No topics match “" + q + "”." : "No topics to show.");
-      emptyCell.colSpan = 7;
+      emptyCell.colSpan = currentUsage ? 8 : 7;
       emptyRow.appendChild(emptyCell);
       tbody.appendChild(emptyRow);
       return;
@@ -1688,11 +1706,172 @@
       }
       tr.appendChild(tdStatus);
 
+      if (currentUsage) {
+        var tdUsage = el("td");
+        var usageTotal = usageEntriesForTopic(t.topic, t.version || null)
+          .reduce(function (a, e) { return a + (e.count || 0); }, 0);
+        tdUsage.appendChild(usageTotal > 0
+          ? el("span", "usage-count", fmtCount(usageTotal))
+          : el("span", "t-empty", "–"));
+        tr.appendChild(tdUsage);
+      }
+
       tbody.appendChild(tr);
     });
   }
   document.getElementById("topics-show-utils").addEventListener("change", renderTopicRows);
   document.getElementById("topics-filter").addEventListener("input", renderTopicRows);
+
+  /* ---------- usage (observed traffic) ----------
+     usage.json is the aggregator's merge of every registered usage adapter's report - counts of
+     messages actually handled, per topic, at whatever dimensions (version/service/transport/
+     status) the adapter's backend could supply (docs/mesh-usage-feed.md). This is the signal the
+     structural catalog can't give: topics.json says a topic is *wired*, usage says it's *used*.
+     Absent artifact = no usage feed wired at all - every usage surface stays hidden. Present with
+     empty entries = feed wired, nothing observed - an explicit statement worth rendering. A
+     dimension that's null across the feed is a data gap to surface (in the section's footnote -
+     findable, but off the primary screen), never something to guess. */
+  var currentUsage = null;
+  function loadUsage() {
+    fetch(resolveUrl("usage.json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (u) {
+        currentUsage = (u && u.entries) ? u : null;
+        renderTopicRows();  // the estate table's Usage column joins once the feed loads
+        syncViewFromHash(); // an open topic/service page gains its usage section
+      })
+      .catch(function () { currentUsage = null; });
+  }
+
+  function usageEntriesForTopic(topicId, version) {
+    if (!currentUsage) return [];
+    return currentUsage.entries.filter(function (e) {
+      if (e.topic !== topicId) return false;
+      if (version === undefined || version === null) return true; // whole-topic ask
+      // A versionless entry (source can't discriminate versions) counts toward any version row.
+      return e.version == null || e.version === version;
+    });
+  }
+
+  function fmtCount(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+    return String(n);
+  }
+
+  /* Sums entries per distinct value of one dimension; null renders as "(unattributed)" so a
+     partially-dimensioned feed (some adapters carry transport, some don't) stays honest. */
+  function usageGroups(entries, dim) {
+    var sums = {}, order = [];
+    entries.forEach(function (e) {
+      var label = e[dim] == null ? "(unattributed)" : e[dim];
+      if (!(label in sums)) { sums[label] = 0; order.push(label); }
+      sums[label] += e.count || 0;
+    });
+    return order.map(function (k) { return { key: k, count: sums[k] }; })
+      .sort(function (a, b) { return b.count - a.count; });
+  }
+
+  function usageChipRow(label, groups) {
+    var row = el("div", "usage-chip-row");
+    row.appendChild(el("span", "usage-dim", label));
+    groups.forEach(function (g) {
+      var chip = el("span", "chip");
+      chip.appendChild(document.createTextNode(g.key + " "));
+      chip.appendChild(el("b", null, fmtCount(g.count)));
+      row.appendChild(chip);
+    });
+    return row;
+  }
+
+  function buildUsagePanel(entries, opts) {
+    var panel = el("div", "usage-panel");
+
+    var total = entries.reduce(function (a, e) { return a + (e.count || 0); }, 0);
+    var meta = [fmtCount(total) + " message" + (total === 1 ? "" : "s")];
+    var win = [];
+    if (currentUsage.windowStartUtc) win.push(String(currentUsage.windowStartUtc));
+    if (currentUsage.windowEndUtc) win.push(String(currentUsage.windowEndUtc));
+    if (win.length) meta.push("window " + win.join(" → "));
+    var sources = [];
+    (entries.length ? entries : currentUsage.entries).forEach(function (e) {
+      if (e.source && sources.indexOf(e.source) < 0) sources.push(e.source);
+    });
+    if (sources.length) meta.push("source: " + sources.join(", "));
+    panel.appendChild(el("div", "usage-meta", meta.join(" · ")));
+
+    if (!entries.length) {
+      panel.appendChild(el("div", "sp-empty", "The usage feed is wired, but no traffic was observed here in the window."));
+      return panel;
+    }
+
+    var hasTransport = entries.some(function (e) { return e.transport != null; });
+    var hasStatus = entries.some(function (e) { return e.status != null; });
+    if (hasTransport) panel.appendChild(usageChipRow("By transport", usageGroups(entries, "transport")));
+    if (hasStatus) panel.appendChild(usageChipRow("By status", usageGroups(entries, "status")));
+
+    if (opts && opts.perTopic) {
+      var box = el("div", "usage-topics");
+      usageGroups(entries, "topic").forEach(function (g) {
+        var row = el("div", "sp-topic-row");
+        row.appendChild(topicLink(g.key));
+        row.appendChild(el("span", "usage-count", fmtCount(g.count)));
+        box.appendChild(row);
+      });
+      panel.appendChild(box);
+    }
+
+    // The owner's degradation ruling: a missing dimension is surfaced as a visible data-quality
+    // note - findable, but a footnote rather than a primary-screen alarm - never silently
+    // pretended around. The fix is adapter-side (docs/mesh-usage-feed.md), not a UI setting.
+    var missing = [];
+    if (!hasTransport) missing.push("transport");
+    if (!entries.some(function (e) { return e.service != null; })) missing.push("per-service attribution");
+    if (!hasStatus) missing.push("status");
+    if (missing.length) {
+      panel.appendChild(el("div", "usage-note",
+        "⚠ This usage feed carries no " + missing.join(" or ") + " dimension" + (missing.length > 1 ? "s" : "")
+        + " — counts can't be split that way. A metrics-backend adapter reading the standard tags fills this in (see docs/mesh-usage-feed.md)."));
+    }
+    return panel;
+  }
+
+  function buildTopicUsageSection(topicId) {
+    if (!currentUsage) return null;
+    var block = el("div", "tp-version");
+    var head = el("div", "tp-version-head");
+    head.appendChild(el("span", "usage-h", "Usage"));
+    block.appendChild(head);
+    block.appendChild(buildUsagePanel(usageEntriesForTopic(topicId), {}));
+    return block;
+  }
+
+  function buildServiceUsageSection(name) {
+    if (!currentUsage) return null;
+    var section = el("div", "sp-section");
+    section.appendChild(el("h2", null, "Usage"));
+
+    var mine = currentUsage.entries.filter(function (e) { return e.service === name; });
+    var feedAttributesServices = currentUsage.entries.some(function (e) { return e.service != null; });
+    if (mine.length || feedAttributesServices) {
+      // Either this service's own counts, or a per-service-capable feed that saw nothing for it
+      // (the panel's explicit "wired, nothing observed" empty state - not the same as no feed).
+      section.appendChild(buildUsagePanel(mine, { perTopic: true }));
+      return section;
+    }
+
+    // The feed has no per-service dimension at all - fall back to fleet-wide counts for the
+    // topics this service handles, and say so rather than passing them off as its own.
+    var handled = {};
+    currentTopics.forEach(function (t) {
+      if ((t.consumers || []).some(function (s) { return s.service === name; })) handled[t.topic] = true;
+    });
+    var fleetWide = currentUsage.entries.filter(function (e) { return handled[e.topic]; });
+    section.appendChild(el("div", "usage-note",
+      "This usage feed doesn't attribute counts per service — showing fleet-wide counts for the topics " + name + " handles."));
+    section.appendChild(buildUsagePanel(fleetWide, { perTopic: true }));
+    return section;
+  }
 
   /* ---------- topology ---------- */
   function loadTopology() {

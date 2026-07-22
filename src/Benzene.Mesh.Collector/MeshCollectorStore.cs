@@ -29,6 +29,12 @@ public class MeshCollectorStore
         _ring = new List<MeshTraceEvent>(Math.Min(maxTraceEvents, 1024));
     }
 
+    /// <summary>
+    /// When this store started accumulating - the window start for anything reporting the
+    /// cumulative stats (storage is in-memory, so counts always cover "since process start").
+    /// </summary>
+    public DateTimeOffset StartedAtUtc { get; } = DateTimeOffset.UtcNow;
+
     private class ServiceState
     {
         public MeshServiceDescriptor? Descriptor;

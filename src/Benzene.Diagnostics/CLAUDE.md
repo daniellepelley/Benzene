@@ -49,6 +49,11 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
   This is the whole metrics surface — there is no configurable/extensible instrument set, no other
   built-in meters, and nothing is recorded unless you add this middleware. Export the `Meter` via
   `Benzene.OpenTelemetry`'s `AddBenzeneInstrumentation(MeterProviderBuilder)`.
+  These two instruments and their `topic`/`transport`/`result` tag set are also **the mesh usage
+  feed's metric metadata standard** (`docs/mesh-usage-feed.md`): backend adapters
+  (`Benzene.Mesh.Contracts.IMeshUsageSource`) read them out of whatever backend they were exported
+  to and feed the mesh's `usage.json` — so treat the instrument names and tag keys as a published
+  contract, not internals.
 
 ### Correlation
 - `ICorrelationId`/`CorrelationId`, `AddCorrelationId()`, `WithCorrelationId()` - a per-invocation

@@ -27,6 +27,7 @@ public class MeshAggregator
     private readonly IReadOnlyDictionary<string, IMeshServiceSource> _sources;
     private readonly IMeshArtifactStore _store;
     private readonly Func<DateTimeOffset> _clock;
+    private readonly IMeshUsageSource[] _usageSources;
 
     /// <summary>Initializes a new instance of the <see cref="MeshAggregator"/> class.</summary>
     /// <param name="sources">
@@ -37,11 +38,20 @@ public class MeshAggregator
     /// </param>
     /// <param name="store">Where generated catalog artifacts are published (and, for contract-drift comparison, read back from).</param>
     /// <param name="clock">Supplies the current time; defaults to <see cref="DateTimeOffset.UtcNow"/>. Overridable for deterministic tests.</param>
-    public MeshAggregator(IEnumerable<IMeshServiceSource> sources, IMeshArtifactStore store, Func<DateTimeOffset>? clock = null)
+    /// <param name="usageSources">
+    /// Every registered <see cref="IMeshUsageSource"/> (usage adapters - see
+    /// <c>docs/mesh-usage-feed.md</c>). Optional and empty by default: with none registered no
+    /// <c>usage.json</c> is ever published, so the artifact's absence keeps meaning "no usage feed
+    /// wired" to consumers.
+    /// </param>
+    public MeshAggregator(
+        IEnumerable<IMeshServiceSource> sources, IMeshArtifactStore store, Func<DateTimeOffset>? clock = null,
+        IEnumerable<IMeshUsageSource>? usageSources = null)
     {
         _sources = sources.ToDictionary(source => source.Key, StringComparer.OrdinalIgnoreCase);
         _store = store;
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
+        _usageSources = usageSources?.ToArray() ?? Array.Empty<IMeshUsageSource>();
     }
 
     /// <summary>
@@ -58,6 +68,8 @@ public class MeshAggregator
     public async Task<MeshManifest> RunOnceAsync(MeshServiceRegistry registry)
     {
         var entries = registry.Services;
+        // Usage adapters are polled concurrently with the services themselves - independent I/O.
+        var usageTask = FetchUsageAsync();
         var results = await Task.WhenAll(entries.Select(BuildServiceAsync));
 
         // Build every artifact's content first (cheap, in-memory), then publish them all concurrently.
@@ -93,9 +105,60 @@ public class MeshAggregator
         // endpoint) into one fleet-wide document loadable in an AsyncAPI editor.
         writes.Add(_store.PublishAsync("asyncapi.json", BuildCompositeAsyncApi(entries, results)));
 
+        // Observed usage (docs/mesh-usage-feed.md): published only when at least one registered
+        // IMeshUsageSource reported, so the artifact's absence still means "no usage feed wired"
+        // (the UI hides its usage sections) while an empty entries array means "feed wired, no
+        // traffic observed" - two different product statements.
+        var usage = await usageTask;
+        if (usage != null)
+        {
+            writes.Add(_store.PublishAsync("usage.json", JsonSerializer.Serialize(usage, JsonOptions)));
+        }
+
         await Task.WhenAll(writes);
 
         return manifest;
+    }
+
+    /// <summary>
+    /// Polls every registered usage adapter (bounded by <see cref="PerServiceFetchTimeout"/> each,
+    /// a throwing/timing-out source contributes nothing rather than failing the run - the same
+    /// rule as a service fetch) and merges the reports into one <see cref="MeshUsage"/>: entries
+    /// concatenated (each already carries its own <see cref="MeshUsageEntry.Source"/>), window
+    /// bounds widened to cover every report. Returns <c>null</c> when no source reported.
+    /// </summary>
+    private async Task<MeshUsage?> FetchUsageAsync()
+    {
+        if (_usageSources.Length == 0)
+        {
+            return null;
+        }
+
+        var reports = await Task.WhenAll(_usageSources.Select(FetchOneUsageAsync));
+        var available = reports.Where(report => report != null).Select(report => report!).ToArray();
+        if (available.Length == 0)
+        {
+            return null;
+        }
+
+        return new MeshUsage(
+            _clock(),
+            available.Select(report => report.WindowStartUtc).Min(),
+            available.Select(report => report.WindowEndUtc).Max(),
+            available.SelectMany(report => report.Entries).ToArray());
+    }
+
+    private async Task<MeshUsage?> FetchOneUsageAsync(IMeshUsageSource source)
+    {
+        using var cancellation = new CancellationTokenSource(PerServiceFetchTimeout);
+        try
+        {
+            return await source.FetchUsageAsync(cancellation.Token);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

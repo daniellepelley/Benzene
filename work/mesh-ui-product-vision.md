@@ -7,7 +7,44 @@
 
 ---
 
-> **2026-07-22 (latest) P3 SHIPPED — the topology graph, on both planes:**
+> **2026-07-22 (latest) P4 SHIPPED — usage analytics, and data requirement 1 closed:**
+> - **The C.1 usage feed now exists end to end.** The emission half turned out to already be
+>   shipped: `Benzene.Diagnostics`' `UseBenzeneMetrics()` emits `benzene.messages.processed` /
+>   `benzene.message.duration` per handled message, tagged `topic`/`transport`/`result` — exactly
+>   the owner's standard metadata set. That tag set is now documented as **the** metric metadata
+>   standard in `docs/mesh-usage-feed.md` and flagged as a published contract in the Diagnostics
+>   package docs. Per the owner's ruling it stays observability-side: no Cloud Service spec
+>   widening, no new required endpoints on any service.
+> - **Ingestion:** `MeshUsage`/`MeshUsageEntry` (`usage.json`) + the `IMeshUsageSource` port in
+>   `Benzene.Mesh.Contracts` (zero-I/O port, `IMeshReportPublisher` precedent — adapters depend
+>   on Contracts alone). `MeshAggregator` polls all registered sources per run (concurrent with
+>   the service polling, per-source 10s timeout, a throwing source never fails the run), merges
+>   reports (per-entry `source` attribution, `TopologyEdge` precedent) and publishes `usage.json`
+>   only when a source reported — absence still means "no feed wired", empty entries means "feed
+>   wired, nothing observed". Not a defined-but-produced-by-nothing contract: the first adapter
+>   ships too — `CollectorUsageSource` bridges a co-hosted collector's cumulative per-topic
+>   stats as (topic, version, status) entries, transport/service honestly absent (the trace wire
+>   shape has no transport; that dimension is the metrics-backend adapters' job — App Insights/
+>   CloudWatch adapters need their SDKs, so they ship as their own packages later).
+> - **UI (usage sections on all three entity pages, not a separate dashboard):** estate topics
+>   table gains a Usage column (`–` for unexercised topics); topic page gains a usage panel
+>   (total/window/source, split-by-transport and split-by-status chip rows); service page gains
+>   a Usage section directly under the functional map (service-attributed entries, or
+>   clearly-labeled fleet-wide counts for its topics when the feed can't attribute). Degradation
+>   per the owner's ruling: missing artifact hides everything; missing dimensions become a
+>   data-quality footnote inside the panel (findable, off the primary screen); an unexercised
+>   topic renders the explicit "feed wired, no traffic observed" state — which is precisely the
+>   deprecation evidence P5 will rank on.
+> - Verified: 8 new unit tests (aggregator merge/timeout/absence semantics, collector bridge
+>   dimensions) — 181 Mesh tests green — and 42 Playwright checks against the refreshed demo
+>   (which now ships a two-source `usage.json`: a transport-rich "cloudwatch" feed + a
+>   collector-shaped feed, so every degradation path is visible), zero console errors.
+> - Remaining roadmap: P5 value/deprecation view (usage + observed consumers + drift substance —
+>   data req. 2, drift substance, is now the only gating input), P6 discussion/annotations.
+>
+> ---
+>
+> **2026-07-22 (earlier) P3 SHIPPED — the topology graph, on both planes:**
 > - **Artifact plane (`mesh-ui.html`):** a node-link SVG graph now renders above the existing
 >   topology edge table (the table stays — the graph answers "what's the shape of the estate",
 >   the table answers "sort me by error rate"). Hand-rolled, self-contained SVG: deterministic
