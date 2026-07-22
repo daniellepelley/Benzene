@@ -293,7 +293,51 @@ public class MeshAggregator
             .ThenBy(x => x.Version, StringComparer.Ordinal)
             .ToArray();
 
-        return new MeshTopicCatalog(_clock(), topics);
+        var versionCompatibility = BuildVersionCompatibility(byTopic);
+
+        return new MeshTopicCatalog(_clock(), topics, versionCompatibility: versionCompatibility);
+    }
+
+    /// <summary>
+    /// Reconciles, per non-reserved topic id, the set of versions the fleet produces (spec <c>events</c>)
+    /// against the set it consumes (spec <c>requests</c>) - the cross-version compatibility view. Only topics
+    /// with more than one version in play, or an outright skew, get an entry (a single-version topic has no
+    /// compatibility question). A version produced but consumed nowhere is the load-bearing signal (an
+    /// upcaster on the consumer may still bridge it - see <see cref="MeshTopicVersionCompatibility"/>).
+    /// </summary>
+    private static MeshTopicVersionCompatibility[] BuildVersionCompatibility(
+        Dictionary<(string Topic, string Version), TopicAggregate> byTopic)
+    {
+        return byTopic
+            .Where(kvp => !kvp.Value.Reserved)
+            .GroupBy(kvp => kvp.Key.Topic)
+            .Select(group =>
+            {
+                var produced = group.Where(kvp => kvp.Value.Producers.Count > 0)
+                    .Select(kvp => kvp.Key.Version).Distinct().OrderBy(v => v, StringComparer.Ordinal).ToArray();
+                var consumed = group.Where(kvp => kvp.Value.Consumers.Count > 0)
+                    .Select(kvp => kvp.Key.Version).Distinct().OrderBy(v => v, StringComparer.Ordinal).ToArray();
+
+                var distinctVersions = produced.Union(consumed).Count();
+
+                // Only a topic that actually exists at more than one version has a version-compatibility
+                // question. A single-version topic with a producer- or consumer-side gap is the domain of the
+                // per-entry Status (gap / deprecation-candidate), not this cross-version view - and an
+                // unversioned HTTP topic (version "") with an external producer must not read as a skew here.
+                if (distinctVersions <= 1)
+                {
+                    return null;
+                }
+
+                var producedNotConsumed = produced.Except(consumed).OrderBy(v => v, StringComparer.Ordinal).ToArray();
+                var consumedNotProduced = consumed.Except(produced).OrderBy(v => v, StringComparer.Ordinal).ToArray();
+
+                return new MeshTopicVersionCompatibility(group.Key, produced, consumed, producedNotConsumed, consumedNotProduced);
+            })
+            .Where(x => x != null)
+            .Select(x => x!)
+            .OrderBy(x => x.Topic, StringComparer.Ordinal)
+            .ToArray();
     }
 
     /// <summary>
@@ -343,7 +387,8 @@ public class MeshAggregator
             .ThenBy(entry => entry.Version, StringComparer.Ordinal)
             .ToArray();
 
-        return new MeshTopicCatalog(catalog.GeneratedAtUtc, topics, removed);
+        // Version compatibility is derived from the current fleet, not the diff - carry it through unchanged.
+        return new MeshTopicCatalog(catalog.GeneratedAtUtc, topics, removed, catalog.VersionCompatibility);
     }
 
     private static MeshTopicEntry DiffTopicEntry(

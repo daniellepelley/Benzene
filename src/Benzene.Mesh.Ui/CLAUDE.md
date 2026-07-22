@@ -136,6 +136,20 @@
 > - **Follow-ups (not in this cut):** the host `UseTestPayloads()` introspect-and-dress endpoint +
 >   the runtime-clean core / `Benzene.*.TestPayloads.Aws` package split (`work/runtime-test-payloads-
 >   plan.md`), Azure transport dressing, and the feature-detected fetch of host-dressed payloads.
+>
+> **2026-07-22 (F3b-revised case 2a: Spec-UI "Try it" deep-link — the §10.7-clean live-HTTP answer).**
+> Each service's link row (estate card + service page) gains a **"try it ↗"** deep-link to the
+> service's **own** Spec UI (`specUiTryItHref` → the service origin's `/spec-ui`, `UseSpecUi()`'s
+> default path, derived from `specUrl`'s origin). The live send is the service's *own same-origin*
+> "Try it" (`Benzene.Spec.Ui`) — **the mesh never calls the service itself**, so this needs no §10.7
+> exception (§10.7 explicitly blesses live dispatch scoped to a service's own self-hosted Spec UI).
+> Gated behind the **same compose toggle** as the payload composer (`composeEnabled()` — a live-
+> testing affordance, off in a production deploy by default) and shown only for HTTP-reachable
+> services (`svcIsHttpReachable`: `transports` includes `http`, or an older manifest with no transport
+> info, best-effort). `safeHttpUrl`-validated. It requires the target service to host its own Spec UI
+> (optional today; recommended as part of the service standard — a docs follow-up). Queue/stream
+> transports stay F3a compose+copy only; the Lambda direct-invoke (browser-can't-`Invoke`) host-proxy
+> path is the separate, gated F3b case (1).
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
@@ -209,8 +223,10 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   lazily fetches that service's `services/{name}.json` (resolved relative to the manifest's own
   URL, via `resolveUrl()`) and renders its health-check detail: per check, its name, `type`, a
   status badge (`ok`/`warning`/`failed` via `checkBadgeClass` - `warning` is a distinct amber tier
-  from `failed`'s red, mirroring the `Benzene.HealthChecks.Core` model where a 401/403 permission
-  blip degrades to `warning`, not `failed`), and dependency chips. For any **non-ok** check it also
+  from `failed`'s red, mirroring the `Benzene.HealthChecks.Core` model where a degraded but non-fatal
+  signal — contract drift, or a non-critical dependency blip — reports `warning`, not `failed`; note a
+  401/403 permission failure is *not* a warning but a persistent `failed`, a deterministic IAM
+  misconfiguration), and dependency chips. For any **non-ok** check it also
   renders the check's `data` bag as a key/value **root-cause** block - the "why" behind the
   warning/failure (e.g. `Error`/`ErrorCode`/`StatusCode` from the shared classification policy) - so
   a reader doesn't have to leave the mesh to find out what's wrong. An ok check stays a single clean

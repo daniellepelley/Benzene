@@ -63,7 +63,7 @@ public class RabbitMqHealthCheckTest
     }
 
     [Fact]
-    public async Task ExecuteAsync_AccessRefused_DegradesToWarning()
+    public async Task ExecuteAsync_AccessRefused_IsPersistentFailure()
     {
         var channel = ChannelMock();
         channel.Setup(x => x.QueueDeclarePassiveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -72,7 +72,8 @@ public class RabbitMqHealthCheckTest
         var result = await new RabbitMqHealthCheck(ProviderWith(channel), "orders").ExecuteAsync();
 
         // AMQP 403 access-refused is a permission problem: Warning, not a failure (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal(403, result.Data["StatusCode"]);
     }
 

@@ -50,6 +50,20 @@ public class HealthCheckResult : IHealthCheckResult
         return new HealthCheckResult(success ? HealthCheckStatus.Ok : HealthCheckStatus.Failed, type, data, dependencies);
     }
 
+    /// <summary>
+    /// Creates a <b>persistent</b> <see cref="HealthCheckStatus.Failed"/> result with diagnostic data and
+    /// dependency metadata - a deterministic fault (e.g. an authorization denial) that will not self-heal,
+    /// so it is <b>not</b> softened by the non-critical downgrade (§3.4) and surfaces as unhealthy even for
+    /// a dependency-category check. See <see cref="IHealthCheckResult.IsPersistent"/>.
+    /// </summary>
+    /// <param name="type">The check's identifier.</param>
+    /// <param name="data">Diagnostic details to include in the result.</param>
+    /// <param name="dependencies">The external dependencies this check verifies.</param>
+    public static IHealthCheckResult CreatePersistentFailure(string type, IDictionary<string, object> data, HealthCheckDependency[] dependencies)
+    {
+        return new HealthCheckResult(HealthCheckStatus.Failed, type, data, dependencies, isPersistent: true);
+    }
+
     /// <summary>Creates a <see cref="HealthCheckStatus.Warning"/> result with no diagnostic data - a degraded-but-not-failed outcome that does not flip an aggregated response's <c>IsHealthy</c> to <c>false</c>.</summary>
     /// <param name="type">The check's identifier.</param>
     public static IHealthCheckResult CreateWarning(string type)
@@ -79,18 +93,21 @@ public class HealthCheckResult : IHealthCheckResult
     /// <param name="type">The check's identifier.</param>
     /// <param name="data">Diagnostic details to include in the result.</param>
     /// <param name="dependencies">The external dependencies this check verifies. Defaults to none.</param>
+    /// <param name="duration">How long the check took to run. Defaults to <see cref="TimeSpan.Zero"/>.</param>
+    /// <param name="isPersistent">Whether a <see cref="HealthCheckStatus.Failed"/> result is a persistent, deterministic fault (see <see cref="IHealthCheckResult.IsPersistent"/>). Defaults to <c>false</c>.</param>
     /// <remarks>
-    /// A single constructor with an optional parameter, rather than an overload, so reflection-based
+    /// A single constructor with optional parameters, rather than overloads, so reflection-based
     /// deserializers (e.g. <c>Newtonsoft.Json</c>, which requires exactly one constructor to bind to
     /// when a type has no default constructor) keep working unambiguously.
     /// </remarks>
-    public HealthCheckResult(string status, string type, IDictionary<string, object> data, HealthCheckDependency[]? dependencies = null, TimeSpan duration = default)
+    public HealthCheckResult(string status, string type, IDictionary<string, object> data, HealthCheckDependency[]? dependencies = null, TimeSpan duration = default, bool isPersistent = false)
     {
         Status = status;
         Type = type;
         Data = data;
         Dependencies = dependencies ?? Array.Empty<HealthCheckDependency>();
         Duration = duration;
+        IsPersistent = isPersistent;
     }
 
     /// <inheritdoc />
@@ -107,4 +124,7 @@ public class HealthCheckResult : IHealthCheckResult
 
     /// <inheritdoc />
     public TimeSpan Duration { get; }
+
+    /// <inheritdoc />
+    public bool IsPersistent { get; }
 }

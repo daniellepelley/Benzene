@@ -3,9 +3,11 @@ using Benzene.CloudService;
 using Benzene.Clients.HealthChecks;
 using Benzene.Examples.Mesh.OrdersService.Clients;
 using Benzene.Examples.Mesh.OrdersService.HealthChecks;
+using Benzene.Examples.Mesh.OrdersService.Model;
 using Benzene.HealthChecks;
 using Benzene.Http.Routing;
 using Benzene.Microsoft.Dependencies;
+using Benzene.ResponseEvents;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +23,13 @@ public class Startup
             // ASP.NET wiring pattern from docs/kubernetes-health-checks.md.
             .AddSingleton<PaymentsContractClient>(_ => new PaymentsContractClient())
             .AddSingleton<IHttpEndpointDefinition>(_ =>
-                new HttpEndpointDefinition("GET", "/contracts", Constants.DefaultContractsTopic)));
+                new HttpEndpointDefinition("GET", "/contracts", Constants.DefaultContractsTopic))
+            // orders-api is pinned to payments:get v1 while payments-api's handler has moved to v2.
+            // Declaring the produced event (spec `events`) puts a payments:get@1 producer in the fleet, so
+            // the mesh's version compatibility view shows the skew (produced v1, consumed v2) - bridged at
+            // runtime by payments-api's upcaster, which the mesh can't see. See versioning.md.
+            .AddResponseEventDeclarations(
+                new ResponseEventDefinition(new Benzene.Core.Messages.Topic("payments:get", "1"), typeof(PaymentsQueryV1))));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

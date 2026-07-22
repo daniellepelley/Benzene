@@ -399,6 +399,24 @@
     border-radius: var(--radius-sm); padding: 10px 13px; font-size: 12.5px; line-height: 1.5; margin-bottom: 16px;
   }
 
+  /* ---------- version compatibility panel (topic page) ---------- */
+  .tp-compat {
+    border: 1px solid var(--line-soft); border-radius: var(--radius-sm); padding: 13px 15px; margin-bottom: 18px;
+    background: var(--sunken);
+  }
+  .tp-compat h2 { margin: 0 0 8px; font-size: 14px; }
+  .tp-compat-skew { border-color: var(--m-put); background: var(--m-put-bg); }
+  .tp-compat-lead { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); margin-bottom: 12px; }
+  .vc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 4px; }
+  @media (max-width: 720px) { .vc-grid { grid-template-columns: 1fr; } }
+  .vc-cell { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
+  .vc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint); width: 100%; }
+  .vc-ver { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--chip-bg); border: 1px solid var(--line-soft); }
+  .vc-issue { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; margin-top: 10px; font-size: 12px; }
+  .vc-issue-label { font-weight: 620; color: var(--ink-soft); }
+  .vc-issue-bad .vc-issue-label { color: var(--m-put); }
+  .vc-issue-bad .vc-ver { border-color: var(--m-put); color: var(--m-put); }
+
   /* ---------- schema tree (mirrors Benzene.Spec.Ui's spec-ui.html) ---------- */
   .schema { background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
   .schema.empty { padding: 11px 14px; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; }
@@ -809,8 +827,10 @@
     return { healthy: "b-healthy", unhealthy: "b-unhealthy", unreachable: "b-unreachable" }[status] || "b-unhealthy";
   }
   /* A per-check status uses its own vocabulary (ok/warning/failed) - warning is a real, distinct tier
-     from failed (a 401/403 permission blip degrades to warning, not failed), so give it its own amber
-     badge rather than folding it into the service-level "unhealthy" fallback. */
+     from failed (e.g. contract drift, or a non-critical dependency degraded rather than de-serviced),
+     so give it its own amber badge rather than folding it into the service-level "unhealthy" fallback.
+     Note: a 401/403 permission failure is NOT a warning - it's a persistent failed (deterministic IAM
+     misconfiguration), so it renders red. */
   function checkBadgeClass(status) {
     return { ok: "b-healthy", warning: "b-warning", failed: "b-failed" }[status] || "b-warning";
   }
@@ -849,6 +869,37 @@
       var u = new URL(raw, location.href);
       return (u.protocol === "http:" || u.protocol === "https:") ? u.href : null;
     } catch (e) { return null; }
+  }
+
+  /* F3b-revised (2a) - the §10.7-clean live-HTTP answer. Rather than the mesh calling a service
+     cross-origin itself, it deep-links out to the service's OWN Spec UI, whose "Try it" POSTs
+     same-origin to that service (see Benzene.Spec.Ui). The Spec UI lives at the service origin's
+     /spec-ui when it hosts UseSpecUi() (that extension's default path); derived from specUrl's
+     origin, best-effort (null when specUrl is missing/unsafe). Requires the service to host its
+     own Spec UI - recommended as part of the service standard, but optional today. */
+  function specUiTryItHref(svc) {
+    var specHref = (svc && svc.specUrl) ? safeHttpUrl(svc.specUrl) : null;
+    if (!specHref) return null;
+    try { return new URL(specHref).origin + "/spec-ui"; } catch (e) { return null; }
+  }
+  function svcIsHttpReachable(svc) {
+    var t = (svc && svc.transports) || [];
+    for (var i = 0; i < t.length; i++) { if (String(t[i]).toLowerCase() === "http") return true; }
+    return t.length === 0; // older manifests carry no transport info - show best-effort
+  }
+  /* Appends the "try it" deep-link to a service's link row. Gated behind the same compose toggle as
+     the payload composer (a live-testing affordance, off in a production deploy by default) and only
+     for HTTP-reachable services. It's just an outbound link to the service's own same-origin Spec UI -
+     the mesh never calls the service itself, so it needs no §10.7 exception. */
+  function appendTryItLink(links, svc) {
+    if (!composeEnabled() || !svcIsHttpReachable(svc)) return;
+    var href = specUiTryItHref(svc);
+    if (!href) return;
+    var a = el("a", null, "try it ↗");
+    a.href = href; a.target = "_blank"; a.rel = "noopener";
+    a.title = "Open this service's own Spec UI to send a live test request (its same-origin “Try it”). Requires the service to host UseSpecUi().";
+    a.addEventListener("click", function (e) { e.stopPropagation(); });
+    links.appendChild(a);
   }
 
   /* ---------- render ---------- */
@@ -1043,6 +1094,7 @@
     if (specHref) { var aRaw = el("a", null, "raw"); aRaw.href = specHref; aRaw.target = "_blank"; aRaw.rel = "noopener"; aRaw.title = "The service's raw spec JSON (the Cloud Service contract)"; aRaw.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(aRaw); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
+    appendTryItLink(links, svc);
     var a4 = el("button", "svc-topics-link", "topics");
     a4.type = "button";
     a4.title = "Find topics " + svc.name + " produces or consumes";
@@ -1229,6 +1281,7 @@
 
   /* ---------- topics (cross-service catalog) ---------- */
   var currentTopics = [];
+  var currentTopicVersionCompatibility = [];
   function loadTopics() {
     fetch(resolveUrl("topics.json"), { headers: { accept: "application/json" } })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -1238,6 +1291,7 @@
   function renderTopics(cat) {
     currentTopics = (cat && cat.topics) || [];
     currentRemovedTopics = (cat && cat.removedTopics) || [];
+    currentTopicVersionCompatibility = (cat && cat.versionCompatibility) || [];
     var section = document.getElementById("topics-section");
     if (!currentTopics.length) { section.style.display = "none"; return; }
     section.style.display = "";
@@ -1330,6 +1384,10 @@
       composeBar.appendChild(cbtn);
       body.appendChild(composeBar);
     }
+
+    var compat = buildVersionCompatibilitySection(topicId);
+    if (compat) body.appendChild(compat);
+
     versions.forEach(function (t) { body.appendChild(buildTopicPageVersionSection(t)); });
 
     var usage = buildTopicUsageSection(topicId);
@@ -1638,6 +1696,7 @@
     if (specHref) { var a3 = el("a", null, "raw"); a3.href = specHref; a3.target = "_blank"; a3.rel = "noopener"; a3.title = "The service's raw spec JSON (the Cloud Service contract)"; links.appendChild(a3); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; links.appendChild(a2); }
+    appendTryItLink(links, svc);
     if (links.childNodes.length) idSection.appendChild(links);
     if (idSection.childNodes.length) body.appendChild(idSection);
 
@@ -1903,6 +1962,56 @@
       io.appendChild(renderSchemaTree(part[1], 0));
       wrap.appendChild(io);
     });
+    return wrap;
+  }
+
+  /* Cross-version compatibility: for a topic that exists at more than one version, the aggregator
+     reconciles which versions the fleet PRODUCES against which it CONSUMES (topics.json
+     versionCompatibility). A version produced but handled by no service is the load-bearing signal
+     - a forward-compatibility risk - with the honest caveat that an upcaster on the consumer (which
+     the mesh can't see) may bridge it. Rendered above the per-version sections. */
+  function versionChips(box, versions) {
+    if (!versions || !versions.length) { box.appendChild(el("span", "d", "none")); return; }
+    versions.forEach(function (v) { box.appendChild(el("span", "mono vc-ver", v || "unversioned")); });
+  }
+
+  function buildVersionCompatibilitySection(topicId) {
+    var vc = currentTopicVersionCompatibility.filter(function (v) { return v.topic === topicId; })[0];
+    if (!vc) return null;
+
+    var wrap = el("div", "tp-compat" + (vc.isCompatible ? "" : " tp-compat-skew"));
+    wrap.appendChild(el("h2", null, "Version compatibility"));
+
+    var lead = vc.isCompatible
+      ? "Every version produced in the fleet has a matching consumer."
+      : "⚠ A version is produced that no service handles at that version — a forward-compatibility risk. "
+        + "Confirm an upcaster on the consumer bridges it (upcasters aren't visible to the mesh).";
+    wrap.appendChild(el("div", "tp-compat-lead", lead));
+
+    var grid = el("div", "vc-grid");
+    var produced = el("div", "vc-cell");
+    produced.appendChild(el("div", "vc-label", "Produced"));
+    versionChips(produced, vc.producedVersions);
+    grid.appendChild(produced);
+
+    var consumed = el("div", "vc-cell");
+    consumed.appendChild(el("div", "vc-label", "Consumed"));
+    versionChips(consumed, vc.consumedVersions);
+    grid.appendChild(consumed);
+    wrap.appendChild(grid);
+
+    if (vc.producedNotConsumed && vc.producedNotConsumed.length) {
+      var pnc = el("div", "vc-issue vc-issue-bad");
+      pnc.appendChild(el("span", "vc-issue-label", "Produced, not consumed:"));
+      versionChips(pnc, vc.producedNotConsumed);
+      wrap.appendChild(pnc);
+    }
+    if (vc.consumedNotProduced && vc.consumedNotProduced.length) {
+      var cnp = el("div", "vc-issue");
+      cnp.appendChild(el("span", "vc-issue-label", "Consumed, not produced:"));
+      versionChips(cnp, vc.consumedNotProduced);
+      wrap.appendChild(cnp);
+    }
     return wrap;
   }
 

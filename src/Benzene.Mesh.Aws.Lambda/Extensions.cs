@@ -2,6 +2,7 @@ using Amazon.Lambda;
 using Benzene.Abstractions.DI;
 using Benzene.Clients.Aws.Lambda;
 using Benzene.Mesh.Aggregator;
+using Benzene.Mesh.Dispatch;
 
 namespace Benzene.Mesh.Aws.Lambda;
 
@@ -33,6 +34,24 @@ public static class Extensions
         // AWS client is only built the first time a service with Source=AwsLambdaInvoke is fetched.
         services.AddSingleton<IMeshServiceSource>(resolver =>
             new LambdaMeshServiceSource(new Lazy<IAwsLambdaClient>(resolver.GetService<IAwsLambdaClient>)));
+        return services;
+    }
+
+    /// <summary>
+    /// Registers <see cref="AwsLambdaMeshServiceDispatcher"/> (as an additional
+    /// <c>Benzene.Mesh.Dispatch.IMeshServiceDispatcher</c>) so the opt-in <c>mesh:dispatch</c> handler can
+    /// invoke AWS-Lambda services (<c>Source == AwsLambdaInvoke</c>). Reuses the same lazily-built
+    /// <see cref="IAwsLambdaClient"/> / <c>lambda:InvokeFunction</c> grant as <see cref="AddMeshLambdaSource"/>;
+    /// safe to call alongside it (the client registrations are idempotent via TryAdd).
+    /// </summary>
+    /// <param name="services">The service container to register with.</param>
+    /// <returns>The service container for method chaining.</returns>
+    public static IBenzeneServiceContainer AddMeshLambdaDispatcher(this IBenzeneServiceContainer services)
+    {
+        services.TryAddSingleton<IAmazonLambda>(_ => new AmazonLambdaClient());
+        services.TryAddSingleton<IAwsLambdaClient>(resolver => new AwsLambdaClient(resolver.GetService<IAmazonLambda>()));
+        services.AddSingleton<IMeshServiceDispatcher>(resolver =>
+            new AwsLambdaMeshServiceDispatcher(new Lazy<IAwsLambdaClient>(resolver.GetService<IAwsLambdaClient>)));
         return services;
     }
 }

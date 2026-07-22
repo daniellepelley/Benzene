@@ -3,6 +3,7 @@ using Benzene.Core.MessageHandlers;
 using Benzene.Mesh.Aggregator;
 using Benzene.Mesh.Aws.Lambda;
 using Benzene.Mesh.Contracts;
+using Benzene.Mesh.Dispatch;
 using Benzene.Mesh.Ui;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.AspNetCore.Builder;
@@ -43,12 +44,23 @@ public class Startup
         services.AddSingleton(_config);
         services.AddHostedService<MeshPollBackgroundService>();
 
-        services.UsingBenzene(x => x
-            .AddMeshAggregator(_registry, _config.ArtifactRootDirectory)
-            // Optional per entry - only actually used if a service's Source is AwsLambdaInvoke.
-            // Registering it unconditionally is harmless: constructing an AmazonLambdaClient
-            // doesn't require valid AWS credentials up front, only an actual Invoke call would.
-            .AddMeshLambdaSource());
+        services.UsingBenzene(x =>
+        {
+            x.AddMeshAggregator(_registry, _config.ArtifactRootDirectory)
+                // Optional per entry - only actually used if a service's Source is AwsLambdaInvoke.
+                // Registering it unconditionally is harmless: constructing an AmazonLambdaClient
+                // doesn't require valid AWS credentials up front, only an actual Invoke call would.
+                .AddMeshLambdaSource();
+
+            // Live dispatch is OFF unless explicitly opted in (it invokes services' real handlers).
+            // When enabled, the registry (the set of dispatchable services) and the AWS-Lambda
+            // dispatcher are registered; the mesh:dispatch handler itself is wired in Configure().
+            if (_config.EnableDispatch)
+            {
+                x.AddSingleton(_registry);
+                x.AddMeshLambdaDispatcher();
+            }
+        });
     }
 
     /// <summary>Configures the request pipeline.</summary>
@@ -67,10 +79,18 @@ public class Startup
         });
 
         app.UseBenzene(benzene => benzene
-            .UseHttp(asp => asp
-                .UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json")
-                .UseMessageHandlers()
-            )
+            .UseHttp(asp =>
+            {
+                asp.UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json");
+                // Opt-in live dispatch (mesh:dispatch). Off by default; even when on it self-refuses in
+                // Production unless DispatchAllowInProduction is also set - a real handler runs.
+                if (_config.EnableDispatch)
+                {
+                    asp.UseMeshDispatch(new MeshDispatchOptions { AllowInProduction = _config.DispatchAllowInProduction });
+                }
+
+                asp.UseMessageHandlers();
+            })
         );
 
         app.UseEndpoints(endpoints => { });

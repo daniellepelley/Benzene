@@ -15,7 +15,9 @@ namespace Benzene.HealthChecks;
 /// checks share (or omit) a <see cref="IHealthCheck.Type"/>. Per-check overrides are honoured: a check's
 /// <see cref="IHealthCheck.Timeout"/> replaces the processor-wide timeout, and a non-critical check
 /// (<see cref="IHealthCheck.IsNonCritical"/> == <c>true</c>) has a <see cref="HealthCheckStatus.Failed"/>
-/// result downgraded to <see cref="HealthCheckStatus.Warning"/> so it never flips the probe unhealthy.
+/// result downgraded to <see cref="HealthCheckStatus.Warning"/> so it never flips the probe unhealthy -
+/// <em>unless</em> that failure is persistent (<see cref="IHealthCheckResult.IsPersistent"/>, e.g. an
+/// authorization denial), which escapes the downgrade and stays <see cref="HealthCheckStatus.Failed"/>.
 /// </summary>
 public class HealthCheckProcessor : IHealthCheckProcessor
 {
@@ -59,14 +61,17 @@ public class HealthCheckProcessor : IHealthCheckProcessor
         var result = await check.ExecuteAsync();
         stopwatch.Stop();
 
-        // A non-critical check (IHealthCheck.IsNonCritical == true) never flips the probe unhealthy: a
-        // Failed result is downgraded to Warning so a non-critical dependency being down degrades the
-        // instance rather than taking it out of service (§3.4).
-        var status = result.Status == HealthCheckStatus.Failed && healthCheck.IsNonCritical
+        // A non-critical check (IHealthCheck.IsNonCritical == true) normally never flips the probe
+        // unhealthy: a Failed result is downgraded to Warning so a non-critical dependency being down
+        // degrades the instance rather than taking it out of service (§3.4). The exception is a
+        // *persistent* failure (IHealthCheckResult.IsPersistent) - a deterministic fault like an
+        // authorization denial that won't self-heal - which escapes the downgrade and stays Failed, so a
+        // real misconfiguration surfaces as unhealthy on the deep layer rather than sitting yellow forever.
+        var status = result.Status == HealthCheckStatus.Failed && healthCheck.IsNonCritical && !result.IsPersistent
             ? HealthCheckStatus.Warning
             : result.Status;
 
-        return new HealthCheckResult(status, result.Type, result.Data, result.Dependencies, stopwatch.Elapsed);
+        return new HealthCheckResult(status, result.Type, result.Data, result.Dependencies, stopwatch.Elapsed, result.IsPersistent);
     }
 
     /// <summary>

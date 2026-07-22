@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Benzene.Mesh.Aggregator\Benzene.Mesh.Aggregator.csproj" />
     <ProjectReference Include="..\Benzene.Clients.Aws\Benzene.Clients.Aws.csproj" />
+    <ProjectReference Include="..\Benzene.Mesh.Dispatch\Benzene.Mesh.Dispatch.csproj" />
   </ItemGroup>
 
 </Project>

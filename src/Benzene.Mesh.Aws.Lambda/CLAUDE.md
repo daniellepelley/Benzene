@@ -24,6 +24,13 @@ in `work/service-mesh-roadmap-1.0.md`'s 2026-07-15 update. A focused adapter pac
   not register `IMeshArtifactStore`/`MeshAggregator`** - requires
   `Benzene.Mesh.Aggregator.Extensions.AddMeshAggregator(...)` already registered in the same
   container, same prerequisite shape as `Benzene.Mesh.Tracing.Tempo.AddTempoTopology`.
+- `AwsLambdaMeshServiceDispatcher : Benzene.Mesh.Dispatch.IMeshServiceDispatcher` +
+  `Extensions.AddMeshLambdaDispatcher()` - the **write-side** counterpart of `LambdaMeshServiceSource`,
+  for the opt-in live-dispatch feature (`Benzene.Mesh.Dispatch`). Sends a caller-chosen topic/body to a
+  service via the **same** `IAwsLambdaClient` / `lambda:InvokeFunction` grant this source already uses to
+  read spec/health (the client registrations are shared, idempotent via `TryAdd`, so it's safe to call
+  alongside `AddMeshLambdaSource()`). This is why direct-invoke reuses an existing access path rather
+  than a new grant - the §10.7 premise. Requires `SourceOptions["functionName"]`, same as the source.
 
 ## Why this reuses `Benzene.Clients.Aws.Lambda.IAwsLambdaClient` instead of building a new client
 `IAwsLambdaClient`/`AwsLambdaClient` already exist and already wrap `IAmazonLambda.InvokeAsync`

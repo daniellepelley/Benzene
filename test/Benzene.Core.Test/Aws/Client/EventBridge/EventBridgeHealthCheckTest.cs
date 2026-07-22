@@ -59,7 +59,7 @@ public class EventBridgeHealthCheckTest
     }
 
     [Fact]
-    public async Task ExecuteAsync_PermissionDenied_DegradesToWarning_AndSurfacesTheDiscriminators()
+    public async Task ExecuteAsync_PermissionDenied_IsPersistentFailure_AndSurfacesTheDiscriminators()
     {
         var mock = new Mock<IAmazonEventBridge>();
         mock.Setup(x => x.DescribeEventBusAsync(It.IsAny<DescribeEventBusRequest>(), It.IsAny<CancellationToken>()))
@@ -72,7 +72,8 @@ public class EventBridgeHealthCheckTest
         var result = await new EventBridgeHealthCheck(mock.Object).ExecuteAsync();
 
         // Lacking events:DescribeEventBus is a Warning, not a failure (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("AccessDeniedException", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
     }

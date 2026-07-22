@@ -43,8 +43,9 @@ a Benzene middleware pipeline over a `Grpc.Net.Client.GrpcChannel`. Mirrors the 
 - `GrpcHealthCheck` - verifies **transport reachability** to the channel's target with
   `GrpcChannel.ConnectAsync` (opens the HTTP/2 connection, no application RPC — non-destructive). `Type =
   "Grpc"`, dependency `("Grpc", channel.Target)`. An unreachable target surfaces as a `ConnectAsync`
-  timeout → Failed; an `RpcException` is classified by its gRPC status (`PermissionDenied`/
-  `Unauthenticated` → Warning) via `HealthCheckError.Classify`.
+  timeout → transient Failed; an `RpcException` is classified by its gRPC status (`PermissionDenied`/
+  `Unauthenticated` → a **persistent `Failed`**, surfacing as unhealthy rather than being softened to a
+  Warning) via `HealthCheckError.Classify`.
   - **Auto-wired (Phase 4, default-on):** `AddGrpcClient(configureRoutes, healthCheck: true)` registers
     it on the **dependency** category (deep `healthcheck` layer only — never a probe; see
     `IDependencyHealthCheck`), resolving the caller's registered `GrpcChannel`. `healthCheck: false` opts

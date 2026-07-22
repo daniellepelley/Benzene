@@ -20,6 +20,21 @@ public class MeshHostConfig
 
     /// <summary>The services to poll each pass.</summary>
     public MeshHostServiceConfig[] Services { get; set; } = Array.Empty<MeshHostServiceConfig>();
+
+    /// <summary>
+    /// Opt in to the live dispatch feature (the <c>mesh:dispatch</c> handler that invokes a registered
+    /// service's REAL handler with a chosen payload). Off by default: it fires real side-effects, so it
+    /// is a deliberate, non-default choice. Even when enabled it is still refused in a Production
+    /// environment unless <see cref="DispatchAllowInProduction"/> is also set.
+    /// </summary>
+    public bool EnableDispatch { get; set; }
+
+    /// <summary>
+    /// Whether the dispatch feature (when <see cref="EnableDispatch"/> is set) is also permitted in a
+    /// Production environment. Off by default - dispatch runs real handlers, so Production requires this
+    /// explicit second opt-in.
+    /// </summary>
+    public bool DispatchAllowInProduction { get; set; }
 }
 
 /// <summary>One <c>mesh.json</c> service entry, converted to a <see cref="MeshServiceRegistryEntry"/> via <see cref="ToEntry"/>.</summary>

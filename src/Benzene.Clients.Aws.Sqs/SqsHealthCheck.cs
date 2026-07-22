@@ -91,8 +91,9 @@ public class SqsHealthCheck : IHealthCheck
         cts.Cancel();
 
         // IsFaulted, not .Result on a faulted task: reading .Result would rethrow and lose the Queue
-        // dependency to the outer exception wrapper. Classify via the shared policy: 401/403 -> Warning,
-        // else Failed, enriched with the SDK error code + status, never the exception message.
+        // dependency to the outer exception wrapper. Classify via the shared policy: an authorization
+        // failure (401/403, or a known auth error code) is a persistent Failed, anything else a transient
+        // Failed, enriched with the SDK error code + status, never the exception message.
         if (call.IsFaulted)
         {
             var ex = (call.Exception?.InnerException ?? call.Exception)!;

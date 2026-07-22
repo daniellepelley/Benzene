@@ -82,7 +82,7 @@ public class KafkaHealthCheckTest
     }
 
     [Fact]
-    public async Task ExecuteAsync_NotAuthorized_DegradesToWarning()
+    public async Task ExecuteAsync_NotAuthorized_IsPersistentFailure()
     {
         var factory = FactoryThrowing(new KafkaException(new Error(ErrorCode.ClusterAuthorizationFailed, "no acl")));
         var check = new KafkaHealthCheck(factory, Brokers, new[] { "orders" });
@@ -90,7 +90,8 @@ public class KafkaHealthCheckTest
         var result = await check.ExecuteAsync();
 
         // A Kafka authorization failure is a Warning, not a failure (§3.9).
-        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal(HealthCheckStatus.Failed, result.Status);
+        Assert.True(result.IsPersistent);
         Assert.Equal("ClusterAuthorizationFailed", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
     }

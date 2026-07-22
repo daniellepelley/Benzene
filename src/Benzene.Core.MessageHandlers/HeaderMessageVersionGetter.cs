@@ -1,3 +1,4 @@
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.Messages.Mappers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 
@@ -17,8 +18,9 @@ namespace Benzene.Core.MessageHandlers;
 /// </typeparam>
 public class HeaderMessageVersionGetter<TContext> : IMessageVersionGetter<TContext>
 {
-    /// <summary>The default, ordered header-name fallback (docs/specification/versioning.md §2.1).</summary>
-    public static readonly IReadOnlyList<string> DefaultHeaderNames = ["benzene-version", "version", "x-version"];
+    /// <summary>The default, ordered header-name fallback (docs/specification/versioning.md §2.1). The
+    /// primary name is <see cref="MessageVersionHeaders.Default"/>, the same name the outbound helpers write.</summary>
+    public static readonly IReadOnlyList<string> DefaultHeaderNames = [MessageVersionHeaders.Default, "version", "x-version"];
 
     private readonly IMessageHeadersGetter<TContext> _headersGetter;
     private readonly IReadOnlyList<string> _headerNames;

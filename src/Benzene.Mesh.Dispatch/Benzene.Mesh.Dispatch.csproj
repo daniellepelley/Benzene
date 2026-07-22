@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Mesh.Dispatch</AssemblyName>
+    <RootNamespace>Benzene.Mesh.Dispatch</RootNamespace>
+    <Description>Opt-in, production-gated mesh dispatch: invoke ONE registered service's real handler with a chosen test payload (F3b direct-to-consumer). Off by default.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
+    <ProjectReference Include="..\Benzene.Abstractions.MessageHandlers\Benzene.Abstractions.MessageHandlers.csproj" />
+    <ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+  </ItemGroup>
+
+</Project>

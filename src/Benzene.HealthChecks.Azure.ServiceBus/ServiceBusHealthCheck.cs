@@ -65,8 +65,9 @@ public class ServiceBusHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             // Expected failures (entity missing, no connectivity, no Listen claim) are a classified
-            // result, not a throw. HealthCheckError applies the shared policy: a permission failure ->
-            // Warning, else Failed, reporting the SDK failure reason, never the exception message.
+            // result, not a throw. HealthCheckError applies the shared policy: an authorization failure
+            // is a persistent Failed, anything else a transient Failed, reporting the SDK failure reason,
+            // never the exception message.
             var (errorCode, statusCode) = ServiceBusErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode, BuildData());
         }
@@ -80,9 +81,9 @@ public class ServiceBusHealthCheck : IHealthCheck
     }
 
     // Service Bus is AMQP, not HTTP. A bad credential/claim surfaces as UnauthorizedAccessException
-    // (mapped to 403 so the shared policy degrades it to Warning); other failures surface as
-    // ServiceBusException with a FailureReason (reported as the error code, no status -> Failed); null
-    // for anything else (e.g. a raw socket failure).
+    // (mapped to 403 so the shared policy classifies it as a persistent Failed); other failures surface
+    // as ServiceBusException with a FailureReason (reported as the error code, no status -> transient
+    // Failed); null for anything else (e.g. a raw socket failure).
     private static (string? ErrorCode, int? StatusCode) ServiceBusErrorDetails(Exception ex)
     {
         if (ex is UnauthorizedAccessException)

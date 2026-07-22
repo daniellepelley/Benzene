@@ -40,6 +40,17 @@ alongside their other infra), rather than only against `examples/Mesh/`'s demo/f
   separable follow-up (would need `tempo.prometheusUrl` in `MeshHostConfig` and a matching
   `ProjectReference` to `Benzene.Mesh.Tracing.Tempo`), not built here to keep this phase scoped.
 
+## Opt-in live dispatch (off by default)
+`MeshHostConfig.EnableDispatch` (default false) wires `Benzene.Mesh.Dispatch`'s `UseMeshDispatch()` +
+`AddMeshLambdaDispatcher()` and registers the `MeshServiceRegistry` so the `mesh:dispatch` handler can
+invoke a registered service's **real** handler with a chosen payload (the mesh UI composer's "send"
+leg). It's a deliberate, non-default choice because real side-effects execute. Two gates, both must
+pass: `EnableDispatch` (this wiring) **and** the runtime environment gate — dispatch is refused in a
+Production environment unless `DispatchAllowInProduction` is *also* set (an unset environment counts as
+Production). Because `MeshDispatchMessageHandler` carries no `[Message]` attribute, the default
+`.UseMessageHandlers()` scan does **not** expose it — unlike `/mesh/report`, it is genuinely absent
+until `EnableDispatch` is set.
+
 ## Dependencies on other Benzene packages
 - **Benzene.AspNet.Core**, **Benzene.Microsoft.Dependencies** - the ASP.NET Core host wiring.
 - **Benzene.Mesh.Aggregator** - `AddMeshAggregator`, `MeshAggregator`, `MeshServiceRegistry`.

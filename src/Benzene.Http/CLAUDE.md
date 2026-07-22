@@ -25,6 +25,21 @@ Provides HTTP abstractions and utilities for building HTTP-based Benzene applica
   path (to a `CompiledRoutePath`) once at construction, and splits only the incoming path per request
   (once, not once per route), so the hot path does no per-route regex/splitting work
 
+### Path-based versioning (opt-in)
+- `HttpVersioningOptions` - policy: `VersionSegment` (default `v{version}` → `/v1/…`), `KeepUnversionedRoute`
+  (default true - the bare route stays and resolves to the latest handler via the version selector).
+  `VersionParameterName` = `"version"`, matching what `HttpMessageVersionGetterBase` reads.
+- `VersionedHttpEndpointFinder` - decorates `IHttpEndpointFinder`: re-emits each discovered route under the
+  version segment (and, by default, keeps the unversioned twin), so `/v1/orders` and `/orders` both reach the
+  same topic; a route the app already declared with `{version}` is a hand-authored override, passed through
+  untouched. Dedups on (method, path).
+- `Extensions.AddHttpVersioning(configure?)` - opt-in wiring: replaces the (now concretely-registered)
+  `CompositeHttpEndpointFinder` with the decorator. Off unless called. Because both `RouteFinder` and the
+  spec builder read `IHttpEndpointFinder`, the versioned paths flow into routing **and** the generated spec
+  (so the mesh sees per-version endpoints) with no per-transport change. Call after `AddHttpMessageHandlers`.
+  The version the route captures (e.g. `/v2/…` → `"2"`) is the same token the `benzene-version` header and the
+  payload casters use - see `Benzene.Core.Versioning` and `docs/specification/versioning.md`.
+
 ### Endpoint Discovery
 - `ReflectionHttpEndpointFinder` - Discovers endpoints via reflection
 - `CacheHttpEndpointFinder` - Caches discovered endpoints

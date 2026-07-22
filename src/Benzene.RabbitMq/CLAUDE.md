@@ -65,9 +65,10 @@ message, handlers must be idempotent - see [Idempotency](../../docs/cookbooks/id
 - `RabbitMqHealthCheck` - verifies the broker is reachable and the consumed queue exists, via a
   **passive** `QueueDeclarePassiveAsync` (read-only: it neither creates nor mutates the queue; a missing
   queue is a channel-level `404`). `Type = "RabbitMq"`, dependency `("Queue", config.QueueName)`.
-  Non-destructive (no publish/get/ack). AMQP reply codes align with §3.9: `403 access-refused` -> a
-  **Warning** (permission), `404 not-found` -> Failed; classified via `HealthCheckError.Classify`, never
-  the message.
+  Non-destructive (no publish/get/ack). AMQP reply codes align with §3.9 (reversed): `403 access-refused`
+  (permission) -> a **persistent `Failed`**, surfacing as unhealthy rather than being softened to a
+  Warning (a deterministic misconfiguration that won't self-heal); `404 not-found` -> a transient Failed;
+  classified via `HealthCheckError.Classify`, never the message.
 - `IRabbitMqConnectionProvider` / `RabbitMqConnectionProvider` - supplies the connection the check uses.
   It opens **one** connection (via `IRabbitMqConnectionFactory`) and reuses it across probes, opening
   only a cheap short-lived **channel** per probe. It does **not** share the worker's private connection
