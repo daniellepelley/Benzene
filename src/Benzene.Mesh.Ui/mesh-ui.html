@@ -833,7 +833,7 @@
     // JSON, never any HTML. A single relative link works whether this page is a static file or served
     // from a pipeline at /mesh-ui (the spec page answers at /mesh-spec-ui.html in that case). The raw
     // JSON stays one click away via the separate "raw" link.
-    var a1 = el("a", null, "spec"); a1.href = meshSpecUiHref(svc.name); a1.target = "_blank"; a1.rel = "noopener";
+    var a1 = el("a", null, "spec"); a1.href = meshSpecUiHref(svc.name);
     a1.title = "View this service's spec in the mesh-hosted Spec UI";
     a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1);
     var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
