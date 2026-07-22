@@ -505,6 +505,24 @@
   .vd-row.rag-amber { box-shadow: inset 3px 0 0 var(--m-put), var(--shadow); }
   .vd-row.rag-green { box-shadow: inset 3px 0 0 var(--ok), var(--shadow); }
   .vd-row.rag-gone  { box-shadow: inset 3px 0 0 var(--ink-faint), var(--shadow); }
+  /* Compose test-payload screen (F3a) - toggle-gated, copy-only. */
+  .tp-compose-bar { margin: 0 0 14px; }
+  .cmp-grid { display: grid; gap: 16px; }
+  .cmp-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .cmp-field { display: flex; flex-direction: column; gap: 5px; }
+  .cmp-field label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .cmp-field select { height: 34px; padding: 0 10px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm); font: inherit; font-size: 13px; cursor: pointer; }
+  .cmp-io { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .cmp-io { grid-template-columns: 1fr; } }
+  .cmp-io h2, .cmp-out h2 { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); margin: 0 0 6px; }
+  .cmp-ta { width: 100%; box-sizing: border-box; min-height: 160px; resize: vertical; padding: 10px 12px; background: var(--sunken); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+  .cmp-ta:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cmp-err { color: var(--req); font-size: 12px; min-height: 16px; margin-top: 4px; }
+  .cmp-out-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .cmp-copy { display: inline-flex; align-items: center; gap: 8px; }
+  .cmp-copied { color: var(--ok); font-size: 12px; }
+  .cmp-pre { margin: 0; padding: 12px 14px; background: var(--sunken); border: 1px solid var(--line); border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow-x: auto; white-space: pre; }
+  .cmp-note { font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
   .t-change { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
   .tp-changes { margin: 6px 0 10px; }
   .tp-change-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 3px 0; }
@@ -677,6 +695,30 @@
       </div>
     </div>
     <div id="sp-body"></div>
+  </section>
+
+  <!-- Compose page: a fourth view (Estate / Service / Topic / Compose), TOGGLE-GATED (off by
+       default; enabled via ?compose or data-compose-enabled on <html>, so it never surfaces in a
+       production deploy that doesn't ask for it). Builds a raw benzene-message envelope
+       (topic + headers + body) entirely in-browser from the topic's inlined schema, for copy only —
+       the "build it into an SQS" half. Per the architecture ruling the C# transport-dressing builders
+       can't run here, so per-transport dressing (SQS/SNS/API-Gateway/Service Bus) is served by the
+       host UseTestPayloads() endpoint (a documented follow-up); the raw envelope is the always-
+       available static floor. #compose:<topic> is the single source of truth, same router as the
+       other entity views. -->
+  <section id="compose-page" style="display:none">
+    <div class="topic-page-head">
+      <button class="tb-btn tp-back" id="compose-page-back" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m14 6-6 6 6 6"/></svg>
+        Back
+      </button>
+      <div>
+        <h1 id="compose-title"></h1>
+        <p>Assemble a correctly-shaped test message from this topic's own schema — pick a payload and
+          transport, edit the headers and fields, and copy it. Nothing is sent.</p>
+      </div>
+    </div>
+    <div id="compose-body"></div>
   </section>
 </main>
 
@@ -1279,6 +1321,15 @@
     document.getElementById("tp-title").textContent = topicId;
     var body = document.getElementById("tp-body");
     body.innerHTML = "";
+    // Compose affordance - only when the feature is toggled on and some version has an inbound schema
+    // to seed a payload from (the toggle keeps it entirely absent in a production deploy).
+    if (composeEnabled() && versions.some(function (t) { return inboundSchema(t); })) {
+      var composeBar = el("div", "tp-compose-bar");
+      var cbtn = el("button", "tb-btn", "Compose test payload");
+      cbtn.addEventListener("click", function () { location.hash = composeHashFor(topicId); });
+      composeBar.appendChild(cbtn);
+      body.appendChild(composeBar);
+    }
     versions.forEach(function (t) { body.appendChild(buildTopicPageVersionSection(t)); });
 
     var usage = buildTopicUsageSection(topicId);
@@ -1293,14 +1344,16 @@
   /* The three entity views - Estate (#main-view), Topic (#topic-page), Service (#service-page) -
      are mutually exclusive; location.hash is the single source of truth for which one shows. */
   function showView(id) {
-    ["main-view", "topic-page", "service-page"].forEach(function (v) {
+    ["main-view", "topic-page", "service-page", "compose-page"].forEach(function (v) {
       document.getElementById(v).style.display = (v === id) ? "" : "none";
     });
     if (id !== "main-view") window.scrollTo(0, 0);
   }
 
   function syncViewFromHash() {
-    if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
+    if (location.hash.indexOf(COMPOSE_HASH_PREFIX) === 0) {
+      renderComposePage(decodeURIComponent(location.hash.slice(COMPOSE_HASH_PREFIX.length)));
+    } else if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
       renderTopicPage(decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
     } else if (location.hash.indexOf(SERVICE_HASH_PREFIX) === 0) {
       renderServicePage(decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length)));
@@ -1323,12 +1376,205 @@
 
   document.getElementById("topic-page-back").addEventListener("click", clearEntityHash);
   document.getElementById("service-page-back").addEventListener("click", clearEntityHash);
+  // Back from Compose returns to the topic it was launched from (not the estate), keeping the drill
+  // path intact; falls back to the estate if the topic can't be determined.
+  document.getElementById("compose-page-back").addEventListener("click", function () {
+    var topicId = document.getElementById("compose-title").textContent;
+    if (topicId) location.hash = topicHashFor(topicId); else clearEntityHash();
+  });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
+    if (document.getElementById("compose-page").style.display !== "none") {
+      document.getElementById("compose-page-back").click();
+      return;
+    }
     var onEntityPage = document.getElementById("topic-page").style.display !== "none"
       || document.getElementById("service-page").style.display !== "none";
     if (onEntityPage) clearEntityHash();
   });
+
+  /* ---------- Compose test payload (F3a) ----------
+     Toggle-gated (off by default - enabled via ?compose or data-compose-enabled on <html>, so it
+     never appears in a production deploy that doesn't ask for it). Builds a raw benzene-message
+     envelope (topic + headers + body) entirely in-browser from the topic's inlined schema and offers
+     COPY - never send. This is the always-available static floor per the architecture ruling: the C#
+     transport-dressing builders (SQS/SNS/API-Gateway/Service Bus) can't run here, so per-transport
+     dressing is served by the host UseTestPayloads() endpoint (a documented follow-up); when that
+     endpoint isn't wired the raw envelope is what you get. */
+  var COMPOSE_HASH_PREFIX = "#compose:";
+  function composeHashFor(topicId) { return COMPOSE_HASH_PREFIX + encodeURIComponent(topicId); }
+  function composeEnabled() {
+    if (/[?&]compose(=|&|$)/.test(location.search)) return true;
+    var a = document.documentElement.getAttribute("data-compose-enabled");
+    return a === "" || a === "true" || a === "1";
+  }
+
+  // The inbound body schema for a topic version: the event message, else the request (the response
+  // isn't an inbound payload). Null when the version carries no inbound schema.
+  function inboundSchema(t) { return t.messageSchema || t.requestSchema || null; }
+
+  // Deterministic example value from a JSON-schema-ish node (the same shape renderSchemaTree reads):
+  // honours example/default/enum first, then type + format, with length/range hints. No randomness,
+  // so the same schema always yields the same skeleton (matches the C# ExamplePayloadBuilder intent).
+  function exampleFromSchema(s, depth) {
+    s = s || {}; depth = depth || 0;
+    if (s.example !== undefined) return s.example;
+    if (s["default"] !== undefined) return s["default"];
+    if (s.enum && s.enum.length) return s.enum[0];
+    var type = s.type || (s.properties ? "object" : (s.items ? "array" : "string"));
+    if (type === "object" || s.properties) {
+      var o = {}, props = s.properties || {};
+      if (depth < 12) Object.keys(props).forEach(function (k) { o[k] = exampleFromSchema(props[k], depth + 1); });
+      return o;
+    }
+    if (type === "array") return (depth < 12 && s.items) ? [exampleFromSchema(s.items, depth + 1)] : [];
+    if (type === "integer" || type === "number") return s.minimum != null ? s.minimum : (s.maximum != null ? s.maximum : 0);
+    if (type === "boolean") return false;
+    if (type === "null") return null;
+    return exampleString(s);
+  }
+  function exampleString(s) {
+    var byFormat = {
+      "date-time": "2020-01-01T00:00:00Z", date: "2020-01-01", time: "00:00:00",
+      uuid: "00000000-0000-0000-0000-000000000000", guid: "00000000-0000-0000-0000-000000000000",
+      email: "user@example.com", uri: "https://example.com", url: "https://example.com",
+      hostname: "example.com", ipv4: "127.0.0.1"
+    };
+    if (s.format && byFormat[s.format]) return byFormat[s.format];
+    if (s.pattern) return ""; // can't safely synthesize a value matching an arbitrary pattern
+    var v = "string";
+    if (s.minLength != null) { while (v.length < s.minLength) v += "x"; }
+    if (s.maxLength != null && v.length > s.maxLength) v = v.slice(0, s.maxLength);
+    return v;
+  }
+
+  // Transports the topic can actually be received over: the union of its consuming services' declared
+  // manifest transports, plus http when the topic (or a consumer of it) carries HTTP mappings.
+  function supportedTransportsForTopic(topicId) {
+    var set = {};
+    currentTopics.filter(function (t) { return t.topic === topicId; }).forEach(function (t) {
+      (t.consumers || []).forEach(function (c) {
+        var svc = findManifestService(c.service);
+        ((svc && svc.transports) || []).forEach(function (tr) { set[tr] = true; });
+        if ((c.httpMappings || []).length) set["http"] = true;
+      });
+      if ((t.httpMappings || []).length) set["http"] = true;
+    });
+    return Object.keys(set).sort();
+  }
+
+  function copyText(text, onDone) {
+    var done = onDone || function () {};
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+        return;
+      }
+    } catch (e) { /* fall through to the execCommand path */ }
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta); done(ok);
+    } catch (e2) { done(false); }
+  }
+
+  function renderComposePage(topicId) {
+    if (!composeEnabled()) { showView("main-view"); return; } // toggle off - never render
+    var versions = currentTopics.filter(function (t) { return t.topic === topicId && !t.reserved; });
+    if (!versions.length) return; // unknown/stale/reserved link - leave whatever's showing
+    versions = versions.slice().sort(function (a, b) { return (a.version || "").localeCompare(b.version || ""); });
+
+    document.getElementById("compose-title").textContent = topicId;
+    var body = document.getElementById("compose-body");
+    body.innerHTML = "";
+    var grid = el("div", "cmp-grid");
+
+    // controls: which payload (version) and which transport
+    var controls = el("div", "cmp-controls");
+    var verField = el("div", "cmp-field");
+    verField.appendChild(el("label", null, "Payload"));
+    var verSel = el("select");
+    versions.forEach(function (t, i) {
+      var opt = el("option", null, (t.version ? "v" + t.version : "default") + (inboundSchema(t) ? "" : " (no schema)"));
+      opt.value = String(i); verSel.appendChild(opt);
+    });
+    verField.appendChild(verSel);
+    controls.appendChild(verField);
+
+    var trField = el("div", "cmp-field");
+    trField.appendChild(el("label", null, "Transport"));
+    var trSel = el("select");
+    var rawOpt = el("option", null, "raw (benzene-message)"); rawOpt.value = "raw"; trSel.appendChild(rawOpt);
+    supportedTransportsForTopic(topicId).forEach(function (tr) {
+      var o = el("option", null, tr); o.value = tr; trSel.appendChild(o);
+    });
+    trField.appendChild(trSel);
+    controls.appendChild(trField);
+    grid.appendChild(controls);
+
+    // editable headers + payload fields
+    var io = el("div", "cmp-io");
+    var hWrap = el("div"); hWrap.appendChild(el("h2", null, "Headers"));
+    var hTa = el("textarea", "cmp-ta"); hTa.spellcheck = false; hWrap.appendChild(hTa);
+    var hErr = el("div", "cmp-err"); hWrap.appendChild(hErr);
+    io.appendChild(hWrap);
+    var pWrap = el("div"); pWrap.appendChild(el("h2", null, "Payload fields"));
+    var pTa = el("textarea", "cmp-ta"); pTa.spellcheck = false; pWrap.appendChild(pTa);
+    var pErr = el("div", "cmp-err"); pWrap.appendChild(pErr);
+    io.appendChild(pWrap);
+    grid.appendChild(io);
+
+    // assembled envelope + copy
+    var out = el("div", "cmp-out");
+    var outHead = el("div", "cmp-out-head");
+    outHead.appendChild(el("h2", null, "Envelope"));
+    var copyWrap = el("div", "cmp-copy");
+    var copyBtn = el("button", "tb-btn", "Copy");
+    var copied = el("span", "cmp-copied");
+    copyWrap.appendChild(copyBtn); copyWrap.appendChild(copied);
+    outHead.appendChild(copyWrap);
+    out.appendChild(outHead);
+    var pre = el("pre", "cmp-pre"); out.appendChild(pre);
+    var note = el("div", "cmp-note"); out.appendChild(note);
+    grid.appendChild(out);
+
+    body.appendChild(grid);
+
+    function seedForVersion() {
+      var t = versions[Number(verSel.value)] || versions[0];
+      var headers = { topic: topicId };
+      if (t.version) headers.version = t.version;
+      hTa.value = JSON.stringify(headers, null, 2);
+      var sch = inboundSchema(t);
+      pTa.value = sch ? JSON.stringify(exampleFromSchema(sch), null, 2) : "{}";
+    }
+    function rebuild() {
+      hErr.textContent = ""; pErr.textContent = ""; copied.textContent = "";
+      var headers, payload, ok = true;
+      try { headers = JSON.parse(hTa.value || "{}"); } catch (e) { hErr.textContent = "Headers: invalid JSON"; ok = false; }
+      try { payload = JSON.parse(pTa.value || "null"); } catch (e) { pErr.textContent = "Payload: invalid JSON"; ok = false; }
+      if (!ok) { pre.textContent = ""; return; }
+      var envelope = { topic: topicId, headers: headers, body: JSON.stringify(payload) };
+      pre.textContent = JSON.stringify(envelope, null, 2);
+      note.textContent = trSel.value === "raw"
+        ? "Raw benzene-message envelope — the body is the payload serialized as a string, the transport-agnostic shape a direct/in-process invoke accepts."
+        : "Showing the raw benzene-message envelope. The " + trSel.value + "-specific wire dressing is produced by the service host's UseTestPayloads() endpoint (a documented follow-up), not generated in the browser.";
+    }
+
+    verSel.addEventListener("change", function () { seedForVersion(); rebuild(); });
+    trSel.addEventListener("change", rebuild);
+    hTa.addEventListener("input", rebuild);
+    pTa.addEventListener("input", rebuild);
+    copyBtn.addEventListener("click", function () {
+      copyText(pre.textContent, function (good) { copied.textContent = good ? "copied" : "copy failed"; });
+    });
+
+    seedForVersion();
+    rebuild();
+    showView("compose-page");
+  }
 
   /* ---------- service page: the third entity ----------
      "As much detail about the service as possible, everything clickable" - identity/state from
