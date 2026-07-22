@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The standard Microsoft packages every isolated-worker Function App needs, plus the Event Grid
+         trigger extension - referenced directly (not just transitively) so the Functions SDK's build step
+         can discover them and generate the worker's extension manifest. Pinned to the versions Benzene
+         builds and tests against (see examples/AzureFunctionsMesh) - Microsoft's Functions SDK packages
+         aren't on Benzene's floating prerelease cadence. -->
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.EventGrid" Version="3.4.0" />
+    <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
+         published version (including prereleases) on every restore. -->
+    <PackageReference Include="Benzene.Azure.Function.Core" Version="*-*" />
+    <PackageReference Include="Benzene.Azure.Function.EventGrid" Version="*-*" />
+    <!-- Adds AddDiagnostics() (Activity span per middleware) and UseBenzeneEnrichment() (log/trace
+         enrichment). See docs/monitoring.md and docs/diagnosing-failures.md. -->
+    <PackageReference Include="Benzene.Diagnostics" Version="*-*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

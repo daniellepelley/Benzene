@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
+         published version (including prereleases) on every restore, matching what the prerelease flag
+         means when you run `dotnet add package` yourself. Benzene.SelfHost.Http brings Benzene.Http
+         (and the HTTP mapper set) in transitively. -->
+    <PackageReference Include="Benzene.SelfHost.Http" Version="*-*" />
+    <PackageReference Include="Benzene.SelfHost" Version="*-*" />
+    <!-- Adds AddDiagnostics() (Activity span per middleware) and UseBenzeneEnrichment() (log/trace
+         enrichment). See docs/monitoring.md and docs/diagnosing-failures.md. -->
+    <PackageReference Include="Benzene.Diagnostics" Version="*-*" />
+    <PackageReference Include="Benzene.HostedService" Version="*-*" />
+    <!-- Benzene.HostedService/Benzene.SelfHost only bring in the .Abstractions packages transitively -
+         the concrete Host.CreateDefaultBuilder/ConfigurationBuilder implementations used in
+         Program.cs/StartUp.cs need these referenced directly, the same way `dotnet new worker` does. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

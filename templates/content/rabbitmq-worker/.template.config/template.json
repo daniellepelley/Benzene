@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "RabbitMQ", "Worker"],
+  "identity": "Benzene.Templates.RabbitMq.Worker",
+  "name": "Benzene RabbitMQ Worker",
+  "description": "A self-hosted Benzene worker that consumes a RabbitMQ queue (RabbitMQ.Client).",
+  "shortName": "benzene.rabbitmq.worker",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

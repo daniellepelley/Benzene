@@ -9,12 +9,23 @@
 ```
 Benzene.Templates.csproj   # the template pack project (PackageType=Template)
 content/
-  asp/                      # benzene.asp            - ASP.NET Core
-  aws-apigateway/           # benzene.aws.apigateway  - AWS Lambda + API Gateway
-  aws-sqs/                  # benzene.aws.sqs         - AWS Lambda + SQS
-  aws-sns/                  # benzene.aws.sns         - AWS Lambda + SNS
-  azure-http/               # benzene.azure.http      - Azure Functions (isolated worker, HTTP trigger)
-  kafka-worker/             # benzene.kafka.worker    - Self-hosted Kafka consumer
+  # HTTP-shaped
+  asp/                      # benzene.asp                - ASP.NET Core
+  selfhost-http/            # benzene.selfhost.http       - Self-hosted HTTP (HttpListener, no ASP.NET)
+  aws-apigateway/           # benzene.aws.apigateway      - AWS Lambda + API Gateway
+  azure-http/               # benzene.azure.http          - Azure Functions (isolated worker, HTTP trigger)
+  # AWS Lambda event sources
+  aws-sqs/                  # benzene.aws.sqs             - AWS Lambda + SQS
+  aws-sns/                  # benzene.aws.sns             - AWS Lambda + SNS
+  # Self-hosted workers (Benzene owns the process)
+  kafka-worker/             # benzene.kafka.worker        - Self-hosted Kafka consumer
+  rabbitmq-worker/          # benzene.rabbitmq.worker     - Self-hosted RabbitMQ consumer
+  servicebus-worker/        # benzene.servicebus.worker   - Self-hosted Azure Service Bus consumer
+  # Azure Functions triggers (isolated worker)
+  azure-servicebus/         # benzene.azure.servicebus    - Azure Functions + Service Bus trigger
+  azure-eventhub/           # benzene.azure.eventhub      - Azure Functions + Event Hub trigger
+  azure-eventgrid/          # benzene.azure.eventgrid     - Azure Functions + Event Grid trigger (routes by event type)
+  azure-queuestorage/       # benzene.azure.queuestorage  - Azure Functions + Queue Storage trigger
 ```
 
 Each `content/<name>/` folder is a complete, standalone project: a `.template.config/template.json`
@@ -25,12 +36,25 @@ somewhere else, and they only ever reference Benzene via `PackageReference` (nev
 `ProjectReference` back into this repo), since a generated project has no access to this repo's
 source tree.
 
-`asp`/`aws-apigateway`/`aws-sqs`/`aws-sns`/`azure-http` all ship a byte-identical
-`HelloWorldMessageHandler.cs` — the same handler running unchanged behind five different transports
-is the actual point of the exercise. `content/asp/HelloWorldMessageHandler.cs` is the canonical
-copy; **keep the other four identical to it** (`kafka-worker`'s is intentionally different — Kafka's
-fire-and-forget, literal-topic-name routing is a genuinely different shape, not a drift). CI
-(`.github/workflows/build-templates.yml`) enforces this with a diff check — see below.
+The `HelloWorldMessageHandler.cs` falls into two shared groups plus two one-offs — the same handler
+running unchanged behind many transports is the actual point of the exercise, and CI
+(`.github/workflows/build-templates.yml`) enforces the sharing with a diff check (see below):
+- **Group A** (request/response, `content/asp/HelloWorldMessageHandler.cs` is canonical): `asp`,
+  `selfhost-http`, `aws-apigateway`, `aws-sqs`, `aws-sns`, `azure-http`. The `[HttpEndpoint]` is
+  harmless on the non-HTTP ones.
+- **Group B** (fire-and-forget queue/topic/event consumer, `content/rabbitmq-worker/HelloWorldMessageHandler.cs`
+  is canonical): `rabbitmq-worker`, `servicebus-worker`, `azure-servicebus`, `azure-eventhub`,
+  `azure-queuestorage`.
+- **Standalone** (a genuinely different shape, not a drift): `kafka-worker` (literal Kafka topic-name
+  routing) and `azure-eventgrid` (routes by event **type**).
+
+> **Publish cadence:** every template references its Benzene packages with `Version="*-*"` (latest
+> published prerelease). A few transports' packages (`Benzene.RabbitMq`, `Benzene.Azure.ServiceBus`,
+> `Benzene.Azure.Function.EventGrid`, `Benzene.Azure.Function.QueueStorage`) are in `Benzene.sln` and
+> packable but publish on the **next** `deploy-benzene.yml` release, so their generated projects can't
+> `restore`/`build` until then. `build-templates.yml` treats that `NU1101` as a warning (not a failure)
+> and self-heals once the package is published — but a user who generates one of those templates before
+> the release will hit the same restore error.
 
 ## Local workflow
 
@@ -53,13 +77,17 @@ dotnet new uninstall Benzene.Templates
 
 ### Shared-handler diff check
 
-Run this before committing a change to any of the five identical `HelloWorldMessageHandler.cs`
-copies (CI runs the same check):
+Run this before committing a change to any of the shared `HelloWorldMessageHandler.cs` copies (CI runs
+the same check — group A + group B, see "Layout" above):
 
 ```bash
-canonical="templates/content/asp/HelloWorldMessageHandler.cs"
-for f in templates/content/aws-apigateway templates/content/aws-sqs templates/content/aws-sns templates/content/azure-http; do
-  diff "$canonical" "$f/HelloWorldMessageHandler.cs" || { echo "DRIFT: $f"; exit 1; }
+canonical_a="templates/content/asp/HelloWorldMessageHandler.cs"
+for d in selfhost-http aws-apigateway aws-sqs aws-sns azure-http; do
+  diff "$canonical_a" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (A): $d"; exit 1; }
+done
+canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
+for d in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+  diff "$canonical_b" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (B): $d"; exit 1; }
 done
 ```
 

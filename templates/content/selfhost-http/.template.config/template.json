@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "Web", "SelfHost"],
+  "identity": "Benzene.Templates.SelfHost.Http",
+  "name": "Benzene Self-Hosted HTTP",
+  "description": "A Benzene HTTP service hosted in a plain console/worker process (System.Net.HttpListener), no ASP.NET.",
+  "shortName": "benzene.selfhost.http",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

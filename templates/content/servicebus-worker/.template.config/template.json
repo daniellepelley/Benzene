@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "Azure", "ServiceBus", "Worker"],
+  "identity": "Benzene.Templates.ServiceBus.Worker",
+  "name": "Benzene Azure Service Bus Worker",
+  "description": "A self-hosted Benzene worker that consumes an Azure Service Bus queue/subscription (not Azure Functions).",
+  "shortName": "benzene.servicebus.worker",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

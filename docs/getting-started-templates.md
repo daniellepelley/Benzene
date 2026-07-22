@@ -1,8 +1,9 @@
 # Getting Started: Project Templates
 
 `Benzene.Templates` is a `dotnet new` template pack with starter projects for every host Benzene
-supports out of the box: ASP.NET Core, AWS Lambda (API Gateway, SQS, SNS), Azure Functions, and a
-self-hosted Kafka worker. Each one generates a complete, buildable project with a single demo
+supports out of the box: ASP.NET Core, self-hosted HTTP, AWS Lambda (API Gateway, SQS, SNS), Azure
+Functions (HTTP, Service Bus, Event Hub, Event Grid, Queue Storage), and self-hosted workers (Kafka,
+RabbitMQ, Azure Service Bus). Each one generates a complete, buildable project with a single demo
 handler (`HelloWorldMessageHandler`) wired end to end — the fastest way to get a real Benzene
 service running before you write a line of your own code.
 
@@ -36,21 +37,36 @@ occurrence of the placeholder gets renamed); `-o` sets the output directory.
 | Short name | What it generates |
 |---|---|
 | `benzene.asp` | ASP.NET Core service — no cloud account needed, the quickest way to try Benzene locally |
+| `benzene.selfhost.http` | Self-hosted HTTP service (`HttpListener`, no ASP.NET) — a container that owns its own process |
 | `benzene.aws.apigateway` | AWS Lambda triggered by API Gateway, with a SAM `template.yaml` |
 | `benzene.aws.sqs` | AWS Lambda triggered by an SQS queue |
 | `benzene.aws.sns` | AWS Lambda triggered by an SNS topic |
 | `benzene.azure.http` | Azure Functions (isolated worker), HTTP trigger |
+| `benzene.azure.servicebus` | Azure Functions (isolated worker), Service Bus trigger |
+| `benzene.azure.eventhub` | Azure Functions (isolated worker), Event Hub trigger |
+| `benzene.azure.eventgrid` | Azure Functions (isolated worker), Event Grid trigger — routes by event **type** |
+| `benzene.azure.queuestorage` | Azure Functions (isolated worker), Queue Storage trigger |
 | `benzene.kafka.worker` | Self-hosted Kafka consumer (`Confluent.Kafka`), for a long-running worker/container |
+| `benzene.rabbitmq.worker` | Self-hosted RabbitMQ consumer, for a long-running worker/container |
+| `benzene.servicebus.worker` | Self-hosted Azure Service Bus consumer (Benzene owns the process), for a long-running worker/container |
 
 Every generated project has its own `README.md` with run/deploy instructions and links back to the
 matching [getting-started guide](getting-started.md) for that host — the template gets you to a
 buildable starting point; the guide covers everything beyond it (validation, other event sources,
 testing, observability).
 
+> **Newer transports, publish cadence:** `benzene.rabbitmq.worker`, `benzene.servicebus.worker`,
+> `benzene.azure.eventgrid`, and `benzene.azure.queuestorage` reference Benzene packages
+> (`Benzene.RabbitMq`, `Benzene.Azure.ServiceBus`, `Benzene.Azure.Function.EventGrid`,
+> `Benzene.Azure.Function.QueueStorage`) that are complete in the repo but publish to nuget.org on
+> the **next** release. Until then those four generate fine but won't `restore`/`build` (you'll see
+> an `NU1101` for the missing package). The other nine work today.
+
 ## What you get
 
-Every template (except `benzene.kafka.worker`, which is fire-and-forget by design — see its own
-README) generates the identical starter handler:
+The HTTP-shaped and Lambda templates (`benzene.asp`, `benzene.selfhost.http`,
+`benzene.aws.apigateway`, `benzene.aws.sqs`, `benzene.aws.sns`, `benzene.azure.http`) generate the
+identical request/response starter handler:
 
 ```csharp
 [Message("hello:world")]
@@ -68,6 +84,13 @@ public class HelloWorldMessageHandler : IMessageHandler<HelloWorldRequest, Hello
 That's deliberate — it's the same handler shape that runs unchanged behind every transport Benzene
 supports (see [Getting Started](getting-started.md)'s "core idea in 60 seconds"), so trying a second
 template after your first one feels familiar rather than like starting over.
+
+The fire-and-forget worker templates (`benzene.rabbitmq.worker`, `benzene.servicebus.worker`,
+`benzene.azure.servicebus`, `benzene.azure.eventhub`, `benzene.azure.queuestorage`) generate the
+same handler minus the `[HttpEndpoint]` — a queue/topic message has no HTTP route, so it routes on
+`[Message("hello:world")]` alone. `benzene.kafka.worker` (literal Kafka topic-name routing) and
+`benzene.azure.eventgrid` (routes by event **type**, `[Message("hello.world")]`) are each a
+deliberately different shape — see their generated READMEs.
 
 ## Visual Studio
 
@@ -105,9 +128,14 @@ plugin:
   templates already reference them with a floating `Version="*-*"` (equivalent to `dotnet add
   package ... --prerelease`), so this usually means a transient NuGet outage or no network access,
   not a template bug.
-- **AWS/Azure templates reference package versions that seem out of date** — the four Microsoft
-  Azure Functions SDK packages in `benzene.azure.http` are intentionally pinned (not floating) to
-  the versions Benzene itself builds and tests against; see that template's generated `README.md`.
+- **AWS/Azure templates reference package versions that seem out of date** — the Microsoft Azure
+  Functions SDK packages in the `benzene.azure.*` templates (host SDK plus the per-trigger extension)
+  are intentionally pinned (not floating) to the versions Benzene itself builds and tests against;
+  see each template's generated `README.md`.
+- **One of the four newer transports fails to restore with `NU1101`** — `benzene.rabbitmq.worker`,
+  `benzene.servicebus.worker`, `benzene.azure.eventgrid`, and `benzene.azure.queuestorage` depend on
+  Benzene packages that publish on the next release (see the note under the short-name table). This
+  isn't a template bug; those four build once their packages reach nuget.org.
 
 ## See Also
 

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "Azure", "Serverless", "QueueStorage"],
+  "identity": "Benzene.Templates.Azure.QueueStorage",
+  "name": "Benzene Azure Functions (Queue Storage trigger)",
+  "description": "A Benzene service on Azure Functions (isolated worker), triggered by Azure Storage Queue messages.",
+  "shortName": "benzene.azure.queuestorage",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

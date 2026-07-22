@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Benzene",
+  "classifications": ["Benzene", "Azure", "Serverless", "ServiceBus"],
+  "identity": "Benzene.Templates.Azure.ServiceBus",
+  "name": "Benzene Azure Functions (Service Bus trigger)",
+  "description": "A Benzene service on Azure Functions (isolated worker), triggered by Azure Service Bus messages.",
+  "shortName": "benzene.azure.servicebus",
+  "sourceName": "BenzeneStarter",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}
