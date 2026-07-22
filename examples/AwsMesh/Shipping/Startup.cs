@@ -21,7 +21,10 @@ public class Startup : BenzeneStartUp
         => new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
     public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        => MeshServiceWiring.ConfigureServices(services, "shipping", typeof(Startup).Assembly);
+        => MeshServiceWiring.ConfigureServices(services, "shipping", typeof(Startup).Assembly,
+            // shipping-api → inventory-api + notifications-api + analytics-api: publish shipping:dispatched
+            // to EventBridge, routed to interested consumers by rule (the terminal integration event).
+            OutboundSend.EventBridge("shipping:dispatched", typeof(Model.OutboundShipmentDispatched), "EVENT_BUS_NAME"));
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
     {

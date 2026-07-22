@@ -1,0 +1,5 @@
+{
+  "detail-type": "shipping:dispatched",
+  "source": "shipping-api",
+  "detail": { "orderId": "ord-1", "shipmentId": "shp-ord-1" }
+}

@@ -46,16 +46,31 @@ public class CreateOrderMessageHandler : IMessageHandler<CreateOrder, OrderDto>
     public async Task<IBenzeneResult<OrderDto>> HandleAsync(CreateOrder request)
     {
         var order = new OrderDto($"ord-{request.Item.GetHashCode():x}", request.Item, request.Quantity);
+        var amount = request.Quantity * 10m;
 
+        // Point-to-point command over SQS: exactly one consumer (payments-api) must capture this.
         try
         {
             await _sender.SendAsync<OutboundPaymentCapture, Void>("payments:capture",
-                new OutboundPaymentCapture { OrderId = order.Id, Amount = request.Quantity * 10m, Currency = "GBP" });
+                new OutboundPaymentCapture { OrderId = order.Id, Amount = amount, Currency = "GBP" });
             _logger.LogInformation("order {orderId} created; sent payments:capture", order.Id);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "downstream payments:capture send failed for {orderId}", order.Id);
+        }
+
+        // Fan-out event over SNS: every subscriber (inventory-api, notifications-api) gets it. Separate
+        // from the command above — the order is placed regardless of who's listening.
+        try
+        {
+            await _sender.SendAsync<OutboundOrderPlaced, Void>("order:placed",
+                new OutboundOrderPlaced { OrderId = order.Id, Item = order.Item, Quantity = order.Quantity, Amount = amount, Currency = "GBP" });
+            _logger.LogInformation("order {orderId} created; published order:placed", order.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "order:placed publish failed for {orderId}", order.Id);
         }
 
         return BenzeneResult.Created(order);

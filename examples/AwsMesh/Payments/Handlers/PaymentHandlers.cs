@@ -46,6 +46,7 @@ public class CapturePaymentMessageHandler : IMessageHandler<CapturePayment, Paym
     {
         var payment = new PaymentDto($"pay-{request.OrderId}", request.OrderId, request.Amount, request.Currency, "captured");
 
+        // Point-to-point command over SQS: shipping-api must book this exactly once.
         try
         {
             await _sender.SendAsync<OutboundShipmentBook, Void>("shipping:book",
@@ -55,6 +56,18 @@ public class CapturePaymentMessageHandler : IMessageHandler<CapturePayment, Paym
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "downstream shipping:book send failed for {orderId}", request.OrderId);
+        }
+
+        // Integration event over EventBridge: routed by rule to notifications-api and analytics-api.
+        try
+        {
+            await _sender.SendAsync<OutboundPaymentCaptured, Void>("payment:captured",
+                new OutboundPaymentCaptured { OrderId = request.OrderId, PaymentId = payment.Id, Amount = request.Amount, Currency = request.Currency });
+            _logger.LogInformation("payment captured for {orderId}; published payment:captured", request.OrderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "payment:captured publish failed for {orderId}", request.OrderId);
         }
 
         return BenzeneResult.Created(payment);
