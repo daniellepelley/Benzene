@@ -28,7 +28,8 @@ public class SuppliedJsonSchemaProviderTest
         }
         """;
 
-    private static async Task<string> SendAsync(SuppliedJsonSchemaCatalog catalog, string name)
+    private static async Task<(string StatusCode, string Body)> SendWithBodyAsync(
+        SuppliedJsonSchemaCatalog catalog, string name)
     {
         var serviceCollection = ServiceResolverMother.CreateServiceCollection();
         serviceCollection.UsingBenzene(x => x
@@ -54,7 +55,12 @@ public class SuppliedJsonSchemaProviderTest
 
         var response = await app.HandleAsync(request,
             new MicrosoftServiceResolverFactory(serviceCollection.BuildServiceProvider()));
-        return response.StatusCode;
+        return (response.StatusCode, response.Body);
+    }
+
+    private static async Task<string> SendAsync(SuppliedJsonSchemaCatalog catalog, string name)
+    {
+        return (await SendWithBodyAsync(catalog, name)).StatusCode;
     }
 
     [Theory]
@@ -66,6 +72,21 @@ public class SuppliedJsonSchemaProviderTest
             .AddJson(typeof(ExampleRequestPayload), StrictSchemaJson);
 
         Assert.Equal(expectedStatus, await SendAsync(catalog, name));
+    }
+
+    [Fact]
+    public async Task ValidationFailure_CarriesPropertyScopedErrorMessages()
+    {
+        // Same failure contract as FluentValidation/DataAnnotations: the ValidationError result's
+        // payload is an array of human-readable messages, scoped to the failing property's path.
+        var catalog = new SuppliedJsonSchemaCatalog()
+            .AddJson(typeof(ExampleRequestPayload), StrictSchemaJson);
+
+        var response = await SendWithBodyAsync(catalog, "foo-bar-foo-bar");
+
+        Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
+        Assert.Contains("/name", response.Body);
+        Assert.Contains("characters", response.Body);
     }
 
     [Fact]
