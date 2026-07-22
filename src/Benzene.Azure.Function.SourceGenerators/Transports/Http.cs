@@ -6,6 +6,8 @@ namespace Benzene.Azure.Function.SourceGenerators
     /// <summary>Reads <c>[assembly: BenzeneHttpTrigger(...)]</c> declarations into <see cref="TriggerInfo"/>.</summary>
     internal static class Http
     {
+        public const string AttributeName = "Benzene.Azure.Function.AspNet.BenzeneHttpTriggerAttribute";
+
         public static ImmutableArray<TriggerInfo> Read(GeneratorAttributeSyntaxContext context)
         {
             var builder = ImmutableArray.CreateBuilder<TriggerInfo>();
@@ -27,9 +29,7 @@ namespace Benzene.Azure.Function.SourceGenerators
                 builder.Add(new TriggerInfo(
                     className: AttributeReading.ToIdentifier(name) + "HttpFunction",
                     functionNameLiteral: AttributeReading.Literal(name),
-                    bindingAttribute: binding,
-                    parameterType: "global::Microsoft.AspNetCore.Http.HttpRequest",
-                    parameterName: "req",
+                    parameterList: $"[{binding}] global::Microsoft.AspNetCore.Http.HttpRequest req",
                     returnType: "global::System.Threading.Tasks.Task<global::Microsoft.AspNetCore.Mvc.IActionResult>",
                     dispatchExpression: "global::Benzene.Azure.Function.AspNet.Extensions.HandleHttpRequest(_app, req)"));
             }

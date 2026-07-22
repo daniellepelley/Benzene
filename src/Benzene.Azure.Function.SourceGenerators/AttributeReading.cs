@@ -89,6 +89,28 @@ namespace Benzene.Azure.Function.SourceGenerators
             return fallbackExpression;
         }
 
+        /// <summary>Reads a named <c>typeof(...)</c> argument as a fully-qualified type name (with <c>global::</c>), or null.</summary>
+        public static string? NamedType(AttributeData attribute, string name)
+        {
+            foreach (var arg in attribute.NamedArguments)
+            {
+                if (arg.Key == name && arg.Value.Value is ITypeSymbol type)
+                {
+                    return type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Formats an optional <c>, Name = "value"</c> string binding argument, or empty when the value is empty.</summary>
+        public static string OptionalStringArg(string name, string value) =>
+            value.Length > 0 ? $", {name} = {Literal(value)}" : string.Empty;
+
+        /// <summary>Formats an optional <c>, Name = true</c> boolean binding argument, or empty when false.</summary>
+        public static string OptionalBoolArg(string name, bool value) =>
+            value ? $", {name} = true" : string.Empty;
+
         /// <summary>The single required trigger name (first constructor argument), or null if absent/empty.</summary>
         public static string? TriggerName(AttributeData attribute)
         {

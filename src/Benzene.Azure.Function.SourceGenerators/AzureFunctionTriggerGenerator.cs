@@ -18,21 +18,36 @@ namespace Benzene.Azure.Function.SourceGenerators
     [Generator]
     public class AzureFunctionTriggerGenerator : IIncrementalGenerator
     {
-        internal const string HttpAttribute = "Benzene.Azure.Function.AspNet.BenzeneHttpTriggerAttribute";
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // ForAttributeWithMetadataName is the efficient, incremental way to find (assembly-level)
-            // attributes by type - each declared trigger flows through as a value-equatable TriggerInfo,
-            // so an unchanged set of declarations short-circuits the cache.
-            var http = context.SyntaxProvider
+            // One registration per transport. Each reads its own assembly attribute into value-equatable
+            // TriggerInfos; a distinct class-name suffix per transport keeps generated classes from
+            // colliding across transports. ForAttributeWithMetadataName is the efficient, incremental
+            // way to find (assembly-level) attributes by type.
+            Register(context, Http.AttributeName, Http.Read);
+            Register(context, ServiceBus.AttributeName, ServiceBus.Read);
+            Register(context, EventHub.AttributeName, EventHub.Read);
+            Register(context, Kafka.AttributeName, Kafka.Read);
+            Register(context, QueueStorage.AttributeName, QueueStorage.Read);
+            Register(context, BlobStorage.AttributeName, BlobStorage.Read);
+            Register(context, EventGrid.AttributeName, EventGrid.Read);
+            Register(context, CosmosDb.AttributeName, CosmosDb.Read);
+            Register(context, Timer.AttributeName, Timer.Read);
+        }
+
+        private static void Register(
+            IncrementalGeneratorInitializationContext context,
+            string attributeMetadataName,
+            System.Func<GeneratorAttributeSyntaxContext, ImmutableArray<TriggerInfo>> read)
+        {
+            var provider = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
-                    HttpAttribute,
+                    attributeMetadataName,
                     predicate: static (_, _) => true,
-                    transform: static (ctx, _) => Http.Read(ctx))
+                    transform: (ctx, _) => read(ctx))
                 .SelectMany(static (items, _) => items);
 
-            context.RegisterSourceOutput(http.Collect(), static (spc, triggers) => Execute(spc, triggers));
+            context.RegisterSourceOutput(provider.Collect(), static (spc, triggers) => Execute(spc, triggers));
         }
 
         private static void Execute(SourceProductionContext context, ImmutableArray<TriggerInfo> triggers)
@@ -62,7 +77,7 @@ namespace Benzene.Azure.Function.SourceGenerators
                 sb.AppendLine();
                 sb.AppendLine($"        [global::Microsoft.Azure.Functions.Worker.Function({trigger.FunctionNameLiteral})]");
                 sb.AppendLine($"        public {trigger.ReturnType} Run(");
-                sb.AppendLine($"            [{trigger.BindingAttribute}] {trigger.ParameterType} {trigger.ParameterName})");
+                sb.AppendLine($"            {trigger.ParameterList})");
                 sb.AppendLine($"            => {trigger.DispatchExpression};");
                 sb.AppendLine("    }");
                 sb.AppendLine("}");
