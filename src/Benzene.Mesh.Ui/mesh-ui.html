@@ -212,6 +212,8 @@
   .b-healthy { color: var(--ok); background: var(--m-post-bg); }
   .b-unhealthy { color: var(--m-put); background: var(--m-put-bg); }
   .b-unreachable { color: var(--req); background: var(--m-delete-bg); }
+  .b-warning { color: var(--m-put); background: var(--m-put-bg); }
+  .b-failed { color: var(--req); background: var(--m-delete-bg); }
   .b-drift { color: var(--m-event); background: var(--m-event-bg); }
   .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 620; letter-spacing: -.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .svc-team { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
@@ -244,6 +246,12 @@
   }
   .chip b { font-weight: 700; color: var(--ink); }
   .chip.dep { background: var(--accent-tint); color: var(--accent); }
+  /* Root-cause detail for a non-OK check: the "why" behind the warning/failure. Only shown when
+     the check is not ok, so a healthy check stays a single clean line (see renderHealthChecks). */
+  .check-detail { margin-top: 7px; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; align-items: baseline; }
+  .check-detail .cd-k { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-transform: none; }
+  .check-detail .cd-v { font-family: var(--mono); font-size: 11.5px; color: var(--ink); word-break: break-word; }
+  .check-detail-empty { margin-top: 7px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
   .empty-state .mono { color: var(--ink-soft); }
@@ -693,6 +701,17 @@
   function statusBadgeClass(status) {
     return { healthy: "b-healthy", unhealthy: "b-unhealthy", unreachable: "b-unreachable" }[status] || "b-unhealthy";
   }
+  /* A per-check status uses its own vocabulary (ok/warning/failed) - warning is a real, distinct tier
+     from failed (a 401/403 permission blip degrades to warning, not failed), so give it its own amber
+     badge rather than folding it into the service-level "unhealthy" fallback. */
+  function checkBadgeClass(status) {
+    return { ok: "b-healthy", warning: "b-warning", failed: "b-failed" }[status] || "b-warning";
+  }
+  function formatCheckDataValue(v) {
+    if (v == null) return "";
+    if (typeof v === "object") { try { return JSON.stringify(v); } catch (e) { return String(v); } }
+    return String(v);
+  }
   function resolveUrl(relative) {
     try {
       // manifestUrl itself is very often relative (a bare filename, or root-relative like
@@ -992,7 +1011,7 @@
         var head = el("div", "check-row");
         head.appendChild(el("span", "cname", key));
         head.appendChild(el("span", "ctype", c.type || ""));
-        head.appendChild(el("span", "badge " + statusBadgeClass(c.status === "ok" ? "healthy" : c.status === "failed" ? "unreachable" : "unhealthy"), c.status || ""));
+        head.appendChild(el("span", "badge " + checkBadgeClass(c.status), c.status || ""));
         row.appendChild(head);
 
         var chips = el("div", "chips");
@@ -1003,6 +1022,25 @@
           chips.appendChild(chip);
         });
         if (chips.childNodes.length) row.appendChild(chips);
+
+        /* The "why". A healthy check needs no detail; a warning/failure does - that's the first
+           question a reader asks. The check's own Data bag carries the actionable discriminators
+           (e.g. Error/ErrorCode/StatusCode from the shared classification policy). Only render it for
+           a non-ok status, and degrade gracefully when a check reports no Data (it's not guaranteed). */
+        if (c.status && c.status !== "ok") {
+          var data = c.data || {};
+          var dataKeys = Object.keys(data);
+          if (dataKeys.length) {
+            var detail = el("div", "check-detail");
+            dataKeys.forEach(function (k) {
+              detail.appendChild(el("span", "cd-k", k));
+              detail.appendChild(el("span", "cd-v", formatCheckDataValue(data[k])));
+            });
+            row.appendChild(detail);
+          } else {
+            row.appendChild(el("div", "check-detail-empty", "No further detail reported by this check."));
+          }
+        }
         body.appendChild(row);
       });
   }

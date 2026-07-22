@@ -95,7 +95,18 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   entry's `transports` is non-empty - a `.svc-transports` chip row of every transport that
   service is wired to receive messages over). Expanding a card
   lazily fetches that service's `services/{name}.json` (resolved relative to the manifest's own
-  URL, via `resolveUrl()`) and renders its health-check detail (type, status, dependencies, data).
+  URL, via `resolveUrl()`) and renders its health-check detail: per check, its name, `type`, a
+  status badge (`ok`/`warning`/`failed` via `checkBadgeClass` - `warning` is a distinct amber tier
+  from `failed`'s red, mirroring the `Benzene.HealthChecks.Core` model where a 401/403 permission
+  blip degrades to `warning`, not `failed`), and dependency chips. For any **non-ok** check it also
+  renders the check's `data` bag as a key/value **root-cause** block - the "why" behind the
+  warning/failure (e.g. `Error`/`ErrorCode`/`StatusCode` from the shared classification policy) - so
+  a reader doesn't have to leave the mesh to find out what's wrong. An ok check stays a single clean
+  line (no detail needed); a non-ok check whose `data` is empty degrades to a "No further detail
+  reported by this check." note (population is per-check, not guaranteed). Data keys are shown
+  verbatim - the aggregator camelCases property names but not dictionary keys, and the underlying
+  classification policy deliberately reports only non-sensitive discriminators (exception *type*,
+  code, status), never the exception message.
   `resolveUrl()` first resolves `manifestUrl` itself against `location.href` before resolving the
   relative path against *that* - `manifestUrl` is very often relative on its own (a bare filename,
   or root-relative like `/artifacts/manifest.json`, the common case for an aggregator host
