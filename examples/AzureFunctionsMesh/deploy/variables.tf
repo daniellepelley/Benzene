@@ -38,3 +38,14 @@ variable "discovery_tag_key" {
   type        = string
   default     = "benzene"
 }
+
+variable "wire_eventgrid_subscriptions" {
+  description = <<-EOT
+    Whether to create the Event Grid -> Function subscriptions. An Azure-function event subscription
+    requires the target function to already exist, but Terraform runs before the code is published, so
+    the deploy does one apply with this false (everything except the subscriptions), publishes the code,
+    then a second apply with this true to wire the subscriptions onto the now-deployed functions.
+  EOT
+  type        = bool
+  default     = false
+}
