@@ -635,18 +635,16 @@
       return new URL(relative, base).toString();
     } catch (e) { return relative; }
   }
-  /* Best-effort: derive a Benzene.Spec.Ui link from a service's specUrl - not guaranteed to
-     resolve for every hosting layout, since it assumes /spec-ui sits next to /spec on the same
-     host. */
-  function specUiLink(specUrl) {
-    try {
-      var u = new URL(specUrl, location.href);
-      // A self-reported manifest is untrusted; only derive a link from an http(s) spec URL.
-      if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-      var specUiPath = u.pathname.replace(/\/spec$/, "/spec-ui");
-      if (specUiPath === u.pathname) return null;
-      return u.origin + specUiPath + "?url=" + encodeURIComponent(specUrl);
-    } catch (e) { return null; }
+  /* The mesh-hosted Spec UI link for a service. The spec page lives next to this one - as a static
+     file (mesh-spec-ui.html) or, when this page is served from a pipeline at /mesh-ui, at
+     /mesh-spec-ui.html - so a single relative href resolves in both. We pass the service name, the
+     manifest URL this page loaded from (so the spec page resolves services/{name}.json from the same
+     place), and this page's own URL for the spec page's "back to Mesh" link. */
+  function meshSpecUiHref(serviceName) {
+    var qs = "?service=" + encodeURIComponent(serviceName);
+    if (manifestUrl) qs += "&manifest=" + encodeURIComponent(manifestUrl);
+    qs += "&mesh=" + encodeURIComponent(location.pathname + location.search);
+    return "mesh-spec-ui.html" + qs;
   }
   /* Only allow http(s) URLs to become anchor hrefs. specUrl/healthUrl come from an untrusted
      self-reported manifest, so a javascript:/data: URL would otherwise execute on click (target
@@ -830,12 +828,18 @@
     if (svc.owningTeam) head.appendChild(el("span", "svc-team", svc.owningTeam));
 
     var links = el("div", "svc-links");
+    // "spec" opens the mesh-hosted Spec UI (mesh-spec-ui.html), which renders the spec the aggregator
+    // captured into this same origin's services/{name}.json - so the service itself only ever serves
+    // JSON, never any HTML. A single relative link works whether this page is a static file or served
+    // from a pipeline at /mesh-ui (the spec page answers at /mesh-spec-ui.html in that case). The raw
+    // JSON stays one click away via the separate "raw" link.
+    var a1 = el("a", null, "spec"); a1.href = meshSpecUiHref(svc.name); a1.target = "_blank"; a1.rel = "noopener";
+    a1.title = "View this service's spec in the mesh-hosted Spec UI";
+    a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1);
     var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
-    if (specHref) { var a1 = el("a", null, "spec"); a1.href = specHref; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
+    if (specHref) { var aRaw = el("a", null, "raw"); aRaw.href = specHref; aRaw.target = "_blank"; aRaw.rel = "noopener"; aRaw.title = "The service's raw spec JSON (the Cloud Service contract)"; aRaw.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(aRaw); }
     var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
     if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
-    var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
-    if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; a3.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a3); }
     var a4 = el("button", "svc-topics-link", "topics");
     a4.type = "button";
     a4.title = "Find topics " + svc.name + " produces or consumes";
@@ -1282,7 +1286,7 @@
   }
 
   /* Each producer/consumer gets the *real* service card - same accordion, same lazy health-check
-     detail, same spec/health/spec-ui/topics links - as the main service list, not just a name.
+     detail, same spec/raw/health/topics links - as the main service list, not just a name.
      "All the details about that topic" means all the details about the services on it too. A
      name with no matching manifest entry (a service that's since been removed from the registry,
      or - for a "gap" topic - a producer outside this fleet entirely) renders as a plain

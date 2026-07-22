@@ -62,6 +62,9 @@ public class StartUp : BenzeneStartUp
         app.UseHttp(http => http
             .UseBenzeneEnrichment()
             .UseMeshUi("/mesh-ui", "manifest.json")
+            // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's spec
+            // from the same-origin services/{name}.json snapshot, so a service only serves JSON.
+            .UseMeshSpecUi("/mesh-spec-ui.html", "manifest.json")
             // Allow the AsyncAPI Studio deep-link to fetch asyncapi.json cross-origin (Benzene's own CORS).
             .UseMeshArtifacts(new CorsSettings { AllowedDomains = new[] { "https://studio.asyncapi.com" } })
             .UseMessageHandlers(typeof(StartUp).Assembly));

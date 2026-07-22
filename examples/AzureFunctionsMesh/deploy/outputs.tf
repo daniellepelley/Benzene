@@ -9,8 +9,9 @@ output "mesh_refresh_url" {
 }
 
 output "service_spec_ui_urls" {
-  description = "Each service's Spec UI."
-  value       = { for k, app in azurerm_linux_function_app.service : k => "https://${app.default_hostname}/benzene/spec-ui" }
+  description = "Each service's Spec UI — hosted by the mesh, not the service (the service serves only JSON). The mesh discovers each site by its Function App name, which is the ?service= key here."
+  value = { for k, app in azurerm_linux_function_app.service : k =>
+  "https://${azurerm_linux_function_app.mesh.default_hostname}/mesh-spec-ui.html?service=${app.name}&manifest=manifest.json" }
 }
 
 output "service_function_app_names" {

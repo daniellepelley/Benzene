@@ -7,7 +7,6 @@ using Benzene.Diagnostics;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
-using Benzene.Spec.Ui;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,9 +15,11 @@ namespace Benzene.Examples.AzureFunctionsMesh.Service;
 /// <summary>
 /// One Benzene Cloud Service, hosted as an <b>Azure Function</b> (isolated worker, HTTP trigger). The
 /// domain it serves (orders/payments/shipping) is chosen at startup by the <c>MESH_SERVICE</c> env var,
-/// so a single deployable is published three times as three tagged Function Apps. It exposes the full
-/// Cloud Service Profile over HTTP — <c>/benzene/spec</c>, <c>/benzene/health</c>, <c>/benzene/invoke</c>,
-/// <c>/benzene/spec-ui</c> — which is exactly how the mesh interrogates it (plain HTTPS). The catch-all
+/// so a single deployable is published three times as three tagged Function Apps. It exposes the
+/// Cloud Service Profile over HTTP — <c>/benzene/spec</c>, <c>/benzene/health</c>, <c>/benzene/invoke</c>
+/// — which is exactly how the mesh interrogates it (plain HTTPS). Note it serves <b>no HTML</b> of its
+/// own: the Cloud Service contract is JSON only (spec/health/invoke), and the spec is rendered by the
+/// mesh-hosted Spec UI (<c>UseMeshSpecUi</c>), not by the service. The catch-all
 /// <see cref="HttpFunction"/> forwards every request into this pipeline; <c>host.json</c> clears the
 /// <c>/api</c> route prefix so those paths sit at the root the mesh's default discovery URLs expect.
 /// </summary>
@@ -47,9 +48,11 @@ public class StartUp : BenzeneStartUp
         var region = Environment.GetEnvironmentVariable("REGION_NAME") ?? "local";
         IHealthCheck[] healthChecks = { new ServiceHealthCheck(name) };
 
+        // No UseSpecUi here on purpose: a Cloud Service serves only JSON (spec/health/invoke); it does
+        // not host any HTML. The browsable spec view is served by the mesh instead (UseMeshSpecUi),
+        // which renders this service's captured spec from the mesh's own same-origin artifacts.
         app.UseHttp(http => http
             .UseBenzeneEnrichment()
-            .UseSpecUi("/benzene/spec-ui", "/benzene/spec?type=benzene")
             .UseBenzeneCloudService($"{name}-api", cloud => cloud
                 .WithServiceVersion("1.0.0")
                 .WithInstanceId(name)

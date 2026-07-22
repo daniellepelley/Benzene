@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="mesh-ui.html" LogicalName="Benzene.Mesh.Ui.mesh-ui.html" />
+    <EmbeddedResource Include="mesh-spec-ui.html" LogicalName="Benzene.Mesh.Ui.mesh-spec-ui.html" />
     <EmbeddedResource Include="mesh-fleet-ui.html" LogicalName="Benzene.Mesh.Ui.mesh-fleet-ui.html" />
   </ItemGroup>
 

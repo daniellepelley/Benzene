@@ -28,6 +28,18 @@ This package renders the catalog; it does **not** generate it. Generation lives 
 - `MeshUiExtensions.UseMeshUi<TContext>(this IMiddlewarePipelineBuilder<TContext>, path = "/mesh-ui", manifestUrl = "manifest.json")`
   — registers the middleware on any Benzene HTTP pipeline. This is a **secondary convenience**,
   not the primary deployment path (see below).
+- `MeshSpecUiPage` / `MeshSpecUiMiddleware<TContext>` / `UseMeshSpecUi<TContext>(path =
+  "/mesh-spec-ui.html", manifestUrl = "manifest.json")` — the **mesh-hosted per-service Spec UI**
+  (page: `mesh-spec-ui.html`), the target of `mesh-ui.html`'s per-service *spec* link. It renders a
+  single service's Benzene spec — the same Swagger-style view as `Benzene.Spec.Ui`'s `spec-ui.html` —
+  but reads the spec the aggregator already captured into the **same-origin** `services/{name}.json`
+  snapshot (`MeshServiceSnapshot.specJson`), unwrapping it client-side. So a mesh service only ever
+  serves its spec as **JSON** (the Cloud Service contract) — it never has to host any HTML, and there
+  is no cross-origin fetch. Opened as `mesh-spec-ui.html?service=<name>&manifest=<url>&mesh=<backUrl>`.
+  The default served path ends in `.html` on purpose: that one relative link resolves whether the mesh
+  UI is a static file next to the artifacts or served from a pipeline at `/mesh-ui` (the page then
+  answers at `/mesh-spec-ui.html`). It has no "try it" (that would be cross-origin to the service) and
+  no load dialog — it's a fixed, read-only view of one captured spec, with a "‹ Mesh" back link.
 
 ## Primary deployment target: a static file host, not a Benzene pipeline
 Unlike `Benzene.Spec.Ui` (which is served by the exact service whose spec it shows),
@@ -57,10 +69,14 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   that carries no `snapshotAtUtc` at all (`freshnessKnown()` false). All-clear renders a check-mark
   empty state.
 - Renders a stats bar (total/healthy/unhealthy/unreachable/drift counts) and a searchable list of
-  service cards (name, status badge, drift badge, links to the service's raw `specUrl`/
-  `healthUrl`, a best-effort "View Spec UI" link derived from `specUrl`, and - when the manifest
-  entry's `transports` is non-empty - a `.svc-transports` chip row of every transport that
-  service is wired to receive messages over). Expanding a card
+  service cards. Each card's link row is: **spec** (opens the mesh-hosted `mesh-spec-ui.html` for
+  that service — the mesh renders the spec itself, so the service needs no UI of its own), **raw**
+  (the service's raw `specUrl` JSON — the Cloud Service contract), **health** (`healthUrl`), and a
+  **topics** button; plus — when the manifest entry's `transports` is non-empty — a `.svc-transports`
+  chip row of every transport that service is wired to receive messages over. (The old "spec ui" link
+  that *derived* a `/spec-ui` URL on the service's own host was removed: it wrongly assumed the
+  service hosts HTML, which the Cloud Service contract does not require — the mesh hosts the spec UI
+  now.) Expanding a card
   lazily fetches that service's `services/{name}.json` (resolved relative to the manifest's own
   URL, via `resolveUrl()`) and renders its health-check detail (type, status, dependencies, data).
   `resolveUrl()` first resolves `manifestUrl` itself against `location.href` before resolving the
