@@ -95,7 +95,6 @@ written once and apply everywhere.
 
 Full documentation is available in [`docs/`](./docs), including:
 
-- [Migration Guide (Alpha → 1.0)](docs/migration-alpha-to-1.0.md)
 - [Benzene Specification (Draft)](docs/specification/README.md) — the language-neutral core:
   concepts, wire contracts, transport bindings, and a porting guide for implementing Benzene in
   another language

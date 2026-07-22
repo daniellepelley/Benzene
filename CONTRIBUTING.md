@@ -40,8 +40,7 @@ evolving quickly, so please read this file — and `AGENTS.md` — before sendin
 - Do not modify `Benzene.sln` / `Benzene.Examples.sln` structure without discussing it first.
 - Do not add new NuGet dependencies without a strong reason — raise it first.
 - Do not change public API signatures on existing middleware without flagging it as a breaking
-  change (see `CHANGELOG.md`'s `**BREAKING:**`-prefixed entries for the expected style, and
-  `docs/migration-alpha-to-1.0.md` for how breaking renames are documented for consumers).
+  change (see `CHANGELOG.md`'s `**BREAKING:**`-prefixed entries for the expected style).
 - Do not skip or disable existing tests to make a build pass.
 - Prefer editing existing files/patterns over introducing new abstractions — see AGENTS.md's "no
   premature abstraction" convention, illustrated in `work/batch-failure-handling.md`'s "Why this

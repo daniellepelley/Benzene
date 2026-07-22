@@ -123,9 +123,8 @@ The alpha-era service-name/topic-key factory + decorator-chain mechanism - `Clie
 `TraceContextBenzeneMessageClientWrapper`, `ClientMessageSender<TRequest,TResponse>`,
 `ClientMapping`, `ClientMappingBuilder`, `TopicAndServiceKey`, `IClientHeaders`, `ClientHeaders` -
 **has been deleted entirely**, after one release cycle as `[Obsolete]`. See
-`docs/migration-alpha-to-1.0.md`'s "Breaking: removed the `ClientBuilder`-based outbound client
-mechanism" section for the full old→new mapping, and `work/benzene-clients-redesign-plan.md`'s
-2026-07-17 Step 4 scope-correction update for what was verified safe to delete. **Untouched**:
+`work/benzene-clients-redesign-plan.md`'s 2026-07-17 Step 4 scope-correction update for the full
+old→new mapping and what was verified safe to delete. **Untouched**:
 `IBenzeneMessageClient` itself and its concrete transport implementations
 (`SqsBenzeneMessageClient`, `SnsBenzeneMessageClient`, `AwsLambdaBenzeneMessageClient`,
 `EventBridgeBenzeneMessageClient`, `GrpcBenzeneMessageClient`, `KafkaBenzeneMessageClient`) -

@@ -3,8 +3,7 @@
 > **Superseded note (post-implementation):** this plan built `UseResponseEvents` inside
 > `Benzene.Extras`. That package was subsequently decommissioned; the response-events code now
 > lives in its own **`Benzene.ResponseEvents`** package (references below to
-> `Benzene.Extras/ResponseEvents` and `Benzene.Extras.ResponseEvents` are historical). See
-> `docs/migration-alpha-to-1.0.md`.
+> `Benzene.Extras/ResponseEvents` and `Benzene.Extras.ResponseEvents` are historical). See `CHANGELOG.md`.
 
 ## Context
 
@@ -94,8 +93,7 @@ purity preserved); no scoped holder is needed since publishing happens inline.
 
 - Retiring/reimplementing `Broadcast` — ~~left untouched and marked superseded in docs~~ **done
   in a follow-up: `Benzene.Extras/Broadcast` is deleted** (`MapCrudConvention()` +
-  `AddResponseEventDeclarations(...)` replace it; see `CHANGELOG.md` and
-  `docs/migration-alpha-to-1.0.md`).
+  `AddResponseEventDeclarations(...)` replace it; see `CHANGELOG.md`).
 - F1 startup diagnostic (payload-with-nowhere-to-go warning) — needs the mapping registry
   this plan introduces; follow-up.
 - F2 (Event Hub envelope's discarded response serialization) — independent fix.

@@ -2,8 +2,7 @@
 
 > Cross-service correlation is handled by automatic [W3C `traceparent` propagation](monitoring.md#w3c-trace-context)
 > (`UseW3CTraceContext()`), which continues a distributed trace from the incoming
-> `traceparent`/`tracestate` headers on every transport — see the
-> [migration guide](migration-alpha-to-1.0.md#correlation-ids).
+> `traceparent`/`tracestate` headers on every transport.
 
 ## What remains
 
