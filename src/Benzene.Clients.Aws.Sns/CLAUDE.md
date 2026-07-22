@@ -17,6 +17,13 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
   `OutboundContext` overloads of `.UseSns(topicArn, …)` for `AddOutboundRouting(...).Route(topic, …)`.
 - `Extensions` — `UseSnsClient`, `UseSns<T>` (the `IBenzeneClientContext<T,Void>` overloads) and
   `UseSns` (the `OutboundContext` overloads).
+  - **Auto-wired health check (Phase 1, default-on).** The two default (DI-handle) `UseSns`/`UseSns<T>`
+    overloads take `bool healthCheck = true`: unless opted out they auto-register a non-destructive
+    `SnsHealthCheck` for the topic on the **dependency category** (`AddDependencyHealthCheck`, deduped by
+    `"Sns:{topicArn}"`), reusing the `IAmazonSimpleNotificationService` from DI. Surfaces on the deep
+    `healthcheck` layer only — never a liveness/readiness probe (a topic check is shared-fate; see
+    `IDependencyHealthCheck`). The `action`-based overloads don't auto-wire — add `AddSnsHealthCheck`
+    yourself there.
 
 ## Conventions
 - `SnsContextConverter`/`OutboundSnsContextConverter` forward `IBenzeneClientRequest.Headers` onto

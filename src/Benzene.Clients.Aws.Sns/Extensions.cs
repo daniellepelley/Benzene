@@ -1,9 +1,11 @@
 using System;
 using Amazon.SimpleNotificationService;
+using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Messages.BenzeneClient;
 using Benzene.Abstractions.Middleware;
 using Benzene.Clients;
 using Benzene.Core.Middleware;
+using Benzene.HealthChecks.Core;
 using Void = Benzene.Abstractions.Results.Void;
 
 namespace Benzene.Clients.Aws.Sns;
@@ -76,8 +78,12 @@ public static class Extensions
     /// <param name="queueUrl">The ARN of the SNS topic to publish to.</param>
     /// <returns>The pipeline builder for method chaining.</returns>
     public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSns<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SnsContextConverter<T>.DefaultTopicAttribute,
-        SnsPublishOptions? publishOptions = null)
+        SnsPublishOptions? publishOptions = null, bool healthCheck = true)
     {
+        if (healthCheck)
+        {
+            app.RegisterSnsDependencyHealthCheck(queueUrl);
+        }
         return app.Convert(new SnsContextConverter<T>(queueUrl, topicAttributeKey, publishOptions), builder => builder.UseSnsClient());
     }
 
@@ -104,8 +110,23 @@ public static class Extensions
     /// <param name="topicArn">The ARN of the SNS topic to publish to.</param>
     /// <returns>The pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<OutboundContext> UseSns(this IMiddlewarePipelineBuilder<OutboundContext> app, string topicArn, string topicAttributeKey = OutboundSnsContextConverter.DefaultTopicAttribute,
-        SnsPublishOptions? publishOptions = null)
+        SnsPublishOptions? publishOptions = null, bool healthCheck = true)
     {
+        if (healthCheck)
+        {
+            app.RegisterSnsDependencyHealthCheck(topicArn);
+        }
         return app.Convert(new OutboundSnsContextConverter(topicArn, topicAttributeKey, publishOptions), builder => builder.UseSnsClient());
+    }
+
+    // Auto-registers a non-destructive SNS reachability check for the topic on the DEPENDENCY category
+    // (deep healthcheck layer only, never a k8s probe - a topic check is shared-fate). Deduped by
+    // (Type, Name) so two `.UseSns(sameArn)` calls yield one check. Reuses the IAmazonSimpleNotificationService
+    // from DI - the same handle `.UseSnsClient()` resolves.
+    private static void RegisterSnsDependencyHealthCheck<TContext>(this IMiddlewarePipelineBuilder<TContext> app, string topicArn)
+    {
+        app.Register(x => x.AddDependencyHealthCheck(
+            resolver => new SnsHealthCheck(topicArn, resolver.GetService<IAmazonSimpleNotificationService>()),
+            $"Sns:{topicArn}"));
     }
 }

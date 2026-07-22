@@ -326,12 +326,30 @@ SQS, SNS, Lambda, StepFunctions, Service Bus, HTTP. Each default-on client exten
 check on the **dependency category** (deep `healthcheck` layer, never a probe — §3.2 revision), reusing
 the client's own SDK handle, deduped by `(Type, Name)`, with a `healthCheck: false` opt-out. The
 Warning-on-permission / `ErrorCode`/`StatusCode` classification (§3.4, §3.9) is done.
-- ✅ **SQS** — the reference implementation: the two default (DI-handle) `.UseSqs`/`.UseSqs<T>` overloads
-  auto-register `SqsHealthCheck` via `AddDependencyHealthCheck` (dedup `"Sqs:{queueUrl}"`), `healthCheck:
-  false` opts out. The `action`-based (hand-wired-client) overloads don't auto-wire.
-- ⬜ SNS, Lambda, StepFunctions, Service Bus, HTTP — replicate the SQS pattern.
-- ⬜ Default the auto-wired checks under `CachingHealthCheckProcessor` (§3.6) so the deep layer doesn't
-  re-hit every dependency per scrape.
+- ✅ **SQS** — the reference: the two default (DI-handle) `.UseSqs`/`.UseSqs<T>` overloads auto-register
+  `SqsHealthCheck` via `AddDependencyHealthCheck` (dedup `"Sqs:{queueUrl}"`), `healthCheck: false` opts
+  out. The `action`-based (hand-wired-client) overloads don't auto-wire.
+- ✅ **SNS** — same pattern on the two default `.UseSns`/`.UseSns<T>` overloads (dedup `"Sns:{topicArn}"`).
+- ⛔ **Lambda / StepFunctions / Service Bus / HTTP — auto-wiring does NOT structurally apply** (finding
+  from the fan-out; the original plan assumed a uniform `.Use*(resource)` hook that these don't have):
+  - **Lambda** — `.UseAwsLambda<T>()` carries no function name (it's per-call), so there's no config-time
+    site to key a check on. Explicit `AddLambdaHealthCheck(name)` remains the path.
+  - **StepFunctions** — no `.Use*` pipeline extension at all; the client is a factory built with the ARN.
+    Explicit `AddStepFunctionHealthCheck(arn)` remains the path.
+  - **Service Bus** — auto-wiring from `.UseServiceBus` is semantically **wrong**: that's the *send* side
+    (Send claim), but `ServiceBusHealthCheck` peeks (needs the *Listen* claim), and a topic sender has no
+    subscription to peek. Auto-wiring would probe with the wrong claim / wrong entity. The §3.7 co-location
+    move doesn't fix this — it's a producer-vs-consumer mismatch. Keep the explicit consumer-side check.
+  - **HTTP** — there is no Benzene HTTP outbound *client* to hook; `HttpPingHealthCheck` is a generic
+    manual ping (no 1:1 client, so §3.7 co-location N/A).
+  - Net: auto-wiring is the right default only for the **broker send clients that name their resource at
+    config time and whose reachability maps to the send credential** — SQS and SNS. The others stay
+    explicit-registration; that is the correct outcome, not a gap.
+- ⬜ Default the auto-wired checks under `CachingHealthCheckProcessor` (§3.6). **Blocked on a nuance:** the
+  processor is registered app-wide (one `IHealthCheckProcessor` for all topics), but caching must NOT
+  apply to liveness/readiness (they need instant state). Defaulting *only* the deep `healthcheck` layer to
+  caching needs per-topic processor selection, which doesn't exist yet. Left as an explicit opt-in until
+  that seam is added.
 
 **Phase 2 — non-destructive fixes + BYO helper** ✅ *done*
 - ✅ Read-only swaps for SQS/Lambda/StepFunctions; carve out the opt-in active tier with a distinct
