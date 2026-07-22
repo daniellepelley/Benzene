@@ -59,6 +59,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - Rate Limiting *(planned)*
 - [Polly Resilience Pipelines (circuit breaker, timeout, hedging, fallback)](polly-resilience.md) - `Benzene.Resilience` implements retry-with-backoff only; the sibling `Benzene.Resilience.Polly` package runs your own Polly `ResiliencePipeline` as middleware (`.UseResiliencePipeline(...)`) for the full toolkit, and bridges a returned failure result to Polly's outcome model
 - [Request Authentication & Authorization](auth-patterns.md) - OAuth2 bearer token (JWT) validation, Basic auth, and scope-based authorization for services with no security-terminating gateway in front of them
+- [Bring Your Own DI Container](bring-your-own-di-container.md) - Use Lamar, DryIoc, Grace, or any other container behind Benzene with no Benzene-specific package, by plugging its `IServiceProvider` into the host (Benzene ships adapters only for Microsoft DI and Autofac)
 
 ## Cookbook Structure
 
