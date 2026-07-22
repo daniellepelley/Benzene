@@ -17,6 +17,9 @@ concrete options with trade-offs, and recommends a phased path.
 > (non-destructive `healthcheck`-topic reachability, §3.9 permission→Warning), and
 > `AddHttpBenzeneMessageClient(url, healthCheck: true)` which auto-wires the check onto the dependency
 > category. Same-port per the maintainer's decision (it's ordinary middleware on the existing HTTP port).
+> **Demonstrated** in `examples/K8sMesh`: the three Cloud Services now chain orders → payments → shipping
+> over their neighbour's `/benzene-message` endpoint (egress `HttpBenzeneMessageClient` + ingress
+> `UseBenzeneMessage`), turning that mesh from discovery-only into one with real service-to-service traffic.
 > Phase 2 (generic gRPC envelope) remains unstarted.
 
 ---

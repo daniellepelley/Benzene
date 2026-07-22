@@ -18,18 +18,22 @@ services:
     image: benzene-mesh-service:compose
     environment:
       - MESH_SERVICE=orders
+      # Chain the next hop: orders → payments over the BenzeneMessage envelope endpoint. Here services
+      # address each other's container directly, so the port is :8080 (in k8s it's the Service's :80).
+      - DOWNSTREAM_MSG_URL=http://payments:8080/benzene-message
+    depends_on: [payments]
 
   payments:
     image: benzene-mesh-service:compose
     environment:
       - MESH_SERVICE=payments
-    depends_on: [orders]
+      - DOWNSTREAM_MSG_URL=http://shipping:8080/benzene-message
+    depends_on: [shipping]
 
   shipping:
     image: benzene-mesh-service:compose
     environment:
       - MESH_SERVICE=shipping
-    depends_on: [orders]
 
   mesh:
     build:

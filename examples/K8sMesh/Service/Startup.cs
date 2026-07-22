@@ -1,11 +1,15 @@
 using Benzene.Abstractions.Hosting;
 using Benzene.AspNet.Core;
+using Benzene.Client.Http;
+using Benzene.Clients;
 using Benzene.CloudService;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics;
+using Benzene.HealthChecks;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
+using Benzene.Http.BenzeneMessage;
 using Benzene.Microsoft.Dependencies;
 using Benzene.OpenTelemetry;
 using Benzene.Spec.Ui;
@@ -50,15 +54,34 @@ public class Startup : BenzeneStartUp
                 if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
             });
 
-        services.UsingBenzene(x => x
-            .AddBenzene()
-            // Name the service in its own derived spec (the benzene spec's title = IApplicationInfo.Name).
-            // Without this it defaults to BlankApplicationInfo and the spec/Spec UI show no service name.
-            // Matches the name the mesh discovers this service under (its Kubernetes Service name).
-            .SetApplicationInfo(ServiceName, "1.0.0", $"{ServiceName} service")
-            .AddDiagnostics()
-            .AddMessageHandlers(Domain.HandlersFor(ServiceName))
-            .AddHttpMessageHandlers());
+        services.UsingBenzene(x =>
+        {
+            x.AddBenzene()
+                // Name the service in its own derived spec (the benzene spec's title = IApplicationInfo.Name).
+                // Without this it defaults to BlankApplicationInfo and the spec/Spec UI show no service name.
+                // Matches the name the mesh discovers this service under (its Kubernetes Service name).
+                .SetApplicationInfo(ServiceName, "1.0.0", $"{ServiceName} service")
+                .AddDiagnostics()
+                .AddMessageHandlers(Domain.HandlersFor(ServiceName))
+                .AddHttpMessageHandlers();
+
+            // Outbound: chain to the next service over the BenzeneMessage envelope endpoint. The target is
+            // the downstream service's in-cluster URL (e.g. http://payments/benzene-message), supplied by the
+            // DOWNSTREAM_MSG_URL env var — see k8s/services.yaml. HttpBenzeneMessageClient POSTs the
+            // { topic, headers, body } envelope there and also auto-wires a non-destructive reachability check
+            // (a healthcheck-topic POST) onto the deep healthcheck layer. When no downstream is wired (the
+            // terminal shipping service, or a standalone run) a null client stands in so the handlers resolve.
+            var downstreamUrl = Environment.GetEnvironmentVariable("DOWNSTREAM_MSG_URL");
+            if (!string.IsNullOrEmpty(downstreamUrl))
+            {
+                x.AddSingleton(_ => new HttpClient());
+                x.AddHttpBenzeneMessageClient(downstreamUrl);
+            }
+            else
+            {
+                x.AddScoped<IBenzeneMessageClient>(_ => new NullBenzeneMessageClient());
+            }
+        });
     }
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
@@ -77,6 +100,14 @@ public class Startup : BenzeneStartUp
             .UseW3CTraceContext()
             .UseBenzeneEnrichment()
             .UseBenzeneMetrics()
+            // Receive lightweight BenzeneMessages from other services: a POST of a { topic, headers, body }
+            // envelope to /benzene-message is routed to this service's handlers by the envelope's topic — the
+            // ingress half of the orders → payments → shipping chain (HttpBenzeneMessageClient is the egress
+            // half). The healthcheck topic is routed too, so the callers' auto-wired reachability probe gets a
+            // 200. This is the same server endpoint the AWS Lambda invoke path exposes, over HTTP.
+            .UseBenzeneMessage(bm => bm
+                .UseHealthCheck("healthcheck", healthChecks)
+                .UseMessageHandlers(_ => { }))
             .UseSpecUi("/benzene/spec-ui", "/benzene/spec?type=benzene")
             .UseBenzeneCloudService($"{name}-api", cloud =>
             {

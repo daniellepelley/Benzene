@@ -2,7 +2,9 @@
 
 The Kubernetes counterpart of `examples/AwsMesh`: three Benzene Cloud Services running as pods, plus a
 **mesh service** that discovers them **by label** via the Kubernetes API, interrogates each over plain
-in-cluster HTTP, and serves the Mesh UI. It runs two ways from the same manifests: credential-free on
+in-cluster HTTP, and serves the Mesh UI. The three services also **call each other** — orders → payments
+→ shipping — over lightweight Benzene messages on HTTP, so the mesh has real service-to-service traffic
+to observe, not just static specs. It runs two ways from the same manifests: credential-free on
 a throwaway [`kind`](https://kind.sigs.k8s.io) cluster in CI, or on a real **AWS EKS** cluster with
 the Mesh UI on the public internet (see "Deploy to AWS (EKS)" below).
 
@@ -10,19 +12,55 @@ the Mesh UI on the public internet (see "Deploy to AWS (EKS)" below).
 
 ```
         Kubernetes namespace: benzene-mesh
-  ┌──────────┬───────────┬────────────┐
-  │ orders   │ payments  │ shipping   │   3 Deployments (one image, MESH_SERVICE selects the domain)
-  │ Service  │ Service   │ Service    │   each Service labelled  benzene: "true"
-  └────┬─────┴─────┬─────┴─────┬──────┘
-       │           │           │  ▲  3. each service PUSHES register + heartbeat + traces to the
-       │           │           │  │     mesh's collector (http://mesh/benzene/invoke) — the live feed
+  ┌──────────┐   ┌───────────┐   ┌────────────┐
+  │ orders   │──▶│ payments  │──▶│ shipping   │   3 Deployments (one image, MESH_SERVICE selects domain)
+  │ Service  │   │ Service   │   │ Service    │   each Service labelled  benzene: "true"
+  └────┬─────┘   └─────┬─────┘   └─────┬──────┘   ──▶ POST /benzene-message  (a { topic, headers, body }
+       │  ▲            │  ▲            │  ▲             envelope, addressed by in-cluster DNS — the chain)
+       │  │  3. each service PUSHES register + heartbeat + traces to the mesh's collector
+       │  │     (http://mesh/benzene/invoke) — the live feed
        │   1. list Services (label benzene=true) via the Kubernetes API
        │   2. GET http://<svc>.<ns>.svc.cluster.local/benzene/spec|health  (interrogate — the pull feed)
-       ▼                          │
+       ▼
    ┌────────┐   writes manifest.json / services/*.json / topics.json / registry.json
    │  mesh  │   to /artifacts (pod volume) and serves the Mesh UI at /mesh-ui (pulled/declared)
    └────────┘   + the live Fleet view at /benzene/fleet-ui (pushed/observed) — NodePort 30080
 ```
+
+## Service-to-service calls — lightweight Benzene messages over HTTP
+
+Beyond discovery, each service **chains to the next** over its neighbour's BenzeneMessage endpoint:
+
+- **Ingress** — every service exposes `POST /benzene-message` (`asp.UseBenzeneMessage(...)` in
+  `Service/Startup.cs`). A `{ topic, headers, body }` envelope POSTed there is routed to the service's
+  handlers **by the envelope's topic**, exactly as a queue or a Lambda invoke would — one endpoint serves
+  every topic, no per-route REST contract. It's the same server endpoint the AWS Lambda invoke path
+  exposes, just over HTTP.
+- **Egress** — `orders`' `order:create` handler asks `payments` to `payment:take`, and `payments`'
+  `payment:take` handler asks `shipping` to `shipment:book`, each via **`HttpBenzeneMessageClient`**
+  (`src/Benzene.Client.Http`). The downstream URL is the neighbour's in-cluster DNS name, injected as
+  `DOWNSTREAM_MSG_URL` (e.g. `http://payments/benzene-message`); the terminal `shipping` service has none.
+  Registration is one line — `x.AddHttpBenzeneMessageClient(downstreamUrl)` — which also auto-wires a
+  non-destructive reachability check (a `healthcheck`-topic POST) onto the deep `healthcheck` layer.
+
+Send an order into the front of the chain and watch it propagate (from a `port-forward svc/orders 8081:80`,
+or directly against a service ELB on EKS):
+
+```bash
+curl -XPOST localhost:8081/orders -H 'content-type: application/json' \
+     -d '{"customerId":"cust-1","sku":"espresso","quantity":2}'
+# => {"orderId":"order-1","status":"created"}   ... orders logs: payment:take -> Created
+#    ... payments logs: shipment:book -> Created
+
+# Or hit any service's envelope endpoint directly, addressing a topic it owns:
+curl -XPOST localhost:8081/benzene-message -H 'content-type: application/json' \
+     -d '{"topic":"payment:take","headers":{},"body":"{\"orderId\":\"o-9\",\"amount\":30,\"currency\":\"GBP\"}"}'
+# => {"statusCode":"Created", ... ,"body":"{\"paymentId\":\"pay-1\",\"status\":\"captured\"}"}
+```
+
+Design + trade-offs (why HTTP-envelope over gRPC/TCP for internal calls):
+`work/lightweight-non-http-transport-design.md`. The quickest way to see the whole chain **without
+Kubernetes** is the `compose/` variant (`DOWNSTREAM_MSG_URL` is pre-wired there too).
 
 - Discovery is `Benzene.Mesh.Discovery.Kubernetes` (`KubernetesServiceDiscoveryProvider`): it lists
   Services carrying the `benzene` label and emits **HTTP** registry entries at their in-cluster DNS —

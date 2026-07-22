@@ -25,6 +25,9 @@ spec:
             # Report to the mesh pod's collector (register/heartbeat/traces) so the live Fleet view
             # populates. In-cluster the mesh Service is reachable by name in this namespace.
             - { name: MESH_COLLECTOR_ENVELOPE_URL, value: http://mesh/benzene/invoke }
+            # Chain the next hop over HTTP: orders posts payment:take to the payments service's
+            # BenzeneMessage endpoint, addressed by in-cluster DNS. Service port is 80, so no :8080 here.
+            - { name: DOWNSTREAM_MSG_URL, value: "http://payments/benzene-message" }
           readinessProbe:
             httpGet: { path: /benzene/health, port: 8080 }
             initialDelaySeconds: 3
@@ -61,6 +64,8 @@ spec:
           env:
             - { name: MESH_SERVICE, value: payments }
             - { name: MESH_COLLECTOR_ENVELOPE_URL, value: http://mesh/benzene/invoke }
+            # Second hop: payments posts shipment:book to the shipping service.
+            - { name: DOWNSTREAM_MSG_URL, value: "http://shipping/benzene-message" }
           readinessProbe:
             httpGet: { path: /benzene/health, port: 8080 }
             initialDelaySeconds: 3
