@@ -62,16 +62,20 @@ handler/logic in `Benzene.Examples.App` and wiring it from the hosts, rather tha
   `Benzene.Mesh.Discovery.Azure`, plus a mesh Web App that serves the Mesh UI and persists the catalog
   to **Blob Storage** (`Benzene.Mesh.Azure.Blob`). `deploy/` is Terraform (App Service, storage,
   managed identity + role assignments). Has its own `README.md`.
-- **`AzureFunctionsMesh/`** — the **purely Azure Functions** counterpart of `AzureMesh`: the same three
-  Cloud Services and the mesh, each an isolated-worker **Function App**. Services are HTTP-triggered and
-  expose the Cloud Service Profile via `UseBenzeneCloudService` (works because the Functions HTTP
-  context is an `IHttpContext`); `host.json` clears the `/api` route prefix so `/benzene/*` sits at the
-  root discovery expects. The mesh Function has an HTTP trigger (UI + artifacts + `/mesh/refresh`) and a
-  **timer trigger** driving aggregation (the Consumption-plan replacement for the Web App's
-  `BackgroundService`). Discovery is the **same** `Benzene.Mesh.Discovery.Azure` — a Function App is a
-  `Microsoft.Web/sites`, so tagged Function Apps are found identically to Web Apps. Own `.sln`,
-  `README.md`, and Terraform `deploy/` (zip-deployed Function Apps, no container registry). Does **not**
-  use the shared `App` domain.
+- **`AzureFunctionsMesh/`** — the **purely Azure Functions** counterpart of `AzureMesh`: **six** Cloud
+  Services (`orders`/`payments`/`shipping`/`inventory`/`notifications`/`analytics`, each its own Function
+  App project, sharing `Shared/`) plus the mesh, each an isolated-worker **Function App**. The services
+  **call each other over Service Bus (commands), Event Hub (fan-out stream) and Event Grid (routed
+  events)** — the Azure counterpart of `AwsMesh`'s SQS/SNS/EventBridge topology; each `Triggers.cs`
+  declares just the triggers it uses via the source generator. Services are HTTP-triggered too and expose
+  the Cloud Service Profile via `UseBenzeneCloudService` (works because the Functions HTTP context is an
+  `IHttpContext`); `host.json` clears the `/api` route prefix so `/benzene/*` sits at the root discovery
+  expects. The mesh Function has an HTTP trigger (UI + artifacts + `/mesh/refresh`) and a **timer
+  trigger** driving aggregation (the Consumption-plan replacement for the Web App's `BackgroundService`).
+  Discovery is the **same** `Benzene.Mesh.Discovery.Azure` — a Function App is a `Microsoft.Web/sites`, so
+  tagged Function Apps are found identically to Web Apps. Own `.sln`, `README.md`, and Terraform `deploy/`
+  (zip-deployed Function Apps + Service Bus/Event Hub/Event Grid, no container registry; Event Grid
+  subscriptions wired in a second apply after publish). Does **not** use the shared `App` domain.
 
 ## How these build (important)
 - Examples build via **`Benzene.Examples.sln`** at the repo root — **not** the main `Benzene.sln`.

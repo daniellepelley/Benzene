@@ -3,12 +3,12 @@
 The all-**Azure Functions** counterpart of `examples/AzureMesh` (which hosts the same services as Web
 Apps for Containers). Here **every** component is an isolated-worker Azure Function:
 
-- **3 Cloud Services** (`orders` / `payments` / `shipping`) — one deployable, `MESH_SERVICE` selects
-  the domain — each an HTTP-triggered Function exposing the Cloud Service Profile as **JSON only**
-  (`/benzene/spec`, `/benzene/health`, `/benzene/invoke`). It hosts **no HTML of its own** — the
-  browsable spec view is served by the mesh (see below), not the service — which is the whole point:
-  the Cloud Service contract is JSON, not a UI. Each Function App is tagged `benzene = "true"` for
-  discovery.
+- **6 Cloud Services** — `orders` / `payments` / `shipping` / `inventory` / `notifications` /
+  `analytics`, each its own Function App project — that **call each other over Service Bus, Event Hub
+  and Event Grid** (see "Interconnectivity" below). Each exposes the Cloud Service Profile as **JSON
+  only** (`/benzene/spec`, `/benzene/health`, `/benzene/invoke`) over an HTTP trigger; it hosts **no
+  HTML of its own** — the browsable spec view is served by the mesh, not the service. Each Function App
+  is tagged `benzene = "true"` for discovery.
 - **1 mesh** — a Function App with **two** triggers: a catch-all **HTTP trigger** serving the Mesh UI
   (`/mesh-ui`), the mesh-hosted per-service **Spec UI** (`/mesh-spec-ui.html`, the target of each
   service's *spec* link — it renders the spec the aggregator captured, so services need no UI), and the
@@ -46,13 +46,36 @@ here:
 | Discovery | `Benzene.Mesh.Discovery.Azure` | **the same** package |
 | Catalog store | `Benzene.Mesh.Azure.Blob` | **the same** package |
 
+## Interconnectivity — one transport per job
+
+The six services form a live fulfilment flow, each Azure transport used for what it's good at (the
+`Shared/` project holds the wiring identical across services; each service's `Triggers.cs` declares just
+the triggers it uses, via the source generator):
+
+| Transport | Idiomatic for | In this example |
+|---|---|---|
+| **Service Bus queue** | point-to-point **command**, one consumer | `orders → payments` (`payment:take`), `payments → shipping` (`shipment:book`) |
+| **Event Hub** | high-throughput **event stream**, fan-out via consumer groups | `orders` streams `order:placed` → **inventory + notifications** (a consumer group each) |
+| **Event Grid** | **routed integration events**, filtered by event type | `payments` publishes `payment:captured`, `shipping` publishes `shipment:dispatched` → **notifications / inventory / analytics** |
+
+Every hop goes through the same Benzene `IBenzeneMessageSender` (`AddOutboundRouting` → `UseServiceBus`
+/ `UseEventHub` / `UseEventGrid`), and the receiving side is the matching Benzene ingress
+(`app.UseServiceBus` / `app.UseEventHub` / `app.UseEventGrid`) — the **same handler**, no per-transport
+code. Each service also **declares** what it sends (spec `events`), so the mesh derives the structural
+topology across all six.
+
+> The Event Hub egress↔Functions-trigger round-trip needed a small framework addition (property-based
+> Event Hub ingress, `UseEventHub(eh => eh.UseMessageHandlers())`) — see `Benzene.Azure.Function.EventHub`.
+
 ## Projects
 
 | Path | What it is |
 |---|---|
-| `Service/` | the Cloud Service Function (one deployable, `MESH_SERVICE` selects the domain), published 3× |
+| `Shared/` | the common wiring (Cloud Service Profile + HTTP) + the lazy Service Bus/Event Hub/Event Grid client helpers |
+| `Orders/` `Payments/` `Shipping/` | command-chain services (Service Bus) that also publish events (Event Hub / Event Grid) |
+| `Inventory/` `Notifications/` `Analytics/` | pure event consumers (Event Hub and/or Event Grid) |
 | `Mesh/` | the mesh Function (HTTP: UI + artifacts + refresh; timer: aggregation), Azure discovery + Blob store |
-| `deploy/` | Terraform: storage, Consumption plan, 4 Function Apps, managed identity + role assignments |
+| `deploy/` | Terraform: storage, Consumption plan, 7 Function Apps, Service Bus + Event Hub + Event Grid, managed identity + roles |
 
 ## Run it locally
 
@@ -65,11 +88,15 @@ the value is that the whole thing **builds and wires up** and each Function star
 ```bash
 # from examples/AzureFunctionsMesh
 dotnet build Benzene.Example.AzureFunctionsMesh.sln
-# service (pick a domain)
-cd Service && MESH_SERVICE=orders func start
+# a service (each is its own project now — Orders/Payments/Shipping/Inventory/Notifications/Analytics)
+cd Orders && func start
 # mesh (needs MESH_BLOB_URI + az login); serves /mesh-ui
 cd ../Mesh && func start
 ```
+
+The inter-service sends are best-effort: with no Service Bus/Event Hub/Event Grid connection configured
+locally, a send just logs and the caller continues — so each Function still starts and serves its Cloud
+Service Profile.
 
 ## Deploy it (GitHub Actions)
 
@@ -81,17 +108,18 @@ create the resource group, storage, App Service plan, Function Apps, and **to as
 User Access Administrator). Supply a globally-unique storage-account name (it defaults to
 `benzenefnmesh` and **must differ from other examples'** — the remote state is kept in a
 `<name>tfstate` account, so reusing the AzureMesh example's `benzenemesh` collides on that globally-
-unique name and fails `terraform init` with a 404); it runs `terraform apply`,
-then `func azure functionapp publish` for each of the four apps, and prints the URLs
-(`mesh_ui_url`, `mesh_refresh_url`, `service_spec_ui_urls`).
+unique name and fails `terraform init` with a 404). The workflow runs `terraform apply`, publishes each
+of the seven apps (zip deploy), then a **second `terraform apply`** to wire the Event Grid subscriptions
+(they need their target functions to exist first), and prints the URLs.
 
 `deploy/` provisions a storage account (Functions runtime + the `mesh` blob container), a Linux
-Consumption plan, the four Function Apps (3 tagged services + the mesh), and the mesh identity's role
-assignments (**Reader** on the resource group to list sites, **Storage Blob Data Contributor** on the
-storage account to read/write the catalog). The three services share one deployable with `MESH_SERVICE`
-set per app; the mesh is scoped to this subscription + resource group via `MESH_SUBSCRIPTION_ID` /
-`MESH_RESOURCE_GROUP`. To deploy by hand, `terraform apply` then
-`func azure functionapp publish <name>` from each project.
+Consumption plan, the seven Function Apps (6 tagged services + the mesh), the **Service Bus** namespace +
+queues, the **Event Hub** namespace + hub + consumer groups, the **Event Grid** topic + subscriptions,
+and the mesh identity's role assignments (**Reader** on the resource group to list sites, **Storage Blob
+Data Contributor** on the storage account). Each service gets exactly the messaging connection strings it
+uses; the mesh is scoped via `MESH_SUBSCRIPTION_ID` / `MESH_RESOURCE_GROUP`. To deploy by hand:
+`terraform apply`, publish each project (`func azure functionapp publish <name>`), then
+`terraform apply -var wire_eventgrid_subscriptions=true`.
 
 ## Known first-deploy iteration points
 
@@ -112,6 +140,16 @@ first-run tweaks:
   HTTP GET forces the worker up) before every sync-triggers attempt and widens the retry window; a
   manual `func azure functionapp publish <name>`, or simply hitting any anonymous route once, has the
   same effect.
+- **Event Grid subscriptions need their target function first** — an `azure_function_endpoint` event
+  subscription requires the consumer Function's function to already exist, but Terraform runs before the
+  code is published. So the deploy does one apply **without** the subscriptions
+  (`wire_eventgrid_subscriptions=false`), publishes, then a second apply with them `true`. If a
+  subscription apply fails with the endpoint not found, the function name (the `BenzeneEventGridTrigger`
+  `Name`, e.g. `inventory-eg`) or the publish of that app is the thing to check.
+- **Event Hub / Service Bus / Event Grid connection strings** — each service gets the connection strings
+  it needs as app settings from the namespaces Terraform creates (`ServiceBusConnection`,
+  `EventHubConnection`, `EventGridEndpoint`/`EventGridKey`). A missing/blank one only fails the *send*
+  (best-effort, logged), not startup — so an interrogable-but-not-yet-wired service still shows healthy.
 - **Managed-identity propagation** — a `time_sleep` gives the mesh identity time to propagate before
   its role assignments apply; the roles can still take a minute to take effect (an early pass returns
   `0`, the timer retries).

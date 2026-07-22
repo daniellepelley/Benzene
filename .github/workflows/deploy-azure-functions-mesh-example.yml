@@ -1,6 +1,6 @@
 name: Deploy Azure Functions Mesh Example
 
-# Manual-only: deploys examples/AzureFunctionsMesh (3 Cloud Service Function Apps + the mesh Function
+# Manual-only: deploys examples/AzureFunctionsMesh (6 Cloud Service Function Apps + the mesh Function
 # App) to Azure via Terraform, then publishes the built code to each app with the Functions Core Tools.
 # Needs an Azure service principal in the "test" GitHub Environment: AZURE_CREDENTIALS (azure/login
 # JSON) with rights to create the resource group, storage, App Service plan, Function Apps, and to
@@ -80,7 +80,9 @@ jobs:
             -backend-config="container_name=tfstate" \
             -backend-config="key=azure-functions-mesh.tfstate"
 
-      # Create the storage, plan, the four Function Apps, the mesh identity, and its role assignments.
+      # Create the storage, plan, the seven Function Apps, the Service Bus/Event Hub/Event Grid messaging
+      # infrastructure, the mesh identity, and its role assignments. (Event Grid subscriptions are wired
+      # in a second apply after publish - they need the target functions to exist.)
       # Remote state (above) makes re-runs after a partial failure resume cleanly.
       - name: Terraform apply
         working-directory: examples/AzureFunctionsMesh/deploy
@@ -98,8 +100,8 @@ jobs:
       # .NET 10. Deployment is a plain zip deploy via az (no Functions Core Tools needed), followed
       # by the ARM sync-triggers call - retried with backoff since on Linux Consumption it can
       # return transient errors before freshly deployed content is consistent, and its error BODY
-      # is printed on every failed attempt (it names the real cause; never swallow it). The three
-      # services share one deployable - MESH_SERVICE (set per app by Terraform) selects the domain.
+      # is printed on every failed attempt (it names the real cause; never swallow it). Each service is
+      # its own deployable now (orders/payments/shipping/inventory/notifications/analytics + mesh).
       - name: Publish Function App code (self-contained, resilient sync-triggers)
         working-directory: examples/AzureFunctionsMesh
         run: |
@@ -107,10 +109,12 @@ jobs:
           SUB="$(az account show --query id -o tsv)"
 
           echo "::group::dotnet publish (self-contained linux-x64)"
-          dotnet publish Service -c Release -r linux-x64 --self-contained true -o publish/service
-          dotnet publish Mesh    -c Release -r linux-x64 --self-contained true -o publish/mesh
-          (cd publish/service && zip -qr ../service.zip .)
-          (cd publish/mesh    && zip -qr ../mesh.zip .)
+          # Each service is its own project now (no shared MESH_SERVICE deployable).
+          declare -A PROJECTS=( [orders]=Orders [payments]=Payments [shipping]=Shipping [inventory]=Inventory [notifications]=Notifications [analytics]=Analytics [mesh]=Mesh )
+          for svc in "${!PROJECTS[@]}"; do
+            dotnet publish "${PROJECTS[$svc]}" -c Release -r linux-x64 --self-contained true -o "publish/$svc"
+            (cd "publish/$svc" && zip -qr "../$svc.zip" .)
+          done
           echo "::endgroup::"
 
           # Force the isolated worker to cold-start before asking ARM to enumerate triggers. On a
@@ -149,7 +153,7 @@ jobs:
             az functionapp deployment source config-zip -g "$RG" -n "$app" --src "$zipfile" --timeout 600 || ok=1
             echo "::endgroup::"
             if [ "$ok" -ne 0 ]; then
-              echo "zip deploy reported a failure for $app (the package usually uploaded; the trailing trigger sync is the fragile part). Verifying via ARM sync-triggers..."
+              echo "zip deploy reported a failure for $app (the package usually uploaded; the trailing trigger sync' is the fragile part). Verifying via ARM sync-triggers..."
             fi
             if sync_triggers "$app"; then
               return 0
@@ -164,11 +168,23 @@ jobs:
           }
 
           rc=0
-          for svc in orders payments shipping; do
-            deploy "${PROJECT}-${svc}" publish/service.zip || rc=1
+          for svc in orders payments shipping inventory notifications analytics mesh; do
+            deploy "${PROJECT}-${svc}" "publish/$svc.zip" || rc=1
           done
-          deploy "${PROJECT}-mesh" publish/mesh.zip || rc=1
           exit "$rc"
+
+      # Now that the consumer Functions exist, wire the Event Grid subscriptions onto them (an
+      # azure-function event subscription requires its target function to already exist, so this is a
+      # second apply after publish - see var.wire_eventgrid_subscriptions).
+      - name: Terraform apply (wire Event Grid subscriptions)
+        working-directory: examples/AzureFunctionsMesh/deploy
+        run: |
+          terraform apply -input=false -auto-approve \
+            -var "location=${{ inputs.location }}" \
+            -var "project=$PROJECT" \
+            -var "resource_group=$RG" \
+            -var "storage_account=${{ inputs.storage_account }}" \
+            -var "wire_eventgrid_subscriptions=true"
 
       - name: Show URLs
         working-directory: examples/AzureFunctionsMesh/deploy
