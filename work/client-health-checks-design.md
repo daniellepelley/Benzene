@@ -96,7 +96,7 @@ topic/endpoint); the *content* is automatic.
 - **Dedup key = `(Type, Name)`** on the `HealthCheckDependency`: two `.UseSns(sameArn)` → one check;
   two `.UseSns(differentArn)` → two distinct checks.
 
-### 3.2 ⚠️ THE one-way door — readiness, never liveness (unanimous, highest risk)
+### 3.2 ⚠️ THE one-way door — readiness, never liveness (unanimous, highest risk) ✅ *implemented*
 `HealthCheckFinder` returns **all** DI-registered checks, and `.UseLivenessCheck(…)` harvests via the
 finder too. So a naïvely auto-registered dependency check would land in the **liveness** probe — and a
 transient downstream blip (SQS throttle, downstream 503) would flip liveness to 503 and **Kubernetes
@@ -145,15 +145,21 @@ Reuse the existing three-state model (no new statuses — mesh condition):
 Rule of thumb for the guide: *unreachable + critical = Failed; reachable-but-slow = Warning;
 unreachable-but-non-critical = Warning; permission-denied = Warning.*
 
-### 3.5 Extend `IHealthCheck` via default interface members (gating prerequisite)
+### 3.5 Extend `IHealthCheck` via default interface members (gating prerequisite) ✅ *implemented*
 Add, using the same DIM pattern already on `IHealthCheckResult` (zero breaking change to 20+
 implementers):
 
-- `string[] Tags => Array.Empty<string>();` — probe routing/filtering (readiness/liveness selection;
-  MEL predicate mapping).
-- `bool IsCritical => true;` — critical-vs-non-critical (drives §3.4).
-- `TimeSpan? Ttl => null;` and `TimeSpan? Timeout => null;` — per-check overrides (today TTL and
-  timeout are processor-wide, too blunt once every client contributes a check).
+- `string[] Tags => Array.Empty<string>();` — probe routing/filtering (MEL predicate mapping). Note:
+  liveness/readiness **probe separation** is done by topic + the readiness registration category
+  (§3.2), **not** by a tag — tags are finer filtering on top.
+- `bool IsNonCritical => false;` — critical-vs-non-critical (drives §3.4). **Shipped with inverted
+  polarity vs the original `IsCritical => true`:** a health-gating flag must fail *safe*, and a
+  `default(bool)` from any Moq/DI proxy over `IHealthCheck` is `false`. With `IsNonCritical` that false
+  means *critical* (safe); with `IsCritical => true` it would mean non-critical (fail-open) and silently
+  neuter every mocked check in the suite. Same capability, safe default.
+- `TimeSpan? Ttl => null;` and `TimeSpan? Timeout => null;` — per-check overrides. `Timeout` is honoured
+  by `HealthCheckProcessor`; `Ttl` is shape-locked but its consumption is deferred (the caching
+  processor caches the *aggregate* per probe, not per check — per-check TTL needs a separate layer).
 
 This resolves the "no tags/timeout/criticality" open item in `work/observability-roadmap-1.0.md` in
 one coherent, need-driven stroke. **One-way door — decide before any API freeze.** (Note: the
@@ -269,19 +275,21 @@ this pass.
 > the remaining **transport-client auto-wiring** work (SNS/SQS/… contributing a reachability check when
 > configured) — independent of the shipped increment.
 
-**Phase 0 — lock the one-way doors (do before any API freeze; small, foundational)**
-- 0a. Extend `IHealthCheck` with DIM `Tags` / `IsCritical` / `Ttl` / `Timeout` (§3.5); make the
-  engine (`HealthCheckProcessor`/`TimeOutHealthCheck`/`CachingHealthCheckProcessor`) honor per-check
-  overrides.
-- 0b. Introduce the **readiness scope category** and filter `.UseLivenessCheck`'s harvest to exclude
-  it (§3.2). **Decide the probe-separation axis first (one-way door):** the shipped `contracts`
-  increment (§7) separates by **dedicated topic**, matching the existing `liveness`/`readiness` topic
-  pattern — so the codebase is currently **topic-based**. Keeping auto-wired dependency separation
-  topic-based (rather than the `"readiness"` **tag** this section originally floated) is the simpler,
-  already-consistent path and may make the `Tags` DIM unnecessary *for separation* — `Tags`/`IsCritical`/
-  `Ttl` still earn their place for criticality/caching (0a). Don't ship both axes.
-- 0c. Confirm/build the **config-time service-collection seam** reachable from the client
-  `IMiddlewarePipelineBuilder` extensions (§3.1). Fix the dedup key to `(Type, Name)`.
+**Phase 0 — lock the one-way doors (do before any API freeze; small, foundational)** ✅ *done*
+- ✅ 0a. Extended `IHealthCheck` with DIMs `Tags` / `IsNonCritical` (see §3.5 for the polarity flip) /
+  `Ttl` / `Timeout`. `HealthCheckProcessor` honours per-check `Timeout` (replaces the processor-wide
+  timeout) and `IsNonCritical` (downgrades a `Failed` to `Warning`). `Ttl` shape-locked, consumption
+  deferred.
+- ✅ 0b. Introduced the **readiness registration category** `IReadinessHealthCheck` (a DI service-type
+  marker, not a context marker) + `ReadinessHealthCheck` wrapper. Decision: separation stays **topic +
+  DI-category** (no `Tags`-based separation axis). `IHealthCheckFinder` gained
+  `FindReadinessHealthChecks()`; `HealthCheckBuilder.GetHealthChecks(resolver, includeReadinessScoped)`
+  selects scope. Harvest matrix: `.UseHealthCheck`/`.UseReadinessCheck` **include** the category,
+  `.UseLivenessCheck`/`.UseContractsCheck` **exclude** it. The disjointness is structural — a check
+  registered under `IReadinessHealthCheck` is not returned by `IEnumerable<IHealthCheck>`.
+- ✅ 0c. Confirmed the config-time seam exists (`IMiddlewarePipelineBuilder.Register`) and added the
+  `AddReadinessHealthCheck(IBenzeneServiceContainer, factory, dedupKey)` registration hook Phase 1 will
+  call. Dedup by `DedupKey` (Phase 1 sets it to the dependency's `(Type, Name)`) in the finder.
 
 **Phase 1 — auto-wire the clients that already have checks (highest ROI)**
 SQS, SNS, Lambda, StepFunctions, Service Bus, HTTP. Only work is the DI-registration seam + readiness

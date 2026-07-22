@@ -12,7 +12,10 @@ namespace Benzene.HealthChecks;
 /// <see cref="HealthCheckResponse"/>. <c>IsHealthy</c> is <c>true</c> unless at least one check
 /// reports <see cref="HealthCheckStatus.Failed"/> - a <see cref="HealthCheckStatus.Warning"/> does not
 /// flip it. Each result's key is assigned via <see cref="HealthCheckNamer"/> to stay unique even when
-/// checks share (or omit) a <see cref="IHealthCheck.Type"/>.
+/// checks share (or omit) a <see cref="IHealthCheck.Type"/>. Per-check overrides are honoured: a check's
+/// <see cref="IHealthCheck.Timeout"/> replaces the processor-wide timeout, and a non-critical check
+/// (<see cref="IHealthCheck.IsNonCritical"/> == <c>true</c>) has a <see cref="HealthCheckStatus.Failed"/>
+/// result downgraded to <see cref="HealthCheckStatus.Warning"/> so it never flips the probe unhealthy.
 /// </summary>
 public class HealthCheckProcessor : IHealthCheckProcessor
 {
@@ -49,13 +52,21 @@ public class HealthCheckProcessor : IHealthCheckProcessor
     // concurrently with the other checks - each has its own stopwatch, so there is no shared state.
     private async Task<HealthCheckResult> RunTimedAsync(IHealthCheck healthCheck)
     {
-        var check = new TimeOutHealthCheck(new ExceptionHandlingHealthCheck(healthCheck), _timeout);
+        // A check may override the processor-wide timeout (IHealthCheck.Timeout) - honour it here.
+        var check = new TimeOutHealthCheck(new ExceptionHandlingHealthCheck(healthCheck), healthCheck.Timeout ?? _timeout);
 
         var stopwatch = Stopwatch.StartNew();
         var result = await check.ExecuteAsync();
         stopwatch.Stop();
 
-        return new HealthCheckResult(result.Status, result.Type, result.Data, result.Dependencies, stopwatch.Elapsed);
+        // A non-critical check (IHealthCheck.IsNonCritical == true) never flips the probe unhealthy: a
+        // Failed result is downgraded to Warning so a non-critical dependency being down degrades the
+        // instance rather than taking it out of service (§3.4).
+        var status = result.Status == HealthCheckStatus.Failed && healthCheck.IsNonCritical
+            ? HealthCheckStatus.Warning
+            : result.Status;
+
+        return new HealthCheckResult(status, result.Type, result.Data, result.Dependencies, stopwatch.Elapsed);
     }
 
     /// <summary>

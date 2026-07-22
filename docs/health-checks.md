@@ -552,10 +552,17 @@ this if you want different `Data`/behavior than the shipped one.)
 ## Troubleshooting
 
 - **A check never seems to time out, it just reports `Failed` after ~10 seconds.** That's
-  `TimeOutHealthCheck` — every check gets a hard-coded 10 second budget with no override today. If a
-  check is slow by design, make sure its own internal timeout (e.g. an `HttpClient.Timeout`, a DB
-  command timeout) is comfortably shorter than 10 seconds so you get a meaningful `Data["Error"]`
-  from the check itself rather than the generic `"Timed Out"`.
+  `TimeOutHealthCheck` — every check gets a 10 second budget by default. You can widen or tighten it
+  for a single check by overriding `IHealthCheck.Timeout` on that check (it replaces the processor-wide
+  timeout just for that one), or change the default for all checks via
+  `new HealthCheckProcessor(TimeSpan)`. Either way, if a check is slow by design, make sure its own
+  internal timeout (e.g. an `HttpClient.Timeout`, a DB command timeout) is comfortably shorter than its
+  budget so you get a meaningful `Data["Error"]` from the check itself rather than the generic
+  `"Timed Out"`.
+- **A non-critical dependency shouldn't take my service out of rotation.** Override
+  `IHealthCheck.IsNonCritical => true` on that check — a `Failed` from it is downgraded to `Warning`
+  during aggregation, so it's visible in the report but doesn't flip the probe unhealthy. (Checks are
+  critical by default, so the flag is the opt-out `IsNonCritical`, not `IsCritical`.)
 - **Two checks with the same `Type` and I can't tell them apart in the response.** See
   [naming](#result-naming-and-deduplication) — look for the `-2`/`-3` suffix `HealthCheckNamer`
   appends, or give each check a distinct `Type`.

@@ -61,7 +61,7 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, string topic, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { topic, Constants.DefaultHealthCheckTopic }, builder);
+        return app.UseHealthCheckMiddleware(new[] { topic, Constants.DefaultHealthCheckTopic }, builder, includeReadinessScoped: true);
     }
 
     /// <summary>
@@ -112,7 +112,9 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultLivenessTopic }, builder);
+        // Liveness deliberately excludes the readiness-category (auto-wired dependency) checks: a
+        // downstream blip must not fail liveness and restart the pod (§3.2).
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultLivenessTopic }, builder, includeReadinessScoped: false);
     }
 
     /// <summary>
@@ -160,7 +162,9 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultReadinessTopic }, builder);
+        // Readiness is where auto-wired dependency checks belong: their failure de-routes traffic without
+        // restarting the pod (§3.2).
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultReadinessTopic }, builder, includeReadinessScoped: true);
     }
 
     /// <summary>
@@ -206,7 +210,9 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseContractsCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultContractsTopic }, builder);
+        // Contracts is a diagnostic topic for explicitly-added contract-drift checks only - the auto-wired
+        // reachability checks (readiness category) must not pollute it.
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultContractsTopic }, builder, includeReadinessScoped: false);
     }
 
     /// <summary>
@@ -216,7 +222,7 @@ public static class Extensions
     /// otherwise passes through to <c>next()</c>.
     /// </summary>
     private static IMiddlewarePipelineBuilder<TContext> UseHealthCheckMiddleware<TContext>(
-        this IMiddlewarePipelineBuilder<TContext> app, string[] matchTopics, IHealthCheckBuilder builder)
+        this IMiddlewarePipelineBuilder<TContext> app, string[] matchTopics, IHealthCheckBuilder builder, bool includeReadinessScoped)
     {
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
@@ -229,7 +235,7 @@ public static class Extensions
                 // other message just passes through, so resolving these on that path was dead weight.
                 var resultSetter = resolver.GetService<IMessageHandlerResultSetter<TContext>>();
                 var processor = resolver.GetService<IHealthCheckProcessor>();
-                var result = await processor.PerformHealthChecksAsync(builder.GetHealthChecks(resolver));
+                var result = await processor.PerformHealthChecksAsync(builder.GetHealthChecks(resolver, includeReadinessScoped));
                 await resultSetter.SetResultAsync(context, new MessageHandlerResult( messageTopic, MessageHandlerDefinition.Empty(), result));
             }
             else

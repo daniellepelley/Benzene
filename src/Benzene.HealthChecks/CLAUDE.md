@@ -33,9 +33,25 @@ for the full Kubernetes wiring guide.
   de-route otherwise-healthy pods. Wire it to monitoring/the mesh, never a Kubernetes probe - see
   `docs/kubernetes-health-checks.md` and `work/client-health-checks-design.md`.
 - `HealthCheckBuilder : IHealthCheckBuilder` - collects health checks (DI-resolved types, inline
-  factory functions) and, via `IHealthCheckFinder`, DI-registered `IHealthCheck` implementations
-- `IHealthCheckFinder`/`HealthCheckFinder` - resolves every `IHealthCheck` registered directly in DI
-  (as opposed to ones added inline through the builder)
+  factory functions) and, via `IHealthCheckFinder`, DI-registered `IHealthCheck` implementations.
+  `GetHealthChecks(resolver, includeReadinessScoped)` selects the probe scope: when `false` the
+  readiness-category checks are dropped (the liveness-safe set).
+- `IHealthCheckFinder`/`HealthCheckFinder` - resolves DI-registered checks. `FindHealthChecks()` returns
+  the checks registered as plain `IHealthCheck` (the liveness-safe set); `FindReadinessHealthChecks()`
+  returns the readiness-category checks (`IReadinessHealthCheck`), **de-duplicated by `DedupKey`**. The
+  two sets are disjoint: a check registered under `IReadinessHealthCheck` is not returned when the
+  container resolves `IEnumerable<IHealthCheck>`, so it never leaks onto liveness.
+
+### Readiness registration category (§3.2 - the one-way door)
+- `IReadinessHealthCheck` (in `Benzene.HealthChecks.Core`) is the DI category for auto-wired
+  external-dependency checks. `ReadinessHealthCheck` adapts a plain `IHealthCheck` into it (delegating
+  `Type`/`Tags`/`IsNonCritical`/`Ttl`/`Timeout`/`ExecuteAsync` unchanged) and carries the `DedupKey`.
+- `AddReadinessHealthCheck(this IBenzeneServiceContainer, Func<IServiceResolver, IHealthCheck> factory,
+  string? dedupKey = null)` is the config-time seam Phase 1 client extensions call via
+  `app.Register(x => x.AddReadinessHealthCheck(...))`. It registers under `IReadinessHealthCheck`.
+- Harvest matrix: `.UseHealthCheck` (general) and `.UseReadinessCheck` **include** the readiness
+  category; `.UseLivenessCheck` and `.UseContractsCheck` **exclude** it. So a downstream dependency
+  failing takes the pod out of rotation (readiness) without restarting it (liveness).
 
 ### Execution
 - `IHealthCheckProcessor`/`HealthCheckProcessor` - the injectable execution engine (was a static class).
@@ -45,7 +61,10 @@ for the full Kubernetes wiring guide.
   from DI, registered by the builder with `TryAddSingleton` so a consumer can register their own
   (e.g. a different timeout) and have it win. Each check is **timed** and its duration stamped onto the
   result (`IHealthCheckResult.Duration`). A static `PerformHealthChecksAsync(topic, checks)` shim
-  remains for source-compatibility (the `topic` arg is unused).
+  remains for source-compatibility (the `topic` arg is unused). **Per-check overrides are honoured:** a
+  check's `IHealthCheck.Timeout` replaces the processor-wide timeout for that check, and a non-critical
+  check (`IsNonCritical == true`) has a `Failed` result downgraded to `Warning` so it never flips the
+  probe unhealthy (§3.4).
 - `CachingHealthCheckProcessor` - an opt-in `IHealthCheckProcessor` decorator that caches the
   aggregated result for a TTL (keyed by the set of check `Type`s, so liveness/readiness cache
   independently), so a probe polling every few seconds doesn't re-run every check and re-hit every

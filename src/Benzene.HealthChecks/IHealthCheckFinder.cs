@@ -5,7 +5,20 @@ namespace Benzene.HealthChecks;
 /// <summary>Discovers the set of <see cref="IHealthCheck"/>s that have been registered with the dependency container.</summary>
 public interface IHealthCheckFinder
 {
-    /// <summary>Returns every registered health check.</summary>
+    /// <summary>
+    /// Returns the checks registered as plain <see cref="IHealthCheck"/> (process-local self-checks and any
+    /// the developer registered directly). Does <b>not</b> include the readiness-category checks - this is
+    /// the liveness-safe set (§3.2).
+    /// </summary>
     /// <returns>The registered health checks, in no particular guaranteed order.</returns>
     IHealthCheck[] FindHealthChecks();
+
+    /// <summary>
+    /// Returns the readiness-category checks (<see cref="IReadinessHealthCheck"/> - auto-wired external
+    /// dependency checks), de-duplicated by <see cref="IReadinessHealthCheck.DedupKey"/> so two
+    /// registrations of the same dependency collapse to one. Harvested by the general/readiness probes,
+    /// never by liveness. Defaults to empty so existing finders stay source-compatible.
+    /// </summary>
+    /// <returns>The de-duplicated readiness-category health checks.</returns>
+    IReadinessHealthCheck[] FindReadinessHealthChecks() => Array.Empty<IReadinessHealthCheck>();
 }
