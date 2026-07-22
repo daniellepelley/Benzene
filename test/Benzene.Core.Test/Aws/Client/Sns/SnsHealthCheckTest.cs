@@ -42,4 +42,23 @@ public class SnsHealthCheckTest
         Assert.Equal("NotFoundException", result.Data["Error"]);
         Assert.Equal("arn:aws:sns:us-east-1:123:orders", Assert.Single(result.Dependencies).Name);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_PermissionDenied_DegradesToWarning_AndSurfacesTheDiscriminators()
+    {
+        var mock = new Mock<IAmazonSimpleNotificationService>();
+        mock.Setup(x => x.GetTopicAttributesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new AuthorizationErrorException("not authorized")
+            {
+                ErrorCode = "AuthorizationError",
+                StatusCode = HttpStatusCode.Forbidden
+            });
+
+        var result = await new SnsHealthCheck("arn:aws:sns:us-east-1:123:orders", mock.Object).ExecuteAsync();
+
+        // A least-privilege publisher lacking sns:GetTopicAttributes stays green-ish: Warning, not Failed (§3.9).
+        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal("AuthorizationError", result.Data["ErrorCode"]);
+        Assert.Equal(403, result.Data["StatusCode"]);
+    }
 }

@@ -17,7 +17,8 @@ fixed during the Tier 2.1 split).
   Default `HealthCheckMode.Reachability` is a **non-destructive** read-only `GetFunctionConfiguration`
   call (`Type = "Lambda"`); `HealthCheckMode.Active` really invokes the function with a `ping`
   (`Type = "Lambda.Active"`, side-effecting). See `HealthCheckMode` in `Benzene.HealthChecks.Core`.
-  Failures report the exception **type**, never the message.
+  Failures are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a
+  **Warning**, not a failure; the SDK `ErrorCode`/`StatusCode` are surfaced in `Data`, never the message.
 - `LocalAwsLambdaClientFactory` — builds an `IAmazonLambda` from a local AWS profile for dev/test.
 - `Extensions` — `UseAwsLambdaClient`, `UseAwsLambda<T>`, and **`AddLambdaHealthCheck`**.
 

@@ -63,6 +63,27 @@ public class SqsHealthCheckTest
     }
 
     [Fact]
+    public async Task Reachability_PermissionDenied_DegradesToWarning_AndSurfacesTheDiscriminators()
+    {
+        var mockSqsClient = new Mock<IAmazonSQS>();
+        mockSqsClient
+            .Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new AmazonSQSException("access denied for arn:...")
+            {
+                ErrorCode = "AccessDenied",
+                StatusCode = HttpStatusCode.Forbidden
+            });
+
+        var result = await new SqsHealthCheck("some-queue-url", mockSqsClient.Object).ExecuteAsync();
+
+        // "I can't probe this" (403) is a Warning, not a Failed - a least-privilege caller stays green (§3.9).
+        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal("AccessDenied", result.Data["ErrorCode"]);
+        Assert.Equal(403, result.Data["StatusCode"]);
+        Assert.Equal("AmazonSQSException", result.Data["Error"]);
+    }
+
+    [Fact]
     public async Task Active_SendsAPing_AndReportsUnderTheActiveType()
     {
         var mockSqsClient = new Mock<IAmazonSQS>();

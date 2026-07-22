@@ -47,7 +47,10 @@ Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **
 - **`SnsHealthCheck`** — verifies topic reachability with a read-only `GetTopicAttributes` call (the
   SNS analogue of `SqsHealthCheck`, but non-side-effecting: it does not publish). `Type => "Sns"`,
   dependency `("Topic", topicArn)`. Register via `AddSnsHealthCheck(topicArn)`; the consumer registers
-  `IAmazonSimpleNotificationService` in DI (Benzene does not).
+  `IAmazonSimpleNotificationService` in DI (Benzene does not). Failures are classified through
+  `HealthCheckError.Classify` (§3.9): a permission error (403 — e.g. missing `sns:GetTopicAttributes`)
+  is a **Warning**, not a failure, and the SDK's `ErrorCode`/`StatusCode` are surfaced in `Data` (never
+  the exception message).
 
 ## Dependencies
 `AWSSDK.SimpleNotificationService`; Benzene `Clients`, `Core.Middleware`, `Results`, `HealthChecks.Core`.

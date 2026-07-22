@@ -206,7 +206,7 @@ exists*, and timeout + exception isolation are free (the processor already wraps
 `Func<Task<bool>>` sibling for the no-natural-throw case. Keep `IHealthCheck` classes + `IHealthCheckFactory`
 as the "advanced/reusable" tier.
 
-### 3.9 Failure ergonomics — errors that teach
+### 3.9 Failure ergonomics — errors that teach ✅ *implemented*
 Today `SnsHealthCheck` reports `Data["Error"] = ex.GetType().Name` and withholds the message
 (secret-safety — correct). But `AmazonSimpleNotificationServiceException` alone is unactionable.
 Include the **non-sensitive structured discriminators** AWS already returns — error code + HTTP status
@@ -219,6 +219,14 @@ Include the **non-sensitive structured discriminators** AWS already returns — 
 
 `403 / AuthorizationError` turns "something's wrong with SNS" into "it's IAM on `GetTopicAttributes`
 for this ARN." Apply the same enrichment across shipped AWS/Azure client checks.
+
+**Shipped:** the classification *policy* lives once in the cloud-agnostic
+`Benzene.HealthChecks.Core.HealthCheckError.Classify(type, ex, deps, errorCode?, statusCode?, data?)`
+— a 401/403 → `Warning`, everything else → `Failed`, `Data` enriched with the exception type +
+`ErrorCode`/`StatusCode` (never the message). Each AWS check does a 2-line extraction of
+`(ErrorCode, StatusCode)` off `AmazonServiceException` and calls it (no cloud-SDK dependency reaches
+core, no new shared package). Wired into the SNS/SQS/Lambda/StepFunctions checks. Azure Service Bus
+still to do (folds in when its check moves to the client package per §3.7).
 
 ### 3.10 `ValidateHealthChecks()` — mirror `ValidateOutboundRouting()`, but WARN by default
 A parallel validator that cross-references configured outbound routes / known clients against

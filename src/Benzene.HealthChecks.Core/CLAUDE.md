@@ -45,6 +45,12 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
   include-everything behaviour) so a liveness harvest can drop the readiness-category checks.
 - `IHealthCheckFactory` - builds a check from constructor arguments not themselves resolved from DI
   (e.g. a URL, a target migration name) - see `Benzene.HealthChecks.Http`/`.EntityFramework`'s factories
+- `HealthCheckError` - the shared failure-classification policy (§3.4/§3.9). `Classify(type, exception,
+  dependencies, errorCode?, statusCode?, data?)` returns a `Warning` for a permission error (HTTP
+  401/403) and `Failed` otherwise, enriching `Data` with the exception **type** plus the SDK's
+  `ErrorCode`/`StatusCode` when supplied - **never the exception message** (secret-safety). Cloud-SDK
+  exception types (`AmazonServiceException`, Azure's `RequestFailedException`) are extracted by the
+  *caller* in its own client package and passed in, so this core helper stays cloud-agnostic.
 
 ## When to use this package
 - Implementing a custom `IHealthCheck` for a new dependency type

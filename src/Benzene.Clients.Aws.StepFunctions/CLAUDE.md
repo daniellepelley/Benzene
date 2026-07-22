@@ -18,8 +18,9 @@ Functions health check. Pins **only** `AWSSDK.StepFunctions`.
   (`Kind = "StateMachine"`, `Name` = ARN). Default `HealthCheckMode.Reachability` is a
   **non-destructive** read-only `DescribeStateMachine` call (`Type = "StepFunctions"`);
   `HealthCheckMode.Active` starts a real execution (`Type = "StepFunctions.Active"`, side-effecting).
-  See `HealthCheckMode` in `Benzene.HealthChecks.Core`. Failures report the exception **type**, never
-  the message.
+  See `HealthCheckMode` in `Benzene.HealthChecks.Core`. Failures are classified via
+  `HealthCheckError.Classify` (§3.9): a permission error (403) is a **Warning**, not a failure; the SDK
+  `ErrorCode`/`StatusCode` are surfaced in `Data`, never the exception message.
 - `Extensions` — **`AddStepFunctionHealthCheck`**.
 
 ## Scope / honesty (release plan Tier 2.5 — decided 2026-07-19: honest fire-and-forget for 1.0)

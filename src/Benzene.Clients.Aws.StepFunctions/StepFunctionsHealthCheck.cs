@@ -78,15 +78,14 @@ public class StepFunctionsHealthCheck : IHealthCheck
         cts.Cancel();
 
         // IsFaulted, not .Result on a faulted task: reading .Result would rethrow and lose the
-        // StateMachine dependency to the outer exception wrapper. Report the failure type, never the message.
+        // StateMachine dependency to the outer exception wrapper. Classify via the shared policy:
+        // 401/403 -> Warning, else Failed, enriched with the SDK error code + status, never the message.
         if (call.IsFaulted)
         {
-            return HealthCheckResult.CreateInstance(false, Type,
-                new Dictionary<string, object>
-                {
-                    { "StateMachineArn", _stateMachineArn },
-                    { "Error", (call.Exception?.InnerException ?? call.Exception)?.GetType().Name }
-                }, dependencies);
+            var ex = (call.Exception?.InnerException ?? call.Exception)!;
+            var (errorCode, faultStatus) = AwsErrorDetails(ex);
+            return HealthCheckError.Classify(Type, ex, dependencies, errorCode, faultStatus,
+                new Dictionary<string, object> { { "StateMachineArn", _stateMachineArn } });
         }
 
         var statusCode = call.Result;
@@ -99,6 +98,11 @@ public class StepFunctionsHealthCheck : IHealthCheck
         return HealthCheckResult.CreateInstance(false, Type,
             new Dictionary<string, object> { { "StateMachineArn", _stateMachineArn }, { "Error", $"Returned a status of {statusCode}" } }, dependencies);
     }
+
+    // Pulls the non-sensitive discriminators AWS already returns off an SDK exception; null for a
+    // non-AWS exception (e.g. a raw connectivity failure).
+    private static (string? ErrorCode, int? StatusCode) AwsErrorDetails(Exception ex)
+        => ex is AmazonServiceException ase ? (ase.ErrorCode, (int)ase.StatusCode) : (null, null);
 
     /// <summary>The check's identifier: <c>"StepFunctions"</c> in reachability mode, <c>"StepFunctions.Active"</c> in active mode.</summary>
     public string Type => _mode == HealthCheckMode.Active ? "StepFunctions.Active" : "StepFunctions";
