@@ -61,8 +61,11 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
 
     private void Tag(Activity activity, TContext context)
     {
+        // Skip the transport tag until a transport pipeline has actually resolved one - in a
+        // multi-transport function the outer probe stages run before resolution, so tagging here would
+        // stamp the "<missing>" sentinel on every pass-through span (noise in a trace viewer).
         var transport = _serviceResolver.TryGetService<ICurrentTransport>();
-        if (transport is not null)
+        if (transport is not null && transport.Name != TransportNames.Unresolved)
         {
             activity.SetTag("benzene.transport", transport.Name);
         }

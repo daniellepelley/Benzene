@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Benzene.Diagnostics;
 using Benzene.Diagnostics.Timers;
@@ -94,6 +96,64 @@ public class ActivityMiddlewareTest
         Assert.Single(services.Where(d =>
             d.ServiceType == typeof(IMiddlewareWrapper) &&
             d.ImplementationType == typeof(ActivityMiddlewareWrapper)));
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_OmitsTheTransportTagWhileTheTransportIsUnresolved()
+    {
+        // In a multi-transport function the outer probe stages run before any transport pipeline has
+        // recorded itself, so ICurrentTransport still reads TransportNames.Unresolved ("<missing>").
+        // The span must NOT be tagged then - a "<missing>" transport reads like a defect in a trace viewer.
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        services.AddScoped<CurrentTransportInfo>();
+        services.AddScoped<ICurrentTransport>(sp => sp.GetRequiredService<CurrentTransportInfo>());
+
+        var builder = new MiddlewarePipelineBuilder<object>(container);
+        builder.Use("probe", (_, next) => next());
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await pipeline.HandleAsync(new object(), resolver);
+
+        var span = Assert.Single(activities, a => a.OperationName == "probe");
+        Assert.Null(span.GetTagItem("benzene.transport"));
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_TagsTheTransportOnceATransportPipelineHasResolvedIt()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        services.AddScoped<CurrentTransportInfo>();
+        services.AddScoped<ICurrentTransport>(sp => sp.GetRequiredService<CurrentTransportInfo>());
+
+        var builder = new MiddlewarePipelineBuilder<object>(container);
+        builder.Use("resolved", (_, next) => next());
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        // Stand in for a transport pipeline recording itself before the stage runs.
+        resolver.GetService<CurrentTransportInfo>().SetTransport(TransportNames.Sns);
+
+        await pipeline.HandleAsync(new object(), resolver);
+
+        var span = Assert.Single(activities, a => a.OperationName == "resolved");
+        Assert.Equal(TransportNames.Sns, span.GetTagItem("benzene.transport"));
     }
 
     [Fact]
