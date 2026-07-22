@@ -97,12 +97,20 @@ public class SpecBuilder
 
     private ISchemaBuilder CreateSchemaBuilder(IServiceResolver resolver)
     {
+        // BYO seam: a registered ISchemaBuilder (e.g. SuppliedSchemaBuilder over hand-authored
+        // schema documents) replaces the default reflection builder. Register custom builders
+        // transient/scoped - a schema builder accumulates one document's components catalogue,
+        // so a singleton would leak schemas across spec builds. Without one, reflection
+        // generation honors any registered SchemaGenerationOptions (inheritance/polymorphism).
+        var schemaBuilder = resolver.TryGetService<ISchemaBuilder>()
+                            ?? new SchemaBuilder(resolver.TryGetService<SchemaGenerationOptions>());
+
         var validationSchemaBuilder = resolver.TryGetService<IValidationSchemaBuilder>();
         if (validationSchemaBuilder != null)
         {
-            return new OpenApiValidationSchemaBuilder(new SchemaBuilder(), validationSchemaBuilder);
+            return new OpenApiValidationSchemaBuilder(schemaBuilder, validationSchemaBuilder);
         }
 
-        return new SchemaBuilder();
+        return schemaBuilder;
     }
 }

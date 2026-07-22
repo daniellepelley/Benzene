@@ -24,8 +24,15 @@ OpenAPI feature (that is `Benzene.Schema.OpenApi`).
   type. Generated schemas are cached per request type.
 - `Extensions.UseJsonSchema<TContext>()` - pipeline entry point; registers dependencies and adds the
   middleware.
-- `DependencyInjectionExtensions.AddJsonSchema()` - registers `DefaultJsonSchemaProvider<>` and
-  `JsonSchemaMiddleware<>` (both scoped).
+- `DependencyInjectionExtensions.AddJsonSchema()` - registers `DefaultJsonSchemaProvider<>`
+  (`TryAddScoped`, so a provider registered in ConfigureServices - a user's own or the supplied
+  one below - wins over the default) and `JsonSchemaMiddleware<>` (scoped).
+- `SuppliedJsonSchemaCatalog` / `SuppliedJsonSchemaProvider<TContext>`
+  (+ `AddSuppliedJsonSchemas`) - bring-your-own schemas for validation: topics whose request type
+  is mapped in the catalog validate against the hand-authored schema; everything else falls back
+  to the default generated one. Feed it from the same documents as `Benzene.Schema.OpenApi`'s
+  `SuppliedSchemaCatalog` to keep the published contract and runtime validation aligned - see
+  `work/complex-payloads-byo-schema-plan.md`. Tests: `SuppliedJsonSchemaProviderTest`.
 
 ## When to use this package
 - To reject non-conforming request bodies early with a JSON Schema check, without hand-writing

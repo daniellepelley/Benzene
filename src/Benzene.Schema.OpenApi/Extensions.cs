@@ -24,6 +24,33 @@ public static class Extensions
     }
 
     /// <summary>
+    /// Opts spec schema generation into inheritance (<c>allOf</c>) and/or polymorphism
+    /// (<c>oneOf</c> + discriminator) rendering — see <see cref="SchemaGenerationOptions"/>.
+    /// Without this call, generated schemas keep the default flattened shape.
+    /// </summary>
+    public static IBenzeneServiceContainer SetSchemaGenerationOptions(
+        this IBenzeneServiceContainer services, SchemaGenerationOptions options)
+    {
+        services.AddSingleton(options);
+        return services;
+    }
+
+    /// <summary>
+    /// Registers hand-authored (bring-your-own) payload schemas: the spec serves the catalog's
+    /// schemas for the types it maps and falls back to reflection generation (honoring any
+    /// registered <see cref="SchemaGenerationOptions"/>) for everything else. Registered transient
+    /// because a schema builder accumulates one document's components catalogue.
+    /// </summary>
+    public static IBenzeneServiceContainer AddSuppliedSchemas(
+        this IBenzeneServiceContainer services, SuppliedSchemaCatalog catalog)
+    {
+        services.AddSingleton(catalog);
+        services.AddTransient<ISchemaBuilder>(x =>
+            new SuppliedSchemaBuilder(catalog, new SchemaBuilder(x.TryGetService<SchemaGenerationOptions>())));
+        return services;
+    }
+
+    /// <summary>
     /// Registers the <c>test-payloads</c> handler, which serves ready-to-fire example payloads for the
     /// service's domain topics (see <see cref="TestPayloadsMessageHandler"/>). Opt-in by design - like
     /// <see cref="UseSpec{TContext}(IMiddlewarePipelineBuilder{TContext})"/>, nothing is exposed unless

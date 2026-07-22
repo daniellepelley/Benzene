@@ -97,7 +97,23 @@ for the `benzene` contract.
 ### Schema building
 - `ISchemaBuilder` / `SchemaBuilder` - generates `OpenApiSchema`s from CLR types using Swashbuckle's
   `SchemaGenerator` + a `System.Text.Json` contract resolver, and collects them into a components
-  catalogue.
+  catalogue. **DI seam:** `SpecBuilder` try-resolves `ISchemaBuilder` from the container before
+  falling back to `new SchemaBuilder(...)`, so a custom builder (e.g. `SuppliedSchemaBuilder`)
+  can replace reflection generation in the live spec. Register custom builders transient/scoped -
+  a builder accumulates one document's components, so a singleton would leak across spec builds.
+- `SchemaGenerationOptions` (+ `Extensions.SetSchemaGenerationOptions`) - opt-in inheritance
+  (`allOf` base `$ref`) and polymorphism (`oneOf` + `discriminator`) rendering for generated
+  schemas; off by default (flattened output unchanged). Subtype/discriminator resolution defaults
+  to the models' own STJ `[JsonDerivedType]`/`[JsonPolymorphic]` attributes (`JsonPolymorphism`
+  helper), so the contract matches the default runtime serializer's behavior; resolver hooks exist
+  for unannotated hierarchies. Tests: `SchemaBuilderPolymorphismTest`.
+- `SuppliedSchemaCatalog` / `SuppliedSchemaBuilder` (+ `Extensions.AddSuppliedSchemas`) -
+  bring-your-own schema documents: the catalog maps CLR types to hand-authored schemas (loaded
+  programmatically, from per-schema JSON, or from a `components.schemas`-shaped JSON object);
+  the builder serves them as `$ref`s (registering the whole catalog on first use so
+  cross-`$ref`s resolve) and falls back to reflection for unmapped types. See
+  `work/complex-payloads-byo-schema-plan.md` for the full design/phases. Tests:
+  `SuppliedSchemaBuilderTest`, `SpecSuppliedSchemasTest` (end-to-end through `UseSpec`).
 - `OpenApiValidationSchemaBuilder : ISchemaBuilder` - decorates generated schemas with validation
   constraints pulled from a registered `IValidationSchemaBuilder` (e.g. `Benzene.FluentValidation`'s):
   `minLength`/`maxLength`, `pattern`, `enum` (IsOneOf), `required` (NotEmpty/NotNull), and `uuid`/
