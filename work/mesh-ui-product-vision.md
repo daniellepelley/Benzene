@@ -1,9 +1,23 @@
 # Benzene Mesh UI — Product Vision & Roadmap
 
-> Living doc owned by `mesh-ui-product-owner`. Convention: append dated update
+> Living doc owned by `mesh-product-owner`. Convention: append dated update
 > blocks at the top (oldest→newest) that flag deviations rather than rewriting
-> history. Cross-reference `work/service-mesh-roadmap-1.0.md` (owned by
-> `mesh-product-owner`) by section number when a UI need depends on the data layer.
+> history. Cross-reference `work/service-mesh-roadmap-1.0.md` (same owner)
+> by section number when a UI need depends on the data layer.
+
+---
+
+> **2026-07-22 ownership merge:** `mesh-ui-product-owner` has been merged into
+> `mesh-product-owner` — one owner now covers the whole mesh product, data
+> packages through UI. References to `mesh-ui-product-owner` in older update
+> blocks below are historical. The merged role's brief sharpens the product
+> mission: the estate review is for users, business people, business analysts,
+> and product owners; the functional map (topics consumed/produced, payloads,
+> versions) is the most vital part with health present but not the
+> centerpiece; usage means how often topics are exercised **and over which
+> transports**, fed by OpenTelemetry/collector metrics; and the owner is now
+> also guardian of the Cloud Service spec — full coverage of the product's
+> needs with a deliberately small, taut surface area.
 
 ---
 
