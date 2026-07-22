@@ -117,7 +117,13 @@ for the `benzene` contract.
 - `OpenApiValidationSchemaBuilder : ISchemaBuilder` - decorates generated schemas with validation
   constraints pulled from a registered `IValidationSchemaBuilder` (e.g. `Benzene.FluentValidation`'s):
   `minLength`/`maxLength`, `pattern`, `enum` (IsOneOf), `required` (NotEmpty/NotNull), and `uuid`/
-  `email` formats. `SpecBuilder` uses this automatically when an `IValidationSchemaBuilder` is registered.
+  `email` formats. `SpecBuilder` uses this automatically when an `IValidationSchemaBuilder` is
+  registered. Looks the catalogued schema up by the id the inner builder returned (not raw
+  `type.Name`), so generic wrappers (`MessageWrapper<Foo>` → `FooMessageWrapper`) get decorated too.
+- `AsyncApi/Mapper` - maps `OpenApiSchema` onto ByteBard's AsyncAPI schema model; carries
+  `oneOf`/`allOf`/`anyOf` (recursively, refs preserved), `discriminator` (property name), and
+  `additionalProperties` in addition to the scalar/object facets, so polymorphic contracts
+  survive into the AsyncAPI document.
 - `JsonOpenApiSchemaBuilder` - builds an `OpenApiSchema` set from a sample JSON document.
 - `OpenApiSchemaComparer` - structural diff between two `OpenApiSchema`s (type/format/properties).
 

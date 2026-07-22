@@ -47,6 +47,25 @@ public class OpenApiValidationSchemaBuilderTest
     }
 
     [Fact]
+    public void AddSchema_GenericType_DecoratesTheArgPrefixedSchemaId()
+    {
+        // A generic wrapper is catalogued under Swashbuckle's arg-prefixed id
+        // (MessageWrapper<GetUserMessage> => GetUserMessageMessageWrapper); the lookup used raw
+        // type.Name ("MessageWrapper") and silently skipped decoration for every generic type.
+        var validation = new FakeValidationSchemaBuilder(new Dictionary<string, IValidationSchema[]>
+        {
+            { "Message", new IValidationSchema[] { new FakeValidationSchema(ValidationConstants.NotEmpty, "required") } }
+        });
+        var builder = new OpenApiValidationSchemaBuilder(new SchemaBuilder(), validation);
+
+        builder.AddSchema(typeof(Benzene.Test.Autogen.CodeGen.Model.MessageWrapper<Benzene.Test.Autogen.CodeGen.Model.GetUserMessage>));
+        var schema = builder.Build()["GetUserMessageMessageWrapper"];
+
+        Assert.Contains("Message", schema.Required);
+        Assert.Equal("required", schema.Properties["Message"].Description);
+    }
+
+    [Fact]
     public void AddSchema_ValidationRuleForARealProperty_StillDecoratesTheSchema()
     {
         // The happy path must be unchanged: a rule keyed on a real property still applies.

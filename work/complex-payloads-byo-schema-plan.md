@@ -1,6 +1,7 @@
 # Complex payload models & bring-your-own schema documents
 
-**Status:** phases 1–3 implemented (this change); phase 4 proposed; phase 5 backlog.
+**Status:** phases 1–3 implemented; phase 4 implemented except 4.4 (deferred — spec-gated);
+phase 5 items 1–2 done (5.2 resolved by documentation), 5.3 backlog.
 
 ## Motivation
 
@@ -92,21 +93,33 @@ accumulates one document's components catalogue, so instances must not be shared
   for unannotated hierarchies.
 - Off by default — existing specs are byte-identical unless options are registered.
 
-### Phase 4 — teach the consumers composition keywords (proposed, not started)
-1. AsyncAPI `Mapper.Map`: carry `oneOf`/`allOf`/`anyOf`/`discriminator`/`additionalProperties`.
-2. Mesh aggregator `InlineSchema`: recurse into `oneOf`/`allOf`/`anyOf` branches when inlining
-   `$ref`s for `topics.json`.
-3. CodeGen client: `allOf` → base-class composition, `oneOf` + discriminator → polymorphic
-   hierarchy generation. Largest item; degrades gracefully until done (rich schemas simply
-   flatten in generated clients).
-4. `MeshSchemaGenerator` (Mesh.Wire): optional attribute-driven `oneOf` emission to match
-   Phase 3.
+### Phase 4 — teach the consumers composition keywords
+1. ✅ AsyncAPI `Mapper.Map` carries `oneOf`/`allOf`/`anyOf` (branches mapped recursively, refs
+   preserved), `discriminator` (property name — AsyncAPI's schema dialect models it as a string),
+   and `additionalProperties`.
+2. ✅ Mesh aggregator `InlineSchema` recurses into `oneOf`/`allOf`/`anyOf` branches when inlining
+   `$ref`s, so a polymorphic topic schema lands in `topics.json` fully self-contained.
+3. ✅ CodeGen client: `allOf` [base `$ref` + own props] generates `class X : Base` with only the
+   own properties; a schema with a `discriminator` + mapping gets STJ
+   `[JsonPolymorphic]`/`[JsonDerivedType]` attributes (and no POCO property for the discriminator
+   itself, which is serializer metadata); a `oneOf`-union member site is typed as the subtypes'
+   shared `allOf` base when the components catalogue reveals one, else `object`.
+4. ⏸ `MeshSchemaGenerator` (Mesh.Wire): **deferred — spec-gated.** The §2.1 CLR→schema mapping is
+   pinned by `docs/specification/mesh.md` + the language-neutral conformance fixtures (+ the Go
+   reference implementation), and its subset deliberately contains no `oneOf`. Emitting `oneOf`
+   for `[JsonDerivedType]` members would produce non-conformant descriptors and shift
+   `descriptorHash`es. Requires a spec revision (fixtures + reference implementation updated
+   alongside) first; until then annotated base-typed members keep degrading to the base's schema.
 
-### Phase 5 — hygiene backlog
-- `OpenApiValidationSchemaBuilder` looks schemas up by raw `type.Name`, missing generic types
-  (`MessageWrapper<Foo>` is catalogued as `FooMessageWrapper` but looked up as
-  `MessageWrapper`) — validation facets silently skip generic wrappers.
-- Serializer-replacement gotcha above: either document prominently or make `JsonMediaFormat`
-  resolve `ISerializer` when it is a `JsonSerializer`.
-- Consider a startup diagnostic when `[JsonPolymorphic]` models are served without
+### Phase 5 — hygiene
+- ✅ `OpenApiValidationSchemaBuilder` now looks the catalogued schema up by the id the inner
+  builder actually returned (`output.Reference.Id`) instead of raw `type.Name`, so validation
+  facets decorate generic wrappers (`MessageWrapper<Foo>` → `FooMessageWrapper`) too.
+- ✅ Serializer-replacement gotcha: documented in `Benzene.Core.MessageHandlers/CLAUDE.md`
+  ("Important conventions") — replacing `ISerializer` alone doesn't reach the negotiated JSON
+  path; register the concrete `JsonSerializer` (with custom options) before `AddBenzene()`, or a
+  custom `IMediaFormat`. Rebinding `JsonMediaFormat` to `ISerializer` was considered and
+  deliberately not done: it changes a public ctor and would silently redirect the
+  `application/json` format to whatever `ISerializer` happens to be registered.
+- Backlog: consider a startup diagnostic when `[JsonPolymorphic]` models are served without
   `UseOneOfForPolymorphism` (contract silently narrower than runtime behavior).
