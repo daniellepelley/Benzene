@@ -29,6 +29,6 @@ public class StartUp : BenzeneStartUp
     {
         IHealthCheck[] healthChecks = { new ServiceHealthCheck("analytics") };
         MeshServiceWiring.Configure(app, "analytics", Handlers, healthChecks, a => a
-            .UseEventGrid(eg => eg.UseBenzeneEnrichment().UseMessageHandlers(Handlers)));
+            .UseEventGrid(eg => eg.UseBenzeneEnrichment().UseBenzeneMetrics().UseMessageHandlers(Handlers)));
     }
 }

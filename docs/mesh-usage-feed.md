@@ -89,6 +89,21 @@ default) so a CloudWatch `Sum` over the window equals the request count; a cumul
 over-count. Wired end-to-end in `examples/AwsMesh` (see its README). Coarse counts by design — fine-grained
 analysis stays in CloudWatch/Grafana.
 
+### The shipped adapter: Application Insights (Azure)
+
+`Benzene.Mesh.Usage.ApplicationInsights.ApplicationInsightsUsageSource` (own package, pins
+`Azure.Monitor.Query` + `Azure.Identity`) is the Azure sibling of the CloudWatch adapter. The counter is
+exported to Application Insights by the **Azure Monitor OpenTelemetry exporter**
+(`Azure.Monitor.OpenTelemetry.Exporter`), landing in the Log Analytics `customMetrics` table with the tags
+in `customDimensions`. This source reads it back with a KQL query
+(`customMetrics | where name == "benzene.messages.processed" | summarize sum(valueSum) by topic, transport,
+result`) over a configured `TimeWindow`, reporting counts per **(topic, transport, status)** — same
+dimensions and same missing-`service` degradation as CloudWatch. Register it with
+`AddApplicationInsightsUsage(new ApplicationInsightsUsageOptions(workspaceId, ...))` alongside
+`AddMeshAggregator(...)`; the querying identity needs the **Log Analytics Reader** role on the workspace.
+The Azure Monitor exporter uses **delta** temporality by default, so `sum(valueSum)` = the request count.
+Wired end-to-end in `examples/AzureMesh` and `examples/AzureFunctionsMesh` (see their READMEs).
+
 ## 3. Degradation (normative, consumer side)
 
 The Mesh UI (`mesh-ui.html`) renders usage on all three entity pages — a Usage column on the

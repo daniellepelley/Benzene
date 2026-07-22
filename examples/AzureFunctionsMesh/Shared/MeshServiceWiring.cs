@@ -2,6 +2,7 @@ using Azure;
 using Azure.Messaging.EventGrid;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Messaging.ServiceBus;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.Azure.Function.AspNet;
@@ -12,8 +13,12 @@ using Benzene.Diagnostics;
 using Benzene.HealthChecks.Core;
 using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
+using Benzene.OpenTelemetry;
 using Benzene.Schema.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 
 namespace Benzene.Examples.AzureFunctionsMesh.Shared;
 
@@ -34,6 +39,22 @@ public static class MeshServiceWiring
     public static void ConfigureServices(IServiceCollection services, string serviceName, Type[] handlers,
         Action<IBenzeneServiceContainer>? configureBenzene = null)
     {
+        // OpenTelemetry: arm Benzene's metrics (the benzene.messages.processed counter, tagged
+        // topic/transport/result) and, when an Application Insights connection string is present, export
+        // them to Azure Monitor so the mesh's usage feed can read per-topic counts back from Log Analytics.
+        // Isolated-worker Functions run on a Generic Host, so the MeterProvider is built normally (unlike
+        // the bare Lambda host). The Azure Monitor exporter uses delta temporality by default, so a KQL
+        // sum(valueSum) over a window equals the request count. (On a Consumption plan the batching export
+        // can lag by an interval when the worker freezes between invocations; negligible for windowed counts.)
+        var appInsights = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService($"{serviceName}-api"))
+            .WithMetrics(metrics =>
+            {
+                metrics.AddBenzeneInstrumentation();
+                if (!string.IsNullOrEmpty(appInsights)) metrics.AddAzureMonitorMetricExporter();
+            });
+
         services.UsingBenzene(x =>
         {
             x.AddBenzene()
@@ -61,6 +82,7 @@ public static class MeshServiceWiring
         // A Cloud Service serves only JSON (spec/health/invoke); the browsable spec is served by the mesh.
         app.UseHttp(http => http
             .UseBenzeneEnrichment()
+            .UseBenzeneMetrics()
             .UseBenzeneCloudService($"{serviceName}-api", cloud => cloud
                 .WithServiceVersion("1.0.0")
                 .WithInstanceId(serviceName)

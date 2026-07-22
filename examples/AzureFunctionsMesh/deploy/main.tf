@@ -125,8 +125,13 @@ resource "azurerm_linux_function_app" "service" {
 
   # Each service is its own deployable now (no MESH_SERVICE); it gets exactly the messaging connection
   # strings + entity names it uses. FUNCTIONS_WORKER_RUNTIME is set so the isolated worker starts.
+  # APPLICATIONINSIGHTS_CONNECTION_STRING turns on the service's Azure Monitor metric exporter, so the
+  # benzene.messages.processed counter reaches App Insights for the mesh's usage feed to read back.
   app_settings = merge(
-    { FUNCTIONS_WORKER_RUNTIME = "dotnet-isolated" },
+    {
+      FUNCTIONS_WORKER_RUNTIME              = "dotnet-isolated"
+      APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.this.connection_string
+    },
     local.service_app_settings[each.value]
   )
 
@@ -267,6 +272,10 @@ resource "azurerm_linux_function_app" "mesh" {
     # Scope discovery explicitly to this deployment so a subscription-scoped Reader can't widen the sweep.
     MESH_SUBSCRIPTION_ID = data.azurerm_client_config.current.subscription_id
     MESH_RESOURCE_GROUP  = data.azurerm_resource_group.this.name
+    # The mesh reads the usage feed from this Log Analytics workspace (customMetrics) over the window.
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.this.connection_string
+    MESH_LOG_ANALYTICS_WORKSPACE_ID       = azurerm_log_analytics_workspace.this.workspace_id
+    MESH_USAGE_WINDOW_HOURS               = tostring(var.usage_window_hours)
   }
 
   # Same as the service apps: the mesh code is zip-deployed out-of-band, setting WEBSITE_RUN_FROM_PACKAGE.
@@ -296,6 +305,36 @@ resource "azurerm_role_assignment" "mesh_reader" {
 resource "azurerm_role_assignment" "mesh_blob" {
   scope                = azurerm_storage_account.this.id
   role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_function_app.mesh.identity[0].principal_id
+  depends_on           = [time_sleep.identity_propagation]
+}
+
+# --- Observability: workspace-based Application Insights ------------------------------------------------
+# Services export the benzene.messages.processed counter here (via the Azure Monitor OpenTelemetry
+# exporter, on when APPLICATIONINSIGHTS_CONNECTION_STRING is set); the mesh reads it back from the Log
+# Analytics workspace's customMetrics table to build the usage feed (Benzene.Mesh.Usage.ApplicationInsights).
+# Coarse per-topic counts only — deep analysis stays in App Insights/Grafana.
+resource "azurerm_log_analytics_workspace" "this" {
+  name                = "${var.project}-logs"
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_application_insights" "this" {
+  name                = "${var.project}-ai"
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
+  application_type    = "web"
+  workspace_id        = azurerm_log_analytics_workspace.this.id
+}
+
+# Read the usage feed: the mesh identity queries the Log Analytics workspace (customMetrics) via the
+# Azure Monitor logs-query API. "Log Analytics Reader" grants the workspace query permission it needs.
+resource "azurerm_role_assignment" "mesh_monitoring_reader" {
+  scope                = azurerm_log_analytics_workspace.this.id
+  role_definition_name = "Log Analytics Reader"
   principal_id         = azurerm_linux_function_app.mesh.identity[0].principal_id
   depends_on           = [time_sleep.identity_propagation]
 }

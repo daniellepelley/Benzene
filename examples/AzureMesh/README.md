@@ -56,6 +56,20 @@ The mesh Web App wires **full OpenTelemetry** (`AddOpenTelemetry` + Benzene trac
 plus `UseW3CTraceContext`/`UseBenzeneEnrichment`/`UseBenzeneMetrics` on the pipeline). Set
 `OTEL_EXPORTER_OTLP_ENDPOINT` (app setting) to export to a collector; unset, it no-ops.
 
+### Topic usage → the Mesh UI (Application Insights)
+The `UseBenzeneMetrics()` on every service (the shared `K8sMesh/Service` image) and the mesh emits the
+`benzene.messages.processed` counter tagged `topic`/`transport`/`result`. When
+`APPLICATIONINSIGHTS_CONNECTION_STRING` is set (the Terraform wires it), the **Azure Monitor OpenTelemetry
+exporter** also sends that counter to **Application Insights**, landing in the Log Analytics `customMetrics`
+table (delta temporality → a `sum(valueSum)` over a window is the request count). The mesh then reads it
+back: `AddApplicationInsightsUsage(...)` (from `Benzene.Mesh.Usage.ApplicationInsights`, wired when
+`MESH_LOG_ANALYTICS_WORKSPACE_ID` is present) queries `customMetrics` by KQL each aggregation run and writes
+`usage.json` — per-topic request counts over `var.usage_window_hours` (default 24h), which the **Mesh UI**
+renders (Usage column + by-transport / by-status). Terraform adds a Log Analytics workspace + Application
+Insights and grants the mesh identity **Log Analytics Reader**. Coarse counts by design — fine detail stays
+in App Insights/Grafana. (Per-service attribution and duration are documented follow-ups — the counter
+isn't tagged by service, which the UI surfaces honestly as an absent dimension.)
+
 ## Discovery scope
 
 Discovery is pinned to this deployment's subscription and resource group via two app settings on the

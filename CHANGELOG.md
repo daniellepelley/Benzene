@@ -65,6 +65,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `awsemf` exporter (was dropped to `debug`), the counter is exported with delta temporality, the mesh
   Lambda reads it back, and `MeshArtifactMiddleware` now serves `usage.json`/`annotations.json`. See
   `docs/mesh-usage-feed.md` and `src/Benzene.Mesh.Usage.CloudWatch/CLAUDE.md`.
+- **New `Benzene.Mesh.Usage.ApplicationInsights` package — the Azure metrics-backend usage adapter.** The
+  Azure sibling of the CloudWatch adapter (pins `Azure.Monitor.Query` + `Azure.Identity`): an
+  `ApplicationInsightsUsageSource : IMeshUsageSource` reads the `benzene.messages.processed` counter back
+  from an Application Insights **Log Analytics workspace** (`customMetrics`, KQL `sum(valueSum) by topic,
+  transport, result`) and reports per-**(topic, transport, status)** request counts over a window, merged
+  into `usage.json`. Registered with `AddApplicationInsightsUsage(new ApplicationInsightsUsageOptions(...))`
+  (new `MeshUsageSource.ApplicationInsights` constant); the querying identity needs the **Log Analytics
+  Reader** role. Unit-tested via a mockable query seam. Wired end-to-end in **both** Azure mesh examples:
+  `examples/AzureMesh` (services + mesh gain the Azure Monitor OpenTelemetry metric exporter; the counter
+  was already emitted) and `examples/AzureFunctionsMesh` (the OpenTelemetry emit half — `UseBenzeneMetrics()`
+  + providers + exporter — is **added** across its six services and mesh, since it had none). Both examples'
+  Terraform gains a Log Analytics workspace + Application Insights, wires the connection string into the
+  services and mesh, and grants the mesh identity `Log Analytics Reader`; both `MeshArtifactMiddleware`s now
+  serve `usage.json`/`annotations.json`. The Azure Monitor exporter uses delta temporality by default, so
+  `sum(valueSum)` = the count. See `docs/mesh-usage-feed.md` and
+  `src/Benzene.Mesh.Usage.ApplicationInsights/CLAUDE.md`.
 - **Property-based routing for the Azure Functions Event Hub trigger.** `Benzene.Azure.Function.EventHub`
   now registers first-class `EventHubContext` mappers (`EventHubMessageTopicGetter` reading the topic from
   an event property, `EventHubMessageBodyGetter`, `EventHubMessageHandlerResultSetter`), so an Event Hub

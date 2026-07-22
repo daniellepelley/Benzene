@@ -31,7 +31,7 @@ public class StartUp : BenzeneStartUp
         IHealthCheck[] healthChecks = { new ServiceHealthCheck("inventory") };
         MeshServiceWiring.Configure(app, "inventory", Handlers, healthChecks, a => a
             // order:placed off Event Hub (property-based routing), shipment:dispatched off Event Grid.
-            .UseEventHub(eh => eh.UseBenzeneEnrichment().UseMessageHandlers(Handlers))
-            .UseEventGrid(eg => eg.UseBenzeneEnrichment().UseMessageHandlers(Handlers)));
+            .UseEventHub(eh => eh.UseBenzeneEnrichment().UseBenzeneMetrics().UseMessageHandlers(Handlers))
+            .UseEventGrid(eg => eg.UseBenzeneEnrichment().UseBenzeneMetrics().UseMessageHandlers(Handlers)));
     }
 }

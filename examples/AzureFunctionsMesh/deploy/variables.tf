@@ -49,3 +49,9 @@ variable "wire_eventgrid_subscriptions" {
   type        = bool
   default     = false
 }
+
+variable "usage_window_hours" {
+  description = "Lookback window (hours) the mesh's Application Insights usage source counts topic requests over, and the window the Mesh UI shows. Coarse usage only — fine-grained analysis belongs in App Insights/Grafana."
+  type        = number
+  default     = 24
+}

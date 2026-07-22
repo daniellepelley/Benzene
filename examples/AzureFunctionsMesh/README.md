@@ -67,6 +67,25 @@ topology across all six.
 > The Event Hub egress↔Functions-trigger round-trip needed a small framework addition (property-based
 > Event Hub ingress, `UseEventHub(eh => eh.UseMessageHandlers())`) — see `Benzene.Azure.Function.EventHub`.
 
+## Topic usage → the Mesh UI (OpenTelemetry + Application Insights)
+
+Each service wires OpenTelemetry (`AddOpenTelemetry().WithMetrics(...AddBenzeneInstrumentation())` in
+`Shared/MeshServiceWiring.cs`) and `UseBenzeneMetrics()` on its HTTP and message-trigger pipelines, emitting
+the `benzene.messages.processed` counter tagged `topic`/`transport`/`result`. When
+`APPLICATIONINSIGHTS_CONNECTION_STRING` is set (the Terraform wires it), the **Azure Monitor OpenTelemetry
+exporter** sends that counter to **Application Insights** → the Log Analytics `customMetrics` table (delta
+temporality → a `sum(valueSum)` over a window is the request count).
+
+The mesh Function reads it back: `AddApplicationInsightsUsage(...)` (from
+`Benzene.Mesh.Usage.ApplicationInsights`, wired when `MESH_LOG_ANALYTICS_WORKSPACE_ID` is present) queries
+`customMetrics` by KQL each aggregation tick and writes `usage.json` — per-topic request counts over
+`var.usage_window_hours` (default 24h), which the **Mesh UI** renders. Terraform adds a Log Analytics
+workspace + Application Insights, wires the connection string into the six services and the mesh, and grants
+the mesh identity **Log Analytics Reader**. Isolated-worker Functions run on a Generic Host, so the
+OpenTelemetry providers are built normally; on a Consumption plan the batching export can lag by an interval
+when the worker freezes between invocations — negligible for windowed counts. Coarse counts by design —
+fine detail stays in App Insights/Grafana.
+
 ## Projects
 
 | Path | What it is |

@@ -23,4 +23,13 @@ public static class MeshUsageSource
     /// service) - so it exercises the missing-<c>service</c> degradation path.
     /// </summary>
     public const string CloudWatch = "cloudwatch";
+
+    /// <summary>
+    /// Produced by <c>Benzene.Mesh.Usage.ApplicationInsights</c>, reading the
+    /// <c>benzene.messages.processed</c> counter back from an Azure Monitor / Application Insights
+    /// Log Analytics workspace (the <c>customMetrics</c> table) as counts per (topic, transport, status)
+    /// over a configured window. The Azure sibling of <see cref="CloudWatch"/>; same dimensions, same
+    /// missing-<c>service</c> degradation path.
+    /// </summary>
+    public const string ApplicationInsights = "application-insights";
 }

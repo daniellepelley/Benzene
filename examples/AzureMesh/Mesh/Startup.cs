@@ -5,10 +5,12 @@ using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics;
 using Benzene.Http;
 using Benzene.Http.Cors;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Benzene.Mesh.Azure.Blob;
 using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Azure;
 using Benzene.Mesh.Ui;
+using Benzene.Mesh.Usage.ApplicationInsights;
 using Benzene.Microsoft.Dependencies;
 using Benzene.OpenTelemetry;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +43,9 @@ public class Startup : BenzeneStartUp
         // The OTLP exporter is only attached when OTEL_EXPORTER_OTLP_ENDPOINT is set — the
         // instrumentation is armed either way, so there are no connection-refused errors without one.
         var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+        // With an Application Insights connection string, also export metrics to Azure Monitor (delta
+        // temporality by default) — this is what the CloudWatch usage feed's Azure sibling reads back.
+        var appInsights = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService("benzene-mesh"))
             .WithTracing(tracing =>
@@ -52,22 +57,39 @@ public class Startup : BenzeneStartUp
             {
                 metrics.AddBenzeneInstrumentation();
                 if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
+                if (!string.IsNullOrEmpty(appInsights)) metrics.AddAzureMonitorMetricExporter();
             });
 
-        services.UsingBenzene(benzene => benzene
-            .AddBenzene()
-            .AddDiagnostics()
-            .AddMessageHandlers(typeof(Startup).Assembly)
-            .AddHttpMessageHandlers()
-            // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in Blob Storage.
-            .AddMeshAggregatorWithBlob(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()),
-                new Uri(blobServiceUri), container, prefix)
-            // Scope discovery to this deployment's subscription + resource group so a subscription-scoped
-            // Reader identity doesn't discover every benzene-tagged site in the subscription. Both are
-            // optional — unset falls back to the credential's default subscription, whole-subscription sweep.
-            .AddMeshAzureDiscovery(
-                subscriptionId: Environment.GetEnvironmentVariable("MESH_SUBSCRIPTION_ID"),
-                resourceGroup: Environment.GetEnvironmentVariable("MESH_RESOURCE_GROUP")));
+        services.UsingBenzene(benzene =>
+        {
+            benzene
+                .AddBenzene()
+                .AddDiagnostics()
+                .AddMessageHandlers(typeof(Startup).Assembly)
+                .AddHttpMessageHandlers()
+                // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in Blob Storage.
+                .AddMeshAggregatorWithBlob(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()),
+                    new Uri(blobServiceUri), container, prefix)
+                // Scope discovery to this deployment's subscription + resource group so a subscription-scoped
+                // Reader identity doesn't discover every benzene-tagged site in the subscription. Both are
+                // optional — unset falls back to the credential's default subscription, whole-subscription sweep.
+                .AddMeshAzureDiscovery(
+                    subscriptionId: Environment.GetEnvironmentVariable("MESH_SUBSCRIPTION_ID"),
+                    resourceGroup: Environment.GetEnvironmentVariable("MESH_RESOURCE_GROUP"));
+
+            // Usage feed: read the benzene.messages.processed counter (exported to Application Insights by
+            // each service's Azure Monitor exporter) back from the Log Analytics workspace as per-topic
+            // request counts over a window, merged into usage.json each run. Only wired when the workspace
+            // id is configured (so the example still runs without App Insights). Window: MESH_USAGE_WINDOW_HOURS.
+            var workspaceId = Environment.GetEnvironmentVariable("MESH_LOG_ANALYTICS_WORKSPACE_ID");
+            if (!string.IsNullOrEmpty(workspaceId))
+            {
+                var usageWindowHours = double.TryParse(
+                    Environment.GetEnvironmentVariable("MESH_USAGE_WINDOW_HOURS"), out var hours) ? hours : 24;
+                benzene.AddApplicationInsightsUsage(
+                    new ApplicationInsightsUsageOptions(workspaceId, TimeSpan.FromHours(usageWindowHours)));
+            }
+        });
 
         services.AddSingleton<MeshAggregationService>();
         services.AddHostedService<MeshAggregationBackgroundService>();

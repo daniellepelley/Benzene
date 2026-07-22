@@ -40,6 +40,7 @@ public class StartUp : BenzeneStartUp
         MeshServiceWiring.Configure(app, "shipping", Handlers, healthChecks, a => a
             .UseServiceBus(sb => sb
                 .UseBenzeneEnrichment()
+                .UseBenzeneMetrics()
                 .UseMessageHandlers(Handlers)));
     }
 }

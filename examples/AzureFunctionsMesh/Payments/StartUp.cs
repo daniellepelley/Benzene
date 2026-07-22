@@ -46,6 +46,7 @@ public class StartUp : BenzeneStartUp
             // The same handler, now also reachable off the Service Bus queue trigger (routes by "topic").
             .UseServiceBus(sb => sb
                 .UseBenzeneEnrichment()
+                .UseBenzeneMetrics()
                 .UseMessageHandlers(Handlers)));
     }
 }

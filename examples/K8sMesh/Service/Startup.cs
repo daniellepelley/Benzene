@@ -1,3 +1,4 @@
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Hosting;
 using Benzene.AspNet.Core;
@@ -47,6 +48,12 @@ public class Startup : BenzeneStartUp
         // OTEL_EXPORTER_OTLP_ENDPOINT is set — otherwise the instrumentation is armed but nothing tries
         // to reach a collector, so there are no connection-refused errors in the logs without one.
         var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+        // When this image runs on Azure (the AzureMesh example) with an Application Insights connection
+        // string, also export the benzene.messages.processed counter to Azure Monitor, so the mesh's
+        // Benzene.Mesh.Usage.ApplicationInsights source can read per-topic usage back into usage.json.
+        // A no-op on Kubernetes (the env var is unset there). The Azure Monitor exporter uses DELTA
+        // temporality by default, so a KQL sum(valueSum) over a window equals the request count.
+        var appInsights = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService($"{ServiceName}-api"))
             .WithTracing(tracing =>
@@ -58,6 +65,7 @@ public class Startup : BenzeneStartUp
             {
                 metrics.AddBenzeneInstrumentation();
                 if (!string.IsNullOrEmpty(otlpEndpoint)) metrics.AddOtlpExporter();
+                if (!string.IsNullOrEmpty(appInsights)) metrics.AddAzureMonitorMetricExporter();
             });
 
         services.UsingBenzene(x =>

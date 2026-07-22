@@ -108,6 +108,9 @@ resource "azurerm_linux_web_app" "service" {
     PORT                                = "8080"
     MESH_SERVICE                        = each.value
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    # Export the benzene.messages.processed counter to Application Insights (the service image's Azure
+    # Monitor exporter activates when this is set), so the mesh can read per-topic usage back.
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.this.connection_string
   }
 }
 
@@ -145,6 +148,10 @@ resource "azurerm_linux_web_app" "mesh" {
     MESH_SUBSCRIPTION_ID                = data.azurerm_client_config.current.subscription_id
     MESH_RESOURCE_GROUP                 = data.azurerm_resource_group.this.name
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    # The mesh reads the usage feed from this Log Analytics workspace (customMetrics) over the window.
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.this.connection_string
+    MESH_LOG_ANALYTICS_WORKSPACE_ID       = azurerm_log_analytics_workspace.this.workspace_id
+    MESH_USAGE_WINDOW_HOURS               = tostring(var.usage_window_hours)
   }
 }
 
@@ -168,6 +175,36 @@ resource "azurerm_role_assignment" "mesh_reader" {
 resource "azurerm_role_assignment" "mesh_blob" {
   scope                = azurerm_storage_account.artifacts.id
   role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_web_app.mesh.identity[0].principal_id
+  depends_on           = [time_sleep.identity_propagation]
+}
+
+# --- Observability: workspace-based Application Insights ------------------------------------------------
+# Services export the benzene.messages.processed counter here (via the Azure Monitor OpenTelemetry
+# exporter); the mesh reads it back from the Log Analytics workspace's customMetrics table to build the
+# usage feed (Benzene.Mesh.Usage.ApplicationInsights). Coarse per-topic counts only — deep analysis stays
+# in App Insights/Grafana.
+resource "azurerm_log_analytics_workspace" "this" {
+  name                = "${var.project}-logs"
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_application_insights" "this" {
+  name                = "${var.project}-ai"
+  resource_group_name = data.azurerm_resource_group.this.name
+  location            = data.azurerm_resource_group.this.location
+  application_type    = "web"
+  workspace_id        = azurerm_log_analytics_workspace.this.id
+}
+
+# Read the usage feed: the mesh identity queries the Log Analytics workspace (customMetrics) via the
+# Azure Monitor logs-query API. "Log Analytics Reader" grants the workspace query permission it needs.
+resource "azurerm_role_assignment" "mesh_monitoring_reader" {
+  scope                = azurerm_log_analytics_workspace.this.id
+  role_definition_name = "Log Analytics Reader"
   principal_id         = azurerm_linux_web_app.mesh.identity[0].principal_id
   depends_on           = [time_sleep.identity_propagation]
 }
