@@ -1,8 +1,16 @@
 # Payload Schema Versioning
 
-**Status: DRAFT v0.1 — design proposal, not yet implemented.** Nothing in this document is
-shipped; it exists so the design is agreed before code is written. Once implementation starts,
-this document graduates alongside it and this notice is removed.
+**Status: implemented.** Both axes ship: handler-version dispatch (`[Message(topic, version)]` +
+`IVersionSelector`) and payload schema casting (`Benzene.Core.Versioning` — `ICaster`/`SchemaCaster`,
+the request/response casting decorators, `UsePayloadVersionCasting<TContext>()`). The version signal is
+read per transport by `IMessageVersionGetter<TContext>` (HTTP: a `/v{version}` route segment with a
+`benzene-version` header fallback; every other transport: the `benzene-version` header); it is written
+outbound via the `SendAsync(topic, request, version)` / `SendMessageAsync(topic, message, version)`
+overloads (`MessageVersionHeaders.Default`). HTTP apps opt into the `/v{version}` route convention with
+`AddHttpVersioning()`. The mesh reconciles produced-vs-consumed versions per topic
+(`MeshTopicCatalog.VersionCompatibility`, rendered on the Mesh UI topic page). Runnable end-to-end in
+`examples/Mesh` (payments-api: `/v1`|`/v2` routes + response downcast) and `examples/K8sMesh`
+(orders→payments: v1 request upcast to a single v2 handler over the envelope).
 
 ## 1. Purpose and scope
 

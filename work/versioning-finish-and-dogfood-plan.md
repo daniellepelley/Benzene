@@ -50,3 +50,13 @@ The wire token is the same everywhere: HTTP route `/v{version}` captures the tok
 
 Verification: `dotnet build Benzene.sln` + targeted tests per slice; run `examples/Mesh/run.sh`-style
 local exercise where feasible (as done for the HTTP client work).
+
+## Status: COMPLETE (all slices shipped)
+1. ✅ Outbound version-send (`MessageVersionHeaders.Default`, `SendAsync/SendMessageAsync(..., version)`, `WithVersion`).
+2. ✅ HTTP `/v{version}` route policy (`HttpVersioningOptions`, `VersionedHttpEndpointFinder`, `AddHttpVersioning()`).
+3. ✅ Mesh cross-version compatibility (`MeshTopicVersionCompatibility`, aggregator compute, Mesh UI panel).
+4. ✅ `examples/Mesh` dogfood — **verified live**: `/v1`|`/v2` routes + response downcast; mesh skew in `topics.json`.
+5. ✅ `examples/K8sMesh` dogfood — **verified live**: v1 request upcast to a single v2 handler over the envelope.
+6. ✅ Docs — stale banner fixed in `docs/specification/versioning.md`.
+
+Tests: 59 core (versioning/http/clients) + 38 mesh aggregator pass; full `Benzene.sln` builds clean.
