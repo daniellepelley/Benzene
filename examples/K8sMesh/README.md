@@ -14,13 +14,14 @@ the Mesh UI on the public internet (see "Deploy to AWS (EKS)" below).
   │ orders   │ payments  │ shipping   │   3 Deployments (one image, MESH_SERVICE selects the domain)
   │ Service  │ Service   │ Service    │   each Service labelled  benzene: "true"
   └────┬─────┴─────┬─────┴─────┬──────┘
-       │           │           │
+       │           │           │  ▲  3. each service PUSHES register + heartbeat + traces to the
+       │           │           │  │     mesh's collector (http://mesh/benzene/invoke) — the live feed
        │   1. list Services (label benzene=true) via the Kubernetes API
-       │   2. GET http://<svc>.<ns>.svc.cluster.local/benzene/spec|health  (interrogate)
-       ▼
+       │   2. GET http://<svc>.<ns>.svc.cluster.local/benzene/spec|health  (interrogate — the pull feed)
+       ▼                          │
    ┌────────┐   writes manifest.json / services/*.json / topics.json / registry.json
-   │  mesh  │   to /artifacts (pod volume) and serves the Mesh UI at /mesh-ui
-   └────────┘   NodePort 30080 → open the UI in a browser
+   │  mesh  │   to /artifacts (pod volume) and serves the Mesh UI at /mesh-ui (pulled/declared)
+   └────────┘   + the live Fleet view at /benzene/fleet-ui (pushed/observed) — NodePort 30080
 ```
 
 - Discovery is `Benzene.Mesh.Discovery.Kubernetes` (`KubernetesServiceDiscoveryProvider`): it lists
@@ -29,13 +30,24 @@ the Mesh UI on the public internet (see "Deploy to AWS (EKS)" below).
 - The mesh's ServiceAccount has RBAC to **list Services** only (`k8s/mesh.yaml`). The mesh's own
   Service is **not** `benzene`-labelled, so it never discovers itself.
 - The catalog lives on the mesh pod's own `emptyDir` volume (single writer + reader) — no blob store.
+- **The live Fleet view (`/benzene/fleet-ui`)** is the mesh's second, complementary lens. Where the
+  Mesh UI renders what services *declare* (the aggregator's pulled + published artifacts), the Fleet
+  view renders what's *actually running*: the mesh pod also hosts a `Benzene.Mesh.Collector` at
+  `/benzene/invoke`, and each Cloud Service reports to it (`WithCollector(...)`, driven by the
+  `MESH_COLLECTOR_ENVELOPE_URL` the manifests set) — registrations, health heartbeats, and per-call
+  traces. The Fleet view polls the collector and shows live health, observed consumer edges (who
+  actually calls whom, from trace parentage), recent flows, and "missing feed" markers for partial
+  data. The single always-on mesh pod is the right home for the collector's in-memory state (one
+  process accumulates every service's feed) — which is why this live view fits K8sMesh but not the
+  scale-to-zero Azure Functions Consumption mesh. It reduces gracefully: an unreachable collector
+  never fails a service, it just leaves that service's live feed empty.
 
 ## Projects
 
 | Path | What it is |
 |---|---|
 | `Service/` | one ASP.NET Core Cloud Service image; `MESH_SERVICE` picks the domain (orders/payments/shipping) |
-| `Mesh/` | the discovery + aggregator + UI service (K8s discovery, filesystem store, 30s background pass + `POST /mesh/refresh`) |
+| `Mesh/` | the discovery + aggregator + UI service (K8s discovery, filesystem store, 30s background pass + `POST /mesh/refresh`); also hosts the live `Benzene.Mesh.Collector` at `/benzene/invoke` and serves the Fleet view at `/benzene/fleet-ui` |
 | `k8s/` | manifests: namespace, the 3 Deployments+Services, and the mesh (SA + RBAC + Deployment + NodePort Service), with a kustomize base for target-specific overlays |
 | `deploy/` | Terraform for the AWS leg: EKS cluster + node group + the two ECR repositories |
 | `deploy/eks/` | kustomize overlay over `k8s/`: ECR images (set by the workflow) + a LoadBalancer mesh Service |
@@ -61,7 +73,9 @@ kubectl apply -k examples/K8sMesh/k8s/   # -k: the directory is a kustomize base
 kubectl -n benzene-mesh port-forward svc/mesh 8080:80
 # then, in another shell:
 curl -XPOST localhost:8080/mesh/refresh   # {"discovered":3}
-open http://localhost:8080/mesh-ui        # the discovered catalog + cross-service Topics table
+open http://localhost:8080/mesh-ui        # the discovered catalog + cross-service Topics table (declared)
+open http://localhost:8080/benzene/fleet-ui  # the live Fleet view (observed) — services as they register,
+                                             # heartbeat, and push traces to the mesh's collector
 ```
 
 Each service's own Spec UI is reachable the same way (`port-forward svc/orders 8081:80` →
@@ -83,7 +97,8 @@ and the same per-account S3 state bucket (key `k8s-mesh/`). The workflow:
    and does the same for each `benzene`-labelled Service, so orders/payments/shipping are directly
    callable from the internet as well.
 4. waits for the ELBs, `POST`s `/mesh/refresh`, asserts `{"discovered":3}`, and prints
-   `http://<elb-hostname>/mesh-ui` plus each service's `http://<elb-hostname>/benzene/spec-ui` URL
+   `http://<elb-hostname>/mesh-ui` (and the live Fleet view at `http://<elb-hostname>/benzene/fleet-ui`)
+   plus each service's `http://<elb-hostname>/benzene/spec-ui` URL
    (all in the run summary) — open the Mesh UI to watch the mesh discover the pods, exactly like the
    AwsMesh example's Lambda catalog, or hit a service's `/benzene/spec-ui`, `/benzene/health`, or
    `POST /benzene/invoke` directly.

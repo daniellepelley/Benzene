@@ -4,8 +4,10 @@ using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics;
 using Benzene.Http;
+using Benzene.Http.BenzeneMessage;
 using Benzene.Http.Cors;
 using Benzene.Mesh.Aggregator;
+using Benzene.Mesh.Collector;
 using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Kubernetes;
 using Benzene.Mesh.Ui;
@@ -62,6 +64,12 @@ public class Startup : BenzeneStartUp
 
         services.AddSingleton<MeshAggregationService>();
         services.AddHostedService<MeshAggregationBackgroundService>();
+
+        // The live spec collector's in-memory state (Benzene.Mesh.Collector). A single always-on mesh
+        // pod is exactly the right host for it - one process holds the accumulated registrations,
+        // heartbeats, and traces the services push, and the Fleet view below reads it back. (This is
+        // why the Fleet view fits K8sMesh but not the scale-to-zero Consumption Functions mesh.)
+        services.AddSingleton<MeshCollectorStore>();
     }
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)
@@ -80,6 +88,15 @@ public class Startup : BenzeneStartUp
             // Benzene's own CORS support (Benzene.Http.Cors.CorsSettings); "*" would open it to
             // any origin, but scoping to Studio's origin keeps the example tight.
             .UseMeshArtifacts(new CorsSettings { AllowedDomains = new[] { "https://studio.asyncapi.com" } })
+            // The live spec collector behind the wire-envelope endpoint the services report to
+            // (register/heartbeat/trace) and the Fleet view queries (mesh:query:fleet). Its own inner
+            // pipeline routes only the collector topics, over the singleton MeshCollectorStore above.
+            .UseBenzeneMessage(new BenzeneMessageHttpOptions { Path = "/benzene/invoke" },
+                collector => collector.UseMessageHandlers(MeshCollectorHandlers.All))
+            // The Fleet view: the live counterpart of the Mesh UI. Where /mesh-ui renders the
+            // aggregator's pulled + published artifacts (what services declare), this renders what the
+            // collector derives from the services' own push feeds (what's actually running).
+            .UseMeshFleetUi("/benzene/fleet-ui", "/benzene/invoke")
             .UseMessageHandlers(typeof(Startup).Assembly));
     }
 }

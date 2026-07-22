@@ -22,6 +22,9 @@ spec:
           ports: [{ containerPort: 8080 }]
           env:
             - { name: MESH_SERVICE, value: orders }
+            # Report to the mesh pod's collector (register/heartbeat/traces) so the live Fleet view
+            # populates. In-cluster the mesh Service is reachable by name in this namespace.
+            - { name: MESH_COLLECTOR_ENVELOPE_URL, value: http://mesh/benzene/invoke }
           readinessProbe:
             httpGet: { path: /benzene/health, port: 8080 }
             initialDelaySeconds: 3
@@ -57,6 +60,7 @@ spec:
           ports: [{ containerPort: 8080 }]
           env:
             - { name: MESH_SERVICE, value: payments }
+            - { name: MESH_COLLECTOR_ENVELOPE_URL, value: http://mesh/benzene/invoke }
           readinessProbe:
             httpGet: { path: /benzene/health, port: 8080 }
             initialDelaySeconds: 3
@@ -92,6 +96,7 @@ spec:
           ports: [{ containerPort: 8080 }]
           env:
             - { name: MESH_SERVICE, value: shipping }
+            - { name: MESH_COLLECTOR_ENVELOPE_URL, value: http://mesh/benzene/invoke }
           readinessProbe:
             httpGet: { path: /benzene/health, port: 8080 }
             initialDelaySeconds: 3
