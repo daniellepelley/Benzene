@@ -107,6 +107,35 @@
 >   text label, and the row edge is an `inset` box-shadow, so the reading survives colour-blindness
 >   and forced-colors/monochrome. Palette reuses the health-badge design tokens
 >   (`--req`/`--m-put`/`--ok`/`--ink-faint`) - no new colours, verified in light and dark.
+>
+> **2026-07-22 (F3a of the maintainer-feedback triage, first cut): compose test payload (copy-only,
+> toggle-gated static floor).** A fourth entity view (`#compose:<topic>`, `renderComposePage`) joins
+> Estate/Topic/Service in the same hash router (`showView` now lists `compose-page`; back returns to
+> the launching topic, Escape too). It builds a **raw benzene-message envelope** — `{ topic, headers,
+> body }` where `body` is the payload serialized as a string, matching `BenzeneMessageRequest` — from
+> the topic version's **inlined** inbound schema (`inboundSchema` = `messageSchema` ?? `requestSchema`;
+> the response isn't inbound), entirely in-browser via `exampleFromSchema`/`exampleString` (a
+> deterministic example generator honouring `example`/`default`/`enum` then type+format with
+> length/range hints — no randomness, mirroring the C# `ExamplePayloadBuilder` intent). The user
+> picks a **payload** (the topic's versions) and a **transport** (raw + `supportedTransportsForTopic`,
+> the union of consuming services' manifest `transports` + `http` when HTTP mappings exist), edits the
+> **headers** and **payload fields** as JSON (per-field parse errors shown inline), and **copies** the
+> assembled envelope (`copyText`: `navigator.clipboard` with an `execCommand` fallback). **Nothing is
+> sent** — this is the copy half only.
+> - **Toggle (decision: URL/attribute feature-detect):** `composeEnabled()` is off unless `?compose`
+>   is in the query or `data-compose-enabled` is on `<html>`, so the affordance (the topic-page
+>   "Compose test payload" button) and the `#compose:` route are entirely absent in a production
+>   deploy that doesn't opt in. A `#compose:` bookmark with the toggle off falls back to the estate.
+> - **Architecture ruling honoured (do NOT dress transports in the static UI):** the C# SQS/SNS/
+>   API-Gateway/Service-Bus envelope builders can't run here, so this ships **vessel #2** — the
+>   always-available raw-envelope skeleton. Choosing a non-raw transport shows the raw envelope plus
+>   an honest note that the transport-specific wire dressing is served by the host `UseTestPayloads()`
+>   endpoint (**a documented follow-up**, not yet wired) — no fabricated dressing, no AWS-only-and-
+>   called-done. Code-registered custom payloads (`SuppliedSchemaCatalog`) are likewise a host-fed
+>   follow-up; the floor offers the schema-derived default per version.
+> - **Follow-ups (not in this cut):** the host `UseTestPayloads()` introspect-and-dress endpoint +
+>   the runtime-clean core / `Benzene.*.TestPayloads.Aws` package split (`work/runtime-test-payloads-
+>   plan.md`), Azure transport dressing, and the feature-detected fetch of host-dressed payloads.
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
