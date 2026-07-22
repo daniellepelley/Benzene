@@ -136,6 +136,20 @@
 > - **Follow-ups (not in this cut):** the host `UseTestPayloads()` introspect-and-dress endpoint +
 >   the runtime-clean core / `Benzene.*.TestPayloads.Aws` package split (`work/runtime-test-payloads-
 >   plan.md`), Azure transport dressing, and the feature-detected fetch of host-dressed payloads.
+>
+> **2026-07-22 (F3b-revised case 2a: Spec-UI "Try it" deep-link — the §10.7-clean live-HTTP answer).**
+> Each service's link row (estate card + service page) gains a **"try it ↗"** deep-link to the
+> service's **own** Spec UI (`specUiTryItHref` → the service origin's `/spec-ui`, `UseSpecUi()`'s
+> default path, derived from `specUrl`'s origin). The live send is the service's *own same-origin*
+> "Try it" (`Benzene.Spec.Ui`) — **the mesh never calls the service itself**, so this needs no §10.7
+> exception (§10.7 explicitly blesses live dispatch scoped to a service's own self-hosted Spec UI).
+> Gated behind the **same compose toggle** as the payload composer (`composeEnabled()` — a live-
+> testing affordance, off in a production deploy by default) and shown only for HTTP-reachable
+> services (`svcIsHttpReachable`: `transports` includes `http`, or an older manifest with no transport
+> info, best-effort). `safeHttpUrl`-validated. It requires the target service to host its own Spec UI
+> (optional today; recommended as part of the service standard — a docs follow-up). Queue/stream
+> transports stay F3a compose+copy only; the Lambda direct-invoke (browser-can't-`Invoke`) host-proxy
+> path is the separate, gated F3b case (1).
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
