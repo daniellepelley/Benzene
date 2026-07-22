@@ -148,6 +148,20 @@ into a controlled response.
 .UseLogResult(log => log.Add("status", ctx => ctx.MessageResult.Status))
 ```
 
+### `UseRateLimiting(...)` / `UseFixedWindowRateLimiting(...)` / `UseTokenBucketRateLimiting(...)` / `UsePayloadSizeRateLimiting(...)`
+
+**Package:** `Benzene.RateLimiting`. Best-effort, per-instance rate limiting over any
+`System.Threading.RateLimiting.RateLimiter`; a rejected message short-circuits with
+`TooManyRequests` (HTTP 429). Place it before the middleware it protects. Per instance only —
+authoritative limits belong at the gateway; see [Rate Limiting](../rate-limiting.md).
+
+```csharp
+.UseFixedWindowRateLimiting(60, TimeSpan.FromMinutes(1))          // 60 messages/minute
+.UsePayloadSizeRateLimiting(262144, 65536, TimeSpan.FromSeconds(1)) // 64 KiB/s, 256 KiB bursts
+.UseRateLimiting(myRateLimiter)                                    // bring your own
+.UseRateLimiting(myRateLimiter, (resolver, ctx) => CostOf(ctx))    // bring your own + cost
+```
+
 ### `UseRetry(...)`
 
 **Package:** `Benzene.Resilience`. Wraps the rest of the pipeline in a retry policy with

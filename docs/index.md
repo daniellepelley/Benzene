@@ -68,6 +68,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
   - [Caching](caching.md)
   - [Resilience](resilience.md) — retry-with-backoff, plus the full Polly toolkit via `Benzene.Resilience.Polly`
   - [Polly Resilience Pipelines](cookbooks/polly-resilience.md) — circuit breaker, timeout, hedging, fallback
+  - [Rate Limiting](rate-limiting.md) — best-effort, per-instance protection for public endpoints (health checks, spec); authoritative limits belong at the gateway
 
 - **Code Generation**
   - [Terraform](terraform.md)

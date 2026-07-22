@@ -185,6 +185,7 @@ See [Monitoring & Diagnostics](../monitoring.md) and [Correlation IDs](../correl
 | `Benzene.Diagnostics` | The observability toolkit — W3C trace context (`UseW3CTraceContext()`), log enrichment (`UseBenzeneEnrichment()`), metrics, `Activity`-based tracing decorators, and debug timing. |
 | `Benzene.OpenTelemetry` | Wire Benzene's diagnostics into OpenTelemetry for traces/metrics export. |
 | `Benzene.Resilience` | Retry middleware (`RetryMiddleware`) for wrapping handler/pipeline calls with retry policies. |
+| `Benzene.RateLimiting` | Best-effort per-instance rate limiting over `System.Threading.RateLimiting` (fixed window, token bucket, payload-size budget, or bring your own limiter) — protection for public endpoints; authoritative limits belong at the gateway. See [Rate Limiting](../rate-limiting.md). |
 
 ## Health checks
 

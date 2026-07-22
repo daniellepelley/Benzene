@@ -134,6 +134,7 @@
     <ProjectReference Include="..\..\src\Benzene.Http\Benzene.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Idempotency\Benzene.Idempotency.csproj" />
     <ProjectReference Include="..\..\src\Benzene.JsonSchema\Benzene.JsonSchema.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.RateLimiting\Benzene.RateLimiting.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
     <ProjectReference Include="..\..\src\Benzene.MessagePack\Benzene.MessagePack.csproj" />
     <ProjectReference Include="..\..\src\Benzene.NewtonsoftJson\Benzene.NewtonsoftJson.csproj" />
