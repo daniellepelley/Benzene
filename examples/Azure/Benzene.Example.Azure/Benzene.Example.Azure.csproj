@@ -5,6 +5,11 @@
 		<OutputType>Exe</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<!-- Benzene's trigger source generator emits the [Function] classes; the SDK's worker-indexing
+		     source generators can't see another generator's output, so fall back to the reflection-based
+		     metadata + executor (which do). Shipped automatically via buildTransitive in the packaged
+		     Benzene.Azure.Function.Core; set explicitly here because examples use ProjectReferences. -->
+		<FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.2.0" />
@@ -27,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.AspNet\Benzene.Azure.Function.AspNet.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.SourceGenerators\Benzene.Azure.Function.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.Core\Benzene.Azure.Function.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.QueueStorage\Benzene.Azure.Function.QueueStorage.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Azure.Function.ServiceBus\Benzene.Azure.Function.ServiceBus.csproj" />
