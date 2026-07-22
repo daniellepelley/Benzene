@@ -113,18 +113,31 @@ jobs:
           (cd publish/mesh    && zip -qr ../mesh.zip .)
           echo "::endgroup::"
 
-          # Retry the ARM sync-triggers endpoint with backoff; returns 0 as soon as one call
-          # succeeds. Prints each failed attempt's response body - that's the actual diagnosis.
+          # Force the isolated worker to cold-start before asking ARM to enumerate triggers. On a
+          # fresh Linux Consumption (Y1) deploy, syncfunctiontriggers returns "Forbidden from
+          # extensions API" NOT because of anything in the package (the same service.zip that fails
+          # here on one app succeeds on its identical siblings) but because the host hasn't started
+          # the worker yet, so it can't reach the app's extensions endpoint to read the (correctly
+          # generated) functions.metadata. A single anonymous HTTP hit - ANY response, even a 404,
+          # proves the worker is up - pushes the host into that ready state so the sync succeeds.
+          # See README 'Known first-deploy iteration points'.
+          warm() {
+            curl -sS -o /dev/null --max-time 120 "https://${1}.azurewebsites.net/" 2>/dev/null || true
+          }
+
+          # Warm, then retry the ARM sync-triggers endpoint with capped backoff; returns 0 as soon as
+          # one call succeeds. Prints each failed attempt's response body - that's the actual diagnosis.
           sync_triggers() {
             local app="$1" out
             local url="https://management.azure.com/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Web/sites/$app/syncfunctiontriggers?api-version=2023-12-01"
-            for attempt in 1 2 3 4 5 6; do
+            for attempt in 1 2 3 4 5 6 7 8; do
+              warm "$app"
               if out="$(az rest --method post --url "$url" 2>&1)"; then
                 echo "sync-triggers OK for $app (attempt $attempt)"
                 return 0
               fi
               echo "sync-triggers for $app failed (attempt $attempt): ${out:0:600}"
-              sleep $((attempt * 15))
+              sleep $(( attempt < 4 ? attempt * 15 : 60 ))
             done
             return 1
           }

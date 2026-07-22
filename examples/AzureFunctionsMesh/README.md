@@ -98,6 +98,16 @@ first-run tweaks:
   the timer warms the mesh; a Premium/dedicated plan avoids it for the services.
 - **`routePrefix`** — if `/benzene/spec` 404s, confirm `host.json`'s `"routePrefix": ""` took effect
   (or set the `benzene:spec-path`/`benzene:health-path` tags to `/api/benzene/...`).
+- **`sync-triggers` "Forbidden from extensions API" on first deploy** — after a fresh zip deploy the
+  ARM `syncfunctiontriggers` call can fail with `Unauthorized … Encountered an error (Forbidden) from
+  extensions API` until the isolated worker has cold-started at least once and the host can reach the
+  app's extensions endpoint. This is a **host/worker cold-start race, not the declared-trigger
+  codegen** — the generated `functions.metadata` is correct (proven by the *identical* `service.zip`
+  succeeding on one service while a sibling times out, and by the mesh — which declares *more*
+  triggers, HTTP **and** Timer — syncing first try). The workflow now **warms each app** (an anonymous
+  HTTP GET forces the worker up) before every sync-triggers attempt and widens the retry window; a
+  manual `func azure functionapp publish <name>`, or simply hitting any anonymous route once, has the
+  same effect.
 - **Managed-identity propagation** — a `time_sleep` gives the mesh identity time to propagate before
   its role assignments apply; the roles can still take a minute to take effect (an early pass returns
   `0`, the timer retries).
