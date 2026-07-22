@@ -384,9 +384,13 @@ read-only, on the **dependency category** (deep layer, per the §3.2 revision �
   `"EventHub:{name}"`, opt-out) + explicit `AddEventHubHealthCheck`, capturing the passed client. (Hub name
   is passed to the check explicitly because `EventHubProducerClient.EventHubName` is non-virtual /
   unmockable.)
-- ⬜ Event Grid, gRPC, Kafka, RabbitMQ — remaining. Event Grid's publisher has **no data-plane read**
-  (likely explicit-only); Kafka/RabbitMQ/gRPC are broker/RPC-connection checks (more involved, separate
-  investigation).
+- ⬜ Event Grid, gRPC, Kafka, RabbitMQ (+ the explicit-only Lambda/StepFunctions/Service Bus follow-ups)
+  — **designed** in `work/client-health-checks-remaining-designs.md`. Key finding: the worker-startup seam
+  (`IBenzeneWorkerStartup : IRegisterDependency`) supports the same `AddDependencyHealthCheck` hook, so
+  **Kafka and RabbitMQ ARE auto-wireable** (broker metadata / passive-declare reachability); gRPC splits
+  into transport-reachability (dependency layer) vs `grpc.health.v1` (transitive → `contracts` topic);
+  Event Grid has no cheap data-plane read (explicit-only). See that doc for the grounded per-transport
+  designs and recommended sequencing.
 - Each check co-locates in its client package (adds a `HealthChecks.Core` project reference).
 
 **Phase 5 — mesh + interop**
