@@ -224,7 +224,17 @@ Until (1) exists, the explicit `AddStepFunctionHealthCheck(arn)` remains the pat
 
 ---
 
-## 7. Azure Service Bus (`Benzene.Clients.Azure.ServiceBus` + consumers) — **auto-wire the consumer, not the sender**
+## 7. Azure Service Bus — ✅ **IMPLEMENTED (consumer-side auto-wire)**
+
+Shipped: `Benzene.Azure.ServiceBus`'s `UseServiceBus(..., healthCheck: true)` auto-registers the existing
+peek-based `ServiceBusHealthCheck` for the consumed entity on the dependency category (dedup
+`"ServiceBus:{queue}"` / `"ServiceBus:{topic}/{subscription}"`), reusing one `ServiceBusClient` from the
+factory. As designed, it wires on the **consumer** (Listen claim + known entity), not the sender. The
+consumer package references `Benzene.HealthChecks.Azure.ServiceBus` directly (no breaking namespace move
+needed). Also upgraded `ServiceBusHealthCheck` to §3.9: an `UnauthorizedAccessException` (no Listen) is
+now a Warning, closing the last §3.9 gap. Original design retained below.
+
+
 
 The **sender** (`.UseServiceBus`) must not auto-wire: it holds only the *Send* claim, but
 `ServiceBusHealthCheck` peeks (needs *Listen*), and a topic sender has no subscription to peek

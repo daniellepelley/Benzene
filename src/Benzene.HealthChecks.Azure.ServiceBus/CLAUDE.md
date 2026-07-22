@@ -33,8 +33,11 @@ check-only package referencing `Azure.Messaging.ServiceBus` + `Benzene.HealthChe
   client's authentication choice (connection string, `DefaultAzureCredential`, emulator), mirroring the
   `IServiceBusClientFactory` seam in `Benzene.Azure.ServiceBus` and the "already-built client" stance of
   `Benzene.Clients.Azure.ServiceBus`.
-- Failures are a failed `IHealthCheckResult` (never a throw), reporting the exception **type name**,
-  never its message - no connection string / entity secret reaches `Data`.
+- Failures are classified via `HealthCheckError.Classify` (§3.9): a bad credential/claim
+  (`UnauthorizedAccessException`, how Azure Messaging signals no `Listen`) is a **Warning** (mapped to
+  403), else Failed; the SDK's `ServiceBusException.Reason` is reported as `ErrorCode`. Always the
+  exception **type name** / reason, never its message - no connection string / entity secret reaches
+  `Data`. Auto-wired from the consumer via `Benzene.Azure.ServiceBus`'s `UseServiceBus(..., healthCheck:)`.
 
 ## Dependencies
 `Azure.Messaging.ServiceBus` (7.18.2, matching the other Azure Service Bus packages); Benzene

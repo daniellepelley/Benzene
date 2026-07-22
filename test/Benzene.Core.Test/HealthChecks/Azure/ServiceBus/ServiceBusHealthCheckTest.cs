@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
@@ -66,6 +67,24 @@ public class ServiceBusHealthCheckTest
         Assert.DoesNotContain(result.Data.Values,
             v => v is string s && s.Contains("super-secret-connection-detail"));
         Assert.Equal("orders", Assert.Single(result.Dependencies).Name);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Unauthorized_DegradesToWarning()
+    {
+        var receiver = new Mock<ServiceBusReceiver>();
+        receiver.Setup(x => x.PeekMessageAsync(It.IsAny<long?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new UnauthorizedAccessException("no Listen claim"));
+
+        var client = new Mock<ServiceBusClient>();
+        client.Setup(x => x.CreateReceiver("orders")).Returns(receiver.Object);
+
+        var result = await new ServiceBusHealthCheck(client.Object, "orders").ExecuteAsync();
+
+        // Lacking the Listen claim is a permission problem: Warning, not a failure (§3.9).
+        Assert.Equal(HealthCheckStatus.Warning, result.Status);
+        Assert.Equal("Unauthorized", result.Data["ErrorCode"]);
+        Assert.Equal(403, result.Data["StatusCode"]);
     }
 
     [Fact]

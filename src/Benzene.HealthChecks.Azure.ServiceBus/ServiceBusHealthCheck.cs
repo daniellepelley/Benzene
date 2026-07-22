@@ -64,11 +64,11 @@ public class ServiceBusHealthCheck : IHealthCheck
         }
         catch (Exception ex)
         {
-            // Expected failures (entity missing, no connectivity, no Listen claim) are a failed
-            // result, not a throw; report the exception type, never its message.
-            var data = BuildData();
-            data["Error"] = ex.GetType().Name;
-            return HealthCheckResult.CreateInstance(false, Type, data, dependencies);
+            // Expected failures (entity missing, no connectivity, no Listen claim) are a classified
+            // result, not a throw. HealthCheckError applies the shared policy: a permission failure ->
+            // Warning, else Failed, reporting the SDK failure reason, never the exception message.
+            var (errorCode, statusCode) = ServiceBusErrorDetails(ex);
+            return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode, BuildData());
         }
         finally
         {
@@ -77,6 +77,25 @@ public class ServiceBusHealthCheck : IHealthCheck
                 await receiver.DisposeAsync();
             }
         }
+    }
+
+    // Service Bus is AMQP, not HTTP. A bad credential/claim surfaces as UnauthorizedAccessException
+    // (mapped to 403 so the shared policy degrades it to Warning); other failures surface as
+    // ServiceBusException with a FailureReason (reported as the error code, no status -> Failed); null
+    // for anything else (e.g. a raw socket failure).
+    private static (string? ErrorCode, int? StatusCode) ServiceBusErrorDetails(Exception ex)
+    {
+        if (ex is UnauthorizedAccessException)
+        {
+            return ("Unauthorized", 403);
+        }
+
+        if (ex is ServiceBusException sbe)
+        {
+            return (sbe.Reason.ToString(), null);
+        }
+
+        return (null, null);
     }
 
     private Dictionary<string, object> BuildData()
