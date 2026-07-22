@@ -20,7 +20,11 @@ timeline where an X-Ray user expects it. See the AwsMesh example.
   `Benzene.Diagnostics`'s `ActivityMiddlewareWrapper`/`ActivityMiddlewareDecorator`. Opens a subsegment
   per stage, annotates it (`benzene_transport`/`benzene_topic`/`benzene_version`/`benzene_handler` —
   underscores because X-Ray rejects dots in annotation keys), records exceptions as a fault on the
-  failing stage, and closes the subsegment in a `finally`.
+  failing stage, and closes the subsegment in a `finally`. **`benzene_transport` is only annotated once a
+  transport is resolved** — while `ICurrentTransport.Name` still reads `TransportNames.Unresolved`
+  (`"<missing>"`), the tag is skipped, so the outer probe stages a multi-transport function walks (an SQS
+  handler declining an SNS event, say) aren't stamped with the sentinel. `ActivityMiddlewareDecorator`
+  does the same for its `benzene.transport` tag.
 - `DependencyInjectionExtensions.AddXRayTracing()` — registers the wrapper (with the same
   `IsTypeRegistered` guard the Activity one uses, so it never double-wraps). The modern name for the old
   `UseXRayTracing()`, and the X-Ray equivalent of `AddActivityPerMiddleware()`.

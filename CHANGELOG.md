@@ -205,6 +205,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `work/batch-failure-handling.md`'s deferred table.
 
 ### Changed
+- **Observability decorators no longer stamp the `<missing>` transport sentinel on pass-through stages.**
+  In a multi-transport function (e.g. the AwsMesh services, which host API Gateway + BenzeneMessage + SQS
+  + SNS + EventBridge in one Lambda), the AWS Lambda router probes each transport handler in turn until
+  one matches. Every probed-and-declined stage ran before any transport pipeline had recorded itself, so
+  the X-Ray subsegment (`Benzene.Aws.Lambda.XRay`) and OTel span (`Benzene.Diagnostics`) decorators tagged
+  each one `benzene_transport = <missing>` — noise that reads like a defect in a trace viewer. The
+  decorators now **omit** the transport tag while `ICurrentTransport.Name` still reads the unresolved
+  sentinel, so only stages under the matched transport carry it. New shared `TransportNames.Unresolved`
+  constant (value unchanged, `"<missing>"`), which `CurrentTransportInfo` now defaults to as the single
+  source of truth. Per-message **metrics** tags are unchanged: they emit once, after resolution, and a
+  metric dimension wants a stable bucket rather than a dropped tag.
 - `Benzene.Core.MessageHandlers`: the default `JsonSerializer` now serializes with
   `JavaScriptEncoder.UnsafeRelaxedJsonEscaping` instead of System.Text.Json's HTML-safe default
   encoder. Benzene emits JSON to API clients/browsers, never HTML, so the default encoder's

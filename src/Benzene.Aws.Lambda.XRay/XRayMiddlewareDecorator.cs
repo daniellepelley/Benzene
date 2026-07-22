@@ -91,8 +91,12 @@ public class XRayMiddlewareDecorator<TContext> : IMiddleware<TContext>
         // X-Ray annotation keys must be alphanumeric/underscore (dots are rejected), so these use
         // benzene_ keys rather than the benzene.* names the Activity decorator uses. Annotations are
         // indexed and filterable in the X-Ray console.
+        // Skip the transport annotation until a transport pipeline has actually resolved one. In a
+        // multi-transport function the outer probe stages (an API Gateway / SQS handler declining, say,
+        // an SNS event) run before resolution, so annotating here would stamp the "<missing>" sentinel
+        // on every one of them - noise that reads like a defect in the X-Ray console.
         var transport = _serviceResolver.TryGetService<ICurrentTransport>();
-        if (transport is not null)
+        if (transport is not null && transport.Name != TransportNames.Unresolved)
         {
             Safe(() => recorder.AddAnnotation("benzene_transport", transport.Name));
         }

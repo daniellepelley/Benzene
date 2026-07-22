@@ -10,6 +10,15 @@ namespace Benzene.Abstractions.MessageHandlers.Info
     /// </summary>
     public static class TransportNames
     {
+        /// <summary>
+        /// The value <see cref="ICurrentTransport.Name"/> reports before any transport pipeline has
+        /// recorded itself — i.e. "no transport resolved yet". Observability decorators skip the
+        /// transport tag while it still reads this, so a probe/pass-through stage (e.g. an SQS handler
+        /// declining an SNS event in a multi-transport function) isn't annotated with a sentinel. Kept
+        /// at the historic <c>&lt;missing&gt;</c> value so metric buckets and existing dashboards don't shift.
+        /// </summary>
+        public const string Unresolved = "<missing>";
+
         public const string Http = "http";
         public const string Asp = "asp";
         public const string ApiGateway = "api-gateway";
