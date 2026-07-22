@@ -127,7 +127,9 @@
     backdrop-filter: saturate(1.4) blur(10px);
     border-bottom: 1px solid var(--line);
   }
-  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 0; cursor: pointer; border-radius: var(--radius-sm); }
+  .brand:hover .brand-text b { color: var(--accent); }
+  .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .brand svg { display: block; flex: none; }
   .brand .ring { color: var(--accent); }
   .brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
@@ -571,7 +573,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">
+  <div class="brand" id="brand-home" role="link" tabindex="0" title="Back to the estate (home)" aria-label="Back to the estate (home)">
     <svg class="ring" width="26" height="28" viewBox="0 0 26 28" fill="none" aria-hidden="true">
       <path d="M13 1.5 24 7.9v12.2L13 26.5 2 20.1V7.9L13 1.5Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/>
       <circle cx="13" cy="14" r="5.2" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".55"/>
@@ -1434,6 +1436,14 @@
 
   document.getElementById("topic-page-back").addEventListener("click", clearEntityHash);
   document.getElementById("service-page-back").addEventListener("click", clearEntityHash);
+  // The top-left brand title doubles as a "home" link - clears any entity/compose hash back to the estate.
+  var brandHome = document.getElementById("brand-home");
+  if (brandHome) {
+    brandHome.addEventListener("click", clearEntityHash);
+    brandHome.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clearEntityHash(); }
+    });
+  }
   // Back from Compose returns to the topic it was launched from (not the estate), keeping the drill
   // path intact; falls back to the estate if the topic can't be determined.
   document.getElementById("compose-page-back").addEventListener("click", function () {
