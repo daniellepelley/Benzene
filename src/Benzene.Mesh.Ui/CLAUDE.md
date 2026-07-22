@@ -87,6 +87,26 @@
 > navigation). Notes render newest-first via `textContent` only (no HTML injection path), with
 > `humanAge` timestamps. Identity is self-declared by design - the composer says so in-line, and
 > access control is the fronting gateway's job (the RateLimiting boundary ruling).
+>
+> **2026-07-22 (F1 + F2 of the maintainer-feedback triage): version display + value-view RAG.**
+> - **F1 — "unversioned" is implied, not labelled.** The three sites that rendered the literal
+>   `unversioned` fallback for a topic with no version (the service-page consumed/produced list
+>   `buildServiceTopicList`, the topic-page version header `buildTopicPageVersionSection`, and the
+>   value-view row `buildValueRow`) now render **nothing** where the version chip would be - absence
+>   of a version *is* the signal, not a noise word competing with real version strings. Display-only:
+>   the value view's `usageEntriesForTopic(topic, version || null)` join key is unchanged. The estate
+>   topics **table** keeps its neutral `–` cell (a table column's standard "n/a" placeholder, not the
+>   `unversioned` label the feedback objected to).
+> - **F2 — value & deprecation as RAG.** `renderValueView`'s existing four tiers now carry a scan
+>   colour: **red** = *Retirement candidates*, **amber** = *Verify externally*, **green** = *No
+>   retirement signal*, and a **distinct muted grey "gone"** = *Removed since the previous run* (a
+>   past-tense fact, not a live proposal - deliberately NOT sharing red with Candidates). Pure visual
+>   encoding of what P5 already computes: no new tier logic, no new data, the "structural evidence
+>   only" honesty header is untouched. **Colour is never the only signal** - each tier header carries
+>   a distinct SHAPE glyph (`▲ ◆ ● ○` via `vdTierHeader`/`RAG_GLYPH`, `aria-hidden`) and keeps its
+>   text label, and the row edge is an `inset` box-shadow, so the reading survives colour-blindness
+>   and forced-colors/monochrome. Palette reuses the health-badge design tokens
+>   (`--req`/`--m-put`/`--ok`/`--ink-faint`) - no new colours, verified in light and dark.
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the

@@ -492,6 +492,19 @@
   }
   .vd-evidence { font-size: 12px; color: var(--ink-faint); }
   .vd-removed { font-family: var(--mono); font-size: 12.5px; }
+  /* Value/deprecation RAG (P8): a scan colour per tier, reusing the health-badge tokens. Colour is
+     never the only signal - the glyph SHAPE differs per tier and the tier text label is always
+     present, so the reading survives colour-blindness and forced-colors. */
+  .vd-tier-h { display: flex; align-items: center; gap: 7px; }
+  .vd-rag { font-size: 11px; line-height: 1; flex: 0 0 auto; }
+  .vd-rag-red   { color: var(--req); }
+  .vd-rag-amber { color: var(--m-put); }
+  .vd-rag-green { color: var(--ok); }
+  .vd-rag-gone  { color: var(--ink-faint); }
+  .vd-row.rag-red   { box-shadow: inset 3px 0 0 var(--req), var(--shadow); }
+  .vd-row.rag-amber { box-shadow: inset 3px 0 0 var(--m-put), var(--shadow); }
+  .vd-row.rag-green { box-shadow: inset 3px 0 0 var(--ok), var(--shadow); }
+  .vd-row.rag-gone  { box-shadow: inset 3px 0 0 var(--ink-faint), var(--shadow); }
   .t-change { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
   .tp-changes { margin: 6px 0 10px; }
   .tp-change-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 3px 0; }
@@ -1451,7 +1464,7 @@
     topics.forEach(function (t) {
       var row = el("div", "sp-topic-row");
       row.appendChild(topicLink(t.topic));
-      row.appendChild(el("span", "sp-topic-ver", t.version || "unversioned"));
+      if (t.version) row.appendChild(el("span", "sp-topic-ver", t.version));
       if (t.reserved) row.appendChild(el("span", "t-badge t-utility", "utility"));
       if (t.schemaMismatch) {
         var mm = el("span", "t-badge t-status-schema-mismatch", "schema mismatch");
@@ -1651,7 +1664,7 @@
     var block = el("div", "tp-version");
 
     var head = el("div", "tp-version-head");
-    head.appendChild(el("span", "mono tp-version-label", t.version || "unversioned"));
+    if (t.version) head.appendChild(el("span", "mono tp-version-label", t.version));
     if (t.reserved) head.appendChild(el("span", "t-badge t-utility", "utility"));
     if (t.status && TOPIC_STATUS_LABELS[t.status]) {
       var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
@@ -1841,13 +1854,28 @@
      declarations by definition, so fleet data alone can't defend retiring it. */
   var currentRemovedTopics = [];
   var VD_TIERS = [
-    { key: "candidate", label: "Retirement candidates",
+    { key: "candidate", rag: "red", label: "Retirement candidates",
       sub: "Showing no sign of use — the evidence to defend a retirement decision, per row." },
-    { key: "verify", label: "Verify externally",
+    { key: "verify", rag: "amber", label: "Verify externally",
       sub: "Involves parties outside this fleet's own declarations — confirm with them before acting." },
-    { key: "ok", label: "No retirement signal",
+    { key: "ok", rag: "green", label: "No retirement signal",
       sub: "Actively used, or no evidence of disuse." }
   ];
+  // RAG encoding of the value/deprecation tiers (P8): red = retirement candidates, amber = verify
+  // externally, green = no retirement signal, plus a DISTINCT muted grey "gone" for topics removed
+  // since the previous run (a past-tense fact, not a live proposal — never shares red). Colour is
+  // never the only signal: each tier keeps its text label and carries a distinct SHAPE glyph, so the
+  // reading survives colour-blindness and forced-colors/monochrome. Palette reuses the health-badge
+  // design tokens (--req / --m-put / --ok / --ink-faint) — no new colours.
+  var RAG_GLYPH = { red: "▲", amber: "◆", green: "●", gone: "○" }; // ▲ ◆ ● ○
+  function vdTierHeader(rag, label, count) {
+    var h = el("div", "vd-group-h vd-tier-h");
+    var g = el("span", "vd-rag vd-rag-" + rag, RAG_GLYPH[rag]);
+    g.setAttribute("aria-hidden", "true");
+    h.appendChild(g);
+    h.appendChild(document.createTextNode(label + " (" + count + ")"));
+    return h;
+  }
   function renderValueView() {
     var section = document.getElementById("value-section");
     var domainTopics = currentTopics.filter(function (t) { return !t.reserved; });
@@ -1861,10 +1889,10 @@
     body.innerHTML = "";
 
     if (currentRemovedTopics.length) {
-      body.appendChild(el("div", "vd-group-h", "Removed since the previous run (" + currentRemovedTopics.length + ")"));
+      body.appendChild(vdTierHeader("gone", "Removed since the previous run", currentRemovedTopics.length));
       body.appendChild(el("div", "vd-group-sub", "Declared in the previous aggregator run, declared nowhere now — a retirement that just completed, or a disappearance to confirm."));
       currentRemovedTopics.forEach(function (r) {
-        var row = el("div", "vd-row");
+        var row = el("div", "vd-row rag-gone");
         row.appendChild(el("span", "vd-removed", r.topic + (r.version ? " @ " + r.version : "")));
         row.appendChild(el("span", "vd-evidence", "no longer declared by any service"));
         body.appendChild(row);
@@ -1907,17 +1935,17 @@
     VD_TIERS.forEach(function (tierDef) {
       var rows = tiers[tierDef.key];
       if (!rows.length) return;
-      body.appendChild(el("div", "vd-group-h", tierDef.label + " (" + rows.length + ")"));
+      body.appendChild(vdTierHeader(tierDef.rag, tierDef.label, rows.length));
       body.appendChild(el("div", "vd-group-sub", tierDef.sub));
-      rows.forEach(function (r) { body.appendChild(buildValueRow(r)); });
+      rows.forEach(function (r) { body.appendChild(buildValueRow(r, tierDef.rag)); });
     });
   }
 
-  function buildValueRow(r) {
+  function buildValueRow(r, rag) {
     var t = r.t;
-    var row = el("div", "vd-row");
+    var row = el("div", "vd-row" + (rag ? " rag-" + rag : ""));
     row.appendChild(topicLink(t.topic));
-    row.appendChild(el("span", "sp-topic-ver", t.version || "unversioned"));
+    if (t.version) row.appendChild(el("span", "sp-topic-ver", t.version));
     row.appendChild(el("span", "vd-evidence",
       (t.producers || []).length + " producer" + ((t.producers || []).length === 1 ? "" : "s")
       + " · " + (t.consumers || []).length + " consumer" + ((t.consumers || []).length === 1 ? "" : "s")));
