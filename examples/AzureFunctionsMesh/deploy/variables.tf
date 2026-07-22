@@ -41,10 +41,10 @@ variable "discovery_tag_key" {
 
 variable "wire_eventgrid_subscriptions" {
   description = <<-EOT
-    Whether to create the Event Grid -> Function subscriptions. An Azure-function event subscription
-    requires the target function to already exist, but Terraform runs before the code is published, so
-    the deploy does one apply with this false (everything except the subscriptions), publishes the code,
-    then a second apply with this true to wire the subscriptions onto the now-deployed functions.
+    Whether to create the Event Grid -> Function subscriptions. They point at each consumer's Functions
+    Event Grid extension webhook, which is validated against the live running function, so the target
+    must be published AND warm. The deploy therefore does one apply with this false (everything except
+    the subscriptions), publishes the code, warms the consumer apps, then a second apply with this true.
   EOT
   type        = bool
   default     = false
