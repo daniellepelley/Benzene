@@ -267,14 +267,23 @@ still to do (folds in when its check moves to the client package per §3.7).
 > publisher stayed green. That is **no longer the behaviour.** An authorization/permission failure is now a
 > **persistent `Failed`** (surfaces as **unhealthy**), exempt from the §3.4 non-critical downgrade even for
 > an auto-wired dependency check. Rationale: it's a deterministic misconfiguration (missing IAM permission /
-> bad credential) that won't self-heal, and a false-red a human can see and fix beats a false-green that
-> hides a real IAM break. It's detected by **meaning** — HTTP 401/403 **or** a known authorization error
-> code (`AccessDenied`, `AccessDeniedException`, `AuthorizationError`, `AuthorizationFailure`,
-> `AuthenticationFailed`, `Forbidden`, `Unauthorized`), via `HealthCheckError.IsAuthorizationFailure` — so
-> the same denial classifies identically whether the SDK returns 403 or, like AWS EventBridge's
-> `AccessDeniedException`, HTTP 400. Where a probe legitimately lacks the read permission it needs (e.g. it
-> can `PutEvents` but not `DescribeEventBus`), opt the auto-wired check out with `healthCheck: false` on the
-> wiring.
+> bad credential) that won't self-heal. It's detected by **meaning** — HTTP 401/403 **or** a known
+> authorization error code (`AccessDenied`, `AccessDeniedException`, `AuthorizationError`,
+> `AuthorizationFailure`, `AuthenticationFailed`, `Forbidden`, `Unauthorized`), via
+> `HealthCheckError.IsAuthorizationFailure` — so the same denial classifies identically whether the SDK
+> returns 403 or, like AWS EventBridge's `AccessDeniedException`, HTTP 400.
+>
+> **Why this is safe — the deep `healthcheck` layer is advisory, never automated.** Dependency-category
+> checks are harvested *only* by `.UseHealthCheck` (`Extensions.cs`); `liveness`/`readiness`/`contracts` all
+> pass `includeDependencyChecks: false`, so a dependency-driven `Failed`/503 can **never** reach a
+> Kubernetes probe or de-register a load balancer target. That layer — the same status the Mesh UI renders —
+> exists to tell a **human** whether the estate is wired up as expected, not to roll back a service or take
+> it out of rotation. Wiring the deep `healthcheck` endpoint to any automated action (LB target-health,
+> rollback gate) is a **misuse** and must not be done. Precisely *because* it is advisory, surfacing an
+> authorization denial as red is a true, useful "not connected as expected" signal — not a false alarm to
+> suppress. There is therefore no false-positive tradeoff to design around: a red here informs, it does not
+> de-service. (`healthCheck: false` on the wiring exists only to stop probing a dependency you don't want
+> monitored at all — not as a workaround for an advisory red.)
 
 ### 3.10 `ValidateHealthChecks()` — mirror `ValidateOutboundRouting()`, but WARN by default
 A parallel validator that cross-references configured outbound routes / known clients against

@@ -48,9 +48,11 @@ Outbound EventBridge client for a Benzene app: put events on an EventBridge bus.
 - The health check is **reachability-only** (`DescribeEventBus`) — there is no `Active` mode, because a
   "publish a real event" probe would fire live rules/targets. `DescribeEventBus` proves reachability +
   `events:DescribeEventBus`, not that `events:PutEvents` would succeed (the usual reachability tradeoff).
-  Because an authorization failure now surfaces as a persistent unhealthy result, a publisher that can
-  `PutEvents` but genuinely lacks `DescribeEventBus` should opt the auto-wired check out with
-  `healthCheck: false` — a false-red a human can see and fix beats a false-green that hides a real IAM break.
+  An authorization failure surfaces as a persistent unhealthy result on the **advisory** deep `healthcheck`
+  layer (the Mesh UI's status) — it never de-services anything, so a red just tells a human the bus isn't
+  reachable as expected. A publisher that can `PutEvents` but genuinely doesn't want the `DescribeEventBus`
+  reachability probe can turn it off with `healthCheck: false` (stop monitoring that dependency) — not to
+  dodge a false alarm, but because it's opting out of the check entirely.
 
 ## Dependencies
 `AWSSDK.EventBridge`; Benzene `Clients`, `Core.Middleware`, `Results`.

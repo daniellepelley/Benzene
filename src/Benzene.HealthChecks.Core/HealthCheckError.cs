@@ -13,10 +13,14 @@ namespace Benzene.HealthChecks.Core;
 /// non-critical downgrade (§3.4): it surfaces as unhealthy on the deep <c>healthcheck</c> layer even for
 /// an auto-wired dependency check. Detected by <em>meaning</em> (HTTP 401/403 or a known authorization
 /// error code), so the same denial classifies identically whether the SDK returns 403 or - like AWS
-/// EventBridge's <c>AccessDeniedException</c> - HTTP 400. (Reversal of the earlier §3.9 rule, which made a
-/// permission error a Warning so a least-privilege publisher stayed green; a false-red that a human can see
-/// and fix beats a false-green that hides a real IAM break. Where a probe legitimately lacks the read
-/// permission it needs, opt the auto-wired check out with <c>healthCheck: false</c> on the wiring.)</item>
+/// EventBridge's <c>AccessDeniedException</c> - HTTP 400. This is safe because the deep <c>healthcheck</c>
+/// layer (the only one that harvests dependency checks, and the status the Mesh UI renders) is
+/// <b>advisory</b>: <c>liveness</c>/<c>readiness</c> exclude dependency checks, so a red here can never
+/// de-service a pod or de-register a load balancer target - it tells a human the estate is not wired up as
+/// expected. So surfacing an authorization denial as red is a true, useful signal, not a false alarm.
+/// (Reversal of the earlier §3.9 rule, which made a permission error a Warning so a least-privilege publisher
+/// stayed green. <c>healthCheck: false</c> on the wiring stops probing a dependency you don't want monitored
+/// at all - it is not a workaround for the advisory red.)</item>
 /// <item>Any other failure (not-found, outage, timeout, bad connectivity, throttling) is a transient
 /// <see cref="HealthCheckStatus.Failed"/> that the non-critical downgrade still softens to a Warning.</item>
 /// </list>

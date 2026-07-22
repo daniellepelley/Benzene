@@ -40,9 +40,12 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
   failure (`IHealthCheckResult.IsPersistent`, which `HealthCheckError.Classify` sets for an
   authorization/permission denial) is *exempt* from this downgrade and stays `Failed` (unhealthy) even
   here — a missing IAM permission / bad credential is a deterministic misconfiguration that won't
-  self-heal, so it must show red; opt the auto-wired check out with `healthCheck: false` where the read
-  permission is legitimately absent. A caller who wants a dependency to be fatal adds an explicit
-  critical check.
+  self-heal, so it must show red. This is safe *because the deep `healthcheck` layer is advisory*:
+  `liveness`/`readiness` exclude dependency checks (harvest matrix above), so a dependency red — the same
+  status the Mesh UI renders — can never de-service a pod or de-register a load balancer target; it tells a
+  human the estate is not wired up as expected. So the red is a true signal, not a false alarm to suppress.
+  (`healthCheck: false` stops probing a dependency you don't want monitored at all — not a workaround for the
+  advisory red.) A caller who wants a dependency to be fatal on a *probe* adds an explicit critical check.
 - `IHealthCheckResult`/`HealthCheckResult` - `Status`, `Type`, `Data` (arbitrary diagnostic dictionary),
   `Dependencies` (structured `HealthCheckDependency[]` describing the external resources the check
   verifies - e.g. a specific queue, database, or downstream service; a default interface member on
