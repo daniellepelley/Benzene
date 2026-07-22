@@ -365,9 +365,17 @@ Warning-on-permission / `ErrorCode`/`StatusCode` classification (§3.4, §3.9) i
 - Invert `docs/health-checks.md`: lead with one-line-on, clients-already-covered, add-your-own-in-one-line.
 - `ValidateHealthChecks()` (warn-by-default, `strict` opt-in) (§3.10).
 
-**Phase 4 — fill coverage gaps (born correct with the standard pattern)**
+**Phase 4 — fill coverage gaps (born correct with the standard pattern)** 🚧 *in progress*
 EventBridge, Event Hub, Event Grid, Queue Storage, gRPC, Kafka, RabbitMQ — co-located, auto-wired,
-read-only, readiness-scoped.
+read-only, on the **dependency category** (deep layer, per the §3.2 revision — not readiness).
+- ✅ **EventBridge** — `EventBridgeHealthCheck` (read-only `DescribeEventBus`, `Type = "EventBridge"`,
+  dependency `("EventBus", name)`, §3.9 classification, no `Active` mode — a publish probe would fire live
+  rules). Auto-wired on the `source` overload of `.UseEventBridge<T>` (default bus, dedup
+  `"EventBridge:default"`, `healthCheck: false` opt-out) + explicit `AddEventBridgeHealthCheck`. Added the
+  `HealthChecks.Core` project reference to the client package (co-location, like SQS/SNS).
+- ⬜ Event Hub, Event Grid, Queue Storage, gRPC, Kafka, RabbitMQ — each needs a client package with a
+  cheap non-mutating reachability call + a config-time hook to auto-wire (some may be explicit-only, like
+  the §4 Phase-1 findings).
 
 **Phase 5 — mesh + interop**
 - Mesh dependency-inventory increment (pull-plane render of each snapshot's `HealthCheckDependency[]`
