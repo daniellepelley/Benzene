@@ -20,14 +20,37 @@ Kubernetes' guidance is specific about what belongs in each, and Benzene doesn't
   downstream service.
 - **Readiness** answers "is this instance ready to receive traffic right now?" A readiness probe
   failure only **removes the pod from the Service's endpoint list** — no restart, traffic just stops
-  routing to it until it passes again. This is where external-dependency checks belong (database
-  connectivity, a required downstream API) — the correct response to "the database is down" is
-  "stop sending this instance traffic," not "restart the process," since restarting won't fix a
-  database outage.
+  routing to it until it passes again. Readiness is for **instance-local** conditions: warmup not
+  finished, this pod's connection pool is rebuilding, this pod is shedding load, this pod is draining
+  for shutdown (`ShutdownReadinessHealthCheck`).
 
-`Benzene.HealthChecks.EntityFramework`'s `DatabaseConnectionHealthCheck`/`DatabaseHealthCheck` and
-`Benzene.HealthChecks.Http`'s `HttpPingHealthCheck` are all external-dependency checks — register
-them under readiness, not liveness.
+> [!CAUTION]
+> **Don't reflexively put every external-dependency check in readiness.** A check against a *shared*
+> downstream (a queue, a database, an API that every replica talks to) is **shared-fate**: all replicas
+> run the same check against the same dependency, so a transient blip fails **all** their readiness
+> probes at once and Kubernetes pulls **every** pod from the Service. The Service then has **zero
+> endpoints** — callers get connection-refused / DNS failures instead of a structured 503 with
+> `Retry-After`, which breaks L7 retries and circuit breakers and turns a *degradation* into a *total
+> outage*. De-routing only helps when some replicas are healthy to shed to; for a shared dependency
+> there are none. This is the classic cascading-failure anti-pattern. Gate readiness on a dependency
+> **only** when you've reasoned that it's a hard, synchronous dependency you truly cannot serve *any*
+> traffic without, and that failing fast at the load balancer is better than returning a 503 — e.g. a
+> single-region synchronous API. When in doubt, use the deep `healthcheck` layer (below) instead.
+
+For a dependency you *have* reasoned is safe to gate on, register it explicitly under readiness:
+`Benzene.HealthChecks.EntityFramework`'s `DatabaseConnectionHealthCheck` /
+`Benzene.HealthChecks.Http`'s `HttpPingHealthCheck` etc. via `.UseReadinessCheck(...)`.
+
+### Auto-wired client checks land on the deep `healthcheck` layer, not a probe
+
+When a Benzene client is configured (e.g. `.UseSqs(queueUrl)`) it auto-registers a non-destructive
+reachability check for that dependency — but on the general **`healthcheck`** topic only, **never** a
+liveness or readiness probe. That deep layer is scraped by monitoring / the mesh / humans and triggers
+no automated Kubernetes action, so "every client ships a check" gives you visibility without the
+shared-fate cascading-failure risk above. Opt out per client with `healthCheck: false`
+(e.g. `.UseSqs(queueUrl, healthCheck: false)`), or promote a specific dependency to readiness yourself
+if you've reasoned it safe. Point a Kubernetes probe at `livez`/`readyz`, and your monitoring/mesh at
+the `healthcheck` endpoint — not the other way around.
 
 ### Client / contract-drift checks belong in *neither* probe
 

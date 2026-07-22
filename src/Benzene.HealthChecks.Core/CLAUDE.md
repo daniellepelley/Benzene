@@ -21,12 +21,17 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
   any Moq/DI proxy over `IHealthCheck` returns `default(bool)` == false == critical, rather than
   silently turning a failing dependency non-fatal. (Deviation from design §3.5's `IsCritical => true`,
   made because that polarity is fail-open and breaks every `Mock<IHealthCheck>` in the suite.)
-- `IReadinessHealthCheck : IHealthCheck` - the **readiness registration category** (§3.2): a DI
-  service-type marker (not a context marker) that auto-wired client dependency checks register under,
-  so the general (`healthcheck`) and `readiness` probes harvest them but `liveness`/`contracts` don't -
-  a downstream blip must never restart the pod. Carries a `DedupKey` (default `Type`) used to collapse
-  duplicate registrations of the same dependency. The concrete registration wrapper lives in
-  `Benzene.HealthChecks` (`ReadinessHealthCheck` + `AddReadinessHealthCheck`).
+- `IDependencyHealthCheck : IHealthCheck` - the **dependency registration category** (§3.2): a DI
+  service-type marker (not a context marker) that auto-wired client dependency checks register under.
+  These are harvested by the general (`healthcheck`) probe **only** - never `liveness`, `readiness` or
+  `contracts`. The reasoning is shared-fate: every replica runs the same check against the same
+  downstream, so gating a Kubernetes probe on it would fail all replicas at once on a transient blip -
+  liveness would restart-storm the fleet, readiness would pull every pod from the Service (zero
+  endpoints, a total outage from a mere degradation). So dependency reachability lives on the deep
+  `healthcheck` layer (monitoring / mesh / humans), which triggers no automated k8s action. Carries a
+  `DedupKey` (default `Type`) to collapse duplicate registrations. The wrapper `DependencyHealthCheck`
+  and the registration seam `AddDependencyHealthCheck` live **here in Core** (not the middleware
+  package), so a client package can auto-wire using only its existing lightweight `.Core` reference.
 - `IHealthCheckResult`/`HealthCheckResult` - `Status`, `Type`, `Data` (arbitrary diagnostic dictionary),
   `Dependencies` (structured `HealthCheckDependency[]` describing the external resources the check
   verifies - e.g. a specific queue, database, or downstream service; a default interface member on
@@ -41,8 +46,8 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
 - `IHealthCheckResponse<T>`/`HealthCheckResponse` - the aggregated `IsHealthy` + per-check results
 - `IHealthCheckBuilder`/`HealthCheckBuilderExtensions` - registration surface for a set of checks
   (DI-resolved type, resolver-function, instance, or `IHealthCheckFactory`). `GetHealthChecks` has a
-  scope-aware overload `GetHealthChecks(resolver, bool includeReadinessScoped)` (a DIM defaulting to the
-  include-everything behaviour) so a liveness harvest can drop the readiness-category checks.
+  scope-aware overload `GetHealthChecks(resolver, bool includeDependencyChecks)` (a DIM defaulting to the
+  include-everything behaviour) so a liveness/readiness harvest can drop the dependency-category checks.
 - `IHealthCheckFactory` - builds a check from constructor arguments not themselves resolved from DI
   (e.g. a URL, a target migration name) - see `Benzene.HealthChecks.Http`/`.EntityFramework`'s factories
 - `HealthCheckError` - the shared failure-classification policy (§3.4/§3.9). `Classify(type, exception,

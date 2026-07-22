@@ -34,24 +34,28 @@ for the full Kubernetes wiring guide.
   `docs/kubernetes-health-checks.md` and `work/client-health-checks-design.md`.
 - `HealthCheckBuilder : IHealthCheckBuilder` - collects health checks (DI-resolved types, inline
   factory functions) and, via `IHealthCheckFinder`, DI-registered `IHealthCheck` implementations.
-  `GetHealthChecks(resolver, includeReadinessScoped)` selects the probe scope: when `false` the
-  readiness-category checks are dropped (the liveness-safe set).
+  `GetHealthChecks(resolver, includeDependencyChecks)` selects the probe scope: when `false` the
+  dependency-category checks are dropped (the probe-safe set).
 - `IHealthCheckFinder`/`HealthCheckFinder` - resolves DI-registered checks. `FindHealthChecks()` returns
-  the checks registered as plain `IHealthCheck` (the liveness-safe set); `FindReadinessHealthChecks()`
-  returns the readiness-category checks (`IReadinessHealthCheck`), **de-duplicated by `DedupKey`**. The
-  two sets are disjoint: a check registered under `IReadinessHealthCheck` is not returned when the
-  container resolves `IEnumerable<IHealthCheck>`, so it never leaks onto liveness.
+  the checks registered as plain `IHealthCheck` (the probe-safe set); `FindDependencyHealthChecks()`
+  returns the dependency-category checks (`IDependencyHealthCheck`), **de-duplicated by `DedupKey`**. The
+  two sets are disjoint: a check registered under `IDependencyHealthCheck` is not returned when the
+  container resolves `IEnumerable<IHealthCheck>`, so it never leaks onto a probe.
 
-### Readiness registration category (§3.2 - the one-way door)
-- `IReadinessHealthCheck` (in `Benzene.HealthChecks.Core`) is the DI category for auto-wired
-  external-dependency checks. `ReadinessHealthCheck` adapts a plain `IHealthCheck` into it (delegating
-  `Type`/`Tags`/`IsNonCritical`/`Ttl`/`Timeout`/`ExecuteAsync` unchanged) and carries the `DedupKey`.
-- `AddReadinessHealthCheck(this IBenzeneServiceContainer, Func<IServiceResolver, IHealthCheck> factory,
+### Dependency registration category (§3.2 - the one-way door)
+- `IDependencyHealthCheck`, its `DependencyHealthCheck` wrapper, and the `AddDependencyHealthCheck`
+  registration seam all live in **`Benzene.HealthChecks.Core`** (so client packages auto-wire via their
+  existing lightweight `.Core` reference, not a dependency on this middleware package). The wrapper
+  delegates `Type`/`Tags`/`IsNonCritical`/`Ttl`/`Timeout`/`ExecuteAsync` unchanged and carries `DedupKey`.
+- `AddDependencyHealthCheck(this IBenzeneServiceContainer, Func<IServiceResolver, IHealthCheck> factory,
   string? dedupKey = null)` is the config-time seam Phase 1 client extensions call via
-  `app.Register(x => x.AddReadinessHealthCheck(...))`. It registers under `IReadinessHealthCheck`.
-- Harvest matrix: `.UseHealthCheck` (general) and `.UseReadinessCheck` **include** the readiness
-  category; `.UseLivenessCheck` and `.UseContractsCheck` **exclude** it. So a downstream dependency
-  failing takes the pod out of rotation (readiness) without restarting it (liveness).
+  `app.Register(x => x.AddDependencyHealthCheck(...))`.
+- Harvest matrix: **only** `.UseHealthCheck` (the general/deep layer) includes the dependency category;
+  `.UseLivenessCheck`, `.UseReadinessCheck` **and** `.UseContractsCheck` all exclude it. A dependency
+  check is shared-fate, so gating any k8s probe on it would fail every replica at once on a transient
+  blip - liveness restart-storms, readiness pulls the whole Service (a degradation becomes an outage).
+  Dependency reachability is surfaced on the deep `healthcheck` layer for monitoring/mesh instead. A
+  developer can still add a dependency check to readiness explicitly if they've reasoned it safe.
 
 ### Execution
 - `IHealthCheckProcessor`/`HealthCheckProcessor` - the injectable execution engine (was a static class).

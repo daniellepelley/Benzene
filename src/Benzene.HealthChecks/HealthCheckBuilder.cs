@@ -57,19 +57,19 @@ public class HealthCheckBuilder : IHealthCheckBuilder
     /// <returns>Every registered health check, factory-based checks first, followed by container-resolved checks.</returns>
     public IHealthCheck[] GetHealthChecks(IServiceResolver resolver)
     {
-        return GetHealthChecks(resolver, includeReadinessScoped: true);
+        return GetHealthChecks(resolver, includeDependencyChecks: true);
     }
 
     /// <summary>
     /// Resolves the registered checks for a specific probe scope. The builder-local factory checks and the
-    /// plain container-registered checks are always included; the readiness-category checks
-    /// (<see cref="IReadinessHealthCheck"/>) are included only when <paramref name="includeReadinessScoped"/>
-    /// is <c>true</c> - so a liveness probe never harvests an auto-wired dependency check (§3.2).
+    /// plain container-registered checks are always included; the dependency-category checks
+    /// (<see cref="IDependencyHealthCheck"/>) are included only when <paramref name="includeDependencyChecks"/>
+    /// is <c>true</c> - so a liveness or readiness probe never harvests an auto-wired dependency check (§3.2).
     /// </summary>
     /// <param name="resolver">The service resolver used to resolve container-registered checks and to invoke the factory functions.</param>
-    /// <param name="includeReadinessScoped">Whether to include the readiness-category checks.</param>
-    /// <returns>The health checks for the requested scope: factory-based checks first, then plain container checks, then (optionally) readiness-category checks.</returns>
-    public IHealthCheck[] GetHealthChecks(IServiceResolver resolver, bool includeReadinessScoped)
+    /// <param name="includeDependencyChecks">Whether to include the dependency-category checks.</param>
+    /// <returns>The health checks for the requested scope: factory-based checks first, then plain container checks, then (optionally) dependency-category checks.</returns>
+    public IHealthCheck[] GetHealthChecks(IServiceResolver resolver, bool includeDependencyChecks)
     {
         var healthCheckFinder = resolver.GetService<IHealthCheckFinder>();
         var healthChecks = healthCheckFinder.FindHealthChecks();
@@ -77,9 +77,9 @@ public class HealthCheckBuilder : IHealthCheckBuilder
             .Select(x => new InlineHealthCheck(() => x(resolver).ExecuteAsync())).ToArray();
 
         var combined = inlineHealthChecks.Concat(healthChecks);
-        if (includeReadinessScoped)
+        if (includeDependencyChecks)
         {
-            combined = combined.Concat(healthCheckFinder.FindReadinessHealthChecks());
+            combined = combined.Concat(healthCheckFinder.FindDependencyHealthChecks());
         }
 
         return combined.ToArray();

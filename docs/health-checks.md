@@ -369,6 +369,13 @@ each only matches its own topic (`Constants.DefaultLivenessTopic`/`DefaultReadin
 registering both in the same pipeline doesn't have one silently shadow the other on a shared fallback
 topic.
 
+When a Benzene client is configured (e.g. `.UseSqs(queueUrl)`), it auto-registers a non-destructive
+reachability check for that dependency on the general **`healthcheck`** topic **only** — never a
+liveness or readiness probe, because a shared-downstream check gating a probe is a cascading-failure
+risk. Opt out per client with `healthCheck: false`. See
+[Kubernetes Health Checks](kubernetes-health-checks.md#auto-wired-client-checks-land-on-the-deep-healthcheck-layer-not-a-probe)
+for the full reasoning.
+
 There is a third purpose-built method, `.UseContractsCheck()`, that answers a probe-less **`contracts`**
 diagnostic topic (`Constants.DefaultContractsTopic`) — for consumer-side **contract-drift** checks
 (`Benzene.Clients.HealthChecks`' `ClientHealthCheck` / `AddContractCheck<TClient>(serviceName)`) that

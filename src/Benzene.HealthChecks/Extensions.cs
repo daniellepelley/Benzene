@@ -61,7 +61,9 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseHealthCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, string topic, IHealthCheckBuilder builder)
     {
-        return app.UseHealthCheckMiddleware(new[] { topic, Constants.DefaultHealthCheckTopic }, builder, includeReadinessScoped: true);
+        // The general healthcheck topic is the deep layer: it is the ONLY probe that harvests the
+        // auto-wired dependency checks (monitoring / mesh / humans scrape it; it triggers no k8s action).
+        return app.UseHealthCheckMiddleware(new[] { topic, Constants.DefaultHealthCheckTopic }, builder, includeDependencyChecks: true);
     }
 
     /// <summary>
@@ -112,9 +114,9 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseLivenessCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        // Liveness deliberately excludes the readiness-category (auto-wired dependency) checks: a
-        // downstream blip must not fail liveness and restart the pod (§3.2).
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultLivenessTopic }, builder, includeReadinessScoped: false);
+        // Liveness deliberately excludes the auto-wired dependency checks: a downstream blip must not fail
+        // liveness and restart the pod (§3.2).
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultLivenessTopic }, builder, includeDependencyChecks: false);
     }
 
     /// <summary>
@@ -162,9 +164,13 @@ public static class Extensions
     public static IMiddlewarePipelineBuilder<TContext> UseReadinessCheck<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
-        // Readiness is where auto-wired dependency checks belong: their failure de-routes traffic without
-        // restarting the pod (§3.2).
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultReadinessTopic }, builder, includeReadinessScoped: true);
+        // Readiness ALSO excludes the auto-wired dependency checks. A dependency check is shared-fate -
+        // every replica runs the same check against the same downstream - so gating readiness on it would
+        // pull every pod from the Service at once on a transient blip (zero endpoints, connection-refused
+        // to callers), turning a degraded dependency into a total outage. Readiness stays instance-local
+        // ("can THIS pod serve"); dependency reachability is surfaced on the deep healthcheck layer. A
+        // developer can still add a dependency check to readiness explicitly if they've reasoned it safe.
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultReadinessTopic }, builder, includeDependencyChecks: false);
     }
 
     /// <summary>
@@ -211,8 +217,8 @@ public static class Extensions
         this IMiddlewarePipelineBuilder<TContext> app, IHealthCheckBuilder builder)
     {
         // Contracts is a diagnostic topic for explicitly-added contract-drift checks only - the auto-wired
-        // reachability checks (readiness category) must not pollute it.
-        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultContractsTopic }, builder, includeReadinessScoped: false);
+        // reachability checks (dependency category) must not pollute it.
+        return app.UseHealthCheckMiddleware(new[] { Constants.DefaultContractsTopic }, builder, includeDependencyChecks: false);
     }
 
     /// <summary>
@@ -222,7 +228,7 @@ public static class Extensions
     /// otherwise passes through to <c>next()</c>.
     /// </summary>
     private static IMiddlewarePipelineBuilder<TContext> UseHealthCheckMiddleware<TContext>(
-        this IMiddlewarePipelineBuilder<TContext> app, string[] matchTopics, IHealthCheckBuilder builder, bool includeReadinessScoped)
+        this IMiddlewarePipelineBuilder<TContext> app, string[] matchTopics, IHealthCheckBuilder builder, bool includeDependencyChecks)
     {
         return app.Use(resolver => new FuncWrapperMiddleware<TContext>(Constants.HealthCheckMiddlewareName, async (context, next) =>
         {
@@ -235,7 +241,7 @@ public static class Extensions
                 // other message just passes through, so resolving these on that path was dead weight.
                 var resultSetter = resolver.GetService<IMessageHandlerResultSetter<TContext>>();
                 var processor = resolver.GetService<IHealthCheckProcessor>();
-                var result = await processor.PerformHealthChecksAsync(builder.GetHealthChecks(resolver, includeReadinessScoped));
+                var result = await processor.PerformHealthChecksAsync(builder.GetHealthChecks(resolver, includeDependencyChecks));
                 await resultSetter.SetResultAsync(context, new MessageHandlerResult( messageTopic, MessageHandlerDefinition.Empty(), result));
             }
             else

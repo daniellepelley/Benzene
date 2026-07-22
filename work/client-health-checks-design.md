@@ -96,21 +96,39 @@ topic/endpoint); the *content* is automatic.
 - **Dedup key = `(Type, Name)`** on the `HealthCheckDependency`: two `.UseSns(sameArn)` → one check;
   two `.UseSns(differentArn)` → two distinct checks.
 
-### 3.2 ⚠️ THE one-way door — readiness, never liveness (unanimous, highest risk) ✅ *implemented*
-`HealthCheckFinder` returns **all** DI-registered checks, and `.UseLivenessCheck(…)` harvests via the
-finder too. So a naïvely auto-registered dependency check would land in the **liveness** probe — and a
-transient downstream blip (SQS throttle, downstream 503) would flip liveness to 503 and **Kubernetes
-restarts the pod**, turning a downstream degradation into a cross-replica restart storm. This is the
-opposite of graceful degradation, and probe semantics get baked into ops runbooks (expensive to
-change later).
+### 3.2 ⚠️ THE one-way door — deep layer, never a probe (unanimous, highest risk) ✅ *implemented*
+`HealthCheckFinder` returns **all** DI-registered checks, and every `.Use*Check(…)` harvests via the
+finder too. So a naïvely auto-registered dependency check would land in **every** probe — including
+liveness and readiness — and a transient downstream blip (SQS throttle, downstream 503) would take
+automated action across the whole fleet at once.
 
-**Lock it now:** auto-wired client dependency checks are a **readiness** concern and must be
-**excluded from liveness**. Mechanically, register them in a distinct scope/category (a keyed
-registration or a sub-interface / a `"readiness"` tag) that `.UseHealthCheck`/`.UseReadinessCheck`
-read but `.UseLivenessCheck` ignores. This is a DI-registration category, **not** a `TContext`
-marker, so it doesn't offend context purity. Liveness keeps only process-local self-checks
-(`MemoryHealthCheck`). `ShutdownReadinessHealthCheck` already models exactly this discipline. A
-developer may re-route a check explicitly, but the default is readiness and docs discourage overriding.
+**Two distinct hazards, both real:**
+- **Liveness** (failure ⇒ restart): a downstream blip flips liveness to 503 and **Kubernetes restarts
+  the pod** — a cross-replica restart storm, and restarting never fixes a downstream anyway.
+- **Readiness** (failure ⇒ de-route): a dependency check is **shared-fate** — every replica runs the
+  same check against the same downstream, so a blip fails **all** replicas' readiness at once and
+  Kubernetes pulls **every** pod from the Service. The Service now has **zero endpoints** →
+  callers get connection-refused / DNS-level failures instead of a structured 503 with `Retry-After`,
+  breaking L7 retries/circuit-breakers and turning a *degradation* into a *total outage*. De-routing
+  only helps when some replicas are healthy to shed to; for a shared downstream there are none. (This
+  is the well-established "readiness probes considered harmful for shared dependencies" rule; for a
+  worker/consumer, readiness is meaningless anyway — no inbound Service traffic to gate.)
+
+**Decision (revised after review):** auto-wired dependency checks belong on the **deep `healthcheck`
+layer only** — scraped by monitoring / the mesh inventory (§3.11) / humans, triggering **no** automated
+k8s action. They are excluded from **liveness, readiness AND contracts**. Mechanically this is a DI
+registration category `IDependencyHealthCheck` (a sub-interface marker, **not** a `TContext` marker, so
+no context-purity issue) that only `.UseHealthCheck` harvests. Liveness keeps process-local self-checks
+(`MemoryHealthCheck`); readiness keeps instance-local "can *this* pod serve" checks
+(`ShutdownReadinessHealthCheck` for drain). A developer who has reasoned that a *specific* dependency is
+genuinely safe to gate traffic on can still add it to readiness explicitly
+(`.UseReadinessCheck(b => b.AddSqsHealthCheck(...))`) — auto-wiring never does it for them.
+
+> **Note vs. the original plan:** this section first said "readiness, never liveness." Review surfaced
+> that readiness itself is unsafe by default for shared downstreams (the cascading-failure path above),
+> so the category was renamed `IReadinessHealthCheck` → `IDependencyHealthCheck` and readiness now
+> **excludes** it. "Every client ships a check" is still fully delivered — the check is on the health
+> report and the mesh — just not wired to an automated-action probe by default.
 
 ### 3.3 Non-destructive default + opt-in "active" tier ✅ *implemented*
 Fix the three destructive checks to read-only control-plane calls:
@@ -288,22 +306,32 @@ this pass.
   `Ttl` / `Timeout`. `HealthCheckProcessor` honours per-check `Timeout` (replaces the processor-wide
   timeout) and `IsNonCritical` (downgrades a `Failed` to `Warning`). `Ttl` shape-locked, consumption
   deferred.
-- ✅ 0b. Introduced the **readiness registration category** `IReadinessHealthCheck` (a DI service-type
-  marker, not a context marker) + `ReadinessHealthCheck` wrapper. Decision: separation stays **topic +
+- ✅ 0b. Introduced the **dependency registration category** `IDependencyHealthCheck` (a DI service-type
+  marker, not a context marker) + `DependencyHealthCheck` wrapper. Decision: separation stays **topic +
   DI-category** (no `Tags`-based separation axis). `IHealthCheckFinder` gained
-  `FindReadinessHealthChecks()`; `HealthCheckBuilder.GetHealthChecks(resolver, includeReadinessScoped)`
-  selects scope. Harvest matrix: `.UseHealthCheck`/`.UseReadinessCheck` **include** the category,
-  `.UseLivenessCheck`/`.UseContractsCheck` **exclude** it. The disjointness is structural — a check
-  registered under `IReadinessHealthCheck` is not returned by `IEnumerable<IHealthCheck>`.
+  `FindDependencyHealthChecks()`; `HealthCheckBuilder.GetHealthChecks(resolver, includeDependencyChecks)`
+  selects scope. Harvest matrix: **only** `.UseHealthCheck` (deep layer) **includes** the category;
+  `.UseLivenessCheck`, `.UseReadinessCheck` **and** `.UseContractsCheck` **exclude** it (see the §3.2
+  revision — readiness is unsafe by default for shared downstreams). The disjointness is structural — a
+  check registered under `IDependencyHealthCheck` is not returned by `IEnumerable<IHealthCheck>`.
+  *(Originally named `IReadinessHealthCheck`/harvested on readiness; renamed + re-scoped after the §3.2
+  review.)*
 - ✅ 0c. Confirmed the config-time seam exists (`IMiddlewarePipelineBuilder.Register`) and added the
-  `AddReadinessHealthCheck(IBenzeneServiceContainer, factory, dedupKey)` registration hook Phase 1 will
-  call. Dedup by `DedupKey` (Phase 1 sets it to the dependency's `(Type, Name)`) in the finder.
+  `AddDependencyHealthCheck(IBenzeneServiceContainer, factory, dedupKey)` registration hook (in
+  `HealthChecks.Core`, so client packages need only their existing `.Core` reference). Dedup by
+  `DedupKey` (Phase 1 sets it to the dependency's `(Type, Name)`) in the finder.
 
-**Phase 1 — auto-wire the clients that already have checks (highest ROI)**
-SQS, SNS, Lambda, StepFunctions, Service Bus, HTTP. Only work is the DI-registration seam + readiness
-scope + the Warning-on-permission / `ErrorCode`/`StatusCode` classification (§3.4, §3.9). Make bare
-`.UseHealthCheck("healthcheck")` pick them all up. Add `healthCheck: false` opt-out on the client
-extensions. Default them under `CachingHealthCheckProcessor` (§3.6).
+**Phase 1 — auto-wire the clients that already have checks (highest ROI)** 🚧 *in progress*
+SQS, SNS, Lambda, StepFunctions, Service Bus, HTTP. Each default-on client extension auto-registers its
+check on the **dependency category** (deep `healthcheck` layer, never a probe — §3.2 revision), reusing
+the client's own SDK handle, deduped by `(Type, Name)`, with a `healthCheck: false` opt-out. The
+Warning-on-permission / `ErrorCode`/`StatusCode` classification (§3.4, §3.9) is done.
+- ✅ **SQS** — the reference implementation: the two default (DI-handle) `.UseSqs`/`.UseSqs<T>` overloads
+  auto-register `SqsHealthCheck` via `AddDependencyHealthCheck` (dedup `"Sqs:{queueUrl}"`), `healthCheck:
+  false` opts out. The `action`-based (hand-wired-client) overloads don't auto-wire.
+- ⬜ SNS, Lambda, StepFunctions, Service Bus, HTTP — replicate the SQS pattern.
+- ⬜ Default the auto-wired checks under `CachingHealthCheckProcessor` (§3.6) so the deep layer doesn't
+  re-hit every dependency per scrape.
 
 **Phase 2 — non-destructive fixes + BYO helper** ✅ *done*
 - ✅ Read-only swaps for SQS/Lambda/StepFunctions; carve out the opt-in active tier with a distinct

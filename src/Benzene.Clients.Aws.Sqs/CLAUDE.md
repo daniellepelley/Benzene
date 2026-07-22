@@ -26,6 +26,13 @@ consumer, or any SQS target), plus an SQS health check. Pins **only** `AWSSDK.SQ
   builds an `IAmazonSQS` from a local AWS profile for dev/test.
 - `Extensions` — `UseSqsClient`, `UseSqs<T>`/`UseSqs` (both the `IBenzeneClientContext<T,Void>` and
   `OutboundContext` overloads), `AddSqsMessageClient`, and **`AddSqsHealthCheck`**.
+  - **Auto-wired health check (Phase 1, default-on).** The two default (DI-handle) `UseSqs`/`UseSqs<T>`
+    overloads take `bool healthCheck = true`: unless opted out, they auto-register a non-destructive
+    `SqsHealthCheck` for the queue on the **dependency category** (`AddDependencyHealthCheck`, deduped by
+    `"Sqs:{queueUrl}"`), reusing the `IAmazonSQS` from DI. It surfaces on the deep `healthcheck` layer
+    only — **never** a liveness/readiness probe (a queue check is shared-fate; see
+    `IDependencyHealthCheck`). The `action`-based overloads (where you hand-wire the client, possibly
+    with a non-DI handle) do **not** auto-wire — add `AddSqsHealthCheck` yourself there.
 
 ## Conventions
 - `SqsContextConverter`/`OutboundSqsContextConverter` forward `IBenzeneClientRequest.Headers` onto

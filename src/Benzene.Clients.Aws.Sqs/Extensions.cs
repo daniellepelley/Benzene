@@ -64,9 +64,19 @@ public static class Extensions
     /// <param name="app">The pipeline builder to convert.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
     /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="SqsContextConverter{T}.DefaultTopicAttribute"/>).</param>
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive SQS reachability check for <paramref name="queueUrl"/>
+    /// is auto-registered on the deep <c>healthcheck</c> layer (never a Kubernetes probe — see
+    /// <see cref="IDependencyHealthCheck"/>). Pass <c>false</c> to opt out. Reuses the <c>IAmazonSQS</c>
+    /// resolved from DI (the same handle this send pipeline uses).
+    /// </param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSqs<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SqsContextConverter<T>.DefaultTopicAttribute)
+    public static IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> UseSqs<T>(this IMiddlewarePipelineBuilder<IBenzeneClientContext<T, Void>> app, string queueUrl, string topicAttributeKey = SqsContextConverter<T>.DefaultTopicAttribute, bool healthCheck = true)
     {
+        if (healthCheck)
+        {
+            app.RegisterSqsDependencyHealthCheck(queueUrl, topicAttributeKey);
+        }
         return app.Convert(new SqsContextConverter<T>(queueUrl, topicAttributeKey), builder => builder.UseSqsClient());
     }
 
@@ -94,9 +104,18 @@ public static class Extensions
     /// <param name="app">The outbound pipeline builder to convert.</param>
     /// <param name="queueUrl">The URL of the queue to send to.</param>
     /// <param name="topicAttributeKey">The message attribute the topic is written to (defaults to <see cref="OutboundSqsContextConverter.DefaultTopicAttribute"/>).</param>
+    /// <param name="healthCheck">
+    /// When <c>true</c> (the default) a non-destructive SQS reachability check for <paramref name="queueUrl"/>
+    /// is auto-registered on the deep <c>healthcheck</c> layer (never a Kubernetes probe — see
+    /// <see cref="IDependencyHealthCheck"/>). Pass <c>false</c> to opt out.
+    /// </param>
     /// <returns>The pipeline builder, for chaining.</returns>
-    public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute)
+    public static IMiddlewarePipelineBuilder<OutboundContext> UseSqs(this IMiddlewarePipelineBuilder<OutboundContext> app, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute, bool healthCheck = true)
     {
+        if (healthCheck)
+        {
+            app.RegisterSqsDependencyHealthCheck(queueUrl, topicAttributeKey);
+        }
         return app.Convert(new OutboundSqsContextConverter(queueUrl, topicAttributeKey), builder => builder.UseSqsClient());
     }
 
@@ -137,5 +156,17 @@ public static class Extensions
     public static IHealthCheckBuilder AddSqsHealthCheck(this IHealthCheckBuilder builder, string queueUrl, string topicAttributeKey = OutboundSqsContextConverter.DefaultTopicAttribute, HealthCheckMode mode = HealthCheckMode.Reachability)
     {
         return builder.AddHealthCheck(resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>(), mode, topicAttributeKey));
+    }
+
+    // Auto-registers a non-destructive SQS reachability check for the queue on the DEPENDENCY category, so
+    // it surfaces on the deep healthcheck layer (monitoring / mesh) but never on a Kubernetes probe. Deduped
+    // by (Type, Name) so two `.UseSqs(sameUrl)` calls yield one check. Reuses the IAmazonSQS from DI - the
+    // same handle the send pipeline's `.UseSqsClient()` resolves.
+    private static void RegisterSqsDependencyHealthCheck<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+        string queueUrl, string topicAttributeKey)
+    {
+        app.Register(x => x.AddDependencyHealthCheck(
+            resolver => new SqsHealthCheck(queueUrl, resolver.GetService<IAmazonSQS>(), HealthCheckMode.Reachability, topicAttributeKey),
+            $"Sqs:{queueUrl}"));
     }
 }

@@ -7,18 +7,19 @@ public interface IHealthCheckFinder
 {
     /// <summary>
     /// Returns the checks registered as plain <see cref="IHealthCheck"/> (process-local self-checks and any
-    /// the developer registered directly). Does <b>not</b> include the readiness-category checks - this is
-    /// the liveness-safe set (§3.2).
+    /// the developer registered directly). Does <b>not</b> include the dependency-category checks - this is
+    /// the probe-safe set (§3.2).
     /// </summary>
     /// <returns>The registered health checks, in no particular guaranteed order.</returns>
     IHealthCheck[] FindHealthChecks();
 
     /// <summary>
-    /// Returns the readiness-category checks (<see cref="IReadinessHealthCheck"/> - auto-wired external
-    /// dependency checks), de-duplicated by <see cref="IReadinessHealthCheck.DedupKey"/> so two
-    /// registrations of the same dependency collapse to one. Harvested by the general/readiness probes,
-    /// never by liveness. Defaults to empty so existing finders stay source-compatible.
+    /// Returns the dependency-category checks (<see cref="IDependencyHealthCheck"/> - auto-wired external
+    /// dependency checks), de-duplicated by <see cref="IDependencyHealthCheck.DedupKey"/> so two
+    /// registrations of the same dependency collapse to one. Harvested by the general <c>healthcheck</c>
+    /// probe only, never by liveness/readiness/contracts. Defaults to empty so existing finders stay
+    /// source-compatible.
     /// </summary>
-    /// <returns>The de-duplicated readiness-category health checks.</returns>
-    IReadinessHealthCheck[] FindReadinessHealthChecks() => Array.Empty<IReadinessHealthCheck>();
+    /// <returns>The de-duplicated dependency-category health checks.</returns>
+    IDependencyHealthCheck[] FindDependencyHealthChecks() => Array.Empty<IDependencyHealthCheck>();
 }
