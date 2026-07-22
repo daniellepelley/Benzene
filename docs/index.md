@@ -37,6 +37,7 @@ Benzene is a hexagonal framework designed for services running in serverless env
 
 - **Service Mesh**
   - [Mesh UI](mesh-ui.md) — the two dashboards `Benzene.Mesh.Ui` ships: the Mesh Explorer (a published-artifact catalog viewer, primarily static-hosted) and the Fleet view (a live dashboard polling a running `Benzene.Mesh.Collector`)
+  - [Mesh Usage Feed](mesh-usage-feed.md) — how the mesh learns how often each topic is actually exercised and over which transports: the per-message metric metadata standard, `IMeshUsageSource` adapters, and `usage.json`'s degradation rules
 
 - **Cloud Providers**
   - **AWS**
