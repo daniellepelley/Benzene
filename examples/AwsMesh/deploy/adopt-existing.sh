@@ -30,7 +30,21 @@ tf_import() {
     return 0
   fi
   echo "· import: $addr  <-  $id"
-  terraform import -input=false -var "region=$REGION" "$addr" "$id"
+  # A deterministic-id resource that doesn't exist in AWS yet (e.g. a brand-new service on its first
+  # deploy) isn't an error — apply will create it. Terraform reports that specific case as "Cannot
+  # import non-existent remote object"; swallow only that, and re-raise anything else so real failures
+  # still abort under set -e.
+  local out
+  if out="$(terraform import -input=false -var "region=$REGION" "$addr" "$id" 2>&1)"; then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  if printf '%s\n' "$out" | grep -q "Cannot import non-existent remote object"; then
+    echo "· skip (not in AWS yet — apply will create it): $addr"
+    return 0
+  fi
+  printf '%s\n' "$out" >&2
+  return 1
 }
 
 # All HTTP API ids with a given name (a failed run can leave duplicate names).
