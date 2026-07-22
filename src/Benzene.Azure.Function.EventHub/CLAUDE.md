@@ -101,6 +101,15 @@ Covered by `test/Benzene.Core.Test/Azure/EventHubFailureHandlingTest.cs`. The fa
   whatever `IBenzeneInvocation` the outer Azure Functions invocation populated. No application code
   changes needed.
 
+## Declared triggers (source-generated)
+Instead of hand-writing the `[Function]`/`[…Trigger]` class, declare the trigger and let
+Benzene's source generator (shipped in `Benzene.Azure.Function.Core`) emit it:
+`[assembly: BenzeneEventHubTrigger(Name = "telemetry", EventHubName = "telemetry")]`.
+`BenzeneEventHubTriggerAttribute` (assembly-scoped, `AllowMultiple`) lives in this package; you own every
+binding value. Still reference this transport's `Microsoft.Azure.Functions.Worker.Extensions.*`
+package directly, and note `FunctionsEnableWorkerIndexing=false` (auto via Core's
+buildTransitive). The hand-written form still works. See `docs/azure-functions.md`.
+
 ## When to use this package
 - Consuming an Event Hub via an Azure Functions Event Hub trigger. Add
   `Microsoft.Azure.Functions.Worker.Extensions.EventHubs` (6.5.0) directly to your function app so

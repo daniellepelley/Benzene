@@ -178,8 +178,35 @@ features, `HttpRequest`/`IActionResult` trigger bindings). `UseBenzene<StartUp>(
 runs `ConfigureServices`/`Configure` inside the host's `ConfigureServices` callback and registers
 the built `IAzureFunctionApp` as a scoped service so trigger functions can inject it.
 
-Then add a single catch-all HTTP trigger function that delegates to Benzene's own routing — one
-Azure Function handles every route your message handlers define:
+Then **declare** a single catch-all HTTP trigger. Benzene's source generator writes the
+`[Function]`/`[HttpTrigger]` class for you — the part that has to be exactly right for the Functions
+host to register and dispatch the trigger — so one Azure Function handles every route your message
+handlers define, and you write none of the ceremony. Add the declaration at assembly scope (anywhere
+in the project, e.g. a `Triggers.cs`):
+
+```csharp
+using Benzene.Azure.Function.AspNet;
+
+[assembly: BenzeneHttpTrigger(Name = "orders", Route = "{*restOfPath}")]
+```
+
+That's the whole trigger. The generator emits a catch-all HTTP function that forwards into your built
+`IAzureFunctionApp`, which routes the request to the right message handler. You own the `Name` and
+`Route` (and `AuthorizationLevel`/`Methods` if you want them) — nothing is hard-coded; a bare
+`[assembly: BenzeneHttpTrigger]` also works (a `benzene`-named anonymous catch-all). Every transport
+has an equivalent attribute — see [Non-HTTP triggers](#non-http-triggers).
+
+**One required setting.** The generator relies on `FunctionsEnableWorkerIndexing=false` (the Functions
+SDK's own worker-indexing source generators can't see another generator's output). Benzene's NuGet
+packages set this for you via `buildTransitive`; nothing to do. (If you consume Benzene via
+`ProjectReference` — e.g. inside this repo — set `<FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>`
+in your csproj, since `buildTransitive` props don't flow across project references.)
+
+<details>
+<summary><b>Prefer to write the trigger by hand?</b> (the escape hatch)</summary>
+
+The generator only *adds* a path — a hand-written `[Function]` still works, and both can coexist.
+Reach for this when you need a binding shape the attribute doesn't expose:
 
 ```csharp
 using Benzene.Azure.Function.AspNet;
@@ -206,38 +233,11 @@ public class HttpFunction
 }
 ```
 
-`HandleHttpRequest` is an extension method from `Benzene.Azure.Function.AspNet` — under the hood
-it calls the generic `IAzureFunctionApp.HandleAsync<HttpRequest, IActionResult>(req)`, which
-dispatches to whichever entry point application your `Configure` method registered for that
-request/response type pairing (here, the one `UseHttp` added).
-
-### Let Benzene generate the trigger (declarative triggers)
-
-Writing that `[Function]`/`[HttpTrigger]` class by hand is pure ceremony — and it's the part that
-has to be exactly right for the Functions host to register and dispatch the trigger. Benzene ships a
-source generator that writes it for you from a one-line **declaration**. Delete the class above and
-instead declare the trigger at assembly scope (anywhere in the project, e.g. a `Triggers.cs`):
-
-```csharp
-using Benzene.Azure.Function.AspNet;
-
-[assembly: BenzeneHttpTrigger(Name = "orders", Route = "{*restOfPath}")]
-```
-
-That's it — the generator emits the same catch-all HTTP trigger, forwarding into your built
-`IAzureFunctionApp`. You own the `Name` and `Route` (and `AuthorizationLevel`/`Methods` if you want
-them); nothing is hard-coded. A bare `[assembly: BenzeneHttpTrigger]` works too (a `benzene`-named
-anonymous catch-all). Every transport has an equivalent attribute — see
-[Non-HTTP triggers](#non-http-triggers).
-
-**One required setting.** The generator relies on `FunctionsEnableWorkerIndexing=false` (the Functions
-SDK's worker-indexing source generators can't see another generator's output). Benzene's NuGet
-packages set this for you via `buildTransitive`; nothing to do. (If you consume Benzene via
-`ProjectReference` — e.g. inside this repo — set `<FunctionsEnableWorkerIndexing>false</FunctionsEnableWorkerIndexing>`
-in your csproj, since `buildTransitive` props don't flow across project references.)
-
-The hand-written form still works and both can coexist — the generator only *adds* a path. Reach for
-a hand-written `[Function]` when you need a binding shape the attribute doesn't expose.
+`HandleHttpRequest` is an extension method from `Benzene.Azure.Function.AspNet` — under the hood it
+calls the generic `IAzureFunctionApp.HandleAsync<HttpRequest, IActionResult>(req)`, which dispatches
+to whichever entry point application your `Configure` method registered for that request/response type
+pairing (here, the one `UseHttp` added). The declaration above generates exactly this class.
+</details>
 
 ## 6. Configuration
 
@@ -344,10 +344,10 @@ sub-pipeline, exactly as with any other Benzene host:
 - **Event Grid**: `app.UseEventGrid(...)`, in `Benzene.Azure.Function.EventGrid`
 - **Timer**: `app.UseTimerTrigger(...)`, in `Benzene.Azure.Function.Timer`
 
-Each per-transport section below shows the hand-written trigger function. As with HTTP
-([Let Benzene generate the trigger](#let-benzene-generate-the-trigger-declarative-triggers)),
-you can **declare** the trigger instead and let the generator write it — one assembly attribute,
-you own every binding value:
+Each trigger has two parts: the **pipeline** you wire in `Configure` (`app.UseEventHub(...)`,
+`app.UseServiceBus(...)`, …, covered per-transport below) and the **trigger function** that feeds it.
+Just like HTTP, you **declare** the trigger function and Benzene's source generator writes it — one
+assembly attribute per trigger, you own every binding value:
 
 ```csharp
 [assembly: BenzeneServiceBusTrigger(Name = "orders", QueueName = "orders", Connection = "ServiceBusConnection")]
@@ -365,6 +365,10 @@ Each attribute lives in that transport's `Benzene.Azure.Function.*` package. You
 transport's `Microsoft.Azure.Functions.Worker.Extensions.*` package directly (a Functions tooling
 requirement — the trigger isn't registered from a transitive reference), and the
 `FunctionsEnableWorkerIndexing=false` note from the HTTP section applies to all of them.
+
+The per-transport sections below cover each pipeline's wiring and options, and show the **hand-written**
+trigger function as the escape hatch — the equivalent of the declaration above, for when you need a
+binding shape the attribute doesn't expose.
 
 ### Event Hubs
 

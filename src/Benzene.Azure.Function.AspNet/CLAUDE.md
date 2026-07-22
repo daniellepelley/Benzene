@@ -25,6 +25,11 @@ use `Benzene.AspNet.Core`).
   mappers via `AddAspNet()`.
 - `Extensions.HandleHttpRequest(this IAzureFunctionApp, HttpRequest)` — the dispatch helper the
   `[HttpTrigger]` function method calls; returns `Task<IActionResult>`.
+- `BenzeneHttpTriggerAttribute` (assembly-scoped, `AllowMultiple`) — the **declaration** the trigger
+  source generator (shipped in `Benzene.Azure.Function.Core`) turns into the `[Function]`/`[HttpTrigger]`
+  class, so the HTTP trigger doesn't have to be hand-written. `[assembly: BenzeneHttpTrigger(Name = "orders",
+  Route = "…", AuthorizationLevel = …, Methods = …)]`; `Name` defaults to a `benzene` catch-all. The
+  hand-written function still works — the generator only adds a path. See `docs/azure-functions.md`.
 
 ## When to use this package
 - Handling HTTP-triggered Azure Functions with Benzene. Add it alongside
