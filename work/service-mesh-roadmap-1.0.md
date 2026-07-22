@@ -1,6 +1,53 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-22 FEEDBACK TRIAGE — send-demo-payloads ask lands on §10.2/§10.7 (mesh-product-owner).**
+> A maintainer feedback batch (full triage + UI-side requirements F1/F2/F3 in
+> `work/mesh-ui-product-vision.md`, dated block at top) includes: *"Should be able to send in demo
+> payloads … feature toggleable … users will not want that on production … build them from topic,
+> headers and payload fields, and construct those into an SQS … define custom payloads in the code
+> … might be its own screen."* This splits against this roadmap as follows:
+> - **Compose & copy a transport-dressed payload (F3a):** APPROVED, near-term, static-floor-safe.
+>   This is exactly §10.2's "generate-and-copy, not live-dispatch" affordance and reuses machinery
+>   that already exists — `LambdaTestFilesBuilder`'s `sns`/`sqs`/`api-gateway`/`benzene-message`
+>   dressing over the deterministic `Benzene.Schema.OpenApi.Examples.ExamplePayloadBuilder`, and the
+>   opt-in runtime endpoint already designed in `work/runtime-test-payloads-plan.md`
+>   (`UseTestPayloads()`). "Supported payloads" = schema-derived defaults (already inlined per
+>   topic in `MeshTopicEntry.RequestSchema`/`ResponseSchema`/`MessageSchema`) **plus** code-registered
+>   custom examples, mapped to the existing BYO-schema seam (`SuppliedSchemaCatalog`/
+>   `AddSuppliedSchemas`, see `work/complex-payloads-byo-schema-plan.md`). Envelope-dressing lives in
+>   a runtime-clean core + opt-in `Benzene.*.TestPayloads.Aws` package (plan decision 1(c)) — never
+>   in `Contracts`/`Ui`, never pulling AWS test-helpers into a service runtime. Azure dressing is a
+>   documented follow-up, not silently AWS-only. **No Cloud Service spec widening** — topics/schemas/
+>   transports/HTTP-mappings are all already in the spec and already fetched. Taut.
+> - **Live dispatch (F3b-revised): §10.7 NOT reopened — candidate that MIGHT clear its bar,
+>   EXPLORE-AND-DESIGN pending a maintainer ruling.** The maintainer (2026-07-22) did **not**
+>   authorize the queue-injection version (§10.7 stands as-is for SQS/SNS/stream injection) and
+>   steered to a narrower direction: *"the payloads would be sent straight to the consumer, such as
+>   the Lambda and not to the SQS … A possible other solution for http is to provide a wired in
+>   swagger interface."* This partitions by transport (full analysis in `mesh-ui-product-vision.md`
+>   F3b-revised):
+>   - **Direct-invokable transports (Lambda `Invoke` / HTTP / BenzeneMessage):** send straight to
+>     the one target service, reusing the **access path the aggregator already has** (same
+>     `lambda:InvokeFunction` / same HTTP POST it already uses for spec/health) — **no new credential
+>     type**, bounded to one known service rather than fanning into shared infra. This plausibly
+>     clears §10.7's "don't reach into *different systems* from the aggregated view" objection.
+>     Residual risk is real but smaller: the handler runs for real (side-effects, possibly its own
+>     downstream publishes), so it still needs opt-in + `AllowInProduction` gating and stays off
+>     prod. Vessel for Lambda/BenzeneMessage: `deploy/Mesh/Benzene.Mesh.Host` (browser can't
+>     `Invoke`). PO recommendation: clears the bar — but held for the maintainer's ruling; §10.7
+>     stays NOT reopened until then.
+>   - **HTTP "wired-in Swagger":** best served by **deep-linking each service's own `UseSpecUi()`
+>     "Try it"** (same-origin, live) — which is *literally* the §10.7-sanctioned home for live
+>     dispatch, so it needs **no exception at all**. A centralized cross-origin Swagger in the mesh
+>     is the heavier alternative (needs CORS allow-listing per §10.5 + browser-carried auth) and is
+>     separately decided.
+>   - **Queue/stream transports (SQS/SNS/Event Hub/Kinesis/Event Grid):** out of scope for live
+>     send — **F3a compose+copy only**, exactly as §10.7 left them.
+>   - Data-layer/packages implications recorded here; each build case gets its own design doc only
+>     if/when the maintainer approves. `runtime-test-payloads-plan.md` (opt-in `UseTestPayloads()`,
+>     transport-dress package split, gate decision 3) is the reusable foundation for all of it.
+>
 > **2026-07-22 ownership merge:** `mesh-ui-product-owner` has been merged into
 > `mesh-product-owner` — one owner for the whole mesh product (this doc and
 > `work/mesh-ui-product-vision.md` now share that owner). Mentions of
