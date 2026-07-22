@@ -16,7 +16,18 @@ Outbound EventBridge client for a Benzene app: put events on an EventBridge bus.
   entry `i`, a failed entry carries `ErrorCode`), so failures are mapped by position within each
   chunk. Covered by `test/Benzene.Core.Test/Clients/Aws/BatchMessageClientTest.cs`.
 - `Extensions` — `UseEventBridgeClient`, `UseEventBridge<T>` (a `source` overload and a
-  pipeline-configuring overload), and **`AddEventBridgeHealthCheck`**.
+  pipeline-configuring overload), the **`OutboundContext`** `UseEventBridge(source, eventBusName?, …)`
+  overloads (below), and **`AddEventBridgeHealthCheck`**.
+- `OutboundEventBridgeContextConverter` — `OutboundContext` → `EventBridgeSendMessageContext`, so an
+  outbound route (`OutboundRoutingBuilder.Route`) can publish to EventBridge the same way `.UseSqs(...)`/
+  `.UseSns(...)` do (the EventBridge twin of `OutboundSns/SqsContextConverter`, added 2026-07-22). Maps the
+  Benzene topic → `DetailType` and the configured `source` → `Source`; embeds wire headers into `Detail`
+  under `_benzeneHeaders` exactly as `EventBridgeContextConverter<T>` does (shares its `EmbeddedHeadersKey`).
+  Fire-and-acknowledge, so the response is always `IBenzeneResult<Void>` — route a topic here and send it
+  via `IBenzeneMessageSender.SendAsync<TRequest,Void>`. The `UseEventBridge(this
+  IMiddlewarePipelineBuilder<OutboundContext>, string source, string? eventBusName = null, bool healthCheck
+  = true)` overload auto-registers the reachability check for `eventBusName` (null = default bus) on the
+  dependency category, mirroring `.UseSns(...)`.
 - `EventBridgeHealthCheck` — verifies an event bus with a read-only `DescribeEventBus` call
   (`Type = "EventBridge"`, dependency `("EventBus", name)`; null name = the `"default"` bus). Failures
   are classified via `HealthCheckError.Classify` (§3.9): a permission error (403) is a **Warning**, and

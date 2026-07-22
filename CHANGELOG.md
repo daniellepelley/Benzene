@@ -51,6 +51,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   around them was removed.
 
 ### Added
+- **`.UseEventBridge(...)` on the outbound-routing model.** `Benzene.Clients.Aws.EventBridge` now has an
+  `IMiddlewarePipelineBuilder<OutboundContext>` overload (`UseEventBridge(source, eventBusName?,
+  healthCheck?)` + an inner-pipeline-configuring overload), backed by a new
+  `OutboundEventBridgeContextConverter` — so `AddOutboundRouting(...).Route(topic, p =>
+  p.UseEventBridge("my-source"))` publishes to EventBridge exactly as `.UseSqs(...)`/`.UseSns(...)` already
+  did for their transports. Closes the SQS/SNS/EventBridge parity gap on `OutboundContext` (only
+  `.UseAwsLambda(...)` there remains deferred). The topic maps to the event `DetailType` (what the inbound
+  `Benzene.Aws.Lambda.EventBridge` binding reads back) and wire headers embed into `Detail` under
+  `_benzeneHeaders`; fire-and-acknowledge, so send via `SendAsync<TRequest,Void>`. Non-breaking (new API).
 - **Azure Functions triggers can be declared instead of hand-written.** New
   `Benzene.Azure.Function.SourceGenerators` (a Roslyn analyzer) emits the `[Function]`/`[…Trigger]`
   class for you from a one-line assembly-attribute declaration, for every transport Benzene supports:
