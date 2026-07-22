@@ -24,6 +24,22 @@
 >   renders each service's heartbeat age, and a service whose `lastSeen` exceeds `STALE_AFTER_MS`
 >   (90s default - a few missed heartbeats; a JS knob, deliberately not a contract value) has its
 >   health mark downgraded to "◌ stale" (amber) - an old "healthy" verdict is not a current one.
+>
+> **2026-07-22 (P3 of the vision doc's roadmap): both pages now render a topology graph.**
+> - **`mesh-ui.html`:** a node-link SVG graph above the topology edge table (the table stays -
+>   the graph answers "what's the shape", the table answers "sort me by error rate"). Hand-rolled
+>   SVG, no graph/layout library: deterministic layered left-to-right layout (longest-path
+>   layering, cycle-guarded; nodes sorted by name within a layer - stable across reloads). Nodes
+>   are stroked by the manifest's health status (dashed = not in the manifest) and are full
+>   members of the three-entity link closure - click/Enter/Space navigates to `#service:<name>`.
+>   Edge width tracks √(req/min), red = error rate ≥ 5%, `<title>` tooltips carry exact numbers;
+>   cycles arc over the top, layer-skipping edges bow underneath intermediate columns.
+> - **`mesh-fleet-ui.html`:** the same graph over **derived** edges - no `topology.json` exists
+>   on the collector plane, so consumer→provider edges are aggregated client-side from the fleet
+>   topic catalog's providers/consumers (invocations/errors summed per pair). Node strokes reuse
+>   the fleet health vocabulary including the P2 staleness downgrade; the section hides itself
+>   when no edges can be derived. Fleet nodes are tooltip-only (no service page exists on this
+>   plane to link to).
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
@@ -146,6 +162,7 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
 ## Conventions
 - Keep the viewer dependency-free and self-contained (no CDN/webfont/script references) so it
   works offline and behind strict CSPs, matching `Benzene.Spec.Ui`'s convention.
-- Topology rendering is a flat sortable edge table, not a node-link graph - full interactive graph
-  visualization is a documented follow-up (see `mesh-product-owner`'s priorities in
-  `.claude/PRODUCT_OWNERS.md` and `work/service-mesh-roadmap-1.0.md`), not built here.
+- Topology rendering is **both** a node-link SVG graph and the flat sortable edge table beneath
+  it - they are two views over the same `topology.json` edges (shape vs. sortable detail), so
+  keep them in sync when the edge contract changes. The graph is hand-rolled SVG under the same
+  no-dependency floor as everything else here: never introduce a chart/graph/layout library.

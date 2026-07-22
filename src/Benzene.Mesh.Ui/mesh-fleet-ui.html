@@ -72,6 +72,20 @@
              font-size: 11px; color: var(--ink-2); white-space: nowrap; }
   .wf-stat .st-err { color: var(--crit); }
   .wf-note { color: var(--muted); font-size: 12px; padding: 6px 0; }
+
+  /* ---------- topology graph (derived from observed provider/consumer edges) ---------- */
+  .topo-graph-wrap { border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
+                     overflow-x: auto; padding: 6px; }
+  .topo-node rect { fill: color-mix(in srgb, var(--ink) 5%, transparent); stroke: var(--muted); stroke-width: 1.2; rx: 7; }
+  .topo-node text { fill: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+  .topo-node.h-healthy rect { stroke: var(--good); }
+  .topo-node.h-degraded rect { stroke: var(--serious); }
+  .topo-node.h-unknown rect { stroke: var(--muted); stroke-dasharray: 4 3; }
+  .topo-node.h-stale rect { stroke: var(--warn); stroke-dasharray: 4 3; }
+  .topo-edge { fill: none; stroke: var(--muted); opacity: .6; }
+  .topo-edge.err { stroke: var(--crit); opacity: .85; }
+  .topo-arrow { fill: var(--muted); }
+  .topo-arrow.err { fill: var(--crit); }
 </style>
 </head>
 <body>
@@ -94,6 +108,9 @@
       <th>Topics</th><th>Instances</th><th>Invocations</th><th>Errors</th><th>Reduced feeds</th></tr></thead>
     <tbody id="services"></tbody>
   </table></div>
+
+  <h2 id="topology-title" style="display:none">Topology <span style="font-weight:400;color:var(--muted);font-size:11.5px">(observed — consumers call providers, derived from trace parentage)</span></h2>
+  <div class="topo-graph-wrap" id="topology-graph" style="display:none"></div>
 
   <h2>Topic catalog</h2>
   <div class="tablewrap"><table>
@@ -214,6 +231,8 @@
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
       });
     }, 5);
+    renderTopologyGraph(fleet);
+
     // The 2s poll rebuilds the table; keep the flow the user is reading open across rebuilds.
     if (openTraceId) {
       var rows = tbody.querySelectorAll("tr.flow-row");
@@ -222,6 +241,155 @@
         if (link2 && traces[i] && traces[i].traceId === openTraceId) { expandFlow(rows[i], openTraceId); break; }
       }
     }
+  }
+
+  /* ---------- topology graph ----------
+     Node-link view over the fleet's OBSERVED call edges: for each topic, every observed consumer
+     (derived by the collector from trace parentage - never declared) calls each provider, so the
+     edge is consumer -> provider, weighted by the topic's invocations and reddened when its error
+     share is >= 5%. Same self-contained SVG approach as mesh-ui.html's graph: layered
+     longest-path layout, deterministic ordering, no libraries. Node strokes carry health (and the
+     staleness derivation). Hidden until at least one edge is observable. */
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function svgTitle(text) {
+    var t = document.createElementNS(SVG_NS, "title");
+    t.textContent = text;
+    return t;
+  }
+  function computeLayers(names, links) {
+    var layer = {};
+    names.forEach(function (n) { layer[n] = 0; });
+    for (var pass = 0; pass < names.length + 1; pass++) {
+      var changed = false;
+      links.forEach(function (l) {
+        if (layer[l.to] < layer[l.from] + 1 && layer[l.from] + 1 <= names.length) {
+          layer[l.to] = layer[l.from] + 1;
+          changed = true;
+        }
+      });
+      if (!changed) break;
+    }
+    return layer;
+  }
+  function deriveEdges(topics) {
+    var byPair = {};
+    (topics || []).forEach(function (t) {
+      (t.consumers || []).forEach(function (c) {
+        (t.providers || []).forEach(function (p) {
+          if (c === p) return;
+          var key = c + "\u0000" + p;
+          var e = byPair[key] || (byPair[key] = { from: c, to: p, invocations: 0, errors: 0, topics: [] });
+          e.invocations += t.invocations || 0;
+          e.errors += t.errors || 0;
+          e.topics.push(t.topic + (t.version ? "@" + t.version : ""));
+        });
+      });
+    });
+    return Object.keys(byPair).map(function (k) { return byPair[k]; });
+  }
+  function renderTopologyGraph(fleet) {
+    var container = document.getElementById("topology-graph");
+    var title = document.getElementById("topology-title");
+    var edges = deriveEdges(fleet.topics);
+    if (!edges.length) { container.style.display = "none"; title.style.display = "none"; return; }
+    container.style.display = "";
+    title.style.display = "";
+    container.textContent = "";
+
+    var healthOf = {};
+    (fleet.services || []).forEach(function (s) {
+      var age = ageMs(s.lastSeen);
+      healthOf[s.service] = (age != null && age > STALE_AFTER_MS) ? "stale" : s.health;
+    });
+
+    var names = [];
+    edges.forEach(function (e) {
+      if (names.indexOf(e.from) < 0) names.push(e.from);
+      if (names.indexOf(e.to) < 0) names.push(e.to);
+    });
+    var layerOf = computeLayers(names, edges);
+    var columns = {};
+    names.slice().sort().forEach(function (n) {
+      (columns[layerOf[n]] = columns[layerOf[n]] || []).push(n);
+    });
+
+    var NODE_H = 28, ROW_GAP = 24, COL_GAP = 100, PAD = 20;
+    function nodeWidth(name) { return Math.min(220, 20 + name.length * 7); }
+    var colWidths = {}, maxRows = 0;
+    Object.keys(columns).forEach(function (l) {
+      colWidths[l] = Math.max.apply(null, columns[l].map(nodeWidth));
+      maxRows = Math.max(maxRows, columns[l].length);
+    });
+
+    var pos = {}, x = PAD;
+    Object.keys(columns).map(Number).sort(function (a, b) { return a - b; }).forEach(function (l) {
+      columns[l].forEach(function (n, i) {
+        pos[n] = { x: x, y: PAD + i * (NODE_H + ROW_GAP), w: nodeWidth(n) };
+      });
+      x += colWidths[l] + COL_GAP;
+    });
+    var width = x - COL_GAP + PAD;
+    var height = PAD * 2 + maxRows * (NODE_H + ROW_GAP) - ROW_GAP;
+
+    var svg = svgEl("svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height, role: "img" });
+    svg.appendChild(svgTitle("Observed service topology"));
+    var defs = svgEl("defs", {});
+    [["fleet-arrowhead", "topo-arrow"], ["fleet-arrowhead-err", "topo-arrow err"]].forEach(function (m) {
+      // userSpaceOnUse keeps arrowheads a constant size instead of scaling with edge width.
+      var marker = svgEl("marker", { id: m[0], viewBox: "0 0 10 10", refX: 9, refY: 5,
+        markerWidth: 9, markerHeight: 9, markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" });
+      var tip = svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z" });
+      tip.setAttribute("class", m[1]);
+      marker.appendChild(tip);
+      defs.appendChild(marker);
+    });
+    svg.appendChild(defs);
+
+    edges.forEach(function (e) {
+      var from = pos[e.from], to = pos[e.to];
+      if (!from || !to) return;
+      var x1 = from.x + from.w, y1 = from.y + NODE_H / 2;
+      var x2 = to.x, y2 = to.y + NODE_H / 2;
+      var errShare = e.invocations > 0 ? e.errors / e.invocations : 0;
+      var err = errShare >= 0.05;
+      var d;
+      if (x2 > x1) {
+        var mid = (x1 + x2) / 2;
+        // An edge skipping intermediate layers bows underneath them, so it doesn't vanish
+        // behind the nodes it passes when its endpoints share a row.
+        var bow = (layerOf[e.to] - layerOf[e.from] > 1) ? NODE_H + 4 : 0;
+        d = "M " + x1 + " " + y1 + " C " + mid + " " + (y1 + bow) + ", " + mid + " " + (y2 + bow) + ", " + (x2 - 3) + " " + y2;
+      } else {
+        var lift = Math.min(y1, y2) - (NODE_H + 12);
+        d = "M " + x1 + " " + y1 + " C " + (x1 + 42) + " " + lift + ", " + (x2 - 42) + " " + lift + ", " + (x2 - 3) + " " + y2;
+      }
+      var path = svgEl("path", { d: d, "marker-end": "url(#fleet-arrowhead" + (err ? "-err" : "") + ")" });
+      path.setAttribute("class", "topo-edge" + (err ? " err" : ""));
+      path.setAttribute("stroke-width", (1 + Math.min(4, Math.sqrt(e.invocations) / 8)).toFixed(1));
+      path.appendChild(svgTitle(e.from + " → " + e.to + " · " + e.invocations + " invocations · "
+        + e.errors + " errors · via " + e.topics.join(", ")));
+      svg.appendChild(path);
+    });
+
+    names.forEach(function (n) {
+      var p = pos[n];
+      var health = healthOf[n] || "unknown";
+      var g = svgEl("g", { transform: "translate(" + p.x + "," + p.y + ")" });
+      g.setAttribute("class", "topo-node h-" + health);
+      g.appendChild(svgEl("rect", { width: p.w, height: NODE_H, rx: 7 }));
+      var label = svgEl("text", { x: p.w / 2, y: NODE_H / 2 + 4, "text-anchor": "middle" });
+      label.textContent = n.length > 27 ? n.slice(0, 26) + "…" : n;
+      g.appendChild(label);
+      g.appendChild(svgTitle(n + " · " + health));
+      svg.appendChild(g);
+    });
+
+    container.appendChild(svg);
   }
 
   /* ---------- flow view: the traced waterfall ----------

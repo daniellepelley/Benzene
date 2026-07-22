@@ -418,6 +418,24 @@
   @keyframes svc-flash { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 3px var(--accent-soft); } }
   .svc-flash { animation: svc-flash 1.1s ease-in-out; }
 
+  /* ---------- topology graph (node-link SVG over the same edges as the table) ---------- */
+  .topo-graph-wrap {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 12px; overflow-x: auto; padding: 6px;
+  }
+  .topo-node rect { fill: var(--surface-2); stroke: var(--ink-faint); stroke-width: 1.2; rx: 8; }
+  .topo-node text { fill: var(--ink); font-family: var(--mono); font-size: 12px; }
+  .topo-node { cursor: pointer; }
+  .topo-node:hover rect, .topo-node:focus rect { stroke: var(--accent); stroke-width: 1.8; }
+  .topo-node.st-healthy rect { stroke: var(--ok); }
+  .topo-node.st-unhealthy rect { stroke: var(--m-put); }
+  .topo-node.st-unreachable rect { stroke: var(--req); }
+  .topo-node.st-unknown rect { stroke: var(--ink-faint); stroke-dasharray: 4 3; }
+  .topo-edge { fill: none; stroke: var(--ink-faint); opacity: .6; }
+  .topo-edge.err { stroke: var(--req); opacity: .8; }
+  .topo-arrow { fill: var(--ink-faint); }
+  .topo-arrow.err { fill: var(--req); }
+
   /* ---------- service page (the third entity: Estate / Service / Topic) ---------- */
   .svc-name-btn {
     background: none; border: none; padding: 0; cursor: pointer;
@@ -535,6 +553,7 @@
       <h2>Topology</h2>
       <span class="topo-generated" id="topology-generated"></span>
     </div>
+    <div class="topo-graph-wrap" id="topology-graph"></div>
     <div class="topo-table-wrap">
       <table class="topo-table" id="topology-table">
         <thead>
@@ -1686,8 +1705,145 @@
     document.getElementById("topology-generated").textContent = topo.generatedAtUtc
       ? "generated " + topo.generatedAtUtc : "";
     currentEdges = edges;
+    renderTopologyGraph(edges);
     sortAndRenderEdges();
     syncViewFromHash(); // an open service page gains its topology section once edges arrive
+  }
+
+  /* ---------- topology graph ----------
+     A node-link view over the same edges as the sortable table below it (which stays - the graph
+     answers "what's the shape", the table answers "sort me by error rate"). Self-contained,
+     hand-rolled SVG: layered left-to-right layout (longest path from the roots), deterministic
+     (nodes ordered by name within a layer - no physics, no randomness, stable across reloads),
+     theme-aware via CSS classes. Nodes carry the manifest's health status on their stroke and
+     click through to the service page; edge width tracks request rate, red = error rate >= 5%. */
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function svgTitle(text) {
+    var t = document.createElementNS(SVG_NS, "title");
+    t.textContent = text;
+    return t;
+  }
+  function computeLayers(names, links) {
+    // Longest-path layering with a cycle guard: relax layer assignments at most N times, so a
+    // cyclic call graph (A->B->A) settles instead of looping forever.
+    var layer = {};
+    names.forEach(function (n) { layer[n] = 0; });
+    for (var pass = 0; pass < names.length + 1; pass++) {
+      var changed = false;
+      links.forEach(function (l) {
+        if (layer[l.to] < layer[l.from] + 1 && layer[l.from] + 1 <= names.length) {
+          layer[l.to] = layer[l.from] + 1;
+          changed = true;
+        }
+      });
+      if (!changed) break;
+    }
+    return layer;
+  }
+  function renderTopologyGraph(edges) {
+    var container = document.getElementById("topology-graph");
+    container.innerHTML = "";
+
+    var names = [];
+    edges.forEach(function (e) {
+      if (names.indexOf(e.client) < 0) names.push(e.client);
+      if (names.indexOf(e.server) < 0) names.push(e.server);
+    });
+    if (!names.length) { container.style.display = "none"; return; }
+    container.style.display = "";
+
+    var layerOf = computeLayers(names, edges.map(function (e) { return { from: e.client, to: e.server }; }));
+    var columns = {};
+    names.slice().sort().forEach(function (n) {
+      (columns[layerOf[n]] = columns[layerOf[n]] || []).push(n);
+    });
+
+    var NODE_H = 30, ROW_GAP = 26, COL_GAP = 110, PAD = 22;
+    function nodeWidth(name) { return Math.min(230, 22 + name.length * 7.4); }
+    var colWidths = {}, maxRows = 0;
+    Object.keys(columns).forEach(function (l) {
+      colWidths[l] = Math.max.apply(null, columns[l].map(nodeWidth));
+      maxRows = Math.max(maxRows, columns[l].length);
+    });
+
+    var pos = {}, x = PAD;
+    Object.keys(columns).map(Number).sort(function (a, b) { return a - b; }).forEach(function (l) {
+      columns[l].forEach(function (n, i) {
+        pos[n] = { x: x, y: PAD + i * (NODE_H + ROW_GAP), w: nodeWidth(n) };
+      });
+      x += colWidths[l] + COL_GAP;
+    });
+    var width = x - COL_GAP + PAD;
+    var height = PAD * 2 + maxRows * (NODE_H + ROW_GAP) - ROW_GAP;
+
+    var svg = svgEl("svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height, role: "img" });
+    svg.appendChild(svgTitle("Service topology graph"));
+    var defs = svgEl("defs", {});
+    [["topo-arrowhead", "topo-arrow"], ["topo-arrowhead-err", "topo-arrow err"]].forEach(function (m) {
+      // userSpaceOnUse keeps arrowheads a constant size instead of scaling with edge width.
+      var marker = svgEl("marker", { id: m[0], viewBox: "0 0 10 10", refX: 9, refY: 5,
+        markerWidth: 9, markerHeight: 9, markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" });
+      var tip = svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z" });
+      tip.setAttribute("class", m[1]);
+      marker.appendChild(tip);
+      defs.appendChild(marker);
+    });
+    svg.appendChild(defs);
+
+    edges.forEach(function (e) {
+      var from = pos[e.client], to = pos[e.server];
+      if (!from || !to) return;
+      var x1 = from.x + from.w, y1 = from.y + NODE_H / 2;
+      var x2 = to.x, y2 = to.y + NODE_H / 2;
+      var err = e.errorRate != null && e.errorRate >= 0.05;
+      var d;
+      if (x2 > x1) {
+        var mid = (x1 + x2) / 2;
+        // An edge skipping intermediate layers bows underneath them, so it doesn't vanish
+        // behind the nodes it passes when its endpoints share a row.
+        var bow = (layerOf[e.server] - layerOf[e.client] > 1) ? NODE_H + 4 : 0;
+        d = "M " + x1 + " " + y1 + " C " + mid + " " + (y1 + bow) + ", " + mid + " " + (y2 + bow) + ", " + (x2 - 3) + " " + y2;
+      } else {
+        // Backward/same-column edge (a cycle): arc over the top so it stays legible.
+        var lift = Math.min(y1, y2) - (NODE_H + 14);
+        d = "M " + x1 + " " + y1 + " C " + (x1 + 46) + " " + lift + ", " + (x2 - 46) + " " + lift + ", " + (x2 - 3) + " " + y2;
+      }
+      var path = svgEl("path", { d: d, "marker-end": "url(#topo-arrowhead" + (err ? "-err" : "") + ")" });
+      path.setAttribute("class", "topo-edge" + (err ? " err" : ""));
+      var rpm = e.requestsPerMinute;
+      path.setAttribute("stroke-width", (1 + Math.min(4, rpm ? Math.sqrt(rpm) / 3 : 0)).toFixed(1));
+      var bits = [e.client + " → " + e.server];
+      if (rpm != null) bits.push(Number(rpm).toFixed(1) + " req/min");
+      if (e.errorRate != null) bits.push((e.errorRate * 100).toFixed(2) + "% err");
+      if (e.p50LatencyMs != null) bits.push("p50 " + Number(e.p50LatencyMs).toFixed(0) + "ms");
+      path.appendChild(svgTitle(bits.join(" · ")));
+      svg.appendChild(path);
+    });
+
+    names.forEach(function (n) {
+      var p = pos[n];
+      var svc = findManifestService(n);
+      var status = svc ? svc.status : "unknown";
+      var g = svgEl("g", { transform: "translate(" + p.x + "," + p.y + ")", tabindex: 0, role: "link" });
+      g.setAttribute("class", "topo-node st-" + status);
+      g.appendChild(svgEl("rect", { width: p.w, height: NODE_H, rx: 8 }));
+      var label = svgEl("text", { x: p.w / 2, y: NODE_H / 2 + 4, "text-anchor": "middle" });
+      label.textContent = n.length > 28 ? n.slice(0, 27) + "…" : n;
+      g.appendChild(label);
+      g.appendChild(svgTitle(n + (svc ? " · " + status : " · not in this fleet's manifest")));
+      g.addEventListener("click", function () { goToService(n); });
+      g.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); goToService(n); }
+      });
+      svg.appendChild(g);
+    });
+
+    container.appendChild(svg);
   }
   function fmtNum(value, digits, suffix) {
     return value == null ? "–" : Number(value).toFixed(digits) + (suffix || "");

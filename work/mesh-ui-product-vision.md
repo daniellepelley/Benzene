@@ -7,6 +7,36 @@
 
 ---
 
+> **2026-07-22 (latest) P3 SHIPPED — the topology graph, on both planes:**
+> - **Artifact plane (`mesh-ui.html`):** a node-link SVG graph now renders above the existing
+>   topology edge table (the table stays — the graph answers "what's the shape of the estate",
+>   the table answers "sort me by error rate"). Hand-rolled, self-contained SVG: deterministic
+>   layered left-to-right layout (longest-path layering with a cycle guard, nodes sorted by name
+>   within a layer — no physics, no randomness, stable across reloads). Nodes carry the
+>   manifest's health status on their stroke (healthy/unhealthy/unreachable; dashed for a
+>   participant not in the manifest) and **click through to the service page** — the graph is a
+>   full member of the three-entity link closure (keyboard: Enter/Space, `role="link"`).
+>   Edge width tracks √(req/min), red = error rate ≥ 5%, tooltips carry the exact numbers;
+>   backward edges (cycles) arc over the top, and edges that skip intermediate layers bow
+>   underneath them so they stay visible when endpoints share a row.
+> - **Collector plane (`mesh-fleet-ui.html`):** the same graph, but over **derived** edges — the
+>   fleet has no `topology.json`, so consumer→provider edges are aggregated client-side from the
+>   topic catalog's providers/consumers lists (invocations/errors summed per pair, topics listed
+>   in the tooltip). Node strokes reuse the fleet health vocabulary incl. the P2 staleness
+>   downgrade (stale = amber dashed); the section hides itself entirely when no edges can be
+>   derived yet. Nodes are informational (tooltip), not clickable — the fleet view has no
+>   service page to link to (yet); that's the artifact plane's job today.
+> - Both graphs share the no-dependency floor: no chart/graph library, no layout engine, inline
+>   CSS classes for theming (light + dark verified).
+> - Verified in a real browser (Playwright + Chromium): 29 artifact-plane checks and 21 fleet
+>   checks green, zero console errors — node/edge counts, err-edge thresholds (18% flags, 2.4%
+>   doesn't), per-status node strokes, graph-node → service-page navigation round trip, and the
+>   edge-less service correctly absent from the fleet graph.
+> - Remaining roadmap: P4 usage analytics (gated on the C.1 usage-feed standard), P5
+>   value/deprecation view, P6 discussion/annotations.
+>
+> ---
+>
 > **2026-07-22 (later still) P2 SHIPPED — flow view + fleet staleness:**
 > - **Flow view:** the collector's conformance-tested `mesh:query:trace`/`TraceView` is finally
 >   surfaced — every "Recent flows" row in `mesh-fleet-ui.html` expands an inline traced
