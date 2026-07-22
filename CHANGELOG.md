@@ -51,6 +51,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   around them was removed.
 
 ### Added
+- **New `Benzene.Mesh.Usage.CloudWatch` package — the first metrics-backend usage adapter.** A
+  `CloudWatchUsageSource : IMeshUsageSource` (pins only `AWSSDK.CloudWatch`) reads the
+  `benzene.messages.processed` counter (tags `topic`/`transport`/`result`, emitted by every
+  `UseBenzeneMetrics()` pipeline) back from CloudWatch and reports per-**(topic, transport, status)**
+  request counts over a configurable `TimeWindow`, which the aggregator merges into `usage.json` for the
+  Mesh UI. Registered with `AddCloudWatchUsage(new CloudWatchUsageOptions(...))` alongside
+  `AddMeshAggregator(...)` (the additive `IMeshUsageSource` pattern; new `MeshUsageSource.CloudWatch`
+  constant). It lists the metric's live dimension combinations then sums each with one `GetMetricData`
+  query, so every entry's dimensions are exact; it assumes **delta** temporality (a CloudWatch `Sum` =
+  the count) and honestly reports the absent `service`/`version`/duration dimensions rather than guessing.
+  Wired end-to-end in `examples/AwsMesh`: the ADOT collector now exports metrics to CloudWatch via the
+  `awsemf` exporter (was dropped to `debug`), the counter is exported with delta temporality, the mesh
+  Lambda reads it back, and `MeshArtifactMiddleware` now serves `usage.json`/`annotations.json`. See
+  `docs/mesh-usage-feed.md` and `src/Benzene.Mesh.Usage.CloudWatch/CLAUDE.md`.
 - **Property-based routing for the Azure Functions Event Hub trigger.** `Benzene.Azure.Function.EventHub`
   now registers first-class `EventHubContext` mappers (`EventHubMessageTopicGetter` reading the topic from
   an event property, `EventHubMessageBodyGetter`, `EventHubMessageHandlerResultSetter`), so an Event Hub

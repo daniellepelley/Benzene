@@ -13,6 +13,7 @@ using Benzene.Mesh.Aws.S3;
 using Benzene.Mesh.Contracts;
 using Benzene.Mesh.Discovery.Aws;
 using Benzene.Mesh.Ui;
+using Benzene.Mesh.Usage.CloudWatch;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Examples.AwsMesh.Shared;
 using Microsoft.Extensions.Configuration;
@@ -58,6 +59,12 @@ public class Startup : BenzeneStartUp
             benzene.AddMeshAggregatorWithS3(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()), bucket, prefix);
             benzene.AddMeshLambdaSource();          // LambdaMeshServiceSource: interrogate a service by Invoke
             benzene.AddMeshAwsLambdaDiscovery();    // AwsLambdaDiscoveryProvider + MeshDiscoveryRunner
+            // Usage feed: read the benzene.messages.processed counter (exported to CloudWatch by the ADOT
+            // collector's EMF exporter — see collector.yaml) back as per-topic request counts over a
+            // window, merged into usage.json each run. The window is tweakable via MESH_USAGE_WINDOW_HOURS.
+            var usageWindowHours = double.TryParse(
+                Environment.GetEnvironmentVariable("MESH_USAGE_WINDOW_HOURS"), out var hours) ? hours : 24;
+            benzene.AddCloudWatchUsage(new CloudWatchUsageOptions(timeWindow: TimeSpan.FromHours(usageWindowHours)));
         });
     }
 

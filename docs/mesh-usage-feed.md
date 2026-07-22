@@ -74,6 +74,21 @@ the degradation path rather than guessing. A metrics-backend adapter (reading th
 Application Insights or CloudWatch) is the intended way to fill them in; those adapters need
 their backend SDKs and therefore ship as their own packages, not from the core mesh packages.
 
+### The shipped adapter: CloudWatch
+
+`Benzene.Mesh.Usage.CloudWatch.CloudWatchUsageSource` (own package, pins `AWSSDK.CloudWatch`) is the
+first metrics-backend adapter. It reads the §1 `benzene.messages.processed` counter back from CloudWatch —
+where a service's OpenTelemetry pipeline exported it, e.g. via the ADOT collector's `awsemf` (EMF) exporter
+— and reports counts per **(topic, transport, status)** over a configured `TimeWindow` (default 24h, the
+window the UI shows). It carries the `transport` and outcome dimensions the collector bridge can't, but no
+per-service dimension (the counter isn't tagged by service), so it honestly reports `service` as absent.
+Register it with `AddCloudWatchUsage(new CloudWatchUsageOptions(...))` alongside `AddMeshAggregator(...)`.
+It lists the metric's live dimension combinations then sums each with one `GetMetricData` query, so every
+entry's dimensions are known exactly. **It assumes delta temporality** on the exported counter (the EMF
+default) so a CloudWatch `Sum` over the window equals the request count; a cumulative export would
+over-count. Wired end-to-end in `examples/AwsMesh` (see its README). Coarse counts by design — fine-grained
+analysis stays in CloudWatch/Grafana.
+
 ## 3. Degradation (normative, consumer side)
 
 The Mesh UI (`mesh-ui.html`) renders usage on all three entity pages — a Usage column on the

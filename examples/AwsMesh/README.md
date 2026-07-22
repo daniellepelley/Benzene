@@ -116,6 +116,23 @@ needs only X-Ray active tracing (on) + the X-Ray write IAM (granted); the ADOT c
 path above is then just the *alternative* for shipping the same pipeline's OTel spans to a non-X-Ray
 backend (Tempo/Jaeger/Honeycomb). Wire one or both — they coexist.
 
+### Topic usage → the Mesh UI (metrics, not just traces)
+The same `UseBenzeneMetrics()` on every pipeline emits the `benzene.messages.processed` counter tagged
+`topic`/`transport`/`result`. The collector's `metrics` pipeline exports it to **CloudWatch** via the
+`awsemf` (Embedded Metric Format) exporter (`collector.yaml`) into the `Benzene/Mesh` namespace, dimensions
+`[topic, transport, result]`, in the `/benzene/mesh/usage` log group. The counter is exported with **delta**
+temporality (`LambdaTelemetry`) so a CloudWatch `Sum` over a window equals the request count.
+
+The mesh Lambda then reads it back: `AddCloudWatchUsage(...)` registers
+`Benzene.Mesh.Usage.CloudWatch`'s `IMeshUsageSource`, which the aggregator pulls each run to write
+`usage.json` — per-topic request counts over `var.usage_window_hours` (default 24h). The **Mesh UI** renders
+those as a Usage column on the estate topic table plus per-topic by-transport / by-status breakdowns and the
+window. IAM: the service role gains CloudWatch Logs perms on the usage group (`service_emf`), and the mesh
+role gains `cloudwatch:GetMetricData`/`ListMetrics` (in its policy). This is deliberately coarse — request
+counts over a window; fine-grained analysis stays in CloudWatch/Grafana. (Per-service attribution and
+duration are documented follow-ups — the counter isn't tagged by service, so `usage.json` reports that
+dimension as absent, which the UI surfaces honestly rather than guessing.)
+
 ## What each service shows off
 
 Every service is wired through the shared `Shared/MeshServiceWiring` helper, which "goes to town" on

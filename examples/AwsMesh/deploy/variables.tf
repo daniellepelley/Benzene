@@ -93,3 +93,9 @@ variable "mesh_zip" {
   type    = string
   default = "../artifacts/mesh.zip"
 }
+
+variable "usage_window_hours" {
+  description = "Lookback window (hours) the mesh's CloudWatch usage source counts topic requests over, and the window the Mesh UI shows. Coarse usage only — fine-grained analysis belongs in CloudWatch/Grafana."
+  type        = number
+  default     = 24
+}

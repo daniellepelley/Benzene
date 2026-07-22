@@ -67,7 +67,15 @@ public static class LambdaTelemetry
         var meterBuilder = Sdk.CreateMeterProviderBuilder()
             .SetResourceBuilder(resource)
             .AddBenzeneInstrumentation();
-        if (!string.IsNullOrEmpty(otlpEndpoint)) meterBuilder.AddOtlpExporter();
+        // Export metrics with DELTA temporality (each export is that interval's delta, not a running
+        // cumulative total). The CloudWatch EMF exporter downstream turns each delta into a metric
+        // datapoint, so a CloudWatch Sum over a window equals the request count the mesh usage feed reads;
+        // cumulative temporality would make that Sum meaningless. Harmless when no collector is attached.
+        if (!string.IsNullOrEmpty(otlpEndpoint))
+        {
+            meterBuilder.AddOtlpExporter((_, metrics) =>
+                metrics.TemporalityPreference = MetricReaderTemporalityPreference.Delta);
+        }
         _meterProvider = meterBuilder.Build();
 
         services.AddSingleton(_tracerProvider);

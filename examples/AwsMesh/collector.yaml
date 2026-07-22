@@ -9,7 +9,15 @@
 # console. It is selected via OPENTELEMETRY_COLLECTOR_CONFIG_URI=/var/task/collector.yaml, set by the
 # Terraform whenever the ADOT layer is attached. The awsxray exporter needs only
 # xray:PutTraceSegments / xray:PutTelemetryRecords, already granted by AWSXRayDaemonWriteAccess — so no
-# extra IAM. Metrics keep going to the `debug` exporter (as the default did), needing no CloudWatch perms.
+# extra IAM.
+#
+# Metrics now go to CloudWatch (was `debug`, i.e. dropped): the `awsemf` exporter turns the
+# `benzene.messages.processed` counter into CloudWatch Embedded-Metric-Format logs, from which CloudWatch
+# extracts a metric in the `Benzene/Mesh` namespace with dimensions [topic, transport, result]. That is
+# what the mesh aggregator's Benzene.Mesh.Usage.CloudWatch source reads back into usage.json (per-topic
+# request counts). awsemf writes EMF to the /benzene/mesh/usage log group, so the function roles gain
+# CloudWatch Logs perms on that group (see the Terraform `service_emf`/`mesh` IAM). The counter is
+# exported with DELTA temporality (see LambdaTelemetry) so a CloudWatch Sum over a window = the count.
 #
 # Note: Benzene emits its spans into its own W3C trace (one trace across the whole mesh run, linked by
 # Benzene's traceparent propagation), which is a different trace id from the per-Lambda X-Ray trace. So
@@ -27,8 +35,17 @@ receivers:
 
 exporters:
   awsxray:
-  debug:
-    verbosity: normal
+  # CloudWatch EMF: emit the benzene.messages.processed counter as a metric in the Benzene/Mesh namespace,
+  # keeping exactly the topic/transport/result dimensions the mesh usage feed reads. NoDimensionRollup so
+  # CloudWatch doesn't also create the (aggregated) zero-dimension and single-dimension roll-up metrics.
+  awsemf:
+    namespace: Benzene/Mesh
+    log_group_name: /benzene/mesh/usage
+    dimension_rollup_option: NoDimensionRollup
+    metric_declarations:
+      - dimensions: [[topic, transport, result]]
+        metric_name_selectors:
+          - "benzene.messages.processed"
 
 service:
   pipelines:
@@ -37,4 +54,4 @@ service:
       exporters: [awsxray]
     metrics:
       receivers: [otlp]
-      exporters: [debug]
+      exporters: [awsemf]

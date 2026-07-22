@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Mesh.Usage.CloudWatch</AssemblyName>
+    <RootNamespace>Benzene.Mesh.Usage.CloudWatch</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.CloudWatch" Version="3.7.301.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

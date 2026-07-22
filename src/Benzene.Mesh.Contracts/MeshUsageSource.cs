@@ -14,4 +14,13 @@ public static class MeshUsageSource
     /// deliberately exercises the missing-dimension degradation path instead of guessing.
     /// </summary>
     public const string Collector = "collector";
+
+    /// <summary>
+    /// Produced by <c>Benzene.Mesh.Usage.CloudWatch</c>, reading the <c>benzene.messages.processed</c>
+    /// counter (exported to CloudWatch, e.g. via the ADOT collector's EMF exporter) back as counts per
+    /// (topic, transport, status) over a configured window. Carries the <c>transport</c> and outcome
+    /// dimensions the collector bridge can't, but no per-service dimension (the metric isn't tagged by
+    /// service) - so it exercises the missing-<c>service</c> degradation path.
+    /// </summary>
+    public const string CloudWatch = "cloudwatch";
 }

@@ -38,6 +38,7 @@
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Aws.S3\Benzene.Mesh.Aws.S3.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Usage.CloudWatch\Benzene.Mesh.Usage.CloudWatch.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.OpenTelemetry\Benzene.OpenTelemetry.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />

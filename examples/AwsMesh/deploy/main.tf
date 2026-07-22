@@ -113,6 +113,27 @@ resource "aws_iam_role_policy_attachment" "service_xray" {
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
+locals {
+  # The ADOT collector's awsemf exporter writes the benzene.messages.processed counter as EMF to this
+  # CloudWatch Logs group (see collector.yaml); CloudWatch extracts the Benzene/Mesh metric from it. Not
+  # covered by AWSLambdaBasicExecutionRole (which scopes logs to each function's own /aws/lambda group).
+  usage_emf_log_group_arn = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/benzene/mesh/usage"
+}
+
+# The service Lambdas' collectors write their metrics as EMF to the shared usage log group.
+data "aws_iam_policy_document" "service_emf" {
+  statement {
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams", "logs:PutRetentionPolicy"]
+    resources = [local.usage_emf_log_group_arn, "${local.usage_emf_log_group_arn}:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "service_emf" {
+  name   = "${var.project}-service-emf"
+  role   = aws_iam_role.service.id
+  policy = data.aws_iam_policy_document.service_emf.json
+}
+
 resource "aws_iam_role" "mesh" {
   name               = "${var.project}-mesh-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
@@ -144,6 +165,17 @@ data "aws_iam_policy_document" "mesh" {
   statement {
     actions   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
     resources = [aws_s3_bucket.artifacts.arn, "${aws_s3_bucket.artifacts.arn}/*"]
+  }
+  # Usage feed: read the benzene.messages.processed metric back from CloudWatch (these actions don't
+  # support resource-level scoping, hence "*").
+  statement {
+    actions   = ["cloudwatch:GetMetricData", "cloudwatch:ListMetrics"]
+    resources = ["*"]
+  }
+  # The mesh Lambda also emits metrics, so its collector's awsemf exporter writes EMF to the usage group.
+  statement {
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams", "logs:PutRetentionPolicy"]
+    resources = [local.usage_emf_log_group_arn, "${local.usage_emf_log_group_arn}:*"]
   }
 }
 
@@ -354,6 +386,8 @@ resource "aws_lambda_function" "mesh" {
     variables = merge({
       MESH_ARTIFACT_BUCKET = aws_s3_bucket.artifacts.id
       MESH_ARTIFACT_PREFIX = "mesh"
+      # The lookback window the CloudWatch usage source counts over (and the window the Mesh UI shows).
+      MESH_USAGE_WINDOW_HOURS = tostring(var.usage_window_hours)
     }, local.otlp_env)
   }
 
