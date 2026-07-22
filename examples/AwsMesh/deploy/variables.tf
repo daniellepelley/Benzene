@@ -77,6 +77,18 @@ variable "shipping_zip" {
   type    = string
   default = "../artifacts/shipping.zip"
 }
+variable "inventory_zip" {
+  type    = string
+  default = "../artifacts/inventory.zip"
+}
+variable "notifications_zip" {
+  type    = string
+  default = "../artifacts/notifications.zip"
+}
+variable "analytics_zip" {
+  type    = string
+  default = "../artifacts/analytics.zip"
+}
 variable "mesh_zip" {
   type    = string
   default = "../artifacts/mesh.zip"

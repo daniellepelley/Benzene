@@ -70,7 +70,7 @@ tf_import 'aws_iam_role_policy_attachment.mesh_logs' "${PROJECT}-mesh-role/${BAS
 tf_import 'aws_iam_role_policy.mesh' "${PROJECT}-mesh-role:${PROJECT}-mesh-policy"
 
 # ---- Lambda functions + permissions --------------------------------------------------------------
-for svc in orders payments shipping; do
+for svc in orders payments shipping inventory notifications analytics; do
   tf_import "aws_lambda_function.service[\"$svc\"]" "${PROJECT}-${svc}"
   tf_import "aws_lambda_permission.service_api[\"$svc\"]" "${PROJECT}-${svc}/AllowApiGatewayInvoke"
 done
@@ -114,13 +114,43 @@ adopt_http_api() {
   fi
 }
 
-for svc in orders payments shipping; do
+for svc in orders payments shipping inventory notifications analytics; do
   adopt_http_api "service[\"$svc\"]" "${PROJECT}-${svc}-api"
 done
 adopt_http_api "mesh" "${PROJECT}-mesh-api"
 
-# ---- EventBridge schedule ------------------------------------------------------------------------
+# ---- EventBridge schedule (default bus) ----------------------------------------------------------
 tf_import 'aws_cloudwatch_event_rule.aggregate' "default/${PROJECT}-aggregate"
 tf_import 'aws_cloudwatch_event_target.aggregate' "default/${PROJECT}-aggregate/mesh"
+
+# ---- Inter-service messaging: SNS fan-out + EventBridge integration events -----------------------
+# CreateTopic/PutRule/PutTargets/Subscribe are upserts (no 409), but CreateFunction, AddPermission
+# and CreateEventBus DO collide, so those are the ones that must be adopted after a state loss.
+tf_import 'aws_sns_topic.order_placed' "arn:aws:sns:${REGION}:${ACCOUNT}:${PROJECT}-order-placed"
+tf_import 'aws_cloudwatch_event_bus.bus' "${PROJECT}-bus"
+
+# SNS → Lambda invoke permissions (deterministic statement ids).
+for svc in inventory notifications; do
+  tf_import "aws_lambda_permission.sns_invoke[\"$svc\"]" "${PROJECT}-${svc}/AllowSnsInvoke"
+done
+
+# EventBridge rules, targets, and the fan-out invoke permissions. Keys mirror deploy/main.tf's
+# local.eventbridge_targets ("<rule_key>-<service>").
+declare -A EB_TARGETS=(
+  [payment_captured-notifications]=notifications
+  [payment_captured-analytics]=analytics
+  [shipping_dispatched-inventory]=inventory
+  [shipping_dispatched-notifications]=notifications
+  [shipping_dispatched-analytics]=analytics
+)
+for rule_key in payment_captured shipping_dispatched; do
+  tf_import "aws_cloudwatch_event_rule.integration[\"$rule_key\"]" "${PROJECT}-bus/${PROJECT}-${rule_key}"
+done
+for key in "${!EB_TARGETS[@]}"; do
+  svc="${EB_TARGETS[$key]}"
+  rule_key="${key%-*}"
+  tf_import "aws_cloudwatch_event_target.integration[\"$key\"]" "${PROJECT}-bus/${PROJECT}-${rule_key}/${svc}"
+  tf_import "aws_lambda_permission.eventbridge_invoke[\"$key\"]" "${PROJECT}-${svc}/AllowEventBridge-${key}"
+done
 
 echo "Adoption pass complete."

@@ -28,10 +28,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - { name: orders,   project: examples/AwsMesh/Orders,   assembly: Benzene.Examples.AwsMesh.Orders }
-          - { name: payments, project: examples/AwsMesh/Payments, assembly: Benzene.Examples.AwsMesh.Payments }
-          - { name: shipping, project: examples/AwsMesh/Shipping, assembly: Benzene.Examples.AwsMesh.Shipping }
-          - { name: mesh,     project: examples/AwsMesh/Mesh,     assembly: Benzene.Examples.AwsMesh.Mesh }
+          - { name: orders,        project: examples/AwsMesh/Orders,        assembly: Benzene.Examples.AwsMesh.Orders }
+          - { name: payments,      project: examples/AwsMesh/Payments,      assembly: Benzene.Examples.AwsMesh.Payments }
+          - { name: shipping,      project: examples/AwsMesh/Shipping,      assembly: Benzene.Examples.AwsMesh.Shipping }
+          - { name: inventory,     project: examples/AwsMesh/Inventory,     assembly: Benzene.Examples.AwsMesh.Inventory }
+          - { name: notifications, project: examples/AwsMesh/Notifications, assembly: Benzene.Examples.AwsMesh.Notifications }
+          - { name: analytics,     project: examples/AwsMesh/Analytics,     assembly: Benzene.Examples.AwsMesh.Analytics }
+          - { name: mesh,          project: examples/AwsMesh/Mesh,          assembly: Benzene.Examples.AwsMesh.Mesh }
     steps:
       - uses: actions/checkout@v4
 

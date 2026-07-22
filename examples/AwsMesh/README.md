@@ -1,24 +1,31 @@
 # AWS Mesh Self-Discovery — end-to-end example
 
-A deployable AWS example that proves the Benzene mesh **self-discovery** story end to end: three
-Benzene Cloud Services running as Lambdas, plus a **mesh service** (a fourth Lambda) that discovers
-them by tag, interrogates each, and serves the Mesh UI — all fronted by API Gateway so you can open
-the UIs in a browser.
+A deployable AWS example that proves the Benzene mesh **self-discovery** story end to end: **six**
+Benzene Cloud Services running as Lambdas that call each other over **SQS, SNS and EventBridge**, plus
+a **mesh service** (a seventh Lambda) that discovers them by tag, interrogates each, and serves the
+Mesh UI — all fronted by API Gateway so you can open the UIs in a browser.
 
-See `work/mesh-self-discovery-design.md` for the design this example exercises.
+The six services dogfood Benzene's transports by using **each one for what it's actually good at**
+(commands vs fan-out events vs routed integration events), so the Mesh UI's topology renders a real,
+non-trivial graph. See `work/aws-mesh-multi-transport-plan.md` for the plan and
+`work/mesh-self-discovery-design.md` for the discovery design this example exercises.
 
 ## Architecture
 
 ```
-                    API Gateway (HTTP API, public)
-   ┌──────────────┬──────────────┬───────────────┬──────────────┐
-   │ /orders/*    │ /payments/*  │ /shipping/*   │ /mesh/*       │
-   ▼              ▼              ▼               ▼
- orders-api    payments-api   shipping-api     mesh            ← 4 Lambdas
- (Cloud Svc)   (Cloud Svc)    (Cloud Svc)      (discovery +
-   │              │              │              aggregator + UI)
-   │ tag: benzene │ tag: benzene │ tag: benzene    │
-   └──────────────┴───────┬──────┴─────────────────┘
+                          API Gateway (one HTTP API per Lambda, public)  +  direct Lambda-invoke (mesh interrogation)
+
+  ┌─────────┐  SQS  payments:capture  ┌──────────┐  SQS  shipping:book  ┌──────────┐
+  │ orders  │ ───────────────────────►│ payments │ ───────────────────► │ shipping │
+  └────┬────┘                         └────┬─────┘                      └────┬─────┘
+       │ SNS  order:placed (fan-out)       │ EventBridge  payment:captured   │ EventBridge  shipping:dispatched
+       ▼               ▼                   ▼               ▼                  ▼          ▼          ▼
+ ┌───────────┐  ┌───────────────┐   ┌───────────────┐ ┌───────────┐   inventory  notifications  analytics
+ │ inventory │  │ notifications │   │ notifications │ │ analytics │
+ └───────────┘  └───────────────┘   └───────────────┘ └───────────┘
+   reserve         notify              notify            metrics
+                                                                          ← 6 Cloud Service Lambdas (tag: benzene)
+                          │  mesh (7th Lambda, untagged):
                           │  1. ListFunctions + ListTags  (discover benzene-tagged Lambdas)
                           │  2. Invoke each ({topic:'spec'|'healthcheck'})  (interrogate)
                           ▼
@@ -30,8 +37,8 @@ See `work/mesh-self-discovery-design.md` for the design this example exercises.
                           │  Mesh UI reads the catalog artifacts
 ```
 
-- The three **service Lambdas** are full Cloud Service Profile (R1–R8) services: `/benzene/invoke`,
-  `/benzene/spec`, `/benzene/health`, `/benzene/spec-ui`, plus their domain routes — and they answer
+- The six **service Lambdas** are full Cloud Service Profile (R1–R8) services: `/benzene/invoke`,
+  `/benzene/spec`, `/benzene/health`, `/benzene/spec-ui`, plus any domain routes — and they answer
   the mesh's **direct Lambda-Invoke** interrogation (`spec`/`healthcheck` topics) with no HTTP surface
   required. They carry a `benzene` resource tag so discovery finds them.
 - The **mesh Lambda** runs, on an EventBridge schedule: discovery (`AwsLambdaDiscoveryProvider` →
@@ -41,14 +48,17 @@ See `work/mesh-self-discovery-design.md` for the design this example exercises.
 
 ## Projects
 
-| Project | What it is | Status |
-|---|---|---|
-| `Orders/` (`Benzene.Examples.AwsMesh.Orders`) | orders-api Cloud Service Lambda | ✅ built |
-| `Payments/` (`Benzene.Examples.AwsMesh.Payments`) | payments-api Cloud Service Lambda | ✅ built |
-| `Shipping/` (`Benzene.Examples.AwsMesh.Shipping`) | shipping-api Cloud Service Lambda | ✅ built |
-| `Mesh/` (`Benzene.Examples.AwsMesh.Mesh`) | the discovery + aggregator + UI Lambda (uses `Benzene.Mesh.Aws.S3`) | ✅ built |
-| `deploy/` | Terraform: 4 Lambdas, IAM, S3, one HTTP API per Lambda, EventBridge schedule | ✅ built |
-| `.github/workflows/deploy-aws-mesh-example.yml` | GitHub Actions: build + `terraform apply` | ✅ built |
+| Project | What it is | Sends | Consumes |
+|---|---|---|---|
+| `Orders/` (`…AwsMesh.Orders`) | orders-api Cloud Service Lambda | `payments:capture` (SQS), `order:placed` (SNS) | — |
+| `Payments/` (`…AwsMesh.Payments`) | payments-api Cloud Service Lambda | `shipping:book` (SQS), `payment:captured` (EventBridge) | `payments:capture` |
+| `Shipping/` (`…AwsMesh.Shipping`) | shipping-api Cloud Service Lambda | `shipping:dispatched` (EventBridge) | `shipping:book` |
+| `Inventory/` (`…AwsMesh.Inventory`) | inventory-api Cloud Service Lambda | — | `order:placed` (SNS), `shipping:dispatched` (EventBridge) |
+| `Notifications/` (`…AwsMesh.Notifications`) | notifications-api Cloud Service Lambda | — | `order:placed` (SNS), `payment:captured` + `shipping:dispatched` (EventBridge) |
+| `Analytics/` (`…AwsMesh.Analytics`) | analytics-api Cloud Service Lambda | — | `payment:captured` + `shipping:dispatched` (EventBridge) |
+| `Mesh/` (`…AwsMesh.Mesh`) | the discovery + aggregator + UI Lambda (uses `Benzene.Mesh.Aws.S3`) | — | — |
+| `deploy/` | Terraform: 7 Lambdas, IAM, S3, one HTTP API per Lambda, SQS queues, an SNS topic, a custom EventBridge bus + rules, and the aggregation schedule | | |
+| `.github/workflows/deploy-aws-mesh-example.yml` | GitHub Actions: build all 7 Lambdas + `terraform apply` | | |
 
 Each service Lambda is a **self-contained executable** hosting the Benzene pipeline via an
 `Amazon.Lambda.RuntimeSupport` bootstrap — because .NET 10 has no managed Lambda runtime, they deploy
@@ -56,7 +66,7 @@ on the **`provided.al2023`** custom runtime (self-contained publish).
 
 ## OpenTelemetry (traces + metrics)
 
-Every Lambda (the three services and the mesh) wires **full OpenTelemetry**: Benzene's instrumentation
+Every Lambda (the six services and the mesh) wires **full OpenTelemetry**: Benzene's instrumentation
 (`AddBenzeneInstrumentation`) for traces and metrics, exported over **OTLP**, plus the pipeline
 middleware `UseW3CTraceContext` → `UseBenzeneEnrichment` → `UseBenzeneMetrics` on every transport. The
 W3C trace-context propagation is what stitches the **order → payment → shipment** spans (across the SQS
@@ -123,28 +133,54 @@ Benzene's features so the example dogfoods them on a real deploy:
   `router.UseFluentValidation()`, so an invalid payload is rejected identically no matter which
   transport it arrived on.
 
-## Interconnectivity → topology (a real chain)
+## Interconnectivity → topology — one transport per job
 
-The services form a live **order → payment → shipment** chain:
+The six services form a live fulfilment flow, and **each transport is used for what it's good at** —
+that's the whole point of the dogfood, and what makes the Mesh UI topology worth looking at:
 
-- `orders-api`, on `orders:create`, sends **`payments:capture`** to the payments SQS queue.
-- `payments-api`, on `payments:capture`, sends **`shipping:book`** to the shipping SQS queue.
-- `shipping-api` books the shipment (terminal).
+| Transport | Idiomatic for | In this example |
+|---|---|---|
+| **SQS** | a point-to-point **command** — one consumer, must arrive, retry/DLQ | `orders → payments` (`payments:capture`), `payments → shipping` (`shipping:book`) |
+| **SNS** | a **fan-out event** — one publisher, many subscribers | `orders` publishes `order:placed` → **inventory _and_ notifications** |
+| **EventBridge** | **routed integration events** — content rules, one event → many targets | `payments` publishes `payment:captured`, `shipping` publishes `shipping:dispatched` → routed to **notifications / inventory / analytics** |
 
-Each hop uses a Benzene `IBenzeneMessageSender` (`AddOutboundRouting` → `UseSqs`) targeting the next
-service's SQS **ingress** — the same queue the shared wiring already consumes. Terraform provisions
-the two queues, the SQS→Lambda event-source mappings, and the send/receive IAM. Sends are best-effort,
-so a downstream hiccup never fails the upstream call (and locally, with no queue, it just logs).
+The flow:
+
+- `orders-api`, on `orders:create`: **sends** `payments:capture` (SQS command) **and** publishes
+  `order:placed` (SNS event).
+- `payments-api`, on `payments:capture`: **sends** `shipping:book` (SQS command) **and** publishes
+  `payment:captured` (EventBridge event).
+- `shipping-api`, on `shipping:book`: books the shipment and publishes `shipping:dispatched`
+  (EventBridge event).
+- `inventory-api` reserves stock on `order:placed` (SNS) and decrements it on `shipping:dispatched`
+  (EventBridge) — one service consuming from **two** event transports.
+- `notifications-api` notifies the customer on `order:placed` (SNS) + `payment:captured` +
+  `shipping:dispatched` (EventBridge).
+- `analytics-api` records metrics on `payment:captured` + `shipping:dispatched` (EventBridge).
+
+Every hop goes through the same Benzene `IBenzeneMessageSender` (`AddOutboundRouting` → `UseSqs` /
+`UseSns` / `UseEventBridge`), and the receiving side is just the matching Benzene ingress the shared
+wiring already registers (`aws.UseSqs` / `aws.UseSns` / `aws.UseEventBridge`) — the **same handler**, no
+per-transport code. The choice of transport per send lives entirely in each service's `Startup`
+(`OutboundSend.Sqs/Sns/EventBridge(...)`). Terraform provisions the two SQS queues + event-source
+mappings, the SNS topic + Lambda subscriptions, and a **custom EventBridge bus** + rules + targets, plus
+the send/publish IAM. Sends are best-effort, so a downstream hiccup never fails the upstream call (and
+locally, with no target wired, they just log).
 
 Because each service also **declares** what it sends (in its spec's `events`), the mesh aggregator
-derives a **structural topology** — an edge from each sender to each handler — and publishes
-`topology.json`. After a refresh the Mesh UI's **Topology** table shows `orders → payments` and
-`payments → shipping` (source `structural`), no tracing backend required. Layer on
-`Benzene.Mesh.Tracing.Tempo` to add *observed* edges (real req-rate / error / latency) on top.
+derives a **structural topology** — an edge from each sender to each consuming handler — and publishes
+`topology.json`, **transport-agnostically** (an SQS command, an SNS event and an EventBridge event all
+surface as edges the same way). After a refresh the Mesh UI's **Topology** table shows the whole graph
+(`orders → payments`, `orders → inventory`, `orders → notifications`, `payments → shipping`, `payments →
+notifications`, `payments → analytics`, `shipping → inventory/notifications/analytics`), source
+`structural`, no tracing backend required. Layer on `Benzene.Mesh.Tracing.Tempo` to add *observed* edges
+(real req-rate / error / latency) on top.
 
-**See the chain fire:** invoke `orders-api` (any transport — `orders-create-sqs.json`, the API, …),
-then watch CloudWatch: `orders` logs "sent payments:capture", `payments` logs "sent shipping:book",
-`shipping` logs the booking — all tied together by the propagated correlation id.
+**See the flow fire:** invoke `orders-api` (any transport — `orders-create-sqs.json`, the API, …), then
+watch CloudWatch: `orders` logs "sent payments:capture" + "published order:placed"; `inventory` and
+`notifications` log the `order:placed` fan-out; `payments` logs "sent shipping:book" + "published
+payment:captured"; `shipping` logs the booking + "published shipping:dispatched"; `analytics` logs its
+metrics — all tied together by the propagated correlation id.
 
 ## Deploy it (via GitHub Actions — no local tooling)
 
@@ -155,7 +191,7 @@ so each service's Spec UI and the Mesh UI serve their relative assets from their
    - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` — an IAM principal allowed to manage Lambda, IAM,
      S3, API Gateway, and EventBridge.
 2. **Run the workflow**: Actions → **Deploy AWS Mesh Example** → *Run workflow* (pick a region).
-   It builds all four Lambdas (self-contained `provided.al2023`), then `terraform apply`s the stack.
+   It builds all seven Lambdas (self-contained `provided.al2023`), then `terraform apply`s the stack.
 3. **Grab the URLs** from the workflow's final `terraform output` step:
    - `mesh_ui_url` — the Mesh UI.
    - `service_spec_ui_urls` — each service's Spec UI.
@@ -196,11 +232,11 @@ recover, then leave it off for normal incremental deploys.
 
 ## See it working (both ends)
 
-1. **Open a service Spec UI** (`service_spec_ui_urls.orders`, etc.) — proof the three services are up
+1. **Open a service Spec UI** (`service_spec_ui_urls.orders`, etc.) — proof the services are up
    and Cloud Service Profile-conformant, each with its own domain contract and health.
 2. **Trigger a mesh pass**: `curl -XPOST "$mesh_refresh_url"` (or wait for the 5-minute schedule). It
-   returns `{ "discovered": 3 }` once it has found the three `benzene`-tagged Lambdas.
-3. **Open the Mesh UI** (`mesh_ui_url`) — the catalog of the three services the mesh **discovered by
+   returns `{ "discovered": 6 }` once it has found the six `benzene`-tagged Lambdas.
+3. **Open the Mesh UI** (`mesh_ui_url`) — the catalog of the six services the mesh **discovered by
    itself** (no `mesh.json`), each interrogated by direct Lambda-Invoke, with health and dependencies.
    Below the service list, the **Topics** table is the cross-service catalog (every topic across the
    platform → which service owns it, its HTTP mapping, domain vs utility), with a **show utilities**
@@ -215,11 +251,11 @@ artifacts) with `{ "discovered": N }`.
 
 ## How discovery is scoped
 
-- The three **service** Lambdas carry a `benzene` **resource tag**; the **mesh** Lambda does not — so
+- The six **service** Lambdas carry a `benzene` **resource tag**; the **mesh** Lambda does not — so
   the mesh discovers the services but never itself. Change the tag key via the `discovery_tag_key`
   Terraform variable (and the mesh's filter) to match your own tagging.
 - The mesh's IAM role gets exactly `lambda:ListFunctions` + `lambda:ListTags` (discover),
-  `lambda:InvokeFunction` scoped to the three services (interrogate), and `s3:*Object`/`ListBucket`
+  `lambda:InvokeFunction` scoped to the six services (interrogate), and `s3:*Object`/`ListBucket`
   on the artifact bucket. Read + describe-invoke only.
 
 ## Teardown
@@ -234,19 +270,24 @@ I can build and compile all of this, but the live AWS behaviour is only verifiab
 The most likely things to tweak on the first run (all localized):
 - **Custom-runtime packaging** — the `bootstrap` wrapper + self-contained publish RID/arch
   (`lambda_architecture` must match the CI `RID`). Note the `provided.al2023` runtime ships **no
-  libicu**, so all four Lambda projects publish with `<InvariantGlobalization>true</InvariantGlobalization>`
+  libicu**, so all seven Lambda projects publish with `<InvariantGlobalization>true</InvariantGlobalization>`
   — without it the apphost aborts at init with "Couldn't find a valid ICU package installed".
 - **API Gateway payload format** — pinned to `1.0` to match `Benzene.Aws.Lambda.ApiGateway`; if a UI
   route 500s, this is the first thing to check.
-- **EventBridge → `mesh:aggregate` routing** — the scheduled target sends a constant
-  `{"detail-type":"mesh:aggregate",...}` payload; if the schedule doesn't trigger a pass, verify the
-  Benzene EventBridge adapter reads `detail-type` as the topic (POST `mesh_refresh_url` works
-  independently of this).
+- **EventBridge → topic routing** — both the `mesh:aggregate` schedule and the inter-service
+  integration events (`payment:captured`, `shipping:dispatched`) rely on the Benzene EventBridge adapter
+  reading `detail-type` as the topic. The custom-bus rules match on that same `detail-type`; if a
+  consumer never fires, confirm the publisher's `DetailType` and the rule's `event_pattern` agree (POST
+  `mesh_refresh_url` triggers a pass independently of any of this).
+- **SNS fan-out routing** — `order:placed` carries the Benzene topic in the `topic` **message
+  attribute**; the SNS→Lambda subscription delivers it to inventory-api and notifications-api, whose
+  `aws.UseSns` ingress routes on that attribute. If a subscriber doesn't route, check the attribute is
+  present on the published message.
 
 ## Build locally
 
 ```bash
-for p in Orders Payments Shipping Mesh; do
+for p in Orders Payments Shipping Inventory Notifications Analytics Mesh; do
   dotnet build "examples/AwsMesh/$p/Benzene.Examples.AwsMesh.$p.csproj"
 done
 ```
