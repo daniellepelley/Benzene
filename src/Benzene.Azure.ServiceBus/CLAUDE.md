@@ -102,6 +102,15 @@ through the shared internal `IServiceBusMessageSettler` adapter over `ProcessMes
 - `Extensions.UseServiceBus(IBenzeneWorkerStartup, config, clientFactory, action)` - the
   `IBenzeneWorkerStartup` wiring, mirroring `UseSqs`/`UseKafka`; registers
   `AddBenzeneMessage().AddServiceBusConsumer()` and adds the worker.
+  - **Auto-wired health check (Phase 4, default-on).** `UseServiceBus(..., healthCheck: true)` calls
+    `AddServiceBusDependencyHealthCheck(config, clientFactory)` - auto-registers the peek-based
+    `ServiceBusHealthCheck` (from `Benzene.HealthChecks.Azure.ServiceBus`, referenced directly) for the
+    consumed entity on the **dependency** category (deep `healthcheck` layer only, never a probe - see
+    `IDependencyHealthCheck`), dedup `"ServiceBus:{queue}"` / `"ServiceBus:{topic}/{subscription}"`. One
+    `ServiceBusClient` is created from the factory and reused across probes (a short-lived receiver per
+    probe). Auto-wiring belongs on the **consumer** (not the sender in `Benzene.Clients.Azure.ServiceBus`):
+    the peek needs the `Listen` claim the consumer holds, and the consumer knows its exact entity - the
+    sender has neither. `healthCheck: false` opts out.
 
 ## When to use this package
 - Consuming Service Bus from a long-running process (console app, container, AKS, App Service

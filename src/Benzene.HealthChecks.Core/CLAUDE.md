@@ -32,6 +32,12 @@ middleware) and whatever HTTP transport package maps a result to an HTTP respons
   `DedupKey` (default `Type`) to collapse duplicate registrations. The wrapper `DependencyHealthCheck`
   and the registration seam `AddDependencyHealthCheck` live **here in Core** (not the middleware
   package), so a client package can auto-wire using only its existing lightweight `.Core` reference.
+  **The category is non-critical by default:** `DependencyHealthCheck` forces `IsNonCritical => true`, so
+  a failing auto-wired check *degrades* the deep report to a `Warning` (still visible per-dependency)
+  rather than flipping the aggregate unhealthy / the endpoint to 503 — that layer is monitoring, not a
+  probe, so a downstream blip must not turn it red, and it keeps a healthcheck endpoint green in
+  integration tests where the real dependency isn't reachable. A caller who wants a dependency to be
+  fatal adds an explicit critical check.
 - `IHealthCheckResult`/`HealthCheckResult` - `Status`, `Type`, `Data` (arbitrary diagnostic dictionary),
   `Dependencies` (structured `HealthCheckDependency[]` describing the external resources the check
   verifies - e.g. a specific queue, database, or downstream service; a default interface member on

@@ -7,6 +7,39 @@
 > reduced-feed markers, topic catalog with observed consumers, recent flows). Same embedded-HTML
 > pattern (`mesh-fleet-ui.html`, attribute-injected config, no JS framework); see
 > `examples/Mesh/run.sh` for it running against live services.
+>
+> **2026-07-22 (P2 of the vision doc's roadmap): the Fleet view now has the flow view + staleness.**
+> - **Flow view (traced waterfall):** each "Recent flows" row is clickable (button + Enter/Space on
+>   the row) and expands an inline waterfall of the flow's events, fetched from the collector's
+>   `mesh:query:trace` through the same envelope endpoint. One row per handled message: service +
+>   `topic@version` label, a time-positioned bar (offset = start within the flow, width = duration),
+>   colored by the status's **wire-vocabulary success class** (`Ok`/`Created`/`Accepted`/`Updated`/
+>   `Deleted`/`Ignored` = success; everything else - and unknown statuses - render as failure,
+>   matching the collector's own error counting), with parentage shown by indenting children under
+>   their parent span (cycle-guarded, capped at depth 8 visually). A trace is immutable once
+>   captured, so the `TraceView` is cached per trace id (a transient fetch failure is not cached);
+>   the open waterfall survives the 2s poll's table rebuild, and an empty `events` answer renders
+>   the "aged out of the ring buffer" note. Self-contained CSS bars - no chart/graph library.
+> - **Staleness (the roadmap's 2026-07-20 ruling, collector-plane half):** a new "Last seen" column
+>   renders each service's heartbeat age, and a service whose `lastSeen` exceeds `STALE_AFTER_MS`
+>   (90s default - a few missed heartbeats; a JS knob, deliberately not a contract value) has its
+>   health mark downgraded to "◌ stale" (amber) - an old "healthy" verdict is not a current one.
+>
+> **2026-07-22 (P3 of the vision doc's roadmap): both pages now render a topology graph.**
+> - **`mesh-ui.html`:** a node-link SVG graph above the topology edge table (the table stays -
+>   the graph answers "what's the shape", the table answers "sort me by error rate"). Hand-rolled
+>   SVG, no graph/layout library: deterministic layered left-to-right layout (longest-path
+>   layering, cycle-guarded; nodes sorted by name within a layer - stable across reloads). Nodes
+>   are stroked by the manifest's health status (dashed = not in the manifest) and are full
+>   members of the three-entity link closure - click/Enter/Space navigates to `#service:<name>`.
+>   Edge width tracks √(req/min), red = error rate ≥ 5%, `<title>` tooltips carry exact numbers;
+>   cycles arc over the top, layer-skipping edges bow underneath intermediate columns.
+> - **`mesh-fleet-ui.html`:** the same graph over **derived** edges - no `topology.json` exists
+>   on the collector plane, so consumer→provider edges are aggregated client-side from the fleet
+>   topic catalog's providers/consumers (invocations/errors summed per pair). Node strokes reuse
+>   the fleet health vocabulary including the P2 staleness downgrade; the section hides itself
+>   when no edges can be derived. Fleet nodes are tooltip-only (no service page exists on this
+>   plane to link to).
 
 ## What this package does
 Serves a self-contained, catalog-style web viewer for a **Benzene service mesh** - the
@@ -96,6 +129,25 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
   merged AsyncAPI 3.0 document): a download link plus, when the resolved artifact URL is absolute,
   an "open in Studio" deep-link to `https://studio.asyncapi.com/?url=…`. Populated in `renderTopics`
   via the same `resolveUrl()` model as the other artifacts.
+- **Three-entity exploration model (2026-07-22, P1 of the vision doc's revised roadmap):** the page
+  now has three first-class, hash-deep-linkable views — **Estate** (`#main-view`), **Topic**
+  (`#topic:<id>`), and **Service** (`#service:<name>`) — mutually exclusive, with `location.hash` as
+  the single source of truth (one generic `syncViewFromHash()` router; browser Back/Forward and
+  bookmarks work across all three). The **service page** (`renderServicePage`) is maximally
+  informative from data already shipped: identity/badges/team/freshness + transports + external
+  links (manifest), the **functional map as the centerpiece** — topics consumed/produced with
+  version/status/mismatch badges and the service's own HTTP mappings, derived by filtering
+  `topics.json` — then About & health (snapshot time, fetch error, drift hash-pair evidence, the
+  spec's own `info.description`/`version` parsed best-effort from the verbatim `specJson`, full
+  health-check detail via the shared `renderHealthChecks`), and its topology position
+  (calls/called-by with rate/error/p50, from `topology.json`). Every section degrades
+  independently: no `topics.json` → explicit empty state; no edges → section hidden; unknown
+  service name (stale bookmark / out-of-fleet participant) → placeholder page.
+  **Full link closure:** estate card names, topic-page producer/consumer rows (now compact linked
+  rows — the embedded full cards are gone; the service page is the canonical depth), topology
+  table client/server cells, and issue-inbox service rows all navigate to `#service:`; every topic
+  id links to `#topic:`; `goToService` now navigates to the service page (the old scroll+flash
+  card behavior is retired).
 - The per-topic drill-in page (`#topic:<id>`) renders each version's **payload schema** — a "Payload"
   panel showing the Request/Response (or Message) structure with a property tree and validation-rule
   chips (`format`, `enum`, `minLength`/`maxLength`, `minimum`/`maximum`, `pattern`, `nullable`,
@@ -126,6 +178,7 @@ serve it from a live Benzene app (local demo, or an aggregator host self-serving
 ## Conventions
 - Keep the viewer dependency-free and self-contained (no CDN/webfont/script references) so it
   works offline and behind strict CSPs, matching `Benzene.Spec.Ui`'s convention.
-- Topology rendering is a flat sortable edge table, not a node-link graph - full interactive graph
-  visualization is a documented follow-up (see `mesh-product-owner`'s priorities in
-  `.claude/PRODUCT_OWNERS.md` and `work/service-mesh-roadmap-1.0.md`), not built here.
+- Topology rendering is **both** a node-link SVG graph and the flat sortable edge table beneath
+  it - they are two views over the same `topology.json` edges (shape vs. sortable detail), so
+  keep them in sync when the edge contract changes. The graph is hand-rolled SVG under the same
+  no-dependency floor as everything else here: never introduce a chart/graph/layout library.

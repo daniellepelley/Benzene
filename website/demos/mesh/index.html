@@ -182,6 +182,17 @@
   .search input::placeholder { color: var(--ink-faint); }
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-faint); }
 
+  .topics-search { position: relative; width: 220px; }
+  .topics-search input {
+    width: 100%; height: 28px; padding: 0 10px 0 28px;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font: inherit; font-size: 12.5px;
+  }
+  .topics-search input::placeholder { color: var(--ink-faint); }
+  .topics-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--ink-faint); }
+  .topics-empty { color: var(--ink-faint); font-size: 12.5px; padding: 14px 4px; }
+
   /* ---------- Service card ---------- */
   .svc {
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
@@ -203,11 +214,15 @@
   .b-unreachable { color: var(--req); background: var(--m-delete-bg); }
   .b-drift { color: var(--m-event); background: var(--m-event-bg); }
   .svc-name { font-family: var(--mono); font-size: 14.5px; font-weight: 620; letter-spacing: -.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .svc-team { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
   .svc-links { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; font-size: 12px; }
   .svc-links a { color: var(--accent); text-decoration: none; }
   .svc-links a:hover { text-decoration: underline; }
+  .svc-topics-link { background: none; border: none; padding: 0; font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; }
+  .svc-topics-link:hover, .svc-topics-link:focus-visible { text-decoration: underline; outline: none; }
   .chev { flex: none; color: var(--ink-faint); transition: transform .16s; }
   .svc.open .chev { transform: rotate(90deg); }
+  .svc-transports { padding: 0 15px 12px; margin-top: -4px; }
 
   .svc-body { display: none; padding: 4px 15px 17px; border-top: 1px solid var(--line-soft); }
   .svc.open .svc-body { display: block; }
@@ -254,6 +269,30 @@
   .loader .primary:hover { background: var(--accent-soft); }
   .ld-err { color: var(--req); font-size: 12.5px; font-family: var(--mono); min-height: 16px; }
 
+  /* Topic page - a full view swap (like clicking a service card, but page-scale), not a dialog:
+     work/service-mesh-roadmap-1.0.md §10.15. */
+  .topic-page-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 26px; }
+  .topic-page-head h1 { margin: 0 0 6px; font-size: 21px; font-family: var(--mono); letter-spacing: -.01em; word-break: break-word; }
+  .topic-page-head p { margin: 0; color: var(--ink-soft); max-width: 62ch; font-size: 13.5px; }
+  .tp-back {
+    flex: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tp-version { margin-bottom: 34px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+  .tp-version:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .tp-version-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tp-version-label { font-size: 16px; font-weight: 650; font-family: var(--mono); }
+  .tp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 720px) { .tp-grid { grid-template-columns: 1fr; } }
+  .tp-side h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .tp-mapping { font-size: 11.5px; color: var(--ink-faint); font-family: var(--mono); margin: -4px 0 8px 1px; }
+  .tp-unknown-svc {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    padding: 11px 14px; margin-bottom: 11px;
+    background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius);
+  }
+  .topic-link { background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-align: left; }
+  .topic-link:hover, .topic-link:focus-visible { text-decoration: underline; outline: none; }
+
   /* ---------- Topology table ---------- */
   .topo-head { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; }
   .topo-head h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
@@ -278,6 +317,156 @@
   .topo-table tr:hover td { background: var(--surface-2); }
   .b-source-tempo { color: var(--accent); background: var(--accent-tint); }
   .b-source-structural { color: var(--chip-ink); background: var(--chip-bg); }
+  .topo-head-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .topics-toggle { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .topics-toggle input { cursor: pointer; }
+  .topics-asyncapi {
+    font-family: var(--mono); font-size: 11.5px; color: var(--accent); text-decoration: none;
+    padding: 3px 9px; border: 1px solid var(--accent-tint); border-radius: var(--radius-sm); background: var(--accent-tint);
+    white-space: nowrap;
+  }
+  .topics-asyncapi:hover { color: var(--accent-soft); border-color: var(--accent-soft); }
+  .t-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-family: var(--mono); }
+  .t-domain { color: var(--accent); background: var(--accent-tint); }
+  .t-utility { color: var(--chip-ink); background: var(--chip-bg); }
+  .t-svc { display: inline-block; padding: 1px 6px; margin: 1px 3px 1px 0; border-radius: 4px;
+           background: var(--surface-2); color: var(--ink); font: inherit; font-size: 12px;
+           border: none; cursor: pointer; }
+  .t-svc:hover, .t-svc:focus-visible { background: var(--accent-tint); color: var(--accent); outline: none; }
+  .t-http { color: var(--ink-faint); }
+  .t-empty { color: var(--ink-faint); }
+  .t-status-deprecation-candidate { color: var(--chip-ink); background: var(--chip-bg); cursor: help; }
+  .t-status-gap { color: var(--m-put); background: var(--m-put-bg); cursor: help; }
+  .t-status-schema-mismatch { color: var(--m-delete); background: var(--m-delete-bg); cursor: help; font-weight: 650; }
+
+  /* ---------- issue inbox ---------- */
+  #issues-section { margin: 22px 0 4px; }
+  .issues-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
+  .issues-head h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+  .issues-sub { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .issues-clear { display: flex; align-items: center; gap: 9px; padding: 16px 18px; border-radius: var(--radius);
+                  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+                  color: var(--ink-soft); font-size: 14px; }
+  .issues-clear svg { flex: 0 0 auto; color: var(--ok); }
+  .issue-group { margin-bottom: 14px; }
+  .issue-group-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700;
+                       color: var(--ink-faint); margin: 0 0 7px 2px; display: flex; align-items: center; gap: 7px; }
+  .issue-group-label .cnt { font-family: var(--mono); color: var(--ink-soft); font-weight: 650; letter-spacing: 0; }
+  .issue-list { display: flex; flex-direction: column; gap: 7px; }
+  .issue { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+           padding: 11px 14px; border-radius: var(--radius-sm); background: var(--surface);
+           border: 1px solid var(--line); box-shadow: var(--shadow); cursor: pointer;
+           font: inherit; color: inherit; transition: border-color .12s, transform .12s; }
+  .issue:hover, .issue:focus-visible { border-color: var(--accent); outline: none; transform: translateX(2px); }
+  .issue[disabled] { cursor: default; opacity: .85; }
+  .issue[disabled]:hover { border-color: var(--line); transform: none; }
+  .issue-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; }
+  .sev-high .issue-dot { background: var(--req); }
+  .sev-medium .issue-dot { background: var(--m-put); }
+  .sev-low .issue-dot { background: var(--ink-faint); }
+  .issue-body { flex: 1 1 auto; min-width: 0; }
+  .issue-title { font-size: 14px; font-weight: 600; }
+  .issue-title .mono { font-family: var(--mono); font-weight: 650; }
+  .issue-why { font-size: 12.5px; color: var(--ink-faint); margin-top: 1px; }
+  .issue-meta { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+  .issue-kind { font-size: 11px; font-family: var(--mono); padding: 1px 7px; border-radius: 999px; }
+  .issue-kind.k-high { color: var(--req); background: var(--m-delete-bg); }
+  .issue-kind.k-medium { color: var(--m-event); background: var(--m-event-bg); }
+  .issue-kind.k-low { color: var(--chip-ink); background: var(--chip-bg); }
+  .issue-team { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  .issue-arrow { flex: 0 0 auto; color: var(--ink-faint); }
+  .issue[disabled] .issue-arrow { display: none; }
+  .issues-deferred { margin-top: 10px; font-size: 12px; color: var(--ink-faint);
+                     padding: 9px 12px; border-radius: var(--radius-sm); background: var(--surface-2);
+                     border: 1px dashed var(--line); }
+  .issues-deferred .mono { font-family: var(--mono); color: var(--ink-soft); }
+
+  /* ---------- topic payload (schema + validation) ---------- */
+  .tp-payload { margin: 0 0 26px; }
+  .tp-payload > h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .tp-io { margin-bottom: 14px; }
+  .tp-io-label { font-size: 12px; font-family: var(--mono); font-weight: 650; color: var(--ink-soft); margin-bottom: 6px; }
+  .tp-mismatch {
+    background: var(--m-delete-bg); color: var(--m-delete); border: 1px solid var(--m-delete);
+    border-radius: var(--radius-sm); padding: 10px 13px; font-size: 12.5px; line-height: 1.5; margin-bottom: 16px;
+  }
+
+  /* ---------- schema tree (mirrors Benzene.Spec.Ui's spec-ui.html) ---------- */
+  .schema { background: var(--sunken); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
+  .schema.empty { padding: 11px 14px; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; }
+  .prop { display: block; border-top: 1px solid var(--line-soft); }
+  .prop:first-child { border-top: none; }
+  .prop-row { display: flex; align-items: baseline; gap: 9px; padding: 9px 14px; flex-wrap: wrap; }
+  .prop-row .pname { font-family: var(--mono); font-size: 13px; font-weight: 620; color: var(--ink); }
+  .prop-row .preq { color: var(--req); font-weight: 700; font-size: 12px; transform: translateY(-1px); }
+  .prop-row .ptype { font-family: var(--mono); font-size: 12px; color: var(--accent); cursor: default; }
+  .prop-row .ptype.ref { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .prop-row .ptype.ref:hover { color: var(--accent-soft); }
+  .prop-row .pdesc { flex-basis: 100%; color: var(--ink-soft); font-size: 12.5px; margin-top: -1px; }
+  .schema .chips { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+  .schema .chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 5px; background: var(--chip-bg); color: var(--chip-ink);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.5;
+  }
+  .schema .chip b { font-weight: 700; color: var(--ink); }
+  .schema .chip.fmt { background: var(--accent-tint); color: var(--accent); }
+  .schema .chip.enum { background: var(--m-put-bg); color: var(--m-put); }
+  .nested { margin: 0 0 10px 14px; border-left: 2px solid var(--line); padding-left: 0; }
+  .nested .schema { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .topics-table td { white-space: normal; }
+  @keyframes svc-flash { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 3px var(--accent-soft); } }
+  .svc-flash { animation: svc-flash 1.1s ease-in-out; }
+
+  /* ---------- topology graph (node-link SVG over the same edges as the table) ---------- */
+  .topo-graph-wrap {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 12px; overflow-x: auto; padding: 6px;
+  }
+  .topo-node rect { fill: var(--surface-2); stroke: var(--ink-faint); stroke-width: 1.2; rx: 8; }
+  .topo-node text { fill: var(--ink); font-family: var(--mono); font-size: 12px; }
+  .topo-node { cursor: pointer; }
+  .topo-node:hover rect, .topo-node:focus rect { stroke: var(--accent); stroke-width: 1.8; }
+  .topo-node.st-healthy rect { stroke: var(--ok); }
+  .topo-node.st-unhealthy rect { stroke: var(--m-put); }
+  .topo-node.st-unreachable rect { stroke: var(--req); }
+  .topo-node.st-unknown rect { stroke: var(--ink-faint); stroke-dasharray: 4 3; }
+  .topo-edge { fill: none; stroke: var(--ink-faint); opacity: .6; }
+  .topo-edge.err { stroke: var(--req); opacity: .8; }
+  .topo-arrow { fill: var(--ink-faint); }
+  .topo-arrow.err { fill: var(--req); }
+
+  /* ---------- service page (the third entity: Estate / Service / Topic) ---------- */
+  .svc-name-btn {
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-family: var(--mono); font-size: 14.5px; font-weight: 620; letter-spacing: -.01em;
+    color: var(--ink); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .svc-name-btn:hover, .svc-name-btn:focus-visible { color: var(--accent); text-decoration: underline; outline: none; }
+  .topo-svc { font-size: 13px; font-weight: 500; }
+  .sp-head-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 7px; }
+  .sp-section { margin: 0 0 28px; }
+  .sp-section > h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 700; }
+  .sp-links { display: flex; gap: 14px; font-size: 12.5px; margin-top: 10px; }
+  .sp-links a { color: var(--accent); text-decoration: none; }
+  .sp-links a:hover { text-decoration: underline; }
+  .sp-about { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px 15px 10px; }
+  .sp-desc { color: var(--ink-soft); font-size: 13.5px; padding: 9px 0 2px; max-width: 72ch; }
+  .sp-kv { display: flex; gap: 10px; align-items: baseline; font-size: 12.5px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+  .sp-kv:first-child { border-top: none; }
+  .sp-kv .k { color: var(--ink-faint); flex: none; min-width: 120px; }
+  .sp-kv .v { font-family: var(--mono); color: var(--ink); word-break: break-all; }
+  .sp-kv .v.err { color: var(--req); }
+  .sp-checks-label { font-size: 12px; font-family: var(--mono); font-weight: 650; color: var(--ink-soft); padding: 10px 0 2px; border-top: 1px solid var(--line-soft); margin-top: 2px; }
+  .sp-topic-row, .sp-svc-row {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    padding: 10px 14px; margin-bottom: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+  }
+  .sp-svc-row { align-items: center; }
+  .sp-topic-ver { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .sp-empty { color: var(--ink-faint); font-size: 12.5px; }
+  .sp-edge-stats { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); margin-left: auto; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -306,22 +495,65 @@
 </header>
 
 <main>
+ <div id="main-view">
   <div class="lede">
     <h1 id="lede-title">Benzene Mesh Explorer</h1>
     <p id="lede-desc">Every service's health status and contract-drift state, in one place.</p>
   </div>
   <div class="stats" id="stats"></div>
+  <section id="issues-section" style="display:none">
+    <div class="issues-head">
+      <h2>Issues</h2>
+      <span class="issues-sub" id="issues-sub"></span>
+    </div>
+    <div id="issues-body"></div>
+  </section>
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
     <input type="search" id="filter" placeholder="Filter services…" autocomplete="off" spellcheck="false" />
   </div>
   <div id="content"></div>
 
+  <section id="topics-section" style="display:none">
+    <div class="topo-head">
+      <h2>Topics</h2>
+      <span class="topo-generated" id="topics-generated"></span>
+      <div class="topo-head-actions">
+        <div class="topics-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+          <input type="search" id="topics-filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
+        </div>
+        <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show utilities</label>
+        <a id="topics-asyncapi" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
+           title="Download the fleet's composite AsyncAPI document" style="display:none">Composite AsyncAPI</a>
+        <a id="topics-asyncapi-studio" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
+           title="Open the composite AsyncAPI document in AsyncAPI Studio" style="display:none">open in Studio ↗</a>
+      </div>
+    </div>
+    <div class="topo-table-wrap">
+      <table class="topo-table" id="topics-table">
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Version</th>
+            <th>Type</th>
+            <th>Producers</th>
+            <th>Consumers</th>
+            <th>HTTP</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="topics-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
   <section id="topology-section" style="display:none">
     <div class="topo-head">
       <h2>Topology</h2>
       <span class="topo-generated" id="topology-generated"></span>
     </div>
+    <div class="topo-graph-wrap" id="topology-graph"></div>
     <div class="topo-table-wrap">
       <table class="topo-table" id="topology-table">
         <thead>
@@ -339,6 +571,39 @@
         <tbody id="topology-tbody"></tbody>
       </table>
     </div>
+  </section>
+ </div>
+
+  <section id="topic-page" style="display:none">
+    <div class="topic-page-head">
+      <button class="tb-btn tp-back" id="topic-page-back" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m14 6-6 6 6 6"/></svg>
+        Back
+      </button>
+      <div>
+        <h1 id="tp-title"></h1>
+        <p>Every version seen across the fleet, who produces it, and who consumes it — derived
+          entirely from services' own self-description, never declared by hand.</p>
+      </div>
+    </div>
+    <div id="tp-body"></div>
+  </section>
+
+  <!-- Service page: the third entity view (Estate / Service / Topic), same full view-swap +
+       hash-deep-link model as the topic page — #service:<name> is the single source of truth. -->
+  <section id="service-page" style="display:none">
+    <div class="topic-page-head">
+      <button class="tb-btn tp-back" id="service-page-back" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m14 6-6 6 6 6"/></svg>
+        Back
+      </button>
+      <div>
+        <div class="sp-head-badges" id="sp-badges"></div>
+        <h1 id="sp-title"></h1>
+        <p id="sp-sub"></p>
+      </div>
+    </div>
+    <div id="sp-body"></div>
   </section>
 </main>
 
@@ -375,14 +640,18 @@
       "status": "healthy",
       "contractDrift": false,
       "specUrl": "https://orders-api.example/spec?type=benzene",
-      "healthUrl": "https://orders-api.example/healthcheck"
+      "healthUrl": "https://orders-api.example/healthcheck",
+      "owningTeam": "team-checkout",
+      "transports": ["http", "sqs"]
     },
     {
       "name": "payments-api",
       "status": "unhealthy",
       "contractDrift": true,
       "specUrl": "https://payments-api.example/spec?type=benzene",
-      "healthUrl": "https://payments-api.example/healthcheck"
+      "healthUrl": "https://payments-api.example/healthcheck",
+      "owningTeam": "team-payments",
+      "transports": ["sns", "sqs"]
     },
     {
       "name": "shipping-api",
@@ -440,9 +709,21 @@
   function specUiLink(specUrl) {
     try {
       var u = new URL(specUrl, location.href);
+      // A self-reported manifest is untrusted; only derive a link from an http(s) spec URL.
+      if (u.protocol !== "http:" && u.protocol !== "https:") return null;
       var specUiPath = u.pathname.replace(/\/spec$/, "/spec-ui");
       if (specUiPath === u.pathname) return null;
       return u.origin + specUiPath + "?url=" + encodeURIComponent(specUrl);
+    } catch (e) { return null; }
+  }
+  /* Only allow http(s) URLs to become anchor hrefs. specUrl/healthUrl come from an untrusted
+     self-reported manifest, so a javascript:/data: URL would otherwise execute on click (target
+     _blank does not neutralize a javascript: href). Returns the absolute URL if its scheme is
+     http/https, else null. */
+  function safeHttpUrl(raw) {
+    try {
+      var u = new URL(raw, location.href);
+      return (u.protocol === "http:" || u.protocol === "https:") ? u.href : null;
     } catch (e) { return null; }
   }
 
@@ -487,22 +768,156 @@
     }
 
     services.forEach(function (s) { content.appendChild(buildServiceCard(s)); });
+    renderIssues();
+    // A page loaded with #service:<name> renders as soon as the manifest is in - the service
+    // page's topics/topology sections fill in when those artifacts arrive (each re-syncs).
+    syncViewFromHash();
+  }
+
+  /* ---------- issue inbox ----------
+     Promotes the fleet's scattered problem signals into one severity-grouped, actionable worklist -
+     "what do I need to act on now" - over the same static artifacts the rest of the page reads
+     (manifest health/drift + topics.json schema-mismatch/status). Every row links out to the
+     offending service or topic. Staleness is a known-missing signal (there is no
+     MeshServiceStatus.Stale / per-service freshness timestamp yet), so it's shown as explicitly
+     deferred rather than silently omitted - see work/mesh-ui-product-vision.md's near-term block. */
+  function svcIssue(sev, kind, svc, title, why) {
+    return { sev: sev, kind: kind, title: title, subject: svc.name, why: why,
+             team: svc.owningTeam || null, nav: function () { goToService(svc.name); } };
+  }
+  function topicIssue(sev, kind, t, title, why) {
+    var subject = t.topic + (t.version ? " v" + t.version : "");
+    return { sev: sev, kind: kind, title: title, subject: subject, why: why, team: null,
+             nav: function () { location.hash = topicHashFor(t.topic); } };
+  }
+  // Staleness is a viewing-time policy derived here from each row's `snapshotAtUtc` freshness - the
+  // aggregator ships the timestamp but never a "stale" verdict (it's the clock at poll time; a stale
+  // row only appears once a self-reporting service goes quiet). 24h default won't false-positive on a
+  // normally-scheduled mesh but catches a dead self-reporter.
+  var STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+  function snapshotAgeMs(svc) {
+    if (!svc.snapshotAtUtc) return null;
+    var t = Date.parse(svc.snapshotAtUtc);
+    return isNaN(t) ? null : Date.now() - t;
+  }
+  function humanAge(ms) {
+    var h = Math.round(ms / 3600000);
+    if (h < 48) return h + (h === 1 ? " hour" : " hours");
+    return Math.round(h / 24) + " days";
+  }
+  function freshnessKnown() {
+    return (manifest.services || []).some(function (s) { return !!s.snapshotAtUtc; });
+  }
+  function collectIssues() {
+    var issues = [];
+    (manifest.services || []).forEach(function (s) {
+      if (s.status === "unreachable") issues.push(svcIssue("high", "unreachable", s, "Service unreachable", "The aggregator could not reach this service on the last run."));
+      else if (s.status === "unhealthy") issues.push(svcIssue("high", "unhealthy", s, "Service unhealthy", "One or more of this service's health checks are failing."));
+      if (s.contractDrift) issues.push(svcIssue("medium", "drift", s, "Contract drift", "This service's live contract differs from the last recorded baseline."));
+      var age = snapshotAgeMs(s);
+      if (age != null && age > STALE_AFTER_MS) issues.push(svcIssue("medium", "stale", s, "Service stale", "Last reported " + humanAge(age) + " ago — past the " + humanAge(STALE_AFTER_MS) + " freshness window; it may have quietly stopped reporting."));
+    });
+    (currentTopics || []).forEach(function (t) {
+      if (t.reserved) return;
+      if (t.schemaMismatch) issues.push(topicIssue("high", "schema mismatch", t, "Schema mismatch", "Two consumers of this topic and version declare different payloads — a likely contract error."));
+      if (t.status === "deprecation-candidate") issues.push(topicIssue("low", "deprecation", t, "Deprecation candidate", TOPIC_STATUS_TITLES["deprecation-candidate"]));
+      else if (t.status === "gap") issues.push(topicIssue("low", "producer gap", t, "Producer gap", TOPIC_STATUS_TITLES["gap"]));
+    });
+    return issues;
+  }
+  function buildIssueRow(i) {
+    var row = el("button", "issue sev-" + i.sev);
+    row.type = "button";
+    row.title = "Go to " + i.subject;
+    row.appendChild(el("span", "issue-dot"));
+    var b = el("div", "issue-body");
+    var title = el("div", "issue-title");
+    title.appendChild(document.createTextNode(i.title + " · "));
+    title.appendChild(el("span", "mono", i.subject));
+    b.appendChild(title);
+    if (i.why) b.appendChild(el("div", "issue-why", i.why));
+    row.appendChild(b);
+    var meta = el("div", "issue-meta");
+    if (i.team) meta.appendChild(el("span", "issue-team", i.team));
+    meta.appendChild(el("span", "issue-kind k-" + i.sev, i.kind));
+    row.appendChild(meta);
+    var arrow = el("span", "issue-arrow");
+    arrow.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>';
+    row.appendChild(arrow);
+    row.addEventListener("click", i.nav);
+    return row;
+  }
+  function renderIssues() {
+    var section = document.getElementById("issues-section");
+    var body = document.getElementById("issues-body");
+    var sub = document.getElementById("issues-sub");
+    if (!(manifest.services || []).length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    body.innerHTML = "";
+
+    var issues = collectIssues();
+    [["high", "Needs attention"], ["medium", "Warnings"], ["low", "For review"]].forEach(function (g) {
+      var items = issues.filter(function (i) { return i.sev === g[0]; });
+      if (!items.length) return;
+      var group = el("div", "issue-group");
+      var label = el("div", "issue-group-label");
+      label.appendChild(document.createTextNode(g[1]));
+      label.appendChild(el("span", "cnt", String(items.length)));
+      group.appendChild(label);
+      var list = el("div", "issue-list");
+      items.forEach(function (i) { list.appendChild(buildIssueRow(i)); });
+      group.appendChild(list);
+      body.appendChild(group);
+    });
+
+    if (!issues.length) {
+      var clear = el("div", "issues-clear");
+      clear.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>';
+      clear.appendChild(document.createTextNode("All clear — no unhealthy, unreachable, drifting, or contract issues detected across the fleet."));
+      body.appendChild(clear);
+    }
+
+    // Only surface the "pending data" note when the manifest carries no freshness signal at all (an
+    // older manifest.json predating `snapshotAtUtc`); once timestamps are present, staleness is live
+    // and any stale service shows up as an issue above.
+    if (!freshnessKnown()) {
+      var deferred = el("div", "issues-deferred");
+      deferred.innerHTML = 'Staleness detection is <span class="mono">pending data</span> — this manifest carries no per-service freshness timestamp, so a service that stopped self-reporting can\'t yet be flagged as stale.';
+      body.appendChild(deferred);
+    }
+
+    sub.textContent = issues.length ? (issues.length === 1 ? "1 issue" : issues.length + " issues") : "all clear";
   }
 
   function buildServiceCard(svc) {
     var card = el("article", "svc");
     card.tabIndex = 0;
+    card.dataset.service = svc.name;
 
     var head = el("div", "svc-head");
     head.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
     if (svc.contractDrift) head.appendChild(el("span", "badge b-drift", "drift"));
-    head.appendChild(el("span", "svc-name", svc.name));
+    // The name opens the service's own page; the rest of the header still toggles the
+    // quick-glance accordion. (The card keeps a .svc-name node so the filter keeps working.)
+    var nameBtn = el("button", "svc-name-btn svc-name", svc.name);
+    nameBtn.type = "button";
+    nameBtn.title = "Open " + svc.name;
+    nameBtn.addEventListener("click", function (e) { e.stopPropagation(); goToService(svc.name); });
+    head.appendChild(nameBtn);
+    if (svc.owningTeam) head.appendChild(el("span", "svc-team", svc.owningTeam));
 
     var links = el("div", "svc-links");
-    if (svc.specUrl) { var a1 = el("a", null, "spec"); a1.href = svc.specUrl; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
-    if (svc.healthUrl) { var a2 = el("a", null, "health"); a2.href = svc.healthUrl; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
+    var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
+    if (specHref) { var a1 = el("a", null, "spec"); a1.href = specHref; a1.target = "_blank"; a1.rel = "noopener"; a1.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a1); }
+    var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
+    if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; a2.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a2); }
     var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
     if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; a3.addEventListener("click", function (e) { e.stopPropagation(); }); links.appendChild(a3); }
+    var a4 = el("button", "svc-topics-link", "topics");
+    a4.type = "button";
+    a4.title = "Find topics " + svc.name + " produces or consumes";
+    a4.addEventListener("click", function (e) { e.stopPropagation(); goToTopicsFor(svc.name); });
+    links.appendChild(a4);
     head.appendChild(links);
 
     var chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -512,6 +927,14 @@
     chev.innerHTML = '<path d="m9 6 6 6-6 6"/>';
     head.appendChild(chev);
     card.appendChild(head);
+
+    if (svc.transports && svc.transports.length) {
+      var transportsRow = el("div", "svc-transports chips");
+      svc.transports.forEach(function (t) {
+        transportsRow.appendChild(el("span", "chip", t));
+      });
+      card.appendChild(transportsRow);
+    }
 
     var body = el("div", "svc-body");
     card.appendChild(body);
@@ -532,20 +955,31 @@
     return card;
   }
 
+  function fetchSnapshot(name) {
+    var cached = detailCache[name];
+    var promise = cached || fetch(resolveUrl("services/" + encodeURIComponent(name) + ".json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+    detailCache[name] = promise;
+    return promise;
+  }
+
   function loadDetail(svc, body) {
     body.innerHTML = "";
     body.appendChild(el("div", "loading", "Loading health check detail…"));
 
-    var cached = detailCache[svc.name];
-    var promise = cached || fetch(resolveUrl("services/" + encodeURIComponent(svc.name) + ".json"), { headers: { accept: "application/json" } })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
-    detailCache[svc.name] = promise;
-
-    promise.then(function (snapshot) {
+    fetchSnapshot(svc.name).then(function (snapshot) {
       body.innerHTML = "";
       if (snapshot.error) {
         body.appendChild(el("div", "error", "Last fetch error: " + snapshot.error));
       }
+      renderHealthChecks(snapshot, body);
+    }).catch(function (ex) {
+      body.innerHTML = "";
+      body.appendChild(el("div", "error", "Could not load detail: " + (ex.message || ex)));
+    });
+  }
+
+  function renderHealthChecks(snapshot, body) {
       var checks = (snapshot.health && snapshot.health.healthChecks) || {};
       var keys = Object.keys(checks);
       if (!keys.length) {
@@ -571,20 +1005,44 @@
         if (chips.childNodes.length) row.appendChild(chips);
         body.appendChild(row);
       });
-    }).catch(function (ex) {
-      body.innerHTML = "";
-      body.appendChild(el("div", "error", "Could not load detail: " + (ex.message || ex)));
-    });
   }
 
   /* ---------- filter ---------- */
-  document.getElementById("filter").addEventListener("input", function (e) {
-    var q = e.target.value.trim().toLowerCase();
+  function applyFilter(q) {
+    q = (q || "").trim().toLowerCase();
     document.querySelectorAll(".svc").forEach(function (card) {
       var name = (card.querySelector(".svc-name") || {}).textContent || "";
       card.style.display = (!q || name.toLowerCase().indexOf(q) >= 0) ? "" : "none";
     });
+  }
+  document.getElementById("filter").addEventListener("input", function (e) {
+    applyFilter(e.target.value);
   });
+
+  /* ---------- cross-linking: any service name, anywhere -> the service page ----------
+     A service is a first-class entity with its own deep-linkable page (#service:<name>), same
+     model as the topic page - so every producer/consumer chip, issue row, and topology cell
+     navigates to a bookmarkable view instead of scroll-flashing an estate card
+     (work/mesh-ui-product-vision.md 2026-07-22 three-entity model). */
+  function goToService(name) {
+    location.hash = serviceHashFor(name);
+  }
+
+  /* ---------- cross-linking, the other direction: a service card -> the topics it's involved in
+     Reuses the topics search box rather than a separate view - "which topics does orders-api
+     touch" is exactly what that search already answers once it also matches producer/consumer
+     names, not just the topic id (work/service-mesh-roadmap-1.0.md §10.11's remaining gap). */
+  function goToTopicsFor(name) {
+    clearEntityHash();
+
+    var section = document.getElementById("topics-section");
+    if (section.style.display === "none") return; // no topics.json published - nothing to jump to
+
+    var filterInput = document.getElementById("topics-filter");
+    filterInput.value = name;
+    renderTopicRows();
+    section.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
 
   /* ---------- loader dialog ---------- */
   var loader = document.getElementById("loader");
@@ -614,8 +1072,623 @@
     manifestUrl = url;
     detailCache = {};
     render();
+    loadTopics();
     loadTopology();
   }
+
+  /* ---------- topics (cross-service catalog) ---------- */
+  var currentTopics = [];
+  function loadTopics() {
+    fetch(resolveUrl("topics.json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (cat) { renderTopics(cat); })
+      .catch(function () { document.getElementById("topics-section").style.display = "none"; });
+  }
+  function renderTopics(cat) {
+    currentTopics = (cat && cat.topics) || [];
+    var section = document.getElementById("topics-section");
+    if (!currentTopics.length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    document.getElementById("topics-generated").textContent = cat.generatedAtUtc ? "generated " + cat.generatedAtUtc : "";
+    updateAsyncApiLinks();
+    renderTopicRows();
+    renderIssues(); // topic-derived issues (schema mismatch, deprecation/gap) join once topics load
+    syncViewFromHash(); // a page loaded with #topic:/#service: in the URL opens straight to it (and an open service page re-renders with the topics now loaded)
+  }
+
+  /* The aggregator publishes asyncapi.json (the fleet's composite AsyncAPI doc) alongside
+     topics.json, so we surface it as a download link + an AsyncAPI Studio deep-link. Studio must
+     fetch the doc itself, so the deep-link is only offered when the resolved URL is absolute. */
+  function updateAsyncApiLinks() {
+    var url = resolveUrl("asyncapi.json");
+    var download = document.getElementById("topics-asyncapi");
+    download.href = url;
+    download.style.display = "";
+    var studio = document.getElementById("topics-asyncapi-studio");
+    if (/^https?:\/\//i.test(url)) {
+      studio.href = "https://studio.asyncapi.com/?url=" + encodeURIComponent(url);
+      studio.style.display = "";
+    } else {
+      studio.style.display = "none";
+    }
+  }
+  var TOPIC_STATUS_LABELS = {
+    "deprecation-candidate": "deprecation candidate",
+    "gap": "gap"
+  };
+  var TOPIC_STATUS_TITLES = {
+    "deprecation-candidate": "Produced somewhere in the fleet, but nothing consumes it anymore - a candidate for retiring, not proof it's already safe to delete.",
+    "gap": "Consumed here, but nothing in this fleet declares producing it - may be fed by a third party or a system outside this fleet. Worth confirming that's expected."
+  };
+
+  function svcChip(name) {
+    var chip = el("button", "t-svc", name);
+    chip.type = "button";
+    chip.title = "Jump to " + name;
+    chip.addEventListener("click", function () { goToService(name); });
+    return chip;
+  }
+
+  /* ---------- topic view: one topic, every version, who produces/consumes each ----------
+     The table below is one row per (topic, version); this dialog groups all of a topic's
+     versions together - "is anything still consuming v1 while v2 is live" is the question a flat
+     table can't answer at a glance (work/service-mesh-roadmap-1.0.md §10.3/§10.8). */
+  function topicLink(topicId) {
+    var link = el("button", "topic-link", topicId);
+    link.type = "button";
+    link.title = "View " + topicId;
+    link.addEventListener("click", function () { location.hash = topicHashFor(topicId); });
+    return link;
+  }
+
+  var TOPIC_HASH_PREFIX = "#topic:";
+  var SERVICE_HASH_PREFIX = "#service:";
+
+  function topicHashFor(topicId) {
+    return TOPIC_HASH_PREFIX + encodeURIComponent(topicId);
+  }
+  function serviceHashFor(name) {
+    return SERVICE_HASH_PREFIX + encodeURIComponent(name);
+  }
+
+  /* ---------- topic page: a full view swap, not a dialog ----------
+     "A whole new page around that topic, much like the pages for a service, with sections for
+     each service so you can drill back into the service from there" - work/service-mesh-roadmap-
+     1.0.md §10.15. #main-view (everything the normal Mesh Explorer shows) and #topic-page are
+     mutually exclusive; location.hash is the single source of truth for which one is showing, so
+     the browser's own Back/Forward buttons and direct/bookmarked links all behave the same as
+     clicking a topic link or the in-page Back button. */
+  function renderTopicPage(topicId) {
+    var versions = currentTopics.filter(function (t) { return t.topic === topicId; });
+    if (!versions.length) return; // stale/unknown link - leave whatever's currently showing as-is
+    versions = versions.slice().sort(function (a, b) {
+      return (a.version || "").localeCompare(b.version || "");
+    });
+
+    document.getElementById("tp-title").textContent = topicId;
+    var body = document.getElementById("tp-body");
+    body.innerHTML = "";
+    versions.forEach(function (t) { body.appendChild(buildTopicPageVersionSection(t)); });
+
+    showView("topic-page");
+  }
+
+  /* The three entity views - Estate (#main-view), Topic (#topic-page), Service (#service-page) -
+     are mutually exclusive; location.hash is the single source of truth for which one shows. */
+  function showView(id) {
+    ["main-view", "topic-page", "service-page"].forEach(function (v) {
+      document.getElementById(v).style.display = (v === id) ? "" : "none";
+    });
+    if (id !== "main-view") window.scrollTo(0, 0);
+  }
+
+  function syncViewFromHash() {
+    if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
+      renderTopicPage(decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
+    } else if (location.hash.indexOf(SERVICE_HASH_PREFIX) === 0) {
+      renderServicePage(decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length)));
+    } else {
+      showView("main-view");
+    }
+  }
+  window.addEventListener("hashchange", syncViewFromHash);
+
+  /* Leaving via the Back button, Escape, or a cross-link elsewhere all go through this - a plain
+     location.hash = "" still leaves a bare trailing "#" in the address bar, so this strips the
+     hash properly via replaceState instead (no new history entry - opening an entity page already
+     got one via its location.hash =, so browser Back/Forward between entities still works). */
+  function clearEntityHash() {
+    if (location.hash) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    showView("main-view");
+  }
+
+  document.getElementById("topic-page-back").addEventListener("click", clearEntityHash);
+  document.getElementById("service-page-back").addEventListener("click", clearEntityHash);
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var onEntityPage = document.getElementById("topic-page").style.display !== "none"
+      || document.getElementById("service-page").style.display !== "none";
+    if (onEntityPage) clearEntityHash();
+  });
+
+  /* ---------- service page: the third entity ----------
+     "As much detail about the service as possible, everything clickable" - identity/state from
+     manifest.json, the functional map (topics consumed/produced, the centerpiece) from
+     topics.json, full health/drift/about detail from services/{name}.json, and its topology
+     position from topology.json. Every data source degrades independently: a missing artifact
+     hides its section (or shows an explicit empty state), never breaks the page. */
+  function spKv(box, key, value, extraCls) {
+    var row = el("div", "sp-kv");
+    row.appendChild(el("span", "k", key));
+    row.appendChild(el("span", "v" + (extraCls ? " " + extraCls : ""), value));
+    box.appendChild(row);
+  }
+  function serviceNameButton(name, cls) {
+    var btn = el("button", "svc-name-btn" + (cls ? " " + cls : ""), name);
+    btn.type = "button";
+    btn.title = "Open " + name;
+    btn.addEventListener("click", function () { goToService(name); });
+    return btn;
+  }
+
+  function renderServicePage(name) {
+    var svc = findManifestService(name);
+    document.getElementById("sp-title").textContent = name;
+    var badges = document.getElementById("sp-badges");
+    badges.innerHTML = "";
+    var sub = document.getElementById("sp-sub");
+    var body = document.getElementById("sp-body");
+    body.innerHTML = "";
+
+    if (!svc) {
+      // A stale bookmark, or a topology/topic participant outside this fleet's manifest.
+      sub.textContent = "Not in this fleet's manifest — it may have been removed from the registry, or it lives outside this fleet.";
+      showView("service-page");
+      return;
+    }
+
+    badges.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
+    if (svc.contractDrift) badges.appendChild(el("span", "badge b-drift", "drift"));
+
+    var metaBits = [];
+    if (svc.owningTeam) metaBits.push(svc.owningTeam);
+    var age = snapshotAgeMs(svc);
+    if (age != null) metaBits.push("last reported " + humanAge(age) + " ago");
+    sub.textContent = metaBits.join(" · ");
+
+    var idSection = el("div", "sp-section");
+    if (svc.transports && svc.transports.length) {
+      var chips = el("div", "chips");
+      svc.transports.forEach(function (t) { chips.appendChild(el("span", "chip", t)); });
+      idSection.appendChild(chips);
+    }
+    var links = el("div", "sp-links");
+    var specHref = svc.specUrl ? safeHttpUrl(svc.specUrl) : null;
+    if (specHref) { var a1 = el("a", null, "spec"); a1.href = specHref; a1.target = "_blank"; a1.rel = "noopener"; links.appendChild(a1); }
+    var healthHref = svc.healthUrl ? safeHttpUrl(svc.healthUrl) : null;
+    if (healthHref) { var a2 = el("a", null, "health"); a2.href = healthHref; a2.target = "_blank"; a2.rel = "noopener"; links.appendChild(a2); }
+    var sui = svc.specUrl ? specUiLink(svc.specUrl) : null;
+    if (sui) { var a3 = el("a", null, "spec ui"); a3.href = sui; a3.target = "_blank"; a3.rel = "noopener"; links.appendChild(a3); }
+    if (links.childNodes.length) idSection.appendChild(links);
+    if (idSection.childNodes.length) body.appendChild(idSection);
+
+    body.appendChild(buildServiceTopicsSection(name));
+
+    var about = el("div", "sp-section");
+    about.appendChild(el("h2", null, "About & health"));
+    var aboutBox = el("div", "sp-about");
+    aboutBox.appendChild(el("div", "loading", "Loading service detail…"));
+    about.appendChild(aboutBox);
+    body.appendChild(about);
+    fetchSnapshot(name)
+      .then(function (snapshot) { renderServiceAbout(svc, snapshot, aboutBox); })
+      .catch(function (ex) {
+        aboutBox.innerHTML = "";
+        aboutBox.appendChild(el("div", "error", "Could not load detail: " + (ex.message || ex)));
+      });
+
+    var topo = buildServiceTopologySection(name);
+    if (topo) body.appendChild(topo);
+
+    showView("service-page");
+  }
+
+  /* The functional map - what this service consumes and produces - is the page's centerpiece,
+     ahead of health (the estate-comprehension product's ordering, not a monitoring dashboard's). */
+  function buildServiceTopicsSection(name) {
+    var section = el("div", "sp-section");
+    section.appendChild(el("h2", null, "Topics"));
+
+    if (!currentTopics.length) {
+      section.appendChild(el("div", "sp-empty",
+        "No topic catalog published (topics.json) — the functional map can't be shown for this service."));
+      return section;
+    }
+
+    function participates(list) {
+      return (list || []).some(function (s) { return s.service === name; });
+    }
+    var consumed = currentTopics.filter(function (t) { return participates(t.consumers); });
+    var produced = currentTopics.filter(function (t) { return participates(t.producers); });
+
+    if (!consumed.length && !produced.length) {
+      section.appendChild(el("div", "sp-empty", "This service declares no topics in the catalog."));
+      return section;
+    }
+
+    var grid = el("div", "tp-grid");
+    grid.appendChild(buildServiceTopicList("Consumes", consumed, name, true));
+    grid.appendChild(buildServiceTopicList("Produces", produced, name, false));
+    section.appendChild(grid);
+    return section;
+  }
+
+  function buildServiceTopicList(label, topics, name, isConsumer) {
+    var side = el("div", "tp-side");
+    side.appendChild(el("h2", null, label + " (" + topics.length + ")"));
+    if (!topics.length) {
+      side.appendChild(el("div", "t-empty", "none"));
+      return side;
+    }
+    topics.forEach(function (t) {
+      var row = el("div", "sp-topic-row");
+      row.appendChild(topicLink(t.topic));
+      row.appendChild(el("span", "sp-topic-ver", t.version || "unversioned"));
+      if (t.reserved) row.appendChild(el("span", "t-badge t-utility", "utility"));
+      if (t.schemaMismatch) {
+        var mm = el("span", "t-badge t-status-schema-mismatch", "schema mismatch");
+        mm.title = "Consumers of this topic and version declare different payload schemas — likely a contract error.";
+        row.appendChild(mm);
+      }
+      if (t.status && TOPIC_STATUS_LABELS[t.status]) {
+        var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
+        badge.title = TOPIC_STATUS_TITLES[t.status] || "";
+        row.appendChild(badge);
+      }
+      if (isConsumer) {
+        var mine = (t.consumers || []).filter(function (s) { return s.service === name; })[0];
+        var maps = ((mine && mine.httpMappings) || []).map(function (m) {
+          return (m.method || "").toUpperCase() + " " + (m.path || "");
+        });
+        if (maps.length) row.appendChild(el("span", "t-http", maps.join(", ")));
+      }
+      side.appendChild(row);
+    });
+    return side;
+  }
+
+  function renderServiceAbout(svc, snapshot, box) {
+    box.innerHTML = "";
+
+    // The service's own self-description, parsed client-side from the verbatim spec the
+    // aggregator stored. Best-effort: any spec shape without an info block just skips this.
+    var info = null;
+    try {
+      var spec = JSON.parse(snapshot.specJson || "null");
+      info = spec && spec.info;
+    } catch (e) { /* not JSON, or an unexpected shape - skip */ }
+    if (info && info.description) box.appendChild(el("div", "sp-desc", info.description));
+    if (info && info.version) spKv(box, "Service version", info.version);
+
+    if (snapshot.fetchedAtUtc) spKv(box, "Snapshot taken", snapshot.fetchedAtUtc);
+    if (snapshot.error) spKv(box, "Last fetch error", snapshot.error, "err");
+    if (svc.contractDrift && snapshot.specHash && snapshot.previousSpecHash) {
+      spKv(box, "Contract drift", "spec hash changed: " + String(snapshot.previousSpecHash).slice(0, 12) + "… → " + String(snapshot.specHash).slice(0, 12) + "…");
+    }
+
+    box.appendChild(el("div", "sp-checks-label", "Health checks"));
+    renderHealthChecks(snapshot, box);
+  }
+
+  /* Who this service calls, and who calls it - from the same topology.json the estate table
+     renders. Same degradation: no edges for this service (or no topology.json at all, the
+     common no-Tempo case) hides the section rather than showing an empty shell. */
+  function buildServiceTopologySection(name) {
+    var calls = currentEdges.filter(function (e) { return e.client === name; });
+    var calledBy = currentEdges.filter(function (e) { return e.server === name; });
+    if (!calls.length && !calledBy.length) return null;
+
+    var section = el("div", "sp-section");
+    section.appendChild(el("h2", null, "Topology"));
+    var grid = el("div", "tp-grid");
+    grid.appendChild(buildServiceEdgeList("Calls", calls, function (e) { return e.server; }));
+    grid.appendChild(buildServiceEdgeList("Called by", calledBy, function (e) { return e.client; }));
+    section.appendChild(grid);
+    return section;
+  }
+
+  function buildServiceEdgeList(label, edges, neighborOf) {
+    var side = el("div", "tp-side");
+    side.appendChild(el("h2", null, label + " (" + edges.length + ")"));
+    if (!edges.length) {
+      side.appendChild(el("div", "t-empty", "none"));
+      return side;
+    }
+    edges.forEach(function (e) {
+      var row = el("div", "sp-svc-row");
+      row.appendChild(serviceNameButton(neighborOf(e)));
+      row.appendChild(el("span", "badge b-source-" + e.source, e.source));
+      var stats = [];
+      if (e.requestsPerMinute != null) stats.push(Number(e.requestsPerMinute).toFixed(1) + " req/min");
+      if (e.errorRate != null) stats.push((e.errorRate * 100).toFixed(2) + "% err");
+      if (e.p50LatencyMs != null) stats.push("p50 " + Number(e.p50LatencyMs).toFixed(0) + "ms");
+      if (stats.length) row.appendChild(el("span", "sp-edge-stats", stats.join(" · ")));
+      side.appendChild(row);
+    });
+    return side;
+  }
+
+  /* ---------- payload schema + validation rules ----------
+     The topic catalog carries each topic's request/response/message JSON Schema with its $refs
+     already inlined by the aggregator (so there's no components catalog to resolve against here,
+     unlike Benzene.Spec.Ui - nested objects appear directly under properties[...].properties).
+     This renders the same property table + validation constraint chips the Spec UI shows. */
+  function schemaTypeLabel(s) {
+    if (!s) return "any";
+    if (s.type === "array") return "array<" + schemaTypeLabel(s.items) + ">";
+    if (s.title) return s.title;
+    if (s.type) return s.type;
+    if (s.properties) return "object";
+    return "any";
+  }
+  function schemaConstraintChips(s) {
+    var out = [];
+    function chip(label, val, cls) {
+      var c = el("span", "chip" + (cls ? " " + cls : ""));
+      if (val === undefined) { c.textContent = label; }
+      else { c.appendChild(document.createTextNode(label + " ")); c.appendChild(el("b", null, String(val))); }
+      out.push(c);
+    }
+    if (s.format) chip(s.format, undefined, "fmt");
+    if (s.enum && s.enum.length) {
+      var ec = el("span", "chip enum");
+      ec.appendChild(document.createTextNode("enum "));
+      ec.appendChild(el("b", null, s.enum.join(" · ")));
+      out.push(ec);
+    }
+    if (s.minLength != null && s.maxLength != null) chip("length", s.minLength + "–" + s.maxLength);
+    else { if (s.minLength != null) chip("min len", s.minLength); if (s.maxLength != null) chip("max len", s.maxLength); }
+    if (s.minimum != null && s.maximum != null) chip("range", s.minimum + "–" + s.maximum);
+    else { if (s.minimum != null) chip("≥", s.minimum); if (s.maximum != null) chip("≤", s.maximum); }
+    if (s.pattern) chip("pattern " + s.pattern);
+    if (s.nullable === true) chip("nullable");
+    if (s["default"] !== undefined) chip("default", s["default"]);
+    return out;
+  }
+  function renderSchemaTree(s, depth) {
+    s = s || {};
+    depth = depth || 0;
+    if (s.type === "array" && s.items) {
+      var wrap = el("div");
+      var note = el("div", "schema empty"); note.textContent = "array of " + schemaTypeLabel(s.items);
+      wrap.appendChild(note);
+      if (s.items && s.items.properties) wrap.appendChild(renderSchemaTree(s.items, depth));
+      return wrap;
+    }
+    if (!s.properties) {
+      var e = el("div", "schema empty");
+      e.textContent = s.type ? (schemaTypeLabel(s) + (s.format ? " (" + s.format + ")" : "")) : "no schema";
+      return e;
+    }
+    var required = s.required || [];
+    var box = el("div", "schema");
+    Object.keys(s.properties).forEach(function (key) {
+      var p = s.properties[key] || {};
+      var pr = el("div", "prop");
+      var row = el("div", "prop-row");
+      row.appendChild(el("span", "pname", key));
+      if (required.indexOf(key) >= 0) { var star = el("span", "preq", "*"); star.title = "required"; row.appendChild(star); }
+
+      var nested = (p.type === "object" || (!p.type && p.properties)) && p.properties ? p
+        : (p.type === "array" && p.items && p.items.properties ? p.items : null);
+      var tp = el("span", "ptype" + (nested ? " ref" : ""), schemaTypeLabel(p));
+      row.appendChild(tp);
+
+      var cc = schemaConstraintChips(p);
+      if (cc.length) { var chips = el("span", "chips"); cc.forEach(function (c) { chips.appendChild(c); }); row.appendChild(chips); }
+      if (p.description) row.appendChild(el("div", "pdesc", p.description));
+      pr.appendChild(row);
+
+      if (nested && depth < 16) {
+        var sub = el("div", "nested"); sub.style.display = "none";
+        sub.appendChild(renderSchemaTree(nested, depth + 1));
+        pr.appendChild(sub);
+        tp.addEventListener("click", function () {
+          var showing = sub.style.display !== "none";
+          sub.style.display = showing ? "none" : "block";
+          tp.textContent = (showing ? schemaTypeLabel(p) : "▾ " + schemaTypeLabel(p));
+        });
+      }
+      box.appendChild(pr);
+    });
+    return box;
+  }
+
+  function buildTopicPayloadSection(t) {
+    var parts = [];
+    if (t.requestSchema) parts.push(["Request", t.requestSchema]);
+    if (t.responseSchema) parts.push(["Response", t.responseSchema]);
+    if (t.messageSchema) parts.push(["Message", t.messageSchema]);
+    if (!parts.length && !t.schemaMismatch) return null;
+
+    var wrap = el("div", "tp-payload");
+    wrap.appendChild(el("h2", null, "Payload"));
+    if (t.schemaMismatch) {
+      var banner = el("div", "tp-mismatch");
+      banner.textContent = "⚠ Consumers of this topic and version declare different payload schemas. "
+        + "Handlers of the same topic and version are expected to agree on the payload, so this is likely a "
+        + "contract error to reconcile. The schema below is one consumer's, shown for reference.";
+      wrap.appendChild(banner);
+    }
+    parts.forEach(function (part) {
+      var io = el("div", "tp-io");
+      io.appendChild(el("div", "tp-io-label", part[0]));
+      io.appendChild(renderSchemaTree(part[1], 0));
+      wrap.appendChild(io);
+    });
+    return wrap;
+  }
+
+  function buildTopicPageVersionSection(t) {
+    var block = el("div", "tp-version");
+
+    var head = el("div", "tp-version-head");
+    head.appendChild(el("span", "mono tp-version-label", t.version || "unversioned"));
+    if (t.reserved) head.appendChild(el("span", "t-badge t-utility", "utility"));
+    if (t.status && TOPIC_STATUS_LABELS[t.status]) {
+      var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
+      badge.title = TOPIC_STATUS_TITLES[t.status] || "";
+      head.appendChild(badge);
+    }
+    if (t.schemaMismatch) {
+      var mm = el("span", "t-badge t-status-schema-mismatch", "schema mismatch");
+      mm.title = "Consumers of this topic and version declare different payload schemas — likely a contract error.";
+      head.appendChild(mm);
+    }
+    block.appendChild(head);
+
+    var payload = buildTopicPayloadSection(t);
+    if (payload) block.appendChild(payload);
+
+    var grid = el("div", "tp-grid");
+    grid.appendChild(buildTopicServiceSection("Producers", t.producers || []));
+    grid.appendChild(buildTopicServiceSection("Consumers", t.consumers || []));
+    block.appendChild(grid);
+
+    return block;
+  }
+
+  function findManifestService(name) {
+    return (manifest.services || []).filter(function (s) { return s.name === name; })[0];
+  }
+
+  /* Each producer/consumer is a compact linked row - status at a glance, name linking to the
+     service's own page (the canonical depth now that the service is a first-class entity; the
+     embedded-full-card rendering this replaces duplicated accordion state with the estate list).
+     A name with no matching manifest entry (a service since removed from the registry, or - for
+     a "gap" topic - a producer outside this fleet entirely) renders as the same non-link
+     placeholder as before. */
+  function buildTopicServiceSection(label, items) {
+    var side = el("div", "tp-side");
+    side.appendChild(el("h2", null, label + " (" + items.length + ")"));
+    if (!items.length) {
+      side.appendChild(el("div", "t-empty", "none"));
+      return side;
+    }
+    items.forEach(function (item) {
+      if (item.httpMappings && item.httpMappings.length) {
+        var maps = item.httpMappings.map(function (m) {
+          return (m.method || "").toUpperCase() + " " + (m.path || "");
+        }).join(", ");
+        side.appendChild(el("div", "tp-mapping", maps));
+      }
+      var svc = findManifestService(item.service);
+      if (svc) {
+        var row = el("div", "sp-svc-row");
+        row.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
+        if (svc.contractDrift) row.appendChild(el("span", "badge b-drift", "drift"));
+        row.appendChild(serviceNameButton(svc.name));
+        if (svc.owningTeam) row.appendChild(el("span", "svc-team", svc.owningTeam));
+        side.appendChild(row);
+      } else {
+        var placeholder = el("div", "tp-unknown-svc");
+        placeholder.appendChild(el("span", "svc-name", item.service));
+        placeholder.appendChild(el("span", "t-empty", "not in this fleet's manifest"));
+        side.appendChild(placeholder);
+      }
+    });
+    return side;
+  }
+
+  function topicMatchesQuery(t, q) {
+    if (!q) return true;
+    if (t.topic.toLowerCase().indexOf(q) >= 0) return true;
+    var services = (t.producers || []).concat(t.consumers || []);
+    return services.some(function (s) { return (s.service || "").toLowerCase().indexOf(q) >= 0; });
+  }
+
+  function renderTopicRows() {
+    var showUtils = document.getElementById("topics-show-utils").checked;
+    var q = document.getElementById("topics-filter").value.trim().toLowerCase();
+    var rows = currentTopics.filter(function (t) {
+      return (showUtils || !t.reserved) && topicMatchesQuery(t, q);
+    });
+    var tbody = document.getElementById("topics-tbody");
+    tbody.innerHTML = "";
+
+    if (!rows.length) {
+      var emptyRow = el("tr");
+      var emptyCell = el("td", "topics-empty", q ? "No topics match “" + q + "”." : "No topics to show.");
+      emptyCell.colSpan = 7;
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+
+    rows.forEach(function (t) {
+      var tr = el("tr");
+
+      var tdTopic = el("td"); tdTopic.appendChild(topicLink(t.topic)); tr.appendChild(tdTopic);
+
+      var tdVersion = el("td");
+      tdVersion.appendChild(el("span", "mono", t.version || "–"));
+      tr.appendChild(tdVersion);
+
+      var tdType = el("td");
+      tdType.appendChild(el("span", "t-badge " + (t.reserved ? "t-utility" : "t-domain"), t.reserved ? "utility" : "domain"));
+      tr.appendChild(tdType);
+
+      var tdProducers = el("td", "topics-table");
+      var producers = t.producers || [];
+      if (producers.length) {
+        producers.forEach(function (p) { tdProducers.appendChild(svcChip(p.service)); });
+      } else {
+        tdProducers.appendChild(el("span", "t-empty", "–"));
+      }
+      tr.appendChild(tdProducers);
+
+      var tdConsumers = el("td", "topics-table");
+      var consumers = t.consumers || [];
+      if (consumers.length) {
+        consumers.forEach(function (s) { tdConsumers.appendChild(svcChip(s.service)); });
+      } else {
+        tdConsumers.appendChild(el("span", "t-empty", "–"));
+      }
+      tr.appendChild(tdConsumers);
+
+      var tdHttp = el("td", "t-http");
+      var maps = [];
+      consumers.forEach(function (s) {
+        (s.httpMappings || []).forEach(function (m) {
+          var label = (m.method || "").toUpperCase() + " " + (m.path || "");
+          if (maps.indexOf(label) === -1) maps.push(label);
+        });
+      });
+      tdHttp.textContent = maps.length ? maps.join(", ") : "–";
+      tr.appendChild(tdHttp);
+
+      var tdStatus = el("td");
+      if (t.schemaMismatch) {
+        var mmBadge = el("span", "t-badge t-status-schema-mismatch", "schema mismatch");
+        mmBadge.title = "Consumers of this topic and version declare different payload schemas — likely a contract error.";
+        tdStatus.appendChild(mmBadge);
+      }
+      if (t.status && TOPIC_STATUS_LABELS[t.status]) {
+        var badge = el("span", "t-badge t-status-" + t.status, TOPIC_STATUS_LABELS[t.status]);
+        badge.title = TOPIC_STATUS_TITLES[t.status] || "";
+        tdStatus.appendChild(badge);
+      } else if (!t.schemaMismatch) {
+        tdStatus.appendChild(el("span", "t-empty", "–"));
+      }
+      tr.appendChild(tdStatus);
+
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById("topics-show-utils").addEventListener("change", renderTopicRows);
+  document.getElementById("topics-filter").addEventListener("input", renderTopicRows);
 
   /* ---------- topology ---------- */
   function loadTopology() {
@@ -632,7 +1705,145 @@
     document.getElementById("topology-generated").textContent = topo.generatedAtUtc
       ? "generated " + topo.generatedAtUtc : "";
     currentEdges = edges;
+    renderTopologyGraph(edges);
     sortAndRenderEdges();
+    syncViewFromHash(); // an open service page gains its topology section once edges arrive
+  }
+
+  /* ---------- topology graph ----------
+     A node-link view over the same edges as the sortable table below it (which stays - the graph
+     answers "what's the shape", the table answers "sort me by error rate"). Self-contained,
+     hand-rolled SVG: layered left-to-right layout (longest path from the roots), deterministic
+     (nodes ordered by name within a layer - no physics, no randomness, stable across reloads),
+     theme-aware via CSS classes. Nodes carry the manifest's health status on their stroke and
+     click through to the service page; edge width tracks request rate, red = error rate >= 5%. */
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function svgTitle(text) {
+    var t = document.createElementNS(SVG_NS, "title");
+    t.textContent = text;
+    return t;
+  }
+  function computeLayers(names, links) {
+    // Longest-path layering with a cycle guard: relax layer assignments at most N times, so a
+    // cyclic call graph (A->B->A) settles instead of looping forever.
+    var layer = {};
+    names.forEach(function (n) { layer[n] = 0; });
+    for (var pass = 0; pass < names.length + 1; pass++) {
+      var changed = false;
+      links.forEach(function (l) {
+        if (layer[l.to] < layer[l.from] + 1 && layer[l.from] + 1 <= names.length) {
+          layer[l.to] = layer[l.from] + 1;
+          changed = true;
+        }
+      });
+      if (!changed) break;
+    }
+    return layer;
+  }
+  function renderTopologyGraph(edges) {
+    var container = document.getElementById("topology-graph");
+    container.innerHTML = "";
+
+    var names = [];
+    edges.forEach(function (e) {
+      if (names.indexOf(e.client) < 0) names.push(e.client);
+      if (names.indexOf(e.server) < 0) names.push(e.server);
+    });
+    if (!names.length) { container.style.display = "none"; return; }
+    container.style.display = "";
+
+    var layerOf = computeLayers(names, edges.map(function (e) { return { from: e.client, to: e.server }; }));
+    var columns = {};
+    names.slice().sort().forEach(function (n) {
+      (columns[layerOf[n]] = columns[layerOf[n]] || []).push(n);
+    });
+
+    var NODE_H = 30, ROW_GAP = 26, COL_GAP = 110, PAD = 22;
+    function nodeWidth(name) { return Math.min(230, 22 + name.length * 7.4); }
+    var colWidths = {}, maxRows = 0;
+    Object.keys(columns).forEach(function (l) {
+      colWidths[l] = Math.max.apply(null, columns[l].map(nodeWidth));
+      maxRows = Math.max(maxRows, columns[l].length);
+    });
+
+    var pos = {}, x = PAD;
+    Object.keys(columns).map(Number).sort(function (a, b) { return a - b; }).forEach(function (l) {
+      columns[l].forEach(function (n, i) {
+        pos[n] = { x: x, y: PAD + i * (NODE_H + ROW_GAP), w: nodeWidth(n) };
+      });
+      x += colWidths[l] + COL_GAP;
+    });
+    var width = x - COL_GAP + PAD;
+    var height = PAD * 2 + maxRows * (NODE_H + ROW_GAP) - ROW_GAP;
+
+    var svg = svgEl("svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height, role: "img" });
+    svg.appendChild(svgTitle("Service topology graph"));
+    var defs = svgEl("defs", {});
+    [["topo-arrowhead", "topo-arrow"], ["topo-arrowhead-err", "topo-arrow err"]].forEach(function (m) {
+      // userSpaceOnUse keeps arrowheads a constant size instead of scaling with edge width.
+      var marker = svgEl("marker", { id: m[0], viewBox: "0 0 10 10", refX: 9, refY: 5,
+        markerWidth: 9, markerHeight: 9, markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" });
+      var tip = svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z" });
+      tip.setAttribute("class", m[1]);
+      marker.appendChild(tip);
+      defs.appendChild(marker);
+    });
+    svg.appendChild(defs);
+
+    edges.forEach(function (e) {
+      var from = pos[e.client], to = pos[e.server];
+      if (!from || !to) return;
+      var x1 = from.x + from.w, y1 = from.y + NODE_H / 2;
+      var x2 = to.x, y2 = to.y + NODE_H / 2;
+      var err = e.errorRate != null && e.errorRate >= 0.05;
+      var d;
+      if (x2 > x1) {
+        var mid = (x1 + x2) / 2;
+        // An edge skipping intermediate layers bows underneath them, so it doesn't vanish
+        // behind the nodes it passes when its endpoints share a row.
+        var bow = (layerOf[e.server] - layerOf[e.client] > 1) ? NODE_H + 4 : 0;
+        d = "M " + x1 + " " + y1 + " C " + mid + " " + (y1 + bow) + ", " + mid + " " + (y2 + bow) + ", " + (x2 - 3) + " " + y2;
+      } else {
+        // Backward/same-column edge (a cycle): arc over the top so it stays legible.
+        var lift = Math.min(y1, y2) - (NODE_H + 14);
+        d = "M " + x1 + " " + y1 + " C " + (x1 + 46) + " " + lift + ", " + (x2 - 46) + " " + lift + ", " + (x2 - 3) + " " + y2;
+      }
+      var path = svgEl("path", { d: d, "marker-end": "url(#topo-arrowhead" + (err ? "-err" : "") + ")" });
+      path.setAttribute("class", "topo-edge" + (err ? " err" : ""));
+      var rpm = e.requestsPerMinute;
+      path.setAttribute("stroke-width", (1 + Math.min(4, rpm ? Math.sqrt(rpm) / 3 : 0)).toFixed(1));
+      var bits = [e.client + " → " + e.server];
+      if (rpm != null) bits.push(Number(rpm).toFixed(1) + " req/min");
+      if (e.errorRate != null) bits.push((e.errorRate * 100).toFixed(2) + "% err");
+      if (e.p50LatencyMs != null) bits.push("p50 " + Number(e.p50LatencyMs).toFixed(0) + "ms");
+      path.appendChild(svgTitle(bits.join(" · ")));
+      svg.appendChild(path);
+    });
+
+    names.forEach(function (n) {
+      var p = pos[n];
+      var svc = findManifestService(n);
+      var status = svc ? svc.status : "unknown";
+      var g = svgEl("g", { transform: "translate(" + p.x + "," + p.y + ")", tabindex: 0, role: "link" });
+      g.setAttribute("class", "topo-node st-" + status);
+      g.appendChild(svgEl("rect", { width: p.w, height: NODE_H, rx: 8 }));
+      var label = svgEl("text", { x: p.w / 2, y: NODE_H / 2 + 4, "text-anchor": "middle" });
+      label.textContent = n.length > 28 ? n.slice(0, 27) + "…" : n;
+      g.appendChild(label);
+      g.appendChild(svgTitle(n + (svc ? " · " + status : " · not in this fleet's manifest")));
+      g.addEventListener("click", function () { goToService(n); });
+      g.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); goToService(n); }
+      });
+      svg.appendChild(g);
+    });
+
+    container.appendChild(svg);
   }
   function fmtNum(value, digits, suffix) {
     return value == null ? "–" : Number(value).toFixed(digits) + (suffix || "");
@@ -658,8 +1869,12 @@
     tbody.innerHTML = "";
     sorted.forEach(function (edge) {
       var tr = document.createElement("tr");
-      tr.appendChild(el("td", "mono", edge.client));
-      tr.appendChild(el("td", "mono", edge.server));
+      var clientTd = el("td", "mono");
+      clientTd.appendChild(serviceNameButton(edge.client, "topo-svc"));
+      tr.appendChild(clientTd);
+      var serverTd = el("td", "mono");
+      serverTd.appendChild(serviceNameButton(edge.server, "topo-svc"));
+      tr.appendChild(serverTd);
       var sourceTd = el("td");
       sourceTd.appendChild(el("span", "badge b-source-" + edge.source, edge.source));
       tr.appendChild(sourceTd);

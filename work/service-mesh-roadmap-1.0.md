@@ -1,6 +1,12 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-22 ownership merge:** `mesh-ui-product-owner` has been merged into
+> `mesh-product-owner` — one owner for the whole mesh product (this doc and
+> `work/mesh-ui-product-vision.md` now share that owner). Mentions of
+> `mesh-ui-product-owner` in older blocks below are historical. The merged
+> brief also makes the owner guardian of the Cloud Service spec's surface:
+> coverage of the product's needs, kept taut and small.
 > **2026-07-16 design-principles update:** the "opinionated but optional" strategy is now spec:
 > `docs/specification/design-principles.md` records the adoption ladder (message handlers are the
 > steer but optional, like controllers in ASP.NET - middleware-only and in-process pipelines are

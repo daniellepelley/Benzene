@@ -139,7 +139,16 @@ passive-declare as the default (it verifies the actual queue), `IsOpen` as a doc
 
 ---
 
-## 3. gRPC (`Benzene.Grpc.Client`, Grpc.Net.Client) — **two distinct checks, don't conflate**
+## 3. gRPC (`Benzene.Grpc.Client`, Grpc.Net.Client) — ✅ **IMPLEMENTED (transport tier)**
+
+Shipped: `GrpcHealthCheck` — the **transport-reachability** tier (a) — `GrpcChannel.ConnectAsync` against
+the caller's DI-registered channel, `Type = "Grpc"`, dependency `("Grpc", channel.Target)`, auto-wired on
+`AddGrpcClient(configureRoutes, healthCheck: true)`. An unreachable target times out → Failed; an
+`RpcException` classifies by status (PermissionDenied/Unauthenticated → Warning). The `grpc.health.v1`
+tier (b) is intentionally **not** shipped: it is transitive (belongs on `contracts`, not a probe/default)
+and needs the `Grpc.HealthCheck` package (a new dependency). Original two-tier design retained below.
+
+
 
 gRPC is the one where "health check" is genuinely ambiguous, and the choice interacts with §3.2 / the
 `contracts` topic (§7 of the main plan).
@@ -166,7 +175,14 @@ DIM — already shipped).
 
 ---
 
-## 4. Azure Event Grid (`Benzene.Clients.Azure.EventGrid`) — **explicit-only; no cheap check exists**
+## 4. Azure Event Grid (`Benzene.Clients.Azure.EventGrid`) — ✅ **RESOLVED: no check (documented)**
+
+Decision shipped: **no** health check (documented in the package CLAUDE.md). `EventGridPublisherClient`
+is publish-only — no data-plane read exists — and every alternative (management-plane `GetTopic`,
+synthetic publish, TCP/DNS) is either the wrong dependency, side-effecting, or meaningless. An opt-in
+`Active` synthetic-publish check remains a future option if demand appears. Rationale below.
+
+
 
 `EventGridPublisherClient` is **publish-only** — there is no data-plane read (no describe/get-properties on
 the topic endpoint). So there is no non-destructive reachability check analogous to the others:
@@ -184,7 +200,14 @@ read exists"). If demand appears, offer an explicit opt-in `Active` synthetic-pu
 
 ---
 
-## 5. AWS Lambda (`Benzene.Clients.Aws.Lambda`) — **explicit-only (dynamic target)**
+## 5. AWS Lambda (`Benzene.Clients.Aws.Lambda`) — ✅ **RESOLVED: explicit-only (documented)**
+
+Decision shipped: the Lambda client is a dynamic-target invoker (no fixed function at config time), so
+auto-wiring doesn't apply — documented in the package CLAUDE.md. The explicit non-destructive
+`AddLambdaHealthCheck(name)` (already §3.9-classified) is the path; a fixed-target client, if ever
+added, would auto-wire there. Rationale below.
+
+
 
 `.UseAwsLambda<T>()` carries **no function name** — the target function is supplied per-invocation
 (`AwsLambdaClient.SendMessageAsync(request, lambdaName, …)`), i.e. the client is a *dynamic-target* invoker,
@@ -199,7 +222,15 @@ real use case, not added just to hang a check on.
 
 ---
 
-## 6. AWS Step Functions (`Benzene.Clients.Aws.StepFunctions`) — **needs a registration seam first**
+## 6. AWS Step Functions (`Benzene.Clients.Aws.StepFunctions`) — ✅ **IMPLEMENTED**
+
+Shipped both steps: (1) added the missing `AddStepFunctionsClient(arn)` DI-registration seam
+(`IStepFunctionsClientFactory`/`IStepFunctionsClient`, resolving `IAmazonStepFunctions` from DI), and
+(2) it auto-wires the existing non-destructive `DescribeStateMachine` check on the dependency category
+(dedup `"StepFunctions:{arn}"`, `healthCheck: false` opt-out). The explicit `AddStepFunctionHealthCheck`
+remains. Original design retained below.
+
+
 
 Unlike the others there is **no `.Use*` pipeline extension** at all — the client is
 `StepFunctionsClientFactory(stateMachineArn, …)`, constructed directly, and there is no
@@ -215,7 +246,17 @@ Until (1) exists, the explicit `AddStepFunctionHealthCheck(arn)` remains the pat
 
 ---
 
-## 7. Azure Service Bus (`Benzene.Clients.Azure.ServiceBus` + consumers) — **auto-wire the consumer, not the sender**
+## 7. Azure Service Bus — ✅ **IMPLEMENTED (consumer-side auto-wire)**
+
+Shipped: `Benzene.Azure.ServiceBus`'s `UseServiceBus(..., healthCheck: true)` auto-registers the existing
+peek-based `ServiceBusHealthCheck` for the consumed entity on the dependency category (dedup
+`"ServiceBus:{queue}"` / `"ServiceBus:{topic}/{subscription}"`), reusing one `ServiceBusClient` from the
+factory. As designed, it wires on the **consumer** (Listen claim + known entity), not the sender. The
+consumer package references `Benzene.HealthChecks.Azure.ServiceBus` directly (no breaking namespace move
+needed). Also upgraded `ServiceBusHealthCheck` to §3.9: an `UnauthorizedAccessException` (no Listen) is
+now a Warning, closing the last §3.9 gap. Original design retained below.
+
+
 
 The **sender** (`.UseServiceBus`) must not auto-wire: it holds only the *Send* claim, but
 `ServiceBusHealthCheck` peeks (needs *Listen*), and a topic sender has no subscription to peek
@@ -236,6 +277,14 @@ queue or topic+subscription — exactly what `ServiceBusHealthCheck` (already sh
    reference `Benzene.HealthChecks.Azure.ServiceBus` directly (lighter than a breaking namespace move).
 
 ---
+
+## Status: all designed transports resolved ✅
+
+Every transport in this document is now either **implemented** (Kafka, RabbitMQ, gRPC transport tier,
+Step Functions, Service Bus consumer) or **resolved as intentionally check-less** (Event Grid — no
+data-plane read; Lambda — dynamic target). The only deliberately-deferred item is gRPC's `grpc.health.v1`
+tier (b), which needs the `Grpc.HealthCheck` dependency and belongs on the `contracts` topic, not an
+auto-wired default. The original recommended sequencing is kept below for history.
 
 ## Recommended sequencing
 

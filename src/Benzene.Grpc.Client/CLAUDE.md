@@ -39,6 +39,21 @@ a Benzene middleware pipeline over a `Grpc.Net.Client.GrpcChannel`. Mirrors the 
   collapse to the same `StatusCode.OK` on the wire, so the trailer is the only way to recover which
   one it actually was)
 
+### Health check
+- `GrpcHealthCheck` - verifies **transport reachability** to the channel's target with
+  `GrpcChannel.ConnectAsync` (opens the HTTP/2 connection, no application RPC — non-destructive). `Type =
+  "Grpc"`, dependency `("Grpc", channel.Target)`. An unreachable target surfaces as a `ConnectAsync`
+  timeout → Failed; an `RpcException` is classified by its gRPC status (`PermissionDenied`/
+  `Unauthenticated` → Warning) via `HealthCheckError.Classify`.
+  - **Auto-wired (Phase 4, default-on):** `AddGrpcClient(configureRoutes, healthCheck: true)` registers
+    it on the **dependency** category (deep `healthcheck` layer only — never a probe; see
+    `IDependencyHealthCheck`), resolving the caller's registered `GrpcChannel`. `healthCheck: false` opts
+    out; explicit `AddGrpcHealthCheck()` on an `IHealthCheckBuilder` is the manual path.
+  - **Deliberately NOT `grpc.health.v1`.** That downstream `Check` asks whether the *downstream itself*
+    is serving — **transitive** (it aggregates its own deps), the same hazard as the CodeGen
+    contract-drift check — so it belongs on the diagnostic `contracts` topic, not this auto-wired
+    default, and it needs the `Grpc.HealthCheck` package (a new dependency, out of scope here).
+
 ### Pipeline-embedding building block
 - `GrpcContextConverter<T>`/`Extensions.UseGrpc<T>`/`UseGrpcClient` - the reusable
   `Convert(...)`-based building block for embedding a gRPC send as one step of a broader

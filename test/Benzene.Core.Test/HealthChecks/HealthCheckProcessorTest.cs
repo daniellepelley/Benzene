@@ -64,6 +64,21 @@ public class HealthCheckProcessorTest
     }
 
     [Fact]
+    public async Task DependencyCategoryCheck_ThatFails_DegradesToWarning_KeepingTheEndpointHealthy()
+    {
+        // The inner check reports Failed and even declares itself critical, but the dependency category
+        // forces non-critical: a down dependency degrades the deep healthcheck report (Warning) rather
+        // than flipping the endpoint to 503. This is what keeps a healthcheck endpoint green when an
+        // auto-wired downstream (e.g. an egress queue) is unreachable — the common integration-test case.
+        var wrapped = new DependencyHealthCheck(new StubCheck("dep", ok: false, isNonCritical: false));
+
+        var response = await RunAsync(new HealthCheckProcessor(), wrapped);
+
+        Assert.True(response.IsHealthy);
+        Assert.Equal(HealthCheckStatus.Warning, response.HealthChecks["dep"].Status);
+    }
+
+    [Fact]
     public async Task PerCheckTimeout_ShorterThanProcessor_TimesTheCheckOut()
     {
         // Processor budget is generous (30s); the check's own 10ms Timeout is what should bite.

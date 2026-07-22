@@ -150,6 +150,12 @@ default — the false-negative (healthy-but-can't-write) is rarer than the failu
 cache key with the reachability check) and the existing `⚠️ Side-effecting` docs. Not deleted, not a
 flag on the default check.
 
+> **Implemented refinement:** auto-wired dependency-category checks are **non-critical by default**
+> (`DependencyHealthCheck` forces `IsNonCritical => true`). A down auto-wired dependency degrades the deep
+> `healthcheck` report to a Warning rather than flipping the endpoint to 503 — that layer is monitoring,
+> not a probe. This also keeps healthcheck integration tests green when the real dependency isn't
+> reachable (surfaced by the AWS example: configuring egress to a queue must not 503 the healthcheck).
+
 ### 3.4 Result semantics — criticality-driven Warning vs Failed
 Reuse the existing three-state model (no new statuses — mesh condition):
 
@@ -392,8 +398,17 @@ read-only, on the **dependency category** (deep layer, per the §3.2 revision �
   queue existence), `IRabbitMqConnectionProvider` (one dedicated connection reused; cheap channel per
   probe), §3.9 via AMQP reply codes, auto-wired on `UseRabbitMq(..., healthCheck: true)` (dependency
   category, dedup `"RabbitMq:{queue}"`).
-- ⬜ Event Grid, gRPC (+ the explicit-only Lambda/StepFunctions/Service Bus follow-ups)
-  — **designed** in `work/client-health-checks-remaining-designs.md`. Key finding: the worker-startup seam
+- ✅ **gRPC** (`Benzene.Grpc.Client`) — `GrpcHealthCheck` (transport reachability via `ConnectAsync`),
+  auto-wired on `AddGrpcClient(..., healthCheck: true)`. `grpc.health.v1` (transitive) deferred to the
+  `contracts` topic + `Grpc.HealthCheck` dep.
+- ✅ **Step Functions** — added the `AddStepFunctionsClient(arn)` DI seam; it auto-wires the existing
+  `DescribeStateMachine` check.
+- ✅ **Service Bus consumer** (`Benzene.Azure.ServiceBus`) — `UseServiceBus(..., healthCheck: true)`
+  auto-wires the peek-based check (Listen claim, consumer-side); `ServiceBusHealthCheck` upgraded to §3.9.
+- ✅ **Event Grid / Lambda** — resolved as intentionally check-less (no data-plane read / dynamic
+  target), documented in their CLAUDE.md.
+- All remaining transports **designed and resolved** in `work/client-health-checks-remaining-designs.md`.
+  Key finding: the worker-startup seam
   (`IBenzeneWorkerStartup : IRegisterDependency`) supports the same `AddDependencyHealthCheck` hook, so
   **Kafka and RabbitMQ ARE auto-wireable** (broker metadata / passive-declare reachability); gRPC splits
   into transport-reachability (dependency layer) vs `grpc.health.v1` (transitive → `contracts` topic);

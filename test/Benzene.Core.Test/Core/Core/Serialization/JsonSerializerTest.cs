@@ -41,4 +41,33 @@ public class JsonSerializerTest
     {
         Assert.IsAssignableFrom<Benzene.Abstractions.Serialization.IPayloadSerializer>(new JsonSerializer());
     }
+
+    [Fact]
+    public void Serialize_DefaultOptions_DoesNotEscapeWireUnfriendlyCharacters()
+    {
+        // Benzene JSON goes to API clients/browsers, never HTML, so the default relaxed encoder must
+        // write <, >, & and ' literally rather than as \uXXXX escapes - otherwise framework wire
+        // messages (e.g. a NotFound detail carrying the "<missing>" topic sentinel) render as gibberish.
+        var serializer = new JsonSerializer();
+
+        var json = serializer.Serialize(new { detail = "No handler found for topic '<missing>' & more" });
+
+        Assert.Contains("'<missing>'", json);
+        Assert.Contains("&", json);
+        Assert.DoesNotContain("\\u", json);
+    }
+
+    [Fact]
+    public void Serialize_BytePath_AlsoUsesRelaxedEncoding()
+    {
+        var serializer = new JsonSerializer();
+        var payload = new { detail = "topic '<missing>'" };
+
+        var writer = new ArrayBufferWriter<byte>();
+        serializer.Serialize(payload.GetType(), payload, writer);
+        var json = Encoding.UTF8.GetString(writer.WrittenSpan);
+
+        Assert.Contains("'<missing>'", json);
+        Assert.DoesNotContain("\\u", json);
+    }
 }
