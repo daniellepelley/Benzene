@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
@@ -30,11 +29,19 @@ public class ParallelOutboundTest
         var live = 0;
         var maxLive = 0;
         var gate = new object();
+        // A rendezvous both branches must reach before either may finish: it can only be satisfied
+        // if the two branches are in flight at the same time. This proves concurrency
+        // deterministically - no wall-clock timing, so it can't flake under CPU load (unlike an
+        // "elapsed < Nms" assertion, where a loaded thread pool delays Task resumption). A sequential
+        // run would leave the first branch waiting alone; it releases only on the bounded timeout, by
+        // which point the branches never overlapped, so maxLive stays 1 and the test fails.
+        using var bothInFlight = new Barrier(2);
 
         Func<IServiceResolver, Func<OutboundContext, Func<Task>, Task>> branch = _ => async (ctx, _) =>
         {
             lock (gate) { maxLive = Math.Max(maxLive, ++live); }
-            await Task.Delay(60);
+            await Task.Yield(); // ensure each branch's continuation runs on its own thread-pool thread
+            bothInFlight.SignalAndWait(TimeSpan.FromSeconds(10));
             lock (gate) { live--; }
             ctx.Response = BenzeneResult.Ok<Void>();
         };
@@ -43,14 +50,10 @@ public class ParallelOutboundTest
             ("a", b => b.Use("a", branch)),
             ("b", b => b.Use("b", branch)))));
 
-        var stopwatch = Stopwatch.StartNew();
         var result = await sender.SendAsync<string, Void>("order:create", "payload");
-        stopwatch.Stop();
 
         Assert.True(result.IsSuccessful);
-        Assert.Equal(2, maxLive);                          // both branches were in flight at once
-        Assert.True(stopwatch.ElapsedMilliseconds < 120,   // ~max(60,60), not 120 sequential
-            $"expected concurrent (~60ms) not sequential (~120ms), was {stopwatch.ElapsedMilliseconds}ms");
+        Assert.Equal(2, maxLive); // both branches were in flight at once (the barrier could release)
     }
 
     [Fact]
