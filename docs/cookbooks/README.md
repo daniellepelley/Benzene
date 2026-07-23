@@ -21,6 +21,7 @@ Cookbooks are step-by-step guides that show you how to solve specific problems w
 - [S3 Event Processing](../getting-started-aws.md) - React to S3 object creation/deletion via `Benzene.Aws.Lambda.S3` (see the "S3" section)
 - API Gateway Custom Authorizers *(planned - `Benzene.Aws.Lambda.ApiGateway`'s `ApiGatewayCustomAuthorizer` support exists in source but isn't cookbook-documented yet)*
 - [Lambda Cold Start Optimization](lambda-cold-start-optimization.md) - Reduce cold start times
+- [Deploying with the Serverless Framework](deploy-with-serverless-framework.md) - Deploy a Benzene Lambda via `serverless.yml` (for teams already on the Serverless Framework), and keep the one seam — `events:` ↔ `.UseXxx(...)` — in sync
 
 ### Azure
 - [Service Bus Message Handling](service-bus-handling.md) - Process Service Bus messages with Benzene
