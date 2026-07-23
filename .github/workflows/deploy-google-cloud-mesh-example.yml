@@ -49,6 +49,24 @@ jobs:
 
       - uses: hashicorp/setup-terraform@v3
 
+      # Enable every Google Cloud API the deploy touches (a fresh project has them off). Needs the SA to
+      # have roles/serviceusage.serviceUsageAdmin; if it 403s, enable them once in the console instead.
+      - name: Enable required Google Cloud APIs
+        run: |
+          gcloud services enable --project "${{ github.event.inputs.project }}" \
+            iam.googleapis.com \
+            cloudresourcemanager.googleapis.com \
+            serviceusage.googleapis.com \
+            storage.googleapis.com \
+            pubsub.googleapis.com \
+            cloudfunctions.googleapis.com \
+            run.googleapis.com \
+            cloudbuild.googleapis.com \
+            artifactregistry.googleapis.com \
+            eventarc.googleapis.com \
+            cloudscheduler.googleapis.com \
+            logging.googleapis.com
+
       # Ensure the Terraform state bucket exists (the GCS backend requires it to pre-exist).
       - name: Ensure Terraform state bucket
         run: |

@@ -85,6 +85,7 @@ denied on the Terraform state bucket):
 PROJECT=smart-theory-88114
 SA=benzene@smart-theory-88114.iam.gserviceaccount.com   # your GCP_SA_KEY account
 for role in \
+  roles/serviceusage.serviceUsageAdmin \ # enable the required APIs (the workflow does this)
   roles/storage.admin \            # Terraform state bucket + the mesh artifact bucket
   roles/pubsub.admin \             # inbox topics + subscriptions
   roles/cloudfunctions.admin \     # deploy the functions
