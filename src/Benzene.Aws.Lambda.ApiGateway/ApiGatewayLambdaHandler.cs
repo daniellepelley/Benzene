@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -18,6 +19,12 @@ namespace Benzene.Aws.Lambda.ApiGateway;
 /// </remarks>
 public class ApiGatewayLambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayProxyRequest>
 {
+    // Source-generated JSON metadata for the API Gateway proxy event types, built once per process
+    // (shared, thread-safe). Replaces the base router's reflection-based DefaultLambdaJsonSerializer for
+    // this handler, so the first invocation doesn't pay System.Text.Json's per-type metadata build - the
+    // bulk of the cold-start API-Gateway-to-Benzene conversion cost in the X-Ray cold-start analysis.
+    private static readonly SourceGeneratorLambdaJsonSerializer<ApiGatewayJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly ApiGatewayApplication _apiGatewayApplication;
 
     /// <summary>
@@ -29,6 +36,7 @@ public class ApiGatewayLambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayProxy
         IServiceResolver serviceResolver)
     : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _apiGatewayApplication = new ApiGatewayApplication(pipeline);
     }
 

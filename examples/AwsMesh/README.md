@@ -352,11 +352,13 @@ and the levers beyond it, in rough order of value-for-effort:
   a full vCPU (shortest cold start) or back to 512 to minimise cost — one line in `deploy/main.tf`.
 
 **Remaining levers (not applied — each has a real trade-off):**
-- **Source-generated JSON** *(recommended next step)* — the largest unwarmed cost left is STJ's
-  reflection-based metadata build for the API Gateway event and the payload types. A
-  `JsonSerializerContext` (STJ source generator) removes that reflection entirely. It's a code change,
-  not a toggle, and needs the context wired into the Lambda serializer + media format, so it's a
-  deliberate follow-up rather than a flag.
+- **Source-generated JSON** *(in progress)* — the largest unwarmed cost left is STJ's reflection-based
+  metadata build for the API Gateway event and the payload types. A `JsonSerializerContext` (STJ source
+  generator) removes that reflection entirely. **Done for the API Gateway proxy event:**
+  `ApiGatewayLambdaHandler` now uses a source-generated `ApiGatewayJsonSerializerContext` instead of the
+  reflection serializer, so the cold API-Gateway→Benzene conversion no longer pays the event-type
+  metadata build. Still a follow-up: the same treatment for the message **payload** types (app-authored
+  or Benzene-generated context wired into the media format) and the other event adapters.
 - **arm64 (Graviton)** — usually better price/performance and competitive cold start. Requires
   flipping `lambda_architecture` to `arm64`, the CI `RID` to `linux-arm64`, **and** the ADOT collector
   layer ARN (see `variables.tf`) to the matching arm64 build — a coordinated change, so it's opt-in.

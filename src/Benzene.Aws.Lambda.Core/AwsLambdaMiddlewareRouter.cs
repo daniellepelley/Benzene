@@ -1,3 +1,4 @@
+using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
@@ -24,11 +25,13 @@ public abstract class AwsLambdaMiddlewareRouter<TRequest> : MiddlewareRouter<TRe
     private static readonly DefaultLambdaJsonSerializer SharedJsonSerializer = new();
 
     /// <summary>
-    /// The JSON serializer used to deserialize the request and serialize the response. Shared across
-    /// router instances by default (the serializer is thread-safe and stateless per call); assign a
-    /// different instance to override it for one router.
+    /// The JSON serializer used to deserialize the request and serialize the response. Defaults to the
+    /// reflection-based <see cref="DefaultLambdaJsonSerializer"/>, shared across router instances (it's
+    /// thread-safe and stateless per call). Typed as <see cref="ILambdaSerializer"/> so a derived router
+    /// can assign a <see cref="SourceGeneratorLambdaJsonSerializer{TContext}"/> for its event type -
+    /// removing System.Text.Json's per-type metadata build from the first (cold) invocation.
     /// </summary>
-    protected DefaultLambdaJsonSerializer JsonSerializer = SharedJsonSerializer;
+    protected ILambdaSerializer JsonSerializer = SharedJsonSerializer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AwsLambdaMiddlewareRouter{TRequest}"/> class.
@@ -59,11 +62,16 @@ public abstract class AwsLambdaMiddlewareRouter<TRequest> : MiddlewareRouter<TRe
     }
 
     /// <summary>
-    /// Serializes a response object and writes it to the context's response stream.
+    /// Serializes a response and writes it to the context's response stream.
     /// </summary>
+    /// <typeparam name="TResponse">The static response type. Passed through to
+    /// <see cref="ILambdaSerializer.Serialize{T}"/> so a source-generated serializer can resolve the
+    /// right <c>JsonTypeInfo</c> by type (a boxed <c>object</c> would defeat source generation). Every
+    /// caller passes the application's concrete response type, so this is also the runtime type - no
+    /// behavioural change for the reflection serializer.</typeparam>
     /// <param name="context">The AWS event stream context to write the response to.</param>
-    /// <param name="response">The response object to serialize.</param>
-    protected void MapResponse(AwsEventStreamContext context, object response)
+    /// <param name="response">The response to serialize.</param>
+    protected void MapResponse<TResponse>(AwsEventStreamContext context, TResponse response)
     {
         JsonSerializer.Serialize(response, context.Response);
         if (context.Response != null)

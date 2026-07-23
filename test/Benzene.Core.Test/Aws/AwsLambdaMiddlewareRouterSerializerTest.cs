@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Aws.Lambda.Core;
@@ -20,7 +21,7 @@ public class AwsLambdaMiddlewareRouterSerializerTest
     private class ExposingRouter : AwsLambdaMiddlewareRouter<string>
     {
         public ExposingRouter() : base(new NullServiceResolver()) { }
-        public DefaultLambdaJsonSerializer ExposedSerializer => JsonSerializer;
+        public ILambdaSerializer ExposedSerializer => JsonSerializer;
         protected override bool CanHandle(string request) => false;
         protected override Task HandleFunction(string request, AwsEventStreamContext context, IServiceResolverFactory serviceResolverFactory) => Task.CompletedTask;
     }

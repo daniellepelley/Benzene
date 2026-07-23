@@ -53,10 +53,20 @@ Core AWS Lambda integration for Benzene. Provides base classes and abstractions 
 - AWS Lambda context passed through middleware pipeline
 - Cold start optimization via startup caching
 - Async/await used throughout
-- `AwsLambdaMiddlewareRouter<TRequest>`'s `DefaultLambdaJsonSerializer` is shared (static) across
-  router instances, because the pipeline constructs middleware fresh per invocation and
-  System.Text.Json caches its reflection-built type metadata per `JsonSerializerOptions` instance —
-  a per-instance serializer re-paid the full metadata build for `TRequest` (tens of ms for the large
-  AWS event types) on every invocation. The `protected JsonSerializer` field is still per-instance
-  assignable for overrides. Regression-guarded by
-  `test/Benzene.Core.Test/Aws/AwsLambdaMiddlewareRouterSerializerTest.cs`.
+- `AwsLambdaMiddlewareRouter<TRequest>`'s serializer is shared (static) across router instances,
+  because the pipeline constructs middleware fresh per invocation and System.Text.Json caches its
+  reflection-built type metadata per `JsonSerializerOptions` instance — a per-instance serializer
+  re-paid the full metadata build for `TRequest` (tens of ms for the large AWS event types) on every
+  invocation. The `protected JsonSerializer` field is still per-instance assignable for overrides.
+  Regression-guarded by `test/Benzene.Core.Test/Aws/AwsLambdaMiddlewareRouterSerializerTest.cs`.
+  - The field is typed **`ILambdaSerializer`** (default: the reflection-based
+    `DefaultLambdaJsonSerializer`) so a derived router can plug a **source-generated**
+    `SourceGeneratorLambdaJsonSerializer<TContext>` for its event type — this removes even the *first*
+    (cold-start) reflection metadata build, the bulk of the API-Gateway conversion cost in the X-Ray
+    cold-start analysis. `Benzene.Aws.Lambda.ApiGateway`'s `ApiGatewayLambdaHandler` does this via the
+    public `ApiGatewayJsonSerializerContext` (`APIGatewayProxyRequest`/`APIGatewayProxyResponse`); other
+    adapters still default to reflection. `MapResponse<TResponse>` is generic (not `object`) so the
+    concrete response type reaches the serializer — required for source generation to resolve the right
+    `JsonTypeInfo`, and behaviourally identical for the reflection path since every caller already passes
+    its application's concrete response type. Round-trip equivalence (source-gen vs reflection) is guarded
+    by `test/Benzene.Core.Test/Aws/ApiGateway/ApiGatewaySourceGenSerializerTest.cs`.
