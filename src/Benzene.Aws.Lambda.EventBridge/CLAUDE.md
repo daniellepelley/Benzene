@@ -6,7 +6,7 @@ Benzene message handlers. The event's `detail-type` is the message topic — Eve
 routing key, so no `topic` attribute needs bolting on the way SQS/SNS require — and `detail` is
 the message body. See `docs/plans/eventbridge-plan.md` for the design decisions (E1–E7).
 
-## Failure handling: a returned failure result is not retried by default (opt in via `EventBridgeOptions`)
+## Failure handling: a returned failure result is escalated (safe by default; opt out via `EventBridgeOptions`)
 Safe-by-default (`RaiseOnFailureStatus` defaults to `true`, flipped 2026-07-21 — see
 `work/settlement-contract-1.0.md`): if your handler returns a non-exception failure result (e.g.
 `BenzeneResult.ServiceUnavailable(...)`), it is escalated into a thrown

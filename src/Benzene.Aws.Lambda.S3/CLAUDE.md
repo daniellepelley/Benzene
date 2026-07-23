@@ -12,18 +12,17 @@ middleware pipeline as a fire-and-forget, no-response transport.
 > it actually does. Real EventBridge support now lives in the separate
 > `Benzene.Aws.Lambda.EventBridge` package.
 
-## Failure handling: a returned failure result is not retried by default (opt in via `S3Options`)
-By default, if a handler returns a non-exception failure result (e.g.
-`BenzeneResult.ServiceUnavailable(...)`), the Lambda invocation still reports success, so the S3
-event notification is considered delivered and is never retried — only an unhandled exception fails
-the invocation and lets Lambda's own async-invoke retry (2 automatic retries) + on-failure
-destination/DLQ take over. To retry on failure *results* too, set
-`S3Options.RaiseOnFailureStatus = true` (via `UseS3(action, configure)`), which escalates a failure
-result into a thrown `S3MessageProcessingException` so the async-invoke retry applies the same way it
-would for an exception — mirroring `Benzene.Aws.Lambda.Sns`. `S3Options.CatchExceptions` (default
-`false`) conversely swallows/logs handler exceptions instead of cascading them. Both default off
-(purely additive). If you enable `RaiseOnFailureStatus`, the handler must be idempotent (a retried
-S3 delivery re-runs it).
+## Failure handling: a returned failure result is escalated (safe by default; opt out via `S3Options`)
+Safe-by-default (`S3Options.RaiseOnFailureStatus` defaults to `true`). If a handler returns a
+non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`), `S3Application`
+escalates it into a thrown `S3MessageProcessingException`, so the Lambda invocation fails and S3's
+own async-invoke retry (2 automatic retries) + on-failure destination/DLQ take over — the S3 event
+notification is redelivered, not silently settled (at-least-once). Because a retried S3 delivery
+re-runs the handler with the same event, the handler must be idempotent. Set
+`S3Options.RaiseOnFailureStatus = false` (via `UseS3(action, configure)`) for at-most-once, where a
+failure result is accepted and the invocation is not retried — mirroring `Benzene.Aws.Lambda.Sns`.
+`S3Options.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions instead of
+cascading them.
 
 ## Key types/interfaces
 

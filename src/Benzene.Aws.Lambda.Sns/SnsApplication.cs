@@ -27,8 +27,9 @@ public class SnsApplication : IMiddlewareApplication<SNSEvent>
     /// <param name="pipeline">The built SNS middleware pipeline to run each record through.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled. Defaults to a new
-    /// <see cref="SnsOptions"/> instance (both <see cref="SnsOptions.CatchExceptions"/> and
-    /// <see cref="SnsOptions.RaiseOnFailureStatus"/> off) if omitted.
+    /// <see cref="SnsOptions"/> instance (safe-by-default:
+    /// <see cref="SnsOptions.RaiseOnFailureStatus"/> on, <see cref="SnsOptions.CatchExceptions"/>
+    /// off) if omitted.
     /// </param>
     public SnsApplication(IMiddlewarePipeline<SnsRecordContext> pipeline, SnsOptions options = null)
     {

@@ -28,8 +28,9 @@ public class S3Application : IMiddlewareApplication<S3Event>
     /// <param name="pipeline">The built S3 middleware pipeline to run each record through.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled, and the batch fan-out
-    /// concurrency. Defaults to a new <see cref="S3Options"/> instance (both flags off, unbounded
-    /// fan-out) if omitted.
+    /// concurrency. Defaults to a new <see cref="S3Options"/> instance (safe-by-default:
+    /// <see cref="S3Options.RaiseOnFailureStatus"/> on, <see cref="S3Options.CatchExceptions"/> off,
+    /// unbounded fan-out) if omitted.
     /// </param>
     public S3Application(IMiddlewarePipeline<S3RecordContext> pipeline, S3Options options = null)
     {

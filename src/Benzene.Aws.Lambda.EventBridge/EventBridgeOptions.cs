@@ -19,9 +19,9 @@ public class EventBridgeOptions
     /// Gets or sets whether a message handler returning a non-exception failure result (e.g. a
     /// validation error) is escalated into a thrown <see cref="EventBridgeMessageProcessingException"/>,
     /// so the EventBridge rule target retries the event the same way it would for an unhandled
-    /// exception. Defaults to <c>true</c> (safe-by-default: a returned failure is escalated and redelivered; set <c>false</c> for at-most-once, and keep the handler idempotent). Historically the reasoning was that a failure result usually reflects a permanent/business
-    /// failure that retrying won't fix. Turn it on for at-least-once semantics; the handler must then
-    /// be idempotent.
+    /// exception. Defaults to <c>true</c> (safe-by-default): a returned failure is escalated and
+    /// redelivered (at-least-once), so the handler must be idempotent. Set <c>false</c> for
+    /// at-most-once, where a failure result is accepted and the event is not retried.
     /// </summary>
     public bool RaiseOnFailureStatus { get; set; } = true;
 }

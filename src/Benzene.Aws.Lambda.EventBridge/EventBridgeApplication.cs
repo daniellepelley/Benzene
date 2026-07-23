@@ -26,7 +26,9 @@ public class EventBridgeApplication : IMiddlewareApplication<EventBridgeEvent>
     /// <param name="pipeline">The built EventBridge middleware pipeline to run each event through.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled. Defaults to a new
-    /// <see cref="EventBridgeOptions"/> instance (both flags off) if omitted.
+    /// <see cref="EventBridgeOptions"/> instance (safe-by-default:
+    /// <see cref="EventBridgeOptions.RaiseOnFailureStatus"/> on,
+    /// <see cref="EventBridgeOptions.CatchExceptions"/> off) if omitted.
     /// </param>
     public EventBridgeApplication(IMiddlewarePipeline<EventBridgeContext> pipeline, EventBridgeOptions options = null)
     {
