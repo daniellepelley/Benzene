@@ -133,6 +133,49 @@ counts over a window; fine-grained analysis stays in CloudWatch/Grafana. (Per-se
 duration are documented follow-ups — the counter isn't tagged by service, so `usage.json` reports that
 dimension as absent, which the UI surfaces honestly rather than guessing.)
 
+#### Generate traffic with the Lambda test tool
+There's nothing to show until services actually handle messages. The quickest way to create some is the
+**Test** tab on a service Lambda in the console (or `aws lambda invoke`). On a direct invoke the services
+accept the **Benzene message envelope** `{ "topic", "headers", "body" }` — note `body` is a *string* holding
+the message JSON (escaped quotes), and it flows through the same metered pipeline. Which Lambda handles
+which topic: `orders:*` → orders, `payments:*` → payments, `shipping:*` → shipping; the events `order:placed`
+→ inventory/notifications, `payment:captured` → notifications/analytics, `shipping:dispatched` →
+inventory/notifications/analytics.
+
+**Best starting point — `orders:create` on the `orders` Lambda.** Because the queues/topics/bus are wired,
+the handler's downstream sends fire for real, so one invoke fans out `payments:capture` (SQS) →
+`shipping:book` (SQS) → `shipping:dispatched` (EventBridge) → the consumers — giving traffic across many
+topics and the **sqs/sns/eventbridge** transports, not just the invoke path. Fire it a dozen times:
+
+```json
+{ "topic": "orders:create", "headers": {}, "body": "{\"item\":\"Espresso Machine\",\"quantity\":2}" }
+```
+
+Per-topic payloads to hit any service directly (these count under the *invoke* transport):
+
+```json
+{ "topic": "payments:capture",    "headers": {}, "body": "{\"orderId\":\"ord-1\",\"amount\":20,\"currency\":\"GBP\"}" }
+{ "topic": "shipping:book",       "headers": {}, "body": "{\"orderId\":\"ord-1\",\"carrier\":\"DPD\"}" }
+{ "topic": "order:placed",        "headers": {}, "body": "{\"orderId\":\"ord-1\",\"item\":\"Espresso Machine\",\"quantity\":2,\"amount\":20,\"currency\":\"GBP\"}" }
+{ "topic": "payment:captured",    "headers": {}, "body": "{\"orderId\":\"ord-1\",\"amount\":20,\"currency\":\"GBP\"}" }
+{ "topic": "shipping:dispatched", "headers": {}, "body": "{\"orderId\":\"ord-1\",\"shipmentId\":\"shp-1\",\"carrier\":\"DPD\",\"trackingNumber\":\"DPD-123\"}" }
+{ "topic": "orders:get-all",      "headers": {}, "body": "" }
+```
+
+Or from the CLI (`--cli-binary-format raw-in-base64-out` lets AWS CLI v2 take a raw JSON payload):
+
+```bash
+aws lambda invoke --function-name <orders-fn-name> --cli-binary-format raw-in-base64-out \
+  --payload '{"topic":"orders:create","headers":{},"body":"{\"item\":\"Espresso Machine\",\"quantity\":2}"}' /dev/stdout
+```
+
+Notes: the counter is recorded around the whole pipeline, so **every** invoke produces a datapoint — a
+payload that fails validation just lands as `result=failure`. Validation to respect: `orders:create` needs a
+non-empty item and quantity 1–1000; `payments:capture` a 3-char currency and amount > 0; `shipping:book` a
+carrier in {DPD, RoyalMail, UPS, FedEx}. After firing a batch, give the metric ~1–2 min to reach CloudWatch,
+`POST /mesh/refresh` to aggregate now (instead of waiting for the schedule), then check `usage.json` / the
+Mesh UI Usage column.
+
 ## What each service shows off
 
 Every service is wired through the shared `Shared/MeshServiceWiring` helper, which "goes to town" on
