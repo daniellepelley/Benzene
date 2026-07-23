@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AssemblyName>Benzene.Examples.GoogleCloudMesh.Payments</AssemblyName>
+    <RootNamespace>Benzene.Examples.GoogleCloudMesh.Payments</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Benzene.Examples.GoogleCloudMesh.Shared.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.GoogleCloud.Functions.Http\Benzene.GoogleCloud.Functions.Http.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.GoogleCloud.Functions.PubSub\Benzene.GoogleCloud.Functions.PubSub.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.AspNet.Core\Benzene.AspNet.Core.csproj" />
+  </ItemGroup>
+
+</Project>
