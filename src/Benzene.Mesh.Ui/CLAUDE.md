@@ -1,5 +1,15 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-23 (Fleet view): "Look up a trace by ID" box.** `mesh-fleet-ui.html` gains a direct
+> trace-id lookup box (above "Recent flows"), the sibling of the correlation lookup: paste a trace id
+> → POSTs `mesh:query:trace` through the same `ENVELOPE_URL` → renders that flow's waterfall via the
+> **existing** `buildWaterfall(view)`. It surfaces the trace waterfall as its own window rather than
+> only via clicking one of the last ~20 recent flows, so a trace still in the collector's ring but off
+> the recent list is reachable. `not-found` → an honest "aged out of the ring buffer" empty state;
+> empty id is a client-side no-op. Reuses the `.corr-box`/`.corr-results` styles and the no-dependency
+> floor (vanilla JS, one `fetch`); no new read-model (the collector's `mesh:query:trace`/`TraceView`
+> were already built + conformance-tested, just previously reachable only by row-click).
+>
 > **2026-07-23 (usage panel): "By status" reconciles with "By transport" via a neutral bucket.**
 > The usage panel (`buildUsagePanel`) computed "By transport" over all entries but "By status" over
 > only real statuses (excluding the `result=<missing>` no-outcome sentinel), so the two rows silently
