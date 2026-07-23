@@ -42,6 +42,26 @@ for the `HttpListener` one.
 
   See [`docs/hosting.md`](hosting.md) for both host shapes and the `benzene.asp` starter template
   (`templates/content/asp`) for a complete Kestrel-hosted example.
+- **Want it *lean* — Kestrel without the MVC/routing baggage?** That's usually why people reached for
+  `SelfHost.Http` in the first place. Use `WebApplication.CreateSlimBuilder(args)` (or, for an even
+  smaller surface, `CreateEmptyBuilder(...)`) instead of `CreateBuilder`. The slim builder starts from
+  just Kestrel + configuration + logging and opts you into nothing else — it's the trim/AOT-friendly
+  host Microsoft ships for exactly this "no framework baggage" case, and Benzene layers on top of it
+  unchanged:
+
+  ```csharp
+  // Lean Kestrel, no MVC/routing - the closest replacement for the "no ASP.NET" motivation
+  var builder = WebApplication.CreateSlimBuilder(args).UseBenzene<StartUp>();
+  var app = builder.Build();
+  app.UseBenzene();
+  app.Run();
+  ```
+
+  This still references the `Microsoft.AspNetCore.App` shared framework (Kestrel only ships there),
+  so it isn't dependency-free the way `HttpListener` was — but it *is* the leanest Kestrel host, and a
+  bespoke Kestrel-on-raw-`IHttpApplication` server would save only the middleware-pipeline overhead
+  (which Benzene bypasses anyway) at the cost of owning request/response feature mapping, TLS, HTTP/2,
+  connection limits, and graceful drain yourself.
 - **Worker that also needs an HTTP health/probe endpoint** (e.g. a Kafka/SQS consumer exposing
   `GET /livez` for Kubernetes) — the one case where `HttpListener`'s throughput genuinely doesn't
   matter. Even so, host it on Kestrel: run a `WebApplication` that registers your worker as an

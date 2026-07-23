@@ -404,6 +404,25 @@ is a no-op `IBenzeneApplicationBuilder` extension on any platform other than ASP
 pattern as `UseAwsLambda`/`UseWorker`. See [ASP.NET Core Integration](asp-net-core.md) for more
 detail on request routing.
 
+**Lean Kestrel (no MVC/routing baggage).** Swap `WebApplication.CreateBuilder(args)` for
+`WebApplication.CreateSlimBuilder(args)` — the slim builder starts from just Kestrel + configuration
++ logging and opts you into nothing else (it's the trim/AOT-friendly host Microsoft ships for exactly
+this "no framework baggage" case). Benzene layers on top unchanged, so this is the leanest Kestrel
+host and the recommended replacement for the now-deprecated `Benzene.SelfHost.Http` (see
+[Deprecations](deprecations.md)):
+
+```csharp
+var builder = WebApplication.CreateSlimBuilder(args).UseBenzene<StartUp>();
+var app = builder.Build();
+app.UseBenzene();
+app.Run();
+```
+
+Kestrel only ships in the `Microsoft.AspNetCore.App` shared framework, so this still references it —
+there is no supported standalone Kestrel package. If you truly need HTTP with no ASP.NET Core shared
+framework at all, that's what `Benzene.SelfHost.Http` (`HttpListener`) did, and it's deprecated for
+the performance reasons in [Deprecations](deprecations.md).
+
 ### gRPC on ASP.NET Core
 
 Package: `Benzene.Grpc.AspNet`. Rides the same ASP.NET Core host adapter as `UseHttp` above — same
