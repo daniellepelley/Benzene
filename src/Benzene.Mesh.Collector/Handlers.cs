@@ -25,6 +25,22 @@ public static class MeshCollectorHandlers
         typeof(TraceQueryMessageHandler),
         typeof(CorrelationQueryMessageHandler)
     };
+
+    /// <summary>
+    /// The read-side <c>mesh:query:*</c> handlers only — no ingest (<c>mesh:register</c>/
+    /// <c>heartbeat</c>/<c>traces</c>). Register these when the fleet read model is composed from an
+    /// external backend (a <c>Benzene.Mesh.Fleet.*</c> adapter) rather than the in-memory push
+    /// collector: there is no ring to ingest into, only an <see cref="IMeshFleetReadModel"/> to query.
+    /// These depend solely on <see cref="IMeshFleetReadModel"/>, not <see cref="MeshCollectorStore"/>.
+    /// </summary>
+    public static readonly Type[] Queries =
+    {
+        typeof(FleetQueryMessageHandler),
+        typeof(ServiceQueryMessageHandler),
+        typeof(TopicQueryMessageHandler),
+        typeof(TraceQueryMessageHandler),
+        typeof(CorrelationQueryMessageHandler)
+    };
 }
 
 /// <summary>Ingests a service's descriptor (spec §4): re-registration replaces provider edges wholesale.</summary>

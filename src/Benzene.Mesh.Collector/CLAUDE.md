@@ -33,6 +33,11 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   `mesh:register`/`mesh:heartbeat`/`mesh:traces` ingest (service required → `BadRequest`; an
   empty trace batch is accepted) and `mesh:query:fleet`/`service`/`topic`/`trace`/`correlation`
   (missing params → `BadRequest`, unknown subjects → `NotFound`).
+- `MeshCollectorHandlers.Queries` (2026-07-23) - the five `mesh:query:*` handlers only, no ingest. For a
+  host whose fleet read model is composed from an external backend (a `Benzene.Mesh.Fleet.*` adapter,
+  e.g. X-Ray) rather than the push collector: there's no ring to ingest into, only an
+  `IMeshFleetReadModel` to query. The query handlers depend solely on `IMeshFleetReadModel`, so no
+  `MeshCollectorStore` singleton is needed with this list.
 - `mesh:query:correlation` (`CorrelationQueryMessageHandler`, 2026-07-23) - cross-service failure
   triage from a **business correlation id** (a ticket/log id) rather than a trace id. A correlation
   id can span multiple traces, so `MeshCollectorStore.Correlation(id)` filters the ring by

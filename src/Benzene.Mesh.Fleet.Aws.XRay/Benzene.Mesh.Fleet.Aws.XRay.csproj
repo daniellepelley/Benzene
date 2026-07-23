@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Benzene.Mesh.Fleet.Aws.XRay</AssemblyName>
+    <RootNamespace>Benzene.Mesh.Fleet.Aws.XRay</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.XRay" Version="3.7.300.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+    <ProjectReference Include="..\Benzene.Mesh.Collector\Benzene.Mesh.Collector.csproj" />
+  </ItemGroup>
+
+</Project>
