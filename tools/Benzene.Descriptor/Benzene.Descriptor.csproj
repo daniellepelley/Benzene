@@ -36,6 +36,8 @@
     <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Wire\Benzene.Mesh.Wire.csproj" />
+    <!-- Cloud-neutral outbound routing model (for produces[].transportKind). -->
+    <ProjectReference Include="..\..\src\Benzene.Clients\Benzene.Clients.csproj" />
   </ItemGroup>
 
 </Project>

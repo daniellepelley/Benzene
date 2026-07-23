@@ -145,6 +145,14 @@ Points worth noting from the **real** output:
   by the spec today. That's the single new capability this needs (next section).
 - The `descriptorHash` is stable and content-addressed — a natural drift signal for CI.
 
+> **Update (tool spike):** `tools/Benzene.Descriptor` now recovers the outbound **`transportKind`**
+> (`sqs`/`sns`/`eventbridge`/…) cloud-agnostically, by reading the route's converter context-type name
+> via best-effort reflection — so the `TODO`s below are partly addressed for the transport half. The
+> **destination** (env-var binding) is still deliberately deferred to the outbound redesign, and the
+> reflection approach is spike-grade: the clean fix remains the read-model described here. The tool is
+> also now structured as a cloud-agnostic core + host adapters (only the inbound transport list needs a
+> host adapter), matching the "logical is cloud-neutral, transports are just names" principle.
+
 ## The one new capability required
 
 Everything above except the egress transport/env-var reuses code that already ships. To fill the two

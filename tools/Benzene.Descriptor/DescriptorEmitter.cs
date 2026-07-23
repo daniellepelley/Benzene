@@ -4,24 +4,18 @@ using System.Text.Json.Nodes;
 using Benzene.Abstractions.Hosting;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.Messages;
-using Benzene.Aws.Lambda.Core;
-using Benzene.Aws.Lambda.Core.AwsEventStream;
 using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandlers.TestHelpers;
-using Benzene.Core.Middleware;
 using Benzene.Mesh.Wire;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
-using Benzene.Testing;
-using Benzene.Tools.Aws;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Benzene.Descriptor;
 
 /// <summary>
-/// Constructs a built Benzene AWS Lambda service in-process — running its StartUp registration exactly
-/// as the Lambda host does on cold start, but never starting the run/listen step — then reads the
-/// `spec` descriptor it already computes and distils a neutral deployment descriptor. No network I/O.
+/// Emits a cloud-agnostic deployment descriptor from a built, non-running Benzene service. The logical
+/// contract (consumes, produces, schemas, outbound transport kinds) is derived from host-neutral
+/// registration; a host adapter (AWS Lambda today) additionally supplies the inbound transport-name
+/// list. No deploy, no socket.
 /// </summary>
 internal static class DescriptorEmitter
 {
@@ -32,13 +26,19 @@ internal static class DescriptorEmitter
         var assembly = alc.LoadFromAssemblyPath(fullPath);
 
         var startUpType = FindStartUpType(assembly);
-        var specJson = BuildSpec(startUpType);
-        var meshJson = BuildMesh(assembly, options);
+        var adapter = options.Host is { } forced
+            ? HostAdapters.All.FirstOrDefault(a => a.Name == forced)
+              ?? throw new InvalidOperationException($"Unknown host adapter '{forced}'. Known: {string.Join(", ", HostAdapters.All.Select(a => a.Name))}.")
+            : HostAdapters.Select(assembly);
+        var build = adapter.Build(startUpType);
 
-        return Distil(specJson, meshJson, options);
+        var specJson = BuildSpec(build.Resolver);
+        var meshJson = BuildMesh(assembly, options);
+        var outboundTransports = OutboundRouteInspector.TransportsByTopic(build.Resolver);
+
+        return Distil(specJson, meshJson, outboundTransports, build, options);
     }
 
-    // Locate the service's BenzeneStartUp (shared base type ⇒ assignable across the ALC boundary).
     private static Type FindStartUpType(Assembly assembly)
     {
         var candidates = assembly.GetTypes()
@@ -57,33 +57,16 @@ internal static class DescriptorEmitter
         };
     }
 
-    // Replicates AwsLambdaHost<TStartUp>'s constructor (registration + pipeline build) without the
-    // Lambda runtime, then asks the built pipeline for the `spec` document over an in-memory message.
-    private static string BuildSpec(Type startUpType)
+    // Runs SpecBuilder directly against the built container — no host round-trip, no I/O. For the
+    // neutral adapter this yields everything except the inbound transports (empty); for a host adapter
+    // it also carries transports and validation-enriched schemas.
+    private static string BuildSpec(Benzene.Abstractions.DI.IServiceResolver resolver)
     {
-        var startUp = (BenzeneStartUp)Activator.CreateInstance(startUpType)!;
-        var configuration = startUp.GetConfiguration();
-
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var container = new MicrosoftBenzeneServiceContainer(services);
-        var eventPipeline = new MiddlewarePipelineBuilder<AwsEventStreamContext>(container);
-
-        startUp.ConfigureServices(services, configuration);
-        startUp.Configure(new AwsLambdaApplicationBuilder(eventPipeline, container), configuration);
-
-        var entryPoint = new AwsLambdaEntryPoint(eventPipeline.Build(), new MicrosoftServiceResolverFactory(services));
-        using var host = new AwsLambdaBenzeneTestHost(entryPoint);
-
-        // The service's own console logger writes to stdout while the pipeline runs; keep our stdout
-        // (where the descriptor may be printed) clean by diverting that to stderr for the send.
         var stdout = Console.Out;
         Console.SetOut(Console.Error);
         try
         {
-            var response = host.SendBenzeneMessageAsync(
-                MessageBuilder.Create("spec", new SpecRequest("benzene", "json"))).GetAwaiter().GetResult();
-            return response.Body ?? "";
+            return new SpecBuilder().CreateSpec(resolver, new SpecRequest("benzene", "json"));
         }
         finally
         {
@@ -91,8 +74,6 @@ internal static class DescriptorEmitter
         }
     }
 
-    // The mesh ServiceDescriptor builds straight from the handler types (no host) — used here only for
-    // the content-addressed descriptorHash and the placement/version identity fields.
     private static string BuildMesh(Assembly assembly, EmitOptions options)
     {
         var definitions = new ReflectionMessageHandlersFinder(assembly).FindDefinitions();
@@ -104,10 +85,8 @@ internal static class DescriptorEmitter
         return MeshJson.Serialize(descriptor);
     }
 
-    // Projects the neutral deployment descriptor from the real spec + mesh. NOTE: the produces[] entries
-    // deliberately carry topic + payload schema only — the transport kind + destination env-var per
-    // egress are paused pending the outbound-routing design (see work/deployment-descriptor-design.md).
-    private static string Distil(string specJson, string meshJson, EmitOptions options)
+    private static string Distil(string specJson, string meshJson,
+        IReadOnlyDictionary<string, string> outboundTransports, HostBuild build, EmitOptions options)
     {
         var spec = JsonNode.Parse(specJson)?.AsObject();
         var mesh = JsonNode.Parse(meshJson)?.AsObject();
@@ -145,12 +124,17 @@ internal static class DescriptorEmitter
         var produces = new JsonArray();
         if (spec?["events"] is JsonArray events)
             foreach (var e in events.OfType<JsonObject>())
+            {
+                var topic = e["topic"]?.GetValue<string>();
                 produces.Add(new JsonObject
                 {
-                    ["topic"] = e["topic"]?.DeepClone(),
+                    ["topic"] = topic,
+                    // Cloud-agnostic transport kind; destination (env-var binding) is intentionally
+                    // omitted pending the outbound-routing redesign. See work/deployment-descriptor-design.md.
+                    ["transportKind"] = topic != null && outboundTransports.TryGetValue(topic, out var tk) ? tk : "unknown",
                     ["messageSchema"] = Resolve(e["message"]),
-                    // transportKind + destinationRef intentionally omitted — paused pending outbound design.
                 });
+            }
 
         var doc = new JsonObject
         {
@@ -158,6 +142,8 @@ internal static class DescriptorEmitter
             ["service"] = options.ServiceName,
             ["serviceVersion"] = options.ServiceVersion,
             ["placement"] = new JsonObject { ["cloud"] = options.Cloud, ["region"] = options.Region },
+            ["host"] = build.HostName,
+            ["transportsResolved"] = build.TransportsResolved,
             ["transports"] = transports,
             ["consumes"] = consumes,
             ["produces"] = produces,

@@ -47,10 +47,12 @@ namespace Benzene.Descriptor
         public string? ServiceVersion { get; init; }
         public string Cloud { get; init; } = "aws";
         public string Region { get; init; } = "eu-west-1";
+        // Force a specific host adapter (e.g. "neutral" for the cloud-agnostic core); auto-selected if null.
+        public string? Host { get; init; }
 
         public static EmitOptions? Parse(string[] args)
         {
-            string? assembly = null, output = null, service = null, version = null, cloud = null, region = null;
+            string? assembly = null, output = null, service = null, version = null, cloud = null, region = null, host = null;
             for (var i = 0; i < args.Length; i++)
             {
                 string? Next() => i + 1 < args.Length ? args[++i] : null;
@@ -62,6 +64,7 @@ namespace Benzene.Descriptor
                     case "--service-version": version = Next(); break;
                     case "--cloud": cloud = Next(); break;
                     case "--region": region = Next(); break;
+                    case "--host": host = Next(); break;
                     default: return null;
                 }
             }
@@ -77,6 +80,7 @@ namespace Benzene.Descriptor
                 ServiceVersion = version,
                 Cloud = cloud ?? "aws",
                 Region = region ?? "eu-west-1",
+                Host = host,
             };
         }
     }
