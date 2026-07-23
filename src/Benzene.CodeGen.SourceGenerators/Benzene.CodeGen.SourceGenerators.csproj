@@ -8,6 +8,12 @@
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsRoslynComponent>true</IsRoslynComponent>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- This analyzer ships its DLL under analyzers/dotnet/cs (below), not lib/, so there is no
+         build output in the package. The shared src/Directory.Build.props turns on symbol packages
+         (IncludeSymbols=true, snupkg); with no lib assembly the .snupkg has nothing to carry and
+         `dotnet pack` fails the whole project with NU5017 ("no dependencies nor content") - the main
+         .nupkg packs fine. Analyzers don't ship meaningful symbol packages anyway, so turn it off here. -->
+    <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
 
   <ItemGroup>
