@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SNSEvents;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -20,6 +21,10 @@ namespace Benzene.Aws.Lambda.Sns;
 /// </remarks>
 public class SnsLambdaHandler : AwsLambdaMiddlewareRouter<SNSEvent>
 {
+    // Source-generated JSON metadata for this handler's event type, built once per process, replacing
+    // the base router's reflection serializer so the first (cold) invocation skips the metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<SnsJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly IMiddlewareApplication<SNSEvent> _application;
 
     /// <summary>
@@ -32,6 +37,7 @@ public class SnsLambdaHandler : AwsLambdaMiddlewareRouter<SNSEvent>
         IServiceResolver serviceResolver)
     : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _application = application;
     }
 

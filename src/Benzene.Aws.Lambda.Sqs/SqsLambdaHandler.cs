@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -19,6 +20,10 @@ namespace Benzene.Aws.Lambda.Sqs;
 /// </remarks>
 public class SqsLambdaHandler : AwsLambdaMiddlewareRouter<SQSEvent>
 {
+    // Source-generated JSON metadata for this handler's event types, built once per process, replacing
+    // the base router's reflection serializer so the first (cold) invocation skips the metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<SqsJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly IMiddlewareApplication<SQSEvent, SQSBatchResponse> _application;
 
     /// <summary>
@@ -31,6 +36,7 @@ public class SqsLambdaHandler : AwsLambdaMiddlewareRouter<SQSEvent>
         IServiceResolver serviceResolver)
     : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _application = application;
     }
 

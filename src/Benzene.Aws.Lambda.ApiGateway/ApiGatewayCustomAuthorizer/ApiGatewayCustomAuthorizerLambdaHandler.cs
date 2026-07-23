@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -18,6 +19,11 @@ namespace Benzene.Aws.Lambda.ApiGateway.ApiGatewayCustomAuthorizer;
 /// </remarks>
 public class ApiGatewayCustomAuthorizerLambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayCustomAuthorizerRequest>
 {
+    // Source-generated JSON metadata for the custom authorizer event types, built once per process,
+    // replacing the base router's reflection serializer so the first (cold) invocation skips the
+    // metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<ApiGatewayCustomAuthorizerJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly ApiGatewayCustomAuthorizerApplication _apiGatewayApplication;
 
     /// <summary>
@@ -28,6 +34,7 @@ public class ApiGatewayCustomAuthorizerLambdaHandler : AwsLambdaMiddlewareRouter
     public ApiGatewayCustomAuthorizerLambdaHandler(IMiddlewarePipeline<ApiGatewayCustomAuthorizerContext> pipeline, IServiceResolver serviceResolver)
         :base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _apiGatewayApplication = new ApiGatewayCustomAuthorizerApplication(pipeline);
     }
 

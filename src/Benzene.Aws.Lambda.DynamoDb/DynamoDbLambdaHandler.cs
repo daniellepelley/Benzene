@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -18,6 +19,10 @@ namespace Benzene.Aws.Lambda.DynamoDb;
 /// </remarks>
 public class DynamoDbLambdaHandler : AwsLambdaMiddlewareRouter<DynamoDbEvent>
 {
+    // Source-generated JSON metadata for this handler's event types, built once per process, replacing
+    // the base router's reflection serializer so the first (cold) invocation skips the metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<DynamoDbJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly IMiddlewareApplication<DynamoDbEvent, DynamoDbBatchResponse> _application;
 
     /// <summary>
@@ -30,6 +35,7 @@ public class DynamoDbLambdaHandler : AwsLambdaMiddlewareRouter<DynamoDbEvent>
         IServiceResolver serviceResolver)
         : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _application = application;
     }
 

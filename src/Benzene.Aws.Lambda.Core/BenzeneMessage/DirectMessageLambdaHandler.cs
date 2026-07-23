@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
@@ -20,6 +21,11 @@ namespace Benzene.Aws.Lambda.Core.BenzeneMessage;
 /// </remarks>
 public class BenzeneMessageLambdaHandler : AwsLambdaMiddlewareRouter<BenzeneMessageRequest>
 {
+    // Source-generated JSON metadata for the BenzeneMessage request/response types, built once per
+    // process, replacing the base router's reflection serializer so the first (cold) invocation skips
+    // the metadata build. This is the Lambda-to-Lambda direct-invoke path the mesh uses.
+    private static readonly SourceGeneratorLambdaJsonSerializer<BenzeneMessageJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly BenzeneMessageApplication _directMessageApplication;
 
     /// <summary>
@@ -32,6 +38,7 @@ public class BenzeneMessageLambdaHandler : AwsLambdaMiddlewareRouter<BenzeneMess
         IServiceResolver serviceResolver)
     :base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _directMessageApplication = new BenzeneMessageApplication(pipeline);
     }
 

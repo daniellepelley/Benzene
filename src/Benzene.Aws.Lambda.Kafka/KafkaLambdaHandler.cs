@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.KafkaEvents;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -20,6 +21,10 @@ namespace Benzene.Aws.Lambda.Kafka;
 /// </remarks>
 public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
 {
+    // Source-generated JSON metadata for this handler's event types, built once per process, replacing
+    // the base router's reflection serializer so the first (cold) invocation skips the metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<KafkaJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly IMiddlewareApplication<KafkaEvent, KafkaBatchResponse> _application;
 
     /// <summary>
@@ -32,6 +37,7 @@ public class KafkaLambdaHandler : AwsLambdaMiddlewareRouter<KafkaEvent>
         IServiceResolver serviceResolver)
         : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _application = application;
     }
 

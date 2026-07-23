@@ -10,7 +10,9 @@ namespace Benzene.Aws.Lambda.ApiGateway;
 /// <see cref="ApiGatewayLambdaHandler"/> reads the request and writes the response without
 /// System.Text.Json building that metadata by reflection on the first invocation - the bulk of the
 /// cold-start "API Gateway -> Benzene" conversion cost in the AWS X-Ray cold-start analysis. Public so
-/// an app can reuse it (e.g. when moving the function toward trimming/Native AOT).
+/// an app can reuse it (e.g. when moving the function toward trimming/Native AOT). The v2 and custom
+/// authorizer event types live in their own contexts (their nested types collide with these by simple
+/// name, so they can't share one source-generated context).
 /// </summary>
 [JsonSerializable(typeof(APIGatewayProxyRequest))]
 [JsonSerializable(typeof(APIGatewayProxyResponse))]

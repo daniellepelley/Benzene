@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -20,6 +21,10 @@ namespace Benzene.Aws.Lambda.Kinesis;
 /// </remarks>
 public class KinesisLambdaHandler : AwsLambdaMiddlewareRouter<KinesisEvent>
 {
+    // Source-generated JSON metadata for this handler's event types, built once per process, replacing
+    // the base router's reflection serializer so the first (cold) invocation skips the metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<KinesisJsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly IMiddlewareApplication<KinesisEvent, KinesisBatchResponse> _application;
 
     /// <summary>
@@ -32,6 +37,7 @@ public class KinesisLambdaHandler : AwsLambdaMiddlewareRouter<KinesisEvent>
         IServiceResolver serviceResolver)
         : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _application = application;
     }
 

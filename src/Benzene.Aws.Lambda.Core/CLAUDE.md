@@ -63,10 +63,20 @@ Core AWS Lambda integration for Benzene. Provides base classes and abstractions 
     `DefaultLambdaJsonSerializer`) so a derived router can plug a **source-generated**
     `SourceGeneratorLambdaJsonSerializer<TContext>` for its event type — this removes even the *first*
     (cold-start) reflection metadata build, the bulk of the API-Gateway conversion cost in the X-Ray
-    cold-start analysis. `Benzene.Aws.Lambda.ApiGateway`'s `ApiGatewayLambdaHandler` does this via the
-    public `ApiGatewayJsonSerializerContext` (`APIGatewayProxyRequest`/`APIGatewayProxyResponse`); other
-    adapters still default to reflection. `MapResponse<TResponse>` is generic (not `object`) so the
-    concrete response type reaches the serializer — required for source generation to resolve the right
-    `JsonTypeInfo`, and behaviourally identical for the reflection path since every caller already passes
-    its application's concrete response type. Round-trip equivalence (source-gen vs reflection) is guarded
-    by `test/Benzene.Core.Test/Aws/ApiGateway/ApiGatewaySourceGenSerializerTest.cs`.
+    cold-start analysis. **Every event-source adapter now does this**, each via its own public
+    `*JsonSerializerContext` registering the event type it deserializes plus, where it writes one, the
+    response type it serializes: API Gateway v1 (`ApiGatewayJsonSerializerContext`), v2
+    (`ApiGatewayV2JsonSerializerContext`) and custom authorizer
+    (`ApiGatewayCustomAuthorizerJsonSerializerContext`) — kept as **separate** contexts because the v1/v2
+    request types have nested types with the same simple name (a shared context trips `SYSLIB1031`) —
+    plus SQS, SNS, S3, EventBridge, DynamoDB, Kinesis, Kafka, and the BenzeneMessage direct-invoke path
+    (`Benzene.Aws.Lambda.Core.BenzeneMessage.BenzeneMessageJsonSerializerContext`). The batch adapters
+    register their `*BatchResponse`; SNS/S3/EventBridge write no response so register only the event.
+    `MapResponse<TResponse>` is generic (not `object`) so the response's static type reaches the
+    serializer — required for source generation to resolve the right `JsonTypeInfo`, and behaviourally
+    identical for the reflection path. One wrinkle: BenzeneMessage's pipeline returns the
+    **`IBenzeneMessageResponse` interface** (its declared members match the concrete), so that context
+    registers the *interface* — the static type the serializer is actually invoked with. Each adapter's
+    handler exercises its source-gen serializer end-to-end in the existing `*MessagePipelineTest`s;
+    round-trip equivalence (source-gen vs reflection) for the API Gateway v1 event is guarded by
+    `test/Benzene.Core.Test/Aws/ApiGateway/ApiGatewaySourceGenSerializerTest.cs`.

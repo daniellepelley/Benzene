@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.Middleware;
 using Benzene.Aws.Lambda.Core;
@@ -23,6 +24,11 @@ namespace Benzene.Aws.Lambda.ApiGateway;
 /// </remarks>
 public class ApiGatewayV2LambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayHttpApiV2ProxyRequest>
 {
+    // Source-generated JSON metadata for the API Gateway v2 event types, built once per process,
+    // replacing the base router's reflection serializer so the first (cold) invocation skips the
+    // metadata build.
+    private static readonly SourceGeneratorLambdaJsonSerializer<ApiGatewayV2JsonSerializerContext> SourceGenJsonSerializer = new();
+
     private readonly ApiGatewayV2Application _apiGatewayApplication;
 
     /// <summary>
@@ -34,6 +40,7 @@ public class ApiGatewayV2LambdaHandler : AwsLambdaMiddlewareRouter<APIGatewayHtt
         IServiceResolver serviceResolver)
         : base(serviceResolver)
     {
+        JsonSerializer = SourceGenJsonSerializer;
         _apiGatewayApplication = new ApiGatewayV2Application(pipeline);
     }
 
