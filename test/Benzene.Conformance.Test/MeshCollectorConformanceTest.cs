@@ -58,7 +58,9 @@ public class MeshCollectorConformanceTest
 
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddSingleton(new MeshCollectorStore());
+        var collectorStore = new MeshCollectorStore();
+        services.AddSingleton(collectorStore);
+        services.AddSingleton<IMeshFleetReadModel>(collectorStore);
 
         var container = new MicrosoftBenzeneServiceContainer(services);
         container.AddBenzene().AddBenzeneMessage();

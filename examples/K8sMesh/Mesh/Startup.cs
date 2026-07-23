@@ -70,6 +70,7 @@ public class Startup : BenzeneStartUp
         // heartbeats, and traces the services push, and the Fleet view below reads it back. (This is
         // why the Fleet view fits K8sMesh but not the scale-to-zero Consumption Functions mesh.)
         services.AddSingleton<MeshCollectorStore>();
+        services.AddSingleton<IMeshFleetReadModel>(sp => sp.GetRequiredService<MeshCollectorStore>());
     }
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration)

@@ -39,11 +39,23 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
     {
         using (activity)
         {
-            Tag(activity, context);
+            // Only the topic-bearing span carries benzene.status, so a trace-backed mesh reader
+            // (Benzene.Mesh.Fleet.*) can reconstruct MeshTraceEvent.Status from the same span it reads
+            // the topic off - see work/otel-fleet-adapter-scope.md §6a.
+            var taggedTopic = Tag(activity, context);
 
             try
             {
                 await _inner.HandleAsync(context, next);
+
+                // Set after next() so the handler's result is available. Recorded as the real Benzene
+                // wire status (e.g. "ok"/"not-found") - the trace's success/failure signal - on the
+                // topic-bearing span only, avoiding a duplicate tag on every wrapped stage.
+                if (taggedTopic && context is IHasMessageResult { MessageResult: not null } result
+                    && !string.IsNullOrEmpty(result.MessageResult.Status))
+                {
+                    activity.SetTag("benzene.status", result.MessageResult.Status);
+                }
             }
             catch (Exception ex)
             {
@@ -54,12 +66,21 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
                 activity.AddException(ex);
                 activity.SetStatus(ActivityStatusCode.Error, ex.Message);
 
+                // An escaped exception has no BenzeneResult; record it as its own status (matching the
+                // metric's "exception" token) so the trace shows a failure, not a missing status.
+                if (taggedTopic)
+                {
+                    activity.SetTag("benzene.status", "exception");
+                }
+
                 throw;
             }
         }
     }
 
-    private void Tag(Activity activity, TContext context)
+    /// <summary>Tags the span; returns true when a real topic was resolved and tagged (so the caller
+    /// knows this is a topic-bearing span, the one that also carries benzene.status).</summary>
+    private bool Tag(Activity activity, TContext context)
     {
         // Skip the transport tag until a transport pipeline has actually resolved one - in a
         // multi-transport function the outer probe stages run before resolution, so tagging here would
@@ -81,6 +102,10 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
             {
                 activity.SetTag("benzene.handler", handler.HandlerType.Name);
             }
+
+            return true;
         }
+
+        return false;
     }
 }

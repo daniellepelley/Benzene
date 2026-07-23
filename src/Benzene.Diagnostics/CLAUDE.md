@@ -21,7 +21,13 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
 ### Tracing
 - `BenzeneDiagnostics` - the shared `ActivitySource`/`Meter`, named `"Benzene"`
 - `ActivityMiddlewareWrapper`/`ActivityMiddlewareDecorator<TContext>` - auto-wraps every middleware
-  instance in an `Activity` span; registered by `AddDiagnostics()`
+  instance in an `Activity` span; registered by `AddDiagnostics()`. Tags `benzene.transport`/
+  `benzene.topic`/`benzene.version`/`benzene.handler`, and (2026-07-23) **`benzene.status`** on the
+  topic-bearing span only — the real Benzene wire status (`ok`/`not-found`/…) read from the completed
+  context's `IHasMessageResult.MessageResult` after `next()`, or `exception` when the span throws. This
+  is the trace-store analogue of the metric's `result` tag: it lets a trace-backed mesh reader
+  (`Benzene.Mesh.Fleet.*`, `work/otel-fleet-adapter-scope.md` §6a) reconstruct `MeshTraceEvent.Status`
+  from the span. On the topic-bearing span only, to avoid a duplicate tag on every wrapped stage.
 - `DebugMiddlewareWrapper`/`DebugMiddlewareDecorator<TContext>` - `Debug.WriteLine` start/stop
   tracing, unrelated to `Activity`/tracing proper
 

@@ -79,17 +79,18 @@ public class TracesMessageHandler : IMessageHandler<MeshTraceBatch, Ack>
     }
 }
 
-/// <summary>The whole known fleet in one read model.</summary>
+/// <summary>The whole known fleet in one read model. Depends on <see cref="IMeshFleetReadModel"/> so
+/// the fleet's data source is swappable (in-memory collector, or a backend-composed reader).</summary>
 [Message("mesh:query:fleet")]
 public class FleetQueryMessageHandler : IMessageHandler<FleetQuery, FleetView>
 {
-    private readonly MeshCollectorStore _store;
+    private readonly IMeshFleetReadModel _readModel;
 
-    public FleetQueryMessageHandler(MeshCollectorStore store) => _store = store;
+    public FleetQueryMessageHandler(IMeshFleetReadModel readModel) => _readModel = readModel;
 
-    public Task<IBenzeneResult<FleetView>> HandleAsync(FleetQuery request)
+    public async Task<IBenzeneResult<FleetView>> HandleAsync(FleetQuery request)
     {
-        return Task.FromResult(BenzeneResult.Ok(_store.Fleet()));
+        return BenzeneResult.Ok(await _readModel.FleetAsync());
     }
 }
 
@@ -97,20 +98,20 @@ public class FleetQueryMessageHandler : IMessageHandler<FleetQuery, FleetView>
 [Message("mesh:query:service")]
 public class ServiceQueryMessageHandler : IMessageHandler<ServiceQuery, ServiceView>
 {
-    private readonly MeshCollectorStore _store;
+    private readonly IMeshFleetReadModel _readModel;
 
-    public ServiceQueryMessageHandler(MeshCollectorStore store) => _store = store;
+    public ServiceQueryMessageHandler(IMeshFleetReadModel readModel) => _readModel = readModel;
 
-    public Task<IBenzeneResult<ServiceView>> HandleAsync(ServiceQuery request)
+    public async Task<IBenzeneResult<ServiceView>> HandleAsync(ServiceQuery request)
     {
         if (string.IsNullOrEmpty(request.Service))
         {
-            return Task.FromResult(BenzeneResult.BadRequest<ServiceView>("service is required"));
+            return BenzeneResult.BadRequest<ServiceView>("service is required");
         }
-        var view = _store.Service(request.Service!);
-        return Task.FromResult(view == null
+        var view = await _readModel.ServiceAsync(request.Service!);
+        return view == null
             ? BenzeneResult.NotFound<ServiceView>($"unknown service {request.Service}")
-            : BenzeneResult.Ok(view));
+            : BenzeneResult.Ok(view);
     }
 }
 
@@ -118,63 +119,63 @@ public class ServiceQueryMessageHandler : IMessageHandler<ServiceQuery, ServiceV
 [Message("mesh:query:topic")]
 public class TopicQueryMessageHandler : IMessageHandler<TopicQuery, TopicSummary>
 {
-    private readonly MeshCollectorStore _store;
+    private readonly IMeshFleetReadModel _readModel;
 
-    public TopicQueryMessageHandler(MeshCollectorStore store) => _store = store;
+    public TopicQueryMessageHandler(IMeshFleetReadModel readModel) => _readModel = readModel;
 
-    public Task<IBenzeneResult<TopicSummary>> HandleAsync(TopicQuery request)
+    public async Task<IBenzeneResult<TopicSummary>> HandleAsync(TopicQuery request)
     {
         if (string.IsNullOrEmpty(request.Topic))
         {
-            return Task.FromResult(BenzeneResult.BadRequest<TopicSummary>("topic is required"));
+            return BenzeneResult.BadRequest<TopicSummary>("topic is required");
         }
-        var view = _store.Topic(request.Topic!, request.Version);
-        return Task.FromResult(view == null
+        var view = await _readModel.TopicAsync(request.Topic!, request.Version);
+        return view == null
             ? BenzeneResult.NotFound<TopicSummary>($"unknown topic {request.Topic}")
-            : BenzeneResult.Ok(view));
+            : BenzeneResult.Ok(view);
     }
 }
 
-/// <summary>One flow's events in start order, from the bounded ring window.</summary>
+/// <summary>One flow's events in start order → the waterfall.</summary>
 [Message("mesh:query:trace")]
 public class TraceQueryMessageHandler : IMessageHandler<TraceQuery, TraceView>
 {
-    private readonly MeshCollectorStore _store;
+    private readonly IMeshFleetReadModel _readModel;
 
-    public TraceQueryMessageHandler(MeshCollectorStore store) => _store = store;
+    public TraceQueryMessageHandler(IMeshFleetReadModel readModel) => _readModel = readModel;
 
-    public Task<IBenzeneResult<TraceView>> HandleAsync(TraceQuery request)
+    public async Task<IBenzeneResult<TraceView>> HandleAsync(TraceQuery request)
     {
         if (string.IsNullOrEmpty(request.TraceId))
         {
-            return Task.FromResult(BenzeneResult.BadRequest<TraceView>("traceId is required"));
+            return BenzeneResult.BadRequest<TraceView>("traceId is required");
         }
-        var view = _store.Trace(request.TraceId!);
-        return Task.FromResult(view == null
+        var view = await _readModel.TraceAsync(request.TraceId!);
+        return view == null
             ? BenzeneResult.NotFound<TraceView>($"unknown trace {request.TraceId}")
-            : BenzeneResult.Ok(view));
+            : BenzeneResult.Ok(view);
     }
 }
 
-/// <summary>Every flow that carried a business correlation id, grouped by trace, from the ring
-/// window. Complements <c>mesh:query:trace</c> for cross-service failure triage from a business
-/// identifier (a ticket/log correlation id) rather than a trace id.</summary>
+/// <summary>Every flow that carried a business correlation id, grouped by trace. Complements
+/// <c>mesh:query:trace</c> for cross-service failure triage from a business identifier (a ticket/log
+/// correlation id) rather than a trace id.</summary>
 [Message("mesh:query:correlation")]
 public class CorrelationQueryMessageHandler : IMessageHandler<CorrelationQuery, CorrelationView>
 {
-    private readonly MeshCollectorStore _store;
+    private readonly IMeshFleetReadModel _readModel;
 
-    public CorrelationQueryMessageHandler(MeshCollectorStore store) => _store = store;
+    public CorrelationQueryMessageHandler(IMeshFleetReadModel readModel) => _readModel = readModel;
 
-    public Task<IBenzeneResult<CorrelationView>> HandleAsync(CorrelationQuery request)
+    public async Task<IBenzeneResult<CorrelationView>> HandleAsync(CorrelationQuery request)
     {
         if (string.IsNullOrEmpty(request.CorrelationId))
         {
-            return Task.FromResult(BenzeneResult.BadRequest<CorrelationView>("correlationId is required"));
+            return BenzeneResult.BadRequest<CorrelationView>("correlationId is required");
         }
-        var view = _store.Correlation(request.CorrelationId!);
-        return Task.FromResult(view == null
+        var view = await _readModel.CorrelationAsync(request.CorrelationId!);
+        return view == null
             ? BenzeneResult.NotFound<CorrelationView>($"no flows for correlation {request.CorrelationId}")
-            : BenzeneResult.Ok(view));
+            : BenzeneResult.Ok(view);
     }
 }

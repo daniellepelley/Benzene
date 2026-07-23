@@ -21,7 +21,9 @@ public class Startup
     private static readonly MeshCollectorStore CollectorStore = new();
     private static readonly EnvelopeHost Collector = new(
         MeshCollectorHandlers.All,
-        configureServices: services => services.AddSingleton(CollectorStore));
+        configureServices: services => services
+            .AddSingleton(CollectorStore)
+            .AddSingleton<IMeshFleetReadModel>(CollectorStore));
 
     private static readonly MeshServiceRegistry Registry = new(new[]
     {

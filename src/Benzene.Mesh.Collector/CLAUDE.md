@@ -10,6 +10,19 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
 2026-07-16 updates).
 
 ## Key types/interfaces
+- `IMeshFleetReadModel` (2026-07-23) - the **read seam** the five `mesh:query:*` handlers depend on
+  (async: `FleetAsync`/`ServiceAsync`/`TopicAsync`/`TraceAsync`/`CorrelationAsync`), so the fleet UI's
+  data source is swappable. `MeshCollectorStore` implements it (explicit-interface async wrappers over
+  its sync read methods — the push-collector plane, unchanged). Register `IMeshFleetReadModel` alongside
+  the store singleton (every host that wires the collector now does both). The other implementation,
+  `TraceSourceFleetReadModel`, composes a pluggable `IMeshTraceSource` (OTel trace backend) — see
+  `work/otel-fleet-adapter-scope.md`.
+- `IMeshTraceSource` (2026-07-23) - the pluggable trace-shaped source (`GetTraceAsync`; correlation +
+  recent-flows added in later increments) implemented per backend in a `Benzene.Mesh.Fleet.*` adapter
+  (X-Ray first). Deliberately carries **no** stats/health (traces are sampled; no heartbeat feed) —
+  those stay `IMeshUsageSource` + the heartbeat plane. `TraceSourceFleetReadModel` wraps it into an
+  `IMeshFleetReadModel`, serving `mesh:query:trace` now and returning honest empty/absent shapes for the
+  rest until the composing increments land.
 - `MeshCollectorStore` - the in-memory state (singleton per collector): cumulative per-service
   and per-topic stats, latest heartbeat per instance, registered descriptors, and a bounded ring
   of recent trace events (default 4096). Consumer edges are derived **at query time** from ring

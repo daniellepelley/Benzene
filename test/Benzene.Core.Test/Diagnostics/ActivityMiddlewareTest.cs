@@ -182,6 +182,76 @@ public class ActivityMiddlewareTest
             a.Status == ActivityStatusCode.Error && a.Events.Any(e => e.Name == "exception"));
     }
 
+    private class StatusContext : Benzene.Abstractions.MessageHandlers.IHasMessageResult
+    {
+        public Benzene.Abstractions.Results.IBenzeneResult MessageResult { get; set; } =
+            Benzene.Results.BenzeneResult.Ok();
+    }
+
+    // Resolves a real topic (so the span is topic-bearing, the one that carries benzene.status).
+    private class FakeMessageGetter : Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>
+    {
+        public Benzene.Abstractions.Messages.ITopic? GetTopic(StatusContext context) =>
+            new Benzene.Core.Messages.Topic("orders:create");
+        public string? GetBody(StatusContext context) => null;
+        public System.Collections.Generic.IDictionary<string, string> GetHeaders(StatusContext context) =>
+            new System.Collections.Generic.Dictionary<string, string>();
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_TagsBenzeneStatusOnTheTopicBearingSpan_FromTheResult()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        services.AddScoped<Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>, FakeMessageGetter>();
+
+        var builder = new MiddlewarePipelineBuilder<StatusContext>(container);
+        builder.Use("handle", (_, next) => next());
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        // A trace-backed mesh reader reconstructs MeshTraceEvent.Status from this tag - the real wire
+        // status, on the same span it reads benzene.topic off.
+        await pipeline.HandleAsync(new StatusContext { MessageResult = Benzene.Results.BenzeneResult.NotFound() }, resolver);
+
+        var span = Assert.Single(activities, a => a.OperationName == "handle");
+        Assert.Equal("orders:create", span.GetTagItem("benzene.topic"));
+        Assert.Equal("not-found", span.GetTagItem("benzene.status"));
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_TagsBenzeneStatusException_WhenTheTopicBearingSpanThrows()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        services.AddScoped<Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>, FakeMessageGetter>();
+
+        var builder = new MiddlewarePipelineBuilder<StatusContext>(container);
+        builder.Use("handle", (_, _) => throw new InvalidOperationException("kaboom"));
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            pipeline.HandleAsync(new StatusContext(), resolver));
+
+        var span = Assert.Single(activities, a => a.OperationName == "handle");
+        Assert.Equal("exception", span.GetTagItem("benzene.status"));
+    }
+
     [Fact]
     public async Task UseTimer_StillCompilesAndProducesAnActivity()
     {

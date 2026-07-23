@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Benzene.Mesh.Wire;
 using Benzene.Results;
 
@@ -12,7 +14,7 @@ namespace Benzene.Mesh.Collector;
 /// service with no traffic is a catalog entry with no stats, and no missing feed ever fails
 /// ingestion or a query: the §6 degradation rule, collector side.
 /// </summary>
-public class MeshCollectorStore
+public class MeshCollectorStore : IMeshFleetReadModel
 {
     private readonly object _lock = new();
     private readonly int _capacity;
@@ -253,6 +255,14 @@ public class MeshCollectorStore
             return traces.Count == 0 ? null : new CorrelationView { CorrelationId = correlationId, Traces = traces };
         }
     }
+
+    // IMeshFleetReadModel — the in-memory store is synchronous, so these just wrap the read methods
+    // above (the query handlers depend on the async interface so a backend-composed reader can slot in).
+    Task<FleetView> IMeshFleetReadModel.FleetAsync(CancellationToken cancellationToken) => Task.FromResult(Fleet());
+    Task<ServiceView?> IMeshFleetReadModel.ServiceAsync(string name, CancellationToken cancellationToken) => Task.FromResult(Service(name));
+    Task<TopicSummary?> IMeshFleetReadModel.TopicAsync(string id, string? version, CancellationToken cancellationToken) => Task.FromResult(Topic(id, version));
+    Task<TraceView?> IMeshFleetReadModel.TraceAsync(string traceId, CancellationToken cancellationToken) => Task.FromResult(Trace(traceId));
+    Task<CorrelationView?> IMeshFleetReadModel.CorrelationAsync(string correlationId, CancellationToken cancellationToken) => Task.FromResult(Correlation(correlationId));
 
     private ServiceState EnsureService(string name)
     {
