@@ -74,6 +74,20 @@ with `gcloud functions deploy` (Gen2, buildpack source deploy from the repo root
 project references resolve), which also creates each Pub/Sub function's trigger subscription. Run it
 manually with a project id and a Terraform-state bucket.
 
+## Prerequisites: bootstrap the API-enablement APIs (one-time)
+
+The workflow enables every API it needs — but it can't enable the two APIs that *enablement itself*
+depends on (you can't turn on an API through an API that's off). On a fresh project, enable these two
+once, manually (console links appear in the `SERVICE_DISABLED` error, or run this as a project owner —
+**not** the deploy SA):
+
+```bash
+gcloud services enable serviceusage.googleapis.com cloudresourcemanager.googleapis.com \
+  --project smart-theory-88114
+```
+
+After that the workflow's "Enable required Google Cloud APIs" step turns on the rest.
+
 ## Prerequisites: deploy service-account roles (one-time)
 
 The workflow authenticates as the `GCP_SA_KEY` service account. That SA provisions and deploys
