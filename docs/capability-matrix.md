@@ -61,11 +61,11 @@ surprising case because nothing crashed.
 | AWS Lambda SQS (`Benzene.Aws.Lambda.Sqs`) | **Safe** — retried per-message via `ReportBatchItemFailures`, same as an exception | N/A (default is already safe); `SqsOptions.BatchFailureMode = FailWholeBatch` to change the *shape* of the retry, not to enable it |
 | AWS DynamoDB Streams (`Benzene.Aws.Lambda.DynamoDb`) | **Safe** — sequential processing stops at the first failed record and reports it for redelivery | N/A |
 | AWS Kinesis (`Benzene.Aws.Lambda.Kinesis`) | **Safe by design** — the stream checkpoints only where your handler explicitly checkpoints; an unfailed-but-uncheckpointed record is redelivered | N/A — see [Benzene.Aws.Lambda.Kinesis's CLAUDE.md](../src/Benzene.Aws.Lambda.Kinesis/CLAUDE.md) |
-| AWS SNS (`Benzene.Aws.Lambda.Sns`) | **Unsafe** — silently accepted, no retry | `SnsOptions.RaiseOnFailureStatus = true` — see [SNS Fan-Out Pattern](cookbooks/sns-fan-out.md) |
-| AWS EventBridge (`Benzene.Aws.Lambda.EventBridge`) | **Unsafe, no opt-out** — silently accepted, no retry, no options class at all | None today — handler must throw instead |
-| AWS Kafka/MSK (`Benzene.Aws.Lambda.Kafka`) | **Unsafe, no opt-out** — silently accepted, no per-record reporting despite AWS supporting it | None today — handler must throw instead |
-| AWS S3 (`Benzene.Aws.Lambda.S3`) | **Unsafe, no opt-out** — silently accepted, no retry | None today — handler must throw instead |
-| AWS SQS self-hosted worker (`Benzene.Aws.Sqs`'s `SqsConsumer`) | **Unsafe by default** (`SqsConsumerAckMode.WholeBatch`) — a failure result is deleted along with the rest of the batch | `SqsConsumerAckMode.PerMessage` |
+| AWS SNS (`Benzene.Aws.Lambda.Sns`) | **Safe by default** — `SnsOptions.RaiseOnFailureStatus` defaults `true`, escalating a failure result into a throw so SNS's subscription retry/redrive applies | `SnsOptions.RaiseOnFailureStatus = false` for at-most-once — see [SNS Fan-Out Pattern](cookbooks/sns-fan-out.md) |
+| AWS EventBridge (`Benzene.Aws.Lambda.EventBridge`) | **Safe by default** — `EventBridgeOptions.RaiseOnFailureStatus` defaults `true`, escalating a failure result into a throw so EventBridge's retry/DLQ applies | `EventBridgeOptions.RaiseOnFailureStatus = false` for at-most-once |
+| AWS Kafka/MSK (`Benzene.Aws.Lambda.Kafka`) | **Safe by default** — `KafkaOptions.BatchFailureMode` defaults to `PartialBatchFailure`, reporting each failed partition's resume offset via the batch response (needs `ReportBatchItemFailures` on the event source mapping, as with SQS) so records are redriven from the failure, honouring per-partition ordering | `KafkaOptions.BatchFailureMode = FailWholeBatch` (throws) when the event source mapping isn't configured for `ReportBatchItemFailures` |
+| AWS S3 (`Benzene.Aws.Lambda.S3`) | **Safe by default** — `S3Options.RaiseOnFailureStatus` defaults `true`, escalating a failure result into a throw so the Lambda invocation fails and the event's async retry/DLQ applies | `S3Options.RaiseOnFailureStatus = false` for at-most-once |
+| AWS SQS self-hosted worker (`Benzene.Aws.Sqs`'s `SqsConsumer`) | **Safe by default** — `SqsConsumerOptions.AckMode` defaults to `SqsConsumerAckMode.PerMessage`, so only successfully-handled messages are deleted and a failure result is left for redelivery | `SqsConsumerAckMode.WholeBatch` for at-most-once (delete the whole batch regardless) |
 | RabbitMQ self-hosted worker (`Benzene.RabbitMq`) | **Safe by default** (`RabbitMqAckMode.Explicit`) — a failure result (or exception) nacks the message for requeue/dead-letter, not ack | N/A (default is already safe); `RequeueOnFailure`/`AckMode` tune *how* it's redelivered, or `AckMode = AutoAck` to opt into at-most-once |
 | Azure Service Bus Function trigger (`Benzene.Azure.Function.ServiceBus`) | **Safe by default** — although `AckMode` defaults to `AutoComplete`, `ServiceBusOptions.RaiseOnFailureStatus` defaults `true`, so a failure result throws (→ the message is abandoned, not completed) | `RaiseOnFailureStatus = false` for at-most-once; `AckMode = Explicit` for true per-message complete/abandon control |
 | Azure Service Bus self-hosted worker (`Benzene.Azure.ServiceBus`) | **Safe by default** — `BenzeneServiceBusConfig.AckMode` defaults to `ServiceBusConsumerAckMode.Explicit`, so a failure result (or throw) abandons the message for redelivery | `AckMode = ServiceBusConsumerAckMode.AutoComplete` for at-most-once |
@@ -77,9 +77,12 @@ surprising case because nothing crashed.
 | Azure Cosmos DB Change Feed (`Benzene.Azure.Function.CosmosDb`) | N/A as a "failure result" concern — like Kinesis, this is a fan-in `StreamContext<TDocument>` with no `IBenzeneResult`/message-handler routing; the trigger's lease checkpoints the whole batch on any non-throwing return, and unlike Kinesis there's no per-document checkpoint API to opt out of that with (see the package's own `CLAUDE.md`) | Have the handler throw for anything that must redeliver the whole batch |
 | HTTP / API Gateway | N/A — a failure result maps straight to an HTTP status code the caller sees synchronously; there's no async "retry" concept to opt into | N/A |
 
-If a row says "no opt-out," that's a real gap, not a documented trade-off — the fix, until a
-future release adds the missing knob, is to have the handler `throw` for any failure you need
-retried instead of returning an `IBenzeneResult` failure.
+As of the 1.0 settlement contract (see `work/settlement-contract-1.0.md`), every async/event
+transport is **safe by default**: a returned failure result is redelivered (at-least-once), not
+silently settled, and each transport exposes an explicit opt-out (the "Opt-out" column) for the
+at-most-once cases where you deliberately want a returned failure accepted. The two rows marked
+N/A above (Cosmos DB Change Feed, HTTP) have no per-item async-retry knob to opt into — there, a
+handler that `throw`s is the escape hatch for anything that must redeliver.
 
 ## Why "we don't do that" is a feature
 
