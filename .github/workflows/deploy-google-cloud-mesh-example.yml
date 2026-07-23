@@ -11,6 +11,7 @@ on:
       project:
         description: "Google Cloud project id"
         required: true
+        default: "driven-cabinet-337820"
       region:
         description: "Region"
         required: false
@@ -18,6 +19,7 @@ on:
       state_bucket:
         description: "GCS bucket for Terraform state (must exist)"
         required: true
+        default: "benzenemesh"
 
 permissions:
   contents: read
