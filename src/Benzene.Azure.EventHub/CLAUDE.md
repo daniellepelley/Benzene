@@ -85,7 +85,12 @@ recorded for diagnostics/middleware). Mirrors the escalation on the Function tri
   `EventProcessorClient` does not create it.
 - `Extensions.UseEventHub(IBenzeneWorkerStartup, config, clientFactory, action)` - the
   `IBenzeneWorkerStartup` wiring, mirroring `UseKafka`/`UseSqs`/`UseServiceBus`; registers
-  `AddBenzeneMessage().AddEventHubConsumer()` and adds the worker.
+  `AddBenzeneMessage().AddEventHubConsumer()` and adds the worker. It also registers the built
+  `EventHubConsumerApplication` in DI (inert in a normal run) so `Benzene.Azure.EventHub.TestHelpers`'
+  `BuildEventHubWorkerHost()` can resolve and drive the real pipeline without a hub - the same
+  StartUp-based component-test seam the other self-hosted workers (`BuildRabbitMqWorkerHost`,
+  `BuildServiceBusWorkerHost`, `BuildKafkaWorkerHost`) use. `AsEventHubBenzeneMessage()` there builds
+  an `EventData` routed by the `"topic"` property.
 - **W3C trace context and invocationId (release plan Tier 3.5).** `.UseW3CTraceContext<EventHubConsumerContext>()`
   works: `EventHubConsumerMessageHeadersGetter` already read real string-typed `EventData.Properties`.
   Separately, `UseEventHub(...)` now auto-wires `UseBenzeneInvocation()`
