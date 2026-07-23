@@ -48,6 +48,10 @@ public static class DependencyExtensions
             .ToArray();
 
         services.TryAddSingleton<IValidationSchemaBuilder>(new FluentValidationSchemaBuilder(validators));
+
+        // Registered unconditionally, but only runs when a host warms up (AddBenzeneWarmUp opted in) -
+        // pre-builds each validator's rule set at INIT so the first message doesn't pay it.
+        services.AddSingleton<Benzene.Abstractions.WarmUp.IWarmUpTask, ValidationWarmUpTask>();
         return services;
     }
 }

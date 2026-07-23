@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Benzene.Aws.Lambda.Core.AwsEventStream;
+using Benzene.Core.MessageHandlers.WarmUp;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +34,13 @@ public class AwsLambdaHost<TStartUp> : IAwsLambdaEntryPoint where TStartUp : Ben
         startUp.ConfigureServices(services, configuration);
         startUp.Configure(new AwsLambdaApplicationBuilder(eventPipeline, container), configuration);
 
-        _entryPoint = new AwsLambdaEntryPoint(eventPipeline.Build(), new MicrosoftServiceResolverFactory(services));
+        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        _entryPoint = new AwsLambdaEntryPoint(eventPipeline.Build(), serviceResolverFactory);
+
+        // Lambda INIT phase: warm framework internals (serializer per request type, validators, ...) so
+        // the first invocation isn't the one that pays for them. A no-op unless the StartUp opted in via
+        // AddBenzeneWarmUp; never dispatches a message, so it's invisible to logging/metrics/tracing.
+        serviceResolverFactory.WarmUp();
     }
 
     /// <summary>

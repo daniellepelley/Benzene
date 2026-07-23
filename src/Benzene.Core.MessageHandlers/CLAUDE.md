@@ -164,6 +164,26 @@ Provides complete implementation of message handler infrastructure for command/q
   otherwise reads. Works for ANY `TContext`, with zero changes required to that context type -
   a transport adopting this only needs the two DI-registration lines above
 
+### Cold-start warm-up (`WarmUp/`)
+- `IWarmUpTask` (in **Benzene.Abstractions**, `Benzene.Abstractions.WarmUp`, so plugin packages can
+  implement it without a heavy reference) - a unit of INIT-phase warm-up. **Invisible by design:** it
+  warms internals directly and does NOT dispatch a message through the pipeline, so no logs/metrics/
+  traces/handler side-effects.
+- `SerializationWarmUpTask` - for every registered handler's `RequestType`, does a serializer
+  round-trip so System.Text.Json's per-type metadata/converter is built at start-up, not on the first
+  real message. Warms the **concrete `JsonSerializer`** (the instance `JsonMediaFormat` binds to on
+  the hot path - a *different* instance, with its own STJ cache, from the `ISerializer` registration)
+  plus any distinct `ISerializer`.
+- `BenzeneWarmUpExtensions.AddBenzeneWarmUp()` - the opt-in (registers the serialization task + a
+  marker). `IServiceResolverFactory.WarmUp()` - the host-side runner: on a throwaway scope, runs every
+  registered `IWarmUpTask` **only if** `AddBenzeneWarmUp` opted in (no-op otherwise); never throws.
+  `Benzene.Aws.Lambda.Core.AwsLambdaHost` calls it in its ctor (the Lambda INIT phase).
+  `Benzene.FluentValidation` registers a `ValidationWarmUpTask` (constructs each request type's
+  `IValidator<T>` singleton, building its rule set) that joins in when warm-up is enabled. Addresses
+  the two ~18ms first-message JIT gaps (deserialize + validator) seen in the AWS X-Ray cold-start
+  analysis. Tests: `test/Benzene.Core.Test/Core/Core/WarmUp/WarmUpTest.cs`,
+  `test/Benzene.Core.Test/Plugins/FluentValidation/ValidationWarmUpTaskTest.cs`.
+
 ### Transport Info
 - `ApplicationInfo` - Application metadata
 - `BlankApplicationInfo` - Empty application info
