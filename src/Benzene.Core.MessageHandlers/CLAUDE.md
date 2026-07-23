@@ -69,6 +69,16 @@ Provides complete implementation of message handler infrastructure for command/q
 - `ResponseMessageHandlerResultSetterBase<TContext>` - Base for result setters
 - `DefaultMessageHandlerResultSetterBase<TContext>` - Default result setter base
 - `MessageHandlerResultSetterBase<TContext>` - shared result-setter base
+- `MessageResultRecorder` (`Response/`) - static helper the response-writing setters
+  (`ResponseMessageHandlerResultSetterBase`, `ResponseIfHandledMessageHandlerResultSetter`,
+  `BenzeneMessageHandlerResultSetter`) call after writing the response to also record the outcome onto
+  the context when it implements `IHasMessageResult` (only if not already set). Event-style transports
+  report their outcome by *setting* `MessageResult`; request/response transports report by *writing a
+  response* and used to leave `MessageResult` unset — which made `UseBenzeneMetrics` tag those
+  messages `result=<missing>` (and, downstream, the mesh usage feed show a `<missing>` status). The
+  HTTP/API-Gateway/BenzeneMessage contexts now implement `IHasMessageResult` and their setters record
+  through this helper, so the same success/failure signal exists on every transport. Guarded by
+  `test/Benzene.Core.Test/Core/Core/Response/MessageResultRecordingTest.cs`.
 
 ### Serialization
 - `JsonSerializer` - System.Text.Json implementation of `ISerializer`; also implements

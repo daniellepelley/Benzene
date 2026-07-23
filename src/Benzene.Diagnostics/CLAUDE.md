@@ -43,7 +43,17 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
 ### Metrics
 - `UseBenzeneMetrics<TContext>()` (`MetricsExtensions.cs`) - explicit-opt-in middleware that records
   once per message (not per-middleware). Emits exactly two fixed instruments on the shared `"Benzene"`
-  `Meter`, tagged `topic`/`transport`/`result` (`"<missing>"` when a source isn't resolvable):
+  `Meter`, tagged `topic`/`transport`/`result` (`"<missing>"` when a source isn't resolvable). The
+  `result` tag reads the completed context's `IHasMessageResult.MessageResult`: `success`/`failure`
+  from its `IsSuccessful`, `failure` if the pipeline threw, and `<missing>` only when the context
+  neither implements `IHasMessageResult` nor had a result recorded. Every shipped transport now
+  records that signal — event-style setters (SQS/SNS/EventBridge/Service Bus) set `MessageResult`
+  directly, and the request/response setters (`ResponseMessageHandlerResultSetterBase`,
+  `ResponseIfHandledMessageHandlerResultSetter`, `BenzeneMessageHandlerResultSetter` — via
+  `Benzene.Core.MessageHandlers.Response.MessageResultRecorder`) now record it too, so
+  `result=<missing>` no longer appears for a normally-handled HTTP/API-Gateway/BenzeneMessage
+  message (it did before those setters recorded — the source of the mesh usage feed's `<missing>`
+  status). The instruments:
   - `BenzeneDiagnostics.MessagesProcessed` - `Counter<long>` named `benzene.messages.processed`
   - `BenzeneDiagnostics.MessageDuration` - `Histogram<double>` named `benzene.message.duration` (ms)
   This is the whole metrics surface — there is no configurable/extensible instrument set, no other

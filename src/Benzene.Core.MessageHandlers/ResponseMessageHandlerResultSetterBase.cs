@@ -1,6 +1,7 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Response;
+using Benzene.Core.MessageHandlers.Response;
 
 namespace Benzene.Core.MessageHandlers;
 
@@ -41,5 +42,6 @@ public class ResponseMessageHandlerResultSetterBase<TContext> : IMessageHandlerR
     public async Task SetResultAsync(TContext context, IMessageHandlerResult messageHandlerResult)
     {
         await _responseHandlerContainer.HandleAsync(context, messageHandlerResult);
+        MessageResultRecorder.Record(context, messageHandlerResult);
     }
 }

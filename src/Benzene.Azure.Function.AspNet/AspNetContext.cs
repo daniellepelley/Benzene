@@ -1,3 +1,5 @@
+using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Benzene.Http;
 using Microsoft.AspNetCore.Mvc;
 using HttpRequest = Microsoft.AspNetCore.Http.HttpRequest;
@@ -7,7 +9,7 @@ namespace Benzene.Azure.Function.AspNet;
 /// <summary>
 /// Implements <see cref="IHttpContext"/> for an Azure Functions HTTP trigger request.
 /// </summary>
-public class AspNetContext : IHttpContext
+public class AspNetContext : IHttpContext, IHasMessageResult
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="AspNetContext"/> class.
@@ -28,4 +30,11 @@ public class AspNetContext : IHttpContext
     /// <see cref="AspNetResponseAdapter"/>; created lazily via <see cref="Extensions.EnsureResponseExists"/>.
     /// </summary>
     public ContentResult? ContentResult { get; set; }
+
+    /// <summary>
+    /// Gets or sets the outcome of handling this request, recorded by the response-writing result setter
+    /// so a cross-cutting observer of the completed pipeline (e.g. metrics) sees a real success/failure
+    /// signal rather than a missing one.
+    /// </summary>
+    public IBenzeneResult MessageResult { get; set; } = null!;
 }

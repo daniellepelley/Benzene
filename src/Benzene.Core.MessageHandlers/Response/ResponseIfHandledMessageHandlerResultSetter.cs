@@ -35,6 +35,7 @@ public class ResponseIfHandledMessageHandlerResultSetter<TContext> : IMessageHan
         if (messageHandlerResult.Topic != null && messageHandlerResult.Topic.Id != Constants.Missing.Id)
         {
             await _responseHandlerContainer.HandleAsync(context, messageHandlerResult);
+            MessageResultRecorder.Record(context, messageHandlerResult);
         }
     }
 }

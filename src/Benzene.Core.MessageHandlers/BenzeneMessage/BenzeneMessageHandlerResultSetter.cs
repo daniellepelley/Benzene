@@ -1,6 +1,7 @@
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.MessageHandlers.Response;
+using Benzene.Core.MessageHandlers.Response;
 using Benzene.Core.Messages.BenzeneMessage;
 
 namespace Benzene.Core.MessageHandlers.BenzeneMessage;
@@ -39,6 +40,10 @@ public class BenzeneMessageHandlerResultSetter : IMessageHandlerResultSetter<Ben
     /// <param name="messageHandlerResult">The outcome of routing and handling the message.</param>
     public async Task SetResultAsync(BenzeneMessageContext context, IMessageHandlerResult messageHandlerResult)
     {
+        // Record the outcome even when the response is suppressed - a one-way host discards the
+        // serialized response, but the success/failure signal still belongs on the context.
+        MessageResultRecorder.Record(context, messageHandlerResult);
+
         if (_suppression.IsSuppressed)
         {
             return;

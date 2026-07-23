@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Amazon.Lambda.APIGatewayEvents;
+using Benzene.Abstractions.MessageHandlers;
+using Benzene.Abstractions.Results;
 using Benzene.Http;
 
 namespace Benzene.Aws.Lambda.ApiGateway;
@@ -17,7 +19,7 @@ namespace Benzene.Aws.Lambda.ApiGateway;
 /// those differences so the shared <see cref="IHttpContext"/> pipeline sees them the same way it sees
 /// v1 requests.
 /// </remarks>
-public class ApiGatewayV2Context : IHttpContext
+public class ApiGatewayV2Context : IHttpContext, IHasMessageResult
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ApiGatewayV2Context"/> class.
@@ -56,6 +58,13 @@ public class ApiGatewayV2Context : IHttpContext
     /// the same way it does on v1. The returned dictionary is case-insensitive.
     /// </summary>
     /// <returns>A case-insensitive header dictionary including the folded cookie header.</returns>
+    /// <summary>
+    /// Gets or sets the outcome of handling this request, recorded by
+    /// <see cref="ApiGatewayV2MessageHandlerResultSetter"/> so a cross-cutting observer of the completed
+    /// pipeline (e.g. metrics) sees a real success/failure signal rather than a missing one.
+    /// </summary>
+    public IBenzeneResult MessageResult { get; set; } = null!;
+
     public IDictionary<string, string> CombinedHeaders()
     {
         var headers = ApiGatewayProxyRequest?.Headers != null
