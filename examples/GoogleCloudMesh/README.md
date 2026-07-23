@@ -74,6 +74,32 @@ with `gcloud functions deploy` (Gen2, buildpack source deploy from the repo root
 project references resolve), which also creates each Pub/Sub function's trigger subscription. Run it
 manually with a project id and a Terraform-state bucket.
 
+## Prerequisites: deploy service-account roles (one-time)
+
+The workflow authenticates as the `GCP_SA_KEY` service account. That SA provisions and deploys
+everything, so — as a **project owner** — grant it the roles below once (the workflow can't grant its
+own IAM). Without them the run fails with a `403` (the first symptom is usually `storage.objects.list`
+denied on the Terraform state bucket):
+
+```bash
+PROJECT=smart-theory-88114
+SA=benzene@smart-theory-88114.iam.gserviceaccount.com   # your GCP_SA_KEY account
+for role in \
+  roles/storage.admin \            # Terraform state bucket + the mesh artifact bucket
+  roles/pubsub.admin \             # inbox topics + subscriptions
+  roles/cloudfunctions.admin \     # deploy the functions
+  roles/run.admin \                # Gen2 functions run on Cloud Run
+  roles/cloudbuild.builds.editor \ # Gen2 source builds
+  roles/artifactregistry.admin \   # build artifacts
+  roles/cloudscheduler.admin \     # the mesh refresh job
+  roles/iam.serviceAccountUser ; do # deploy functions AS the runtime SA
+  gcloud projects add-iam-policy-binding "$PROJECT" \
+    --member="serviceAccount:$SA" --role="$role" >/dev/null
+done
+```
+
+(Scope these down for a real deployment; this is the broad set that lets one SA run the whole demo.)
+
 ## Known first-deploy iteration points
 
 - **Runtime `dotnet10`** — the workflow assumes a GCF `dotnet10` runtime; adjust if the managed runtime
