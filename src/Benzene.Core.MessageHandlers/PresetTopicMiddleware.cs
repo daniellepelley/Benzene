@@ -15,16 +15,23 @@ public class PresetTopicMiddleware<TContext> : IMiddleware<TContext>
 {
     private readonly PresetTopicHolder _holder;
     private readonly ITopic _presetTopic;
+    private readonly ResolvedTopicCache<TContext>? _resolvedTopicCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PresetTopicMiddleware{TContext}"/> class.
     /// </summary>
     /// <param name="holder">The current message's preset-topic holder, resolved from the same DI scope <see cref="PresetTopicMessageTopicGetter{TContext}"/> reads it from.</param>
     /// <param name="presetTopic">The topic to set for every message this middleware sees.</param>
-    public PresetTopicMiddleware(PresetTopicHolder holder, ITopic presetTopic)
+    /// <param name="resolvedTopicCache">
+    /// The scoped per-message topic cache to discard when the preset is applied, so a topic memoized by
+    /// an earlier middleware (e.g. a tracing decorator that ran before this one) isn't served to the
+    /// router in place of the preset. Optional (<c>null</c> in a direct construction) - DI supplies it.
+    /// </param>
+    public PresetTopicMiddleware(PresetTopicHolder holder, ITopic presetTopic, ResolvedTopicCache<TContext>? resolvedTopicCache = null)
     {
         _holder = holder;
         _presetTopic = presetTopic;
+        _resolvedTopicCache = resolvedTopicCache;
     }
 
     /// <inheritdoc />
@@ -34,6 +41,9 @@ public class PresetTopicMiddleware<TContext> : IMiddleware<TContext>
     public Task HandleAsync(TContext context, Func<Task> next)
     {
         _holder.PresetTopic = _presetTopic;
+        // Anything that resolved the topic before this middleware ran cached the transport's own
+        // topic; drop it so the router re-resolves and sees the preset.
+        _resolvedTopicCache?.Reset();
         return next();
     }
 }

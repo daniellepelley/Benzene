@@ -16,6 +16,7 @@ public class MessageGetter<TContext> : IMessageGetter<TContext>
     private readonly IMessageHeadersGetter<TContext> _messageHeadersGetter;
     private readonly IMessageTopicGetter<TContext> _messageTopicGetter;
     private readonly IMessageBodyGetter<TContext> _messageBodyGetter;
+    private readonly ResolvedTopicCache<TContext>? _resolvedTopicCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageGetter{TContext}"/> class.
@@ -23,11 +24,17 @@ public class MessageGetter<TContext> : IMessageGetter<TContext>
     /// <param name="messageTopicGetter">Extracts the topic from a <typeparamref name="TContext"/>.</param>
     /// <param name="messageBodyGetter">Extracts the body from a <typeparamref name="TContext"/>.</param>
     /// <param name="messageHeadersGetter">Extracts the headers from a <typeparamref name="TContext"/>.</param>
-    public MessageGetter(IMessageTopicGetter<TContext> messageTopicGetter, IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter)
+    /// <param name="resolvedTopicCache">
+    /// The scoped per-message topic cache so the topic is extracted once and reused by every consumer.
+    /// Optional: when <c>null</c> (e.g. a direct construction in a test) the topic is extracted on every
+    /// call, exactly as before this cache existed. DI supplies it in a running app.
+    /// </param>
+    public MessageGetter(IMessageTopicGetter<TContext> messageTopicGetter, IMessageBodyGetter<TContext> messageBodyGetter, IMessageHeadersGetter<TContext> messageHeadersGetter, ResolvedTopicCache<TContext>? resolvedTopicCache = null)
     {
         _messageHeadersGetter = messageHeadersGetter;
         _messageTopicGetter = messageTopicGetter;
         _messageBodyGetter = messageBodyGetter;
+        _resolvedTopicCache = resolvedTopicCache;
     }
 
     /// <summary>
@@ -57,6 +64,21 @@ public class MessageGetter<TContext> : IMessageGetter<TContext>
     /// <returns>The message's <see cref="ITopic"/>.</returns>
     public ITopic GetTopic(TContext context)
     {
-        return _messageTopicGetter.GetTopic(context);
+        // Extract once per message and reuse: the router, health-check middleware and every tracing
+        // decorator's tagging all call this, so on a traced request it would otherwise re-run the
+        // transport's topic extraction ~a dozen times for the same answer.
+        if (_resolvedTopicCache is null)
+        {
+            return _messageTopicGetter.GetTopic(context);
+        }
+
+        if (_resolvedTopicCache.HasValue)
+        {
+            return _resolvedTopicCache.Topic!;
+        }
+
+        var topic = _messageTopicGetter.GetTopic(context);
+        _resolvedTopicCache.Set(topic);
+        return topic;
     }
 }

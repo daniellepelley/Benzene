@@ -111,6 +111,7 @@ public static class Extensions
     /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddContextItems(this IBenzeneServiceContainer services)
     {
+        services.TryAddScoped(typeof(ResolvedTopicCache<>));
         services.TryAddScoped(typeof(IMessageGetter<>), typeof(MessageGetter<>));
         services.TryAddScoped(typeof(IResponsePayloadMapper<>), typeof(DefaultResponsePayloadMapper<>));
         services.TryAddScoped(typeof(IResponseHandlerContainer<>), typeof(ResponseHandlerContainer<>));

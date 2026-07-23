@@ -170,7 +170,19 @@ Provides complete implementation of message handler infrastructure for command/q
 ### Other
 - `MessageHandlerFactory` - Creates handler instances
 - `MessageAttribute` - Attribute for marking message handlers
-- `MessageGetter<TContext>` - Gets messages from context
+- `MessageGetter<TContext>` - Gets messages from context. `GetTopic` **memoizes** via a scoped
+  `ResolvedTopicCache<TContext>` (below) so the transport's topic extraction runs once per message,
+  not once per consumer - the router, the health-check middleware and every tracing decorator's
+  per-subsegment tagging all call it (~a dozen times on a traced Lambda). The cache is an optional
+  ctor arg (`null` = extract every call, unchanged - the shape direct-construction tests use); DI
+  supplies it. `BenzeneMessageGetter` (the `BenzeneMessageContext` getter) is separate and unmemoized -
+  its topic is a plain property read.
+- `ResolvedTopicCache<TContext>` - scoped (one per message) cache of the resolved `ITopic`, generic
+  on `TContext` so a multi-transport function never serves one transport's topic to another.
+  `PresetTopicMiddleware` calls `Reset()` when it applies a preset, so a topic memoized by a
+  middleware that ran *before* the preset (e.g. a tracing decorator) isn't served to the router in
+  place of the preset - the router re-resolves and sees the preset. Registered by `AddContextItems`.
+  Mirrors the memoizing-scoped-holder pattern of `MediaFormatNegotiator`/`PresetTopicHolder`.
 - `CoreRegistrations` - Registers core services
 - Various extension methods in `Extensions.cs`, `MessageMapperExtensions.cs`
 

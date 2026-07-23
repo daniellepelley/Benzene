@@ -177,7 +177,8 @@ public static class MiddlewarePipelineExtensions
         string topicId, string version = "")
     {
         var presetTopic = new Topic(topicId, version);
-        return app.Use(resolver => new PresetTopicMiddleware<TContext>(resolver.GetService<PresetTopicHolder>(), presetTopic));
+        return app.Use(resolver => new PresetTopicMiddleware<TContext>(
+            resolver.GetService<PresetTopicHolder>(), presetTopic, resolver.TryGetService<ResolvedTopicCache<TContext>>()));
     }
 
     /// <summary>
