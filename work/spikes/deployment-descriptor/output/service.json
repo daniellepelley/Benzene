@@ -1,0 +1,144 @@
+{
+  "descriptorVersion": "0.1-spike",
+  "service": "payments",
+  "serviceVersion": "1.0.0",
+  "placement": {
+    "cloud": "aws",
+    "region": "eu-west-1"
+  },
+  "transports": [
+    "api-gateway",
+    "benzene",
+    "sqs",
+    "sns",
+    "eventbridge"
+  ],
+  "consumes": [
+    {
+      "topic": "payments:capture",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/payments"
+        }
+      ],
+      "requestSchema": {
+        "required": [
+          "Currency",
+          "OrderId"
+        ],
+        "type": "object",
+        "properties": {
+          "OrderId": {
+            "type": "string",
+            "description": "Not Empty"
+          },
+          "Amount": {
+            "type": "number",
+            "description": "Greater Than 0",
+            "format": "double"
+          },
+          "Currency": {
+            "type": "string",
+            "description": "Not Empty"
+          }
+        },
+        "additionalProperties": false
+      },
+      "responseSchema": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "string",
+            "nullable": true
+          },
+          "OrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "Amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "Currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "Status": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "topic": "payments:get-all",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/payments"
+        }
+      ],
+      "requestSchema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "responseSchema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PaymentDto"
+        }
+      }
+    }
+  ],
+  "produces": [
+    {
+      "topic": "shipping:book",
+      "messageSchema": {
+        "type": "object",
+        "properties": {
+          "OrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "Carrier": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "transportKind": "TODO: needs outbound-routing accessor",
+      "destinationRef": "TODO: env-var name, needs outbound-routing accessor"
+    },
+    {
+      "topic": "payment:captured",
+      "messageSchema": {
+        "type": "object",
+        "properties": {
+          "OrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "PaymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "Amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "Currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "transportKind": "TODO: needs outbound-routing accessor",
+      "destinationRef": "TODO: env-var name, needs outbound-routing accessor"
+    }
+  ],
+  "descriptorHash": "sha256:4906226bb54a53eb6352cb0189ead3d13c547d848dabeb9f288dffc3d76fd70b"
+}

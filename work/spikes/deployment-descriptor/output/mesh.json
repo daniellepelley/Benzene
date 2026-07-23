@@ -1,0 +1,99 @@
+{
+  "service": "payments",
+  "serviceVersion": "1.0.0",
+  "instanceId": "payments",
+  "runtime": "dotnet",
+  "placement": {
+    "cloud": "aws",
+    "region": "eu-west-1"
+  },
+  "topics": [
+    {
+      "id": "payments:capture",
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "amount",
+          "currency"
+        ]
+      },
+      "responseSchema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderId",
+          "amount",
+          "currency",
+          "status"
+        ]
+      }
+    },
+    {
+      "id": "payments:get-all",
+      "requestSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "responseSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number"
+            },
+            "currency": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "orderId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "orderId",
+            "amount",
+            "currency",
+            "status"
+          ]
+        }
+      }
+    }
+  ],
+  "descriptorHash": "sha256:4906226bb54a53eb6352cb0189ead3d13c547d848dabeb9f288dffc3d76fd70b"
+}

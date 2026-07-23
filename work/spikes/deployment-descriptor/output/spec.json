@@ -1,0 +1,218 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "",
+    "description": "",
+    "version": ""
+  },
+  "messageEndpoint": "/benzene/invoke",
+  "transports": [
+    "api-gateway",
+    "benzene",
+    "sqs",
+    "sns",
+    "eventbridge"
+  ],
+  "requests": [
+    {
+      "topic": "payments:capture",
+      "httpMappings": [
+        {
+          "method": "POST",
+          "path": "/payments"
+        }
+      ],
+      "request": {
+        "$ref": "#/components/schemas/CapturePayment"
+      },
+      "response": {
+        "$ref": "#/components/schemas/PaymentDto"
+      },
+      "example": {
+        "orderId": "value",
+        "amount": 42.42,
+        "currency": "value"
+      }
+    },
+    {
+      "topic": "payments:get-all",
+      "httpMappings": [
+        {
+          "method": "GET",
+          "path": "/payments"
+        }
+      ],
+      "request": {
+        "$ref": "#/components/schemas/Void"
+      },
+      "response": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PaymentDto"
+        }
+      },
+      "example": {}
+    },
+    {
+      "topic": "spec",
+      "reserved": true,
+      "httpMappings": [
+        {
+          "method": "get",
+          "path": "/benzene/spec"
+        }
+      ],
+      "request": {
+        "$ref": "#/components/schemas/SpecRequest"
+      },
+      "response": {
+        "$ref": "#/components/schemas/RawStringMessage"
+      },
+      "example": {
+        "type": "value",
+        "format": "value"
+      }
+    }
+  ],
+  "events": [
+    {
+      "topic": "shipping:book",
+      "message": {
+        "$ref": "#/components/schemas/OutboundShipmentBook"
+      },
+      "example": {
+        "orderId": "value",
+        "carrier": "value"
+      }
+    },
+    {
+      "topic": "payment:captured",
+      "message": {
+        "$ref": "#/components/schemas/OutboundPaymentCaptured"
+      },
+      "example": {
+        "orderId": "value",
+        "paymentId": "value",
+        "amount": 42.42,
+        "currency": "value"
+      }
+    }
+  ],
+  "components": {
+    "schemas": {
+      "CapturePayment": {
+        "required": [
+          "Currency",
+          "OrderId"
+        ],
+        "type": "object",
+        "properties": {
+          "OrderId": {
+            "type": "string",
+            "description": "Not Empty"
+          },
+          "Amount": {
+            "type": "number",
+            "description": "Greater Than 0",
+            "format": "double"
+          },
+          "Currency": {
+            "type": "string",
+            "description": "Not Empty"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OutboundPaymentCaptured": {
+        "type": "object",
+        "properties": {
+          "OrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "PaymentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "Amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "Currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OutboundShipmentBook": {
+        "type": "object",
+        "properties": {
+          "OrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "Carrier": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PaymentDto": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "string",
+            "nullable": true
+          },
+          "OrderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "Amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "Currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "Status": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RawStringMessage": {
+        "type": "object",
+        "properties": {
+          "Content": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SpecRequest": {
+        "type": "object",
+        "properties": {
+          "Type": {
+            "type": "string",
+            "nullable": true
+          },
+          "Format": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Void": {
+        "type": "object",
+        "additionalProperties": false
+      }
+    }
+  }
+}
