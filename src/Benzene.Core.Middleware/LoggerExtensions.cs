@@ -57,10 +57,18 @@ public static class LoggerExtensions
                         throw;
                     }
 
-                    using (logger.BeginScope(builder.BuildResponseScope(resolver, context)))
-                    using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds }))
+                    // The success line is Information. If that level is switched off, skip the whole
+                    // block: BuildResponseScope runs the caller's OnResponse extractors (which may read
+                    // or serialize the result) and two scopes are allocated, all only to feed a log the
+                    // sink would discard. The request scope above still wraps next() so warnings/errors
+                    // logged by the handler keep their correlation context regardless of this level.
+                    if (logger.IsEnabled(LogLevel.Information))
                     {
-                        logger.LogInformation("BenzeneResult");
+                        using (logger.BeginScope(builder.BuildResponseScope(resolver, context)))
+                        using (logger.BeginScope(new Dictionary<string, object> { ["processTime"] = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds }))
+                        {
+                            logger.LogInformation("BenzeneResult");
+                        }
                     }
                 }
             });
