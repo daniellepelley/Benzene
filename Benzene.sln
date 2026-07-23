@@ -364,6 +364,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Kafka.Core.TestHelp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Clients.GoogleCloud.PubSub", "src\Benzene.Clients.GoogleCloud.PubSub\Benzene.Clients.GoogleCloud.PubSub.csproj", "{C8C067E2-D638-4AE0-BF18-EB4E65C3C349}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Mesh.GoogleCloud.Storage", "src\Benzene.Mesh.GoogleCloud.Storage\Benzene.Mesh.GoogleCloud.Storage.csproj", "{87F417B7-1409-44CC-87CB-16FD85737989}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -2270,6 +2272,18 @@ Global
 		{C8C067E2-D638-4AE0-BF18-EB4E65C3C349}.Release|x64.Build.0 = Release|Any CPU
 		{C8C067E2-D638-4AE0-BF18-EB4E65C3C349}.Release|x86.ActiveCfg = Release|Any CPU
 		{C8C067E2-D638-4AE0-BF18-EB4E65C3C349}.Release|x86.Build.0 = Release|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Debug|x64.Build.0 = Debug|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Debug|x86.Build.0 = Debug|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Release|x64.ActiveCfg = Release|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Release|x64.Build.0 = Release|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Release|x86.ActiveCfg = Release|Any CPU
+		{87F417B7-1409-44CC-87CB-16FD85737989}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -2432,6 +2446,7 @@ Global
 		{50D94D01-4671-407E-AA18-6FE6EA52EE27} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{42629EA0-8D5A-40D6-9E38-3B39DA1F817B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C8C067E2-D638-4AE0-BF18-EB4E65C3C349} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{87F417B7-1409-44CC-87CB-16FD85737989} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4E68A9C-300A-490A-B3A5-1F1D5A0A3260}
