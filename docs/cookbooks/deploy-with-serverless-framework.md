@@ -164,7 +164,7 @@ functions:
 
 The Serverless Framework's `serverless-offline` plugin emulates API Gateway/Lambda for **Node** functions and does **not** run .NET handlers — don't rely on it for local Benzene testing. Use Benzene's own local paths instead:
 
-- **`benzene.selfhost.http`** or **`benzene.asp`** — the same `HelloWorldMessageHandler` runs behind a local HTTP server with no AWS emulation at all (the point of "write your handlers once, host them anywhere"). Fastest inner loop.
+- **`benzene.asp`** — the same `HelloWorldMessageHandler` runs behind a local HTTP server (Kestrel) with no AWS emulation at all (the point of "write your handlers once, host them anywhere"). Fastest inner loop.
 - **`BenzeneTestHost` / `AwsLambdaBenzeneTestHost`** — drive the pipeline in-process from a test, no zip, no deploy. See [Integration Testing Lambda Functions](testing-lambda-functions.md).
 - **`sam local invoke`** — if you want real Lambda-runtime emulation against the packaged zip.
 

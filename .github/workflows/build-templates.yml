@@ -43,7 +43,7 @@ jobs:
         # routing) carry the same shape with a different topic string, so they're standalone.
         # Group A (request/response, canonical asp) - HTTP-shaped templates that assert on the response.
         canonical_a="templates/content/asp/HelloWorldMessageHandler.cs"
-        for dir in aws-apigateway azure-http selfhost-http; do
+        for dir in aws-apigateway azure-http; do
           if ! diff -u "$canonical_a" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
             echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical_a"
             exit 1
@@ -63,28 +63,10 @@ jobs:
         # carry the same collaborator handler shape but a different topic string, so they're standalone -
         # deliberately not diffed against any canonical.
 
-    - name: Check shared BenzeneStarter.Tests files haven't drifted
-      run: |
-        set -euo pipefail
-        # The optional unit-test project shares the same way the handler does. Only templates still on the
-        # shared in-memory test keep the identical .csproj + shared test .cs - now just the two HTTP-shaped
-        # ones (asp, selfhost-http). Every message/event template has migrated to a bespoke per-transport
-        # component test (different TestHelpers package + Build*Host + As* builder), so they drop out of
-        # these shared-file checks; their handler sharing is still enforced by the step above.
-        canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-        for dir in selfhost-http; do
-          if ! diff -u "$canonical_csproj" "templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"; then
-            echo "::error::templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj has drifted from $canonical_csproj"
-            exit 1
-          fi
-        done
-        canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-        for dir in selfhost-http; do
-          if ! diff -u "$canonical_test_a" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
-            echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_a"
-            exit 1
-          fi
-        done
+    # (No shared BenzeneStarter.Tests drift check: `asp` is now the only template on the shared
+    # in-memory test - every other template runs a bespoke per-transport component test - so its
+    # .csproj/test .cs aren't shared with anything to drift against. Handler sharing is still enforced
+    # by the step above.)
 
     - name: Pack Benzene.Templates
       run: dotnet pack templates/Benzene.Templates.csproj -c Release -o ./templates-pack
@@ -98,7 +80,7 @@ jobs:
         for shortname in \
           benzene.asp benzene.aws.apigateway benzene.aws.sqs benzene.aws.sns \
           benzene.azure.http benzene.kafka.worker \
-          benzene.selfhost.http benzene.rabbitmq.worker benzene.servicebus.worker \
+          benzene.rabbitmq.worker benzene.servicebus.worker \
           benzene.azure.servicebus benzene.azure.eventhub benzene.azure.eventgrid benzene.azure.queuestorage; do
           out="/tmp/generated/${shortname}"
           log="/tmp/${shortname}.buildlog"

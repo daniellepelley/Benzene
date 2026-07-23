@@ -11,8 +11,6 @@ Benzene.Templates.csproj   # the template pack project (PackageType=Template)
 content/
   # HTTP-shaped
   asp/                      # benzene.asp                - ASP.NET Core
-  selfhost-http/            # benzene.selfhost.http       - Self-hosted HTTP (HttpListener) - DEPRECATED,
-                            #                               use benzene.asp (Kestrel); see docs/deprecations.md
   aws-apigateway/           # benzene.aws.apigateway      - AWS Lambda + API Gateway
   azure-http/               # benzene.azure.http          - Azure Functions (isolated worker, HTTP trigger)
   # AWS Lambda event sources
@@ -61,17 +59,18 @@ Two test styles are in play — the same setup wraps every transport, so you lea
   `Build<Transport>Host()` → push a built message. These tests are **bespoke per transport** (each
   transport's host build + entry point differ), so they're excluded from the shared-**test-file** drift
   checks below — but the handler they exercise is still shared (see the handler groups).
-- **In-memory test (`asp`, `selfhost-http`)** — transport-agnostic: routes the demo topic through
-  Benzene's in-memory `BenzeneMessageApplication` host (no HTTP/Lambda/broker needed). The demo topic
-  returns `Ok` and an unknown topic returns `NotFound`. References only `Benzene.Core.MessageHandlers`
-  + `Benzene.Microsoft.Dependencies` plus the generated main project. (These two HTTP hosts don't yet
-  have a `Build*Host`, so they stay on the in-memory test.)
+- **In-memory test (`asp`)** — transport-agnostic: routes the demo topic through Benzene's in-memory
+  `BenzeneMessageApplication` host (no HTTP/Lambda/broker needed). The demo topic returns `Ok` and an
+  unknown topic returns `NotFound`. References only `Benzene.Core.MessageHandlers` +
+  `Benzene.Microsoft.Dependencies` plus the generated main project. (`asp` is an ASP.NET Core app with
+  no `BenzeneStartUp` entry point, so it doesn't fit the `Create<StartUp>().Build*Host()` shape; its
+  idiomatic in-process host is `WebApplicationFactory`, left as a follow-up.)
 
 The `HelloWorldMessageHandler.cs` falls into two shared groups plus two one-offs — the same handler
 running unchanged behind many transports is the actual point of the exercise, and CI
 (`.github/workflows/build-templates.yml`) enforces the sharing with a diff check (see below):
 - **Group A** (request/response, `content/asp/HelloWorldMessageHandler.cs` is canonical): `asp`,
-  `selfhost-http`, `aws-apigateway`, `azure-http`. The `[HttpEndpoint]` is harmless on the non-HTTP ones.
+  `aws-apigateway`, `azure-http`. The `[HttpEndpoint]` is harmless on the non-HTTP ones.
 - **Group C** (fire-and-forget with an injected `IGreeter` collaborator, `content/aws-sqs/HelloWorldMessageHandler.cs`
   is canonical): `aws-sqs`, `aws-sns`, `azure-eventhub`, `azure-servicebus`, `azure-queuestorage`,
   `rabbitmq-worker`, `servicebus-worker` — every fire-and-forget transport whose demo topic is
@@ -118,7 +117,7 @@ the same check — group A + group B, see "Layout" above):
 ```bash
 # Group A (request/response, canonical asp)
 canonical_a="templates/content/asp/HelloWorldMessageHandler.cs"
-for d in aws-apigateway azure-http selfhost-http; do
+for d in aws-apigateway azure-http; do
   diff "$canonical_a" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (A): $d"; exit 1; }
 done
 # Group C (fire-and-forget with an injected collaborator, canonical aws-sqs)
@@ -132,24 +131,9 @@ done
 
 ### Shared-test diff check
 
-Only templates still on the **in-memory** test keep the identical `.csproj` + shared test `.cs` — now
-just the two HTTP-shaped ones (`asp`, `selfhost-http`), which assert `Ok` + body. Every message/event
-template has migrated to a bespoke per-transport component test (different TestHelpers package +
-`Build*Host` + `As*` builder), so they drop out of these shared-file lists; their handler sharing is
-still enforced by the handler diff check above.
-
-```bash
-# every in-memory test .csproj is identical (component-test templates are omitted)
-canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-for d in selfhost-http; do
-  diff "$canonical_csproj" "templates/content/$d/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj" || { echo "DRIFT (csproj): $d"; exit 1; }
-done
-# group A test (request/response): asserts Ok + body
-canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-for d in selfhost-http; do
-  diff "$canonical_test_a" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (A): $d"; exit 1; }
-done
-```
+No longer needed: `asp` is now the only template on the shared in-memory test (every other template
+runs a bespoke per-transport component test), so its `.csproj`/test `.cs` aren't shared with anything
+to drift against. `asp`'s handler is still checked as the Group A canonical above.
 
 ## Publishing
 

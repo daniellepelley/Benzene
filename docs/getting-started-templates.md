@@ -37,7 +37,6 @@ occurrence of the placeholder gets renamed); `-o` sets the output directory.
 | Short name | What it generates |
 |---|---|
 | `benzene.asp` | ASP.NET Core service — no cloud account needed, the quickest way to try Benzene locally |
-| `benzene.selfhost.http` | Self-hosted HTTP service (`HttpListener`, no ASP.NET) — a container that owns its own process |
 | `benzene.aws.apigateway` | AWS Lambda triggered by API Gateway, with a SAM `template.yaml` |
 | `benzene.aws.sqs` | AWS Lambda triggered by an SQS queue |
 | `benzene.aws.sns` | AWS Lambda triggered by an SNS topic |
@@ -64,9 +63,8 @@ testing, observability).
 
 ## What you get
 
-The HTTP-shaped and Lambda templates (`benzene.asp`, `benzene.selfhost.http`,
-`benzene.aws.apigateway`, `benzene.aws.sqs`, `benzene.aws.sns`, `benzene.azure.http`) generate the
-identical request/response starter handler:
+The HTTP-shaped and Lambda templates (`benzene.asp`, `benzene.aws.apigateway`, `benzene.aws.sqs`,
+`benzene.aws.sns`, `benzene.azure.http`) generate the identical request/response starter handler:
 
 ```csharp
 [Message("hello:world")]
