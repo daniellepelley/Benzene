@@ -117,4 +117,15 @@ service's topics when it doesn't). Every panel:
   off the primary screen, per the product ruling — naming what the feed doesn't carry and that
   the fix is adapter-side, not a UI setting;
 - never invents a number: an unexercised topic shows the explicit "feed is wired, no traffic
-  observed" state, not a fabricated zero-row.
+  observed" state, not a fabricated zero-row;
+- **reconciles the "By status" breakdown with the total.** The `result=<missing>` sentinel (a
+  message counted with no recorded success/failure outcome) is never rendered as if it were a real
+  status, but its **count is still accounted for**: when a "By status" row is shown, the unrecorded
+  count is folded into a neutral **`(no outcome recorded)`** bucket so the status chips sum to the
+  same total as the "By transport" row. This supersedes an earlier "just hide `<missing>`" approach,
+  which dropped the count and left the two breakdowns silently disagreeing (the same messages,
+  different totals). Eliminating `<missing>` is a **backend** fix — the pipeline recording a
+  `MessageResult` (see `docs/message-result.md` / `Benzene.Core.MessageHandlers`'
+  `MessageResultRecorder`) — but the panel stays honest whatever the rolling metric window still
+  holds. When a feed carries **no** real status at all (only `<missing>`/null), no "By status" row is
+  shown and the missing-`status` data-quality footnote covers it instead.

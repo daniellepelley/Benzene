@@ -1956,6 +1956,7 @@
     row.appendChild(el("span", "usage-dim", label));
     groups.forEach(function (g) {
       var chip = el("span", "chip");
+      if (g.title) chip.title = g.title;
       chip.appendChild(document.createTextNode(g.key + " "));
       chip.appendChild(el("b", null, fmtCount(g.count)));
       row.appendChild(chip);
@@ -1985,9 +1986,28 @@
     }
 
     var hasTransport = entries.some(function (e) { return e.transport != null; });
-    var hasStatus = entries.some(function (e) { return e.status != null; });
+    // Never render the raw "<missing>" no-result sentinel as a status - but still account for its count,
+    // or "By status" would silently disagree with "By transport". Real statuses render as chips; the
+    // unrecorded count is folded into a neutral "(no outcome recorded)" bucket so the row reconciles.
+    var statusEntries = entries.filter(function (e) { return e.status != null && e.status !== "<missing>"; });
+    var hasStatus = statusEntries.length > 0;
+    var unrecordedCount = entries.reduce(function (a, e) {
+      return a + ((e.status == null || e.status === "<missing>") ? (e.count || 0) : 0);
+    }, 0);
     if (hasTransport) panel.appendChild(usageChipRow("By transport", usageGroups(entries, "transport")));
-    if (hasStatus) panel.appendChild(usageChipRow("By status", usageGroups(entries, "status")));
+    if (hasStatus) {
+      var statusGroups = usageGroups(statusEntries, "status");
+      if (unrecordedCount > 0) {
+        statusGroups.push({
+          key: "(no outcome recorded)",
+          count: unrecordedCount,
+          title: "Messages that completed without a recorded success/failure outcome. Counted here so "
+            + "By status reconciles with By transport. The fix is backend-side (the pipeline recording "
+            + "a MessageResult), not a UI setting."
+        });
+      }
+      panel.appendChild(usageChipRow("By status", statusGroups));
+    }
 
     if (opts && opts.perTopic) {
       var box = el("div", "usage-topics");

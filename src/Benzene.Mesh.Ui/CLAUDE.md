@@ -1,5 +1,23 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-23 (usage panel): "By status" reconciles with "By transport" via a neutral bucket.**
+> The usage panel (`buildUsagePanel`) computed "By transport" over all entries but "By status" over
+> only real statuses (excluding the `result=<missing>` no-outcome sentinel), so the two rows silently
+> disagreed by the `<missing>` count — the "numbers don't add up" an owner reported (91 by transport
+> vs 29 by status). Fixed by **relabeling, not hiding**: the raw `<missing>` token is still never
+> rendered as a status, but its count is now folded into a neutral **`(no outcome recorded)`** chip
+> appended to the "By status" row (with a `title` tooltip explaining it's messages with no recorded
+> success/failure outcome and that the fix is backend-side), so the status chips sum to the same total
+> as the transport row. When a feed carries *only* `<missing>`/null statuses, no "By status" row is
+> shown at all (the missing-`status` data-quality footnote covers it) — so there's never a lone bucket
+> and never two disagreeing totals. This supersedes the earlier "just hide `<missing>`" mechanism,
+> whose intent (don't show the ugly sentinel) is kept while its bug (dropping the count broke
+> cross-row integrity) is fixed. Normative rule in `docs/mesh-usage-feed.md` §3; mirrored in
+> `website/demos/mesh/index.html`. Making `<missing>` actually reach zero remains a backend concern
+> (the pipeline recording a `MessageResult`); this keeps the panel honest regardless. Showing the real
+> wire status (`Accepted`/`Ignored`/…) instead of the `success`/`failure` class is a **separate,
+> deferred** metric-vocabulary change (a `benzene.messages.processed` contract change), not this.
+>
 > **2026-07-23 (Fleet view): "Trace a transaction" — correlation-id lookup + failed-flow pivot.**
 > `mesh-fleet-ui.html` gains a **correlation-id lookup box** above "Recent flows": enter a business
 > correlation id (from a ticket/log) → POSTs `mesh:query:correlation` through the same `ENVELOPE_URL`

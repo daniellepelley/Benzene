@@ -2390,6 +2390,7 @@
     row.appendChild(el("span", "usage-dim", label));
     groups.forEach(function (g) {
       var chip = el("span", "chip");
+      if (g.title) chip.title = g.title;
       chip.appendChild(document.createTextNode(g.key + " "));
       chip.appendChild(el("b", null, fmtCount(g.count)));
       row.appendChild(chip);
@@ -2419,13 +2420,33 @@
     }
 
     var hasTransport = entries.some(function (e) { return e.transport != null; });
-    // A "<missing>" status is the metric's no-result-signal sentinel, not a real outcome; treat it (and
-    // a null status) as no status - don't render a "By status" chip for it, and don't count it toward the
-    // feed carrying a usable status dimension. (The backend not emitting <missing> is the deeper fix.)
+    // A "<missing>" status is the metric's no-result-signal sentinel, not a real outcome (and null is
+    // no status at all). We never render the raw sentinel as if it were a status - but we must still
+    // ACCOUNT for its count, or "By status" would silently disagree with "By transport" (both are the
+    // same messages). So: split real statuses from unrecorded ones, and when a real "By status" row is
+    // shown, append a neutral "(no outcome recorded)" bucket carrying the unrecorded count, so the row
+    // reconciles to the same total. (Eliminating <missing> is a backend fix - the pipeline recording a
+    // MessageResult - but this keeps the panel honest whatever the rolling metric window still holds.)
     var statusEntries = entries.filter(function (e) { return e.status != null && e.status !== "<missing>"; });
     var hasStatus = statusEntries.length > 0;
+    var unrecordedCount = entries.reduce(function (a, e) {
+      return a + ((e.status == null || e.status === "<missing>") ? (e.count || 0) : 0);
+    }, 0);
     if (hasTransport) panel.appendChild(usageChipRow("By transport", usageGroups(entries, "transport")));
-    if (hasStatus) panel.appendChild(usageChipRow("By status", usageGroups(statusEntries, "status")));
+    if (hasStatus) {
+      var statusGroups = usageGroups(statusEntries, "status");
+      if (unrecordedCount > 0) {
+        statusGroups.push({
+          key: "(no outcome recorded)",
+          count: unrecordedCount,
+          title: "Messages that completed without a recorded success/failure outcome — a handler path "
+            + "that set no result, or (transiently) data still aging out of the metric window. Counted "
+            + "here so By status reconciles with By transport. The fix is backend-side (the pipeline "
+            + "recording a MessageResult), not a UI setting."
+        });
+      }
+      panel.appendChild(usageChipRow("By status", statusGroups));
+    }
 
     if (opts && opts.perTopic) {
       var box = el("div", "usage-topics");
