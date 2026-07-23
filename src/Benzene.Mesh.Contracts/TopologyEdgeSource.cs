@@ -6,12 +6,13 @@ namespace Benzene.Mesh.Contracts;
 public static class TopologyEdgeSource
 {
     /// <summary>
-    /// A "designed to call" edge derived from static/structural information (e.g. which services
-    /// generate a <c>Benzene.CodeGen.Client</c> against which other service's spec). Not currently
-    /// produced by any Benzene package - deriving this at runtime from an HTTP-polling aggregator
-    /// is a real, still-open design question (see <c>work/service-mesh-roadmap-1.0.md</c> §4.6).
-    /// Defined here so <see cref="TopologyEdge"/> can represent it once that's built, without a
-    /// later breaking change to this constant list.
+    /// A "designed to call" edge derived from the fleet's declared contracts: for every domain topic a
+    /// service <em>produces</em> (spec <c>events</c>), an edge to every service that <em>consumes</em> it
+    /// (spec <c>requests</c>). Produced by <c>Benzene.Mesh.Aggregator.MeshAggregator.BuildTopology</c> and
+    /// published as <c>topology.json</c> on every run - so a mesh has a topology graph from declared
+    /// contracts alone, with no tracing backend. The metric columns (req/min, error rate, latency
+    /// percentiles) are left null on a purely-structural edge unless a usage/tracing source can attribute
+    /// them; contrast <see cref="Tempo"/>, which carries observed traffic and performance.
     /// </summary>
     public const string Structural = "structural";
 

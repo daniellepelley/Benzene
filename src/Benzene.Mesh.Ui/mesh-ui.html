@@ -250,9 +250,10 @@
   .chip.dep { background: var(--accent-tint); color: var(--accent); }
   /* Root-cause detail for a non-OK check: the "why" behind the warning/failure. Only shown when
      the check is not ok, so a healthy check stays a single clean line (see renderHealthChecks). */
-  .check-detail { margin-top: 7px; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; align-items: baseline; }
-  .check-detail .cd-k { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-transform: none; }
-  .check-detail .cd-v { font-family: var(--mono); font-size: 11.5px; color: var(--ink); word-break: break-word; }
+  .check-detail { margin-top: 7px; display: flex; flex-direction: column; gap: 3px; }
+  .check-detail .cd-item { display: flex; gap: 10px; align-items: baseline; }
+  .check-detail .cd-k { flex: 0 0 auto; min-width: 92px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-transform: none; }
+  .check-detail .cd-v { flex: 1 1 auto; min-width: 0; font-family: var(--mono); font-size: 11.5px; color: var(--ink); word-break: break-word; }
   .check-detail-empty { margin-top: 7px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
@@ -1198,8 +1199,10 @@
           if (dataKeys.length) {
             var detail = el("div", "check-detail");
             dataKeys.forEach(function (k) {
-              detail.appendChild(el("span", "cd-k", k));
-              detail.appendChild(el("span", "cd-v", formatCheckDataValue(data[k])));
+              var item = el("div", "cd-item");
+              item.appendChild(el("span", "cd-k", k));
+              item.appendChild(el("span", "cd-v", formatCheckDataValue(data[k])));
+              detail.appendChild(item);
             });
             row.appendChild(detail);
           } else {
@@ -2416,9 +2419,13 @@
     }
 
     var hasTransport = entries.some(function (e) { return e.transport != null; });
-    var hasStatus = entries.some(function (e) { return e.status != null; });
+    // A "<missing>" status is the metric's no-result-signal sentinel, not a real outcome; treat it (and
+    // a null status) as no status - don't render a "By status" chip for it, and don't count it toward the
+    // feed carrying a usable status dimension. (The backend not emitting <missing> is the deeper fix.)
+    var statusEntries = entries.filter(function (e) { return e.status != null && e.status !== "<missing>"; });
+    var hasStatus = statusEntries.length > 0;
     if (hasTransport) panel.appendChild(usageChipRow("By transport", usageGroups(entries, "transport")));
-    if (hasStatus) panel.appendChild(usageChipRow("By status", usageGroups(entries, "status")));
+    if (hasStatus) panel.appendChild(usageChipRow("By status", usageGroups(statusEntries, "status")));
 
     if (opts && opts.perTopic) {
       var box = el("div", "usage-topics");
