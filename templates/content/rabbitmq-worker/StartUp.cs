@@ -26,7 +26,12 @@ public class StartUp : BenzeneStartUp
         // AddRabbitMq() registers the consumer's services; AddDiagnostics() wraps every middleware in an
         // Activity span (a no-op until an OpenTelemetry exporter is attached). The generic host wires
         // console logging. See docs/monitoring.md and docs/diagnosing-failures.md.
+        // Register your application services here - a test can override any of them (see
+        // BenzeneStarter.Tests). IGreeter is the demo handler's one dependency.
+        services.AddSingleton<IGreeter, ConsoleGreeter>();
+
         services.UsingBenzene(x => x
+            .AddBenzene()
             .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly)
             .AddRabbitMq()
             .AddDiagnostics());

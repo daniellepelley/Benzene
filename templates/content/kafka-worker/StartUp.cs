@@ -26,7 +26,12 @@ public class StartUp : BenzeneStartUp
         // AddDiagnostics() wraps every middleware in an Activity span and marks failing stages Error
         // - a no-op until an OpenTelemetry exporter is attached. The generic host (Program.cs) wires
         // console logging for you. See docs/monitoring.md and docs/diagnosing-failures.md.
+        // Register your application services here - a test can override any of them (see
+        // BenzeneStarter.Tests). IGreeter is the demo handler's one dependency.
+        services.AddSingleton<IGreeter, ConsoleGreeter>();
+
         services.UsingBenzene(x => x
+            .AddBenzene()
             .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly)
             .AddKafka<Ignore, string>()
             .AddDiagnostics());

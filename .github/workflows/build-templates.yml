@@ -36,11 +36,11 @@ jobs:
     - name: Check shared HelloWorldMessageHandler.cs hasn't drifted
       run: |
         set -euo pipefail
-        # Group A - the request/response handler shared by every HTTP-shaped and Lambda template
-        # (the [HttpEndpoint] is harmless on the non-HTTP ones; the same handler serving them all is
-        # the point). Group B - the fire-and-forget handler shared by the queue/topic/event workers.
-        # kafka-worker (literal-topic routing) and azure-eventgrid (event-type routing) are
-        # deliberately their own shape - not part of either group.
+        # Group A - the request/response handler shared by the HTTP-shaped templates (the [HttpEndpoint]
+        # is harmless on the non-HTTP ones; the same handler serving them all is the point). Group C -
+        # the fire-and-forget handler with an injected collaborator, shared by every "hello:world"
+        # component-test template. kafka-worker (literal-topic routing) and azure-eventgrid (event-type
+        # routing) carry the same shape with a different topic string, so they're standalone.
         # Group A (request/response, canonical asp) - HTTP-shaped templates that assert on the response.
         canonical_a="templates/content/asp/HelloWorldMessageHandler.cs"
         for dir in aws-apigateway azure-http selfhost-http; do
@@ -50,33 +50,29 @@ jobs:
           fi
         done
         # Group C (fire-and-forget with an injected collaborator, canonical aws-sqs) - the component-test
-        # templates that need a spyable dependency to assert the handler ran.
+        # templates that need a spyable dependency to assert the handler ran. Every fire-and-forget
+        # transport whose demo topic is "hello:world" shares this exact handler.
         canonical_c="templates/content/aws-sqs/HelloWorldMessageHandler.cs"
-        for dir in aws-sns azure-eventhub azure-servicebus; do
+        for dir in aws-sns azure-eventhub azure-servicebus azure-queuestorage rabbitmq-worker servicebus-worker; do
           if ! diff -u "$canonical_c" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
             echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical_c"
             exit 1
           fi
         done
-        # Group B (fire-and-forget, no collaborator - still on the in-memory test, canonical rabbitmq).
-        canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
-        for dir in servicebus-worker azure-queuestorage; do
-          if ! diff -u "$canonical_b" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
-            echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical_b"
-            exit 1
-          fi
-        done
+        # kafka-worker (literal Kafka topic "hello_world") and azure-eventgrid (event type "hello.world")
+        # carry the same collaborator handler shape but a different topic string, so they're standalone -
+        # deliberately not diffed against any canonical.
 
     - name: Check shared BenzeneStarter.Tests files haven't drifted
       run: |
         set -euo pipefail
-        # The optional unit-test project shares the same way the handler does: the .csproj is identical
-        # everywhere; the test .cs shares by handler group (A asserts Ok + body, B asserts Accepted),
-        # with kafka-worker/azure-eventgrid differing only in the topic string.
-        # Only templates still on the shared in-memory test keep the identical .csproj + shared test .cs.
-        # Component-test templates (bespoke per transport) are dropped from these lists as they migrate.
+        # The optional unit-test project shares the same way the handler does. Only templates still on the
+        # shared in-memory test keep the identical .csproj + shared test .cs - now just the two HTTP-shaped
+        # ones (asp, selfhost-http). Every message/event template has migrated to a bespoke per-transport
+        # component test (different TestHelpers package + Build*Host + As* builder), so they drop out of
+        # these shared-file checks; their handler sharing is still enforced by the step above.
         canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-        for dir in selfhost-http azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
+        for dir in selfhost-http; do
           if ! diff -u "$canonical_csproj" "templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj has drifted from $canonical_csproj"
             exit 1
@@ -86,13 +82,6 @@ jobs:
         for dir in selfhost-http; do
           if ! diff -u "$canonical_test_a" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_a"
-            exit 1
-          fi
-        done
-        canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-        for dir in servicebus-worker azure-queuestorage; do
-          if ! diff -u "$canonical_test_b" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
-            echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_b"
             exit 1
           fi
         done

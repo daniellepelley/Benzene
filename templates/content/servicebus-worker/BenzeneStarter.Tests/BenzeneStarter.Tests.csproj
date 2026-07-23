@@ -17,11 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Benzene's transport-agnostic in-memory host (BenzeneMessage), used by the tests to route a
-         topic through your handlers without the real transport. Version="*-*" floats to the latest
-         published prerelease, matching the main project. -->
-    <PackageReference Include="Benzene.Core.MessageHandlers" Version="*-*" />
-    <PackageReference Include="Benzene.Microsoft.Dependencies" Version="*-*" />
+    <!-- Benzene's test host: BenzeneTestHost.Create<StartUp>() boots the app exactly as the real host
+         does (ConfigureServices + Configure), with WithServices/WithConfiguration override seams. The
+         Service Bus worker helpers add BuildServiceBusWorkerHost() and AsAzureServiceBusMessage().
+         Version "*-*" floats to the latest published prerelease, matching the main project. -->
+    <PackageReference Include="Benzene.Testing" Version="*-*" />
+    <PackageReference Include="Benzene.Azure.ServiceBus.TestHelpers" Version="*-*" />
   </ItemGroup>
 
   <ItemGroup>
