@@ -45,13 +45,21 @@ root exactly as before — a `<Compile Remove="BenzeneStarter.Tests\**" />` in e
 the test sources out of the main project's own compilation (default globbing would otherwise pull the
 subfolder in; the Remove is a harmless no-op when tests aren't generated).
 
-The tests are **transport-agnostic**: they route the demo topic through Benzene's in-memory
-`BenzeneMessageApplication` host (so no HTTP/Lambda/broker is needed), which exercises the real handler
-and routing. Two tests per template — the demo topic returns a success status (`Ok` for
-request/response handlers, `Accepted` for fire-and-forget), and an unknown topic returns `NotFound`
-(the router's real "no handler for topic" behaviour). The test project references only published
-Benzene packages (`Benzene.Core.MessageHandlers`, `Benzene.Microsoft.Dependencies`) plus the generated
-main project, so it restores/builds wherever the main project does.
+Two test styles are in play (a per-transport migration is underway):
+
+- **Component test (templates with a `StartUp`)** — boots the SAME app the `StartUp` configures for a
+  real deployment (`BenzeneTestHost.Create<StartUp>()` from `Benzene.Testing`, `.BuildAwsLambdaHost()`/
+  `.BuildAzureFunctionApp()`/…), with `WithServices`/`WithConfiguration` seams to override dependencies
+  and settings, then pushes a message through the whole pipeline via the transport's own entry point
+  (e.g. `HandleEventHub`). The demo handler takes one injected service (`IGreeter`) so the test can
+  swap it for a spy and assert the handler actually ran with the routed message. These tests are
+  **bespoke per transport** (each transport's host build + trigger differs), so they're excluded from
+  the shared-drift checks below. `azure-eventhub` is the first converted; the rest follow.
+- **In-memory test (`asp`, `selfhost-http`, and not-yet-migrated templates)** — transport-agnostic:
+  routes the demo topic through Benzene's in-memory `BenzeneMessageApplication` host (no
+  HTTP/Lambda/broker needed). The demo topic returns a success status (`Ok` for request/response,
+  `Accepted` for fire-and-forget) and an unknown topic returns `NotFound`. References only
+  `Benzene.Core.MessageHandlers` + `Benzene.Microsoft.Dependencies` plus the generated main project.
 
 The `HelloWorldMessageHandler.cs` falls into two shared groups plus two one-offs — the same handler
 running unchanged behind many transports is the actual point of the exercise, and CI
@@ -103,7 +111,7 @@ for d in selfhost-http aws-apigateway aws-sqs aws-sns azure-http; do
   diff "$canonical_a" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (A): $d"; exit 1; }
 done
 canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
-for d in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+for d in servicebus-worker azure-servicebus azure-queuestorage; do
   diff "$canonical_b" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (B): $d"; exit 1; }
 done
 ```
@@ -119,7 +127,7 @@ assert `Accepted`), with `kafka-worker`/`azure-eventgrid` differing only in the 
 # every test .csproj is identical
 canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
 for d in $(ls templates/content); do
-  [ "$d" = "asp" ] && continue
+  [ "$d" = "asp" ] || [ "$d" = "azure-eventhub" ] && continue
   diff "$canonical_csproj" "templates/content/$d/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj" || { echo "DRIFT (csproj): $d"; exit 1; }
 done
 # group A test (request/response): asserts Ok + body
@@ -129,7 +137,7 @@ for d in selfhost-http aws-apigateway aws-sqs aws-sns azure-http; do
 done
 # group B test (fire-and-forget): asserts Accepted
 canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-for d in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+for d in servicebus-worker azure-servicebus azure-queuestorage; do
   diff "$canonical_test_b" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (B): $d"; exit 1; }
 done
 ```

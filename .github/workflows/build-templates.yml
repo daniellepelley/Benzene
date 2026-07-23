@@ -49,7 +49,7 @@ jobs:
           fi
         done
         canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
-        for dir in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+        for dir in servicebus-worker azure-servicebus azure-queuestorage; do
           if ! diff -u "$canonical_b" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
             echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical_b"
             exit 1
@@ -64,7 +64,7 @@ jobs:
         # with kafka-worker/azure-eventgrid differing only in the topic string.
         canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
         for dir in $(ls templates/content); do
-          [ "$dir" = "asp" ] && continue
+          [ "$dir" = "asp" ] || [ "$dir" = "azure-eventhub" ] && continue
           if ! diff -u "$canonical_csproj" "templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj has drifted from $canonical_csproj"
             exit 1
@@ -78,7 +78,7 @@ jobs:
           fi
         done
         canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-        for dir in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+        for dir in servicebus-worker azure-servicebus azure-queuestorage; do
           if ! diff -u "$canonical_test_b" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_b"
             exit 1
