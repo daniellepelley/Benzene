@@ -6,7 +6,7 @@ namespace Benzene.Kafka.Core.TestHelpers;
 
 /// <summary>
 /// A test host that drives the Kafka message pipeline a <c>StartUp</c> configured, without a running
-/// broker. Built by <see cref="BenzeneTestHostExtensions.BuildKafkaHost{TStartUp, TKey, TValue}"/>;
+/// broker. Built by <see cref="BenzeneTestHostExtensions.BuildKafkaWorkerHost{TStartUp, TKey, TValue}"/>;
 /// push a record through it with <see cref="HandleAsync(ConsumeResult{TKey, TValue})"/> (build one from
 /// a <c>MessageBuilder</c> via <c>AsKafkaBenzeneMessage()</c>).
 /// </summary>

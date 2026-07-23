@@ -21,7 +21,7 @@ public class HelloWorldMessageHandlerTests
     private static RabbitMqBenzeneTestHost BuildHost(IGreeter greeter) =>
         BenzeneTestHost.Create<StartUp>()
             .WithServices(services => services.AddSingleton<IGreeter>(greeter))
-            .BuildRabbitMqHost();
+            .BuildRabbitMqWorkerHost();
 
     [Fact]
     public async Task Routing_the_demo_topic_invokes_the_handler()

@@ -19,7 +19,7 @@ public static class BenzeneTestHostExtensions
     /// <typeparam name="TStartUp">The <see cref="BenzeneStartUp"/> to run.</typeparam>
     /// <param name="builder">The test host builder, with any <c>WithServices</c>/<c>WithConfiguration</c> overrides already applied.</param>
     /// <returns>The built RabbitMQ test host.</returns>
-    public static RabbitMqBenzeneTestHost BuildRabbitMqHost<TStartUp>(this BenzeneTestHostBuilder<TStartUp> builder)
+    public static RabbitMqBenzeneTestHost BuildRabbitMqWorkerHost<TStartUp>(this BenzeneTestHostBuilder<TStartUp> builder)
         where TStartUp : BenzeneStartUp, new()
     {
         return builder.Build((startUp, services, configuration) =>

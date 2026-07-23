@@ -23,7 +23,7 @@ public static class BenzeneTestHostExtensions
     /// <typeparam name="TValue">The Kafka record value type.</typeparam>
     /// <param name="builder">The test host builder, with any <c>WithServices</c>/<c>WithConfiguration</c> overrides already applied.</param>
     /// <returns>The built Kafka worker test host.</returns>
-    public static KafkaBenzeneTestHost<TKey, TValue> BuildKafkaHost<TStartUp, TKey, TValue>(this BenzeneTestHostBuilder<TStartUp> builder)
+    public static KafkaBenzeneTestHost<TKey, TValue> BuildKafkaWorkerHost<TStartUp, TKey, TValue>(this BenzeneTestHostBuilder<TStartUp> builder)
         where TStartUp : BenzeneStartUp, new()
     {
         return builder.Build((startUp, services, configuration) =>

@@ -7,7 +7,7 @@ namespace Benzene.RabbitMq.TestHelpers;
 
 /// <summary>
 /// A test host that drives the RabbitMQ message pipeline a <c>StartUp</c> configured, without a
-/// running broker. Built by <see cref="BenzeneTestHostExtensions.BuildRabbitMqHost{TStartUp}"/>; push
+/// running broker. Built by <see cref="BenzeneTestHostExtensions.BuildRabbitMqWorkerHost{TStartUp}"/>; push
 /// a delivery through it with <see cref="HandleAsync(BasicDeliverEventArgs)"/> (build one from a
 /// <c>MessageBuilder</c> via <c>AsRabbitMqBenzeneMessage()</c>).
 /// </summary>

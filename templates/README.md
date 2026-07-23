@@ -50,7 +50,7 @@ Two test styles are in play — the same setup wraps every transport, so you lea
 - **Component test (every message/event/Lambda template)** — boots the SAME app the `StartUp`
   configures for a real deployment: `BenzeneTestHost.Create<StartUp>()` (from `Benzene.Testing`) then a
   transport `Build*` extension — `.BuildAwsLambdaHost()`, `.BuildAzureFunctionApp()`,
-  `.BuildRabbitMqHost()`, `.BuildServiceBusWorkerHost()`, `.BuildKafkaHost<StartUp, TKey, TValue>()` —
+  `.BuildRabbitMqWorkerHost()`, `.BuildServiceBusWorkerHost()`, `.BuildKafkaWorkerHost<StartUp, TKey, TValue>()` —
   with `WithServices`/`WithConfiguration` seams to override dependencies and settings, then pushes a
   message through the whole pipeline via the transport's own entry point (`HandleEventHub`,
   `HandleQueueMessages`, `HandleEventGridEvents`, or the worker hosts' `HandleAsync(delivery)`) built

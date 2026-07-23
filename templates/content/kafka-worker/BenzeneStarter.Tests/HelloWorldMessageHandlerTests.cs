@@ -23,7 +23,7 @@ public class HelloWorldMessageHandlerTests
     private static KafkaBenzeneTestHost<Ignore, string> BuildHost(IGreeter greeter) =>
         BenzeneTestHost.Create<StartUp>()
             .WithServices(services => services.AddSingleton<IGreeter>(greeter))
-            .BuildKafkaHost<StartUp, Ignore, string>();
+            .BuildKafkaWorkerHost<StartUp, Ignore, string>();
 
     [Fact]
     public async Task Routing_the_demo_topic_invokes_the_handler()
