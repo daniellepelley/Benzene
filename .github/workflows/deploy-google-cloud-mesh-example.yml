@@ -1,0 +1,129 @@
+# Deploys the Google Cloud Mesh example: Terraform provisions the Pub/Sub inbox topics + mesh GCS
+# bucket + runtime service account + IAM, then each function is deployed with `gcloud functions deploy`
+# (Gen2, .NET 10, buildpack source deploy from the repo root so sibling src/ ProjectReferences
+# resolve). Manual only. NOT verified against live GCP from this repo — treat the first run as an
+# iteration exercise (see examples/GoogleCloudMesh/README.md).
+name: Deploy Google Cloud Mesh Example
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Google Cloud project id"
+        required: true
+      region:
+        description: "Region"
+        required: false
+        default: "europe-west2"
+      state_bucket:
+        description: "GCS bucket for Terraform state (must exist)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  NAME_PREFIX: benzene-gcpmesh
+  RUNTIME: dotnet10
+  TF_DIR: examples/GoogleCloudMesh/deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - uses: hashicorp/setup-terraform@v3
+
+      # 1. Provision infra (topics, bucket, service account, IAM) — no scheduler yet.
+      - name: Terraform apply (infra)
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform init -backend-config="bucket=${{ github.event.inputs.state_bucket }}" -backend-config="prefix=google-cloud-mesh"
+          terraform apply -auto-approve \
+            -var "project=${{ github.event.inputs.project }}" \
+            -var "region=${{ github.event.inputs.region }}"
+
+      - name: Read Terraform outputs
+        id: tf
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          echo "sa=$(terraform output -raw runtime_service_account)" >> "$GITHUB_OUTPUT"
+          echo "bucket=$(terraform output -raw mesh_bucket)" >> "$GITHUB_OUTPUT"
+
+      # 2. Deploy the functions. Source is the repo root; GOOGLE_BUILDABLE selects the project. HTTP
+      #    functions serve the Cloud Service Profile; Pub/Sub functions bind their inbox topic. Producers
+      #    get the destination inbox topic ids as env vars (the Benzene topic rides in the "topic" attribute).
+      - name: Deploy functions
+        env:
+          PROJECT: ${{ github.event.inputs.project }}
+          REGION: ${{ github.event.inputs.region }}
+          SA: ${{ steps.tf.outputs.sa }}
+          BUCKET: ${{ steps.tf.outputs.bucket }}
+        run: |
+          set -euo pipefail
+          topic() { echo "projects/$PROJECT/topics/$NAME_PREFIX-$1-inbox"; }
+
+          deploy_http() {   # name project-dir extra-env
+            gcloud functions deploy "$NAME_PREFIX-$1" --gen2 --region "$REGION" --runtime "$RUNTIME" \
+              --source . --set-build-env-vars "GOOGLE_BUILDABLE=examples/GoogleCloudMesh/$2/Benzene.Examples.GoogleCloudMesh.$2.csproj" \
+              --entry-point "Benzene.Examples.GoogleCloudMesh.$2.HttpFunction" \
+              --trigger-http --allow-unauthenticated --run-service-account "$SA" \
+              --set-env-vars "REGION=$REGION${3:+,$3}"
+          }
+          deploy_pubsub() { # name project-dir inbox
+            gcloud functions deploy "$NAME_PREFIX-$1-sub" --gen2 --region "$REGION" --runtime "$RUNTIME" \
+              --source . --set-build-env-vars "GOOGLE_BUILDABLE=examples/GoogleCloudMesh/$2/Benzene.Examples.GoogleCloudMesh.$2.csproj" \
+              --entry-point "Benzene.Examples.GoogleCloudMesh.$2.PubSubFunction" \
+              --trigger-topic "$NAME_PREFIX-$3-inbox" --run-service-account "$SA"
+          }
+
+          # HTTP functions (Cloud Service Profile). Producers carry their destination inbox topics.
+          deploy_http orders   Orders        "PAYMENT_TAKE_TOPIC=$(topic payments),ORDER_PLACED_TOPIC=$(topic notifications)"
+          deploy_http payments Payments      "SHIPMENT_BOOK_TOPIC=$(topic shipping),PAYMENT_CAPTURED_TOPIC=$(topic notifications)"
+          deploy_http shipping Shipping      "SHIPMENT_DISPATCHED_TOPIC=$(topic notifications)"
+          deploy_http notifications Notifications ""
+
+          # Pub/Sub consumers (bind their inbox topic).
+          deploy_pubsub payments      Payments      payments
+          deploy_pubsub shipping      Shipping      shipping
+          deploy_pubsub notifications Notifications notifications
+
+      # 3. Deploy the mesh, pointing it at each service's HTTP URL + the GCS bucket.
+      - name: Deploy mesh
+        env:
+          PROJECT: ${{ github.event.inputs.project }}
+          REGION: ${{ github.event.inputs.region }}
+          SA: ${{ steps.tf.outputs.sa }}
+          BUCKET: ${{ steps.tf.outputs.bucket }}
+        run: |
+          set -euo pipefail
+          url() { gcloud functions describe "$NAME_PREFIX-$1" --gen2 --region "$REGION" --format 'value(serviceConfig.uri)'; }
+          MESH_ENV="MESH_BUCKET=$BUCKET,MESH_ORDERS_URL=$(url orders),MESH_PAYMENTS_URL=$(url payments),MESH_SHIPPING_URL=$(url shipping),MESH_NOTIFICATIONS_URL=$(url notifications)"
+          gcloud functions deploy "$NAME_PREFIX-mesh" --gen2 --region "$REGION" --runtime "$RUNTIME" \
+            --source . --set-build-env-vars "GOOGLE_BUILDABLE=examples/GoogleCloudMesh/Mesh/Benzene.Examples.GoogleCloudMesh.Mesh.csproj" \
+            --entry-point "Benzene.Examples.GoogleCloudMesh.Mesh.HttpFunction" \
+            --trigger-http --allow-unauthenticated --run-service-account "$SA" \
+            --set-env-vars "$MESH_ENV"
+
+      # 4. Second Terraform pass: create the Cloud Scheduler job now the mesh refresh URL exists.
+      - name: Terraform apply (scheduler)
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          MESH_URL="$(gcloud functions describe $NAME_PREFIX-mesh --gen2 --region ${{ github.event.inputs.region }} --format 'value(serviceConfig.uri)')/mesh/refresh"
+          terraform apply -auto-approve \
+            -var "project=${{ github.event.inputs.project }}" \
+            -var "region=${{ github.event.inputs.region }}" \
+            -var "mesh_refresh_url=$MESH_URL"
+          echo "Mesh UI: $(gcloud functions describe $NAME_PREFIX-mesh --gen2 --region ${{ github.event.inputs.region }} --format 'value(serviceConfig.uri)')/mesh-ui"
