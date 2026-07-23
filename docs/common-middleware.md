@@ -602,9 +602,12 @@ split on the *first* `:` only — a password containing `:` is preserved intact,
 Basic scope-based authorization: requires the caller authenticated by `UseOAuth2Bearer`, earlier in
 the pipeline, to hold at least one of the given scopes. Reads both the `scope` claim (RFC 8693,
 space-delimited) and the `scp` claim (Azure AD's convention — a space-delimited string or a JSON
-array, depending on issuer). This is intentionally the ceiling of Benzene's built-in authorization
-— roles, resource-based policies, and RBAC are application concerns layered on top of the
-`ClaimsPrincipal` this middleware exposes, not something Benzene provides itself.
+array, depending on issuer). Scope checks are the simplest of several authorization primitives
+Benzene ships: `Benzene.Auth.Core` (`Benzene.Auth.Core.AuthorizationExtensions`) also provides
+`RequireRole`, `RequirePolicy` (name-, predicate-, and `AddAuthorizationPolicy`-based), and
+resource-based `RequireAuthorization<TContext, TResource>`, all layered on the `ClaimsPrincipal` this
+middleware exposes — see `docs/cookbooks/auth-patterns.md` §"Authorization: Roles, Policies &
+Resource Checks".
 
 ```csharp
 public static IMiddlewarePipelineBuilder<TContext> RequireScope<TContext>(

@@ -188,7 +188,8 @@ overload above constructs for you.
 ### `FailedHealthCheck` (`Benzene.HealthChecks`)
 
 Wraps an `Exception`. `Type` is `"Failed"`; `ExecuteAsync()` always returns a `Failed` result with
-the exception's message in `Data["Exception"]`. `Extensions.BuildHealthCheck(Func<IHealthCheck>)`
+the exception's **type name** (not its message — the same secret-safety convention the rest of the
+health checks follow) in `Data["Exception"]`. `Extensions.BuildHealthCheck(Func<IHealthCheck>)`
 uses this to turn a check *construction* failure (e.g. a factory that throws) into a reportable
 result instead of an unhandled exception.
 
@@ -246,11 +247,13 @@ shutdown hook. Dependency-free (only a BCL `CancellationToken`), so it also ship
 These two are `internal` — you never construct them yourself, but it's worth knowing they run
 around *every* check automatically. `HealthCheckProcessor.PerformHealthChecksAsync` wraps each
 `IHealthCheck` in `ExceptionHandlingHealthCheck` (catches any exception thrown by `ExecuteAsync()`
-and turns it into a `Failed` result with `Data["Exception"]`) and then `TimeOutHealthCheck` (a
-hard-coded 10 second timeout — if the check hasn't completed by then, it returns a `Failed` result
-with `Data["Error"] = "Timed Out"` instead of waiting indefinitely). Neither timeout nor exception
-handling is currently configurable; every check gets the same 10 second budget and the same
-catch-all.
+and turns it into a `Failed` result with `Data["Exception"]` set to the exception's **type name**,
+not its message) and then `TimeOutHealthCheck` (a 10 second timeout by default — if the check hasn't
+completed by then, it returns a `Failed` result with `Data["Error"] = "Timed Out"` instead of waiting
+indefinitely). The timeout **is** configurable: the processor-wide default comes from
+`new HealthCheckProcessor(TimeSpan)` (registered with `TryAddSingleton`, so your own registration
+wins), and an individual check can override it by setting `IHealthCheck.Timeout`. The exception
+catch-all itself is not configurable — every check gets it automatically.
 
 ### `HttpPingHealthCheck` (`Benzene.HealthChecks.Http`)
 
@@ -276,7 +279,8 @@ DI-resolved type or via their factory:
 
 - **`DatabaseConnectionHealthCheck<TDbContext>`** — `Type` is `"DatabaseConnection"`. Just calls
   `dbContext.Database.CanConnectAsync()`; `Data["CanConnect"]` reports the result (and
-  `Data["Error"]` the exception message, if connecting threw).
+  `Data["Error"]` the exception's **type name**, not its message, if connecting threw — some ADO.NET
+  providers embed server/credentials in exception messages, and this result can flow out unauthenticated).
 
   ```csharp
   app.UseHealthCheck("healthcheck", x => x

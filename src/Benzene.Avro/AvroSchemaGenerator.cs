@@ -8,7 +8,8 @@ namespace Benzene.Avro;
 /// read/write properties, so callers can serialize plain POCOs without hand-authoring a schema.
 /// </summary>
 /// <remarks>
-/// Type mapping: <c>bool→boolean</c>, integral (<=32 bit)<c>→int</c>, <c>long/ulong→long</c>,
+/// Type mapping: <c>bool→boolean</c>, signed integral and <c>ushort</c> (<=32 bit)<c>→int</c>,
+/// <c>uint/long/ulong→long</c> (<c>uint</c> maps to long, not int, because its upper half overflows int32),
 /// <c>float→float</c>, <c>double→double</c>, <c>byte[]→bytes</c>, and
 /// <c>string/Guid/DateTime/DateTimeOffset/decimal/enum→string</c> (stringified so precision and
 /// round-tripping are preserved for money/timestamps). Nested classes map to Avro records, and

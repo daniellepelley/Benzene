@@ -82,6 +82,10 @@ public class Startup
             .UseHttp(asp =>
             {
                 asp.UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json");
+                // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link resolves to
+                // /mesh-spec-ui.html when the dashboard is served from this pipeline). Without it,
+                // every service card's "spec" drill-in 404s.
+                asp.UseMeshSpecUi(path: "/mesh-spec-ui.html", manifestUrl: "/artifacts/manifest.json");
                 // Opt-in live dispatch (mesh:dispatch). Off by default; even when on it self-refuses in
                 // Production unless DispatchAllowInProduction is also set - a real handler runs.
                 if (_config.EnableDispatch)

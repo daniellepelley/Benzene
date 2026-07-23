@@ -49,8 +49,11 @@ Provides complete implementation of message handler infrastructure for command/q
   reads, `accept` for writes), e.g. `Benzene.Xml`'s `XmlMediaFormat`
 - `MediaFormatNegotiator<TContext>` - Default `IMediaFormatNegotiator<TContext>`; scoped and
   memoizing (one selection per message)
-- `AddMediaFormatNegotiation<TContext>()` - DI extension every transport (and `AddContextItems()`)
-  calls to register the default format + negotiator for a context type
+- `AddMediaFormatNegotiation<TContext>()` - DI extension the HTTP-ish transports call to register the
+  default JSON format + negotiator for a specific closed context type. The generic message-handler
+  path doesn't call it: `AddContextItems()` instead registers the same `JsonMediaFormat<>` +
+  `MediaFormatNegotiator<>` as **open generics** (so they apply to any `TContext`) — equivalent net
+  registration, different mechanism
 
 ### Response Handling
 - `RendererResponseHandler<TContext>` - The single response-writing `IResponseHandler<TContext>`

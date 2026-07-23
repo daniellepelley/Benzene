@@ -34,7 +34,7 @@ This is the option for a long-running process that owns its own consumer group a
 continuously — a Worker Service, a container, or a plain console app. Under the hood,
 `BenzeneKafkaWorker<TKey, TValue>` runs a `while` loop calling `IConsumer.Consume`, dispatching each
 record through the middleware pipeline with up to `ConcurrentRequests` records in flight at once
-(bounded by a `SemaphoreSlim`).
+(bounded by a `BoundedConcurrentDispatcher`, a `System.Threading.Channels`-based lane dispatcher).
 
 ### 1.1 Create the project
 
@@ -151,7 +151,7 @@ public class StartUp : BenzeneStartUp
   headers **are** mapped to Benzene message headers on this path (UTF-8 decoded) — unlike the Azure
   Functions Kafka trigger below.
 - `BenzeneKafkaConfig.ConcurrentRequests` (default `5`) bounds how many records this worker
-  processes concurrently via an internal semaphore.
+  processes concurrently via an internal `BoundedConcurrentDispatcher` (Channels-based).
 
 ### 1.5 Wire up `Program.cs`
 

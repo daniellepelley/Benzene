@@ -3,10 +3,12 @@
 namespace Benzene.HealthChecks;
 
 /// <summary>
-/// Decorates an <see cref="IHealthCheck"/> with a fixed 10-second timeout: if the wrapped check has not
+/// Decorates an <see cref="IHealthCheck"/> with a caller-supplied timeout: if the wrapped check has not
 /// completed within that time, <see cref="ExecuteAsync"/> returns a failed result (with an
-/// <c>"Error"</c>/<c>"Timed Out"</c> data entry) instead of continuing to wait. The timeout is not
-/// currently configurable. Used internally by <see cref="HealthCheckProcessor"/> to wrap every check.
+/// <c>"Error"</c>/<c>"Timed Out"</c> data entry) instead of continuing to wait. Used internally by
+/// <see cref="HealthCheckProcessor"/> to wrap every check, with the processor-wide timeout (default 10s,
+/// configurable via <c>new HealthCheckProcessor(TimeSpan)</c>) or a per-check <c>IHealthCheck.Timeout</c>
+/// override.
 /// </summary>
 /// <remarks>
 /// This only stops <em>waiting</em> on the inner check - the inner <see cref="ExecuteAsync"/> task is not
@@ -30,8 +32,8 @@ internal class TimeOutHealthCheck : IHealthCheck
     }
 
     /// <summary>
-    /// Runs the wrapped check, waiting up to 10 seconds. If it has not completed by then, returns a
-    /// failed result instead of the check's actual outcome.
+    /// Runs the wrapped check, waiting up to the configured timeout. If it has not completed by then,
+    /// returns a failed result instead of the check's actual outcome.
     /// </summary>
     public async Task<IHealthCheckResult> ExecuteAsync()
     {

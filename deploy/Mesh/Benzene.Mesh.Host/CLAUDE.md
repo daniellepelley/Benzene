@@ -9,7 +9,8 @@ alongside their other infra), rather than only against `examples/Mesh/`'s demo/f
 
 ## Key types
 - `Startup` - mirrors `examples/Mesh/Benzene.Examples.Mesh.Aggregator/Startup.cs`'s wiring shape
-  (`AddMeshAggregator`, static-file mount at `/artifacts`, `UseMeshUi`, `.UseMessageHandlers()`),
+  (`AddMeshAggregator`, static-file mount at `/artifacts`, `UseMeshUi` + `UseMeshSpecUi` so the
+  per-service "spec" drill-in resolves, `.UseMessageHandlers()`),
   but binds `MeshHostConfig` from `IConfiguration` (constructor-injected) instead of a hardcoded
   static registry, and additionally wires `AddMeshLambdaSource()` and a `MeshPollBackgroundService`
   hosted service.

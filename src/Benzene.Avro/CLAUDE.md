@@ -45,7 +45,8 @@ pipeline.UseAvro<MyContext>(o => o
 `IMediaFormat<TContext>`; content negotiation then selects it whenever `application/avro` is requested.
 
 ## Reflection type mapping (v1)
-`bool→boolean`, integral(≤32-bit)`→int`, `long/ulong→long`, `float→float`, `double→double`,
+`bool→boolean`, signed integral and `ushort` (≤32-bit)`→int`, `uint/long/ulong→long` (`uint→long`,
+not int, since its upper half overflows int32), `float→float`, `double→double`,
 `byte[]→bytes`, and `string/Guid/DateTime/DateTimeOffset/decimal/enum→string` (stringified to preserve
 precision/round-tripping for money and timestamps). Nested classes → Avro records; `IEnumerable<T>` /
 arrays → Avro arrays. Reference-typed and `Nullable<T>` members become a `["null", X]` union so nulls

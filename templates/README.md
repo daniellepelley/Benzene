@@ -112,7 +112,7 @@ dotnet new uninstall Benzene.Templates
 ### Shared-handler diff check
 
 Run this before committing a change to any of the shared `HelloWorldMessageHandler.cs` copies (CI runs
-the same check — group A + group B, see "Layout" above):
+the same check — Group A + Group C, see the "Optional unit-test project" section above):
 
 ```bash
 # Group A (request/response, canonical asp)

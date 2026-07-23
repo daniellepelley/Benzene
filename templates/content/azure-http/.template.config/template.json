@@ -18,7 +18,7 @@
       "datatype": "bool",
       "defaultValue": "true",
       "displayName": "Include unit test project",
-      "description": "Include an xUnit test project that routes the demo topic through your handlers, asserting a successful result and a NotFound for an unknown topic."
+      "description": "Include an xUnit test project with a component test that drives the demo handler through its transport test host and asserts the expected outcome."
     }
   },
   "sources": [

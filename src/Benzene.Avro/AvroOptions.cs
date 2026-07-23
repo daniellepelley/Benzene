@@ -24,7 +24,7 @@ public class AvroOptions
     public bool UseReflectionSchemas { get; set; } = true;
 
     /// <summary>
-    /// An optional hard cap, in bytes, on any single length-prefixed field (bytes/string/array block)
+    /// An optional hard cap, in bytes, on any single length-prefixed <c>bytes</c>/<c>string</c> field
     /// the deserializer will accept from an <c>application/avro</c> body, on top of the always-applied
     /// bound that no field may exceed the decoded input size. Avro binary length-prefixes each such
     /// field, so a hostile payload can declare a huge length and drive a large allocation before any

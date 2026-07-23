@@ -9,10 +9,14 @@ wherever an `ISerializer` is required.
 ## Key types
 - `JsonSerializer : ISerializer` (namespace `Benzene.NewtonsoftJson`) - all four members are
   `virtual`, so a subclass can override the settings.
-  - Serialization uses a `CamelCasePropertyNamesContractResolver` (camelCase property names,
-    matching Benzene's default serializer). `Serialize<T>` and `Serialize(Type, object)` produce the
-    same output - the non-generic overload delegates to the generic one, so the `Type` argument does
-    not change the result.
+  - Serialization uses a `DefaultContractResolver` with a `CamelCaseNamingStrategy`
+    (`ProcessDictionaryKeys = false`) — camelCase **property** names only, matching Benzene's default
+    `System.Text.Json` serializer. It deliberately does **not** use
+    `CamelCasePropertyNamesContractResolver`, whose naming strategy camel-cases **dictionary keys**
+    too (`ProcessDictionaryKeys = true`) and silently corrupts free-form keys on round-trip
+    (deserialize doesn't undo it). `Serialize<T>` and `Serialize(Type, object)` produce the same
+    output - the non-generic overload delegates to the generic one, so the `Type` argument does not
+    change the result.
   - Deserialization (`Deserialize<T>` / `Deserialize(Type, string)`) uses default
     `JsonSerializerSettings` (Newtonsoft's property matching is case-insensitive).
   - Settings are constructed inline per call; there is no injectable `JsonSerializerSettings` /
