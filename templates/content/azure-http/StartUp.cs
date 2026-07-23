@@ -27,6 +27,7 @@ public class StartUp : BenzeneStartUp
         // - a no-op until an OpenTelemetry exporter is attached. The Functions host wires logging
         // (Application Insights) for you. See docs/monitoring.md and docs/diagnosing-failures.md.
         services.UsingBenzene(x => x
+            .AddBenzene()
             .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly)
             .AddHttpMessageHandlers()
             .AddDiagnostics());

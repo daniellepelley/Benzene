@@ -133,12 +133,12 @@ lists as they migrate.
 ```bash
 # every in-memory test .csproj is identical (component-test templates are omitted)
 canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-for d in selfhost-http azure-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
+for d in selfhost-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
   diff "$canonical_csproj" "templates/content/$d/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj" || { echo "DRIFT (csproj): $d"; exit 1; }
 done
 # group A test (request/response): asserts Ok + body
 canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-for d in azure-http selfhost-http; do
+for d in selfhost-http; do
   diff "$canonical_test_a" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (A): $d"; exit 1; }
 done
 # group B test (fire-and-forget): asserts Accepted

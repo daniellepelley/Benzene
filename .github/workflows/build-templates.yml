@@ -76,14 +76,14 @@ jobs:
         # Only templates still on the shared in-memory test keep the identical .csproj + shared test .cs.
         # Component-test templates (bespoke per transport) are dropped from these lists as they migrate.
         canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-        for dir in selfhost-http azure-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
+        for dir in selfhost-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
           if ! diff -u "$canonical_csproj" "templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj has drifted from $canonical_csproj"
             exit 1
           fi
         done
         canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-        for dir in azure-http selfhost-http; do
+        for dir in selfhost-http; do
           if ! diff -u "$canonical_test_a" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_a"
             exit 1
