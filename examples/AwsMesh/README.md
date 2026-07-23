@@ -294,8 +294,10 @@ recover, then leave it off for normal incremental deploys.
 
 1. **Open a service Spec UI** (`service_spec_ui_urls.orders`, etc.) — proof the services are up
    and Cloud Service Profile-conformant, each with its own domain contract and health.
-2. **Trigger a mesh pass**: `curl -XPOST "$mesh_refresh_url"` (or wait for the 5-minute schedule). It
-   returns `{ "discovered": 6 }` once it has found the six `benzene`-tagged Lambdas.
+2. **Trigger a mesh pass**: `curl -XPOST "$mesh_refresh_url"` (or wait for the schedule — every minute
+   by default, `var.aggregate_schedule`). It returns `{ "discovered": 6 }` once it has found the six
+   `benzene`-tagged Lambdas. The schedule keeps the catalog + usage feed fresh on its own; the Mesh UI
+   explorer loads artifacts once per page load, so reload the page to pick up a newer pass.
 3. **Open the Mesh UI** (`mesh_ui_url`) — the catalog of the six services the mesh **discovered by
    itself** (no `mesh.json`), each interrogated by direct Lambda-Invoke, with health and dependencies.
    Below the service list, the **Topics** table is the cross-service catalog (every topic across the

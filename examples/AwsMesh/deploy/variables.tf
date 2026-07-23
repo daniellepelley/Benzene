@@ -29,9 +29,9 @@ variable "lambda_architecture" {
 }
 
 variable "aggregate_schedule" {
-  description = "EventBridge schedule expression for the mesh aggregation pass."
+  description = "EventBridge schedule expression for the mesh aggregation pass. Defaults to every minute so the catalog + usage feed stay fresh (matching the AzureFunctionsMesh timer). Raise it (e.g. rate(5 minutes)) to cut invocations if you don't need near-live data. Note: the Mesh UI explorer loads artifacts once per page load, so a browser reload still shows the latest — this only bounds how stale that reload can be."
   type        = string
-  default     = "rate(5 minutes)"
+  default     = "rate(1 minute)"
 }
 
 variable "adot_collector_layer_arn" {
