@@ -48,7 +48,22 @@ public class CreateOrderMessageHandler : IMessageHandler<CreateOrder, OrderDto>
         var order = new OrderDto($"ord-{request.Item.GetHashCode():x}", request.Item, request.Quantity);
         var amount = request.Quantity * 10m;
 
-        // Point-to-point command over SQS: exactly one consumer (payments-api) must capture this.
+        // The two downstream messages are independent and best-effort, so send them concurrently rather
+        // than one-then-the-other. A warm X-Ray trace showed the SQS send (~25ms) and the SNS publish
+        // (~15ms) running sequentially and together dominating the create pipeline; Task.WhenAll collapses
+        // that to the slower of the two. Each send keeps its own try/catch, so one downstream hiccup never
+        // fails the order or the other send. (This is app-level fan-out of two DISTINCT messages — not
+        // Benzene's UseParallel, which fans a single message across transports.)
+        await Task.WhenAll(
+            SendPaymentsCaptureAsync(order, amount),
+            PublishOrderPlacedAsync(order, amount));
+
+        return BenzeneResult.Created(order);
+    }
+
+    // Point-to-point command over SQS: exactly one consumer (payments-api) must capture this.
+    private async Task SendPaymentsCaptureAsync(OrderDto order, decimal amount)
+    {
         try
         {
             await _sender.SendAsync<OutboundPaymentCapture, Void>("payments:capture",
@@ -59,9 +74,12 @@ public class CreateOrderMessageHandler : IMessageHandler<CreateOrder, OrderDto>
         {
             _logger.LogWarning(ex, "downstream payments:capture send failed for {orderId}", order.Id);
         }
+    }
 
-        // Fan-out event over SNS: every subscriber (inventory-api, notifications-api) gets it. Separate
-        // from the command above — the order is placed regardless of who's listening.
+    // Fan-out event over SNS: every subscriber (inventory-api, notifications-api) gets it. Separate
+    // from the command above — the order is placed regardless of who's listening.
+    private async Task PublishOrderPlacedAsync(OrderDto order, decimal amount)
+    {
         try
         {
             await _sender.SendAsync<OutboundOrderPlaced, Void>("order:placed",
@@ -72,8 +90,6 @@ public class CreateOrderMessageHandler : IMessageHandler<CreateOrder, OrderDto>
         {
             _logger.LogWarning(ex, "order:placed publish failed for {orderId}", order.Id);
         }
-
-        return BenzeneResult.Created(order);
     }
 }
 
