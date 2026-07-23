@@ -210,8 +210,8 @@ trace-context / payload-version headers reach the wire. With the default exchang
 routing key must equal the target queue name, so publishing topic `"orders"` lands in queue `"orders"`;
 for topic/direct/fanout exchanges, pass the exchange name and bind your queues to it out-of-band.
 
-Publishing is fire-and-forget by default — a completed publish maps to `Accepted`, a thrown publish to
-`ServiceUnavailable`. (Publisher confirms for at-least-once publish are a planned opt-in.)
+Publishing is fire-and-forget by default — a completed publish maps to `accepted`, a thrown publish to
+`service-unavailable`. (Publisher confirms for at-least-once publish are a planned opt-in.)
 
 For the `OutboundRoutingBuilder` path (so call sites use `IBenzeneMessageSender.SendAsync`), the
 `.UseRabbitMq<T>(exchange, ...)` / `.UseRabbitMqClient(channel)` pipeline extensions are the conversion

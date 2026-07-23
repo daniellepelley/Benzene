@@ -113,7 +113,7 @@ app.UseTenant<AspNetContext>((context, resolver) =>
 
 ## Step 3 — require a tenant where one is mandatory
 
-Routes that must be tenant-scoped get a guard that short-circuits with `BadRequest` when no tenant was
+Routes that must be tenant-scoped get a guard that short-circuits with `bad-request` when no tenant was
 resolved — the same result-setter idiom the auth `Require*` middleware uses, so it returns a proper
 status on every transport rather than throwing.
 
@@ -205,7 +205,7 @@ outboundHeaders["x-tenant-id"] = _tenant.TenantId!;
 `TenantHolder` is a plain scoped service, so a handler test just constructs one with the tenant under
 test. To test resolution + the guard, drive the middleware directly (as the auth tests do in
 `test/Benzene.Core.Test/Auth/`): a resolver strategy returning `null` should make `RequireTenant`
-short-circuit with `BadRequest`; a present tenant should reach the handler.
+short-circuit with `bad-request`; a present tenant should reach the handler.
 
 ## Security notes
 
@@ -218,7 +218,7 @@ short-circuit with `BadRequest`; a present tenant should reach the handler.
   who only owns `globex` is the classic multi-tenant data-leak — cross-check the resolved tenant
   against the principal when both are available.
 - **Fail closed.** `RequireTenant` on every tenant-scoped route means a resolution bug becomes a
-  `BadRequest`, not an unscoped query that returns another tenant's rows.
+  `bad-request`, not an unscoped query that returns another tenant's rows.
 
 ## Do you need a package?
 

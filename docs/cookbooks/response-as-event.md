@@ -105,7 +105,7 @@ Returning `null` from `project` skips the publish for that message.
 ### CRUD naming convention
 
 `MapCrudConvention()` adds one rule covering every CRUD topic on the pipeline:
-`X:create`/`X:update`/`X:delete` handled with status `Created`/`Updated`/`Deleted` publishes the
+`X:create`/`X:update`/`X:delete` handled with status `created`/`updated`/`deleted` publishes the
 payload on `X:created`/`X:updated`/`X:deleted`:
 
 ```csharp
@@ -121,7 +121,7 @@ returns the publication (topic + payload) or `null`.
 ### Publish failure behavior
 
 By default (`PublishFailureMode.FailMessage`) a failed publish replaces the handler's response
-with an `UnexpectedError`, so the transport reports the message as failed and the queue redelivers
+with an `unexpected-error`, so the transport reports the message as failed and the queue redelivers
 it. **This is at-least-once delivery: the handler re-runs on redelivery, so the handler and the
 event's consumers must be idempotent** (see [Idempotency](idempotency.md)). If the event is
 best-effort, opt out:
@@ -189,7 +189,7 @@ services.AddScoped<IResponseEventPublisher, MyOutboxPublisher>();
   route that produces a typed response makes the default publisher's send throw a response-type
   mismatch; register a custom `IResponseEventPublisher` for such routes.
 - **No-response handlers (`IMessageHandler<TRequest>`) never publish** — they produce an
-  `Accepted` result with no payload, and a mapping never fires without a payload.
+  `accepted` result with no payload, and a mapping never fires without a payload.
 - **This is not an outbox.** The publish happens after the handler's work, in the same
   invocation; a crash between the two can drop the event (or, with `FailMessage`, re-run the
   handler). If you need the event to commit atomically with the DB write, put an outbox behind

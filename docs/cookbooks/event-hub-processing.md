@@ -355,7 +355,7 @@ This is the part that's easy to get wrong, so it's worth being precise:
 
   This means a "poison" event — one whose payload reliably throws inside your handler's business
   logic — does **not** propagate as an exception out of `HandleEventHub` by default. It comes back
-  as a `ServiceUnavailable` (or `ValidationError`) result, the trigger function returns normally,
+  as a `service-unavailable` (or `validation-error`) result, the trigger function returns normally,
   and the Functions runtime checkpoints the batch as successfully processed. Benzene's result
   status has no effect on the Event Hubs extension's retry/checkpoint behavior — that machinery
   only reacts to the .NET exception actually escaping your trigger function.
@@ -490,7 +490,7 @@ because `CanHandle` returning `false` is a normal "not for me" outcome, not a fa
 
 ### A single bad event seems to have no effect, but data loss still happened
 
-Remember `MessageHandler.HandleAsync` converts your handler's exceptions into a `ServiceUnavailable`
+Remember `MessageHandler.HandleAsync` converts your handler's exceptions into a `service-unavailable`
 result rather than throwing (see [step 6](#6-checkpointing-on-failure-and-why-benzene-doesnt-help-with-poison-events)).
 If you're not logging inside the handler or checking the returned status somewhere, a systematically
 failing event type can churn through your pipeline indefinitely, checkpointing past every time,
