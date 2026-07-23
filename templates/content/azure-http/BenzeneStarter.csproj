@@ -8,6 +8,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- The optional unit-test project is generated as a sibling in the BenzeneStarter.Tests subfolder.
+       Keep its sources out of THIS project's compilation (it's a separate project). Matches nothing -
+       and is harmless - if you generated without the test project. -->
+  <ItemGroup>
+    <Compile Remove="BenzeneStarter.Tests\**" />
+    <Content Remove="BenzeneStarter.Tests\**" />
+    <None Remove="BenzeneStarter.Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- The standard Microsoft packages every isolated-worker Function App needs, referenced
          directly (not just transitively) so the Functions SDK's build step can discover them and

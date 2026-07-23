@@ -6,6 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- The optional unit-test project is generated as a sibling in the BenzeneStarter.Tests subfolder.
+       Keep its sources out of THIS project's compilation (it's a separate project). Matches nothing -
+       and is harmless - if you generated without the test project. -->
+  <ItemGroup>
+    <Compile Remove="BenzeneStarter.Tests\**" />
+    <Content Remove="BenzeneStarter.Tests\**" />
+    <None Remove="BenzeneStarter.Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Benzene's packages are prerelease (-alpha) until 1.0 - Version="*-*" floats to the latest
          published version (including prereleases) on every restore. Azure.Messaging.ServiceBus comes in

@@ -36,6 +36,23 @@ somewhere else, and they only ever reference Benzene via `PackageReference` (nev
 `ProjectReference` back into this repo), since a generated project has no access to this repo's
 source tree.
 
+## Optional unit-test project (`--IncludeTests`)
+
+Every template also carries a `BenzeneStarter.Tests/` xUnit project, included by **default** and
+switchable off with `--IncludeTests false` (a `bool` `parameter` symbol in each `template.json`; a
+`sources` `modifier` excludes the folder when it's false). The main project stays flat at the output
+root exactly as before — a `<Compile Remove="BenzeneStarter.Tests\**" />` in each main `.csproj` keeps
+the test sources out of the main project's own compilation (default globbing would otherwise pull the
+subfolder in; the Remove is a harmless no-op when tests aren't generated).
+
+The tests are **transport-agnostic**: they route the demo topic through Benzene's in-memory
+`BenzeneMessageApplication` host (so no HTTP/Lambda/broker is needed), which exercises the real handler
+and routing. Two tests per template — the demo topic returns a success status (`Ok` for
+request/response handlers, `Accepted` for fire-and-forget), and an unknown topic returns `NotFound`
+(the router's real "no handler for topic" behaviour). The test project references only published
+Benzene packages (`Benzene.Core.MessageHandlers`, `Benzene.Microsoft.Dependencies`) plus the generated
+main project, so it restores/builds wherever the main project does.
+
 The `HelloWorldMessageHandler.cs` falls into two shared groups plus two one-offs — the same handler
 running unchanged behind many transports is the actual point of the exercise, and CI
 (`.github/workflows/build-templates.yml`) enforces the sharing with a diff check (see below):
@@ -88,6 +105,32 @@ done
 canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
 for d in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
   diff "$canonical_b" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (B): $d"; exit 1; }
+done
+```
+
+### Shared-test diff check
+
+The `BenzeneStarter.Tests/` files follow the same sharing groups. The `.csproj` is **identical** across
+all templates; the test `.cs` shares by handler group (group A asserts `Ok` + body; group B/standalone
+assert `Accepted`), with `kafka-worker`/`azure-eventgrid` differing only in the topic string
+(`hello_world` / `hello.world`).
+
+```bash
+# every test .csproj is identical
+canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
+for d in $(ls templates/content); do
+  [ "$d" = "asp" ] && continue
+  diff "$canonical_csproj" "templates/content/$d/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj" || { echo "DRIFT (csproj): $d"; exit 1; }
+done
+# group A test (request/response): asserts Ok + body
+canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
+for d in selfhost-http aws-apigateway aws-sqs aws-sns azure-http; do
+  diff "$canonical_test_a" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (A): $d"; exit 1; }
+done
+# group B test (fire-and-forget): asserts Accepted
+canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
+for d in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+  diff "$canonical_test_b" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (B): $d"; exit 1; }
 done
 ```
 

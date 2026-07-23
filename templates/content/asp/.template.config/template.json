@@ -11,5 +11,24 @@
   "tags": {
     "language": "C#",
     "type": "project"
-  }
+  },
+  "symbols": {
+    "IncludeTests": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "displayName": "Include unit test project",
+      "description": "Include an xUnit test project that routes the demo topic through your handlers, asserting a successful result and a NotFound for an unknown topic."
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(!IncludeTests)",
+          "exclude": [ "BenzeneStarter.Tests/**" ]
+        }
+      ]
+    }
+  ]
 }

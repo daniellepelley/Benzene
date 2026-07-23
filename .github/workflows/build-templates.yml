@@ -56,13 +56,42 @@ jobs:
           fi
         done
 
+    - name: Check shared BenzeneStarter.Tests files haven't drifted
+      run: |
+        set -euo pipefail
+        # The optional unit-test project shares the same way the handler does: the .csproj is identical
+        # everywhere; the test .cs shares by handler group (A asserts Ok + body, B asserts Accepted),
+        # with kafka-worker/azure-eventgrid differing only in the topic string.
+        canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
+        for dir in $(ls templates/content); do
+          [ "$dir" = "asp" ] && continue
+          if ! diff -u "$canonical_csproj" "templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"; then
+            echo "::error::templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj has drifted from $canonical_csproj"
+            exit 1
+          fi
+        done
+        canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
+        for dir in aws-apigateway aws-sqs aws-sns azure-http selfhost-http; do
+          if ! diff -u "$canonical_test_a" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
+            echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_a"
+            exit 1
+          fi
+        done
+        canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
+        for dir in servicebus-worker azure-servicebus azure-eventhub azure-queuestorage; do
+          if ! diff -u "$canonical_test_b" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
+            echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_b"
+            exit 1
+          fi
+        done
+
     - name: Pack Benzene.Templates
       run: dotnet pack templates/Benzene.Templates.csproj -c Release -o ./templates-pack
 
     - name: Install the freshly-packed template pack
       run: dotnet new install ./templates-pack/Benzene.Templates.*.nupkg
 
-    - name: Generate and build every template
+    - name: Generate, build and test every template
       run: |
         set -euo pipefail
         for shortname in \
@@ -73,8 +102,11 @@ jobs:
           out="/tmp/generated/${shortname}"
           log="/tmp/${shortname}.buildlog"
           echo "::group::${shortname}"
+          # Default generation includes the unit-test project. `dotnet test` on it compiles both the
+          # test project AND the main project it references, then runs the starter tests - so this one
+          # command verifies the whole generated output (main + tests) end to end.
           dotnet new "$shortname" -n Sample -o "$out"
-          if dotnet build "$out" --verbosity minimal > "$log" 2>&1; then
+          if dotnet test "$out/Sample.Tests/Sample.Tests.csproj" --verbosity minimal > "$log" 2>&1; then
             cat "$log"
           else
             cat "$log"
@@ -86,7 +118,7 @@ jobs:
             if grep -qE "error NU1101: Unable to find package Benzene\." "$log"; then
               echo "::warning::${shortname}: a required Benzene package isn't on NuGet yet (in Benzene.sln + packable, ships next release). Generated OK; build skipped until then."
             else
-              echo "::error::${shortname} failed to build"
+              echo "::error::${shortname} failed to build or test"
               exit 1
             fi
           fi
