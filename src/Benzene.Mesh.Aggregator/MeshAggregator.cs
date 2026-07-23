@@ -195,13 +195,27 @@ public class MeshAggregator
         return AsyncApiCompositor.Merge(documents, _clock());
     }
 
-    // The exact `result`-tag tokens the metric standard (Benzene.Diagnostics.MetricsExtensions)
+    // The synthesized `result`-tag tokens the metric standard (Benzene.Diagnostics.MetricsExtensions)
     // writes onto benzene.messages.processed, which become MeshUsageEntry.Status for the
-    // metrics-backend adapters (CloudWatch/App Insights). Error rate is classified only against
-    // these two; a wire-vocabulary status (e.g. the collector feed's "Ok") or a "<missing>" is
-    // deliberately *not* classifiable, so the error-rate cell stays blank rather than guessing.
+    // metrics-backend adapters (CloudWatch/App Insights). Successes collapse to "success"; failures are
+    // now itemized by their real status (NotFound/Unauthorized/...), plus "exception" for an escaped
+    // throw and a legacy "failure" fallback. Error-rate classification is wire-vocabulary-aware (below),
+    // so it correctly handles both the synthesized tokens and the collector feed's raw wire statuses
+    // (Ok/Created/... which BenzeneResultStatus classifies); only "<missing>"/null/unknown stay
+    // unclassifiable, so the error-rate cell blanks rather than guessing.
     private const string SuccessResult = "success";
     private const string FailureResult = "failure";
+    private const string ExceptionResult = "exception";
+
+    // A usage entry's status counts as success when it's the synthesized "success" token or a
+    // framework success-class wire status; as failure when it's the synthesized "failure"/"exception"
+    // token or a framework failure-class wire status. Anything else ("<missing>", null, an
+    // application-defined status) is unclassifiable and never guessed as a failure.
+    private static bool IsSuccessStatus(string? status)
+        => status == SuccessResult || Benzene.Results.BenzeneResultStatus.IsSuccess(status);
+
+    private static bool IsFailureStatus(string? status)
+        => status == FailureResult || status == ExceptionResult || Benzene.Results.BenzeneResultStatus.IsFailure(status);
 
     /// <summary>
     /// Derives the structural topology: for every domain topic a service declares it <em>sends</em>
@@ -303,8 +317,9 @@ public class MeshAggregator
     /// All-or-nothing: if <em>any</em> carried topic can't be attributed unambiguously to this edge
     /// (see <see cref="AttributeTopicToEdge"/>), both metrics are null - a lower bound shown in a
     /// "req/min" cell would be a wrong number to a reader, worse than a blank. Error rate additionally
-    /// requires every attributed entry to be classifiable (a <c>success</c>/<c>failure</c> outcome);
-    /// req/min can show when error rate can't.
+    /// requires every attributed entry to be classifiable (a known success or failure outcome - see
+    /// <see cref="IsSuccessStatus"/>/<see cref="IsFailureStatus"/>); a <c>&lt;missing&gt;</c>/unknown
+    /// status blanks the error rate, while req/min can still show.
     /// </summary>
     private static (double? RequestsPerMinute, double? ErrorRate) AttributeEdge(
         List<string> carriedTopics,
@@ -392,9 +407,12 @@ public class MeshAggregator
 
         var relevantEntries = relevant.ToArray();
         double count = relevantEntries.Sum(entry => (double)entry.Count);
-        var classifiable = relevantEntries.All(entry => entry.Status is SuccessResult or FailureResult);
+        // Classifiable only if every entry's outcome is known (success or a real failure). A "<missing>"
+        // (or null/unknown) status means the outcome wasn't recorded, so no honest error rate can be
+        // computed for this edge.
+        var classifiable = relevantEntries.All(entry => IsSuccessStatus(entry.Status) || IsFailureStatus(entry.Status));
         double failureCount = classifiable
-            ? relevantEntries.Where(entry => entry.Status == FailureResult).Sum(entry => (double)entry.Count)
+            ? relevantEntries.Where(entry => IsFailureStatus(entry.Status)).Sum(entry => (double)entry.Count)
             : 0;
         return (count, classifiable, failureCount);
     }

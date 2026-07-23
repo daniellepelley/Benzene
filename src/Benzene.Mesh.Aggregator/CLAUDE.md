@@ -100,9 +100,15 @@ lower bound. `AttributeTopicToEdge`/`AttributeEdge` implement it:
   the whole edge's metrics are null (summing only the clean ones is a lower bound, which is dishonest
   in a "req/min" cell). A topic reported by **more than one `Source`** is left unattributed (cross-source
   double-count guard). No bounded window (`WindowStart`/`End` null) → null (no divisor).
-- `ErrorRate` is classified only against the metric standard's exact `success`/`failure` result tokens
-  (`Benzene.Diagnostics.MetricsExtensions`); a `<missing>` or wire-vocabulary status (e.g. the
-  collector feed's `Ok`) is **not** classifiable, so error rate stays blank while req/min still shows.
+- `ErrorRate` is **wire-vocabulary-aware** (2026-07-23): an entry counts as success when its status is
+  the synthesized `success` token or a `BenzeneResultStatus` success-class value (`Ok`/`Created`/…),
+  and as failure when it's the synthesized `failure`/`exception` token or a failure-class value
+  (`NotFound`/`Unauthorized`/…) — see `IsSuccessStatus`/`IsFailureStatus`. Only `<missing>`/null/an
+  unknown application-defined status is **unclassifiable**, blanking error rate while req/min still
+  shows. This means a collector-fed edge (raw wire statuses) now gets an honest error rate too — a
+  strict improvement over the old two-token rule, which left it always blank. The metric feed now
+  itemizes failures by real status (`Benzene.Diagnostics.MetricsExtensions`, `docs/mesh-usage-feed.md`
+  §1), so this classifier reconciles the coarse success total with the itemized failures.
 - **Coverage caveat:** under today's `Service`-null feeds this collapses to single-producer-AND-single-
   consumer, so on the AwsMesh demo only the two 1:1 SQS command legs light up; the SNS/EventBridge
   fan-out edges stay blank until the per-consumer usage dimension (a documented adapter follow-up) is

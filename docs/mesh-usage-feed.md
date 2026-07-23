@@ -32,7 +32,22 @@ both tagged with the **standard metadata set**:
 |---|---|
 | `topic` | the message's topic id (`"<missing>"` when unresolvable) |
 | `transport` | the transport the message arrived over (`"<missing>"` when unresolvable) |
-| `result` | `success` / `failure` (the wire vocabulary's success class), `"<missing>"` when no result signal |
+| `result` | outcome of handling — **successes collapse to `success`**, **failures are itemized by root cause** (see below); `"<missing>"` when no result signal |
+
+> **The `result` collapse rule is part of the standard** (a 2026-07-23 change to the value set —
+> keys and instrument names are unchanged): emit **`success`** for any *successful* outcome
+> (`IHasMessageResult.MessageResult.IsSuccessful` — the bool, so a result that stays successful while
+> carrying a failure-class status like a health check's `ServiceUnavailable` is still `success`); the
+> failure's **status string verbatim** (`NotFound`, `Unauthorized`, `Conflict`, `ValidationError`, …)
+> for an unsuccessful result; **`exception`** when the pipeline threw (distinct from a handler that
+> *returned* `UnexpectedError`); and `"<missing>"` when no result was recorded. This keeps success
+> cardinality at 1 (you want the total, not `Ok` vs `Created`) while making failures diagnosable — a
+> mostly-`NotFound` failure mix reads very differently from a mostly-`Unauthorized` one. The failure
+> vocabulary is a **bounded** set (`BenzeneResultStatus`), so cardinality stays a small constant;
+> cost-shaping, if ever needed, belongs backend-side (a metric filter), never in the emitted standard.
+> Pre-1.0, flagged per convention: a backend's rolling window may briefly hold both the old
+> `success`/`failure` values and the new ones — both consumers (the two usage adapters, the Mesh UI's
+> "By status" panel, the aggregator's edge error-rate classifier) tolerate the overlap.
 
 Emission is explicit opt-in — add `UseBenzeneMetrics()` to the pipeline — and export is whatever
 OTel wiring the host already has (`Benzene.OpenTelemetry`'s

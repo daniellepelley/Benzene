@@ -600,6 +600,62 @@ public class MeshAggregatorTest : IDisposable
     }
 
     [Fact]
+    public async Task RunOnceAsync_ItemizedFailureStatuses_CountTowardErrorRate()
+    {
+        // The metric feed now itemizes failures by real status (NotFound/Unauthorized/exception/...)
+        // instead of a single "failure" token; each still counts toward the edge's error rate.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("payments:capture", null, null, null, "success", 6, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "NotFound", 2, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "Unauthorized", 1, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "exception", 1, null, "cw")));
+
+        var edge = Edge(topology, "orders-api", "payments-api");
+        Assert.Equal(1.0, edge.RequestsPerMinute);
+        Assert.Equal(0.4, edge.ErrorRate!.Value, 5); // 4 of 10 (NotFound + Unauthorized + exception)
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_CollectorWireStatuses_AreClassifiedBySuccessClass()
+    {
+        // The collector feed reports raw wire statuses (Ok/Created/NotFound/...), not the synthesized
+        // success/failure tokens. These now classify via the success class - Ok = success, NotFound =
+        // failure - so a collector-fed edge gets an honest error rate (previously always blank).
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("payments:capture", null, null, null, "Ok", 6, null, "collector"),
+            new MeshUsageEntry("payments:capture", null, null, null, "NotFound", 4, null, "collector")));
+
+        var edge = Edge(topology, "orders-api", "payments-api");
+        Assert.Equal(0.4, edge.ErrorRate!.Value, 5); // 4 of 10 NotFound
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_UnknownStatus_IsUnclassifiable_BlanksErrorRateButShowsReqPerMinute()
+    {
+        // An application-defined status outside the framework vocabulary is never guessed as a failure;
+        // its presence makes the outcome unknown, so error rate blanks while req/min still shows.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("payments:capture", null, null, null, "success", 6, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "SomethingCustom", 4, null, "cw")));
+
+        var edge = Edge(topology, "orders-api", "payments-api");
+        Assert.Equal(1.0, edge.RequestsPerMinute);
+        Assert.Null(edge.ErrorRate);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_MultiProducerTopic_LeavesBothEdgesUnattributed()
     {
         // payments:capture is produced by TWO services, so a count handled at payments-api can't be

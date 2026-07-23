@@ -55,10 +55,21 @@ public static class MetricsExtensions
                     // costs nothing beyond the timestamp read (no tag build, no DI resolves, no record).
                     if (BenzeneDiagnostics.MessagesProcessed.Enabled || BenzeneDiagnostics.MessageDuration.Enabled)
                     {
+                        // Collapse every successful outcome to "success" (you want the total, not Ok
+                        // vs Created), but itemize failures by their root-cause status (NotFound vs
+                        // Unauthorized vs ...) - a mostly-NotFound failure mix reads very differently
+                        // from a mostly-Unauthorized one. An escaped exception is its own category,
+                        // distinct from a handler that *returned* UnexpectedError. Success is decided
+                        // by IsSuccessful (the bool), NOT the status class: a result can be successful
+                        // while carrying a failure-class status (e.g. a health check reporting
+                        // ServiceUnavailable but staying successful so the body renders). See
+                        // docs/mesh-usage-feed.md §1 - this is the published "result" tag vocabulary.
                         var result = threw
-                            ? "failure"
+                            ? "exception"
                             : context is IHasMessageResult { MessageResult: not null } r
-                                ? (r.MessageResult.IsSuccessful ? "success" : "failure")
+                                ? (r.MessageResult.IsSuccessful
+                                    ? "success"
+                                    : string.IsNullOrEmpty(r.MessageResult.Status) ? "failure" : r.MessageResult.Status)
                                 : "<missing>";  // no result signal set on a non-throwing completion
 
                         var tags = new TagList
