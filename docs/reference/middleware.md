@@ -152,7 +152,7 @@ into a controlled response.
 
 **Package:** `Benzene.RateLimiting`. Best-effort, per-instance rate limiting over any
 `System.Threading.RateLimiting.RateLimiter`; a rejected message short-circuits with
-`TooManyRequests` (HTTP 429). Place it before the middleware it protects. Per instance only —
+`too-many-requests` (HTTP 429). Place it before the middleware it protects. Per instance only —
 authoritative limits belong at the gateway; see [Rate Limiting](../rate-limiting.md).
 
 ```csharp

@@ -1,6 +1,6 @@
 # Fluent Validation
 
-`Benzene.FluentValidation` runs [FluentValidation](https://docs.fluentvalidation.net/) validators against a message handler's request before the handler executes, short-circuiting the pipeline with a `ValidationError` result when validation fails.
+`Benzene.FluentValidation` runs [FluentValidation](https://docs.fluentvalidation.net/) validators against a message handler's request before the handler executes, short-circuiting the pipeline with a `validation-error` result when validation fails.
 
 ## Overview
 

@@ -18,7 +18,7 @@ Because it's a normal Benzene middleware (`IMiddleware<TContext>`), `UseRetry(..
 
 ### Outbound client retry uses this same middleware
 
-Retrying an outbound call — e.g. a `Benzene.Clients` route that returns `ServiceUnavailable` — is not
+Retrying an outbound call — e.g. a `Benzene.Clients` route that returns `service-unavailable` — is not
 a separate mechanism. `.UseRetry(...)` works on `OutboundContext` unmodified, since `RetryMiddleware<TContext>`
 is fully generic:
 
@@ -86,7 +86,7 @@ app.UseRetry<MyMessageContext>(
     shouldRetryContext: context => context.Result?.Status == BenzeneResultStatus.ServiceUnavailable);
 ```
 
-This re-runs the wrapped pipeline whenever the handler returns a `ServiceUnavailable`-style result without throwing, in addition to the default exception-based retry behavior.
+This re-runs the wrapped pipeline whenever the handler returns a `service-unavailable`-style result without throwing, in addition to the default exception-based retry behavior.
 
 ### Narrowing which exceptions are retried
 

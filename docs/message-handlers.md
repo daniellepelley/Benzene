@@ -185,10 +185,10 @@ app.UseMessageHandlers(typeof(CreateOrderMessageHandler).Assembly, router => rou
 Every overload ultimately registers a **`MessageRouter<TContext>`** as an `IMiddleware<TContext>` in
 the pipeline. `MessageRouter<TContext>.HandleAsync`:
 
-1. Extracts the topic via `IMessageGetter<TContext>`. If it's missing, sets a `ValidationError`
+1. Extracts the topic via `IMessageGetter<TContext>`. If it's missing, sets a `validation-error`
    result ("Topic is missing") and returns — no handler lookup happens.
 2. Looks up the handler definition for that topic via `IMessageHandlerDefinitionLookUp`. If none is
-   found, sets a `NotFound` result and returns.
+   found, sets a `not-found` result and returns.
 3. Creates the handler instance via `IMessageHandlerFactory` (resolving it from DI, wrapping it per
    `IMessageHandlerWrapper`, and building its own per-handler middleware pipeline — see
    [Response handling](#response-handling) below).
