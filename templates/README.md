@@ -113,12 +113,12 @@ for d in aws-apigateway azure-http selfhost-http; do
 done
 # Group C (fire-and-forget with an injected collaborator, canonical aws-sqs - the component-test templates)
 canonical_c="templates/content/aws-sqs/HelloWorldMessageHandler.cs"
-for d in aws-sns azure-eventhub; do
+for d in aws-sns azure-eventhub azure-servicebus; do
   diff "$canonical_c" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (C): $d"; exit 1; }
 done
 # Group B (fire-and-forget, no collaborator - still on the in-memory test, canonical rabbitmq)
 canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
-for d in servicebus-worker azure-servicebus azure-queuestorage; do
+for d in servicebus-worker azure-queuestorage; do
   diff "$canonical_b" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (B): $d"; exit 1; }
 done
 ```
@@ -133,7 +133,7 @@ lists as they migrate.
 ```bash
 # every in-memory test .csproj is identical (component-test templates are omitted)
 canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-for d in selfhost-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
+for d in selfhost-http azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
   diff "$canonical_csproj" "templates/content/$d/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj" || { echo "DRIFT (csproj): $d"; exit 1; }
 done
 # group A test (request/response): asserts Ok + body
@@ -143,7 +143,7 @@ for d in selfhost-http; do
 done
 # group B test (fire-and-forget): asserts Accepted
 canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-for d in servicebus-worker azure-servicebus azure-queuestorage; do
+for d in servicebus-worker azure-queuestorage; do
   diff "$canonical_test_b" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (B): $d"; exit 1; }
 done
 ```

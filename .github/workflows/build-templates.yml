@@ -52,7 +52,7 @@ jobs:
         # Group C (fire-and-forget with an injected collaborator, canonical aws-sqs) - the component-test
         # templates that need a spyable dependency to assert the handler ran.
         canonical_c="templates/content/aws-sqs/HelloWorldMessageHandler.cs"
-        for dir in aws-sns azure-eventhub; do
+        for dir in aws-sns azure-eventhub azure-servicebus; do
           if ! diff -u "$canonical_c" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
             echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical_c"
             exit 1
@@ -60,7 +60,7 @@ jobs:
         done
         # Group B (fire-and-forget, no collaborator - still on the in-memory test, canonical rabbitmq).
         canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
-        for dir in servicebus-worker azure-servicebus azure-queuestorage; do
+        for dir in servicebus-worker azure-queuestorage; do
           if ! diff -u "$canonical_b" "templates/content/$dir/HelloWorldMessageHandler.cs"; then
             echo "::error::templates/content/$dir/HelloWorldMessageHandler.cs has drifted from $canonical_b"
             exit 1
@@ -76,7 +76,7 @@ jobs:
         # Only templates still on the shared in-memory test keep the identical .csproj + shared test .cs.
         # Component-test templates (bespoke per transport) are dropped from these lists as they migrate.
         canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-        for dir in selfhost-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
+        for dir in selfhost-http azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
           if ! diff -u "$canonical_csproj" "templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj has drifted from $canonical_csproj"
             exit 1
@@ -90,7 +90,7 @@ jobs:
           fi
         done
         canonical_test_b="templates/content/rabbitmq-worker/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-        for dir in servicebus-worker azure-servicebus azure-queuestorage; do
+        for dir in servicebus-worker azure-queuestorage; do
           if ! diff -u "$canonical_test_b" "templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"; then
             echo "::error::templates/content/$dir/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs has drifted from $canonical_test_b"
             exit 1
