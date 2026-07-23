@@ -18,6 +18,7 @@ using Benzene.Clients.Aws.Sns;
 using Benzene.Clients.Aws.Sqs;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
+using Benzene.Core.MessageHandlers.WarmUp;
 using Benzene.Core.Middleware;
 using Benzene.Abstractions.Messages;
 using Benzene.Diagnostics;
@@ -84,7 +85,12 @@ public static class MeshServiceWiring
                 // emits both X-Ray subsegments and OTel spans; drop either to pick one backend.
                 .AddXRayTracing()
                 .AddMessageHandlers(domainAssembly)
-                .AddHttpMessageHandlers();
+                .AddHttpMessageHandlers()
+                // Opt into cold-start warm-up: at Lambda INIT (AwsLambdaHost's ctor calls WarmUp()) this
+                // pre-builds each handler's request+response STJ metadata and each FluentValidation rule
+                // set, so the first real invocation doesn't pay that JIT. Invisible - no message dispatch,
+                // no logs/metrics/traces. See README "Cold-start tuning".
+                .AddBenzeneWarmUp();
 
             if (outboundSends.Length > 0)
             {
