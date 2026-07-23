@@ -5,9 +5,11 @@
 
 ## Goal
 Let the **Fleet UI** (`mesh-fleet-ui.html`, the collector/live plane — traces, waterfall, correlation
-lookup) read from an existing **OTel trace backend** (Grafana Tempo / Jaeger / AWS X-Ray) instead of
-requiring services to push to the in-memory push-collector. The maintainer's ask: *"surface the trace
-waterfall against my existing OTel store, without standing up a Benzene push-collector."*
+lookup) read from **various existing observability sources**, composed per-signal, instead of requiring
+services to push to the in-memory push-collector. The maintainer's ask: *"work with various sources; for
+the AWS demo it would likely be X-Ray and CloudWatch"* — i.e. **traces from X-Ray, stats from CloudWatch**
+(the existing usage adapter), health absent, all behind the same `mesh:query:*` topics. Non-AWS targets
+(Grafana Tempo, Jaeger) plug into the same trace-source seam.
 
 ## Today (for contrast)
 The five `mesh:query:*` read-models (`fleet`/`service`/`topic`/`trace`/`correlation`) are answered by
@@ -22,20 +24,43 @@ Precedent: the mesh already reads observability backends for the *other* two sig
 App Insights adapters read metrics backends for `usage.json`. Governing principle (from those): **read
 what the backend actually has; degrade honestly on missing dimensions; never invent.**
 
-## Architecture / the seam
+## Architecture / the seam — MULTI-SOURCE by design (maintainer direction, 2026-07-23)
+The maintainer wants this to work with **various sources**, composing per-signal (not one backend doing
+everything). This matches the "read what each backend has" principle exactly: **traces** come from a
+trace store, **stats** from a metrics store, **health** from a heartbeat feed — each pluggable.
+
 The query handlers (`TraceQueryMessageHandler`, `FleetQueryMessageHandler`, …, `Handlers.cs`) currently
 depend on the **concrete** `MeshCollectorStore` (read methods `Fleet()`/`Service(name)`/
-`Topic(id,ver)`/`Trace(id)`/`Correlation(id)`). Make the read side backend-swappable:
+`Topic(id,ver)`/`Trace(id)`/`Correlation(id)`). Make the read side backend-swappable **and composable**:
 
-1. Extract `IMeshFleetReadModel` over those five read methods (+ their nullable-return contract).
-2. `MeshCollectorStore` implements it (no behaviour change — the push-collector deployment is unchanged).
-3. The new adapter is a **second implementation** behind the **same** `mesh:query:*` topics and the
-   **same** `TraceView`/`CorrelationView`/`FleetView` shapes. The Fleet UI is untouched.
-4. The push-ingest handlers (`mesh:register`/`heartbeat`/`traces`) are simply **not registered** in an
-   OTel-backed deployment — services export OTLP to the backend directly instead of pushing.
+1. Extract `IMeshFleetReadModel` over those five read methods (nullable-return contract preserved).
+2. `MeshCollectorStore` implements it (no behaviour change — the push-collector deployment is unchanged;
+   it stays the all-in-one "everything from the ring" implementation).
+3. Add a **composing** implementation, `CompositeMeshFleetReadModel`, that fans each read-model out to
+   the right per-signal source:
+   - **`IMeshTraceSource`** — the trace-shaped read-models (`Trace`, `Correlation`, recent-flows +
+     observed topic consumers from span parentage). Pluggable implementations: **AWS X-Ray**, **Grafana
+     Tempo**, **Jaeger** (and the in-memory ring is trivially one too).
+   - **`IMeshUsageSource`** — *already exists* (`Benzene.Mesh.Contracts`, shipped **CloudWatch** + **App
+     Insights** adapters). Reuse it for per-topic/per-service **stats** in the `FleetView` — do **not**
+     re-derive counts from sampled traces. This is the whole reason stats are omitted from the trace
+     source.
+   - **health** — from the heartbeat feed if present; absent on a trace/metrics-only backend →
+     `Health = unknown`, `MissingFeeds += "health"`.
+4. The query handlers depend on `IMeshFleetReadModel` (the composite or the in-memory store, by DI).
+5. The push-ingest handlers (`mesh:register`/`heartbeat`/`traces`) are **not registered** in a
+   backend-composed deployment — services export to X-Ray/Tempo/CloudWatch directly, not to a collector.
 
-**No mesh wire-contract change, no Cloud Service spec change — purely a new read-side adapter.** The
-existing `mesh-collector-cases.json` query shapes become a **forcing function** the adapter must satisfy.
+**No mesh wire-contract change, no Cloud Service spec change — purely new read-side adapters behind the
+same `mesh:query:*` topics/shapes.** The existing `mesh-collector-cases.json` query shapes are a
+**forcing function** the composite must still satisfy. The Fleet UI is untouched (same topics).
+
+### Why this unlocks the AwsMesh plane
+AwsMesh already exports traces to **X-Ray** and metrics to **CloudWatch**, and its mesh Lambda already
+serves `mesh-ui.html`. Adding `.UseMeshFleetUi(...)` on that same Lambda, wired to a
+`CompositeMeshFleetReadModel(XRayTraceSource, CloudWatchUsageSource, health=absent)`, brings the **Fleet
+UI + trace waterfall onto the AwsMesh plane the maintainer actually uses** — closing the earlier
+"traces on AwsMesh" gap **without** standing up a push-collector (which Lambda's in-memory ring can't host).
 
 ## Per-read-model coverage (mesh-product-owner ruling)
 A trace store holds spans, queryable by trace id and by attribute, with recent-trace search. It is not a
@@ -55,17 +80,25 @@ metrics store and has no heartbeat/descriptor feed.
 **Net:** a trace-backed adapter is a **trace / correlation / recent-flows reader**. Health and aggregate
 stats are structurally out of reach and stay on the heartbeat plane and the usage feed respectively.
 
-## Backend priority
-1. **Grafana Tempo (trace API) — build first.** Consistency (we already target Tempo operators),
-   TraceQL is a real query language (`/api/traces/{id}` + `/api/search` with attribute filters), OTLP-
-   native reference store. **Distinct package `Benzene.Mesh.Fleet.Tempo`** — do NOT fold into
-   `Benzene.Mesh.Tracing.Tempo`, which is a **PromQL service-graph** client; this is a **trace-API**
-   client. Keeping them separate protects that "PromQL, not trace-API" invariant.
-2. **AWS X-Ray** — natural for `AwsMesh` (already exports to X-Ray). `GetTraceSummaries` ≈ recent-flows +
-   correlation (annotation filter); `BatchGetTraces` ≈ the waterfall.
+## `IMeshTraceSource` backends (build order — maintainer's AWS demo first)
+Build the **`IMeshTraceSource` abstraction** once, then implementations in this order:
+1. **AWS X-Ray — build first (the maintainer's AWS demo target).** `AwsMesh` already exports to X-Ray +
+   CloudWatch, so an X-Ray trace source + the existing `CloudWatchUsageSource` composes the whole AWS
+   fleet read-model and lights up the Fleet UI on the AwsMesh plane. `GetTraceSummaries` ≈ recent-flows +
+   correlation (annotation filter); `BatchGetTraces` ≈ the waterfall. Package `Benzene.Mesh.Fleet.Aws.XRay`,
+   `AWSSDK.XRay` only. Caveat: X-Ray's data model is segments/subsegments (not raw OTLP spans) — the
+   span→`MeshTraceEvent` mapping reads X-Ray segment fields + `annotations` (topic/status/correlation as
+   **annotations**, since only annotations are filterable — see §6b).
+2. **Grafana Tempo (trace API).** The OTLP-native reference target for non-AWS. TraceQL is a real query
+   language (`/api/traces/{id}` + `/api/search` with attribute filters). Package `Benzene.Mesh.Fleet.Tempo`
+   — **distinct** from `Benzene.Mesh.Tracing.Tempo` (a **PromQL service-graph** client); this is a
+   **trace-API** client. Keeping them separate protects the "PromQL, not trace-API" invariant.
 3. **Jaeger** (query API) — lower priority, no existing Benzene footprint.
 - **"OTLP-generic" target: NO.** OTLP is a push/export protocol with **no query API** — you cannot read
   from OTLP. "OTel-backed" means "an OTLP-fed store," queried via its own API, never "query OTLP."
+- **The stats source is not a choice to build** — it's the **existing** `IMeshUsageSource`
+  (`CloudWatchUsageSource` for AWS, `ApplicationInsightsUsageSource` for Azure), composed in for
+  `FleetView` counts. Reuse, don't rebuild.
 
 ## Honest degradation / UI framing
 When the Fleet UI is trace-backed:
@@ -105,18 +138,26 @@ span→event mapping is **mostly already emitted**. Two gaps:
 message**. The adapter must select the message-representative span (the one carrying `benzene.topic` /
 the message-handler span), not every middleware span — else the waterfall shows one bar per middleware.
 
-## Phasing (keep increment 1 small)
-- **Increment 1 — `mesh:query:trace` against Tempo.** trace-by-id → span list → `TraceView` waterfall.
-  One backend, one handler, mocked-HTTP tests to the documented TraceQL/attribute convention. Delivers
-  exactly the ask. Shippable alone. (Status colouring is ok/error until §6a lands.)
-- **Increment 2 — `mesh:query:correlation`.** attribute search by correlation id + group-by-trace;
-  reuses increment-1's mapping. Gated on §6b.
-- **Increment 3 — recent-flows only (`FleetView.Traces`).** search over a window → `TraceSummary` rows;
-  `Services` observed-only, `Topics` observed-consumers-only, every row
-  `MissingFeeds=[health,descriptor,stats]`, `Health=unknown`. Requires the UI absent-≠-zero fix.
-- **Increment 4 — decision gate (NOT pre-committed): NO.** Fleet-aggregate/health does not belong on a
-  trace-backed adapter. Health stays heartbeat/collector-plane; aggregate stats stay the usage feed.
-  Revisit only if a compelling merged-plane story emerges.
+## Phasing (keep increment 1 small; AWS demo is the target)
+- **Increment 0 — the seams (tiny, no backend).** Extract `IMeshFleetReadModel` (query handlers depend
+  on it; `MeshCollectorStore` implements it, unchanged) and declare `IMeshTraceSource`. Pure refactor,
+  fully covered by the existing collector tests + `mesh-collector-cases.json`.
+- **Increment 1 — `mesh:query:trace` against X-Ray.** `BatchGetTraces` → segment tree →
+  `TraceView` waterfall, in `Benzene.Mesh.Fleet.Aws.XRay`, behind `IMeshTraceSource`. Mocked-SDK tests
+  (the `IAmazonXRay`-mock posture the AWS health-check/usage tests already use). Delivers the ask on the
+  AWS demo. Shippable alone. (Status colouring is ok/error until §6a lands.)
+- **Increment 2 — `mesh:query:correlation` (X-Ray).** `GetTraceSummaries` with an annotation filter on
+  the correlation id + group-by-trace; reuses increment-1's mapping. Gated on §6b (correlation id as an
+  X-Ray **annotation**).
+- **Increment 3 — `CompositeMeshFleetReadModel` + recent-flows `FleetView`.** Compose `IMeshTraceSource`
+  (recent traces + observed consumers) with the existing `CloudWatchUsageSource` (per-topic stats);
+  `Health=unknown`, `MissingFeeds=[health,descriptor]` (NOT `stats` — CloudWatch fills those). Wire
+  `.UseMeshFleetUi(...)` onto the AwsMesh mesh Lambda → **Fleet UI + waterfall on the AwsMesh plane.**
+  Requires the UI absent-≠-zero fix (render "—" not "0" when a stat is genuinely absent).
+- **Increment 4 — Tempo `IMeshTraceSource`** (`Benzene.Mesh.Fleet.Tempo`), the non-AWS reference target,
+  reusing increments 0–3's handlers/composite unchanged (that's the payoff of the abstraction). Jaeger later.
+- **Not in scope:** deriving health or per-topic **counts** from a trace source. Health stays the
+  heartbeat feed; counts stay `IMeshUsageSource`. The trace source is a trace/correlation/recent-flows reader.
 
 ## Verification caveat (state every time)
 Like the Tempo PromQL adapter, this adapter's TraceQL construction, response parsing, and span→event
@@ -125,6 +166,11 @@ against a live Tempo trace API** until run against a real instance (the egress l
 live-verifying the PromQL adapter applies). Attribute-name mapping is documented convention, not confirmed.
 
 ## Recommendation
-Approve the concept; build to the phasing above. **Reject any framing where a trace-backed Fleet reports
-health or aggregate stats** — that line keeps it honest. First increment: `Benzene.Mesh.Fleet.Tempo`'s
-`mesh:query:trace` handler.
+Build the **multi-source composite** (maintainer direction): a pluggable `IMeshTraceSource` for the
+trace-shaped read-models + the existing `IMeshUsageSource` for stats + heartbeat (or absent) for health,
+behind `IMeshFleetReadModel`. **Reject any framing where the trace source reports health or aggregate
+counts** — those come from their own sources; that line keeps it honest. **Build order = the maintainer's
+AWS demo first:** X-Ray trace source + the shipped `CloudWatchUsageSource`, which composes the whole AWS
+fleet read-model and brings the Fleet UI + waterfall onto the AwsMesh plane. Tempo/Jaeger reuse the same
+handlers/composite afterward. First code: Increment 0 (the two seams) + Increment 1 (`mesh:query:trace`
+against X-Ray).
