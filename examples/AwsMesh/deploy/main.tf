@@ -199,7 +199,12 @@ resource "aws_lambda_function" "service" {
   runtime          = "provided.al2023"
   handler          = "bootstrap"
   architectures    = [var.lambda_architecture]
-  memory_size      = 512
+  # Cold start on .NET is CPU-bound (JIT of not-yet-R2R'd reflection/serialization code + DI build),
+  # and Lambda scales vCPU with memory: ~0.3 vCPU at 512 MB vs ~0.58 at 1024 (a full vCPU arrives at
+  # ~1769 MB). Bumping 512 -> 1024 roughly halves that init/JIT wall time - the single biggest
+  # cold-start lever once ReadyToRun is already on (see the publish step + README "Cold-start tuning").
+  # Dial to 1769 for the shortest possible cold start (1 vCPU), or back to 512 to minimise cost.
+  memory_size      = 1024
   timeout          = 30
   layers           = local.collector_layers
 

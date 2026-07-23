@@ -326,6 +326,58 @@ artifacts) with `{ "discovered": N }`.
 cd examples/AwsMesh/deploy && terraform destroy
 ```
 
+## Cold-start tuning
+
+.NET on Lambda has a real cold-start cost, and it is **mostly not Benzene** — it's JIT compilation
+and reflection-driven code generation (System.Text.Json metadata, DI graph build, handler/validator
+reflection) that only runs once per fresh execution environment. Optimising it well is what lets an
+X-Ray trace isolate Benzene's own overhead from the .NET/AWS floor. What this example already does,
+and the levers beyond it, in rough order of value-for-effort:
+
+**Already applied here:**
+- **ReadyToRun** — the publish step (`.github/workflows/deploy-aws-mesh-example.yml`) uses
+  `-p:PublishReadyToRun=true`, precompiling IL to native so most framework/app code doesn't JIT at
+  startup. This is the standard first move and it's on.
+- **`InvariantGlobalization=true`** — every service `.csproj` sets it (also required because
+  `provided.al2023` ships no libicu). Skips ICU load at init.
+- **Shared static Lambda event serializer** — `AwsLambdaMiddlewareRouter` caches the
+  `DefaultLambdaJsonSerializer` statically so the (large) AWS event type's STJ metadata is built once
+  per process, not per invocation (see `Benzene.Aws.Lambda.Core`).
+- **Framework warm-up (opt-in)** — `AddBenzeneWarmUp()` pre-builds each handler's request **and
+  response** STJ metadata and each FluentValidation rule set during Lambda INIT, invisibly (no
+  synthetic message, no logs/metrics/traces). Enable it in the service startup to move those
+  first-message JIT gaps into INIT. See `Benzene.Core.MessageHandlers` → *Cold-start warm-up*.
+- **Memory = 1024 MB** (services; the mesh was already 1024). Lambda scales vCPU with memory and
+  cold start is CPU-bound, so this roughly halves init/JIT wall time vs 512 MB. Dial to ~1769 MB for
+  a full vCPU (shortest cold start) or back to 512 to minimise cost — one line in `deploy/main.tf`.
+
+**Remaining levers (not applied — each has a real trade-off):**
+- **Source-generated JSON** *(recommended next step)* — the largest unwarmed cost left is STJ's
+  reflection-based metadata build for the API Gateway event and the payload types. A
+  `JsonSerializerContext` (STJ source generator) removes that reflection entirely. It's a code change,
+  not a toggle, and needs the context wired into the Lambda serializer + media format, so it's a
+  deliberate follow-up rather than a flag.
+- **arm64 (Graviton)** — usually better price/performance and competitive cold start. Requires
+  flipping `lambda_architecture` to `arm64`, the CI `RID` to `linux-arm64`, **and** the ADOT collector
+  layer ARN (see `variables.tf`) to the matching arm64 build — a coordinated change, so it's opt-in.
+- **ADOT collector overhead** — the trace's ~26 ms `extensionOverhead` (and some INIT weight) is the
+  telemetry extension, not Benzene. If cold latency matters more than full-fidelity tracing, sample
+  traces or drop the collector layer.
+- **Provisioned concurrency** — the guaranteed-warm escape hatch: pre-initialised environments, no
+  cold start on the covered concurrency, at standing cost. The blunt-instrument option when a specific
+  path must never pay init.
+
+**Deliberately *not* done — these would break this app:**
+- **Trimming (`PublishTrimmed`)** — Benzene discovers handlers, resolves DI, and builds
+  FluentValidation rules by reflection, and the default serializer is reflection-based STJ. Trimming
+  strips types those paths need at runtime → failures that don't show at build time. Don't enable it
+  without full trim annotations and source-gen serialization first.
+- **Native AOT** — the biggest cold-start win in principle, but incompatible as-is for the same
+  reflection/DI/reflection-STJ reasons; it would require source-generating serialization and reworking
+  reflection-based discovery. A project, not a setting.
+- **SnapStart** — not available on the `provided.al2023` **custom** runtime (SnapStart covers managed
+  runtimes only), and .NET 10 has no managed Lambda runtime — so it's off the table for this deployment.
+
 ## Known first-deploy iteration points
 
 I can build and compile all of this, but the live AWS behaviour is only verifiable on a real deploy.
