@@ -147,9 +147,11 @@ Provides complete implementation of message handler infrastructure for command/q
 - `PresetTopicMessageTopicGetter<TContext>` - Decorates a transport's real
   `IMessageTopicGetter<TContext>`, preferring `PresetTopicHolder.PresetTopic` (resolved from the
   same DI scope) when set and falling back to the transport's own extraction otherwise. Every
-  transport that supports preset topics (`Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Sqs`,
-  `Benzene.Azure.Function.ServiceBus`) registers this wrapping its real getter as the default
-  `IMessageTopicGetter<TContext>`, and registers `PresetTopicHolder` itself
+  non-HTTP transport that supports preset topics registers this wrapping its real getter as the
+  default `IMessageTopicGetter<TContext>` — currently `Benzene.Aws.Lambda.Sqs`, `Benzene.Aws.Sqs`,
+  `Benzene.Azure.Function.ServiceBus`, `Benzene.Azure.ServiceBus`, `Benzene.Azure.EventHub`,
+  `Benzene.RabbitMq`, `Benzene.Azure.Function.Timer`, `Benzene.Azure.Function.QueueStorage`, and
+  `Benzene.Azure.Function.EventGrid` — and each also registers `PresetTopicHolder` itself
   (`services.TryAddScoped<PresetTopicHolder>()`), so a pipeline that never opts in behaves exactly
   as before this type existed
 - `PresetTopicMiddleware<TContext>` - Resolves the current message's `PresetTopicHolder` and sets

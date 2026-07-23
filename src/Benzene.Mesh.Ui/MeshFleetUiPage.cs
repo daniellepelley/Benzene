@@ -18,7 +18,7 @@ public static class MeshFleetUiPage
 
     private static readonly Lazy<string> LazyHtml = new(ReadResource);
 
-    /// <summary>Gets the page with its built-in default envelope URL ("/invoke").</summary>
+    /// <summary>Gets the page with its built-in default envelope URL ("/benzene/invoke").</summary>
     public static string GetHtml() => LazyHtml.Value;
 
     /// <summary>Gets the page pointed at a specific wire-envelope endpoint URL.</summary>

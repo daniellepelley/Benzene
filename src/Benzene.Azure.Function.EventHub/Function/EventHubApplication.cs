@@ -43,8 +43,9 @@ public class EventHubApplication : EntryPointMiddlewareApplication<EventData[]>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled, and the batch fan-out
-    /// concurrency. Defaults to a new <see cref="EventHubOptions"/> instance (both flags off, unbounded)
-    /// if omitted.
+    /// concurrency. Defaults to a new <see cref="EventHubOptions"/> instance (safe-by-default:
+    /// <see cref="EventHubOptions.RaiseOnFailureStatus"/> on, <see cref="EventHubOptions.CatchExceptions"/>
+    /// off, unbounded fan-out) if omitted.
     /// </param>
     public EventHubApplication(IMiddlewarePipeline<EventHubContext> pipeline, IServiceResolverFactory serviceResolverFactory, EventHubOptions options)
         : base(new EventHubBatchApplication(pipeline, options), serviceResolverFactory)

@@ -25,7 +25,9 @@ public class QueueStorageApplication : EntryPointMiddlewareApplication<QueueStor
     /// <param name="serviceResolverFactory">The service resolver factory used to process each invocation.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled, and the batch fan-out
-    /// concurrency. Defaults to a new <see cref="QueueStorageOptions"/> instance (both flags off) if omitted.
+    /// concurrency. Defaults to a new <see cref="QueueStorageOptions"/> instance (safe-by-default:
+    /// <see cref="QueueStorageOptions.RaiseOnFailureStatus"/> on,
+    /// <see cref="QueueStorageOptions.CatchExceptions"/> off) if omitted.
     /// </param>
     public QueueStorageApplication(IMiddlewarePipeline<QueueStorageContext> pipeline, IServiceResolverFactory serviceResolverFactory, QueueStorageOptions options = null)
         : base(new QueueStorageBatchApplication(pipeline, options), serviceResolverFactory)

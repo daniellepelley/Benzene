@@ -26,8 +26,9 @@ public class ServiceBusApplication : EntryPointMiddlewareApplication<ServiceBusR
     /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled. Defaults to a new
-    /// <see cref="ServiceBusOptions"/> instance (both <see cref="ServiceBusOptions.CatchExceptions"/>
-    /// and <see cref="ServiceBusOptions.RaiseOnFailureStatus"/> off) if omitted.
+    /// <see cref="ServiceBusOptions"/> instance (safe-by-default:
+    /// <see cref="ServiceBusOptions.RaiseOnFailureStatus"/> on,
+    /// <see cref="ServiceBusOptions.CatchExceptions"/> off) if omitted.
     /// </param>
     public ServiceBusApplication(IMiddlewarePipeline<ServiceBusContext> pipeline, IServiceResolverFactory serviceResolverFactory, ServiceBusOptions? options = null)
         : base(new ServiceBusBatchApplication(pipeline, options), serviceResolverFactory)

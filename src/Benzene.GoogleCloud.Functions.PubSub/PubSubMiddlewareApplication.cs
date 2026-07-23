@@ -25,8 +25,9 @@ public class PubSubMiddlewareApplication : IMiddlewareApplication<MessagePublish
     /// <param name="pipeline">The built Pub/Sub middleware pipeline to run the message through.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled. Defaults to a new
-    /// <see cref="PubSubOptions"/> instance (both <see cref="PubSubOptions.CatchExceptions"/> and
-    /// <see cref="PubSubOptions.RaiseOnFailureStatus"/> off) if omitted.
+    /// <see cref="PubSubOptions"/> instance (safe-by-default:
+    /// <see cref="PubSubOptions.RaiseOnFailureStatus"/> on, <see cref="PubSubOptions.CatchExceptions"/>
+    /// off) if omitted.
     /// </param>
     public PubSubMiddlewareApplication(IMiddlewarePipeline<PubSubContext> pipeline, PubSubOptions? options = null)
     {

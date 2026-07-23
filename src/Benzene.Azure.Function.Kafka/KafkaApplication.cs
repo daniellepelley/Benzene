@@ -25,8 +25,9 @@ public class KafkaApplication : EntryPointMiddlewareApplication<KafkaRecord[]>
     /// <param name="serviceResolverFactory">The service resolver factory used to process each batch.</param>
     /// <param name="options">
     /// Configures how a handler's exceptions and failure results are handled. Defaults to a new
-    /// <see cref="KafkaOptions"/> instance (both <see cref="KafkaOptions.CatchExceptions"/> and
-    /// <see cref="KafkaOptions.RaiseOnFailureStatus"/> off) if omitted.
+    /// <see cref="KafkaOptions"/> instance (safe-by-default:
+    /// <see cref="KafkaOptions.RaiseOnFailureStatus"/> on, <see cref="KafkaOptions.CatchExceptions"/>
+    /// off) if omitted.
     /// </param>
     public KafkaApplication(IMiddlewarePipeline<KafkaContext> pipeline, IServiceResolverFactory serviceResolverFactory, KafkaOptions? options = null)
         : base(new KafkaBatchApplication(pipeline, options), serviceResolverFactory)

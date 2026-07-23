@@ -58,16 +58,16 @@ buildTransitive). The hand-written form still works. See `docs/azure-functions.m
   drives Event Grid's own retry/dead-letter machinery.
 - `EventGridApplication` — `EntryPointMiddlewareApplication<EventGridTriggerEvent[]>`, fan-out,
   transport tag `"event-grid"`; array shape covers batched ("many"-cardinality) triggers and tests.
-- `UseEventGrid(action, maxDegreeOfParallelism = null)` (both builders, no-op off-Azure),
-  `AddAzureEventGrid()`, `EventGridRegistrations`, `HandleEventGridEvents(params ...)`,
-  `HandleEventGridEvent(string)`. `maxDegreeOfParallelism` optionally bounds fan-out concurrency
-  (routed through `Benzene.Core.Middleware`'s `BoundedFanOut`); it only bites on a batched
-  ("many"-cardinality) trigger - the default one-event-per-invocation delivery has nothing to bound.
-
-## Failure handling
-None in-package: a pipeline exception propagates and Event Grid's delivery retry (with backoff, up
-to 24h) and optional dead-letter destination take over — configured on the event subscription, not
-in code.
+- `UseEventGrid(action, Action<EventGridOptions> configure = null, string name = null)` (both
+  builders, no-op off-Azure), `AddAzureEventGrid()`, `EventGridRegistrations`,
+  `HandleEventGridEvents(params ...)`, `HandleEventGridEvent(string)`. Fan-out concurrency is bounded
+  via `EventGridOptions.MaxDegreeOfParallelism` (the positional `maxDegreeOfParallelism` arg was
+  folded into the options object, same change Kafka made), routed through `Benzene.Core.Middleware`'s
+  `BoundedFanOut`; it only bites on a batched ("many"-cardinality) trigger - the default
+  one-event-per-invocation delivery has nothing to bound.
+- `EventGridOptions` (`CatchExceptions`, `RaiseOnFailureStatus`, `MaxDegreeOfParallelism`) +
+  `EventGridMessageProcessingException` — the failure-handling knobs and the escalation exception
+  (see "Failure handling: a returned failure result is retried by default" above).
 
 ## Tests
 - `test/Benzene.Core.Test/Azure/EventGridPipelineTest.cs` — end-to-end routing for both schemas,

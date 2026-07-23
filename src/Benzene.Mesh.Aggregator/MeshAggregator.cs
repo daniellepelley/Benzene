@@ -114,7 +114,7 @@ public class MeshAggregator
         var topology = BuildTopology(entries, results, usage);
         writes.Add(_store.PublishAsync("topology.json", JsonSerializer.Serialize(topology, JsonOptions)));
 
-        // Composite AsyncAPI: merge every service's own AsyncAPI 2.0 doc (fetched from its spec
+        // Composite AsyncAPI: merge every service's own AsyncAPI 3.0 doc (fetched from its spec
         // endpoint) into one fleet-wide document loadable in an AsyncAPI editor.
         writes.Add(_store.PublishAsync("asyncapi.json", BuildCompositeAsyncApi(entries, results)));
 

@@ -9,18 +9,24 @@ through a Benzene middleware pipeline. This is the Event Hubs counterpart of
 documented in `docs/hosting.md`, where Benzene owns the process. For events delivered by an Azure
 Functions trigger, use `Benzene.Azure.Function.EventHub` instead.
 
-## A handler failure result stops the partition checkpointing past it by default (`RaiseOnFailureStatus`)
+## A handler failure result is escalated like an exception (`RaiseOnFailureStatus`); redelivery depends on `CatchHandlerExceptions`
 **`BenzeneEventHubConfig.RaiseOnFailureStatus` defaults to `true`** (flipped 2026-07-21 — see
 `work/settlement-contract-1.0.md`). A handler that returns a failure result (e.g.
 `BenzeneResult.ServiceUnavailable(...)`) without throwing is escalated into a thrown
-`EventHubMessageProcessingException`, which takes the same not-checkpointed path as an unhandled
-exception (see `CatchHandlerExceptions` below): the failed event isn't checkpointed, so the partition
-doesn't advance past it and a restart redelivers it. Since Event Hubs is checkpoint-based with no
-per-event abandon, the semantics are "don't checkpoint, reprocess from here" — the handler must be
-idempotent. Set `RaiseOnFailureStatus = false` for at-most-once (a failure result is checkpointed like
-a success once `CheckpointInterval` is reached; `EventHubConsumerContext.MessageResult` is then only
-recorded for diagnostics/middleware). Mirrors the escalation on the Function triggers
-(`KafkaOptions.RaiseOnFailureStatus` etc.).
+`EventHubMessageProcessingException`, which takes the same path as an unhandled exception (see
+`CatchHandlerExceptions` below) — the failed event is never itself checkpointed. **The redelivery
+outcome is then governed by `CatchHandlerExceptions`, not by `RaiseOnFailureStatus` alone.** This
+standalone worker defaults `CatchHandlerExceptions = true` (unlike the Function triggers, whose
+`CatchExceptions` defaults `false`), so with the shipping defaults the escalated failure is caught
+and logged, the partition keeps processing, and the next successful event checkpoints past the
+failed one — it is effectively skipped (at-most-once) once the partition advances. To actually
+redeliver a failed event (at-least-once), also set `CatchHandlerExceptions = false`: the worker then
+stops at the failure without checkpointing it, so a restart resumes from the last checkpoint and
+reprocesses it (the handler must be idempotent). `RaiseOnFailureStatus`'s role is only to make a
+returned failure behave identically to a thrown exception rather than being silently settled; the
+actual settle semantics live in `CatchHandlerExceptions`. Set `RaiseOnFailureStatus = false` to
+accept a failure result as settled (`EventHubConsumerContext.MessageResult` is then only recorded
+for diagnostics/middleware).
 
 ## Key types/interfaces
 - `BenzeneEventHubWorker : IBenzeneWorker` - wires `ProcessEventAsync`/`ProcessErrorAsync` on an

@@ -55,9 +55,11 @@ public static class MeshDescriptorFactory
 
 /// <summary>
 /// The contract hash of docs/specification/mesh.md §2.2: SHA-256 over the descriptor's canonical
-/// JSON with the per-instance (<c>instanceId</c>) and transient (<c>degraded</c>) fields blanked -
-/// two instances of one build hash identically, and the hash changes exactly when the contract
-/// changes. Distinct from <c>Benzene.Mesh.Contracts.MeshHashing</c> (HMAC over raw OpenAPI text),
+/// JSON with the per-instance (<c>instanceId</c>), transient (<c>degraded</c>), self-described
+/// (<c>profile</c>), and self-referential (<c>descriptorHash</c>) fields blanked - two instances of
+/// one build hash identically, and the hash changes exactly when the contract changes. Notably
+/// <c>profile</c> MUST NOT participate in the hash (§2.2), so a profile change never re-hashes the
+/// contract. Distinct from <c>Benzene.Mesh.Contracts.MeshHashing</c> (HMAC over raw OpenAPI text),
 /// which serves the aggregator's artifact-drift feature; this one is the spec's wire-level hash.
 /// </summary>
 public static class MeshDescriptorHashing

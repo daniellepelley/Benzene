@@ -55,12 +55,21 @@ public class BenzeneEventHubConfig
     /// Gets or sets whether a handler that returns a non-exception failure result (e.g.
     /// <c>BenzeneResult.ServiceUnavailable(...)</c>) is escalated into a thrown
     /// <see cref="EventHubMessageProcessingException"/> so it's treated exactly like an unhandled
-    /// exception (see <see cref="CatchHandlerExceptions"/>): the failed event is not checkpointed, so
-    /// the partition doesn't advance past it. Defaults to <c>true</c> - a returned failure is escalated so the partition is not checkpointed past
-    /// it (at-least-once). Set <c>false</c> for at-most-once (recorded for diagnostics only, checkpoints past it). Since Event Hubs is checkpoint-based
-    /// with no per-event abandon, the semantics are "don't checkpoint, reprocess from here" - so the
-    /// handler must be idempotent. Mirrors the escalation on the Function triggers
-    /// (<c>KafkaOptions.RaiseOnFailureStatus</c> etc.).
+    /// exception (see <see cref="CatchHandlerExceptions"/>): the failed event is never itself
+    /// checkpointed. Defaults to <c>true</c>, so a returned failure result is treated exactly like a
+    /// thrown exception rather than being silently settled. <b>The redelivery outcome is then
+    /// governed by <see cref="CatchHandlerExceptions"/>, not by this flag alone</b>: with the default
+    /// <c>CatchHandlerExceptions = true</c> the escalated failure is caught and logged, the partition
+    /// keeps processing, and a later successful event checkpoints past the failed one - so it is
+    /// effectively skipped (at-most-once) once the partition advances. To actually redeliver a failed
+    /// event (at-least-once), also set <c>CatchHandlerExceptions = false</c>, which stops the worker
+    /// at the failure without checkpointing it, so a restart resumes from the last checkpoint. Set
+    /// this to <c>false</c> to accept a failure result as settled (recorded for diagnostics only).
+    /// Since Event Hubs is checkpoint-based with no per-event abandon, the semantics are "don't
+    /// checkpoint this event, reprocess from here on restart" - so the handler must be idempotent.
+    /// Mirrors the escalation on the Function triggers (<c>KafkaOptions.RaiseOnFailureStatus</c> etc.),
+    /// which differ in that their <c>CatchExceptions</c> defaults <c>false</c>, so their escalation
+    /// propagates out of the box.
     /// </summary>
     public bool RaiseOnFailureStatus { get; set; } = true;
 }
