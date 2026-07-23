@@ -145,7 +145,6 @@
     <ProjectReference Include="..\..\src\Benzene.Saga\Benzene.Saga.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
     <ProjectReference Include="..\..\src\Benzene.SelfHost\Benzene.SelfHost.csproj" />
-    <ProjectReference Include="..\..\src\Benzene.SelfHost.Http\Benzene.SelfHost.Http.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Spec.Ui\Benzene.Spec.Ui.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Xml\Benzene.Xml.csproj" />
     <ProjectReference Include="..\..\src\Benzene.HealthChecks.Tcp\Benzene.HealthChecks.Tcp.csproj" />
@@ -319,7 +318,6 @@
 
   <ItemGroup>
     <Folder Include="Asp\" />
-    <Folder Include="SelfHost\Http\" />
   </ItemGroup>
 
   <ItemGroup>

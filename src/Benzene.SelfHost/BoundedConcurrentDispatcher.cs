@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace Benzene.SelfHost;
 
 /// <summary>
-/// Dispatches items pulled from a self-hosted worker's poll loop (<see cref="Benzene.Kafka.Core.BenzeneKafkaWorker{TKey,TValue}"/>,
-/// <see cref="Benzene.SelfHost.Http.BenzeneHttpWorker"/>) to an async handler, bounding how many
+/// Dispatches items pulled from a self-hosted worker's poll loop (e.g.
+/// <see cref="Benzene.Kafka.Core.BenzeneKafkaWorker{TKey,TValue}"/>) to an async handler, bounding how many
 /// handlers run at once. Built on <see cref="System.Threading.Channels"/> - no new NuGet dependency,
 /// part of the BCL.
 /// </summary>
