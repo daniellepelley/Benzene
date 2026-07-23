@@ -73,6 +73,25 @@ public class SdkTypeBuilderTest
 
 
     [Fact]
+    public void BuildType_NonStringDictionary_EmitsCollectionsUsing()
+    {
+        // A Dictionary<string, long> property emits `Dictionary<string, long>`, which needs
+        // `using System.Collections.Generic;` just like a string map does. Regression guard: the
+        // using-statement emit used to only fire for string-valued maps, so a non-string map
+        // generated code that didn't compile.
+        var lambdaServiceSdkBuilder = new OpenApiSchemaCSharpTypeBuilder(BaseNameSpace);
+
+        var schemaBuilder = new SchemaBuilder();
+        schemaBuilder.AddSchema(typeof(HasLongDictionary));
+
+        var result = lambdaServiceSdkBuilder.BuildType(schemaBuilder.Build().First());
+        var generated = result.Lines.ToText();
+
+        Assert.Contains("Dictionary<string, long?>", generated);
+        Assert.Contains("using System.Collections.Generic;", generated);
+    }
+
+    [Fact]
     public void BuildType_MessageWrapper_Test()
     {
         var lambdaServiceSdkBuilder = new OpenApiSchemaCSharpTypeBuilder(BaseNameSpace);

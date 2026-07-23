@@ -113,7 +113,11 @@ namespace Benzene.CodeGen.Client.MessageHandlers
             var output = new List<string>();
             output.Add("System");
 
-            if (type.GetProperties().Any(x => x.PropertyType.Name == "Dictionary`2"))
+            // GetTypeName emits Name<T> for any generic property type (List<T>, IEnumerable<T>,
+            // HashSet<T>, Dictionary<,> ...), all of which live in System.Collections.Generic - so the
+            // using must cover every such property, not only Dictionary`2 (a List<Foo> property
+            // otherwise generates with only `using System;` and won't compile).
+            if (type.GetProperties().Any(x => x.PropertyType.IsGenericType && x.PropertyType.Namespace == "System.Collections.Generic"))
             {
                 output.Add("System.Collections.Generic");
             }

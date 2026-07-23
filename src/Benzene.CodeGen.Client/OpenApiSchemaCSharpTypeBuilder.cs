@@ -106,7 +106,11 @@ public class OpenApiSchemaCSharpTypeBuilder : ICodeBuilder<IDictionary<string, O
         output.Add("System");
         output.Add("System.Diagnostics.CodeAnalysis");
 
-        if (schema.Properties.Any(x => x.Value.AdditionalProperties != null && x.Value.AdditionalProperties.Type == "string"))
+        // Any map property emits Dictionary<string, T> (see CSharpTypeName.GetName) regardless of the
+        // value type - string, int64, or a $ref - so the using must be added for every non-null
+        // additionalProperties, not only the string case (a Dictionary<string, long>/<string, Thing>
+        // otherwise generates with no `using System.Collections.Generic;` and won't compile).
+        if (schema.Properties.Any(x => x.Value.Type == "object" && x.Value.AdditionalProperties != null))
         {
             output.Add("System.Collections.Generic");
         }
