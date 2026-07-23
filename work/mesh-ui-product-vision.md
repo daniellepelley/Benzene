@@ -9,12 +9,12 @@
 
 > **2026-07-23 usage "By status" now itemizes failures (mesh-product-owner).**
 > Following the reconcile-the-totals fix, the owner asked for the *failure* breakdown to show the real
-> cause, not a single `failure` chip: "a load of `NotFound` might be fine; a load of `Unauthorized`
+> cause, not a single `failure` chip: "a load of `not-found` might be fine; a load of `unauthorized`
 > points to a wider problem." Delivered by the data-layer `result`-tag change (see
 > `work/service-mesh-roadmap-1.0.md`, same date): successes stay one `success` bucket, failures carry
 > their real status. **No UI change was needed** — `buildUsagePanel` already groups by `status` and
 > renders each value as a chip, and the just-shipped `(no outcome recorded)` bucket still folds
-> `<missing>`, so "By status" now reads e.g. `success 29 · NotFound 40 · Unauthorized 2 · (no outcome
+> `<missing>`, so "By status" now reads e.g. `success 29 · not-found 40 · unauthorized 2 · (no outcome
 > recorded) 20` and reconciles with "By transport". Optional future polish (not done): tint failure
 > chips distinctly from `success`.
 > **2026-07-23 Fleet view: "Trace a transaction" — correlation-id lookup (mesh-product-owner).**

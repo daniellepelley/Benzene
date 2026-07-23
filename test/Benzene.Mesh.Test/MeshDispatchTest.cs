@@ -72,12 +72,12 @@ public class MeshDispatchMessageHandlerTest
     [Fact]
     public async Task BlockedInProduction_ReturnsForbidden_AndNeverDispatches()
     {
-        var dispatcher = new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("Ok", "{}"));
+        var dispatcher = new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("ok", "{}"));
         var handler = Handler(isProduction: true, HttpRegistry(), dispatcher);
 
         var result = await handler.HandleAsync(new MeshDispatchRequest { Service = "orders", Topic = "order:create", Body = "{}" });
 
-        Assert.Equal("Forbidden", result.Status);
+        Assert.Equal("forbidden", result.Status);
         Assert.False(result.IsSuccessful);
         Assert.Null(dispatcher.Entry); // the real handler was never invoked
     }
@@ -86,11 +86,11 @@ public class MeshDispatchMessageHandlerTest
     public async Task UnknownService_ReturnsNotFound()
     {
         var handler = Handler(false, new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()),
-            new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("Ok", "{}")));
+            new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("ok", "{}")));
 
         var result = await handler.HandleAsync(new MeshDispatchRequest { Service = "ghost", Topic = "x" });
 
-        Assert.Equal("NotFound", result.Status);
+        Assert.Equal("not-found", result.Status);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class MeshDispatchMessageHandlerTest
 
         var result = await handler.HandleAsync(new MeshDispatchRequest { Service = "orders" });
 
-        Assert.Equal("BadRequest", result.Status);
+        Assert.Equal("bad-request", result.Status);
     }
 
     [Fact]
@@ -112,17 +112,17 @@ public class MeshDispatchMessageHandlerTest
                 new Dictionary<string, string> { ["functionName"] = "fn" }),
         });
         // Only an HTTP dispatcher is registered - nothing handles AwsLambdaInvoke.
-        var handler = Handler(false, registry, new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("Ok", "{}")));
+        var handler = Handler(false, registry, new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("ok", "{}")));
 
         var result = await handler.HandleAsync(new MeshDispatchRequest { Service = "orders", Topic = "x" });
 
-        Assert.Equal("NotImplemented", result.Status);
+        Assert.Equal("not-implemented", result.Status);
     }
 
     [Fact]
     public async Task HappyPath_DispatchesViaMatchingTransport_AndReturnsTheServiceResponse()
     {
-        var dispatcher = new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("Created", "{\"id\":1}"));
+        var dispatcher = new RecordingDispatcher(MeshServiceSource.Http, new MeshDispatchResult("created", "{\"id\":1}"));
         var handler = Handler(false, HttpRegistry(), dispatcher);
 
         var result = await handler.HandleAsync(new MeshDispatchRequest
@@ -133,13 +133,13 @@ public class MeshDispatchMessageHandlerTest
             Body = "{\"a\":1}",
         });
 
-        Assert.Equal("Ok", result.Status);
+        Assert.Equal("ok", result.Status);
         Assert.True(result.IsSuccessful);
         Assert.Equal("orders", dispatcher.Entry!.Name);
         Assert.Equal("order:create", dispatcher.Envelope!.Topic);
         Assert.Equal("{\"a\":1}", dispatcher.Envelope!.Body);
         // The service's response envelope is serialized into the payload.
-        Assert.Contains("Created", result.Payload.Content);
+        Assert.Contains("created", result.Payload.Content);
         Assert.Contains("id", result.Payload.Content);
     }
 }
@@ -152,7 +152,7 @@ public class AwsLambdaMeshServiceDispatcherTest
         var client = new Mock<IAwsLambdaClient>();
         client.Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
                 It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
-            .ReturnsAsync(new BenzeneMessageClientResponse("Created", "{\"ok\":true}", new Dictionary<string, string>()));
+            .ReturnsAsync(new BenzeneMessageClientResponse("created", "{\"ok\":true}", new Dictionary<string, string>()));
 
         var dispatcher = new AwsLambdaMeshServiceDispatcher(client.Object);
         var entry = new MeshServiceRegistryEntry("orders", "", "", MeshServiceSource.AwsLambdaInvoke,
@@ -161,7 +161,7 @@ public class AwsLambdaMeshServiceDispatcherTest
         var result = await dispatcher.DispatchAsync(entry,
             new MeshDispatchEnvelope("order:create", new Dictionary<string, string>(), "{\"a\":1}"), CancellationToken.None);
 
-        Assert.Equal("Created", result.StatusCode);
+        Assert.Equal("created", result.StatusCode);
         Assert.Equal("{\"ok\":true}", result.Body);
         client.Verify(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
             It.Is<BenzeneMessageClientRequest>(r => r.Topic == "order:create" && r.Body == "{\"a\":1}"),

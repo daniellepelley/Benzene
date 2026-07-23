@@ -11,7 +11,7 @@ namespace Benzene.Mesh.Test;
 public class MeshCollectorStoreTest
 {
     private static MeshTraceEvent Event(string traceId, string spanId, string service, string topic,
-        DateTimeOffset startedAt, string status = "Ok")
+        DateTimeOffset startedAt, string status = "ok")
     {
         return new MeshTraceEvent
         {
@@ -105,7 +105,7 @@ public class MeshCollectorStoreTest
     // ---- correlation lookup (mesh:query:correlation, mesh-product-owner ruling 2026-07-23) ----
 
     private static MeshTraceEvent CorrEvent(string traceId, string spanId, string service, string topic,
-        DateTimeOffset startedAt, string? correlationId, string status = "Ok")
+        DateTimeOffset startedAt, string? correlationId, string status = "ok")
     {
         var evt = Event(traceId, spanId, service, topic, startedAt, status);
         evt.CorrelationId = correlationId;
@@ -124,7 +124,7 @@ public class MeshCollectorStoreTest
             CorrEvent("trace-b", "b2", "shipping", "book", now.AddSeconds(10).AddMilliseconds(5), "corr-1"),
             CorrEvent("trace-b", "b1", "orders", "ship", now.AddSeconds(10), "corr-1"),
             CorrEvent("trace-a", "a1", "orders", "create", now, "corr-1"),
-            CorrEvent("trace-a", "a2", "payments", "capture", now.AddMilliseconds(5), "corr-1", status: "ServiceUnavailable"),
+            CorrEvent("trace-a", "a2", "payments", "capture", now.AddMilliseconds(5), "corr-1", status: "service-unavailable"),
             CorrEvent("trace-c", "c1", "orders", "create", now.AddSeconds(20), "other"),
         });
 
@@ -141,7 +141,7 @@ public class MeshCollectorStoreTest
         Assert.Equal(new[] { "b1", "b2" }, view.Traces[1].Events.Select(e => e.SpanId).ToArray());
         // The per-leg service/topic/status the owner wants to read survives intact.
         Assert.Equal("payments", view.Traces[0].Events[1].Service);
-        Assert.Equal("ServiceUnavailable", view.Traces[0].Events[1].Status);
+        Assert.Equal("service-unavailable", view.Traces[0].Events[1].Status);
     }
 
     [Fact]
@@ -166,10 +166,10 @@ public class MeshCollectorStoreTest
         store.AddEvents(new[] { CorrEvent("trace-1", "s1", "orders", "create", DateTimeOffset.UtcNow, "corr-1") });
         var handler = new CorrelationQueryMessageHandler(store);
 
-        Assert.Equal("BadRequest", (await handler.HandleAsync(new CorrelationQuery { CorrelationId = "" })).Status);
-        Assert.Equal("NotFound", (await handler.HandleAsync(new CorrelationQuery { CorrelationId = "nope" })).Status);
+        Assert.Equal("bad-request", (await handler.HandleAsync(new CorrelationQuery { CorrelationId = "" })).Status);
+        Assert.Equal("not-found", (await handler.HandleAsync(new CorrelationQuery { CorrelationId = "nope" })).Status);
         var ok = await handler.HandleAsync(new CorrelationQuery { CorrelationId = "corr-1" });
-        Assert.Equal("Ok", ok.Status);
+        Assert.Equal("ok", ok.Status);
         Assert.Equal("corr-1", ok.Payload.CorrelationId);
         Assert.Single(ok.Payload.Traces);
     }

@@ -24,7 +24,7 @@ public class LambdaMeshServiceSourceTest
         client
             .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
                 It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
-            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{\"info\":{\"title\":\"orders-api\"}}"));
+            .ReturnsAsync(new BenzeneMessageClientResponse("ok", "{\"info\":{\"title\":\"orders-api\"}}"));
         var source = new LambdaMeshServiceSource(client.Object);
 
         var result = await source.FetchSpecAsync(Entry(), CancellationToken.None);
@@ -44,7 +44,7 @@ public class LambdaMeshServiceSourceTest
             .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
                 It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
             .Callback<BenzeneMessageClientRequest, string, InvocationType>((request, _, _) => sent = request)
-            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{}"));
+            .ReturnsAsync(new BenzeneMessageClientResponse("ok", "{}"));
         var source = new LambdaMeshServiceSource(client.Object);
 
         using var activitySource = new ActivitySource("mesh-test-source");
@@ -75,7 +75,7 @@ public class LambdaMeshServiceSourceTest
             .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
                 It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
             .Callback<BenzeneMessageClientRequest, string, InvocationType>((request, _, _) => sent = request)
-            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{\"asyncapi\":\"2.0.0\"}"));
+            .ReturnsAsync(new BenzeneMessageClientResponse("ok", "{\"asyncapi\":\"2.0.0\"}"));
         var source = new LambdaMeshServiceSource(client.Object);
 
         var result = await source.TryFetchSpecAsync(Entry(), "asyncapi", CancellationToken.None);
@@ -99,7 +99,7 @@ public class LambdaMeshServiceSourceTest
             .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
                 It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
             .Callback<BenzeneMessageClientRequest, string, InvocationType>((request, _, _) => sentTopic = request.Topic)
-            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{}"));
+            .ReturnsAsync(new BenzeneMessageClientResponse("ok", "{}"));
         var source = new LambdaMeshServiceSource(client.Object);
 
         await source.FetchSpecAsync(Entry(), CancellationToken.None);
@@ -116,7 +116,7 @@ public class LambdaMeshServiceSourceTest
             .Setup(x => x.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(
                 It.IsAny<BenzeneMessageClientRequest>(), "orders-fn", InvocationType.RequestResponse))
             .Callback<BenzeneMessageClientRequest, string, InvocationType>((request, _, _) => sentTopic = request.Topic)
-            .ReturnsAsync(new BenzeneMessageClientResponse("Ok", "{}"));
+            .ReturnsAsync(new BenzeneMessageClientResponse("ok", "{}"));
         var source = new LambdaMeshServiceSource(client.Object);
 
         await source.FetchHealthAsync(Entry(), CancellationToken.None);

@@ -76,12 +76,12 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
     {
         if (_benzeneResponseAdapter != null)
         {
-            _benzeneResponseAdapter.SetStatusCode(contextIn, "Ok");
+            _benzeneResponseAdapter.SetStatusCode(contextIn, BenzeneResultStatus.Ok);
             return Task.CompletedTask;
         }
 
         return _messageHandlerResultSetter.SetResultAsync(contextIn,
             new MessageHandlerResult(new Topic(contextOut.Topic),
-                MessageHandlerDefinition.Empty(), BenzeneResult.Set("Ok")));
+                MessageHandlerDefinition.Empty(), BenzeneResult.Set(BenzeneResultStatus.Ok)));
     }
 }

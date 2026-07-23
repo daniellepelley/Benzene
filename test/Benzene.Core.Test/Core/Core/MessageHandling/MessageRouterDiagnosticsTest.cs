@@ -44,8 +44,8 @@ public class MessageRouterDiagnosticsTest
         // Default IMessageHandlerFactory mock returns null from Create(...) - exactly the "definition
         // found but instance implements neither handler interface" case B1 targets.
         var defaultStatuses = new Mock<IDefaultStatuses>();
-        defaultStatuses.SetupGet(x => x.NotFound).Returns("NotFound");
-        defaultStatuses.SetupGet(x => x.ValidationError).Returns("ValidationError");
+        defaultStatuses.SetupGet(x => x.NotFound).Returns("not-found");
+        defaultStatuses.SetupGet(x => x.ValidationError).Returns("validation-error");
 
         IMessageHandlerResult? captured = null;
         var resultSetter = new Mock<IMessageHandlerResultSetter<TestContext>>();
@@ -75,7 +75,7 @@ public class MessageRouterDiagnosticsTest
 
         var result = captured();
         Assert.NotNull(result);
-        Assert.Equal("ValidationError", result!.BenzeneResult.Status);
+        Assert.Equal("validation-error", result!.BenzeneResult.Status);
         // The message must point the developer at how to supply a topic, not just say it's missing.
         Assert.Contains("UsePresetTopic", string.Join(" ", result.BenzeneResult.Errors));
     }
@@ -97,7 +97,7 @@ public class MessageRouterDiagnosticsTest
         Assert.NotNull(result);
         // Not a routing miss (NotFound) - a wiring/signature bug, reported as UnexpectedError and
         // naming the handler type + expected interface so the developer fixes the right thing.
-        Assert.Equal("UnexpectedError", result!.BenzeneResult.Status);
+        Assert.Equal("unexpected-error", result!.BenzeneResult.Status);
         var message = string.Join(" ", result.BenzeneResult.Errors);
         Assert.Contains(nameof(MisdeclaredHandler), message);
         Assert.Contains("does not implement", message);

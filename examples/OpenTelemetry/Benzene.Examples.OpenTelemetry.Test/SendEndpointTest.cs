@@ -47,7 +47,7 @@ public class SendEndpointTest : IClassFixture<WebApplicationFactory<GreetingRequ
 
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SendResult>();
-        Assert.Equal("Ok", result!.StatusCode);
+        Assert.Equal("ok", result!.StatusCode);
         Assert.Contains("Hello, acme!", result.Body);
     }
 
@@ -61,7 +61,7 @@ public class SendEndpointTest : IClassFixture<WebApplicationFactory<GreetingRequ
 
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SendResult>();
-        Assert.Equal("Created", result!.StatusCode);
+        Assert.Equal("created", result!.StatusCode);
         Assert.Contains("prod-1", result.Body);
     }
 
@@ -77,8 +77,8 @@ public class SendEndpointTest : IClassFixture<WebApplicationFactory<GreetingRequ
         // handler throwing (a thrown handler maps to the transport's generic-error status).
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SendResult>();
-        Assert.NotEqual("Ok", result!.StatusCode);
-        Assert.NotEqual("Created", result.StatusCode);
+        Assert.NotEqual("ok", result!.StatusCode);
+        Assert.NotEqual("created", result.StatusCode);
     }
 
     private record TopicRow(string Topic, string Version, string Handler, string RequestType);

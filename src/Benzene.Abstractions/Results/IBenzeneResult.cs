@@ -7,7 +7,7 @@
 public interface IBenzeneResult
 {
     /// <summary>
-    /// Gets the status code or status identifier for the result (e.g., "200", "404", "Success", "NotFound").
+    /// Gets the status code or status identifier for the result (e.g., "200", "404", "success", "not-found").
     /// </summary>
     string Status { get; }
 

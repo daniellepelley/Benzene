@@ -5,7 +5,7 @@
       "name": "greet-ok",
       "request": { "topic": "conformance:greet", "headers": {}, "body": "{\"name\":\"world\"}" },
       "expected": {
-        "statusCode": "Ok",
+        "statusCode": "ok",
         "body": { "greeting": "Hello world" },
         "headers": { "content-type": "application/json" }
       }
@@ -14,113 +14,113 @@
       "name": "unknown-topic-returns-not-found",
       "request": { "topic": "conformance:no-such-topic", "headers": {}, "body": "{}" },
       "expected": {
-        "statusCode": "NotFound",
-        "body": { "status": "NotFound" }
+        "statusCode": "not-found",
+        "body": { "status": "not-found" }
       }
     },
     {
       "name": "empty-topic-returns-validation-error",
       "request": { "topic": "", "headers": {}, "body": "{}" },
       "expected": {
-        "statusCode": "ValidationError",
-        "body": { "status": "ValidationError" }
+        "statusCode": "validation-error",
+        "body": { "status": "validation-error" }
       }
     },
     {
       "name": "status-created",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Created\"}" },
-      "expected": { "statusCode": "Created", "body": { "applied": "Created" } }
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"created\"}" },
+      "expected": { "statusCode": "created", "body": { "applied": "created" } }
     },
     {
       "name": "status-accepted",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Accepted\"}" },
-      "expected": { "statusCode": "Accepted", "body": { "applied": "Accepted" } }
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"accepted\"}" },
+      "expected": { "statusCode": "accepted", "body": { "applied": "accepted" } }
     },
     {
       "name": "status-updated",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Updated\"}" },
-      "expected": { "statusCode": "Updated", "body": { "applied": "Updated" } }
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"updated\"}" },
+      "expected": { "statusCode": "updated", "body": { "applied": "updated" } }
     },
     {
       "name": "status-deleted",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Deleted\"}" },
-      "expected": { "statusCode": "Deleted", "body": { "applied": "Deleted" } }
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"deleted\"}" },
+      "expected": { "statusCode": "deleted", "body": { "applied": "deleted" } }
     },
     {
       "name": "status-ignored",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Ignored\"}" },
-      "expected": { "statusCode": "Ignored", "body": { "applied": "Ignored" } }
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ignored\"}" },
+      "expected": { "statusCode": "ignored", "body": { "applied": "ignored" } }
     },
     {
       "name": "status-bad-request",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"BadRequest\",\"errors\":[\"first error\",\"second error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"bad-request\",\"errors\":[\"first error\",\"second error\"]}" },
       "expected": {
-        "statusCode": "BadRequest",
-        "body": { "status": "BadRequest", "detail": "first error, second error" }
+        "statusCode": "bad-request",
+        "body": { "status": "bad-request", "detail": "first error, second error" }
       }
     },
     {
       "name": "status-validation-error",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ValidationError\",\"errors\":[\"first error\",\"second error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"validation-error\",\"errors\":[\"first error\",\"second error\"]}" },
       "expected": {
-        "statusCode": "ValidationError",
-        "body": { "status": "ValidationError", "detail": "first error, second error" }
+        "statusCode": "validation-error",
+        "body": { "status": "validation-error", "detail": "first error, second error" }
       }
     },
     {
       "name": "status-unauthorized",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Unauthorized\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"unauthorized\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "Unauthorized",
-        "body": { "status": "Unauthorized", "detail": "first error" }
+        "statusCode": "unauthorized",
+        "body": { "status": "unauthorized", "detail": "first error" }
       }
     },
     {
       "name": "status-forbidden",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Forbidden\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"forbidden\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "Forbidden",
-        "body": { "status": "Forbidden", "detail": "first error" }
+        "statusCode": "forbidden",
+        "body": { "status": "forbidden", "detail": "first error" }
       }
     },
     {
       "name": "status-not-found",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"NotFound\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"not-found\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "NotFound",
-        "body": { "status": "NotFound", "detail": "first error" }
+        "statusCode": "not-found",
+        "body": { "status": "not-found", "detail": "first error" }
       }
     },
     {
       "name": "status-conflict",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"Conflict\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"conflict\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "Conflict",
-        "body": { "status": "Conflict", "detail": "first error" }
+        "statusCode": "conflict",
+        "body": { "status": "conflict", "detail": "first error" }
       }
     },
     {
       "name": "status-not-implemented",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"NotImplemented\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"not-implemented\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "NotImplemented",
-        "body": { "status": "NotImplemented", "detail": "first error" }
+        "statusCode": "not-implemented",
+        "body": { "status": "not-implemented", "detail": "first error" }
       }
     },
     {
       "name": "status-service-unavailable",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ServiceUnavailable\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"service-unavailable\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "ServiceUnavailable",
-        "body": { "status": "ServiceUnavailable", "detail": "first error" }
+        "statusCode": "service-unavailable",
+        "body": { "status": "service-unavailable", "detail": "first error" }
       }
     },
     {
       "name": "status-unexpected-error",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"UnexpectedError\",\"errors\":[\"first error\"]}" },
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"unexpected-error\",\"errors\":[\"first error\"]}" },
       "expected": {
-        "statusCode": "UnexpectedError",
-        "body": { "status": "UnexpectedError", "detail": "first error" }
+        "statusCode": "unexpected-error",
+        "body": { "status": "unexpected-error", "detail": "first error" }
       }
     }
   ]

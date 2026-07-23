@@ -128,7 +128,7 @@ public class BenzeneMetricsTest
         await pipeline.HandleAsync(new FakeMessageContext { MessageResult = BenzeneResult.NotFound<Void>("nope") }, resolver);
 
         var count = Assert.Single(longMeasurements, m => m.Name == "benzene.messages.processed");
-        Assert.Contains(count.Tags, t => t.Key == "result" && (string)t.Value == "NotFound");
+        Assert.Contains(count.Tags, t => t.Key == "result" && (string)t.Value == "not-found");
     }
 
     [Fact]

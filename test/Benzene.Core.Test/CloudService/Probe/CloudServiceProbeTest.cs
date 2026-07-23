@@ -220,7 +220,7 @@ public class CloudServiceProbeTest
     private static string Envelope(string body)
     {
         var escaped = JsonSerializer.Serialize(body);
-        return $"{{\"statusCode\":\"Ok\",\"headers\":{{}},\"body\":{escaped}}}";
+        return $"{{\"statusCode\":\"ok\",\"headers\":{{}},\"body\":{escaped}}}";
     }
 
     private static async Task WriteJsonAsync(HttpListenerContext context, int statusCode, string json)

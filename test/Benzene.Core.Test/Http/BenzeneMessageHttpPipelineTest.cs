@@ -48,7 +48,7 @@ public class BenzeneMessageHttpPipelineTest
 
         Assert.NotNull(response);
         Assert.Equal(200, response.StatusCode);
-        Assert.Contains("\"statusCode\":\"Ok\"", response.Body);
+        Assert.Contains("\"statusCode\":\"ok\"", response.Body);
     }
 
     [Fact]

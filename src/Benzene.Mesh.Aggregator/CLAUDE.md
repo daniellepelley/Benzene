@@ -101,9 +101,9 @@ lower bound. `AttributeTopicToEdge`/`AttributeEdge` implement it:
   in a "req/min" cell). A topic reported by **more than one `Source`** is left unattributed (cross-source
   double-count guard). No bounded window (`WindowStart`/`End` null) → null (no divisor).
 - `ErrorRate` is **wire-vocabulary-aware** (2026-07-23): an entry counts as success when its status is
-  the synthesized `success` token or a `BenzeneResultStatus` success-class value (`Ok`/`Created`/…),
+  the synthesized `success` token or a `BenzeneResultStatus` success-class value (`ok`/`created`/…),
   and as failure when it's the synthesized `failure`/`exception` token or a failure-class value
-  (`NotFound`/`Unauthorized`/…) — see `IsSuccessStatus`/`IsFailureStatus`. Only `<missing>`/null/an
+  (`not-found`/`unauthorized`/…) — see `IsSuccessStatus`/`IsFailureStatus`. Only `<missing>`/null/an
   unknown application-defined status is **unclassifiable**, blanking error rate while req/min still
   shows. This means a collector-fed edge (raw wire statuses) now gets an honest error rate too — a
   strict improvement over the old two-token rule, which left it always blank. The metric feed now

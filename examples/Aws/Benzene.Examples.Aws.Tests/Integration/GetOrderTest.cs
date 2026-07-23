@@ -110,7 +110,7 @@ public class GetOrderTest : InMemoryOrdersTestBase
 
         var order = new XmlSerializer().Deserialize<ErrorPayload>(response.Body);
 
-        Assert.Equal("ValidationError", order.Status);
+        Assert.Equal("validation-error", order.Status);
 
         Assert.Equal(422, response.StatusCode);
         Assert.NotNull(response.Body);

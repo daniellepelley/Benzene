@@ -6,12 +6,12 @@
       "steps": [
         {
           "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}" },
-          "expected": { "statusCode": "Ok", "body": { "accepted": 1 } }
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
         {
           "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
           "expected": {
-            "statusCode": "Ok",
+            "statusCode": "ok",
             "body": {
               "services": [
                 { "service": "orders", "topics": 1, "health": "unknown", "missingFeeds": ["health", "traces"] }
@@ -29,15 +29,15 @@
       "steps": [
         {
           "request": { "topic": "mesh:register", "headers": {}, "body": "{\"topics\":[]}" },
-          "expected": { "statusCode": "BadRequest" }
+          "expected": { "statusCode": "bad-request" }
         },
         {
           "request": { "topic": "mesh:heartbeat", "headers": {}, "body": "{\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}" },
-          "expected": { "statusCode": "BadRequest" }
+          "expected": { "statusCode": "bad-request" }
         },
         {
           "request": { "topic": "mesh:traces", "headers": {}, "body": "{\"events\":[]}" },
-          "expected": { "statusCode": "Ok", "body": { "accepted": 0 } }
+          "expected": { "statusCode": "ok", "body": { "accepted": 0 } }
         }
       ]
     },
@@ -46,27 +46,27 @@
       "steps": [
         {
           "request": { "topic": "mesh:query:service", "headers": {}, "body": "{}" },
-          "expected": { "statusCode": "BadRequest" }
+          "expected": { "statusCode": "bad-request" }
         },
         {
           "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{}" },
-          "expected": { "statusCode": "BadRequest" }
+          "expected": { "statusCode": "bad-request" }
         },
         {
           "request": { "topic": "mesh:query:trace", "headers": {}, "body": "{}" },
-          "expected": { "statusCode": "BadRequest" }
+          "expected": { "statusCode": "bad-request" }
         },
         {
           "request": { "topic": "mesh:query:service", "headers": {}, "body": "{\"service\":\"ghost\"}" },
-          "expected": { "statusCode": "NotFound" }
+          "expected": { "statusCode": "not-found" }
         },
         {
           "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{\"topic\":\"no:such\"}" },
-          "expected": { "statusCode": "NotFound" }
+          "expected": { "statusCode": "not-found" }
         },
         {
           "request": { "topic": "mesh:query:trace", "headers": {}, "body": "{\"traceId\":\"feed0000feed0000\"}" },
-          "expected": { "statusCode": "NotFound" }
+          "expected": { "statusCode": "not-found" }
         }
       ]
     },
@@ -75,24 +75,24 @@
       "steps": [
         {
           "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"descriptorHash\":\"sha256:aaaa\",\"topics\":[{\"id\":\"order:create\"}]}" },
-          "expected": { "statusCode": "Ok" }
+          "expected": { "statusCode": "ok" }
         },
         {
           "request": { "topic": "mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-1\",\"descriptorHash\":\"sha256:aaaa\",\"sentAt\":\"2026-07-16T09:00:00Z\",\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}" },
-          "expected": { "statusCode": "Ok" }
+          "expected": { "statusCode": "ok" }
         },
         {
           "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
-          "expected": { "statusCode": "Ok", "body": { "services": [ { "service": "orders", "health": "healthy", "instances": 1 } ] } }
+          "expected": { "statusCode": "ok", "body": { "services": [ { "service": "orders", "health": "healthy", "instances": 1 } ] } }
         },
         {
           "request": { "topic": "mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-2\",\"descriptorHash\":\"sha256:bbbb\",\"sentAt\":\"2026-07-16T09:00:05Z\",\"health\":{\"isHealthy\":false,\"healthChecks\":{}}}" },
-          "expected": { "statusCode": "Ok" }
+          "expected": { "statusCode": "ok" }
         },
         {
           "request": { "topic": "mesh:query:service", "headers": {}, "body": "{\"service\":\"orders\"}" },
           "expected": {
-            "statusCode": "Ok",
+            "statusCode": "ok",
             "body": {
               "service": "orders",
               "health": "degraded",
@@ -110,37 +110,37 @@
       "steps": [
         {
           "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"greeter\",\"topics\":[{\"id\":\"greet\"}]}" },
-          "expected": { "statusCode": "Ok" }
+          "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "mesh:traces", "headers": {}, "body": "{\"events\":[{\"traceId\":\"trace0000000000000000000000000001\",\"spanId\":\"span00000000000f\",\"service\":\"frontdoor\",\"topic\":\"welcome\",\"status\":\"Ok\",\"durationMs\":20,\"startedAt\":\"2026-07-16T09:00:00Z\"},{\"traceId\":\"trace0000000000000000000000000001\",\"spanId\":\"span00000000001f\",\"parentSpanId\":\"span00000000000f\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"Ok\",\"durationMs\":10,\"startedAt\":\"2026-07-16T09:00:00.005Z\"},{\"traceId\":\"trace0000000000000000000000000002\",\"spanId\":\"span00000000002f\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"ServiceUnavailable\",\"durationMs\":30,\"startedAt\":\"2026-07-16T09:00:01Z\"}]}" },
-          "expected": { "statusCode": "Ok", "body": { "accepted": 3 } }
+          "request": { "topic": "mesh:traces", "headers": {}, "body": "{\"events\":[{\"traceId\":\"trace0000000000000000000000000001\",\"spanId\":\"span00000000000f\",\"service\":\"frontdoor\",\"topic\":\"welcome\",\"status\":\"ok\",\"durationMs\":20,\"startedAt\":\"2026-07-16T09:00:00Z\"},{\"traceId\":\"trace0000000000000000000000000001\",\"spanId\":\"span00000000001f\",\"parentSpanId\":\"span00000000000f\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"ok\",\"durationMs\":10,\"startedAt\":\"2026-07-16T09:00:00.005Z\"},{\"traceId\":\"trace0000000000000000000000000002\",\"spanId\":\"span00000000002f\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"service-unavailable\",\"durationMs\":30,\"startedAt\":\"2026-07-16T09:00:01Z\"}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 3 } }
         },
         {
           "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{\"topic\":\"greet\"}" },
           "expected": {
-            "statusCode": "Ok",
+            "statusCode": "ok",
             "body": {
               "topic": "greet",
               "providers": ["greeter"],
               "consumers": ["frontdoor"],
               "invocations": 2,
               "errors": 1,
-              "statusCounts": { "Ok": 1, "ServiceUnavailable": 1 }
+              "statusCounts": { "ok": 1, "service-unavailable": 1 }
             }
           }
         },
         {
           "request": { "topic": "mesh:query:service", "headers": {}, "body": "{\"service\":\"frontdoor\"}" },
           "expected": {
-            "statusCode": "Ok",
+            "statusCode": "ok",
             "body": { "service": "frontdoor", "invocations": 1, "missingFeeds": ["descriptor", "health"] }
           }
         },
         {
           "request": { "topic": "mesh:query:trace", "headers": {}, "body": "{\"traceId\":\"trace0000000000000000000000000001\"}" },
           "expected": {
-            "statusCode": "Ok",
+            "statusCode": "ok",
             "body": {
               "traceId": "trace0000000000000000000000000001",
               "events": [
@@ -157,15 +157,15 @@
       "steps": [
         {
           "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}" },
-          "expected": { "statusCode": "Ok" }
+          "expected": { "statusCode": "ok" }
         },
         {
           "request": { "topic": "mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:cancel\"}]}" },
-          "expected": { "statusCode": "Ok" }
+          "expected": { "statusCode": "ok" }
         },
         {
           "request": { "topic": "mesh:query:topic", "headers": {}, "body": "{\"topic\":\"order:create\"}" },
-          "expected": { "statusCode": "Ok", "body": { "topic": "order:create", "providers": [] } }
+          "expected": { "statusCode": "ok", "body": { "topic": "order:create", "providers": [] } }
         }
       ]
     }

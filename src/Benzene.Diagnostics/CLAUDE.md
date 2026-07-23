@@ -47,11 +47,11 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
   `result` tag reads the completed context's `IHasMessageResult.MessageResult` and **collapses success
   but itemizes failure** (2026-07-23): `success` for any successful outcome (from `IsSuccessful`, the
   bool — so a successful result carrying a failure-class status, e.g. a health check's
-  `ServiceUnavailable`, is still `success`), the failure's **`Status` string verbatim**
-  (`NotFound`/`Unauthorized`/…) for an unsuccessful result, `exception` if the pipeline threw (distinct
-  from a returned `UnexpectedError`), and `<missing>` only when the context neither implements
-  `IHasMessageResult` nor had a result recorded. Rationale: nobody wants `Ok`-vs-`Created`, but a
-  failure mix that's mostly `NotFound` reads very differently from mostly `Unauthorized`. This is a
+  `service-unavailable`, is still `success`), the failure's **`Status` string verbatim**
+  (`not-found`/`unauthorized`/…) for an unsuccessful result, `exception` if the pipeline threw (distinct
+  from a returned `unexpected-error`), and `<missing>` only when the context neither implements
+  `IHasMessageResult` nor had a result recorded. Rationale: nobody wants `ok`-vs-`created`, but a
+  failure mix that's mostly `not-found` reads very differently from mostly `unauthorized`. This is a
   pre-1.0 breaking change to the tag's *value set* (`docs/mesh-usage-feed.md` §1) — instrument
   names/tag keys unchanged. Every shipped transport now
   records that signal — event-style setters (SQS/SNS/EventBridge/Service Bus) set `MessageResult`

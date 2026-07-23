@@ -429,7 +429,7 @@
   var traceCache = {};
   // The wire-contracts §3 success class - only these statuses count as success (everything
   // unknown is rendered as failure, matching the collector's own error counting).
-  var SUCCESS_STATUSES = { Ok: 1, Created: 1, Accepted: 1, Updated: 1, Deleted: 1, Ignored: 1 };
+  var SUCCESS_STATUSES = { "ok": 1, "created": 1, "accepted": 1, "updated": 1, "deleted": 1, "ignored": 1 };
 
   // Staleness knob: a few missed heartbeats on this live plane (heartbeat cadence is
   // deployment-specific; 90s catches a quiet service without flapping on a slow sender).
@@ -476,7 +476,7 @@
       if (!response.ok) throw new Error("HTTP " + response.status);
       return response.json();
     }).then(function (envelope) {
-      if (envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+      if (envelope.statusCode !== "ok") throw new Error(envelope.statusCode);
       return JSON.parse(envelope.body);
     });
     traceCache[traceId] = promise;
@@ -528,7 +528,7 @@
       return response.json();
     }).then(function (envelope) {
       results.textContent = "";
-      if (envelope.statusCode === "NotFound") {
+      if (envelope.statusCode === "not-found") {
         var none = document.createElement("div");
         none.className = "wf-note";
         none.textContent = "No flows found for correlation id “" + id + "” — it may have aged out of " +
@@ -536,7 +536,7 @@
         results.appendChild(none);
         return;
       }
-      if (envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+      if (envelope.statusCode !== "ok") throw new Error(envelope.statusCode);
       var view = JSON.parse(envelope.body);
       var traces = view.traces || [];
       var label = document.createElement("div");
@@ -671,7 +671,7 @@
       if (!response.ok) throw new Error("HTTP " + response.status);
       return response.json();
     }).then(function (envelope) {
-      if (envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+      if (envelope.statusCode !== "ok") throw new Error(envelope.statusCode);
       render(JSON.parse(envelope.body));
       document.getElementById("status").textContent = "";
     }).catch(function (err) {

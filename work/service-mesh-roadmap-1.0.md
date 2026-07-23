@@ -2,18 +2,18 @@
 
 **Status:** IN PROGRESS.
 > **2026-07-23 usage `result` tag: collapse success, itemize failure (mesh-product-owner ruling).**
-> Owner: "if success, call it `success`; if failure, record the root cause — a load of `NotFound`
-> might be fine, a load of `Unauthorized` points to a wider problem." `benzene.messages.processed`'s
+> Owner: "if success, call it `success`; if failure, record the root cause — a load of `not-found`
+> might be fine, a load of `unauthorized` points to a wider problem." `benzene.messages.processed`'s
 > `result` tag changes value set (keys/instrument names unchanged): any *successful* outcome →
 > `success` (decided by `IsSuccessful`, the bool — so a successful result carrying a failure-class
-> status like a health check's `ServiceUnavailable` is still `success`); an unsuccessful result → its
-> **`Status` verbatim** (`NotFound`/`Unauthorized`/…); a thrown pipeline → `exception` (distinct from a
+> status like a health check's `service-unavailable` is still `success`); an unsuccessful result → its
+> **`Status` verbatim** (`not-found`/`unauthorized`/…); a thrown pipeline → `exception` (distinct from a
 > returned `UnexpectedError`); no result → `<missing>`. Success cardinality stays 1; the failure
 > vocabulary is bounded (`BenzeneResultStatus`). **Coupled, mandatory** change: the topology edge
 > error-rate classifier (`MeshAggregator.AttributeTopicToEdge`) becomes wire-vocabulary-aware
 > (`IsSuccessStatus`/`IsFailureStatus` over `BenzeneResultStatus.IsSuccess`/`IsFailure`) or it would
 > silently drop error rate on every itemized-failure edge; a strict improvement, it also makes the
-> collector feed's raw wire statuses (`Ok`/`NotFound`) classify (previously always blank). The two
+> collector feed's raw wire statuses (`ok`/`not-found`) classify (previously always blank). The two
 > usage adapters need **no code change** (they pass `result` through). UI half in
 > `work/mesh-ui-product-vision.md`. Pre-1.0 breaking (value set); a rolling backend window may briefly
 > hold both old and new values — every consumer tolerates the overlap. Standard: `docs/mesh-usage-feed.md` §1.

@@ -81,7 +81,7 @@ public class AspNetPipelineTest
         var payload = new JsonSerializer().Deserialize<ErrorPayload>(response.Content);
 
         Assert.Equal(422, response.StatusCode);
-        Assert.Equal("ValidationError", payload.Status);
+        Assert.Equal("validation-error", payload.Status);
         Assert.NotEmpty(payload.Detail);
     }
 }

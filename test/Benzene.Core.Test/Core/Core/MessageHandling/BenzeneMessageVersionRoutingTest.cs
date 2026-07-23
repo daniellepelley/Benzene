@@ -39,8 +39,8 @@ public class BenzeneMessageVersionRoutingTest
             .Returns((IMessageHandlerDefinition?)null);
 
         var defaultStatuses = new Mock<IDefaultStatuses>();
-        defaultStatuses.SetupGet(x => x.NotFound).Returns("NotFound");
-        defaultStatuses.SetupGet(x => x.ValidationError).Returns("ValidationError");
+        defaultStatuses.SetupGet(x => x.NotFound).Returns("not-found");
+        defaultStatuses.SetupGet(x => x.ValidationError).Returns("validation-error");
 
         var router = new MessageRouter<BenzeneMessageContext>(
             Mock.Of<IMessageHandlerFactory>(),

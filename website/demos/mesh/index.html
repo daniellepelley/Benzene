@@ -2156,7 +2156,7 @@
       })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (envelope) {
-          if (envelope.statusCode !== "Created" && envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+          if (envelope.statusCode !== "created" && envelope.statusCode !== "ok") throw new Error(envelope.statusCode);
           var thread = JSON.parse(envelope.body);
           // Fold the authoritative thread into the local cache, so navigating away and back
           // keeps the new note without re-fetching the artifact (which may lag the write).

@@ -135,7 +135,7 @@ public class BenzeneMessageHttpMiddlewareTest
         responseAdapterMock.Verify(x => x.SetContentType(It.IsAny<FakeHttpContext>(), "application/json; charset=utf-8"), Times.Once);
         responseAdapterMock.Verify(x => x.FinalizeAsync(It.IsAny<FakeHttpContext>()), Times.Once);
         var body = Assert.Single(bodies);
-        Assert.Contains("\"statusCode\":\"Ok\"", body);
+        Assert.Contains("\"statusCode\":\"ok\"", body);
         Assert.Contains("echoTopic", body);
     }
 

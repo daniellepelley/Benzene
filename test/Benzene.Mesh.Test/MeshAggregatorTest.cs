@@ -610,8 +610,8 @@ public class MeshAggregatorTest : IDisposable
             ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
         }, UsageOverTenMinutes(
             new MeshUsageEntry("payments:capture", null, null, null, "success", 6, null, "cw"),
-            new MeshUsageEntry("payments:capture", null, null, null, "NotFound", 2, null, "cw"),
-            new MeshUsageEntry("payments:capture", null, null, null, "Unauthorized", 1, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "not-found", 2, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "unauthorized", 1, null, "cw"),
             new MeshUsageEntry("payments:capture", null, null, null, "exception", 1, null, "cw")));
 
         var edge = Edge(topology, "orders-api", "payments-api");
@@ -630,8 +630,8 @@ public class MeshAggregatorTest : IDisposable
             ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
             ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
         }, UsageOverTenMinutes(
-            new MeshUsageEntry("payments:capture", null, null, null, "Ok", 6, null, "collector"),
-            new MeshUsageEntry("payments:capture", null, null, null, "NotFound", 4, null, "collector")));
+            new MeshUsageEntry("payments:capture", null, null, null, "ok", 6, null, "collector"),
+            new MeshUsageEntry("payments:capture", null, null, null, "not-found", 4, null, "collector")));
 
         var edge = Edge(topology, "orders-api", "payments-api");
         Assert.Equal(0.4, edge.ErrorRate!.Value, 5); // 4 of 10 NotFound
@@ -1146,7 +1146,7 @@ public class MeshAggregatorTest : IDisposable
             .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
         var store = new FileSystemMeshArtifactStore(_rootDirectory);
         var report = new MeshUsage(at.AddMinutes(-1), at.AddDays(-1), at,
-            new[] { new MeshUsageEntry("orders:create", "v1", "orders-api", "Sqs", "Created", 42, 12.5, "stub") });
+            new[] { new MeshUsageEntry("orders:create", "v1", "orders-api", "Sqs", "created", 42, 12.5, "stub") });
         var aggregator = new MeshAggregator(
             new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, () => at,
             new IMeshUsageSource[] { new StubUsageSource(report) });
@@ -1172,9 +1172,9 @@ public class MeshAggregatorTest : IDisposable
             .MapGet(HealthUrl, HttpStatusCode.OK, SerializeHealth(true));
         var store = new FileSystemMeshArtifactStore(_rootDirectory);
         var narrow = new MeshUsage(at, at.AddHours(-1), at,
-            new[] { new MeshUsageEntry("orders:create", null, null, "AspNet", "Created", 10, null, "a") });
+            new[] { new MeshUsageEntry("orders:create", null, null, "AspNet", "created", 10, null, "a") });
         var wide = new MeshUsage(at, at.AddDays(-2), at.AddHours(-2),
-            new[] { new MeshUsageEntry("orders:create", null, null, null, "Ok", 5, null, "b") });
+            new[] { new MeshUsageEntry("orders:create", null, null, null, "ok", 5, null, "b") });
         var aggregator = new MeshAggregator(
             new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, () => at,
             new IMeshUsageSource[] { new StubUsageSource(narrow), new StubUsageSource(wide) });

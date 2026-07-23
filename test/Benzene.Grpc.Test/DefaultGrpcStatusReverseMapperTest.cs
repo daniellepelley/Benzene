@@ -43,9 +43,9 @@ public class DefaultGrpcStatusReverseMapperTest
     public void Map_WhenBenzeneStatusTrailerIsPresent_ItWinsOverTheStatusCodeMapping()
     {
         var mapper = new DefaultGrpcStatusReverseMapper();
-        var trailers = new Metadata { { "benzene-status", "Created" } };
+        var trailers = new Metadata { { "benzene-status", "created" } };
 
-        Assert.Equal("Created", mapper.Map(StatusCode.OK, trailers));
+        Assert.Equal("created", mapper.Map(StatusCode.OK, trailers));
     }
 
     [Fact]

@@ -80,7 +80,7 @@ public class PipelineFailureLoggingTest
         var collector = await RunAsync("faildiag:notfound", useLogResult: false);
 
         Assert.Contains(collector.Entries, e =>
-            e.Level == LogLevel.Warning && e.Message.Contains("NotFound"));
+            e.Level == LogLevel.Warning && e.Message.Contains("not-found"));
     }
 
     [Fact]

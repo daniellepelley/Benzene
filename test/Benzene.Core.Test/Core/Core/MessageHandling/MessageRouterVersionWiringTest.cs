@@ -40,8 +40,8 @@ public class MessageRouterVersionWiringTest
         lookUp.Setup(x => x.FindHandler(It.IsAny<ITopic>())).Returns((IMessageHandlerDefinition?)null);
 
         var defaultStatuses = new Mock<IDefaultStatuses>();
-        defaultStatuses.SetupGet(x => x.NotFound).Returns("NotFound");
-        defaultStatuses.SetupGet(x => x.ValidationError).Returns("ValidationError");
+        defaultStatuses.SetupGet(x => x.NotFound).Returns("not-found");
+        defaultStatuses.SetupGet(x => x.ValidationError).Returns("validation-error");
 
         var router = new MessageRouter<TestContext>(
             Mock.Of<IMessageHandlerFactory>(),
@@ -98,7 +98,7 @@ public class MessageRouterVersionWiringTest
         var versionGetter = new Mock<IMessageVersionGetter<TestContext>>();
 
         var defaultStatuses = new Mock<IDefaultStatuses>();
-        defaultStatuses.SetupGet(x => x.ValidationError).Returns("ValidationError");
+        defaultStatuses.SetupGet(x => x.ValidationError).Returns("validation-error");
 
         var router = new MessageRouter<TestContext>(
             Mock.Of<IMessageHandlerFactory>(),

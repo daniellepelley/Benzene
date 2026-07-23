@@ -87,11 +87,11 @@ public class ClientHealthCheckTest
     public async Task Unreachable_NullPayload_ReportsFailed()
     {
         var result = await CheckReturning(
-            BenzeneResult.Set<HealthCheckResponse>("ServiceUnavailable", false)).ExecuteAsync();
+            BenzeneResult.Set<HealthCheckResponse>("service-unavailable", false)).ExecuteAsync();
 
         Assert.Equal(HealthCheckStatus.Failed, result.Status);
         Assert.Equal(false, result.Data["reachable"]);
-        Assert.Equal("ServiceUnavailable", result.Data["status"]);
+        Assert.Equal("service-unavailable", result.Data["status"]);
     }
 
     [Fact]

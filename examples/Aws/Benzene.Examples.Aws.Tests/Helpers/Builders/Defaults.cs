@@ -20,7 +20,7 @@ public static class Defaults
 
     public static class ErrorStatus
     {
-        public const string NotFound = "NotFound";
-        public const string ValidationError = "ValidationError";
+        public const string NotFound = "not-found";
+        public const string ValidationError = "validation-error";
     }
 }

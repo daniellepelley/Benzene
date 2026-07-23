@@ -50,7 +50,7 @@ public class UseBenzeneCloudServiceTest
             HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope(Defaults.Topic)));
 
         Assert.Equal(200, response.StatusCode);
-        Assert.Contains("\"statusCode\":\"Ok\"", response.Body);
+        Assert.Contains("\"statusCode\":\"ok\"", response.Body);
     }
 
     [Fact]
@@ -197,7 +197,7 @@ public class UseBenzeneCloudServiceTest
                 {
                     return next();
                 }
-                context.BenzeneMessageResponse.StatusCode = "Ok";
+                context.BenzeneMessageResponse.StatusCode = "ok";
                 context.BenzeneMessageResponse.Body = "{\"intercepted\":true}";
                 return Task.CompletedTask;
             }))));

@@ -3,14 +3,14 @@
   "windowStartUtc": "2026-07-15T09:15:00Z",
   "windowEndUtc": "2026-07-16T09:15:00Z",
   "entries": [
-    { "topic": "orders:get-all", "version": null, "service": "orders-api", "transport": "AspNet", "status": "Ok", "count": 41230, "avgDurationMs": 14.2, "source": "cloudwatch" },
-    { "topic": "orders:get-all", "version": null, "service": "orders-api", "transport": "AspNet", "status": "ServiceUnavailable", "count": 310, "avgDurationMs": 2101.4, "source": "cloudwatch" },
-    { "topic": "orders:create", "version": null, "service": "orders-api", "transport": "AspNet", "status": "Created", "count": 8460, "avgDurationMs": 38.1, "source": "cloudwatch" },
-    { "topic": "orders:create", "version": null, "service": "orders-api", "transport": "Sqs", "status": "Created", "count": 2150, "avgDurationMs": 41.7, "source": "cloudwatch" },
-    { "topic": "orders:create", "version": null, "service": "orders-api", "transport": "Sqs", "status": "ValidationError", "count": 94, "avgDurationMs": 9.3, "source": "cloudwatch" },
-    { "topic": "payment:capture", "version": null, "service": "payments-api", "transport": "Sqs", "status": "Ok", "count": 10290, "avgDurationMs": 55.0, "source": "cloudwatch" },
-    { "topic": "payment:capture", "version": null, "service": "payments-api", "transport": "Sqs", "status": "ServiceUnavailable", "count": 412, "avgDurationMs": 1893.0, "source": "cloudwatch" },
-    { "topic": "shipping:book", "version": null, "service": null, "transport": null, "status": "Ok", "count": 5120, "avgDurationMs": null, "source": "collector" },
-    { "topic": "shipping:book", "version": null, "service": null, "transport": null, "status": "ValidationError", "count": 87, "avgDurationMs": null, "source": "collector" }
+    { "topic": "orders:get-all", "version": null, "service": "orders-api", "transport": "AspNet", "status": "ok", "count": 41230, "avgDurationMs": 14.2, "source": "cloudwatch" },
+    { "topic": "orders:get-all", "version": null, "service": "orders-api", "transport": "AspNet", "status": "service-unavailable", "count": 310, "avgDurationMs": 2101.4, "source": "cloudwatch" },
+    { "topic": "orders:create", "version": null, "service": "orders-api", "transport": "AspNet", "status": "created", "count": 8460, "avgDurationMs": 38.1, "source": "cloudwatch" },
+    { "topic": "orders:create", "version": null, "service": "orders-api", "transport": "Sqs", "status": "created", "count": 2150, "avgDurationMs": 41.7, "source": "cloudwatch" },
+    { "topic": "orders:create", "version": null, "service": "orders-api", "transport": "Sqs", "status": "validation-error", "count": 94, "avgDurationMs": 9.3, "source": "cloudwatch" },
+    { "topic": "payment:capture", "version": null, "service": "payments-api", "transport": "Sqs", "status": "ok", "count": 10290, "avgDurationMs": 55.0, "source": "cloudwatch" },
+    { "topic": "payment:capture", "version": null, "service": "payments-api", "transport": "Sqs", "status": "service-unavailable", "count": 412, "avgDurationMs": 1893.0, "source": "cloudwatch" },
+    { "topic": "shipping:book", "version": null, "service": null, "transport": null, "status": "ok", "count": 5120, "avgDurationMs": null, "source": "collector" },
+    { "topic": "shipping:book", "version": null, "service": null, "transport": null, "status": "validation-error", "count": 87, "avgDurationMs": null, "source": "collector" }
   ]
 }

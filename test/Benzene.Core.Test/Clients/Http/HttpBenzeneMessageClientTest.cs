@@ -27,7 +27,7 @@ public class HttpBenzeneMessageClientTest
     [Fact]
     public async Task SendMessageAsync_PostsTheEnvelope_ToTheConfiguredUrl_WithTopicHeadersAndSerializedBody()
     {
-        var handler = new CapturingHandler(HttpStatusCode.OK, """{"statusCode":"Ok","headers":{},"body":"\"hello\""}""");
+        var handler = new CapturingHandler(HttpStatusCode.OK, """{"statusCode":"ok","headers":{},"body":"\"hello\""}""");
         var client = new HttpBenzeneMessageClient(new HttpClient(handler), Url);
 
         var request = new BenzeneClientRequest<string>("my-topic", "the-message",
@@ -48,7 +48,7 @@ public class HttpBenzeneMessageClientTest
     [Fact]
     public async Task SendMessageAsync_MapsASuccessEnvelope_ToAnOkResultWithThePayload()
     {
-        var handler = new CapturingHandler(HttpStatusCode.OK, """{"statusCode":"Ok","headers":{},"body":"\"hello\""}""");
+        var handler = new CapturingHandler(HttpStatusCode.OK, """{"statusCode":"ok","headers":{},"body":"\"hello\""}""");
         var client = new HttpBenzeneMessageClient(new HttpClient(handler), Url);
 
         var result = await client.SendMessageAsync<string, string>(
@@ -63,7 +63,7 @@ public class HttpBenzeneMessageClientTest
     {
         // The target maps NotFound onto HTTP 404, but the authoritative status is in the envelope body -
         // a mapped non-2xx is a normal result, not a transport failure, so we must not throw on it.
-        var handler = new CapturingHandler(HttpStatusCode.NotFound, """{"statusCode":"NotFound","headers":{},"body":null}""");
+        var handler = new CapturingHandler(HttpStatusCode.NotFound, """{"statusCode":"not-found","headers":{},"body":null}""");
         var client = new HttpBenzeneMessageClient(new HttpClient(handler), Url);
 
         var result = await client.SendMessageAsync<string, string>(
@@ -78,7 +78,7 @@ public class HttpBenzeneMessageClientTest
     {
         // A Void (send-acknowledgement) caller: the handler's body shape is undefined, so we map the status
         // only. A non-envelope-shaped body must not break the Void path.
-        var handler = new CapturingHandler(HttpStatusCode.OK, """{"statusCode":"Ok","headers":{},"body":"anything at all"}""");
+        var handler = new CapturingHandler(HttpStatusCode.OK, """{"statusCode":"ok","headers":{},"body":"anything at all"}""");
         var client = new HttpBenzeneMessageClient(new HttpClient(handler), Url);
 
         var result = await client.SendMessageAsync<string, Void>(

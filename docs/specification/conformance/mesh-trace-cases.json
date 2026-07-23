@@ -23,22 +23,22 @@
     {
       "name": "success-is-traced-with-the-semantic-status",
       "request": { "topic": "conformance:greet", "headers": { "x-correlation-id": "corr-1" }, "body": "{\"name\":\"world\"}" },
-      "expectedEvent": { "topic": "conformance:greet", "status": "Ok", "correlationId": "corr-1" }
+      "expectedEvent": { "topic": "conformance:greet", "status": "ok", "correlationId": "corr-1" }
     },
     {
       "name": "application-status-travels-verbatim",
-      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"ValidationError\",\"errors\":[\"bad\"]}" },
-      "expectedEvent": { "topic": "conformance:status", "status": "ValidationError" }
+      "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"validation-error\",\"errors\":[\"bad\"]}" },
+      "expectedEvent": { "topic": "conformance:status", "status": "validation-error" }
     },
     {
       "name": "missing-handler-is-traced-as-notfound",
       "request": { "topic": "conformance:no-such-topic", "headers": {}, "body": "{}" },
-      "expectedEvent": { "topic": "conformance:no-such-topic", "status": "NotFound" }
+      "expectedEvent": { "topic": "conformance:no-such-topic", "status": "not-found" }
     },
     {
       "name": "handler-panic-is-traced-as-serviceunavailable",
       "request": { "topic": "conformance:panic", "headers": {}, "body": "{}" },
-      "expectedEvent": { "topic": "conformance:panic", "status": "ServiceUnavailable" }
+      "expectedEvent": { "topic": "conformance:panic", "status": "service-unavailable" }
     }
   ]
 }

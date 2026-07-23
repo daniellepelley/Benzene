@@ -3,29 +3,30 @@
 /// <summary>
 /// The framework-defined result status vocabulary (see
 /// <c>docs/specification/wire-contracts.md</c> §3 — the strings are the case-sensitive wire
-/// values), plus the classification of each status. Applications may use additional status
-/// strings; every transport mapping routes unknown statuses to its generic-error row, and the
-/// classifiers below treat them as neither success nor failure.
+/// values, **lowercase-kebab-case** e.g. <c>not-found</c>/<c>validation-error</c>), plus the
+/// classification of each status. Applications may use additional status strings; every transport
+/// mapping routes unknown statuses to its generic-error row, and the classifiers below treat them
+/// as neither success nor failure.
 /// </summary>
 public static class BenzeneResultStatus
 {
-    public const string Accepted = "Accepted";
-    public const string Ok = "Ok";
-    public const string Created = "Created";
-    public const string Updated = "Updated";
-    public const string Deleted = "Deleted";
-    public const string Ignored = "Ignored";
-    public const string NotFound = "NotFound";
-    public const string BadRequest = "BadRequest";
-    public const string ValidationError = "ValidationError";
-    public const string ServiceUnavailable = "ServiceUnavailable";
-    public const string NotImplemented = "NotImplemented";
-    public const string UnexpectedError = "UnexpectedError";
-    public const string Conflict = "Conflict";
-    public const string Forbidden = "Forbidden";
-    public const string Unauthorized = "Unauthorized";
-    public const string TooManyRequests = "TooManyRequests";
-    public const string Timeout = "Timeout";
+    public const string Accepted = "accepted";
+    public const string Ok = "ok";
+    public const string Created = "created";
+    public const string Updated = "updated";
+    public const string Deleted = "deleted";
+    public const string Ignored = "ignored";
+    public const string NotFound = "not-found";
+    public const string BadRequest = "bad-request";
+    public const string ValidationError = "validation-error";
+    public const string ServiceUnavailable = "service-unavailable";
+    public const string NotImplemented = "not-implemented";
+    public const string UnexpectedError = "unexpected-error";
+    public const string Conflict = "conflict";
+    public const string Forbidden = "forbidden";
+    public const string Unauthorized = "unauthorized";
+    public const string TooManyRequests = "too-many-requests";
+    public const string Timeout = "timeout";
 
     private static readonly HashSet<string> SuccessStatuses = new()
     {

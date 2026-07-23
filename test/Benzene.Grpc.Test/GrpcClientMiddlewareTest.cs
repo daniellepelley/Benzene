@@ -45,7 +45,7 @@ public class GrpcClientMiddlewareTest
     [Fact]
     public async Task HandleAsync_WhenTheCallThrowsRpcException_CapturesTheStatusAndTrailersWithoutRethrowing()
     {
-        var trailers = new Metadata { { "benzene-status", "NotFound" } };
+        var trailers = new Metadata { { "benzene-status", "not-found" } };
         var invoker = new TestCallInvoker { RpcExceptionToThrow = new RpcException(new Status(StatusCode.NotFound, "missing"), trailers) };
         var registry = new GrpcClientRouteRegistry();
         registry.Add<EchoRequest, EchoReply>("echo-topic", "/benzene.test.TestService/Echo");
@@ -55,6 +55,6 @@ public class GrpcClientMiddlewareTest
         await middleware.HandleAsync(context, () => Task.CompletedTask);
 
         Assert.Equal(StatusCode.NotFound, context.Status.StatusCode);
-        Assert.Contains(context.ResponseTrailers!, e => e.Key == "benzene-status" && e.Value == "NotFound");
+        Assert.Contains(context.ResponseTrailers!, e => e.Key == "benzene-status" && e.Value == "not-found");
     }
 }

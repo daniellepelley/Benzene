@@ -33,10 +33,10 @@ public class CollectorUsageSourceTest
         var store = new MeshCollectorStore();
         store.AddEvents(new[]
         {
-            Event("s1", "orders:create", "Created", "v1"),
-            Event("s2", "orders:create", "Created", "v1"),
-            Event("s3", "orders:create", "ValidationError", "v1"),
-            Event("s4", "orders:get-all", "Ok")
+            Event("s1", "orders:create", "created", "v1"),
+            Event("s2", "orders:create", "created", "v1"),
+            Event("s3", "orders:create", "validation-error", "v1"),
+            Event("s4", "orders:get-all", "ok")
         });
         var at = new DateTimeOffset(2026, 7, 22, 9, 0, 0, TimeSpan.Zero);
         var source = new CollectorUsageSource(store, () => at);
@@ -49,7 +49,7 @@ public class CollectorUsageSourceTest
         Assert.Equal(at, usage.WindowEndUtc);
         Assert.Equal(3, usage.Entries.Length);
 
-        var created = Assert.Single(usage.Entries, e => e.Status == "Created");
+        var created = Assert.Single(usage.Entries, e => e.Status == "created");
         Assert.Equal("orders:create", created.Topic);
         Assert.Equal("v1", created.Version);
         Assert.Equal(2, created.Count);
@@ -58,8 +58,8 @@ public class CollectorUsageSourceTest
         Assert.Null(created.Transport);
         Assert.Null(created.Service);
 
-        Assert.Single(usage.Entries, e => e.Status == "ValidationError" && e.Count == 1);
-        Assert.Single(usage.Entries, e => e.Topic == "orders:get-all" && e.Status == "Ok" && e.Version == null);
+        Assert.Single(usage.Entries, e => e.Status == "validation-error" && e.Count == 1);
+        Assert.Single(usage.Entries, e => e.Topic == "orders:get-all" && e.Status == "ok" && e.Version == null);
     }
 
     [Fact]
