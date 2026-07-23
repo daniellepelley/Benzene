@@ -144,7 +144,7 @@ public class GetOrderMessageHandler : IMessageHandler<GetOrderRequest, Order>
 | `SetValueAsync(T value, TimeSpan? expireIn = null)` | Serializes (via `Benzene.Core.MessageHandlers.Serialization.JsonSerializer`) and stores the value, using `expireIn` or the service's `DefaultCacheLifespan`. |
 | `InvalidateAsync()` | Deletes the key(s). |
 | `LazyLoadAsync(Func<Task<IBenzeneResult<T>>> databaseReadFunc)` | Cache-aside read: hit returns from cache; miss calls `databaseReadFunc` and caches a successful result. |
-| `WriteThroughAsync(Func<Task<TResult>> modifyDatabaseFunc)` | Runs the write, then updates the cache based on the result's `BenzeneResultStatus` (`Ok`/`Created`/`Updated`/`Accepted` → `Set`; `Deleted` → `Invalidate`; anything else → no cache change). |
+| `WriteThroughAsync(Func<Task<TResult>> modifyDatabaseFunc)` | Runs the write, then updates the cache based on the result's `BenzeneResultStatus` (`ok`/`created`/`updated`/`accepted` → `Set`; `deleted` → `Invalidate`; anything else → no cache change). |
 | `WriteThroughAsync(..., Func<TResult, T> getCacheValue)` / `WriteThroughAsync(..., getCacheValue, getCacheAction)` | Overloads for when the write's result type isn't `IBenzeneResult<T>` directly, or when you need custom cache-action logic instead of the default status mapping. |
 | `WriteThroughInvalidateAsync(Func<Task<TResult>> modifyDatabaseFunc)` | Runs the write, and invalidates the cache only if the result `IsSuccessful` — no `Set` path, since there's nothing to cache (e.g. a delete-only operation). |
 
@@ -180,7 +180,7 @@ Internally this runs a Redis `KEYS <pattern>` command and deletes the matches in
 
 ### Custom cache-action mapping
 
-The three-argument `WriteThroughAsync` overload lets you decide, per result, whether to `Set`, `Invalidate`, or leave the cache alone — useful when the default `BenzeneResultStatus` → `CacheUpdateAction` mapping (`Ok`/`Created`/`Updated`/`Accepted` → `Set`, `Deleted` → `Invalidate`) doesn't fit your handler:
+The three-argument `WriteThroughAsync` overload lets you decide, per result, whether to `Set`, `Invalidate`, or leave the cache alone — useful when the default `BenzeneResultStatus` → `CacheUpdateAction` mapping (`ok`/`created`/`updated`/`accepted` → `Set`, `deleted` → `Invalidate`) doesn't fit your handler:
 
 ```csharp
 await entry.WriteThroughAsync(

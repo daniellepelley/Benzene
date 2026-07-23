@@ -224,7 +224,7 @@ public Task Run(
 }
 ```
 
-With this wired up: a handler that returns `Ok` (or any successful result) completes the message;
+With this wired up: a handler that returns `ok` (or any successful result) completes the message;
 a handler that returns a non-exception failure result, or throws, abandons it (returned to the
 queue, respecting the queue's own max-delivery-count before Service Bus's native auto-dead-letter
 kicks in). The plain `HandleServiceBusMessages(IAzureFunctionApp, params

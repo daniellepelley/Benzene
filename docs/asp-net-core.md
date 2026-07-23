@@ -324,7 +324,7 @@ app.UseHttp(http => http
 ```
 
 See [Fluent Validation](fluent-validation.md) for how validators are resolved and how failures are
-turned into a `ValidationError` result.
+turned into a `validation-error` result.
 
 ### Testing
 
