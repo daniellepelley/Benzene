@@ -24,6 +24,22 @@ public class BenzeneResultExtensionsTest
         Assert.False(BenzeneResult.UnexpectedError().IsSuccess());
     }
     [Fact]
+    public void IsSuccess_True_ForOk()
+    {
+        Assert.True(BenzeneResult.Ok().IsSuccess());
+    }
+    [Fact]
+    public void IsSuccess_True_ForNonOkSuccessStatuses()
+    {
+        // IsSuccess must match the success class (not just Ok) - the same classification as
+        // IBenzeneResult.IsSuccessful / BenzeneResultStatus.IsSuccess.
+        Assert.True(BenzeneResult.Created().IsSuccess());
+        Assert.True(BenzeneResult.Accepted().IsSuccess());
+        Assert.True(BenzeneResult.Updated().IsSuccess());
+        Assert.True(BenzeneResult.Deleted().IsSuccess());
+        Assert.True(BenzeneResult.Ignored().IsSuccess());
+    }
+    [Fact]
     public void IsAccepted_True()
     {
         Assert.True(BenzeneResult.Accepted().IsAccepted());

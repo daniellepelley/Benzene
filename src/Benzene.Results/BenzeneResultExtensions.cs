@@ -9,9 +9,15 @@ public static class BenzeneResultExtensions
     {
         return serviceBenzeneResult.Status == BenzeneResultStatus.Accepted;
     }
+    /// <summary>
+    /// True when the result's status is in the success class (<c>Ok</c>, <c>Created</c>,
+    /// <c>Accepted</c>, <c>Updated</c>, <c>Deleted</c>, <c>Ignored</c>) — the same classification
+    /// as <see cref="IBenzeneResult.IsSuccessful"/> and <see cref="BenzeneResultStatus.IsSuccess"/>.
+    /// Use <see cref="IsOk"/> for the narrower "status is exactly <c>Ok</c>" check.
+    /// </summary>
     public static bool IsSuccess(this IBenzeneResult serviceBenzeneResult)
     {
-        return serviceBenzeneResult.Status == BenzeneResultStatus.Ok;
+        return BenzeneResultStatus.IsSuccess(serviceBenzeneResult.Status);
     }
     public static bool IsOk(this IBenzeneResult serviceBenzeneResult)
     {
