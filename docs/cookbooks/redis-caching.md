@@ -190,8 +190,8 @@ is served straight from Redis without touching `IProductRepository` at all.
 ### 4. Write-through: keep the cache in sync on updates
 
 `WriteThroughAsync` runs your write, then updates the cache based on the result's
-`BenzeneResultStatus` — `Ok`/`Created`/`Updated`/`Accepted` sets the cache to the new payload,
-`Deleted` invalidates it, anything else leaves the cache untouched:
+`BenzeneResultStatus` — `ok`/`created`/`updated`/`accepted` sets the cache to the new payload,
+`deleted` invalidates it, anything else leaves the cache untouched:
 
 ```csharp
 [Message("products:update")]
