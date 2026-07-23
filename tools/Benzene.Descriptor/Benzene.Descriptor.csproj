@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Benzene.Descriptor — emits a service's deployment descriptor (service.json) at BUILD TIME from a
+    non-running, non-deployed service, by constructing it in-process and reading the `spec` it already
+    computes. See tools/Benzene.Descriptor/README.md and work/deployment-descriptor-design.md.
+
+    Packaged as a dotnet tool (command: benzene-descriptor). Deliberately NOT in Benzene.sln /
+    Benzene.Examples.sln yet — adding it to the solution + deploy-benzene.yml is a follow-up that needs
+    approval (per the repo's "do not modify .sln structure without approval" rule).
+
+    In-repo it uses ProjectReferences so it builds and tests against local source; the shipped package
+    would use PackageReferences pinned to the consuming service's Benzene version.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>benzene-descriptor</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <AssemblyName>Benzene.Descriptor</AssemblyName>
+    <RootNamespace>Benzene.Descriptor</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The construction substrate (public types the AWS Lambda host itself uses). -->
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
+    <!-- In-memory invoke + the descriptors the runtime already serves. -->
+    <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Mesh.Wire\Benzene.Mesh.Wire.csproj" />
+  </ItemGroup>
+
+</Project>

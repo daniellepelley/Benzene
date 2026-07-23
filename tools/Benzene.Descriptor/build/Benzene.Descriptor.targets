@@ -1,0 +1,29 @@
+<Project>
+  <!--
+    Build integration for benzene-descriptor. Emits <service>.json into the output folder after every
+    build, by running the tool against the just-built assembly (which runs in the service's own output
+    folder, so its full dependency closure is present).
+
+    Opt in per project:
+        <PropertyGroup>
+          <BenzeneEmitDescriptor>true</BenzeneEmitDescriptor>
+        </PropertyGroup>
+
+    Assumes the `benzene-descriptor` tool is on PATH (a global tool, or a local tool restored via a
+    .config/dotnet-tools.json manifest). Override BenzeneDescriptorCommand to invoke it another way
+    (e.g. `dotnet tool run benzene-descriptor`).
+  -->
+  <PropertyGroup>
+    <BenzeneEmitDescriptor Condition="'$(BenzeneEmitDescriptor)' == ''">false</BenzeneEmitDescriptor>
+    <BenzeneDescriptorCommand Condition="'$(BenzeneDescriptorCommand)' == ''">benzene-descriptor</BenzeneDescriptorCommand>
+    <BenzeneDescriptorOutput Condition="'$(BenzeneDescriptorOutput)' == ''">$(TargetDir)$(AssemblyName).service.json</BenzeneDescriptorOutput>
+    <BenzeneDescriptorServiceName Condition="'$(BenzeneDescriptorServiceName)' == ''">$(AssemblyName)</BenzeneDescriptorServiceName>
+  </PropertyGroup>
+
+  <Target Name="BenzeneEmitDescriptor"
+          AfterTargets="Build"
+          Condition="'$(BenzeneEmitDescriptor)' == 'true'">
+    <Exec Command="&quot;$(BenzeneDescriptorCommand)&quot; --assembly &quot;$(TargetPath)&quot; --output &quot;$(BenzeneDescriptorOutput)&quot; --service &quot;$(BenzeneDescriptorServiceName)&quot; --service-version &quot;$(Version)&quot;"
+          ContinueOnError="true" />
+  </Target>
+</Project>
