@@ -9,8 +9,8 @@ FluentValidation lets you define strongly-typed validation rules for a request t
 `Benzene.FluentValidation` plugs this into the middleware pipeline as a single piece of middleware, `ValidationMiddleware<TRequest, TResponse>`, added via `.UseFluentValidation()` inside `.UseMessageHandlers(...)`. For each request:
 
 - If no `IValidator<TRequest>` is registered in DI, the middleware does nothing and calls the next middleware (which eventually invokes the handler).
-- If a validator is found and the request is `null`, the pipeline short-circuits with a `ValidationError` result (`"Request is null"`).
-- If a validator is found and validation fails, the pipeline short-circuits with the mapped status (`ValidationError` by default — see [Failure status mapping](#failure-status-mapping)) and the collected error messages.
+- If a validator is found and the request is `null`, the pipeline short-circuits with a `validation-error` result (`"Request is null"`).
+- If a validator is found and validation fails, the pipeline short-circuits with the mapped status (`validation-error` by default — see [Failure status mapping](#failure-status-mapping)) and the collected error messages.
 - If validation passes, `next()` is called and the handler runs as normal.
 
 Use this package when you want validation rules that live outside the request/handler, support complex cross-property rules, and can be unit-tested independently with FluentValidation's own test helpers.
@@ -56,7 +56,7 @@ app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
 1. Registers an `IValidationStatusMapper` (`DefaultValidationStatusMapper`, unless one is already registered) and discovers every `AbstractValidator<T>` in the given assemblies, registering each one against `IValidator<T>` with `TryAddSingleton` (see [Validator discovery](#validator-discovery)).
 2. Adds `ValidationMiddleware<TRequest, TResponse>` to the handler pipeline, which resolves `IValidator<TRequest>` for the current request type on every call.
 
-If `CreateWidgetRequest.Name` is longer than 10 characters, the handler is never invoked and the caller receives a `ValidationError` result containing FluentValidation's error messages.
+If `CreateWidgetRequest.Name` is longer than 10 characters, the handler is never invoked and the caller receives a `validation-error` result containing FluentValidation's error messages.
 
 ## Validator discovery
 
@@ -113,7 +113,7 @@ public class SampleValidator : AbstractValidator<SampleRequest>
 }
 ```
 
-A failure on this rule returns `BenzeneResultStatus.BadRequest` instead of `ValidationError`.
+A failure on this rule returns `BenzeneResultStatus.BadRequest` instead of `validation-error`.
 
 ### Overriding the status from the handler
 
@@ -153,7 +153,7 @@ Because it is per-handler middleware, it runs for every message handler in the p
 
 ## Client-side validation
 
-`Benzene.FluentValidation` also ships `ValidationClientMiddleware<TRequest, TResponse>`, which applies the same "resolve `IValidator<TRequest>`, validate, short-circuit with `ValidationError` on failure" behavior to outgoing Benzene client calls (`IBenzeneClientContext<TRequest, TResponse>`), rather than incoming message handler requests. Note that client-side failures always map to `BenzeneResultStatus.ValidationError` — the per-rule/per-handler status mapping described above only applies to `ValidationMiddleware` on the handler side.
+`Benzene.FluentValidation` also ships `ValidationClientMiddleware<TRequest, TResponse>`, which applies the same "resolve `IValidator<TRequest>`, validate, short-circuit with `validation-error` on failure" behavior to outgoing Benzene client calls (`IBenzeneClientContext<TRequest, TResponse>`), rather than incoming message handler requests. Note that client-side failures always map to `BenzeneResultStatus.ValidationError` — the per-rule/per-handler status mapping described above only applies to `ValidationMiddleware` on the handler side.
 
 ## Custom string validators
 
@@ -199,6 +199,6 @@ Recognized rule types include minimum/maximum length, regular expressions, `NotE
 
 ## See Also
 - [Message Handlers](message-handlers.md) — where validation middleware sits in the request lifecycle
-- [Handler Result](message-result.md) — `IBenzeneResult` statuses, including `ValidationError`
+- [Handler Result](message-result.md) — `IBenzeneResult` statuses, including `validation-error`
 - [Middleware](middleware.md) — general middleware pipeline concepts
 - [Data Annotations](data-annotations.md) — the attribute-based alternative to FluentValidation
