@@ -26,9 +26,12 @@ public static class Extensions
     /// until the composing increments land.
     /// </remarks>
     /// <param name="services">The service container to register with.</param>
+    /// <param name="options">Correlation-search tuning (lookback window); defaults if omitted.</param>
     /// <returns>The service container for method chaining.</returns>
-    public static IBenzeneServiceContainer AddXRayFleetReadModel(this IBenzeneServiceContainer services)
+    public static IBenzeneServiceContainer AddXRayFleetReadModel(
+        this IBenzeneServiceContainer services, XRayTraceSourceOptions? options = null)
     {
+        services.AddSingleton(options ?? new XRayTraceSourceOptions());
         services.AddSingleton<IAmazonXRay>(_ => new AmazonXRayClient());
         services.AddSingleton<IMeshTraceSource, XRayTraceSource>();
         services.AddSingleton<IMeshFleetReadModel, TraceSourceFleetReadModel>();

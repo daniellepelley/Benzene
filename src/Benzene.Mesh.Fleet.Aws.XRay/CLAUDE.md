@@ -2,17 +2,26 @@
 
 ## What this package does
 The AWS realisation of the **trace-backed fleet reader** scoped in `work/otel-fleet-adapter-scope.md`:
-it answers the mesh's `mesh:query:trace` from AWS X-Ray instead of the in-memory push collector, so
-the fleet UI's trace waterfall works over an observability backend a team already runs — no
-`mesh:traces` exporter, no `MeshCollectorStore` ring. This is **Increment 1** of that scope (trace
-lookup only); correlation (inc 2), recent-flows + usage-fed stats (inc 3), and other backends (Tempo,
-inc 4) compose on the same `IMeshTraceSource`/`IMeshFleetReadModel` seam later.
+it answers the mesh's `mesh:query:trace` and `mesh:query:correlation` from AWS X-Ray instead of the
+in-memory push collector, so the fleet UI's trace waterfall and correlation triage work over an
+observability backend a team already runs — no `mesh:traces` exporter, no `MeshCollectorStore` ring.
+This is **Increments 1-2** of that scope (trace lookup + correlation search); recent-flows + usage-fed
+stats (inc 3) and other backends (Tempo, inc 4) compose on the same
+`IMeshTraceSource`/`IMeshFleetReadModel` seam later.
 
 ## Key types
 - `XRayTraceSource : Benzene.Mesh.Collector.IMeshTraceSource` — fetches a trace's segments with
   `IAmazonXRay.BatchGetTraces` and maps its topic-bearing spans into a `TraceView`. Returns null (→ the
   query handler answers `NotFound`) when X-Ray has no such trace **or** the trace carried no Benzene
-  topic-bearing span (a real trace that isn't a mesh flow is not an empty waterfall).
+  topic-bearing span (a real trace that isn't a mesh flow is not an empty waterfall). `GetCorrelationAsync`
+  (inc 2) runs `GetTraceSummaries` filtered on `annotation.benzene_correlation_id = "…"` over the
+  configured lookback (paging `NextToken` to the end), fetches the matching traces with `BatchGetTraces`
+  (chunked to X-Ray's 5-ids-per-call limit), maps each to a `TraceView`, and groups them into a
+  `CorrelationView` (traces earliest-first — the same ordering the in-memory collector uses, so the UI
+  renders both identically). Only **annotations** are filterable in X-Ray, so the correlation id must land
+  as one (see the prerequisite below).
+- `XRayTraceSourceOptions` — `CorrelationLookback` (default 24h): X-Ray's `GetTraceSummaries` needs a
+  time range, so a correlation search scans the last N hours. Trace lookup is by id (no window).
 - `XRaySegmentMapper` — static `Map(meshTraceId, segmentDocuments)`: parses each X-Ray segment JSON
   document, walks segment + subsegments, and emits one `MeshTraceEvent` per node that carries a Benzene
   topic. Reads the `benzene.*` attributes (`topic`/`version`/`status`/`correlation-id`) from **either**
@@ -22,11 +31,12 @@ inc 4) compose on the same `IMeshTraceSource`/`IMeshFleetReadModel` seam later.
   skipped (traces are read best-effort); events are returned in start order. The enclosing segment's
   `name` is the emitting `Service`; subsegments keep it (they're the same service's internal spans — a
   new service boundary is its own X-Ray segment).
-- `Extensions.AddXRayFleetReadModel()` — registers a default `IAmazonXRay` (region/credentials from the
-  ambient AWS environment — on Lambda, the execution role) unless one is already registered, the
-  `XRayTraceSource` as `IMeshTraceSource`, and `TraceSourceFleetReadModel` as `IMeshFleetReadModel`.
-  Wire the read side with `UseMessageHandlers(MeshCollectorHandlers.Queries)` (query-only — there is no
-  ingestion) and the fleet UI with `UseMeshFleetUi()`.
+- `Extensions.AddXRayFleetReadModel(options?)` — registers the `XRayTraceSourceOptions` (defaults if
+  omitted), a default `IAmazonXRay` (region/credentials from the ambient AWS environment — on Lambda, the
+  execution role) unless one is already registered, the `XRayTraceSource` as `IMeshTraceSource`, and
+  `TraceSourceFleetReadModel` as `IMeshFleetReadModel`. Wire the read side with
+  `UseMessageHandlers(MeshCollectorHandlers.Queries)` (query-only — there is no ingestion) and the fleet
+  UI with `UseMeshFleetUi()`.
 
 ## What it deliberately does NOT do
 Per `IMeshTraceSource`, this carries **no** per-topic/service counts and **no** service health: X-Ray
@@ -35,10 +45,16 @@ traces are sampled (counts would be biased) and X-Ray has no heartbeat feed. Tho
 later increment. Until then a trace-only deployment answers trace lookups and reports honest
 empty/absent shapes for fleet/service/topic/correlation (`TraceSourceFleetReadModel`).
 
-## Prerequisite it relies on
-The pipeline must stamp `benzene.status` (and `benzene.topic`/`benzene.version`) on the topic-bearing
-span — `Benzene.Diagnostics.ActivityMiddlewareDecorator` does this (see `src/Benzene.Diagnostics/
-CLAUDE.md`). Without those span tags an X-Ray trace has no mesh semantics to map.
+## Prerequisites it relies on
+The pipeline must stamp `benzene.status`/`benzene.topic`/`benzene.version` — and, for correlation,
+`benzene.correlation-id` — on the topic-bearing span. `Benzene.Diagnostics.ActivityMiddlewareDecorator`
+does this (see `src/Benzene.Diagnostics/CLAUDE.md`); `benzene.correlation-id` is set only when the
+message actually carried `x-correlation-id` (never a fabricated id, the same rule as
+`MeshTraceEvent.CorrelationId`). Without those span tags an X-Ray trace has no mesh semantics to map. One
+deployment step is **yours**: X-Ray only lets you *filter* on **annotations**, so the OTel→X-Ray exporter
+must be configured to index `benzene.correlation-id` as an annotation (`benzene_correlation_id`) — a
+metadata-only attribute is readable in a fetched trace but not searchable, so `mesh:query:correlation`
+would find nothing.
 
 ## Verification caveat
 The mapper is unit-tested against representative X-Ray segment JSON (`test/Benzene.Mesh.Test/

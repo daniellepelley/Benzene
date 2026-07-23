@@ -4,6 +4,7 @@ using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
+using Benzene.Diagnostics.Correlation;
 
 namespace Benzene.Diagnostics;
 
@@ -91,7 +92,8 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
             activity.SetTag("benzene.transport", transport.Name);
         }
 
-        var topic = _serviceResolver.TryGetService<IMessageGetter<TContext>>()?.GetTopic(context);
+        var getter = _serviceResolver.TryGetService<IMessageGetter<TContext>>();
+        var topic = getter?.GetTopic(context);
         if (topic is not null && !string.IsNullOrEmpty(topic.Id))
         {
             activity.SetTag("benzene.topic", topic.Id);
@@ -101,6 +103,17 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
             if (handler is not null)
             {
                 activity.SetTag("benzene.handler", handler.HandlerType.Name);
+            }
+
+            // Only when the message actually carried a business correlation id (x-correlation-id) - the
+            // same source and null-when-absent rule as MeshTraceEvent.CorrelationId, so the mesh never
+            // fabricates one. This is what makes mesh:query:correlation answerable from a trace store: a
+            // trace-backed reader (Benzene.Mesh.Fleet.*) searches this tag - see
+            // work/otel-fleet-adapter-scope.md §6b. On the topic-bearing span only, like benzene.status.
+            var correlationId = getter!.GetHeader(context, "x-correlation-id");
+            if (!string.IsNullOrEmpty(correlationId))
+            {
+                activity.SetTag("benzene.correlation-id", correlationId);
             }
 
             return true;

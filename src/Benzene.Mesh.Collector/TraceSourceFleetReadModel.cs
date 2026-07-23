@@ -5,14 +5,14 @@ namespace Benzene.Mesh.Collector;
 
 /// <summary>
 /// An <see cref="IMeshFleetReadModel"/> backed by a pluggable <see cref="IMeshTraceSource"/> (X-Ray /
-/// Tempo / Jaeger) — the backend-composed alternative to the in-memory push-collector. Increment 1
-/// serves <c>mesh:query:trace</c> from the trace source; correlation, recent-flows, and the
-/// usage-fed stats compose in later increments (see <c>work/otel-fleet-adapter-scope.md</c>).
+/// Tempo / Jaeger) — the backend-composed alternative to the in-memory push-collector. Increments 1-2
+/// serve <c>mesh:query:trace</c> and <c>mesh:query:correlation</c> from the trace source; recent-flows
+/// and the usage-fed stats compose in a later increment (see <c>work/otel-fleet-adapter-scope.md</c>).
 /// </summary>
 /// <remarks>
-/// Until those increments land, the non-trace read-models return their honest empty/absent shapes: an
+/// Until that increment lands, the remaining read-models return their honest empty/absent shapes: an
 /// empty <see cref="FleetView"/> (no services/topics observed through this reader yet) and null for
-/// service/topic/correlation. A trace-only deployment therefore answers trace lookups and reports
+/// service/topic. A trace-only deployment therefore answers trace and correlation lookups and reports
 /// "nothing else known here" rather than fabricating a fleet — the mesh degradation rule.
 /// </remarks>
 public class TraceSourceFleetReadModel : IMeshFleetReadModel
@@ -27,10 +27,10 @@ public class TraceSourceFleetReadModel : IMeshFleetReadModel
     public Task<TraceView?> TraceAsync(string traceId, CancellationToken cancellationToken = default)
         => _traceSource.GetTraceAsync(traceId, cancellationToken);
 
-    // Composed in later increments (correlation = inc 2; fleet recent-flows + usage-fed stats = inc 3).
     public Task<CorrelationView?> CorrelationAsync(string correlationId, CancellationToken cancellationToken = default)
-        => Task.FromResult<CorrelationView?>(null);
+        => _traceSource.GetCorrelationAsync(correlationId, cancellationToken);
 
+    // Composed in a later increment (fleet recent-flows + usage-fed stats = inc 3).
     public Task<FleetView> FleetAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(new FleetView());
 

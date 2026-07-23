@@ -17,12 +17,13 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   the store singleton (every host that wires the collector now does both). The other implementation,
   `TraceSourceFleetReadModel`, composes a pluggable `IMeshTraceSource` (OTel trace backend) — see
   `work/otel-fleet-adapter-scope.md`.
-- `IMeshTraceSource` (2026-07-23) - the pluggable trace-shaped source (`GetTraceAsync`; correlation +
-  recent-flows added in later increments) implemented per backend in a `Benzene.Mesh.Fleet.*` adapter
-  (X-Ray first). Deliberately carries **no** stats/health (traces are sampled; no heartbeat feed) —
-  those stay `IMeshUsageSource` + the heartbeat plane. `TraceSourceFleetReadModel` wraps it into an
-  `IMeshFleetReadModel`, serving `mesh:query:trace` now and returning honest empty/absent shapes for the
-  rest until the composing increments land.
+- `IMeshTraceSource` (2026-07-23) - the pluggable trace-shaped source (`GetTraceAsync` +
+  `GetCorrelationAsync`; recent-flows added in a later increment) implemented per backend in a
+  `Benzene.Mesh.Fleet.*` adapter (X-Ray first). Deliberately carries **no** stats/health (traces are
+  sampled; no heartbeat feed) — those stay `IMeshUsageSource` + the heartbeat plane.
+  `TraceSourceFleetReadModel` wraps it into an `IMeshFleetReadModel`, serving `mesh:query:trace` and
+  `mesh:query:correlation` now and returning honest empty/absent shapes for the rest until the composing
+  increment lands.
 - `MeshCollectorStore` - the in-memory state (singleton per collector): cumulative per-service
   and per-topic stats, latest heartbeat per instance, registered descriptors, and a bounded ring
   of recent trace events (default 4096). Consumer edges are derived **at query time** from ring

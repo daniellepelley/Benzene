@@ -28,6 +28,12 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
   is the trace-store analogue of the metric's `result` tag: it lets a trace-backed mesh reader
   (`Benzene.Mesh.Fleet.*`, `work/otel-fleet-adapter-scope.md` §6a) reconstruct `MeshTraceEvent.Status`
   from the span. On the topic-bearing span only, to avoid a duplicate tag on every wrapped stage.
+  Also (2026-07-23) **`benzene.correlation-id`** on the same topic-bearing span, **only** when the
+  message carried an `x-correlation-id` header (never the auto-generated `ICorrelationId` GUID — same
+  source and null-when-absent rule as `MeshTraceEvent.CorrelationId`, so the mesh never fabricates one).
+  This is the searchable span attribute `mesh:query:correlation` needs from a trace store
+  (`work/otel-fleet-adapter-scope.md` §6b) — for X-Ray it must be indexed as an *annotation* to be
+  filterable.
 - `DebugMiddlewareWrapper`/`DebugMiddlewareDecorator<TContext>` - `Debug.WriteLine` start/stop
   tracing, unrelated to `Activity`/tracing proper
 

@@ -197,4 +197,137 @@ public class XRayTraceSourceTest
         var source = new XRayTraceSource(new Mock<IAmazonXRay>().Object);
         Assert.Null(await source.GetTraceAsync(""));
     }
+
+    private static string Segment(string id, string service, string topic, string correlationId, double start) => $$"""
+        {
+          "id": "{{id}}",
+          "name": "{{service}}",
+          "start_time": {{start.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+          "end_time": {{(start + 0.1).ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+          "annotations": {
+            "benzene_topic": "{{topic}}",
+            "benzene_status": "ok",
+            "benzene_correlation_id": "{{correlationId}}"
+          }
+        }
+        """;
+
+    [Fact]
+    public async Task GetCorrelationAsync_FindsMatchingTraces_GroupedByTrace()
+    {
+        // Two distinct traces both carrying the same business correlation id (ticket-42) - a correlation
+        // id can span more than one flow, so each comes back as its own TraceView.
+        const string correlationId = "ticket-42";
+        const string traceA = "1-aaaaaaaa-1111";
+        const string traceB = "1-bbbbbbbb-2222";
+
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((GetTraceSummariesRequest req, CancellationToken _) =>
+            {
+                // The search filters on the correlation-id annotation over a time window.
+                Assert.Contains("annotation.benzene_correlation_id", req.FilterExpression);
+                Assert.Contains(correlationId, req.FilterExpression);
+                return new GetTraceSummariesResponse
+                {
+                    TraceSummaries = new List<TraceSummary>
+                    {
+                        new TraceSummary { Id = traceB }, // later trace returned first...
+                        new TraceSummary { Id = traceA }
+                    }
+                };
+            });
+        mock.Setup(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((BatchGetTracesRequest req, CancellationToken _) => new BatchGetTracesResponse
+            {
+                Traces = req.TraceIds.Select(id => new Trace
+                {
+                    Id = id,
+                    Segments = new List<Segment>
+                    {
+                        new Segment
+                        {
+                            Document = id == traceA
+                                ? Segment("seg-a", "orders-api", "orders:create", correlationId, 1500000000.0)
+                                : Segment("seg-b", "billing-api", "billing:charge", correlationId, 1500000100.0)
+                        }
+                    }
+                }).ToList()
+            });
+
+        var source = new XRayTraceSource(mock.Object);
+
+        var view = await source.GetCorrelationAsync(correlationId);
+
+        Assert.NotNull(view);
+        Assert.Equal(correlationId, view!.CorrelationId);
+        Assert.Equal(2, view.Traces.Count);
+        // Ordered earliest-first regardless of the order X-Ray returned the summaries.
+        Assert.Equal(traceA, view.Traces[0].TraceId);
+        Assert.Equal("orders:create", view.Traces[0].Events.Single().Topic);
+        Assert.Equal(traceB, view.Traces[1].TraceId);
+        Assert.Equal("billing:charge", view.Traces[1].Events.Single().Topic);
+    }
+
+    [Fact]
+    public async Task GetCorrelationAsync_PagesThroughAllSummaries()
+    {
+        const string correlationId = "ticket-99";
+        var mock = new Mock<IAmazonXRay>();
+        var call = 0;
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((GetTraceSummariesRequest req, CancellationToken _) =>
+            {
+                // First page returns a NextToken; the source must follow it to collect page two.
+                call++;
+                return call == 1
+                    ? new GetTraceSummariesResponse
+                    {
+                        TraceSummaries = new List<TraceSummary> { new TraceSummary { Id = "1-page1-0001" } },
+                        NextToken = "more"
+                    }
+                    : new GetTraceSummariesResponse
+                    {
+                        TraceSummaries = new List<TraceSummary> { new TraceSummary { Id = "1-page2-0002" } }
+                    };
+            });
+        mock.Setup(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((BatchGetTracesRequest req, CancellationToken _) => new BatchGetTracesResponse
+            {
+                Traces = req.TraceIds.Select((id, i) => new Trace
+                {
+                    Id = id,
+                    Segments = new List<Segment>
+                    {
+                        new Segment { Document = Segment($"seg-{i}", "svc", "topic:do", correlationId, 1500000000.0 + i) }
+                    }
+                }).ToList()
+            });
+
+        var source = new XRayTraceSource(mock.Object);
+
+        var view = await source.GetCorrelationAsync(correlationId);
+
+        Assert.NotNull(view);
+        Assert.Equal(2, view!.Traces.Count); // both pages' traces collected
+        Assert.Equal(2, call); // followed the NextToken
+    }
+
+    [Fact]
+    public async Task GetCorrelationAsync_NoMatches_ReturnsNull()
+    {
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTraceSummariesResponse { TraceSummaries = new List<TraceSummary>() });
+        var source = new XRayTraceSource(mock.Object);
+
+        Assert.Null(await source.GetCorrelationAsync("nobody"));
+    }
+
+    [Fact]
+    public async Task GetCorrelationAsync_EmptyCorrelationId_ReturnsNull()
+    {
+        var source = new XRayTraceSource(new Mock<IAmazonXRay>().Object);
+        Assert.Null(await source.GetCorrelationAsync(""));
+    }
 }

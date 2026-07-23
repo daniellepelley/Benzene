@@ -124,15 +124,16 @@ Cloud Service spec; they're the trace-store analogue of the Tempo metric/label c
 `benzene.handler`, and `service.name`/`service.instance.id` come from OTel resource attrs — so the
 span→event mapping is **mostly already emitted**. Two gaps:
 
-- **(a) Fine-grained status as a span tag.** Today the span only sets `ActivityStatusCode.Error` on
-  exception. `MeshTraceEvent.Status` is the full Benzene wire status (the metric path already itemizes
-  it — `MetricsExtensions.cs`). Without a `benzene.status` (kebab wire status, e.g. `not-found`) span
-  tag, the trace-backed `Status` **degrades to ok/error only**. Decide: add the tag (cheap, additive to
-  `Benzene.Diagnostics`) or accept ok/error and document it. *Blocks increment-1 completeness of the
-  waterfall's success/failure colouring beyond ok/error.*
-- **(b) Correlation id as a *searchable* span attribute.** Correlation flows through log scope/
-  enrichment today; `mesh:query:correlation` needs it as an **indexed, filterable** span attribute
-  (X-Ray *annotation*, not metadata). *Blocks increment 2.*
+- **(a) Fine-grained status as a span tag.** ✅ **DONE (2026-07-23).** `ActivityMiddlewareDecorator`
+  now tags **`benzene.status`** (the full kebab wire status, e.g. `not-found`, or `exception` on throw)
+  on the topic-bearing span, read from `IHasMessageResult.MessageResult` after `next()`. The
+  trace-backed `Status` is now the real wire status, not ok/error only.
+- **(b) Correlation id as a *searchable* span attribute.** ✅ **DONE (2026-07-23).**
+  `ActivityMiddlewareDecorator` now tags **`benzene.correlation-id`** on the topic-bearing span, only
+  when the message carried `x-correlation-id` (never the auto-generated GUID). Benzene-side is complete;
+  the remaining deployment step is exporter config — X-Ray only filters on **annotations**, so
+  `benzene.correlation-id` must be indexed as an annotation (`benzene_correlation_id`) for
+  `mesh:query:correlation` to find matches.
 
 **Granularity nuance:** Benzene emits a span **per middleware**, but a `MeshTraceEvent` is **per handled
 message**. The adapter must select the message-representative span (the one carrying `benzene.topic` /
@@ -142,13 +143,13 @@ the message-handler span), not every middleware span — else the waterfall show
 - **Increment 0 — the seams (tiny, no backend).** Extract `IMeshFleetReadModel` (query handlers depend
   on it; `MeshCollectorStore` implements it, unchanged) and declare `IMeshTraceSource`. Pure refactor,
   fully covered by the existing collector tests + `mesh-collector-cases.json`.
-- **Increment 1 — `mesh:query:trace` against X-Ray.** `BatchGetTraces` → segment tree →
-  `TraceView` waterfall, in `Benzene.Mesh.Fleet.Aws.XRay`, behind `IMeshTraceSource`. Mocked-SDK tests
-  (the `IAmazonXRay`-mock posture the AWS health-check/usage tests already use). Delivers the ask on the
-  AWS demo. Shippable alone. (Status colouring is ok/error until §6a lands.)
-- **Increment 2 — `mesh:query:correlation` (X-Ray).** `GetTraceSummaries` with an annotation filter on
-  the correlation id + group-by-trace; reuses increment-1's mapping. Gated on §6b (correlation id as an
-  X-Ray **annotation**).
+- **Increment 1 — `mesh:query:trace` against X-Ray.** ✅ **DONE (2026-07-23).** `BatchGetTraces` →
+  segment tree → `TraceView` waterfall, in `Benzene.Mesh.Fleet.Aws.XRay`, behind `IMeshTraceSource`.
+  Mocked-`IAmazonXRay` tests. Full wire-status colouring (§6a landed alongside).
+- **Increment 2 — `mesh:query:correlation` (X-Ray).** ✅ **DONE (2026-07-23).** `GetTraceSummaries`
+  filtered on `annotation.benzene_correlation_id` (paged) → `BatchGetTraces` (chunked to 5) →
+  group-by-trace `CorrelationView`, reusing increment-1's mapping. §6b landed alongside. Runtime caveat:
+  the exporter must index the correlation id as an X-Ray annotation (deployment config, not code).
 - **Increment 3 — `CompositeMeshFleetReadModel` + recent-flows `FleetView`.** Compose `IMeshTraceSource`
   (recent traces + observed consumers) with the existing `CloudWatchUsageSource` (per-topic stats);
   `Health=unknown`, `MissingFeeds=[health,descriptor]` (NOT `stats` — CloudWatch fills those). Wire
