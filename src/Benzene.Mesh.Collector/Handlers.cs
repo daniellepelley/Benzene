@@ -22,7 +22,8 @@ public static class MeshCollectorHandlers
         typeof(FleetQueryMessageHandler),
         typeof(ServiceQueryMessageHandler),
         typeof(TopicQueryMessageHandler),
-        typeof(TraceQueryMessageHandler)
+        typeof(TraceQueryMessageHandler),
+        typeof(CorrelationQueryMessageHandler)
     };
 }
 
@@ -151,6 +152,29 @@ public class TraceQueryMessageHandler : IMessageHandler<TraceQuery, TraceView>
         var view = _store.Trace(request.TraceId!);
         return Task.FromResult(view == null
             ? BenzeneResult.NotFound<TraceView>($"unknown trace {request.TraceId}")
+            : BenzeneResult.Ok(view));
+    }
+}
+
+/// <summary>Every flow that carried a business correlation id, grouped by trace, from the ring
+/// window. Complements <c>mesh:query:trace</c> for cross-service failure triage from a business
+/// identifier (a ticket/log correlation id) rather than a trace id.</summary>
+[Message("mesh:query:correlation")]
+public class CorrelationQueryMessageHandler : IMessageHandler<CorrelationQuery, CorrelationView>
+{
+    private readonly MeshCollectorStore _store;
+
+    public CorrelationQueryMessageHandler(MeshCollectorStore store) => _store = store;
+
+    public Task<IBenzeneResult<CorrelationView>> HandleAsync(CorrelationQuery request)
+    {
+        if (string.IsNullOrEmpty(request.CorrelationId))
+        {
+            return Task.FromResult(BenzeneResult.BadRequest<CorrelationView>("correlationId is required"));
+        }
+        var view = _store.Correlation(request.CorrelationId!);
+        return Task.FromResult(view == null
+            ? BenzeneResult.NotFound<CorrelationView>($"no flows for correlation {request.CorrelationId}")
             : BenzeneResult.Ok(view));
     }
 }

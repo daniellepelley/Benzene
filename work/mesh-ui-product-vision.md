@@ -7,6 +7,20 @@
 
 ---
 
+> **2026-07-23 Fleet view: "Trace a transaction" — correlation-id lookup (mesh-product-owner).**
+> Ships the owner's "trace a transaction by correlation id" story on the **collector/live plane**
+> (`mesh-fleet-ui.html`): a lookup box that resolves a business correlation id to every flow that
+> carried it — services, topics, per-leg success/error — via the new `mesh:query:correlation`
+> (data-layer block in `work/service-mesh-roadmap-1.0.md`, same date). Deliberately a **box on the
+> existing page, not a separate hash-routed screen** (that page has no router; adding one is
+> gold-plating for a first cut) — reuses the P2 waterfall renderer per matching trace. The "surface it
+> from a reported failure" half is a **failed-flow pivot**: an expanded flow's `correlationId` is a
+> one-click "find related flows" action inside the waterfall, right where an investigator already is —
+> with **no** `FleetView`/`TraceSummary` widening. Degradation is honest: correlation ids exist only
+> for flows whose entry set `x-correlation-id` (the mesh never fabricates one), and an aged-out id
+> reuses the ring-buffer note. **Collector-plane only:** the static `mesh-ui.html`/AwsMesh plane has no
+> live ring; its X-Ray/CloudWatch correlation deep-link stays a **separate, deferred** item. Shipped
+> .NET-side; cross-language conformance pinning is a fast-follow.
 > **2026-07-23 topology table now shows real data on attributable edges (mesh-product-owner).**
 > Owner reported the main-page topology table read as "entirely empty". It wasn't missing rows — the
 > structural edges render — but every metric cell was blank because the aggregator never attributed

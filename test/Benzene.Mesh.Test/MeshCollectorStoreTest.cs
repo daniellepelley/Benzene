@@ -101,4 +101,76 @@ public class MeshCollectorStoreTest
         Assert.NotNull(inner);
         Assert.Equal(new List<string> { "caller" }, inner!.Consumers);
     }
+
+    // ---- correlation lookup (mesh:query:correlation, mesh-product-owner ruling 2026-07-23) ----
+
+    private static MeshTraceEvent CorrEvent(string traceId, string spanId, string service, string topic,
+        DateTimeOffset startedAt, string? correlationId, string status = "Ok")
+    {
+        var evt = Event(traceId, spanId, service, topic, startedAt, status);
+        evt.CorrelationId = correlationId;
+        return evt;
+    }
+
+    [Fact]
+    public void Correlation_GroupsMatchingFlowsByTrace_OrderedByEarliestStart_EventsInStartOrder()
+    {
+        // One business correlation id spans two distinct traces; a third trace carries a different id.
+        var store = new MeshCollectorStore();
+        var now = DateTimeOffset.UtcNow;
+        store.AddEvents(new[]
+        {
+            // trace-b starts later but its events are added first, to prove ordering is by StartedAt.
+            CorrEvent("trace-b", "b2", "shipping", "book", now.AddSeconds(10).AddMilliseconds(5), "corr-1"),
+            CorrEvent("trace-b", "b1", "orders", "ship", now.AddSeconds(10), "corr-1"),
+            CorrEvent("trace-a", "a1", "orders", "create", now, "corr-1"),
+            CorrEvent("trace-a", "a2", "payments", "capture", now.AddMilliseconds(5), "corr-1", status: "ServiceUnavailable"),
+            CorrEvent("trace-c", "c1", "orders", "create", now.AddSeconds(20), "other"),
+        });
+
+        var view = store.Correlation("corr-1");
+
+        Assert.NotNull(view);
+        Assert.Equal("corr-1", view!.CorrelationId);
+        Assert.Equal(2, view.Traces.Count);
+        // Traces ordered by earliest event start: trace-a (now) before trace-b (now+10s).
+        Assert.Equal("trace-a", view.Traces[0].TraceId);
+        Assert.Equal("trace-b", view.Traces[1].TraceId);
+        // Events within a trace in start order (b1 before b2 despite reversed insertion).
+        Assert.Equal(new[] { "a1", "a2" }, view.Traces[0].Events.Select(e => e.SpanId).ToArray());
+        Assert.Equal(new[] { "b1", "b2" }, view.Traces[1].Events.Select(e => e.SpanId).ToArray());
+        // The per-leg service/topic/status the owner wants to read survives intact.
+        Assert.Equal("payments", view.Traces[0].Events[1].Service);
+        Assert.Equal("ServiceUnavailable", view.Traces[0].Events[1].Status);
+    }
+
+    [Fact]
+    public void Correlation_ExcludesNullCorrelationEvents_AndReturnsNullWhenNothingMatches()
+    {
+        // The mesh never fabricates a correlation id: a flow whose entry set no x-correlation-id
+        // header simply won't appear in any lookup.
+        var store = new MeshCollectorStore();
+        var now = DateTimeOffset.UtcNow;
+        store.AddEvents(new[]
+        {
+            CorrEvent("trace-1", "s1", "orders", "create", now, correlationId: null),
+        });
+
+        Assert.Null(store.Correlation("corr-1"));
+    }
+
+    [Fact]
+    public async Task CorrelationQueryHandler_EmptyId_BadRequest_UnknownId_NotFound_KnownId_Ok()
+    {
+        var store = new MeshCollectorStore();
+        store.AddEvents(new[] { CorrEvent("trace-1", "s1", "orders", "create", DateTimeOffset.UtcNow, "corr-1") });
+        var handler = new CorrelationQueryMessageHandler(store);
+
+        Assert.Equal("BadRequest", (await handler.HandleAsync(new CorrelationQuery { CorrelationId = "" })).Status);
+        Assert.Equal("NotFound", (await handler.HandleAsync(new CorrelationQuery { CorrelationId = "nope" })).Status);
+        var ok = await handler.HandleAsync(new CorrelationQuery { CorrelationId = "corr-1" });
+        Assert.Equal("Ok", ok.Status);
+        Assert.Equal("corr-1", ok.Payload.CorrelationId);
+        Assert.Single(ok.Payload.Traces);
+    }
 }

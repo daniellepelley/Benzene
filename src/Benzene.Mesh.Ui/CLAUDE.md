@@ -1,5 +1,19 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-23 (Fleet view): "Trace a transaction" — correlation-id lookup + failed-flow pivot.**
+> `mesh-fleet-ui.html` gains a **correlation-id lookup box** above "Recent flows": enter a business
+> correlation id (from a ticket/log) → POSTs `mesh:query:correlation` through the same `ENVELOPE_URL`
+> → renders every matching flow (a correlation id can span multiple traces) as a labelled block via
+> the **existing** `buildWaterfall(view)` — no new event-rendering code. `NotFound` → an honest empty
+> state that also names the ring-buffer-aging / no-header-set reasons; the box carries a one-line note
+> that correlation ids exist only for flows whose entry set the `x-correlation-id` header (the mesh
+> never fabricates one). **Failed-flow pivot:** when an expanded waterfall's events carry a
+> `correlationId`, the `wf-head` shows it as a "find all flows that carried this correlation id" button
+> that drives the same lookup — so an investigator who opened a failed flow reaches every related flow
+> in one click ("surface it from a reported failure"). Collector-plane only, by design: the static
+> `mesh-ui.html` / AwsMesh artifact plane has no live ring and gets an X-Ray/CloudWatch deep-link
+> instead (a separate, still-deferred item). Reuses the no-dependency floor (vanilla JS, one `fetch`).
+>
 > **2026-07-16:** this package now ships a second page: `MeshFleetUiPage`/`MeshFleetUiMiddleware`/
 > `UseMeshFleetUi(path, envelopeUrl)` - the **Fleet view**, the live counterpart to the
 > artifact-driven explorer below. It polls a `Benzene.Mesh.Collector`'s `mesh:query:fleet` topic

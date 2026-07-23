@@ -16,12 +16,24 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   parentage - an event whose parent span belongs to another service makes that service a
   consumer of the event's topic; who-calls-whom is observed, never declared. Re-registration
   replaces a service's provider edges wholesale (a redeploy that drops a topic drops the claim).
-- `MeshCollectorHandlers.All` - the seven handlers to pass to `UseMessageHandlers`:
+- `MeshCollectorHandlers.All` - the eight handlers to pass to `UseMessageHandlers`:
   `mesh:register`/`mesh:heartbeat`/`mesh:traces` ingest (service required → `BadRequest`; an
-  empty trace batch is accepted) and `mesh:query:fleet`/`service`/`topic`/`trace` (missing
-  params → `BadRequest`, unknown subjects → `NotFound`).
+  empty trace batch is accepted) and `mesh:query:fleet`/`service`/`topic`/`trace`/`correlation`
+  (missing params → `BadRequest`, unknown subjects → `NotFound`).
+- `mesh:query:correlation` (`CorrelationQueryMessageHandler`, 2026-07-23) - cross-service failure
+  triage from a **business correlation id** (a ticket/log id) rather than a trace id. A correlation
+  id can span multiple traces, so `MeshCollectorStore.Correlation(id)` filters the ring by
+  `MeshTraceEvent.CorrelationId` (already a shipped wire field, populated from `x-correlation-id`),
+  groups by trace id, and returns `CorrelationView { CorrelationId; List<TraceView> Traces }` - one
+  ordinary single-trace `TraceView` per matching trace (events in start order, traces ordered by
+  earliest start), so the fleet UI renders each through the **same waterfall** as a normal trace.
+  Events with a null correlation id never match (the mesh never fabricates one); empty id →
+  `BadRequest`, nothing matched → `NotFound`. **Additive/read-model only** - no wire, ingestion, or
+  spec change. Query surface is not yet conformance-pinned across languages (no Go-reference case
+  yet); shipped .NET-side, a fixture case + Go collector are the fast-follow. Covered by
+  `MeshCollectorStoreTest`'s correlation cases.
 - View shapes (`FleetView`, `ServiceSummary`, `TopicSummary`, `ServiceView`, `InstanceView`,
-  `TraceView`, `TraceSummary`, `Ack`) - `missingFeeds` names what the collector hasn't received
+  `TraceView`, `TraceSummary`, `CorrelationView`, `Ack`) - `missingFeeds` names what the collector hasn't received
   per service ("descriptor"/"health"/"traces"); `hashMatches` surfaces an instance running a
   different contract than its registration; health is `healthy`/`degraded`/`unknown` from the
   latest heartbeats.

@@ -1,6 +1,21 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-23 collector query surface: `mesh:query:correlation` (mesh-product-owner ruling).**
+> New collector read model for cross-service failure triage from a **business correlation id** (a
+> ticket/log id), complementing — not replacing — CloudWatch. `MeshTraceEvent.CorrelationId` already
+> ships (populated from `x-correlation-id`, stored whole in the ring), so this is a pure read-model
+> addition: new topic `mesh:query:correlation` → `CorrelationView { CorrelationId; List<TraceView>
+> Traces }` (one single-trace `TraceView` per matching trace, since a correlation id can span several
+> flows — the existing `TraceView`/waterfall is reused, not forked). **Rejected** overloading
+> `mesh:query:trace`/`TraceQuery`, a flattened synthetic-TraceId response, and any `FleetView`/
+> `TraceSummary` widening. Additive/non-breaking; nothing touches a cross-port wire contract. **Fast-
+> follow (not a blocker):** add a `mesh:query:correlation` case to
+> `docs/specification/conformance/mesh-collector-cases.json` **with the Go reference collector in the
+> same change** — until then the query is shipped .NET-side and honestly described as "not yet
+> cross-language conformance-pinned". UI half in `work/mesh-ui-product-vision.md` (fleet-plane lookup
+> box + failed-flow pivot). The artifact-plane (AwsMesh) X-Ray/CloudWatch correlation deep-link
+> remains a **separate, deferred** item, unchanged by this.
 > **2026-07-23 topology edges now carry usage-derived req/min + error rate (mesh-product-owner ruling).**
 > Owner feedback: the main-page topology table (client/server/source/req·min/error/p50·95·99) looked
 > "entirely empty" though the usage feed worked. Root cause: the edges *were* there (structural,

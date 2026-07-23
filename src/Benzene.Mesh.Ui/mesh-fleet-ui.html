@@ -73,6 +73,22 @@
   .wf-stat .st-err { color: var(--crit); }
   .wf-note { color: var(--muted); font-size: 12px; padding: 6px 0; }
 
+  /* ---------- correlation lookup (mesh:query:correlation) ---------- */
+  .corr-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 6px; }
+  .corr-box input { flex: 0 1 320px; min-width: 0; padding: 6px 9px; border: 1px solid var(--border);
+                    border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; font-size: 12.5px; }
+  .corr-box input:focus-visible { outline: none; border-color: var(--good); }
+  .corr-box button { padding: 6px 14px; border: 1px solid var(--border); border-radius: 7px;
+                     background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink);
+                     font: inherit; font-size: 12.5px; cursor: pointer; }
+  .corr-box button:hover, .corr-box button:focus-visible { border-color: var(--good); outline: none; }
+  .corr-results { margin-top: 4px; }
+  .corr-results .wf { margin-bottom: 18px; }
+  .corr-trace-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 8px 0 6px; }
+  .corr-link { background: none; border: none; padding: 0; font: inherit; font-size: 11.5px; color: var(--ink-2);
+               cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .corr-link:hover, .corr-link:focus-visible { color: var(--good); outline: none; }
+
   /* ---------- topology graph (derived from observed provider/consumer edges) ---------- */
   .topo-graph-wrap { border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
                      overflow-x: auto; padding: 6px; }
@@ -118,6 +134,18 @@
       <th>Invocations</th><th>Errors</th><th>Avg ms</th><th>Statuses</th></tr></thead>
     <tbody id="topics"></tbody>
   </table></div>
+
+  <h2>Trace a transaction</h2>
+  <p class="sub">Look up every flow that carried a business <span class="mono">correlation id</span> —
+    which services and topics were involved, and whether each leg succeeded or errored (from the
+    collector's <span class="mono">mesh:query:correlation</span>). Correlation ids exist only for flows
+    whose entry set the <span class="mono">x-correlation-id</span> header; flows without one won't appear here.</p>
+  <div class="corr-box">
+    <input id="corr-input" type="text" placeholder="correlation id (e.g. from a ticket or log)"
+           aria-label="Correlation id" autocomplete="off" spellcheck="false">
+    <button id="corr-go" type="button">Trace</button>
+  </div>
+  <div class="corr-results" id="corr-results"></div>
 
   <h2>Recent flows</h2>
   <p class="sub">Click a flow to open its traced waterfall — every handled message in the flow, per
@@ -473,6 +501,67 @@
     return note;
   }
 
+  /* ---------- correlation lookup: every flow that carried a business correlation id ---------- */
+  function lookupCorrelation(presetId) {
+    var input = document.getElementById("corr-input");
+    var results = document.getElementById("corr-results");
+    if (!input || !results) return;
+    if (presetId !== undefined && presetId !== null) {
+      input.value = presetId;
+      if (input.scrollIntoView) input.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    var id = (input.value || "").trim();
+    results.textContent = "";
+    if (!id) return;
+
+    var loading = document.createElement("div");
+    loading.className = "wf-note";
+    loading.textContent = "Looking up flows for " + id + "…";
+    results.appendChild(loading);
+
+    fetch(ENVELOPE_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ topic: "mesh:query:correlation", headers: {}, body: JSON.stringify({ correlationId: id }) })
+    }).then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    }).then(function (envelope) {
+      results.textContent = "";
+      if (envelope.statusCode === "NotFound") {
+        var none = document.createElement("div");
+        none.className = "wf-note";
+        none.textContent = "No flows found for correlation id “" + id + "” — it may have aged out of " +
+          "the collector's ring buffer, or no flow set this correlation id.";
+        results.appendChild(none);
+        return;
+      }
+      if (envelope.statusCode !== "Ok") throw new Error(envelope.statusCode);
+      var view = JSON.parse(envelope.body);
+      var traces = view.traces || [];
+      var label = document.createElement("div");
+      label.className = "corr-trace-label";
+      label.textContent = traces.length + (traces.length === 1 ? " flow" : " flows") +
+        " carried correlation id " + view.correlationId;
+      results.appendChild(label);
+      traces.forEach(function (t) { results.appendChild(buildWaterfall(t)); });
+    }).catch(function (err) {
+      results.textContent = "";
+      var note = document.createElement("div");
+      note.className = "wf-note failed";
+      note.textContent = "Could not look up correlation id: " + (err.message || err);
+      results.appendChild(note);
+    });
+  }
+  (function wireCorrelationLookup() {
+    var go = document.getElementById("corr-go");
+    var input = document.getElementById("corr-input");
+    if (go) go.addEventListener("click", function () { lookupCorrelation(); });
+    if (input) input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); lookupCorrelation(); }
+    });
+  })();
+
   function spanDepths(events) {
     var byId = {};
     events.forEach(function (e) { if (e.spanId) byId[e.spanId] = e; });
@@ -496,6 +585,22 @@
     tid.className = "tid";
     tid.textContent = view.traceId;
     head.appendChild(tid);
+    // Surface a correlation id from the flow itself, so an investigator who opened a failed flow can
+    // pivot to every related flow with one click (the "surface it from a reported failure" affordance).
+    var correlated = (events.find(function (e) { return e.correlationId; }) || {}).correlationId;
+    if (correlated) {
+      var cwrap = document.createElement("span");
+      cwrap.className = "tid";
+      cwrap.textContent = "correlation ";
+      var clink = document.createElement("button");
+      clink.type = "button";
+      clink.className = "corr-link";
+      clink.textContent = correlated;
+      clink.title = "Find all flows that carried this correlation id";
+      clink.addEventListener("click", function () { lookupCorrelation(correlated); });
+      cwrap.appendChild(clink);
+      head.appendChild(cwrap);
+    }
     wrap.appendChild(head);
 
     if (!events.length) {

@@ -229,6 +229,31 @@ public class MeshCollectorStore
         }
     }
 
+    /// <summary>
+    /// Every flow in the ring that carried <paramref name="correlationId"/>, grouped by trace id -
+    /// one <see cref="TraceView"/> per trace (events in start order), traces ordered by earliest
+    /// event. A correlation id is a business identifier that can span multiple traces, so the result
+    /// preserves that grouping rather than flattening. Events with a null correlation id never match
+    /// (the mesh never fabricates a correlation id). Returns null when nothing carried it.
+    /// </summary>
+    public CorrelationView? Correlation(string correlationId)
+    {
+        lock (_lock)
+        {
+            var traces = _ring
+                .Where(x => x.CorrelationId == correlationId)
+                .GroupBy(x => x.TraceId)
+                .Select(group => new TraceView
+                {
+                    TraceId = group.Key,
+                    Events = group.OrderBy(x => x.StartedAt).ToList(),
+                })
+                .OrderBy(view => view.Events[0].StartedAt)
+                .ToList();
+            return traces.Count == 0 ? null : new CorrelationView { CorrelationId = correlationId, Traces = traces };
+        }
+    }
+
     private ServiceState EnsureService(string name)
     {
         if (!_services.TryGetValue(name, out var state))

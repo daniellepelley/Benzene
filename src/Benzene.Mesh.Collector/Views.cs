@@ -126,6 +126,17 @@ public class TraceView
     public List<MeshTraceEvent> Events { get; set; } = new();
 }
 
+/// <summary>The <c>mesh:query:correlation</c> response: every flow that carried a business
+/// correlation id, grouped by trace. A correlation id is a business identifier that can span more
+/// than one trace (several distinct flows sharing it), so this returns one <see cref="TraceView"/>
+/// per matching trace rather than a single flattened event list - each group renders through the
+/// same waterfall as a normal trace, and the "several distinct flows" distinction is preserved.</summary>
+public class CorrelationView
+{
+    public string CorrelationId { get; set; } = string.Empty;
+    public List<TraceView> Traces { get; set; } = new();
+}
+
 /// <summary>The <c>mesh:query:fleet</c> request body (no parameters).</summary>
 public class FleetQuery
 {
@@ -148,4 +159,10 @@ public class TopicQuery
 public class TraceQuery
 {
     public string? TraceId { get; set; }
+}
+
+/// <summary>The <c>mesh:query:correlation</c> request body.</summary>
+public class CorrelationQuery
+{
+    public string? CorrelationId { get; set; }
 }
