@@ -7,6 +7,12 @@
 
 ---
 
+> **2026-07-23 SCOPED: Fleet UI backed by an OTel trace store.** Beyond the push-collector, the Fleet
+> view can read traces/correlation/recent-flows from Grafana Tempo/X-Ray/Jaeger (scope:
+> `work/otel-fleet-adapter-scope.md`). UI honesty items when trace-backed: a "Backed by: <backend> —
+> traces only" banner, `Health=unknown`+`MissingFeeds` reduced rows (health/descriptor/stats absent from
+> traces), and — the one gap to close — render "—" not "0" for stat fields when `MissingFeeds` has
+> `stats` (absent ≠ zero; traces are sampled, counts stay the usage feed).
 > **2026-07-23 usage "By status" now itemizes failures (mesh-product-owner).**
 > Following the reconcile-the-totals fix, the owner asked for the *failure* breakdown to show the real
 > cause, not a single `failure` chip: "a load of `not-found` might be fine; a load of `unauthorized`

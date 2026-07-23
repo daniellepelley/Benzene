@@ -1,6 +1,15 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-23 SCOPED: OTel-backed Fleet read-model adapter (mesh-product-owner).** The Fleet UI can be
+> made to read the `mesh:query:trace`/`correlation`/(recent-flows subset of `fleet`) read-models from an
+> existing OTel **trace** backend (Grafana Tempo first, then X-Ray, then Jaeger — never OTLP itself,
+> which has no query API) instead of the in-memory push-collector. Purely additive read-side adapter
+> behind the same `mesh:query:*` topics/shapes (no wire/spec change); new package `Benzene.Mesh.Fleet.Tempo`,
+> kept distinct from the PromQL `Benzene.Mesh.Tracing.Tempo`. Health + aggregate stats are OMITTED
+> (not in traces / sampling-biased) — those stay the heartbeat plane + usage feed. Two prerequisite
+> span-attribute conventions for `observability-product-owner` (`benzene.status`; searchable correlation
+> id). Full scope + phasing: `work/otel-fleet-adapter-scope.md`.
 > **2026-07-23 usage `result` tag: collapse success, itemize failure (mesh-product-owner ruling).**
 > Owner: "if success, call it `success`; if failure, record the root cause — a load of `not-found`
 > might be fine, a load of `unauthorized` points to a wider problem." `benzene.messages.processed`'s
