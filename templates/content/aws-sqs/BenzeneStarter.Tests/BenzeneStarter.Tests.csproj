@@ -17,11 +17,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Benzene's transport-agnostic in-memory host (BenzeneMessage), used by the tests to route a
-         topic through your handlers without the real transport. Version="*-*" floats to the latest
-         published prerelease, matching the main project. -->
-    <PackageReference Include="Benzene.Core.MessageHandlers" Version="*-*" />
-    <PackageReference Include="Benzene.Microsoft.Dependencies" Version="*-*" />
+    <!-- Benzene's test host: BenzeneTestHost.Create<StartUp>() boots the app exactly as the real host
+         does (ConfigureServices + Configure), with WithServices/WithConfiguration override seams. The
+         AWS helpers add BuildAwsLambdaHost()/AwsLambdaBenzeneTestHost and SendSqsAsync. Version "*-*"
+         floats to the latest published prerelease, matching the main project. -->
+    <PackageReference Include="Benzene.Testing" Version="*-*" />
+    <PackageReference Include="Benzene.Aws.Lambda.Core.TestHelpers" Version="*-*" />
+    <PackageReference Include="Benzene.Aws.Lambda.Sqs.TestHelpers" Version="*-*" />
   </ItemGroup>
 
   <ItemGroup>

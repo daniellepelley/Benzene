@@ -6,8 +6,8 @@ namespace BenzeneStarter;
 // This is a starter handler - replace it with your own, or add more alongside it.
 //
 // This is a fire-and-forget handler (IMessageHandler<HelloWorldMessage>, no response type) - the right
-// shape for an event/stream consumer, since nothing is written back. Benzene routes each incoming
-// message to a handler by matching its topic against [Message("...")]. The handler takes its
+// shape for a queue, topic, or stream consumer, since nothing is written back. Benzene routes each
+// incoming message to a handler by matching its topic against [Message("...")]. The handler takes its
 // collaborators (here IGreeter) via the constructor - they're resolved from DI, and a test can swap
 // them for a stand-in (see BenzeneStarter.Tests). Keeping side effects behind an injected service like
 // this is what makes the handler straightforward to test.

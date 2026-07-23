@@ -1,61 +1,50 @@
-using Benzene.Abstractions.DI;
-using Benzene.Core.MessageHandlers;
-using Benzene.Core.MessageHandlers.BenzeneMessage;
-using Benzene.Core.MessageHandlers.DI;
-using Benzene.Core.Messages.BenzeneMessage;
-using Benzene.Core.Middleware;
-using Benzene.Microsoft.Dependencies;
+using Benzene.Aws.Lambda.Core.TestHelpers;
+using Benzene.Aws.Lambda.Sns.TestHelpers;
+using Benzene.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BenzeneStarter.Tests;
 
-// These tests route a message through Benzene's transport-agnostic in-memory host (BenzeneMessage),
-// exercising your real handler and its routing without spinning up the actual transport (HTTP,
-// Lambda, a queue). The same handler answers every transport by its topic, so proving it here proves
-// it everywhere. Add a test per handler as your service grows.
+// A component test: it boots the SAME app your StartUp configures for a real deployment - both
+// ConfigureServices and Configure run - then pushes a message through the whole Benzene pipeline.
+// Only the SNS trigger is simulated. WithServices/WithConfiguration are the seams for overriding any
+// dependency or setting the test needs (here we swap the real IGreeter for a spy so we can assert the
+// handler actually ran with the routed message).
 public class HelloWorldMessageHandlerTests
 {
-    // A minimal in-memory Benzene host: it discovers the handlers in the main project and routes a
-    // BenzeneMessage (a topic + JSON body) to them - the same routing every Benzene transport performs.
-    private static async Task<IBenzeneMessageResponse> SendAsync(string topic, string body)
+    private sealed class SpyGreeter : IGreeter
     {
-        var services = new ServiceCollection();
-        services.AddLogging();
+        public List<string> Greeted { get; } = new();
+        public void Greet(string name) => Greeted.Add(name);
+    }
 
-        var container = new MicrosoftBenzeneServiceContainer(services);
-        container
-            .AddBenzene()
-            .AddBenzeneMessage()
-            .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly);
+    private static AwsLambdaBenzeneTestHost BuildHost(IGreeter greeter) =>
+        new(BenzeneTestHost.Create<StartUp>()
+            .WithServices(services => services.AddSingleton<IGreeter>(greeter))
+            .WithConfiguration("Example:Setting", "test-value")
+            .BuildAwsLambdaHost());
 
-        var pipeline = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
-        pipeline.UseMessageHandlers();
+    [Fact]
+    public async Task Routing_the_demo_topic_invokes_the_handler()
+    {
+        var greeter = new SpyGreeter();
+        using var host = BuildHost(greeter);
 
-        var app = new BenzeneMessageApplication(pipeline.Build());
-        var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
+        // A real SNS event carrying a Benzene message envelope (topic + body) through the full pipeline.
+        await host.SendEventAsync(MessageBuilder.Create("hello:world", new HelloWorldMessage { Name = "World" }).AsSns());
 
-        return await app.HandleAsync(
-            new BenzeneMessageRequest { Topic = topic, Headers = new Dictionary<string, string>(), Body = body },
-            serviceResolverFactory);
+        Assert.Equal(new[] { "World" }, greeter.Greeted);
     }
 
     [Fact]
-    public async Task Sending_the_hello_world_topic_returns_Ok()
+    public async Task An_unknown_topic_does_not_reach_the_handler()
     {
-        var response = await SendAsync("hello:world", "{\"name\":\"World\"}");
+        var greeter = new SpyGreeter();
+        using var host = BuildHost(greeter);
 
-        Assert.Equal("Ok", response.StatusCode);
-        Assert.Contains("Hello World!", response.Body);
-    }
+        await host.SendEventAsync(MessageBuilder.Create("does:not-exist", new HelloWorldMessage { Name = "World" }).AsSns());
 
-    [Fact]
-    public async Task Sending_an_unknown_topic_returns_NotFound()
-    {
-        // Nothing handles this topic, so Benzene's router returns a NotFound result - the same
-        // behaviour every transport surfaces (e.g. an HTTP 404) when a message has no handler.
-        var response = await SendAsync("does:not-exist", "{}");
-
-        Assert.Equal("NotFound", response.StatusCode);
+        Assert.Empty(greeter.Greeted);
     }
 }

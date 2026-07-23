@@ -29,7 +29,13 @@ public class StartUp : BenzeneStartUp
         // stages Error - a no-op until an OpenTelemetry exporter is attached. See
         // docs/monitoring.md and docs/diagnosing-failures.md.
         services.AddLogging(x => x.AddConsole());
+
+        // Register your application services here - a test can override any of them (see
+        // BenzeneStarter.Tests). IGreeter is the demo handler's one dependency.
+        services.AddSingleton<IGreeter, ConsoleGreeter>();
+
         services.UsingBenzene(x => x
+            .AddBenzene()
             .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly)
             .AddDiagnostics());
     }

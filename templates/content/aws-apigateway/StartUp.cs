@@ -31,6 +31,7 @@ public class StartUp : BenzeneStartUp
         // docs/monitoring.md and docs/diagnosing-failures.md.
         services.AddLogging(x => x.AddConsole());
         services.UsingBenzene(x => x
+            .AddBenzene()
             .AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly)
             .AddHttpMessageHandlers()
             .AddDiagnostics());

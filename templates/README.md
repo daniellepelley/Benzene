@@ -106,10 +106,17 @@ Run this before committing a change to any of the shared `HelloWorldMessageHandl
 the same check — group A + group B, see "Layout" above):
 
 ```bash
+# Group A (request/response, canonical asp)
 canonical_a="templates/content/asp/HelloWorldMessageHandler.cs"
-for d in selfhost-http aws-apigateway aws-sqs aws-sns azure-http; do
+for d in aws-apigateway azure-http selfhost-http; do
   diff "$canonical_a" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (A): $d"; exit 1; }
 done
+# Group C (fire-and-forget with an injected collaborator, canonical aws-sqs - the component-test templates)
+canonical_c="templates/content/aws-sqs/HelloWorldMessageHandler.cs"
+for d in aws-sns azure-eventhub; do
+  diff "$canonical_c" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (C): $d"; exit 1; }
+done
+# Group B (fire-and-forget, no collaborator - still on the in-memory test, canonical rabbitmq)
 canonical_b="templates/content/rabbitmq-worker/HelloWorldMessageHandler.cs"
 for d in servicebus-worker azure-servicebus azure-queuestorage; do
   diff "$canonical_b" "templates/content/$d/HelloWorldMessageHandler.cs" || { echo "DRIFT (B): $d"; exit 1; }
@@ -118,21 +125,20 @@ done
 
 ### Shared-test diff check
 
-The `BenzeneStarter.Tests/` files follow the same sharing groups. The `.csproj` is **identical** across
-all templates; the test `.cs` shares by handler group (group A asserts `Ok` + body; group B/standalone
-assert `Accepted`), with `kafka-worker`/`azure-eventgrid` differing only in the topic string
-(`hello_world` / `hello.world`).
+Only templates still on the **in-memory** test keep the identical `.csproj` + shared test `.cs`
+(group A asserts `Ok` + body; group B/standalone assert `Accepted`, with `kafka-worker`/`azure-eventgrid`
+differing only in the topic string). Component-test templates (bespoke per transport) drop out of these
+lists as they migrate.
 
 ```bash
-# every test .csproj is identical
+# every in-memory test .csproj is identical (component-test templates are omitted)
 canonical_csproj="templates/content/asp/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj"
-for d in $(ls templates/content); do
-  [ "$d" = "asp" ] || [ "$d" = "azure-eventhub" ] && continue
+for d in selfhost-http azure-http azure-servicebus azure-eventgrid azure-queuestorage kafka-worker rabbitmq-worker servicebus-worker; do
   diff "$canonical_csproj" "templates/content/$d/BenzeneStarter.Tests/BenzeneStarter.Tests.csproj" || { echo "DRIFT (csproj): $d"; exit 1; }
 done
 # group A test (request/response): asserts Ok + body
 canonical_test_a="templates/content/asp/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs"
-for d in selfhost-http aws-apigateway aws-sqs aws-sns azure-http; do
+for d in azure-http selfhost-http; do
   diff "$canonical_test_a" "templates/content/$d/BenzeneStarter.Tests/HelloWorldMessageHandlerTests.cs" || { echo "DRIFT test (A): $d"; exit 1; }
 done
 # group B test (fire-and-forget): asserts Accepted

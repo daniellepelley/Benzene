@@ -1,38 +1,47 @@
 using Benzene.Abstractions.MessageHandlers;
-using Benzene.Abstractions.Results;
 using Benzene.Core.MessageHandlers;
-using Benzene.Http;
-using Benzene.Results;
 
 namespace BenzeneStarter;
 
-// This is a starter handler - replace it with your own, or add more alongside it. Your business
-// logic lives here, not in Program.cs/StartUp.cs: a handler receives a typed request and returns a
-// typed response, and knows nothing about HTTP, Lambda, or queues - the same handler shape runs
-// unchanged on every host Benzene supports (see docs/getting-started.md).
+// This is a starter handler - replace it with your own, or add more alongside it.
 //
-// [Message("hello:world")] maps this handler to its topic - every Benzene transport routes by
-// topic, so this identifier stays constant across HTTP, Lambda, SQS, SNS, and Kafka.
-// [HttpEndpoint("GET", "/hello/{name}")] additionally maps an HTTP method and path onto that same
-// topic (unused on transports with no HTTP concept, e.g. SQS/SNS/Kafka - harmless to leave in
-// place, since the same handler still answers those transports via its topic alone).
+// This is a fire-and-forget handler (IMessageHandler<HelloWorldMessage>, no response type) - the right
+// shape for a queue, topic, or stream consumer, since nothing is written back. Benzene routes each
+// incoming message to a handler by matching its topic against [Message("...")]. The handler takes its
+// collaborators (here IGreeter) via the constructor - they're resolved from DI, and a test can swap
+// them for a stand-in (see BenzeneStarter.Tests). Keeping side effects behind an injected service like
+// this is what makes the handler straightforward to test.
 [Message("hello:world")]
-[HttpEndpoint("GET", "/hello/{name}")]
-public class HelloWorldMessageHandler : IMessageHandler<HelloWorldRequest, HelloWorldResponse>
+public class HelloWorldMessageHandler : IMessageHandler<HelloWorldMessage>
 {
-    public Task<IBenzeneResult<HelloWorldResponse>> HandleAsync(HelloWorldRequest message)
+    private readonly IGreeter _greeter;
+
+    public HelloWorldMessageHandler(IGreeter greeter)
     {
-        var response = new HelloWorldResponse { Message = $"Hello {message.Name}!" };
-        return Task.FromResult(BenzeneResult.Ok(response));
+        _greeter = greeter;
+    }
+
+    public Task HandleAsync(HelloWorldMessage message)
+    {
+        _greeter.Greet(message.Name);
+        return Task.CompletedTask;
     }
 }
 
-public class HelloWorldRequest
+public class HelloWorldMessage
 {
     public string Name { get; set; } = string.Empty;
 }
 
-public class HelloWorldResponse
+// A tiny example dependency, registered in StartUp and injected into the handler above. It exists to
+// show the shape - a handler depends on an interface, the app registers a real implementation, and a
+// test overrides it. Replace it with your own services (a repository, an HTTP client, ...).
+public interface IGreeter
 {
-    public string Message { get; set; } = string.Empty;
+    void Greet(string name);
+}
+
+public class ConsoleGreeter : IGreeter
+{
+    public void Greet(string name) => Console.WriteLine($"Hello {name}!");
 }
