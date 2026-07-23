@@ -77,13 +77,22 @@ jobs:
                  --uniform-bucket-level-access
 
       # 1. Provision infra (topics, bucket, service account, IAM) — no scheduler yet.
+      #    Retry the apply: a just-enabled API (esp. IAM) can take a couple of minutes to propagate
+      #    before service-account creation succeeds, even after `services enable` returns.
       - name: Terraform apply (infra)
         working-directory: ${{ env.TF_DIR }}
         run: |
           terraform init -backend-config="bucket=${{ github.event.inputs.state_bucket }}" -backend-config="prefix=google-cloud-mesh"
-          terraform apply -auto-approve \
-            -var "project=${{ github.event.inputs.project }}" \
-            -var "region=${{ github.event.inputs.region }}"
+          for attempt in 1 2 3 4; do
+            if terraform apply -auto-approve \
+                 -var "project=${{ github.event.inputs.project }}" \
+                 -var "region=${{ github.event.inputs.region }}"; then
+              exit 0
+            fi
+            echo "::warning::infra apply attempt $attempt failed (likely API propagation); retrying in 60s"
+            sleep 60
+          done
+          exit 1
 
       - name: Read Terraform outputs
         id: tf
