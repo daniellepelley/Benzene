@@ -1,7 +1,11 @@
+using System.Globalization;
 using Amazon.XRay;
 using Amazon.XRay.Model;
 using Benzene.Mesh.Collector;
 using Benzene.Mesh.Wire;
+// Both namespaces declare a TraceSummary; the alias resolves the bare name to the mesh one (what this
+// adapter produces) while X-Ray's own summary type stays reachable by its full name.
+using TraceSummary = Benzene.Mesh.Collector.TraceSummary;
 
 namespace Benzene.Mesh.Fleet.Aws.XRay;
 
@@ -127,6 +131,83 @@ public class XRayTraceSource : IMeshTraceSource
         // renders both identically.
         traces.Sort((a, b) => EarliestStart(a).CompareTo(EarliestStart(b)));
         return new CorrelationView { CorrelationId = correlationId, Traces = traces };
+    }
+
+    /// <summary>Lists the most recent flows for the fleet view: one <c>GetTraceSummaries</c> over the
+    /// recent-flows window (no filter), mapped to <see cref="TraceSummary"/> rows, newest first, capped at
+    /// <paramref name="limit"/>. Zero <c>BatchGetTraces</c> — the fleet load must not fan out per row; the
+    /// summary carries no span count, so <see cref="TraceSummary.Events"/> is 0 (the accurate count is one
+    /// <c>GetTraceAsync</c> away on drill-in).</summary>
+    public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(
+        int limit = 20, CancellationToken cancellationToken = default)
+    {
+        if (limit <= 0)
+        {
+            return Array.Empty<TraceSummary>();
+        }
+
+        var end = DateTime.UtcNow;
+        var start = end - _options.RecentFlowsLookback;
+
+        var summaries = new List<Amazon.XRay.Model.TraceSummary>();
+        string? nextToken = null;
+        do
+        {
+            var response = await _xray.GetTraceSummariesAsync(new GetTraceSummariesRequest
+            {
+                StartTime = start,
+                EndTime = end,
+                NextToken = nextToken
+            }, cancellationToken);
+
+            if (response.TraceSummaries != null)
+            {
+                summaries.AddRange(response.TraceSummaries);
+            }
+
+            nextToken = string.IsNullOrEmpty(response.NextToken) ? null : response.NextToken;
+        }
+        // Stop once we have comfortably more than the cap to sort a newest-first top-N from; the window,
+        // not exhaustive paging, bounds a "recent flows" list.
+        while (nextToken != null && summaries.Count < limit * 4);
+
+        return summaries
+            .Select(ToTraceSummary)
+            .OrderByDescending(t => t.StartedAt)
+            .Take(limit)
+            .ToList();
+    }
+
+    private static TraceSummary ToTraceSummary(Amazon.XRay.Model.TraceSummary summary) => new()
+    {
+        TraceId = summary.Id ?? string.Empty,
+        // X-Ray Duration is in seconds; the mesh carries milliseconds.
+        DurationMs = summary.Duration * 1000,
+        Failed = summary.HasError || summary.HasFault,
+        Services = summary.ServiceIds?
+            .Select(s => s.Name)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Select(name => name!)
+            .Distinct()
+            .ToList() ?? new List<string>(),
+        StartedAt = ParseTraceStart(summary.Id),
+        Events = 0 // X-Ray summaries carry no span count; the drill-in trace has it.
+    };
+
+    /// <summary>An X-Ray trace id is <c>1-{8 hex epoch seconds}-{24 hex}</c>; the middle group is the
+    /// trace's start time. Falls back to <see cref="DateTimeOffset.MinValue"/> for an unparseable id.</summary>
+    private static DateTimeOffset ParseTraceStart(string? traceId)
+    {
+        if (traceId is not null)
+        {
+            var parts = traceId.Split('-');
+            if (parts.Length >= 2 && long.TryParse(parts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var epoch))
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(epoch);
+            }
+        }
+
+        return DateTimeOffset.MinValue;
     }
 
     /// <summary>Fetch the given trace ids from X-Ray and map the returned segments to events under one

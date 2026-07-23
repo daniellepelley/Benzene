@@ -39,6 +39,11 @@
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Ui\Benzene.Mesh.Ui.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Contracts\Benzene.Mesh.Contracts.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Mesh.Usage.CloudWatch\Benzene.Mesh.Usage.CloudWatch.csproj" />
+    <!-- The Fleet view: the composite (X-Ray traces + CloudWatch usage) read model behind the collector
+         query handlers, served over the same wire-envelope endpoint the Fleet UI polls. (UseBenzeneMessage
+         and the Fleet UI come from Benzene.Http / Benzene.Mesh.Ui, already referenced transitively.) -->
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Collector\Benzene.Mesh.Collector.csproj" />
+    <ProjectReference Include="..\..\..\src\Benzene.Mesh.Fleet.Aws.XRay\Benzene.Mesh.Fleet.Aws.XRay.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Diagnostics\Benzene.Diagnostics.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.OpenTelemetry\Benzene.OpenTelemetry.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />

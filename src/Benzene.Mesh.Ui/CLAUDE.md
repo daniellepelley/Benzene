@@ -1,5 +1,19 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-23 (Fleet view): absent ≠ zero — reduced stats render "—", not "0".**
+> `mesh-fleet-ui.html` gains `isAbsent(row, dim)`/`statCell(row, value, dim, class)`: a stat dimension a
+> row itself marks genuinely absent (via `missingFeeds`) renders **`—`**, not the non-nullable `0` it
+> carries on the wire. This is the UI half of the composite fleet reader (`CompositeMeshFleetReadModel`,
+> `work/otel-fleet-adapter-scope.md` inc 3): a backend-composed fleet (X-Ray traces + CloudWatch usage)
+> supplies **topic** counts but not **per-service** counts (CloudWatch has no service dimension) nor a
+> **duration** (CloudWatch has none) — so service rows mark `stats` and topic rows mark `duration`, and
+> those cells show `—` instead of a fabricated `0` that reads as "observed none". Also: the top
+> **Invocations/Errors tiles now sum over topics, not services** — topic counts are the per-message truth
+> on both planes (they match the service sums on the push collector, which counts the same events), and on
+> the composite plane services carry no counts while topics do, so the old service-sum would have shown
+> `0` beside a populated topic table (the "numbers don't add up" trap again). Collector-plane rows are
+> unaffected (their `missingFeeds` never name a stat dimension — every dimension is observed there).
+>
 > **2026-07-23 (Fleet view): "Look up a trace by ID" box.** `mesh-fleet-ui.html` gains a direct
 > trace-id lookup box (above "Recent flows"), the sibling of the correlation lookup: paste a trace id
 > → POSTs `mesh:query:trace` through the same `ENVELOPE_URL` → renders that flow's waterfall via the

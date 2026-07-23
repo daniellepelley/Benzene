@@ -150,11 +150,26 @@ the message-handler span), not every middleware span — else the waterfall show
   filtered on `annotation.benzene_correlation_id` (paged) → `BatchGetTraces` (chunked to 5) →
   group-by-trace `CorrelationView`, reusing increment-1's mapping. §6b landed alongside. Runtime caveat:
   the exporter must index the correlation id as an X-Ray annotation (deployment config, not code).
-- **Increment 3 — `CompositeMeshFleetReadModel` + recent-flows `FleetView`.** Compose `IMeshTraceSource`
-  (recent traces + observed consumers) with the existing `CloudWatchUsageSource` (per-topic stats);
-  `Health=unknown`, `MissingFeeds=[health,descriptor]` (NOT `stats` — CloudWatch fills those). Wire
-  `.UseMeshFleetUi(...)` onto the AwsMesh mesh Lambda → **Fleet UI + waterfall on the AwsMesh plane.**
-  Requires the UI absent-≠-zero fix (render "—" not "0" when a stat is genuinely absent).
+- **Increment 3 — `CompositeMeshFleetReadModel` + recent-flows `FleetView`.** ✅ **DONE (2026-07-23).**
+  Compose `IMeshTraceSource` (recent flows + anonymous services) with the registered `IMeshUsageSource`s
+  (CloudWatch per-topic stats); `.UseMeshFleetUi(...)` + the composite wired onto the AwsMesh mesh Lambda
+  → **Fleet UI on the AwsMesh plane.** The four locked rulings (mesh-product-owner, 2026-07-23):
+  - **Topic stats** — one `TopicSummary` per (topic, version=null) from usage entries: `Invocations`=Σcount,
+    `Errors`=Σcount where the `result` tag is an error, `StatusCounts`=raw `result` token→Σ. The error rule
+    is the **metric `result` vocabulary** (`docs/mesh-usage-feed.md` §1), i.e. `status is not null &&
+    != "success" && != "<missing>"` — **NOT** `BenzeneResultStatus.IsFailure`/`!IsSuccess`, which read the
+    wire vocabulary and would miscount `exception`/`failure` as non-errors and `success` as an error.
+  - **Services** — name-only from the recent flows' `ServiceIds` (no extra API call): `Invocations`/`Errors`
+    absent, `Health=unknown`, `MissingFeeds=[descriptor,health,stats]` — the push collector's shipped
+    "anonymous-but-live from traffic" rule, sourced from X-Ray. (Refinement: the earlier shorthand
+    "`MissingFeeds=[health,descriptor]` NOT stats" conflated **topic** stats (present from CloudWatch) with
+    **per-service** stats (absent — no service dimension). Topics carry no `stats` marker; **service rows do**.)
+  - **absent ≠ zero** — non-nullable fields + markers (nullable would break the fixtures' subset match).
+    Reuse `ServiceSummary.MissingFeeds`; **add `TopicSummary.MissingFeeds`** (`[descriptor,duration]` on
+    this plane). UI renders "—" when the row's `MissingFeeds` names the dimension.
+  - **recent flows** — new `IMeshTraceSource.GetRecentFlowsAsync(limit=20)`; X-Ray = one unfiltered
+    `GetTraceSummaries` over a 1h window mapped summary→`TraceSummary` (`Events=0`, no span count),
+    **zero `BatchGetTraces` on fleet load** (the accurate count is one `GetTraceAsync` away on drill-in).
 - **Increment 4 — Tempo `IMeshTraceSource`** (`Benzene.Mesh.Fleet.Tempo`), the non-AWS reference target,
   reusing increments 0–3's handlers/composite unchanged (that's the payoff of the abstraction). Jaeger later.
 - **Not in scope:** deriving health or per-topic **counts** from a trace source. Health stays the

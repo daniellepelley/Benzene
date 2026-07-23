@@ -64,6 +64,15 @@ public class TopicSummary
     public double AvgDurationMs { get; set; }
     public Dictionary<string, long> StatusCounts { get; set; } = new();
     public DateTimeOffset LastSeen { get; set; }
+
+    /// <summary>Which stat dimensions are genuinely absent for this topic (the counts/duration are the
+    /// non-nullable default, not an observed zero) - the same "reduced is visible, never mistaken for
+    /// empty" degradation marker <see cref="ServiceSummary.MissingFeeds"/> carries, at the topic grain.
+    /// Empty on the push-collector plane (it observes every dimension); a backend-composed reader that
+    /// can't supply, e.g., duration names it here so the UI renders "—" not "0". Declared like
+    /// <see cref="ServiceSummary.MissingFeeds"/> (always serialized, empty when nothing is missing); the
+    /// fixtures' subset match ignores the extra key on the push-collector plane.</summary>
+    public List<string> MissingFeeds { get; set; } = new();
 }
 
 /// <summary>One recent flow on the fleet view.</summary>

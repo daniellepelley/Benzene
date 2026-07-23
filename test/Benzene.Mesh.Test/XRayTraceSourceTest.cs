@@ -330,4 +330,67 @@ public class XRayTraceSourceTest
         var source = new XRayTraceSource(new Mock<IAmazonXRay>().Object);
         Assert.Null(await source.GetCorrelationAsync(""));
     }
+
+    [Fact]
+    public async Task GetRecentFlowsAsync_MapsSummaries_NewestFirst_WithoutFetchingTraces()
+    {
+        // Two recent flows; the trace-id epoch prefix (1-{hex epoch}-…) gives the start time. 5c… > 5b…,
+        // so the second summary is the newer one and must sort first — with zero BatchGetTraces calls.
+        var older = "1-5b000000-aaaaaaaaaaaaaaaaaaaaaaaa";
+        var newer = "1-5c000000-bbbbbbbbbbbbbbbbbbbbbbbb";
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((GetTraceSummariesRequest req, CancellationToken _) =>
+            {
+                Assert.Null(req.FilterExpression); // recent flows is unfiltered
+                return new GetTraceSummariesResponse
+                {
+                    TraceSummaries = new List<Amazon.XRay.Model.TraceSummary>
+                    {
+                        new Amazon.XRay.Model.TraceSummary
+                        {
+                            Id = older, Duration = 0.4, HasError = false, HasFault = false,
+                            ServiceIds = new List<ServiceId> { new ServiceId { Name = "orders-api" } }
+                        },
+                        new Amazon.XRay.Model.TraceSummary
+                        {
+                            Id = newer, Duration = 0.25, HasError = true, HasFault = false,
+                            ServiceIds = new List<ServiceId> { new ServiceId { Name = "billing-api" } }
+                        }
+                    }
+                };
+            });
+
+        var source = new XRayTraceSource(mock.Object);
+
+        var flows = await source.GetRecentFlowsAsync(20);
+
+        Assert.Equal(2, flows.Count);
+        Assert.Equal(newer, flows[0].TraceId);       // newest first
+        Assert.True(flows[0].Failed);                // HasError
+        Assert.Equal(250, flows[0].DurationMs, 3);   // seconds → ms
+        Assert.Equal("billing-api", Assert.Single(flows[0].Services));
+        Assert.Equal(0, flows[0].Events);            // summaries carry no span count
+        Assert.Equal(older, flows[1].TraceId);
+        Assert.False(flows[1].Failed);
+        // No trace was fetched to build the fleet's recent-flows list.
+        mock.Verify(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetRecentFlowsAsync_HonoursTheLimit()
+    {
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTraceSummariesResponse
+            {
+                TraceSummaries = Enumerable.Range(0, 5).Select(i =>
+                    new Amazon.XRay.Model.TraceSummary { Id = $"1-5b0000{i:D2}-{i:D24}" }).ToList()
+            });
+        var source = new XRayTraceSource(mock.Object);
+
+        var flows = await source.GetRecentFlowsAsync(3);
+
+        Assert.Equal(3, flows.Count);
+    }
 }

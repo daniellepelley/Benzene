@@ -179,6 +179,18 @@
     return td;
   }
 
+  // A stat dimension a row itself declares genuinely absent (via missingFeeds) is rendered "—", NOT the
+  // non-nullable zero it carries on the wire — a backend-composed fleet (e.g. X-Ray traces + CloudWatch
+  // usage) can supply topic counts but not per-service counts, nor a duration; showing "0" there would
+  // read as "observed none" instead of "not measured here". See work/otel-fleet-adapter-scope.md (inc 3).
+  function isAbsent(row, dimension) {
+    return (row.missingFeeds || []).indexOf(dimension) !== -1;
+  }
+  // A number cell that shows "—" when the owning row marks its dimension absent.
+  function statCell(row, value, dimension, className) {
+    return cell(row, isAbsent(row, dimension) ? "—" : value, className);
+  }
+
   function fill(tbody, rows, build, columns) {
     tbody.textContent = "";
     if (!rows || rows.length === 0) {
@@ -199,8 +211,14 @@
     var services = fleet.services || [], topics = fleet.topics || [], traces = fleet.traces || [];
     var invocations = 0, errors = 0, unhealthy = 0;
     services.forEach(function (s) {
-      invocations += s.invocations; errors += s.errors;
       if (s.health === "degraded") unhealthy++;
+    });
+    // Totals sum over TOPICS, not services: topic counts are the per-message truth on both planes (they
+    // match the service sums on the push collector, where both count the same events), and on a composite
+    // plane the services carry no counts at all while topics do — summing services there would show 0
+    // beside a populated topic table (the "numbers don't add up" trap).
+    topics.forEach(function (t) {
+      if (!isAbsent(t, "stats")) { invocations += t.invocations; errors += t.errors; }
     });
     document.getElementById("t-services").textContent = services.length;
     document.getElementById("t-topics").textContent = topics.length;
@@ -231,8 +249,8 @@
       cell(tr, s.binding);
       cell(tr, s.topics, "num");
       cell(tr, s.instances, "num");
-      cell(tr, s.invocations, "num");
-      cell(tr, s.errors, "num" + (s.errors > 0 ? " failed" : ""));
+      statCell(tr, s.invocations, "stats", "num");
+      statCell(tr, s.errors, "stats", "num" + (!isAbsent(s, "stats") && s.errors > 0 ? " failed" : ""));
       cell(tr, (s.missingFeeds || []).join(", "), "missing");
     }, 11);
 
@@ -240,9 +258,9 @@
       cell(tr, t.topic + (t.version ? "@" + t.version : ""), "mono");
       cell(tr, (t.providers || []).join(", "));
       cell(tr, (t.consumers || []).join(", "));
-      cell(tr, t.invocations, "num");
-      cell(tr, t.errors, "num" + (t.errors > 0 ? " failed" : ""));
-      cell(tr, t.avgDurationMs ? t.avgDurationMs.toFixed(1) : "0.0", "num");
+      statCell(tr, t.invocations, "stats", "num");
+      statCell(tr, t.errors, "stats", "num" + (!isAbsent(t, "stats") && t.errors > 0 ? " failed" : ""));
+      statCell(tr, t.avgDurationMs ? t.avgDurationMs.toFixed(1) : "0.0", "duration", "num");
       var statuses = Object.keys(t.statusCounts || {}).sort().map(function (k) {
         return (k || "(none)") + " " + t.statusCounts[k];
       }).join(" · ");

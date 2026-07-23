@@ -15,15 +15,31 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   data source is swappable. `MeshCollectorStore` implements it (explicit-interface async wrappers over
   its sync read methods — the push-collector plane, unchanged). Register `IMeshFleetReadModel` alongside
   the store singleton (every host that wires the collector now does both). The other implementation,
-  `TraceSourceFleetReadModel`, composes a pluggable `IMeshTraceSource` (OTel trace backend) — see
-  `work/otel-fleet-adapter-scope.md`.
-- `IMeshTraceSource` (2026-07-23) - the pluggable trace-shaped source (`GetTraceAsync` +
-  `GetCorrelationAsync`; recent-flows added in a later increment) implemented per backend in a
-  `Benzene.Mesh.Fleet.*` adapter (X-Ray first). Deliberately carries **no** stats/health (traces are
-  sampled; no heartbeat feed) — those stay `IMeshUsageSource` + the heartbeat plane.
-  `TraceSourceFleetReadModel` wraps it into an `IMeshFleetReadModel`, serving `mesh:query:trace` and
-  `mesh:query:correlation` now and returning honest empty/absent shapes for the rest until the composing
-  increment lands.
+  `CompositeMeshFleetReadModel`, composes a pluggable `IMeshTraceSource` (OTel trace backend) with the
+  `IMeshUsageSource`s (metrics backend) — see `work/otel-fleet-adapter-scope.md`.
+- `IMeshTraceSource` (2026-07-23) - the pluggable trace-shaped source (`GetTraceAsync` /
+  `GetCorrelationAsync` / `GetRecentFlowsAsync`) implemented per backend in a `Benzene.Mesh.Fleet.*`
+  adapter (X-Ray first). Deliberately carries **no** stats/health (traces are sampled; no heartbeat
+  feed) — those stay `IMeshUsageSource` + the heartbeat plane. `GetRecentFlowsAsync` returns per-flow
+  `TraceSummary` rows only (no aggregate counts), and its `Events` may be 0 when the backend's summary
+  shape has no span count (the accurate count is one `GetTraceAsync` away on drill-in).
+- `CompositeMeshFleetReadModel` (2026-07-23) - the backend-composed `IMeshFleetReadModel` (inc 3):
+  **topic stats** from the `IMeshUsageSource`s (CloudWatch/App Insights), **recent flows + the
+  anonymous-but-live service list** from the `IMeshTraceSource` (X-Ray). Each source is fetched in its
+  own try/catch (the aggregator's fetch-isolation rule — one failing source degrades its own slice to
+  empty, never blanks the whole `FleetView`). Per-service pages and single-topic rows return `null` (no
+  descriptor feed on this plane). Two honesty details worth knowing:
+  - **Error rule follows the metric `result` vocabulary, NOT the wire-status classifiers.** A usage
+    entry's `status` is the `result` tag (`docs/mesh-usage-feed.md` §1): `success` collapses every
+    ok/created/…, `exception`/`failure` are error buckets with no wire status, `not-found`/… are
+    itemized failures, `<missing>`/null are no-outcome. So "error" = `status is not null && != "success"
+    && != "<missing>"`. Do **not** rewrite this as `BenzeneResultStatus.IsFailure`/`!IsSuccess` — those
+    read the *wire* vocabulary (what the push-collector's raw trace `benzene.status` carries, a
+    different vocabulary) and would miscount `exception`/`failure` as non-errors and `success` as an error.
+  - **Absent ≠ zero.** CloudWatch has no per-service dimension and no duration, and X-Ray traces are
+    sampled, so genuinely-absent stats are marked via `MissingFeeds` (below), not shown as `0`: topic
+    rows carry `["descriptor","duration"]` (Providers need a descriptor feed; duration unless a usage
+    source measured it), anonymous service rows carry `["descriptor","health","stats"]`.
 - `MeshCollectorStore` - the in-memory state (singleton per collector): cumulative per-service
   and per-topic stats, latest heartbeat per instance, registered descriptors, and a bounded ring
   of recent trace events (default 4096). Consumer edges are derived **at query time** from ring
@@ -52,8 +68,12 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   yet); shipped .NET-side, a fixture case + Go collector are the fast-follow. Covered by
   `MeshCollectorStoreTest`'s correlation cases.
 - View shapes (`FleetView`, `ServiceSummary`, `TopicSummary`, `ServiceView`, `InstanceView`,
-  `TraceView`, `TraceSummary`, `CorrelationView`, `Ack`) - `missingFeeds` names what the collector hasn't received
-  per service ("descriptor"/"health"/"traces"); `hashMatches` surfaces an instance running a
+  `TraceView`, `TraceSummary`, `CorrelationView`, `Ack`) - `ServiceSummary.missingFeeds` names what the
+  collector hasn't received per service ("descriptor"/"health"/"traces"); `TopicSummary.missingFeeds`
+  (2026-07-23, additive) does the same at the topic grain, naming absent **stat dimensions**
+  ("descriptor"/"duration"/"stats") so a backend-composed reader can mark a genuinely-absent count/duration
+  and the UI renders "—" not "0" (empty on the push-collector plane, which observes every dimension —
+  the fixtures' subset match ignores the extra key). `hashMatches` surfaces an instance running a
   different contract than its registration; health is `healthy`/`degraded`/`unknown` from the
   latest heartbeats.
 - `CollectorUsageSource : Benzene.Mesh.Contracts.IMeshUsageSource` (2026-07-22) - the

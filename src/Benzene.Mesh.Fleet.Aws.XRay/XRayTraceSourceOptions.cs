@@ -12,4 +12,10 @@ public class XRayTraceSourceOptions
     /// Default 24 hours — a business correlation id (a ticket/log id) is typically chased soon after the
     /// event, and X-Ray retains traces for 30 days so a longer window is available if you widen it.</summary>
     public TimeSpan CorrelationLookback { get; init; } = TimeSpan.FromHours(24);
+
+    /// <summary>How far back the fleet view's "recent flows" list scans X-Ray. Default 1 hour — the fleet
+    /// view wants the latest activity, not history; kept separate from <see cref="CorrelationLookback"/>
+    /// (and from the usage feed's own window) because "what's flowing now" is a much shorter horizon than
+    /// "find the trace(s) for this ticket".</summary>
+    public TimeSpan RecentFlowsLookback { get; init; } = TimeSpan.FromHours(1);
 }

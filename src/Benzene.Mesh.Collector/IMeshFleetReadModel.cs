@@ -7,7 +7,7 @@ namespace Benzene.Mesh.Collector;
 /// The read side of the fleet the <c>mesh:query:*</c> handlers answer — the seam that makes the fleet
 /// UI's data source swappable. The in-memory <see cref="MeshCollectorStore"/> is one implementation
 /// (push-collector plane); a backend-composed implementation
-/// (<see cref="TraceSourceFleetReadModel"/> / <c>Benzene.Mesh.Fleet.*</c>) reads traces from an OTel
+/// (<see cref="CompositeMeshFleetReadModel"/> / <c>Benzene.Mesh.Fleet.*</c>) reads traces from an OTel
 /// trace store and stats from an <c>IMeshUsageSource</c> — see <c>work/otel-fleet-adapter-scope.md</c>.
 /// Async because a backend-composed reader does I/O; the in-memory store just wraps its sync methods.
 /// </summary>
