@@ -11,7 +11,7 @@ on:
       project:
         description: "Google Cloud project id"
         required: true
-        default: "driven-cabinet-337820"
+        default: "smart-theory-88114"
       region:
         description: "Region"
         required: false
