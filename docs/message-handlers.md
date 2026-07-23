@@ -34,7 +34,7 @@ public interface IMessageHandler<TRequest>
   Internally, `MessageHandlerNoResultWrapper<TRequest, TResponse>` wraps it so it still fits the
   request/response shape; the wrapper always returns `BenzeneResult.Accepted<TResponse>()` once
   your handler's `HandleAsync` completes — this is why a no-response handler always reports back an
-  "Accepted" result.
+  "accepted" result.
 
 See [Message Results](message-result.md) for everything about `IBenzeneResult<T>` and the available
 status factories — this page doesn't repeat that detail.

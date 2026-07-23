@@ -102,7 +102,7 @@ app.UseApiGateway(apiGatewayApp => apiGatewayApp
     .UseExceptionHandler((ApiGatewayContext context, Exception exception) =>
     {
         context.EnsureResponseExists();
-        context.ApiGatewayProxyResponse.StatusCode = 500; // matches DefaultHttpStatusCodeMapper's UnexpectedError -> 500
+        context.ApiGatewayProxyResponse.StatusCode = 500; // matches DefaultHttpStatusCodeMapper's unexpected-error -> 500
         context.ApiGatewayProxyResponse.Headers["content-type"] = "application/json";
         context.ApiGatewayProxyResponse.Body = JsonSerializer.Serialize(
             new ErrorPayload(BenzeneResultStatus.UnexpectedError, new[] { "An unexpected error occurred." }));

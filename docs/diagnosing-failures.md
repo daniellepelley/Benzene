@@ -104,7 +104,7 @@ describe the same throw from different layers — the `traceId` ties them togeth
 An *unsuccessful result* (no throw) instead produces a single `Warning` from the router:
 
 ```
-[Warning] Benzene: Handler CreateOrderHandler for topic order:create returned unsuccessful status NotFound
+[Warning] Benzene: Handler CreateOrderHandler for topic order:create returned unsuccessful status not-found
     { invocationId=..., topic=order:create, transport=sqs, handler=CreateOrderHandler }
 ```
 

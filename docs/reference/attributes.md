@@ -96,7 +96,7 @@ public ValidationStatusAttribute(string status)
 | `Status` | The result status to return on validation failure. |
 
 ```csharp
-[ValidationStatus("BadRequest")]
+[ValidationStatus("bad-request")]
 public class CreateOrderRequest { /* … */ }
 ```
 
