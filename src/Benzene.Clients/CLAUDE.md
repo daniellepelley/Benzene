@@ -67,6 +67,21 @@ an `OutboundRoutingBuilder.Route(...)` pipeline:
   per topic via `.Route(topic, pipeline => ...)`; `Build()` throws `DuplicateOutboundRouteException`
   for a repeated topic. `AddOutboundRouting(...)` registers the resulting `IBenzeneMessageSender`
   plus an `OutboundRoutingTopics` singleton (the registered topic set, for `ValidateOutboundRouting()` below).
+- `OutboundParallelExtensions.UseParallel(...)` / `ParallelOutboundMiddleware` (internal) - fans **one
+  message out to several transports concurrently** within a single route:
+  `p.UseParallel(("sqs", b => b.UseSqs(url)), ("sns", b => b.UseSns(arn)))`. Needed because a
+  transport middleware (`ContextConverterMiddleware`, "Convert") is **terminal** - it never calls
+  `next` - so a single route otherwise holds a single transport, and even two chained would run in
+  turn. `UseParallel` builds each branch as its own single-transport sub-pipeline
+  (`CreateMiddlewarePipeline`), runs them on **cloned** `OutboundContext`s (the copy keeps the branches
+  from racing the shared `Headers`/`Response`), awaits them together via `BoundedFanOut` (optional
+  `maxDegreeOfParallelism`), and aggregates **all-must-succeed**: `IBenzeneResult<Void>` success only
+  if every branch succeeded, otherwise a single failure whose `Errors` name each failed transport
+  (a branch that throws is caught so the others still run). It's a terminal send step, like the
+  transports it fans out to. From the AWS X-Ray perf analysis: sequential SQS+SNS sends (6.5ms +
+  18.6ms) collapse to ~max. (Note: sending *different* messages to *different* topics is still just
+  `Task.WhenAll` over two `SendAsync` calls at the app level - `UseParallel` is specifically one
+  message → many transports.) Tests: `test/Benzene.Core.Test/Clients/ParallelOutboundTest.cs`.
 - `DefaultBenzeneMessageSender` (internal) - resolves a topic to its pipeline and runs it; throws
   `UnroutedTopicException` for a topic with no registered route. If the route's response isn't an
   `IBenzeneResult<TResponse>` for the caller's requested `TResponse` - the common case being a
