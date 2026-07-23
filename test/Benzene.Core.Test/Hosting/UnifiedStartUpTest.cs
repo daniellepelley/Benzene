@@ -12,7 +12,7 @@ using Benzene.HostedService;
 using Benzene.Microsoft.Dependencies;
 using Benzene.SelfHost;
 using Benzene.Test.Examples;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

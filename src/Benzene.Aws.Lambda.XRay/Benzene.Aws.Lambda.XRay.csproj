@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Same AWS X-Ray SDK version already used by Benzene.Tools' test host. -->
+    <!-- Same AWS X-Ray SDK version used by the AWS Lambda test host (Benzene.Aws.Lambda.Core.TestHelpers). -->
     <PackageReference Include="AWSXRayRecorder.Core" Version="2.13.0" />
   </ItemGroup>
 

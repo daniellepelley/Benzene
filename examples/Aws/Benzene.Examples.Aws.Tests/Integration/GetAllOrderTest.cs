@@ -12,7 +12,6 @@ using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
 using Xunit;
 using ThreadSafeTestLambdaLogger = Benzene.Examples.Aws.Tests.Helpers.ThreadSafeTestLambdaLogger;
 

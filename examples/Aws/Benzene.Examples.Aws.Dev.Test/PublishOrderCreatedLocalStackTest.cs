@@ -6,7 +6,6 @@ using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Dev.Test.Fixtures;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
 using Newtonsoft.Json;
 using Xunit;
 

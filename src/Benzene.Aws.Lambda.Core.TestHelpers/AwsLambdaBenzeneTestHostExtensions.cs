@@ -1,6 +1,6 @@
 ﻿using Benzene.Aws.Lambda.Core;
 
-namespace Benzene.Tools.Aws;
+namespace Benzene.Aws.Lambda.Core.TestHelpers;
 
 public static class AwsLambdaBenzeneTestHostExtensions
 {

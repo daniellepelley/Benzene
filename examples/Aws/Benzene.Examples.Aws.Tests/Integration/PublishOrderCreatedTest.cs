@@ -7,7 +7,6 @@ using Benzene.Examples.App.Handlers;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

@@ -7,7 +7,7 @@ using Benzene.Core.MessageHandlers;
 using Benzene.Http.BenzeneMessage;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Xunit;
 
 namespace Benzene.Test.Http;

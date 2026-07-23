@@ -31,7 +31,6 @@
     <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core\Benzene.Core.csproj" />
     <!-- In-memory invoke + the descriptors the runtime already serves. -->
-    <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Schema.OpenApi\Benzene.Schema.OpenApi.csproj" />

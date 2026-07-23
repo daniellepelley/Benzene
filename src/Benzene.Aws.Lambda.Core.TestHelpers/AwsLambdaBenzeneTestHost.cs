@@ -6,7 +6,7 @@ using Benzene.Abstractions;
 using Benzene.Aws.Lambda.Core;
 using Newtonsoft.Json;
 
-namespace Benzene.Tools.Aws;
+namespace Benzene.Aws.Lambda.Core.TestHelpers;
 
 public sealed class AwsLambdaBenzeneTestHost : IBenzeneTestHost, IDisposable
 {

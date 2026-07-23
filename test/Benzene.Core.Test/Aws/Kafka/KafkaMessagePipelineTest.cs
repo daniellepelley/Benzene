@@ -19,7 +19,7 @@ using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Aws.Sns;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

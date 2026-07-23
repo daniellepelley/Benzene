@@ -9,7 +9,7 @@ using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
 using Benzene.Schema.OpenApi.EventService;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using ByteBard.AsyncAPI.Readers;
 using Microsoft.OpenApi.Readers;
 using Xunit;

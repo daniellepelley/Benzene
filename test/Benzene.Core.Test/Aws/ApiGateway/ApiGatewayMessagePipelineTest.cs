@@ -24,7 +24,7 @@ using Benzene.Test.Aws.ApiGateway.Examples;
 using Benzene.Test.Aws.Helpers;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Xml;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

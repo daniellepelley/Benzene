@@ -15,8 +15,8 @@ public static class BenzeneTestHostExtensions
     /// Builds an <see cref="IAwsLambdaEntryPoint"/> from the StartUp, configured services, and any
     /// overrides registered on <paramref name="builder"/> — the same construction
     /// <see cref="AwsLambdaHost{TStartUp}"/> performs for a real deployment, with a seam for test
-    /// overrides. Wrap the result in <c>AwsLambdaBenzeneTestHost</c> (in <c>Benzene.Tools</c>) to send
-    /// events into it.
+    /// overrides. Wrap the result in <c>AwsLambdaBenzeneTestHost</c> (in this project) to send events
+    /// into it.
     /// </summary>
     /// <typeparam name="TStartUp">The <see cref="BenzeneStartUp"/> to run.</typeparam>
     /// <param name="builder">The test host builder, with any <c>WithServices</c>/<c>WithConfiguration</c> overrides already applied.</param>

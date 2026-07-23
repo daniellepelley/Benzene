@@ -21,7 +21,6 @@
     <ProjectReference Include="..\..\..\examples\AwsMesh\Payments\Benzene.Examples.AwsMesh.Payments.csproj" />
     <!-- Build-time construction seam + in-memory invoke, exactly as the runtime host does it. -->
     <ProjectReference Include="..\..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
     <!-- The mesh ServiceDescriptor factory (build directly from handler types, no host). -->

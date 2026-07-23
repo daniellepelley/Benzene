@@ -11,7 +11,7 @@ using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Test.Logging.Helpers;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;

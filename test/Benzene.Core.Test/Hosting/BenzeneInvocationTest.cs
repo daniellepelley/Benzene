@@ -17,7 +17,7 @@ using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Results;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;

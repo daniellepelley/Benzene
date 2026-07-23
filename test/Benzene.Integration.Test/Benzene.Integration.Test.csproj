@@ -41,7 +41,7 @@
 	  <ProjectReference Include="..\..\src\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.RabbitMq\Benzene.RabbitMq.csproj" />
 	  <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
-	  <ProjectReference Include="..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
+	  <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
 	</ItemGroup>
 
   <ItemGroup>

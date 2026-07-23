@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Amazon.Lambda.Core;
 
-namespace Benzene.Tools.Aws;
+namespace Benzene.Aws.Lambda.Core.TestHelpers;
 
 public class ThreadSafeTestLambdaLogger : ILambdaLogger
 {

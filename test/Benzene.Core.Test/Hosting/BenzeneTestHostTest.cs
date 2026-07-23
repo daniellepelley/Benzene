@@ -14,7 +14,6 @@ using Benzene.Http;
 using Benzene.Microsoft.Dependencies;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

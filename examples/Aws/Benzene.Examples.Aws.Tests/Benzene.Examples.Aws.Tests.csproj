@@ -29,7 +29,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Tools\Benzene.Tools.csproj" />
     <ProjectReference Include="..\Benzene.Examples.Aws\Benzene.Examples.Aws.csproj" />
   </ItemGroup>
 </Project>

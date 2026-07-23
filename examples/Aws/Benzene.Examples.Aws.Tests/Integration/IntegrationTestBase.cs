@@ -1,7 +1,7 @@
 using Benzene.Aws.Lambda.Core;
 using Benzene.Examples.App.Data;
 using Benzene.Examples.Aws.Tests.Helpers;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 
 namespace Benzene.Examples.Aws.Tests.Integration;
 

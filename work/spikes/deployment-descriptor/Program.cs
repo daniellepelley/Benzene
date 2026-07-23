@@ -10,7 +10,6 @@ using Benzene.Examples.AwsMesh.Payments.Handlers;
 using Benzene.Mesh.Wire;
 using Benzene.Schema.OpenApi;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
 
 // ---------------------------------------------------------------------------------------------------
 // Deployment-descriptor spike.

@@ -21,8 +21,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Core.Messages", "..
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Examples.Aws.Tests", "Benzene.Examples.Aws.Tests\Benzene.Examples.Aws.Tests.csproj", "{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benzene.Tools", "..\..\src\Benzene.Tools\Benzene.Tools.csproj", "{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Abstractions", "..\..\src\Benzene.Abstractions\Benzene.Abstractions.csproj", "{978A82CD-4359-4581-BBBE-8F675469963E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benzene.Abstractions.Messages", "..\..\src\Benzene.Abstractions.Messages\Benzene.Abstractions.Messages.csproj", "{E1C92DCD-408C-43AA-95F4-5719EA4186E1}"
@@ -83,10 +81,6 @@ Global
 		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{686F7AEB-B8AA-4B4E-84F6-1843FB7A07ED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CA1CBD5B-56BA-4AF9-A1A3-72E2F7BCDB6A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{978A82CD-4359-4581-BBBE-8F675469963E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{978A82CD-4359-4581-BBBE-8F675469963E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{978A82CD-4359-4581-BBBE-8F675469963E}.Release|Any CPU.ActiveCfg = Release|Any CPU

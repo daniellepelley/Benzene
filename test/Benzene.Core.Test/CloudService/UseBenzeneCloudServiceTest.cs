@@ -12,7 +12,7 @@ using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Middleware;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Xunit;
 
 namespace Benzene.Test.CloudService;

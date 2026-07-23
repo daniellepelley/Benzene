@@ -10,7 +10,7 @@ using Benzene.Microsoft.Dependencies;
 using Benzene.Schema.OpenApi;
 using Benzene.Test.Examples;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Xunit;
 
 namespace Benzene.Test.Autogen.Schema.OpenApi;
