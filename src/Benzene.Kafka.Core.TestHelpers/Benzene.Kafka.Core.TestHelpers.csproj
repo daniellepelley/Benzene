@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>Benzene.Kafka.Core.TestHelpers</AssemblyName>
+		<RootNamespace>Benzene.Kafka.Core.TestHelpers</RootNamespace>
+		<Description>Test helpers for Benzene.Kafka.Core - for testing purposes only</Description>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
+		<ProjectReference Include="..\Benzene.Kafka.Core\Benzene.Kafka.Core.csproj" />
+		<ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+		<ProjectReference Include="..\Benzene.SelfHost\Benzene.SelfHost.csproj" />
+		<ProjectReference Include="..\Benzene.Testing\Benzene.Testing.csproj" />
+	</ItemGroup>
+
+</Project>

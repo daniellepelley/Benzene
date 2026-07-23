@@ -46,6 +46,11 @@ public static class Extensions
         var pipeline = middlewarePipelineBuilder.Build();
 
         var kafkaApplication = new KafkaApplication<TKey, TValue>(pipeline);
+        // Register the built application so it can be resolved and driven directly - e.g. a
+        // StartUp-based component test pushing a record through the real pipeline without a running
+        // broker (see Benzene.Kafka.Core.TestHelpers). Inert in a normal worker run; the worker
+        // already holds this same instance via the factory below.
+        app.Register(x => x.AddSingleton(kafkaApplication));
         app.Add(serviceResolverFactory =>
         {
             using var scope = serviceResolverFactory.CreateScope();

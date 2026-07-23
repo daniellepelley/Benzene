@@ -46,6 +46,11 @@ public static class Extensions
         var pipeline = middlewarePipelineBuilder.Build();
 
         var application = new ServiceBusConsumerApplication(pipeline);
+        // Register the built application so it can be resolved and driven directly - e.g. a
+        // StartUp-based component test pushing a message through the real pipeline without a running
+        // broker (see Benzene.Azure.ServiceBus.TestHelpers). Inert in a normal worker run; the worker
+        // already holds this same instance via the factory below.
+        app.Register(x => x.AddSingleton(application));
         app.Add(serviceResolverFactory => new BenzeneServiceBusWorker(serviceResolverFactory, application, config, serviceBusClientFactory));
         return app;
     }
