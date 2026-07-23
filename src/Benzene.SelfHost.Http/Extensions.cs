@@ -14,6 +14,22 @@ namespace Benzene.SelfHost.Http;
 
 public static class Extensions
 {
+    /// <summary>
+    /// Adds a self-hosted HTTP endpoint to a Benzene worker, served by <see cref="BenzeneHttpWorker"/>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Deprecated.</b> This host is built on <see cref="System.Net.HttpListener"/>, which is
+    /// materially slower than Kestrel and adds no advantage over the raw listener. Use
+    /// <c>Benzene.AspNet.Core</c> (Kestrel) for a self-hosted HTTP endpoint instead — see
+    /// <c>docs/deprecations.md</c>.
+    /// </remarks>
+    /// <param name="app">The worker startup to add the HTTP endpoint to.</param>
+    /// <param name="benzeneHttpConfig">The listener URL and processing behavior to use.</param>
+    /// <param name="action">Configures the inner HTTP middleware pipeline.</param>
+    /// <returns>The worker startup for method chaining.</returns>
+    [Obsolete("Benzene.SelfHost.Http is built on System.Net.HttpListener, which is materially slower " +
+        "than Kestrel and adds no advantage over the raw listener. Use Benzene.AspNet.Core (Kestrel) " +
+        "for a self-hosted HTTP endpoint instead. See docs/deprecations.md.")]
     public static IBenzeneWorkerStartup UseHttp(this IBenzeneWorkerStartup app, BenzeneHttpConfig benzeneHttpConfig, Action<IMiddlewarePipelineBuilder<SelfHostHttpContext>> action)
     {
         // Register the config so request-scoped components (e.g. the body getter's size limit) can

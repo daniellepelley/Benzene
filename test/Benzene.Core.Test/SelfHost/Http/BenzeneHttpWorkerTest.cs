@@ -13,6 +13,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
+// Benzene.SelfHost.Http is deprecated (see docs/deprecations.md), but it still ships and this is its
+// only end-to-end coverage, so keep exercising UseHttp here without the CS0618 obsolete noise.
+#pragma warning disable CS0618
+
 namespace Benzene.Test.SelfHost.Http;
 
 /// <summary>

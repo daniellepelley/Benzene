@@ -11,6 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BenzeneStarter;
 
+// DEPRECATED: this template hosts HTTP on Benzene.SelfHost.Http (System.Net.HttpListener), which is
+// materially slower than Kestrel. For a production HTTP service use the `benzene.asp` template
+// (Benzene.AspNet.Core / Kestrel) instead - your handlers and StartUp move across unchanged. See
+// docs/deprecations.md. This template is kept only as a minimal no-ASP.NET reference.
 public class StartUp : BenzeneStartUp
 {
     public override IConfiguration GetConfiguration()

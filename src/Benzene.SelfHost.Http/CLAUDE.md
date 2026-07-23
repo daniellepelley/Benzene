@@ -1,5 +1,12 @@
 # Benzene.SelfHost.Http
 
+> **⚠️ Deprecated.** This package hosts HTTP on `System.Net.HttpListener`, which is materially slower
+> than Kestrel and adds no advantage over the raw listener, so it fails the "an adapter must earn its
+> place" bar (see `docs/deprecations.md`). The `UseHttp(...)` entry point is marked `[Obsolete]`. Use
+> **`Benzene.AspNet.Core`** (Kestrel) for a self-hosted HTTP endpoint instead — a `BenzeneStartUp`'s
+> `Configure` moves across unchanged. The package still builds and functions; don't extend it with new
+> features — direct HTTP-host work to `Benzene.AspNet.Core`.
+
 ## What this package does
 Provides HTTP server capabilities for self-hosted Benzene applications. Enables running HTTP endpoints without ASP.NET Core or IIS. Built on HttpListener for lightweight HTTP hosting in console apps or Windows services. This is one of the "self-hosted worker" startup modes documented in `docs/hosting.md` - Benzene itself owns the accept loop and the process here, unlike ASP.NET Core (embedded in Kestrel, which owns the process instead).
 

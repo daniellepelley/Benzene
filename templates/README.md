@@ -11,7 +11,8 @@ Benzene.Templates.csproj   # the template pack project (PackageType=Template)
 content/
   # HTTP-shaped
   asp/                      # benzene.asp                - ASP.NET Core
-  selfhost-http/            # benzene.selfhost.http       - Self-hosted HTTP (HttpListener, no ASP.NET)
+  selfhost-http/            # benzene.selfhost.http       - Self-hosted HTTP (HttpListener) - DEPRECATED,
+                            #                               use benzene.asp (Kestrel); see docs/deprecations.md
   aws-apigateway/           # benzene.aws.apigateway      - AWS Lambda + API Gateway
   azure-http/               # benzene.azure.http          - Azure Functions (isolated worker, HTTP trigger)
   # AWS Lambda event sources

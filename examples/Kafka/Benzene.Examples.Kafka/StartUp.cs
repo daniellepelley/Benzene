@@ -40,6 +40,11 @@ public class StartUp : BenzeneStartUp
             Topics = new[] { "order_create" }
         };
 
+        // NOTE: UseHttp (Benzene.SelfHost.Http) is deprecated - it's built on the slower
+        // System.Net.HttpListener (see docs/deprecations.md). This example still demonstrates the
+        // Kafka-worker-plus-HTTP-surface shape; for a real HTTP endpoint host on Benzene.AspNet.Core
+        // (Kestrel), e.g. a WebApplication that runs the Kafka worker as a hosted service alongside it.
+#pragma warning disable CS0618
         app.UseWorker(worker => worker
             .UseKafka<Ignore, string>(benzeneKafkaConfig, x =>
                 x.UseMessageHandlers())
@@ -57,5 +62,6 @@ public class StartUp : BenzeneStartUp
                     AllowedHeaders = Array.Empty<string>()
                 })
                 .UseMessageHandlers(x => x.UseFluentValidation())));
+#pragma warning restore CS0618
     }
 }

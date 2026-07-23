@@ -37,6 +37,14 @@ no separate host already listening. This is the one mode where how many events B
 *at once* is Benzene's own decision, not the platform's - see
 [Worker concurrency](#worker-concurrency) below for exactly how that's bounded and configured.
 
+> **Deprecated: `Benzene.SelfHost.Http`.** The HTTP self-host worker is built on
+> `System.Net.HttpListener`, which is materially slower than Kestrel and adds no advantage over the raw
+> listener. For a self-hosted HTTP endpoint use **`Benzene.AspNet.Core`** (Kestrel, mode 2 above)
+> instead — the same `BenzeneStartUp.Configure` moves across unchanged. See
+> [Deprecations](deprecations.md). The other self-hosted workers (Kafka, SQS, Service Bus, Event Hub,
+> RabbitMQ) are not affected — they own genuinely different transports, not a slower wrapper of an
+> existing one.
+
 ## Overview
 
 Every platform-specific getting-started guide ([AWS Lambda](getting-started-aws.md),
