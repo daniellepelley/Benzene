@@ -107,6 +107,7 @@ for role in \
   roles/cloudbuild.builds.editor \ # Gen2 source builds
   roles/artifactregistry.admin \   # build artifacts
   roles/cloudscheduler.admin \     # the mesh refresh job
+  roles/iam.serviceAccountAdmin \  # create the runtime service account
   roles/iam.serviceAccountUser ; do # deploy functions AS the runtime SA
   gcloud projects add-iam-policy-binding "$PROJECT" \
     --member="serviceAccount:$SA" --role="$role" >/dev/null

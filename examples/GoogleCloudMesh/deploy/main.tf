@@ -52,10 +52,13 @@ resource "google_service_account" "runtime" {
   display_name = "Benzene GoogleCloudMesh runtime"
 }
 
-resource "google_project_iam_member" "publisher" {
-  project = var.project
-  role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:${google_service_account.runtime.email}"
+# Grant publish on each inbox topic (topic-level, not project-level) so provisioning needs only
+# pubsub.admin — not the broad resourcemanager.projectIamAdmin a project-level binding would require.
+resource "google_pubsub_topic_iam_member" "publisher" {
+  for_each = google_pubsub_topic.inbox
+  topic    = each.value.name
+  role     = "roles/pubsub.publisher"
+  member   = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 resource "google_storage_bucket_iam_member" "mesh_object_admin" {
