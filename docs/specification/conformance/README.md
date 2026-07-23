@@ -42,11 +42,11 @@ with exactly these topics and behaviors:
 
 | Topic | Request body | Behavior |
 |---|---|---|
-| `conformance:greet` | `{ "name": string }` | Returns `Ok` with payload `{ "greeting": "Hello <name>" }` |
+| `conformance:greet` | `{ "name": string }` | Returns `ok` with payload `{ "greeting": "Hello <name>" }` |
 | `conformance:status` | `{ "status": string, "errors": string[]? }` | Returns the given status verbatim. For a success-class status, the payload is `{ "applied": "<status>" }`; for a failure-class status, the result carries the given `errors` (and no payload). |
 
 No handler is registered for any other topic — cases targeting unregistered or empty topics
-verify the router's `NotFound` / `ValidationError` behavior.
+verify the router's `not-found` / `validation-error` behavior.
 
 ## Envelope case format
 
@@ -55,7 +55,7 @@ verify the router's `NotFound` / `ValidationError` behavior.
   "name": "unique-case-name",
   "request":  { "topic": "...", "headers": { }, "body": "..." },
   "expected": {
-    "statusCode": "Ok",
+    "statusCode": "ok",
     "body": { "greeting": "Hello world" },
     "headers": { "content-type": "application/json" }
   }
@@ -93,7 +93,7 @@ collections).
 
   | Topic | Request body | Behavior |
   |---|---|---|
-  | `conformance:panic` | any | Panics/throws unconditionally — pins the rule that a handler panic is traced as `ServiceUnavailable`, not lost |
+  | `conformance:panic` | any | Panics/throws unconditionally — pins the rule that a handler panic is traced as `service-unavailable`, not lost |
 
   `expectedEvent` is subset-matched against the single TraceEvent exported for that
   invocation. (`conformance:panic` is registered only for these trace cases, not for
@@ -107,8 +107,8 @@ collections).
 
 ```json
 {
-  "forward": [ { "from": "Ok", "to": "200" } ],
-  "reverse": [ { "from": "200", "to": "Ok" } ]
+  "forward": [ { "from": "ok", "to": "200" } ],
+  "reverse": [ { "from": "200", "to": "ok" } ]
 }
 ```
 

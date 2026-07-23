@@ -295,7 +295,7 @@ in step 5 (via a shared internal helper regardless of shape), then:
 4. **Status/trailer mapping (D4)** — the handler's `IBenzeneResult.Status` is mapped to a gRPC
    `StatusCode` (see the table below) and always added as a `benzene-status` response trailer,
    carrying the *original*, more specific status even when several statuses map to the same
-   `StatusCode` (e.g. `Created`/`Accepted`/`Updated` all map to `OK`).
+   `StatusCode` (e.g. `created`/`accepted`/`updated` all map to `OK`).
 
 ## 7. Metadata and trace context (D5)
 
@@ -325,15 +325,15 @@ gets added).
 
 | `BenzeneResultStatus` | gRPC `StatusCode` |
 |---|---|
-| `Ok`, `Ignored`, `Created`, `Accepted`, `Updated`, `Deleted` | `OK` |
-| `BadRequest`, `ValidationError` | `InvalidArgument` |
-| `Unauthorized` | `Unauthenticated` |
-| `Forbidden` | `PermissionDenied` |
-| `NotFound` | `NotFound` |
-| `Conflict` | `AlreadyExists` |
-| `NotImplemented` | `Unimplemented` |
-| `ServiceUnavailable` | `Unavailable` |
-| `UnexpectedError` / anything unrecognized | `Internal` |
+| `ok`, `ignored`, `created`, `accepted`, `updated`, `deleted` | `OK` |
+| `bad-request`, `validation-error` | `InvalidArgument` |
+| `unauthorized` | `Unauthenticated` |
+| `forbidden` | `PermissionDenied` |
+| `not-found` | `NotFound` |
+| `conflict` | `AlreadyExists` |
+| `not-implemented` | `Unimplemented` |
+| `service-unavailable` | `Unavailable` |
+| `unexpected-error` / anything unrecognized | `Internal` |
 
 A non-OK status throws `RpcException(new Status(mappedCode, detail))` — `detail` is the joined
 `IBenzeneResult.Errors` if present, otherwise the raw status string. The `benzene-status` trailer
@@ -436,7 +436,7 @@ For unit-testing a `GrpcMethodHandler`/pipeline directly, without a host, `TestS
   action) — see step 5.
 - **Headers aren't available in the handler** — confirm `AddBenzeneGrpc()` ran in
   `ConfigureServices`; also check for a `-bin`-suffixed key, which is intentionally skipped.
-- **My client can't tell `Created` from `Accepted` from `Ok`** — all three map to `StatusCode.OK`;
+- **My client can't tell `created` from `accepted` from `ok`** — all three map to `StatusCode.OK`;
   read the `benzene-status` trailer instead, or use `Benzene.Grpc.Client`'s
   `IGrpcStatusReverseMapper`, which already prefers it.
 

@@ -42,7 +42,7 @@ NuGet dependency) so the default publisher can ride `IBenzeneMessageSender`.
    - `ExplicitResponseEventMapping` — source topic → event topic; default predicate
      *successful and payload non-null*; optional `when` predicate and payload projector.
    - `CrudConventionResponseEventMapping` — the Broadcast rule as data:
-     `X:create`/`update`/`delete` + `Created`/`Updated`/`Deleted` → `X:{verb}d`.
+     `X:create`/`update`/`delete` + `created`/`updated`/`deleted` → `X:{verb}d`.
    - Anything app-defined via `events.Add(mapping)`.
    Every matching mapping publishes (fan-out is allowed).
 2. **`ResponseEventMappings`** — one pipeline's immutable mapping set + `PublishFailureMode`.
@@ -51,7 +51,7 @@ NuGet dependency) so the default publisher can ride `IBenzeneMessageSender`.
    `next()`, resolves matches against `context.Response` and publishes. The publisher is
    resolved lazily — only when a mapping actually matched (Broadcast resolved eagerly, per
    message, for every message). Failure handling per mode:
-   - `FailMessage` (default): overwrite `context.Response` with `UnexpectedError` so the
+   - `FailMessage` (default): overwrite `context.Response` with `unexpected-error` so the
      transport nacks/redelivers — honest at-least-once; stop publishing further matches.
    - `LogAndContinue`: log a warning, keep the handler's response, keep publishing.
 4. **`IResponseEventPublisher`** — the outbound port (`PublishAsync(topic, payload, headers?)`).
@@ -81,7 +81,7 @@ purity preserved); no scoped holder is needed since publishing happens inline.
    - mapping unit tests (explicit/conditional/projector/convention/no-payload guards);
    - end-to-end via `BenzeneMessageApplication` + `UseMessageHandlers(types, router)` +
      `AddOutboundRouting` capture route: publish on match, silence on non-match, both failure
-     modes, custom mapping, no-response handler (`Accepted`, null payload) never publishes;
+     modes, custom mapping, no-response handler (`accepted`, null payload) never publishes;
    - catalog/introspection + `FindDefinitions` tests.
 3. Docs: fix the wrong `UseBroadcastEvent()` description in `docs/reference/middleware.md`
    (design review F4) and add `UseResponseEvents`; cookbook

@@ -524,7 +524,7 @@ Behavior tracks the CORS specification the same way `Microsoft.AspNetCore.Cors` 
 OAuth2 bearer token (JWT) validation for services that have no security-terminating gateway (API
 Gateway, a load balancer with auth, etc.) in front of them. Reads `Authorization: Bearer <token>`,
 validates it against a JWKS endpoint (via OIDC discovery or a bare JWKS URI), and either
-short-circuits with `Unauthorized` or sets the authenticated caller for later pipeline steps. See
+short-circuits with `unauthorized` or sets the authenticated caller for later pipeline steps. See
 the [Authentication Patterns cookbook](cookbooks/auth-patterns.md) for a full worked example.
 
 ```csharp
@@ -548,7 +548,7 @@ and `ValidAlgorithms` are all required — an empty allowlist would silently und
 token, so `UseOAuth2Bearer` throws at wire-up time rather than accepting tokens from any
 issuer/audience/algorithm. `ValidAlgorithms` in particular has no permissive default: a validator
 that trusted whatever `alg` a token claimed would be open to algorithm-confusion attacks (RFC 8725
-§3.1). A failed validation always returns a generic `Unauthorized` detail — the real reason (bad
+§3.1). A failed validation always returns a generic `unauthorized` detail — the real reason (bad
 signature, expired, wrong issuer/audience) is never echoed back to the caller, only logged
 server-side. On success, the validated claims are available to `RequireScope` (below) and to your
 own handlers via `Benzene.Auth.Core.AuthenticationHolder`.
@@ -590,7 +590,7 @@ app.UseBasicAuth(new ServiceAccountValidator());
 ```
 
 Applies to any `TContext : IHttpContext`. A missing/malformed header or a validator returning
-`null` short-circuits with `Unauthorized` and a `WWW-Authenticate: Basic realm="..."` challenge
+`null` short-circuits with `unauthorized` and a `WWW-Authenticate: Basic realm="..."` challenge
 header (per RFC 7617, so browsers/HTTP clients actually prompt for credentials). Credentials are
 split on the *first* `:` only — a password containing `:` is preserved intact, not truncated.
 
@@ -619,9 +619,9 @@ app.UseOAuth2Bearer(oauth2Options)
 ```
 
 Applies to any `TContext : IHttpContext`, chained after `UseOAuth2Bearer`. No authenticated caller
-at all (no auth middleware ran, or it ran and failed) short-circuits with `Unauthorized` — a
-caller present but missing every requested scope short-circuits with `Forbidden` instead. These
-are deliberately distinct statuses (`Unauthorized` = not authenticated, `Forbidden` = authenticated
+at all (no auth middleware ran, or it ran and failed) short-circuits with `unauthorized` — a
+caller present but missing every requested scope short-circuits with `forbidden` instead. These
+are deliberately distinct statuses (`unauthorized` = not authenticated, `forbidden` = authenticated
 but not permitted); collapsing them would leave API consumers unable to tell the two apart from a
 403 alone.
 

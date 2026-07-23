@@ -53,14 +53,14 @@ curl -X POST http://localhost:8080/benzene-message \
 ```
 
 The response is the response envelope, with the HTTP status mapped from the envelope's status
-(`Ok` → 200, `ValidationError` → 422, `NotFound` → 404, …):
+(`ok` → 200, `validation-error` → 422, `not-found` → 404, …):
 
 ```json
-{ "statusCode": "Ok", "headers": { }, "body": "{\"orderId\":\"...\"}" }
+{ "statusCode": "ok", "headers": { }, "body": "{\"orderId\":\"...\"}" }
 ```
 
 The envelope itself is always plain JSON (camelCase), independent of whatever payload formats the
-app's own serializer negotiates. A malformed or topic-less envelope gets a `BadRequest` envelope
+app's own serializer negotiates. A malformed or topic-less envelope gets a `bad-request` envelope
 back with a 400.
 
 ### Options
@@ -69,7 +69,7 @@ back with a 400.
 apiGateway.UseBenzeneMessage(new BenzeneMessageHttpOptions
 {
     Path = "/admin/benzene-message",              // default: /benzene-message
-    TopicFilter = topic => topic.StartsWith("order:")  // reject → NotFound envelope, 404
+    TopicFilter = topic => topic.StartsWith("order:")  // reject → not-found envelope, 404
 }, messageApp => messageApp.UseMessageHandlers());
 ```
 

@@ -58,7 +58,7 @@ All the error-style factories (`NotFound`, `BadRequest`, `ValidationError`, `For
 `Unauthorized`, `Conflict`, `ServiceUnavailable`, `NotImplemented`, `UnexpectedError`) accept
 `params string[] errors` and produce `IsSuccessful == false`. There's also a lower-level escape
 hatch, `BenzeneResult.Set(status, ...)`, for a custom status string that isn't one of the built-ins
-— used internally (e.g. `MessageRouter<TContext>` sets `ValidationError`/`NotFound` results this way
+— used internally (e.g. `MessageRouter<TContext>` sets `validation-error`/`not-found` results this way
 when a topic is missing or unmatched).
 
 ### `BenzeneResultExtensions`
@@ -77,21 +77,21 @@ A static class of string constants (`Benzene.Results`), **not** a .NET `enum`:
 ```csharp
 public static class BenzeneResultStatus
 {
-    public const string Accepted = "Accepted";
-    public const string Ok = "Ok";
-    public const string Created = "Created";
-    public const string Updated = "Updated";
-    public const string Deleted = "Deleted";
-    public const string Ignored = "Ignored";
-    public const string NotFound = "NotFound";
-    public const string BadRequest = "BadRequest";
-    public const string ValidationError = "ValidationError";
-    public const string ServiceUnavailable = "ServiceUnavailable";
-    public const string NotImplemented = "NotImplemented";
-    public const string UnexpectedError = "UnexpectedError";
-    public const string Conflict = "Conflict";
-    public const string Forbidden = "Forbidden";
-    public const string Unauthorized = "Unauthorized";
+    public const string Accepted = "accepted";
+    public const string Ok = "ok";
+    public const string Created = "created";
+    public const string Updated = "updated";
+    public const string Deleted = "deleted";
+    public const string Ignored = "ignored";
+    public const string NotFound = "not-found";
+    public const string BadRequest = "bad-request";
+    public const string ValidationError = "validation-error";
+    public const string ServiceUnavailable = "service-unavailable";
+    public const string NotImplemented = "not-implemented";
+    public const string UnexpectedError = "unexpected-error";
+    public const string Conflict = "conflict";
+    public const string Forbidden = "forbidden";
+    public const string Unauthorized = "unauthorized";
 }
 ```
 
@@ -104,19 +104,19 @@ public static class BenzeneResultStatus
 
 | Status | HTTP code |
 |---|---|
-| `Ok`, `Ignored` | 200 |
-| `Created` | 201 |
-| `Accepted` | 202 |
-| `Updated`, `Deleted` | 204 |
-| `BadRequest` | 400 |
-| `Unauthorized` | 401 |
-| `Forbidden` | 403 |
-| `NotFound` | 404 |
-| `Conflict` | 409 |
-| `ValidationError` | 422 |
-| `UnexpectedError` (or anything unmapped) | 500 |
-| `NotImplemented` | 501 |
-| `ServiceUnavailable` | 503 |
+| `ok`, `ignored` | 200 |
+| `created` | 201 |
+| `accepted` | 202 |
+| `updated`, `deleted` | 204 |
+| `bad-request` | 400 |
+| `unauthorized` | 401 |
+| `forbidden` | 403 |
+| `not-found` | 404 |
+| `conflict` | 409 |
+| `validation-error` | 422 |
+| `unexpected-error` (or anything unmapped) | 500 |
+| `not-implemented` | 501 |
+| `service-unavailable` | 503 |
 
 `HttpStatusCodeResponseHandler<TContext>` applies this mapping to the HTTP response via
 `IBenzeneResponseAdapter<TContext>`. On success, `SerializerResponseRenderer<TContext>` (see
@@ -133,9 +133,9 @@ copies `IBenzeneResult.IsSuccessful` onto the per-record `SqsMessageContext.IsSu
 whole batch is processed, `SqsApplication` reports every record where `IsSuccessful == false` (or
 where an unhandled exception occurred) back to Lambda as an `SQSBatchResponse.BatchItemFailure`,
 which tells SQS to retry (or dead-letter, per your queue's redrive policy) only those records —
-successfully-handled records in the same batch are not reprocessed. This means any non-`Ok`/`Created`/
-etc. result (anything with `IsSuccessful == false`, e.g. `ValidationError`, `NotFound`,
-`ServiceUnavailable`) causes that message to be retried by SQS, exactly like an unhandled exception
+successfully-handled records in the same batch are not reprocessed. This means any non-`ok`/`created`/
+etc. result (anything with `IsSuccessful == false`, e.g. `validation-error`, `not-found`,
+`service-unavailable`) causes that message to be retried by SQS, exactly like an unhandled exception
 would. This partial-batch-failure behavior is itself configurable — see
 `Benzene.Aws.Lambda.Sqs`'s `SqsOptions.BatchFailureMode`
 ([Handling SQS Message Failures](cookbooks/handling-sqs-failures.md#opting-into-whole-batch-failure-instead)),

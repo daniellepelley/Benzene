@@ -58,7 +58,7 @@ app.UseOAuth2Bearer(new OAuth2BearerOptions
 ```
 
 Requests without a valid bearer token — missing header, malformed, expired, bad signature, wrong
-issuer/audience/algorithm — are short-circuited with the `Unauthorized` status (mapped to HTTP 401
+issuer/audience/algorithm — are short-circuited with the `unauthorized` status (mapped to HTTP 401
 by every Benzene HTTP transport). A successfully validated token's claims become available to
 later middleware and handlers via `Benzene.Auth.Core.AuthenticationHolder.Principal`
 (`System.Security.Claims.ClaimsPrincipal`) — no Benzene-specific principal type, just the BCL
@@ -148,7 +148,7 @@ app.UseBasicAuth(new ServiceAccountValidator());
 hardcoding a credential store in the package would be a footgun waiting to be deployed. Implement
 it against whatever your service actually uses: an environment variable for a single service
 account (above), a secrets manager, a user table. A missing/malformed `Authorization` header or a
-validator returning `null` produces `Unauthorized` (401) with a `WWW-Authenticate: Basic
+validator returning `null` produces `unauthorized` (401) with a `WWW-Authenticate: Basic
 realm="..."` challenge header, per RFC 7617 — this is what makes browsers and HTTP clients that
 understand Basic auth actually prompt for credentials.
 
@@ -175,8 +175,8 @@ Two distinct failure statuses matter here, and `RequireScope` keeps them distinc
 
 | Situation | Status | Meaning |
 |---|---|---|
-| No `Authorization` header at all, or the token failed validation | `Unauthorized` (401) | Caller not authenticated |
-| A validly authenticated caller, but missing every required scope | `Forbidden` (403) | Caller authenticated but not permitted |
+| No `Authorization` header at all, or the token failed validation | `unauthorized` (401) | Caller not authenticated |
+| A validly authenticated caller, but missing every required scope | `forbidden` (403) | Caller authenticated but not permitted |
 
 Collapsing these into one status would leave an API consumer unable to tell "you're not logged in"
 apart from "you're logged in but don't have permission" from the response code alone.
@@ -186,8 +186,8 @@ apart from "you're logged in but don't have permission" from the response code a
 Scopes are an OAuth2/JWT concept, so `RequireScope` lives in `Benzene.Auth.OAuth2`. For
 authorization that reads off any authenticated caller — regardless of whether the principal came
 from a bearer token, Basic auth, or a custom mechanism — `Benzene.Auth.Core` adds three
-mechanism-agnostic checks. Benzene owns the *enforcement* (each short-circuits with `Unauthorized`
-when there's no caller and `Forbidden` when the caller lacks permission, the same distinction
+mechanism-agnostic checks. Benzene owns the *enforcement* (each short-circuits with `unauthorized`
+when there's no caller and `forbidden` when the caller lacks permission, the same distinction
 `RequireScope` keeps); *what a role/policy means* stays in your app.
 
 All three compose the same way as `RequireScope`, and on any transport (not just HTTP) whose
@@ -259,7 +259,7 @@ If you need a genuine mix of public and protected routes in one ASP.NET Core app
 protected ones with a plain ASP.NET Core `app.Map(...)` branch, entered *before* any Benzene
 pipeline runs — not two sibling `UseHttp` pipelines on the same branch. Benzene's message router is
 unconditionally the terminal step of whichever pipeline it's wired into (it always answers, even
-with `NotFound`, and never falls through to a sibling pipeline once it's run), so two `UseHttp`
+with `not-found`, and never falls through to a sibling pipeline once it's run), so two `UseHttp`
 calls at the same level can't split routes between them — whichever one registers first ends up
 answering every request its own router sees, recognized or not. `app.Map` sidesteps this
 entirely: requests under the mapped prefix never reach the outer pipeline's router at all.
@@ -310,7 +310,7 @@ project's `README.md` for exactly how to start it and mint a test token.
   above. Don't work around the `ArgumentException` by passing every algorithm your provider might
   ever use; pass exactly the ones it actually signs with.
 - **A failed OAuth2 validation never reveals why.** Bad signature, expired, wrong issuer — all of
-  them produce the same generic `Unauthorized` detail to the caller, because a distinguishable
+  them produce the same generic `unauthorized` detail to the caller, because a distinguishable
   failure reason in the response is an oracle an attacker can use to probe token shapes. If you
   need to debug a rejected token, check your service's logs (the real reason is logged
   server-side), not the HTTP response.
@@ -330,5 +330,5 @@ project's `README.md` for exactly how to start it and mint a test token.
 ## Further Reading
 
 - [UseOAuth2Bearer](../common-middleware.md#useoauth2bearer), [UseBasicAuth](../common-middleware.md#usebasicauth), [RequireScope](../common-middleware.md#requirescope) in the Common Middleware reference
-- [Message Results](../message-result.md) — the `Unauthorized`/`Forbidden` status vocabulary these packages return through
+- [Message Results](../message-result.md) — the `unauthorized`/`forbidden` status vocabulary these packages return through
 - `examples/Asp` — the runnable demo referenced above

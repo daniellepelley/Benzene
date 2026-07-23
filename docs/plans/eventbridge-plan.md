@@ -78,9 +78,9 @@ rule generation from `[Message]` topics is explicitly out of scope (future work)
 - **E6 Outbound client:** `EventBridgeBenzeneMessageClient : IBenzeneMessageClient` configured
   with a fixed `source` and optional `eventBusName` (default bus when null); topic →
   `PutEventsRequestEntry.DetailType`, serialized message (+ embedded headers per E4) → `Detail`.
-  Result: `Accepted` when HTTP OK and no failed entries; a failed entry maps to
-  `ServiceUnavailable` carrying the entry's `ErrorCode`/`ErrorMessage`; exceptions map to
-  `ServiceUnavailable` (standard client behavior).
+  Result: `accepted` when HTTP OK and no failed entries; a failed entry maps to
+  `service-unavailable` carrying the entry's `ErrorCode`/`ErrorMessage`; exceptions map to
+  `service-unavailable` (standard client behavior).
 - **E7 Registration parity:** `AddEventBridge()`, `UseEventBridge(action)`,
   `EventBridgeRegistrations`, mirroring SNS exactly. TestHelpers:
   `MessageBuilder.Create(topic, msg).AsEventBridge()` produces a realistic event with the topic as
@@ -114,7 +114,7 @@ transport `"eventbridge"`), `EventBridgeLambdaHandler.cs`
   body from detail, `_benzeneHeaders` lift + envelope prefixes), router test (EventBridge payload
   handled / SQS-shaped payload falls through), outbound converter tests (topic→DetailType, header
   embedding incl. the no-headers and non-object-payload cases), client test with mocked
-  `IAmazonEventBridge` (Accepted on success; failed entry → ServiceUnavailable with error detail).
+  `IAmazonEventBridge` (accepted on success; failed entry → service-unavailable with error detail).
 - `Benzene.sln`: register both new projects.
 - Docs: `docs/clients.md` EventBridge section; `docs/specification/transport-bindings.md` catalog
   entry; `docs/specification/wire-contracts.md` §2 note for `_benzeneHeaders`; tick the roadmap.

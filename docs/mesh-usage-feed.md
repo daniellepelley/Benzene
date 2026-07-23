@@ -37,12 +37,12 @@ both tagged with the **standard metadata set**:
 > **The `result` collapse rule is part of the standard** (a 2026-07-23 change to the value set —
 > keys and instrument names are unchanged): emit **`success`** for any *successful* outcome
 > (`IHasMessageResult.MessageResult.IsSuccessful` — the bool, so a result that stays successful while
-> carrying a failure-class status like a health check's `ServiceUnavailable` is still `success`); the
-> failure's **status string verbatim** (`NotFound`, `Unauthorized`, `Conflict`, `ValidationError`, …)
+> carrying a failure-class status like a health check's `service-unavailable` is still `success`); the
+> failure's **status string verbatim** (`not-found`, `unauthorized`, `conflict`, `validation-error`, …)
 > for an unsuccessful result; **`exception`** when the pipeline threw (distinct from a handler that
-> *returned* `UnexpectedError`); and `"<missing>"` when no result was recorded. This keeps success
-> cardinality at 1 (you want the total, not `Ok` vs `Created`) while making failures diagnosable — a
-> mostly-`NotFound` failure mix reads very differently from a mostly-`Unauthorized` one. The failure
+> *returned* `unexpected-error`); and `"<missing>"` when no result was recorded. This keeps success
+> cardinality at 1 (you want the total, not `ok` vs `created`) while making failures diagnosable — a
+> mostly-`not-found` failure mix reads very differently from a mostly-`unauthorized` one. The failure
 > vocabulary is a **bounded** set (`BenzeneResultStatus`), so cardinality stays a small constant;
 > cost-shaping, if ever needed, belongs backend-side (a metric filter), never in the emitted standard.
 > Pre-1.0, flagged per convention: a backend's rolling window may briefly hold both the old

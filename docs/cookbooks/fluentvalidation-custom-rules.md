@@ -18,7 +18,7 @@ that real handlers actually need:
 - Benzene's own reusable string-format rules (`IsGuid()`, `IsOneOf(...)`, etc.) from
   `Benzene.FluentValidation.Common`.
 - Mapping a specific business rule to a specific result status — a duplicate-name failure should
-  come back as `409 Conflict`, not the generic `422 ValidationError` every other failure gets.
+  come back as `409 conflict`, not the generic `422 validation-error` every other failure gets.
 
 ## Prerequisites
 
@@ -232,7 +232,7 @@ them directly.** Validators with a plain parameterless constructor (like a
 `UpdateProductRequestValidator` with no external dependencies) are unaffected and can still go
 through the scan as usual.
 
-### 5. Returning `409 Conflict` for the duplicate-name rule
+### 5. Returning `409 conflict` for the duplicate-name rule
 
 A duplicate name is a business-rule conflict, not a generic validation error — map it explicitly
 with `.WithStatus(...)`, chained after the rule method (`.WithStatus` is only available on
@@ -255,8 +255,8 @@ for the rule it's attached to (`DefaultValidationStatusMapper` returns on the fi
 whose `CustomState` carries a status; see [Failure status mapping](../fluent-validation.md#failure-status-mapping)).
 
 If your handler is exposed over HTTP (`Benzene.Http`), `BenzeneResultStatus.Conflict` maps to an
-actual `409` response — `DefaultHttpStatusCodeMapper` maps `Conflict` → `"409"` alongside the rest
-of the standard REST-ish mapping (`ValidationError` → `422`, `BadRequest` → `400`, and so on).
+actual `409` response — `DefaultHttpStatusCodeMapper` maps `conflict` → `"409"` alongside the rest
+of the standard REST-ish mapping (`validation-error` → `422`, `bad-request` → `400`, and so on).
 
 ### Putting it together
 
@@ -398,7 +398,7 @@ status of whichever failure appears first in FluentValidation's own `ValidationR
 (effectively rule declaration order for synchronous rules) — it does not merge or prioritize
 between them.
 
-### Client-side validation always returns `ValidationError`, ignoring `.WithStatus(...)`
+### Client-side validation always returns `validation-error`, ignoring `.WithStatus(...)`
 
 This is expected, not a bug: `ValidationClientMiddleware` (used for outgoing Benzene client calls)
 always maps failures to `BenzeneResultStatus.ValidationError`. The per-rule/per-handler status
@@ -452,6 +452,6 @@ per-rule status overrides or async rules the way `Benzene.FluentValidation` does
 - [Fluent Validation](../fluent-validation.md) — the middleware mechanics, validator discovery,
   and failure status mapping this cookbook builds on
 - [Message Handlers](../message-handlers.md) — `[Message]`, `IMessageHandler<TRequest, TResponse>`
-- [Handler Result](../message-result.md) — `IBenzeneResult` statuses, including `Conflict` and
-  `ValidationError`
+- [Handler Result](../message-result.md) — `IBenzeneResult` statuses, including `conflict` and
+  `validation-error`
 - [Data Annotations](../data-annotations.md) — the attribute-based alternative to FluentValidation

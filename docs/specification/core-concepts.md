@@ -54,8 +54,8 @@ handle : TRequest -> Result<TResponse>
 
 - `TRequest` and `TResponse` are application types. The handler never sees the transport.
 - The handler returns a **result** (section 5), never throws for domain failures. An uncaught
-  exception escaping a handler is converted by the framework into an `UnexpectedError` /
-  `ServiceUnavailable`-class result — it MUST NOT crash the transport adapter.
+  exception escaping a handler is converted by the framework into an `unexpected-error` /
+  `service-unavailable`-class result — it MUST NOT crash the transport adapter.
 - **Streaming**: a request or response type (or both) MAY be an **asynchronous stream** of items
   (`IAsyncEnumerable<T>` in .NET; the language's idiomatic async-stream type elsewhere — a channel
   in Go, an async generator in TypeScript/Python). The handler contract is otherwise unchanged,

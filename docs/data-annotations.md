@@ -1,6 +1,6 @@
 # Data Annotations
 
-`Benzene.DataAnnotations` validates a message handler's request using standard .NET `System.ComponentModel.DataAnnotations` attributes (`[Required]`, `[Range]`, `[MaxLength]`, `[RegularExpression]`, etc.), short-circuiting the pipeline with a `ValidationError` result when any attribute fails.
+`Benzene.DataAnnotations` validates a message handler's request using standard .NET `System.ComponentModel.DataAnnotations` attributes (`[Required]`, `[Range]`, `[MaxLength]`, `[RegularExpression]`, etc.), short-circuiting the pipeline with a `validation-error` result when any attribute fails.
 
 ## Overview
 
@@ -8,9 +8,9 @@
 
 Unlike `Benzene.FluentValidation`, this middleware requires no separate validator class and no DI registration — it always runs `System.ComponentModel.DataAnnotations.Validator.TryValidateObject(...)` against the request object, using whatever attributes are already declared on its properties. For each request:
 
-- If the request is `null`, the pipeline short-circuits with a `ValidationError` result (`"Request is null"`).
+- If the request is `null`, the pipeline short-circuits with a `validation-error` result (`"Request is null"`).
 - The middleware validates every property of the request via `Validator.TryValidateObject(request, context, results, validateAllProperties: true)`.
-- If any attribute fails, the pipeline short-circuits with a `ValidationError` result containing the collected error messages — the status is always `ValidationError`; there is no per-rule or per-handler override (see [Comparison with FluentValidation](#comparison-with-fluentvalidation)).
+- If any attribute fails, the pipeline short-circuits with a `validation-error` result containing the collected error messages — the status is always `validation-error`; there is no per-rule or per-handler override (see [Comparison with FluentValidation](#comparison-with-fluentvalidation)).
 - If every attribute passes (or the request type has no validation attributes at all), `next()` is called and the handler runs as normal.
 
 Use this package when your validation needs are simple attribute checks, when you're migrating request models from ASP.NET MVC/Web API that already carry `DataAnnotations` attributes, or when you want validation with zero extra registration.
@@ -52,7 +52,7 @@ app.UseBenzeneMessage(benzeneMessageApp => benzeneMessageApp
 
 No further registration is required — `.UseDataAnnotationsValidation()` only adds the middleware to the handler pipeline; it does not need to discover anything from DI, because the validation rules live directly on the request type as attributes.
 
-If `Name` is missing or longer than 10 characters, the handler is never invoked and the caller receives a `ValidationError` result with messages such as `"The Name field is required."`.
+If `Name` is missing or longer than 10 characters, the handler is never invoked and the caller receives a `validation-error` result with messages such as `"The Name field is required."`.
 
 ## Configuration
 
@@ -85,8 +85,8 @@ Because it runs for every request that reaches a handler, adding it once here va
 | Where rules live | Separate `AbstractValidator<T>` class | Attributes on the request type's properties |
 | Opt-in per request type | Yes — only runs if an `IValidator<TRequest>` is registered/discovered for that type | No — always runs `Validator.TryValidateObject` on every request that reaches the middleware |
 | DI / registration required | Yes — validators discovered from assemblies/types and registered via `TryAddSingleton` | No — no services are registered |
-| Null request | `ValidationError`, message `"Request is null"` | `ValidationError`, message `"Request is null"` |
-| Failure status | Configurable — defaults to `ValidationError`, but can be overridden per-rule (`.WithStatus(...)`) or per-handler (`[ValidationStatus(...)]`) via `IValidationStatusMapper` | Always `BenzeneResultStatus.ValidationError` — no override mechanism |
+| Null request | `validation-error`, message `"Request is null"` | `validation-error`, message `"Request is null"` |
+| Failure status | Configurable — defaults to `validation-error`, but can be overridden per-rule (`.WithStatus(...)`) or per-handler (`[ValidationStatus(...)]`) via `IValidationStatusMapper` | Always `BenzeneResultStatus.ValidationError` — no override mechanism |
 | Schema/OpenAPI generation | Yes — `IValidationSchemaBuilder` (`FluentValidationSchemaBuilder`) reflects over rules | Not provided by this package |
 | Complex/cross-property rules | Yes — full fluent rule composition | Limited to what a single `ValidationAttribute` can express (or a custom attribute / `IValidatableObject`) |
 
@@ -122,5 +122,5 @@ public class CreateWidgetRequest
 ## See Also
 - [Fluent Validation](fluent-validation.md) — the rule-based alternative with configurable failure statuses and schema generation
 - [Message Handlers](message-handlers.md) — where validation middleware sits in the request lifecycle
-- [Handler Result](message-result.md) — `IBenzeneResult` statuses, including `ValidationError`
+- [Handler Result](message-result.md) — `IBenzeneResult` statuses, including `validation-error`
 - [Middleware](middleware.md) — general middleware pipeline concepts

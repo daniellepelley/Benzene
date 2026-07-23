@@ -39,7 +39,7 @@ is normative.)*
 
 ```json
 {
-  "statusCode": "Ok",
+  "statusCode": "ok",
   "headers": { },
   "body": "{ …serialized response… }"
 }
@@ -58,7 +58,7 @@ problem-details-shaped object:
 
 ```json
 {
-  "status": "NotFound",
+  "status": "not-found",
   "detail": "No handler found for topic order:create"
 }
 ```
@@ -94,27 +94,27 @@ Duplicate keys: last value wins.
 ## 3. Status vocabulary
 
 The closed set of framework-defined statuses. The strings below are the wire values — they are
-**PascalCase and case-sensitive**.
+**case-sensitive**. The vocabulary is lowercase-kebab-case (e.g. `not-found`, `validation-error`).
 
 | Status | Success? | Meaning |
 |---|---|---|
-| `Ok` | yes | Handled successfully |
-| `Created` | yes | Resource created |
-| `Accepted` | yes | Accepted for asynchronous processing |
-| `Updated` | yes | Resource updated |
-| `Deleted` | yes | Resource deleted |
-| `Ignored` | yes | Deliberately not processed (e.g. filtered); not an error |
-| `BadRequest` | no | Malformed or invalid request |
-| `ValidationError` | no | Semantically invalid request (validation rules failed) |
-| `Unauthorized` | no | Caller not authenticated |
-| `Forbidden` | no | Caller authenticated but not permitted |
-| `NotFound` | no | Target not found (including: no handler registered for the topic) |
-| `Conflict` | no | State conflict |
-| `TooManyRequests` | no | Throttled / rate limited; transient — back off and retry |
-| `Timeout` | no | A downstream deadline elapsed; transient, but the operation may or may not have been applied, so blind retries are only safe for idempotent operations |
-| `NotImplemented` | no | Recognized but unsupported operation |
-| `ServiceUnavailable` | no | Transient infrastructure failure; retryable. Also the mapping for uncaught handler exceptions and client-side send failures. |
-| `UnexpectedError` | no | Unclassified failure |
+| `ok` | yes | Handled successfully |
+| `created` | yes | Resource created |
+| `accepted` | yes | Accepted for asynchronous processing |
+| `updated` | yes | Resource updated |
+| `deleted` | yes | Resource deleted |
+| `ignored` | yes | Deliberately not processed (e.g. filtered); not an error |
+| `bad-request` | no | Malformed or invalid request |
+| `validation-error` | no | Semantically invalid request (validation rules failed) |
+| `unauthorized` | no | Caller not authenticated |
+| `forbidden` | no | Caller authenticated but not permitted |
+| `not-found` | no | Target not found (including: no handler registered for the topic) |
+| `conflict` | no | State conflict |
+| `too-many-requests` | no | Throttled / rate limited; transient — back off and retry |
+| `timeout` | no | A downstream deadline elapsed; transient, but the operation may or may not have been applied, so blind retries are only safe for idempotent operations |
+| `not-implemented` | no | Recognized but unsupported operation |
+| `service-unavailable` | no | Transient infrastructure failure; retryable. Also the mapping for uncaught handler exceptions and client-side send failures. |
+| `unexpected-error` | no | Unclassified failure |
 
 Applications MAY use additional status strings; every mapping table below routes unknown statuses
 to its generic-error row.
@@ -125,27 +125,27 @@ to its generic-error row.
 
 | Benzene status | HTTP |
 |---|---|
-| `Ok`, `Ignored` | 200 |
-| `Created` | 201 |
-| `Accepted` | 202 |
-| `Updated`, `Deleted` | 204 |
-| `BadRequest` | 400 |
-| `Unauthorized` | 401 |
-| `Forbidden` | 403 |
-| `NotFound` | 404 |
-| `Conflict` | 409 |
-| `ValidationError` | 422 |
-| `TooManyRequests` | 429 |
-| `UnexpectedError`, unknown, missing | 500 |
-| `NotImplemented` | 501 |
-| `ServiceUnavailable` | 503 |
-| `Timeout` | 504 |
+| `ok`, `ignored` | 200 |
+| `created` | 201 |
+| `accepted` | 202 |
+| `updated`, `deleted` | 204 |
+| `bad-request` | 400 |
+| `unauthorized` | 401 |
+| `forbidden` | 403 |
+| `not-found` | 404 |
+| `conflict` | 409 |
+| `validation-error` | 422 |
+| `too-many-requests` | 429 |
+| `unexpected-error`, unknown, missing | 500 |
+| `not-implemented` | 501 |
+| `service-unavailable` | 503 |
+| `timeout` | 504 |
 
-Reverse (HTTP → Benzene, used by HTTP clients): 200→`Ok`, 201→`Created`, 202→`Accepted`,
-204→`Deleted`, 400→`BadRequest`, 401→`Unauthorized`, 403→`Forbidden`, 404→`NotFound`,
-408→`Timeout`, 409→`Conflict`, 422→`ValidationError`, 429→`TooManyRequests`,
-501→`NotImplemented`, 502→`ServiceUnavailable`, 503→`ServiceUnavailable`, 504→`Timeout`,
-anything else→`UnexpectedError`.
+Reverse (HTTP → Benzene, used by HTTP clients): 200→`ok`, 201→`created`, 202→`accepted`,
+204→`deleted`, 400→`bad-request`, 401→`unauthorized`, 403→`forbidden`, 404→`not-found`,
+408→`timeout`, 409→`conflict`, 422→`validation-error`, 429→`too-many-requests`,
+501→`not-implemented`, 502→`service-unavailable`, 503→`service-unavailable`, 504→`timeout`,
+anything else→`unexpected-error`.
 
 ### 4.2 gRPC
 
@@ -153,17 +153,17 @@ Forward (server):
 
 | Benzene status | gRPC `StatusCode` |
 |---|---|
-| `Ok`, `Ignored`, `Created`, `Accepted`, `Updated`, `Deleted` | `OK` |
-| `BadRequest`, `ValidationError` | `InvalidArgument` |
-| `Unauthorized` | `Unauthenticated` |
-| `Forbidden` | `PermissionDenied` |
-| `NotFound` | `NotFound` |
-| `Conflict` | `AlreadyExists` |
-| `NotImplemented` | `Unimplemented` |
-| `ServiceUnavailable` | `Unavailable` |
-| `TooManyRequests` | `ResourceExhausted` |
-| `Timeout` | `DeadlineExceeded` |
-| `UnexpectedError`, unknown, missing | `Internal` |
+| `ok`, `ignored`, `created`, `accepted`, `updated`, `deleted` | `OK` |
+| `bad-request`, `validation-error` | `InvalidArgument` |
+| `unauthorized` | `Unauthenticated` |
+| `forbidden` | `PermissionDenied` |
+| `not-found` | `NotFound` |
+| `conflict` | `AlreadyExists` |
+| `not-implemented` | `Unimplemented` |
+| `service-unavailable` | `Unavailable` |
+| `too-many-requests` | `ResourceExhausted` |
+| `timeout` | `DeadlineExceeded` |
+| `unexpected-error`, unknown, missing | `Internal` |
 
 **The `benzene-status` trailer**: because several Benzene statuses collapse to one gRPC code, a
 Benzene gRPC server MUST attach a response trailer `benzene-status` carrying the raw status string
@@ -171,11 +171,11 @@ verbatim, on success and failure alike. A missing result maps the trailer value 
 Non-`OK` outcomes are surfaced as a gRPC error with the mapped code and a detail string of the
 joined `errors` (or the raw status if `errors` is empty).
 
-Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`Ok`,
-`InvalidArgument`→`BadRequest`, `Unauthenticated`→`Unauthorized`, `PermissionDenied`→`Forbidden`,
-`NotFound`→`NotFound`, `AlreadyExists`→`Conflict`, `Unimplemented`→`NotImplemented`,
-`Unavailable`/`Cancelled`→`ServiceUnavailable`, `ResourceExhausted`→`TooManyRequests`,
-`DeadlineExceeded`→`Timeout`, anything else→`UnexpectedError`.
+Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`ok`,
+`InvalidArgument`→`bad-request`, `Unauthenticated`→`unauthorized`, `PermissionDenied`→`forbidden`,
+`NotFound`→`not-found`, `AlreadyExists`→`conflict`, `Unimplemented`→`not-implemented`,
+`Unavailable`/`Cancelled`→`service-unavailable`, `ResourceExhausted`→`too-many-requests`,
+`DeadlineExceeded`→`timeout`, anything else→`unexpected-error`.
 
 **Cancellation**: a cancelled invocation maps to gRPC `DeadlineExceeded` if the call's deadline
 has passed, else `Cancelled`.

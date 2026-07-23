@@ -133,7 +133,7 @@ public class CapturePaymentHandler : IMessageHandler<OrderPaymentMessage, Void>
 }
 ```
 
-Both paths — the caught `ServiceUnavailable` result and an uncaught exception — leave `SqsMessageContext.IsSuccessful` as `false` (or unset, in the case of an exception, since `SqsApplication`'s `catch` block reports the failure directly without needing `IsSuccessful` at all). Either way the message ID ends up in `BatchItemFailures`.
+Both paths — the caught `service-unavailable` result and an uncaught exception — leave `SqsMessageContext.IsSuccessful` as `false` (or unset, in the case of an exception, since `SqsApplication`'s `catch` block reports the failure directly without needing `IsSuccessful` at all). Either way the message ID ends up in `BatchItemFailures`.
 
 ### 2. Add in-process retry with `UseRetry`
 
@@ -151,7 +151,7 @@ public static IMiddlewarePipelineBuilder<TContext> UseRetry<TContext>(
     Func<TimeSpan, Task>? delay = null)                  // defaults to Task.Delay; override in tests
 ```
 
-Important: by default, `RetryMiddleware` only retries when the pipeline **throws**. It does *not* retry a handler that returns a failure result (like `ServiceUnavailable`) without throwing — `shouldRetryContext` defaults to always returning `false`. If you want the `CapturePaymentHandler` example above to be retried in-process (rather than only relying on SQS's own redelivery), pass a `shouldRetryContext` that inspects `SqsMessageContext.IsSuccessful`:
+Important: by default, `RetryMiddleware` only retries when the pipeline **throws**. It does *not* retry a handler that returns a failure result (like `service-unavailable`) without throwing — `shouldRetryContext` defaults to always returning `false`. If you want the `CapturePaymentHandler` example above to be retried in-process (rather than only relying on SQS's own redelivery), pass a `shouldRetryContext` that inspects `SqsMessageContext.IsSuccessful`:
 
 ```csharp
 using Benzene.Resilience;
@@ -170,7 +170,7 @@ app.UseSqs(sqs => sqs
 
 With this wiring:
 - A thrown exception from `CapturePaymentHandler` is retried up to 3 times (200ms, then 400ms, then 800ms delay) before being allowed to propagate out of the pipeline, where `SqsApplication` catches it, logs it, and reports the batch item failure.
-- A `ServiceUnavailable` result is retried up to 3 times in-process (via `shouldRetryContext`) and, if still unsuccessful after the last attempt, `RetryMiddleware` returns normally (it does not throw for context-based failures) — `SqsApplication` then sees `context.IsSuccessful == false` and reports the batch item failure exactly as if there were no retry middleware at all.
+- A `service-unavailable` result is retried up to 3 times in-process (via `shouldRetryContext`) and, if still unsuccessful after the last attempt, `RetryMiddleware` returns normally (it does not throw for context-based failures) — `SqsApplication` then sees `context.IsSuccessful == false` and reports the batch item failure exactly as if there were no retry middleware at all.
 
 There is no circuit breaker, timeout, or bulkhead middleware in `Benzene.Resilience` today — only this single retry middleware. If you need those patterns, you'll need to bring your own (e.g. wrap `IPaymentGateway` with Polly directly) since Benzene does not currently ship them, despite what `src/Benzene.Resilience/CLAUDE.md` claims.
 
@@ -246,7 +246,7 @@ Adapt this for your own handler: build an `SQSEvent` with `MessageBuilder.Create
 
 Your event source mapping is missing `function_response_types = ["ReportBatchItemFailures"]` (Terraform) or the equivalent `FunctionResponseTypes: ["ReportBatchItemFailures"]` in CloudFormation/console config. Without it, AWS Lambda ignores `SQSBatchResponse.BatchItemFailures` entirely and treats the invocation as fully succeeded (if it returned without throwing) or fully failed (if the Lambda invocation itself threw) — regardless of what Benzene reports per-message.
 
-### A handler that returns `ServiceUnavailable` isn't being retried
+### A handler that returns `service-unavailable` isn't being retried
 
 By default `RetryMiddleware`'s `shouldRetryContext` always returns `false` — it only retries thrown exceptions unless you explicitly pass `shouldRetryContext: context => context.IsSuccessful == false` (or your own predicate). This is intentional: Benzene has no way to know whether a non-throwing "failure" result should be retried without you telling it.
 

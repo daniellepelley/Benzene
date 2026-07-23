@@ -28,7 +28,7 @@ R6) — for such a service, §6 governs runtime degradation, not whether the fee
 
 A mesh-enabled service MUST intercept the reserved topic id `mesh` (plus any app-chosen aliases)
 the same way health-check interception works (core-concepts.md §5): interception is by topic id
-alone, ignoring version; any other topic passes through unchanged. The response is status `Ok`
+alone, ignoring version; any other topic passes through unchanged. The response is status `ok`
 with the ServiceDescriptor (§2) as payload.
 
 Provisioning this endpoint is a deployment decision: a service that must not expose it (e.g.
@@ -148,7 +148,7 @@ transport-shaped.
   "instanceId": "orders-7f9c",
   "topic": "order:create",
   "topicVersion": "v2",
-  "status": "ValidationError",
+  "status": "validation-error",
   "durationMs": 12.4,
   "startedAt": "2026-07-16T09:14:03.120Z",
   "correlationId": "abc-123"
@@ -183,7 +183,7 @@ transport (transport-bindings.md):
 | `mesh:heartbeat` | Heartbeat (§5) | `{"accepted":1}` |
 | `mesh:traces` | `{"events":[TraceEvent…]}` | `{"accepted":<count>}` |
 
-- `service` is REQUIRED on register and heartbeat → `BadRequest` when missing. A `mesh:traces`
+- `service` is REQUIRED on register and heartbeat → `bad-request` when missing. A `mesh:traces`
   batch of any size, including empty, MUST be accepted.
 - Re-registration replaces the previous registration wholesale, including the claim to provide
   each topic — a redeploy that drops a topic drops the provider edge with it.

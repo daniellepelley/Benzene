@@ -29,28 +29,28 @@ the HTTP status code HTTP transports map it to (via `DefaultHttpStatusCodeMapper
 
 | Factory | Status | HTTP | Notes |
 |---|---|---|---|
-| `BenzeneResult.Ok(payload)` | `Ok` | `200` | Standard success with a payload. |
-| `BenzeneResult.Created(payload)` | `Created` | `201` | Resource created. |
-| `BenzeneResult.Accepted()` | `Accepted` | `202` | Acknowledged for async processing. The **default** result for fire-and-forget event handlers (those with no response). |
-| `BenzeneResult.Updated(payload)` | `Updated` | `204` | Resource updated; no content returned. |
-| `BenzeneResult.Deleted<T>()` | `Deleted` | `204` | Resource deleted; no content returned. |
-| `BenzeneResult.Ignored<T>()` | `Ignored` | `200` | Message deliberately not acted upon but acknowledged as handled. |
+| `BenzeneResult.Ok(payload)` | `ok` | `200` | Standard success with a payload. |
+| `BenzeneResult.Created(payload)` | `created` | `201` | Resource created. |
+| `BenzeneResult.Accepted()` | `accepted` | `202` | Acknowledged for async processing. The **default** result for fire-and-forget event handlers (those with no response). |
+| `BenzeneResult.Updated(payload)` | `updated` | `204` | Resource updated; no content returned. |
+| `BenzeneResult.Deleted<T>()` | `deleted` | `204` | Resource deleted; no content returned. |
+| `BenzeneResult.Ignored<T>()` | `ignored` | `200` | Message deliberately not acted upon but acknowledged as handled. |
 
 ### Failure statuses
 
 | Factory | Status | HTTP | Notes |
 |---|---|---|---|
-| `BenzeneResult.BadRequest(message)` | `BadRequest` | `400` | Malformed or invalid request. |
-| `BenzeneResult.Unauthorized()` | `Unauthorized` | `401` | Authentication required or failed. |
-| `BenzeneResult.Forbidden()` | `Forbidden` | `403` | Authenticated but not permitted. |
-| `BenzeneResult.NotFound<T>()` | `NotFound` | `404` | Resource does not exist. |
-| `BenzeneResult.Conflict()` | `Conflict` | `409` | Conflicts with current state. |
-| `BenzeneResult.ValidationError(message)` | `ValidationError` | `422` | Request failed validation. Returned automatically by [validation middleware](middleware.md#message-router-middleware). |
-| `BenzeneResult.TooManyRequests()` | `TooManyRequests` | `429` | Throttled / rate limited; transient — back off and retry. |
-| `BenzeneResult.UnexpectedError(message)` | `UnexpectedError` | `500` | Unhandled/unexpected failure. |
-| `BenzeneResult.NotImplemented()` | `NotImplemented` | `501` | Operation not implemented. |
-| `BenzeneResult.ServiceUnavailable()` | `ServiceUnavailable` | `503` | A dependency is unavailable; safe to retry. |
-| `BenzeneResult.Timeout()` | `Timeout` | `504` | A downstream deadline elapsed; transient, but the operation may or may not have been applied — retry only if idempotent. |
+| `BenzeneResult.BadRequest(message)` | `bad-request` | `400` | Malformed or invalid request. |
+| `BenzeneResult.Unauthorized()` | `unauthorized` | `401` | Authentication required or failed. |
+| `BenzeneResult.Forbidden()` | `forbidden` | `403` | Authenticated but not permitted. |
+| `BenzeneResult.NotFound<T>()` | `not-found` | `404` | Resource does not exist. |
+| `BenzeneResult.Conflict()` | `conflict` | `409` | Conflicts with current state. |
+| `BenzeneResult.ValidationError(message)` | `validation-error` | `422` | Request failed validation. Returned automatically by [validation middleware](middleware.md#message-router-middleware). |
+| `BenzeneResult.TooManyRequests()` | `too-many-requests` | `429` | Throttled / rate limited; transient — back off and retry. |
+| `BenzeneResult.UnexpectedError(message)` | `unexpected-error` | `500` | Unhandled/unexpected failure. |
+| `BenzeneResult.NotImplemented()` | `not-implemented` | `501` | Operation not implemented. |
+| `BenzeneResult.ServiceUnavailable()` | `service-unavailable` | `503` | A dependency is unavailable; safe to retry. |
+| `BenzeneResult.Timeout()` | `timeout` | `504` | A downstream deadline elapsed; transient, but the operation may or may not have been applied — retry only if idempotent. |
 
 > Any status not in the map — or a `null` status — falls back to **HTTP 500**.
 
@@ -82,9 +82,9 @@ BenzeneResult.BadRequest("Invalid request");
 | Member | Purpose |
 |---|---|
 | `BenzeneResult.Set(status, isSuccess)` / `Set<T>(...)` | Build a result with an explicit status string and success flag — the escape hatch for custom statuses. |
-| `BenzeneResult.Set(status, payload, isSuccess)` | Explicit status *and* payload *and* success flag — for results whose success class shouldn't be derived from the status (e.g. an unhealthy health check: `ServiceUnavailable` for the HTTP 503, successful so the report payload renders as the body). |
+| `BenzeneResult.Set(status, payload, isSuccess)` | Explicit status *and* payload *and* success flag — for results whose success class shouldn't be derived from the status (e.g. an unhealthy health check: `service-unavailable` for the HTTP 503, successful so the report payload renders as the body). |
 | `BenzeneResult.IsSuccess(result)` | True when the result's status is a success status. |
-| `BenzeneResult.IsAccepted(result)` | True when the result is `Accepted`. |
+| `BenzeneResult.IsAccepted(result)` | True when the result is `accepted`. |
 | `*Internal` factories (`OkInternal`, `NotFoundInternal`, …) | Variants used for internal/inter-service results — e.g. results returned across a Benzene [message client](packages.md#outbound-messaging-clients) rather than mapped straight to an HTTP response. |
 
 ## Classifying statuses
@@ -97,15 +97,15 @@ clients, and `IsSuccessful` all derive from it:
 | `BenzeneResultStatus.IsSuccess(status)` | True for the six success statuses. |
 | `BenzeneResultStatus.IsFailure(status)` | True for the known failure statuses. Application-defined statuses are neither. |
 | `BenzeneResultStatus.IsKnown(status)` | True for any framework-defined status. |
-| `BenzeneResultStatus.IsTransient(status)` | True for `ServiceUnavailable`, `TooManyRequests`, and `Timeout` — a later retry may succeed. |
+| `BenzeneResultStatus.IsTransient(status)` | True for `service-unavailable`, `too-many-requests`, and `timeout` — a later retry may succeed. |
 | `result.IsTransient()` | Extension form of the above. |
 
 `IsSuccessful` on a result built with `BenzeneResult.Set(status)` / `Set(status, payload)` is
 derived from the status class: known failure statuses produce `IsSuccessful == false`;
 application-defined statuses default to successful (use `Set<T>(status, bool)` to be explicit).
 
-**Retrying:** `RetryBenzeneMessageClient` (`Benzene.Clients`) retries `ServiceUnavailable` and
-`TooManyRequests` by default. `Timeout` is transient but *not* retried by default — a timed-out
+**Retrying:** `RetryBenzeneMessageClient` (`Benzene.Clients`) retries `service-unavailable` and
+`too-many-requests` by default. `timeout` is transient but *not* retried by default — a timed-out
 operation may have been applied, so blind retries are only safe for idempotent calls; opt in via
 its `shouldRetry` constructor parameter (e.g. `r => BenzeneResultStatus.IsTransient(r.Status)`).
 
@@ -122,4 +122,4 @@ its `shouldRetry` constructor parameter (e.g. `r => BenzeneResultStatus.IsTransi
 
 - [Message Results](../message-result.md) — the conceptual introduction.
 - [Message Handlers](../message-handlers.md) — where results are returned.
-- [Fluent Validation](../fluent-validation.md) / [Data Annotations](../data-annotations.md) — produce `ValidationError` results automatically.
+- [Fluent Validation](../fluent-validation.md) / [Data Annotations](../data-annotations.md) — produce `validation-error` results automatically.

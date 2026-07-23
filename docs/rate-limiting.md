@@ -31,11 +31,11 @@ app.UseBenzeneMessage(x => x
 ```
 
 A message over the limit never reaches the protected middleware: it short-circuits with a
-`TooManyRequests` result, which the standard status mapping serves as **HTTP 429**, with the
+`too-many-requests` result, which the standard status mapping serves as **HTTP 429**, with the
 limiter's retry-after hint in the error message when the limiter provides one:
 
 ```json
-{ "status": "TooManyRequests", "errors": ["Rate limit exceeded; retry after 42s"] }
+{ "status": "too-many-requests", "errors": ["Rate limit exceeded; retry after 42s"] }
 ```
 
 Nothing is ever queued — a protective limiter that queues requests just moves the resource
