@@ -169,11 +169,14 @@ Provides complete implementation of message handler infrastructure for command/q
   implement it without a heavy reference) - a unit of INIT-phase warm-up. **Invisible by design:** it
   warms internals directly and does NOT dispatch a message through the pipeline, so no logs/metrics/
   traces/handler side-effects.
-- `SerializationWarmUpTask` - for every registered handler's `RequestType`, does a serializer
-  round-trip so System.Text.Json's per-type metadata/converter is built at start-up, not on the first
-  real message. Warms the **concrete `JsonSerializer`** (the instance `JsonMediaFormat` binds to on
-  the hot path - a *different* instance, with its own STJ cache, from the `ISerializer` registration)
-  plus any distinct `ISerializer`.
+- `SerializationWarmUpTask` - for every registered handler's `RequestType` **and `ResponseType`**
+  (deduped into a set), does a serializer round-trip so System.Text.Json's per-type metadata/converter
+  is built at start-up, not on the first real message. Warming the response type as well matters for
+  read-shaped topics (a trivial request but a large response payload) - a later cold-start X-Ray trace
+  of `orders:get-all` showed the response serialization, not the request deserialization, was the
+  dominant unwarmed first-message cost. Warms the **concrete `JsonSerializer`** (the instance
+  `JsonMediaFormat` binds to on the hot path - a *different* instance, with its own STJ cache, from the
+  `ISerializer` registration) plus any distinct `ISerializer`.
 - `BenzeneWarmUpExtensions.AddBenzeneWarmUp()` - the opt-in (registers the serialization task + a
   marker). `IServiceResolverFactory.WarmUp()` - the host-side runner: on a throwaway scope, runs every
   registered `IWarmUpTask` **only if** `AddBenzeneWarmUp` opted in (no-op otherwise); never throws.

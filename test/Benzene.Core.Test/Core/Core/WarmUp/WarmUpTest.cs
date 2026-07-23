@@ -38,10 +38,14 @@ public class WarmUpTest
 
     private sealed class FakeDefinition : IMessageHandlerDefinition
     {
-        public FakeDefinition(Type requestType) => RequestType = requestType;
+        public FakeDefinition(Type requestType, Type? responseType = null)
+        {
+            RequestType = requestType;
+            ResponseType = responseType ?? typeof(object);
+        }
         public ITopic Topic => new Topic("t");
         public Type RequestType { get; }
-        public Type ResponseType => typeof(object);
+        public Type ResponseType { get; }
         public Type HandlerType => typeof(object);
     }
 
@@ -49,11 +53,13 @@ public class WarmUpTest
     {
         private readonly IMessageHandlerDefinition[] _definitions;
         public FakeFinder(params Type[] requestTypes) => _definitions = requestTypes.Select(t => (IMessageHandlerDefinition)new FakeDefinition(t)).ToArray();
+        public FakeFinder(params IMessageHandlerDefinition[] definitions) => _definitions = definitions;
         public IMessageHandlerDefinition[] FindDefinitions() => _definitions;
     }
 
     public class FooRequest { }
     public class BarRequest { }
+    public class FooResponse { }
 
     private static IServiceResolverFactory FactoryFor(Action<MicrosoftBenzeneServiceContainer> configure)
     {
@@ -120,5 +126,25 @@ public class WarmUpTest
 
         Assert.Contains(typeof(FooRequest), spy.WarmedTypes);
         Assert.Contains(typeof(BarRequest), spy.WarmedTypes);
+    }
+
+    [Fact]
+    public void SerializationWarmUpTask_WarmsHandlerResponseType()
+    {
+        // A read-shaped handler: a trivial request but a distinct (potentially large) response payload.
+        // The cold-start trace showed the response serialization was the dominant unwarmed cost.
+        var spy = new SpySerializer();
+        var factory = FactoryFor(c =>
+        {
+            c.AddSingleton<ISerializer>(_ => spy);
+            c.AddSingleton<IMessageHandlersFinder>(_ =>
+                new FakeFinder(new FakeDefinition(typeof(FooRequest), typeof(FooResponse))));
+        });
+        using var resolver = factory.CreateScope();
+
+        new SerializationWarmUpTask().WarmUp(resolver);
+
+        Assert.Contains(typeof(FooRequest), spy.WarmedTypes);
+        Assert.Contains(typeof(FooResponse), spy.WarmedTypes);
     }
 }

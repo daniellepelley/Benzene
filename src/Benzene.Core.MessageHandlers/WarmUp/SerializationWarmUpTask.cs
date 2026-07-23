@@ -11,8 +11,11 @@ namespace Benzene.Core.MessageHandlers.WarmUp;
 /// <summary>
 /// Warms the serializer's per-type machinery - e.g. System.Text.Json builds and caches reflection
 /// metadata and a converter for each type on its first (de)serialize - for every registered handler's
-/// request type, so the first real message of each type doesn't pay that build. This was one of the two
-/// ~18ms first-message gaps in the AWS X-Ray cold-start analysis.
+/// request AND response type, so the first real message of each type doesn't pay that build. This was
+/// one of the two ~18ms first-message gaps in the AWS X-Ray cold-start analysis. Warming the response
+/// type as well matters for read-shaped topics (a trivial request but a large response payload), where a
+/// later cold-start trace showed the response serialization - not the request deserialization - was the
+/// dominant unwarmed first-message cost.
 /// </summary>
 public class SerializationWarmUpTask : IWarmUpTask
 {
@@ -48,11 +51,30 @@ public class SerializationWarmUpTask : IWarmUpTask
             return;
         }
 
+        // Collect the distinct request AND response types across all handlers, then warm each once per
+        // serializer. Deduping matters because request/response types are commonly shared across handlers
+        // (and a request can equal a response), so a flat per-definition loop would re-pay the same type.
+        var types = new HashSet<Type>();
         foreach (var definition in finder.FindDefinitions())
+        {
+            if (definition.RequestType is not null)
+            {
+                types.Add(definition.RequestType);
+            }
+
+            // The response path serializes this type when writing the reply; for read-shaped topics it's
+            // the bigger first-message cost, so warm it too (a round-trip warms both read and write metadata).
+            if (definition.ResponseType is not null)
+            {
+                types.Add(definition.ResponseType);
+            }
+        }
+
+        foreach (var type in types)
         {
             foreach (var serializer in serializers)
             {
-                WarmType(serializer, definition.RequestType);
+                WarmType(serializer, type);
             }
         }
     }
