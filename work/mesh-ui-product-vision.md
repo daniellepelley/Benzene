@@ -7,6 +7,19 @@
 
 ---
 
+> **2026-07-23 topology table now shows real data on attributable edges (mesh-product-owner).**
+> Owner reported the main-page topology table read as "entirely empty". It wasn't missing rows — the
+> structural edges render — but every metric cell was blank because the aggregator never attributed
+> usage onto edges. Fixed data-side (see `work/service-mesh-roadmap-1.0.md` 2026-07-23 block): edges
+> now carry a usage-derived req/min + error rate where a topic's traffic attributes to that specific
+> edge unambiguously (single-producer rule); percentiles stay blank (no latency in the feed). **UI
+> note / follow-up:** a blank metric cell now means one of two things — "no usage feed wired" (whole
+> table blank) or "traffic can't be attributed to this specific link" (some rows blank while others
+> show numbers). The latter needs an **empty-cell affordance** (e.g. a `title` tooltip: "traffic can't
+> be attributed to this link — needs the per-consumer usage dimension") so a blank reads as *designed*,
+> not *broken* — currently the cell just shows "–". Coordinate with `dx-champion`. The lever to fill
+> the remaining AwsMesh fan-out rows is the per-consumer usage dimension (an adapter follow-up), not a
+> UI change.
 > **2026-07-22 (latest) FEEDBACK TRIAGE — three maintainer asks turned into requirements
 > (mesh-product-owner). No shipping code changed; this is PO triage + written requirements. The
 > P1–P6 roadmap remains complete; these are the next backlog items, sized and sequenced.

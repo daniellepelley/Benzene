@@ -542,6 +542,166 @@ public class MeshAggregatorTest : IDisposable
         Assert.Equal("orders-api", edge.Client);
         Assert.Equal("payments-api", edge.Server);
         Assert.Equal(TopologyEdgeSource.Structural, edge.Source);
+        // No usage feed wired -> the metric columns stay null (blank cells), as before.
+        Assert.Null(edge.RequestsPerMinute);
+        Assert.Null(edge.ErrorRate);
+    }
+
+    // ---- usage -> structural-edge attribution (mesh-product-owner ruling, 2026-07-23) ----
+    // The single-producer attribution rule: a topic's observed traffic is pinned to an edge only when
+    // it can be done unambiguously; percentiles are never available from this feed.
+
+    private static readonly DateTimeOffset UsageAt = new(2026, 7, 23, 9, 0, 0, TimeSpan.Zero);
+
+    private static MeshUsage UsageOverTenMinutes(params MeshUsageEntry[] entries) =>
+        new(UsageAt, UsageAt.AddMinutes(-10), UsageAt, entries);
+
+    private async Task<MeshTopology> RunTopologyAsync((string Name, string Spec)[] services, MeshUsage? usage)
+    {
+        var handler = new RoutingHttpMessageHandler();
+        var registryEntries = new List<MeshServiceRegistryEntry>();
+        foreach (var (name, spec) in services)
+        {
+            var specUrl = $"https://{name}.example/spec?type=benzene";
+            var healthUrl = $"https://{name}.example/healthcheck";
+            handler.MapGet(specUrl, HttpStatusCode.OK, spec).MapGet(healthUrl, HttpStatusCode.OK, SerializeHealth(true));
+            registryEntries.Add(new MeshServiceRegistryEntry(name, specUrl, healthUrl));
+        }
+
+        var store = new FileSystemMeshArtifactStore(_rootDirectory);
+        var usageSources = usage != null ? new IMeshUsageSource[] { new StubUsageSource(usage) } : Array.Empty<IMeshUsageSource>();
+        var aggregator = new MeshAggregator(
+            new IMeshServiceSource[] { new HttpMeshServiceSource(new HttpClient(handler)) }, store, () => UsageAt, usageSources);
+
+        await aggregator.RunOnceAsync(new MeshServiceRegistry(registryEntries.ToArray()));
+        return JsonSerializer.Deserialize<MeshTopology>((await store.TryReadAsync("topology.json"))!, JsonOptions)!;
+    }
+
+    private static TopologyEdge Edge(MeshTopology topology, string client, string server) =>
+        topology.Edges.Single(e => e.Client == client && e.Server == server);
+
+    [Fact]
+    public async Task RunOnceAsync_SingleProducerSingleConsumer_AttributesReqPerMinuteAndErrorRate()
+    {
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("payments:capture", null, null, null, "success", 8, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "failure", 2, null, "cw")));
+
+        var edge = Edge(topology, "orders-api", "payments-api");
+        Assert.Equal(1.0, edge.RequestsPerMinute); // 10 messages / 10 minutes
+        Assert.Equal(0.2, edge.ErrorRate!.Value, 5); // 2 of 10 failed
+        Assert.Null(edge.P50LatencyMs);
+        Assert.Null(edge.P95LatencyMs);
+        Assert.Null(edge.P99LatencyMs);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_MultiProducerTopic_LeavesBothEdgesUnattributed()
+    {
+        // payments:capture is produced by TWO services, so a count handled at payments-api can't be
+        // pinned to a specific producer edge - both stay blank (never double-counted, never split).
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("checkout-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("payments:capture", null, null, null, "success", 10, null, "cw")));
+
+        Assert.Null(Edge(topology, "orders-api", "payments-api").RequestsPerMinute);
+        Assert.Null(Edge(topology, "checkout-api", "payments-api").RequestsPerMinute);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_FanOutTopic_ServiceDimensionAbsent_LeavesEdgesUnattributed()
+    {
+        // order:shipped fans out to two consumers and the feed carries only a topic total (Service
+        // null), so the total can't be split per edge - both edges stay blank.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"order:shipped\"}]}"),
+            ("shipping-api", "{\"requests\":[{\"topic\":\"order:shipped\"}]}"),
+            ("analytics-api", "{\"requests\":[{\"topic\":\"order:shipped\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("order:shipped", null, null, null, "success", 20, null, "cw")));
+
+        Assert.Null(Edge(topology, "orders-api", "shipping-api").RequestsPerMinute);
+        Assert.Null(Edge(topology, "orders-api", "analytics-api").RequestsPerMinute);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_FanOutTopic_ServiceDimensionPresent_AttributesPerConsumer()
+    {
+        // Same fan-out, but the feed carries per-consumer counts (Service present) - a single-producer
+        // topic is then attributable to each consumer edge from its own consumer-scoped count.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"order:shipped\"}]}"),
+            ("shipping-api", "{\"requests\":[{\"topic\":\"order:shipped\"}]}"),
+            ("analytics-api", "{\"requests\":[{\"topic\":\"order:shipped\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("order:shipped", null, "shipping-api", null, "success", 5, null, "cw"),
+            new MeshUsageEntry("order:shipped", null, "analytics-api", null, "success", 3, null, "cw")));
+
+        Assert.Equal(0.5, Edge(topology, "orders-api", "shipping-api").RequestsPerMinute); // 5 / 10 min
+        Assert.Equal(0.3, Edge(topology, "orders-api", "analytics-api").RequestsPerMinute!.Value, 5); // 3 / 10 min
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_MultiTopicEdge_OneAmbiguousTopic_BlanksTheWholeEdge()
+    {
+        // The orders-api -> payments-api edge carries two topics: capture:one (clean, single/single)
+        // and refund:two (ambiguous - two producers). One ambiguous topic blanks the whole edge; a
+        // partial (lower-bound) req/min would be a wrong number to a reader.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"capture:one\"},{\"topic\":\"refund:two\"}]}"),
+            ("checkout-api", "{\"events\":[{\"topic\":\"refund:two\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"capture:one\"},{\"topic\":\"refund:two\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("capture:one", null, null, null, "success", 10, null, "cw"),
+            new MeshUsageEntry("refund:two", null, null, null, "success", 4, null, "cw")));
+
+        Assert.Null(Edge(topology, "orders-api", "payments-api").RequestsPerMinute);
+        Assert.Null(Edge(topology, "orders-api", "payments-api").ErrorRate);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_UnclassifiableStatus_ShowsReqPerMinuteButNotErrorRate()
+    {
+        // A "<missing>" result (a handled message with no success/failure signal) means the outcome is
+        // unknown, so error rate can't be computed - but the message still counts toward req/min.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, UsageOverTenMinutes(
+            new MeshUsageEntry("payments:capture", null, null, null, "success", 6, null, "cw"),
+            new MeshUsageEntry("payments:capture", null, null, null, "<missing>", 4, null, "cw")));
+
+        var edge = Edge(topology, "orders-api", "payments-api");
+        Assert.Equal(1.0, edge.RequestsPerMinute); // 10 / 10 min - the <missing> messages still count
+        Assert.Null(edge.ErrorRate); // outcome unknown for some -> no honest error rate
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_NoBoundedWindow_LeavesMetricsUnattributed()
+    {
+        // Without a bounded observation window there's no divisor for a rate, so metrics stay blank
+        // even for an otherwise cleanly-attributable single/single topic.
+        var topology = await RunTopologyAsync(new[]
+        {
+            ("orders-api", "{\"events\":[{\"topic\":\"payments:capture\"}]}"),
+            ("payments-api", "{\"requests\":[{\"topic\":\"payments:capture\"}]}"),
+        }, new MeshUsage(UsageAt, null, null,
+            new[] { new MeshUsageEntry("payments:capture", null, null, null, "success", 10, null, "cw") }));
+
+        Assert.Null(Edge(topology, "orders-api", "payments-api").RequestsPerMinute);
+        Assert.Null(Edge(topology, "orders-api", "payments-api").ErrorRate);
     }
 
     [Fact]

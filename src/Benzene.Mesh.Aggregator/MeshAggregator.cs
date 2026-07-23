@@ -98,20 +98,26 @@ public class MeshAggregator
         var catalog = await ApplyCatalogDiffAsync(BuildTopicCatalog(entries, results));
         writes.Add(_store.PublishAsync("topics.json", JsonSerializer.Serialize(catalog, JsonOptions)));
 
+        // Observed usage (docs/mesh-usage-feed.md) is awaited here - before the topology below - so
+        // the structural edges can carry a usage-derived req/min + error rate where the feed can
+        // attribute one honestly. Published only when at least one registered IMeshUsageSource
+        // reported, so the artifact's absence still means "no usage feed wired" (the UI hides its
+        // usage sections) while an empty entries array means "feed wired, no traffic observed" -
+        // two different product statements.
+        var usage = await usageTask;
+
         // Structural ("designed to call") topology: an edge from each service that *sends* a domain
         // topic to each service that *handles* it, derived from the specs (no tracing backend needed).
-        var topology = BuildTopology(entries, results);
+        // Where the usage feed can unambiguously attribute a topic's traffic to a specific edge, the
+        // edge also carries a usage-derived req/min + error rate; latency percentiles are never
+        // available from this feed and stay null.
+        var topology = BuildTopology(entries, results, usage);
         writes.Add(_store.PublishAsync("topology.json", JsonSerializer.Serialize(topology, JsonOptions)));
 
         // Composite AsyncAPI: merge every service's own AsyncAPI 2.0 doc (fetched from its spec
         // endpoint) into one fleet-wide document loadable in an AsyncAPI editor.
         writes.Add(_store.PublishAsync("asyncapi.json", BuildCompositeAsyncApi(entries, results)));
 
-        // Observed usage (docs/mesh-usage-feed.md): published only when at least one registered
-        // IMeshUsageSource reported, so the artifact's absence still means "no usage feed wired"
-        // (the UI hides its usage sections) while an empty entries array means "feed wired, no
-        // traffic observed" - two different product statements.
-        var usage = await usageTask;
         if (usage != null)
         {
             writes.Add(_store.PublishAsync("usage.json", JsonSerializer.Serialize(usage, JsonOptions)));
@@ -189,32 +195,56 @@ public class MeshAggregator
         return AsyncApiCompositor.Merge(documents, _clock());
     }
 
+    // The exact `result`-tag tokens the metric standard (Benzene.Diagnostics.MetricsExtensions)
+    // writes onto benzene.messages.processed, which become MeshUsageEntry.Status for the
+    // metrics-backend adapters (CloudWatch/App Insights). Error rate is classified only against
+    // these two; a wire-vocabulary status (e.g. the collector feed's "Ok") or a "<missing>" is
+    // deliberately *not* classifiable, so the error-rate cell stays blank rather than guessing.
+    private const string SuccessResult = "success";
+    private const string FailureResult = "failure";
+
     /// <summary>
     /// Derives the structural topology: for every domain topic a service declares it <em>sends</em>
     /// (the spec's <c>events</c>), an edge to every service that <em>handles</em> it (the spec's
     /// <c>requests</c>). This is <see cref="TopologyEdgeSource.Structural"/> — the "designed to call"
-    /// graph, as opposed to <c>Benzene.Mesh.Tracing.Tempo</c>'s observed traffic.
+    /// graph, as opposed to <c>Benzene.Mesh.Tracing.Tempo</c>'s observed traffic. Where the merged
+    /// <paramref name="usage"/> feed can attribute a topic's observed traffic to a specific edge
+    /// <em>unambiguously</em>, that edge also carries a usage-derived req/min and (when the outcome is
+    /// classifiable) error rate; latency percentiles are never available from this feed. Attribution
+    /// is all-or-nothing per edge and never shows a lower bound - see <see cref="AttributeTopicToEdge"/>.
     /// </summary>
-    private MeshTopology BuildTopology(MeshServiceRegistryEntry[] entries, ServiceResult[] results)
+    private MeshTopology BuildTopology(MeshServiceRegistryEntry[] entries, ServiceResult[] results, MeshUsage? usage)
     {
-        var handlersByTopic = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        // Consumers of a topic (spec `requests`, non-reserved) and producers of it (spec `events`).
+        var consumersByTopic = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var producersByTopic = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         for (var i = 0; i < entries.Length; i++)
         {
             foreach (var topic in results[i].Topics.Where(t => !t.Reserved))
             {
-                if (!handlersByTopic.TryGetValue(topic.Topic, out var handlers))
+                if (!consumersByTopic.TryGetValue(topic.Topic, out var consumers))
                 {
-                    handlers = new List<string>();
-                    handlersByTopic[topic.Topic] = handlers;
+                    consumers = new List<string>();
+                    consumersByTopic[topic.Topic] = consumers;
                 }
-                handlers.Add(entries[i].Name);
+                consumers.Add(entries[i].Name);
+            }
+            foreach (var topic in results[i].OutboundTopics)
+            {
+                if (!producersByTopic.TryGetValue(topic.Topic, out var producers))
+                {
+                    producers = new List<string>();
+                    producersByTopic[topic.Topic] = producers;
+                }
+                producers.Add(entries[i].Name);
             }
         }
 
-        var edges = new List<TopologyEdge>();
         // Dedup on the (client, server) pair itself, not a space-joined string: a service name can
-        // contain a space, so "a b"+"c" and "a"+"b c" would otherwise collide onto one key.
-        var seen = new HashSet<(string Client, string Server)>();
+        // contain a space, so "a b"+"c" and "a"+"b c" would otherwise collide onto one key. Each
+        // deduped edge remembers the set of topics it represents so usage can be attributed per edge.
+        var order = new List<(string Client, string Server)>();
+        var carriedByEdge = new Dictionary<(string Client, string Server), List<string>>();
         for (var i = 0; i < entries.Length; i++)
         {
             var client = entries[i].Name;
@@ -222,7 +252,7 @@ public class MeshAggregator
             // of a topic is structurally wired to whichever service(s) handle any version of it.
             foreach (var topic in results[i].OutboundTopics)
             {
-                if (!handlersByTopic.TryGetValue(topic.Topic, out var servers))
+                if (!consumersByTopic.TryGetValue(topic.Topic, out var servers))
                 {
                     continue;
                 }
@@ -232,17 +262,141 @@ public class MeshAggregator
                     {
                         continue; // a service calling itself isn't a mesh edge
                     }
-                    if (seen.Add((client, server)))
+                    var key = (client, server);
+                    if (!carriedByEdge.TryGetValue(key, out var carried))
                     {
-                        edges.Add(new TopologyEdge(client, server, TopologyEdgeSource.Structural,
-                            requestsPerMinute: null, errorRate: null,
-                            p50LatencyMs: null, p95LatencyMs: null, p99LatencyMs: null));
+                        carried = new List<string>();
+                        carriedByEdge[key] = carried;
+                        order.Add(key);
+                    }
+                    if (!carried.Contains(topic.Topic))
+                    {
+                        carried.Add(topic.Topic);
                     }
                 }
             }
         }
 
+        var windowMinutes = usage?.WindowStartUtc != null && usage.WindowEndUtc != null
+            ? (usage.WindowEndUtc.Value - usage.WindowStartUtc.Value).TotalMinutes
+            : 0;
+        var entriesByTopic = usage?.Entries
+                .GroupBy(entry => entry.Topic, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal)
+            ?? new Dictionary<string, MeshUsageEntry[]>(StringComparer.Ordinal);
+
+        var edges = new List<TopologyEdge>(order.Count);
+        foreach (var key in order)
+        {
+            var (requestsPerMinute, errorRate) = AttributeEdge(
+                carriedByEdge[key], key.Server, producersByTopic, consumersByTopic, entriesByTopic, windowMinutes);
+            edges.Add(new TopologyEdge(key.Client, key.Server, TopologyEdgeSource.Structural,
+                requestsPerMinute: requestsPerMinute, errorRate: errorRate,
+                p50LatencyMs: null, p95LatencyMs: null, p99LatencyMs: null));
+        }
+
         return new MeshTopology(_clock(), edges.ToArray());
+    }
+
+    /// <summary>
+    /// Computes an edge's usage-derived req/min and error rate by summing every topic it carries.
+    /// All-or-nothing: if <em>any</em> carried topic can't be attributed unambiguously to this edge
+    /// (see <see cref="AttributeTopicToEdge"/>), both metrics are null - a lower bound shown in a
+    /// "req/min" cell would be a wrong number to a reader, worse than a blank. Error rate additionally
+    /// requires every attributed entry to be classifiable (a <c>success</c>/<c>failure</c> outcome);
+    /// req/min can show when error rate can't.
+    /// </summary>
+    private static (double? RequestsPerMinute, double? ErrorRate) AttributeEdge(
+        List<string> carriedTopics,
+        string server,
+        Dictionary<string, List<string>> producersByTopic,
+        Dictionary<string, List<string>> consumersByTopic,
+        Dictionary<string, MeshUsageEntry[]> entriesByTopic,
+        double windowMinutes)
+    {
+        if (windowMinutes <= 0)
+        {
+            return (null, null); // no bounded window -> no rate can be computed
+        }
+
+        double total = 0;
+        double totalFailures = 0;
+        var allClassifiable = true;
+        foreach (var topic in carriedTopics)
+        {
+            var attribution = AttributeTopicToEdge(topic, server, producersByTopic, consumersByTopic, entriesByTopic);
+            if (attribution == null)
+            {
+                return (null, null); // one ambiguous topic blanks the whole edge
+            }
+            total += attribution.Value.Count;
+            totalFailures += attribution.Value.FailureCount;
+            allClassifiable &= attribution.Value.Classifiable;
+        }
+
+        var requestsPerMinute = total / windowMinutes;
+        double? errorRate = allClassifiable && total > 0 ? totalFailures / total : null;
+        return (requestsPerMinute, errorRate);
+    }
+
+    /// <summary>
+    /// Attributes one topic's observed traffic to the edge into <paramref name="server"/>, or returns
+    /// null when it can't be done unambiguously. Two independent ambiguity axes (mesh-product-owner
+    /// ruling, 2026-07-23): a topic with more than one <em>producer</em> can't be pinned to a specific
+    /// producer edge; and without the per-consumer <c>Service</c> dimension a topic-total can only be
+    /// pinned to an edge when the topic has exactly one <em>consumer</em>. When the feed does carry
+    /// <c>Service</c>, the count for this exact consumer is used directly (so a single-producer fan-out
+    /// topic becomes attributable per consumer). A topic reported by more than one source is left
+    /// unattributed to avoid cross-source double counting.
+    /// </summary>
+    private static (double Count, bool Classifiable, double FailureCount)? AttributeTopicToEdge(
+        string topic,
+        string server,
+        Dictionary<string, List<string>> producersByTopic,
+        Dictionary<string, List<string>> consumersByTopic,
+        Dictionary<string, MeshUsageEntry[]> entriesByTopic)
+    {
+        // (A) Producer ambiguity: a message the server handled could have come from any producer.
+        if (!producersByTopic.TryGetValue(topic, out var producers) || producers.Count != 1)
+        {
+            return null;
+        }
+
+        var topicEntries = entriesByTopic.GetValueOrDefault(topic) ?? Array.Empty<MeshUsageEntry>();
+
+        // Cross-source double-count guard: one topic reported by two feeds can't be summed safely.
+        if (topicEntries.Select(entry => entry.Source).Distinct(StringComparer.Ordinal).Count() > 1)
+        {
+            return null;
+        }
+
+        IEnumerable<MeshUsageEntry> relevant;
+        if (topicEntries.Any(entry => entry.Service != null))
+        {
+            // Mixed granularity within one topic (some entries consumer-scoped, some not) -> don't trust.
+            if (topicEntries.Any(entry => entry.Service == null))
+            {
+                return null;
+            }
+            relevant = topicEntries.Where(entry => string.Equals(entry.Service, server, StringComparison.Ordinal));
+        }
+        else
+        {
+            // (C) Topic totals only: attributable to a specific edge only when the topic has one consumer.
+            if (!consumersByTopic.TryGetValue(topic, out var consumers) || consumers.Count != 1)
+            {
+                return null;
+            }
+            relevant = topicEntries;
+        }
+
+        var relevantEntries = relevant.ToArray();
+        double count = relevantEntries.Sum(entry => (double)entry.Count);
+        var classifiable = relevantEntries.All(entry => entry.Status is SuccessResult or FailureResult);
+        double failureCount = classifiable
+            ? relevantEntries.Where(entry => entry.Status == FailureResult).Sum(entry => (double)entry.Count)
+            : 0;
+        return (count, classifiable, failureCount);
     }
 
     /// <summary>

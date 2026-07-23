@@ -82,6 +82,34 @@ needed — it's read straight from the specs the aggregator already fetches. Thi
 Note: `Benzene.Mesh.Tracing.Tempo` publishes *observed* edges to the same `topology.json`; a
 deployment using both currently has last-writer-wins (merging structural + observed is a future step).
 
+### Usage-derived edge metrics (single-producer attribution, 2026-07-23)
+When a usage feed is wired (`usage.json` — the merged `MeshUsage`, awaited in `RunOnceAsync` before
+`BuildTopology`), a structural edge also carries a **usage-derived `RequestsPerMinute` and (when the
+outcome is classifiable) `ErrorRate`**, so the Mesh UI's topology table shows real numbers instead of
+all-blank metric columns. Latency percentiles (`P50/P95/P99`) are **never** available from this feed
+and stay null (it's a metrics-counter feed, no span data). Attribution follows the mesh-product-owner
+ruling (2026-07-23) — a business user reads these numbers, so a shown value must be correct, never a
+lower bound. `AttributeTopicToEdge`/`AttributeEdge` implement it:
+- A topic's count is pinned to the edge into a server **only when unambiguous**, on two axes: (A) the
+  topic has exactly **one producer** (else a count handled at the server can't be pinned to a specific
+  producer edge → blank), and either the feed carries the per-consumer `Service` dimension (then that
+  consumer's own count is used — so a single-producer *fan-out* topic is attributable per consumer) or,
+  when it doesn't (`Service` null, today's CloudWatch/App-Insights adapters), the topic has exactly
+  **one consumer** (else a topic-total can't be split → blank).
+- **All-or-nothing per edge**: a deduped edge carries a *set* of topics; if any one is unattributable,
+  the whole edge's metrics are null (summing only the clean ones is a lower bound, which is dishonest
+  in a "req/min" cell). A topic reported by **more than one `Source`** is left unattributed (cross-source
+  double-count guard). No bounded window (`WindowStart`/`End` null) → null (no divisor).
+- `ErrorRate` is classified only against the metric standard's exact `success`/`failure` result tokens
+  (`Benzene.Diagnostics.MetricsExtensions`); a `<missing>` or wire-vocabulary status (e.g. the
+  collector feed's `Ok`) is **not** classifiable, so error rate stays blank while req/min still shows.
+- **Coverage caveat:** under today's `Service`-null feeds this collapses to single-producer-AND-single-
+  consumer, so on the AwsMesh demo only the two 1:1 SQS command legs light up; the SNS/EventBridge
+  fan-out edges stay blank until the per-consumer usage dimension (a documented adapter follow-up) is
+  wired — the same code then fills them (every AwsMesh topic is single-producer). Covered by
+  `MeshAggregatorTest`'s `RunOnceAsync_*Producer*`/`*FanOut*`/`*MultiTopicEdge*`/`*Unclassifiable*`/
+  `*NoBoundedWindow*` cases.
+
 ## Aggregated topic catalog (`topics.json`)
 Alongside `manifest.json`/`services/{name}.json`, each run also publishes `topics.json`
 (`MeshTopicCatalog` in `Benzene.Mesh.Contracts`): every distinct **(topic, version)** pair across

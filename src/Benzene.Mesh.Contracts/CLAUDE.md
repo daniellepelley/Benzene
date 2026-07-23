@@ -68,8 +68,10 @@ data types - no HTTP, no file I/O, no execution logic.
   edges (`Client`→`Server`, plus nullable `RequestsPerMinute`/`ErrorRate`/`P50`/`P95`/`P99LatencyMs`),
   each tagged with an origin (`TopologyEdgeSource.Tempo` for observed traffic, `.Structural` for the
   declared-contract derivation). Pure shapes only - populated by `Benzene.Mesh.Aggregator`
-  (`BuildTopology`, structural producer→consumer edges every run) and `Benzene.Mesh.Tracing.Tempo`
-  (observed traffic), not by anything in this package.
+  (`BuildTopology`, structural producer→consumer edges every run, with `RequestsPerMinute`/`ErrorRate`
+  filled from the usage feed where a topic's traffic attributes to a specific edge unambiguously -
+  percentiles stay null, that feed has no latency) and `Benzene.Mesh.Tracing.Tempo` (observed traffic,
+  including latency), not by anything in this package.
 - `MeshAnnotation`/`MeshAnnotationLog`/`MeshAnnotationRequest`/`MeshAnnotationThread` (2026-07-22)
   - the discussion shapes: one note attached to one entity of the estate (`Entity` is
   `"service:<name>"`/`"topic:<topicId>"`, mirroring the explorer's own hash-entity model).

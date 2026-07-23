@@ -1,6 +1,19 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-23 topology edges now carry usage-derived req/min + error rate (mesh-product-owner ruling).**
+> Owner feedback: the main-page topology table (client/server/source/req·min/error/p50·95·99) looked
+> "entirely empty" though the usage feed worked. Root cause: the edges *were* there (structural,
+> published every run) but every metric column was hard-coded null. `MeshAggregator.BuildTopology` now
+> attributes `RequestsPerMinute` + `ErrorRate` from the merged `usage.json` onto a structural edge
+> **only where it can be done unambiguously** — the single-producer rule: one producer, and either the
+> per-consumer `Service` dimension present or a single consumer; all-or-nothing per (deduped) edge;
+> cross-source double-count guarded; latency percentiles never attributed (metrics feed has no spans).
+> Error rate classified only against the metric standard's `success`/`failure` tokens (a `<missing>` or
+> wire-vocabulary status leaves error rate blank, req/min still shows). **Honesty over fullness:** on
+> today's `Service`-null demo feeds this lights up only the 1:1 command legs (2 of 9 AwsMesh edges);
+> the fan-out rows stay blank until the per-consumer usage dimension (an adapter follow-up) is wired —
+> the same code then fills them. See `Benzene.Mesh.Aggregator/CLAUDE.md` "Usage-derived edge metrics".
 > **2026-07-22 FEEDBACK TRIAGE — send-demo-payloads ask lands on §10.2/§10.7 (mesh-product-owner).**
 > A maintainer feedback batch (full triage + UI-side requirements F1/F2/F3 in
 > `work/mesh-ui-product-vision.md`, dated block at top) includes: *"Should be able to send in demo
