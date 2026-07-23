@@ -5,7 +5,9 @@ using Benzene.Azure.Function.QueueStorage;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Serialization;
 using Benzene.Core.Middleware;
+using Benzene.Core.Messages.BenzeneMessage;
 using Benzene.Core.Messages.TestHelpers;
+using Benzene.Results;
 using Benzene.Test.Examples;
 using Benzene.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -126,5 +128,47 @@ public class QueueStoragePipelineTest
         Assert.Equal("some-id", observed.Message.MessageId);
         Assert.Equal(3, observed.Message.DequeueCount);
         Assert.Equal(insertedOn, observed.Message.InsertedOn);
+    }
+
+    [Fact]
+    public async Task EnvelopeHandlerReturnsFailure_RaiseOnFailureDefault_EscalatesToProcessingException()
+    {
+        var app = new InlineAzureFunctionStartUp()
+            .ConfigureServices(services => services.ConfigureServiceCollection())
+            .Configure(app => app
+                .UseQueueStorage(queue => queue
+                    .UseBenzeneMessage(direct => direct
+                        .Use("Fail", (BenzeneMessageContext context, Func<Task> _) =>
+                        {
+                            context.MessageResult = BenzeneResult.ServiceUnavailable();
+                            return Task.CompletedTask;
+                        }))))
+            .Build();
+
+        // A failure recorded inside the (response-suppressed) envelope pipeline is now surfaced to the
+        // outer QueueStorageContext, so RaiseOnFailureStatus (default true) escalates it into a thrown
+        // exception - the host retries and eventually poisons the message instead of silently deleting it.
+        await Assert.ThrowsAsync<QueueStorageMessageProcessingException>(
+            () => app.HandleQueueMessage(CreateEnvelopeMessageText()));
+    }
+
+    [Fact]
+    public async Task EnvelopeHandlerReturnsFailure_RaiseOnFailureDisabled_DoesNotEscalate()
+    {
+        var app = new InlineAzureFunctionStartUp()
+            .ConfigureServices(services => services.ConfigureServiceCollection())
+            .Configure(app => app
+                .UseQueueStorage(queue => queue
+                    .UseBenzeneMessage(direct => direct
+                        .Use("Fail", (BenzeneMessageContext context, Func<Task> _) =>
+                        {
+                            context.MessageResult = BenzeneResult.ServiceUnavailable();
+                            return Task.CompletedTask;
+                        })),
+                    configure: options => options.RaiseOnFailureStatus = false))
+            .Build();
+
+        // Opt-out (at-most-once): a returned failure is accepted like a success, so nothing is thrown.
+        await app.HandleQueueMessage(CreateEnvelopeMessageText());
     }
 }

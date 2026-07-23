@@ -6,7 +6,7 @@ worker): delivers a queue message to a Benzene middleware pipeline. The Azure co
 `Benzene.Aws.Lambda.Sqs` in spirit, but structurally closer to `Benzene.Azure.Function.EventHub` —
 see "Routing" below for why.
 
-## Failure handling: a returned failure result is not retried by default (opt in via `QueueStorageOptions`)
+## Failure handling: a returned failure result is retried by default (opt out via `QueueStorageOptions`)
 Safe-by-default (`QueueStorageOptions.RaiseOnFailureStatus` defaults to `true`, flipped 2026-07-21 —
 see `work/settlement-contract-1.0.md`): if a handler returns a non-exception failure result (e.g.
 `BenzeneResult.ServiceUnavailable(...)`), it is escalated into a thrown
@@ -16,6 +16,12 @@ takes over — the same treatment an unhandled exception already got. Set
 at-most-once (a failure result deletes the message like a success, no retry).
 `QueueStorageOptions.CatchExceptions` (default `false`) conversely swallows/logs handler exceptions.
 Because a returned failure is now retried by default, the handler must be idempotent.
+
+This holds for **both** routing paths. The escalation reads `QueueStorageContext.MessageResult`; the
+preset-topic path records it directly, and on the envelope path (`UseBenzeneMessage`, response
+suppressed) `BenzeneMessageQueueStorageHandler` surfaces the inner handler's recorded result onto the
+outer context (via `BenzeneMessageResultApplication`), so a failure inside the envelope pipeline
+escalates too rather than being silently deleted.
 
 ## Zero dependencies — deliberately
 References only `Benzene.Azure.Function.Core` + `Benzene.Core.MessageHandlers` — no storage SDK,
@@ -82,4 +88,5 @@ already the whole helper — a `.TestHelpers` package would be an identity funct
 ## Tests
 - `test/Benzene.Core.Test/Azure/QueueStoragePipelineTest.cs` — envelope routing, preset-topic
   routing of raw payloads (also proves the `AddAzureQueueStorage` registration set is complete
-  for `.UseMessageHandlers()`), non-envelope deferral, exception propagation, metadata flow.
+  for `.UseMessageHandlers()`), non-envelope deferral, exception propagation, metadata flow, and
+  envelope-path `RaiseOnFailureStatus` escalation + opt-out (`EnvelopeHandlerReturnsFailure_*`).

@@ -26,19 +26,19 @@ is now **escalated** the same way by default (`RaiseOnFailureStatus` defaults to
 - `EventHubOptions.RaiseOnFailureStatus` (default `true`) escalates a non-exception failure result
   into a thrown `EventHubMessageProcessingException`, so the Event Hubs trigger re-delivers the batch
   the same way it would for an exception (at-least-once; the handler must then be idempotent). Set
-  `false` for at-most-once. **Caveat:** this reads `EventHubContext.MessageResult` (`EventHubContext : IHasMessageResult`),
-  but this package's default routing path (`UseBenzeneMessage`) runs handlers on the inner
-  `BenzeneMessageContext` with its response **suppressed** (`SuppressResponse()`), so nothing
-  populates `EventHubContext.MessageResult` in that path today — the flag is wired structurally
-  (and unit-tested) but only bites when a middleware/result-setter records a result directly on the
-  `EventHubContext`. Fully surfacing the inner envelope handler's failure result to the outer context
-  would need a new propagation mechanism (the response is suppressed) — deferred, flagged for a
-  maintainer decision. This is the same envelope-path limitation `QueueStorage`'s
-  `RaiseOnFailureStatus` has; `QueueStorage`/`EventGrid` only work fully because they *also* run
-  handlers directly on their own context (preset-topic / by-event-type routing), which this package
-  does not expose.
+  `false` for at-most-once. It reads `EventHubContext.MessageResult` (`EventHubContext : IHasMessageResult`).
+  The default envelope routing path (`UseBenzeneMessage`) runs handlers on the inner
+  `BenzeneMessageContext` with its response **suppressed** (`SuppressResponse()`), but the result is
+  still **recorded** on that inner context (by `BenzeneMessageHandlerResultSetter`, which records even
+  when suppressed) and `BenzeneMessageEventHubHandler` now surfaces it onto the outer
+  `EventHubContext.MessageResult` via `BenzeneMessageResultApplication` — so the flag bites on the
+  envelope path too, not only when a middleware/result-setter records a result directly on the
+  `EventHubContext`. (`QueueStorage` shares the same envelope propagation; `EventGrid` never needed it
+  because it routes by event type directly on its own context.) Covered by
+  `EventHubPipelineTest.EnvelopeHandlerReturnsFailure_*`.
 
-Both flags default off (purely additive, non-breaking). The existing `maxDegreeOfParallelism` knob
+`CatchExceptions` defaults off and `RaiseOnFailureStatus` defaults on (both purely additive,
+non-breaking on the exception path). The existing `maxDegreeOfParallelism` knob
 is folded into `EventHubOptions.MaxDegreeOfParallelism`; the original `UseEventHub(action,
 maxDegreeOfParallelism)` / `EventHubApplication(pipeline, srf, int?)` signatures are unchanged (the
 options form is an **additional** overload). The batch fan-out lives in `EventHubBatchApplication`

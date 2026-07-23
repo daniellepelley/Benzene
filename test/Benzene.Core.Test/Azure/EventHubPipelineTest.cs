@@ -6,7 +6,10 @@ using Benzene.Azure.Function.EventHub.Function;
 using Benzene.Azure.Function.EventHub.TestHelpers;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.Serialization;
+using Benzene.Core.Messages.BenzeneMessage;
+using Benzene.Core.Middleware;
 using Benzene.Microsoft.Dependencies;
+using Benzene.Results;
 using Benzene.Test.Examples;
 using Benzene.Testing;
 using Benzene.Xml;
@@ -87,4 +90,48 @@ public class EventHubPipelineTest
         mockExampleService.Verify(x => x.Register(Defaults.Name));
     }
 
+    [Fact]
+    public async Task EnvelopeHandlerReturnsFailure_RaiseOnFailureDefault_EscalatesToProcessingException()
+    {
+        var app = new InlineAzureFunctionStartUp()
+            .ConfigureServices(services => services.ConfigureServiceCollection())
+            .Configure(app => app
+                .UseEventHub(eventHub => eventHub
+                    .UseBenzeneMessage(direct => direct
+                        .Use("Fail", (BenzeneMessageContext context, Func<Task> _) =>
+                        {
+                            context.MessageResult = BenzeneResult.ServiceUnavailable();
+                            return Task.CompletedTask;
+                        }))))
+            .Build();
+
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsEventHubBenzeneMessage();
+
+        // A failure recorded inside the (response-suppressed) envelope pipeline is now surfaced to the
+        // outer EventHubContext, so RaiseOnFailureStatus (default true) escalates it - failing the
+        // invocation so the trigger re-delivers the batch instead of checkpointing past the failure.
+        await Assert.ThrowsAsync<EventHubMessageProcessingException>(() => app.HandleEventHub(request));
+    }
+
+    [Fact]
+    public async Task EnvelopeHandlerReturnsFailure_RaiseOnFailureDisabled_DoesNotEscalate()
+    {
+        var app = new InlineAzureFunctionStartUp()
+            .ConfigureServices(services => services.ConfigureServiceCollection())
+            .Configure(app => app
+                .UseEventHub(eventHub => eventHub
+                    .UseBenzeneMessage(direct => direct
+                        .Use("Fail", (BenzeneMessageContext context, Func<Task> _) =>
+                        {
+                            context.MessageResult = BenzeneResult.ServiceUnavailable();
+                            return Task.CompletedTask;
+                        })),
+                    options => options.RaiseOnFailureStatus = false))
+            .Build();
+
+        var request = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject).AsEventHubBenzeneMessage();
+
+        // Opt-out (at-most-once): a returned failure is accepted like a success, so nothing is thrown.
+        await app.HandleEventHub(request);
+    }
 }

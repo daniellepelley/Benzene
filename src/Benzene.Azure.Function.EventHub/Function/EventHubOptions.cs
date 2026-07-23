@@ -8,10 +8,10 @@ namespace Benzene.Azure.Function.EventHub.Function;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Both flags default to <c>false</c> and the fan-out defaults to unbounded, so the out-of-the-box
-/// behavior is exactly what it was before this type existed: every event in the batch runs, an
-/// unhandled exception cascades and fails the whole Functions invocation, and a non-exception
-/// failure result checkpoints like a success.
+/// <see cref="CatchExceptions"/> defaults to <c>false</c> (an unhandled exception cascades and fails
+/// the whole Functions invocation) and <see cref="RaiseOnFailureStatus"/> defaults to <c>true</c>
+/// (safe-by-default: a non-exception failure result is escalated and the batch re-delivered rather
+/// than checkpointed past). The fan-out defaults to unbounded.
 /// </para>
 /// <para>
 /// <b>Ordering tradeoff.</b> Event Hub records within a partition are ordered, and the default
@@ -45,11 +45,12 @@ public class EventHubOptions
     /// at-most-once (a failure result is accepted, not retried); either way the handler must be idempotent.
     /// </summary>
     /// <remarks>
-    /// This reads <see cref="EventHubContext.MessageResult"/>. In this package's default envelope
-    /// routing path (<c>UseBenzeneMessage</c>) the handler runs on the inner <c>BenzeneMessageContext</c>
-    /// and its response is suppressed, so nothing populates <see cref="EventHubContext.MessageResult"/>
-    /// there today - meaning this flag only bites when a middleware/setter records a result directly on
-    /// the <see cref="EventHubContext"/>. See the package CLAUDE.md "Failure handling" section.
+    /// This reads <see cref="EventHubContext.MessageResult"/>. In the default envelope routing path
+    /// (<c>UseBenzeneMessage</c>) the handler runs on the inner <c>BenzeneMessageContext</c> with its
+    /// response suppressed; <c>BenzeneMessageEventHubHandler</c> surfaces that inner handler's result
+    /// onto the outer <see cref="EventHubContext.MessageResult"/>, so this flag escalates a failure on
+    /// the envelope path too (not only when a middleware/setter records a result directly on the
+    /// <see cref="EventHubContext"/>). See the package CLAUDE.md "Failure handling" section.
     /// </remarks>
     public bool RaiseOnFailureStatus { get; set; } = true;
 

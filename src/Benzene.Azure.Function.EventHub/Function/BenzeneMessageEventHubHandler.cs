@@ -18,7 +18,7 @@ namespace Benzene.Azure.Function.EventHub.Function;
 /// </remarks>
 public class BenzeneMessageEventHubHandler : MiddlewareRouter<BenzeneMessageRequest, EventHubContext>
 {
-    private readonly BenzeneMessageApplication _directMessageApplication;
+    private readonly BenzeneMessageResultApplication _directMessageApplication;
     private readonly ISerializer _serializer;
 
     /// <summary>
@@ -32,7 +32,7 @@ public class BenzeneMessageEventHubHandler : MiddlewareRouter<BenzeneMessageRequ
     : base(serviceResolver)
     {
         _serializer = serviceResolver.GetService<ISerializer>();
-        _directMessageApplication = new BenzeneMessageApplication(pipeline);
+        _directMessageApplication = new BenzeneMessageResultApplication(pipeline);
     }
 
     /// <summary>
@@ -46,14 +46,17 @@ public class BenzeneMessageEventHubHandler : MiddlewareRouter<BenzeneMessageRequ
     }
 
     /// <summary>
-    /// Handles the event by running it through the direct-message application.
+    /// Handles the event by running it through the direct-message application and surfacing the inner
+    /// handler's result onto the outer <see cref="EventHubContext.MessageResult"/>, so
+    /// <see cref="EventHubOptions.RaiseOnFailureStatus"/> escalation sees a failure that occurred inside
+    /// the (response-suppressed) envelope pipeline.
     /// </summary>
     /// <param name="request">The deserialized Benzene message request.</param>
     /// <param name="context">The Event Hub context for this invocation.</param>
     /// <param name="serviceResolverFactory">The service resolver factory for the current invocation.</param>
     protected override async Task HandleFunction(BenzeneMessageRequest request, EventHubContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        await _directMessageApplication.HandleAsync(request, serviceResolverFactory);
+        context.MessageResult = await _directMessageApplication.HandleAsync(request, serviceResolverFactory);
     }
 
     /// <summary>

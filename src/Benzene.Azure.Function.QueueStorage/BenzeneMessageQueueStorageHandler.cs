@@ -21,7 +21,7 @@ namespace Benzene.Azure.Function.QueueStorage;
 /// </remarks>
 public class BenzeneMessageQueueStorageHandler : MiddlewareRouter<BenzeneMessageRequest, QueueStorageContext>
 {
-    private readonly BenzeneMessageApplication _directMessageApplication;
+    private readonly BenzeneMessageResultApplication _directMessageApplication;
     private readonly ISerializer _serializer;
 
     /// <summary>
@@ -35,7 +35,7 @@ public class BenzeneMessageQueueStorageHandler : MiddlewareRouter<BenzeneMessage
         : base(serviceResolver)
     {
         _serializer = serviceResolver.GetService<ISerializer>();
-        _directMessageApplication = new BenzeneMessageApplication(pipeline);
+        _directMessageApplication = new BenzeneMessageResultApplication(pipeline);
     }
 
     /// <summary>
@@ -49,14 +49,17 @@ public class BenzeneMessageQueueStorageHandler : MiddlewareRouter<BenzeneMessage
     }
 
     /// <summary>
-    /// Handles the message by running it through the direct-message application.
+    /// Handles the message by running it through the direct-message application and surfacing the inner
+    /// handler's result onto the outer <see cref="QueueStorageContext.MessageResult"/>, so
+    /// <see cref="QueueStorageOptions.RaiseOnFailureStatus"/> escalation sees a failure that occurred
+    /// inside the (response-suppressed) envelope pipeline.
     /// </summary>
     /// <param name="request">The deserialized Benzene message request.</param>
     /// <param name="context">The Queue Storage context for this invocation.</param>
     /// <param name="serviceResolverFactory">The service resolver factory for the current invocation.</param>
     protected override async Task HandleFunction(BenzeneMessageRequest request, QueueStorageContext context, IServiceResolverFactory serviceResolverFactory)
     {
-        await _directMessageApplication.HandleAsync(request, serviceResolverFactory);
+        context.MessageResult = await _directMessageApplication.HandleAsync(request, serviceResolverFactory);
     }
 
     /// <summary>
