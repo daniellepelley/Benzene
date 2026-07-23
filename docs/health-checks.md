@@ -326,13 +326,12 @@ app.UseHealthCheck("orders-service:healthcheck", x => x
 
 ### HTTP method + path based (raw HTTP transports)
 
-Two packages that deal with raw HTTP requests directly — `Benzene.SelfHost.Http` and
-`Benzene.Aws.Lambda.ApiGateway` — additionally expose `UseHealthCheck` overloads that match on HTTP
-verb and path instead of (or in addition to) a message topic, since those pipelines see the raw
-request before any topic has been resolved from it:
+`Benzene.Aws.Lambda.ApiGateway` deals with raw HTTP requests directly, so it additionally exposes
+`UseHealthCheck` overloads that match on HTTP verb and path instead of (or in addition to) a message
+topic, since that pipeline sees the raw request before any topic has been resolved from it:
 
 ```csharp
-// Benzene.SelfHost.Http / Benzene.Aws.Lambda.ApiGateway
+// Benzene.Aws.Lambda.ApiGateway
 app.UseHealthCheck(method, path, params IHealthCheck[] healthChecks);
 app.UseHealthCheck(topic, method, path, params IHealthCheck[] healthChecks);
 app.UseHealthCheck(method, path, Action<IHealthCheckBuilder> action);
@@ -383,11 +382,11 @@ call a downstream service. These belong in **neither** liveness nor readiness �
 would otherwise restart or de-route otherwise-healthy pods — so monitoring/the mesh scrape `contracts`
 directly. See [Kubernetes Health Checks](kubernetes-health-checks.md#client--contract-drift-checks-belong-in-neither-probe).
 
-`Benzene.SelfHost.Http` and `Benzene.Aws.Lambda.ApiGateway` additionally expose HTTP-path versions,
-defaulting to the conventional Kubernetes probe paths:
+`Benzene.Aws.Lambda.ApiGateway` additionally exposes HTTP-path versions, defaulting to the
+conventional Kubernetes probe paths:
 
 ```csharp
-// Benzene.SelfHost.Http / Benzene.Aws.Lambda.ApiGateway
+// Benzene.Aws.Lambda.ApiGateway
 app.UseLivenessCheck(checks);   // GET /livez
 app.UseReadinessCheck(checks);  // GET /readyz
 app.UseLivenessCheck("/custom/live/path", checks);  // path override

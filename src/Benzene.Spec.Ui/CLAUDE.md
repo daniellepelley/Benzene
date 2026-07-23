@@ -79,7 +79,6 @@ and works identically on API Gateway, Azure Functions, ASP.NET Core, and self-ho
   short-circuits (writes the page via `IBenzeneResponseAdapter`, never calls `next`); any other
   method or path falls through to `next`; path normalization (case, leading/trailing slash).
   Uses a trivial `FakeHttpContext : IHttpContext` (the interface is a pure marker) with Moq'd
-  `IHttpRequestAdapter`/`IBenzeneResponseAdapter` — no real transport needed, unlike
-  `Benzene.SelfHost.Http`'s tests.
+  `IHttpRequestAdapter`/`IBenzeneResponseAdapter` — no real transport needed.
 - Keep the viewer dependency-free and self-contained (no CDN/webfont/script references) so it works
   offline and behind strict CSPs, and can be embedded as a single resource.

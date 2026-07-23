@@ -138,7 +138,7 @@ Functions ASP.NET, self-hosted HttpListener), which used to call `ReadToEndAsync
 - When building HTTP-based applications with Benzene
 - When implementing custom HTTP transport adapters
 - When you need HTTP routing and endpoint discovery
-- Typically used via AspNet.Core, Lambda API Gateway, or SelfHost.Http
+- Typically used via AspNet.Core or Lambda API Gateway
 
 ## Dependencies on other Benzene packages
 - **Benzene.Abstractions** - Uses core abstractions

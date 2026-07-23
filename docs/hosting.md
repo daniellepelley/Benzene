@@ -26,24 +26,18 @@ how many run at once. Benzene is just middleware inside that pipeline; it never 
 paces anything about the host process itself. See
 [ASP.NET Core](#aspnet-core--webapplicationbuilderusebenzenetstartup--iapplicationbuilderusebenzene).
 
-**3. Self-hosted worker** - `Benzene.HostedService` + `Benzene.SelfHost.Http`/`Benzene.Kafka.Core`/
+**3. Self-hosted worker** - `Benzene.HostedService` + `Benzene.Kafka.Core`/
 `Benzene.Aws.Sqs`/`Benzene.Azure.ServiceBus`/`Benzene.Azure.EventHub`/`Benzene.RabbitMq`.
-Here, Benzene itself owns a long-running consumer that actively receives work (an HTTP
-`HttpListener.GetContextAsync()` accept loop, a Kafka consumer's `Consume()` poll, an SQS
-long-poll loop, a running Service Bus/Event Hubs SDK processor, or a RabbitMQ
+Here, Benzene itself owns a long-running consumer that actively receives work (a Kafka consumer's
+`Consume()` poll, an SQS long-poll loop, a running Service Bus/Event Hubs SDK processor, or a RabbitMQ
 `AsyncEventingBasicConsumer` push consumer) and is
 responsible for keeping the process alive - there is no external infrastructure invoking you, and
 no separate host already listening. This is the one mode where how many events Benzene processes
 *at once* is Benzene's own decision, not the platform's - see
 [Worker concurrency](#worker-concurrency) below for exactly how that's bounded and configured.
-
-> **Deprecated: `Benzene.SelfHost.Http`.** The HTTP self-host worker is built on
-> `System.Net.HttpListener`, which is materially slower than Kestrel and adds no advantage over the raw
-> listener. For a self-hosted HTTP endpoint use **`Benzene.AspNet.Core`** (Kestrel, mode 2 above)
-> instead — the same `BenzeneStartUp.Configure` moves across unchanged. See
-> [Deprecations](deprecations.md). The other self-hosted workers (Kafka, SQS, Service Bus, Event Hub,
-> RabbitMQ) are not affected — they own genuinely different transports, not a slower wrapper of an
-> existing one.
+(There is no self-hosted *HTTP* worker: for a self-hosted HTTP endpoint use `Benzene.AspNet.Core`
+on Kestrel, mode 2 above. The former `HttpListener`-based `Benzene.SelfHost.Http` was removed - see
+[Deprecations](deprecations.md).)
 
 ## Overview
 
@@ -311,26 +305,24 @@ this host passes in.
 
 #### Worker concurrency
 
-The three dispatcher-based self-hosted workers - `Benzene.Kafka.Core.BenzeneKafkaWorker<TKey,TValue>`
-(a Kafka consumer), `Benzene.SelfHost.Http.BenzeneHttpWorker` (an `HttpListener` accept loop), and
-`Benzene.RabbitMq.RabbitMqWorker` (a RabbitMQ `AsyncEventingBasicConsumer`) - are
-where mode 3 above ("Benzene decides how many events at once") actually matters. All are built on
+The two dispatcher-based self-hosted workers - `Benzene.Kafka.Core.BenzeneKafkaWorker<TKey,TValue>`
+(a Kafka consumer) and `Benzene.RabbitMq.RabbitMqWorker` (a RabbitMQ `AsyncEventingBasicConsumer`) -
+are where mode 3 above ("Benzene decides how many events at once") actually matters. Both are built on
 `Benzene.SelfHost.BoundedConcurrentDispatcher<T>`, a shared primitive on top of
 `System.Threading.Channels` (part of the BCL - no new NuGet dependency):
 
-- **`ConcurrentRequests`** (on `BenzeneKafkaConfig`/`BenzeneHttpConfig`/`RabbitMqConfig`) caps the
+- **`ConcurrentRequests`** (on `BenzeneKafkaConfig`/`RabbitMqConfig`) caps the
   maximum number of messages/requests handled concurrently.
 - **`PreserveOrderPerPartition`** (`BenzeneKafkaConfig` only, default `true`) - Kafka only ever
   promises order within a partition, so by default messages from the same partition are routed to
   the same dispatcher lane and handled strictly in order, while different partitions still run
   concurrently up to `ConcurrentRequests`. Set to `false` for unordered round-robin dispatch when
-  throughput matters more than per-partition order. `BenzeneHttpWorker` and `RabbitMqWorker` have no
-  equivalent ordering key - requests/deliveries always round-robin across lanes (RabbitMQ makes no
+  throughput matters more than per-partition order. `RabbitMqWorker` has no
+  equivalent ordering key - deliveries always round-robin across lanes (RabbitMQ makes no
   ordering promise across a queue once more than one delivery is in flight).
 - **`PrefetchCount`** (`RabbitMqConfig` only, default 5) - the consumer QoS bounding how many
   unacknowledged deliveries the broker sends at once; set it at or above `ConcurrentRequests` so
-  every lane can stay fed. (Kafka's fetch/`BenzeneHttpWorker`'s accept loop pull work themselves, so
-  they have no prefetch knob.)
+  every lane can stay fed. (Kafka's fetch pulls work itself, so it has no prefetch knob.)
 - **`DrainTimeout`** (default 30 seconds on all three configs) - how long `StopAsync` waits for
   in-flight work to finish before abandoning it and closing the consumer/listener. Each worker's
   `StopAsync` signals shutdown and awaits this drain, rather than closing the consumer/listener out
@@ -408,7 +400,7 @@ detail on request routing.
 `WebApplication.CreateSlimBuilder(args)` — the slim builder starts from just Kestrel + configuration
 + logging and opts you into nothing else (it's the trim/AOT-friendly host Microsoft ships for exactly
 this "no framework baggage" case). Benzene layers on top unchanged, so this is the leanest Kestrel
-host and the recommended replacement for the now-deprecated `Benzene.SelfHost.Http` (see
+host and the replacement for the removed `Benzene.SelfHost.Http` (see
 [Deprecations](deprecations.md)):
 
 ```csharp
@@ -419,9 +411,9 @@ app.Run();
 ```
 
 Kestrel only ships in the `Microsoft.AspNetCore.App` shared framework, so this still references it —
-there is no supported standalone Kestrel package. If you truly need HTTP with no ASP.NET Core shared
-framework at all, that's what `Benzene.SelfHost.Http` (`HttpListener`) did, and it's deprecated for
-the performance reasons in [Deprecations](deprecations.md).
+there is no supported standalone Kestrel package. The removed `Benzene.SelfHost.Http` avoided that
+shared framework by hosting on `System.Net.HttpListener`, but at a real performance cost — see
+[Deprecations](deprecations.md) for why it went.
 
 ### gRPC on ASP.NET Core
 

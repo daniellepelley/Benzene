@@ -20,7 +20,7 @@ but no built-in adapter for a specific external policy engine — see
 
 ## Prerequisites
 
-- A Benzene service hosted behind an HTTP transport (ASP.NET Core, AWS Lambda API Gateway, Azure Functions HTTP trigger, or `Benzene.SelfHost.Http`) — every package here targets `TContext : IHttpContext`, so it works on any of them the same way
+- A Benzene service hosted behind an HTTP transport (ASP.NET Core, AWS Lambda API Gateway, or Azure Functions HTTP trigger) — every package here targets `TContext : IHttpContext`, so it works on any of them the same way
 - For `Benzene.Auth.OAuth2`: an identity provider that exposes either full OIDC discovery (Auth0, Cognito, Azure AD, Okta all do) or a bare JWKS document
 
 ## Installation

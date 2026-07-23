@@ -128,7 +128,6 @@ See [Worker Service Setup](../getting-started-worker.md#part-b-built-in-workers-
 | Package | What it gives you |
 |---|---|
 | `Benzene.SelfHost` | Run Benzene as a standalone worker pipeline with no external transport — useful for background/worker services. |
-| `Benzene.SelfHost.Http` | A self-hosted HTTP server (built on `HttpListener`) for running a Benzene HTTP service without ASP.NET Core. |
 | `Benzene.HostedService` | Run Benzene inside a .NET Generic Host as an `IHostedService` / background worker. |
 | `Benzene.Grpc` | Expose message handlers over gRPC — includes the `[GrpcMethod]` attribute and method-handler factory. |
 

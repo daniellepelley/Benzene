@@ -116,9 +116,9 @@ Each responds only to its own topic (`Constants.DefaultLivenessTopic` = `"livene
 in the pipeline would silently swallow every request for the shared `"healthcheck"` topic, and the
 other would never run for it.
 
-## HTTP-path wiring: `Benzene.SelfHost.Http`, `Benzene.Aws.Lambda.ApiGateway`
+## HTTP-path wiring: `Benzene.Aws.Lambda.ApiGateway`
 
-These two packages deal with raw HTTP requests directly, so they expose method+path matching instead
+This package deals with raw HTTP requests directly, so it exposes method+path matching instead
 of (in addition to) topic matching — defaulting to the conventional Kubernetes probe paths:
 
 ```csharp

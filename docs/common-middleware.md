@@ -206,9 +206,8 @@ app.UseHealthCheck("healthcheck", new MyDatabaseHealthCheck(), new MyQueueHealth
 `AddHealthCheck(Func<IServiceResolver, IHealthCheck>)` directly — plus the `AddHealthChecks(params IHealthCheck[])`
 and `AddHealthCheckFactory(IHealthCheckFactory)` extension helpers built on top of those.
 
-On HTTP-based transports (ASP.NET Core, API Gateway, `Benzene.SelfHost.Http`), an additional
-overload lets you match on HTTP method and path instead of (or as well as) a topic — see
-`Benzene.SelfHost.Http.Extensions.UseHealthCheck(method, path, ...)`.
+On HTTP-based transports (ASP.NET Core, API Gateway), an additional overload lets you match on HTTP
+method and path instead of (or as well as) a topic.
 
 See also: [Health Checks](health-checks.md) for a full worked example.
 
@@ -494,7 +493,7 @@ app.UseCors(new CorsSettings
 });
 ```
 
-Applies to any `TContext : IHttpContext` — ASP.NET Core, API Gateway, `Benzene.SelfHost.Http`, etc.
+Applies to any `TContext : IHttpContext` — ASP.NET Core, API Gateway, etc.
 Behavior tracks the CORS specification the same way `Microsoft.AspNetCore.Cors` does:
 
 - **Origin matching is exact (scheme + host + port) when you specify a full URL.**

@@ -8,7 +8,7 @@ host's `IHostedService`, so a Benzene worker starts/stops with the host. This is
 ## Key types/interfaces
 - `BenzeneHostedServiceAdapter : IHostedService` - wraps an `IBenzeneWorker`; `StartAsync`/`StopAsync`
   delegate straight to the worker's `StartAsync`/`StopAsync` (graceful shutdown is the worker's own
-  drain logic — see `Benzene.SelfHost`/`Benzene.SelfHost.Http`).
+  drain logic — see `Benzene.SelfHost`).
 - `HostBuilderExtensions.UseBenzene<TStartUp>(this IHostBuilder)` - runs a platform-neutral
   `BenzeneStartUp` as a hosted worker: builds a `WorkerApplicationBuilder`, runs `ConfigureServices`/
   `Configure`, and registers the resulting worker as a singleton `IHostedService`.

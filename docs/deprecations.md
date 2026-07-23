@@ -1,29 +1,25 @@
-# Deprecations
+# Deprecations & removals
 
-Packages and APIs that are still shipped and functional but are **no longer recommended** and may be
-removed in a future major version. Each entry says what to use instead. Deprecated code carries an
-`[Obsolete]` attribute (a compiler warning, never an error) so a build surfaces the nudge at the call
-site.
+Packages and APIs that are **no longer recommended** — either still shipped but deprecated (carrying an
+`[Obsolete]` compiler warning, never an error), or removed from the repo entirely. Each entry says
+what to use instead.
 
 > **Guiding principle.** A Benzene adapter has to earn its place. A self-hosted transport that merely
 > wraps a slower standard-library server — adding no performance or capability advantage over calling
 > that library directly — doesn't. When Benzene already offers a faster path for the same job, the
-> weaker one is deprecated rather than kept for parity's sake.
+> weaker one is dropped rather than kept for parity's sake.
 
-## `Benzene.SelfHost.Http` — deprecated
+## `Benzene.SelfHost.Http` — removed
 
 **Use instead:** [`Benzene.AspNet.Core`](hosting.md) (Kestrel).
 
-`Benzene.SelfHost.Http` hosts HTTP on `System.Net.HttpListener`. On .NET's cross-platform managed
+`Benzene.SelfHost.Http` hosted HTTP on `System.Net.HttpListener`. On .NET's cross-platform managed
 `HttpListener` that is **materially slower than Kestrel** (Kestrel is the server the whole ASP.NET
-Core ecosystem is tuned around), and wrapping it in Benzene adds no throughput or feature advantage
-over the raw listener — so it fails the guiding principle above. Benzene already has a
-production-grade HTTP host, `Benzene.AspNet.Core`, running on Kestrel, so there is no reason to reach
-for the `HttpListener` one.
-
-- **What's deprecated:** the `UseHttp(...)` worker extension (marked `[Obsolete]`). `BenzeneHttpWorker`,
-  `BenzeneHttpConfig`, `SelfHostHttpContext`, and the health-check extensions still function so existing
-  apps keep building.
+Core ecosystem is tuned around), and wrapping it in Benzene added no throughput or feature advantage
+over the raw listener — so it failed the guiding principle above. Benzene already has a
+production-grade HTTP host, `Benzene.AspNet.Core`, running on Kestrel, so there was no reason to keep
+the `HttpListener` one. It was deprecated (`UseHttp(...)` marked `[Obsolete]`), then removed from the
+repo; the guidance below is for anyone still on an older published version.
 - **Migration:** a `BenzeneStartUp`'s `Configure` is platform-neutral — the same handlers, middleware,
   and health checks move across unchanged. Swap the host wiring:
 

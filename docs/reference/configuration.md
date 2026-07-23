@@ -131,15 +131,6 @@ Configures the Kafka consumer/client.
 | `CatchHandlerExceptions` | `true` | Whether an unhandled handler exception is caught and logged (that lane keeps consuming) or left to stop the whole worker. |
 | `CommitOnlyOnSuccess` | `false` | Whether an offset is only stored after its handler succeeds (at-least-once, redelivers on failure/crash) instead of being auto-stored as soon as it's consumed. Requires `CatchHandlerExceptions = false` and `PreserveOrderPerPartition = true`. |
 
-### `BenzeneHttpConfig` — `Benzene.SelfHost.Http`
-
-Configures the self-hosted HTTP server (no ASP.NET Core).
-
-| Property | Purpose |
-|---|---|
-| `Url` | The URL/prefix the server listens on. |
-| `ConcurrentRequests` | Number of requests handled concurrently. |
-
 ### Retry options — `Benzene.Resilience`
 
 `UseRetry(...)` takes its settings as method parameters rather than an options class — see

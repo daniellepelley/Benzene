@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
+- **BREAKING:** removed the `Benzene.SelfHost.Http` package. It hosted HTTP on
+  `System.Net.HttpListener`, which is materially slower than Kestrel and added no advantage over the
+  raw listener, so it was deprecated (`UseHttp(...)` marked `[Obsolete]`) and then removed. Use
+  `Benzene.AspNet.Core` (Kestrel) for a self-hosted HTTP endpoint - a `BenzeneStartUp`'s `Configure`
+  moves across unchanged, and `WebApplication.CreateSlimBuilder(...)` is the lean, no-MVC host. The
+  `benzene.selfhost.http` starter template was removed too. See [`docs/deprecations.md`](docs/deprecations.md).
+  The base `Benzene.SelfHost` worker infrastructure is unaffected.
 - **BREAKING:** decommissioned the `Benzene.Extras` package entirely - it was a grab-bag of
   code carried over from a third-party project, most of it specialized and unused, which the
   framework shouldn't ship. The one genuinely-framework capability in it, response events, is

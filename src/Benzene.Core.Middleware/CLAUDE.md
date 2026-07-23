@@ -39,7 +39,7 @@ Provides concrete implementations of Benzene's middleware pipeline system. Inclu
 `IDisposable` resolved inside it, per event/message, forever - a real, standing resource leak
 affecting every concrete subclass: `AspNetApplication` (both `Benzene.AspNet.Core`'s and
 `Benzene.Azure.Function.AspNet`'s), `Benzene.Kafka.Core.KafkaApplication<TKey,TValue>`,
-`Benzene.SelfHost.Http.HttpListenerApplication`, and `BenzeneMessageApplication`, which in turn is
+and `BenzeneMessageApplication`, which in turn is
 used by AWS Lambda's `DirectMessageLambdaHandler` and Azure Event Hub's
 `BenzeneMessageEventHubHandler`). `MiddlewareMultiApplication<...>` (the batch-oriented sibling)
 already disposed its per-record scopes correctly and was not affected. Regression coverage:
@@ -61,7 +61,7 @@ Transports seed it where they have a signal: **per-message/-call** - `Benzene.As
 middleware), `Benzene.Grpc` (`ServerCallContext.CancellationToken`), `Benzene.RabbitMq`
 (`BasicDeliverEventArgs.CancellationToken`), the `Benzene.Azure.ServiceBus`/`Benzene.Azure.EventHub`
 workers (`ProcessMessageEventArgs`/`ProcessEventArgs.CancellationToken`, via the token overload); and
-**worker-shutdown** - `Benzene.SelfHost.Http` + `Benzene.Kafka.Core` (the worker's linked run token).
+**worker-shutdown** - `Benzene.Kafka.Core` (the worker's linked run token).
 AWS Lambda (no `ILambdaContext` token) and the Azure Functions non-HTTP triggers (their
 `FunctionContext.CancellationToken` never reaches Benzene) have no signal to seed;
 `Benzene.GoogleCloud.Functions.PubSub` has one but seeding it needs a token overload on
