@@ -582,6 +582,22 @@
   .hb-healthy { background: var(--ok); }
   .hb-degraded { background: var(--req); }
   .hb-stale { background: var(--m-event); }
+  /* Slice 3: live data woven into the drill-in pages. A compact live strip near the header folds the
+     live-only facts up (health/last-seen/instances/observed stats/flows), refreshed in place on the poll;
+     inline observed markers reconcile each declared row against what's running. All in the observed token. */
+  .live-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 2px 0 8px;
+    padding: 9px 12px; border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: 9px;
+    background: var(--surface-2); font-size: 12.5px; }
+  .live-strip .ls-item { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); }
+  .live-strip .ls-k { color: var(--ink-faint); }
+  .live-strip .ls-live { font-size: 9.5px; font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase;
+    padding: 0 5px; border-radius: 999px; color: var(--ok); border: 1px solid var(--ok); opacity: .8; }
+  .obs-marker { font-size: 10.5px; font-family: var(--mono); margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; }
+  .obs-marker.obs-count { color: var(--ok); }
+  .obs-marker.obs-count::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }
+  .obs-marker.obs-silent { color: var(--ink-faint); }
+  .live-gap { margin: 8px 0 2px; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--req);
+    background: var(--m-delete-bg); color: var(--req); font-size: 12.5px; }
   .usage-note { color: var(--ink-faint); font-size: 12px; margin-top: 10px; max-width: 640px; }
   .usage-h { font-weight: 600; }
   .usage-topics { margin-top: 8px; }
@@ -1652,16 +1668,22 @@
       body.appendChild(composeBar);
     }
 
+    // Live-only facts + the observed-but-undeclared gap callout fold into a strip in the header region
+    // (retiring the trailing "Observed (live)" section). Refreshed in place on the poll.
+    var topLive = buildTopicLiveStrip(topicId);
+    if (topLive) body.appendChild(topLive);
+
     var compat = buildVersionCompatibilitySection(topicId);
     if (compat) body.appendChild(compat);
 
-    versions.forEach(function (t) { body.appendChild(buildTopicPageVersionSection(t)); });
+    // Version sections carry inline observed markers on their declared consumer rows; a stable container
+    // lets the poll re-render just them (keeping the markers current) without rebuilding the whole page.
+    var versionsWrap = el("div"); versionsWrap.id = "tp-versions";
+    versions.forEach(function (t) { versionsWrap.appendChild(buildTopicPageVersionSection(t)); });
+    body.appendChild(versionsWrap);
 
     var usage = buildTopicUsageSection(topicId);
     if (usage) body.appendChild(usage);
-
-    var topLive = buildTopicLiveSection(topicId);
-    if (topLive) body.appendChild(topLive);
 
     var discussion = buildDiscussionSection("topic:" + topicId);
     if (discussion) body.appendChild(discussion);
@@ -1981,15 +2003,17 @@
     if (links.childNodes.length) idSection.appendChild(links);
     if (idSection.childNodes.length) body.appendChild(idSection);
 
+    // Live-only facts fold into a strip in the header region (retiring the trailing "Live activity" section):
+    // heartbeat health, last-seen, instances, observed totals, recent-flows link. Refreshed in place on poll.
+    var liveStrip = buildServiceLiveStrip(name);
+    if (liveStrip) body.appendChild(liveStrip);
+
     body.appendChild(buildServiceTopicsSection(name));
 
     // Usage sits directly under the functional map: "what does it do" then "how much is it
     // actually used" - the two questions the estate-comprehension product leads with.
     var usageSection = buildServiceUsageSection(name);
     if (usageSection) body.appendChild(usageSection);
-
-    var svcLive = buildServiceLiveSection(name);
-    if (svcLive) body.appendChild(svcLive);
 
     var about = el("div", "sp-section");
     about.appendChild(el("h2", null, "About & health"));
@@ -2017,6 +2041,7 @@
      ahead of health (the estate-comprehension product's ordering, not a monitoring dashboard's). */
   function buildServiceTopicsSection(name) {
     var section = el("div", "sp-section");
+    section.id = "sp-topics-section"; // stable container so the poll can re-render the observed markers in place
     section.appendChild(el("h2", null, "Topics"));
 
     if (!currentTopics.length) {
@@ -2072,6 +2097,10 @@
         });
         if (maps.length) row.appendChild(el("span", "t-http", maps.join(", ")));
       }
+      // Observed marker: reconcile this declared topic against live traffic (a count when observed, muted
+      // "silent" when declared-but-quiet in the window). Null with no endpoint — nothing woven in.
+      var obs = topicObservedMarker(t.topic, t.version || null);
+      if (obs) row.appendChild(obs);
       side.appendChild(row);
     });
     return side;
@@ -2094,6 +2123,14 @@
     if (snapshot.error) spKv(box, "Last fetch error", snapshot.error, "err");
     if (svc.contractDrift && snapshot.specHash && snapshot.previousSpecHash) {
       spKv(box, "Contract drift", "spec hash changed: " + String(snapshot.previousSpecHash).slice(0, 12) + "… → " + String(snapshot.specHash).slice(0, 12) + "…");
+    }
+
+    // Live heartbeat health beside the pulled health-check — the two health planes (self-report heartbeat
+    // vs the aggregator's pulled check) shown together, per the reconciliation rule. Absent with no endpoint.
+    var hb = liveHealthState(svc.name);
+    if (hb) {
+      spKv(box, "Live heartbeat", hb.label.charAt(0).toUpperCase() + hb.label.slice(1),
+        hb.cls === "hb-healthy" ? "" : "err");
     }
 
     box.appendChild(el("div", "sp-checks-label", "Health checks"));
@@ -2334,8 +2371,8 @@
     if (payload) block.appendChild(payload);
 
     var grid = el("div", "tp-grid");
-    grid.appendChild(buildTopicServiceSection("Producers", t.producers || []));
-    grid.appendChild(buildTopicServiceSection("Consumers", t.consumers || []));
+    grid.appendChild(buildTopicServiceSection("Producers", t.producers || [], t.topic));
+    grid.appendChild(buildTopicServiceSection("Consumers", t.consumers || [], t.topic));
     block.appendChild(grid);
 
     return block;
@@ -2351,13 +2388,14 @@
      A name with no matching manifest entry (a service since removed from the registry, or - for
      a "gap" topic - a producer outside this fleet entirely) renders as the same non-link
      placeholder as before. */
-  function buildTopicServiceSection(label, items) {
+  function buildTopicServiceSection(label, items, topicId) {
     var side = el("div", "tp-side");
     side.appendChild(el("h2", null, label + " (" + items.length + ")"));
     if (!items.length) {
       side.appendChild(el("div", "t-empty", "none"));
       return side;
     }
+    var isConsumer = label === "Consumers";
     items.forEach(function (item) {
       if (item.httpMappings && item.httpMappings.length) {
         var maps = item.httpMappings.map(function (m) {
@@ -2372,6 +2410,9 @@
         if (svc.contractDrift) row.appendChild(el("span", "badge b-drift", "drift"));
         row.appendChild(serviceNameButton(svc.name));
         if (svc.owningTeam) row.appendChild(el("span", "svc-team", svc.owningTeam));
+        // Reconcile a declared consumer against live traffic: observed calling this topic, or silent.
+        var cm = isConsumer && topicId ? consumerObservedMarker(topicId, svc.name) : null;
+        if (cm) row.appendChild(cm);
         side.appendChild(row);
       } else {
         var placeholder = el("div", "tp-unknown-svc");
@@ -3297,77 +3338,93 @@
     if (age != null && age > FL_STALE_MS) return { text: "◌ stale", cls: "fl-stale" };
     return { text: ({ healthy: "✓ healthy", degraded: "▲ degraded", unknown: "◌ unknown" }[s.health] || s.health), cls: "fl-h-" + s.health };
   }
-  function liveGap(box) {
-    box.appendChild(el("div", "fl-sub fl-missing",
-      "Declared in the catalog, but not observed in the live mesh in the current window."));
+  /* ===== Slice 3: live data woven inline on the drill-in pages =====
+     The catalog is the spine; observed reality sits beside each declared fact, and divergence is called
+     out. Live-only facts fold into a compact strip near the header (refreshed in place on the poll); the
+     declared consumer/functional-map rows carry inline observed markers; the observed-but-undeclared gap
+     stays a loud callout. Honesty state 1: every builder returns null / no marker without a live endpoint. */
+
+  // A declared topic row's observed marker: a live count when observed, a muted "silent" when declared but
+  // not seen in the window (absent ≠ zero — never a fabricated 0). Null with no endpoint (nothing mounts).
+  function topicObservedMarker(topicId, version) {
+    if (!fleetEndpoint() || !currentFleet) return null;
+    var rows = (currentFleet.topics || []).filter(function (o) {
+      return o.topic === topicId && (version == null || (o.version || null) === (version || null));
+    });
+    var hasStats = rows.some(function (o) { return (o.missingFeeds || []).indexOf("stats") === -1; });
+    var inv = rows.reduce(function (a, o) { return a + ((o.missingFeeds || []).indexOf("stats") === -1 ? (o.invocations || 0) : 0); }, 0);
+    if (hasStats && inv > 0) {
+      var m = el("span", "obs-marker obs-count", fmtCount(inv) + " obs");
+      m.title = "Observed messages in the current window (live).";
+      return m;
+    }
+    var s = el("span", "obs-marker obs-silent", "silent");
+    s.title = "No traffic observed for this topic in the current window (live).";
+    return s;
+  }
+  // A declared consumer's observed marker: was this service actually seen calling the topic in the window?
+  function consumerObservedMarker(topicId, serviceName) {
+    if (!fleetEndpoint() || !currentFleet) return null;
+    var seen = (currentFleet.topics || []).some(function (o) {
+      return o.topic === topicId && (o.consumers || []).indexOf(serviceName) !== -1;
+    });
+    var m = el("span", "obs-marker " + (seen ? "obs-count" : "obs-silent"), seen ? "observed" : "silent");
+    m.title = seen ? "Observed calling this topic in the current window (live)."
+                   : "Declared consumer, but not observed calling this topic in the current window (live).";
+    return m;
   }
 
-  // ---- service page: "Live activity" ----
-  function buildServiceLiveSection(name) {
-    if (!fleetEndpoint()) return null; // static floor
-    var section = el("div", "sp-section");
-    section.id = "sp-live-section";
-    section.appendChild(el("h2", null, "Live activity"));
-    var box = el("div"); box.id = "sp-live-box";
-    section.appendChild(box);
-    fillServiceLive(box, name);
-    return section;
+  // ---- service page: live strip (folded up from the retired "Live activity" section) ----
+  function buildServiceLiveStrip(name) {
+    if (!fleetEndpoint()) return null; // static floor: the live layer does not mount
+    var strip = el("div", "live-strip"); strip.id = "sp-live-strip";
+    fillServiceLiveStrip(strip, name);
+    return strip;
   }
-  function fillServiceLive(box, name) {
-    box.innerHTML = "";
-    if (!currentFleet) { box.appendChild(el("div", "fl-sub", "connecting to the live mesh…")); return; }
+  function lsItem(strip, k, node, cls) {
+    var item = el("div", "ls-item" + (cls ? " " + cls : ""));
+    item.appendChild(el("span", "ls-k", k));
+    if (typeof node === "string") item.appendChild(document.createTextNode(node));
+    else item.appendChild(node);
+    strip.appendChild(item);
+  }
+  function fillServiceLiveStrip(strip, name) {
+    strip.innerHTML = "";
+    strip.appendChild(el("span", "ls-live", "live"));
+    if (!currentFleet) { strip.appendChild(document.createTextNode("connecting to the live mesh…")); return; }
     var s = (currentFleet.services || []).filter(function (x) { return x.service === name; })[0];
-    if (!s) { liveGap(box); return; }
-    var h = flServiceHealth(s), age = flAgeMs(s.lastSeen), grid = el("div", "fl-tiles");
-    flTile(grid, "Health", h.text, h.cls);
-    flTile(grid, "Last seen", age == null ? "—" : flAge(age) + " ago");
-    flTile(grid, "Instances", s.instances != null ? String(s.instances) : "—");
-    flTile(grid, "Invocations", absent(s, "stats") ? "—" : String(s.invocations));
-    flTile(grid, "Errors", absent(s, "stats") ? "—" : String(s.errors), (!absent(s, "stats") && s.errors > 0) ? "fl-failed" : null);
-    box.appendChild(grid);
-    if (!absent(s, "stats")) flCountsNote(box, currentFleet.window);
+    if (!s) { strip.appendChild(el("span", "obs-marker obs-silent", "not observed in the live mesh in the current window")); return; }
+    var h = flServiceHealth(s), age = flAgeMs(s.lastSeen);
+    lsItem(strip, "heartbeat", el("span", h.cls, h.text));
+    lsItem(strip, "last seen", age == null ? "—" : flAge(age) + " ago");
+    lsItem(strip, "instances", s.instances != null ? String(s.instances) : "—");
+    lsItem(strip, "observed", absent(s, "stats") ? "—" : (fmtCount(s.invocations) + (s.errors > 0 ? " · " + fmtCount(s.errors) + " err" : "")));
     var flows = (currentFleet.traces || []).filter(function (f) { return (f.services || []).indexOf(name) !== -1; });
     if (flows.length) {
-      box.appendChild(el("div", "fl-sub", "Recent flows touching this service"));
-      box.appendChild(buildLiveFlowsTable(flows.slice(0, 10)));
+      var link = el("button", "fl-flow-link", flows.length + " recent flow" + (flows.length === 1 ? "" : "s") + " ↗");
+      link.type = "button"; link.title = "Open the Fleet view's recent flows";
+      link.addEventListener("click", function () { location.hash = "#fleet"; });
+      lsItem(strip, "flows", link);
     }
   }
-  function buildLiveFlowsTable(flows) {
-    var wrap = el("div", "fl-tablewrap"), table = document.createElement("table");
-    var thead = document.createElement("thead"), htr = document.createElement("tr");
-    ["Trace", "Services", "Duration ms", "Outcome", ""].forEach(function (h) { htr.appendChild(el("th", null, h)); });
-    thead.appendChild(htr); table.appendChild(thead);
-    var tb = document.createElement("tbody");
-    flows.forEach(function (f) {
-      var tr = document.createElement("tr");
-      tr.appendChild(el("td", "fl-mono", (f.traceId || "").slice(0, 16)));
-      tr.appendChild(el("td", null, (f.services || []).join(" → ")));
-      tr.appendChild(el("td", "fl-num", (f.durationMs || 0).toFixed(1)));
-      tr.appendChild(el("td", f.failed ? "fl-failed" : "fl-h-healthy", f.failed ? "✕ failed" : "✓ ok"));
-      var od = document.createElement("td");
-      var ob = el("button", "fl-flow-link fl-mono", "open ↗"); ob.type = "button";
-      ob.addEventListener("click", function () { openTraceOnFleet(f.traceId); });
-      od.appendChild(ob); tr.appendChild(od); tb.appendChild(tr);
-    });
-    table.appendChild(tb); wrap.appendChild(table); return wrap;
-  }
 
-  // ---- topic page: "Observed (live)" ----
-  function buildTopicLiveSection(topicId) {
+  // ---- topic page: live strip + the observed-but-undeclared gap callout ----
+  function buildTopicLiveStrip(topicId) {
     if (!fleetEndpoint()) return null;
-    var section = el("div", "sp-section");
-    section.id = "tp-live-section";
-    section.appendChild(el("h2", null, "Observed (live)"));
-    var box = el("div"); box.id = "tp-live-box";
-    section.appendChild(box);
-    fillTopicLive(box, topicId);
-    return section;
+    var wrap = el("div"); wrap.id = "tp-live-wrap";
+    fillTopicLiveStrip(wrap, topicId);
+    return wrap;
   }
-  function fillTopicLive(box, topicId) {
-    box.innerHTML = "";
-    if (!currentFleet) { box.appendChild(el("div", "fl-sub", "connecting to the live mesh…")); return; }
+  function fillTopicLiveStrip(wrap, topicId) {
+    wrap.innerHTML = "";
+    var strip = el("div", "live-strip");
+    strip.appendChild(el("span", "ls-live", "live"));
+    if (!currentFleet) { strip.appendChild(document.createTextNode("connecting to the live mesh…")); wrap.appendChild(strip); return; }
     var rows = (currentFleet.topics || []).filter(function (t) { return t.topic === topicId; });
-    if (!rows.length) { liveGap(box); return; }
+    if (!rows.length) {
+      strip.appendChild(el("span", "obs-marker obs-silent", "not observed in the live mesh in the current window"));
+      wrap.appendChild(strip); return;
+    }
     var inv = 0, errs = 0, dur = 0, durN = 0, absentStats = false, absentDur = false, statusCounts = {}, observed = {};
     rows.forEach(function (t) {
       if (absent(t, "stats")) absentStats = true; else { inv += t.invocations; errs += t.errors; }
@@ -3376,40 +3433,48 @@
       Object.keys(t.statusCounts || {}).forEach(function (k) { statusCounts[k] = (statusCounts[k] || 0) + t.statusCounts[k]; });
       (t.consumers || []).forEach(function (c) { observed[c] = 1; });
     });
-    var grid = el("div", "fl-tiles");
-    flTile(grid, "Invocations", absentStats ? "—" : String(inv));
-    flTile(grid, "Errors", absentStats ? "—" : String(errs), (!absentStats && errs > 0) ? "fl-failed" : null);
-    flTile(grid, "Avg ms", absentDur ? "—" : (durN ? (dur / durN).toFixed(1) : "—"));
-    box.appendChild(grid);
-    if (!absentStats) flCountsNote(box, currentFleet.window);
+    lsItem(strip, "observed", absentStats ? "—" : fmtCount(inv));
+    lsItem(strip, "errors", absentStats ? "—" : fmtCount(errs), (!absentStats && errs > 0) ? "fl-failed" : null);
+    lsItem(strip, "avg ms", absentDur ? "—" : (durN ? (dur / durN).toFixed(1) : "—"));
     var statuses = Object.keys(statusCounts).sort().map(function (k) { return (k || "(none)") + " " + statusCounts[k]; }).join(" · ");
-    if (statuses) box.appendChild(el("div", "fl-sub", "Status mix — " + statuses));
-    // Declared (catalog) vs observed (trace-derived) consumers side by side - the join the standalone
-    // fleet view couldn't show. An observed consumer absent from the declared set is a live-confirmed gap.
+    if (statuses) lsItem(strip, "status", statuses);
+    wrap.appendChild(strip);
+
+    // The one divergence that can't be woven inline (it's absent from the declared list by definition):
+    // observed-but-undeclared consumers, kept as a loud callout — the reconciliation pattern's centerpiece.
     var declared = {};
     currentTopics.filter(function (t) { return t.topic === topicId; })
       .forEach(function (t) { (t.consumers || []).forEach(function (c) { if (c && c.service) declared[c.service] = 1; }); });
-    var declaredList = Object.keys(declared).sort();
-    var observedList = Object.keys(observed).sort();
-    box.appendChild(el("div", "fl-sub", "Declared consumers — " + (declaredList.length ? declaredList.join(", ") : "none")));
-    var undeclared = observedList.filter(function (c) { return !declared[c]; });
-    var obsLine = el("div", "fl-sub", "Observed consumers — " + (observedList.length ? observedList.join(", ") : "none observed in window"));
-    box.appendChild(obsLine);
+    var undeclared = Object.keys(observed).sort().filter(function (c) { return !declared[c]; });
     if (undeclared.length) {
-      box.appendChild(el("div", "fl-sub fl-failed",
-        "Observed, not in catalog — " + undeclared.join(", ") + " (seen calling this topic but declared by no service descriptor; verify)."));
+      wrap.appendChild(el("div", "live-gap",
+        "⚠ Observed, not in catalog — " + undeclared.join(", ") + " (seen calling this topic live but declared by no service descriptor; confirm, or add to the contract)."));
     }
   }
 
-  // Refresh whatever entity live section is open, in place, so a background poll never rebuilds the
-  // whole catalog page (or loses scroll / re-fetches the snapshot) - only the live box updates.
+  // Refresh the woven live surfaces of whatever drill-in page is open, in place, so a background poll never
+  // rebuilds the whole page (losing scroll / re-fetching the snapshot): the header live strip refreshes, and
+  // the declared sections carrying inline observed markers (functional map / consumer grids) re-render into
+  // their stable containers so the markers stay current.
   function refreshOpenLiveSection() {
     if (location.hash.indexOf(SERVICE_HASH_PREFIX) === 0) {
-      var sBox = document.getElementById("sp-live-box");
-      if (sBox) fillServiceLive(sBox, decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length)));
+      var name = decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length));
+      var strip = document.getElementById("sp-live-strip");
+      if (strip) fillServiceLiveStrip(strip, name);
+      var topics = document.getElementById("sp-topics-section");
+      if (topics && currentTopics.length) { var fresh = buildServiceTopicsSection(name); topics.replaceWith(fresh); }
     } else if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
-      var tBox = document.getElementById("tp-live-box");
-      if (tBox) fillTopicLive(tBox, decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
+      var topicId = decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length));
+      var wrap = document.getElementById("tp-live-wrap");
+      if (wrap) fillTopicLiveStrip(wrap, topicId);
+      var versions = document.getElementById("tp-versions");
+      if (versions) {
+        var vs = currentTopics.filter(function (t) { return t.topic === topicId; })
+          .slice().sort(function (a, b) { return (a.version || "").localeCompare(b.version || ""); });
+        var freshV = el("div"); freshV.id = "tp-versions";
+        vs.forEach(function (t) { freshV.appendChild(buildTopicPageVersionSection(t)); });
+        versions.replaceWith(freshV);
+      }
     }
   }
 

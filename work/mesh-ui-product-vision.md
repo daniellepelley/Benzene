@@ -37,7 +37,15 @@
 > the `.obs-count` observed token) and reused; the estate topics table gains an **Observed** column adjacent to
 > (never merged with) the declared usage.json column — "—" when unobserved, live count otherwise, header stating
 > the window/plane — and the service cards gain a live **heartbeat dot**. Both mount only with a live endpoint
-> (static floor renders as before; Playwright-verified). Slice 3 (weave the drill-in pages) remains.
+> (static floor renders as before; Playwright-verified).
+> **Slice 3 SHIPPED 2026-07-25 — the increment is complete.** The drill-in pages are woven: the Phase-C
+> titled live sections are retired in favour of a compact header **live strip** (live-only facts, refreshed on
+> poll), **inline observed markers** on the declared functional-map / consumer rows (count or "silent"),
+> **heartbeat health beside the pulled health-check**, and the **observed-but-undeclared gap kept as a loud
+> callout** (the one divergence that can't be woven inline). Static floor honoured (no strip, no markers
+> without an endpoint; Playwright-verified service + topic). All three surfaces — estate, service, topic — now
+> show the live truth alongside the declared, reconciliation as the through-line. Deferred as scoped:
+> topology-graph live encoding, full live value-ranking.
 
 > **2026-07-24 SHIPPED: the Fleet plane folded into the Mesh UI + a time-range picker (Phases A–F).**
 > The standalone `mesh-fleet-ui.html` is gone: the live Fleet plane is now enriched into `mesh-ui.html`

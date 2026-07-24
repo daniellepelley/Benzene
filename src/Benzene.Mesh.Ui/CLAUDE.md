@@ -30,7 +30,24 @@
 > the dots mount only with `fleetEndpoint()` + a polled fleet — a static-only deploy renders exactly as before
 > (Playwright-verified both paths). On the fleet poll the estate refreshes the Observed column via
 > `renderTopicRows()` and updates the heartbeat dots **in place** (`refreshServiceCardHeartbeats()`) so an
-> expanded card isn't collapsed. Slice 3 (weave the drill-in pages) is the remaining follow-on.
+> expanded card isn't collapsed.
+>
+> **Slice 3 SHIPPED 2026-07-25 — weave the live data inline on the drill-in pages; retire the appended
+> sections.** The Phase-C "Live activity"/"Observed (live)" titled sections are gone; their contents
+> redistribute per the reconciliation rule. Each page gets a compact **live strip** (`.live-strip`, in the
+> header region) folding the live-only facts — service: heartbeat health / last-seen / instances / observed
+> totals / a recent-flows link; topic: observed / errors / avg-ms / status-mix — refreshed in place on the
+> poll. Declared rows carry **inline observed markers** (`.obs-marker`, the observed token): the service
+> functional-map rows via `topicObservedMarker` (a live count or muted "silent"), the topic's declared
+> consumer rows via `consumerObservedMarker` ("observed" vs "silent"). Heartbeat health shows **beside the
+> pulled health-check** in `renderServiceAbout` (the two health planes together). The one divergence that
+> can't be woven inline — **observed-but-undeclared** consumers, absent from the declared list by definition —
+> stays a **loud `.live-gap` callout** on the topic page (the reconciliation pattern's centerpiece). Poll
+> refresh (`refreshOpenLiveSection`) re-fills the strip and re-renders the stable containers
+> (`sp-topics-section` / `tp-versions`) so the inline markers stay current without rebuilding the page (no
+> lost scroll / re-fetched snapshot). Honesty state 1 throughout: every strip builder returns null and every
+> marker helper returns null without `fleetEndpoint()` — the drill-in pages render exactly as on a static-only
+> deploy (Playwright-verified both paths, service + topic).
 
 > **2026-07-24 (merge, phase D): a time-range picker on the live plane.** The Fleet view gains a Grafana-style
 > time-range control (`.fl-range` / `flWireRangePicker`) — presets 5m/15m/1h/6h/24h/7d, All time, and a custom
