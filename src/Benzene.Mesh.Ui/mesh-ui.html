@@ -1506,6 +1506,9 @@
     var usage = buildTopicUsageSection(topicId);
     if (usage) body.appendChild(usage);
 
+    var topLive = buildTopicLiveSection(topicId);
+    if (topLive) body.appendChild(topLive);
+
     var discussion = buildDiscussionSection("topic:" + topicId);
     if (discussion) body.appendChild(discussion);
 
@@ -1830,6 +1833,9 @@
     // actually used" - the two questions the estate-comprehension product leads with.
     var usageSection = buildServiceUsageSection(name);
     if (usageSection) body.appendChild(usageSection);
+
+    var svcLive = buildServiceLiveSection(name);
+    if (svcLive) body.appendChild(svcLive);
 
     var about = el("div", "sp-section");
     about.appendChild(el("h2", null, "About & health"));
@@ -2693,6 +2699,7 @@
   // re-render for now so a background poll never disturbs an open catalog page unless it shows live data.
   function renderFleetInto() {
     if (location.hash === "#fleet") renderFleetPage();
+    else refreshOpenLiveSection();
   }
 
   /* ===== Fleet view rendering (ported from the standalone fleet page, fl- namespaced) ===== */
@@ -2979,6 +2986,137 @@
     if (tg) tg.addEventListener("click", function () { flLookupTrace(); });
     if (ti) ti.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); flLookupTrace(); } });
   })();
+
+  /* ===== Per-entity live sections: the catalog is the spine, the live fleet enriches ===== */
+  function openTraceOnFleet(traceId) {
+    location.hash = "#fleet";
+    setTimeout(function () { flLookupTrace(traceId); }, 60); // let the Fleet view render first
+  }
+  function flTile(grid, k, v, cls) {
+    var t = el("div", "fl-tile");
+    t.appendChild(el("div", "k", k));
+    t.appendChild(el("div", cls ? ("v " + cls) : "v", v));
+    grid.appendChild(t);
+  }
+  function absent(row, dim) { return (row.missingFeeds || []).indexOf(dim) !== -1; }
+  function flServiceHealth(s) {
+    var age = flAgeMs(s.lastSeen);
+    if (age != null && age > FL_STALE_MS) return { text: "◌ stale", cls: "fl-stale" };
+    return { text: ({ healthy: "✓ healthy", degraded: "▲ degraded", unknown: "◌ unknown" }[s.health] || s.health), cls: "fl-h-" + s.health };
+  }
+  function liveGap(box) {
+    box.appendChild(el("div", "fl-sub fl-missing",
+      "Declared in the catalog, but not observed in the live mesh in the current window."));
+  }
+
+  // ---- service page: "Live activity" ----
+  function buildServiceLiveSection(name) {
+    if (!fleetEndpoint()) return null; // static floor
+    var section = el("div", "sp-section");
+    section.id = "sp-live-section";
+    section.appendChild(el("h2", null, "Live activity"));
+    var box = el("div"); box.id = "sp-live-box";
+    section.appendChild(box);
+    fillServiceLive(box, name);
+    return section;
+  }
+  function fillServiceLive(box, name) {
+    box.innerHTML = "";
+    if (!currentFleet) { box.appendChild(el("div", "fl-sub", "connecting to the live mesh…")); return; }
+    var s = (currentFleet.services || []).filter(function (x) { return x.service === name; })[0];
+    if (!s) { liveGap(box); return; }
+    var h = flServiceHealth(s), age = flAgeMs(s.lastSeen), grid = el("div", "fl-tiles");
+    flTile(grid, "Health", h.text, h.cls);
+    flTile(grid, "Last seen", age == null ? "—" : flAge(age) + " ago");
+    flTile(grid, "Instances", s.instances != null ? String(s.instances) : "—");
+    flTile(grid, "Invocations", absent(s, "stats") ? "—" : String(s.invocations));
+    flTile(grid, "Errors", absent(s, "stats") ? "—" : String(s.errors), (!absent(s, "stats") && s.errors > 0) ? "fl-failed" : null);
+    box.appendChild(grid);
+    var flows = (currentFleet.traces || []).filter(function (f) { return (f.services || []).indexOf(name) !== -1; });
+    if (flows.length) {
+      box.appendChild(el("div", "fl-sub", "Recent flows touching this service"));
+      box.appendChild(buildLiveFlowsTable(flows.slice(0, 10)));
+    }
+  }
+  function buildLiveFlowsTable(flows) {
+    var wrap = el("div", "fl-tablewrap"), table = document.createElement("table");
+    var thead = document.createElement("thead"), htr = document.createElement("tr");
+    ["Trace", "Services", "Duration ms", "Outcome", ""].forEach(function (h) { htr.appendChild(el("th", null, h)); });
+    thead.appendChild(htr); table.appendChild(thead);
+    var tb = document.createElement("tbody");
+    flows.forEach(function (f) {
+      var tr = document.createElement("tr");
+      tr.appendChild(el("td", "fl-mono", (f.traceId || "").slice(0, 16)));
+      tr.appendChild(el("td", null, (f.services || []).join(" → ")));
+      tr.appendChild(el("td", "fl-num", (f.durationMs || 0).toFixed(1)));
+      tr.appendChild(el("td", f.failed ? "fl-failed" : "fl-h-healthy", f.failed ? "✕ failed" : "✓ ok"));
+      var od = document.createElement("td");
+      var ob = el("button", "fl-flow-link fl-mono", "open ↗"); ob.type = "button";
+      ob.addEventListener("click", function () { openTraceOnFleet(f.traceId); });
+      od.appendChild(ob); tr.appendChild(od); tb.appendChild(tr);
+    });
+    table.appendChild(tb); wrap.appendChild(table); return wrap;
+  }
+
+  // ---- topic page: "Observed (live)" ----
+  function buildTopicLiveSection(topicId) {
+    if (!fleetEndpoint()) return null;
+    var section = el("div", "sp-section");
+    section.id = "tp-live-section";
+    section.appendChild(el("h2", null, "Observed (live)"));
+    var box = el("div"); box.id = "tp-live-box";
+    section.appendChild(box);
+    fillTopicLive(box, topicId);
+    return section;
+  }
+  function fillTopicLive(box, topicId) {
+    box.innerHTML = "";
+    if (!currentFleet) { box.appendChild(el("div", "fl-sub", "connecting to the live mesh…")); return; }
+    var rows = (currentFleet.topics || []).filter(function (t) { return t.topic === topicId; });
+    if (!rows.length) { liveGap(box); return; }
+    var inv = 0, errs = 0, dur = 0, durN = 0, absentStats = false, absentDur = false, statusCounts = {}, observed = {};
+    rows.forEach(function (t) {
+      if (absent(t, "stats")) absentStats = true; else { inv += t.invocations; errs += t.errors; }
+      if (absent(t, "duration")) absentDur = true;
+      else if (t.avgDurationMs) { dur += t.avgDurationMs * (t.invocations || 1); durN += (t.invocations || 1); }
+      Object.keys(t.statusCounts || {}).forEach(function (k) { statusCounts[k] = (statusCounts[k] || 0) + t.statusCounts[k]; });
+      (t.consumers || []).forEach(function (c) { observed[c] = 1; });
+    });
+    var grid = el("div", "fl-tiles");
+    flTile(grid, "Invocations", absentStats ? "—" : String(inv));
+    flTile(grid, "Errors", absentStats ? "—" : String(errs), (!absentStats && errs > 0) ? "fl-failed" : null);
+    flTile(grid, "Avg ms", absentDur ? "—" : (durN ? (dur / durN).toFixed(1) : "—"));
+    box.appendChild(grid);
+    var statuses = Object.keys(statusCounts).sort().map(function (k) { return (k || "(none)") + " " + statusCounts[k]; }).join(" · ");
+    if (statuses) box.appendChild(el("div", "fl-sub", "Status mix — " + statuses));
+    // Declared (catalog) vs observed (trace-derived) consumers side by side - the join the standalone
+    // fleet view couldn't show. An observed consumer absent from the declared set is a live-confirmed gap.
+    var declared = {};
+    currentTopics.filter(function (t) { return t.topic === topicId; })
+      .forEach(function (t) { (t.consumers || []).forEach(function (c) { if (c && c.service) declared[c.service] = 1; }); });
+    var declaredList = Object.keys(declared).sort();
+    var observedList = Object.keys(observed).sort();
+    box.appendChild(el("div", "fl-sub", "Declared consumers — " + (declaredList.length ? declaredList.join(", ") : "none")));
+    var undeclared = observedList.filter(function (c) { return !declared[c]; });
+    var obsLine = el("div", "fl-sub", "Observed consumers — " + (observedList.length ? observedList.join(", ") : "none observed in window"));
+    box.appendChild(obsLine);
+    if (undeclared.length) {
+      box.appendChild(el("div", "fl-sub fl-failed",
+        "Observed, not in catalog — " + undeclared.join(", ") + " (seen calling this topic but declared by no service descriptor; verify)."));
+    }
+  }
+
+  // Refresh whatever entity live section is open, in place, so a background poll never rebuilds the
+  // whole catalog page (or loses scroll / re-fetches the snapshot) - only the live box updates.
+  function refreshOpenLiveSection() {
+    if (location.hash.indexOf(SERVICE_HASH_PREFIX) === 0) {
+      var sBox = document.getElementById("sp-live-box");
+      if (sBox) fillServiceLive(sBox, decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length)));
+    } else if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
+      var tBox = document.getElementById("tp-live-box");
+      if (tBox) fillTopicLive(tBox, decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
+    }
+  }
 
   function buildDiscussionSection(entityId) {
     var endpoint = annotationsEndpoint();
