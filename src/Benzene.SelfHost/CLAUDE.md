@@ -7,6 +7,13 @@ Provides self-hosted application infrastructure for Benzene. Enables running Ben
 
 ### Self-Hosting Infrastructure
 - `IBenzeneWorkerStartup` / `WorkerApplicationBuilder` / `CompositeBenzeneWorker` - self-host application builders
+- `IBenzeneWorkerBuilder` / `InlineSelfHostedStartUp` - the inline (no dedicated `BenzeneStartUp`
+  class) way to build an `IBenzeneWorker`: `.ConfigureServices(...)` + `.Configure(...)` then
+  `.Build()`. Used by the worker live integration tests and consumable via
+  `Benzene.HostedService`'s `BuildHostedService()`. **`Build()` runs `ConfigureServices` before
+  `Configure`**, matching every other host — so a caller's `ConfigureServices` registration wins the
+  TryAdd race over anything the `Configure`/`UseMessageHandlers` path registers (it previously ran
+  them in the reverse order).
 - Standalone application runners
 - Console application helpers
 

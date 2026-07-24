@@ -31,8 +31,13 @@ public class InlineSelfHostedStartUp : IBenzeneWorkerBuilder
         var services = new ServiceCollection();
         var app = new BenzeneWorkerBuilder(new MicrosoftBenzeneServiceContainer(services));
 
-        _appAction(app);
+        // ConfigureServices runs before Configure, matching every other host
+        // (HostBuilderExtensions.UseBenzene, the Google Cloud function hosts, ...). Because most
+        // message-handler registrations are TryAdd (first-registration-wins), a service the caller
+        // registers in ConfigureServices (e.g. a custom ISerializer before AddBenzene) must land
+        // first so it wins over whatever the Configure/UseMessageHandlers path TryAdds.
         _servicesAction(services);
+        _appAction(app);
 
         var serviceResolverFactory = new MicrosoftServiceResolverFactory(services);
 
