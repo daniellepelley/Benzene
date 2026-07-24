@@ -176,7 +176,16 @@ the message-handler span), not every middleware span — else the waterfall show
   **unchanged** — the payoff of the `IMeshTraceSource` seam. Reads `benzene.*` span attributes by their
   dotted OTLP names verbatim (Tempo preserves keys — no annotation/metadata reconciliation like X-Ray).
   Mocked-`HttpClient` tests against documented Tempo API shapes; shipped-but-unverified against a live
-  Tempo. Jaeger later (same seam). NOT to be confused with `Benzene.Mesh.Tracing.Tempo` (PromQL/topology).
+  Tempo. NOT to be confused with `Benzene.Mesh.Tracing.Tempo` (PromQL/topology).
+- **Increment 5 — Jaeger `IMeshTraceSource`** (`Benzene.Mesh.Fleet.Jaeger`). ✅ **DONE (2026-07-24).**
+  The third backend on the same seam, again reusing the composite/handlers/UI unchanged.
+  `JaegerTraceSource` answers trace-by-id (`/api/traces/{id}`) + correlation (a `benzene.correlation-id`
+  tag search) + recent-flows via a **per-service search fan-out** — Jaeger's search requires a `service`
+  (no "all services" query), so a fleet-wide search enumerates services (configured or discovered via
+  `/api/services`), merges, and dedupes by trace id. Because Jaeger search returns **full** traces,
+  recent-flows carry a real span count + failure flag (richer than the summary-only backends).
+  `JaegerTraceMapper` handles Jaeger's own model (µs times, `references` parentage, `processes` service
+  names). Mocked-`HttpClient` tests; shipped-but-unverified against a live Jaeger.
 - **Not in scope:** deriving health or per-topic **counts** from a trace source. Health stays the
   heartbeat feed; counts stay `IMeshUsageSource`. The trace source is a trace/correlation/recent-flows reader.
 
