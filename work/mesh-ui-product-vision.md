@@ -7,6 +7,33 @@
 
 ---
 
+> **2026-07-25 VISION: live data alongside declared across every surface — reconciliation as the through-line.**
+> Maintainer ask: "that [fleet] data on the mesh-ui and on the service and topic pages to give a live data view
+> as well as the current information." Ruling (mesh-product-owner): **declared is the spine; observed sits
+> adjacent, never replacing or summed into it; the divergence is the product.** Four reconciliation classes,
+> named consistently everywhere: **silent-but-declared** (in catalog, no observed traffic in window →
+> deprecation evidence), **observed-but-undeclared** (traffic with no catalog entry → catalog gap),
+> **unhealthy** (heartbeat health bad), **stale** (heartbeat past freshness). Two registers: **the estate
+> expresses divergence as issues** (bounded, severity-ranked, actionable); **the drill-in expresses it in
+> place** (inline markers + the loud gap callout). Honesty three-states (hard acceptance criteria): **(1) no
+> endpoint → the live layer does not mount at all** (no empty observed columns, no "—" implying missing data —
+> the table/cards render exactly as today; feature-detect `envelopeUrl`); (2) endpoint but nothing observed →
+> **"—", never 0** (absent ≠ zero); (3) endpoint + observation → value with the cumulative-vs-windowed plane
+> badge (`countsWindowed`/`countsSince`, per the 2026-07-24 data-layer contract in
+> `work/service-mesh-roadmap-1.0.md`). Estate live planes (usage.json declared column vs `currentFleet`
+> observed) stay **adjacent, labelled by provenance, never blended** — disagreement is signal, not a bug.
+> **This deliberately un-defers** the Phase-C "estate topics-table live indicator" deferral. Phase order:
+> **Slice 1** — the four classes as live rows in the issue inbox (highest value, reuses `renderIssues()`,
+> satisfies the core ask); **Slice 2** — estate topics-table observed column + service-card heartbeat dot
+> (badged, absent≠zero, adjacent-not-merged), gated on a one-time provenance visual-token vocabulary;
+> **Slice 3** — weave the drill-in pages (inline observed markers, header-fold live-only facts, keep the topic
+> gap callout, retire the appended "Live activity"/"Observed (live)" sections). **Explicitly NOT this
+> increment:** topology-graph live encoding, full live value-ranking, any plane blending/refiltering, any wire
+> or spec change. **Slice 1 SHIPPED 2026-07-25:** `collectLiveIssues()` derives the four classes from the
+> live `FleetView` against the declared catalog, merged into the inbox with a `LIVE` provenance chip; the
+> static-floor no-endpoint path (no rows mount) is Playwright-verified as its own case. Topic reconciliation
+> is skipped until `topics.json` loads (else every observed consumer would false-flag as undeclared).
+
 > **2026-07-24 SHIPPED: the Fleet plane folded into the Mesh UI + a time-range picker (Phases A–F).**
 > The standalone `mesh-fleet-ui.html` is gone: the live Fleet plane is now enriched into `mesh-ui.html`
 > itself (`UseMeshUi(path, manifestUrl, envelopeUrl)` — the catalog is the spine, the live data merges in

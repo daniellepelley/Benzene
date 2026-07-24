@@ -1,5 +1,22 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 (live-across-surfaces, slice 1): live divergences in the estate issue inbox.** The landing
+> page's issue inbox (`renderIssues`/`collectIssues`) now also surfaces live-plane divergences via
+> `collectLiveIssues()` — the reconciliation through-line from `work/mesh-ui-product-vision.md` (2026-07-25):
+> **declared is the spine, observed sits adjacent, the divergence is the product.** Four classes derived from
+> the live `FleetView` against the declared catalog: **observed-but-undeclared** consumer (high — a live caller
+> no descriptor declares; the estate echo of the topic page's gap callout), **undeclared topic** observed live
+> (medium), **heartbeat degraded** (high) and **heartbeat stale** (medium, `FL_STALE_MS`) from the live health
+> plane, and **silent-but-declared** (low — a declared domain topic with no observed traffic *in the current
+> window*; worded as deprecation evidence, never "unused"). Each renders with a `LIVE` provenance chip
+> (`.issue-live`) so an observed divergence is never mistaken for a declared fact. **Honesty state 1 is
+> load-bearing:** with no `fleetEndpoint()` (or before the first poll) `collectLiveIssues()` returns `[]` — the
+> live layer does not mount, and the inbox reads exactly as on a static-only deploy (Playwright-verified as its
+> own case). Topic reconciliation is skipped until `topics.json` loads (else every observed consumer would
+> false-flag as undeclared). The estate inbox re-renders on each fleet poll only when on the estate view
+> (`isEstateView()`), leaving the rest of the landing page undisturbed by the background poll. Slices 2 (estate
+> table observed column + card heartbeat dot) and 3 (weave the drill-in pages) are the follow-ons.
+
 > **2026-07-24 (merge, phase D): a time-range picker on the live plane.** The Fleet view gains a Grafana-style
 > time-range control (`.fl-range` / `flWireRangePicker`) — presets 5m/15m/1h/6h/24h/7d, All time, and a custom
 > absolute from/to (`datetime-local` → ISO). **One shared range** (`fleetRange`, default `now-1h`) drives every

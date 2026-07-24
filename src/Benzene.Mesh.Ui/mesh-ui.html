@@ -385,6 +385,10 @@
   .issue-kind.k-medium { color: var(--m-event); background: var(--m-event-bg); }
   .issue-kind.k-low { color: var(--chip-ink); background: var(--chip-bg); }
   .issue-team { font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+  /* Provenance marker for a live-plane (observed) issue — a distinct token from the declared-artifact
+     kinds, so a reader never mistakes an observed divergence for a declared fact. */
+  .issue-live { font-size: 10px; font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 999px; color: var(--ok); border: 1px solid var(--ok); opacity: .8; }
   .issue-arrow { flex: 0 0 auto; color: var(--ink-faint); }
   .issue[disabled] .issue-arrow { display: none; }
   .issues-deferred { margin-top: 10px; font-size: 12px; color: var(--ink-faint);
@@ -1127,6 +1131,80 @@
       if (t.status === "deprecation-candidate") issues.push(topicIssue("low", "deprecation", t, "Deprecation candidate", TOPIC_STATUS_TITLES["deprecation-candidate"]));
       else if (t.status === "gap") issues.push(topicIssue("low", "producer gap", t, "Producer gap", TOPIC_STATUS_TITLES["gap"]));
     });
+    return issues.concat(collectLiveIssues());
+  }
+
+  // Live-plane divergences on the landing page (vision 2026-07-24: the estate expresses divergence as
+  // issues; the drill-in expresses it in place). The four reconciliation classes are derived from the
+  // live FleetView against the declared catalog. Honesty state 1: with no live endpoint the layer does
+  // NOT mount — this returns [] so the inbox reads exactly as it does on a static-only deploy.
+  function liveTopicIssue(sev, kind, topicId, version, title, why) {
+    return { sev: sev, kind: kind, title: title, subject: topicId + (version ? " v" + version : ""),
+             why: why, team: null, live: true, nav: function () { location.hash = topicHashFor(topicId); } };
+  }
+  function liveSvcIssue(sev, kind, name, title, why) {
+    var svc = (manifest.services || []).filter(function (s) { return s.name === name; })[0];
+    return { sev: sev, kind: kind, title: title, subject: name, why: why,
+             team: (svc && svc.owningTeam) || null, live: true, nav: function () { goToService(name); } };
+  }
+  function isReservedTopicId(topicId) {
+    return /^(mesh:|benzene:|\$)/i.test(topicId || "");
+  }
+  function collectLiveIssues() {
+    if (!fleetEndpoint() || !currentFleet) return []; // static floor: the live layer never mounts
+    var fleet = currentFleet, issues = [];
+
+    // Heartbeat health (the live plane) — independent of the declared catalog, so always available.
+    (fleet.services || []).forEach(function (s) {
+      var age = flAgeMs(s.lastSeen);
+      if (age != null && age > FL_STALE_MS) {
+        issues.push(liveSvcIssue("medium", "heartbeat stale", s.service, "Heartbeat stale",
+          "Last heartbeat " + flAge(age) + " ago — past the live freshness window; it may have stopped reporting."));
+      } else if (s.health === "degraded") {
+        issues.push(liveSvcIssue("high", "heartbeat degraded", s.service, "Heartbeat reports degraded",
+          "This service's latest heartbeat reports one or more instances unhealthy."));
+      }
+    });
+
+    // Topic reconciliation needs the declared side; without topics.json loaded we can't tell observed-but-
+    // undeclared from simply-unknown, so we skip it rather than false-flag every observed consumer.
+    if ((currentTopics || []).length) {
+      var declaredConsumers = {}, declaredTopicIds = {};
+      currentTopics.forEach(function (t) {
+        if (t.reserved) return;
+        declaredTopicIds[t.topic] = 1;
+        var set = declaredConsumers[t.topic] || (declaredConsumers[t.topic] = {});
+        (t.consumers || []).forEach(function (c) { if (c && c.service) set[c.service] = 1; });
+      });
+
+      var observedTopics = {};
+      (fleet.topics || []).forEach(function (t) {
+        if ((t.missingFeeds || []).indexOf("stats") === -1 && t.invocations > 0) observedTopics[t.topic] = 1;
+
+        // observed-but-undeclared: a live consumer calling a topic no descriptor declares consuming.
+        var declared = declaredConsumers[t.topic] || {};
+        var undeclared = (t.consumers || []).filter(function (c) { return c && !declared[c]; });
+        if (undeclared.length) {
+          issues.push(liveTopicIssue("high", "observed consumer", t.topic, t.version, "Observed consumer not in catalog",
+            "Observed calling this topic but declared by no service descriptor: " + undeclared.join(", ") + ". Confirm, or add it to the contract."));
+        }
+        // observed topic entirely absent from the declared catalog (a fleet-only, non-reserved topic).
+        if (!declaredTopicIds[t.topic] && !isReservedTopicId(t.topic)) {
+          issues.push(liveTopicIssue("medium", "undeclared topic", t.topic, t.version, "Topic observed, not in catalog",
+            "This topic is being exercised live but appears in no service's declared contract."));
+        }
+      });
+
+      // silent-but-declared: a declared domain topic with no observed traffic in the current window
+      // (deprecation evidence, not proof — the wording says "in the current window", never "unused").
+      Object.keys(declaredTopicIds).forEach(function (topicId) {
+        if (!observedTopics[topicId]) {
+          issues.push(liveTopicIssue("low", "silent", topicId, null, "Declared but not observed",
+            "No traffic observed for this topic in the current window — evidence toward retiring it (widen the range to be sure)."));
+        }
+      });
+    }
+
     return issues;
   }
   function buildIssueRow(i) {
@@ -1143,6 +1221,13 @@
     row.appendChild(b);
     var meta = el("div", "issue-meta");
     if (i.team) meta.appendChild(el("span", "issue-team", i.team));
+    // Provenance marker: an observed (live-plane) divergence vs a declared-artifact issue. Keeps the
+    // reader from ever mistaking "not observed in window" for a declared fact (vision honesty rule).
+    if (i.live) {
+      var live = el("span", "issue-live", "live");
+      live.title = "Derived from the live fleet (observed), not the declared catalog.";
+      meta.appendChild(live);
+    }
     meta.appendChild(el("span", "issue-kind k-" + i.sev, i.kind));
     row.appendChild(meta);
     var arrow = el("span", "issue-arrow");
@@ -1177,7 +1262,9 @@
     if (!issues.length) {
       var clear = el("div", "issues-clear");
       clear.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>';
-      clear.appendChild(document.createTextNode("All clear — no unhealthy, unreachable, drifting, or contract issues detected across the fleet."));
+      clear.appendChild(document.createTextNode(fleetEndpoint()
+        ? "All clear — no unhealthy, unreachable, drifting, contract, or live-divergence issues detected across the fleet."
+        : "All clear — no unhealthy, unreachable, drifting, or contract issues detected across the fleet."));
       body.appendChild(clear);
     }
 
@@ -2759,7 +2846,18 @@
   // re-render for now so a background poll never disturbs an open catalog page unless it shows live data.
   function renderFleetInto() {
     if (location.hash === "#fleet") renderFleetPage();
-    else refreshOpenLiveSection();
+    else {
+      refreshOpenLiveSection();
+      // On the estate landing view, refresh the issue inbox so live divergences stay current as the fleet
+      // polls (the inbox is the estate's live surface — vision 2026-07-24). Other estate widgets are left
+      // undisturbed by a background poll; only the inbox reflects live data in this slice.
+      if (isEstateView()) renderIssues();
+    }
+  }
+  function isEstateView() {
+    var h = location.hash;
+    return !h || h === "#" || (h.indexOf(SERVICE_HASH_PREFIX) !== 0 && h.indexOf(TOPIC_HASH_PREFIX) !== 0
+      && h.indexOf(COMPOSE_HASH_PREFIX) !== 0 && h !== "#fleet");
   }
 
   /* ===== Fleet view rendering (ported from the standalone fleet page, fl- namespaced) ===== */
