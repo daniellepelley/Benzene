@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers;
@@ -147,15 +149,7 @@ public static class Extensions
     /// <returns>The same container, for chaining.</returns>
     public static IBenzeneServiceContainer AddMessageHandlers(this IBenzeneServiceContainer services)
     {
-        services.TryAddSingleton<MessageHandlersList>();
-        services.TryAddSingleton<DependencyMessageHandlersFinder>();
-        services.TryAddSingleton<IMessageHandlersList>(x => x.GetService<MessageHandlersList>());
-        services.TryAddSingleton<IMessageHandlersFinder>(x =>
-            new CompositeMessageHandlersFinder(
-                x.GetService<MessageHandlersList>(),
-                x.GetService<DependencyMessageHandlersFinder>()
-            ));
-        services.TryAddSingleton<MessageHandlerDefinitionIndex>();
+        RegisterHandlerFinderInfrastructure(services);
 
         services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();
@@ -165,6 +159,31 @@ public static class Extensions
 
         services.AddContextItems();
         return services;
+    }
+
+    /// <summary>
+    /// Registers the shared handler-discovery finders (used by every <c>AddMessageHandlers</c> overload).
+    /// The reflection finder is built <b>lazily</b> over the <b>deduped union</b> of every
+    /// <see cref="MessageHandlerCandidateTypes"/> registered by any <c>AddMessageHandlers(Type[])</c> call,
+    /// so a second call - e.g. an inner <c>UseBenzeneMessage</c> pipeline's own
+    /// <c>UseMessageHandlers(types)</c> over a different type set than the app's outer scan - is discovered
+    /// too (it was silently dropped when the finder was captured from the first call only), while
+    /// overlapping scans don't double-register a handler (which would trip the route-uniqueness check).
+    /// Registered via <c>TryAdd</c> so the single composite the singular consumers resolve (spec builder,
+    /// gRPC, HTTP routing, warm-up) always sees the full union regardless of call order.
+    /// </summary>
+    private static void RegisterHandlerFinderInfrastructure(IBenzeneServiceContainer services)
+    {
+        services.TryAddSingleton<MessageHandlersList>();
+        services.TryAddSingleton<DependencyMessageHandlersFinder>();
+        services.TryAddSingleton<IMessageHandlersList>(x => x.GetService<MessageHandlersList>());
+        services.TryAddSingleton<IMessageHandlersFinder>(x =>
+            new CompositeMessageHandlersFinder(
+                new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(
+                    x.GetServices<MessageHandlerCandidateTypes>().SelectMany(c => c.Types).Distinct().ToArray())),
+                x.GetService<MessageHandlersList>(),
+                x.GetService<DependencyMessageHandlersFinder>()));
+        services.TryAddSingleton<MessageHandlerDefinitionIndex>();
     }
 
     /// <summary>
@@ -183,22 +202,16 @@ public static class Extensions
         // UnroutedHttpEndpointCheck flagging an [HttpEndpoint] handler missing its [Message].
         services.AddSingleton(new MessageHandlerCandidateTypes(types));
 
+        // Eagerly register each discovered handler type as scoped (so it can be constructed). Discovery
+        // of the topic->handler mapping itself is done by the shared union finder below, over every call's
+        // candidate types - see RegisterHandlerFinderInfrastructure.
         var cacheMessageHandlersFinder = new CacheMessageHandlersFinder(new ReflectionMessageHandlersFinder(types));
         foreach (var handler in cacheMessageHandlersFinder.FindDefinitions())
         {
             services.AddScoped(handler.HandlerType);
         }
 
-        services.TryAddSingleton<MessageHandlersList>();
-        services.TryAddSingleton<DependencyMessageHandlersFinder>();
-        services.TryAddSingleton<IMessageHandlersList>(x => x.GetService<MessageHandlersList>());
-        services.TryAddSingleton<IMessageHandlersFinder>(x =>
-            new CompositeMessageHandlersFinder(
-                cacheMessageHandlersFinder,
-            x.GetService<MessageHandlersList>(),
-            x.GetService<DependencyMessageHandlersFinder>()
-        ));
-        services.TryAddSingleton<MessageHandlerDefinitionIndex>();
+        RegisterHandlerFinderInfrastructure(services);
 
         services.TryAddScoped<IMessageHandlerDefinitionLookUp, MessageHandlerDefinitionLookUp>();
         services.TryAddScoped<IHandlerPipelineBuilder, HandlerPipelineBuilder>();

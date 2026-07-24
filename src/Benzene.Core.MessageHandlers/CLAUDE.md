@@ -28,7 +28,17 @@ Provides complete implementation of message handler infrastructure for command/q
 - `MessageHandlerCandidateTypes` - records the candidate types of one reflection-scanning
   `AddMessageHandlers(Type[])` call (registered cumulatively, one instance per call) so
   cross-cutting diagnostics can see the types discovery *skipped* — consumed by `Benzene.Http`'s
-  `UnroutedHttpEndpointCheck` to flag `[HttpEndpoint]` handlers missing their `[Message]`
+  `UnroutedHttpEndpointCheck` to flag `[HttpEndpoint]` handlers missing their `[Message]`. It is
+  **also** what makes multiple `AddMessageHandlers(Type[])` calls compose: the single
+  `IMessageHandlersFinder` (`RegisterHandlerFinderInfrastructure` in `DI/Extensions.cs`) reflects
+  **lazily, once, over the deduped union** of every registered `MessageHandlerCandidateTypes`. So an
+  inner `UseBenzeneMessage(a => a.UseMessageHandlers(otherTypes))` pipeline whose type set differs from
+  the app's outer scan is discovered too — it used to be silently dropped (the finder was captured from
+  the first call only, via `TryAdd`), which is why a composite-fleet `/benzene/invoke` endpoint answered
+  `No handler found for topic 'mesh:query:fleet'`. Union+`Distinct` means overlapping scans (e.g.
+  `AddMessageHandlers(assembly)` plus a later `UseMessageHandlers()` over all assemblies) never
+  double-register a handler, which would otherwise trip the route-uniqueness check. Guarded by
+  `test/Benzene.Mesh.Test/MultipleAddMessageHandlersCompositionTest.cs`.
 
 ### Request Mapping
 - `RequestMapper<TContext>` - Maps transport context to request; prefers the byte-oriented path
