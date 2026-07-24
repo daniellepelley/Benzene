@@ -33,6 +33,10 @@
     <ProjectReference Include="..\..\src\Benzene.Mesh.Fleet.Jaeger\Benzene.Mesh.Fleet.Jaeger.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Usage.ApplicationInsights\Benzene.Mesh.Usage.ApplicationInsights.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Aws.Lambda\Benzene.Mesh.Aws.Lambda.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.ApiGateway.TestHelpers\Benzene.Aws.Lambda.ApiGateway.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
+    <ProjectReference Include="..\..\src\Benzene.Testing\Benzene.Testing.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Discovery.Aws\Benzene.Mesh.Discovery.Aws.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Discovery.Kubernetes\Benzene.Mesh.Discovery.Kubernetes.csproj" />
     <ProjectReference Include="..\..\src\Benzene.Mesh.Discovery.Azure\Benzene.Mesh.Discovery.Azure.csproj" />
