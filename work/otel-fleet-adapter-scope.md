@@ -170,8 +170,13 @@ the message-handler span), not every middleware span — else the waterfall show
   - **recent flows** — new `IMeshTraceSource.GetRecentFlowsAsync(limit=20)`; X-Ray = one unfiltered
     `GetTraceSummaries` over a 1h window mapped summary→`TraceSummary` (`Events=0`, no span count),
     **zero `BatchGetTraces` on fleet load** (the accurate count is one `GetTraceAsync` away on drill-in).
-- **Increment 4 — Tempo `IMeshTraceSource`** (`Benzene.Mesh.Fleet.Tempo`), the non-AWS reference target,
-  reusing increments 0–3's handlers/composite unchanged (that's the payoff of the abstraction). Jaeger later.
+- **Increment 4 — Tempo `IMeshTraceSource`** (`Benzene.Mesh.Fleet.Tempo`). ✅ **DONE (2026-07-24).** The
+  non-AWS reference: `TempoTraceSource` answers trace-by-id (`/api/traces/{id}`, OTLP/JSON) + correlation
+  and recent-flows (TraceQL search, `/api/search`), reusing increments 0–3's handlers/composite/UI
+  **unchanged** — the payoff of the `IMeshTraceSource` seam. Reads `benzene.*` span attributes by their
+  dotted OTLP names verbatim (Tempo preserves keys — no annotation/metadata reconciliation like X-Ray).
+  Mocked-`HttpClient` tests against documented Tempo API shapes; shipped-but-unverified against a live
+  Tempo. Jaeger later (same seam). NOT to be confused with `Benzene.Mesh.Tracing.Tempo` (PromQL/topology).
 - **Not in scope:** deriving health or per-topic **counts** from a trace source. Health stays the
   heartbeat feed; counts stay `IMeshUsageSource`. The trace source is a trace/correlation/recent-flows reader.
 
