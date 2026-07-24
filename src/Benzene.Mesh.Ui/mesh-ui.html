@@ -1282,6 +1282,7 @@
     loadTopology();
     loadUsage();
     loadAnnotations();
+    loadFleet();
   }
 
   /* ---------- topics (cross-service catalog) ---------- */
@@ -2534,6 +2535,51 @@
         syncViewFromHash(); // an open entity page gains its recorded discussion
       })
       .catch(function () { currentAnnotations = null; });
+  }
+
+  /* ---------- fleet (live / observed plane) ----------
+     The live counterpart to the static catalog: the observed FleetView polled from the wire-envelope
+     endpoint (mesh:query:fleet). The catalog is the SPINE (declared services/topics/providers/consumers/
+     schemas); the fleet ENRICHES those rows with observed behaviour (invocations/errors/latency/health/
+     recent flows). Same read-static / enrich-when-live "hard constraint vessel" shape as the annotations
+     feature: absent endpoint => pure static catalog, no polling, no trace of the feature. Feature-detected
+     via ?fleet=<envelope-url> or data-fleet-url on the document root (on AwsMesh that URL is the same
+     /benzene/invoke the annotations write path speaks to, but the two toggles are independent). */
+  var currentFleet = null;    // null = no endpoint / not yet loaded; a FleetView object when live
+  var fleetTimer = null;
+  var FLEET_POLL_MS = 5000;   // slower than the standalone fleet page's 2s - it now feeds more surfaces
+  function fleetEndpoint() {
+    return new URLSearchParams(location.search).get("fleet")
+      || document.documentElement.getAttribute("data-fleet-url") || null;
+  }
+  // POST one mesh:query:* envelope and resolve its parsed body, rejecting a non-ok envelope. The single
+  // seam every live surface (fleet poll, trace/correlation lookups) speaks through.
+  function fleetQuery(topic, body) {
+    var endpoint = fleetEndpoint();
+    if (!endpoint) return Promise.reject(new Error("no fleet endpoint"));
+    return fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ topic: topic, headers: {}, body: body || "{}" })
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (env) {
+      if (env.statusCode !== "ok") throw new Error(env.statusCode || "error");
+      return JSON.parse(env.body);
+    });
+  }
+  function loadFleet() {
+    if (!fleetEndpoint()) return; // static floor: nothing live to poll
+    fleetQuery("mesh:query:fleet", "{}")
+      .then(function (view) { currentFleet = view; renderFleetInto(); })
+      .catch(function () { /* keep the last good view - a transient poll failure isn't a reset */ });
+    if (!fleetTimer) { fleetTimer = setInterval(loadFleet, FLEET_POLL_MS); }
+  }
+  // Re-render the surfaces the live plane feeds after a poll. Phase A: just the current view; later
+  // phases add the estate live indicators, per-entity live sections, and the Fleet landing view.
+  function renderFleetInto() {
+    syncViewFromHash();
   }
 
   function buildDiscussionSection(entityId) {
