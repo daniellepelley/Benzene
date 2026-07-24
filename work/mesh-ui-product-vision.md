@@ -7,6 +7,25 @@
 
 ---
 
+> **2026-07-25 DRAINS-UP REVIEW — the three-job reprioritization. See `work/mesh-drains-up-review.md`
+> (the working plan; supersedes this doc's outcome ordering for roadmap purposes).** Maintainer ask:
+> start from first principles — the user wants (1) what traffic is flowing across services/topics,
+> (2) what issues need their attention, (3) exactly what each issue is and how to resolve it.
+> Three-review synthesis (mesh PO + observability PO + DX operator walkthrough) concluded: job 2's
+> inbox watches the estate's *paperwork* (drift/mismatch/staleness), not its *behavior* (no
+> failing-traffic issue class — a failing system can say "All clear"); job 3 is essentially unserved
+> (the mesh says *that*, never *why* + *what to do*); blindness is indistinguishable from quiet and
+> even becomes false retirement evidence. Architecture ruling: **backends tell you what moved; the
+> pipeline tells you what's wrong** — a mesh-native, fingerprint-deduped issue feed (pipeline-emitted,
+> spec-§4 lossy/non-blocking, `MissingFeeds`-degradable) serves jobs 2/3; trace backends remain the
+> traffic + evidence plane. Deviations recorded there: (a) traffic/issues/resolution over
+> comprehension-first; (b) the 2026-07-25 "declared/observed adjacent everywhere" *presentation*
+> ruling is revised — divergence's home is the inbox, primary surfaces show one best-available number
+> with provenance one affordance deep (the reconciliation classes stay); (c) a normative
+> Benzene-semantic rendering rule: backend infra artifacts never surface as first-class fleet
+> entities. A STOP list (notably: no new estate surfaces until the front door + issue detail exist)
+> and a 4-phase roadmap live in the review doc.
+
 > **2026-07-25 FIXED: flows show real service names on both ends (the `orders-api → ApiGatewayLambdaHandler`
 > bug).** A maintainer saw one real service name and one AWS/Lambda infra name in a Fleet flow. Root cause:
 > the topic-bearing span didn't carry the emitting service's own name, so the X-Ray mapper fell back to the
