@@ -48,7 +48,8 @@ public class JaegerTraceSourceTest
     private static string Trace(string traceId, string service, string topic, string status,
         string correlationId = "", long startMicros = 1500000000000000, string parentSpanId = "")
     {
-        var tags = Tag("benzene.topic", topic) + ", " + Tag("benzene.version", "v1") + ", " + Tag("benzene.status", status);
+        var tags = Tag("benzene.topic", topic) + ", " + Tag("benzene.version", "v1") + ", " + Tag("benzene.status", status)
+            + ", " + Tag("benzene.exception.type", "System.TimeoutException");
         if (correlationId.Length > 0) tags += ", " + Tag("benzene.correlation-id", correlationId);
         var references = parentSpanId.Length == 0
             ? "[]"
@@ -87,6 +88,7 @@ public class JaegerTraceSourceTest
         var evt = Assert.Single(view.Events); // the benzene span only, not the http.method span
         Assert.Equal("orders:create", evt.Topic);
         Assert.Equal("v1", evt.TopicVersion);
+        Assert.Equal("System.TimeoutException", evt.ExceptionType); // the failure's WHY (spec §3), read when present
         Assert.Equal("ok", evt.Status);
         Assert.Equal("orders-api", evt.Service);            // from processes[p1].serviceName
         Assert.Equal("span-trace-1", evt.SpanId);

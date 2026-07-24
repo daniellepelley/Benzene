@@ -19,6 +19,21 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
 ## Key types/interfaces
 
 ### Tracing
+> **2026-07-25 — `benzene.exception.type` (drains-up phase 3.1, the failure's WHY).** When an
+> invocation's failure originated in a thrown exception, the topic-bearing span also carries the
+> exception's **type name** (never the message/stack — the type is the stable, non-sensitive
+> discriminator, the same classification rule as the health-check plane). Two stamp sites cover both
+> failure shapes: (1) `ActivityMiddlewareDecorator`'s catch, for exceptions that PROPAGATE (alongside
+> `benzene.status = "exception"`); (2) `Benzene.Core.MessageHandlers.ActivityExceptionTag.TryStamp`,
+> called from `MessageHandler`'s catches, for the common case where the handler layer CONVERTS the
+> exception into a result (deserialization → BadRequest, ArgumentException → validation-error, general
+> → service-unavailable) and it never reaches the decorator — the helper walks `Activity.Current`'s
+> open ancestor chain to the span carrying `benzene.topic` and tags it, first exception wins.
+> **Span-only by design — never a metric tag** (unbounded cardinality). Read back by the mesh trace
+> mappers into `MeshTraceEvent.ExceptionType` (spec §3, optional/additive) and rendered on failed
+> waterfall legs. Covered by `ActivityMiddlewareTest` (throw path) + `ActivityExceptionTagTest`
+> (walk/first-wins/no-op paths).
+
 - `BenzeneDiagnostics` - the shared `ActivitySource`/`Meter`, named `"Benzene"`
 - `ActivityMiddlewareWrapper`/`ActivityMiddlewareDecorator<TContext>` - auto-wraps every middleware
   instance in an `Activity` span; registered by `AddDiagnostics()`. `benzene.transport` is tagged on

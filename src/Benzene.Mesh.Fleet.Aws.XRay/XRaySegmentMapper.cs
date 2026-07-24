@@ -78,6 +78,10 @@ public static class XRaySegmentMapper
                 Topic = topic!,
                 TopicVersion = ReadBenzene(node, "version"),
                 Status = ReadBenzene(node, "status") ?? string.Empty,
+                // The failure's WHY (spec §3 exceptionType): the thrown exception's type name, stamped by
+                // the pipeline on the same topic-bearing span as benzene.status. Null for non-exception
+                // failures or spans predating the tag.
+                ExceptionType = ReadBenzene(node, "exception.type"),
                 CorrelationId = ReadBenzene(node, "correlation-id") ?? ReadBenzene(node, "correlationId"),
                 StartedAt = ReadStartedAt(node),
                 DurationMs = ReadDurationMs(node)

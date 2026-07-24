@@ -68,10 +68,15 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
                 activity.SetStatus(ActivityStatusCode.Error, ex.Message);
 
                 // An escaped exception has no BenzeneResult; record it as its own status (matching the
-                // metric's "exception" token) so the trace shows a failure, not a missing status.
+                // metric's "exception" token) so the trace shows a failure, not a missing status. The
+                // exception's TYPE (never its message — the type is the stable, non-sensitive
+                // discriminator, same rule as the health-check classification policy) rides alongside on
+                // the same topic-bearing span, so a trace-backed mesh reader can answer "why", not just
+                // "that". Span-only by design — never a metric tag (unbounded cardinality).
                 if (taggedTopic)
                 {
                     activity.SetTag("benzene.status", "exception");
+                    activity.SetTag("benzene.exception.type", ex.GetType().FullName);
                 }
 
                 throw;

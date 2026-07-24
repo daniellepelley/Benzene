@@ -71,6 +71,7 @@ public static class TempoTraceMapper
                         Topic = topic,
                         TopicVersion = attributes.GetValueOrDefault("benzene.version"),
                         Status = attributes.GetValueOrDefault("benzene.status") ?? string.Empty,
+                        ExceptionType = attributes.GetValueOrDefault("benzene.exception.type"),
                         CorrelationId = attributes.GetValueOrDefault("benzene.correlation-id"),
                         StartedAt = NanosToTime(GetString(span, "startTimeUnixNano")),
                         DurationMs = DurationMs(span)

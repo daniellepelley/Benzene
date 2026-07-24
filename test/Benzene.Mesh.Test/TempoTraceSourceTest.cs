@@ -60,7 +60,8 @@ public class TempoTraceSourceTest
                       "attributes": [
                         { "key": "benzene.topic", "value": { "stringValue": "{{topic}}" } },
                         { "key": "benzene.version", "value": { "stringValue": "v1" } },
-                        { "key": "benzene.status", "value": { "stringValue": "{{status}}" } }{{correlationAttr}}
+                        { "key": "benzene.status", "value": { "stringValue": "{{status}}" } },
+                        { "key": "benzene.exception.type", "value": { "stringValue": "System.TimeoutException" } }{{correlationAttr}}
                       ]
                     },
                     {
@@ -91,6 +92,7 @@ public class TempoTraceSourceTest
         Assert.Equal("orders:create", evt.Topic);
         Assert.Equal("v1", evt.TopicVersion);
         Assert.Equal("ok", evt.Status);
+        Assert.Equal("System.TimeoutException", evt.ExceptionType); // the failure's WHY (spec §3), read when present
         Assert.Equal("orders-api", evt.Service);
         Assert.Equal("aabbccdd", evt.SpanId);
         Assert.Null(evt.ParentSpanId);       // empty parentSpanId → null

@@ -149,6 +149,7 @@ transport-shaped.
   "topic": "order:create",
   "topicVersion": "v2",
   "status": "validation-error",
+  "exceptionType": "System.InvalidOperationException",
   "durationMs": 12.4,
   "startedAt": "2026-07-16T09:14:03.120Z",
   "correlationId": "abc-123"
@@ -166,6 +167,12 @@ transport-shaped.
   lets a collector derive consumer edges (§4) from parentage.
 - `status` is the Benzene status verbatim (wire-contracts.md §3); empty only when no downstream
   middleware produced a result (a wiring gap, reported as-is).
+- `exceptionType` *(optional, additive 2026-07-25)* — when the invocation's failure originated in a
+  thrown exception, the exception's language-native **type name** (e.g. a fully-qualified CLR or Java
+  class name, a Go error type). Never the exception message, stack trace, or any payload-derived text —
+  the type is a stable, non-sensitive discriminator (the same classification rule the health-check
+  plane uses). Omitted for non-exception failures and by emitters that don't capture it; a collector
+  MUST accept its absence.
 - `correlationId` mirrors the `x-correlation-id` header when present.
 - Coverage MUST be structural: because the router already converts a missing handler, a request
   conversion failure, and a handler panic/exception into results (core-concepts.md §5), every

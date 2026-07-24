@@ -401,6 +401,8 @@ public class ActivityMiddlewareTest
 
         var span = Assert.Single(activities, a => a.OperationName == "handle");
         Assert.Equal("exception", span.GetTagItem("benzene.status"));
+        // The WHY rides alongside: the thrown exception's TYPE (never its message) on the same span.
+        Assert.Equal("System.InvalidOperationException", span.GetTagItem("benzene.exception.type"));
     }
 
     [Fact]

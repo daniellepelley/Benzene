@@ -193,6 +193,14 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 
 ### Phase 3 — The WHY (pipeline + wire; the mesh finally explains)
 
+> **3.1 SHIPPED 2026-07-25.** `benzene.exception.type` on the topic-bearing span (decorator catch for
+> propagating exceptions; `ActivityExceptionTag` walk-up for handler-converted ones — the common case),
+> `MeshTraceEvent.ExceptionType` as a spec-§3 **optional/additive** field (flagged: additive wire
+> change; push-plane `UseMeshTrace` doesn't populate it yet — absence is spec-legal), read by all three
+> trace-store mappers, rendered on failed waterfall legs ("service-unavailable ·
+> System.Net.Http.HttpRequestException"). Type name only, never message/stack; span-only, never a
+> metric tag. 3.2 (issue feed) and 3.3 (issue detail page) remain.
+
 | # | Slice | Job | Size |
 |---|---|---|---|
 | 3.1 | **`benzene.exception.type` on the error span** (`ActivityMiddlewareDecorator` — today only status + message). Span-only, never a metric tag (cardinality). Failed waterfall rows immediately answer "why" | 3 | S |

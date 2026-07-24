@@ -95,6 +95,7 @@ public static class JaegerTraceMapper
                 Topic = topic,
                 TopicVersion = tags.GetValueOrDefault("benzene.version"),
                 Status = tags.GetValueOrDefault("benzene.status") ?? string.Empty,
+                ExceptionType = tags.GetValueOrDefault("benzene.exception.type"),
                 CorrelationId = tags.GetValueOrDefault("benzene.correlation-id"),
                 StartedAt = MicrosToTime(GetLong(span, "startTime")),
                 DurationMs = GetLong(span, "duration") / 1000.0 // µs → ms

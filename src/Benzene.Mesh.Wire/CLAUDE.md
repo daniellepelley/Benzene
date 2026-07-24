@@ -44,6 +44,12 @@ pull-based collector idiom and can adopt these shapes as ingest sources (roadmap
   `test/Benzene.Core.Test/CloudService/MeshDisposalTest.cs`.
 - `MeshTopics` / `MeshTraceEvent` / `MeshTraceBatch` / `MeshHeartbeat` - the wire shapes.
   `MeshHeartbeat.Health` reuses `HealthChecks.Core.HealthCheckResponse` as-is.
+  `MeshTraceEvent.ExceptionType` (2026-07-25, spec §3 **optional/additive**, null-omitted): the thrown
+  exception's type name when the failure was exception-originated — type only, never message/stack.
+  The .NET *span* pipeline stamps it as `benzene.exception.type` (see `Benzene.Diagnostics`) and the
+  trace-store mappers (`Benzene.Mesh.Fleet.*`) read it back; the push-plane `UseMeshTrace` middleware
+  does **not** populate it yet (its status comes from `IMeshStatusReader`, which has no exception in
+  hand — a documented gap, acceptable because absence is spec-legal).
 
 ## Important conventions
 - **The spec wins.** These shapes are pinned by `docs/specification/conformance/mesh-*.json`;

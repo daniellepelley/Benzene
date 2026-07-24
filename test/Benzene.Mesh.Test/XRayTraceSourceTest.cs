@@ -61,7 +61,8 @@ public class XRayTraceSourceTest
               "end_time": 1500000000.7,
               "annotations": {
                 "benzene_topic": "inventory:reserve",
-                "benzene_status": "not-found"
+                "benzene_status": "not-found",
+                "benzene_exception_type": "System.InvalidOperationException"
               }
             }
           ]
@@ -94,6 +95,8 @@ public class XRayTraceSourceTest
         Assert.Equal("orders-api", child.Service); // enclosing segment's name, not a new boundary
         Assert.Equal("inventory:reserve", child.Topic);
         Assert.Equal("not-found", child.Status);
+        Assert.Equal("System.InvalidOperationException", child.ExceptionType); // the failure's WHY (spec §3)
+        Assert.Null(root.ExceptionType); // absent tag → null, never fabricated
     }
 
     [Fact]

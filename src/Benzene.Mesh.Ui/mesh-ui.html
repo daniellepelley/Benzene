@@ -3492,10 +3492,18 @@
       bar.className = "fl-wf-bar" + (ok ? "" : " err");
       bar.style.left = (((starts[i] - t0) / span) * 100).toFixed(2) + "%";
       bar.style.width = Math.max(0.4, ((e.durationMs || 0) / span) * 100).toFixed(2) + "%";
-      bar.title = (e.durationMs || 0).toFixed(1) + "ms · " + e.status;
+      bar.title = (e.durationMs || 0).toFixed(1) + "ms · " + e.status + (e.exceptionType ? " · " + e.exceptionType : "");
       track.appendChild(bar); row.appendChild(track);
       var stat = el("div", "fl-wf-stat"), st = el("span", ok ? "" : "fl-st-err", e.status);
-      stat.appendChild(st); stat.appendChild(document.createTextNode(" · " + (e.durationMs || 0).toFixed(1) + "ms"));
+      stat.appendChild(st);
+      // The WHY (drains-up 3.1): the thrown exception's type, on failed legs that carry it — the trace
+      // now answers "service-unavailable · System.InvalidOperationException", not just a status word.
+      if (!ok && e.exceptionType) {
+        var exType = el("span", "fl-st-err fl-mono", " · " + e.exceptionType);
+        exType.title = "The thrown exception's type (benzene.exception.type). Type only — messages and stack traces stay in your logging backend.";
+        stat.appendChild(exType);
+      }
+      stat.appendChild(document.createTextNode(" · " + (e.durationMs || 0).toFixed(1) + "ms"));
       row.appendChild(stat); wrap.appendChild(row);
     });
     return wrap;
@@ -3512,7 +3520,7 @@
   function flExpandFlow(tr, traceId) {
     flOpenTraceId = traceId; tr.classList.add("open");
     var detailRow = document.createElement("tr"); detailRow.className = "fl-flow-detail-row";
-    var td = document.createElement("td"); td.className = "fl-flow-detail"; td.colSpan = 5;
+    var td = document.createElement("td"); td.className = "fl-flow-detail"; td.colSpan = 6;
     td.appendChild(el("div", "fl-wf-note", "Loading trace…"));
     detailRow.appendChild(td); tr.parentNode.insertBefore(detailRow, tr.nextSibling);
     var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));

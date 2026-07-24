@@ -30,6 +30,12 @@ public class MeshTraceEvent
     /// <summary>The Benzene status verbatim; empty only when no downstream middleware produced a result.</summary>
     public string Status { get; set; } = string.Empty;
 
+    /// <summary>When the failure originated in a thrown exception, the exception's type name (spec §3,
+    /// optional/additive) — the stable non-sensitive discriminator, never the message or stack trace.
+    /// Null for non-exception failures or when the emitter didn't capture it.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ExceptionType { get; set; }
+
     public double DurationMs { get; set; }
 
     public DateTimeOffset StartedAt { get; set; }
