@@ -136,4 +136,27 @@ public class SpecTest
 
         Assert.Equal(6, document.Components.Schemas.Count);
     }
+
+    [Fact]
+    public async Task BenzeneApi_NullRequestDefaultsToBenzene()
+    {
+        // A null request (empty body hitting the spec topic) must default to the benzene format -
+        // the documented default and what an unknown/empty type string resolves to - not asyncapi.
+        var serviceContainer = new MicrosoftBenzeneServiceContainer();
+        serviceContainer
+            .AddBenzene()
+            .AddBenzeneMessage()
+            .AddHttpMessageHandlers()
+            .SetApplicationInfo("Example App", "1.0", "Stuff");
+
+        var resolver = serviceContainer.CreateServiceResolverFactory().CreateScope();
+        var handler = new SpecMessageHandler(resolver);
+
+        var result = await handler.HandleAsync(null);
+
+        // A benzene EventServiceDocument carries the app info; an asyncapi document would not
+        // round-trip through this deserializer with the app title populated.
+        var document = new EventServiceDocumentDeserializer().Deserialize(result.Payload.Content);
+        Assert.Equal("Example App", document.Info.Title);
+    }
 }

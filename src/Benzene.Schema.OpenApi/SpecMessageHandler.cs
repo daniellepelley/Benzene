@@ -17,7 +17,9 @@ public class SpecMessageHandler : IMessageHandler<SpecRequest, RawStringMessage>
     
     public Task<IBenzeneResult<RawStringMessage>> HandleAsync(SpecRequest request)
     {
-        var specRequest = request ?? new SpecRequest("asyncapi", "json");
+        // A null request (e.g. an empty request body hitting the spec topic) defaults to the same
+        // format as an unknown/empty type string does in SpecBuilder: benzene, the documented default.
+        var specRequest = request ?? new SpecRequest("benzene", "json");
 
         // The spec is deterministic for a given (type, format), so serve it from the memoizing
         // SpecCache when one is registered (UseSpec registers a singleton) - only the first request
