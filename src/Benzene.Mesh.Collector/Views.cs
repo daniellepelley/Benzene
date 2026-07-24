@@ -97,6 +97,13 @@ public class TraceSummary
     public DateTimeOffset StartedAt { get; set; }
     public double DurationMs { get; set; }
     public bool Failed { get; set; }
+
+    /// <summary>The flow's entry topic — the earliest Benzene event's topic — or null when the plane
+    /// can't attribute one (a summary-plane row that mapped no Benzene spans). Additive (2026-07-25,
+    /// drains-up phase 1): lets the fleet UI attribute a flow (and its failure) to a topic without a
+    /// per-row trace fetch; omitted from the wire when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Topic { get; set; }
 }
 
 /// <summary>The <c>mesh:query:service</c> response: the fleet row plus the registered descriptor

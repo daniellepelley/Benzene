@@ -167,6 +167,7 @@ public class JaegerTraceSourceTest
         Assert.True(flows[0].Failed);                       // status not-found → not the success class
         Assert.Equal(1, flows[0].Events);                   // Jaeger returns full traces → real span count
         Assert.Equal("billing-api", Assert.Single(flows[0].Services));
+        Assert.Equal("billing:charge", flows[0].Topic);     // the flow's entry topic (earliest event's)
         Assert.Equal("t-a", flows[1].TraceId);
         Assert.False(flows[1].Failed);                      // status ok
     }

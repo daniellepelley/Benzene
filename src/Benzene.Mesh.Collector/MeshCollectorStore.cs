@@ -426,7 +426,10 @@ public class MeshCollectorStore : IMeshFleetReadModel
                         .Select(x => x.Service!).Distinct().OrderBy(x => x, StringComparer.Ordinal).ToList(),
                     StartedAt = startedAt,
                     DurationMs = (end - startedAt).TotalMilliseconds,
-                    Failed = group.Any(x => !BenzeneResultStatusExtensions.IsSuccess(x.Status))
+                    Failed = group.Any(x => !BenzeneResultStatusExtensions.IsSuccess(x.Status)),
+                    // The flow's entry topic: the earliest event's. Ring events always carry a topic.
+                    Topic = group.OrderBy(x => x.StartedAt)
+                        .Select(x => x.Topic).FirstOrDefault(t => !string.IsNullOrEmpty(t))
                 };
             })
             // A flow is in-window when it started in [From,To]; no window ⇒ today's unfiltered last-N.

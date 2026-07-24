@@ -435,6 +435,7 @@ public class XRayTraceSourceTest
         Assert.Equal(1, flow.Events);                                // real span count, not the old hardcoded 0
         Assert.True(flow.Failed);                                    // summary's HasError flag is kept
         Assert.Equal(250, flow.DurationMs, 3);                       // summary duration (seconds → ms)
+        Assert.Equal("mesh:aggregate", flow.Topic);                  // entry topic from the earliest mapped event
     }
 
     [Fact]
@@ -515,6 +516,7 @@ public class XRayTraceSourceTest
         Assert.Equal(missing, flows[1].TraceId);                     // older, summary-plane fallback
         Assert.Equal("orders-api", Assert.Single(flows[1].Services)); // ServiceIds name
         Assert.Equal(0, flows[1].Events);                            // no span count on the summary plane
+        Assert.Null(flows[1].Topic);                                 // no Benzene span mapped → no topic attribution
     }
 
     [Fact]

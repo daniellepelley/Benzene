@@ -157,7 +157,14 @@ quarterly tool, not a daily one), discussion, compose, the topology edge table.
 
 Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ a day, L = multi-day.
 
-### Phase 1 — "The inbox watches the system, and knows when it's blind" (all client-side/UI, no wire changes)
+### Phase 1 — "The inbox watches the system, and knows when it's blind" — **SHIPPED 2026-07-25**
+
+> All five slices below shipped in one pass (see `src/Benzene.Mesh.Ui/CLAUDE.md`'s dated block for the
+> implementation detail). One deviation from "no wire changes": `TraceSummary.topic` was added (additive,
+> null-omitted — the flow's entry topic), pulled forward from Phase 2.4 because per-topic "last failing
+> flow" and the unattributed-failure class both need flow→topic attribution; populated by the store,
+> X-Ray enriched rows, and Jaeger. Verified by a Playwright smoke harness (failing/blind/down/static
+> scenarios) + the .NET mesh & conformance suites.
 
 | # | Slice | Job | Size |
 |---|---|---|---|

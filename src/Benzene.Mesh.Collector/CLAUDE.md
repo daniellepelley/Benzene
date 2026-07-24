@@ -118,7 +118,12 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
   and the UI renders "—" not "0" (empty on the push-collector plane, which observes every dimension —
   the fixtures' subset match ignores the extra key). `hashMatches` surfaces an instance running a
   different contract than its registration; health is `healthy`/`degraded`/`unknown` from the
-  latest heartbeats.
+  latest heartbeats. `TraceSummary.topic` (2026-07-25, additive, `WhenWritingNull`-omitted — drains-up
+  phase 1) is the flow's **entry topic** (the earliest Benzene event's), so the fleet UI can attribute a
+  flow (and its failure) to a topic without a per-row trace fetch; populated by the store's ring
+  summaries, the X-Ray adapter's enriched rows, and Jaeger — null on a summary-plane row that mapped no
+  Benzene spans (which is itself signal: a failing flow with no topic is the "uninstrumented failure"
+  inbox class).
 - `CollectorUsageSource : Benzene.Mesh.Contracts.IMeshUsageSource` (2026-07-22) - the
   collector→aggregator usage bridge, the "`IMeshArtifactStore` bridge to the aggregator pipeline"
   extension point below made real for the usage feed (`docs/mesh-usage-feed.md`). Reports the

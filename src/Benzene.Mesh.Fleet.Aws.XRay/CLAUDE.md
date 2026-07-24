@@ -25,7 +25,9 @@ other backends (Tempo, inc 4) reuse the same `IMeshTraceSource`/`IMeshFleetReadM
   **bounded `BatchGetTraces`** (2026-07-25 — see the invariant-reversal note below): each row's `Services`
   = distinct `benzene.service` from the mapped events (not `ServiceIds[].Name`, X-Ray's own — on Lambda
   infra/handler names), `StartedAt` = the earliest mapped event's real **millisecond** start (not the
-  second-granularity id epoch), and `Events` = the real span count. `Failed` (`HasError||HasFault`) and
+  second-granularity id epoch), `Events` = the real span count, and `Topic` (2026-07-25) = the earliest
+  mapped event's topic (null on a fallback row — which the UI reads as the "uninstrumented failure"
+  signal). `Failed` (`HasError||HasFault`) and
   `Duration`×1000 → ms stay from the summary (authoritative + free). A row whose trace can't be fetched or
   carries no Benzene span falls back **per-row** to the summary plane (`ServiceIds`/id-epoch/`Events=0`) —
   fetch isolation, so one bad batch degrades ≤5 rows, never the list. Final order is

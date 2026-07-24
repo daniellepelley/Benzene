@@ -82,6 +82,7 @@ public class MeshCollectorStoreTest
 
         Assert.Equal(20, fleet.Traces.Count);
         Assert.True(fleet.Traces[0].StartedAt > fleet.Traces[^1].StartedAt); // newest first
+        Assert.Equal("topic", fleet.Traces[0].Topic); // the flow's entry topic (earliest event's)
     }
 
     [Fact]

@@ -1,5 +1,41 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 DRAINS-UP PHASE 1 SHIPPED — the inbox watches the system, and knows when it's blind.**
+> First implementation phase of `work/mesh-drains-up-review.md` (slices 1.1–1.5), closing the review's
+> headline defect: a failing system could say "All clear" because every inbox class was catalog paperwork.
+> - **Failing-traffic issue class (1.1):** `collectLiveIssues()` now files a high-severity "Failing
+>   traffic" row per topic with `errors > 0` — count, total, the failing-status mix
+>   (`failingStatusMix`, top 3 non-success tokens across both planes' vocabularies), and "last failing
+>   flow Xm ago" when derivable. Derived from a **dedicated 24h inbox window** (`INBOX_WINDOW`/
+>   `loadInboxFleet`, 30s cadence — `INBOX_POLL_MS`) independent of the fleet picker, so an overnight
+>   failure greets the morning check; falls back to the shared-range view until the first inbox poll
+>   lands. Honest on the push plane: when `window.countsWindowed === false` the row says "(cumulative —
+>   this plane can't window counts)". **Reserved topics are deliberately included** — a failing
+>   `mesh:aggregate` must be reportable (the AwsMesh scheduled-rule 400 was the motivating invisible
+>   failure).
+> - **Unattributed-failing-traffic class (1.2):** failed flows whose trace carries no Benzene span
+>   (`events === 0 && !topic`) file one "Failing traffic without Benzene instrumentation" row — the
+>   infra-level / rejected-before-topic-resolved failure class. Gated on the plane attributing spans at
+>   all (some flow has `events > 0 || topic`), so a summary-only backend (Tempo) never false-flags.
+> - **Feed health (1.3):** `feedHealthState()`/`renderFeedHealth()` — the line that distinguishes
+>   "quiet" from "blind". `loadFleet` now records success/failure timestamps and observed activity
+>   (`recordFeedActivity`; counts prove traffic even when no flow row is in view). States: poll failing
+>   → red "live plane unreachable … the live data shown is stale"; connected-but-nothing-ever-observed
+>   while topics are declared (`feedIsBlind()`) → amber "check the exporter / OTLP endpoint wiring";
+>   ok → "live · polled Xs ago · last activity Ym ago" (fleet page always; the estate line only mounts
+>   when something is wrong). **Blind-state suppression:** silent-but-declared issues are skipped when
+>   blind — a broken exporter must never read as retirement evidence. "Connecting to the live mesh…"
+>   is no longer a permanent state (`liveConnectingText()` on the fleet status + both live strips).
+> - **Last failing flow (1.4):** `lastFailingFlowAgeMs(topicId)` — from the flow lists' new
+>   `TraceSummary.topic` field (additive, `Benzene.Mesh.Collector` Views; populated by the store,
+>   X-Ray enriched rows, and Jaeger) — rendered on the topic live strip and the failing-traffic rows.
+>   Worded "last failing flow" (observed), never "last error": composite flows are sampled/capped.
+> - **Copy sweep (1.5):** plane-correct not-found copy on the trace/correlation lookups and the empty
+>   waterfall (no more "ring buffer" wording on planes with no ring); the fleet Unhealthy tile now
+>   counts stale heartbeats (not unknown — the composite plane is health-unknown by design).
+> - Verified by a Playwright smoke harness against the real page + a mock envelope (failing/blind/
+>   down/static scenarios, 17 assertions) — ad-hoc, not in CI.
+
 > **2026-07-25 (live-across-surfaces, slice 1): live divergences in the estate issue inbox.** The landing
 > page's issue inbox (`renderIssues`/`collectIssues`) now also surfaces live-plane divergences via
 > `collectLiveIssues()` — the reconciliation through-line from `work/mesh-ui-product-vision.md` (2026-07-25):

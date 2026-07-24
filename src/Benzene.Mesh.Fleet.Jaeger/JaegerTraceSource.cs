@@ -178,7 +178,9 @@ public class JaegerTraceSource : IMeshTraceSource
             StartedAt = startedAt,
             DurationMs = (end - startedAt).TotalMilliseconds,
             // Same success class the in-memory collector's trace summaries use (unknown/empty = failure).
-            Failed = trace.Events.Any(e => !BenzeneResultStatusExtensions.IsSuccess(e.Status))
+            Failed = trace.Events.Any(e => !BenzeneResultStatusExtensions.IsSuccess(e.Status)),
+            // The flow's entry topic: the earliest mapped event's.
+            Topic = trace.Events.OrderBy(e => e.StartedAt).First().Topic
         };
     }
 

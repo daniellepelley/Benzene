@@ -355,6 +355,10 @@
   .issues-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; }
   .issues-head h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
   .issues-sub { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  /* Feed health (drains-up 1.3): the line that distinguishes "quiet" from "blind" on the live plane. */
+  .feed-health { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); margin: 4px 0 6px; }
+  .feed-health.fh-warn { color: var(--m-put); }
+  .feed-health.fh-bad { color: var(--req); }
   .issues-clear { display: flex; align-items: center; gap: 9px; padding: 16px 18px; border-radius: var(--radius);
                   background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
                   color: var(--ink-soft); font-size: 14px; }
@@ -711,6 +715,7 @@
       <h2>Issues</h2>
       <span class="issues-sub" id="issues-sub"></span>
     </div>
+    <div class="feed-health" id="feed-health-estate" style="display:none"></div>
     <div id="issues-body"></div>
   </section>
   <div class="search">
@@ -864,6 +869,7 @@
       </span>
       <span class="fl-sub" id="fl-range-note"></span>
     </div>
+    <div class="feed-health" id="fl-feed-health" style="display:none"></div>
     <div class="fl-tiles" id="fl-tiles"></div>
     <div id="fl-counts-note"></div>
 
@@ -1210,6 +1216,38 @@
     if (!fleetEndpoint() || !currentFleet) return []; // static floor: the live layer never mounts
     var fleet = currentFleet, issues = [];
 
+    // ---- Failing traffic (drains-up 1.1): the inbox watches the system, not just the paperwork. ----
+    // Derived from the dedicated 24h inbox window (falling back to the shared-range view until the first
+    // inbox poll lands). Reserved topics are deliberately INCLUDED — a failing mesh:aggregate must be
+    // reportable; the mesh can't be the one service allowed to fail invisibly.
+    var errFleet = inboxFleet || fleet;
+    var countsWindowed = !errFleet.window || errFleet.window.countsWindowed !== false;
+    var windowPhrase = !countsWindowed ? "(cumulative — this plane can't window counts)"
+      : (inboxFleet ? "in the last 24 hours" : "in " + fleetRangeLabel());
+    (errFleet.topics || []).forEach(function (t) {
+      if ((t.missingFeeds || []).indexOf("stats") !== -1 || !(t.errors > 0)) return;
+      var mix = failingStatusMix(t.statusCounts);
+      var lastErr = lastFailingFlowAgeMs(t.topic);
+      issues.push(liveTopicIssue("high", "failing traffic", t.topic, t.version, "Failing traffic",
+        fmtCount(t.errors) + " of " + fmtCount(t.invocations) + " requests failed " + windowPhrase +
+        (mix ? " — " + mix : "") + (lastErr != null ? "; last failing flow " + flAge(lastErr) + " ago" : "") + "."));
+    });
+    // Failing flows with no Benzene-labelled span (drains-up 1.2) — the failure class the pipeline never
+    // saw: infrastructure-level, or a message rejected before its topic resolved (the scheduled-rule-400
+    // shape). Only derivable on a plane that attributes spans at all (some flow carries events/topic), so
+    // a summary-only backend never false-flags every failure as uninstrumented.
+    var errFlows = errFleet.traces || [];
+    if (errFlows.some(function (f) { return f.events > 0 || f.topic; })) {
+      var unattributed = errFlows.filter(function (f) { return f.failed && !(f.events > 0) && !f.topic; });
+      if (unattributed.length) {
+        issues.push({ sev: "high", kind: "uninstrumented", live: true, team: null,
+          title: "Failing traffic without Benzene instrumentation",
+          subject: unattributed.length + " failing flow" + (unattributed.length === 1 ? "" : "s"),
+          why: "These flows failed but their traces carry no Benzene-labelled span — an infrastructure-level failure, or the pipeline rejecting the message before its topic resolved (e.g. a malformed event). Open the flow's waterfall for the raw trace.",
+          nav: function () { location.hash = "#fleet"; } });
+      }
+    }
+
     // Heartbeat health (the live plane) — independent of the declared catalog, so always available.
     (fleet.services || []).forEach(function (s) {
       var age = flAgeMs(s.lastSeen);
@@ -1253,12 +1291,16 @@
 
       // silent-but-declared: a declared domain topic with no observed traffic in the current window
       // (deprecation evidence, not proof — the wording says "in the current window", never "unused").
-      Object.keys(declaredTopicIds).forEach(function (topicId) {
-        if (!observedTopics[topicId]) {
-          issues.push(liveTopicIssue("low", "silent", topicId, null, "Declared but not observed",
-            "No traffic observed for this topic in the current window — evidence toward retiring it (widen the range to be sure)."));
-        }
-      });
+      // Suppressed entirely when the feed is blind (drains-up 1.3): silence is only evidence when we can
+      // see at all — a broken exporter must never read as retirement evidence for the whole estate.
+      if (!feedIsBlind()) {
+        Object.keys(declaredTopicIds).forEach(function (topicId) {
+          if (!observedTopics[topicId]) {
+            issues.push(liveTopicIssue("low", "silent", topicId, null, "Declared but not observed",
+              "No traffic observed for this topic in the current window — evidence toward retiring it (widen the range to be sure)."));
+          }
+        });
+      }
     }
 
     return issues;
@@ -1319,10 +1361,11 @@
       var clear = el("div", "issues-clear");
       clear.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>';
       clear.appendChild(document.createTextNode(fleetEndpoint()
-        ? "All clear — no unhealthy, unreachable, drifting, contract, or live-divergence issues detected across the fleet."
+        ? "All clear — no failing traffic, unhealthy, unreachable, drifting, contract, or live-divergence issues detected across the fleet."
         : "All clear — no unhealthy, unreachable, drifting, or contract issues detected across the fleet."));
       body.appendChild(clear);
     }
+    renderFeedHealth(); // the estate's blind/unreachable warning lives with the inbox it qualifies
 
     // Only surface the "pending data" note when the manifest carries no freshness signal at all (an
     // older manifest.json predating `snapshotAtUtc`); once timestamps are present, staleness is live
@@ -2935,6 +2978,104 @@
     return new URLSearchParams(location.search).get("fleet")
       || document.documentElement.getAttribute("data-fleet-url") || null;
   }
+
+  /* ---- Drains-up phase 1 (work/mesh-drains-up-review.md): the inbox watches the system, and the live
+     plane knows when it is blind. ---- */
+  // The issue inbox reasons over a fixed 24h window regardless of the fleet picker — an overnight failure
+  // must greet the morning check — via its own slow-cadence windowed poll. UI knobs, never contract values.
+  var INBOX_WINDOW = { from: "now-24h" };
+  var INBOX_POLL_MS = 30000;
+  var inboxFleet = null, inboxTimer = null;
+  // Feed health: distinguish "the system is quiet" from "I am blind" (polls failing, or nothing ever seen).
+  var feedLastOkAt = null, feedLastFailAt = null, feedLastActivityAt = null;
+
+  function recordFeedActivity(view) {
+    ((view && view.traces) || []).forEach(function (t) {
+      var ts = Date.parse(t.startedAt);
+      if (!isNaN(ts) && (feedLastActivityAt == null || ts > feedLastActivityAt)) feedLastActivityAt = ts;
+    });
+    // Counts prove traffic even when no flow row is in view (flows are sampled/capped; counts aren't).
+    if (feedLastActivityAt == null && ((view && view.topics) || []).some(function (t) {
+      return (t.missingFeeds || []).indexOf("stats") === -1 && t.invocations > 0;
+    })) feedLastActivityAt = Date.now();
+  }
+  function declaredDomainTopicCount() {
+    return (currentTopics || []).filter(function (t) { return !t.reserved; }).length;
+  }
+  // Blind = the live plane answers but has never shown any activity while the catalog declares topics.
+  // In that state silence is NOT evidence (of retirement or of health) — it's most likely a broken feed.
+  function feedIsBlind() {
+    return feedLastOkAt != null && feedLastActivityAt == null && declaredDomainTopicCount() > 0;
+  }
+  function feedHealthState() {
+    if (!fleetEndpoint()) return null; // static floor
+    var now = Date.now();
+    if (feedLastOkAt == null) {
+      return feedLastFailAt == null ? null
+        : { cls: "fh-bad", text: "live plane unreachable — no successful poll yet (last attempt " + flAge(now - feedLastFailAt) + " ago); retrying" };
+    }
+    if (feedLastFailAt != null && feedLastFailAt > feedLastOkAt && now - feedLastOkAt > 3 * FLEET_POLL_MS) {
+      return { cls: "fh-bad", text: "live plane unreachable — last successful poll " + flAge(now - feedLastOkAt) + " ago; the live data shown is stale" };
+    }
+    if (feedIsBlind()) {
+      return { cls: "fh-warn", text: "live plane connected, but no telemetry has been observed since this page loaded (" + declaredDomainTopicCount() + " topics declared) — if traffic is flowing, check the exporter / OTLP endpoint wiring" };
+    }
+    return { cls: "fh-ok", text: "live · polled " + flAge(now - feedLastOkAt) + " ago" +
+      (feedLastActivityAt != null ? " · last activity " + flAge(now - feedLastActivityAt) + " ago" : " · no activity observed yet") };
+  }
+  function liveConnectingText() {
+    var fh = feedHealthState();
+    return fh && fh.cls === "fh-bad" ? "live plane unreachable — retrying…" : "connecting to the live mesh…";
+  }
+  function renderFeedHealth() {
+    var fh = feedHealthState();
+    [["feed-health-estate", true], ["fl-feed-health", false]].forEach(function (spec) {
+      var node = document.getElementById(spec[0]);
+      if (!node) return;
+      // The estate only surfaces the line when something is wrong — a healthy feed shouldn't add chrome;
+      // the Fleet page always shows it (it IS the live surface, so freshness belongs in view).
+      if (!fh || (spec[1] && fh.cls === "fh-ok")) { node.style.display = "none"; node.textContent = ""; return; }
+      node.style.display = "";
+      node.className = "feed-health " + fh.cls;
+      node.textContent = fh.text;
+    });
+  }
+  function loadInboxFleet() {
+    if (!fleetEndpoint()) return;
+    fleetQuery("mesh:query:fleet", JSON.stringify({ window: INBOX_WINDOW }))
+      .then(function (view) {
+        inboxFleet = view;
+        recordFeedActivity(view);
+        renderFeedHealth();
+        if (isEstateView()) renderIssues();
+      })
+      .catch(function () { /* reachability is the main poll's feed-health line's job */ });
+    if (!inboxTimer) { inboxTimer = setInterval(loadInboxFleet, INBOX_POLL_MS); }
+  }
+  // The failing statuses of a status-count bag, most frequent first — works on both planes' vocabularies
+  // (the wire statuses and the usage feed's result tokens; "success"/"<missing>" are never failures).
+  function failingStatusMix(statusCounts) {
+    var keys = Object.keys(statusCounts || {}).filter(function (k) {
+      return !(FL_SUCCESS[k] || k === "success" || k === "<missing>");
+    });
+    keys.sort(function (a, b) { return statusCounts[b] - statusCounts[a]; });
+    return keys.slice(0, 3).map(function (k) { return k + " ×" + fmtCount(statusCounts[k]); }).join(", ");
+  }
+  // When the newest observed FAILING flow started (for one topic, or fleet-wide with topicId null), as an
+  // age in ms — or null when none is in view. Derived from the flow lists (sampled/capped on the composite
+  // plane), so it's "last failing flow observed", not a guaranteed "last error".
+  function lastFailingFlowAgeMs(topicId) {
+    var newest = null;
+    [currentFleet, inboxFleet].forEach(function (f) {
+      ((f && f.traces) || []).forEach(function (t) {
+        if (!t.failed) return;
+        if (topicId != null && t.topic !== topicId) return;
+        var ts = Date.parse(t.startedAt);
+        if (!isNaN(ts) && (newest == null || ts > newest)) newest = ts;
+      });
+    });
+    return newest == null ? null : Math.max(0, Date.now() - newest);
+  }
   // POST one mesh:query:* envelope and resolve its parsed body, rejecting a non-ok envelope. The single
   // seam every live surface (fleet poll, trace/correlation lookups) speaks through.
   function fleetQuery(topic, body) {
@@ -2957,9 +3098,24 @@
     var nav = document.getElementById("fleet-nav");
     if (nav) nav.style.display = ""; // the Fleet nav appears only when a live endpoint is present
     fleetQuery("mesh:query:fleet", fleetQueryBody())
-      .then(function (view) { currentFleet = view; renderFleetInto(); })
-      .catch(function () { /* keep the last good view - a transient poll failure isn't a reset */ });
+      .then(function (view) {
+        currentFleet = view;
+        feedLastOkAt = Date.now();
+        recordFeedActivity(view);
+        renderFeedHealth();
+        renderFleetInto();
+      })
+      .catch(function () {
+        // Keep the last good view (a transient failure isn't a reset) — but RECORD the failure and surface
+        // it via the feed-health line: a silently-stale green view is the "blindness looks like quiet"
+        // trap (work/mesh-drains-up-review.md D5).
+        feedLastFailAt = Date.now();
+        renderFeedHealth();
+        // Replace the fleet page's "connecting…" with the unreachable state instead of hanging forever.
+        if (location.hash === "#fleet" && !currentFleet) renderFleetPage();
+      });
     if (!fleetTimer) { fleetTimer = setInterval(loadFleet, FLEET_POLL_MS); }
+    if (!inboxTimer) { loadInboxFleet(); } // the inbox's own 24h-window poll, on its slower cadence
   }
   // Re-render the surfaces the live plane feeds after a poll: the Fleet landing view when it's open, and
   // (later phases) the estate live indicators + per-entity live sections. Kept off the entity/estate
@@ -3022,13 +3178,20 @@
     var fleet = currentFleet;
     var status = document.getElementById("fl-status");
     if (!fleet) {
-      if (status) status.textContent = "connecting to the live mesh…";
+      // "Connecting…" must not be a permanent state: once a poll has failed, say so (drains-up 1.5).
+      if (status) status.textContent = liveConnectingText();
       return;
     }
     if (status) status.textContent = "";
     var services = fleet.services || [], topics = fleet.topics || [], traces = fleet.traces || [];
     var invocations = 0, errors = 0, unhealthy = 0;
-    services.forEach(function (s) { if (s.health === "degraded") unhealthy++; });
+    // A stale heartbeat counts as unhealthy for the tile — an old "healthy" verdict is not a current one
+    // (matching the P2 staleness downgrade the service rows already render). Unknown health does NOT
+    // count: on the composite plane every service is health-unknown by design.
+    services.forEach(function (s) {
+      var age = flAgeMs(s.lastSeen);
+      if (s.health === "degraded" || (age != null && age > FL_STALE_MS)) unhealthy++;
+    });
     topics.forEach(function (t) {
       if ((t.missingFeeds || []).indexOf("stats") === -1) { invocations += t.invocations; errors += t.errors; }
     });
@@ -3175,7 +3338,7 @@
     }
     wrap.appendChild(head);
     if (!events.length) {
-      wrap.appendChild(el("div", "fl-wf-note", "No events for this trace — it may have aged out of the ring buffer."));
+      wrap.appendChild(el("div", "fl-wf-note", "No events for this trace — it may be outside the backend's retention or sampling window (or the collector's recent ring)."));
       return wrap;
     }
     var starts = events.map(function (e) { return Date.parse(e.startedAt) || 0; });
@@ -3241,7 +3404,7 @@
     }).catch(function (err) {
       results.textContent = "";
       var msg = String(err.message || err) === "not-found"
-        ? "No flows found for correlation id “" + id + "” — it may have aged out of the ring buffer, or no flow set this correlation id."
+        ? "No flows found for correlation id “" + id + "” — no flow may have set this correlation id (it rides the x-correlation-id header), or matching flows are outside the backend's retention, sampling, or search window."
         : "Could not look up correlation id: " + (err.message || err);
       results.appendChild(el("div", "fl-wf-note" + (String(err.message || err) === "not-found" ? "" : " fl-failed"), msg));
     });
@@ -3257,7 +3420,7 @@
     }).catch(function (err) {
       results.textContent = "";
       var msg = String(err.message || err) === "not-found"
-        ? "No trace found for id “" + id + "” — it may have aged out of the ring buffer."
+        ? "No trace found for id “" + id + "” — it may be outside the backend's retention or sampling window (or the collector's recent ring), or the id may be mistyped."
         : "Could not load trace: " + (err.message || err);
       results.appendChild(el("div", "fl-wf-note" + (String(err.message || err) === "not-found" ? "" : " fl-failed"), msg));
     });
@@ -3391,7 +3554,7 @@
   function fillServiceLiveStrip(strip, name) {
     strip.innerHTML = "";
     strip.appendChild(el("span", "ls-live", "live"));
-    if (!currentFleet) { strip.appendChild(document.createTextNode("connecting to the live mesh…")); return; }
+    if (!currentFleet) { strip.appendChild(document.createTextNode(liveConnectingText())); return; }
     var s = (currentFleet.services || []).filter(function (x) { return x.service === name; })[0];
     if (!s) { strip.appendChild(el("span", "obs-marker obs-silent", "not observed in the live mesh in the current window")); return; }
     var h = flServiceHealth(s), age = flAgeMs(s.lastSeen);
@@ -3419,7 +3582,7 @@
     wrap.innerHTML = "";
     var strip = el("div", "live-strip");
     strip.appendChild(el("span", "ls-live", "live"));
-    if (!currentFleet) { strip.appendChild(document.createTextNode("connecting to the live mesh…")); wrap.appendChild(strip); return; }
+    if (!currentFleet) { strip.appendChild(document.createTextNode(liveConnectingText())); wrap.appendChild(strip); return; }
     var rows = (currentFleet.topics || []).filter(function (t) { return t.topic === topicId; });
     if (!rows.length) {
       strip.appendChild(el("span", "obs-marker obs-silent", "not observed in the live mesh in the current window"));
@@ -3435,6 +3598,11 @@
     });
     lsItem(strip, "observed", absentStats ? "—" : fmtCount(inv));
     lsItem(strip, "errors", absentStats ? "—" : fmtCount(errs), (!absentStats && errs > 0) ? "fl-failed" : null);
+    // Post-fix verification in one glance (drains-up 1.4): when the newest observed failing flow was.
+    // "last failing flow", not "last error" — on the composite plane flows are sampled/capped, so this is
+    // the newest failure OBSERVED, which is exactly what a just-deployed fix wants to watch go quiet.
+    var lastFail = lastFailingFlowAgeMs(topicId);
+    if (lastFail != null) lsItem(strip, "last failing flow", flAge(lastFail) + " ago", "fl-failed");
     lsItem(strip, "avg ms", absentDur ? "—" : (durN ? (dur / durN).toFixed(1) : "—"));
     var statuses = Object.keys(statusCounts).sort().map(function (k) { return (k || "(none)") + " " + statusCounts[k]; }).join(" · ");
     if (statuses) lsItem(strip, "status", statuses);

@@ -272,7 +272,9 @@ public class XRayTraceSource : IMeshTraceSource
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList(),
         StartedAt = events.Min(e => e.StartedAt),
-        Events = events.Count
+        Events = events.Count,
+        // The flow's entry topic: the earliest mapped event's (Map returns events in start order).
+        Topic = events[0].Topic
     };
 
     private static TraceSummary ToSummaryPlaneRow(Amazon.XRay.Model.TraceSummary summary) => new()
