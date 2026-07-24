@@ -13,11 +13,15 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.3.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+    <!-- X-Ray-compatible trace IDs (epoch-prefixed): the OTel default random 128-bit id maps to an X-Ray
+         id whose leading bytes are read as a timestamp, which X-Ray rejects when "too far in the past".
+         AddXRayTraceId() makes the ROOT service mint X-Ray-format ids; downstream services inherit it via
+         the propagated traceparent, so every hop lands in ONE X-Ray trace the mesh can read end to end. -->
+    <PackageReference Include="OpenTelemetry.Extensions.AWS" Version="1.11.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.XRay\Benzene.Aws.Lambda.XRay.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.EventBridge\Benzene.Aws.Lambda.EventBridge.csproj" />
     <ProjectReference Include="..\..\..\src\Benzene.Aws.Lambda.Sqs\Benzene.Aws.Lambda.Sqs.csproj" />

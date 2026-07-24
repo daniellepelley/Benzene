@@ -10,7 +10,6 @@ using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.Lambda.EventBridge;
 using Benzene.Aws.Lambda.Sns;
 using Benzene.Aws.Lambda.Sqs;
-using Benzene.Aws.Lambda.XRay;
 using Benzene.CloudService;
 using Benzene.Clients;
 using Benzene.Clients.Aws.EventBridge;
@@ -80,12 +79,13 @@ public static class MeshServiceWiring
                 // tracing with no per-stage code. (For spans-only, AddActivityPerMiddleware() is the
                 // focused opt-in.)
                 .AddDiagnostics()
-                // AddXRayTracing() ALSO wraps every middleware, but in an AWS X-Ray subsegment via the
-                // X-Ray SDK, so each stage nests directly under the Lambda's X-Ray segment — the
-                // middleware breakdown shows up inside the same X-Ray trace as the AWS-level segments,
-                // with no OTLP collector in between. Wired alongside AddDiagnostics() so this service
-                // emits both X-Ray subsegments and OTel spans; drop either to pick one backend.
-                .AddXRayTracing()
+                // NB: we deliberately run the OTel path ALONE (AddDiagnostics → OTLP → the ADOT collector →
+                // X-Ray), not the X-Ray SDK path (AddXRayTracing). Only OTel propagates across Benzene's
+                // async sends — via the W3C traceparent wired on the outbound routes below — so it's the one
+                // that stitches order → payment → shipment into a single end-to-end X-Ray trace. The X-Ray
+                // SDK path relies on AWSTraceHeader, which Benzene doesn't inject on a send, so it can only
+                // nest within one Lambda invocation and would add a second, per-hop-rooted representation
+                // that muddies the cross-service view. One representation, end to end.
                 .AddMessageHandlers(domainAssembly)
                 .AddHttpMessageHandlers()
                 // Opt into cold-start warm-up: at Lambda INIT (AwsLambdaHost's ctor calls WarmUp()) this

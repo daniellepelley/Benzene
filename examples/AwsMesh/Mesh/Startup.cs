@@ -3,7 +3,6 @@ using Benzene.Abstractions.Hosting;
 using Benzene.Aws.Lambda.ApiGateway;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.EventBridge;
-using Benzene.Aws.Lambda.XRay;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Diagnostics;
@@ -55,9 +54,10 @@ public class Startup : BenzeneStartUp
             // must, same as every other Benzene example.
             benzene.AddBenzene();
             benzene.AddDiagnostics();
-            // Also emit an AWS X-Ray subsegment per middleware (nested under the Lambda's X-Ray segment,
-            // no OTLP collector needed) alongside the OTel Activity spans AddDiagnostics() produces.
-            benzene.AddXRayTracing();
+            // OTel path only (→ ADOT collector → X-Ray), matching the domain services: it's the path that
+            // stitches a cross-service transaction into one X-Ray trace (via the propagated W3C traceparent),
+            // so running the X-Ray SDK path (AddXRayTracing) too would add a second, non-stitching
+            // representation. See MeshServiceWiring for the full rationale.
             benzene.AddMessageHandlers(typeof(Startup).Assembly);
             // Discovery starts with an empty registry — discovery replaces it at runtime; artifacts live in S3.
             benzene.AddMeshAggregatorWithS3(new MeshServiceRegistry(Array.Empty<MeshServiceRegistryEntry>()), bucket, prefix);

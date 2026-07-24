@@ -60,6 +60,11 @@ public static class LambdaTelemetry
         var tracerBuilder = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(resource)
             .SetSampler(new AlwaysOnSampler())
+            // Mint X-Ray-compatible (epoch-prefixed) trace ids at the root, so the OTel→ADOT→X-Ray export
+            // produces valid ids and, because downstream services continue the SAME id via the propagated
+            // traceparent (UseW3CTraceContext), every service in a transaction lands in ONE X-Ray trace.
+            // Without this the default random id can map to an out-of-range X-Ray timestamp and be dropped.
+            .AddXRayTraceId()
             .AddBenzeneInstrumentation();
         if (!string.IsNullOrEmpty(otlpEndpoint)) tracerBuilder.AddOtlpExporter();
         _tracerProvider = tracerBuilder.Build();

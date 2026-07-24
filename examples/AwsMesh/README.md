@@ -101,20 +101,33 @@ already emit their own spans, so only the collector half of the layer is used.) 
 an escape hatch for pointing at an out-of-process collector instead. With neither set, spans are
 recorded but exported nowhere.
 
-Because Benzene builds its **own** W3C trace across the whole mesh run (its `traceparent` propagation),
-these OTLP spans arrive in X-Ray as their **own** traces — grouped by OTel service name (`orders-api`,
-`payments-api`, `benzene-mesh`) — rather than nested inside the per-invocation `AWS::Lambda` segments,
-which carry X-Ray's own (different) trace ids.
+### End-to-end cross-service traces (one X-Ray trace per transaction)
+The point of the OTel path here is that **a whole transaction — `order:create` → (EventBridge/SNS/SQS) →
+the next service's topic → …  — shows up as ONE trace** you can read end to end, in X-Ray and in the Mesh
+UI's flow waterfall. Two things make that work, and both are wired in this example:
 
-### Middleware spans nested *inside* the X-Ray segments — `AddXRayTracing()`
-If what you want is the middleware breakdown **nested under the `AWS::Lambda::Function` segment** (the
-classic X-Ray view), that's what **`Benzene.Aws.Lambda.XRay`** is for. Every service and the mesh wire
-`AddXRayTracing()` alongside `AddDiagnostics()`: it wraps each middleware in an AWS **X-Ray subsegment**
-via the X-Ray SDK, which attaches to the Lambda's own segment (`_X_AMZN_TRACE_ID`) — so the stages nest
-directly under it, in the same trace as the AWS-level segments, **with no OTLP collector at all**. It
-needs only X-Ray active tracing (on) + the X-Ray write IAM (granted); the ADOT collector / `collector.yaml`
-path above is then just the *alternative* for shipping the same pipeline's OTel spans to a non-X-Ray
-backend (Tempo/Jaeger/Honeycomb). Wire one or both — they coexist.
+1. **The trace context is propagated on every outbound send.** `MeshServiceWiring`'s outbound routes run
+   `.UseW3CTraceContext().UseCorrelationId()` before the transport, so the current activity's `traceparent`
+   (and `x-correlation-id`) ride the message — as an SQS/SNS message attribute, or embedded in the
+   EventBridge `Detail`. The receiving service's inbound `UseW3CTraceContext()` (in `Observe()`) then
+   **continues the same trace** instead of starting a fresh one. Without the *outbound* half, each service
+   began its own trace and you saw disconnected single-service flows.
+2. **The root trace id is X-Ray-compatible.** `LambdaTelemetry` adds OpenTelemetry's `AddXRayTraceId()`
+   (the `OpenTelemetry.Extensions.AWS` id generator), so the first service mints an X-Ray-format
+   (epoch-prefixed) id; downstream services inherit it via the propagated `traceparent`. Every hop then
+   lands under **one** X-Ray trace id, which the ADOT collector's `traces → awsxray` pipeline exports as a
+   single X-Ray trace. (The default random OTel id maps to an out-of-range X-Ray timestamp, which X-Ray
+   drops — which is why cross-service traces didn't line up before.)
+
+**One tracing path on purpose (OTel, not the X-Ray SDK).** This example runs the OTel path *alone*
+(`AddDiagnostics` → OTLP → the ADOT collector → X-Ray) and does **not** also wire
+`Benzene.Aws.Lambda.XRay`'s `AddXRayTracing()`. That X-Ray-SDK path nests middleware subsegments under the
+Lambda's own segment via `_X_AMZN_TRACE_ID`, which only propagates through AWS's `AWSTraceHeader` — and
+Benzene doesn't inject that on an outbound send, so it can **only** stitch within a single Lambda
+invocation. Running it alongside OTel would add a second, per-hop-rooted representation that muddies the
+cross-service view, so we pick the one path that stitches end to end. (`AddXRayTracing()` remains a valid
+library option when you want the classic in-segment X-Ray breakdown for a *single* Lambda with no
+collector — it's just not what an end-to-end mesh wants.)
 
 ### Topic usage → the Mesh UI (metrics, not just traces)
 The same `UseBenzeneMetrics()` on every pipeline emits the `benzene.messages.processed` counter tagged
