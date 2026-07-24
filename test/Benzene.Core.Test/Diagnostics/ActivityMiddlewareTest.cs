@@ -229,6 +229,47 @@ public class ActivityMiddlewareTest
     }
 
     [Fact]
+    public async Task AddDiagnostics_StampsTheIdentityTagsOnASingleSpan_NotEveryTopicResolvingStage()
+    {
+        // For a transport whose topic is intrinsic to the message (HTTP route / BenzeneMessage
+        // envelope), GetTopic resolves at EVERY stage - here the FakeMessageGetter always returns a
+        // topic. Every middleware must still get its own span, but the message-identity tags
+        // (topic/version/status/correlation) must land on exactly ONE span, otherwise a trace-backed
+        // mesh reader emits one flow event per middleware stage and over-counts the message.
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        services.AddScoped<Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>, FakeMessageGetter>();
+
+        var builder = new MiddlewarePipelineBuilder<StatusContext>(container);
+        builder.Use("first", (_, next) => next());
+        builder.Use("second", (_, next) => next());
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await pipeline.HandleAsync(new StatusContext { MessageResult = Benzene.Results.BenzeneResult.NotFound() }, resolver);
+
+        // Both middleware still get their own span (span-per-middleware is unchanged)...
+        var firstSpan = Assert.Single(activities, a => a.OperationName == "first");
+        var secondSpan = Assert.Single(activities, a => a.OperationName == "second");
+
+        // ...but only the first (outermost) topic-bearing span carries the identity tags + status.
+        Assert.Equal("orders:create", firstSpan.GetTagItem("benzene.topic"));
+        Assert.Equal("not-found", firstSpan.GetTagItem("benzene.status"));
+        Assert.Null(secondSpan.GetTagItem("benzene.topic"));
+        Assert.Null(secondSpan.GetTagItem("benzene.status"));
+
+        // Exactly one span across the whole trace carries the topic - what the mesh reader counts.
+        Assert.Single(activities, a => a.GetTagItem("benzene.topic") is not null);
+    }
+
+    [Fact]
     public async Task AddDiagnostics_TagsBenzeneCorrelationId_WhenTheMessageCarriesOne()
     {
         var (activities, listener) = ListenToBenzeneActivities();

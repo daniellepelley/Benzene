@@ -23,6 +23,9 @@ namespace Benzene.Diagnostics
             {
                 services.AddSingleton<ActivityMiddlewareWrapper>();
                 services.AddSingleton<IMiddlewareWrapper, ActivityMiddlewareWrapper>();
+                // Scoped once-guard so the message-identity tags (topic/version/handler/status/
+                // correlation-id) land on a single span per dispatch rather than every wrapped stage.
+                services.AddScoped<ActivityTopicTagState>();
             }
 
             return services;

@@ -21,16 +21,25 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
 ### Tracing
 - `BenzeneDiagnostics` - the shared `ActivitySource`/`Meter`, named `"Benzene"`
 - `ActivityMiddlewareWrapper`/`ActivityMiddlewareDecorator<TContext>` - auto-wraps every middleware
-  instance in an `Activity` span; registered by `AddDiagnostics()`. Tags `benzene.transport`/
-  `benzene.topic`/`benzene.version`/`benzene.handler`, and (2026-07-23) **`benzene.status`** on the
-  topic-bearing span only — the real Benzene wire status (`ok`/`not-found`/…) read from the completed
-  context's `IHasMessageResult.MessageResult` after `next()`, or `exception` when the span throws. This
-  is the trace-store analogue of the metric's `result` tag: it lets a trace-backed mesh reader
-  (`Benzene.Mesh.Fleet.*`, `work/otel-fleet-adapter-scope.md` §6a) reconstruct `MeshTraceEvent.Status`
-  from the span. On the topic-bearing span only, to avoid a duplicate tag on every wrapped stage.
-  Also (2026-07-23) **`benzene.correlation-id`** on the same topic-bearing span, **only** when the
-  message carried an `x-correlation-id` header (never the auto-generated `ICorrelationId` GUID — same
-  source and null-when-absent rule as `MeshTraceEvent.CorrelationId`, so the mesh never fabricates one).
+  instance in an `Activity` span; registered by `AddDiagnostics()`. `benzene.transport` is tagged on
+  every stage that has resolved a transport. The **message-identity tags** — `benzene.topic`/
+  `benzene.version`/`benzene.handler`, `benzene.status` (2026-07-23), and `benzene.correlation-id`
+  (2026-07-23) — are stamped on **a single span per dispatch**, enforced by the scoped
+  **`ActivityTopicTagState`** once-guard (registered by `AddActivityPerMiddleware`): the first stage
+  whose topic resolves claims the tags and every later stage skips them. This matters because for a
+  transport whose topic is intrinsic to the message (HTTP route, BenzeneMessage envelope) `GetTopic`
+  resolves at *every* stage, so without the guard every wrapped span would carry the tags and a
+  trace-backed mesh reader (`Benzene.Mesh.Fleet.*`, which emits one `MeshTraceEvent` per span carrying
+  `benzene.topic`) would count one message once per middleware stage. `benzene.status` is the real
+  Benzene wire status (`ok`/`not-found`/…) read from the completed context's
+  `IHasMessageResult.MessageResult` after `next()`, or `exception` when the span throws — the
+  trace-store analogue of the metric's `result` tag, letting the mesh reader reconstruct
+  `MeshTraceEvent.Status` (`work/otel-fleet-adapter-scope.md` §6a). `benzene.correlation-id` is set
+  **only** when the message carried an `x-correlation-id` header (never the auto-generated
+  `ICorrelationId` GUID — same source and null-when-absent rule as `MeshTraceEvent.CorrelationId`, so
+  the mesh never fabricates one). Covered by
+  `test/Benzene.Core.Test/Diagnostics/ActivityMiddlewareTest.cs`
+  (`...StampsTheIdentityTagsOnASingleSpan_NotEveryTopicResolvingStage`).
   This is the searchable span attribute `mesh:query:correlation` needs from a trace store
   (`work/otel-fleet-adapter-scope.md` §6b) — for X-Ray it must be indexed as an *annotation* to be
   filterable.

@@ -92,10 +92,30 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
             activity.SetTag("benzene.transport", transport.Name);
         }
 
+        // The message-identity tags (topic/version/handler/correlation-id, and the after-next()
+        // benzene.status the caller keys off this return value) belong on ONE span per dispatch. For a
+        // transport whose topic is intrinsic to the message (HTTP route, BenzeneMessage envelope),
+        // GetTopic resolves at every stage, so without a guard every wrapped span would carry them - and
+        // a trace-backed mesh reader (Benzene.Mesh.Fleet.*) emits one flow event per topic-tagged span,
+        // counting a single message once per middleware stage. The scoped ActivityTopicTagState is one
+        // shared instance across every stage of this message's DI scope, so the FIRST topic-bearing span
+        // claims the tags and every later stage returns false here. If the guard isn't registered
+        // (TryGetService returns null) we fall back to the original per-stage behaviour.
+        var tagState = _serviceResolver.TryGetService<ActivityTopicTagState>();
+        if (tagState is { Tagged: true })
+        {
+            return false;
+        }
+
         var getter = _serviceResolver.TryGetService<IMessageGetter<TContext>>();
         var topic = getter?.GetTopic(context);
         if (topic is not null && !string.IsNullOrEmpty(topic.Id))
         {
+            if (tagState is not null)
+            {
+                tagState.Tagged = true;
+            }
+
             activity.SetTag("benzene.topic", topic.Id);
             activity.SetTag("benzene.version", topic.Version);
 
