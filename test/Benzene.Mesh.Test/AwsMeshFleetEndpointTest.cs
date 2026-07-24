@@ -21,10 +21,11 @@ namespace Benzene.Mesh.Test;
 /// End-to-end regression guard for the AwsMesh fleet endpoint wiring (the composite-backed fleet plane):
 /// the exact shape <c>examples/AwsMesh/Mesh/Startup.cs</c> wires — a <c>/benzene/invoke</c> BenzeneMessage
 /// endpoint routing <see cref="MeshCollectorHandlers.Queries"/> over an <see cref="IMeshFleetReadModel"/>,
-/// followed by <c>UseMeshFleetUi</c> and a fall-through <c>UseMessageHandlers</c> — must answer the Fleet
-/// UI's <c>POST /benzene/invoke</c> <c>mesh:query:fleet</c> poll with 200, through the real (payload
-/// format 1.0) API Gateway host. Pins the "collector unreachable (HTTP 404)" regression: examples aren't
-/// in the CI gate, so this library-side test stands in for that wiring.
+/// with the mesh UI's live Fleet plane folded into <c>UseMeshUi(..., envelopeUrl)</c> and a fall-through
+/// <c>UseMessageHandlers</c> — must answer the Fleet plane's <c>POST /benzene/invoke</c>
+/// <c>mesh:query:fleet</c> poll with 200, through the real (payload format 1.0) API Gateway host. Pins the
+/// "collector unreachable (HTTP 404)" regression: examples aren't in the CI gate, so this library-side test
+/// stands in for that wiring.
 /// </summary>
 public class AwsMeshFleetEndpointTest
 {
@@ -54,11 +55,12 @@ public class AwsMeshFleetEndpointTest
             }))
             .Configure(app => app
                 .UseApiGateway(http => http
-                    // Mirrors the AwsMesh mesh Lambda: the envelope endpoint routes the query handlers over
-                    // the composite read model, then the fleet UI, then the fall-through handler router.
+                    // Mirrors the AwsMesh mesh Lambda: the mesh UI with its live Fleet plane pointed at the
+                    // envelope endpoint, the envelope endpoint routing the query handlers over the composite
+                    // read model, then the fall-through handler router.
+                    .UseMeshUi("/mesh-ui", "manifest.json", "/benzene/invoke")
                     .UseBenzeneMessage(new BenzeneMessageHttpOptions { Path = "/benzene/invoke" },
                         fleet => fleet.UseMessageHandlers(MeshCollectorHandlers.Queries))
-                    .UseMeshFleetUi("/benzene/fleet-ui", "/benzene/invoke")
                     .UseMessageHandlers(typeof(AwsMeshFleetEndpointTest).Assembly)))
             .BuildHost();
     }
@@ -82,15 +84,15 @@ public class AwsMeshFleetEndpointTest
     }
 
     [Fact]
-    public async Task GetFleetUiPage_IsServed()
+    public async Task GetMeshUiPage_IsServed_WithFleetPlaneWired()
     {
         var host = CreateHost();
 
-        var response = await host.SendApiGatewayAsync(HttpBuilder.Create("GET", "/benzene/fleet-ui"));
+        var response = await host.SendApiGatewayAsync(HttpBuilder.Create("GET", "/mesh-ui"));
 
         Assert.NotNull(response);
         Assert.Equal(200, response.StatusCode);
-        // The page carries the injected envelope URL it polls.
-        Assert.Contains("/benzene/invoke", response.Body);
+        // The catalog page carries the injected envelope URL its live Fleet plane feature-detects and polls.
+        Assert.Contains("data-fleet-url=\"/benzene/invoke\"", response.Body);
     }
 }

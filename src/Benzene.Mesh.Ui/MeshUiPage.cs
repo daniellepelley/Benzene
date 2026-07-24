@@ -40,14 +40,42 @@ public static class MeshUiPage
     /// behaves like <see cref="GetHtml()"/>.
     /// </param>
     /// <returns>The complete, self-contained HTML document.</returns>
-    public static string GetHtml(string manifestUrl)
+    public static string GetHtml(string manifestUrl) => GetHtml(manifestUrl, null);
+
+    /// <summary>
+    /// Gets the viewer HTML with a manifest URL and (optionally) a live fleet-envelope endpoint
+    /// injected onto the document root. With <paramref name="envelopeUrl"/> set, the page's Fleet
+    /// plane feature-detects (via the injected <c>data-fleet-url</c>) and enriches the catalog with
+    /// live <c>mesh:query:*</c> data polled from that wire-envelope endpoint; without it the page is
+    /// the static catalog viewer exactly as <see cref="GetHtml(string)"/>.
+    /// </summary>
+    /// <param name="manifestUrl">
+    /// The URL the page should fetch <c>manifest.json</c> from. If null or whitespace, no
+    /// <c>data-manifest-url</c> is injected (the page falls back to <c>?url=</c>/relative fetch).
+    /// </param>
+    /// <param name="envelopeUrl">
+    /// The wire-envelope endpoint the Fleet plane polls (same-origin path or absolute URL). If null
+    /// or whitespace, no <c>data-fleet-url</c> is injected and the Fleet plane stays dormant.
+    /// </param>
+    /// <returns>The complete, self-contained HTML document.</returns>
+    public static string GetHtml(string? manifestUrl, string? envelopeUrl)
     {
-        if (string.IsNullOrWhiteSpace(manifestUrl))
+        var attribute = string.Empty;
+        if (!string.IsNullOrWhiteSpace(manifestUrl))
+        {
+            attribute += $" data-manifest-url=\"{WebUtility.HtmlEncode(manifestUrl)}\"";
+        }
+
+        if (!string.IsNullOrWhiteSpace(envelopeUrl))
+        {
+            attribute += $" data-fleet-url=\"{WebUtility.HtmlEncode(envelopeUrl)}\"";
+        }
+
+        if (attribute.Length == 0)
         {
             return LazyHtml.Value;
         }
 
-        var attribute = $" data-manifest-url=\"{WebUtility.HtmlEncode(manifestUrl)}\"";
         return LazyHtml.Value.Replace("<html lang=\"en\">", $"<html lang=\"en\"{attribute}>");
     }
 

@@ -40,9 +40,28 @@ public class MeshUiMiddleware<TContext> : IMiddleware<TContext> where TContext :
     public MeshUiMiddleware(string path, string manifestUrl,
         IHttpRequestAdapter<TContext> httpRequestAdapter,
         IBenzeneResponseAdapter<TContext> responseAdapter)
+        : this(path, manifestUrl, null, httpRequestAdapter, responseAdapter)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MeshUiMiddleware{TContext}"/> class, optionally
+    /// wiring the live Fleet plane to a wire-envelope endpoint.
+    /// </summary>
+    /// <param name="path">The path the UI is served from (for example <c>/mesh-ui</c>).</param>
+    /// <param name="manifestUrl">The URL the page fetches <c>manifest.json</c> from.</param>
+    /// <param name="envelopeUrl">
+    /// The wire-envelope endpoint the Fleet plane polls for live <c>mesh:query:*</c> data (same-origin
+    /// path or absolute URL). When null/whitespace the page serves the static catalog viewer only.
+    /// </param>
+    /// <param name="httpRequestAdapter">Adapter used to read the request method and path.</param>
+    /// <param name="responseAdapter">Adapter used to write the HTML response.</param>
+    public MeshUiMiddleware(string path, string manifestUrl, string? envelopeUrl,
+        IHttpRequestAdapter<TContext> httpRequestAdapter,
+        IBenzeneResponseAdapter<TContext> responseAdapter)
     {
         _path = NormalizePath(path);
-        _html = MeshUiPage.GetHtml(manifestUrl);
+        _html = MeshUiPage.GetHtml(manifestUrl, envelopeUrl);
         _httpRequestAdapter = httpRequestAdapter;
         _responseAdapter = responseAdapter;
     }

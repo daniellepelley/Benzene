@@ -1,5 +1,19 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-24 (merge, phase E): the Fleet plane is folded into `UseMeshUi` — one page, not two.**
+> The live Fleet data (health, observed-vs-declared consumers, recent flows, a Fleet landing view) is
+> no longer a separate `mesh-fleet-ui.html` page — it's enriched into the catalog `mesh-ui.html` in
+> place ("the catalog is the spine, the live data enriches it"; phases A/B/C did the page work). The
+> wiring caught up here: `MeshUiPage.GetHtml(string? manifestUrl, string? envelopeUrl)` injects a
+> `data-fleet-url` alongside `data-manifest-url` (same `<html>`-attribute mechanism), the page's Fleet
+> plane feature-detects on it (`?fleet=`/`data-fleet-url`), and `UseMeshUi(path, manifestUrl,
+> envelopeUrl)` grew the optional third parameter that threads it through `MeshUiMiddleware`. With
+> `envelopeUrl` null (the default) the page is the static catalog viewer exactly as before — the Fleet
+> plane stays dormant, so a plain static-host deploy is unaffected. `UseMeshFleetUi` /
+> `MeshFleetUiPage` / `MeshFleetUiMiddleware` / `mesh-fleet-ui.html` are now `[Obsolete]` (phase F
+> migrates the remaining example callers and deletes them); the AwsMesh example already wires
+> `.UseMeshUi("/mesh-ui", "manifest.json", "/benzene/invoke")` instead of the separate fleet page.
+>
 > **2026-07-23 (Fleet view): absent ≠ zero — reduced stats render "—", not "0".**
 > `mesh-fleet-ui.html` gains `isAbsent(row, dim)`/`statCell(row, value, dim, class)`: a stat dimension a
 > row itself marks genuinely absent (via `missingFeeds`) renders **`—`**, not the non-nullable `0` it
@@ -222,11 +236,19 @@ This package renders the catalog; it does **not** generate it. Generation lives 
   - `GetHtml()` — the page as-is (falls back to an embedded sample manifest, or a `?url=` query param).
   - `GetHtml(string manifestUrl)` — injects a `data-manifest-url` onto the document root so the
     page fetches and renders that manifest on load.
+  - `GetHtml(string? manifestUrl, string? envelopeUrl)` — additionally injects a `data-fleet-url`
+    when `envelopeUrl` is set, so the page's live **Fleet plane** feature-detects it and enriches the
+    catalog with `mesh:query:*` data polled from that wire-envelope endpoint. `envelopeUrl` null →
+    the static catalog viewer, Fleet plane dormant (the folded-in successor to the retired
+    `MeshFleetUiPage`).
 - `MeshUiMiddleware<TContext> : IMiddleware<TContext> where TContext : IHttpContext` — transport-
-  agnostic HTTP middleware, same short-circuit shape as `Benzene.Spec.Ui`'s `SpecUiMiddleware`.
-- `MeshUiExtensions.UseMeshUi<TContext>(this IMiddlewarePipelineBuilder<TContext>, path = "/mesh-ui", manifestUrl = "manifest.json")`
+  agnostic HTTP middleware, same short-circuit shape as `Benzene.Spec.Ui`'s `SpecUiMiddleware`. Two
+  ctors: `(path, manifestUrl, …)` and `(path, manifestUrl, envelopeUrl, …)` (the latter wires the
+  live Fleet plane).
+- `MeshUiExtensions.UseMeshUi<TContext>(this IMiddlewarePipelineBuilder<TContext>, path = "/mesh-ui", manifestUrl = "manifest.json", envelopeUrl = null)`
   — registers the middleware on any Benzene HTTP pipeline. This is a **secondary convenience**,
-  not the primary deployment path (see below).
+  not the primary deployment path (see below). Pass `envelopeUrl` (e.g. `"/benzene/invoke"`) on a
+  mesh host that also serves a `Benzene.Mesh.Collector` to fold the live Fleet plane into the catalog.
 - `MeshSpecUiPage` / `MeshSpecUiMiddleware<TContext>` / `UseMeshSpecUi<TContext>(path =
   "/mesh-spec-ui.html", manifestUrl = "manifest.json")` — the **mesh-hosted per-service Spec UI**
   (page: `mesh-spec-ui.html`), the target of `mesh-ui.html`'s per-service *spec* link. It renders a

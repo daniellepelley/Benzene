@@ -37,16 +37,25 @@ public static class MeshUiExtensions
     /// <param name="manifestUrl">
     /// The URL the UI fetches <c>manifest.json</c> from. Defaults to <see cref="DefaultManifestUrl"/>.
     /// </param>
+    /// <param name="envelopeUrl">
+    /// The wire-envelope endpoint the page's live Fleet plane polls for <c>mesh:query:*</c> data
+    /// (same-origin path or absolute URL). When null (the default) the page serves the static catalog
+    /// viewer only; when set — e.g. <see cref="DefaultEnvelopeUrl"/> on a mesh Lambda that also hosts
+    /// a <c>Benzene.Mesh.Collector</c> — the catalog is enriched with live health, observed consumers,
+    /// recent flows, and a Fleet landing view. This folds in what <c>UseMeshFleetUi</c> served as a
+    /// separate page.
+    /// </param>
     /// <returns>The middleware pipeline builder, for chaining.</returns>
     public static IMiddlewarePipelineBuilder<TContext> UseMeshUi<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app,
         string path = DefaultPath,
-        string manifestUrl = DefaultManifestUrl)
+        string manifestUrl = DefaultManifestUrl,
+        string? envelopeUrl = null)
         where TContext : IHttpContext
     {
         app.Register(x =>
             x.AddSingleton(resolver => new MeshUiMiddleware<TContext>(
-                path, manifestUrl,
+                path, manifestUrl, envelopeUrl,
                 resolver.GetService<IHttpRequestAdapter<TContext>>(),
                 resolver.GetService<IBenzeneResponseAdapter<TContext>>()
             )));
@@ -114,6 +123,7 @@ public static class MeshUiExtensions
     /// <param name="path">The path to serve the page on.</param>
     /// <param name="envelopeUrl">The wire-envelope endpoint URL the page polls (same-origin path or absolute).</param>
     /// <returns>The same pipeline builder, for chaining.</returns>
+    [Obsolete("The Fleet view is now folded into the main mesh UI - call UseMeshUi(path, manifestUrl, envelopeUrl) with the wire-envelope endpoint instead of serving this as a separate page. The catalog is the spine and the live fleet data enriches it (health, observed consumers, recent flows, a Fleet landing view), rather than living on its own disconnected page.")]
     public static IMiddlewarePipelineBuilder<TContext> UseMeshFleetUi<TContext>(
         this IMiddlewarePipelineBuilder<TContext> app,
         string path = DefaultFleetPath,

@@ -102,7 +102,12 @@ public class Startup : BenzeneStartUp
                 .UseW3CTraceContext()
                 .UseBenzeneEnrichment()
                 .UseBenzeneMetrics()
-                .UseMeshUi("/mesh-ui", "manifest.json")
+                // The Mesh UI: the service catalog (what services declare, from manifest.json) enriched
+                // in-page with the live fleet — what's actually running (X-Ray traces + CloudWatch usage) —
+                // polled from the /benzene/invoke envelope below. One page: the catalog is the spine and
+                // the live data merges into it (health, observed-vs-declared consumers, recent flows, a
+                // Fleet landing view), rather than a disconnected second page.
+                .UseMeshUi("/mesh-ui", "manifest.json", "/benzene/invoke")
                 // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's
                 // spec from the same-origin services/{name}.json snapshot, so a service only serves JSON.
                 .UseMeshSpecUi("/mesh-spec-ui.html", "manifest.json")
@@ -110,14 +115,11 @@ public class Startup : BenzeneStartUp
                 // Benzene's own CORS support (Benzene.Http.Cors.CorsSettings); "*" would open it to
                 // any origin, but scoping to Studio's origin keeps the example tight.
                 .UseMeshArtifacts(new CorsSettings { AllowedDomains = new[] { "https://studio.asyncapi.com" } })
-                // The Fleet view's wire-envelope endpoint: an inner benzene-message pipeline routing only
-                // the collector's read queries (mesh:query:*) over the composite X-Ray+CloudWatch read
-                // model. Queries only - there's no push ingestion here (X-Ray/CloudWatch are the feeds).
+                // The Mesh UI's live fleet endpoint: an inner benzene-message pipeline routing only the
+                // collector's read queries (mesh:query:*) over the composite X-Ray+CloudWatch read model.
+                // Queries only - there's no push ingestion here (X-Ray/CloudWatch are the feeds).
                 .UseBenzeneMessage(new BenzeneMessageHttpOptions { Path = "/benzene/invoke" },
                     fleet => fleet.UseMessageHandlers(MeshCollectorHandlers.Queries))
-                // The Fleet view itself: what's actually running (traces + usage), the live counterpart to
-                // the artifact-driven Mesh UI above (what services declare). Polls /benzene/invoke.
-                .UseMeshFleetUi("/benzene/fleet-ui", "/benzene/invoke")
                 .UseMessageHandlers(handlers));
         });
     }
