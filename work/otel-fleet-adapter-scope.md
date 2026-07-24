@@ -134,6 +134,17 @@ span→event mapping is **mostly already emitted**. Two gaps:
   the remaining deployment step is exporter config — X-Ray only filters on **annotations**, so
   `benzene.correlation-id` must be indexed as an annotation (`benzene_correlation_id`) for
   `mesh:query:correlation` to find matches.
+- **(c) Emitting service name as a span tag.** ✅ **DONE (2026-07-24).** The assumption above — that
+  `service.name` from the OTel resource is enough — was wrong on Lambda: X-Ray/ADOT names the segment after
+  the handler (`ApiGatewayLambdaHandler`), not `service.name`, so the mapper (reading the segment name)
+  mislabelled the emitting service — the reported `orders-api → ApiGatewayLambdaHandler`. Fixed by tagging
+  **`benzene.service`** on the topic-bearing span (from `IApplicationInfo.Name`, OTel-free — see
+  `Benzene.Diagnostics/CLAUDE.md`), which the X-Ray/Tempo/Jaeger mappers now **prefer** over the
+  segment/resource/process name. **Unlike (b) it needs NO annotation-indexing** — it's read on drill-in,
+  never filtered. Canonical feed: `UseBenzeneCloudService` now calls `SetApplicationInfo` from
+  `CloudServiceBuilder.ServiceName`. **Summary-plane caveat:** X-Ray/Tempo recent-flows come from search
+  *summaries* (no span attributes), so their "services touched" still show backend names; the drill-in
+  waterfall/correlation are correct, and Jaeger recent-flows (full traces) show real names too.
 
 **Granularity nuance:** Benzene emits a span **per middleware**, but a `MeshTraceEvent` is **per handled
 message**. The adapter must select the message-representative span (the one carrying `benzene.topic` /

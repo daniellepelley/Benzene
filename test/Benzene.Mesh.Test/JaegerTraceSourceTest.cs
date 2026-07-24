@@ -95,6 +95,21 @@ public class JaegerTraceSourceTest
     }
 
     [Fact]
+    public async Task GetTraceAsync_PrefersBenzeneServiceTag_OverProcessServiceName()
+    {
+        // benzene.service on the span wins over Jaeger's processes[].serviceName (an infra name here) — the
+        // mesh's own namespace stays authoritative and uniform across the trace-plane mappers.
+        var tags = Tag("benzene.topic", "orders:create") + ", " + Tag("benzene.service", "orders-api");
+        var span = "{ \"spanID\": \"s1\", \"processID\": \"p1\", \"references\": [], \"startTime\": 1500000000000000, \"duration\": 400000, \"tags\": [ " + tags + " ] }";
+        var trace = "{ \"traceID\": \"trace-1\", \"spans\": [ " + span + " ], \"processes\": { \"p1\": { \"serviceName\": \"aws-lambda\" } } }";
+        var source = Source(_ => (HttpStatusCode.OK, Data(trace)), TwoServices, out _);
+
+        var view = await source.GetTraceAsync("trace-1");
+
+        Assert.Equal("orders-api", Assert.Single(view!.Events).Service); // not "aws-lambda"
+    }
+
+    [Fact]
     public async Task GetTraceAsync_UnknownTrace_ReturnsNull()
     {
         var source = Source(_ => (HttpStatusCode.NotFound, ""), TwoServices, out _);

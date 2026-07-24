@@ -23,8 +23,8 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
 - `ActivityMiddlewareWrapper`/`ActivityMiddlewareDecorator<TContext>` - auto-wraps every middleware
   instance in an `Activity` span; registered by `AddDiagnostics()`. `benzene.transport` is tagged on
   every stage that has resolved a transport. The **message-identity tags** — `benzene.topic`/
-  `benzene.version`/`benzene.handler`, `benzene.status` (2026-07-23), and `benzene.correlation-id`
-  (2026-07-23) — are stamped on **a single span per dispatch**, enforced by the scoped
+  `benzene.version`/`benzene.handler`, `benzene.status` (2026-07-23), `benzene.correlation-id`
+  (2026-07-23), and `benzene.service` (2026-07-24) — are stamped on **a single span per dispatch**, enforced by the scoped
   **`ActivityTopicTagState`** once-guard (registered by `AddActivityPerMiddleware`): the first stage
   whose topic resolves claims the tags and every later stage skips them. This matters because for a
   transport whose topic is intrinsic to the message (HTTP route, BenzeneMessage envelope) `GetTopic`
@@ -42,7 +42,19 @@ calling both (or either twice) never double-wraps a middleware; `AddDiagnostics(
   (`...StampsTheIdentityTagsOnASingleSpan_NotEveryTopicResolvingStage`).
   This is the searchable span attribute `mesh:query:correlation` needs from a trace store
   (`work/otel-fleet-adapter-scope.md` §6b) — for X-Ray it must be indexed as an *annotation* to be
-  filterable.
+  filterable. `benzene.service` (2026-07-24) is the emitting service's own name, sourced from
+  `IApplicationInfo.Name` (`_serviceResolver.TryGetService<IApplicationInfo>()?.Name`) — the OTel-free
+  seam Diagnostics already uses; `BlankApplicationInfo`'s `""` silent-degrades to no tag (same rule as
+  `benzene.transport`'s `Unresolved` guard). It lets a trace-store mesh reader (`Benzene.Mesh.Fleet.*`)
+  label a flow with the **real** service name instead of the backend's segment/root span name — on
+  Lambda/ADOT that segment is named after the handler (e.g. `ApiGatewayLambdaHandler`), not the service,
+  which was the `orders-api → ApiGatewayLambdaHandler` mislabel. **Unlike `benzene.correlation-id` it is
+  read on drill-in and never filtered on, so it needs NO X-Ray annotation-indexing step — plain metadata
+  is fine.** The canonical feed is `UseBenzeneCloudService`, which now calls `SetApplicationInfo` from the
+  same `CloudServiceBuilder.ServiceName` that feeds the mesh descriptor + the log scope, so one string
+  drives all three and can never disagree; a hand-composed host sets its own `SetApplicationInfo(...)`.
+  Covered by `ActivityMiddlewareTest` (`...TagsBenzeneServiceOnTheTopicBearingSpan_FromApplicationInfo`
+  and the blank-name omission case).
 - `DebugMiddlewareWrapper`/`DebugMiddlewareDecorator<TContext>` - `Debug.WriteLine` start/stop
   tracing, unrelated to `Activity`/tracing proper
 

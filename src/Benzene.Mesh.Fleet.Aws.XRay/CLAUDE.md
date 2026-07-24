@@ -32,7 +32,11 @@ other backends (Tempo, inc 4) reuse the same `IMeshTraceSource`/`IMeshFleetReadM
   time range; a trace lookup is by id (no window).
 - `XRaySegmentMapper` — static `Map(meshTraceId, segmentDocuments)`: parses each X-Ray segment JSON
   document, walks segment + subsegments, and emits one `MeshTraceEvent` per node that carries a Benzene
-  topic. Reads the `benzene.*` attributes (`topic`/`version`/`status`/`correlation-id`) from **either**
+  topic. **The emitting service is `benzene.service` when the span carries it (2026-07-24), falling back
+  to the enclosing segment's `name`.** This is the fix for `orders-api → ApiGatewayLambdaHandler`: on
+  Lambda the segment `name` is the ADOT/handler name, not the service, so reading the pipeline-stamped
+  `benzene.service` attribute (via the same annotation/metadata reader as the other `benzene.*` tags) is
+  authoritative; the segment name is only the fallback for a span that predates the tag. Reads the `benzene.*` attributes (`topic`/`version`/`status`/`correlation-id`) from **either**
   `annotations` (X-Ray sanitises keys to underscores → `benzene_topic`) **or** `metadata` (dotted keys
   preserved → `benzene.topic`, at the top level or one namespace deep like `metadata.default`), because
   which of the two the OTel→X-Ray exporter uses is a deployment choice. A document that fails to parse is
@@ -68,6 +72,16 @@ deployment step is **yours**: X-Ray only lets you *filter* on **annotations**, s
 must be configured to index `benzene.correlation-id` as an annotation (`benzene_correlation_id`) — a
 metadata-only attribute is readable in a fetched trace but not searchable, so `mesh:query:correlation`
 would find nothing.
+
+## Recent-flows service names (summary-plane caveat)
+`GetRecentFlowsAsync` maps X-Ray `GetTraceSummaries`, whose summaries carry only `ServiceIds` (X-Ray's own
+service names) and **no span attributes** — so a recent-flows row's "services touched" shows the
+**backend's** names, which on Lambda may be infra names (`ApiGatewayLambdaHandler`), NOT the mesh's
+`benzene.service`. This is by design: reading `benzene.service` there would need a `BatchGetTraces` per row,
+the exact per-load fan-out Increment 3 forbids. The **drill-in waterfall and correlation view** (which map
+full segments) show the real service names. Documented gap, accepted because the drill-in is correct. (Tempo
+shares this summary-plane caveat; Jaeger does not — its recent-flows returns full traces, so it reads
+`benzene.service` and shows real names there too.)
 
 ## Verification caveat
 The mapper, correlation search, and recent-flows mapping are unit-tested against representative X-Ray

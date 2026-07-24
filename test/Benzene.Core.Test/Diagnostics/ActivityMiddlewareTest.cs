@@ -229,6 +229,58 @@ public class ActivityMiddlewareTest
     }
 
     [Fact]
+    public async Task AddDiagnostics_TagsBenzeneServiceOnTheTopicBearingSpan_FromApplicationInfo()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        // The emitting service's own name — the source a trace-store mesh reader labels the flow with,
+        // instead of the backend's segment name (which on Lambda is the handler name).
+        Benzene.Core.MessageHandlers.DI.Extensions.SetApplicationInfo(container, "orders-api", string.Empty, string.Empty);
+        services.AddScoped<Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>, FakeMessageGetter>();
+
+        var builder = new MiddlewarePipelineBuilder<StatusContext>(container);
+        builder.Use("handle", (_, next) => next());
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await pipeline.HandleAsync(new StatusContext { MessageResult = Benzene.Results.BenzeneResult.Ok() }, resolver);
+
+        var span = Assert.Single(activities, a => a.OperationName == "handle");
+        Assert.Equal("orders-api", span.GetTagItem("benzene.service"));
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_OmitsBenzeneService_WhenApplicationInfoNameIsBlank()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        // No SetApplicationInfo → BlankApplicationInfo (or unregistered): the "" name silent-degrades to no tag.
+        services.AddScoped<Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>, FakeMessageGetter>();
+
+        var builder = new MiddlewarePipelineBuilder<StatusContext>(container);
+        builder.Use("handle", (_, next) => next());
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+
+        await pipeline.HandleAsync(new StatusContext { MessageResult = Benzene.Results.BenzeneResult.Ok() }, resolver);
+
+        var span = Assert.Single(activities, a => a.OperationName == "handle");
+        Assert.Null(span.GetTagItem("benzene.service"));
+    }
+
+    [Fact]
     public async Task AddDiagnostics_StampsTheIdentityTagsOnASingleSpan_NotEveryTopicResolvingStage()
     {
         // For a transport whose topic is intrinsic to the message (HTTP route / BenzeneMessage

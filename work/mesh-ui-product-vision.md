@@ -7,6 +7,17 @@
 
 ---
 
+> **2026-07-25 FIXED: flows show real service names on both ends (the `orders-api → ApiGatewayLambdaHandler`
+> bug).** A maintainer saw one real service name and one AWS/Lambda infra name in a Fleet flow. Root cause:
+> the topic-bearing span didn't carry the emitting service's own name, so the X-Ray mapper fell back to the
+> segment name (the ADOT handler name on Lambda). Fixed by a new **`benzene.service`** span attribute
+> (mesh-PO + observability-PO approved; sourced from `IApplicationInfo.Name`, fed canonically by
+> `UseBenzeneCloudService` → `SetApplicationInfo`), which the X-Ray/Tempo/Jaeger mappers prefer over the
+> backend's segment/resource/process name. Data-layer detail in `work/otel-fleet-adapter-scope.md` §6(c).
+> **Known residual:** the Fleet **recent-flows** list on the X-Ray/Tempo *summary* planes still shows the
+> backend's names (summaries carry no span attributes, and we don't fan out a fetch per row) — the drill-in
+> waterfall/correlation show real names, and Jaeger recent-flows (full traces) do too. A documented gap.
+
 > **2026-07-25 VISION: live data alongside declared across every surface — reconciliation as the through-line.**
 > Maintainer ask: "that [fleet] data on the mesh-ui and on the service and topic pages to give a live data view
 > as well as the current information." Ruling (mesh-product-owner): **declared is the spine; observed sits

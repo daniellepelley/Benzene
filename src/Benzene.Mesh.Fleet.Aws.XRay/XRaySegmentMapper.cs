@@ -71,7 +71,10 @@ public static class XRaySegmentMapper
                 TraceId = meshTraceId,
                 SpanId = TryGetString(node, "id") ?? string.Empty,
                 ParentSpanId = TryGetString(node, "parent_id"),
-                Service = service,
+                // Prefer the Benzene service name the pipeline stamps (benzene.service) over the X-Ray segment
+                // name: on Lambda the segment is named by ADOT after the handler (e.g. "ApiGatewayLambdaHandler"),
+                // not the service, so the segment name is only a fallback for a span that predates the tag.
+                Service = ReadBenzene(node, "service") ?? service,
                 Topic = topic!,
                 TopicVersion = ReadBenzene(node, "version"),
                 Status = ReadBenzene(node, "status") ?? string.Empty,

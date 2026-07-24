@@ -64,7 +64,10 @@ public static class TempoTraceMapper
                         TraceId = meshTraceId,
                         SpanId = GetString(span, "spanId") ?? string.Empty,
                         ParentSpanId = EmptyToNull(GetString(span, "parentSpanId")),
-                        Service = service,
+                        // Prefer the Benzene service name the pipeline stamps (benzene.service); fall back to the
+                        // batch resource's service.name (already correct in the common case, but keeping the mesh's
+                        // own namespace authoritative makes every trace-plane mapper uniform and backend-agnostic).
+                        Service = attributes.GetValueOrDefault("benzene.service") ?? service,
                         Topic = topic,
                         TopicVersion = attributes.GetValueOrDefault("benzene.version"),
                         Status = attributes.GetValueOrDefault("benzene.status") ?? string.Empty,

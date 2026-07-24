@@ -97,6 +97,53 @@ public class XRayTraceSourceTest
     }
 
     [Fact]
+    public async Task GetTraceAsync_PrefersBenzeneServiceTag_OverTheSegmentName()
+    {
+        // The bug this fixes: on Lambda the X-Ray segment is named by ADOT after the handler
+        // ("ApiGatewayLambdaHandler"), not the service. When the pipeline stamps benzene.service, the mapper
+        // must use it as the emitting service, not the infra segment name.
+        var segment = """
+        {
+          "id": "70de5b6f19ff9a0a",
+          "name": "ApiGatewayLambdaHandler",
+          "start_time": 1500000000.5,
+          "end_time": 1500000000.9,
+          "annotations": {
+            "benzene_topic": "orders:create",
+            "benzene_service": "orders-api",
+            "benzene_status": "ok"
+          }
+        }
+        """;
+
+        var source = new XRayTraceSource(XRay(segment).Object);
+
+        var view = await source.GetTraceAsync(TraceId);
+
+        var evt = Assert.Single(view!.Events);
+        Assert.Equal("orders-api", evt.Service); // the benzene.service tag, not "ApiGatewayLambdaHandler"
+    }
+
+    [Fact]
+    public async Task GetTraceAsync_FallsBackToSegmentName_WhenNoBenzeneServiceTag()
+    {
+        // A span that predates the tag: the segment name remains the fallback service.
+        var segment = """
+        {
+          "id": "70de5b6f19ff9a0a",
+          "name": "orders-api",
+          "start_time": 1500000000.5,
+          "end_time": 1500000000.9,
+          "annotations": { "benzene_topic": "orders:create", "benzene_status": "ok" }
+        }
+        """;
+
+        var view = await new XRayTraceSource(XRay(segment).Object).GetTraceAsync(TraceId);
+
+        Assert.Equal("orders-api", Assert.Single(view!.Events).Service);
+    }
+
+    [Fact]
     public async Task GetTraceAsync_ReadsBenzeneAttributes_FromNamespacedMetadata()
     {
         // The OTel→X-Ray exporter can land span attributes in metadata under a namespace (dotted keys

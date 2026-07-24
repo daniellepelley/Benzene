@@ -44,6 +44,12 @@ Core setup) remains the full-control path and this package must never be require
 - `CloudServicePaths` — the `/benzene/*` default-standard path constants.
 
 ## Important conventions
+- **The logical service name is the application name (2026-07-24).** `UseBenzeneCloudService` calls
+  `SetApplicationInfo(serviceName, …)`, so `IApplicationInfo.Name` = the same string that feeds the mesh
+  descriptor (`info.service`), the log scope, and the `benzene.service` span attribute
+  (`Benzene.Diagnostics`, so a trace-store mesh reader labels a flow with the real service name instead of
+  the backend's segment name — the `orders-api → ApiGatewayLambdaHandler` fix). One source of truth, three
+  surfaces; before this, `IApplicationInfo.Name` was `""` on a cloud service.
 - **Spec §6 degradation is law here too**: the announcer and trace exporter swallow every
   failure; no mesh feed may ever fail, slow, or block an invocation.
 - **Two pipelines, one registry.** The envelope pipeline (`/benzene/invoke`) and the outer HTTP

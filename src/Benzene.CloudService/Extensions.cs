@@ -82,6 +82,11 @@ public static class Extensions
         app.Register(x =>
         {
             x.AddBenzeneMessage();
+            // Make the logical service name the application's name, from the one source of truth: it already
+            // feeds the mesh descriptor (info.service) and now the log scope + the benzene.service span
+            // attribute (Benzene.Diagnostics), so a trace-store mesh reader can label a flow with the real
+            // service name rather than the backend's segment name. Same string, three surfaces, never adrift.
+            x.SetApplicationInfo(serviceName, string.Empty, string.Empty);
             x.AddSingleton(_ => report);
             x.AddSingleton<IHttpEndpointDefinition>(_ =>
                 new HttpEndpointDefinition("get", builder.SpecPath, Schema.OpenApi.Constants.DefaultSpecTopic));

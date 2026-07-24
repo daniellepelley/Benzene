@@ -34,8 +34,14 @@ either, both, or neither.
   (and legacy `instrumentationLibrarySpans`), emitting one `MeshTraceEvent` per span carrying
   `benzene.topic`. Reads `benzene.topic`/`benzene.version`/`benzene.status`/`benzene.correlation-id` by
   their **dotted OTLP names verbatim** — Tempo preserves attribute keys, so unlike X-Ray there's no
-  annotation/metadata sanitising to reconcile. Service = the batch `resource`'s `service.name`; times from
-  `start`/`endTimeUnixNano`; events returned in start order; an unparseable body → empty list.
+  annotation/metadata sanitising to reconcile. Service = the span's **`benzene.service`** attribute when
+  present (2026-07-24), falling back to the batch `resource`'s `service.name` (already correct in the common
+  case since `AddService("orders-api")` sets it — preferring `benzene.service` keeps the mesh's own namespace
+  authoritative and uniform with the X-Ray/Jaeger mappers); times from `start`/`endTimeUnixNano`; events
+  returned in start order; an unparseable body → empty list. **Recent-flows caveat:** Tempo's search summary
+  carries `rootServiceName` (a backend name, not `benzene.service`) and no span attributes, so recent-flows
+  rows share the X-Ray summary-plane caveat — the drill-in trace shows the real names. Covered by
+  `TempoTraceSourceTest` (`...PrefersBenzeneServiceTag_OverResourceServiceName`).
 - `TempoTraceSourceOptions(tempoUrl)` — `CorrelationLookback` (24h) and `RecentFlowsLookback` (1h) bound
   the two searches (Tempo's `/api/search` needs a time range); a trace lookup is by id (no window).
 - `Extensions.AddTempoFleetReadModel(options)` — registers the options, an `HttpClient` (unless one is

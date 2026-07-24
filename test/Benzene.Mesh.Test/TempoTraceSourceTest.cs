@@ -98,6 +98,28 @@ public class TempoTraceSourceTest
     }
 
     [Fact]
+    public async Task GetTraceAsync_PrefersBenzeneServiceTag_OverResourceServiceName()
+    {
+        // The pipeline's benzene.service is authoritative; the resource service.name (here an infra name) is
+        // only the fallback — keeps the mesh's own namespace winning uniformly across the trace-plane mappers.
+        var body = """
+        { "batches": [ {
+          "resource": { "attributes": [ { "key": "service.name", "value": { "stringValue": "aws-lambda" } } ] },
+          "scopeSpans": [ { "spans": [ {
+            "spanId": "aabbccdd", "startTimeUnixNano": "1500000000000000000", "endTimeUnixNano": "1500000000400000000",
+            "attributes": [
+              { "key": "benzene.topic", "value": { "stringValue": "orders:create" } },
+              { "key": "benzene.service", "value": { "stringValue": "orders-api" } }
+            ] } ] } ] } ] }
+        """;
+        var source = Source(_ => (HttpStatusCode.OK, body), out _);
+
+        var view = await source.GetTraceAsync("trace-1");
+
+        Assert.Equal("orders-api", Assert.Single(view!.Events).Service); // not "aws-lambda"
+    }
+
+    [Fact]
     public async Task GetTraceAsync_UnknownTrace_ReturnsNull()
     {
         var source = Source(_ => (HttpStatusCode.NotFound, ""), out _);

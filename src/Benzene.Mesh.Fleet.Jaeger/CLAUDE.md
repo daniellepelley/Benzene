@@ -23,8 +23,13 @@ and the fleet view's recent-flows from a **Jaeger query service**, reusing the *
 - `JaegerTraceMapper.MapTraces(body)` → one `JaegerMappedTrace` (id + events) per trace in `data[]`. Maps
   Jaeger's own model, which differs from OTLP/Tempo: times are **microseconds** (`startTime`/`duration`),
   parentage is a `references` entry with `refType == "CHILD_OF"` (not `parentSpanId`), and the service is
-  `processes[processID].serviceName` (not a resource attribute). Benzene tag keys are read by their dotted
-  names verbatim (Jaeger preserves keys — no sanitising).
+  the span's **`benzene.service`** tag when present (2026-07-24), falling back to
+  `processes[processID].serviceName` (correct in the common case; preferring `benzene.service` keeps the
+  mesh's namespace authoritative and uniform with the X-Ray/Tempo mappers). Benzene tag keys are read by
+  their dotted names verbatim (Jaeger preserves keys — no sanitising). **Because Jaeger recent-flows returns
+  *full* traces (not summaries), it reads `benzene.service` there too — so unlike the X-Ray/Tempo summary
+  planes, Jaeger recent-flows shows the real service names, not backend/infra names.** Covered by
+  `JaegerTraceSourceTest` (`...PrefersBenzeneServiceTag_OverProcessServiceName`).
 - `JaegerTraceSourceOptions(jaegerUrl)` — `Services` (the set to search; discovered via `GET /api/services`
   when null/empty), `CorrelationLookback` (24h), `RecentFlowsLookback` (1h), `SearchLimitPerService` (20).
 

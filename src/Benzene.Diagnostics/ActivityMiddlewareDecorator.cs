@@ -119,6 +119,18 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
             activity.SetTag("benzene.topic", topic.Id);
             activity.SetTag("benzene.version", topic.Version);
 
+            // The emitting service's own name, so a trace-store mesh reader (Benzene.Mesh.Fleet.*) can label
+            // the flow with the real service instead of falling back to the backend's segment/root name (which
+            // on Lambda/ADOT is the handler name, e.g. "ApiGatewayLambdaHandler"). Sourced from the OTel-free
+            // IApplicationInfo (BlankApplicationInfo's "" silent-degrades to no tag, like benzene.transport's
+            // Unresolved guard); topic-bearing span only, like benzene.status. Read on drill-in, never filtered,
+            // so unlike benzene.correlation-id it needs no X-Ray annotation indexing - plain metadata is fine.
+            var serviceName = _serviceResolver.TryGetService<IApplicationInfo>()?.Name;
+            if (!string.IsNullOrWhiteSpace(serviceName))
+            {
+                activity.SetTag("benzene.service", serviceName);
+            }
+
             var handler = _serviceResolver.TryGetService<IMessageHandlerDefinitionLookUp>()?.FindHandler(topic);
             if (handler is not null)
             {

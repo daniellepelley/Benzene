@@ -88,7 +88,10 @@ public static class JaegerTraceMapper
                 TraceId = traceId!,
                 SpanId = GetString(span, "spanID") ?? string.Empty,
                 ParentSpanId = ChildOfParent(span),
-                Service = processId is not null ? services.GetValueOrDefault(processId) : null,
+                // Prefer the Benzene service name the pipeline stamps (benzene.service); fall back to Jaeger's
+                // processes[processID].serviceName (correct in the common case, but the mesh's own namespace stays
+                // authoritative and uniform across the trace-plane mappers).
+                Service = tags.GetValueOrDefault("benzene.service") ?? (processId is not null ? services.GetValueOrDefault(processId) : null),
                 Topic = topic,
                 TopicVersion = tags.GetValueOrDefault("benzene.version"),
                 Status = tags.GetValueOrDefault("benzene.status") ?? string.Empty,
