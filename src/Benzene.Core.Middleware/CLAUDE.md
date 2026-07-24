@@ -68,6 +68,22 @@ AWS Lambda (no `ILambdaContext` token) and the Azure Functions non-HTTP triggers
 `IEntryPointMiddlewareApplication` (a public-interface change) - deferred. Covered by
 `test/Benzene.Core.Test/Core/Middleware/CancellationTokenSeedingTest.cs`.
 
+**Cancellation surfaced as an exception (known edge — by design).** `ExceptionHandlerMiddleware<TContext>`
+(and the equivalent guards in `Benzene.Core.MessageHandlers.MessageHandler`) rethrow an
+`OperationCanceledException` **only when it carries a cancellation-requested token**
+(`catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)`) — i.e. the
+ambient/seeded token that actually fired (host shutdown/drain). This is deliberate: a genuine cancellation
+must propagate so a settle/ack/checkpoint transport redelivers the interrupted unit of work instead of
+treating it as done. The known edge: an `OperationCanceledException`/`TaskCanceledException` that does
+**not** carry that fired token — a bare `new OperationCanceledException()`, some library-internal
+cancellations, or a `Task.WhenAny(work, Task.Delay(timeout))` timeout — has `IsCancellationRequested == false`,
+so it falls through to the generic handler and is turned into a **result** (a failure result —
+`ServiceUnavailable` in `MessageHandler`), not re-thrown as cancellation. Under the safe-by-default
+settlement contract that failure result is itself redelivered, so this is not silent message loss in the
+common case; the only footgun is a handler that maps such a result to success. If you need a timeout-style
+cancellation to always propagate *as cancellation*, drive it from a real linked `CancellationToken` (so the
+`OperationCanceledException` carries a requested token) rather than a bare `Task.Delay` race.
+
 ### Middleware Components
 - `FuncWrapperMiddleware<TContext>` - Wraps Func as middleware
 - `ContextConverterMiddleware<TContext, TContextOut>` - Converts context types

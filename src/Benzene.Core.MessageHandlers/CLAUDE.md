@@ -129,6 +129,17 @@ Provides complete implementation of message handler infrastructure for command/q
   `HandlerPipelineBuilderCachingTest` (key isolation + per-record scoped resolution under concurrency)
   and benchmarked by `HandlerCreationBenchmarks` (per-message build allocation dropped from
   ~408-792 B, scaling with middleware count, to a flat 32 B).
+  - **Known limitation — `IHandlerMiddlewareBuilder`s must be stable (singleton) instances.**
+    `HandlerPipelineStructureCache` is a process-lifetime static dictionary keyed by the builder array's
+    **element reference-identity** (`HandlerMiddlewareBuilderSetComparer` uses `ReferenceEquals` +
+    `RuntimeHelpers.GetHashCode`), and it is **never evicted**. That is correct for how the core wires
+    handler middleware — the builders are `new`'d once into the router builder and the same array
+    reference is reused every message, so there is exactly one cache entry per pipeline. But a plugin that
+    **DI-registers an `IHandlerMiddlewareBuilder` as scoped/transient** and has `HandlerPipelineBuilder.Add`
+    concatenate it (a fresh instance, in a fresh array, per message) would mint a **new cache entry per
+    message** — an unbounded memory leak. Register handler-middleware builders as singletons (or feed a
+    stable array) so the cache key stays constant. No core package trips this; it is a caveat for custom
+    handler-middleware builders only.
 - `VersionSelector` - Selects handler versions
 - `HeaderMessageVersionGetter<TContext>` - the default `IMessageVersionGetter<TContext>`: reads the
   payload schema version from the header dictionary, trying each name in an ordered fallback list
