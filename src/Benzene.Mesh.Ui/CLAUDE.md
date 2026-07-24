@@ -14,8 +14,23 @@
 > live layer does not mount, and the inbox reads exactly as on a static-only deploy (Playwright-verified as its
 > own case). Topic reconciliation is skipped until `topics.json` loads (else every observed consumer would
 > false-flag as undeclared). The estate inbox re-renders on each fleet poll only when on the estate view
-> (`isEstateView()`), leaving the rest of the landing page undisturbed by the background poll. Slices 2 (estate
-> table observed column + card heartbeat dot) and 3 (weave the drill-in pages) are the follow-ons.
+> (`isEstateView()`), leaving the rest of the landing page undisturbed by the background poll.
+>
+> **Slice 2 SHIPPED 2026-07-25 — estate observed column + service-card heartbeat dot.** The provenance
+> visual-token vocabulary is now defined once and reused: **declared renders plain; observed renders in the
+> `.obs-count` token** (a live dot + `--ok` accent), with `.obs-th-chip`/`.obs-th-window` on the column header
+> and `.hb-dot` (health-coloured) on the cards — so a reader never guesses which figure is declared vs observed.
+> The estate topics table gains an **Observed** column (`topics-observed-th`) **adjacent to — never merged with**
+> the declared `usage.json` Usage column: they're different planes (aggregator snapshot vs live poll), shown
+> side by side, never summed; disagreement is signal, not a bug. Per-cell: a live count in the observed token,
+> or **`—` when not observed / stats-absent** (absent ≠ zero). The header states the window/plane
+> (`fleetRangeLabel()` when `countsWindowed`, else "cumulative"), carrying the 2026-07-24 count-plane honesty
+> onto the estate. Service cards gain a live **heartbeat dot** (`liveHealthState`/`applyHeartbeatDot`: healthy/
+> degraded/stale; no dot when unknown — absent heartbeat ≠ unhealthy). Honesty state 1: the observed column and
+> the dots mount only with `fleetEndpoint()` + a polled fleet — a static-only deploy renders exactly as before
+> (Playwright-verified both paths). On the fleet poll the estate refreshes the Observed column via
+> `renderTopicRows()` and updates the heartbeat dots **in place** (`refreshServiceCardHeartbeats()`) so an
+> expanded card isn't collapsed. Slice 3 (weave the drill-in pages) is the remaining follow-on.
 
 > **2026-07-24 (merge, phase D): a time-range picker on the live plane.** The Fleet view gains a Grafana-style
 > time-range control (`.fl-range` / `flWireRangePicker`) — presets 5m/15m/1h/6h/24h/7d, All time, and a custom

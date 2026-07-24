@@ -569,6 +569,19 @@
   .usage-chip-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
   .usage-dim { font-size: 12px; color: var(--ink-faint); min-width: 86px; }
   .usage-count { font-family: var(--mono); font-weight: 600; }
+  /* Provenance visual-token vocabulary (vision 2026-07-25): DECLARED renders plain; OBSERVED (live-plane)
+     renders in this single, consistent secondary token — a live dot + the accent colour — reused on every
+     surface so a reader never has to guess which figure is declared and which is observed. */
+  .obs-count { font-family: var(--mono); font-weight: 600; color: var(--ok); display: inline-flex; align-items: center; gap: 5px; }
+  .obs-count::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
+  .obs-th-chip { font-size: 9.5px; font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase;
+    padding: 0 5px; border-radius: 999px; color: var(--ok); border: 1px solid var(--ok); opacity: .8; margin-left: 4px; }
+  .obs-th-window { display: block; font-size: 10px; font-weight: 400; color: var(--ink-faint); text-transform: none; letter-spacing: 0; margin-top: 2px; }
+  /* Live heartbeat dot on the estate service cards — the same observed token, health-coloured. */
+  .hb-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+  .hb-healthy { background: var(--ok); }
+  .hb-degraded { background: var(--req); }
+  .hb-stale { background: var(--m-event); }
   .usage-note { color: var(--ink-faint); font-size: 12px; margin-top: 10px; max-width: 640px; }
   .usage-h { font-weight: 600; }
   .usage-topics { margin-top: 8px; }
@@ -718,6 +731,7 @@
             <th>HTTP</th>
             <th>Status</th>
             <th id="topics-usage-th" style="display:none" title="Observed messages handled in the usage feed's window (usage.json)">Usage</th>
+            <th id="topics-observed-th" style="display:none">Observed <span class="obs-th-chip" title="Live observed traffic, polled from the running fleet — a different plane from the Usage column; the two are shown adjacent, never summed.">live</span><span class="obs-th-window" id="topics-observed-window"></span></th>
           </tr>
         </thead>
         <tbody id="topics-tbody"></tbody>
@@ -1150,6 +1164,32 @@
   function isReservedTopicId(topicId) {
     return /^(mesh:|benzene:|\$)/i.test(topicId || "");
   }
+  // The live heartbeat health of a service, or null when there's no live signal (no endpoint, not yet
+  // polled, service not in the fleet, or health unknown) — null renders no dot: absent heartbeat ≠ unhealthy.
+  function liveHealthState(name) {
+    if (!fleetEndpoint() || !currentFleet) return null;
+    var s = (currentFleet.services || []).filter(function (x) { return x.service === name; })[0];
+    if (!s) return null;
+    var age = flAgeMs(s.lastSeen);
+    if (age != null && age > FL_STALE_MS) return { cls: "hb-stale", label: "heartbeat stale — last seen " + flAge(age) + " ago" };
+    if (s.health === "degraded") return { cls: "hb-degraded", label: "heartbeat reports degraded" };
+    if (s.health === "healthy") return { cls: "hb-healthy", label: "heartbeat healthy" };
+    return null;
+  }
+  function applyHeartbeatDot(dot, name) {
+    var st = liveHealthState(name);
+    if (!st) { dot.style.display = "none"; dot.className = "hb-dot"; dot.title = ""; return; }
+    dot.style.display = "";
+    dot.className = "hb-dot " + st.cls;
+    dot.title = st.label + " (live heartbeat)";
+  }
+  // In-place dot refresh on the fleet poll — updates the estate cards' live health without rebuilding the
+  // card list (which would collapse an expanded card and re-fetch its health detail).
+  function refreshServiceCardHeartbeats() {
+    document.querySelectorAll(".hb-dot[data-hb]").forEach(function (dot) {
+      applyHeartbeatDot(dot, dot.getAttribute("data-hb"));
+    });
+  }
   function collectLiveIssues() {
     if (!fleetEndpoint() || !currentFleet) return []; // static floor: the live layer never mounts
     var fleet = currentFleet, issues = [];
@@ -1288,6 +1328,14 @@
     var head = el("div", "svc-head");
     head.appendChild(el("span", "badge " + statusBadgeClass(svc.status), svc.status));
     if (svc.contractDrift) head.appendChild(el("span", "badge b-drift", "drift"));
+    // Live heartbeat dot (observed plane), adjacent to the declared status badge. Honesty state 1: mounts
+    // only with a live endpoint; hidden until a heartbeat state exists (absent heartbeat ≠ unhealthy).
+    if (fleetEndpoint()) {
+      var hb = el("span", "hb-dot");
+      hb.dataset.hb = svc.name;
+      applyHeartbeatDot(hb, svc.name);
+      head.appendChild(hb);
+    }
     // The name opens the service's own page; the rest of the header still toggles the
     // quick-glance accordion. (The card keeps a .svc-name node so the filter keeps working.)
     var nameBtn = el("button", "svc-name-btn svc-name", svc.name);
@@ -2351,11 +2399,25 @@
     var tbody = document.getElementById("topics-tbody");
     tbody.innerHTML = "";
     document.getElementById("topics-usage-th").style.display = currentUsage ? "" : "none";
+    // Honesty state 1: the Observed column mounts only with a live endpoint AND a polled fleet — otherwise the
+    // table renders exactly as on a static-only deploy (no empty column, no "—" implying missing data).
+    var showObserved = !!(fleetEndpoint() && currentFleet);
+    document.getElementById("topics-observed-th").style.display = showObserved ? "" : "none";
+    if (showObserved) {
+      var winEl = document.getElementById("topics-observed-window");
+      var w = currentFleet.window;
+      winEl.textContent = !w ? "all time"
+        : (w.countsWindowed ? fleetRangeLabel() : "cumulative");
+      winEl.title = w && !w.countsWindowed
+        ? "Counts are cumulative on this plane, not filtered to " + fleetRangeLabel() + " (see the Fleet view)."
+        : "Observed over " + (w ? fleetRangeLabel() : "all time") + ".";
+    }
+    var baseCols = 7 + (currentUsage ? 1 : 0) + (showObserved ? 1 : 0);
 
     if (!rows.length) {
       var emptyRow = el("tr");
       var emptyCell = el("td", "topics-empty", q ? "No topics match “" + q + "”." : "No topics to show.");
-      emptyCell.colSpan = currentUsage ? 8 : 7;
+      emptyCell.colSpan = baseCols;
       emptyRow.appendChild(emptyCell);
       tbody.appendChild(emptyRow);
       return;
@@ -2426,6 +2488,23 @@
           ? el("span", "usage-count", fmtCount(usageTotal))
           : el("span", "t-empty", "–"));
         tr.appendChild(tdUsage);
+      }
+
+      if (showObserved) {
+        // Adjacent to Usage, never merged with it (a different plane). absent ≠ zero → "—" when this topic
+        // wasn't observed (or its stats feed is absent), a live count otherwise, in the observed token.
+        var tdObs = el("td");
+        var obsRows = (currentFleet.topics || []).filter(function (o) {
+          return o.topic === t.topic && (o.version || null) === (t.version || null);
+        });
+        var observedThis = obsRows.some(function (o) { return (o.missingFeeds || []).indexOf("stats") === -1; });
+        var obsTotal = obsRows.reduce(function (a, o) {
+          return a + ((o.missingFeeds || []).indexOf("stats") === -1 ? (o.invocations || 0) : 0);
+        }, 0);
+        tdObs.appendChild(!observedThis
+          ? el("span", "t-empty", "—")
+          : el("span", "obs-count", fmtCount(obsTotal)));
+        tr.appendChild(tdObs);
       }
 
       tbody.appendChild(tr);
@@ -2848,10 +2927,14 @@
     if (location.hash === "#fleet") renderFleetPage();
     else {
       refreshOpenLiveSection();
-      // On the estate landing view, refresh the issue inbox so live divergences stay current as the fleet
-      // polls (the inbox is the estate's live surface — vision 2026-07-24). Other estate widgets are left
-      // undisturbed by a background poll; only the inbox reflects live data in this slice.
-      if (isEstateView()) renderIssues();
+      // On the estate landing view, refresh the live surfaces as the fleet polls: the issue inbox (Slice 1),
+      // the topics-table Observed column, and the service-card heartbeat dots (Slice 2). The heartbeat dots
+      // update in place so an expanded service card isn't collapsed by a background poll.
+      if (isEstateView()) {
+        renderIssues();
+        if (currentTopics && currentTopics.length) renderTopicRows();
+        refreshServiceCardHeartbeats();
+      }
     }
   }
   function isEstateView() {

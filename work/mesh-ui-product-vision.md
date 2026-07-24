@@ -33,6 +33,11 @@
 > live `FleetView` against the declared catalog, merged into the inbox with a `LIVE` provenance chip; the
 > static-floor no-endpoint path (no rows mount) is Playwright-verified as its own case. Topic reconciliation
 > is skipped until `topics.json` loads (else every observed consumer would false-flag as undeclared).
+> **Slice 2 SHIPPED 2026-07-25:** the provenance visual-token vocabulary is defined once (declared plain vs
+> the `.obs-count` observed token) and reused; the estate topics table gains an **Observed** column adjacent to
+> (never merged with) the declared usage.json column — "—" when unobserved, live count otherwise, header stating
+> the window/plane — and the service cards gain a live **heartbeat dot**. Both mount only with a live endpoint
+> (static floor renders as before; Playwright-verified). Slice 3 (weave the drill-in pages) remains.
 
 > **2026-07-24 SHIPPED: the Fleet plane folded into the Mesh UI + a time-range picker (Phases A–F).**
 > The standalone `mesh-fleet-ui.html` is gone: the live Fleet plane is now enriched into `mesh-ui.html`
