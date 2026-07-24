@@ -465,6 +465,64 @@
   .topo-arrow { fill: var(--ink-faint); }
   .topo-arrow.err { fill: var(--req); }
 
+  /* ---------- Fleet view (live/observed plane, folded in from the standalone fleet page) ---------- */
+  .fl-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 4px 0 18px; }
+  .fl-tile { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; }
+  .fl-tile .k { color: var(--ink-faint); font-size: 12px; }
+  .fl-tile .v { font-size: 22px; font-weight: 650; }
+  .fl-tablewrap { overflow-x: auto; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); }
+  .fl-tablewrap table { width: 100%; border-collapse: collapse; }
+  .fl-tablewrap th, .fl-tablewrap td { text-align: left; padding: 7px 11px; border-bottom: 1px solid var(--line-soft); font-size: 12.5px; white-space: nowrap; }
+  .fl-tablewrap th { color: var(--ink-faint); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+  .fl-tablewrap tr:last-child td { border-bottom: none; }
+  .fl-num { font-variant-numeric: tabular-nums; }
+  .fl-mono { font-family: var(--mono); font-size: 12px; }
+  .fl-h-healthy { color: var(--ok); }
+  .fl-h-degraded { color: var(--m-put); }
+  .fl-h-unknown, .fl-missing { color: var(--ink-faint); }
+  .fl-failed { color: var(--req); }
+  .fl-stale { color: var(--m-put); }
+  .fl-sub { color: var(--ink-soft); font-size: 12.5px; margin: 3px 0 12px; }
+  tr.fl-flow-row { cursor: pointer; }
+  tr.fl-flow-row:hover td { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  .fl-flow-link { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .fl-flow-link:hover, .fl-flow-link:focus-visible { color: var(--accent); outline: none; }
+  td.fl-flow-detail { padding: 4px 11px 14px; white-space: normal; }
+  .fl-wf { margin-top: 4px; }
+  .fl-wf-head { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin: 4px 0 10px; }
+  .fl-wf-head .fl-tid { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); word-break: break-all; }
+  .fl-wf-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+  .fl-wf-label { flex: 0 0 300px; min-width: 0; display: flex; align-items: baseline; gap: 7px; font-size: 12px; overflow: hidden; }
+  .fl-wf-label .fl-svc { color: var(--ink-soft); flex: none; }
+  .fl-wf-label .fl-top { font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fl-wf-track { flex: 1 1 auto; position: relative; height: 16px; background: color-mix(in srgb, var(--ink) 5%, transparent); border-radius: 4px; overflow: hidden; }
+  .fl-wf-bar { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; min-width: 3px; background: var(--ok); opacity: .85; }
+  .fl-wf-bar.err { background: var(--req); }
+  .fl-wf-stat { flex: 0 0 150px; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
+  .fl-wf-stat .fl-st-err { color: var(--req); }
+  .fl-wf-note { color: var(--ink-faint); font-size: 12px; padding: 6px 0; }
+  .fl-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 6px; }
+  .fl-box input { flex: 0 1 320px; min-width: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; font-size: 12.5px; }
+  .fl-box input:focus-visible { outline: none; border-color: var(--accent); }
+  .fl-box button { padding: 6px 14px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer; }
+  .fl-box button:hover, .fl-box button:focus-visible { border-color: var(--accent); outline: none; }
+  .fl-results { margin-top: 4px; }
+  .fl-results .fl-wf { margin-bottom: 18px; }
+  .fl-trace-label { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .05em; margin: 8px 0 6px; }
+  .fl-corr-link { background: none; border: none; padding: 0; font: inherit; font-size: 11.5px; color: var(--ink-soft); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .fl-corr-link:hover, .fl-corr-link:focus-visible { color: var(--accent); outline: none; }
+  .fl-topo-wrap { border: 1px solid var(--line); border-radius: 9px; background: var(--surface); overflow-x: auto; padding: 6px; margin-bottom: 8px; }
+  .fl-topo-node rect { fill: var(--surface-2); stroke: var(--ink-faint); stroke-width: 1.2; }
+  .fl-topo-node text { fill: var(--ink); font-family: var(--mono); font-size: 11.5px; }
+  .fl-topo-node.fl-h-healthy rect { stroke: var(--ok); }
+  .fl-topo-node.fl-h-degraded rect { stroke: var(--m-put); }
+  .fl-topo-node.fl-h-unknown rect { stroke: var(--ink-faint); stroke-dasharray: 4 3; }
+  .fl-topo-node.fl-h-stale rect { stroke: var(--m-put); stroke-dasharray: 4 3; }
+  .fl-topo-edge { fill: none; stroke: var(--ink-faint); opacity: .6; }
+  .fl-topo-edge.err { stroke: var(--req); opacity: .85; }
+  .fl-topo-arrow { fill: var(--ink-faint); }
+  .fl-topo-arrow.err { fill: var(--req); }
+
   /* ---------- service page (the third entity: Estate / Service / Topic) ---------- */
   .svc-name-btn {
     background: none; border: none; padding: 0; cursor: pointer;
@@ -588,6 +646,10 @@
     <div class="v" id="doc-generated">&nbsp;</div>
   </div>
   <div class="grow"></div>
+  <button class="tb-btn" id="fleet-nav" title="Live fleet activity" style="display:none" onclick="location.hash='#fleet'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+    <span>Fleet</span>
+  </button>
   <button class="tb-btn" id="load-btn" title="Load a different manifest">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
     <span>Load manifest</span>
@@ -740,6 +802,51 @@
       </div>
     </div>
     <div id="compose-body"></div>
+  </section>
+
+  <section id="fleet-page" style="display:none">
+    <div class="lede">
+      <h1>Fleet — live activity</h1>
+      <p id="lede-desc">Observed behaviour polled live from the running mesh — traces, flows and status —
+        the counterpart to the declared catalog. The estate, topic and service pages are enriched with
+        this live data too; this view holds the fleet-wide live surfaces.
+        <span id="fl-status" class="fl-failed"></span></p>
+    </div>
+    <div class="fl-tiles" id="fl-tiles"></div>
+
+    <h2 id="fl-topo-title" style="display:none">Observed topology
+      <span style="font-weight:400;color:var(--ink-faint);font-size:11.5px">(consumers call providers, derived from trace parentage — never declared)</span></h2>
+    <div class="fl-topo-wrap" id="fl-topo" style="display:none"></div>
+
+    <h2>Trace a transaction</h2>
+    <p class="fl-sub">Look up every flow that carried a business <span class="fl-mono">correlation id</span> —
+      which services and topics were involved and whether each leg succeeded (from
+      <span class="fl-mono">mesh:query:correlation</span>). Correlation ids exist only for flows whose entry
+      set the <span class="fl-mono">x-correlation-id</span> header.</p>
+    <div class="fl-box">
+      <input id="fl-corr-input" type="text" placeholder="correlation id (e.g. from a ticket or log)"
+             aria-label="Correlation id" autocomplete="off" spellcheck="false">
+      <button id="fl-corr-go" type="button">Trace</button>
+    </div>
+    <div class="fl-results" id="fl-corr-results"></div>
+
+    <h2>Look up a trace by ID</h2>
+    <p class="fl-sub">Paste a <span class="fl-mono">trace id</span> to open its full waterfall — the whole
+      flow across every service (from <span class="fl-mono">mesh:query:trace</span>).</p>
+    <div class="fl-box">
+      <input id="fl-trace-input" type="text" placeholder="trace id"
+             aria-label="Trace id" autocomplete="off" spellcheck="false">
+      <button id="fl-trace-go" type="button">Open</button>
+    </div>
+    <div class="fl-results" id="fl-trace-results"></div>
+
+    <h2>Recent flows</h2>
+    <p class="fl-sub">Click a flow to open its traced waterfall — every handled message in the flow, per
+      service, laid out over time (from <span class="fl-mono">mesh:query:trace</span>).</p>
+    <div class="fl-tablewrap"><table>
+      <thead><tr><th>Trace</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
+      <tbody id="fl-traces"></tbody>
+    </table></div>
   </section>
 </main>
 
@@ -1408,7 +1515,7 @@
   /* The three entity views - Estate (#main-view), Topic (#topic-page), Service (#service-page) -
      are mutually exclusive; location.hash is the single source of truth for which one shows. */
   function showView(id) {
-    ["main-view", "topic-page", "service-page", "compose-page"].forEach(function (v) {
+    ["main-view", "topic-page", "service-page", "compose-page", "fleet-page"].forEach(function (v) {
       document.getElementById(v).style.display = (v === id) ? "" : "none";
     });
     if (id !== "main-view") window.scrollTo(0, 0);
@@ -1421,6 +1528,9 @@
       renderTopicPage(decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
     } else if (location.hash.indexOf(SERVICE_HASH_PREFIX) === 0) {
       renderServicePage(decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length)));
+    } else if (location.hash === "#fleet" && fleetEndpoint()) {
+      renderFleetPage();
+      showView("fleet-page");
     } else {
       showView("main-view");
     }
@@ -2571,16 +2681,304 @@
   }
   function loadFleet() {
     if (!fleetEndpoint()) return; // static floor: nothing live to poll
+    var nav = document.getElementById("fleet-nav");
+    if (nav) nav.style.display = ""; // the Fleet nav appears only when a live endpoint is present
     fleetQuery("mesh:query:fleet", "{}")
       .then(function (view) { currentFleet = view; renderFleetInto(); })
       .catch(function () { /* keep the last good view - a transient poll failure isn't a reset */ });
     if (!fleetTimer) { fleetTimer = setInterval(loadFleet, FLEET_POLL_MS); }
   }
-  // Re-render the surfaces the live plane feeds after a poll. Phase A: just the current view; later
-  // phases add the estate live indicators, per-entity live sections, and the Fleet landing view.
+  // Re-render the surfaces the live plane feeds after a poll: the Fleet landing view when it's open, and
+  // (later phases) the estate live indicators + per-entity live sections. Kept off the entity/estate
+  // re-render for now so a background poll never disturbs an open catalog page unless it shows live data.
   function renderFleetInto() {
-    syncViewFromHash();
+    if (location.hash === "#fleet") renderFleetPage();
   }
+
+  /* ===== Fleet view rendering (ported from the standalone fleet page, fl- namespaced) ===== */
+  var FL_SUCCESS = { "ok": 1, "created": 1, "accepted": 1, "updated": 1, "deleted": 1, "ignored": 1 };
+  var FL_STALE_MS = 90 * 1000; // heartbeat staleness (fine-grained), distinct from the 24h manifest one
+  var flOpenTraceId = null, flTraceCache = {};
+
+  function flAgeMs(iso) {
+    if (!iso) return null;
+    var t = Date.parse(iso);
+    return isNaN(t) ? null : Math.max(0, Date.now() - t);
+  }
+  function flAge(ms) {
+    if (ms < 90 * 1000) return Math.round(ms / 1000) + "s";
+    if (ms < 90 * 60 * 1000) return Math.round(ms / 60000) + "m";
+    return Math.round(ms / 3600000) + "h";
+  }
+  function flCell(row, text, cls) {
+    var td = document.createElement("td");
+    td.textContent = text === undefined || text === null || text === "" ? "-" : String(text);
+    if (cls) td.className = cls;
+    row.appendChild(td);
+    return td;
+  }
+  function flFill(tbody, rows, build, columns) {
+    tbody.textContent = "";
+    if (!rows || rows.length === 0) {
+      var tr = document.createElement("tr");
+      var td = flCell(tr, "nothing observed yet", "fl-missing");
+      td.colSpan = columns;
+      tbody.appendChild(tr);
+      return;
+    }
+    rows.forEach(function (item) { var tr = document.createElement("tr"); build(tr, item); tbody.appendChild(tr); });
+  }
+
+  function renderFleetPage() {
+    var fleet = currentFleet;
+    var status = document.getElementById("fl-status");
+    if (!fleet) {
+      if (status) status.textContent = "connecting to the live mesh…";
+      return;
+    }
+    if (status) status.textContent = "";
+    var services = fleet.services || [], topics = fleet.topics || [], traces = fleet.traces || [];
+    var invocations = 0, errors = 0, unhealthy = 0;
+    services.forEach(function (s) { if (s.health === "degraded") unhealthy++; });
+    topics.forEach(function (t) {
+      if ((t.missingFeeds || []).indexOf("stats") === -1) { invocations += t.invocations; errors += t.errors; }
+    });
+    var tiles = document.getElementById("fl-tiles");
+    tiles.textContent = "";
+    [["Services", services.length], ["Topics", topics.length], ["Invocations", invocations],
+     ["Errors", errors], ["Unhealthy", unhealthy]].forEach(function (kv) {
+      var t = el("div", "fl-tile");
+      t.appendChild(el("div", "k", kv[0]));
+      t.appendChild(el("div", "v", String(kv[1])));
+      tiles.appendChild(t);
+    });
+
+    var tbody = document.getElementById("fl-traces");
+    flFill(tbody, traces, function (tr, f) {
+      tr.className = "fl-flow-row";
+      tr.tabIndex = 0;
+      var tdId = document.createElement("td");
+      var link = document.createElement("button");
+      link.className = "fl-flow-link fl-mono";
+      link.type = "button";
+      link.textContent = (f.traceId || "").slice(0, 16);
+      link.title = "Open this flow's traced waterfall";
+      tdId.appendChild(link);
+      tr.appendChild(tdId);
+      flCell(tr, (f.services || []).join(" → "));
+      flCell(tr, f.events, "fl-num");
+      flCell(tr, (f.durationMs || 0).toFixed(1), "fl-num");
+      flCell(tr, f.failed ? "✕ failed" : "✓ ok", f.failed ? "fl-failed" : "fl-h-healthy");
+      var open = function () { flToggleFlow(tr, f.traceId); };
+      tr.addEventListener("click", open);
+      tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    }, 5);
+    flRenderTopology(fleet);
+
+    if (flOpenTraceId) {
+      var rows = tbody.querySelectorAll("tr.fl-flow-row");
+      for (var i = 0; i < rows.length; i++) {
+        if (traces[i] && traces[i].traceId === flOpenTraceId) { flExpandFlow(rows[i], flOpenTraceId); break; }
+      }
+    }
+  }
+
+  /* observed topology: consumer -> provider edges derived from the topics' observed consumers */
+  function flDeriveEdges(topics) {
+    var byPair = {};
+    (topics || []).forEach(function (t) {
+      (t.consumers || []).forEach(function (c) {
+        (t.providers || []).forEach(function (p) {
+          if (c === p) return;
+          var key = c + " " + p;
+          var e = byPair[key] || (byPair[key] = { from: c, to: p, invocations: 0, errors: 0, topics: [] });
+          e.invocations += t.invocations || 0; e.errors += t.errors || 0;
+          e.topics.push(t.topic + (t.version ? "@" + t.version : ""));
+        });
+      });
+    });
+    return Object.keys(byPair).map(function (k) { return byPair[k]; });
+  }
+  function flRenderTopology(fleet) {
+    var container = document.getElementById("fl-topo"), title = document.getElementById("fl-topo-title");
+    var edges = flDeriveEdges(fleet.topics);
+    if (!edges.length) { container.style.display = "none"; title.style.display = "none"; return; }
+    container.style.display = ""; title.style.display = ""; container.textContent = "";
+    var healthOf = {};
+    (fleet.services || []).forEach(function (s) {
+      var age = flAgeMs(s.lastSeen);
+      healthOf[s.service] = (age != null && age > FL_STALE_MS) ? "stale" : s.health;
+    });
+    var names = [];
+    edges.forEach(function (e) { if (names.indexOf(e.from) < 0) names.push(e.from); if (names.indexOf(e.to) < 0) names.push(e.to); });
+    var layerOf = computeLayers(names, edges), columns = {};
+    names.slice().sort().forEach(function (n) { (columns[layerOf[n]] = columns[layerOf[n]] || []).push(n); });
+    var NODE_H = 28, ROW_GAP = 24, COL_GAP = 100, PAD = 20;
+    function nodeW(name) { return Math.min(220, 20 + name.length * 7); }
+    var colWidths = {}, maxRows = 0;
+    Object.keys(columns).forEach(function (l) { colWidths[l] = Math.max.apply(null, columns[l].map(nodeW)); maxRows = Math.max(maxRows, columns[l].length); });
+    var pos = {}, x = PAD;
+    Object.keys(columns).map(Number).sort(function (a, b) { return a - b; }).forEach(function (l) {
+      columns[l].forEach(function (n, i) { pos[n] = { x: x, y: PAD + i * (NODE_H + ROW_GAP), w: nodeW(n) }; });
+      x += colWidths[l] + COL_GAP;
+    });
+    var width = x - COL_GAP + PAD, height = PAD * 2 + maxRows * (NODE_H + ROW_GAP) - ROW_GAP;
+    var svg = svgEl("svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height, role: "img" });
+    svg.appendChild(svgTitle("Observed service topology"));
+    var defs = svgEl("defs", {});
+    [["fl-arrow", "fl-topo-arrow"], ["fl-arrow-err", "fl-topo-arrow err"]].forEach(function (m) {
+      var marker = svgEl("marker", { id: m[0], viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 9, markerHeight: 9, markerUnits: "userSpaceOnUse", orient: "auto-start-reverse" });
+      var tip = svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z" }); tip.setAttribute("class", m[1]); marker.appendChild(tip); defs.appendChild(marker);
+    });
+    svg.appendChild(defs);
+    edges.forEach(function (e) {
+      var from = pos[e.from], to = pos[e.to]; if (!from || !to) return;
+      var x1 = from.x + from.w, y1 = from.y + NODE_H / 2, x2 = to.x, y2 = to.y + NODE_H / 2;
+      var err = (e.invocations > 0 ? e.errors / e.invocations : 0) >= 0.05, d;
+      if (x2 > x1) {
+        var mid = (x1 + x2) / 2, bow = (layerOf[e.to] - layerOf[e.from] > 1) ? NODE_H + 4 : 0;
+        d = "M " + x1 + " " + y1 + " C " + mid + " " + (y1 + bow) + ", " + mid + " " + (y2 + bow) + ", " + (x2 - 3) + " " + y2;
+      } else {
+        var lift = Math.min(y1, y2) - (NODE_H + 12);
+        d = "M " + x1 + " " + y1 + " C " + (x1 + 42) + " " + lift + ", " + (x2 - 42) + " " + lift + ", " + (x2 - 3) + " " + y2;
+      }
+      var path = svgEl("path", { d: d, "marker-end": "url(#fl-arrow" + (err ? "-err" : "") + ")" });
+      path.setAttribute("class", "fl-topo-edge" + (err ? " err" : ""));
+      path.setAttribute("stroke-width", (1 + Math.min(4, Math.sqrt(e.invocations) / 8)).toFixed(1));
+      path.appendChild(svgTitle(e.from + " → " + e.to + " · " + e.invocations + " invocations · " + e.errors + " errors · via " + e.topics.join(", ")));
+      svg.appendChild(path);
+    });
+    names.forEach(function (n) {
+      var p = pos[n], health = healthOf[n] || "unknown";
+      var g = svgEl("g", { transform: "translate(" + p.x + "," + p.y + ")" });
+      g.setAttribute("class", "fl-topo-node fl-h-" + health);
+      g.appendChild(svgEl("rect", { width: p.w, height: NODE_H, rx: 7 }));
+      var label = svgEl("text", { x: p.w / 2, y: NODE_H / 2 + 4, "text-anchor": "middle" });
+      label.textContent = n.length > 27 ? n.slice(0, 26) + "…" : n;
+      g.appendChild(label); g.appendChild(svgTitle(n + " · " + health)); svg.appendChild(g);
+    });
+    container.appendChild(svg);
+  }
+
+  /* the traced waterfall */
+  function flSpanDepths(events) {
+    var byId = {}; events.forEach(function (e) { if (e.spanId) byId[e.spanId] = e; });
+    var depths = {};
+    events.forEach(function (e) {
+      var depth = 0, seen = {}, p = e.parentSpanId;
+      while (p && byId[p] && !seen[p] && depth < 32) { seen[p] = 1; depth++; p = byId[p].parentSpanId; }
+      depths[e.spanId || ""] = depth;
+    });
+    return depths;
+  }
+  function flBuildWaterfall(view) {
+    var events = view.events || [], wrap = el("div", "fl-wf"), head = el("div", "fl-wf-head");
+    head.appendChild(el("span", "fl-tid", view.traceId));
+    var correlated = (events.find(function (e) { return e.correlationId; }) || {}).correlationId;
+    if (correlated) {
+      var cwrap = el("span", "fl-tid", "correlation ");
+      var clink = el("button", "fl-corr-link", correlated);
+      clink.type = "button"; clink.title = "Find all flows that carried this correlation id";
+      clink.addEventListener("click", function () { flLookupCorrelation(correlated); });
+      cwrap.appendChild(clink); head.appendChild(cwrap);
+    }
+    wrap.appendChild(head);
+    if (!events.length) {
+      wrap.appendChild(el("div", "fl-wf-note", "No events for this trace — it may have aged out of the ring buffer."));
+      return wrap;
+    }
+    var starts = events.map(function (e) { return Date.parse(e.startedAt) || 0; });
+    var t0 = Math.min.apply(null, starts);
+    var t1 = Math.max.apply(null, events.map(function (e, i) { return starts[i] + (e.durationMs || 0); }));
+    var span = Math.max(1, t1 - t0), depths = flSpanDepths(events);
+    events.forEach(function (e, i) {
+      var row = el("div", "fl-wf-row"), label = el("div", "fl-wf-label");
+      label.style.paddingLeft = Math.min(depths[e.spanId || ""] || 0, 8) * 14 + "px";
+      label.appendChild(el("span", "fl-svc", e.service || "?"));
+      var top = el("span", "fl-top", e.topic + (e.topicVersion ? "@" + e.topicVersion : "")); top.title = top.textContent;
+      label.appendChild(top); row.appendChild(label);
+      var track = el("div", "fl-wf-track"), bar = el("div"), ok = FL_SUCCESS[e.status] === 1;
+      bar.className = "fl-wf-bar" + (ok ? "" : " err");
+      bar.style.left = (((starts[i] - t0) / span) * 100).toFixed(2) + "%";
+      bar.style.width = Math.max(0.4, ((e.durationMs || 0) / span) * 100).toFixed(2) + "%";
+      bar.title = (e.durationMs || 0).toFixed(1) + "ms · " + e.status;
+      track.appendChild(bar); row.appendChild(track);
+      var stat = el("div", "fl-wf-stat"), st = el("span", ok ? "" : "fl-st-err", e.status);
+      stat.appendChild(st); stat.appendChild(document.createTextNode(" · " + (e.durationMs || 0).toFixed(1) + "ms"));
+      row.appendChild(stat); wrap.appendChild(row);
+    });
+    return wrap;
+  }
+  function flToggleFlow(tr, traceId) {
+    var wasOpen = flOpenTraceId === traceId; flCollapseFlows();
+    if (!wasOpen) flExpandFlow(tr, traceId);
+  }
+  function flCollapseFlows() {
+    flOpenTraceId = null;
+    document.querySelectorAll("tr.fl-flow-detail-row").forEach(function (r) { r.remove(); });
+    document.querySelectorAll("tr.fl-flow-row.open").forEach(function (r) { r.classList.remove("open"); });
+  }
+  function flExpandFlow(tr, traceId) {
+    flOpenTraceId = traceId; tr.classList.add("open");
+    var detailRow = document.createElement("tr"); detailRow.className = "fl-flow-detail-row";
+    var td = document.createElement("td"); td.className = "fl-flow-detail"; td.colSpan = 5;
+    td.appendChild(el("div", "fl-wf-note", "Loading trace…"));
+    detailRow.appendChild(td); tr.parentNode.insertBefore(detailRow, tr.nextSibling);
+    var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
+    flTraceCache[traceId] = promise;
+    promise.then(function (view) {
+      if (flOpenTraceId !== traceId || !detailRow.isConnected) return;
+      td.textContent = ""; td.appendChild(flBuildWaterfall(view));
+    }).catch(function (err) {
+      delete flTraceCache[traceId];
+      if (!detailRow.isConnected) return;
+      td.textContent = ""; td.appendChild(el("div", "fl-wf-note fl-failed", "Could not load this flow's trace: " + (err.message || err)));
+    });
+  }
+
+  function flLookupCorrelation(presetId) {
+    var input = document.getElementById("fl-corr-input"), results = document.getElementById("fl-corr-results");
+    if (!input || !results) return;
+    if (presetId != null) { input.value = presetId; if (input.scrollIntoView) input.scrollIntoView({ behavior: "smooth", block: "center" }); }
+    var id = (input.value || "").trim(); results.textContent = ""; if (!id) return;
+    results.appendChild(el("div", "fl-wf-note", "Looking up flows for " + id + "…"));
+    fleetQuery("mesh:query:correlation", JSON.stringify({ correlationId: id })).then(function (view) {
+      results.textContent = "";
+      var traces = view.traces || [];
+      results.appendChild(el("div", "fl-trace-label", traces.length + (traces.length === 1 ? " flow" : " flows") + " carried correlation id " + view.correlationId));
+      traces.forEach(function (t) { results.appendChild(flBuildWaterfall(t)); });
+    }).catch(function (err) {
+      results.textContent = "";
+      var msg = String(err.message || err) === "not-found"
+        ? "No flows found for correlation id “" + id + "” — it may have aged out of the ring buffer, or no flow set this correlation id."
+        : "Could not look up correlation id: " + (err.message || err);
+      results.appendChild(el("div", "fl-wf-note" + (String(err.message || err) === "not-found" ? "" : " fl-failed"), msg));
+    });
+  }
+  function flLookupTrace(presetId) {
+    var input = document.getElementById("fl-trace-input"), results = document.getElementById("fl-trace-results");
+    if (!input || !results) return;
+    if (presetId != null) { input.value = presetId; if (input.scrollIntoView) input.scrollIntoView({ behavior: "smooth", block: "center" }); }
+    var id = (input.value || "").trim(); results.textContent = ""; if (!id) return;
+    results.appendChild(el("div", "fl-wf-note", "Loading trace " + id + "…"));
+    fleetQuery("mesh:query:trace", JSON.stringify({ traceId: id })).then(function (view) {
+      results.textContent = ""; results.appendChild(flBuildWaterfall(view));
+    }).catch(function (err) {
+      results.textContent = "";
+      var msg = String(err.message || err) === "not-found"
+        ? "No trace found for id “" + id + "” — it may have aged out of the ring buffer."
+        : "Could not load trace: " + (err.message || err);
+      results.appendChild(el("div", "fl-wf-note" + (String(err.message || err) === "not-found" ? "" : " fl-failed"), msg));
+    });
+  }
+  (function flWireLookups() {
+    var cg = document.getElementById("fl-corr-go"), ci = document.getElementById("fl-corr-input");
+    if (cg) cg.addEventListener("click", function () { flLookupCorrelation(); });
+    if (ci) ci.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); flLookupCorrelation(); } });
+    var tg = document.getElementById("fl-trace-go"), ti = document.getElementById("fl-trace-input");
+    if (tg) tg.addEventListener("click", function () { flLookupTrace(); });
+    if (ti) ti.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); flLookupTrace(); } });
+  })();
 
   function buildDiscussionSection(entityId) {
     var endpoint = annotationsEndpoint();
