@@ -359,6 +359,16 @@
   .feed-health { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); margin: 4px 0 6px; }
   .feed-health.fh-warn { color: var(--m-put); }
   .feed-health.fh-bad { color: var(--req); }
+  /* D7 rule: backend infra names are labelled, never presented as mesh services. */
+  .fl-infra-chip { margin-left: 6px; font-family: var(--mono); font-size: 10px; padding: 1px 5px;
+    border: 1px dashed var(--line); border-radius: 4px; color: var(--ink-faint); }
+  /* The recent-flows pivot filter bar (a filtered list must never look like the whole). */
+  .fl-flow-filterbar { display: flex; gap: 10px; align-items: baseline; font-family: var(--mono);
+    font-size: 11.5px; color: var(--ink-soft); margin: 0 0 6px; }
+  /* Demoted estate sections (drains-up 2.2): collapsed by default behind their header. */
+  .sec-toggle { background: none; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+    font: inherit; font-size: 11.5px; color: var(--ink-soft); padding: 2px 8px; margin-left: 10px; }
+  .sec-toggle:hover { color: var(--accent); border-color: var(--accent); }
   .issues-clear { display: flex; align-items: center; gap: 9px; padding: 16px 18px; border-radius: var(--radius);
                   background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
                   color: var(--ink-soft); font-size: 14px; }
@@ -718,6 +728,66 @@
     <div class="feed-health" id="feed-health-estate" style="display:none"></div>
     <div id="issues-body"></div>
   </section>
+
+  <!-- The front door's traffic picture (drains-up phase 2.2): the live plane lives ON the landing page —
+       needs-you strip above, traffic picture here, the catalog below. Mounts only with a live endpoint
+       (static floor: hidden entirely). Formerly the separate #fleet-page; #fleet deep-links scroll here. -->
+  <section id="traffic-section" style="display:none">
+    <div class="issues-head">
+      <h2>Live traffic</h2>
+      <span class="issues-sub" id="fl-status"></span>
+    </div>
+    <div class="fl-range" id="fl-range">
+      <label for="fl-range-select">Time range</label>
+      <select id="fl-range-select" aria-label="Live time range"></select>
+      <span id="fl-range-custom" style="display:none">
+        <input type="datetime-local" id="fl-range-from" aria-label="From">
+        <span class="fl-range-dash">→</span>
+        <input type="datetime-local" id="fl-range-to" aria-label="To">
+        <button type="button" id="fl-range-apply">Apply</button>
+      </span>
+      <span class="fl-sub" id="fl-range-note"></span>
+    </div>
+    <div class="feed-health" id="fl-feed-health" style="display:none"></div>
+    <div class="fl-tiles" id="fl-tiles"></div>
+    <div id="fl-counts-note"></div>
+
+    <h3 id="fl-topo-title" style="display:none">Traffic map
+      <span id="fl-topo-sub" style="font-weight:400;color:var(--ink-faint);font-size:11.5px"></span></h3>
+    <div class="fl-topo-wrap" id="fl-topo" style="display:none"></div>
+
+    <h3>Recent flows</h3>
+    <p class="fl-sub">Click a flow to open its traced waterfall — every handled message in the flow, per
+      service, laid out over time (from <span class="fl-mono">mesh:query:trace</span>).</p>
+    <div class="fl-flow-filterbar" id="fl-flow-filter" style="display:none"></div>
+    <div class="fl-tablewrap"><table>
+      <thead><tr><th>Trace</th><th>Topic</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
+      <tbody id="fl-traces"></tbody>
+    </table></div>
+
+    <h3>Trace a transaction</h3>
+    <p class="fl-sub">Look up every flow that carried a business <span class="fl-mono">correlation id</span> —
+      which services and topics were involved and whether each leg succeeded (from
+      <span class="fl-mono">mesh:query:correlation</span>). Correlation ids exist only for flows whose entry
+      set the <span class="fl-mono">x-correlation-id</span> header.</p>
+    <div class="fl-box">
+      <input id="fl-corr-input" type="text" placeholder="correlation id (e.g. from a ticket or log)"
+             aria-label="Correlation id" autocomplete="off" spellcheck="false">
+      <button id="fl-corr-go" type="button">Trace</button>
+    </div>
+    <div class="fl-results" id="fl-corr-results"></div>
+
+    <h3>Look up a trace by ID</h3>
+    <p class="fl-sub">Paste a <span class="fl-mono">trace id</span> to open its full waterfall — the whole
+      flow across every service (from <span class="fl-mono">mesh:query:trace</span>).</p>
+    <div class="fl-box">
+      <input id="fl-trace-input" type="text" placeholder="trace id"
+             aria-label="Trace id" autocomplete="off" spellcheck="false">
+      <button id="fl-trace-go" type="button">Open</button>
+    </div>
+    <div class="fl-results" id="fl-trace-results"></div>
+  </section>
+
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
     <input type="search" id="filter" placeholder="Filter services…" autocomplete="off" spellcheck="false" />
@@ -751,8 +821,10 @@
             <th>Consumers</th>
             <th>HTTP</th>
             <th>Status</th>
-            <th id="topics-usage-th" style="display:none" title="Observed messages handled in the usage feed's window (usage.json)">Usage</th>
-            <th id="topics-observed-th" style="display:none">Observed <span class="obs-th-chip" title="Live observed traffic, polled from the running fleet — a different plane from the Usage column; the two are shown adjacent, never summed.">live</span><span class="obs-th-window" id="topics-observed-window"></span></th>
+            <!-- One Traffic column (drains-up 2.5): best-available observed count per row — live plane
+                 preferred, usage feed as fallback — with provenance/window one affordance deep (the
+                 header token + per-cell tooltips), not a second column. Divergence lives in the inbox. -->
+            <th id="topics-traffic-th" style="display:none">Traffic<span class="obs-th-window" id="topics-traffic-window"></span></th>
           </tr>
         </thead>
         <tbody id="topics-tbody"></tbody>
@@ -760,19 +832,25 @@
     </div>
   </section>
 
+  <!-- Demoted sections (drains-up 2.2): quarterly/analysis tools, collapsed by default so the front
+       door stays issues → traffic → flows → catalog. The toggle only hides the body — the section
+       header stays discoverable. -->
   <section id="value-section" style="display:none">
     <div class="topo-head">
       <h2>Value &amp; deprecation</h2>
       <span class="topo-generated" id="value-note"></span>
+      <button type="button" class="sec-toggle" data-sec-toggle="value-body">show</button>
     </div>
-    <div id="value-body"></div>
+    <div id="value-body" style="display:none"></div>
   </section>
 
   <section id="topology-section" style="display:none">
     <div class="topo-head">
       <h2>Topology</h2>
       <span class="topo-generated" id="topology-generated"></span>
+      <button type="button" class="sec-toggle" data-sec-toggle="topology-content">show</button>
     </div>
+    <div id="topology-content" style="display:none">
     <div class="topo-graph-wrap" id="topology-graph"></div>
     <div class="topo-table-wrap">
       <table class="topo-table" id="topology-table">
@@ -790,6 +868,7 @@
         </thead>
         <tbody id="topology-tbody"></tbody>
       </table>
+    </div>
     </div>
   </section>
  </div>
@@ -850,63 +929,6 @@
     <div id="compose-body"></div>
   </section>
 
-  <section id="fleet-page" style="display:none">
-    <div class="lede">
-      <h1>Fleet — live activity</h1>
-      <p id="lede-desc">Observed behaviour polled live from the running mesh — traces, flows and status —
-        the counterpart to the declared catalog. The estate, topic and service pages are enriched with
-        this live data too; this view holds the fleet-wide live surfaces.
-        <span id="fl-status" class="fl-failed"></span></p>
-    </div>
-    <div class="fl-range" id="fl-range">
-      <label for="fl-range-select">Time range</label>
-      <select id="fl-range-select" aria-label="Live time range"></select>
-      <span id="fl-range-custom" style="display:none">
-        <input type="datetime-local" id="fl-range-from" aria-label="From">
-        <span class="fl-range-dash">→</span>
-        <input type="datetime-local" id="fl-range-to" aria-label="To">
-        <button type="button" id="fl-range-apply">Apply</button>
-      </span>
-      <span class="fl-sub" id="fl-range-note"></span>
-    </div>
-    <div class="feed-health" id="fl-feed-health" style="display:none"></div>
-    <div class="fl-tiles" id="fl-tiles"></div>
-    <div id="fl-counts-note"></div>
-
-    <h2 id="fl-topo-title" style="display:none">Observed topology
-      <span style="font-weight:400;color:var(--ink-faint);font-size:11.5px">(consumers call providers, derived from trace parentage — never declared)</span></h2>
-    <div class="fl-topo-wrap" id="fl-topo" style="display:none"></div>
-
-    <h2>Trace a transaction</h2>
-    <p class="fl-sub">Look up every flow that carried a business <span class="fl-mono">correlation id</span> —
-      which services and topics were involved and whether each leg succeeded (from
-      <span class="fl-mono">mesh:query:correlation</span>). Correlation ids exist only for flows whose entry
-      set the <span class="fl-mono">x-correlation-id</span> header.</p>
-    <div class="fl-box">
-      <input id="fl-corr-input" type="text" placeholder="correlation id (e.g. from a ticket or log)"
-             aria-label="Correlation id" autocomplete="off" spellcheck="false">
-      <button id="fl-corr-go" type="button">Trace</button>
-    </div>
-    <div class="fl-results" id="fl-corr-results"></div>
-
-    <h2>Look up a trace by ID</h2>
-    <p class="fl-sub">Paste a <span class="fl-mono">trace id</span> to open its full waterfall — the whole
-      flow across every service (from <span class="fl-mono">mesh:query:trace</span>).</p>
-    <div class="fl-box">
-      <input id="fl-trace-input" type="text" placeholder="trace id"
-             aria-label="Trace id" autocomplete="off" spellcheck="false">
-      <button id="fl-trace-go" type="button">Open</button>
-    </div>
-    <div class="fl-results" id="fl-trace-results"></div>
-
-    <h2>Recent flows</h2>
-    <p class="fl-sub">Click a flow to open its traced waterfall — every handled message in the flow, per
-      service, laid out over time (from <span class="fl-mono">mesh:query:trace</span>).</p>
-    <div class="fl-tablewrap"><table>
-      <thead><tr><th>Trace</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
-      <tbody id="fl-traces"></tbody>
-    </table></div>
-  </section>
 </main>
 
 <dialog class="loader" id="loader">
@@ -1228,9 +1250,12 @@
       if ((t.missingFeeds || []).indexOf("stats") !== -1 || !(t.errors > 0)) return;
       var mix = failingStatusMix(t.statusCounts);
       var lastErr = lastFailingFlowAgeMs(t.topic);
-      issues.push(liveTopicIssue("high", "failing traffic", t.topic, t.version, "Failing traffic",
+      var row = liveTopicIssue("high", "failing traffic", t.topic, t.version, "Failing traffic",
         fmtCount(t.errors) + " of " + fmtCount(t.invocations) + " requests failed " + windowPhrase +
-        (mix ? " — " + mix : "") + (lastErr != null ? "; last failing flow " + flAge(lastErr) + " ago" : "") + "."));
+        (mix ? " — " + mix : "") + (lastErr != null ? "; last failing flow " + flAge(lastErr) + " ago" : "") + ".");
+      // Evidence-first (the core loop): the row lands on this topic's failing flows, not the catalog page.
+      row.nav = function () { flPivotToFailingFlows(t.topic); };
+      issues.push(row);
     });
     // Failing flows with no Benzene-labelled span (drains-up 1.2) — the failure class the pipeline never
     // saw: infrastructure-level, or a message rejected before its topic resolved (the scheduled-rule-400
@@ -1244,7 +1269,7 @@
           title: "Failing traffic without Benzene instrumentation",
           subject: unattributed.length + " failing flow" + (unattributed.length === 1 ? "" : "s"),
           why: "These flows failed but their traces carry no Benzene-labelled span — an infrastructure-level failure, or the pipeline rejecting the message before its topic resolved (e.g. a malformed event). Open the flow's waterfall for the raw trace.",
-          nav: function () { location.hash = "#fleet"; } });
+          nav: function () { flPivotToFailingFlows(null); } });
       }
     }
 
@@ -1737,7 +1762,7 @@
   /* The three entity views - Estate (#main-view), Topic (#topic-page), Service (#service-page) -
      are mutually exclusive; location.hash is the single source of truth for which one shows. */
   function showView(id) {
-    ["main-view", "topic-page", "service-page", "compose-page", "fleet-page"].forEach(function (v) {
+    ["main-view", "topic-page", "service-page", "compose-page"].forEach(function (v) {
       document.getElementById(v).style.display = (v === id) ? "" : "none";
     });
     if (id !== "main-view") window.scrollTo(0, 0);
@@ -1751,8 +1776,12 @@
     } else if (location.hash.indexOf(SERVICE_HASH_PREFIX) === 0) {
       renderServicePage(decodeURIComponent(location.hash.slice(SERVICE_HASH_PREFIX.length)));
     } else if (location.hash === "#fleet" && fleetEndpoint()) {
+      // The live plane now lives ON the landing page (drains-up 2.2, one front door): a #fleet deep-link
+      // (old bookmarks, the nav button, the strip pivots) shows the estate scrolled to the traffic section.
       renderFleetPage();
-      showView("fleet-page");
+      showView("main-view");
+      var traffic = document.getElementById("traffic-section");
+      if (traffic) traffic.scrollIntoView({ behavior: "smooth", block: "start" });
     } else {
       showView("main-view");
     }
@@ -2482,21 +2511,24 @@
     });
     var tbody = document.getElementById("topics-tbody");
     tbody.innerHTML = "";
-    document.getElementById("topics-usage-th").style.display = currentUsage ? "" : "none";
-    // Honesty state 1: the Observed column mounts only with a live endpoint AND a polled fleet — otherwise the
-    // table renders exactly as on a static-only deploy (no empty column, no "—" implying missing data).
+    // One Traffic column (drains-up 2.5): live plane preferred, usage feed as fallback; mounts when
+    // either exists. Honesty state 1 still holds: with neither plane the column never appears.
     var showObserved = !!(fleetEndpoint() && currentFleet);
-    document.getElementById("topics-observed-th").style.display = showObserved ? "" : "none";
-    if (showObserved) {
-      var winEl = document.getElementById("topics-observed-window");
-      var w = currentFleet.window;
-      winEl.textContent = !w ? "all time"
-        : (w.countsWindowed ? fleetRangeLabel() : "cumulative");
-      winEl.title = w && !w.countsWindowed
-        ? "Counts are cumulative on this plane, not filtered to " + fleetRangeLabel() + " (see the Fleet view)."
-        : "Observed over " + (w ? fleetRangeLabel() : "all time") + ".";
+    var showTraffic = showObserved || !!currentUsage;
+    document.getElementById("topics-traffic-th").style.display = showTraffic ? "" : "none";
+    if (showTraffic) {
+      var winEl = document.getElementById("topics-traffic-window");
+      var w = showObserved ? currentFleet.window : null;
+      winEl.textContent = showObserved
+        ? "live · " + (!w ? "all time" : (w.countsWindowed ? fleetRangeLabel() : "cumulative"))
+        : "usage feed";
+      winEl.title = showObserved
+        ? (w && !w.countsWindowed
+          ? "Live counts are cumulative on this plane (they can't be sub-windowed). Rows the live plane hasn't observed fall back to the usage feed's count — each cell's tooltip says which plane it shows."
+          : "Live counts over " + (w ? fleetRangeLabel() : "all time") + ". Rows the live plane hasn't observed fall back to the usage feed's count — each cell's tooltip says which plane it shows.")
+        : "Observed messages from the usage feed (usage.json), over the feed's own window.";
     }
-    var baseCols = 7 + (currentUsage ? 1 : 0) + (showObserved ? 1 : 0);
+    var baseCols = 7 + (showTraffic ? 1 : 0);
 
     if (!rows.length) {
       var emptyRow = el("tr");
@@ -2564,31 +2596,38 @@
       }
       tr.appendChild(tdStatus);
 
-      if (currentUsage) {
-        var tdUsage = el("td");
-        var usageTotal = usageEntriesForTopic(t.topic, t.version || null)
-          .reduce(function (a, e) { return a + (e.count || 0); }, 0);
-        tdUsage.appendChild(usageTotal > 0
-          ? el("span", "usage-count", fmtCount(usageTotal))
-          : el("span", "t-empty", "–"));
-        tr.appendChild(tdUsage);
-      }
-
-      if (showObserved) {
-        // Adjacent to Usage, never merged with it (a different plane). absent ≠ zero → "—" when this topic
-        // wasn't observed (or its stats feed is absent), a live count otherwise, in the observed token.
-        var tdObs = el("td");
-        var obsRows = (currentFleet.topics || []).filter(function (o) {
-          return o.topic === t.topic && (o.version || null) === (t.version || null);
-        });
-        var observedThis = obsRows.some(function (o) { return (o.missingFeeds || []).indexOf("stats") === -1; });
-        var obsTotal = obsRows.reduce(function (a, o) {
-          return a + ((o.missingFeeds || []).indexOf("stats") === -1 ? (o.invocations || 0) : 0);
-        }, 0);
-        tdObs.appendChild(!observedThis
-          ? el("span", "t-empty", "—")
-          : el("span", "obs-count", fmtCount(obsTotal)));
-        tr.appendChild(tdObs);
+      if (showTraffic) {
+        // One best-available number (drains-up 2.5): the live observed count when this row was observed,
+        // else the usage feed's count, else "—". Which plane (and both planes' figures, when both exist)
+        // lives in the tooltip — provenance one affordance deep, never a second column.
+        var tdTraffic = el("td");
+        var usageTotal = currentUsage
+          ? usageEntriesForTopic(t.topic, t.version || null).reduce(function (a, e) { return a + (e.count || 0); }, 0)
+          : null;
+        var observedThis = false, obsTotal = 0;
+        if (showObserved) {
+          var obsRows = (currentFleet.topics || []).filter(function (o) {
+            return o.topic === t.topic && (o.version || null) === (t.version || null);
+          });
+          observedThis = obsRows.some(function (o) { return (o.missingFeeds || []).indexOf("stats") === -1; });
+          obsTotal = obsRows.reduce(function (a, o) {
+            return a + ((o.missingFeeds || []).indexOf("stats") === -1 ? (o.invocations || 0) : 0);
+          }, 0);
+        }
+        if (observedThis) {
+          var liveSpan = el("span", "obs-count", fmtCount(obsTotal));
+          liveSpan.title = "Observed live" +
+            (usageTotal != null && usageTotal > 0 ? " · the usage feed reports " + fmtCount(usageTotal) + " over its own window" : "");
+          tdTraffic.appendChild(liveSpan);
+        } else if (usageTotal != null && usageTotal > 0) {
+          var usageSpan = el("span", "usage-count", fmtCount(usageTotal));
+          usageSpan.title = "From the usage feed (usage.json), over the feed's own window" +
+            (showObserved ? " — not observed on the live plane in the current window" : "");
+          tdTraffic.appendChild(usageSpan);
+        } else {
+          tdTraffic.appendChild(el("span", "t-empty", "–"));
+        }
+        tr.appendChild(tdTraffic);
       }
 
       tbody.appendChild(tr);
@@ -2819,20 +2858,9 @@
       return a + ((e.status == null || e.status === "<missing>") ? (e.count || 0) : 0);
     }, 0);
     if (hasTransport) panel.appendChild(usageChipRow("By transport", usageGroups(entries, "transport")));
-    if (hasStatus) {
-      var statusGroups = usageGroups(statusEntries, "status");
-      if (unrecordedCount > 0) {
-        statusGroups.push({
-          key: "(no outcome recorded)",
-          count: unrecordedCount,
-          title: "Messages that completed without a recorded success/failure outcome — a handler path "
-            + "that set no result, or (transiently) data still aging out of the metric window. Counted "
-            + "here so By status reconciles with By transport. The fix is backend-side (the pipeline "
-            + "recording a MessageResult), not a UI setting."
-        });
-      }
-      panel.appendChild(usageChipRow("By status", statusGroups));
-    }
+    // The no-outcome count is still ACCOUNTED for (By status must reconcile with By transport), but as a
+    // data-quality footnote below, not a chip on the primary row (drains-up 2.5 absorption ruling).
+    if (hasStatus) panel.appendChild(usageChipRow("By status", usageGroups(statusEntries, "status")));
 
     if (opts && opts.perTopic) {
       var box = el("div", "usage-topics");
@@ -2856,6 +2884,14 @@
       panel.appendChild(el("div", "usage-note",
         "⚠ This usage feed carries no " + missing.join(" or ") + " dimension" + (missing.length > 1 ? "s" : "")
         + " — counts can't be split that way. A metrics-backend adapter reading the standard tags fills this in (see docs/mesh-usage-feed.md)."));
+    }
+    // The no-outcome delta, accounted for here rather than as a primary-row chip: the By-status chips
+    // cover fewer messages than By transport by exactly this count, and the fix is backend-side.
+    if (hasStatus && unrecordedCount > 0) {
+      panel.appendChild(el("div", "usage-note",
+        "ⓘ " + fmtCount(unrecordedCount) + " message" + (unrecordedCount === 1 ? "" : "s") + " recorded no "
+        + "success/failure outcome and " + (unrecordedCount === 1 ? "is" : "are") + " not itemised in By status "
+        + "(so its total reads lower than By transport). The fix is backend-side — the pipeline recording a MessageResult."));
     }
     return panel;
   }
@@ -2969,9 +3005,10 @@
     if (!window || window.countsWindowed !== false) return;
     var since = window.countsSince ? new Date(window.countsSince) : null;
     var sinceText = since && !isNaN(since.getTime()) ? since.toLocaleString() : (window.countsSince || "process start");
-    var note = el("div", "fl-sub fl-missing",
-      "Counts below are cumulative from " + sinceText + ", not filtered to " + fleetRangeLabel() +
-      " — the flows are windowed, the counters aren't (they can't be sub-windowed on this plane).");
+    // Compact marker, full honesty one affordance deep (drains-up 2.5): the number stays primary.
+    var note = el("div", "fl-sub fl-missing", "counts cumulative since " + sinceText + " ⓘ");
+    note.title = "The count tiles are cumulative from " + sinceText + ", not filtered to " + fleetRangeLabel() +
+      " — the flows are windowed, the counters aren't (they can't be sub-windowed on this plane).";
     box.appendChild(note);
   }
   function fleetEndpoint() {
@@ -3097,6 +3134,8 @@
     if (!fleetEndpoint()) return; // static floor: nothing live to poll
     var nav = document.getElementById("fleet-nav");
     if (nav) nav.style.display = ""; // the Fleet nav appears only when a live endpoint is present
+    var traffic = document.getElementById("traffic-section");
+    if (traffic) traffic.style.display = ""; // the front door's traffic section mounts with the endpoint
     fleetQuery("mesh:query:fleet", fleetQueryBody())
       .then(function (view) {
         currentFleet = view;
@@ -3111,33 +3150,29 @@
         // trap (work/mesh-drains-up-review.md D5).
         feedLastFailAt = Date.now();
         renderFeedHealth();
-        // Replace the fleet page's "connecting…" with the unreachable state instead of hanging forever.
-        if (location.hash === "#fleet" && !currentFleet) renderFleetPage();
+        // Replace the traffic section's "connecting…" with the unreachable state instead of hanging forever.
+        if (isEstateView() && !currentFleet) renderFleetPage();
       });
     if (!fleetTimer) { fleetTimer = setInterval(loadFleet, FLEET_POLL_MS); }
     if (!inboxTimer) { loadInboxFleet(); } // the inbox's own 24h-window poll, on its slower cadence
   }
-  // Re-render the surfaces the live plane feeds after a poll: the Fleet landing view when it's open, and
-  // (later phases) the estate live indicators + per-entity live sections. Kept off the entity/estate
-  // re-render for now so a background poll never disturbs an open catalog page unless it shows live data.
+  // Re-render the surfaces the live plane feeds after a poll. The traffic section lives on the estate
+  // landing now (drains-up 2.2), so an estate poll refreshes it alongside the inbox, the topics table,
+  // and the heartbeat dots (the dots in place, so an expanded service card isn't collapsed).
   function renderFleetInto() {
-    if (location.hash === "#fleet") renderFleetPage();
-    else {
-      refreshOpenLiveSection();
-      // On the estate landing view, refresh the live surfaces as the fleet polls: the issue inbox (Slice 1),
-      // the topics-table Observed column, and the service-card heartbeat dots (Slice 2). The heartbeat dots
-      // update in place so an expanded service card isn't collapsed by a background poll.
-      if (isEstateView()) {
-        renderIssues();
-        if (currentTopics && currentTopics.length) renderTopicRows();
-        refreshServiceCardHeartbeats();
-      }
+    refreshOpenLiveSection();
+    if (isEstateView()) {
+      renderFleetPage();
+      renderIssues();
+      if (currentTopics && currentTopics.length) renderTopicRows();
+      refreshServiceCardHeartbeats();
     }
   }
   function isEstateView() {
     var h = location.hash;
+    // "#fleet" IS the estate now (the traffic section lives on the landing page — drains-up 2.2).
     return !h || h === "#" || (h.indexOf(SERVICE_HASH_PREFIX) !== 0 && h.indexOf(TOPIC_HASH_PREFIX) !== 0
-      && h.indexOf(COMPOSE_HASH_PREFIX) !== 0 && h !== "#fleet");
+      && h.indexOf(COMPOSE_HASH_PREFIX) !== 0);
   }
 
   /* ===== Fleet view rendering (ported from the standalone fleet page, fl- namespaced) ===== */
@@ -3174,15 +3209,33 @@
     rows.forEach(function (item) { var tr = document.createElement("tr"); build(tr, item); tbody.appendChild(tr); });
   }
 
+  // A flow row whose trace mapped no Benzene span: its service names are the backend's own (Lambda
+  // handler names etc.), not mesh services — never first-class (the drains-up D7 rendering rule).
+  function flIsInfraRow(f) {
+    return !(f.events > 0) && !f.topic;
+  }
+  // The recent-flows pivot filter (drains-up 2.4), set by the error-count links; null = unfiltered.
+  var flFlowFilter = null; // { topic: string|null, failedOnly: bool }
+  function flPivotToFailingFlows(topicId) {
+    flFlowFilter = { topic: topicId || null, failedOnly: true };
+    if (location.hash === "#fleet") {
+      renderFleetPage();
+      var traffic = document.getElementById("traffic-section");
+      if (traffic) traffic.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      location.hash = "#fleet"; // syncViewFromHash renders + scrolls to the traffic section
+    }
+  }
+
   function renderFleetPage() {
     var fleet = currentFleet;
     var status = document.getElementById("fl-status");
     if (!fleet) {
       // "Connecting…" must not be a permanent state: once a poll has failed, say so (drains-up 1.5).
-      if (status) status.textContent = liveConnectingText();
+      if (status) { status.textContent = liveConnectingText(); status.className = "issues-sub fl-failed"; }
       return;
     }
-    if (status) status.textContent = "";
+    if (status) { status.textContent = ""; status.className = "issues-sub"; }
     var services = fleet.services || [], topics = fleet.topics || [], traces = fleet.traces || [];
     var invocations = 0, errors = 0, unhealthy = 0;
     // A stale heartbeat counts as unhealthy for the tile — an old "healthy" verdict is not a current one
@@ -3195,20 +3248,56 @@
     topics.forEach(function (t) {
       if ((t.missingFeeds || []).indexOf("stats") === -1) { invocations += t.invocations; errors += t.errors; }
     });
+    // The Services tile counts mesh services, not backend artifacts (D7): a name known ONLY from
+    // infra flows (no Benzene-attributed flow, no health signal) is excluded from the headline count.
+    var attributedNames = {}, infraNames = {};
+    traces.forEach(function (f) {
+      var bucket = flIsInfraRow(f) ? infraNames : attributedNames;
+      (f.services || []).forEach(function (n) { bucket[n] = 1; });
+    });
+    var infraOnlyCount = services.filter(function (s) {
+      return infraNames[s.service] && !attributedNames[s.service] && (!s.health || s.health === "unknown");
+    }).length;
     var tiles = document.getElementById("fl-tiles");
     tiles.textContent = "";
-    [["Services", services.length], ["Topics", topics.length], ["Invocations", invocations],
+    [["Services", services.length - infraOnlyCount], ["Topics", topics.length], ["Invocations", invocations],
      ["Errors", errors], ["Unhealthy", unhealthy]].forEach(function (kv) {
       var t = el("div", "fl-tile");
       t.appendChild(el("div", "k", kv[0]));
       t.appendChild(el("div", "v", String(kv[1])));
+      if (kv[0] === "Services" && infraOnlyCount > 0) {
+        t.title = infraOnlyCount + " backend infrastructure name" + (infraOnlyCount === 1 ? "" : "s") +
+          " (from uninstrumented flows) not counted as mesh services.";
+      }
       tiles.appendChild(t);
     });
     var countsNote = document.getElementById("fl-counts-note");
     if (countsNote) { countsNote.textContent = ""; flCountsNote(countsNote, fleet.window); }
 
+    // Apply the pivot filter (drains-up 2.4) and say so — a filtered list must never look like the whole.
+    var flowRows = traces;
+    var filterBar = document.getElementById("fl-flow-filter");
+    if (filterBar) { filterBar.textContent = ""; filterBar.style.display = "none"; }
+    if (flFlowFilter) {
+      flowRows = traces.filter(function (f) {
+        if (flFlowFilter.failedOnly && !f.failed) return false;
+        if (flFlowFilter.topic && f.topic !== flFlowFilter.topic) return false;
+        return true;
+      });
+      if (filterBar) {
+        filterBar.style.display = "";
+        filterBar.appendChild(el("span", null, "Showing " + flowRows.length + " of " + traces.length + " flows — " +
+          (flFlowFilter.failedOnly ? "failed only" : "") +
+          (flFlowFilter.topic ? (flFlowFilter.failedOnly ? " · " : "") + "topic " + flFlowFilter.topic : "")));
+        var clear = el("button", "fl-flow-link", "clear filter");
+        clear.type = "button";
+        clear.addEventListener("click", function () { flFlowFilter = null; renderFleetPage(); });
+        filterBar.appendChild(clear);
+      }
+    }
+
     var tbody = document.getElementById("fl-traces");
-    flFill(tbody, traces, function (tr, f) {
+    flFill(tbody, flowRows, function (tr, f) {
       tr.className = "fl-flow-row";
       tr.tabIndex = 0;
       var tdId = document.createElement("td");
@@ -3219,20 +3308,30 @@
       link.title = "Open this flow's traced waterfall";
       tdId.appendChild(link);
       tr.appendChild(tdId);
-      flCell(tr, (f.services || []).join(" → "));
+      flCell(tr, f.topic || "—", "fl-mono");
+      // Services: on an uninstrumented row these are the backend's own names — label them, never
+      // present them as mesh services (the D7 rendering rule).
+      var tdSvc = document.createElement("td");
+      tdSvc.textContent = (f.services || []).join(" → ") || "-";
+      if (flIsInfraRow(f) && (f.services || []).length) {
+        var chip = el("span", "fl-infra-chip", "infrastructure");
+        chip.title = "No Benzene-labelled span in this trace — these are the backend's own names (e.g. the Lambda handler), not mesh services.";
+        tdSvc.appendChild(chip);
+      }
+      tr.appendChild(tdSvc);
       flCell(tr, f.events, "fl-num");
       flCell(tr, (f.durationMs || 0).toFixed(1), "fl-num");
       flCell(tr, f.failed ? "✕ failed" : "✓ ok", f.failed ? "fl-failed" : "fl-h-healthy");
       var open = function () { flToggleFlow(tr, f.traceId); };
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
-    }, 5);
+    }, 6);
     flRenderTopology(fleet);
 
     if (flOpenTraceId) {
       var rows = tbody.querySelectorAll("tr.fl-flow-row");
       for (var i = 0; i < rows.length; i++) {
-        if (traces[i] && traces[i].traceId === flOpenTraceId) { flExpandFlow(rows[i], flOpenTraceId); break; }
+        if (flowRows[i] && flowRows[i].traceId === flOpenTraceId) { flExpandFlow(rows[i], flOpenTraceId); break; }
       }
     }
   }
@@ -3253,10 +3352,48 @@
     });
     return Object.keys(byPair).map(function (k) { return byPair[k]; });
   }
+  // The front door's traffic map edges (drains-up 2.3). Preferred: edges the live plane itself observed
+  // (push collector — consumers/providers on the fleet topics). On the composite plane those dimensions
+  // don't exist, so fall back to the DECLARED routes (topics.json: producer → consumer, sender → handler)
+  // carrying the LIVE per-topic counts — structure from the catalog, traffic from the window.
+  function flTrafficEdges(fleet) {
+    var observed = flDeriveEdges(fleet.topics);
+    if (observed.length) return { edges: observed, declaredStructure: false };
+    if (!(currentTopics || []).length) return { edges: [], declaredStructure: false };
+    var liveByTopic = {};
+    (fleet.topics || []).forEach(function (t) {
+      if ((t.missingFeeds || []).indexOf("stats") !== -1) return;
+      var agg = liveByTopic[t.topic] || (liveByTopic[t.topic] = { invocations: 0, errors: 0 });
+      agg.invocations += t.invocations; agg.errors += t.errors;
+    });
+    var byPair = {};
+    currentTopics.forEach(function (t) {
+      if (t.reserved) return;
+      var counts = liveByTopic[t.topic] || { invocations: 0, errors: 0 };
+      (t.producers || []).forEach(function (p) {
+        var from = p && p.service; if (!from) return;
+        (t.consumers || []).forEach(function (c) {
+          var to = c && c.service; if (!to || to === from) return;
+          var key = from + " " + to;
+          var e = byPair[key] || (byPair[key] = { from: from, to: to, invocations: 0, errors: 0, topics: [] });
+          e.invocations += counts.invocations; e.errors += counts.errors;
+          e.topics.push(t.topic + (t.version ? "@" + t.version : ""));
+        });
+      });
+    });
+    return { edges: Object.keys(byPair).map(function (k) { return byPair[k]; }), declaredStructure: true };
+  }
   function flRenderTopology(fleet) {
     var container = document.getElementById("fl-topo"), title = document.getElementById("fl-topo-title");
-    var edges = flDeriveEdges(fleet.topics);
+    var traffic = flTrafficEdges(fleet);
+    var edges = traffic.edges;
     if (!edges.length) { container.style.display = "none"; title.style.display = "none"; return; }
+    var sub = document.getElementById("fl-topo-sub");
+    if (sub) {
+      sub.textContent = traffic.declaredStructure
+        ? "(declared routes carrying the window's observed traffic — edge width = volume, red = failing)"
+        : "(edges observed from live traffic — width = volume, red = failing; never declared)";
+    }
     container.style.display = ""; title.style.display = ""; container.textContent = "";
     var healthOf = {};
     (fleet.services || []).forEach(function (s) {
@@ -3425,6 +3562,19 @@
       results.appendChild(el("div", "fl-wf-note" + (String(err.message || err) === "not-found" ? "" : " fl-failed"), msg));
     });
   }
+  // Demoted-section disclosure toggles (drains-up 2.2): show/hide the section body in place.
+  (function wireSectionToggles() {
+    document.querySelectorAll("[data-sec-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var body = document.getElementById(btn.getAttribute("data-sec-toggle"));
+        if (!body) return;
+        var open = body.style.display !== "none";
+        body.style.display = open ? "none" : "";
+        btn.textContent = open ? "show" : "hide";
+      });
+    });
+  })();
+
   (function flWireLookups() {
     var cg = document.getElementById("fl-corr-go"), ci = document.getElementById("fl-corr-input");
     if (cg) cg.addEventListener("click", function () { flLookupCorrelation(); });
@@ -3597,7 +3747,16 @@
       (t.consumers || []).forEach(function (c) { observed[c] = 1; });
     });
     lsItem(strip, "observed", absentStats ? "—" : fmtCount(inv));
-    lsItem(strip, "errors", absentStats ? "—" : fmtCount(errs), (!absentStats && errs > 0) ? "fl-failed" : null);
+    // An error count is never a dead end (drains-up 2.4): it pivots to this topic's failing flows.
+    if (!absentStats && errs > 0) {
+      var errLink = el("button", "fl-flow-link fl-failed", fmtCount(errs) + " ↗");
+      errLink.type = "button";
+      errLink.title = "Show this topic's failing flows";
+      errLink.addEventListener("click", function () { flPivotToFailingFlows(topicId); });
+      lsItem(strip, "errors", errLink);
+    } else {
+      lsItem(strip, "errors", absentStats ? "—" : fmtCount(errs));
+    }
     // Post-fix verification in one glance (drains-up 1.4): when the newest observed failing flow was.
     // "last failing flow", not "last error" — on the composite plane flows are sampled/capped, so this is
     // the newest failure OBSERVED, which is exactly what a just-deployed fix wants to watch go quiet.

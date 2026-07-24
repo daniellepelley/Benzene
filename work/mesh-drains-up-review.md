@@ -174,7 +174,14 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 | 1.4 | **"Last error at \<time\>"** per topic (strip + fleet rows) — post-fix verification becomes one glanceable timestamp instead of counter-archaeology | 2/3 | S |
 | 1.5 | **Copy/papercut sweep**: plane-correct empty states (no "ring buffer" on the composite plane), "connecting…" never a permanent state, Unhealthy tile counts stale/unknown | 1–3 | S |
 
-### Phase 2 — One front door, one traffic picture
+### Phase 2 — One front door, one traffic picture — **SHIPPED 2026-07-25**
+
+> All five slices shipped (see `src/Benzene.Mesh.Ui/CLAUDE.md`). Notes: the traffic map's composite-plane
+> derivation is declared routes (topics.json producer→consumer) carrying the window's live per-topic
+> counts — fleet topics on that plane have no consumer/provider dimensions to derive observed edges from;
+> the map's subtitle names which derivation is showing. Demotion of value/topology = collapsed-by-default
+> disclosures (a full nav overhaul wasn't needed for the front-door ordering). 2.4's `TraceSummary.topic`
+> had already shipped with Phase 1.
 
 | # | Slice | Job | Size |
 |---|---|---|---|

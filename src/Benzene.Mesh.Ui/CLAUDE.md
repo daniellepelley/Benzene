@@ -1,5 +1,36 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 DRAINS-UP PHASE 2 SHIPPED — one front door, one traffic picture, evidence-first.**
+> Second phase of `work/mesh-drains-up-review.md` (slices 2.1–2.5):
+> - **Front door (2.2):** the separate `#fleet-page` is GONE — the live plane lives on the landing page
+>   as `#traffic-section` (between the issue inbox and the catalog), ordered per the three jobs:
+>   needs-you strip → live traffic (range picker, feed health, tiles) → traffic map → recent flows →
+>   trace/correlation lookups → the catalog. `#fleet` deep-links (old bookmarks, the nav button, the
+>   pivots) show the estate scrolled to the traffic section; `isEstateView()` treats `#fleet` as estate;
+>   `renderFleetInto()` refreshes the traffic section on every estate poll. Mounts only with a live
+>   endpoint (static floor: the section never appears). The **value & deprecation** and declared
+>   **topology** sections are demoted: collapsed by default behind `.sec-toggle` show/hide buttons.
+> - **Traffic map (2.3):** `flTrafficEdges(fleet)` — observed consumer→provider edges when the plane
+>   carries them (push collector), else **declared routes carrying live counts** (topics.json
+>   producer→consumer structure joined with the window's per-topic invocations/errors) — which is what
+>   makes the map light up on the composite (AwsMesh) plane, where fleet topics have no
+>   consumer/provider dimensions. Edge width = √volume, red = ≥5% failing (the existing encoding);
+>   `#fl-topo-sub` says which derivation is in play.
+> - **D7 rendering rule (2.1):** backend infra names are never first-class. A flow row that mapped no
+>   Benzene span (`flIsInfraRow`: `events === 0 && !topic`) gets an "infrastructure" chip on its
+>   services cell (`.fl-infra-chip`), and the Services tile excludes names known only from such rows.
+> - **Failing-flows pivot (2.4):** recent flows gain a **Topic** column (`TraceSummary.topic`) and a
+>   pivot filter (`flFlowFilter`/`flPivotToFailingFlows` + the `#fl-flow-filter` bar with row counts and
+>   a clear button). Error counts are never dead ends: the inbox's failing-traffic rows and the topic
+>   strip's error count land on that topic's failing flows (evidence-first core loop).
+> - **Provenance absorption (2.5):** the estate topics table's two count columns (Usage / Observed) are
+>   now ONE **Traffic** column — best-available number per row (live preferred, usage-feed fallback),
+>   plane + window one affordance deep (header token + per-cell tooltips). The counts-cumulative badge
+>   is a compact marker with the full sentence in its tooltip; the usage panel's `(no outcome recorded)`
+>   chip moved into the data-quality footnotes (still reconciling By-status vs By-transport).
+> - Playwright smoke harness extended to 28 assertions (front door, pivot round-trips, infra labeling,
+>   declared-route traffic map, single Traffic column, static floor) — ad-hoc, not in CI.
+
 > **2026-07-25 DRAINS-UP PHASE 1 SHIPPED — the inbox watches the system, and knows when it's blind.**
 > First implementation phase of `work/mesh-drains-up-review.md` (slices 1.1–1.5), closing the review's
 > headline defect: a failing system could say "All clear" because every inbox class was catalog paperwork.
