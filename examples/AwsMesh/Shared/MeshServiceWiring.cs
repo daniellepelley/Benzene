@@ -16,6 +16,8 @@ using Benzene.Clients;
 using Benzene.Clients.Aws.EventBridge;
 using Benzene.Clients.Aws.Sns;
 using Benzene.Clients.Aws.Sqs;
+using Benzene.Clients.CorrelationId;
+using Benzene.Clients.TraceContext;
 using Benzene.Core.MessageHandlers;
 using Benzene.Core.MessageHandlers.DI;
 using Benzene.Core.MessageHandlers.WarmUp;
@@ -128,6 +130,15 @@ public static class MeshServiceWiring
                         var target = Environment.GetEnvironmentVariable(send.TargetEnvVar) ?? "";
                         routing.Route(send.Topic, pipeline =>
                         {
+                            // Propagate the caller's trace + correlation context onto the outbound message
+                            // BEFORE the transport converter (which is terminal), so the receiving service's
+                            // inbound UseW3CTraceContext() continues the SAME distributed trace instead of
+                            // starting a fresh one. This is the missing *write* half — Observe() wired the
+                            // *read* half on the inbound pipelines — and it's what stitches order → payment →
+                            // shipment into one end-to-end transaction (traceparent rides as an SQS/SNS message
+                            // attribute, or embedded in the EventBridge detail). UseCorrelationId() does the
+                            // same for x-correlation-id, so the mesh's cross-service correlation lookup works too.
+                            pipeline.UseW3CTraceContext().UseCorrelationId();
                             switch (send.Transport)
                             {
                                 case OutboundTransport.Sqs:
