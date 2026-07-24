@@ -1,5 +1,6 @@
 using System.Reflection;
 using Benzene.Abstractions.DI;
+using Benzene.Abstractions.Messages;
 using Benzene.Abstractions.MessageHandlers;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
@@ -179,6 +180,56 @@ public static class MiddlewarePipelineExtensions
         var presetTopic = new Topic(topicId, version);
         return app.Use(resolver => new PresetTopicMiddleware<TContext>(
             resolver.GetService<PresetTopicHolder>(), presetTopic, resolver.TryGetService<ResolvedTopicCache<TContext>>()));
+    }
+
+    /// <summary>
+    /// Derives the routing topic for each message from its transport context via a caller-supplied
+    /// selector, so <c>UseMessageHandlers</c> routes on it - the dynamic counterpart of
+    /// <see cref="UsePresetTopic{TContext}(IMiddlewarePipelineBuilder{TContext}, string, string)"/>
+    /// (which sets a fixed topic). Use it when a transport delivers a payload with no topic
+    /// attribute/property but the topic can be computed from the message itself (e.g. a discriminator
+    /// field in the body, a routing key, a blob name). This is the inline equivalent of writing and
+    /// registering a custom <see cref="Benzene.Abstractions.MessageHandlers.Mappers.IMessageTopicGetter{TContext}"/>.
+    /// Call it before <c>UseMessageHandlers</c> in that specific pipeline only. Return <c>null</c> from
+    /// the selector to fall through to the transport's own topic extraction for that message.
+    /// </summary>
+    /// <typeparam name="TContext">The pipeline's context type; the selector reads the payload off it (the same input a custom topic getter gets).</typeparam>
+    /// <param name="app">The pipeline builder to add the derivation to.</param>
+    /// <param name="topicSelector">Computes the <see cref="ITopic"/> (id + optional version) for a message from its context, or <c>null</c> to not override.</param>
+    /// <returns>The same builder, for chaining.</returns>
+    /// <remarks>
+    /// Works on any transport whose adapter wraps its topic getter in
+    /// <see cref="PresetTopicMessageTopicGetter{TContext}"/> (every non-HTTP transport that supports
+    /// preset topics - SQS/Service Bus/Event Hub/Queue Storage/Timer/Event Grid/RabbitMQ, and the
+    /// self-hosted SQS/Service Bus/Event Hub workers). It carries the derived topic in scoped DI state,
+    /// not on the context, exactly like <c>UsePresetTopic</c>.
+    /// </remarks>
+    public static IMiddlewarePipelineBuilder<TContext> UseTopicFrom<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+        Func<TContext, ITopic?> topicSelector)
+    {
+        return app.Use(resolver => new DeriveTopicMiddleware<TContext>(
+            resolver.GetService<PresetTopicHolder>(), topicSelector, resolver.TryGetService<ResolvedTopicCache<TContext>>()));
+    }
+
+    /// <summary>
+    /// Derives the routing topic <em>id</em> for each message from its transport context via a
+    /// caller-supplied selector (unversioned). Convenience overload of
+    /// <see cref="UseTopicFrom{TContext}(IMiddlewarePipelineBuilder{TContext}, Func{TContext, ITopic})"/>
+    /// for the common case where you only need a topic id string; return <c>null</c>/empty to fall
+    /// through to the transport's own topic extraction for that message.
+    /// </summary>
+    /// <typeparam name="TContext">The pipeline's context type; the selector reads the payload off it.</typeparam>
+    /// <param name="app">The pipeline builder to add the derivation to.</param>
+    /// <param name="topicSelector">Computes the topic id for a message from its context, or <c>null</c>/empty to not override.</param>
+    /// <returns>The same builder, for chaining.</returns>
+    public static IMiddlewarePipelineBuilder<TContext> UseTopicFrom<TContext>(this IMiddlewarePipelineBuilder<TContext> app,
+        Func<TContext, string?> topicSelector)
+    {
+        return app.UseTopicFrom(context =>
+        {
+            var topicId = topicSelector(context);
+            return string.IsNullOrEmpty(topicId) ? null : (ITopic)new Topic(topicId);
+        });
     }
 
     /// <summary>

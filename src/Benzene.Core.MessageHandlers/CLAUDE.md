@@ -189,6 +189,21 @@ Provides complete implementation of message handler infrastructure for command/q
   attribute/property at all - see each transport's own docs for the attribute/property name it
   otherwise reads. Works for ANY `TContext`, with zero changes required to that context type -
   a transport adopting this only needs the two DI-registration lines above
+- `DeriveTopicMiddleware<TContext>` + `UseTopicFrom<TContext>(...)` - the **dynamic** sibling of
+  `UsePresetTopic`. Where `UsePresetTopic` sets a **fixed** topic, `UseTopicFrom` computes one **per
+  message** from a caller-supplied selector over the context, and sets it on the **same**
+  `PresetTopicHolder` (so it flows through `PresetTopicMessageTopicGetter` identically - it works on
+  exactly the same transports, needs no context change, and carries the topic in scoped DI state, not
+  on the context). This is the inline equivalent of writing and DI-registering a custom
+  `IMessageTopicGetter<TContext>` - for the common "the payload carries no topic attribute, but I can
+  derive one from a discriminator field / routing key / blob name" case. Two overloads:
+  `UseTopicFrom(Func<TContext, string?>)` (topic id, unversioned) and
+  `UseTopicFrom(Func<TContext, ITopic?>)` (full id + version control). A selector returning
+  `null`/empty leaves the holder unset, so that message **falls through** to the transport's own topic
+  getter (mixed pipelines where only some messages need deriving still work). Middleware `Name` is
+  `"DeriveTopic"` (distinct from `PresetTopic` in traces). It resets `ResolvedTopicCache` on override,
+  same as `PresetTopicMiddleware`. Covered by
+  `test/Benzene.Core.Test/Core/Core/MessageHandling/DeriveTopicMiddlewareTest.cs`
 
 ### Cold-start warm-up (`WarmUp/`)
 - `IWarmUpTask` (in **Benzene.Abstractions**, `Benzene.Abstractions.WarmUp`, so plugin packages can
