@@ -14,14 +14,13 @@ public class HttpContextConverter<TRequest, TResponse> : IContextConverter<IBenz
     private readonly string _path;
 
     public HttpContextConverter(string verb, string path)
-        :this(new JsonSerializer())
+        : this(verb, path, new JsonSerializer())
+    { }
+
+    public HttpContextConverter(string verb, string path, ISerializer serializer)
     {
-        _path = path;
         _verb = verb;
-    }
-    
-    public HttpContextConverter(ISerializer serializer)
-    {
+        _path = path;
         _serializer = serializer;
     }
 

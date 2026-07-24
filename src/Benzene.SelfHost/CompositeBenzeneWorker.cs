@@ -16,10 +16,53 @@ public class CompositeBenzeneWorker : IBenzeneWorker
     
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var tasks = _workers
-            .Select(x => x.StartAsync(cancellationToken))
+        // Start every worker (in parallel), then await them together. If any one fails, roll back the
+        // workers that DID start - otherwise a partial composite start leaks their running consume
+        // loops / open connections with nothing tracking them (StopAsync is only called on a clean
+        // start). Task.WhenAll waits for every task to finish before throwing, so at the catch each
+        // task is terminal and IsCompletedSuccessfully reliably identifies the started workers.
+        // SafeStart captures a *synchronous* throw as a faulted task, so one worker throwing before
+        // its first await still lets the others start (and get rolled back) rather than aborting the
+        // materialization mid-way.
+        var started = _workers
+            .Select(x => (worker: x, task: SafeStart(x, cancellationToken)))
             .ToArray();
-        await Task.WhenAll(tasks);
+
+        try
+        {
+            await Task.WhenAll(started.Select(x => x.task));
+        }
+        catch
+        {
+            foreach (var (worker, task) in started)
+            {
+                if (task.IsCompletedSuccessfully)
+                {
+                    try
+                    {
+                        await worker.StopAsync(cancellationToken);
+                    }
+                    catch
+                    {
+                        // Best-effort rollback: don't let a stop fault mask the original start failure.
+                    }
+                }
+            }
+
+            throw;
+        }
+    }
+
+    private static Task SafeStart(IBenzeneWorker worker, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return worker.StartAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return Task.FromException(ex);
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

@@ -6,6 +6,7 @@ using Amazon.Lambda.SQSEvents;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Core.Middleware;
 using Microsoft.Extensions.Logging;
 
@@ -31,7 +32,7 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
     /// </param>
     public SqsApplication(IMiddlewarePipeline<SqsMessageContext> pipeline, SqsOptions options = null)
     {
-        _pipeline = pipeline;
+        _pipeline = new TransportMiddlewarePipeline<SqsMessageContext>(TransportNames.Sqs, pipeline);
         _options = options ?? new SqsOptions();
     }
 
@@ -63,8 +64,6 @@ public class SqsApplication : IMiddlewareApplication<SQSEvent, SQSBatchResponse>
                 {
                     using (var scope = serviceResolverFactory.CreateScope())
                     {
-                        var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
-                        setCurrentTransport.SetTransport(TransportNames.Sqs);
                         await _pipeline.HandleAsync(context, scope);
                     }
 

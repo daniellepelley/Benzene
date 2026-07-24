@@ -81,7 +81,9 @@ row for the `IHttpClientFactory`/lifetime story (yours to own on both paths).
   is separate outbound middleware in `Benzene.Clients` (`.UseCorrelationId()` / `.UseW3CTraceContext()`).
 
 ## Important conventions
-- Bodies are JSON via the shared `JsonSerializer` unless you pass your own `ISerializer` to the converter.
+- Bodies are JSON via the shared `JsonSerializer` unless you pass your own `ISerializer` to the
+  converter's `(verb, path, serializer)` constructor. (The old bare `(ISerializer)` constructor was
+  removed — it left the verb/path unset and would `NullReferenceException` on the first request.)
 - Async throughout (`SendAsync`, `ReadAsStringAsync`).
 
 ## Dependencies on other Benzene packages

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Benzene.Abstractions.DI;
 using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.Middleware;
+using Benzene.Core.MessageHandlers.Info;
 using Benzene.Results;
 using Microsoft.Extensions.Logging;
 
@@ -27,7 +28,7 @@ public class DynamoDbApplication : IMiddlewareApplication<DynamoDbEvent, DynamoD
     /// <param name="pipeline">The built DynamoDB middleware pipeline to run each record through.</param>
     public DynamoDbApplication(IMiddlewarePipeline<DynamoDbRecordContext> pipeline)
     {
-        _pipeline = pipeline;
+        _pipeline = new TransportMiddlewarePipeline<DynamoDbRecordContext>(TransportNames.DynamoDb, pipeline);
     }
 
     /// <summary>
@@ -50,8 +51,6 @@ public class DynamoDbApplication : IMiddlewareApplication<DynamoDbEvent, DynamoD
             {
                 using (var scope = serviceResolverFactory.CreateScope())
                 {
-                    var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
-                    setCurrentTransport.SetTransport(TransportNames.DynamoDb);
                     await _pipeline.HandleAsync(context, scope);
                 }
             }

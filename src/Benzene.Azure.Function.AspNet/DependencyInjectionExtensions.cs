@@ -91,8 +91,11 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IBenzeneResponseAdapter<AspNetContext>, AspNetResponseAdapter>();
 
         services.AddScoped<IResponseRenderer<AspNetContext>, SerializerResponseRenderer<AspNetContext>>();
-        services.AddScoped<IResponseHandler<AspNetContext>, RendererResponseHandler<AspNetContext>>();
+        // Registration order matches the other HTTP transports (Benzene.AspNet.Core, both API
+        // Gateway variants): the status-code handler before the renderer. ResponseHandlerContainer
+        // runs them in registration order.
         services.AddScoped<IResponseHandler<AspNetContext>, HttpStatusCodeResponseHandler<AspNetContext>>();
+        services.AddScoped<IResponseHandler<AspNetContext>, RendererResponseHandler<AspNetContext>>();
         services.AddMediaFormatNegotiation<AspNetContext>();
 
         // services.AddScoped<ResponseMiddleware<AspNetContext>>();

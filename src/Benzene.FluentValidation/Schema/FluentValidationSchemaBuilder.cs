@@ -32,8 +32,11 @@ public class FluentValidationSchemaBuilder : IValidationSchemaBuilder
 
     public IDictionary<string, IValidationSchema[]> GetValidationSchemas(Type type)
     {
-        var validator = _validators.FirstOrDefault(validator =>
-            validator.GetType().BaseType.GetGenericArguments()[0] == type);
+        // Use FluentValidation's own CanValidateInstancesOfType rather than reflecting the validator's
+        // direct BaseType generic argument: the latter threw IndexOutOfRangeException for any validator
+        // whose immediate base isn't a closed generic (e.g. a non-generic intermediate base class),
+        // aborting the whole schema build instead of skipping the odd validator.
+        var validator = _validators.FirstOrDefault(v => v != null && v.CanValidateInstancesOfType(type));
 
         if (validator == null)
         {
