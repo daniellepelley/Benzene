@@ -40,17 +40,22 @@ public class CloudWatchUsageSource : IMeshUsageSource
     }
 
     /// <inheritdoc />
-    public async Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default)
+    public async Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
     {
-        var end = DateTimeOffset.UtcNow;
-        var start = end - _options.TimeWindow;
+        // Honor a requested window (the UI picker, via the composite reader) by querying over exactly those
+        // bounds; otherwise fall back to the configured TimeWindow (the aggregator's usage.json path). Either
+        // way the returned MeshUsage reports the window actually used, so the composite can tell the counts
+        // really are windowed. CloudWatch GetMetricData is billed per metric requested, not per datapoint, so a
+        // wider window barely moves this bill (unlike X-Ray's per-trace-scanned recent-flows query).
+        var end = window?.ToUtc ?? DateTimeOffset.UtcNow;
+        var start = window?.FromUtc ?? end - _options.TimeWindow;
 
         var metrics = await ListMetricsAsync(cancellationToken);
         if (metrics.Count == 0)
         {
             // The metric hasn't been seen at all - report an empty window rather than nothing, so the feed
             // reads as "wired, no traffic observed" instead of "no feed" (which a null return would mean).
-            return new MeshUsage(end, start, end, Array.Empty<MeshUsageEntry>());
+            return new MeshUsage(DateTimeOffset.UtcNow, start, end, Array.Empty<MeshUsageEntry>());
         }
 
         // One Sum query per live dimension combination; remember each id's dimensions to map the result back.
@@ -117,7 +122,7 @@ public class CloudWatchUsageSource : IMeshUsageSource
             }
         }
 
-        return new MeshUsage(end, start, end, entries.ToArray());
+        return new MeshUsage(DateTimeOffset.UtcNow, start, end, entries.ToArray());
     }
 
     private async Task<List<Metric>> ListMetricsAsync(CancellationToken cancellationToken)

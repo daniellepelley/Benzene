@@ -37,7 +37,7 @@ public class CompositeMeshFleetReadModelTest
         public MeshUsage? Usage { get; init; }
         public bool Throw { get; init; }
 
-        public Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default)
+        public Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
             => Throw ? throw new InvalidOperationException("usage backend down") : Task.FromResult(Usage);
     }
 

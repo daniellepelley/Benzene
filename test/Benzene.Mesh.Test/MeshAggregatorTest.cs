@@ -1238,7 +1238,7 @@ public class MeshAggregatorTest : IDisposable
 
         public StubUsageSource(Exception exception) => _exception = exception;
 
-        public Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default)
+        public Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
         {
             return _exception != null ? Task.FromException<MeshUsage?>(_exception) : Task.FromResult(_report);
         }

@@ -34,12 +34,16 @@ public class ApplicationInsightsUsageSource : IMeshUsageSource
     }
 
     /// <inheritdoc />
-    public async Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default)
+    public async Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
     {
-        var end = DateTimeOffset.UtcNow;
-        var start = end - _options.TimeWindow;
+        // Honor a requested window (the UI picker, via the composite reader); otherwise the configured
+        // TimeWindow (the aggregator's usage.json path). The returned MeshUsage reports the window used, so the
+        // composite can tell the counts really are windowed. NB: Log Analytics queries bill on data scanned, so a
+        // wider requested window raises this query's cost - the picker's cost lever on the Azure plane.
+        var end = window?.ToUtc ?? DateTimeOffset.UtcNow;
+        var start = window?.FromUtc ?? end - _options.TimeWindow;
 
-        var rows = await _query.QueryAsync(_options, _options.TimeWindow, cancellationToken);
+        var rows = await _query.QueryAsync(_options, start, end, cancellationToken);
 
         var entries = new List<MeshUsageEntry>(rows.Count);
         foreach (var row in rows)
@@ -61,6 +65,6 @@ public class ApplicationInsightsUsageSource : IMeshUsageSource
                 source: MeshUsageSource.ApplicationInsights));
         }
 
-        return new MeshUsage(end, start, end, entries.ToArray());
+        return new MeshUsage(DateTimeOffset.UtcNow, start, end, entries.ToArray());
     }
 }

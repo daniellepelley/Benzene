@@ -199,12 +199,19 @@ and the per-entity live sections it feeds — and is applied **server-side** on 
 live plane; the static catalog and its `usage.json` window are untouched.
 
 The picker windows the **flows** (recent-flows, correlation) on every plane. **Counts** are subtler and the
-UI is honest about it: on the push-collector plane the per-topic/service counters are cumulative-since-start
-and can't be sub-windowed, and on the composite (X-Ray + CloudWatch) plane the counts come from the usage
-feed's own baked window. In both cases the response's window says so (`countsWindowed: false`) and the count
-tiles carry a *"counts are cumulative from … — flows are windowed, counters aren't"* badge rather than a
-blanked or refiltered number. A null/absent window (All time, or an old client) reproduces the pre-picker
+UI is honest about it. On the **push-collector** plane the per-topic/service counters are cumulative-since-start
+and can't be sub-windowed, so the response says `countsWindowed: false` and the count tiles carry a *"counts are
+cumulative from … — flows are windowed, counters aren't"* badge rather than a blanked or refiltered number. On the
+**composite** (X-Ray + CloudWatch/App-Insights) plane the counts **do** honor the picked window — the metrics
+adapters query their backend over exactly the selected range — so `countsWindowed` is true and no badge shows,
+*unless* a usage source in the mix can't window (e.g. the cumulative collector feed), in which case the union
+isn't windowed and the badge returns. A null/absent window (All time, or an old client) reproduces the pre-picker
 unfiltered behavior exactly.
+
+> **Cost note (AWS/Azure):** on the composite plane a wider selected range now also drives the usage query.
+> That's negligible for CloudWatch (`GetMetricData` is billed per metric, not per datapoint) but real for Azure
+> Log Analytics (billed on data scanned) — a 7-day range raises the App-Insights query cost. The X-Ray
+> recent-flows scan is window-sensitive on both.
 
 This is the [Cloud Service Profile](specification/cloud-service-profile.md)'s intended visibility
 surface (its R6 requirement provisions exactly the feeds the Fleet plane reads);

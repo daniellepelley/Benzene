@@ -161,7 +161,8 @@ public class MeshAggregator
         using var cancellation = new CancellationTokenSource(PerServiceFetchTimeout);
         try
         {
-            return await source.FetchUsageAsync(cancellation.Token);
+            // usage.json keeps each source's own configured window (no picker here), so no window is passed.
+            return await source.FetchUsageAsync(cancellationToken: cancellation.Token);
         }
         catch
         {

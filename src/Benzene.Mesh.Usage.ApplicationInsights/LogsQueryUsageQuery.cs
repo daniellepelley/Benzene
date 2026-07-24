@@ -22,7 +22,7 @@ public class LogsQueryUsageQuery : IApplicationInsightsUsageQuery
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<UsageCount>> QueryAsync(
-        ApplicationInsightsUsageOptions options, TimeSpan window, CancellationToken cancellationToken = default)
+        ApplicationInsightsUsageOptions options, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken cancellationToken = default)
     {
         // Sum the counter (customMetrics.valueSum is the per-interval sum; with delta temporality that is
         // the request delta, so a sum over the window is the total) grouped by the three tag dimensions.
@@ -36,7 +36,7 @@ public class LogsQueryUsageQuery : IApplicationInsightsUsageQuery
             $"| summarize _count = sum(valueSum) by _topic, _transport, _result";
 
         var response = await _client.QueryWorkspaceAsync(
-            options.WorkspaceId, kql, new QueryTimeRange(window), cancellationToken: cancellationToken);
+            options.WorkspaceId, kql, new QueryTimeRange(startUtc, endUtc), cancellationToken: cancellationToken);
 
         var table = response.Value.Table;
         var rows = new List<UsageCount>(table.Rows.Count);

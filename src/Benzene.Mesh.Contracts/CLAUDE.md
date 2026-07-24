@@ -102,6 +102,14 @@ data types - no HTTP, no file I/O, no execution logic.
   `IMeshReportPublisher`: an adapter depends on this package alone. First shipped implementation:
   `Benzene.Mesh.Collector.CollectorUsageSource`; metrics-backend adapters (App Insights,
   CloudWatch) ship as their own packages since they need their backend SDKs.
+  `FetchUsageAsync` also takes an optional `MeshUsageWindow?` (2026-07-24) — a resolved absolute
+  `[FromUtc,ToUtc]` a caller (the composite fleet reader, driven by the mesh UI's time-range picker)
+  asks the source to scope its counts to; `null` = the source's own configured window (today's
+  behavior, so the aggregator's `usage.json` path is unaffected). A source that can't honor an
+  arbitrary window (a cumulative counter) ignores it and reports its own window, and the caller
+  compares the returned window to the request to decide whether the counts were actually windowed
+  (no source self-certifies). This package deliberately stays free of the relative-time grammar
+  (`now-1h` etc.) — that lives with the read models; `MeshUsageWindow` is resolved-absolute only.
 - `MeshServiceStatus` - string constants `Healthy`/`Unhealthy`/`Unreachable`, mirroring
   `HealthCheckStatus`'s loose-string convention (not an enum).
 - `MeshHashing.ComputeHash(string json)` - the contract-drift hash. Deliberately reimplements

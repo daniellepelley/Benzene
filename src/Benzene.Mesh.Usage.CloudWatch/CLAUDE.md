@@ -50,8 +50,11 @@ A CloudWatch `Sum` over the window equals the request count **only if** the coun
   reading it here is a documented follow-up; it raises metric cardinality/cost, so it's opt-in, not default.
 - **No duration.** `AvgDurationMs` is `null`; the `benzene.message.duration` histogram could fill it with a
   second `Average` query — a follow-up, kept out of v1 to stay focused on counts.
-- **Single window.** One configured `TimeWindow` per aggregator run. UI-side window switching would need the
-  aggregator to publish multiple windows — a separate change.
+- **Configured `TimeWindow` is the default, not the only window (2026-07-24).** `FetchUsageAsync` now takes an
+  optional `MeshUsageWindow?`: when the composite fleet reader passes one (driven by the mesh UI's time-range
+  picker), the `GetMetricData` query runs over exactly those bounds and the returned `MeshUsage` echoes them; with
+  none (the aggregator's `usage.json` path) it falls back to the configured `TimeWindow` — unchanged. Billing is
+  per metric requested, not per datapoint, so a wider picked window barely moves this adapter's cost.
 
 ## Dependencies
 - `AWSSDK.CloudWatch` — `ListMetrics`/`GetMetricData`.

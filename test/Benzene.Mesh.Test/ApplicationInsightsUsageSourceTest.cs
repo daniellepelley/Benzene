@@ -15,7 +15,7 @@ public class ApplicationInsightsUsageSourceTest
     private static ApplicationInsightsUsageSource Source(params UsageCount[] rows)
     {
         var query = new Mock<IApplicationInsightsUsageQuery>();
-        query.Setup(x => x.QueryAsync(It.IsAny<ApplicationInsightsUsageOptions>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+        query.Setup(x => x.QueryAsync(It.IsAny<ApplicationInsightsUsageOptions>(), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rows);
         return new ApplicationInsightsUsageSource(query.Object, new ApplicationInsightsUsageOptions("ws-guid", TimeSpan.FromHours(6)));
     }

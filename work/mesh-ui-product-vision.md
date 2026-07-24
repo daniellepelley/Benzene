@@ -24,6 +24,17 @@
 > composite-plane range behavior is verified against a live AWS backend yet (correct by API shape only).
 > Deferred: per-surface range overrides (one shared range for now).
 
+> **2026-07-24 SHIPPED: the composite count-windowing fast-follow (the caveat above, closed).** The AWS/Azure
+> plane's counts now honor the picked window too — the CloudWatch/App-Insights adapters query their backend over
+> the selected range (the picked window threads into `IMeshUsageSource` as a resolved `MeshUsageWindow`), so the
+> "cumulative from …" badge disappears on that plane and the tiles track the picker. It stays honest when a
+> non-windowable source (the cumulative collector feed) is mixed in — the badge returns, because the union of a
+> windowed and a cumulative feed isn't windowed. UI needed no change (the badge already keys on `countsWindowed`).
+> Data-layer detail (the `MeshUsageWindow` port change, the returned-window honored check) is in
+> `work/service-mesh-roadmap-1.0.md`, same date. **Cost:** a wider range now drives the usage query too —
+> negligible on CloudWatch, real on Azure Log Analytics; pair with the idle-poll pause if it bites. Still
+> API-shape-verified only, not against a live backend.
+
 > **2026-07-23 SCOPED: Fleet UI backed by an OTel trace store.** Beyond the push-collector, the Fleet
 > view can read traces/correlation/recent-flows from Grafana Tempo/X-Ray/Jaeger (scope:
 > `work/otel-fleet-adapter-scope.md`). UI honesty items when trace-backed: a "Backed by: <backend> —

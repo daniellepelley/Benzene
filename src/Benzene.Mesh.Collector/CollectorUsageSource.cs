@@ -37,9 +37,12 @@ public class CollectorUsageSource : IMeshUsageSource
     /// <remarks>
     /// Never returns <c>null</c>: a live collector with no traffic yet is a wired feed with
     /// nothing observed (an empty entries array), not an absent one. The window always starts at
-    /// the store's own start - the in-memory stats are cumulative since process start.
+    /// the store's own start - the in-memory stats are cumulative since process start, so a
+    /// requested <paramref name="window"/> is deliberately <b>ignored</b> (these counters can't be
+    /// sub-windowed) and the report keeps its since-start window. A caller comparing the reported
+    /// window to what it asked for therefore sees they differ and keeps <c>CountsWindowed=false</c>.
     /// </remarks>
-    public Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default)
+    public Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
     {
         var entries = _store.Fleet().Topics
             .SelectMany(topic => topic.StatusCounts

@@ -19,7 +19,8 @@ public record UsageCount(string? Topic, string? Transport, string? Result, long 
 /// </summary>
 public interface IApplicationInsightsUsageQuery
 {
-    /// <summary>Runs the grouped count query over <paramref name="window"/> and returns one row per dimension combination.</summary>
+    /// <summary>Runs the grouped count query over the absolute <c>[<paramref name="startUtc"/>, <paramref name="endUtc"/>]</c>
+    /// window and returns one row per dimension combination.</summary>
     Task<IReadOnlyList<UsageCount>> QueryAsync(
-        ApplicationInsightsUsageOptions options, TimeSpan window, CancellationToken cancellationToken = default);
+        ApplicationInsightsUsageOptions options, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken cancellationToken = default);
 }

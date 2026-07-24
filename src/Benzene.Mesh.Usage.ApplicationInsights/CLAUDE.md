@@ -53,7 +53,11 @@ but here it's the exporter default, so nothing extra is needed on the emit side.
   OTel `service.name` resource attribute to a dimension is a documented follow-up.
 - **No duration** (`AvgDurationMs` is `null`) — the `benzene.message.duration` histogram could fill it
   with a second query; a follow-up, kept out of v1 to stay focused on counts.
-- **Single window** per aggregator run — UI-side window switching is a separate change.
+- **Configured `TimeWindow` is the default, not the only window (2026-07-24).** `FetchUsageAsync` takes an optional
+  `MeshUsageWindow?`: when the composite reader passes one (the mesh UI's time-range picker), the KQL query runs over
+  exactly those bounds (`IApplicationInsightsUsageQuery.QueryAsync` now takes absolute `start`/`end`) and the returned
+  `MeshUsage` echoes them; with none it falls back to the configured `TimeWindow`. NB Log Analytics bills on data
+  scanned, so a wider picked window raises this adapter's query cost — the picker's cost lever on the Azure plane.
 
 ## Dependencies
 - `Azure.Monitor.Query` (`LogsQueryClient`) + `Azure.Identity` (`DefaultAzureCredential`).

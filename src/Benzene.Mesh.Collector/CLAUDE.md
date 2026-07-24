@@ -29,14 +29,28 @@ hosted a live cross-language fleet (Go and C# services in one view - see the roa
 >   derivation stays over the full bounded ring (already a recent window), not re-windowed — avoids a
 >   windowed-consumers/cumulative-counts mismatch on one row.
 > - **Composite plane** (`CompositeMeshFleetReadModel`): the range reaches the trace source (X-Ray/Tempo/Jaeger
->   `GetTraceSummaries`/search take it — flows honor it), but the counts come from the usage feed's own baked window
->   (the CloudWatch/App-Insights adapters are single-window by design), so `CountsWindowed=false` and `CountsSince` is
->   the usage feed's `WindowStartUtc`. **Threading the picked window into `IMeshUsageSource` so composite counts honor
->   it is the documented fast-follow** — and, like all the composite-plane behavior, is verified by API shape (unit
->   tests, mocked backends), NOT against a live AWS/Tempo/Jaeger backend yet. `CountsWindowed` is the seam that flips
->   to true when a plane's counts honor the picked window end-to-end.
+>   `GetTraceSummaries`/search take it — flows honor it) **and** the usage sources — the picked window is resolved
+>   to absolute and passed as a `MeshUsageWindow` to `IMeshUsageSource.FetchUsageAsync` (see the 2026-07-24
+>   count-windowing note below). `CountsWindowed` is decided from what the sources **returned**: it's true only when
+>   *every* contributing source echoed back a window matching the request (each windowable source queries its
+>   backend over exactly those bounds), and false — with `CountsSince` = the earliest returned window start — if any
+>   source couldn't (a cumulative source returns its own wider window). Honesty is never a source self-certifying.
+>   All of this is verified by API shape (unit tests, mocked backends), NOT against a live AWS/Tempo/Jaeger backend.
 > Covered by `MeshTimeRangeTest` (resolver grammar, store flow-windowing + `CountsSince`, null-window == today,
-> composite range-threading + usage-window reporting).
+> composite range-threading, and the honored-vs-cumulative `CountsWindowed` decision).
+
+> **2026-07-24 (Phase D fast-follow — composite counts honor the picked window).** `IMeshUsageSource.FetchUsageAsync`
+> gained an optional `MeshUsageWindow?` (resolved absolute `[FromUtc,ToUtc]`, in `Benzene.Mesh.Contracts`; null =
+> today's baked window, so the aggregator's `usage.json` path is unchanged). The **CloudWatch** and **App-Insights**
+> adapters query their backend over exactly those bounds when given a window and echo it back on the returned
+> `MeshUsage`; `CollectorUsageSource` **ignores** it (cumulative counters can't be sub-windowed) and keeps its
+> since-start window. `CompositeMeshFleetReadModel` resolves the picked range, passes it to every usage source, and
+> flips `CountsWindowed=true` only when all returned windows match the request within a 5-minute tolerance (absorbs a
+> backend snapping to its aggregation period + clock skew; a cumulative source's much-earlier start clearly fails).
+> Additive/backward-compatible: it's a new optional param on a public port (implemented by all three adapters — flag
+> as a breaking-additive change). **Cost note:** on the composite plane a wider picked window now also drives the
+> usage query — negligible for CloudWatch `GetMetricData` (billed per metric, not per datapoint) but real for Azure
+> Log Analytics (billed on data scanned), so a 7d range raises the App-Insights query cost.
 
 ## Key types/interfaces
 - `IMeshFleetReadModel` (2026-07-23) - the **read seam** the five `mesh:query:*` handlers depend on

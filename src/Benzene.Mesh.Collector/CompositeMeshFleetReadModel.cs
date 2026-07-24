@@ -57,11 +57,21 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
     public Task<TopicSummary?> TopicAsync(string id, string? version, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
         => Task.FromResult<TopicSummary?>(null);
 
+    /// <summary>How close a usage source's returned window must be to the requested one to count as "honored"
+    /// — absorbs a metrics backend snapping to its aggregation period, and the sub-second skew between the
+    /// composite's <c>now</c> and each source's. A cumulative source returns a window starting far earlier than
+    /// this tolerance, so it correctly reads as "did not honor".</summary>
+    private static readonly TimeSpan WindowMatchTolerance = TimeSpan.FromMinutes(5);
+
     public async Task<FleetView> FleetAsync(MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
-        var (topics, usageWindowStart) = await TopicsFromUsageAsync(cancellationToken);
-        // Flows honor the picked window (X-Ray GetTraceSummaries / Tempo / Jaeger take the range); the counts
-        // above come from the usage feed's own baked window, so the reported window says CountsWindowed=false.
+        var requested = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
+        var usageWindow = requested is { } w ? new MeshUsageWindow(w.From, w.To) : null;
+
+        var (topics, reports) = await TopicsFromUsageAsync(usageWindow, cancellationToken);
+        // Flows honor the picked window (X-Ray GetTraceSummaries / Tempo / Jaeger take the range) - and now the
+        // counts do too, on any usage source that can honor it (CloudWatch/App-Insights). CompositeWindow decides
+        // CountsWindowed from what the sources actually returned, so a source that can't window is still honest.
         var flows = await RecentFlowsAsync(range, cancellationToken);
 
         return new FleetView
@@ -70,53 +80,70 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
             Topics = topics,
             Traces = flows,
             Services = ServicesFromFlows(flows),
-            Window = CompositeWindow(range, usageWindowStart)
+            Window = CompositeWindow(requested, reports)
         };
     }
 
-    /// <summary>Build the reported <see cref="MeshWindow"/> for the composite plane. Flows honor the picked
-    /// window; the counts come from the usage feed's baked window, so <see cref="MeshWindow.CountsWindowed"/> is
-    /// false and <see cref="MeshWindow.CountsSince"/> is that feed's window start (threading the picked window
-    /// into the usage sources so their counts honor it is a documented fast-follow — the CloudWatch/App-Insights
-    /// adapters are single-window by design). Null when no window was requested (today's shape).</summary>
-    private static MeshWindow? CompositeWindow(MeshTimeRange? range, DateTimeOffset? usageWindowStart)
+    /// <summary>Build the reported <see cref="MeshWindow"/> for the composite plane. Flows always honor the picked
+    /// window. The counts honor it too when <em>every</em> contributing usage source returned a window matching the
+    /// request (each windowable source queries its backend over exactly those bounds and echoes them back) — then
+    /// <see cref="MeshWindow.CountsWindowed"/> is true. If any source couldn't (a cumulative source returns its own
+    /// wider window), the counts are a union of differing windows, so <see cref="MeshWindow.CountsWindowed"/> is
+    /// false and <see cref="MeshWindow.CountsSince"/> is the earliest window the counts actually cover. Honesty is
+    /// decided from what the sources <em>returned</em>, never a source self-certifying. Null when no window was
+    /// requested (today's shape).</summary>
+    private static MeshWindow? CompositeWindow(
+        (DateTimeOffset From, DateTimeOffset To)? requested, IReadOnlyList<MeshUsage> reports)
     {
-        var window = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
-        if (window == null)
+        if (requested == null)
         {
             return null;
         }
 
+        var (from, to) = requested.Value;
+        var honored = reports.Count > 0 && reports.All(r =>
+            r.WindowStartUtc is { } start && r.WindowEndUtc is { } end &&
+            Within(start, from) && Within(end, to));
+
+        DateTimeOffset? earliestStart = reports
+            .Select(r => r.WindowStartUtc)
+            .Where(start => start != null)
+            .DefaultIfEmpty(null)
+            .Min();
+
         return new MeshWindow
         {
-            From = MeshTimeRangeResolver.ToIso(window.Value.From),
-            To = MeshTimeRangeResolver.ToIso(window.Value.To),
-            CountsWindowed = false,
-            CountsSince = usageWindowStart == null ? null : MeshTimeRangeResolver.ToIso(usageWindowStart.Value)
+            From = MeshTimeRangeResolver.ToIso(from),
+            To = MeshTimeRangeResolver.ToIso(to),
+            CountsWindowed = honored,
+            CountsSince = honored || earliestStart == null ? null : MeshTimeRangeResolver.ToIso(earliestStart.Value)
         };
     }
 
-    /// <summary>Merge every usage source's entries and roll them up into one <see cref="TopicSummary"/>
-    /// per (topic, version). A failing source contributes nothing (its slice degrades to empty). Also returns
-    /// the earliest usage-feed window start seen, so the composite can report where its counts really begin.</summary>
-    private async Task<(List<TopicSummary> Topics, DateTimeOffset? UsageWindowStart)> TopicsFromUsageAsync(CancellationToken cancellationToken)
+    private static bool Within(DateTimeOffset actual, DateTimeOffset expected)
+        => (actual - expected).Duration() <= WindowMatchTolerance;
+
+    /// <summary>Merge every usage source's entries and roll them up into one <see cref="TopicSummary"/> per
+    /// (topic, version), passing <paramref name="usageWindow"/> to each source. A failing source contributes
+    /// nothing (its slice degrades to empty). Also returns each source's report, so the composite can decide from
+    /// the returned windows whether the counts were actually windowed.</summary>
+    private async Task<(List<TopicSummary> Topics, List<MeshUsage> Reports)> TopicsFromUsageAsync(
+        MeshUsageWindow? usageWindow, CancellationToken cancellationToken)
     {
         var entries = new List<MeshUsageEntry>();
-        DateTimeOffset? usageWindowStart = null;
+        var reports = new List<MeshUsage>();
         foreach (var source in _usageSources)
         {
             try
             {
-                var usage = await source.FetchUsageAsync(cancellationToken);
-                if (usage?.Entries is { Length: > 0 })
+                var usage = await source.FetchUsageAsync(usageWindow, cancellationToken);
+                if (usage != null)
                 {
-                    entries.AddRange(usage.Entries);
-                }
-                // The earliest window start across the feeds is the honest "counts cover from" for the
-                // composite view (the counts are a union of every source's baked window).
-                if (usage?.WindowStartUtc is { } start && (usageWindowStart == null || start < usageWindowStart))
-                {
-                    usageWindowStart = start;
+                    reports.Add(usage);
+                    if (usage.Entries is { Length: > 0 })
+                    {
+                        entries.AddRange(usage.Entries);
+                    }
                 }
             }
             catch
@@ -131,7 +158,7 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
             .OrderBy(g => g.Key.Item1, StringComparer.Ordinal).ThenBy(g => g.Key.Item2, StringComparer.Ordinal)
             .Select(TopicSummaryFromUsage)
             .ToList();
-        return (topics, usageWindowStart);
+        return (topics, reports);
     }
 
     private static TopicSummary TopicSummaryFromUsage(IGrouping<(string Topic, string Version), MeshUsageEntry> group)

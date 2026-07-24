@@ -20,6 +20,13 @@ namespace Benzene.Mesh.Contracts;
 public interface IMeshUsageSource
 {
     /// <summary>Fetches the current usage report, or <c>null</c> when this source has nothing to report.</summary>
+    /// <param name="window">
+    /// An optional absolute window to scope the counts to (e.g. driven by the mesh UI's time-range picker via the
+    /// composite fleet read model). <c>null</c> (the default) means "use this source's own configured window" -
+    /// today's behavior, so the aggregator's <c>usage.json</c> path is unaffected. A source that can't honor an
+    /// arbitrary window ignores it and reports its own window on the returned <see cref="MeshUsage"/>; the caller
+    /// compares the two to tell whether the counts were actually windowed (see <see cref="MeshUsageWindow"/>).
+    /// </param>
     /// <param name="cancellationToken">Cancels the fetch (the aggregator bounds each source with its per-fetch timeout).</param>
-    Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default);
+    Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default);
 }

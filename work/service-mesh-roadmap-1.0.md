@@ -1,6 +1,17 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-24 SHIPPED: composite counts honor the picked window (Phase D fast-follow).** `IMeshUsageSource`'s
+> `FetchUsageAsync` gained an optional resolved-absolute `MeshUsageWindow?` (in `Benzene.Mesh.Contracts`; null =
+> the source's configured window, so `usage.json` is unchanged). CloudWatch + App-Insights query their backend
+> over the requested bounds and echo the window back; `CollectorUsageSource` ignores it (cumulative). The
+> composite resolves the picked range, passes it to every usage source, and flips `MeshWindow.CountsWindowed=true`
+> only when *all* returned windows match the request (5-min tolerance for period-snapping/skew) — else false with
+> `CountsSince` = earliest returned start. So the composite plane's counts now track the picker except when a
+> non-windowable source is mixed in. Breaking-additive change to a public port (three adapters). Cost lever:
+> a wider range now also drives the usage query — negligible for CloudWatch (per-metric billing), real for Azure
+> Log Analytics (data-scanned billing). Still verified by API shape only, not a live backend. Covered by
+> `MeshTimeRangeTest`'s honored-vs-cumulative composite cases.
 > **2026-07-24 SHIPPED: time-range on the `mesh:query:*` read seam (Phase D data layer).** The fleet read
 > models take an optional, additive `MeshTimeRange` (Grafana relative grammar or ISO absolute, resolved
 > server-side by `MeshTimeRangeResolver`) on `FleetQuery`/`ServiceQuery`/`TopicQuery`/`CorrelationQuery`

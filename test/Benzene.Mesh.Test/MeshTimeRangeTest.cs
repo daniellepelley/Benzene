@@ -150,11 +150,27 @@ public class MeshTimeRangeTest
         }
     }
 
+    // A usage source that ignores the requested window and always reports its own fixed one — the
+    // "can't be sub-windowed" case (like the cumulative collector feed).
     private sealed class FixedUsageSource : IMeshUsageSource
     {
         private readonly MeshUsage _usage;
         public FixedUsageSource(MeshUsage usage) => _usage = usage;
-        public Task<MeshUsage?> FetchUsageAsync(CancellationToken cancellationToken = default) => Task.FromResult<MeshUsage?>(_usage);
+        public Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
+            => Task.FromResult<MeshUsage?>(_usage);
+    }
+
+    // A usage source that honors the requested window — it queries over exactly those bounds and echoes them
+    // back (the CloudWatch/App-Insights behavior after the count-windowing fast-follow).
+    private sealed class WindowHonoringUsageSource : IMeshUsageSource
+    {
+        public Task<MeshUsage?> FetchUsageAsync(MeshUsageWindow? window = null, CancellationToken cancellationToken = default)
+        {
+            var start = window?.FromUtc ?? DateTimeOffset.UtcNow.AddHours(-24);
+            var end = window?.ToUtc ?? DateTimeOffset.UtcNow;
+            var entry = new MeshUsageEntry("orders:create", null, null, "sqs", "success", 5, null, MeshUsageSource.CloudWatch);
+            return Task.FromResult<MeshUsage?>(new MeshUsage(DateTimeOffset.UtcNow, start, end, new[] { entry }));
+        }
     }
 
     [Fact]
@@ -178,10 +194,32 @@ public class MeshTimeRangeTest
     }
 
     [Fact]
-    public async Task Composite_WithoutWindow_OmitsWindow()
+    public async Task Composite_WhenEveryUsageSourceHonorsTheWindow_CountsAreWindowed()
     {
-        var model = new CompositeMeshFleetReadModel(new WindowCapturingTraceSource(), Array.Empty<IMeshUsageSource>());
-        var fleet = await model.FleetAsync();
-        Assert.Null(fleet.Window);
+        // Every usage source echoes the requested window → the counts really cover [from,to] → CountsWindowed=true.
+        var model = new CompositeMeshFleetReadModel(new WindowCapturingTraceSource(),
+            new IMeshUsageSource[] { new WindowHonoringUsageSource() });
+
+        var fleet = await model.FleetAsync(new MeshTimeRange { From = "now-1h" });
+
+        Assert.NotNull(fleet.Window);
+        Assert.True(fleet.Window!.CountsWindowed);
+        Assert.Null(fleet.Window.CountsSince); // no "cumulative from" caveat — the counts honor the range
+    }
+
+    [Fact]
+    public async Task Composite_WhenAnyUsageSourceCannotWindow_CountsStayCumulative()
+    {
+        // One honoring source + one that can't (a fixed/cumulative window) → the union isn't windowed → false.
+        var cumulative = new MeshUsage(Now, Now.AddDays(-30), Now,
+            new[] { new MeshUsageEntry("orders:create", null, null, "sqs", "success", 3, null, MeshUsageSource.Collector) });
+        var model = new CompositeMeshFleetReadModel(new WindowCapturingTraceSource(),
+            new IMeshUsageSource[] { new WindowHonoringUsageSource(), new FixedUsageSource(cumulative) });
+
+        var fleet = await model.FleetAsync(new MeshTimeRange { From = "now-1h" });
+
+        Assert.NotNull(fleet.Window);
+        Assert.False(fleet.Window!.CountsWindowed);
+        Assert.NotNull(fleet.Window.CountsSince); // surfaces the earliest window the counts actually cover
     }
 }
