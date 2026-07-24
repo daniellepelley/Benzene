@@ -172,6 +172,14 @@ data "aws_iam_policy_document" "mesh" {
     actions   = ["cloudwatch:GetMetricData", "cloudwatch:ListMetrics"]
     resources = ["*"]
   }
+  # Fleet view: read traces back from X-Ray for the composite fleet read model (trace waterfall,
+  # correlation search, recent flows — Benzene.Mesh.Fleet.Aws.XRay). Distinct from the
+  # AWSXRayDaemonWriteAccess attachment above, which only lets the function *write* its own segments.
+  # These X-Ray read actions don't support resource-level scoping, hence "*".
+  statement {
+    actions   = ["xray:BatchGetTraces", "xray:GetTraceSummaries"]
+    resources = ["*"]
+  }
   # The mesh Lambda also emits metrics, so its collector's awsemf exporter writes EMF to the usage group.
   statement {
     actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams", "logs:PutRetentionPolicy"]
