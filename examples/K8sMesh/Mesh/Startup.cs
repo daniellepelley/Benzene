@@ -81,7 +81,10 @@ public class Startup : BenzeneStartUp
             .UseW3CTraceContext()
             .UseBenzeneEnrichment()
             .UseBenzeneMetrics()
-            .UseMeshUi("/mesh-ui", "manifest.json")
+            // The Mesh UI: the service catalog (what services declare, from the aggregator's pulled +
+            // published manifest.json) enriched in-page with the live fleet — what the collector derives
+            // from the services' own push feeds (what's actually running) — polled from /benzene/invoke.
+            .UseMeshUi("/mesh-ui", "manifest.json", "/benzene/invoke")
             // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's spec
             // from the same-origin services/{name}.json snapshot, so a service only serves JSON.
             .UseMeshSpecUi("/mesh-spec-ui.html", "manifest.json")
@@ -90,14 +93,10 @@ public class Startup : BenzeneStartUp
             // any origin, but scoping to Studio's origin keeps the example tight.
             .UseMeshArtifacts(new CorsSettings { AllowedDomains = new[] { "https://studio.asyncapi.com" } })
             // The live spec collector behind the wire-envelope endpoint the services report to
-            // (register/heartbeat/trace) and the Fleet view queries (mesh:query:fleet). Its own inner
-            // pipeline routes only the collector topics, over the singleton MeshCollectorStore above.
+            // (register/heartbeat/trace) and the Mesh UI's Fleet plane queries (mesh:query:fleet). Its
+            // own inner pipeline routes only the collector topics, over the singleton MeshCollectorStore.
             .UseBenzeneMessage(new BenzeneMessageHttpOptions { Path = "/benzene/invoke" },
                 collector => collector.UseMessageHandlers(MeshCollectorHandlers.All))
-            // The Fleet view: the live counterpart of the Mesh UI. Where /mesh-ui renders the
-            // aggregator's pulled + published artifacts (what services declare), this renders what the
-            // collector derives from the services' own push feeds (what's actually running).
-            .UseMeshFleetUi("/benzene/fleet-ui", "/benzene/invoke")
             .UseMessageHandlers(typeof(Startup).Assembly));
     }
 }

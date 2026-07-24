@@ -22,8 +22,8 @@ spec:
           ports: [{ containerPort: 8080 }]
           env:
             - { name: MESH_SERVICE, value: orders }
-            # Report to the mesh pod's collector (register/heartbeat/traces) so the live Fleet view
-            # populates. In-cluster the mesh Service is reachable by name in this namespace.
+            # Report to the mesh pod's collector (register/heartbeat/traces) so the Mesh UI's live
+            # Fleet plane populates. In-cluster the mesh Service is reachable by name in this namespace.
             - { name: MESH_COLLECTOR_ENVELOPE_URL, value: http://mesh/benzene/invoke }
             # Chain the next hop over HTTP: orders posts payment:take to the payments service's
             # BenzeneMessage endpoint, addressed by in-cluster DNS. Service port is 80, so no :8080 here.

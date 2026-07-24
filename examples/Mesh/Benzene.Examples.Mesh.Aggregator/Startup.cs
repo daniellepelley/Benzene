@@ -62,12 +62,13 @@ public class Startup
 
         app.UseBenzene(benzene => benzene
             .UseHttp(asp => asp
-                .UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json")
+                // The Mesh UI: the aggregator's pulled + published catalog (what services declare)
+                // enriched in-page with the live derived fleet from the collector (what's actually
+                // running), polled through the /benzene/invoke envelope branched above.
+                .UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json", envelopeUrl: "/benzene/invoke")
                 // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's
                 // spec from the same-origin services/{name}.json snapshot, so a service only serves JSON.
                 .UseMeshSpecUi(path: "/mesh-spec-ui.html", manifestUrl: "/artifacts/manifest.json")
-                // The NEW Fleet view: live derived fleet from the collector, polled through /benzene/invoke.
-                .UseMeshFleetUi(path: "/benzene/fleet-ui", envelopeUrl: "/benzene/invoke")
                 .UseMessageHandlers()
             )
         );

@@ -13,8 +13,9 @@ public static class Extensions
     /// Registers a <see cref="JaegerTraceSource"/> as the <see cref="IMeshTraceSource"/> and composes it —
     /// with whatever <c>IMeshUsageSource</c>s are registered — into a
     /// <see cref="CompositeMeshFleetReadModel"/> serving <see cref="IMeshFleetReadModel"/>. Wire the read
-    /// side with <c>UseMessageHandlers(MeshCollectorHandlers.Queries)</c> and the fleet UI with
-    /// <c>UseMeshFleetUi()</c>; no <see cref="MeshCollectorStore"/> is needed — there is no push ingestion.
+    /// side with <c>UseMessageHandlers(MeshCollectorHandlers.Queries)</c> and point the mesh UI's live Fleet
+    /// plane at it with <c>UseMeshUi(..., envelopeUrl: "/benzene/invoke")</c>; no
+    /// <see cref="MeshCollectorStore"/> is needed — there is no push ingestion.
     /// </summary>
     /// <remarks>
     /// Registers an <see cref="HttpClient"/> unless one is already registered. Add a usage source

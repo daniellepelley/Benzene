@@ -4,8 +4,9 @@
 A second **non-AWS reference** realisation of the trace-backed fleet reader scoped in
 `work/otel-fleet-adapter-scope.md`: it answers the mesh's `mesh:query:trace`, `mesh:query:correlation`,
 and the fleet view's recent-flows from a **Jaeger query service**, reusing the **same**
-`CompositeMeshFleetReadModel`, `MeshCollectorHandlers.Queries`, and `UseMeshFleetUi` as the X-Ray and
-Tempo adapters — a third backend on the `IMeshTraceSource` seam with, again, zero upstream change.
+`CompositeMeshFleetReadModel`, `MeshCollectorHandlers.Queries`, and the mesh UI's live Fleet plane
+(`UseMeshUi(..., envelopeUrl)`) as the X-Ray and Tempo adapters — a third backend on the
+`IMeshTraceSource` seam with, again, zero upstream change.
 
 ## Key types
 - `JaegerTraceSource : Benzene.Mesh.Collector.IMeshTraceSource` —

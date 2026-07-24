@@ -1,16 +1,21 @@
 # Mesh UI
 
-**`Benzene.Mesh.Ui`** ships two self-contained, dependency-free HTML viewers over Benzene's
+**`Benzene.Mesh.Ui`** ships a self-contained, dependency-free HTML viewer over Benzene's
 [service mesh](specification/mesh.md) — the same visual family as [Spec UI](spec-ui.md), styled
 with the same design tokens, but one level up: catalog-of-services instead of catalog-of-topics.
 
-| Page | Shows | Data source | Deployment |
-|---|---|---|---|
-| **Mesh Explorer** (`mesh-ui.html`) | A published mesh artifact snapshot: service health, contract drift, cross-service topics and topology | `manifest.json`/`services/*.json` (and optionally `topics.json`/`topology.json`) produced by `Benzene.Mesh.Aggregator` | Primarily a **static file host** — the realistic case is copying the HTML next to the aggregator's generated JSON |
-| **Fleet view** (`mesh-fleet-ui.html`) | The **live** derived fleet: services with health and reduced-feed markers, the topic catalog with observed consumers, and recent trace flows | Polls a `Benzene.Mesh.Collector`'s `mesh:query:fleet` topic every 2 seconds, over the wire-envelope endpoint | Served by a running Benzene app — there is no static/offline mode, since it has nothing to render without a live collector to poll |
+The **Mesh Explorer** (`mesh-ui.html`) is a published mesh **artifact snapshot** — service health,
+contract drift, cross-service topics and topology — read from the `manifest.json`/`services/*.json`
+(and optionally `topics.json`/`topology.json`/`usage.json`) produced by `Benzene.Mesh.Aggregator`.
+Its realistic deployment is a **static file host**: copy the HTML next to the aggregator's generated
+JSON. The page is theme-aware (light/dark) and renders with no external requests, so it works offline
+and behind strict CSPs.
 
-Both pages are theme-aware (light/dark) and render with no external requests, so they work
-offline (Mesh Explorer) or behind strict CSPs (both).
+When a **live** [`Benzene.Mesh.Collector`](#the-live-fleet-plane) is reachable, the same page also
+grows a **live Fleet plane** — the catalog is the spine and the live data (health, observed-vs-declared
+consumers, recent trace flows, and a Fleet landing view) enriches it in place, rather than living on a
+separate page. This is opt-in via a single wire-envelope endpoint (see below); with none configured the
+page is the static explorer exactly as described above.
 
 ## Mesh Explorer
 
@@ -133,57 +138,58 @@ var html = MeshUiPage.GetHtml("https://cdn.example.com/mesh/manifest.json");
 // write `html` with content-type "text/html"
 ```
 
-## Fleet view
+## The live Fleet plane
 
-The live counterpart: five summary tiles (services, topics, invocations, errors, unhealthy), then
-three tables — **Services** (health, runtime, cloud, binding, topic/instance counts, reduced
-feeds), **Topic catalog** (providers, observed consumers, invocations, errors, average duration,
-status breakdown), and **Recent flows** (one row per trace: participating services in call order,
-event count, duration, outcome). Everything here is *derived* — from registered descriptors,
-heartbeats, and trace events the collector has actually ingested — never hand-declared, per
-[mesh.md §2–§4](specification/mesh.md).
+When you point the page at a live [`Benzene.Mesh.Collector`](specification/mesh.md), the catalog is
+enriched with *derived* fleet data — from registered descriptors, heartbeats, and trace events the
+collector has actually ingested, never hand-declared, per [mesh.md §2–§4](specification/mesh.md):
 
-Because it polls live, an unreachable collector shows "collector unreachable — retrying" rather
-than an empty or stale page, and keeps retrying every 2 seconds.
+- a **Fleet landing view** (five summary tiles — services, topics, invocations, errors, unhealthy —
+  a live Services table with health/reduced-feed markers, a topic catalog with observed consumers,
+  and Recent flows: one row per trace, expandable to a waterfall);
+- per-entity **live sections** on the Service and Topic pages — the declared catalog reconciled with
+  what's observed (e.g. declared-vs-observed consumers, with the gap called out);
+- correlation-id and trace-id lookups that pivot from a reported failure to every related flow.
+
+Because these poll live, an unreachable collector degrades honestly ("collector unreachable —
+retrying") rather than showing an empty or stale page; the static catalog underneath is unaffected.
 
 ### Serving it
 
+The Fleet plane is folded into `UseMeshUi` — pass the wire-envelope `envelopeUrl` the page should poll:
+
 ```csharp
-using Benzene.Mesh.Ui; // UseMeshFleetUi
+using Benzene.Mesh.Ui; // UseMeshUi
 
 app.UseApiGateway(http => http
-    .UseMeshFleetUi()                              // serves GET /benzene/fleet-ui
-    .UseMessageHandlers()
-);
-
-// Point it at a collector reachable at a different URL (same-origin path or absolute):
-app.UseApiGateway(http => http
-    .UseMeshFleetUi("/benzene/fleet-ui", "https://collector.example.com/benzene/invoke")
+    // The catalog page, enriched with the live Fleet plane polling /benzene/invoke:
+    .UseMeshUi("/mesh-ui", "manifest.json", "/benzene/invoke")
+    // The collector behind that endpoint (queries only, or queries + ingestion):
+    .UseBenzeneMessage(new BenzeneMessageHttpOptions { Path = "/benzene/invoke" },
+        collector => collector.UseMessageHandlers(MeshCollectorHandlers.All))
     .UseMessageHandlers()
 );
 ```
 
-Add this to the pipeline that fronts your `Benzene.Mesh.Collector` — the page polls
-`mesh:query:fleet` on the same wire-envelope endpoint (`/benzene/invoke` by default) that
-services use to register, heartbeat, and export traces. See
-[`examples/Mesh/README.md`](../examples/Mesh/README.md) for a runnable end-to-end demo
-(`./run.sh`) with real services registering, heartbeating, and tracing into a live Fleet view.
+The `envelopeUrl` can be a same-origin path (the common case: the mesh host also fronts the collector)
+or an absolute URL to a collector reachable elsewhere. Omit it (the default is `null`) and the page is
+the static explorer with the Fleet plane dormant. The endpoint the page polls is the same wire-envelope
+endpoint (`/benzene/invoke` by default, `MeshUiExtensions.DefaultEnvelopeUrl`) that services use to
+register, heartbeat, and export traces. See [`examples/Mesh/README.md`](../examples/Mesh/README.md) for a
+runnable end-to-end demo (`./run.sh`) with real services registering, heartbeating, and tracing into the
+live Fleet plane, and `examples/AwsMesh/Mesh/Startup.cs` for the AWS wiring (X-Ray + CloudWatch behind
+the envelope).
 
 ### Serving it yourself
 
 ```csharp
-var html = MeshFleetUiPage.GetHtml("https://collector.example.com/benzene/invoke");
+// Inject both the manifest URL and the live-fleet envelope URL onto the page:
+var html = MeshUiPage.GetHtml("https://cdn.example.com/mesh/manifest.json",
+                              "https://collector.example.com/benzene/invoke");
 // write `html` with content-type "text/html"
 ```
 
-## Which one do I want?
-
-- Publishing periodic snapshots from an aggregator that polls each service's `/spec` and
-  `/healthcheck` — **Mesh Explorer**.
-- Running a `Benzene.Mesh.Collector` that services actively register, heartbeat, and trace
-  into — **Fleet view**. This is the [Cloud Service Profile](specification/cloud-service-profile.md)'s
-  intended visibility surface (its R6 requirement provisions exactly the feeds this page reads).
-
-Nothing stops running both against the same fleet — they read two different pipelines
-([mesh.md §9](specification/mesh.md#9-relationship-to-the-existing-net-mesh-packages-informative)
-covers how the two converge.
+This is the [Cloud Service Profile](specification/cloud-service-profile.md)'s intended visibility
+surface (its R6 requirement provisions exactly the feeds the Fleet plane reads);
+[mesh.md §9](specification/mesh.md#9-relationship-to-the-existing-net-mesh-packages-informative)
+covers how the artifact and collector pipelines converge.

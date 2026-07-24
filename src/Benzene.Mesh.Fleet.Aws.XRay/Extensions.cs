@@ -16,9 +16,9 @@ public static class Extensions
     /// <see cref="CompositeMeshFleetReadModel"/> serving <see cref="IMeshFleetReadModel"/>, so the whole
     /// fleet view (trace + correlation from X-Ray, topic stats from the usage feed, recent flows +
     /// anonymous services from X-Ray) answers on the AWS plane. Wire the read side with
-    /// <c>UseMessageHandlers(MeshCollectorHandlers.Queries)</c> and the fleet UI with
-    /// <c>UseMeshFleetUi()</c>; no <see cref="MeshCollectorStore"/> is needed - there is no push
-    /// ingestion, only queries against X-Ray + the usage backend.
+    /// <c>UseMessageHandlers(MeshCollectorHandlers.Queries)</c> and point the mesh UI's live Fleet plane
+    /// at it with <c>UseMeshUi(..., envelopeUrl: "/benzene/invoke")</c>; no <see cref="MeshCollectorStore"/>
+    /// is needed - there is no push ingestion, only queries against X-Ray + the usage backend.
     /// </summary>
     /// <remarks>
     /// Registers a default <see cref="IAmazonXRay"/> (resolving region and credentials from the ambient

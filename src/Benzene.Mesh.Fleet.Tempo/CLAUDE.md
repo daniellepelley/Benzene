@@ -5,8 +5,8 @@ The **non-AWS reference** realisation of the trace-backed fleet reader scoped in
 `work/otel-fleet-adapter-scope.md` (**Increment 4**): it answers the mesh's `mesh:query:trace`,
 `mesh:query:correlation`, and the fleet view's recent-flows from **Grafana Tempo's trace API**, so the
 fleet UI + waterfall work over Tempo the same way `Benzene.Mesh.Fleet.Aws.XRay` makes them work over
-X-Ray — reusing the **same** `CompositeMeshFleetReadModel`, `MeshCollectorHandlers.Queries`, and
-`UseMeshFleetUi`, differing only in the backend. That reuse is the whole point of the `IMeshTraceSource`
+X-Ray — reusing the **same** `CompositeMeshFleetReadModel`, `MeshCollectorHandlers.Queries`, and the mesh
+UI's live Fleet plane (`UseMeshUi(..., envelopeUrl)`), differing only in the backend. That reuse is the whole point of the `IMeshTraceSource`
 seam: increments 0-3 didn't need to change to add a second backend.
 
 ## Not to be confused with `Benzene.Mesh.Tracing.Tempo`
@@ -42,7 +42,7 @@ either, both, or neither.
   already registered — the same shape as `AddTempoTopology`), `TempoTraceSource` as `IMeshTraceSource`, and
   `CompositeMeshFleetReadModel` as `IMeshFleetReadModel` (composed with whatever `IMeshUsageSource`s are
   registered for topic stats). Wire the read side with `UseMessageHandlers(MeshCollectorHandlers.Queries)`
-  and the fleet UI with `UseMeshFleetUi()`.
+  and point the mesh UI's live Fleet plane at it with `UseMeshUi(..., envelopeUrl: "/benzene/invoke")`.
 
 ## What it deliberately does NOT do
 Per `IMeshTraceSource`, it carries **no** per-topic/service counts and **no** service health: traces are

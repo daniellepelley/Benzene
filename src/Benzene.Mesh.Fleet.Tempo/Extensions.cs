@@ -15,8 +15,9 @@ public static class Extensions
     /// <see cref="CompositeMeshFleetReadModel"/> serving <see cref="IMeshFleetReadModel"/>, so the whole
     /// fleet view (trace + correlation + recent flows from Tempo, topic stats from a usage feed if one is
     /// wired) answers off Tempo. Wire the read side with
-    /// <c>UseMessageHandlers(MeshCollectorHandlers.Queries)</c> and the fleet UI with
-    /// <c>UseMeshFleetUi()</c>; no <see cref="MeshCollectorStore"/> is needed — there is no push ingestion.
+    /// <c>UseMessageHandlers(MeshCollectorHandlers.Queries)</c> and point the mesh UI's live Fleet plane at
+    /// it with <c>UseMeshUi(..., envelopeUrl: "/benzene/invoke")</c>; no <see cref="MeshCollectorStore"/> is
+    /// needed — there is no push ingestion.
     /// </summary>
     /// <remarks>
     /// Registers an <see cref="HttpClient"/> unless one is already registered (the same shape as

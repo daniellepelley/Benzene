@@ -1,15 +1,17 @@
 # Benzene Service Mesh Example
 
-Demonstrates Benzene's mesh end to end, both halves of it:
+Demonstrates Benzene's mesh end to end, both halves of it — merged into one page at
+http://localhost:5300/mesh-ui:
 
-- **The live Fleet view (NEW - http://localhost:5300/benzene/fleet-ui)**: the spec mesh
-  (`docs/specification/mesh.md`) running for real. The services register their *derived*
-  descriptors with a `Benzene.Mesh.Collector`, heartbeat every 10s, and trace every
-  wire-envelope invocation; the checkout handler calls payments-api forwarding its mesh span, so
-  the collector derives the `payments:get -> consumers: orders-api` edge and joins both
-  services' events into one flow. Nothing on that page is declared anywhere.
-- **The artifact pipeline**: three small demo services, a real Benzene app that aggregates their
-  specs and health into a catalog, and the classic dashboard (`/mesh-ui`) that renders it.
+- **The live Fleet plane** (the "Fleet" nav, plus the live sections on each service/topic page): the
+  spec mesh (`docs/specification/mesh.md`) running for real. The services register their *derived*
+  descriptors with a `Benzene.Mesh.Collector`, heartbeat every 10s, and trace every wire-envelope
+  invocation; the checkout handler calls payments-api forwarding its mesh span, so the collector
+  derives the `payments:get -> consumers: orders-api` edge and joins both services' events into one
+  flow. Nothing on that plane is declared anywhere.
+- **The artifact pipeline** (the default catalog view): three small demo services, a real Benzene app
+  that aggregates their specs and health into a catalog, rendered by `/mesh-ui`. The live Fleet plane
+  above enriches this catalog in place — the catalog is the spine, the observed data merges into it.
 
 This is a demo with fake/canned data, meant for exploring the feature. For a config-driven version
 you can run via Docker Compose against your own real services, see
@@ -225,7 +227,7 @@ restarting Payments (spec unchanged since the last run) clears the badge.
   `WithHealthPath`), purely so the aggregator's hardcoded polling URLs above
   and `run.sh` keep working unchanged - a real deployment would just keep the
   defaults. The service's `CloudServiceProfileReport` (carried on its
-  descriptor's `profile` field, visible via the Fleet view) honestly flags
+  descriptor's `profile` field, visible via the live Fleet plane) honestly flags
   requirement R7 for that deliberate relocation.
 - `SpecMessageHandler` and the health-check middleware don't carry
   `[HttpEndpoint]` attributes, so reflection-based discovery never picks them

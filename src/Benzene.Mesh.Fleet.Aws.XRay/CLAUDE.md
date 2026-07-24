@@ -44,9 +44,10 @@ other backends (Tempo, inc 4) reuse the same `IMeshTraceSource`/`IMeshFleetReadM
   execution role) unless one is already registered, the `XRayTraceSource` as `IMeshTraceSource`, and
   `CompositeMeshFleetReadModel` as `IMeshFleetReadModel` (composed with whatever `IMeshUsageSource`s are
   registered — add `AddCloudWatchUsage` for topic stats). Wire the read side with
-  `UseMessageHandlers(MeshCollectorHandlers.Queries)` (query-only — there is no ingestion) and the fleet
-  UI with `UseMeshFleetUi()`. `examples/AwsMesh/Mesh/Startup.cs` shows the full wiring on an API Gateway
-  Lambda (envelope endpoint via `UseBenzeneMessage` + `UseMeshFleetUi`).
+  `UseMessageHandlers(MeshCollectorHandlers.Queries)` (query-only — there is no ingestion) and point the
+  mesh UI's live Fleet plane at it with `UseMeshUi(..., envelopeUrl: "/benzene/invoke")`.
+  `examples/AwsMesh/Mesh/Startup.cs` shows the full wiring on an API Gateway Lambda (envelope endpoint via
+  `UseBenzeneMessage` + `UseMeshUi(..., envelopeUrl)`).
 
 ## What it deliberately does NOT do
 Per `IMeshTraceSource`, this carries **no** per-topic/service counts and **no** service health: X-Ray

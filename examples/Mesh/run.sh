@@ -81,16 +81,16 @@ echo
 
 cat <<'EOF'
 
-Mesh Explorer:   http://localhost:5300/mesh-ui
-Fleet view NEW:  http://localhost:5300/benzene/fleet-ui
+Mesh Explorer:   http://localhost:5300/mesh-ui   (catalog + live Fleet plane merged)
 Manifest JSON:   http://localhost:5300/artifacts/manifest.json
 Topology JSON:   http://localhost:5300/artifacts/topology.json
 Orders spec:     http://localhost:5310/spec?type=benzene
 Orders contracts: http://localhost:5310/contracts   (consumer-side contract-drift check, off /healthcheck)
 Payments spec:   http://localhost:5311/spec?type=benzene
 
-The NEW Fleet view (http://localhost:5300/benzene/fleet-ui) is the live collector - everything on it
-is derived from what the services themselves emit (docs/specification/mesh.md), nothing declared:
+The Mesh Explorer's live Fleet plane (the "Fleet" nav on http://localhost:5300/mesh-ui, plus the live
+sections on each service/topic page) is the live collector - everything on it is derived from what the
+services themselves emit (docs/specification/mesh.md), nothing declared:
   - orders-api and payments-api registered their derived descriptors and heartbeat every 10s
     (payments-api heartbeats unhealthy -> "degraded"; restart it with DEMO_PAYMENTS_HEALTHY=true
     to watch it flip)
@@ -101,7 +101,7 @@ is derived from what the services themselves emit (docs/specification/mesh.md), 
   - payments-api's restart with DEMO_ADD_ENDPOINT=true changed its descriptor hash - the same
     contract-drift story the aggregation dashboard tells, from live data
 
-The classic dashboard (http://localhost:5300/mesh-ui) shows every state at once:
+The catalog (the default view of http://localhost:5300/mesh-ui) shows every declared state at once:
   - orders-api    healthy    (Postgres/Redis/SQS checks, each with a dependency chip)
   - payments-api  unhealthy + drift (failed gateway, warning fraud-engine, ok database)
   - shipping-api  unreachable (nothing is listening on port 5312)

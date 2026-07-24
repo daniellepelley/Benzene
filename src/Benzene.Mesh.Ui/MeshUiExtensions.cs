@@ -104,39 +104,9 @@ public static class MeshUiExtensions
         return app.Use<TContext, MeshSpecUiMiddleware<TContext>>();
     }
 
-    /// <summary>The default path the Fleet view is served on, following the default service
-    /// standard's <c>/benzene/</c> prefix (docs/specification/design-principles.md §5).</summary>
-    public const string DefaultFleetPath = "/benzene/fleet-ui";
-
-    /// <summary>The default wire-envelope endpoint the Fleet view polls, following the default
-    /// service standard (docs/specification/design-principles.md §5).</summary>
+    /// <summary>The default wire-envelope endpoint the mesh UI's live Fleet plane polls, following the
+    /// default service standard's <c>/benzene/</c> prefix (docs/specification/design-principles.md §5).
+    /// Pass it as <c>UseMeshUi</c>'s <c>envelopeUrl</c> on a mesh host that also serves a
+    /// <c>Benzene.Mesh.Collector</c> over the wire envelope.</summary>
     public const string DefaultEnvelopeUrl = "/benzene/invoke";
-
-    /// <summary>
-    /// Serves the Fleet view (<see cref="MeshFleetUiPage"/>) at <paramref name="path"/>: the live
-    /// counterpart to <see cref="UseMeshUi{TContext}"/>, rendering a
-    /// <c>Benzene.Mesh.Collector</c>'s derived fleet by polling <c>mesh:query:fleet</c> through
-    /// the wire-envelope endpoint at <paramref name="envelopeUrl"/>.
-    /// </summary>
-    /// <typeparam name="TContext">The pipeline's HTTP context type.</typeparam>
-    /// <param name="app">The pipeline builder to add the middleware to.</param>
-    /// <param name="path">The path to serve the page on.</param>
-    /// <param name="envelopeUrl">The wire-envelope endpoint URL the page polls (same-origin path or absolute).</param>
-    /// <returns>The same pipeline builder, for chaining.</returns>
-    [Obsolete("The Fleet view is now folded into the main mesh UI - call UseMeshUi(path, manifestUrl, envelopeUrl) with the wire-envelope endpoint instead of serving this as a separate page. The catalog is the spine and the live fleet data enriches it (health, observed consumers, recent flows, a Fleet landing view), rather than living on its own disconnected page.")]
-    public static IMiddlewarePipelineBuilder<TContext> UseMeshFleetUi<TContext>(
-        this IMiddlewarePipelineBuilder<TContext> app,
-        string path = DefaultFleetPath,
-        string envelopeUrl = DefaultEnvelopeUrl)
-        where TContext : IHttpContext
-    {
-        app.Register(x =>
-            x.AddSingleton(resolver => new MeshFleetUiMiddleware<TContext>(
-                path, envelopeUrl,
-                resolver.GetService<IHttpRequestAdapter<TContext>>(),
-                resolver.GetService<IBenzeneResponseAdapter<TContext>>()
-            )));
-
-        return app.Use<TContext, MeshFleetUiMiddleware<TContext>>();
-    }
 }
