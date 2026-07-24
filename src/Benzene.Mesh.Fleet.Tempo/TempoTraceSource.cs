@@ -47,7 +47,7 @@ public class TempoTraceSource : IMeshTraceSource
         return events.Count == 0 ? null : new TraceView { TraceId = traceId, Events = events };
     }
 
-    public async Task<CorrelationView?> GetCorrelationAsync(string correlationId, CancellationToken cancellationToken = default)
+    public async Task<CorrelationView?> GetCorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(correlationId))
         {
@@ -56,7 +56,8 @@ public class TempoTraceSource : IMeshTraceSource
 
         // Attribute names carry dots and a hyphen, so quote the name in TraceQL.
         var traceQl = $"{{ span.\"benzene.correlation-id\" = \"{Escape(correlationId)}\" }}";
-        var matches = await SearchAsync(traceQl, _options.CorrelationLookback, limit: 100, cancellationToken);
+        var (start, end) = ResolveWindow(range, _options.CorrelationLookback);
+        var matches = await SearchAsync(traceQl, start, end, limit: 100, cancellationToken);
         if (matches.Count == 0)
         {
             return null;
@@ -83,7 +84,7 @@ public class TempoTraceSource : IMeshTraceSource
         return new CorrelationView { CorrelationId = correlationId, Traces = traces };
     }
 
-    public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
         if (limit <= 0)
         {
@@ -92,7 +93,8 @@ public class TempoTraceSource : IMeshTraceSource
 
         // Any trace carrying a Benzene topic is a mesh flow; this filters out non-mesh traces the same way
         // the span→event mapper does, so the fleet's recent-flows list is mesh flows only.
-        var matches = await SearchAsync("{ span.\"benzene.topic\" != \"\" }", _options.RecentFlowsLookback, limit, cancellationToken);
+        var (start, end) = ResolveWindow(range, _options.RecentFlowsLookback);
+        var matches = await SearchAsync("{ span.\"benzene.topic\" != \"\" }", start, end, limit, cancellationToken);
 
         return matches
             .Select(m => new TraceSummary
@@ -118,15 +120,28 @@ public class TempoTraceSource : IMeshTraceSource
     }
 
     private async Task<List<TempoTraceMatch>> SearchAsync(
-        string traceQl, TimeSpan lookback, int limit, CancellationToken cancellationToken)
+        string traceQl, DateTimeOffset start, DateTimeOffset end, int limit, CancellationToken cancellationToken)
     {
-        var end = DateTimeOffset.UtcNow;
-        var start = end - lookback;
         var url = $"{_options.TempoUrl}/api/search?q={Uri.EscapeDataString(traceQl)}"
                   + $"&start={start.ToUnixTimeSeconds()}&end={end.ToUnixTimeSeconds()}&limit={limit}";
 
         var body = await GetStringOrNullAsync(url, cancellationToken);
         return body is null ? new List<TempoTraceMatch>() : ParseSearch(body);
+    }
+
+    /// <summary>Resolve a requested <see cref="MeshTimeRange"/> to Tempo's search <c>[start,end]</c>, falling
+    /// back to <c>now - <paramref name="fallback"/></c> .. <c>now</c> when no window was requested (today's
+    /// behavior). Tempo's <c>/api/search</c> needs a bounded range either way.</summary>
+    private static (DateTimeOffset Start, DateTimeOffset End) ResolveWindow(MeshTimeRange? range, TimeSpan fallback)
+    {
+        var resolved = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
+        if (resolved != null)
+        {
+            return (resolved.Value.From, resolved.Value.To);
+        }
+
+        var end = DateTimeOffset.UtcNow;
+        return (end - fallback, end);
     }
 
     /// <summary>GET a URL, returning the body on success or null on any reachable-but-unsuccessful

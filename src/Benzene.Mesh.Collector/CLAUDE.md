@@ -9,6 +9,35 @@ fixture files (`test/Benzene.Conformance.Test`), including `mesh-collector-cases
 hosted a live cross-language fleet (Go and C# services in one view - see the roadmap's
 2026-07-16 updates).
 
+> **2026-07-24 (Phase D — time-range on the read seam).** The `mesh:query:*` read models take an optional
+> `MeshTimeRange` (Grafana relative grammar `now`/`now-5m`/`now-1h`/`now-7d`, units s/m/h/d/w/M/y, or ISO-8601
+> absolute — resolved by `MeshTimeRangeResolver` against server `now`). Added to `FleetQuery`/`ServiceQuery`/
+> `TopicQuery`/`CorrelationQuery` (their new `Window` field) and threaded through `IMeshFleetReadModel`
+> (`FleetAsync`/`ServiceAsync`/`TopicAsync`/`CorrelationAsync` gained `MeshTimeRange? range = null`) and
+> `IMeshTraceSource` (`GetCorrelationAsync`/`GetRecentFlowsAsync`). **`mesh:query:trace` deliberately has no
+> window** — a by-id lookup, and a window would only let a valid id outside the range answer `NotFound`.
+> **Additive/backward-compatible:** a null range (or one with no `From`) means "unfiltered", exactly today's
+> behavior, and the response's new `MeshWindow` field (`FleetView`/`ServiceView`/`TopicSummary`/`CorrelationView`,
+> `WhenWritingNull`) is **omitted entirely** — so `mesh-collector-cases.json` and old clients are untouched (the
+> default-1h window is a UI-picker default, never a wire default: the wire never silently hides pre-window flows).
+> The honesty core is `MeshWindow.CountsWindowed`/`CountsSince`: **flows** (recent-flows/correlation) always honor
+> the window, but **counts** may not — a windowed count that can't honor the window is *not* "absent" (that's the
+> `MissingFeeds` "—" channel, for a dimension genuinely not produced), it's a real number answering a *different*
+> window, so it's badged "counts cover from {CountsSince}", never blanked.
+> - **Push-collector plane** (`MeshCollectorStore`): the ring is filtered by trace start for flows; the per-topic/
+>   service counters are cumulative-since-start, so `CountsWindowed=false`, `CountsSince=StartedAtUtc`. Consumer-edge
+>   derivation stays over the full bounded ring (already a recent window), not re-windowed — avoids a
+>   windowed-consumers/cumulative-counts mismatch on one row.
+> - **Composite plane** (`CompositeMeshFleetReadModel`): the range reaches the trace source (X-Ray/Tempo/Jaeger
+>   `GetTraceSummaries`/search take it — flows honor it), but the counts come from the usage feed's own baked window
+>   (the CloudWatch/App-Insights adapters are single-window by design), so `CountsWindowed=false` and `CountsSince` is
+>   the usage feed's `WindowStartUtc`. **Threading the picked window into `IMeshUsageSource` so composite counts honor
+>   it is the documented fast-follow** — and, like all the composite-plane behavior, is verified by API shape (unit
+>   tests, mocked backends), NOT against a live AWS/Tempo/Jaeger backend yet. `CountsWindowed` is the seam that flips
+>   to true when a plane's counts honor the picked window end-to-end.
+> Covered by `MeshTimeRangeTest` (resolver grammar, store flow-windowing + `CountsSince`, null-window == today,
+> composite range-threading + usage-window reporting).
+
 ## Key types/interfaces
 - `IMeshFleetReadModel` (2026-07-23) - the **read seam** the five `mesh:query:*` handlers depend on
   (async: `FleetAsync`/`ServiceAsync`/`TopicAsync`/`TraceAsync`/`CorrelationAsync`), so the fleet UI's

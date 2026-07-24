@@ -150,10 +150,11 @@ public class MeshCollectorStore : IMeshFleetReadModel
         }
     }
 
-    public FleetView Fleet()
+    public FleetView Fleet(MeshTimeRange? range = null)
     {
         lock (_lock)
         {
+            var window = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
             var consumers = ConsumersByTopic();
             return new FleetView
             {
@@ -163,12 +164,15 @@ public class MeshCollectorStore : IMeshFleetReadModel
                     .OrderBy(x => x.Id, StringComparer.Ordinal).ThenBy(x => x.Version, StringComparer.Ordinal)
                     .Select(key => TopicSummaryLocked(key, consumers.GetValueOrDefault(key)))
                     .ToList(),
-                Traces = TraceSummariesLocked(MaxFleetTraces)
+                // Flows honor the window (ring filtered by trace start); the per-topic/service counts above
+                // are cumulative-since-start and can't be sub-windowed - CollectorWindow says so.
+                Traces = TraceSummariesLocked(MaxFleetTraces, window),
+                Window = CollectorWindow(window)
             };
         }
     }
 
-    public ServiceView? Service(string name)
+    public ServiceView? Service(string name, MeshTimeRange? range = null)
     {
         lock (_lock)
         {
@@ -203,13 +207,17 @@ public class MeshCollectorStore : IMeshFleetReadModel
                             ? pair.Value.DescriptorHash == state.Descriptor.DescriptorHash
                             : null
                     })
-                    .ToList()
+                    .ToList(),
+                // The service's counts are cumulative-since-start; a requested window is reported (with
+                // CountsWindowed=false) so the page can badge them honestly. The service's live flows are
+                // windowed on the fleet poll, not carried here.
+                Window = CollectorWindow(MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow))
             };
             return view;
         }
     }
 
-    public TopicSummary? Topic(string id, string? version)
+    public TopicSummary? Topic(string id, string? version, MeshTimeRange? range = null)
     {
         lock (_lock)
         {
@@ -218,7 +226,11 @@ public class MeshCollectorStore : IMeshFleetReadModel
             {
                 return null;
             }
-            return TopicSummaryLocked(key, ConsumersByTopic().GetValueOrDefault(key));
+            var summary = TopicSummaryLocked(key, ConsumersByTopic().GetValueOrDefault(key));
+            // Standalone topic response carries the window (cumulative counts on this plane); embedded in a
+            // FleetView it stays null - the fleet's one Window covers the whole view.
+            summary.Window = CollectorWindow(MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow));
+            return summary;
         }
     }
 
@@ -238,10 +250,11 @@ public class MeshCollectorStore : IMeshFleetReadModel
     /// preserves that grouping rather than flattening. Events with a null correlation id never match
     /// (the mesh never fabricates a correlation id). Returns null when nothing carried it.
     /// </summary>
-    public CorrelationView? Correlation(string correlationId)
+    public CorrelationView? Correlation(string correlationId, MeshTimeRange? range = null)
     {
         lock (_lock)
         {
+            var window = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
             var traces = _ring
                 .Where(x => x.CorrelationId == correlationId)
                 .GroupBy(x => x.TraceId)
@@ -250,19 +263,40 @@ public class MeshCollectorStore : IMeshFleetReadModel
                     TraceId = group.Key,
                     Events = group.OrderBy(x => x.StartedAt).ToList(),
                 })
+                // A flow is in-window when it started in [From,To] - the same trace-start rule the fleet
+                // recent-flows list uses, so a window filters both consistently.
+                .Where(view => window == null ||
+                    (view.Events[0].StartedAt >= window.Value.From && view.Events[0].StartedAt <= window.Value.To))
                 .OrderBy(view => view.Events[0].StartedAt)
                 .ToList();
-            return traces.Count == 0 ? null : new CorrelationView { CorrelationId = correlationId, Traces = traces };
+            return traces.Count == 0
+                ? null
+                : new CorrelationView { CorrelationId = correlationId, Traces = traces, Window = CollectorWindow(window) };
         }
     }
 
+    /// <summary>Build the reported <see cref="MeshWindow"/> for this (push-collector) plane: flows honor
+    /// <paramref name="window"/>, but counts are cumulative since <see cref="StartedAtUtc"/> - so
+    /// <see cref="MeshWindow.CountsWindowed"/> is false and <see cref="MeshWindow.CountsSince"/> names when the
+    /// counts really cover from. Null when no window was requested (the field is then omitted - today's shape).</summary>
+    private MeshWindow? CollectorWindow((DateTimeOffset From, DateTimeOffset To)? window)
+        => window == null
+            ? null
+            : new MeshWindow
+            {
+                From = MeshTimeRangeResolver.ToIso(window.Value.From),
+                To = MeshTimeRangeResolver.ToIso(window.Value.To),
+                CountsWindowed = false,
+                CountsSince = MeshTimeRangeResolver.ToIso(StartedAtUtc)
+            };
+
     // IMeshFleetReadModel — the in-memory store is synchronous, so these just wrap the read methods
     // above (the query handlers depend on the async interface so a backend-composed reader can slot in).
-    Task<FleetView> IMeshFleetReadModel.FleetAsync(CancellationToken cancellationToken) => Task.FromResult(Fleet());
-    Task<ServiceView?> IMeshFleetReadModel.ServiceAsync(string name, CancellationToken cancellationToken) => Task.FromResult(Service(name));
-    Task<TopicSummary?> IMeshFleetReadModel.TopicAsync(string id, string? version, CancellationToken cancellationToken) => Task.FromResult(Topic(id, version));
+    Task<FleetView> IMeshFleetReadModel.FleetAsync(MeshTimeRange? range, CancellationToken cancellationToken) => Task.FromResult(Fleet(range));
+    Task<ServiceView?> IMeshFleetReadModel.ServiceAsync(string name, MeshTimeRange? range, CancellationToken cancellationToken) => Task.FromResult(Service(name, range));
+    Task<TopicSummary?> IMeshFleetReadModel.TopicAsync(string id, string? version, MeshTimeRange? range, CancellationToken cancellationToken) => Task.FromResult(Topic(id, version, range));
     Task<TraceView?> IMeshFleetReadModel.TraceAsync(string traceId, CancellationToken cancellationToken) => Task.FromResult(Trace(traceId));
-    Task<CorrelationView?> IMeshFleetReadModel.CorrelationAsync(string correlationId, CancellationToken cancellationToken) => Task.FromResult(Correlation(correlationId));
+    Task<CorrelationView?> IMeshFleetReadModel.CorrelationAsync(string correlationId, MeshTimeRange? range, CancellationToken cancellationToken) => Task.FromResult(Correlation(correlationId, range));
 
     private ServiceState EnsureService(string name)
     {
@@ -376,7 +410,7 @@ public class MeshCollectorStore : IMeshFleetReadModel
         };
     }
 
-    private List<TraceSummary> TraceSummariesLocked(int limit)
+    private List<TraceSummary> TraceSummariesLocked(int limit, (DateTimeOffset From, DateTimeOffset To)? window = null)
     {
         return _ring
             .GroupBy(x => x.TraceId)
@@ -395,6 +429,8 @@ public class MeshCollectorStore : IMeshFleetReadModel
                     Failed = group.Any(x => !BenzeneResultStatusExtensions.IsSuccess(x.Status))
                 };
             })
+            // A flow is in-window when it started in [From,To]; no window ⇒ today's unfiltered last-N.
+            .Where(t => window == null || (t.StartedAt >= window.Value.From && t.StartedAt <= window.Value.To))
             .OrderByDescending(x => x.StartedAt)
             .Take(limit)
             .ToList();

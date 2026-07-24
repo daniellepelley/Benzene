@@ -62,15 +62,14 @@ public class XRayTraceSource : IMeshTraceSource
     /// <summary>Finds every X-Ray trace carrying the correlation-id annotation over the configured
     /// lookback window, maps each to a <see cref="TraceView"/>, and groups them into a
     /// <see cref="CorrelationView"/> (traces ordered by earliest start), or null when none matched.</summary>
-    public async Task<CorrelationView?> GetCorrelationAsync(string correlationId, CancellationToken cancellationToken = default)
+    public async Task<CorrelationView?> GetCorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(correlationId))
         {
             return null;
         }
 
-        var end = DateTime.UtcNow;
-        var start = end - _options.CorrelationLookback;
+        var (start, end) = ResolveWindow(range, _options.CorrelationLookback);
         // benzene.correlation-id lands in X-Ray as the underscore-sanitised annotation key; only
         // annotations are filterable (see work/otel-fleet-adapter-scope.md §6b).
         var filter = $"annotation.benzene_correlation_id = \"{Escape(correlationId)}\"";
@@ -139,15 +138,14 @@ public class XRayTraceSource : IMeshTraceSource
     /// summary carries no span count, so <see cref="TraceSummary.Events"/> is 0 (the accurate count is one
     /// <c>GetTraceAsync</c> away on drill-in).</summary>
     public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(
-        int limit = 20, CancellationToken cancellationToken = default)
+        int limit = 20, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
         if (limit <= 0)
         {
             return Array.Empty<TraceSummary>();
         }
 
-        var end = DateTime.UtcNow;
-        var start = end - _options.RecentFlowsLookback;
+        var (start, end) = ResolveWindow(range, _options.RecentFlowsLookback);
 
         var summaries = new List<Amazon.XRay.Model.TraceSummary>();
         string? nextToken = null;
@@ -226,6 +224,21 @@ public class XRayTraceSource : IMeshTraceSource
             .Select(s => s.Document);
 
         return XRaySegmentMapper.Map(meshTraceId, segments);
+    }
+
+    /// <summary>Resolve a requested <see cref="MeshTimeRange"/> to X-Ray's <c>[start,end]</c> DateTimes,
+    /// falling back to <c>now - <paramref name="fallback"/></c> .. <c>now</c> when no window was requested
+    /// (today's behavior). X-Ray's <c>GetTraceSummaries</c> needs a bounded range either way.</summary>
+    private static (DateTime Start, DateTime End) ResolveWindow(MeshTimeRange? range, TimeSpan fallback)
+    {
+        var resolved = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
+        if (resolved != null)
+        {
+            return (resolved.Value.From.UtcDateTime, resolved.Value.To.UtcDateTime);
+        }
+
+        var end = DateTime.UtcNow;
+        return (end - fallback, end);
     }
 
     private static DateTimeOffset EarliestStart(TraceView trace)

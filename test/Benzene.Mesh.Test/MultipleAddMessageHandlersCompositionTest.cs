@@ -36,11 +36,11 @@ public class MultipleAddMessageHandlersCompositionTest
 
     private sealed class FakeReadModel : IMeshFleetReadModel
     {
-        public Task<FleetView> FleetAsync(CancellationToken cancellationToken = default) => Task.FromResult(new FleetView());
-        public Task<ServiceView?> ServiceAsync(string name, CancellationToken cancellationToken = default) => Task.FromResult<ServiceView?>(null);
-        public Task<TopicSummary?> TopicAsync(string id, string? version, CancellationToken cancellationToken = default) => Task.FromResult<TopicSummary?>(null);
+        public Task<FleetView> FleetAsync(MeshTimeRange? range = null, CancellationToken cancellationToken = default) => Task.FromResult(new FleetView());
+        public Task<ServiceView?> ServiceAsync(string name, MeshTimeRange? range = null, CancellationToken cancellationToken = default) => Task.FromResult<ServiceView?>(null);
+        public Task<TopicSummary?> TopicAsync(string id, string? version, MeshTimeRange? range = null, CancellationToken cancellationToken = default) => Task.FromResult<TopicSummary?>(null);
         public Task<TraceView?> TraceAsync(string traceId, CancellationToken cancellationToken = default) => Task.FromResult<TraceView?>(null);
-        public Task<CorrelationView?> CorrelationAsync(string correlationId, CancellationToken cancellationToken = default) => Task.FromResult<CorrelationView?>(null);
+        public Task<CorrelationView?> CorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default) => Task.FromResult<CorrelationView?>(null);
     }
 
     [Fact]

@@ -46,36 +46,63 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
     public Task<TraceView?> TraceAsync(string traceId, CancellationToken cancellationToken = default)
         => _traceSource.GetTraceAsync(traceId, cancellationToken);
 
-    public Task<CorrelationView?> CorrelationAsync(string correlationId, CancellationToken cancellationToken = default)
-        => _traceSource.GetCorrelationAsync(correlationId, cancellationToken);
+    public Task<CorrelationView?> CorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
+        => _traceSource.GetCorrelationAsync(correlationId, range, cancellationToken);
 
     // No descriptor feed on this plane, so neither a single service nor a single topic can be answered
     // (the fleet view derives what it can from usage + traces; the per-entity pages compose later).
-    public Task<ServiceView?> ServiceAsync(string name, CancellationToken cancellationToken = default)
+    public Task<ServiceView?> ServiceAsync(string name, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
         => Task.FromResult<ServiceView?>(null);
 
-    public Task<TopicSummary?> TopicAsync(string id, string? version, CancellationToken cancellationToken = default)
+    public Task<TopicSummary?> TopicAsync(string id, string? version, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
         => Task.FromResult<TopicSummary?>(null);
 
-    public async Task<FleetView> FleetAsync(CancellationToken cancellationToken = default)
+    public async Task<FleetView> FleetAsync(MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
-        var topics = await TopicsFromUsageAsync(cancellationToken);
-        var flows = await RecentFlowsAsync(cancellationToken);
+        var (topics, usageWindowStart) = await TopicsFromUsageAsync(cancellationToken);
+        // Flows honor the picked window (X-Ray GetTraceSummaries / Tempo / Jaeger take the range); the counts
+        // above come from the usage feed's own baked window, so the reported window says CountsWindowed=false.
+        var flows = await RecentFlowsAsync(range, cancellationToken);
 
         return new FleetView
         {
             GeneratedAt = DateTimeOffset.UtcNow,
             Topics = topics,
             Traces = flows,
-            Services = ServicesFromFlows(flows)
+            Services = ServicesFromFlows(flows),
+            Window = CompositeWindow(range, usageWindowStart)
+        };
+    }
+
+    /// <summary>Build the reported <see cref="MeshWindow"/> for the composite plane. Flows honor the picked
+    /// window; the counts come from the usage feed's baked window, so <see cref="MeshWindow.CountsWindowed"/> is
+    /// false and <see cref="MeshWindow.CountsSince"/> is that feed's window start (threading the picked window
+    /// into the usage sources so their counts honor it is a documented fast-follow — the CloudWatch/App-Insights
+    /// adapters are single-window by design). Null when no window was requested (today's shape).</summary>
+    private static MeshWindow? CompositeWindow(MeshTimeRange? range, DateTimeOffset? usageWindowStart)
+    {
+        var window = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
+        if (window == null)
+        {
+            return null;
+        }
+
+        return new MeshWindow
+        {
+            From = MeshTimeRangeResolver.ToIso(window.Value.From),
+            To = MeshTimeRangeResolver.ToIso(window.Value.To),
+            CountsWindowed = false,
+            CountsSince = usageWindowStart == null ? null : MeshTimeRangeResolver.ToIso(usageWindowStart.Value)
         };
     }
 
     /// <summary>Merge every usage source's entries and roll them up into one <see cref="TopicSummary"/>
-    /// per (topic, version). A failing source contributes nothing (its slice degrades to empty).</summary>
-    private async Task<List<TopicSummary>> TopicsFromUsageAsync(CancellationToken cancellationToken)
+    /// per (topic, version). A failing source contributes nothing (its slice degrades to empty). Also returns
+    /// the earliest usage-feed window start seen, so the composite can report where its counts really begin.</summary>
+    private async Task<(List<TopicSummary> Topics, DateTimeOffset? UsageWindowStart)> TopicsFromUsageAsync(CancellationToken cancellationToken)
     {
         var entries = new List<MeshUsageEntry>();
+        DateTimeOffset? usageWindowStart = null;
         foreach (var source in _usageSources)
         {
             try
@@ -85,6 +112,12 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
                 {
                     entries.AddRange(usage.Entries);
                 }
+                // The earliest window start across the feeds is the honest "counts cover from" for the
+                // composite view (the counts are a union of every source's baked window).
+                if (usage?.WindowStartUtc is { } start && (usageWindowStart == null || start < usageWindowStart))
+                {
+                    usageWindowStart = start;
+                }
             }
             catch
             {
@@ -93,11 +126,12 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
             }
         }
 
-        return entries
+        var topics = entries
             .GroupBy(e => (e.Topic, e.Version ?? string.Empty))
             .OrderBy(g => g.Key.Item1, StringComparer.Ordinal).ThenBy(g => g.Key.Item2, StringComparer.Ordinal)
             .Select(TopicSummaryFromUsage)
             .ToList();
+        return (topics, usageWindowStart);
     }
 
     private static TopicSummary TopicSummaryFromUsage(IGrouping<(string Topic, string Version), MeshUsageEntry> group)
@@ -159,11 +193,11 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
     private static bool IsErrorResult(string? status)
         => status is not null && status != "success" && status != "<missing>";
 
-    private async Task<List<TraceSummary>> RecentFlowsAsync(CancellationToken cancellationToken)
+    private async Task<List<TraceSummary>> RecentFlowsAsync(MeshTimeRange? range, CancellationToken cancellationToken)
     {
         try
         {
-            var flows = await _traceSource.GetRecentFlowsAsync(MaxFleetTraces, cancellationToken);
+            var flows = await _traceSource.GetRecentFlowsAsync(MaxFleetTraces, range, cancellationToken);
             return flows.ToList();
         }
         catch

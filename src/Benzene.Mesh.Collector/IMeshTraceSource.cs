@@ -26,14 +26,18 @@ public interface IMeshTraceSource
     /// <summary>Fetch every flow that carried a business correlation id, grouped by trace (a
     /// <see cref="CorrelationView"/>), or null if none matched. A correlation id can span more than one
     /// trace, so the backend searches its traces by the correlation-id span attribute
-    /// (<c>benzene.correlation-id</c>) and returns one <see cref="TraceView"/> per matching trace.</summary>
-    Task<CorrelationView?> GetCorrelationAsync(string correlationId, CancellationToken cancellationToken = default);
+    /// (<c>benzene.correlation-id</c>) and returns one <see cref="TraceView"/> per matching trace. An
+    /// optional <paramref name="range"/> bounds the search window; null ⇒ the adapter's configured
+    /// correlation lookback (today's behavior).</summary>
+    Task<CorrelationView?> GetCorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default);
 
     /// <summary>List the most recent flows (up to <paramref name="limit"/>, newest first) as
     /// <see cref="TraceSummary"/> rows for the fleet view - one per trace, carrying only per-flow facts
     /// (duration, failed, the services it touched). Deliberately a summary, not the events: a fleet load
     /// must not fan out one full trace fetch per row, and per-flow rows carry no aggregate counts (those
     /// stay the usage feed). <see cref="TraceSummary.Events"/> may be 0 when the backend's summary shape
-    /// carries no span count - the accurate count is one <see cref="GetTraceAsync"/> away on drill-in.</summary>
-    Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, CancellationToken cancellationToken = default);
+    /// carries no span count - the accurate count is one <see cref="GetTraceAsync"/> away on drill-in. An
+    /// optional <paramref name="range"/> bounds the window; null ⇒ the adapter's configured recent-flows
+    /// lookback (today's behavior).</summary>
+    Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, MeshTimeRange? range = null, CancellationToken cancellationToken = default);
 }

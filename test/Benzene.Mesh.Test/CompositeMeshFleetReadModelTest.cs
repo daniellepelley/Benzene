@@ -19,12 +19,17 @@ public class CompositeMeshFleetReadModelTest
         public CorrelationView? Correlation { get; init; }
         public bool ThrowOnRecent { get; init; }
 
+        public MeshTimeRange? LastRecentRange { get; private set; }
+
         public Task<TraceView?> GetTraceAsync(string traceId, CancellationToken cancellationToken = default)
             => Task.FromResult(Trace);
-        public Task<CorrelationView?> GetCorrelationAsync(string correlationId, CancellationToken cancellationToken = default)
+        public Task<CorrelationView?> GetCorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
             => Task.FromResult(Correlation);
-        public Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, CancellationToken cancellationToken = default)
-            => ThrowOnRecent ? throw new InvalidOperationException("trace backend down") : Task.FromResult(RecentFlows);
+        public Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
+        {
+            LastRecentRange = range;
+            return ThrowOnRecent ? throw new InvalidOperationException("trace backend down") : Task.FromResult(RecentFlows);
+        }
     }
 
     private sealed class FakeUsageSource : IMeshUsageSource

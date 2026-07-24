@@ -54,7 +54,7 @@ public class JaegerTraceSource : IMeshTraceSource
         return events is not { Count: > 0 } ? null : new TraceView { TraceId = traceId, Events = events };
     }
 
-    public async Task<CorrelationView?> GetCorrelationAsync(string correlationId, CancellationToken cancellationToken = default)
+    public async Task<CorrelationView?> GetCorrelationAsync(string correlationId, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(correlationId))
         {
@@ -62,7 +62,7 @@ public class JaegerTraceSource : IMeshTraceSource
         }
 
         var tags = $"{{\"benzene.correlation-id\":\"{Escape(correlationId)}\"}}";
-        var traces = await SearchAcrossServicesAsync(_options.CorrelationLookback, tags, cancellationToken);
+        var traces = await SearchAcrossServicesAsync(ResolveWindow(range, _options.CorrelationLookback), tags, cancellationToken);
 
         var views = traces
             .Where(t => t.Events.Count > 0)
@@ -73,14 +73,14 @@ public class JaegerTraceSource : IMeshTraceSource
         return views.Count == 0 ? null : new CorrelationView { CorrelationId = correlationId, Traces = views };
     }
 
-    public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(int limit = 20, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
         if (limit <= 0)
         {
             return Array.Empty<TraceSummary>();
         }
 
-        var traces = await SearchAcrossServicesAsync(_options.RecentFlowsLookback, tags: null, cancellationToken);
+        var traces = await SearchAcrossServicesAsync(ResolveWindow(range, _options.RecentFlowsLookback), tags: null, cancellationToken);
 
         return traces
             .Where(t => t.Events.Count > 0) // mesh flows only (a trace with no Benzene span isn't one)
@@ -93,7 +93,7 @@ public class JaegerTraceSource : IMeshTraceSource
     /// <summary>Fan a search out across every service (Jaeger requires one per query), merge the returned
     /// full traces, and dedupe by trace id (a cross-service trace is returned by each of its services).</summary>
     private async Task<List<JaegerMappedTrace>> SearchAcrossServicesAsync(
-        TimeSpan lookback, string? tags, CancellationToken cancellationToken)
+        (DateTimeOffset Start, DateTimeOffset End) window, string? tags, CancellationToken cancellationToken)
     {
         var services = await GetServicesAsync(cancellationToken);
         if (services.Count == 0)
@@ -101,10 +101,8 @@ public class JaegerTraceSource : IMeshTraceSource
             return new List<JaegerMappedTrace>();
         }
 
-        var end = DateTimeOffset.UtcNow;
-        var start = end - lookback;
-        var startMicros = start.ToUnixTimeMilliseconds() * 1000;
-        var endMicros = end.ToUnixTimeMilliseconds() * 1000;
+        var startMicros = window.Start.ToUnixTimeMilliseconds() * 1000;
+        var endMicros = window.End.ToUnixTimeMilliseconds() * 1000;
 
         var byTraceId = new Dictionary<string, JaegerMappedTrace>();
         foreach (var service in services)
@@ -191,6 +189,21 @@ public class JaegerTraceSource : IMeshTraceSource
     {
         var response = await _httpClient.GetAsync(url, cancellationToken);
         return response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync(cancellationToken) : null;
+    }
+
+    /// <summary>Resolve a requested <see cref="MeshTimeRange"/> to Jaeger's search <c>[start,end]</c>, falling
+    /// back to <c>now - <paramref name="fallback"/></c> .. <c>now</c> when no window was requested (today's
+    /// behavior). Jaeger's search needs a bounded range either way.</summary>
+    private static (DateTimeOffset Start, DateTimeOffset End) ResolveWindow(MeshTimeRange? range, TimeSpan fallback)
+    {
+        var resolved = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
+        if (resolved != null)
+        {
+            return (resolved.Value.From, resolved.Value.To);
+        }
+
+        var end = DateTimeOffset.UtcNow;
+        return (end - fallback, end);
     }
 
     private static DateTimeOffset EarliestStart(TraceView trace)

@@ -106,7 +106,7 @@ public class FleetQueryMessageHandler : IMessageHandler<FleetQuery, FleetView>
 
     public async Task<IBenzeneResult<FleetView>> HandleAsync(FleetQuery request)
     {
-        return BenzeneResult.Ok(await _readModel.FleetAsync());
+        return BenzeneResult.Ok(await _readModel.FleetAsync(request.Window));
     }
 }
 
@@ -124,7 +124,7 @@ public class ServiceQueryMessageHandler : IMessageHandler<ServiceQuery, ServiceV
         {
             return BenzeneResult.BadRequest<ServiceView>("service is required");
         }
-        var view = await _readModel.ServiceAsync(request.Service!);
+        var view = await _readModel.ServiceAsync(request.Service!, request.Window);
         return view == null
             ? BenzeneResult.NotFound<ServiceView>($"unknown service {request.Service}")
             : BenzeneResult.Ok(view);
@@ -145,7 +145,7 @@ public class TopicQueryMessageHandler : IMessageHandler<TopicQuery, TopicSummary
         {
             return BenzeneResult.BadRequest<TopicSummary>("topic is required");
         }
-        var view = await _readModel.TopicAsync(request.Topic!, request.Version);
+        var view = await _readModel.TopicAsync(request.Topic!, request.Version, request.Window);
         return view == null
             ? BenzeneResult.NotFound<TopicSummary>($"unknown topic {request.Topic}")
             : BenzeneResult.Ok(view);
@@ -189,7 +189,7 @@ public class CorrelationQueryMessageHandler : IMessageHandler<CorrelationQuery, 
         {
             return BenzeneResult.BadRequest<CorrelationView>("correlationId is required");
         }
-        var view = await _readModel.CorrelationAsync(request.CorrelationId!);
+        var view = await _readModel.CorrelationAsync(request.CorrelationId!, request.Window);
         return view == null
             ? BenzeneResult.NotFound<CorrelationView>($"no flows for correlation {request.CorrelationId}")
             : BenzeneResult.Ok(view);
