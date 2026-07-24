@@ -40,7 +40,11 @@ either, both, or neither.
   authoritative and uniform with the X-Ray/Jaeger mappers); times from `start`/`endTimeUnixNano`; events
   returned in start order; an unparseable body → empty list. **Recent-flows caveat:** Tempo's search summary
   carries `rootServiceName` (a backend name, not `benzene.service`) and no span attributes, so recent-flows
-  rows share the X-Ray summary-plane caveat — the drill-in trace shows the real names. Covered by
+  rows show the backend name. **X-Ray now enriches its recent-flows rows** (a bounded, batched
+  `BatchGetTraces` reads `benzene.service`), so Tempo is the remaining adapter with this caveat; Tempo
+  parity is a **deferred follow-up** because its enrichment would be 20 **unbatched** `GET /api/traces/{id}`
+  calls (no 5-per-call batch like X-Ray) — a heavier per-load fan-out that needs its own opt-in/limit first.
+  The drill-in trace shows the real names today. Covered by
   `TempoTraceSourceTest` (`...PrefersBenzeneServiceTag_OverResourceServiceName`).
 - `TempoTraceSourceOptions(tempoUrl)` — `CorrelationLookback` (24h) and `RecentFlowsLookback` (1h) bound
   the two searches (Tempo's `/api/search` needs a time range); a trace lookup is by id (no window).

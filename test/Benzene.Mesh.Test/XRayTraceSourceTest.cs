@@ -378,13 +378,28 @@ public class XRayTraceSourceTest
         Assert.Null(await source.GetCorrelationAsync(""));
     }
 
-    [Fact]
-    public async Task GetRecentFlowsAsync_MapsSummaries_NewestFirst_WithoutFetchingTraces()
+    // A minimal topic-bearing segment document carrying a benzene.service tag and a real start_time,
+    // for the recent-flows enrichment tests (which map the fetched trace to read benzene.service).
+    private static string FlowSegment(string service, string topic, double startSeconds, double endSeconds) => $$"""
     {
-        // Two recent flows; the trace-id epoch prefix (1-{hex epoch}-…) gives the start time. 5c… > 5b…,
-        // so the second summary is the newer one and must sort first — with zero BatchGetTraces calls.
-        var older = "1-5b000000-aaaaaaaaaaaaaaaaaaaaaaaa";
-        var newer = "1-5c000000-bbbbbbbbbbbbbbbbbbbbbbbb";
+      "id": "{{service.Replace("-", "")}}0001",
+      "name": "{{service}}-lambda-infra",
+      "start_time": {{startSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+      "end_time": {{endSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+      "annotations": {
+        "benzene_topic": "{{topic}}",
+        "benzene_service": "{{service}}",
+        "benzene_status": "ok"
+      }
+    }
+    """;
+
+    [Fact]
+    public async Task GetRecentFlowsAsync_EnrichesServices_FromBenzeneService_NotXRayServiceIds()
+    {
+        // The X-Ray summary's ServiceIds carry the infra/handler names (what defect 2 was showing);
+        // enrichment fetches the trace and reads benzene.service instead, so the row shows the real name.
+        var trace = "1-5c000000-aaaaaaaaaaaaaaaaaaaaaaaa";
         var mock = new Mock<IAmazonXRay>();
         mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((GetTraceSummariesRequest req, CancellationToken _) =>
@@ -396,31 +411,150 @@ public class XRayTraceSourceTest
                     {
                         new Amazon.XRay.Model.TraceSummary
                         {
-                            Id = older, Duration = 0.4, HasError = false, HasFault = false,
-                            ServiceIds = new List<ServiceId> { new ServiceId { Name = "orders-api" } }
-                        },
-                        new Amazon.XRay.Model.TraceSummary
-                        {
-                            Id = newer, Duration = 0.25, HasError = true, HasFault = false,
-                            ServiceIds = new List<ServiceId> { new ServiceId { Name = "billing-api" } }
+                            Id = trace, Duration = 0.25, HasError = true, HasFault = false,
+                            // The infra name X-Ray reports — must NOT be what the row shows.
+                            ServiceIds = new List<ServiceId> { new ServiceId { Name = "EventBridgeEventHandler" } }
                         }
                     }
                 };
             });
+        mock.Setup(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetTracesResponse
+            {
+                Traces = new List<Trace>
+                {
+                    new Trace { Id = trace, Segments = new List<Segment>
+                        { new Segment { Document = FlowSegment("benzene-mesh", "mesh:aggregate", 1_600_000_000.5, 1_600_000_000.75) } } }
+                }
+            });
 
-        var source = new XRayTraceSource(mock.Object);
+        var flows = await new XRayTraceSource(mock.Object).GetRecentFlowsAsync(20);
+
+        var flow = Assert.Single(flows);
+        Assert.Equal("benzene-mesh", Assert.Single(flow.Services)); // benzene.service, not "EventBridgeEventHandler"
+        Assert.Equal(1, flow.Events);                                // real span count, not the old hardcoded 0
+        Assert.True(flow.Failed);                                    // summary's HasError flag is kept
+        Assert.Equal(250, flow.DurationMs, 3);                       // summary duration (seconds → ms)
+    }
+
+    [Fact]
+    public async Task GetRecentFlowsAsync_OrdersByRealStart_WithinTheSameEpochSecond()
+    {
+        // Both trace ids share the SAME epoch prefix (second granularity), so the id-epoch key alone can't
+        // order them. Enrichment reads each trace's real millisecond start, so the later-starting flow sorts
+        // first even though the ids tie on the second.
+        var a = "1-5c000000-aaaaaaaaaaaaaaaaaaaaaaaa";
+        var b = "1-5c000000-bbbbbbbbbbbbbbbbbbbbbbbb";
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTraceSummariesResponse
+            {
+                TraceSummaries = new List<Amazon.XRay.Model.TraceSummary>
+                {
+                    new Amazon.XRay.Model.TraceSummary { Id = a, Duration = 0.1 },
+                    new Amazon.XRay.Model.TraceSummary { Id = b, Duration = 0.1 }
+                }
+            });
+        mock.Setup(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetTracesResponse
+            {
+                Traces = new List<Trace>
+                {
+                    // a starts at .200, b starts at .800 within the same second — b is newer.
+                    new Trace { Id = a, Segments = new List<Segment>
+                        { new Segment { Document = FlowSegment("orders-api", "orders:create", 1_600_000_000.200, 1_600_000_000.3) } } },
+                    new Trace { Id = b, Segments = new List<Segment>
+                        { new Segment { Document = FlowSegment("billing-api", "billing:charge", 1_600_000_000.800, 1_600_000_000.9) } } }
+                }
+            });
+
+        var flows = await new XRayTraceSource(mock.Object).GetRecentFlowsAsync(20);
+
+        Assert.Equal(new[] { b, a }, flows.Select(f => f.TraceId).ToArray()); // later real start first
+    }
+
+    [Fact]
+    public async Task GetRecentFlowsAsync_FallsBackToSummaryPlane_PerRow_WhenEnrichmentFails()
+    {
+        // One trace maps to a Benzene span (enriched); the other isn't returned by BatchGetTraces at all
+        // (e.g. aged out) — that row degrades to the summary plane (ServiceIds name, Events = 0), it doesn't
+        // vanish or blank the list.
+        var enriched = "1-5c000000-aaaaaaaaaaaaaaaaaaaaaaaa";
+        var missing = "1-5b000000-bbbbbbbbbbbbbbbbbbbbbbbb";
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTraceSummariesResponse
+            {
+                TraceSummaries = new List<Amazon.XRay.Model.TraceSummary>
+                {
+                    new Amazon.XRay.Model.TraceSummary { Id = enriched, Duration = 0.1 },
+                    new Amazon.XRay.Model.TraceSummary
+                    {
+                        Id = missing, Duration = 0.2,
+                        ServiceIds = new List<ServiceId> { new ServiceId { Name = "orders-api" } }
+                    }
+                }
+            });
+        mock.Setup(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetTracesResponse
+            {
+                // Only the enriched trace comes back; the missing one is absent (UnprocessedTraceIds in X-Ray).
+                Traces = new List<Trace>
+                {
+                    new Trace { Id = enriched, Segments = new List<Segment>
+                        { new Segment { Document = FlowSegment("benzene-mesh", "mesh:aggregate", 1_600_000_000.5, 1_600_000_000.6) } } }
+                }
+            });
+
+        var flows = await new XRayTraceSource(mock.Object).GetRecentFlowsAsync(20);
+
+        Assert.Equal(2, flows.Count);
+        Assert.Equal(enriched, flows[0].TraceId);                    // newer, enriched
+        Assert.Equal("benzene-mesh", Assert.Single(flows[0].Services));
+        Assert.Equal(1, flows[0].Events);
+        Assert.Equal(missing, flows[1].TraceId);                     // older, summary-plane fallback
+        Assert.Equal("orders-api", Assert.Single(flows[1].Services)); // ServiceIds name
+        Assert.Equal(0, flows[1].Events);                            // no span count on the summary plane
+    }
+
+    [Fact]
+    public async Task GetRecentFlowsAsync_EnrichmentOff_ReproducesSummaryPlane_WithoutFetchingTraces()
+    {
+        // With enrichment disabled (RecentFlowsServiceEnrichmentMax = 0), the source is the pre-enrichment
+        // behavior: ServiceIds names, id-epoch ordering, Events = 0, and zero BatchGetTraces calls.
+        var older = "1-5b000000-aaaaaaaaaaaaaaaaaaaaaaaa";
+        var newer = "1-5c000000-bbbbbbbbbbbbbbbbbbbbbbbb";
+        var mock = new Mock<IAmazonXRay>();
+        mock.Setup(x => x.GetTraceSummariesAsync(It.IsAny<GetTraceSummariesRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetTraceSummariesResponse
+            {
+                TraceSummaries = new List<Amazon.XRay.Model.TraceSummary>
+                {
+                    new Amazon.XRay.Model.TraceSummary
+                    {
+                        Id = older, Duration = 0.4, HasError = false, HasFault = false,
+                        ServiceIds = new List<ServiceId> { new ServiceId { Name = "orders-api" } }
+                    },
+                    new Amazon.XRay.Model.TraceSummary
+                    {
+                        Id = newer, Duration = 0.25, HasError = true, HasFault = false,
+                        ServiceIds = new List<ServiceId> { new ServiceId { Name = "billing-api" } }
+                    }
+                }
+            });
+
+        var source = new XRayTraceSource(mock.Object,
+            new XRayTraceSourceOptions { RecentFlowsServiceEnrichmentMax = 0 });
 
         var flows = await source.GetRecentFlowsAsync(20);
 
         Assert.Equal(2, flows.Count);
-        Assert.Equal(newer, flows[0].TraceId);       // newest first
-        Assert.True(flows[0].Failed);                // HasError
-        Assert.Equal(250, flows[0].DurationMs, 3);   // seconds → ms
-        Assert.Equal("billing-api", Assert.Single(flows[0].Services));
-        Assert.Equal(0, flows[0].Events);            // summaries carry no span count
+        Assert.Equal(newer, flows[0].TraceId);       // newest first (id epoch)
+        Assert.True(flows[0].Failed);
+        Assert.Equal(250, flows[0].DurationMs, 3);
+        Assert.Equal("billing-api", Assert.Single(flows[0].Services)); // ServiceIds name, not enriched
+        Assert.Equal(0, flows[0].Events);
         Assert.Equal(older, flows[1].TraceId);
-        Assert.False(flows[1].Failed);
-        // No trace was fetched to build the fleet's recent-flows list.
         mock.Verify(x => x.BatchGetTracesAsync(It.IsAny<BatchGetTracesRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -434,7 +568,9 @@ public class XRayTraceSourceTest
                 TraceSummaries = Enumerable.Range(0, 5).Select(i =>
                     new Amazon.XRay.Model.TraceSummary { Id = $"1-5b0000{i:D2}-{i:D24}" }).ToList()
             });
-        var source = new XRayTraceSource(mock.Object);
+        // Enrichment off keeps this focused on the limit (no BatchGetTraces plumbing needed).
+        var source = new XRayTraceSource(mock.Object,
+            new XRayTraceSourceOptions { RecentFlowsServiceEnrichmentMax = 0 });
 
         var flows = await source.GetRecentFlowsAsync(3);
 

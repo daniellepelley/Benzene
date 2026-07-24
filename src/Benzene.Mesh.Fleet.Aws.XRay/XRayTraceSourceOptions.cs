@@ -18,4 +18,17 @@ public class XRayTraceSourceOptions
     /// (and from the usage feed's own window) because "what's flowing now" is a much shorter horizon than
     /// "find the trace(s) for this ticket".</summary>
     public TimeSpan RecentFlowsLookback { get; init; } = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// How many of the recent-flows rows to enrich with real span data via a bounded
+    /// <c>BatchGetTraces</c> (X-Ray allows 5 ids/call, so 20 → ≤4 calls). Enrichment reads the
+    /// pipeline-stamped <c>benzene.service</c> as each row's service names (instead of X-Ray's own
+    /// <c>ServiceIds</c>, which on Lambda are infra/handler names like <c>ApiGatewayLambdaHandler</c>),
+    /// the mapped events' real millisecond start time (instead of the second-granularity trace-id epoch),
+    /// and the real span count. Default 20 (= the fleet cap); a row whose trace can't be fetched or that
+    /// carries no Benzene span falls back to the summary plane per-row. Set to <c>0</c> to opt out
+    /// entirely (pure-summary behavior: <c>ServiceIds</c> names, id-epoch ordering, <c>Events = 0</c>) for
+    /// a deployment that polls the fleet aggressively and wants to minimise <c>BatchGetTraces</c> load.
+    /// </summary>
+    public int RecentFlowsServiceEnrichmentMax { get; init; } = 20;
 }

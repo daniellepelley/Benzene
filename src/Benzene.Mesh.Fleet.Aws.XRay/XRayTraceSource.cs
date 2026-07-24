@@ -133,10 +133,14 @@ public class XRayTraceSource : IMeshTraceSource
     }
 
     /// <summary>Lists the most recent flows for the fleet view: one <c>GetTraceSummaries</c> over the
-    /// recent-flows window (no filter), mapped to <see cref="TraceSummary"/> rows, newest first, capped at
-    /// <paramref name="limit"/>. Zero <c>BatchGetTraces</c> — the fleet load must not fan out per row; the
-    /// summary carries no span count, so <see cref="TraceSummary.Events"/> is 0 (the accurate count is one
-    /// <c>GetTraceAsync</c> away on drill-in).</summary>
+    /// recent-flows window (no filter), the top-N (by trace-id epoch) enriched with real span data via a
+    /// bounded <c>BatchGetTraces</c> (≤4 calls for 20 rows — see
+    /// <see cref="XRayTraceSourceOptions.RecentFlowsServiceEnrichmentMax"/>), mapped to
+    /// <see cref="TraceSummary"/> rows and ordered newest-first. Enrichment reads each row's service names
+    /// from the pipeline-stamped <c>benzene.service</c> (not X-Ray's <c>ServiceIds</c>, which on Lambda are
+    /// infra/handler names), its real millisecond start (not the second-granularity id epoch), and its real
+    /// span count. A row whose trace can't be fetched or that carries no Benzene span falls back to the
+    /// summary plane per-row (fetch-isolation). Set the option to 0 to skip enrichment entirely.</summary>
     public async Task<IReadOnlyList<TraceSummary>> GetRecentFlowsAsync(
         int limit = 20, MeshTimeRange? range = null, CancellationToken cancellationToken = default)
     {
@@ -169,14 +173,109 @@ public class XRayTraceSource : IMeshTraceSource
         // not exhaustive paging, bounds a "recent flows" list.
         while (nextToken != null && summaries.Count < limit * 4);
 
-        return summaries
-            .Select(ToTraceSummary)
-            .OrderByDescending(t => t.StartedAt)
+        // Select the newest N by the trace-id epoch (second-granularity, but enough to pick the right ~20),
+        // then enrich those rows below. Ordering within a second is refined by the enriched millisecond
+        // start; the final sort applies a stable trace-id tiebreaker so both planes are deterministic.
+        var top = summaries
+            .OrderByDescending(s => ParseTraceStart(s.Id))
+            .ThenByDescending(s => s.Id, StringComparer.Ordinal)
             .Take(limit)
+            .ToList();
+
+        var rows = await EnrichRecentFlowsAsync(top, limit, cancellationToken);
+
+        return rows
+            .OrderByDescending(t => t.StartedAt)
+            .ThenByDescending(t => t.TraceId, StringComparer.Ordinal)
             .ToList();
     }
 
-    private static TraceSummary ToTraceSummary(Amazon.XRay.Model.TraceSummary summary) => new()
+    /// <summary>Enrich the chosen summaries with real span data by batching <see cref="BatchGetTracesMax"/>
+    /// ids per <c>BatchGetTraces</c> call (parallel, per-batch fetch-isolation). A trace that maps to Benzene
+    /// events becomes an enriched row (benzene.service names, ms start, real span count); a trace with no
+    /// Benzene span or a failed batch keeps its summary-plane row. Skips all fetches when enrichment is off
+    /// (<see cref="XRayTraceSourceOptions.RecentFlowsServiceEnrichmentMax"/> = 0).</summary>
+    private async Task<List<TraceSummary>> EnrichRecentFlowsAsync(
+        IReadOnlyList<Amazon.XRay.Model.TraceSummary> summaries, int limit, CancellationToken cancellationToken)
+    {
+        var enrichMax = Math.Min(Math.Max(_options.RecentFlowsServiceEnrichmentMax, 0), limit);
+        if (enrichMax == 0)
+        {
+            return summaries.Select(ToSummaryPlaneRow).ToList();
+        }
+
+        // Which trace ids to enrich (the first enrichMax that have an id); the rest stay summary-plane.
+        var toEnrich = summaries
+            .Where(s => !string.IsNullOrEmpty(s.Id))
+            .Take(enrichMax)
+            .Select(s => s.Id!)
+            .ToList();
+
+        var mapped = new Dictionary<string, List<MeshTraceEvent>>(StringComparer.Ordinal);
+        var batches = await Task.WhenAll(Chunk(toEnrich, BatchGetTracesMax).Select(FetchBatchAsync));
+        foreach (var batch in batches)
+        {
+            foreach (var kvp in batch)
+            {
+                mapped[kvp.Key] = kvp.Value;
+            }
+        }
+
+        // Enriched row where the trace mapped to at least one Benzene event; summary-plane fallback otherwise.
+        return summaries
+            .Select(s => s.Id is { } id && mapped.TryGetValue(id, out var events) && events.Count > 0
+                ? EnrichedRow(s, events)
+                : ToSummaryPlaneRow(s))
+            .ToList();
+
+        async Task<Dictionary<string, List<MeshTraceEvent>>> FetchBatchAsync(List<string> ids)
+        {
+            var result = new Dictionary<string, List<MeshTraceEvent>>(StringComparer.Ordinal);
+            try
+            {
+                var response = await _xray.BatchGetTracesAsync(
+                    new BatchGetTracesRequest { TraceIds = ids }, cancellationToken);
+
+                foreach (var trace in response.Traces ?? new List<Trace>())
+                {
+                    if (trace.Segments is not { Count: > 0 } segments || string.IsNullOrEmpty(trace.Id))
+                    {
+                        continue;
+                    }
+
+                    result[trace.Id] = XRaySegmentMapper.Map(trace.Id, segments.Select(s => s.Document));
+                }
+            }
+            catch
+            {
+                // Fetch isolation: a failed batch leaves its ≤5 rows on the summary plane, never the whole list.
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>An enriched recent-flows row: real service names (benzene.service, from the mapped events),
+    /// the earliest event's millisecond start, and the real span count. Keeps the summary's authoritative
+    /// error flag (<c>HasError</c>/<c>HasFault</c>) and duration.</summary>
+    private static TraceSummary EnrichedRow(Amazon.XRay.Model.TraceSummary summary, List<MeshTraceEvent> events) => new()
+    {
+        TraceId = summary.Id ?? string.Empty,
+        // X-Ray Duration is in seconds; the mesh carries milliseconds.
+        DurationMs = summary.Duration * 1000,
+        Failed = summary.HasError || summary.HasFault,
+        Services = events
+            .Select(e => e.Service)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Select(name => name!)
+            .Distinct()
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList(),
+        StartedAt = events.Min(e => e.StartedAt),
+        Events = events.Count
+    };
+
+    private static TraceSummary ToSummaryPlaneRow(Amazon.XRay.Model.TraceSummary summary) => new()
     {
         TraceId = summary.Id ?? string.Empty,
         // X-Ray Duration is in seconds; the mesh carries milliseconds.

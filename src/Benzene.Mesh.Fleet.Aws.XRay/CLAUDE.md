@@ -20,16 +20,34 @@ other backends (Tempo, inc 4) reuse the same `IMeshTraceSource`/`IMeshFleetReadM
   `CorrelationView` (traces earliest-first — the same ordering the in-memory collector uses, so the UI
   renders both identically). Only **annotations** are filterable in X-Ray, so the correlation id must land
   as one (see the prerequisite below).
-  `GetRecentFlowsAsync` (inc 3) runs one unfiltered `GetTraceSummaries` over the recent-flows window and
-  maps each X-Ray summary to a `TraceSummary` row (`Id`; `Duration`×1000 → ms; `HasError||HasFault` →
-  `Failed`; `ServiceIds[].Name` → `Services`; start time parsed from the trace-id epoch prefix
-  `1-{hex}-…`; `Events = 0` — a summary has no span count), newest first, capped at 20. **Zero
-  `BatchGetTraces` per fleet load** by design (no per-row fan-out; the accurate event count is one
-  `GetTraceAsync` away on drill-in).
-- `XRayTraceSourceOptions` — `CorrelationLookback` (default 24h, the correlation search window) and
+  `GetRecentFlowsAsync` (inc 3) runs one unfiltered `GetTraceSummaries` over the recent-flows window,
+  selects the newest N by the trace-id epoch, and **enriches** those rows with real span data via a
+  **bounded `BatchGetTraces`** (2026-07-25 — see the invariant-reversal note below): each row's `Services`
+  = distinct `benzene.service` from the mapped events (not `ServiceIds[].Name`, X-Ray's own — on Lambda
+  infra/handler names), `StartedAt` = the earliest mapped event's real **millisecond** start (not the
+  second-granularity id epoch), and `Events` = the real span count. `Failed` (`HasError||HasFault`) and
+  `Duration`×1000 → ms stay from the summary (authoritative + free). A row whose trace can't be fetched or
+  carries no Benzene span falls back **per-row** to the summary plane (`ServiceIds`/id-epoch/`Events=0`) —
+  fetch isolation, so one bad batch degrades ≤5 rows, never the list. Final order is
+  `(StartedAt desc, TraceId desc)` — the trace-id tiebreaker makes both the enriched (ms) and fallback
+  (second) rows deterministic. ≤4 `BatchGetTraces` calls per load (20 rows ÷ 5 ids/call), run in parallel.
+- **Recent-flows enrichment (2026-07-25 — reverses the earlier "zero `BatchGetTraces` per fleet load"
+  invariant).** The original inc-3 design read only the summary plane to avoid any per-row fan-out, but
+  that left the fleet's recent-flows `Services` column **and** the composite service list
+  (`CompositeMeshFleetReadModel.ServicesFromFlows` derives from `TraceSummary.Services`) showing X-Ray's
+  backend names — infra/handler names on Lambda (`ApiGatewayLambdaHandler`, `EventBridgeEventHandler`),
+  the very thing the `benzene.service` drill-in fix removed everywhere else. Enrichment closes that gap on
+  the primary "what's flowing now" plane at a bounded, batched cost. It's **on by default**, tunable via
+  `XRayTraceSourceOptions.RecentFlowsServiceEnrichmentMax` (0 = opt out → the old pure-summary behavior,
+  for a deployment that polls the fleet aggressively and wants to minimise `BatchGetTraces` TPS). Ordering
+  stays fixed even with enrichment off (the `TraceId` tiebreaker on the id-epoch path). Tempo does **not**
+  do this yet — its enrichment would be 20 **unbatched** `GET /api/traces/{id}` calls, a heavier fan-out,
+  so its summary-plane caveat stands (deferred follow-up).
+- `XRayTraceSourceOptions` — `CorrelationLookback` (default 24h, the correlation search window),
   `RecentFlowsLookback` (default 1h, the fleet recent-flows window — "what's flowing now" is a shorter
-  horizon than "find the trace for this ticket"). Both feed X-Ray's `GetTraceSummaries`, which needs a
-  time range; a trace lookup is by id (no window).
+  horizon than "find the trace for this ticket"), and `RecentFlowsServiceEnrichmentMax` (default 20 =
+  the fleet cap; 0 = opt out of recent-flows span enrichment). The lookbacks feed X-Ray's
+  `GetTraceSummaries`, which needs a time range; a trace lookup is by id (no window).
 - `XRaySegmentMapper` — static `Map(meshTraceId, segmentDocuments)`: parses each X-Ray segment JSON
   document, walks segment + subsegments, and emits one `MeshTraceEvent` per node that carries a Benzene
   topic. **The emitting service is `benzene.service` when the span carries it (2026-07-24), falling back
@@ -73,21 +91,28 @@ must be configured to index `benzene.correlation-id` as an annotation (`benzene_
 metadata-only attribute is readable in a fetched trace but not searchable, so `mesh:query:correlation`
 would find nothing.
 
-## Recent-flows service names (summary-plane caveat)
-`GetRecentFlowsAsync` maps X-Ray `GetTraceSummaries`, whose summaries carry only `ServiceIds` (X-Ray's own
-service names) and **no span attributes** — so a recent-flows row's "services touched" shows the
-**backend's** names, which on Lambda may be infra names (`ApiGatewayLambdaHandler`), NOT the mesh's
-`benzene.service`. This is by design: reading `benzene.service` there would need a `BatchGetTraces` per row,
-the exact per-load fan-out Increment 3 forbids. The **drill-in waterfall and correlation view** (which map
-full segments) show the real service names. Documented gap, accepted because the drill-in is correct. (Tempo
-shares this summary-plane caveat; Jaeger does not — its recent-flows returns full traces, so it reads
-`benzene.service` and shows real names there too.)
+## Recent-flows service names (enriched — 2026-07-25)
+`GetRecentFlowsAsync` now **enriches** the recent-flows rows with real span data via a bounded, batched
+`BatchGetTraces` (see the enrichment note above), so a row's "services touched" shows the mesh's
+`benzene.service` names, not X-Ray's own `ServiceIds` (which on Lambda are infra names like
+`ApiGatewayLambdaHandler`/`EventBridgeEventHandler`). This closes the earlier summary-plane gap that also
+poisoned the composite service list (`ServicesFromFlows` derives from `TraceSummary.Services`). A row that
+can't be enriched (trace aged out / no Benzene span / batch failed) falls back **per-row** to the
+summary-plane `ServiceIds` — so the backend name can still appear on an un-enriched row, but never in place
+of a name the enrichment could read. Enrichment is on by default; set
+`XRayTraceSourceOptions.RecentFlowsServiceEnrichmentMax = 0` to restore the pure-summary behavior (backend
+names, `Events = 0`) for a poll-heavy, cost-sensitive deployment. The **drill-in waterfall and correlation
+view** map full segments and have always shown real names. (**Tempo** still shares the old summary-plane
+caveat — enriching it means 20 unbatched trace GETs, a heavier fan-out, deferred; **Jaeger** never had the
+caveat — its recent-flows returns full traces already.)
 
 ## Verification caveat
 The mapper, correlation search, and recent-flows mapping are unit-tested against representative X-Ray
 JSON (`test/Benzene.Mesh.Test/XRayTraceSourceTest.cs`, mocked `IAmazonXRay`), covering both the
 annotations and metadata attribute forms, non-Benzene-span filtering, correlation paging/grouping,
-recent-flows ordering + zero-`BatchGetTraces`, and the null cases. The composite is covered by
+recent-flows enrichment (`benzene.service` over `ServiceIds`, ms-precision ordering within one epoch
+second, per-row summary-plane fallback, real event count, and the `…EnrichmentMax = 0` opt-out), and the
+null cases. The composite is covered by
 `CompositeMeshFleetReadModelTest.cs`. None of it has been run against a **live** X-Ray/CloudWatch account
 — the annotation-vs-metadata landing, key sanitisation, and `result`-tag names are read defensively /
 documented convention for that reason; confirm against real data before relying on it in production.
