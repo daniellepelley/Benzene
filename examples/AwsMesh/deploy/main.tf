@@ -494,7 +494,13 @@ resource "aws_cloudwatch_event_target" "aggregate" {
   rule      = aws_cloudwatch_event_rule.aggregate.name
   target_id = "mesh"
   arn       = aws_lambda_function.mesh.arn
-  input     = jsonencode({ "detail-type" = "mesh:aggregate", "source" = "benzene.mesh", "detail" = "{}" })
+  # `detail` must be a JSON OBJECT, not a string. The Benzene EventBridge adapter reads the body as
+  # detail.GetRawText() and deserializes it into the handler's request type (Void here). An empty
+  # object ({}) deserializes cleanly; the string "{}" deserializes as a JSON string and the mapper
+  # rejects it — surfacing as a 400 on every scheduled fire (visible in the fleet once the invocation
+  # gets an X-Ray-compatible trace id). This matches the shape of a real EventBridge-delivered event,
+  # whose `detail` is always an object.
+  input     = jsonencode({ "detail-type" = "mesh:aggregate", "source" = "benzene.mesh", "detail" = {} })
 }
 
 resource "aws_lambda_permission" "mesh_events" {
