@@ -193,6 +193,13 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 
 ### Phase 3 — The WHY (pipeline + wire; the mesh finally explains)
 
+> **3.3 SHIPPED 2026-07-25 (client-derived first cut, deliberately ahead of 3.2).** The issue detail
+> page works over the client-derived issue classes today — diagnosis/remediation catalog in the HTML,
+> composed evidence (inline failing waterfall with 3.1's exception type, pivot/entity deep-links),
+> honest "not currently detected" for a resolved bookmark. Built before the wire feed because it's
+> assembly over data already flowing; 3.2's feed later enriches it (fingerprints as stable ids,
+> first/last-seen, exemplar trace ids, pipeline-classified causes) without changing the page's shape.
+>
 > **3.1 SHIPPED 2026-07-25.** `benzene.exception.type` on the topic-bearing span (decorator catch for
 > propagating exceptions; `ActivityExceptionTag` walk-up for handler-converted ones — the common case),
 > `MeshTraceEvent.ExceptionType` as a spec-§3 **optional/additive** field (flagged: additive wire

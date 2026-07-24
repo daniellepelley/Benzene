@@ -1,5 +1,21 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 DRAINS-UP 3.3 SHIPPED — the issue detail page (client-derived first cut).** The core
+> loop's destination: an inbox row now opens `#issue:<kind|subject>` (`renderIssuePage`, section
+> `#issue-page`) — **what the issue means** (`ISSUE_GUIDE`, a per-kind diagnosis catalog shipped in the
+> HTML — static-floor safe), **what to do** (bounded likely-cause lists; failing-traffic rows get
+> status-keyed guidance from `FAILING_STATUS_GUIDE`: `unauthorized` → IAM/rotated credentials,
+> `bad-request` → producer sending a malformed payload, `validation-error` → contract break,
+> `not-found` → routing/deploy mismatch, `exception`/`service-unavailable` → see the exception type on
+> the example flow, etc.), and **evidence** — deep-link buttons (the failing-flows pivot, the
+> topic/service pages) plus, for failing traffic, the **newest observed failing flow's waterfall
+> inline** (via `mesh:query:trace` + the shared `flTraceCache`), whose failed leg carries the 3.1
+> `exceptionType`. Issue ids resolve against the latest client-side derivation (`lastIssues`), so a
+> bookmark to a fixed issue answers **"Issue not currently detected"** — the honest post-fix state.
+> Entity pages remain one click away; the drill-ins are evidence, not destinations. Covered by the
+> smoke harness (34 assertions: what/what-to-do, status-keyed guidance, inline WHY waterfall,
+> evidence pivot round-trip, undetected-bookmark state).
+
 > **2026-07-25 DRAINS-UP PHASE 2 SHIPPED — one front door, one traffic picture, evidence-first.**
 > Second phase of `work/mesh-drains-up-review.md` (slices 2.1–2.5):
 > - **Front door (2.2):** the separate `#fleet-page` is GONE — the live plane lives on the landing page

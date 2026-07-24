@@ -365,6 +365,15 @@
   /* The recent-flows pivot filter bar (a filtered list must never look like the whole). */
   .fl-flow-filterbar { display: flex; gap: 10px; align-items: baseline; font-family: var(--mono);
     font-size: 11.5px; color: var(--ink-soft); margin: 0 0 6px; }
+  /* Issue detail page (drains-up 3.3). */
+  .ig-meta { display: flex; gap: 8px; align-items: center; margin: 2px 0 10px; }
+  .ig-h { font-size: 15px; margin: 18px 0 6px; }
+  .ig-text { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 6px; max-width: 72ch; }
+  .ig-text.ig-detail { color: var(--ink-faint); font-size: 12.5px; }
+  .ig-fixes { margin: 4px 0 0 18px; padding: 0; max-width: 72ch; }
+  .ig-fixes li { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 7px; }
+  .ig-actions { display: flex; gap: 8px; margin: 4px 0 10px; flex-wrap: wrap; }
+  .ig-example { margin-top: 10px; }
   /* Demoted estate sections (drains-up 2.2): collapsed by default behind their header. */
   .sec-toggle { background: none; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
     font: inherit; font-size: 11.5px; color: var(--ink-soft); padding: 2px 8px; margin-left: 10px; }
@@ -873,6 +882,23 @@
   </section>
  </div>
 
+  <!-- Issue detail page (drains-up 3.3): the core-loop destination — front door → "N issues" →
+       WHAT it is, the EVIDENCE, and WHAT TO DO. The diagnosis/remediation catalog ships in this HTML
+       (static-floor safe); evidence composes the existing drill-ins as deep-links, never duplicates them. -->
+  <section id="issue-page" style="display:none">
+    <div class="topic-page-head">
+      <button class="tb-btn tp-back" id="issue-page-back" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m14 6-6 6 6 6"/></svg>
+        Back
+      </button>
+      <div>
+        <h1 id="ig-title"></h1>
+        <p id="ig-sub"></p>
+      </div>
+    </div>
+    <div id="ig-body"></div>
+  </section>
+
   <section id="topic-page" style="display:none">
     <div class="topic-page-head">
       <button class="tb-btn tp-back" id="topic-page-back" type="button">
@@ -1148,12 +1174,12 @@
      MeshServiceStatus.Stale / per-service freshness timestamp yet), so it's shown as explicitly
      deferred rather than silently omitted - see work/mesh-ui-product-vision.md's near-term block. */
   function svcIssue(sev, kind, svc, title, why) {
-    return { sev: sev, kind: kind, title: title, subject: svc.name, why: why,
+    return { sev: sev, kind: kind, title: title, subject: svc.name, why: why, svc: svc.name,
              team: svc.owningTeam || null, nav: function () { goToService(svc.name); } };
   }
   function topicIssue(sev, kind, t, title, why) {
     var subject = t.topic + (t.version ? " v" + t.version : "");
-    return { sev: sev, kind: kind, title: title, subject: subject, why: why, team: null,
+    return { sev: sev, kind: kind, title: title, subject: subject, why: why, team: null, topic: t.topic,
              nav: function () { location.hash = topicHashFor(t.topic); } };
   }
   // Staleness is a viewing-time policy derived here from each row's `snapshotAtUtc` freshness - the
@@ -1198,11 +1224,12 @@
   // NOT mount — this returns [] so the inbox reads exactly as it does on a static-only deploy.
   function liveTopicIssue(sev, kind, topicId, version, title, why) {
     return { sev: sev, kind: kind, title: title, subject: topicId + (version ? " v" + version : ""),
-             why: why, team: null, live: true, nav: function () { location.hash = topicHashFor(topicId); } };
+             why: why, team: null, live: true, topic: topicId,
+             nav: function () { location.hash = topicHashFor(topicId); } };
   }
   function liveSvcIssue(sev, kind, name, title, why) {
     var svc = (manifest.services || []).filter(function (s) { return s.name === name; })[0];
-    return { sev: sev, kind: kind, title: title, subject: name, why: why,
+    return { sev: sev, kind: kind, title: title, subject: name, why: why, svc: name,
              team: (svc && svc.owningTeam) || null, live: true, nav: function () { goToService(name); } };
   }
   function isReservedTopicId(topicId) {
@@ -1356,7 +1383,9 @@
     var arrow = el("span", "issue-arrow");
     arrow.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>';
     row.appendChild(arrow);
-    row.addEventListener("click", i.nav);
+    // The core loop (drains-up 3.3): a row opens the issue's DETAIL page — what it is, the evidence,
+    // and how to fix it — with the entity/evidence drill-ins one click further, never skipped past.
+    row.addEventListener("click", function () { location.hash = ISSUE_HASH_PREFIX + encodeURIComponent(issueId(i)); });
     return row;
   }
   function renderIssues() {
@@ -1368,6 +1397,7 @@
     body.innerHTML = "";
 
     var issues = collectIssues();
+    lastIssues = issues; // the issue detail page resolves #issue: ids against the latest derivation
     [["high", "Needs attention"], ["medium", "Warnings"], ["low", "For review"]].forEach(function (g) {
       var items = issues.filter(function (i) { return i.sev === g[0]; });
       if (!items.length) return;
@@ -1402,6 +1432,258 @@
     }
 
     sub.textContent = issues.length ? (issues.length === 1 ? "1 issue" : issues.length + " issues") : "all clear";
+  }
+
+  /* ---------- Issue detail page (drains-up 3.3) ----------
+     The core-loop destination: WHAT the issue is, the EVIDENCE (composed from the surfaces that
+     already exist — filtered flows, waterfalls, entity pages), and WHAT TO DO. The remediation
+     catalog ships here in the HTML (static-floor safe, no backend); an issue id is
+     kind + "|" + subject, resolved against the latest client-side derivation — so a bookmark to a
+     fixed issue honestly answers "no longer detected". */
+  var lastIssues = [];
+  function issueId(i) { return i.kind + "|" + i.subject; }
+
+  // Per-kind diagnosis + remediation. `what` explains the signal; `fixes` are the bounded likely-cause
+  // list, most common first. Failing traffic additionally gets status-specific guidance (below) —
+  // the dominant failing status usually names the cause class outright.
+  var ISSUE_GUIDE = {
+    "failing traffic": {
+      what: "Requests on this topic are failing in the inbox's window. The counts come from the live plane's per-topic stats; the flows below are the observed evidence.",
+      fixes: [] // status-specific, composed at render time (FAILING_STATUS_GUIDE)
+    },
+    "uninstrumented": {
+      what: "Flows failed but their traces carry no Benzene-labelled span — the failure happened before (or outside) the handler pipeline, so no topic, status, or handler was ever recorded.",
+      fixes: [
+        "A producer is sending a malformed envelope/event that the transport adapter rejects before the topic resolves (e.g. a scheduled rule whose payload field is a string where an object is expected) — check the producer of the failing payload.",
+        "The failure is infrastructure-level (IAM/permissions, a crash at cold start, a runtime error outside the pipeline) — check the function/process's own logs for this trace id.",
+        "If ALL flows look uninstrumented, the exporter is likely dropping the benzene.* attributes — check the OTel exporter/collector attribute configuration."
+      ]
+    },
+    "heartbeat degraded": {
+      what: "This service's latest heartbeat reports one or more instances failing their health checks.",
+      fixes: [
+        "Open the service page — each failing check carries a root-cause data bag (error class, code, status) naming what broke.",
+        "A dependency check failing (DB/queue/downstream) usually means the dependency, not this service — check that system too."
+      ]
+    },
+    "heartbeat stale": {
+      what: "This service stopped sending heartbeats — its last one is older than the live freshness window.",
+      fixes: [
+        "The service may be down or scaled to zero — check the process/instances.",
+        "If the service is demonstrably running, its mesh heartbeat feed broke — check the heartbeat wiring and the collector endpoint it posts to."
+      ]
+    },
+    "unreachable": {
+      what: "The aggregator could not reach this service on its last run — the catalog entry may be stale.",
+      fixes: [
+        "Check the service is running and its spec endpoint URL (as registered for discovery) is correct.",
+        "Check networking/auth between the aggregator and the service (security groups, tokens)."
+      ]
+    },
+    "unhealthy": {
+      what: "One or more of this service's health checks are failing (pulled by the aggregator).",
+      fixes: [
+        "Open the service page — the failing check's data bag carries the root cause (error class, code, status).",
+        "A 401/403 in the data bag is a deterministic permission misconfiguration, not a transient blip — fix the role/policy."
+      ]
+    },
+    "drift": {
+      what: "This service's live contract differs from the last recorded baseline — it changed without the catalog being re-baselined.",
+      fixes: [
+        "If the change is intended: re-run aggregation so the catalog accepts the new contract as the baseline.",
+        "If not intended: a wrong version is deployed — compare the hash pair on the service page and redeploy the intended build."
+      ]
+    },
+    "stale": {
+      what: "This service's catalog snapshot is old — it may have quietly stopped reporting, or aggregation stopped running.",
+      fixes: [
+        "Check the aggregation schedule ran recently (the mesh's own scheduled pass).",
+        "If other services are fresh, this one likely dropped out of discovery — check its tags/registration and that it's running."
+      ]
+    },
+    "schema mismatch": {
+      what: "Two consumers of this topic and version declare different payload schemas — the same message cannot satisfy both.",
+      fixes: [
+        "Open the topic page and compare the declared payloads — align the consumers on one schema.",
+        "If both shapes are genuinely needed, publish the change as a NEW version instead of diverging in place."
+      ]
+    },
+    "observed consumer": {
+      what: "A live caller is exercising this topic but no service descriptor declares it — the catalog is missing an edge that demonstrably exists.",
+      fixes: [
+        "If the caller is yours: add the declaration (the service's spec events / outbound declarations) so the contract matches reality.",
+        "If you don't recognise the caller: investigate — an undeclared consumer can also be an unauthorised one."
+      ]
+    },
+    "undeclared topic": {
+      what: "Live traffic is flowing on a topic that appears in no service's declared contract.",
+      fixes: [
+        "Add the topic to its owning service's declarations so it gains a schema, an owner, and a place in the catalog.",
+        "If nothing should be sending it, trace a flow below to find the sender."
+      ]
+    },
+    "silent": {
+      what: "This declared topic showed no observed traffic in the current window — evidence toward retirement, never proof.",
+      fixes: [
+        "Widen the time range first — low-frequency (nightly/monthly) topics are silent in short windows.",
+        "If persistently silent, take it to Value & deprecation (on the estate) to build the retirement case."
+      ]
+    },
+    "deprecation": {
+      what: "", // the row's own wording (TOPIC_STATUS_TITLES) carries the explanation
+      fixes: ["Confirm no out-of-fleet consumer exists, then retire the producer's declaration and delete the handler wiring."]
+    },
+    "producer gap": {
+      what: "",
+      fixes: ["Confirm the external producer is expected; document it as an external integration, or remove the consumer if the feed is dead."]
+    }
+  };
+  // The dominant failing status usually names the cause class outright — this is the "what this
+  // usually means" catalog for failing traffic, keyed on the wire/usage result vocabularies.
+  var FAILING_STATUS_GUIDE = {
+    "unauthorized": "The caller lost a permission — check the consuming side's credentials/IAM role and any recently rotated secrets or policies.",
+    "forbidden": "The caller is authenticated but not allowed — a policy or scope change on the receiving side.",
+    "bad-request": "The message can't be read into the handler's request type — usually a producer sending a malformed or differently-shaped payload (e.g. a scheduled rule with a mis-typed body). Fix the producer, not the handler.",
+    "validation-error": "The payload parses but fails validation — producer and consumer disagree about the contract (a renamed/removed field, a tightened rule). Compare the topic's declared schema with what producers actually send.",
+    "not-found": "No handler matched — a topic name/version mismatch between sender and consumer, or the handling service isn't deployed/wired.",
+    "exception": "The pipeline threw — open the example flow below; the failing leg carries the exception type. Usually a code defect or an unavailable dependency.",
+    "service-unavailable": "The handler threw or a dependency was unavailable — the example flow's failing leg carries the exception type when it was a throw.",
+    "unexpected-error": "An unclassified failure — open the example flow and the service's logs for this trace id.",
+    "failure": "The usage feed's generic failure bucket — open the example flow below for the specific status per leg.",
+    "timeout": "A downstream dependency is slow or hung — check the dependency's health and the handler's timeout budget."
+  };
+
+  function igSection(body, title) {
+    var h = el("h2", "ig-h", title);
+    body.appendChild(h);
+    return h;
+  }
+  function igAction(row, label, onClick, primary) {
+    var b = el("button", "tb-btn" + (primary ? " primary" : ""), label);
+    b.type = "button";
+    b.addEventListener("click", onClick);
+    row.appendChild(b);
+    return b;
+  }
+  function renderIssuePage(id) {
+    showView("issue-page");
+    var title = document.getElementById("ig-title"), sub = document.getElementById("ig-sub");
+    var body = document.getElementById("ig-body");
+    body.textContent = "";
+
+    var issues = (lastIssues && lastIssues.length) ? lastIssues : collectIssues();
+    lastIssues = issues;
+    var issue = issues.filter(function (i) { return issueId(i) === id; })[0];
+
+    if (!issue) {
+      // Honest terminal state — and the post-fix payoff: re-opening a fixed issue's bookmark says so.
+      title.textContent = "Issue not currently detected";
+      sub.textContent = id.split("|").slice(1).join("|") || id;
+      var clear = el("div", "issues-clear");
+      clear.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>';
+      clear.appendChild(document.createTextNode(
+        "This issue is not present in the current derivation — it may have been resolved, or the signal moved outside the inbox's window. The estate's issue inbox has the live list."));
+      body.appendChild(clear);
+      return;
+    }
+
+    title.textContent = issue.title;
+    sub.textContent = issue.subject + (issue.team ? " · " + issue.team : "");
+    var head = el("div", "ig-meta");
+    head.appendChild(el("span", "issue-kind k-" + issue.sev, issue.kind));
+    if (issue.live) {
+      var live = el("span", "issue-live", "live");
+      live.title = "Derived from the live fleet (observed), not the declared catalog.";
+      head.appendChild(live);
+    }
+    body.appendChild(head);
+
+    var guide = ISSUE_GUIDE[issue.kind] || { what: "", fixes: [] };
+    igSection(body, "What this means");
+    body.appendChild(el("p", "ig-text", guide.what || issue.why || ""));
+    if (issue.why && guide.what) body.appendChild(el("p", "ig-text ig-detail", issue.why));
+
+    // What to do: the per-kind catalog, plus (for failing traffic) the status-specific reading of the
+    // observed failure mix — the dominant failing status usually names the cause class outright.
+    var fixes = (guide.fixes || []).slice();
+    if (issue.kind === "failing traffic" && issue.topic) {
+      var statuses = failingStatusesForTopic(issue.topic);
+      statuses.forEach(function (s) {
+        if (FAILING_STATUS_GUIDE[s.key]) {
+          fixes.push(s.key + " ×" + fmtCount(s.count) + " — " + FAILING_STATUS_GUIDE[s.key]);
+        }
+      });
+      if (!fixes.length) fixes.push("Open the example flow below — each failing leg carries its own status (and exception type when it was a throw).");
+    }
+    if (fixes.length) {
+      igSection(body, "What to do");
+      var list = el("ul", "ig-fixes");
+      fixes.forEach(function (f) { list.appendChild(el("li", null, f)); });
+      body.appendChild(list);
+    }
+
+    // Evidence: composed deep-links into the surfaces that already exist, plus (for failing traffic)
+    // the newest failing flow's waterfall inline — the WHY without leaving the page.
+    igSection(body, "Evidence");
+    var actions = el("div", "ig-actions");
+    if (issue.kind === "failing traffic" && issue.topic) {
+      igAction(actions, "Show failing flows", function () { flPivotToFailingFlows(issue.topic); }, true);
+      igAction(actions, "Open topic page", function () { location.hash = topicHashFor(issue.topic); });
+    } else if (issue.kind === "uninstrumented") {
+      igAction(actions, "Show the failing flows", function () { flPivotToFailingFlows(null); }, true);
+    } else if (issue.topic) {
+      igAction(actions, "Open topic page", function () { location.hash = topicHashFor(issue.topic); }, true);
+    } else if (issue.svc) {
+      igAction(actions, "Open service page", function () { goToService(issue.svc); }, true);
+    }
+    body.appendChild(actions);
+
+    if (issue.kind === "failing traffic" && issue.topic) {
+      appendExampleFailingFlow(body, issue.topic);
+    }
+  }
+  // The failing statuses observed for a topic (inbox window preferred), largest first.
+  function failingStatusesForTopic(topicId) {
+    var counts = {};
+    (((inboxFleet || currentFleet) || {}).topics || []).forEach(function (t) {
+      if (t.topic !== topicId || (t.missingFeeds || []).indexOf("stats") !== -1) return;
+      Object.keys(t.statusCounts || {}).forEach(function (k) {
+        if (FL_SUCCESS[k] || k === "success" || k === "<missing>") return;
+        counts[k] = (counts[k] || 0) + t.statusCounts[k];
+      });
+    });
+    return Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; })
+      .map(function (k) { return { key: k, count: counts[k] }; });
+  }
+  // The newest observed failing flow for the topic, rendered inline through the existing waterfall —
+  // its failing leg carries the status and (when it was a throw) the exception type.
+  function appendExampleFailingFlow(body, topicId) {
+    var flows = [];
+    [currentFleet, inboxFleet].forEach(function (f) {
+      ((f && f.traces) || []).forEach(function (t) {
+        if (t.failed && t.topic === topicId) flows.push(t);
+      });
+    });
+    if (!flows.length) {
+      body.appendChild(el("p", "fl-sub", "No failing flow for this topic is in the observed flow lists right now (flows are sampled and capped — the counts above remain authoritative)."));
+      return;
+    }
+    flows.sort(function (a, b) { return Date.parse(b.startedAt) - Date.parse(a.startedAt); });
+    var traceId = flows[0].traceId;
+    var wrap = el("div", "ig-example");
+    wrap.appendChild(el("div", "fl-sub", "Example failing flow (newest observed):"));
+    var note = el("div", "fl-wf-note", "Loading trace…");
+    wrap.appendChild(note);
+    body.appendChild(wrap);
+    var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
+    flTraceCache[traceId] = promise;
+    promise.then(function (view) {
+      if (!note.isConnected) return;
+      note.replaceWith(flBuildWaterfall(view));
+    }).catch(function () {
+      delete flTraceCache[traceId];
+      if (note.isConnected) note.textContent = "Could not load the example trace (it may be outside the backend's retention or sampling window).";
+    });
   }
 
   function buildServiceCard(svc) {
@@ -1701,6 +1983,7 @@
 
   var TOPIC_HASH_PREFIX = "#topic:";
   var SERVICE_HASH_PREFIX = "#service:";
+  var ISSUE_HASH_PREFIX = "#issue:";
 
   function topicHashFor(topicId) {
     return TOPIC_HASH_PREFIX + encodeURIComponent(topicId);
@@ -1762,14 +2045,16 @@
   /* The three entity views - Estate (#main-view), Topic (#topic-page), Service (#service-page) -
      are mutually exclusive; location.hash is the single source of truth for which one shows. */
   function showView(id) {
-    ["main-view", "topic-page", "service-page", "compose-page"].forEach(function (v) {
+    ["main-view", "topic-page", "service-page", "compose-page", "issue-page"].forEach(function (v) {
       document.getElementById(v).style.display = (v === id) ? "" : "none";
     });
     if (id !== "main-view") window.scrollTo(0, 0);
   }
 
   function syncViewFromHash() {
-    if (location.hash.indexOf(COMPOSE_HASH_PREFIX) === 0) {
+    if (location.hash.indexOf(ISSUE_HASH_PREFIX) === 0) {
+      renderIssuePage(decodeURIComponent(location.hash.slice(ISSUE_HASH_PREFIX.length)));
+    } else if (location.hash.indexOf(COMPOSE_HASH_PREFIX) === 0) {
       renderComposePage(decodeURIComponent(location.hash.slice(COMPOSE_HASH_PREFIX.length)));
     } else if (location.hash.indexOf(TOPIC_HASH_PREFIX) === 0) {
       renderTopicPage(decodeURIComponent(location.hash.slice(TOPIC_HASH_PREFIX.length)));
@@ -1801,6 +2086,7 @@
 
   document.getElementById("topic-page-back").addEventListener("click", clearEntityHash);
   document.getElementById("service-page-back").addEventListener("click", clearEntityHash);
+  document.getElementById("issue-page-back").addEventListener("click", clearEntityHash);
   // The top-left brand title doubles as a "home" link - clears any entity/compose hash back to the estate.
   var brandHome = document.getElementById("brand-home");
   if (brandHome) {
@@ -3172,7 +3458,7 @@
     var h = location.hash;
     // "#fleet" IS the estate now (the traffic section lives on the landing page — drains-up 2.2).
     return !h || h === "#" || (h.indexOf(SERVICE_HASH_PREFIX) !== 0 && h.indexOf(TOPIC_HASH_PREFIX) !== 0
-      && h.indexOf(COMPOSE_HASH_PREFIX) !== 0);
+      && h.indexOf(COMPOSE_HASH_PREFIX) !== 0 && h.indexOf(ISSUE_HASH_PREFIX) !== 0);
   }
 
   /* ===== Fleet view rendering (ported from the standalone fleet page, fl- namespaced) ===== */
