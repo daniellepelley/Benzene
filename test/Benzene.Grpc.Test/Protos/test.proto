@@ -39,3 +39,17 @@ message UploadSummary {
 message ChatMessage {
   string text = 1;
 }
+
+enum Colour {
+  COLOUR_UNSPECIFIED = 0;
+  COLOUR_RED = 1;
+  COLOUR_GREEN = 2;
+}
+
+// Exercises the proto3-canonical-JSON encodings the POCO bridge used to choke on:
+// 64-bit ints are emitted as JSON strings and enums as their name strings.
+message LongEnumMessage {
+  int64 big_value = 1;
+  uint64 unsigned_value = 2;
+  Colour colour = 3;
+}

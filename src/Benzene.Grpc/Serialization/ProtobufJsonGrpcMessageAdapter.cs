@@ -26,7 +26,14 @@ public class ProtobufJsonGrpcMessageAdapter : IGrpcMessageAdapter
 
     private static readonly JsonSerializerOptions DeserializeOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        // Protobuf's canonical proto3 JSON (what JsonFormatter.Default emits) encodes 64-bit ints
+        // (int64/uint64/fixed64/sfixed64/sint64) as JSON strings and enums as their name strings.
+        // Vanilla System.Text.Json otherwise refuses a string for a long/ulong property and an enum
+        // name without a converter, so the POCO-bridge path threw on any such field. Allow reading
+        // numbers-from-string and enum names so the documented POCO bridge round-trips those types.
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public TRequest? ConvertRequest<TRequest>(object? protobufMessage)
