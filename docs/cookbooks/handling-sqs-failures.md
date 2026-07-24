@@ -36,12 +36,13 @@ try
 {
     using (var scope = serviceResolverFactory.CreateScope())
     {
-        var setCurrentTransport = scope.GetService<ISetCurrentTransport>();
-        setCurrentTransport.SetTransport("sqs");
         await _pipeline.HandleAsync(context, scope);
     }
 
-    if (context.IsSuccessful.HasValue && !context.IsSuccessful.Value)
+    // Only an explicit success is acked. A failure result (IsSuccessful == false) OR an unset
+    // outcome (null - e.g. an unroutable message no handler matched) is reported as a failure, so
+    // SQS redrives it rather than silently deleting it.
+    if (context.MessageResult?.IsSuccessful != true)
     {
         batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
     }
@@ -55,7 +56,7 @@ catch (Exception ex)
 
 Two ways a message ends up in `BatchItemFailures`:
 
-1. **Your handler returns a failure result and no exception is thrown.** `SqsMessageHandlerResultSetter` copies your message handler's `IBenzeneResult.IsSuccessful` onto `SqsMessageContext.IsSuccessful` after the pipeline runs. Any `BenzeneResult` factory method built from an error array (`ServiceUnavailable`, `BadRequest`, `ValidationError`, `NotFound`, etc.) sets `IsSuccessful` to `false`; `Ok`, `Accepted`, `Created`, etc. set it to `true`.
+1. **Your handler returns a failure result (or no result at all) and no exception is thrown.** `SqsMessageHandlerResultSetter` records your message handler's `IBenzeneResult` on `SqsMessageContext.MessageResult` (via `IHasMessageResult`) after the pipeline runs. Any `BenzeneResult` factory method built from an error array (`ServiceUnavailable`, `BadRequest`, `ValidationError`, `NotFound`, etc.) is unsuccessful; `Ok`, `Accepted`, `Created`, etc. are successful. A record whose `MessageResult` is `null` — e.g. an unroutable message whose topic attribute matched no handler, so the setter never ran — is **also** treated as a failure, so it's redriven rather than silently deleted.
 2. **The pipeline throws.** `SqsApplication` catches the exception, logs it via `ILogger<SqsApplication>` (message: `"Processing SQS message {messageId} failed"`), and reports the same message ID as failed.
 
 Either way, only the specific `MessageId`s that failed go into `SQSBatchResponse.BatchItemFailures` — the records that succeeded are never reported, so **AWS will not redeliver them**. This is what makes it a *partial* batch failure: a 10-message batch where 1 message fails only causes that 1 message to become visible again on the queue.
@@ -133,7 +134,7 @@ public class CapturePaymentHandler : IMessageHandler<OrderPaymentMessage, Void>
 }
 ```
 
-Both paths — the caught `service-unavailable` result and an uncaught exception — leave `SqsMessageContext.IsSuccessful` as `false` (or unset, in the case of an exception, since `SqsApplication`'s `catch` block reports the failure directly without needing `IsSuccessful` at all). Either way the message ID ends up in `BatchItemFailures`.
+Both paths — the caught `service-unavailable` result and an uncaught exception — mean the record's `SqsMessageContext.MessageResult` is unsuccessful (or, for an exception, `SqsApplication`'s `catch` block reports the failure directly without needing to read `MessageResult` at all). Either way the message ID ends up in `BatchItemFailures`.
 
 ### 2. Add in-process retry with `UseRetry`
 
@@ -151,7 +152,7 @@ public static IMiddlewarePipelineBuilder<TContext> UseRetry<TContext>(
     Func<TimeSpan, Task>? delay = null)                  // defaults to Task.Delay; override in tests
 ```
 
-Important: by default, `RetryMiddleware` only retries when the pipeline **throws**. It does *not* retry a handler that returns a failure result (like `service-unavailable`) without throwing — `shouldRetryContext` defaults to always returning `false`. If you want the `CapturePaymentHandler` example above to be retried in-process (rather than only relying on SQS's own redelivery), pass a `shouldRetryContext` that inspects `SqsMessageContext.IsSuccessful`:
+Important: by default, `RetryMiddleware` only retries when the pipeline **throws**. It does *not* retry a handler that returns a failure result (like `service-unavailable`) without throwing — `shouldRetryContext` defaults to always returning `false`. If you want the `CapturePaymentHandler` example above to be retried in-process (rather than only relying on SQS's own redelivery), pass a `shouldRetryContext` that inspects `SqsMessageContext.MessageResult`:
 
 ```csharp
 using Benzene.Resilience;
@@ -161,7 +162,7 @@ app.UseSqs(sqs => sqs
         numberOfRetries: 3,
         initialDelay: TimeSpan.FromMilliseconds(200),
         backoffFactor: 2.0,
-        shouldRetryContext: context => context.IsSuccessful == false)
+        shouldRetryContext: context => context.MessageResult?.IsSuccessful == false)
     .UseMessageHandlers(router => router.UseFluentValidation())
 );
 ```
@@ -170,7 +171,7 @@ app.UseSqs(sqs => sqs
 
 With this wiring:
 - A thrown exception from `CapturePaymentHandler` is retried up to 3 times (200ms, then 400ms, then 800ms delay) before being allowed to propagate out of the pipeline, where `SqsApplication` catches it, logs it, and reports the batch item failure.
-- A `service-unavailable` result is retried up to 3 times in-process (via `shouldRetryContext`) and, if still unsuccessful after the last attempt, `RetryMiddleware` returns normally (it does not throw for context-based failures) — `SqsApplication` then sees `context.IsSuccessful == false` and reports the batch item failure exactly as if there were no retry middleware at all.
+- A `service-unavailable` result is retried up to 3 times in-process (via `shouldRetryContext`) and, if still unsuccessful after the last attempt, `RetryMiddleware` returns normally (it does not throw for context-based failures) — `SqsApplication` then sees `context.MessageResult` is unsuccessful and reports the batch item failure exactly as if there were no retry middleware at all.
 
 There is no circuit breaker, timeout, or bulkhead middleware in `Benzene.Resilience` today — only this single retry middleware. If you need those patterns, you'll need to bring your own (e.g. wrap `IPaymentGateway` with Polly directly) since Benzene does not currently ship them, despite what `src/Benzene.Resilience/CLAUDE.md` claims.
 
@@ -248,7 +249,7 @@ Your event source mapping is missing `function_response_types = ["ReportBatchIte
 
 ### A handler that returns `service-unavailable` isn't being retried
 
-By default `RetryMiddleware`'s `shouldRetryContext` always returns `false` — it only retries thrown exceptions unless you explicitly pass `shouldRetryContext: context => context.IsSuccessful == false` (or your own predicate). This is intentional: Benzene has no way to know whether a non-throwing "failure" result should be retried without you telling it.
+By default `RetryMiddleware`'s `shouldRetryContext` always returns `false` — it only retries thrown exceptions unless you explicitly pass `shouldRetryContext: context => context.MessageResult?.IsSuccessful == false` (or your own predicate). This is intentional: Benzene has no way to know whether a non-throwing "failure" result should be retried without you telling it.
 
 ### Messages never reach the DLQ
 

@@ -29,6 +29,31 @@ A returned failure now throws that transport's `*MessageProcessingException`, wh
 `CatchExceptions` still defaults to `false`) propagates and fails the invocation → the platform's
 own retry/redelivery kicks in.
 
+## Caveat: the self-hosted *stream* workers remain at-most-once by default
+
+The flip above makes every **queue-shaped** transport safe-by-default, and it is effective on the
+Function/Lambda triggers (including the Event Hub and Kafka *Function* triggers) because their
+`CatchExceptions` defaults `false`, so the escalated throw propagates and the platform redelivers.
+
+It is **not** effective, on its own, for the two self-hosted **stream** workers, which keep their
+pre-existing "keep the stream flowing" default:
+
+- **`Benzene.Azure.EventHub`** — although `RaiseOnFailureStatus` flipped to `true` (table above),
+  `CatchHandlerExceptions` **also** defaults `true`, so the escalated `EventHubMessageProcessingException`
+  is caught and logged, the worker continues, and the next successful event checkpoints past the failed
+  one — effectively **at-most-once**. At-least-once requires **`CatchHandlerExceptions = false`** as well
+  (the worker then stops at the failure without checkpointing, so a restart redelivers).
+- **`Benzene.Kafka.Core`** — not in the flip table (it settles via offset commit, not `RaiseOnFailureStatus`).
+  `CommitOnlyOnSuccess` defaults `false`, so offsets auto-commit regardless of outcome — also **at-most-once**.
+  At-least-once requires **`CommitOnlyOnSuccess = true`** (which in turn requires `CatchHandlerExceptions = false`).
+
+This is intrinsic to streams: a partition has no per-message ack/abandon, so "don't lose a failed record"
+means "stop the worker and don't advance the offset/checkpoint", which is too aggressive to be a default
+for a long-running consumer (one poison record halts all processing). The queue transports and the
+Lambda/Functions stream *triggers* don't have this tension — the platform redelivers the un-advanced
+work without any single process halting. See the per-transport table and the streaming callout in
+[Capability Matrix](../docs/capability-matrix.md).
+
 ## Already safe before this change (no flip needed)
 
 - **`Benzene.Aws.Sqs` consumer** — `AckMode` already defaulted to `PerMessage` (only successful

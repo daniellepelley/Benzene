@@ -10,12 +10,14 @@ You have one event (e.g. "order created") that multiple, independently-deployed 
 - Wiring an SNS-triggered Lambda to Benzene's message handler pipeline with `Benzene.Aws.Lambda.Sns`
 - Subscribing multiple Lambda functions to the same SNS topic (including how much of this Benzene's Terraform code generator actually automates, and how much is plain AWS configuration)
 
-> **A handler failure result is silently dropped by default.** If a subscriber's handler returns
-> a non-exception failure (e.g. `BenzeneResult.ServiceUnavailable(...)`) instead of throwing,
-> `SnsOptions.RaiseOnFailureStatus` defaults to `false` and the Lambda invocation reports success —
-> SNS never retries that notification, and there's no DLQ for it either. See
+> **A handler failure result is retried by default (safe-by-default).** If a subscriber's handler
+> returns a non-exception failure (e.g. `BenzeneResult.ServiceUnavailable(...)`) instead of throwing,
+> `SnsOptions.RaiseOnFailureStatus` defaults to `true`, so the failure is escalated into a thrown
+> `SnsMessageProcessingException` and SNS's subscription retry/redrive policy applies — the same as an
+> unhandled exception. Because SNS then redelivers the same message, **the handler must be idempotent**.
+> Set `RaiseOnFailureStatus = false` for at-most-once (a failure result accepted, no retry). See
 > ["Configuring exception and retry behavior with `SnsOptions`"](#configuring-exception-and-retry-behavior-with-snsoptions)
-> below to opt into retry-on-failure, and note it requires an idempotent handler (SNS redelivery
+> below, and note redelivery requires an idempotent handler (SNS redelivery
 > has no dedup of its own) — see [Capability Matrix](../capability-matrix.md) and
 > [Idempotency](idempotency.md).
 
@@ -154,7 +156,7 @@ A few things to know about `Benzene.Aws.Lambda.Sns` from reading `SnsLambdaHandl
 
 ### Configuring exception and retry behavior with `SnsOptions`
 
-By default, a handler exception cascades out of the Lambda invocation entirely (Lambda reports the invocation as failed, so SNS's own subscription retry policy applies), while a handler that returns a non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) is silently accepted — the invocation reports success, and SNS never retries it. This is the AWS best-practice default: genuine exceptions usually mean something transient and worth retrying, while a deliberate failure status usually means a permanent/business-logic failure that retrying won't fix.
+By default, a handler exception cascades out of the Lambda invocation entirely (Lambda reports the invocation as failed, so SNS's own subscription retry policy applies), and a handler that returns a non-exception failure result (e.g. `BenzeneResult.ServiceUnavailable(...)`) is now treated the same way — it is escalated into a thrown `SnsMessageProcessingException` so SNS retries it too. This is the 1.0 safe-by-default settlement contract: a returned failure is redelivered (at-least-once), not silently accepted, so the same handler shape doesn't lose data on one transport and not another.
 
 Both halves of that behavior are independently configurable via a second, optional argument to `UseSns`:
 
@@ -168,13 +170,12 @@ app.UseAwsLambda(eventPipeline => eventPipeline
         {
             // Catch handler exceptions instead of letting them fail the invocation (no SNS retry).
             options.CatchExceptions = true;
-            // Escalate a non-exception failure result into a thrown exception too, so SNS retries it
-            // the same way it would an unhandled exception.
-            options.RaiseOnFailureStatus = true;
+            // Opt out of safe-by-default: accept a non-exception failure result (no SNS retry).
+            options.RaiseOnFailureStatus = false;
         }));
 ```
 
-Both default to `false`, reproducing today's implicit behavior exactly — this is purely opt-in. `RaiseOnFailureStatus` and `CatchExceptions` compose: if both are `true`, a failure result is escalated into an `SnsMessageProcessingException` and then immediately caught and logged (no SNS retry either) — useful if you want failure results logged consistently with exceptions but still don't want SNS retrying business failures.
+`RaiseOnFailureStatus` defaults to **`true`** (safe-by-default — a returned failure is escalated and retried); set it `false` for at-most-once. `CatchExceptions` defaults to **`false`** (a thrown exception cascades and fails the invocation). The two compose: if `CatchExceptions` is `true` **and** `RaiseOnFailureStatus` is `true` (the default), a failure result is escalated into an `SnsMessageProcessingException` and then immediately caught and logged (no SNS retry) — so to genuinely swallow everything you set `CatchExceptions = true` and `RaiseOnFailureStatus = false`.
 
 ### 3. Subscribe both Lambdas to the same SNS topic
 
@@ -267,7 +268,7 @@ Unlike SQS, `SnsApplication` has no partial-batch-failure reporting — check yo
 
 ### A failure result isn't triggering an SNS retry
 
-This is the default: `SnsOptions.RaiseOnFailureStatus` defaults to `false`, so a handler returning a non-exception failure result is silently accepted by Lambda and SNS never retries it. Set `RaiseOnFailureStatus = true` if you want failure results treated the same as exceptions for retry purposes.
+By default a failure result **does** trigger a retry (`SnsOptions.RaiseOnFailureStatus` defaults to `true`). If a returned failure result isn't being retried, either it was explicitly set to `false` (opting into at-most-once), or the handler is actually returning a *success* result — check `IBenzeneResult.IsSuccessful` for the status your handler returns. (If you *want* at-most-once, `RaiseOnFailureStatus = false` is how you get it.)
 
 ### Subscription stuck in "pending confirmation"
 
@@ -285,7 +286,7 @@ If a subscriber needs message durability/backpressure (rather than raw SNS-to-La
 
 ### Swallow exceptions entirely for a best-effort subscriber
 
-If a subscriber is genuinely optional (e.g. it only updates a non-critical dashboard) and you'd rather log-and-move-on than have SNS retry a misbehaving downstream repeatedly, set `SnsOptions.CatchExceptions = true` with `RaiseOnFailureStatus` left at its `false` default. Every failure - thrown or returned - is then logged via `ILogger<SnsApplication>` and never propagates, so SNS always sees the invocation as successful.
+If a subscriber is genuinely optional (e.g. it only updates a non-critical dashboard) and you'd rather log-and-move-on than have SNS retry a misbehaving downstream repeatedly, set `SnsOptions.CatchExceptions = true` **and** `RaiseOnFailureStatus = false` (the latter opts out of safe-by-default). Every failure - thrown or returned - is then logged via `ILogger<SnsApplication>` and never propagates, so SNS always sees the invocation as successful.
 
 ## Further Reading
 

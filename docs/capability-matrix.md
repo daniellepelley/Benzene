@@ -73,17 +73,32 @@ surprising case because nothing crashed.
 | Azure Event Grid (`Benzene.Azure.Function.EventGrid`) | **Safe by default** — `EventGridOptions.RaiseOnFailureStatus` defaults `true`, escalating a failure result into a throw so Event Grid's retry/dead-letter (backoff up to 24h) applies | `EventGridOptions.RaiseOnFailureStatus = false` for at-most-once |
 | Azure Event Hubs Function trigger (`Benzene.Azure.Function.EventHub`) | **Safe by default** — `EventHubOptions.RaiseOnFailureStatus` defaults `true`, escalating a failure result (on both the property-based and envelope routing paths) into a throw so the trigger re-delivers the batch | `EventHubOptions.RaiseOnFailureStatus = false` for at-most-once |
 | Azure Queue Storage (`Benzene.Azure.Function.QueueStorage`) | **Safe by default** — `QueueStorageOptions.RaiseOnFailureStatus` defaults `true`, escalating a failure result (on both the preset-topic and envelope routing paths) into a throw so the host's `maxDequeueCount` retry/poison handling applies | `QueueStorageOptions.RaiseOnFailureStatus = false` for at-most-once |
-| Azure Event Hubs self-hosted worker (`Benzene.Azure.EventHub`) | **Safe by default** — `BenzeneEventHubConfig.RaiseOnFailureStatus` defaults `true`, so a failure result is not checkpointed and the partition is re-delivered | `BenzeneEventHubConfig.RaiseOnFailureStatus = false` for at-most-once |
 | Google Cloud Pub/Sub (`Benzene.GoogleCloud.Functions.PubSub`) | **Safe by default** — `PubSubOptions.RaiseOnFailureStatus` defaults `true`, escalating a failure result into a throw so Pub/Sub redelivers per the subscription's ack-deadline/retry policy | `PubSubOptions.RaiseOnFailureStatus = false` for at-most-once |
+| Kafka self-hosted worker (`Benzene.Kafka.Core`) | **At-most-once by default** — a stream worker (see the callout below) can't redeliver one record without halting, so `BenzeneKafkaConfig.CommitOnlyOnSuccess` defaults `false`: offsets auto-commit regardless of outcome, so a failed record is skipped on restart | `BenzeneKafkaConfig.CommitOnlyOnSuccess = true` (requires `CatchHandlerExceptions = false`) for at-least-once — offsets are then stored only after a successful handle, so a restart redelivers the failed record; or wire a `DeadLetterTopic` |
+| Azure Event Hubs self-hosted worker (`Benzene.Azure.EventHub`) | **At-most-once by default** — same stream constraint: `BenzeneEventHubConfig.CatchHandlerExceptions` defaults `true`, so a failed event (or an escalated failure result — `RaiseOnFailureStatus` also defaults `true`) is logged and skipped once a later event checkpoints past it | `BenzeneEventHubConfig.CatchHandlerExceptions = false` for at-least-once — the worker then stops at the failure without checkpointing, so a restart redelivers (and `RaiseOnFailureStatus = false` additionally accepts a failure result as settled) |
 | Azure Cosmos DB Change Feed (`Benzene.Azure.Function.CosmosDb`) | N/A as a "failure result" concern — like Kinesis, this is a fan-in `StreamContext<TDocument>` with no `IBenzeneResult`/message-handler routing; the trigger's lease checkpoints the whole batch on any non-throwing return, and unlike Kinesis there's no per-document checkpoint API to opt out of that with (see the package's own `CLAUDE.md`) | Have the handler throw for anything that must redeliver the whole batch |
 | HTTP / API Gateway | N/A — a failure result maps straight to an HTTP status code the caller sees synchronously; there's no async "retry" concept to opt into | N/A |
 
-As of the 1.0 settlement contract (see `work/settlement-contract-1.0.md`), every async/event
+As of the 1.0 settlement contract (see `work/settlement-contract-1.0.md`), every **queue-shaped**
 transport is **safe by default**: a returned failure result is redelivered (at-least-once), not
-silently settled, and each transport exposes an explicit opt-out (the "Opt-out" column) for the
-at-most-once cases where you deliberately want a returned failure accepted. The two rows marked
-N/A above (Cosmos DB Change Feed, HTTP) have no per-item async-retry knob to opt into — there, a
-handler that `throw`s is the escape hatch for anything that must redeliver.
+silently settled, and each exposes an explicit opt-out (the "Opt-in fix" column shows the reverse) for
+the at-most-once cases where you deliberately want a returned failure accepted.
+
+**The two self-hosted *stream* workers are the deliberate exception — they default to at-most-once.**
+A stream (a Kafka partition, an Event Hub partition) has no per-message ack/abandon: the only way to
+*not* lose a failed record is to stop the worker and never advance the offset/checkpoint past it. That
+is far too drastic a default (one poison record would halt all processing), so `Benzene.Kafka.Core`
+(`CommitOnlyOnSuccess = false`) and `Benzene.Azure.EventHub` (`CatchHandlerExceptions = true`) default
+to **skip-and-continue** — a failed record is logged and the stream advances past it. Opt into
+at-least-once with `CommitOnlyOnSuccess = true` / `CatchHandlerExceptions = false` respectively, and
+accept that a poison record then wedges/halts the worker until it's handled or dead-lettered. This is
+a genuine property of streams, not an oversight — the **Lambda/Functions** stream *triggers* (Kinesis,
+DynamoDB Streams, the Kafka/Event Hub Function triggers) can be safe-by-default because the platform
+re-invokes them from the un-advanced checkpoint without any single process having to halt; a
+long-running self-hosted worker has no such external re-invoker.
+
+The rows marked N/A above (Cosmos DB Change Feed, HTTP) have no per-item async-retry knob to opt into
+— there, a handler that `throw`s is the escape hatch for anything that must redeliver.
 
 ## Why "we don't do that" is a feature
 

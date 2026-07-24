@@ -119,11 +119,12 @@ The same pattern applies to `Benzene.AspNet.Core`'s `AspNetContext` (set `contex
 ```csharp
 using Benzene.Aws.Lambda.Sqs;
 using Benzene.Core.Middleware;
+using Benzene.Results;
 
 app.UseSqs(sqsApp => sqsApp
     .UseExceptionHandler((SqsMessageContext context, Exception exception) =>
     {
-        context.IsSuccessful = false;
+        context.MessageResult = BenzeneResult.UnexpectedError();
     })
     .UseMessageHandlers());
 ```
@@ -139,7 +140,8 @@ try
         await _pipeline.HandleAsync(context, scope);
     }
 
-    if (context.IsSuccessful.HasValue && !context.IsSuccessful.Value)
+    // An unsuccessful OR unset (null) result is reported as a failure.
+    if (context.MessageResult?.IsSuccessful != true)
     {
         batchItemFailures.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = context.SqsMessage.MessageId });
     }
@@ -150,7 +152,7 @@ catch (Exception ex)
 }
 ```
 
-Without `UseExceptionHandler`, a thrown exception is still caught — but one layer up, by `SqsApplication` itself, which logs its own `"Processing SQS message {messageId} failed"` error and adds the failure. Adding `UseExceptionHandler` inside the pipeline intercepts the exception first: `ExceptionHandlerMiddleware` logs `"Unhandled exception caught in middleware pipeline"`, your callback sets `context.IsSuccessful = false`, and the exception never reaches `SqsApplication`'s own `catch` — `SqsApplication` sees a pipeline call that returned normally with `IsSuccessful == false` and adds the batch item failure through its normal (non-exception) branch. The net effect for SQS is the same either way (the message ends up in `BatchItemFailures` so only it gets retried/DLQ'd, not the whole batch) — the difference `UseExceptionHandler` buys you is a single, customizable place to decide what "failed" means and to attach any extra logging/telemetry, instead of relying on `SqsApplication`'s hardcoded fallback message.
+Without `UseExceptionHandler`, a thrown exception is still caught — but one layer up, by `SqsApplication` itself, which logs its own `"Processing SQS message {messageId} failed"` error and adds the failure. Adding `UseExceptionHandler` inside the pipeline intercepts the exception first: `ExceptionHandlerMiddleware` logs `"Unhandled exception caught in middleware pipeline"`, your callback sets an unsuccessful `context.MessageResult`, and the exception never reaches `SqsApplication`'s own `catch` — `SqsApplication` sees a pipeline call that returned normally with an unsuccessful `MessageResult` and adds the batch item failure through its normal (non-exception) branch. The net effect for SQS is the same either way (the message ends up in `BatchItemFailures` so only it gets retried/DLQ'd, not the whole batch) — the difference `UseExceptionHandler` buys you is a single, customizable place to decide what "failed" means and to attach any extra logging/telemetry, instead of relying on `SqsApplication`'s hardcoded fallback message.
 
 The resulting `SQSBatchResponse` (assuming a single failing record in the batch) serializes to:
 
@@ -214,7 +216,7 @@ For the SQS-specific fallback behavior (what happens with *no* `UseExceptionHand
 
 ### An SQS message keeps failing the whole batch, not just itself
 
-**Solution:** Check you're setting `context.IsSuccessful = false` (or letting the exception propagate up to `SqsApplication`'s own catch) rather than swallowing the exception and leaving `IsSuccessful` at its default `null` — `SqsApplication` only adds a `BatchItemFailure` when `IsSuccessful.HasValue && !IsSuccessful.Value`, or when an exception escapes the pipeline entirely.
+**Solution:** Check you're setting an unsuccessful `context.MessageResult` (or letting the exception propagate up to `SqsApplication`'s own catch) rather than swallowing the exception and leaving `MessageResult` at its default `null` — note `SqsApplication` treats a `null` result as a failure too, so it adds a `BatchItemFailure` whenever `MessageResult?.IsSuccessful != true`, or when an exception escapes the pipeline entirely. (This "whole batch, not just itself" symptom is really about `SqsBatchFailureMode` — see [Handling SQS Message Failures](handling-sqs-failures.md); in `PartialBatchFailure` mode, the default, only the failed record is retried.)
 
 ## Variations
 
