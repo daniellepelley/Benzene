@@ -7,6 +7,23 @@
 
 ---
 
+> **2026-07-24 SHIPPED: the Fleet plane folded into the Mesh UI + a time-range picker (Phases A–F).**
+> The standalone `mesh-fleet-ui.html` is gone: the live Fleet plane is now enriched into `mesh-ui.html`
+> itself (`UseMeshUi(path, manifestUrl, envelopeUrl)` — the catalog is the spine, the live data merges in
+> as a Fleet landing view + per-entity live sections). **Phase D** adds the time-range control the owner
+> asked for: Grafana relative grammar (`now-5m`/`now-1h`/`now-7d`), presets 5m/15m/1h/6h/24h/7d + All time
+> + custom absolute, default 1h, **one shared range** driving every live surface, applied **server-side**
+> on `mesh:query:fleet`/`correlation` (a trace lookup is by id — no window). The honesty ruling held: a
+> windowed count that can't honor the window is badged "cumulative from {countsSince}, not filtered to
+> {range}", never blanked (that's the `MissingFeeds` "—" channel) and never silently refiltered. Data-layer
+> half — the `MeshTimeRange`/`MeshWindow` wire types and the `countsWindowed`/`countsSince` self-description
+> across the two planes — is in `work/service-mesh-roadmap-1.0.md` (same date). **Caveat:** the composite
+> (X-Ray + CloudWatch) plane's flows honor the picked window, but its counts still cover the usage feed's
+> own baked window (the CloudWatch/App-Insights adapters are single-window by design) — threading the picked
+> window into `IMeshUsageSource` so composite counts honor it is the documented fast-follow, and none of the
+> composite-plane range behavior is verified against a live AWS backend yet (correct by API shape only).
+> Deferred: per-surface range overrides (one shared range for now).
+
 > **2026-07-23 SCOPED: Fleet UI backed by an OTel trace store.** Beyond the push-collector, the Fleet
 > view can read traces/correlation/recent-flows from Grafana Tempo/X-Ray/Jaeger (scope:
 > `work/otel-fleet-adapter-scope.md`). UI honesty items when trace-backed: a "Backed by: <backend> —

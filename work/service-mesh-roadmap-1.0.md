@@ -1,6 +1,23 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-24 SHIPPED: time-range on the `mesh:query:*` read seam (Phase D data layer).** The fleet read
+> models take an optional, additive `MeshTimeRange` (Grafana relative grammar or ISO absolute, resolved
+> server-side by `MeshTimeRangeResolver`) on `FleetQuery`/`ServiceQuery`/`TopicQuery`/`CorrelationQuery`
+> (their `Window` field), threaded through `IMeshFleetReadModel` and `IMeshTraceSource`. `mesh:query:trace`
+> stays window-free (a by-id lookup). Backward-compatible: a null range means "unfiltered" (today's
+> behavior) and the response's new `MeshWindow` field is omitted, so `mesh-collector-cases.json` and old
+> clients are untouched (the default-1h window is a UI-picker default, never a wire default). The honesty
+> core is `MeshWindow.countsWindowed`/`countsSince`: **flows** (recent-flows/correlation) always honor the
+> window; **counts** may not, and the response says which window they actually cover so the UI badges rather
+> than blanks. Two planes: the push-collector filters its ring for flows but keeps cumulative-since-start
+> counts (`countsSince = StartedAtUtc`); the composite (X-Ray + usage feed) windows flows via the trace
+> source but its counts still come from the usage feed's own baked window (`countsSince = usage
+> WindowStartUtc`) — **threading the picked window into `IMeshUsageSource` so composite counts honor it is a
+> documented fast-follow**, and the whole composite-plane range behavior is verified by API shape (mocked
+> unit tests), NOT against a live AWS/Tempo/Jaeger backend. `countsWindowed` is the seam that flips to true
+> once a plane's counts honor the picked window end-to-end. UI half (the picker) is in
+> `work/mesh-ui-product-vision.md` (same date). Covered by `MeshTimeRangeTest`; conformance stays green.
 > **2026-07-23 SCOPED: OTel-backed Fleet read-model adapter (mesh-product-owner).** The Fleet UI can be
 > made **multi-source**: the `mesh:query:trace`/`correlation`/(recent-flows subset of `fleet`) read-models
 > read from a pluggable `IMeshTraceSource` (AWS **X-Ray** first — the demo target — then Grafana Tempo,
