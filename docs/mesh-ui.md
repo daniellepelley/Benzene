@@ -189,6 +189,23 @@ var html = MeshUiPage.GetHtml("https://cdn.example.com/mesh/manifest.json",
 // write `html` with content-type "text/html"
 ```
 
+### Time range
+
+The Fleet plane carries a **time-range picker** (following Grafana's relative-time grammar — `now-5m`,
+`now-1h`, `now-7d`, …) with presets **5m / 15m / 1h / 6h / 24h / 7d**, **All time**, and a **custom**
+absolute from/to. One shared range (default **1h**) drives the whole live plane — the Fleet landing view
+and the per-entity live sections it feeds — and is applied **server-side** on the `mesh:query:fleet` /
+`mesh:query:correlation` queries (a trace lookup is by id, so it takes no window). It appears only on the
+live plane; the static catalog and its `usage.json` window are untouched.
+
+The picker windows the **flows** (recent-flows, correlation) on every plane. **Counts** are subtler and the
+UI is honest about it: on the push-collector plane the per-topic/service counters are cumulative-since-start
+and can't be sub-windowed, and on the composite (X-Ray + CloudWatch) plane the counts come from the usage
+feed's own baked window. In both cases the response's window says so (`countsWindowed: false`) and the count
+tiles carry a *"counts are cumulative from … — flows are windowed, counters aren't"* badge rather than a
+blanked or refiltered number. A null/absent window (All time, or an old client) reproduces the pre-picker
+unfiltered behavior exactly.
+
 This is the [Cloud Service Profile](specification/cloud-service-profile.md)'s intended visibility
 surface (its R6 requirement provisions exactly the feeds the Fleet plane reads);
 [mesh.md §9](specification/mesh.md#9-relationship-to-the-existing-net-mesh-packages-informative)

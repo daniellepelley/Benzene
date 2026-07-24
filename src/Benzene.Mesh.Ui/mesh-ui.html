@@ -466,6 +466,13 @@
   .topo-arrow.err { fill: var(--req); }
 
   /* ---------- Fleet view (live/observed plane, folded in from the standalone fleet page) ---------- */
+  .fl-range { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 14px; font-size: 13px; }
+  .fl-range label { color: var(--ink-faint); font-size: 12px; }
+  .fl-range select, .fl-range input, .fl-range button { font: inherit; padding: 5px 8px; border: 1px solid var(--line);
+    border-radius: 7px; background: var(--surface-2); color: var(--ink); }
+  .fl-range button { cursor: pointer; }
+  .fl-range-dash { color: var(--ink-faint); }
+  #fl-counts-note { margin: -12px 0 16px; }
   .fl-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 4px 0 18px; }
   .fl-tile { background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; }
   .fl-tile .k { color: var(--ink-faint); font-size: 12px; }
@@ -812,7 +819,19 @@
         this live data too; this view holds the fleet-wide live surfaces.
         <span id="fl-status" class="fl-failed"></span></p>
     </div>
+    <div class="fl-range" id="fl-range">
+      <label for="fl-range-select">Time range</label>
+      <select id="fl-range-select" aria-label="Live time range"></select>
+      <span id="fl-range-custom" style="display:none">
+        <input type="datetime-local" id="fl-range-from" aria-label="From">
+        <span class="fl-range-dash">→</span>
+        <input type="datetime-local" id="fl-range-to" aria-label="To">
+        <button type="button" id="fl-range-apply">Apply</button>
+      </span>
+      <span class="fl-sub" id="fl-range-note"></span>
+    </div>
     <div class="fl-tiles" id="fl-tiles"></div>
+    <div id="fl-counts-note"></div>
 
     <h2 id="fl-topo-title" style="display:none">Observed topology
       <span style="font-weight:400;color:var(--ink-faint);font-size:11.5px">(consumers call providers, derived from trace parentage — never declared)</span></h2>
@@ -2664,6 +2683,47 @@
   var currentFleet = null;    // null = no endpoint / not yet loaded; a FleetView object when live
   var fleetTimer = null;
   var FLEET_POLL_MS = 5000;   // slower than the standalone fleet page's 2s - it now feeds more surfaces
+  // Time-range picker (Phase D). Grafana relative grammar on the wire (now-5m/now-1h/…); one shared range
+  // drives every live surface (the Fleet view, and the per-entity live sections it feeds). Default 1h is a
+  // UI default only - the wire's default is "no window" (empty from ⇒ send nothing ⇒ today's unfiltered).
+  var FLEET_RANGE_PRESETS = [
+    { id: "now-5m", label: "Last 5 minutes" },
+    { id: "now-15m", label: "Last 15 minutes" },
+    { id: "now-1h", label: "Last 1 hour" },
+    { id: "now-6h", label: "Last 6 hours" },
+    { id: "now-24h", label: "Last 24 hours" },
+    { id: "now-7d", label: "Last 7 days" },
+    { id: "", label: "All time" }
+  ];
+  var fleetRange = { from: "now-1h" };  // { from, to } — from "" / falsy ⇒ no window (all time)
+  // The request body for a live query, folding in the shared window unless it's "all time".
+  function fleetQueryBody(extra) {
+    var body = extra || {};
+    if (fleetRange && fleetRange.from) { body.window = fleetRange; }
+    return JSON.stringify(body);
+  }
+  // A short human label for the active range, for the live-section notes.
+  function fleetRangeLabel() {
+    if (!fleetRange || !fleetRange.from) return "all time";
+    for (var i = 0; i < FLEET_RANGE_PRESETS.length; i++) {
+      if (FLEET_RANGE_PRESETS[i].id && FLEET_RANGE_PRESETS[i].id === fleetRange.from && !fleetRange.to) {
+        return FLEET_RANGE_PRESETS[i].label.toLowerCase();
+      }
+    }
+    return "the selected range";
+  }
+  // The "counts aren't windowed" badge (see MeshWindow.countsWindowed) — flows honor the picked window, but
+  // the counts cover a different window (cumulative-since-start on the collector, or the usage feed's baked
+  // window on the composite). An honest badge, never a blanked number (that's the "—" missing-feed channel).
+  function flCountsNote(box, window) {
+    if (!window || window.countsWindowed !== false) return;
+    var since = window.countsSince ? new Date(window.countsSince) : null;
+    var sinceText = since && !isNaN(since.getTime()) ? since.toLocaleString() : (window.countsSince || "process start");
+    var note = el("div", "fl-sub fl-missing",
+      "Counts below are cumulative from " + sinceText + ", not filtered to " + fleetRangeLabel() +
+      " — the flows are windowed, the counters aren't (they can't be sub-windowed on this plane).");
+    box.appendChild(note);
+  }
   function fleetEndpoint() {
     return new URLSearchParams(location.search).get("fleet")
       || document.documentElement.getAttribute("data-fleet-url") || null;
@@ -2689,7 +2749,7 @@
     if (!fleetEndpoint()) return; // static floor: nothing live to poll
     var nav = document.getElementById("fleet-nav");
     if (nav) nav.style.display = ""; // the Fleet nav appears only when a live endpoint is present
-    fleetQuery("mesh:query:fleet", "{}")
+    fleetQuery("mesh:query:fleet", fleetQueryBody())
       .then(function (view) { currentFleet = view; renderFleetInto(); })
       .catch(function () { /* keep the last good view - a transient poll failure isn't a reset */ });
     if (!fleetTimer) { fleetTimer = setInterval(loadFleet, FLEET_POLL_MS); }
@@ -2759,6 +2819,8 @@
       t.appendChild(el("div", "v", String(kv[1])));
       tiles.appendChild(t);
     });
+    var countsNote = document.getElementById("fl-counts-note");
+    if (countsNote) { countsNote.textContent = ""; flCountsNote(countsNote, fleet.window); }
 
     var tbody = document.getElementById("fl-traces");
     flFill(tbody, traces, function (tr, f) {
@@ -2949,7 +3011,7 @@
     if (presetId != null) { input.value = presetId; if (input.scrollIntoView) input.scrollIntoView({ behavior: "smooth", block: "center" }); }
     var id = (input.value || "").trim(); results.textContent = ""; if (!id) return;
     results.appendChild(el("div", "fl-wf-note", "Looking up flows for " + id + "…"));
-    fleetQuery("mesh:query:correlation", JSON.stringify({ correlationId: id })).then(function (view) {
+    fleetQuery("mesh:query:correlation", fleetQueryBody({ correlationId: id })).then(function (view) {
       results.textContent = "";
       var traces = view.traces || [];
       results.appendChild(el("div", "fl-trace-label", traces.length + (traces.length === 1 ? " flow" : " flows") + " carried correlation id " + view.correlationId));
@@ -2985,7 +3047,57 @@
     var tg = document.getElementById("fl-trace-go"), ti = document.getElementById("fl-trace-input");
     if (tg) tg.addEventListener("click", function () { flLookupTrace(); });
     if (ti) ti.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); flLookupTrace(); } });
+    flWireRangePicker();
   })();
+
+  var FL_RANGE_CUSTOM = "__custom__";
+  // Apply the shared range immediately: re-poll the fleet (so the Fleet view and every per-entity live
+  // section it feeds re-window at once - the one-shared-control model), and re-run an open correlation
+  // lookup so its results honor the new range too.
+  function flApplyRange() {
+    if (fleetEndpoint()) loadFleet();
+    var corr = document.getElementById("fl-corr-input");
+    if (corr && (corr.value || "").trim()) flLookupCorrelation();
+  }
+  function flSetRangeNote() {
+    var note = document.getElementById("fl-range-note");
+    if (note) note.textContent = "flows shown for " + fleetRangeLabel();
+  }
+  // Parse a datetime-local value (local wall-clock) into an ISO-8601 UTC string the wire resolver accepts.
+  function flLocalToIso(value) {
+    if (!value) return null;
+    var d = new Date(value); // datetime-local is interpreted in the browser's local zone
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  function flWireRangePicker() {
+    var sel = document.getElementById("fl-range-select");
+    if (!sel) return;
+    FLEET_RANGE_PRESETS.forEach(function (p) {
+      var o = document.createElement("option"); o.value = p.id; o.textContent = p.label; sel.appendChild(o);
+    });
+    var customOpt = document.createElement("option");
+    customOpt.value = FL_RANGE_CUSTOM; customOpt.textContent = "Custom range…"; sel.appendChild(customOpt);
+    sel.value = fleetRange.from || "";  // default 1h
+    var custom = document.getElementById("fl-range-custom");
+    sel.addEventListener("change", function () {
+      if (sel.value === FL_RANGE_CUSTOM) {
+        if (custom) custom.style.display = "";
+        return; // wait for Apply — a half-entered custom range shouldn't fire a query
+      }
+      if (custom) custom.style.display = "none";
+      fleetRange = { from: sel.value };  // preset (or "" for all time)
+      flSetRangeNote(); flApplyRange();
+    });
+    var apply = document.getElementById("fl-range-apply");
+    if (apply) apply.addEventListener("click", function () {
+      var from = flLocalToIso((document.getElementById("fl-range-from") || {}).value);
+      var to = flLocalToIso((document.getElementById("fl-range-to") || {}).value);
+      if (!from) { return; } // no lower bound is not a window
+      fleetRange = to ? { from: from, to: to } : { from: from };
+      flSetRangeNote(); flApplyRange();
+    });
+    flSetRangeNote();
+  }
 
   /* ===== Per-entity live sections: the catalog is the spine, the live fleet enriches ===== */
   function openTraceOnFleet(traceId) {
@@ -3032,6 +3144,7 @@
     flTile(grid, "Invocations", absent(s, "stats") ? "—" : String(s.invocations));
     flTile(grid, "Errors", absent(s, "stats") ? "—" : String(s.errors), (!absent(s, "stats") && s.errors > 0) ? "fl-failed" : null);
     box.appendChild(grid);
+    if (!absent(s, "stats")) flCountsNote(box, currentFleet.window);
     var flows = (currentFleet.traces || []).filter(function (f) { return (f.services || []).indexOf(name) !== -1; });
     if (flows.length) {
       box.appendChild(el("div", "fl-sub", "Recent flows touching this service"));
@@ -3087,6 +3200,7 @@
     flTile(grid, "Errors", absentStats ? "—" : String(errs), (!absentStats && errs > 0) ? "fl-failed" : null);
     flTile(grid, "Avg ms", absentDur ? "—" : (durN ? (dur / durN).toFixed(1) : "—"));
     box.appendChild(grid);
+    if (!absentStats) flCountsNote(box, currentFleet.window);
     var statuses = Object.keys(statusCounts).sort().map(function (k) { return (k || "(none)") + " " + statusCounts[k]; }).join(" · ");
     if (statuses) box.appendChild(el("div", "fl-sub", "Status mix — " + statuses));
     // Declared (catalog) vs observed (trace-derived) consumers side by side - the join the standalone

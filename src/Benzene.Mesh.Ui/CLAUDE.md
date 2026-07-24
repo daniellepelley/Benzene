@@ -1,5 +1,20 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-24 (merge, phase D): a time-range picker on the live plane.** The Fleet view gains a Grafana-style
+> time-range control (`.fl-range` / `flWireRangePicker`) — presets 5m/15m/1h/6h/24h/7d, All time, and a custom
+> absolute from/to (`datetime-local` → ISO). **One shared range** (`fleetRange`, default `now-1h`) drives every
+> live surface: it rides the fleet poll body (`fleetQueryBody` folds `window` into `mesh:query:fleet` and
+> `mesh:query:correlation` — **not** `mesh:query:trace`, a by-id lookup), so the Fleet landing view AND the
+> per-entity live sections it feeds re-window at once (changing it re-polls immediately and re-runs an open
+> correlation lookup). "All time" / a custom range with no lower bound sends **no** `window`, reproducing the
+> pre-picker unfiltered behavior. The picker only exists on the live plane (inside `#fleet-page`, which only
+> shows with an envelope endpoint) — the static catalog is untouched. **Honesty:** when the response's
+> `MeshWindow.countsWindowed` is false (`flCountsNote`), the count tiles carry a "counts are cumulative from
+> {countsSince}, not filtered to {range} — flows are windowed, counters aren't" badge rather than a blanked
+> number: a windowed count that can't honor the window is a real number answering a *different* window, not the
+> "—" of a genuinely-absent dimension. Backend contract + the collector-vs-composite plane split is in
+> `src/Benzene.Mesh.Collector/CLAUDE.md` (Phase D); per-surface range overrides are a deferred fast-follow.
+
 > **2026-07-24 (merge, phase E): the Fleet plane is folded into `UseMeshUi` — one page, not two.**
 > The live Fleet data (health, observed-vs-declared consumers, recent flows, a Fleet landing view) is
 > no longer a separate `mesh-fleet-ui.html` page — it's enriched into the catalog `mesh-ui.html` in
