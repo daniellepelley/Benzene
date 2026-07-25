@@ -42,8 +42,13 @@ locals {
   # OTEL_EXPORTER_OTLP_ENDPOINT points the app at the collector. When the ADOT layer is attached, also
   # override its metrics-only default config with the one shipped in the zip (traces -> awsxray), so the
   # per-middleware spans actually reach X-Ray rather than being dropped.
+  # OTEL_TRACES_SAMPLER_ARG is the standard OTel ratio knob LambdaTelemetry reads (parent-based, so a
+  # transaction is sampled as a whole). Set below 1 it cuts BOTH X-Ray free-tier dimensions at once:
+  # traces recorded (100k/month) and traces scanned by the Mesh UI's queries (1M/month — the
+  # Global-XRay-TracesAccessed line). Set var.trace_sample_rate = 1 to record every trace again.
   otlp_env = local.otlp_endpoint != "" ? merge(
     { OTEL_EXPORTER_OTLP_ENDPOINT = local.otlp_endpoint },
+    { OTEL_TRACES_SAMPLER = "parentbased_traceidratio", OTEL_TRACES_SAMPLER_ARG = tostring(var.trace_sample_rate) },
     var.adot_collector_layer_arn != "" ? { OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml" } : {}
   ) : {}
 

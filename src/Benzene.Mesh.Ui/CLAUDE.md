@@ -1,5 +1,17 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 COST ROUND 2 — the inbox poll no longer scans a day of traces.** The account hit 85% of
+> the X-Ray free tier on `Global-XRay-TracesAccessed` — traces **retrieved/scanned**, i.e. the UI's own
+> queries, not the demo's traffic. `GetTraceSummaries` scans every trace in the queried window, so the
+> 24h inbox poll was the most expensive call on the page. It now sends the additive wire cost hint
+> `includeFlows: false` (`FleetQuery.IncludeFlows`; the composite read model skips the trace source
+> entirely, the in-memory ring ignores it — flows were always a legally-empty slice). The inbox reasons
+> over counts, which is all it needs; the flow-derived "uninstrumented failing traffic" class and
+> `lastFailingFlowAgeMs` read the range-windowed poll instead (`flowFleet`), matching what their wording
+> already claimed ("in the current window"). Also fixed here: whichever of `topics.json` / the first
+> fleet poll landed **second** must trigger the traffic-map render — at the 15s cadence the map was
+> blank for up to a poll (it re-rendered only from the fleet side).
+
 > **2026-07-25 TALLY ROUND — estate-wide filters, and every number reconciles (maintainer + PO ruling).**
 > The maintainer's confidence rule: "if the numbers don't add up, the user won't believe the system."
 > - **Estate-wide filter bar** (`#estate-filters`, sticky under the topbar, on EVERY view): the ONE

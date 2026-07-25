@@ -1,5 +1,17 @@
 # Benzene.Mesh.Collector
 
+> **2026-07-25 (cost round): `FleetQuery.IncludeFlows` — a wire COST HINT, not a contract change.**
+> Absent/null ⇒ true (today's behavior). False means "I only need the windowed counts", so a plane that
+> pays per flow lookup may return an empty `FleetView.Traces`. Motivation: on a trace-backed plane
+> `GetRecentFlowsAsync` costs a `GetTraceSummaries` scan over the whole window, and X-Ray bills/free-tiers
+> **traces scanned** (`Global-XRay-TracesAccessed`, 1M/month) separately from traces recorded — so the
+> mesh UI's 24h issue-inbox poll was scanning a day of traces every cycle just to read counters.
+> Threaded via a **default interface member** `IMeshFleetReadModel.FleetAsync(range, includeFlows, ct)`
+> that ignores the hint and delegates, so every existing implementer stays source/binary compatible;
+> `CompositeMeshFleetReadModel` overrides it (skips the trace source entirely), `MeshCollectorStore`
+> keeps its free in-memory ring flows. Safe by construction: an empty flows list was always a legal
+> degraded-plane answer that every reader already tolerates.
+
 > **2026-07-25 (drains-up 3.2): the issue feed's collector side.** `IssuesMessageHandler`
 > (`mesh:issues`, in `MeshCollectorHandlers.All`; batch `service` required → `bad-request`; empty batch
 > accepted — the liveness assertion) → `MeshCollectorStore.AddIssues`: fingerprint-keyed **delta merge**

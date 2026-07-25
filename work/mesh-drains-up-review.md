@@ -371,3 +371,24 @@ notifications. **Deferred (known, cosmetic-relative):** Tempo recent-flows enric
 2. **Presentation-ruling revision**: adjacent declared/observed dual rendering is no longer the
    default on primary surfaces; divergence's home is the inbox (the reconciliation classes stay).
 3. **D7 Benzene-semantic rendering rule** adopted as normative.
+
+> **COST ROUND 2 — 2026-07-25 (maintainer: AWS free-tier alert at 85%, 966,865 / 1,000,000 traces).**
+> The alerting dimension was `Global-XRay-TracesAccessed` — traces **retrieved or scanned**, i.e. the
+> Mesh UI's own queries, NOT the demo's recorded traffic. `GetTraceSummaries` scans every trace in the
+> queried window, so the widest window on the page (the 24h issue inbox) was the dominant consumer.
+> Three levers shipped:
+> 1. **Emit side:** `trace_sample_rate` (default 0.2) → `OTEL_TRACES_SAMPLER_ARG`, applied with a
+>    PARENT-based ratio sampler so a transaction is sampled or dropped whole (never half a flow in the
+>    mesh). Cuts both free-tier dimensions at once — fewer traces recorded is also fewer traces for
+>    every future scan to walk.
+> 2. **Query side:** `FleetQuery.IncludeFlows` (additive wire cost hint, DIM-threaded so no implementer
+>    breaks) — the inbox's 24h poll now asks for counts only and the composite plane skips the trace
+>    source entirely. Flow-derived issue evidence reads the range-windowed poll (`flowFleet`), which is
+>    what its wording already claimed.
+> 3. **Lifecycle:** a `destroy-aws-mesh-example.yml` workflow (typed DESTROY confirmation, same remote
+>    state as the deploy) that also empties the artifacts bucket and deletes the implicit
+>    `/aws/lambda/benzene-mesh-*` log groups Terraform doesn't own — so "stop paying" is one run.
+> The AwsMesh README gained a cost section stating both free-tier dimensions and the three knobs; the
+> surprising one is that the retrieved dimension grows with **how much you look**, not how much traffic
+> exists. Also fixed: the traffic map stayed blank for a poll when `topics.json` landed after the first
+> fleet poll (only the fleet side re-rendered) — visible once the cadence went to 15s.

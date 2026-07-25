@@ -1,0 +1,134 @@
+name: Destroy AWS Mesh Example
+
+# Manual-only teardown for examples/AwsMesh — the counterpart of "Deploy AWS Mesh Example".
+#
+# WHY THIS EXISTS: the deployed demo costs money while it merely exists. It is not idle — the
+# EventBridge schedule invokes the mesh Lambda, which fans spec + healthcheck calls out to every
+# service, and every one of those is X-Ray-traced and CloudWatch-metered. Left standing it will
+# consume the X-Ray free tier (100k traces recorded / 1,000,000 traces retrieved-or-scanned per
+# month) on its own. Tear the stack down when you are done demoing and redeploy in minutes.
+#
+# Uses the SAME remote S3 state as the deploy workflow, so it destroys exactly what that created.
+# The state bucket itself is deliberately NOT deleted (it is tiny, versioned, and keeps a redeploy
+# cheap); "Also delete the Terraform state bucket" opts into removing it too, for a full cleanup.
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "AWS region (must match the region the stack was deployed to)"
+        required: true
+        default: "eu-west-1"
+      confirm:
+        description: "Type DESTROY to confirm — this deletes the deployed AwsMesh stack"
+        required: true
+        default: ""
+      delete_state_bucket:
+        description: "Also delete the Terraform state bucket (full cleanup; a redeploy then starts from scratch)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    steps:
+      # Fail before touching AWS if the confirmation doesn't match — this job is destructive.
+      - name: Check confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "DESTROY" ]; then
+            echo "::error::Confirmation mismatch: type DESTROY (exactly) to run this workflow."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Verify AWS credentials are available
+        run: |
+          if [ -z "${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "::error::AWS credentials are not configured (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+
+      # Point at the same remote state the deploy wrote. If the bucket is missing there is nothing
+      # deployed (or it was deployed to another region) — say so plainly rather than creating one.
+      - name: Terraform init (remote S3 state)
+        working-directory: examples/AwsMesh/deploy
+        env:
+          REGION: ${{ inputs.region }}
+        run: |
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          STATE_BUCKET="benzene-mesh-tfstate-${ACCOUNT}"
+          echo "STATE_BUCKET=$STATE_BUCKET" >> "$GITHUB_ENV"
+          if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
+            echo "::error::No Terraform state bucket ($STATE_BUCKET) in $REGION — nothing to destroy here. Check the region matches the deploy."
+            exit 1
+          fi
+          terraform init -input=false \
+            -backend-config="bucket=$STATE_BUCKET" \
+            -backend-config="key=aws-mesh/terraform.tfstate" \
+            -backend-config="region=$REGION"
+
+      # The artifacts bucket holds the generated catalog (manifest/topics/usage) and the Lambda zips.
+      # S3 refuses to delete a non-empty bucket, and the deploy uploads objects Terraform doesn't all
+      # track, so empty it first — otherwise destroy fails on BucketNotEmpty.
+      - name: Empty the artifacts bucket
+        continue-on-error: true
+        working-directory: examples/AwsMesh/deploy
+        run: |
+          BUCKET="$(terraform output -raw artifact_bucket 2>/dev/null || true)"
+          if [ -n "$BUCKET" ] && aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+            echo "Emptying s3://$BUCKET"
+            aws s3 rm "s3://$BUCKET" --recursive || true
+          else
+            echo "No artifacts bucket in state — skipping."
+          fi
+
+      - name: Terraform destroy
+        working-directory: examples/AwsMesh/deploy
+        run: |
+          terraform destroy -input=false -auto-approve -var "region=${{ inputs.region }}"
+
+      # The CloudWatch log groups Lambda creates implicitly (/aws/lambda/<fn>) are not Terraform
+      # resources, so destroy leaves them behind, still storing (and billing for) log data.
+      - name: Delete leftover Lambda log groups
+        continue-on-error: true
+        run: |
+          for PREFIX in "/aws/lambda/benzene-mesh" "/benzene/mesh"; do
+            for GROUP in $(aws logs describe-log-groups --log-group-name-prefix "$PREFIX" \
+                            --query 'logGroups[].logGroupName' --output text); do
+              echo "Deleting log group $GROUP"
+              aws logs delete-log-group --log-group-name "$GROUP" || true
+            done
+          done
+
+      - name: Delete the Terraform state bucket
+        if: ${{ inputs.delete_state_bucket }}
+        continue-on-error: true
+        run: |
+          echo "Deleting state bucket $STATE_BUCKET (all versions)"
+          aws s3api delete-objects --bucket "$STATE_BUCKET" --delete "$(aws s3api list-object-versions \
+            --bucket "$STATE_BUCKET" --output json \
+            --query '{Objects: [].{Key:Key,VersionId:VersionId}}' )" 2>/dev/null || true
+          aws s3api delete-objects --bucket "$STATE_BUCKET" --delete "$(aws s3api list-object-versions \
+            --bucket "$STATE_BUCKET" --output json \
+            --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' )" 2>/dev/null || true
+          aws s3 rb "s3://$STATE_BUCKET" --force || true
+
+      - name: Confirm teardown
+        run: |
+          echo "AwsMesh stack destroyed in ${{ inputs.region }}."
+          echo "The X-Ray/CloudWatch data already recorded is retained by AWS until its own retention expires;"
+          echo "no further traces are produced now that the schedule and Lambdas are gone."

@@ -28,6 +28,17 @@ variable "lambda_architecture" {
   default     = "x86_64"
 }
 
+variable "trace_sample_rate" {
+  description = "Fraction of traces to record (0..1), passed to the apps as the standard OTEL_TRACES_SAMPLER_ARG and applied with a parent-based sampler so a whole transaction is sampled or dropped together. Defaults to 0.2 to keep a standing demo inside the X-Ray free tier: X-Ray free-tiers 100k traces recorded AND 1,000,000 traces retrieved/scanned per month (the Global-XRay-TracesAccessed line), and the Mesh UI's live queries scan every trace in the picked window — so sampling at the source cuts both dimensions at once. Set to 1 to record every trace (the pre-2026-07-25 behavior); lower it further for a long-lived demo."
+  type        = number
+  default     = 0.2
+
+  validation {
+    condition     = var.trace_sample_rate > 0 && var.trace_sample_rate <= 1
+    error_message = "trace_sample_rate must be greater than 0 and at most 1 (0 would record nothing, leaving the mesh blind)."
+  }
+}
+
 variable "aggregate_schedule" {
   description = "EventBridge schedule expression for the mesh aggregation pass. Defaults to every 15 minutes to keep a standing demo cheap: each pass invokes the mesh Lambda AND fans out spec + healthcheck HTTP calls to every discovered service, all of it X-Ray-traced and EMF-metered — at rate(1 minute) that's roughly 20k Lambda invocations and 35k X-Ray traces per day sitting idle (observed ~1.5k traces/hour on the demo estate). Lower it (e.g. rate(1 minute), matching the AzureFunctionsMesh timer) when you want near-live catalog freshness. Note: the Mesh UI explorer loads artifacts once per page load, so a browser reload still shows the latest — this only bounds how stale that reload can be; the live traffic plane (X-Ray/CloudWatch) is queried directly by the UI and is unaffected by this schedule."
   type        = string

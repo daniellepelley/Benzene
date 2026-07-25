@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Microsoft.Dependencies;
 using Benzene.OpenTelemetry;
@@ -52,6 +54,27 @@ public static class LambdaTelemetry
     /// container disposes them on shutdown and anything resolving <c>TracerProvider</c>/<c>MeterProvider</c>
     /// gets the live one.
     /// </summary>
+    /// <summary>
+    /// The trace sampler, from the standard OTel knob <c>OTEL_TRACES_SAMPLER_ARG</c> (a 0..1 ratio).
+    /// <para>X-Ray bills — and free-tiers — BOTH dimensions: traces <em>recorded</em> (100k/month free)
+    /// and traces <em>retrieved or scanned</em> by queries (1M/month free, the
+    /// <c>Global-XRay-TracesAccessed</c> line on the bill). Sampling cuts both at once: fewer traces
+    /// recorded also means fewer traces for every <c>GetTraceSummaries</c> scan to walk, so a standing
+    /// demo doesn't burn the free tier just by existing.</para>
+    /// <para>The sampler is <b>parent-based</b>, so a transaction is sampled or dropped as a WHOLE: the
+    /// root decides and every downstream service continues the same W3C traceparent, so the mesh never
+    /// renders half a flow. Unset (or unparseable, or ≥ 1) ⇒ <see cref="AlwaysOnSampler"/> — record
+    /// everything, exactly the previous behavior, so a local run or another example is unaffected.</para>
+    /// </summary>
+    private static Sampler BuildSampler()
+    {
+        var raw = Environment.GetEnvironmentVariable("OTEL_TRACES_SAMPLER_ARG");
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var ratio)
+               && ratio >= 0 && ratio < 1
+            ? new ParentBasedSampler(new TraceIdRatioBasedSampler(ratio))
+            : new AlwaysOnSampler();
+    }
+
     public static void Configure(IServiceCollection services, string serviceName)
     {
         var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
@@ -59,7 +82,7 @@ public static class LambdaTelemetry
 
         var tracerBuilder = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(resource)
-            .SetSampler(new AlwaysOnSampler())
+            .SetSampler(BuildSampler())
             // Mint X-Ray-compatible (epoch-prefixed) trace ids at the root, so the OTel→ADOT→X-Ray export
             // produces valid ids and, because downstream services continue the SAME id via the propagated
             // traceparent (UseW3CTraceContext), every service in a transaction lands in ONE X-Ray trace.

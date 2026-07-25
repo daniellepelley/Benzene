@@ -19,6 +19,18 @@ public interface IMeshFleetReadModel
     /// applied and whether counts honored it.</summary>
     Task<FleetView> FleetAsync(MeshTimeRange? range = null, CancellationToken cancellationToken = default);
 
+    /// <summary>The fleet, with a <b>cost hint</b>: <paramref name="includeFlows"/> false means the caller
+    /// only needs the windowed counts, so a plane that pays per flow lookup may skip it and return an empty
+    /// <see cref="FleetView.Traces"/>. On a trace-backed plane (X-Ray) recent flows cost a
+    /// <c>GetTraceSummaries</c> scan across the whole window — billed per trace scanned — so a wide-window
+    /// counts-only poll (the UI's 24h issue inbox) is dramatically cheaper without them.
+    /// <para>A <b>default interface member</b> that ignores the hint and delegates, so every existing
+    /// implementer stays source- and binary-compatible; the in-memory store keeps its (free) ring flows.
+    /// It is a hint, never a contract change — an empty flows list was always a legal, degraded-plane
+    /// answer, and every reader already tolerates it.</para></summary>
+    Task<FleetView> FleetAsync(MeshTimeRange? range, bool includeFlows, CancellationToken cancellationToken = default)
+        => FleetAsync(range, cancellationToken);
+
     /// <summary>One service's detail, or null if unknown (<c>mesh:query:service</c>). Optional
     /// <paramref name="range"/> windows the service's live flows; null ⇒ unfiltered.</summary>
     Task<ServiceView?> ServiceAsync(string name, MeshTimeRange? range = null, CancellationToken cancellationToken = default);

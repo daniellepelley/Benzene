@@ -126,7 +126,9 @@ public class FleetQueryMessageHandler : IMessageHandler<FleetQuery, FleetView>
 
     public async Task<IBenzeneResult<FleetView>> HandleAsync(FleetQuery request)
     {
-        return BenzeneResult.Ok(await _readModel.FleetAsync(request.Window));
+        // IncludeFlows is a cost hint (absent ⇒ true, today's behavior); planes that pay per flow lookup
+        // may honor it, the in-memory ring ignores it.
+        return BenzeneResult.Ok(await _readModel.FleetAsync(request.Window, request.IncludeFlows ?? true));
     }
 }
 

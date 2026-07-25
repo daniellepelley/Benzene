@@ -250,6 +250,16 @@ public class FleetQuery
 {
     /// <summary>Optional query time range (additive; null ⇒ unfiltered, today's behavior).</summary>
     public MeshTimeRange? Window { get; set; }
+
+    /// <summary>Whether to include the recent-flows list (and, on a trace-backed plane, the anonymous
+    /// service rows derived from it). Additive (2026-07-25, cost round); null/absent ⇒ true, exactly
+    /// today's behavior. <para>Set false by a caller that only needs the windowed COUNTS — the mesh UI's
+    /// 24h issue-inbox poll does. On a trace-backed plane (X-Ray) flows cost a <c>GetTraceSummaries</c>
+    /// scan over the whole window, which is billed per trace scanned, so a wide-window counts-only poll
+    /// is dramatically cheaper without it. A push-collector plane reads its own in-memory ring and may
+    /// ignore the hint (it costs nothing there) — this is a cost hint, never a contract change: a reader
+    /// must still tolerate an empty flows list, which was already the degraded-plane case.</para></summary>
+    public bool? IncludeFlows { get; set; }
 }
 
 /// <summary>The <c>mesh:query:service</c> request body.</summary>

@@ -333,11 +333,53 @@ artifacts) with `{ "discovered": N }`.
   `lambda:InvokeFunction` scoped to the six services (interrogate), and `s3:*Object`/`ListBucket`
   on the artifact bucket. Read + describe-invoke only.
 
+## Cost: this demo is not free while it merely exists
+
+A standing deploy costs money without anyone using it. The scheduled aggregation invokes the mesh
+Lambda, which fans spec + healthcheck calls out to all six services, and **every one of those is
+X-Ray-traced and CloudWatch-metered**. The X-Ray free tier has two separate dimensions and the demo
+can exhaust either:
+
+| Free-tier dimension | Limit / month | What consumes it here |
+| --- | --- | --- |
+| Traces **recorded** | 100,000 | Every sampled span the services + mesh emit |
+| Traces **retrieved or scanned** (`Global-XRay-TracesAccessed`) | 1,000,000 | The Mesh UI's live queries — `GetTraceSummaries` **scans every trace in the picked window on each poll** |
+
+The second one is the surprising one: the bill grows with *how much you look*, not just how much
+traffic there is. Three knobs, all defaulted for a cheap standing demo:
+
+- **`trace_sample_rate`** (default `0.2`) — a parent-based ratio sampler, so a transaction is sampled
+  or dropped as a whole and the mesh never shows half a flow. Cuts **both** dimensions at once: fewer
+  traces recorded also means fewer traces for every query to scan. Set to `1` to record everything.
+- **`aggregate_schedule`** (default `rate(15 minutes)`) — the standing traffic floor. At
+  `rate(1 minute)` the idle demo alone produces roughly 20k Lambda invocations and 35k traces a day.
+- **The Mesh UI's own polling** — 15s for the live plane, 5 min for the 24h issue inbox, **paused
+  entirely while the browser tab is hidden**, and the inbox asks for counts only (`includeFlows:
+  false`) so it never triggers a day-wide trace scan. No configuration needed; just be aware that a
+  dashboard left open on-screen is the single biggest consumer of the *retrieved* dimension.
+
+If you only need the demo occasionally, **tear it down between sessions** (below) — that takes the
+cost to zero, and a redeploy is one workflow run.
+
 ## Teardown
+
+**Via GitHub Actions (recommended):** run the **Destroy AWS Mesh Example** workflow
+(`.github/workflows/destroy-aws-mesh-example.yml`) — the counterpart of the deploy workflow. It uses
+the same remote S3 state, so it destroys exactly what the deploy created. Type `DESTROY` to confirm,
+pick the region you deployed to, and optionally tick **Also delete the Terraform state bucket** for a
+full cleanup. Beyond `terraform destroy` it also empties the artifacts bucket first (S3 refuses to
+delete a non-empty bucket) and deletes the `/aws/lambda/benzene-mesh-*` log groups Lambda creates
+implicitly — neither is a Terraform resource, and both would otherwise linger and keep billing.
+
+**Locally:**
 
 ```bash
 cd examples/AwsMesh/deploy && terraform destroy
 ```
+
+Note the local path leaves the implicit CloudWatch log groups behind; delete them with
+`aws logs delete-log-group --log-group-name /aws/lambda/benzene-mesh-<service>` if you want a clean
+account.
 
 ## Cold-start tuning
 

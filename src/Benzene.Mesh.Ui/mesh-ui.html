@@ -1394,7 +1394,11 @@
     // saw: infrastructure-level, or a message rejected before its topic resolved (the scheduled-rule-400
     // shape). Only derivable on a plane that attributes spans at all (some flow carries events/topic), so
     // a summary-only backend never false-flags every failure as uninstrumented.
-    var errFlows = errFleet.traces || [];
+    // Flow evidence comes from the flow-BEARING poll: the inbox's 24h view is deliberately counts-only
+    // (includeFlows: false — it would scan a day of traces per poll), so this class reads the
+    // range-windowed fleet, which is exactly what its wording already claims ("in the current window").
+    var flowFleet = (errFleet.traces || []).length ? errFleet : fleet;
+    var errFlows = flowFleet.traces || [];
     if (errFlows.some(function (f) { return f.events > 0 || f.topic; })) {
       var unattributed = errFlows.filter(function (f) { return f.failed && !(f.events > 0) && !f.topic; });
       if (unattributed.length) {
@@ -2131,6 +2135,10 @@
     renderTopicRows();
     renderIssues(); // topic-derived issues (schema mismatch, deprecation/gap) join once topics load
     renderValueView();
+    // The traffic map's declared-route fallback needs BOTH the fleet poll and this catalog. Whichever
+    // lands second must trigger the render, or the map stays blank until the next poll — a 15s hole at
+    // the current cadence (cost round). The fleet-poll side already re-renders; this is the other half.
+    if (currentFleet && isEstateView()) renderFleetPage();
     syncViewFromHash(); // a page loaded with #topic:/#service: in the URL opens straight to it (and an open service page re-renders with the topics now loaded)
   }
 
@@ -3672,7 +3680,11 @@
   function loadInboxFleet() {
     if (!fleetEndpoint()) return;
     if (document.hidden) return; // cost guard: a hidden tab never queries the backend
-    fleetQuery("mesh:query:fleet", JSON.stringify({ window: INBOX_WINDOW }))
+    // Counts only (includeFlows: false — a wire cost hint): the inbox reasons over the 24h COUNTS, and on
+    // a trace-backed plane asking for flows would scan a whole day of traces on every poll (X-Ray bills
+    // per trace scanned — the Global-XRay-TracesAccessed free-tier line). Flow-derived issue evidence
+    // comes from the range-windowed poll instead (see collectLiveIssues' flowFleet).
+    fleetQuery("mesh:query:fleet", JSON.stringify({ window: INBOX_WINDOW, includeFlows: false }))
       .then(function (view) {
         // Hold-last-good (2026-07-25 live-fire fix): the composite backend's fetch isolation can
         // return a SUCCESSFUL view whose topics slice degraded to empty under throttling — caching it

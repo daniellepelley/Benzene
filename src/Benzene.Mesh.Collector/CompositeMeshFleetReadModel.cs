@@ -63,7 +63,13 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
     /// this tolerance, so it correctly reads as "did not honor".</summary>
     private static readonly TimeSpan WindowMatchTolerance = TimeSpan.FromMinutes(5);
 
-    public async Task<FleetView> FleetAsync(MeshTimeRange? range = null, CancellationToken cancellationToken = default)
+    public Task<FleetView> FleetAsync(MeshTimeRange? range = null, CancellationToken cancellationToken = default)
+        => FleetAsync(range, includeFlows: true, cancellationToken);
+
+    /// <summary>Honors the <c>includeFlows</c> cost hint: with it false the trace source is not queried at
+    /// all, so a counts-only poll costs zero <c>GetTraceSummaries</c> scans (X-Ray bills per trace scanned,
+    /// and a 24h window scans a whole day of traces). The topics/counts slice is unaffected.</summary>
+    public async Task<FleetView> FleetAsync(MeshTimeRange? range, bool includeFlows, CancellationToken cancellationToken = default)
     {
         var requested = MeshTimeRangeResolver.Resolve(range, DateTimeOffset.UtcNow);
         var usageWindow = requested is { } w ? new MeshUsageWindow(w.From, w.To) : null;
@@ -72,7 +78,9 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
         // Flows honor the picked window (X-Ray GetTraceSummaries / Tempo / Jaeger take the range) - and now the
         // counts do too, on any usage source that can honor it (CloudWatch/App-Insights). CompositeWindow decides
         // CountsWindowed from what the sources actually returned, so a source that can't window is still honest.
-        var flows = await RecentFlowsAsync(range, cancellationToken);
+        var flows = includeFlows
+            ? await RecentFlowsAsync(range, cancellationToken)
+            : new List<TraceSummary>();
 
         return new FleetView
         {
