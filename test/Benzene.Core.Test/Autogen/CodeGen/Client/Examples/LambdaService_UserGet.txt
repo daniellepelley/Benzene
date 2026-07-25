@@ -33,7 +33,7 @@ namespace Benzene.Service.Clients.User
 
         public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()
         {
-            var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>("healthcheck", new NullPayload());
+            var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>("benzene:healthcheck", new NullPayload());
             if (benzeneResult.Payload == null)
             {
                 return benzeneResult;
@@ -46,6 +46,6 @@ namespace Benzene.Service.Clients.User
     [OutboundRoutingContract]
     public static class UserServiceClientRouting
     {
-        public static readonly string[] RequiredTopics = { "user:get", "healthcheck" };
+        public static readonly string[] RequiredTopics = { "user:get", "benzene:healthcheck" };
     }
 }

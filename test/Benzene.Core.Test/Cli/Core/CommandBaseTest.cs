@@ -17,7 +17,7 @@ namespace Benzene.Test.Cli.Core
         {
             public HealthCheckPayload ReceivedPayload { get; private set; }
 
-            public CapturingCommand() : base("healthcheck", "Runs a health check on a Benzene service") { }
+            public CapturingCommand() : base("benzene:healthcheck", "Runs a health check on a Benzene service") { }
 
             public override Task ExecuteAsync(HealthCheckPayload commandPayload)
             {
@@ -32,7 +32,7 @@ namespace Benzene.Test.Cli.Core
             var command = new CapturingCommand();
             var args = new CommandArguments
             {
-                Name = "healthcheck",
+                Name = "benzene:healthcheck",
                 Attributes = new Dictionary<string, string?>
                 {
                     { "profile", "my-profile" },
@@ -53,7 +53,7 @@ namespace Benzene.Test.Cli.Core
 
             var help = command.GetHelp();
 
-            Assert.Contains("healthcheck", help);
+            Assert.Contains("benzene:healthcheck", help);
             Assert.Contains("Runs a health check on a Benzene service", help);
             Assert.Contains("--profile", help);
         }

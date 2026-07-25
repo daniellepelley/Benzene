@@ -30,8 +30,8 @@ public class CloudServiceProbeTest
         fake.OnSpec = ctx => WriteJsonAsync(ctx, 200, "{\"openapi\":\"3.0.0\"}");
         fake.OnInvoke = (ctx, topic) => topic switch
         {
-            "healthcheck" => WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}")),
-            "mesh" => WriteJsonAsync(ctx, 200, Envelope("{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}")),
+            "benzene:healthcheck" => WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}")),
+            "benzene:mesh" => WriteJsonAsync(ctx, 200, Envelope("{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}")),
             _ => WriteJsonAsync(ctx, 404, "{}")
         };
 
@@ -73,7 +73,7 @@ public class CloudServiceProbeTest
         fake.OnSpec = ctx => WriteJsonAsync(ctx, 200, "{\"openapi\":\"3.0.0\"}");
         fake.OnInvoke = (ctx, topic) => topic switch
         {
-            "healthcheck" => WriteJsonAsync(ctx, 503, Envelope("{\"isHealthy\":false}")),
+            "benzene:healthcheck" => WriteJsonAsync(ctx, 503, Envelope("{\"isHealthy\":false}")),
             _ => WriteJsonAsync(ctx, 404, "{}")
         };
 
@@ -131,9 +131,9 @@ public class CloudServiceProbeTest
         using var fake = new FakeCloudService(port, CloudServiceProbePaths.Health, CloudServiceProbePaths.Spec, CloudServiceProbePaths.Invoke);
         fake.OnHealth = ctx => WriteJsonAsync(ctx, 200, "{\"isHealthy\":true}");
         fake.OnSpec = ctx => WriteJsonAsync(ctx, 404, "{}");
-        fake.OnInvoke = (ctx, topic) => topic == "healthcheck"
+        fake.OnInvoke = (ctx, topic) => topic == "benzene:healthcheck"
             ? WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}"))
-            : WriteJsonAsync(ctx, 404, "{}"); // the reserved "mesh" topic is not served either
+            : WriteJsonAsync(ctx, 404, "{}"); // the reserved "benzene:mesh" topic is not served either
 
         using var client = new HttpClient { BaseAddress = new Uri($"http://localhost:{port}") };
         var report = await CloudServiceProbe.RunAsync(client);
@@ -161,8 +161,8 @@ public class CloudServiceProbeTest
         fake.OnSpec = ctx => WriteJsonAsync(ctx, 200, "{\"openapi\":\"3.0.0\"}");
         fake.OnInvoke = (ctx, topic) => topic switch
         {
-            "healthcheck" => WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}")),
-            "mesh" => WriteJsonAsync(ctx, 200, Envelope("{\"service\":\"orders\",\"topics\":[]}")),
+            "benzene:healthcheck" => WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}")),
+            "benzene:mesh" => WriteJsonAsync(ctx, 200, Envelope("{\"service\":\"orders\",\"topics\":[]}")),
             _ => WriteJsonAsync(ctx, 404, "{}")
         };
 
@@ -196,8 +196,8 @@ public class CloudServiceProbeTest
         fake.OnSpec = ctx => WriteJsonAsync(ctx, 200, "{\"openapi\":\"3.0.0\"}");
         fake.OnInvoke = (ctx, topic) => topic switch
         {
-            "healthcheck" => WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}")),
-            "mesh" => WriteJsonAsync(ctx, 200, Envelope("{\"service\":\"orders\",\"topics\":[]}")),
+            "benzene:healthcheck" => WriteJsonAsync(ctx, 200, Envelope("{\"isHealthy\":true}")),
+            "benzene:mesh" => WriteJsonAsync(ctx, 200, Envelope("{\"service\":\"orders\",\"topics\":[]}")),
             _ => WriteJsonAsync(ctx, 404, "{}")
         };
 

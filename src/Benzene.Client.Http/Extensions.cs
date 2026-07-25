@@ -51,9 +51,9 @@ public static class Extensions
     /// </summary>
     /// <param name="builder">The health check builder to add the check to.</param>
     /// <param name="url">The target BenzeneMessage endpoint URL to probe.</param>
-    /// <param name="healthCheckTopic">The topic to POST (defaults to <c>"healthcheck"</c>).</param>
+    /// <param name="healthCheckTopic">The topic to POST (defaults to <c>benzene:healthcheck</c>).</param>
     /// <returns>The health check builder, for chaining.</returns>
-    public static IHealthCheckBuilder AddHttpBenzeneMessageHealthCheck(this IHealthCheckBuilder builder, string url, string healthCheckTopic = "healthcheck")
+    public static IHealthCheckBuilder AddHttpBenzeneMessageHealthCheck(this IHealthCheckBuilder builder, string url, string healthCheckTopic = Benzene.Abstractions.BenzeneTopic.HealthCheck)
     {
         return builder.AddHealthCheck(resolver => new HttpBenzeneMessageHealthCheck(
             resolver.GetService<HttpClient>(), url, healthCheckTopic, resolver.TryGetService<ICancellationTokenAccessor>()));

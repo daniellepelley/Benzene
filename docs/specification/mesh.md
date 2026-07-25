@@ -24,9 +24,9 @@ At Core level, mesh is optional, and so is each of its feeds; the normative degr
 [Cloud Service Profile](cloud-service-profile.md) MUST provision the service-side feeds (its
 R6) — for such a service, §6 governs runtime degradation, not whether the feeds exist.
 
-## 1. The reserved `mesh` topic
+## 1. The reserved `benzene:mesh` topic
 
-A mesh-enabled service MUST intercept the reserved topic id `mesh` (plus any app-chosen aliases)
+A mesh-enabled service MUST intercept the reserved topic id `benzene:mesh` (plus any app-chosen aliases)
 the same way health-check interception works (core-concepts.md §5): interception is by topic id
 alone, ignoring version; any other topic passes through unchanged. The response is status `ok`
 with the ServiceDescriptor (§2) as payload.
@@ -38,7 +38,7 @@ keeps working (§6).
 ## 2. ServiceDescriptor
 
 The service's self-description, derived at startup from its handler registry — never
-hand-maintained. Also the body of a `mesh:register` message (§4).
+hand-maintained. Also the body of a `benzene:mesh:register` message (§4).
 
 ```json
 {
@@ -186,13 +186,13 @@ transport (transport-bindings.md):
 
 | Topic | Body | Success payload |
 |---|---|---|
-| `mesh:register` | ServiceDescriptor (§2) | `{"accepted":1}` |
-| `mesh:heartbeat` | Heartbeat (§5) | `{"accepted":1}` |
-| `mesh:traces` | `{"events":[TraceEvent…]}` | `{"accepted":<count>}` |
-| `mesh:issues` | IssueBatch (§4.1) | `{"accepted":<count>}` |
+| `benzene:mesh:register` | ServiceDescriptor (§2) | `{"accepted":1}` |
+| `benzene:mesh:heartbeat` | Heartbeat (§5) | `{"accepted":1}` |
+| `benzene:mesh:traces` | `{"events":[TraceEvent…]}` | `{"accepted":<count>}` |
+| `benzene:mesh:issues` | IssueBatch (§4.1) | `{"accepted":<count>}` |
 
 - `service` is REQUIRED on register, heartbeat, and issues → `bad-request` when missing. A
-  `mesh:traces` or `mesh:issues` batch of any size, including empty, MUST be accepted.
+  `benzene:mesh:traces` or `benzene:mesh:issues` batch of any size, including empty, MUST be accepted.
 - Re-registration replaces the previous registration wholesale, including the claim to provide
   each topic — a redeploy that drops a topic drops the provider edge with it.
 - Consumer edges MUST be derived from trace parentage (an event whose parent span belongs to a
@@ -208,7 +208,7 @@ yet: they are one collector's read models, and join the spec if a second collect
 third-party view needs them pinned. The collector fixtures exercise them only as the observable
 surface for asserting ingest/derivation behavior.
 
-### 4.1 Issues (`mesh:issues`)
+### 4.1 Issues (`benzene:mesh:issues`)
 
 *Additive 2026-07. Optional on both sides (§6 rules apply); Go reference parity pending. A
 collector that doesn't implement it is unaffected; a service that doesn't emit degrades to
@@ -250,7 +250,7 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   cumulative total. Collectors merge by fingerprint: `count += delta`, `firstSeen = min`,
   `lastSeen = max`, exemplars keep the newest (≤3), other fields latest-wins. Delta semantics
   make merge restart-proof and need no instance identity on the wire; a dropped batch loses its
-  delta — lossy by design, the same trade as `mesh:traces`.
+  delta — lossy by design, the same trade as `benzene:mesh:traces`.
 - **`fingerprint` derivation is normative**: the lowercase hex of the first 16 bytes of SHA-256
   over the UTF-8 bytes of `service|topic|version|classification|discriminator` (pipe-joined),
   where `version` is the empty string when absent and `discriminator` is `exceptionType` when
@@ -281,7 +281,7 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   wiring `not-found` from a handler-returned business `not-found`), `deserialization` (the request
   could not be read into the handler's request type). Unknown keys MUST be tolerated (readers
   fall back to classification-level guidance).
-- Sender rules are `mesh:traces`' rules (§4): asynchronous, non-blocking, lossy, dedup at source
+- Sender rules are `benzene:mesh:traces`' rules (§4): asynchronous, non-blocking, lossy, dedup at source
   (per-occurrence events MUST NOT be sent), and the feed may never fail, slow, or block the
   invocation it observed.
 
@@ -351,7 +351,7 @@ provides:
 
 | `Benzene.Mesh.*` today | This contract | Convergence |
 |---|---|---|
-| `mesh.json` registry, human-edited | catalog derived from `mesh:register` + heartbeats | registry remains a pull-mode bootstrap for unmeshed services; meshed services need no entry |
+| `mesh.json` registry, human-edited | catalog derived from `benzene:mesh:register` + heartbeats | registry remains a pull-mode bootstrap for unmeshed services; meshed services need no entry |
 | `MeshServiceReport` (name, reportedAt, opaque OpenAPI `SpecJson`, health, error) | ServiceDescriptor (§2, topics + derived schemas) + Heartbeat (§5) | the self-report is register+heartbeat in one; the descriptor replaces the opaque spec for wire purposes — the OpenAPI artifact can remain as an enrichment |
 | `MeshHashing` (HMAC-SHA256 of raw spec text) | `descriptorHash` (§2.2, SHA-256 of canonical descriptor JSON) | .NET adopts §2.2 on the wire; `MeshHashing` stays internal to its OpenAPI-artifact drift feature |
 | `TopologyEdge` from Tempo/Prometheus (client/server + rates/latencies) | consumer edges derived from TraceEvent parentage (§3–4) | the native trace feed yields edges with no external tracing stack; Tempo remains an optional additional `TopologyEdgeSource` |

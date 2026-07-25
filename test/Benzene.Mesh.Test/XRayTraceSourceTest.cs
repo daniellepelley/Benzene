@@ -427,7 +427,7 @@ public class XRayTraceSourceTest
                 Traces = new List<Trace>
                 {
                     new Trace { Id = trace, Segments = new List<Segment>
-                        { new Segment { Document = FlowSegment("benzene-mesh", "mesh:aggregate", 1_600_000_000.5, 1_600_000_000.75) } } }
+                        { new Segment { Document = FlowSegment("benzene-mesh", "benzene:mesh:aggregate", 1_600_000_000.5, 1_600_000_000.75) } } }
                 }
             });
 
@@ -438,7 +438,7 @@ public class XRayTraceSourceTest
         Assert.Equal(1, flow.Events);                                // real span count, not the old hardcoded 0
         Assert.True(flow.Failed);                                    // summary's HasError flag is kept
         Assert.Equal(250, flow.DurationMs, 3);                       // summary duration (seconds → ms)
-        Assert.Equal("mesh:aggregate", flow.Topic);                  // entry topic from the earliest mapped event
+        Assert.Equal("benzene:mesh:aggregate", flow.Topic);                  // entry topic from the earliest mapped event
     }
 
     [Fact]
@@ -506,7 +506,7 @@ public class XRayTraceSourceTest
                 Traces = new List<Trace>
                 {
                     new Trace { Id = enriched, Segments = new List<Segment>
-                        { new Segment { Document = FlowSegment("benzene-mesh", "mesh:aggregate", 1_600_000_000.5, 1_600_000_000.6) } } }
+                        { new Segment { Document = FlowSegment("benzene-mesh", "benzene:mesh:aggregate", 1_600_000_000.5, 1_600_000_000.6) } } }
                 }
             });
 

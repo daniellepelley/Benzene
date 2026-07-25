@@ -17,7 +17,7 @@ namespace Benzene.Mesh.Tracing.Tempo;
 /// <c>Benzene.Mesh.Aggregator.MeshAggregateMessageHandler</c>.
 /// </summary>
 [HttpEndpoint("POST", "/mesh/topology")]
-[Message("mesh:topology")]
+[Message(TempoMeshTopics.Topology)]
 public class TempoTopologyMessageHandler : IMessageHandler<Void, MeshTopology>
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

@@ -23,7 +23,7 @@ public class HealthCheckClient
     {
         try
         {
-            var lambdaRequest = new BenzeneMessageClientRequest("healthcheck", new Dictionary<string, string>(), JsonConvert.SerializeObject(new object()));
+            var lambdaRequest = new BenzeneMessageClientRequest(Benzene.Abstractions.BenzeneTopic.HealthCheck, new Dictionary<string, string>(), JsonConvert.SerializeObject(new object()));
             var response = await _lambdaClient.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(lambdaRequest, _lambdaName, InvocationType.RequestResponse);
             return response.Body;
         }

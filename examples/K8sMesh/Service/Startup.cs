@@ -154,7 +154,7 @@ public class Startup : BenzeneStartUp
             // half). The healthcheck topic is routed too, so the callers' auto-wired reachability probe gets a
             // 200. This is the same server endpoint the AWS Lambda invoke path exposes, over HTTP.
             .UseBenzeneMessage(bm => bm
-                .UseHealthCheck("healthcheck", healthChecks)
+                .UseHealthCheck("benzene:healthcheck", healthChecks)
                 .UseMessageHandlers(_ => { }))
             .UseSpecUi("/benzene/spec-ui", "/benzene/spec?type=benzene")
             .UseBenzeneCloudService($"{name}-api", cloud =>

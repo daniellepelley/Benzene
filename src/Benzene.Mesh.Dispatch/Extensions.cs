@@ -11,7 +11,7 @@ namespace Benzene.Mesh.Dispatch;
 public static class Extensions
 {
     /// <summary>The reserved-style topic the dispatch handler is served on.</summary>
-    public const string DispatchTopic = "mesh:dispatch";
+    public const string DispatchTopic = "benzene:mesh:dispatch";
 
     /// <summary>
     /// Registers the opt-in <c>mesh:dispatch</c> handler, which invokes ONE registered service's real

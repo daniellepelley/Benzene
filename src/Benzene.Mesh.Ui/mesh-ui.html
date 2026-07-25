@@ -1266,7 +1266,9 @@
              team: (svc && svc.owningTeam) || null, live: true, nav: function () { goToService(name); } };
   }
   function isReservedTopicId(topicId) {
-    return /^(mesh:|benzene:|\$)/i.test(topicId || "");
+    // "benzene:" is the marker (BenzeneTopic.Prefix). "mesh:" and "$" are tolerated so a UI build
+    // pointed at a backend from before the rename still classifies its traffic correctly.
+    return /^(benzene:|mesh:|\$)/i.test(topicId || "");
   }
   // Benzene's own plumbing traffic — the mesh feeds, healthchecks, spec fetches — hidden from the
   // traffic picture by default so what's shown is the USER'S traffic. The literal list mirrors
@@ -1278,9 +1280,11 @@
   // reportable (the phase-1 rule).
   function isUtilityTraffic(topicId) {
     if (!topicId) return false;
+    // One prefix test. Since the 2026-07-25 rename every framework-owned topic carries "benzene:"
+    // (BenzeneTopic.Prefix), so the interim hardcoded name list this used to keep — healthcheck,
+    // spec, mesh, ping … — is gone, along with its habit of going stale whenever a topic was added.
     if (isReservedTopicId(topicId)) return true;
-    if (/^(healthcheck|liveness|readiness|spec|test-payloads|mesh|invoke|report|ping)$/i.test(topicId)) return true;
-    if (topicId === "<missing>") return true;
+    if (topicId === "<missing>") return true;   // a recording gap, not a topic
     return (currentTopics || []).some(function (t) { return t.topic === topicId && t.reserved; });
   }
   // The "<missing>" sentinel is a recording gap, not a topic name — never show it raw on a primary
@@ -1833,7 +1837,7 @@
     var note = el("div", "fl-wf-note", "Loading trace…");
     wrap.appendChild(note);
     body.appendChild(wrap);
-    var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
+    var promise = flTraceCache[traceId] || fleetQuery("benzene:mesh:query:trace", JSON.stringify({ traceId: traceId }));
     flTraceCache[traceId] = promise;
     promise.then(function (view) {
       if (!note.isConnected) return;
@@ -1876,7 +1880,7 @@
     var note = el("div", "fl-wf-note", "Loading trace…");
     wrap.appendChild(note);
     body.appendChild(wrap);
-    var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
+    var promise = flTraceCache[traceId] || fleetQuery("benzene:mesh:query:trace", JSON.stringify({ traceId: traceId }));
     flTraceCache[traceId] = promise;
     promise.then(function (view) {
       if (!note.isConnected) return;
@@ -3684,7 +3688,7 @@
     // a trace-backed plane asking for flows would scan a whole day of traces on every poll (X-Ray bills
     // per trace scanned — the Global-XRay-TracesAccessed free-tier line). Flow-derived issue evidence
     // comes from the range-windowed poll instead (see collectLiveIssues' flowFleet).
-    fleetQuery("mesh:query:fleet", JSON.stringify({ window: INBOX_WINDOW, includeFlows: false }))
+    fleetQuery("benzene:mesh:query:fleet", JSON.stringify({ window: INBOX_WINDOW, includeFlows: false }))
       .then(function (view) {
         // Hold-last-good (2026-07-25 live-fire fix): the composite backend's fetch isolation can
         // return a SUCCESSFUL view whose topics slice degraded to empty under throttling — caching it
@@ -3760,7 +3764,7 @@
     if (traffic) traffic.style.display = ""; // the front door's traffic section mounts with the endpoint
     var rangeBar = document.getElementById("fl-range");
     if (rangeBar) rangeBar.style.display = ""; // the estate-wide range control mounts with the endpoint
-    fleetQuery("mesh:query:fleet", fleetQueryBody())
+    fleetQuery("benzene:mesh:query:fleet", fleetQueryBody())
       .then(function (view) {
         currentFleet = view;
         feedLastOkAt = Date.now();
@@ -4360,7 +4364,7 @@
     var td = document.createElement("td"); td.className = "fl-flow-detail"; td.colSpan = 7;
     td.appendChild(el("div", "fl-wf-note", "Loading trace…"));
     detailRow.appendChild(td); tr.parentNode.insertBefore(detailRow, tr.nextSibling);
-    var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
+    var promise = flTraceCache[traceId] || fleetQuery("benzene:mesh:query:trace", JSON.stringify({ traceId: traceId }));
     flTraceCache[traceId] = promise;
     promise.then(function (view) {
       if (flOpenTraceId !== traceId || !detailRow.isConnected) return;
@@ -4387,7 +4391,7 @@
     if (presetId != null) { input.value = presetId; if (input.scrollIntoView) input.scrollIntoView({ behavior: "smooth", block: "center" }); }
     var id = (input.value || "").trim(); results.textContent = ""; if (!id) return;
     results.appendChild(el("div", "fl-wf-note", "Looking up flows for " + id + "…"));
-    fleetQuery("mesh:query:correlation", fleetQueryBody({ correlationId: id })).then(function (view) {
+    fleetQuery("benzene:mesh:query:correlation", fleetQueryBody({ correlationId: id })).then(function (view) {
       results.textContent = "";
       var traces = view.traces || [];
       results.appendChild(el("div", "fl-trace-label", traces.length + (traces.length === 1 ? " flow" : " flows") + " carried correlation id " + view.correlationId));
@@ -4406,7 +4410,7 @@
     if (presetId != null) { input.value = presetId; if (input.scrollIntoView) input.scrollIntoView({ behavior: "smooth", block: "center" }); }
     var id = (input.value || "").trim(); results.textContent = ""; if (!id) return;
     results.appendChild(el("div", "fl-wf-note", "Loading trace " + id + "…"));
-    fleetQuery("mesh:query:trace", JSON.stringify({ traceId: id })).then(function (view) {
+    fleetQuery("benzene:mesh:query:trace", JSON.stringify({ traceId: id })).then(function (view) {
       results.textContent = ""; results.appendChild(flBuildWaterfall(view));
     }).catch(function (err) {
       results.textContent = "";
@@ -4744,7 +4748,7 @@
       fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ topic: "mesh:annotations:add", headers: {},
+        body: JSON.stringify({ topic: "benzene:mesh:annotations:add", headers: {},
           body: JSON.stringify({ entity: entityId, author: author, text: body }) })
       })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })

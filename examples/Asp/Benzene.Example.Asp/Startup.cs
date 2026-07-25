@@ -59,10 +59,10 @@ public class Startup
         services.AddScoped<IOrderDbClient, InMemoryOrderDbClient>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage),
+            MessageHandlerDefinition.CreateInstance("benzene:spec", "", typeof(SpecRequest), typeof(RawStringMessage),
                 typeof(SpecMessageHandler)));
         services.AddScoped<SpecMessageHandler>();
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
+        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "benzene:spec"));
 
         // Demo-only fake identity provider (docs/cookbooks/auth-patterns.md) - see DemoAuth/.
         // A real service points OAuth2BearerOptions at a real identity provider instead.

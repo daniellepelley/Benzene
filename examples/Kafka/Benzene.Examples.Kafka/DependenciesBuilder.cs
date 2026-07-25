@@ -55,8 +55,8 @@ public static class DependenciesBuilder
                 new LoggingProcessTimerFactory(x.GetService<ILogger<LoggingProcessTimer>>())));
 
         services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
+            MessageHandlerDefinition.CreateInstance("benzene:spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
         services.AddScoped<SpecMessageHandler>();
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
+        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "benzene:spec"));
     }
 }

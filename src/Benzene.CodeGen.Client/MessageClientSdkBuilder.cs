@@ -96,7 +96,7 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
     {
         // Reflected over by Benzene.Clients' ValidateOutboundRouting() at startup - see
         // work/benzene-clients-redesign-plan.md §2.5.
-        var topics = eventServiceDocument.Requests.Select(x => x.Topic).Append("healthcheck");
+        var topics = eventServiceDocument.Requests.Select(x => x.Topic).Append(Benzene.Abstractions.BenzeneTopic.HealthCheck);
         var requiredTopics = string.Join(", ", topics.Select(topic => $@"""{topic}"""));
 
         var lineWriter = new LineWriter();
@@ -123,7 +123,7 @@ public class MessageClientSdkBuilder : ICodeBuilder<EventServiceDocument>
             $"public async Task<IBenzeneResult<HealthCheckResponse>> HealthCheckAsync()", 2);
         lineWriter.WriteLine("{", 2);
         lineWriter.WriteLine(
-            $@"var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>(""healthcheck"", new NullPayload());",
+            $@"var benzeneResult = await _sender.SendAsync<NullPayload, HealthCheckResponse>(""benzene:healthcheck"", new NullPayload());",
             3);
         lineWriter.WriteLine("if (benzeneResult.Payload == null)", 3);
         lineWriter.WriteLine("{", 3);

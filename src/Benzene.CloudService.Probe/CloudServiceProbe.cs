@@ -22,8 +22,8 @@ public static class CloudServiceProbe
     private const string SpecDescription = "Derived spec";
     private const string MeshDescription = "Mesh service-side feeds (observable half - see reason)";
 
-    private const string HealthcheckEnvelope = "{\"topic\":\"healthcheck\",\"headers\":{},\"body\":\"{}\"}";
-    private const string MeshEnvelope = "{\"topic\":\"mesh\",\"headers\":{},\"body\":\"{}\"}";
+    private const string HealthcheckEnvelope = "{\"topic\":\"benzene:healthcheck\",\"headers\":{},\"body\":\"{}\"}";
+    private const string MeshEnvelope = "{\"topic\":\"benzene:mesh\",\"headers\":{},\"body\":\"{}\"}";
 
     /// <summary>
     /// Probes the service at <paramref name="httpClient"/>'s <c>BaseAddress</c> and returns a

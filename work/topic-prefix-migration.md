@@ -1,6 +1,6 @@
 # Reserved-Topic `benzene:` Prefix — migration plan
 
-**Status:** PLAN — executing. Task #29. Applies the accepted ruling in
+**Status:** ✅ **DONE 2026-07-25** — applied and verified. Task #29. Applies the accepted ruling in
 `work/benzene-naming-principle.md`; the principle itself is settled and not reopened here.
 **Last Updated:** 2026-07-25
 **Purpose:** Apply the `benzene:` prefix to every reserved topic id, without missing occurrences —
@@ -90,3 +90,52 @@ back clean:
 - Spec: 6 documents.
 - Mesh UI: 1 filter function (simplified, not complicated, by this change).
 - Examples/templates: AwsMesh + the mesh examples declare and consume these topics.
+
+
+---
+
+## 6. Outcome (2026-07-25)
+
+**Done and verified.** Build clean; `Benzene.Core.Test` 2196, `Benzene.Mesh.Test` 298,
+`Benzene.Conformance.Test` 134 — all passing; the mesh-UI smoke harness green.
+
+### The constants classes (the maintainer's second ask)
+
+Topic ids are now declared once, mirroring `BenzeneResultStatus`:
+
+- **`BenzeneTopic`** (`Benzene.Abstractions`) — the profile topics (`Spec`, `TestPayloads`,
+  `HealthCheck`, `Liveness`, `Readiness`, `Mesh`, `Ping`) plus `Prefix` and `IsReserved()`. It sits
+  in the root abstraction because every package can reach it.
+- **`MeshTopics`** (`Benzene.Mesh.Wire`) — the cross-service wire contract, incl. the `query:*` set.
+- **`MeshAggregatorTopics`** / **`TempoMeshTopics`** — the host-side operational topics, in their own
+  packages. These did **not** go on `MeshTopics`: `Benzene.Mesh.Aggregator` and `.Dispatch` don't
+  reference `Benzene.Mesh.Wire`, and adding project references to satisfy a constants class would
+  change the package dependency graph for a naming tidy-up. This matches the repo's existing
+  per-package `Constants.cs` pattern.
+- The pre-existing per-package constants (`Benzene.Schema.OpenApi`, `Benzene.HealthChecks`,
+  `Benzene.Aws.Lambda.ApiGateway`) now **delegate** to `BenzeneTopic` rather than repeating literals.
+
+### Two things the rename surfaced
+
+1. **`ReservedTopics.IsReserved` had a latent gap.** It matched a name list that never contained the
+   mesh wire topics, so `mesh:register` and friends were classified as *domain* topics by the spec
+   document builder and the test-payload filter. It is now a prefix test, which fixes that as a
+   side effect.
+2. **Two entries in the reserved list were never topics.** `invoke` is an HTTP *path*
+   (`/benzene/invoke`), and `report`'s real id is `benzene:mesh:report`. Both are dropped rather
+   than given invented `benzene:` ids — declaring wire surface nothing routes would be worse than
+   the inconsistency we started with.
+
+### The audit earned its place
+
+The plan's final bare-word audit (§4) caught **three live topic sends** the constants-first pass had
+missed — `AwsLambdaHealthCheck` sending `ping`, `SqsHealthCheck`'s topic attribute, and a second
+`healthCheckTopic` default in `Benzene.Client.Http/Extensions.cs`. All three compile fine either way
+and would have failed only at runtime, against a renamed service. It also confirmed the survivors
+that must **not** change: the `spec`/`healthcheck` CLI *command* names, and the gRPC
+`liveness`/`readiness` *service names and health tags*.
+
+### Deliberately unchanged
+
+The examples' own `mesh:refresh` topic — that belongs to the example application, not the framework,
+and is a useful demonstration that app topics are untouched by this.

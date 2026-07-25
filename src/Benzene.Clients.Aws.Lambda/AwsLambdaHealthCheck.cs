@@ -53,7 +53,7 @@ public class AwsLambdaHealthCheck : IHealthCheck
         var dependencies = new[] { new HealthCheckDependency("Lambda", _lambdaName) };
 
         return _mode == HealthCheckMode.Active
-            ? RunAsync(_awsLambdaBenzeneMessageClient.SendMessageAsync<Void, Void>("ping", null),
+            ? RunAsync(_awsLambdaBenzeneMessageClient.SendMessageAsync<Void, Void>(Benzene.Abstractions.BenzeneTopic.Ping, null),
                 r => r.Status == BenzeneResultStatus.Accepted, r => ("Status", (object)r.Status), dependencies)
             : RunAsync(_amazonLambda.GetFunctionConfigurationAsync(_lambdaName),
                 r => r.HttpStatusCode == HttpStatusCode.OK, r => ("Status", (object)r.HttpStatusCode), dependencies);

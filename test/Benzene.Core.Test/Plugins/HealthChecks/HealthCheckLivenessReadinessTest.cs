@@ -77,7 +77,7 @@ public class HealthCheckLivenessReadinessTest
     {
         // Unlike UseHealthCheck, UseLivenessCheck/UseReadinessCheck deliberately do NOT also match
         // HealthCheckConstants.DefaultHealthCheckTopic - otherwise, whichever is registered first would silently
-        // shadow the other whenever the generic "healthcheck" topic was requested.
+        // shadow the other whenever the generic "benzene:healthcheck" topic was requested.
         var livenessCheck = CreateMockCheck("Liveness");
         var readinessCheck = CreateMockCheck("Readiness");
         var (app, resolverFactory) = BuildApp(livenessCheck, readinessCheck);

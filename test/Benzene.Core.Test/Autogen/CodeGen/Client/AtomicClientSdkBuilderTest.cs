@@ -50,7 +50,7 @@ public class AtomicClientSdkBuilderTest
         // at startup — it never references user:create.
         Assert.Contains("\"user:get\"", getClient);
         Assert.DoesNotContain("user:create", getClient);
-        Assert.Contains("RequiredTopics = { \"user:get\", \"healthcheck\" }", getClient);
+        Assert.Contains("RequiredTopics = { \"user:get\", \"benzene:healthcheck\" }", getClient);
     }
 
     [Fact]

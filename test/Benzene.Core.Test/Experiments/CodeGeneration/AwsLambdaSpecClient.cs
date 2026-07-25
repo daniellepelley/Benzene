@@ -27,13 +27,13 @@ public class AwsLambdaSpecClient
     {
         try
         {
-            var lambdaRequest = new BenzeneMessageClientRequest("spec", new Dictionary<string, string>(), JsonConvert.SerializeObject(specRequest));
+            var lambdaRequest = new BenzeneMessageClientRequest("benzene:spec", new Dictionary<string, string>(), JsonConvert.SerializeObject(specRequest));
             var response = await _lambdaClient.SendMessageAsync<BenzeneMessageClientRequest, BenzeneMessageClientResponse>(lambdaRequest, _lambdaName, InvocationType.RequestResponse);
             return response.Body;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", "spec", _lambdaName);
+            _logger.LogError(ex, "Sending message {receiverTopic} to {receiver} failed", "benzene:spec", _lambdaName);
             return null;
         }
     }

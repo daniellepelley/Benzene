@@ -18,7 +18,7 @@ namespace Benzene.Examples.Aws.Tests.Integration;
 [Collection("Sequential")]
 public class HealthCheckTest : InMemoryOrdersTestBase
 {
-    private const string HealthCheckTopic = "healthcheck";
+    private const string HealthCheckTopic = "benzene:healthcheck";
     private readonly Guid _id = Guid.Parse(Defaults.Order.Id);
 
     public HealthCheckTest()

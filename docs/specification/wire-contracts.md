@@ -182,7 +182,7 @@ has passed, else `Cancelled`.
 
 ## 5. Health check response
 
-Returned for the reserved topic `healthcheck` (and any app-configured alias):
+Returned for the reserved topic `benzene:healthcheck` (and any app-configured alias):
 
 ```json
 {

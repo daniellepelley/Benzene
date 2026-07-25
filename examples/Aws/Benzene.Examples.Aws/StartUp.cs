@@ -58,7 +58,7 @@ public class StartUp : BenzeneStartUp
                 new SimpleHealthCheck()
             };
 
-            const string healthCheckTopic = "healthcheck";
+            const string healthCheckTopic = "benzene:healthcheck";
 
             var benzeneMessagePipeline =
                 aws.Create<BenzeneMessageContext>()
@@ -77,7 +77,7 @@ public class StartUp : BenzeneStartUp
                 .UseTimer("api-gateway-application")
                 .UseBenzeneEnrichment()
                 .UseXml()
-                .UseHealthCheck("healthcheck", "POST", "/healthcheck", healthChecks)
+                .UseHealthCheck("benzene:healthcheck", "POST", "/healthcheck", healthChecks)
                 .UseMessageHandlers(router => router
                     .UseFluentValidation()
                 )

@@ -10,7 +10,7 @@ namespace Benzene.Mesh.Aws.Lambda;
 /// <summary>
 /// Fetches a service's spec/health via a synchronous AWS Lambda <see cref="InvocationType.RequestResponse"/>
 /// <c>Invoke</c> (<see cref="IAwsLambdaClient"/>), for services with no public HTTP surface. Sends the
-/// literal topics <c>"spec"</c>/<c>"healthcheck"</c> - any service already wired the normal Benzene way
+/// literal topics <c>benzene:spec</c>/<c>benzene:healthcheck</c> - any service already wired the normal Benzene way
 /// (<c>UseBenzeneMessage()</c> + <c>.UseSpec()</c> + <c>.UseHealthCheck(...)</c>) already answers a
 /// direct Lambda invocation carrying either topic, with zero target-side changes, via
 /// <c>Benzene.Aws.Lambda.Core.BenzeneMessage.BenzeneMessageLambdaHandler</c>.
@@ -30,8 +30,8 @@ public class LambdaMeshServiceSource : IMeshServiceSource
     // dependency graph to just Benzene.Mesh.Aggregator + Benzene.Clients.Aws + the AWS Lambda SDK.
     // LambdaMeshServiceSourceTest's two "...MatchingBenzene..." tests pin these against both
     // constants so a future rename of either fails loudly here instead of silently breaking this adapter.
-    private const string SpecTopic = "spec";
-    private const string HealthTopic = "healthcheck";
+    private const string SpecTopic = Benzene.Abstractions.BenzeneTopic.Spec;
+    private const string HealthTopic = Benzene.Abstractions.BenzeneTopic.HealthCheck;
 
     private readonly Lazy<IAwsLambdaClient> _client;
 

@@ -66,7 +66,7 @@ public class Startup
                 // enriched in-page with the live derived fleet from the collector (what's actually
                 // running), polled through the /benzene/invoke envelope branched above.
                 .UseMeshUi(path: "/mesh-ui", manifestUrl: "/artifacts/manifest.json", envelopeUrl: "/benzene/invoke")
-                // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's
+                // The mesh-hosted per-service Spec UI (mesh-ui's "benzene:spec" link). Renders each service's
                 // spec from the same-origin services/{name}.json snapshot, so a service only serves JSON.
                 .UseMeshSpecUi(path: "/mesh-spec-ui.html", manifestUrl: "/artifacts/manifest.json")
                 .UseMessageHandlers()

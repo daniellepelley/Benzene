@@ -82,7 +82,7 @@ public class UseBenzeneCloudServiceTest
         var host = CreateHost();
 
         var response = await host.SendApiGatewayAsync(
-            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("healthcheck", "{}")));
+            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("benzene:healthcheck", "{}")));
 
         Assert.Equal(200, response.StatusCode);
         Assert.Contains("isHealthy", response.Body);
@@ -94,7 +94,7 @@ public class UseBenzeneCloudServiceTest
         var host = CreateHost();
 
         var response = await host.SendApiGatewayAsync(
-            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("mesh", "{}")));
+            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("benzene:mesh", "{}")));
 
         Assert.Equal(200, response.StatusCode);
         Assert.Contains("orders", response.Body);
@@ -112,7 +112,7 @@ public class UseBenzeneCloudServiceTest
         var host = CreateHost(cloud => cloud.WithCollector("http://localhost:9/benzene/invoke"));
 
         var response = await host.SendApiGatewayAsync(
-            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("mesh", "{}")));
+            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("benzene:mesh", "{}")));
 
         Assert.Equal(200, response.StatusCode);
         Assert.Contains(CloudServiceProfileReport.ProfileName, response.Body);
@@ -127,7 +127,7 @@ public class UseBenzeneCloudServiceTest
         var host = CreateHost(cloud => cloud.WithoutMesh());
 
         var response = await host.SendApiGatewayAsync(
-            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("mesh", "{}")));
+            HttpBuilder.Create("POST", CloudServicePaths.Invoke, CreateEnvelope("benzene:mesh", "{}")));
 
         Assert.NotEqual(200, response.StatusCode);
     }
@@ -138,7 +138,7 @@ public class UseBenzeneCloudServiceTest
         var host = CreateHost(cloud => cloud.WithInvokePath("/custom-invoke"));
 
         var response = await host.SendApiGatewayAsync(
-            HttpBuilder.Create("POST", "/custom-invoke", CreateEnvelope("mesh", "{}")));
+            HttpBuilder.Create("POST", "/custom-invoke", CreateEnvelope("benzene:mesh", "{}")));
 
         Assert.Equal(200, response.StatusCode);
         Assert.Contains("R7", response.Body);
@@ -184,7 +184,7 @@ public class UseBenzeneCloudServiceTest
 
         var completed = await Task.WhenAny(receiveRegisterAsync, Task.Delay(TimeSpan.FromSeconds(10)));
         Assert.Same(receiveRegisterAsync, completed);
-        Assert.Contains("mesh:register", await receiveRegisterAsync);
+        Assert.Contains("benzene:mesh:register", await receiveRegisterAsync);
     }
 
     [Fact]

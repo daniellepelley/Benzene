@@ -62,13 +62,13 @@ public class HealthCheckContractsTopicTest
     }
 
     [Theory]
-    [InlineData("readiness")]
-    [InlineData("liveness")]
-    [InlineData("healthcheck")]
+    [InlineData("benzene:readiness")]
+    [InlineData("benzene:liveness")]
+    [InlineData("benzene:healthcheck")]
     public async Task UseContractsCheck_DoesNotRespondToProbeOrHealthCheckTopics(string topic)
     {
         // A contract check must not be reachable through a probe topic - that is the whole point of
-        // keeping it on its own topic. It also doesn't piggy-back on the generic "healthcheck" topic
+        // keeping it on its own topic. It also doesn't piggy-back on the generic "benzene:healthcheck" topic
         // (matching the liveness/readiness non-shadowing rule).
         var contractCheck = CreateMockCheck("Contracts");
         var readinessCheck = CreateMockCheck("Readiness");

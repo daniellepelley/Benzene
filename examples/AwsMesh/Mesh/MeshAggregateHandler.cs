@@ -15,7 +15,7 @@ namespace Benzene.Examples.AwsMesh.Mesh;
 /// the aggregator (Lambda-Invoke), and writes the catalog artifacts to S3. Triggered on a schedule by
 /// EventBridge (detail-type <c>mesh:aggregate</c>) or on demand by <c>POST /mesh/refresh</c>.
 /// </summary>
-[Message("mesh:aggregate")]
+[Message("benzene:mesh:aggregate")]
 [HttpEndpoint("POST", "/mesh/refresh")]
 public class MeshAggregateHandler : IMessageHandler<Void, MeshAggregateSummary>
 {

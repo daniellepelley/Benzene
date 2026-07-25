@@ -78,7 +78,7 @@ short-circuiting — but *routable application topics* MUST go through handlers.
 
 ### R3 — Health checks
 
-The service MUST intercept the reserved `healthcheck` topic and respond with the health check
+The service MUST intercept the reserved `benzene:healthcheck` topic and respond with the health check
 response format ([wire-contracts.md](wire-contracts.md) §5, [core-concepts.md](core-concepts.md)
 §10). Where the service has an HTTP surface, the aggregate MUST also be exposed at its
 `/benzene/health` default ([design-principles.md](design-principles.md) §5.2).
@@ -102,10 +102,10 @@ true because it is derived ([design-principles.md](design-principles.md) §3).
 
 The service MUST provision the four service-side mesh feeds of [mesh.md](mesh.md):
 
-- the reserved `mesh` topic serving the ServiceDescriptor (mesh §1–§2),
-- registration (`mesh:register`) on startup (mesh §4),
-- heartbeats (`mesh:heartbeat`) (mesh §5),
-- the trace feed (`mesh:traces`) with one TraceEvent per routed invocation (mesh §3–§4).
+- the reserved `benzene:mesh` topic serving the ServiceDescriptor (mesh §1–§2),
+- registration (`benzene:mesh:register`) on startup (mesh §4),
+- heartbeats (`benzene:mesh:heartbeat`) (mesh §5),
+- the trace feed (`benzene:mesh:traces`) with one TraceEvent per routed invocation (mesh §3–§4).
 
 Implementing a *collector* is NOT required — the profile makes every service a good mesh
 citizen, not a mesh host.
@@ -177,7 +177,7 @@ questions, and both stay in force:
   service with `UseBenzeneCloudService` (`Benzene.CloudService`) produces a
   `CloudServiceProfileReport` that evaluates the wiring against R1–R8 and is carried on the
   descriptor's `profile` field ([mesh.md §2](mesh.md#2-servicedescriptor)), so any tool that can
-  reach the reserved `mesh` topic can ask a running service whether it claims the profile and, if
+  reach the reserved `benzene:mesh` topic can ask a running service whether it claims the profile and, if
   not, exactly which requirements it's missing. This is a build-time/wiring-time self-assessment
   of what the service's setup call actually provisioned — not a runtime probe — so it never
   changes in response to runtime degradation (§4): an unreachable collector doesn't make a
@@ -197,7 +197,7 @@ questions, and both stay in force:
   Two things are structurally unobservable from a single service and stay `Inconclusive` by
   design, never silently upgraded: R8 (propagation requires either a second service to observe
   forwarded `traceparent` headers, or a collector deriving consumer edges from trace parentage —
-  [mesh.md](mesh.md) §3–§4) and the registration/heartbeat half of R6 (only the reserved `mesh`
+  [mesh.md](mesh.md) §3–§4) and the registration/heartbeat half of R6 (only the reserved `benzene:mesh`
   topic's descriptor response is directly observable; delivery to a collector is not, so a passing
   descriptor check is reported as satisfying only the observable half, never the whole of R6). R7
   likewise degrades to `Inconclusive` the moment the caller points the probe at non-default paths

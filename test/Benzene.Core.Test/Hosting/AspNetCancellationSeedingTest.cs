@@ -45,7 +45,7 @@ public class AspNetCancellationSeedingStartUp : BenzeneStartUp
 
     public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration) => app
         .UseHttp(http => http
-            .UseHealthCheck("healthcheck", x => x.AddHealthCheck(resolver =>
+            .UseHealthCheck("benzene:healthcheck", x => x.AddHealthCheck(resolver =>
                 new TokenObservingHealthCheck(resolver.GetService<ICancellationTokenAccessor>()))));
 }
 

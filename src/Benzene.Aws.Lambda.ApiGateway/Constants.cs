@@ -13,5 +13,5 @@ public static class Constants
     /// <summary>
     /// The default topic used for health check requests when none is specified.
     /// </summary>
-    public const string DefaultHealthCheckTopic = "healthcheck";
+    public const string DefaultHealthCheckTopic = Benzene.Abstractions.BenzeneTopic.HealthCheck;
 }

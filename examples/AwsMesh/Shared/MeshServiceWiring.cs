@@ -187,7 +187,7 @@ public static class MeshServiceWiring
 
             // Direct-invoke surface (how the mesh interrogates this Lambda) + the domain handlers.
             aws.UseBenzeneMessage(bm => Observe(bm)
-                .UseHealthCheck("healthcheck", healthChecks)
+                .UseHealthCheck("benzene:healthcheck", healthChecks)
                 .UseSpec()
                 .UseMessageHandlers(handlers, router => router.UseFluentValidation()));
 

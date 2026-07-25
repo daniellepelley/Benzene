@@ -156,7 +156,7 @@ public class HealthCheckTests
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
             // .UseProcessResponse()
-            .UseHealthCheck("healthcheck", x => x
+            .UseHealthCheck("benzene:healthcheck", x => x
                 .AddHealthCheck<SimpleHealthCheck>()
                 .AddHealthCheck(new SimpleHealthCheck())
                 .AddHealthCheckFactory(new SimpleHealthCheckFactory())
@@ -172,7 +172,7 @@ public class HealthCheckTests
                 .AddHealthCheck(_ => false));
 
         
-        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Topic = "healthcheck" });
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Topic = "benzene:healthcheck" });
 
         await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 
@@ -193,14 +193,14 @@ public class HealthCheckTests
         var middlewarePipelineBuilder = new MiddlewarePipelineBuilder<BenzeneMessageContext>(container);
         middlewarePipelineBuilder
             // .UseProcessResponse()
-            .UseHealthCheck("healthcheck", x => x
+            .UseHealthCheck("benzene:healthcheck", x => x
                 .AddHealthCheck<ExceptionThrowingHealthCheck>()
                 .AddHealthCheck(new ExceptionThrowingHealthCheck())
                 .AddHealthCheckFactory(new ExceptionThrowingHealthCheckFactory())
                 .AddHealthCheck(_ => new ExceptionThrowingHealthCheck())
                 .AddHealthCheck(_ => throw new Exception()));
         
-        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Topic = "healthcheck" });
+        var context = new BenzeneMessageContext(new BenzeneMessageRequest { Topic = "benzene:healthcheck" });
 
         await middlewarePipelineBuilder.Build().HandleAsync(context, new MicrosoftServiceResolverAdapter(serviceCollection.BuildServiceProvider()));
 

@@ -14,7 +14,7 @@ namespace Benzene.Mesh.Aggregator;
 /// message) with no bespoke hosting code, the same way any other Benzene service is invoked.
 /// </summary>
 [HttpEndpoint("POST", "/mesh/aggregate")]
-[Message("mesh:aggregate")]
+[Message(MeshAggregatorTopics.Aggregate)]
 public class MeshAggregateMessageHandler : IMessageHandler<Void, MeshManifest>
 {
     private readonly MeshAggregator _aggregator;

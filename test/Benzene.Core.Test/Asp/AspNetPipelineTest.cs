@@ -220,7 +220,7 @@
 //     //
 //     //     pipeline
 //     //         .UseProcessResponse()
-//     //         .UseHealthCheck("healthcheck", "GET", "/healthcheck", new IHealthCheck[]
+//     //         .UseHealthCheck("benzene:healthcheck", "GET", "/healthcheck", new IHealthCheck[]
 //     //         {
 //     //             mockHealthCheck.Object
 //     //         })

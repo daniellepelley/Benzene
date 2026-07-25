@@ -89,13 +89,13 @@ public class Startup : BenzeneStartUp
     {
         // Scope handler discovery to THIS assembly. The parameterless UseMessageHandlers() scans every
         // loaded assembly, which would also discover Benzene.Mesh.Aggregator's own
-        // MeshAggregateMessageHandler — a second handler for topic "mesh:aggregate" (collision). This
+        // MeshAggregateMessageHandler — a second handler for topic "benzene:mesh:aggregate" (collision). This
         // example deliberately uses its own MeshAggregateHandler (discovery + aggregate) instead.
         var handlers = typeof(Startup).Assembly;
 
         app.UseAwsLambda(aws =>
         {
-            // Scheduled aggregation: an EventBridge rule fires with detail-type "mesh:aggregate".
+            // Scheduled aggregation: an EventBridge rule fires with detail-type "benzene:mesh:aggregate".
             aws.UseEventBridge(eb => eb
                 .UseW3CTraceContext()
                 .UseBenzeneEnrichment()
@@ -113,7 +113,7 @@ public class Startup : BenzeneStartUp
                 // the live data merges into it (health, observed-vs-declared consumers, recent flows, a
                 // Fleet landing view), rather than a disconnected second page.
                 .UseMeshUi("/mesh-ui", "manifest.json", "/benzene/invoke")
-                // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's
+                // The mesh-hosted per-service Spec UI (mesh-ui's "benzene:spec" link). Renders each service's
                 // spec from the same-origin services/{name}.json snapshot, so a service only serves JSON.
                 .UseMeshSpecUi("/mesh-spec-ui.html", "manifest.json")
                 // Allow the AsyncAPI Studio deep-link to fetch asyncapi.json cross-origin. Uses

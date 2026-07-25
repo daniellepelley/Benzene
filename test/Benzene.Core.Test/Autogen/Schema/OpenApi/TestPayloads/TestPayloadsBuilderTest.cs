@@ -48,7 +48,7 @@ public class TestPayloadsBuilderTest
         var document = DocumentWith(
             Array.Empty<string>(),
             ("user:get", typeof(GetUserMessage), typeof(UserDto)),
-            ("spec", typeof(GetUserMessage), typeof(UserDto)));
+            ("benzene:spec", typeof(GetUserMessage), typeof(UserDto)));
 
         var manifest = new TestPayloadsBuilder().Build(document);
 

@@ -69,21 +69,50 @@ public class MeshHeartbeat
     public HealthCheckResponse? Health { get; set; }
 }
 
-/// <summary>The mesh wire-contract topic names (spec §1/§4), shared by services and collectors.</summary>
+/// <summary>
+/// The mesh wire-contract topic names (spec §1/§4), shared by services and collectors.
+/// <para>
+/// All ids carry the <c>benzene:</c> marker per the naming principle
+/// (<c>work/benzene-naming-principle.md</c>) — they live in the same namespace as the
+/// application's topics, so they say whose they are. They sit here rather than on
+/// <see cref="Benzene.Abstractions.BenzeneTopic"/> because the mesh is an optional add-on and the
+/// root abstraction deliberately doesn't know about it; <c>BenzeneTopic.IsReserved</c> still
+/// recognises them, because it tests the prefix rather than a list.
+/// </para>
+/// </summary>
 public static class MeshTopics
 {
     /// <summary>The reserved descriptor topic a meshed service intercepts (spec §1).</summary>
-    public const string Descriptor = "mesh";
+    public const string Descriptor = Benzene.Abstractions.BenzeneTopic.Mesh;
 
     /// <summary>A service announces its descriptor to a collector (spec §4).</summary>
-    public const string Register = "mesh:register";
+    public const string Register = "benzene:mesh:register";
 
     /// <summary>A service instance's periodic health report to a collector (spec §5).</summary>
-    public const string Heartbeat = "mesh:heartbeat";
+    public const string Heartbeat = "benzene:mesh:heartbeat";
 
     /// <summary>A trace exporter's batched events to a collector (spec §4).</summary>
-    public const string Traces = "mesh:traces";
+    public const string Traces = "benzene:mesh:traces";
 
     /// <summary>An issue emitter's deduplicated failure signatures to a collector (spec §4.1).</summary>
-    public const string Issues = "mesh:issues";
+    public const string Issues = "benzene:mesh:issues";
+
+    // Host-side operational topics (aggregate/report/annotations/dispatch/topology) are NOT here:
+    // they are not part of the cross-service wire contract, and their packages don't reference this
+    // one. Each lives in a constants class in its own package, all carrying the same benzene: marker.
+
+    /// <summary>Reads the whole known fleet (services, topics, recent flows).</summary>
+    public const string QueryFleet = "benzene:mesh:query:fleet";
+
+    /// <summary>Reads one service's detail.</summary>
+    public const string QueryService = "benzene:mesh:query:service";
+
+    /// <summary>Reads one topic's summary.</summary>
+    public const string QueryTopic = "benzene:mesh:query:topic";
+
+    /// <summary>Reads one flow's traced waterfall by trace id.</summary>
+    public const string QueryTrace = "benzene:mesh:query:trace";
+
+    /// <summary>Reads every flow carrying a business correlation id.</summary>
+    public const string QueryCorrelation = "benzene:mesh:query:correlation";
 }

@@ -57,7 +57,7 @@ public class MeshQueriesRoutingTest
     [Fact]
     public async Task Queries_RouteFleetQuery_ToTheReadModel_WithNoStore()
     {
-        var response = await DispatchAsync("mesh:query:fleet", "{}");
+        var response = await DispatchAsync("benzene:mesh:query:fleet", "{}");
         Assert.Equal("ok", response.StatusCode);
     }
 
@@ -66,7 +66,7 @@ public class MeshQueriesRoutingTest
     {
         // The fake read model returns null for an unknown trace → the handler answers NotFound (not the
         // "no handler for topic" NotFound the UI would get from an unrouted topic — this proves it routed).
-        var response = await DispatchAsync("mesh:query:trace", """{ "traceId": "abc" }""");
+        var response = await DispatchAsync("benzene:mesh:query:trace", """{ "traceId": "abc" }""");
         Assert.Equal("not-found", response.StatusCode);
     }
 }

@@ -42,9 +42,9 @@ public static class DependenciesBuilder
 
         services.AddScoped<IOrderService, HardcodedOrderService>();
         services.AddSingleton<IMessageHandlerDefinition>(_ =>
-            MessageHandlerDefinition.CreateInstance("spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
+            MessageHandlerDefinition.CreateInstance("benzene:spec", "", typeof(SpecRequest), typeof(RawStringMessage), typeof(SpecMessageHandler)));
         services.AddScoped<SpecMessageHandler>();
-        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "spec"));
+        services.AddSingleton<IHttpEndpointDefinition>(_ => new HttpEndpointDefinition("get", "/spec", "benzene:spec"));
 
         // Egress demo (release plan Tier 2.3): reuses the same "ServiceBusConnection" app setting
         // and "orders" queue the ServiceBusFunction ingress trigger already talks to (see

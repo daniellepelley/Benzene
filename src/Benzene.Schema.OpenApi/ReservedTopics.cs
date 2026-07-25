@@ -17,21 +17,15 @@ namespace Benzene.Schema.OpenApi;
 /// </remarks>
 public static class ReservedTopics
 {
-    /// <summary>The default reserved topic ids, compared case-insensitively.</summary>
-    public static readonly IReadOnlyCollection<string> DefaultIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        Constants.DefaultSpecTopic, // "spec"
-        Constants.DefaultTestPayloadsTopic, // "test-payloads"
-        "healthcheck",
-        "liveness",
-        "readiness",
-        "mesh",     // cloud-service descriptor topic
-        "invoke",   // wire-envelope endpoint topic
-        "report",   // mesh self-report ingestion topic
-    };
+    /// <summary>The reserved topic ids Benzene itself declares, compared case-insensitively.
+    /// Delegates to <see cref="Benzene.Abstractions.BenzeneTopic"/>, the single source of truth.</summary>
+    public static IReadOnlyCollection<string> DefaultIds => Benzene.Abstractions.BenzeneTopic.All;
 
-    private static readonly HashSet<string> Set = new(DefaultIds, StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Whether <paramref name="topic"/> is one of the reserved utility topics.</summary>
-    public static bool IsReserved(string? topic) => topic != null && Set.Contains(topic);
+    /// <summary>
+    /// Whether <paramref name="topic"/> is a framework-owned topic. Since the 2026-07-25 rename this
+    /// is a <c>benzene:</c> prefix test rather than a name-list lookup, which also fixes a latent gap:
+    /// the mesh wire topics (<c>benzene:mesh:register</c>, …) were never in the old list, so they were
+    /// classified as domain topics.
+    /// </summary>
+    public static bool IsReserved(string? topic) => Benzene.Abstractions.BenzeneTopic.IsReserved(topic);
 }

@@ -181,5 +181,5 @@ every transport and every vendor:
   cross-service correlation mechanism. (A per-invocation correlation value settable by application
   middleware and forwardable on outbound clients MAY additionally be offered, but inbound pickup of
   legacy correlation headers is not a framework contract.)
-- **Health checks** — intercept the reserved `healthcheck` topic (plus an app-chosen alias), run
+- **Health checks** — intercept the reserved `benzene:healthcheck` topic (plus an app-chosen alias), run
   registered checks, respond with the standard response format.

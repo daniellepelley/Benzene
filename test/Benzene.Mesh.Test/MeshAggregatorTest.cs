@@ -113,8 +113,8 @@ public class MeshAggregatorTest : IDisposable
     {
         const string paymentsSpecUrl = "https://payments-api.example/spec?type=benzene";
         const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
-        var ordersSpec = "{\"requests\":[{\"topic\":\"order:create\",\"httpMappings\":[{\"method\":\"post\",\"path\":\"/orders\"}]},{\"topic\":\"spec\",\"reserved\":true}]}";
-        var paymentsSpec = "{\"requests\":[{\"topic\":\"payment:take\"},{\"topic\":\"spec\",\"reserved\":true}]}";
+        var ordersSpec = "{\"requests\":[{\"topic\":\"order:create\",\"httpMappings\":[{\"method\":\"post\",\"path\":\"/orders\"}]},{\"topic\":\"benzene:spec\",\"reserved\":true}]}";
+        var paymentsSpec = "{\"requests\":[{\"topic\":\"payment:take\"},{\"topic\":\"benzene:spec\",\"reserved\":true}]}";
 
         var handler = new RoutingHttpMessageHandler()
             .MapGet(SpecUrl, HttpStatusCode.OK, ordersSpec)
@@ -137,7 +137,7 @@ public class MeshAggregatorTest : IDisposable
         // The reserved 'spec' topic is exposed by both services, flagged reserved, and never
         // gets a Status even though it has zero producers - a health/spec endpoint has no
         // "producer" in the fleet sense, so the absence of one isn't informative.
-        var spec = Assert.Single(catalog.Topics, t => t.Topic == "spec");
+        var spec = Assert.Single(catalog.Topics, t => t.Topic == "benzene:spec");
         Assert.True(spec.Reserved);
         Assert.Null(spec.Status);
         Assert.Equal(new[] { "orders-api", "payments-api" }, spec.Consumers.Select(s => s.Service).OrderBy(x => x).ToArray());
@@ -205,9 +205,9 @@ public class MeshAggregatorTest : IDisposable
         const string paymentsHealthUrl = "https://payments-api.example/healthcheck";
 
         // Each service serves its benzene spec (topics) at type=benzene and its AsyncAPI 3.0 doc at
-        // the derived type=asyncapi URL. Both declare a "spec" utility topic that must be filtered.
-        var ordersBenzene = """{"requests":[{"topic":"order:create"},{"topic":"spec","reserved":true}]}""";
-        var paymentsBenzene = """{"requests":[{"topic":"payment:take"},{"topic":"spec","reserved":true}]}""";
+        // the derived type=asyncapi URL. Both declare a "benzene:spec" utility topic that must be filtered.
+        var ordersBenzene = """{"requests":[{"topic":"order:create"},{"topic":"benzene:spec","reserved":true}]}""";
+        var paymentsBenzene = """{"requests":[{"topic":"payment:take"},{"topic":"benzene:spec","reserved":true}]}""";
         var ordersAsyncApi = AsyncApiDoc("orders-api", "order:create", "Order");
         var paymentsAsyncApi = AsyncApiDoc("payments-api", "payment:take", "Payment");
 
@@ -231,14 +231,14 @@ public class MeshAggregatorTest : IDisposable
         Assert.NotNull(json);
 
         // Both services' channels + operations are present, namespaced by service, and the reserved
-        // "spec" topic is filtered out. (Real AsyncAPI-reader validity is proven in an isolated project -
+        // "benzene:spec" topic is filtered out. (Real AsyncAPI-reader validity is proven in an isolated project -
         // see AsyncApiCompositorTest's note on the YamlDotNet conflict.)
         var parsed = JsonNode.Parse(json!)!;
         Assert.Equal("3.0.0", parsed["asyncapi"]!.GetValue<string>());
         var channels = parsed["channels"]!.AsObject();
         Assert.True(channels.ContainsKey("orders-api_order_create"));
         Assert.True(channels.ContainsKey("payments-api_payment_take"));
-        Assert.DoesNotContain(channels, kv => kv.Key.Contains("spec"));
+        Assert.DoesNotContain(channels, kv => kv.Key.Contains("benzene:spec"));
         var operations = parsed["operations"]!.AsObject();
         Assert.True(operations.ContainsKey("orders-api_order_create"));
         Assert.True(operations.ContainsKey("payments-api_payment_take"));
@@ -253,11 +253,11 @@ public class MeshAggregatorTest : IDisposable
           "info": { "title": "{{title}}", "version": "1.0" },
           "channels": {
             "{{ch}}": { "address": "{{topic}}", "messages": { "{{schema}}": { "payload": { "$ref": "#/components/schemas/{{schema}}" } } } },
-            "spec": { "address": "spec", "messages": {} }
+            "benzene:spec": { "address": "benzene:spec", "messages": {} }
           },
           "operations": {
             "{{ch}}": { "action": "receive", "channel": { "$ref": "#/channels/{{ch}}" }, "messages": [ { "$ref": "#/channels/{{ch}}/messages/{{schema}}" } ] },
-            "spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" } }
+            "benzene:spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" } }
           },
           "components": { "schemas": { "{{schema}}": { "type": "object", "properties": { "id": { "type": "string" } } } } }
         }
@@ -1112,8 +1112,8 @@ public class MeshAggregatorTest : IDisposable
         // Utility topics (spec/health/...) churn with framework versions, not with anyone's domain
         // contract - the same carve-out Status and SchemaMismatch already apply.
         var store = new FileSystemMeshArtifactStore(_rootDirectory);
-        await CatalogDiffAggregator("""{"requests":[{"topic":"spec","reserved":true}]}""", store).RunOnceAsync(SingleServiceRegistry());
-        await CatalogDiffAggregator("""{"requests":[{"topic":"spec","reserved":true},{"topic":"healthcheck","reserved":true}]}""", store)
+        await CatalogDiffAggregator("""{"requests":[{"topic":"benzene:spec","reserved":true}]}""", store).RunOnceAsync(SingleServiceRegistry());
+        await CatalogDiffAggregator("""{"requests":[{"topic":"benzene:spec","reserved":true},{"topic":"benzene:healthcheck","reserved":true}]}""", store)
             .RunOnceAsync(SingleServiceRegistry());
 
         var catalog = await ReadCatalogAsync(store);

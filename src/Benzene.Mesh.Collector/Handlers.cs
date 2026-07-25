@@ -117,7 +117,7 @@ public class IssuesMessageHandler : IMessageHandler<MeshIssueBatch, Ack>
 
 /// <summary>The whole known fleet in one read model. Depends on <see cref="IMeshFleetReadModel"/> so
 /// the fleet's data source is swappable (in-memory collector, or a backend-composed reader).</summary>
-[Message("mesh:query:fleet")]
+[Message(MeshTopics.QueryFleet)]
 public class FleetQueryMessageHandler : IMessageHandler<FleetQuery, FleetView>
 {
     private readonly IMeshFleetReadModel _readModel;
@@ -133,7 +133,7 @@ public class FleetQueryMessageHandler : IMessageHandler<FleetQuery, FleetView>
 }
 
 /// <summary>One service: fleet row + descriptor + per-instance heartbeat state.</summary>
-[Message("mesh:query:service")]
+[Message(MeshTopics.QueryService)]
 public class ServiceQueryMessageHandler : IMessageHandler<ServiceQuery, ServiceView>
 {
     private readonly IMeshFleetReadModel _readModel;
@@ -154,7 +154,7 @@ public class ServiceQueryMessageHandler : IMessageHandler<ServiceQuery, ServiceV
 }
 
 /// <summary>One topic's catalog row, consumers derived from trace parentage at query time.</summary>
-[Message("mesh:query:topic")]
+[Message(MeshTopics.QueryTopic)]
 public class TopicQueryMessageHandler : IMessageHandler<TopicQuery, TopicSummary>
 {
     private readonly IMeshFleetReadModel _readModel;
@@ -175,7 +175,7 @@ public class TopicQueryMessageHandler : IMessageHandler<TopicQuery, TopicSummary
 }
 
 /// <summary>One flow's events in start order → the waterfall.</summary>
-[Message("mesh:query:trace")]
+[Message(MeshTopics.QueryTrace)]
 public class TraceQueryMessageHandler : IMessageHandler<TraceQuery, TraceView>
 {
     private readonly IMeshFleetReadModel _readModel;
@@ -198,7 +198,7 @@ public class TraceQueryMessageHandler : IMessageHandler<TraceQuery, TraceView>
 /// <summary>Every flow that carried a business correlation id, grouped by trace. Complements
 /// <c>mesh:query:trace</c> for cross-service failure triage from a business identifier (a ticket/log
 /// correlation id) rather than a trace id.</summary>
-[Message("mesh:query:correlation")]
+[Message(MeshTopics.QueryCorrelation)]
 public class CorrelationQueryMessageHandler : IMessageHandler<CorrelationQuery, CorrelationView>
 {
     private readonly IMeshFleetReadModel _readModel;

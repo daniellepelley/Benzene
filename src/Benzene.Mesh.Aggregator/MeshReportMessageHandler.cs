@@ -18,7 +18,7 @@ namespace Benzene.Mesh.Aggregator;
 /// "aggregator polls, UI reads static files" as the default, not a fait accompli.
 /// </remarks>
 [HttpEndpoint("POST", "/mesh/report")]
-[Message("mesh:report")]
+[Message(MeshAggregatorTopics.Report)]
 public class MeshReportMessageHandler : IMessageHandler<MeshServiceReport>
 {
     private readonly IMeshReportPublisher _publisher;

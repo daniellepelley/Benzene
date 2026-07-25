@@ -204,7 +204,7 @@ public class ApiGatewayMessagePipelineTest
             )
             .Configure(app => app
                 .UseApiGateway(apiGateway => apiGateway
-                    .UseHealthCheck("healthcheck", "GET", "/healthcheck", mockHealthCheck.Object)
+                    .UseHealthCheck("benzene:healthcheck", "GET", "/healthcheck", mockHealthCheck.Object)
                     .UseMessageHandlers()
                 )
             ).BuildHost();

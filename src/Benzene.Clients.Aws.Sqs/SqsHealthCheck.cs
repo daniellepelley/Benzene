@@ -69,7 +69,7 @@ public class SqsHealthCheck : IHealthCheck
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
-                { _topicAttributeKey, new MessageAttributeValue { DataType = "String", StringValue = "ping" } }
+                { _topicAttributeKey, new MessageAttributeValue { DataType = "String", StringValue = Benzene.Abstractions.BenzeneTopic.Ping } }
             }
         });
 

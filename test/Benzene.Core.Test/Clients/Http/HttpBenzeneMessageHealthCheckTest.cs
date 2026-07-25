@@ -35,19 +35,19 @@ public class HttpBenzeneMessageHealthCheckTest
 
         Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
         using var doc = JsonDocument.Parse(handler.LastRequestBody!);
-        Assert.Equal("healthcheck", doc.RootElement.GetProperty("topic").GetString());
+        Assert.Equal("benzene:healthcheck", doc.RootElement.GetProperty("topic").GetString());
     }
 
     [Fact]
     public async Task ExecuteAsync_UsesTheConfiguredHealthCheckTopic()
     {
         var handler = new CapturingHandler(HttpStatusCode.OK);
-        var check = new HttpBenzeneMessageHealthCheck(new HttpClient(handler), Url, "ping");
+        var check = new HttpBenzeneMessageHealthCheck(new HttpClient(handler), Url, "benzene:ping");
 
         await check.ExecuteAsync();
 
         using var doc = JsonDocument.Parse(handler.LastRequestBody!);
-        Assert.Equal("ping", doc.RootElement.GetProperty("topic").GetString());
+        Assert.Equal("benzene:ping", doc.RootElement.GetProperty("topic").GetString());
     }
 
     [Theory]

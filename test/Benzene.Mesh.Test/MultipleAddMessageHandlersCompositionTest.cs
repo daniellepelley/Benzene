@@ -61,7 +61,7 @@ public class MultipleAddMessageHandlersCompositionTest
 
         // Both sets' topics resolve — the second call composed in, not dropped.
         Assert.NotNull(lookup.FindHandler(new Topic("test:first")));
-        Assert.NotNull(lookup.FindHandler(new Topic("mesh:query:fleet")));
-        Assert.NotNull(lookup.FindHandler(new Topic("mesh:query:trace")));
+        Assert.NotNull(lookup.FindHandler(new Topic("benzene:mesh:query:fleet")));
+        Assert.NotNull(lookup.FindHandler(new Topic("benzene:mesh:query:trace")));
     }
 }

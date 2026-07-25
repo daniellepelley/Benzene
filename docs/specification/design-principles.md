@@ -79,7 +79,7 @@ Because handlers are optional, every capability must be honest about whether it 
 | Capability | Why | Degradation when declined |
 |---|---|---|
 | Derived spec (topics + payload schemas) | Derivation reads the registry of `(topic, TRequest, TResponse)` registrations; middleware declares none of that | No spec output; the service is documented by hand or not at all |
-| Mesh descriptor (`mesh` reserved topic, schemas, `descriptorHash`) | Same registry dependency ([mesh.md](mesh.md) §2) | Service appears in the mesh via traces/heartbeats with `missingFeeds: ["descriptor"]` — reduced, never rejected ([mesh.md](mesh.md) §6) |
+| Mesh descriptor (`benzene:mesh` reserved topic, schemas, `descriptorHash`) | Same registry dependency ([mesh.md](mesh.md) §2) | Service appears in the mesh via traces/heartbeats with `missingFeeds: ["descriptor"]` — reduced, never rejected ([mesh.md](mesh.md) §6) |
 | HTTP endpoint attributes / route sugar | Sugar over handler registration | Routes are declared explicitly instead |
 | Codegen clients | Generated from the derived spec | Clients are written by hand |
 
@@ -163,12 +163,12 @@ exactly as specified).
 |---|---|---|
 | `/benzene/invoke` | Wire-envelope endpoint (`{topic, headers, body}` in, `{statusCode, headers, body}` out per [wire-contracts.md](wire-contracts.md)) | The service-to-service and collector-query surface |
 | `/benzene/spec` | The derived spec document | Requires rung 3 (section 3) |
-| `/benzene/health` | Health check (the reserved `healthcheck` topic's response shape, over HTTP) | Liveness/readiness variants MAY nest beneath it (`/benzene/health/live`, `/benzene/health/ready`) |
+| `/benzene/health` | Health check (the reserved `benzene:healthcheck` topic's response shape, over HTTP) | Liveness/readiness variants MAY nest beneath it (`/benzene/health/live`, `/benzene/health/ready`) |
 | `/benzene/spec-ui` | Human-readable spec browser | Optional UI |
 | `/benzene/mesh-ui` | Mesh artifact viewer | Optional UI |
 | `/benzene/fleet-ui` | Live fleet view (collector-hosted) | Optional UI; collectors are ordinary Benzene services, so the standard applies to them too |
 
-Reserved *topics* (`healthcheck`, `mesh`, `mesh:*`) are already namespaced by their own
+Reserved *topics* (`benzene:healthcheck`, `benzene:mesh`, `mesh:*`) are already namespaced by their own
 registries ([wire-contracts.md](wire-contracts.md), [mesh.md](mesh.md) §1/§4) and take no
 prefix — the prefix is an HTTP-surface concern.
 

@@ -36,7 +36,7 @@ public class StartUp : BenzeneStartUp
     {
         var blobServiceUri = Environment.GetEnvironmentVariable("MESH_BLOB_URI")
                              ?? throw new InvalidOperationException("MESH_BLOB_URI is required (e.g. https://acct.blob.core.windows.net).");
-        var container = Environment.GetEnvironmentVariable("MESH_BLOB_CONTAINER") ?? "mesh";
+        var container = Environment.GetEnvironmentVariable("MESH_BLOB_CONTAINER") ?? "benzene:mesh";
         var prefix = Environment.GetEnvironmentVariable("MESH_BLOB_PREFIX") ?? "";
 
         services.UsingBenzene(benzene =>
@@ -79,7 +79,7 @@ public class StartUp : BenzeneStartUp
         app.UseHttp(http => http
             .UseBenzeneEnrichment()
             .UseMeshUi("/mesh-ui", "manifest.json")
-            // The mesh-hosted per-service Spec UI (mesh-ui's "spec" link). Renders each service's spec
+            // The mesh-hosted per-service Spec UI (mesh-ui's "benzene:spec" link). Renders each service's spec
             // from the same-origin services/{name}.json snapshot, so a service only serves JSON.
             .UseMeshSpecUi("/mesh-spec-ui.html", "manifest.json")
             // Allow the AsyncAPI Studio deep-link to fetch asyncapi.json cross-origin (Benzene's own CORS).

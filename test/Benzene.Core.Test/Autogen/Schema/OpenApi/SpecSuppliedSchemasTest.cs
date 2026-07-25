@@ -86,7 +86,7 @@ public class SpecSuppliedSchemasTest
         var host = CreateHost();
 
         var response = await host.SendBenzeneMessageAsync(
-            MessageBuilder.Create("spec", new SpecRequest("benzene", "json")));
+            MessageBuilder.Create("benzene:spec", new SpecRequest("benzene", "json")));
 
         Assert.Contains("suppliedMarker", response.Body);
         Assert.Contains("SuppliedExample", response.Body);

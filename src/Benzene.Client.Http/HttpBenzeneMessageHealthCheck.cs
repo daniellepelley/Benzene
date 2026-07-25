@@ -45,9 +45,9 @@ public class HttpBenzeneMessageHealthCheck : IHealthCheck
     /// <summary>Initializes a new instance of the <see cref="HttpBenzeneMessageHealthCheck"/> class.</summary>
     /// <param name="httpClient">The client used to POST the probe. Its lifetime is the caller's responsibility.</param>
     /// <param name="url">The target BenzeneMessage endpoint URL to probe (the same URL the client posts to).</param>
-    /// <param name="healthCheckTopic">The topic to POST (defaults to <c>"healthcheck"</c>) — pass the topic the target routes its deep health check on.</param>
+    /// <param name="healthCheckTopic">The topic to POST (defaults to <c>benzene:healthcheck</c>) — pass the topic the target routes its deep health check on.</param>
     /// <param name="cancellation">Supplies the ambient cancellation token to pass to the request; null observes no cancellation.</param>
-    public HttpBenzeneMessageHealthCheck(HttpClient httpClient, string url, string healthCheckTopic = "healthcheck", ICancellationTokenAccessor? cancellation = null)
+    public HttpBenzeneMessageHealthCheck(HttpClient httpClient, string url, string healthCheckTopic = Benzene.Abstractions.BenzeneTopic.HealthCheck, ICancellationTokenAccessor? cancellation = null)
     {
         _httpClient = httpClient;
         _url = url;

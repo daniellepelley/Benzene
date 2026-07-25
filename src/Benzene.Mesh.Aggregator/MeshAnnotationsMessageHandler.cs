@@ -22,7 +22,7 @@ namespace Benzene.Mesh.Aggregator;
 /// bloat the artifact every reader downloads.
 /// </remarks>
 [HttpEndpoint("POST", "/mesh/annotations")]
-[Message("mesh:annotations:add")]
+[Message(MeshAggregatorTopics.AnnotationsAdd)]
 public class MeshAnnotationsMessageHandler : IMessageHandler<MeshAnnotationRequest, MeshAnnotationThread>
 {
     /// <summary>Maximum accepted length of <see cref="MeshAnnotationRequest.Entity"/>.</summary>

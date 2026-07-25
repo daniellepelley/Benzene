@@ -101,7 +101,7 @@ public class AsyncApiCompositorTest
     [Fact]
     public void Merge_PrunesSchemasOnlyReferencedByDroppedReservedChannels()
     {
-        // The reserved "spec" channel references SpecRequest; the domain "order:create" channel
+        // The reserved "benzene:spec" channel references SpecRequest; the domain "order:create" channel
         // references Order (which nests OrderChild). Dropping the reserved channel must also drop
         // SpecRequest (now orphaned), but keep Order and its nested OrderChild.
         var doc = """
@@ -110,11 +110,11 @@ public class AsyncApiCompositorTest
           "info": { "title": "orders-api", "version": "1.0" },
           "channels": {
             "order_create": { "address": "order:create", "messages": { "Order": { "payload": { "$ref": "#/components/schemas/Order" } } } },
-            "spec": { "address": "spec", "messages": { "SpecRequest": { "payload": { "$ref": "#/components/schemas/SpecRequest" } } } }
+            "benzene:spec": { "address": "benzene:spec", "messages": { "SpecRequest": { "payload": { "$ref": "#/components/schemas/SpecRequest" } } } }
           },
           "operations": {
             "order_create": { "action": "receive", "channel": { "$ref": "#/channels/order_create" }, "messages": [ { "$ref": "#/channels/order_create/messages/Order" } ] },
-            "spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" }, "messages": [ { "$ref": "#/channels/spec/messages/SpecRequest" } ] }
+            "benzene:spec": { "action": "receive", "channel": { "$ref": "#/channels/benzene:spec" }, "messages": [ { "$ref": "#/channels/benzene:spec/messages/SpecRequest" } ] }
           },
           "components": { "schemas": {
             "Order": { "type": "object", "properties": { "child": { "$ref": "#/components/schemas/OrderChild" } } },
@@ -124,7 +124,7 @@ public class AsyncApiCompositorTest
         }
         """;
 
-        var merged = AsyncApiCompositor.Merge(new[] { Service("orders-api", doc, "spec") }, At);
+        var merged = AsyncApiCompositor.Merge(new[] { Service("orders-api", doc, "benzene:spec") }, At);
         var schemas = JsonNode.Parse(merged)!["components"]!["schemas"]!.AsObject();
 
         Assert.True(schemas.ContainsKey("OrdersApi_Order"));
@@ -149,7 +149,7 @@ public class AsyncApiCompositorTest
     [Fact]
     public void Merge_SkipsReservedTopicChannelsAndOperations()
     {
-        // The reserved "spec" operation carries a reply on a "spec:response" channel. Dropping the
+        // The reserved "benzene:spec" operation carries a reply on a "spec:response" channel. Dropping the
         // operation must also drop BOTH its request and its reply channel - and the compositor does
         // this by keeping only channels a surviving operation references, so it needs no knowledge of
         // the reply suffix (":response" here, but it could be anything a service configures).
@@ -159,26 +159,26 @@ public class AsyncApiCompositorTest
           "info": { "title": "orders-api", "version": "1.0" },
           "channels": {
             "order_create": { "address": "order:create", "messages": {} },
-            "spec": { "address": "spec", "messages": {} },
+            "benzene:spec": { "address": "benzene:spec", "messages": {} },
             "spec_response": { "address": "spec:response", "messages": {} }
           },
           "operations": {
             "order_create": { "action": "receive", "channel": { "$ref": "#/channels/order_create" } },
-            "spec": { "action": "receive", "channel": { "$ref": "#/channels/spec" }, "reply": { "channel": { "$ref": "#/channels/spec_response" } } }
+            "benzene:spec": { "action": "receive", "channel": { "$ref": "#/channels/benzene:spec" }, "reply": { "channel": { "$ref": "#/channels/spec_response" } } }
           },
           "components": { "schemas": {} }
         }
         """;
 
-        var merged = AsyncApiCompositor.Merge(new[] { Service("orders-api", doc, "spec") }, At);
+        var merged = AsyncApiCompositor.Merge(new[] { Service("orders-api", doc, "benzene:spec") }, At);
         var parsed = JsonNode.Parse(merged)!;
         var channels = parsed["channels"]!.AsObject();
         var operations = parsed["operations"]!.AsObject();
 
         Assert.True(channels.ContainsKey("orders-api_order_create"));
-        // The reserved "spec" topic, its reply channel, and its operation are all dropped.
-        Assert.DoesNotContain(channels, kv => kv.Key.Contains("spec"));
-        Assert.DoesNotContain(operations, kv => kv.Key.Contains("spec"));
+        // The reserved "benzene:spec" topic, its reply channel, and its operation are all dropped.
+        Assert.DoesNotContain(channels, kv => kv.Key.Contains("benzene:spec"));
+        Assert.DoesNotContain(operations, kv => kv.Key.Contains("benzene:spec"));
     }
 
     [Fact]

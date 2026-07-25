@@ -9,7 +9,7 @@ public static class Defaults
     public const string PathNoResponse = "/example-no-response";
     public const string Method = "GET";
     public const string Version2 = "2.0";
-    public const string HealthCheckTopic = "healthcheck";
+    public const string HealthCheckTopic = "benzene:healthcheck";
     public const int Id = 42;
     public const string Name = "some-name";
     public static object MessageAsObject = new { name = "some-name"};

@@ -73,7 +73,7 @@ public class AwsMeshFleetEndpointTest
         var response = await host.SendApiGatewayAsync(HttpBuilder
             .Create("POST", "/benzene/invoke", new
             {
-                topic = "mesh:query:fleet",
+                topic = "benzene:mesh:query:fleet",
                 headers = new System.Collections.Generic.Dictionary<string, string>(),
                 body = "{}"
             }));

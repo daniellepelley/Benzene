@@ -67,7 +67,7 @@ public class LambdaMeshServiceSourceTest
     public async Task TryFetchSpecAsync_InvokesSpecTopicWithTheRequestedType_ReturnsBody()
     {
         // The composite-AsyncAPI feature: the aggregator asks each Lambda-invoke source for the
-        // asyncapi spec, which invokes the same "spec" topic but with a SpecRequest body selecting
+        // asyncapi spec, which invokes the same "benzene:spec" topic but with a SpecRequest body selecting
         // the type (the empty-body FetchSpecAsync invoke yields the default benzene spec).
         BenzeneMessageClientRequest? sent = null;
         var client = new Mock<IAwsLambdaClient>();
@@ -81,7 +81,7 @@ public class LambdaMeshServiceSourceTest
         var result = await source.TryFetchSpecAsync(Entry(), "asyncapi", CancellationToken.None);
 
         Assert.Equal("{\"asyncapi\":\"2.0.0\"}", result);
-        Assert.Equal("spec", sent!.Topic);
+        Assert.Equal("benzene:spec", sent!.Topic);
         Assert.Contains("asyncapi", sent.Body); // the SpecRequest body carries type=asyncapi
     }
 
