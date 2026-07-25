@@ -517,6 +517,13 @@
   .fl-failed { color: var(--req); }
   .fl-stale { color: var(--m-put); }
   .fl-sub { color: var(--ink-soft); font-size: 12.5px; margin: 3px 0 12px; }
+  .fl-utility-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-soft);
+    font-size: 12px; cursor: pointer; user-select: none; margin-left: auto; }
+  .fl-utility-toggle input { accent-color: var(--accent); cursor: pointer; }
+  .copy-btn { background: none; border: none; padding: 0 3px; font: inherit; font-size: 12px;
+    color: var(--ink-faint); cursor: pointer; line-height: 1; vertical-align: baseline; }
+  .copy-btn:hover, .copy-btn:focus-visible { color: var(--accent); outline: none; }
+  h1 .copy-btn { font-size: 15px; }
   tr.fl-flow-row { cursor: pointer; }
   tr.fl-flow-row:hover td { background: color-mix(in srgb, var(--ink) 4%, transparent); }
   .fl-flow-link { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
@@ -756,6 +763,9 @@
         <button type="button" id="fl-range-apply">Apply</button>
       </span>
       <span class="fl-sub" id="fl-range-note"></span>
+      <label class="fl-utility-toggle" title="Benzene's own plumbing traffic (mesh:*, benzene:*, healthchecks, spec fetches) is hidden by default so the picture is your traffic. Tick to include it.">
+        <input type="checkbox" id="fl-show-utility"> show benzene traffic</label>
+      <span class="fl-sub" id="fl-utility-note"></span>
     </div>
     <div class="feed-health" id="fl-feed-health" style="display:none"></div>
     <div class="fl-tiles" id="fl-tiles"></div>
@@ -770,7 +780,7 @@
       service, laid out over time (from <span class="fl-mono">mesh:query:trace</span>).</p>
     <div class="fl-flow-filterbar" id="fl-flow-filter" style="display:none"></div>
     <div class="fl-tablewrap"><table>
-      <thead><tr><th>Trace</th><th>Topic</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
+      <thead><tr><th>Trace</th><th>Started</th><th>Topic</th><th>Services</th><th>Events</th><th>Duration ms</th><th>Outcome</th></tr></thead>
       <tbody id="fl-traces"></tbody>
     </table></div>
 
@@ -1235,6 +1245,15 @@
   function isReservedTopicId(topicId) {
     return /^(mesh:|benzene:|\$)/i.test(topicId || "");
   }
+  // Benzene's own plumbing traffic — the mesh feeds, healthchecks, spec fetches — hidden from the
+  // traffic picture by default so what's shown is the USER'S traffic. The name list is interim:
+  // once every utility topic carries the planned "benzene" prefix (a deferred rename task), this
+  // collapses to the reserved-prefix test alone. NOT applied to the issue inbox: a failing
+  // mesh:aggregate must stay reportable (the phase-1 rule).
+  function isUtilityTraffic(topicId) {
+    if (!topicId) return false;
+    return isReservedTopicId(topicId) || /^(healthcheck|spec)$/i.test(topicId) || topicId === "<missing>";
+  }
   // The live heartbeat health of a service, or null when there's no live signal (no endpoint, not yet
   // polled, service not in the fleet, or health unknown) — null renders no dot: absent heartbeat ≠ unhealthy.
   function liveHealthState(name) {
@@ -1632,6 +1651,7 @@
 
     title.textContent = issue.title;
     sub.textContent = issue.subject + (issue.team ? " · " + issue.team : "");
+    sub.appendChild(copyBtn(issue.subject, "the subject (topic / service)"));
     var head = el("div", "ig-meta");
     head.appendChild(el("span", "issue-kind k-" + issue.sev, issue.kind));
     if (issue.live) {
@@ -2094,7 +2114,9 @@
      clicking a topic link or the in-page Back button. */
   function renderTopicPage(topicId) {
     var versions = currentTopics.filter(function (t) { return t.topic === topicId; });
-    document.getElementById("tp-title").textContent = topicId;
+    var tpTitle = document.getElementById("tp-title");
+    tpTitle.textContent = topicId;
+    tpTitle.appendChild(copyBtn(topicId, "topic id"));
     var body = document.getElementById("tp-body");
     body.innerHTML = "";
 
@@ -2306,6 +2328,24 @@
       document.body.removeChild(ta); done(ok);
     } catch (e2) { done(false); }
   }
+  // A small inline copy-to-clipboard button (devs live by copy/paste; selecting text in a table of
+  // clickable rows is miserable). stopPropagation is load-bearing: these sit inside rows/links whose
+  // click navigates or expands — copying must never also trigger that.
+  function copyBtn(text, label) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "copy-btn"; b.textContent = "⧉";
+    b.title = "Copy " + (label || "to clipboard");
+    b.setAttribute("aria-label", b.title);
+    b.addEventListener("click", function (e) {
+      e.stopPropagation(); e.preventDefault();
+      copyText(text, function (ok) {
+        b.textContent = ok ? "✓" : "✕";
+        setTimeout(function () { b.textContent = "⧉"; }, 1200);
+      });
+    });
+    b.addEventListener("keydown", function (e) { e.stopPropagation(); }); // rows also act on Enter/Space
+    return b;
+  }
 
   function renderComposePage(topicId) {
     if (!composeEnabled()) { showView("main-view"); return; } // toggle off - never render
@@ -2425,7 +2465,9 @@
 
   function renderServicePage(name) {
     var svc = findManifestService(name);
-    document.getElementById("sp-title").textContent = name;
+    var spTitle = document.getElementById("sp-title");
+    spTitle.textContent = name;
+    spTitle.appendChild(copyBtn(name, "service name"));
     var badges = document.getElementById("sp-badges");
     badges.innerHTML = "";
     var sub = document.getElementById("sp-sub");
@@ -3622,8 +3664,57 @@
   function flIsInfraRow(f) {
     return !(f.events > 0) && !f.topic;
   }
+
+  // Recent flows are held in a rolling client-side map across polls. The composite plane's trace
+  // backend (X-Ray) is eventually consistent: each poll returns a varying subset, and a flow's row
+  // flips from a second-precision summary to a ms-precision enriched row once its spans land — a
+  // straight per-poll rebuild made the list visibly jump around. Once seen, a trace is HELD and only
+  // upgraded in place; pruned to the newest FL_KNOWN_MAX by start time, cleared on a range change
+  // (a new window is a genuinely new list).
+  var flKnownFlows = {};
+  var FL_KNOWN_MAX = 60;
+  function flMergeFlows(incoming) {
+    (incoming || []).forEach(function (f) {
+      if (!f || !f.traceId) return;
+      var known = flKnownFlows[f.traceId];
+      if (!known) { flKnownFlows[f.traceId] = f; return; }
+      // Upgrade, never downgrade: a row that already mapped Benzene spans keeps them even if a later
+      // poll answers with a thinner summary for the same trace.
+      if ((f.events || 0) > (known.events || 0) || (!known.topic && f.topic)) {
+        flKnownFlows[f.traceId] = f;
+      } else {
+        if (f.failed) known.failed = true;
+        if ((f.durationMs || 0) > (known.durationMs || 0)) known.durationMs = f.durationMs;
+      }
+    });
+    var rows = Object.keys(flKnownFlows).map(function (k) { return flKnownFlows[k]; });
+    rows.sort(function (a, b) {
+      var d = (Date.parse(b.startedAt) || 0) - (Date.parse(a.startedAt) || 0);
+      return d !== 0 ? d : (a.traceId < b.traceId ? 1 : -1); // deterministic tie-break — no flicker
+    });
+    if (rows.length > FL_KNOWN_MAX) {
+      rows.slice(FL_KNOWN_MAX).forEach(function (f) { delete flKnownFlows[f.traceId]; });
+      rows = rows.slice(0, FL_KNOWN_MAX);
+    }
+    return rows;
+  }
+
+  // A flow's start as local wall-clock (today: time only; older: day + time); null when the backend
+  // sent nothing usable (absent ≠ epoch — same floor as flAgeMs).
+  function flStamp(iso) {
+    var t = iso ? Date.parse(iso) : NaN;
+    if (isNaN(t) || t < 978307200000) return null;
+    var d = new Date(t);
+    function p2(n) { return (n < 10 ? "0" : "") + n; }
+    var hms = p2(d.getHours()) + ":" + p2(d.getMinutes()) + ":" + p2(d.getSeconds());
+    if (d.toDateString() === new Date().toDateString()) return hms;
+    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] +
+      " " + d.getDate() + " " + hms;
+  }
   // The recent-flows pivot filter (drains-up 2.4), set by the error-count links; null = unfiltered.
   var flFlowFilter = null; // { topic: string|null, failedOnly: bool }
+  // The show-benzene-traffic toggle: off = the user's traffic only (utility flows/counts/edges hidden).
+  var flShowUtility = false;
   function flPivotToFailingFlows(topicId) {
     flFlowFilter = { topic: topicId || null, failedOnly: true };
     if (location.hash === "#fleet") {
@@ -3653,13 +3744,21 @@
       var age = flAgeMs(s.lastSeen);
       if (s.health === "degraded" || (age != null && age > FL_STALE_MS)) unhealthy++;
     });
+    // Tiles answer for the USER'S traffic by default — benzene utility topics (mesh feeds,
+    // healthchecks) are excluded unless the show-benzene toggle is on. Topics count follows suit.
+    var topicCount = 0;
     topics.forEach(function (t) {
+      if (!flShowUtility && isUtilityTraffic(t.topic)) return;
+      topicCount++;
       if ((t.missingFeeds || []).indexOf("stats") === -1) { invocations += t.invocations; errors += t.errors; }
     });
+    // Merge this poll's flows into the rolling held set FIRST — every flow-derived surface below
+    // (tiles buckets, the flow table) reads the stable merged list, not the poll's churny subset.
+    var merged = flMergeFlows(traces);
     // The Services tile counts mesh services, not backend artifacts (D7): a name known ONLY from
     // infra flows (no Benzene-attributed flow, no health signal) is excluded from the headline count.
     var attributedNames = {}, infraNames = {};
-    traces.forEach(function (f) {
+    merged.forEach(function (f) {
       var bucket = flIsInfraRow(f) ? infraNames : attributedNames;
       (f.services || []).forEach(function (n) { bucket[n] = 1; });
     });
@@ -3668,7 +3767,7 @@
     }).length;
     var tiles = document.getElementById("fl-tiles");
     tiles.textContent = "";
-    [["Services", services.length - infraOnlyCount], ["Topics", topics.length], ["Invocations", invocations],
+    [["Services", services.length - infraOnlyCount], ["Topics", topicCount], ["Invocations", invocations],
      ["Errors", errors], ["Unhealthy", unhealthy]].forEach(function (kv) {
       var t = el("div", "fl-tile");
       t.appendChild(el("div", "k", kv[0]));
@@ -3682,19 +3781,34 @@
     var countsNote = document.getElementById("fl-counts-note");
     if (countsNote) { countsNote.textContent = ""; flCountsNote(countsNote, fleet.window); }
 
+    // Utility-traffic filter: benzene's own plumbing flows are hidden by default. An explicit pivot
+    // TO a utility topic bypasses it (following an issue's evidence link must never land on an
+    // empty-by-filter list), as does the show-benzene toggle.
+    var utilityExempt = flShowUtility || (flFlowFilter && flFlowFilter.topic && isUtilityTraffic(flFlowFilter.topic));
+    var hiddenUtility = 0;
+    var visible = utilityExempt ? merged : merged.filter(function (f) {
+      if (isUtilityTraffic(f.topic)) { hiddenUtility++; return false; }
+      return true;
+    });
+    var utilityNote = document.getElementById("fl-utility-note");
+    if (utilityNote) {
+      utilityNote.textContent = hiddenUtility > 0
+        ? "· " + hiddenUtility + " benzene flow" + (hiddenUtility === 1 ? "" : "s") + " hidden" : "";
+    }
+
     // Apply the pivot filter (drains-up 2.4) and say so — a filtered list must never look like the whole.
-    var flowRows = traces;
+    var flowRows = visible;
     var filterBar = document.getElementById("fl-flow-filter");
     if (filterBar) { filterBar.textContent = ""; filterBar.style.display = "none"; }
     if (flFlowFilter) {
-      flowRows = traces.filter(function (f) {
+      flowRows = visible.filter(function (f) {
         if (flFlowFilter.failedOnly && !f.failed) return false;
         if (flFlowFilter.topic && f.topic !== flFlowFilter.topic) return false;
         return true;
       });
       if (filterBar) {
         filterBar.style.display = "";
-        filterBar.appendChild(el("span", null, "Showing " + flowRows.length + " of " + traces.length + " flows — " +
+        filterBar.appendChild(el("span", null, "Showing " + flowRows.length + " of " + visible.length + " flows — " +
           (flFlowFilter.failedOnly ? "failed only" : "") +
           (flFlowFilter.topic ? (flFlowFilter.failedOnly ? " · " : "") + "topic " + flFlowFilter.topic : "")));
         var clear = el("button", "fl-flow-link", "clear filter");
@@ -3715,7 +3829,11 @@
       link.textContent = (f.traceId || "").slice(0, 16);
       link.title = "Open this flow's traced waterfall";
       tdId.appendChild(link);
+      tdId.appendChild(copyBtn(f.traceId || "", "the full trace id"));
       tr.appendChild(tdId);
+      var stamp = flStamp(f.startedAt);
+      var tdStart = flCell(tr, stamp || "—", "fl-mono");
+      if (stamp) tdStart.title = new Date(Date.parse(f.startedAt)).toISOString();
       flCell(tr, f.topic || "—", "fl-mono");
       // Services: on an uninstrumented row these are the backend's own names — label them, never
       // present them as mesh services (the D7 rendering rule).
@@ -3733,7 +3851,13 @@
       var open = function () { flToggleFlow(tr, f.traceId); };
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
-    }, 6);
+    }, 7);
+    // Hidden ≠ absent: when the filter hid everything, the empty state must say so, not claim quiet.
+    if (!flowRows.length && hiddenUtility > 0 && !flFlowFilter) {
+      var ph = tbody.querySelector("td.fl-missing");
+      if (ph) ph.textContent = "no user traffic in this window — " + hiddenUtility + " benzene flow" +
+        (hiddenUtility === 1 ? "" : "s") + " hidden (tick “show benzene traffic”)";
+    }
     flRenderTopology(fleet);
 
     if (flOpenTraceId) {
@@ -3765,18 +3889,23 @@
   // don't exist, so fall back to the DECLARED routes (topics.json: producer → consumer, sender → handler)
   // carrying the LIVE per-topic counts — structure from the catalog, traffic from the window.
   function flTrafficEdges(fleet) {
-    var observed = flDeriveEdges(fleet.topics);
+    // The map answers for the user's traffic by default too — utility topics contribute no edges
+    // (and no counts) unless the show-benzene toggle is on.
+    var mapTopics = (fleet.topics || []).filter(function (t) {
+      return flShowUtility || !isUtilityTraffic(t.topic);
+    });
+    var observed = flDeriveEdges(mapTopics);
     if (observed.length) return { edges: observed, declaredStructure: false };
     if (!(currentTopics || []).length) return { edges: [], declaredStructure: false };
     var liveByTopic = {};
-    (fleet.topics || []).forEach(function (t) {
+    mapTopics.forEach(function (t) {
       if ((t.missingFeeds || []).indexOf("stats") !== -1) return;
       var agg = liveByTopic[t.topic] || (liveByTopic[t.topic] = { invocations: 0, errors: 0 });
       agg.invocations += t.invocations; agg.errors += t.errors;
     });
     var byPair = {};
     currentTopics.forEach(function (t) {
-      if (t.reserved) return;
+      if (t.reserved || (!flShowUtility && isUtilityTraffic(t.topic))) return;
       var counts = liveByTopic[t.topic] || { invocations: 0, errors: 0 };
       (t.producers || []).forEach(function (p) {
         var from = p && p.service; if (!from) return;
@@ -3872,14 +4001,18 @@
   }
   function flBuildWaterfall(view) {
     var events = view.events || [], wrap = el("div", "fl-wf"), head = el("div", "fl-wf-head");
-    head.appendChild(el("span", "fl-tid", view.traceId));
+    var tid = el("span", "fl-tid", view.traceId);
+    tid.appendChild(copyBtn(view.traceId || "", "trace id"));
+    head.appendChild(tid);
     var correlated = (events.find(function (e) { return e.correlationId; }) || {}).correlationId;
     if (correlated) {
       var cwrap = el("span", "fl-tid", "correlation ");
       var clink = el("button", "fl-corr-link", correlated);
       clink.type = "button"; clink.title = "Find all flows that carried this correlation id";
       clink.addEventListener("click", function () { flLookupCorrelation(correlated); });
-      cwrap.appendChild(clink); head.appendChild(cwrap);
+      cwrap.appendChild(clink);
+      cwrap.appendChild(copyBtn(correlated, "correlation id"));
+      head.appendChild(cwrap);
     }
     wrap.appendChild(head);
     if (!events.length) {
@@ -3928,7 +4061,7 @@
   function flExpandFlow(tr, traceId) {
     flOpenTraceId = traceId; tr.classList.add("open");
     var detailRow = document.createElement("tr"); detailRow.className = "fl-flow-detail-row";
-    var td = document.createElement("td"); td.className = "fl-flow-detail"; td.colSpan = 6;
+    var td = document.createElement("td"); td.className = "fl-flow-detail"; td.colSpan = 7;
     td.appendChild(el("div", "fl-wf-note", "Loading trace…"));
     detailRow.appendChild(td); tr.parentNode.insertBefore(detailRow, tr.nextSibling);
     var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
@@ -3998,6 +4131,11 @@
     var tg = document.getElementById("fl-trace-go"), ti = document.getElementById("fl-trace-input");
     if (tg) tg.addEventListener("click", function () { flLookupTrace(); });
     if (ti) ti.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); flLookupTrace(); } });
+    var util = document.getElementById("fl-show-utility");
+    if (util) util.addEventListener("change", function () {
+      flShowUtility = util.checked;
+      if (currentFleet && isEstateView()) renderFleetPage(); // a display toggle — re-render, no re-poll
+    });
     flWireRangePicker();
   })();
 
@@ -4006,6 +4144,7 @@
   // section it feeds re-window at once - the one-shared-control model), and re-run an open correlation
   // lookup so its results honor the new range too.
   function flApplyRange() {
+    flKnownFlows = {}; // a new window is a genuinely new flow list — the hold-across-polls map resets
     if (fleetEndpoint()) loadFleet();
     var corr = document.getElementById("fl-corr-input");
     if (corr && (corr.value || "").trim()) flLookupCorrelation();

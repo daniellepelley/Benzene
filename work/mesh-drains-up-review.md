@@ -213,6 +213,22 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 > Remaining live observation: ~half the newest flows are summary-plane fallbacks (in-flight traces
 > enriched before X-Ray has their spans) — correctly labelled "infrastructure", noted for Phase 4.
 
+> **LIVE-FEEDBACK ITERATION 2026-07-25 (maintainer, using the deployed estate).** Four asks, all
+> shipped UI-side (see `src/Benzene.Mesh.Ui/CLAUDE.md` for mechanics): (1) **"recent routes jump
+> around"** — root-caused to X-Ray eventual consistency (each poll answers a varying trace subset;
+> enriched rows land late and flip a flow's start precision) × a full table rebuild per 5s poll; fixed
+> with a rolling client-side hold-and-upgrade map (never downgrade, prune to 60 newest, reset on range
+> change), proven by a churn-mode mock (each poll returns a DIFFERENT single flow — the UI holds both,
+> stable order). (2) **Started datetime column** on flows (local wall-clock, ISO in the tooltip,
+> absent ≠ epoch). (3) **Copy-to-clipboard buttons** (trace ids full-length, correlation ids,
+> topic/service titles, issue subjects — stopPropagation so copying never navigates). (4) **Benzene
+> utility traffic hidden by default** (flows/tiles/map; "show benzene traffic" checkbox; hidden count
+> always stated; pivot-to-utility-topic bypasses; inbox deliberately unfiltered). Interim name list in
+> `isUtilityTraffic` until the **benzene-prefix rename** (user-deferred single task, next). Live run:
+> 12/12 assertions incl. the new ones; live finding: X-Ray's 20-row recency cap is ~95% mesh's own 5s
+> polling — the filter makes that visible honestly ("19 benzene flows hidden"); backend-side exclusion
+> of mesh traces from the recent-flows query is the real fix, natural after the rename.
+
 > **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
 > windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
 > classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"

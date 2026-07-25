@@ -1,5 +1,32 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 LIVE-FEEDBACK ITERATION SHIPPED — stable flows, Started column, copy buttons, benzene
+> traffic hidden by default.** Four maintainer asks from using the deployed estate:
+> - **Flow-list stability:** recent flows are held in a rolling client-side map (`flKnownFlows`/
+>   `flMergeFlows`, cap `FL_KNOWN_MAX` 60 by newest start, deterministic tie-break) merged on every
+>   poll — X-Ray's eventual consistency returns a varying subset per poll and enriched rows land late,
+>   which made a per-poll rebuild visibly jump. Once seen, a trace is only **upgraded** in place
+>   (never downgraded to a thinner summary); the map resets on a range change (`flApplyRange` — a new
+>   window is a new list). Tiles' service buckets read the merged list too.
+> - **Started column:** the flows table gains a Started datetime (local wall-clock via `flStamp` —
+>   time-only today, day+time older; full ISO in the cell title; pre-2001 floor shared with `flAgeMs`,
+>   absent ≠ epoch). Table is now 7 columns (detail `colSpan` follows).
+> - **Copy buttons:** `copyBtn(text, label)` (reusing `copyText`) — an inline ⧉ with ✓/✕ feedback,
+>   `stopPropagation` load-bearing (they sit inside clickable rows/links). On: flow trace-id cells
+>   (copies the FULL id, the cell shows 16 chars), waterfall head trace id + correlation id,
+>   topic/service page titles, issue-page subject.
+> - **Utility filter:** `isUtilityTraffic()` (= `isReservedTopicId` + interim literal names
+>   `healthcheck`/`spec`/`<missing>` until the planned benzene-prefix rename) hides benzene's own
+>   plumbing from the traffic picture by default — flows, tiles (Topics/Invocations/Errors), and the
+>   traffic map. A "show benzene traffic" checkbox (`#fl-show-utility`, display-only re-render) shows
+>   all; the hidden count is stated (`#fl-utility-note`, and the empty state says "N benzene flows
+>   hidden", never "nothing observed"). **Pivot bypass:** an explicit pivot to a utility topic (an
+>   issue's evidence link) skips the filter. The issue **inbox is deliberately NOT filtered** — a
+>   failing `mesh:aggregate` stays reportable (the phase-1 rule). Live finding worth knowing: on the
+>   AwsMesh estate the X-Ray recent-flows cap (20) is dominated by the mesh's own 5s polling, so with
+>   the filter on few user flows remain visible — the honest note covers it; the real fix is
+>   backend-side exclusion, natural after the benzene-prefix rename (deferred task).
+
 > **2026-07-25 DRAINS-UP 3.2 UI MERGE SHIPPED — pipeline-reported issues in the inbox, feed-wins.**
 > The inbox now renders `FleetView.issues` (the `mesh:issues` feed, spec §4.1) windowed client-side on
 > `lastSeen` ≤ 24h. **Feed wins and suppresses** the client-derived "Failing traffic" row for the same
