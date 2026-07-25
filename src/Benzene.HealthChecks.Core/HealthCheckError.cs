@@ -76,10 +76,19 @@ public static class HealthCheckError
     /// <param name="data">Optional check-specific diagnostic entries to include (e.g. the resource identifier). Never put secrets here.</param>
     /// <returns>A <b>persistent</b> <see cref="HealthCheckStatus.Failed"/> for an authorization denial, otherwise a transient <see cref="HealthCheckStatus.Failed"/>.</returns>
     public static IHealthCheckResult Classify(string type, Exception exception, HealthCheckDependency[] dependencies,
-        string? errorCode = null, int? statusCode = null, IDictionary<string, object>? data = null)
+        string? errorCode = null, int? statusCode = null, IDictionary<string, object>? data = null,
+        string? requiredPermission = null)
     {
         var payload = data ?? new Dictionary<string, object>();
         payload["Error"] = exception.GetType().Name;
+        // On an authorization denial, name the permission the probe needs (e.g. "events:DescribeEventBus")
+        // so the health surface tells the operator the exact fix — a reachability probe often needs a
+        // read-only permission distinct from the data-path one, and that requirement must travel with
+        // the check, not live only in docs. Additive optional param (binary-compatible source change).
+        if (!string.IsNullOrEmpty(requiredPermission) && IsAuthorizationFailure(statusCode, errorCode))
+        {
+            payload["RequiredPermission"] = requiredPermission;
+        }
         if (!string.IsNullOrEmpty(errorCode))
         {
             payload["ErrorCode"] = errorCode;

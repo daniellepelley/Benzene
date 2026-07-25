@@ -303,6 +303,38 @@ DI-resolved type or via their factory:
       .AddHealthCheckFactory(new DatabaseHealthCheckFactory<MyDbContext>("20220809094008_V8")));
   ```
 
+## AWS reachability probes need their own read-only IAM
+
+The AWS transport health checks are deliberately **non-side-effecting reachability probes**: they
+verify the resource exists and is reachable with a read-only call rather than sending real traffic
+(an EventBridge `PutEvents` probe would fire live rules and targets, and EventBridge has no dry-run).
+The consequence is that the probe usually needs a read-only IAM action **distinct from the data-path
+permission your service already has** — `events:PutEvents` does not imply `events:DescribeEventBus`.
+If the role only grants the data path, the check reports a **persistent Failed** with
+`ErrorCode = AccessDeniedException` (EventBridge surfaces it as HTTP 400) — deliberate: a missing
+permission is a deterministic misconfiguration that won't self-heal, and you want to learn about a
+broken transport wiring at health-check time, not at runtime.
+
+Since 2026-07-25 an authorization failure also carries the exact missing action in the result's
+`Data` as **`RequiredPermission`** — surfaced verbatim on the Mesh UI's root-cause block — so the fix
+is readable from the health surface itself:
+
+| Check | Probe call | Required IAM action |
+| --- | --- | --- |
+| `EventBridgeHealthCheck` | `DescribeEventBus` | `events:DescribeEventBus` on the bus |
+| `SnsHealthCheck` | `GetTopicAttributes` | `sns:GetTopicAttributes` on the topic |
+| `SqsHealthCheck` (passive) | `GetQueueAttributes` | `sqs:GetQueueAttributes` on the queue |
+| `SqsHealthCheck` (`Active`) | `SendMessage` (ping) | `sqs:SendMessage` on the queue |
+| `AwsLambdaHealthCheck` (passive) | `GetFunctionConfiguration` | `lambda:GetFunctionConfiguration` |
+| `AwsLambdaHealthCheck` (`Active`) | ping invoke | `lambda:InvokeFunction` |
+| `StepFunctionsHealthCheck` (passive) | `DescribeStateMachine` | `states:DescribeStateMachine` |
+| `StepFunctionsHealthCheck` (`Active`) | `StartExecution` | `states:StartExecution` |
+
+Grant the probe action alongside the data-path action in the same policy statement (see
+`examples/AwsMesh/deploy/main.tf` for the Terraform shape). A service that genuinely cannot be
+granted the read permission can opt the auto-wired check out (`healthCheck: false`) — that is
+"stop monitoring this dependency", not "silence a false alarm".
+
 ## Wiring into the pipeline: `.UseHealthCheck()`
 
 ### Message-topic based (every transport)

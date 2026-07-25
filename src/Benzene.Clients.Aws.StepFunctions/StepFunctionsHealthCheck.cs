@@ -86,7 +86,8 @@ public class StepFunctionsHealthCheck : IHealthCheck
             var ex = (call.Exception?.InnerException ?? call.Exception)!;
             var (errorCode, faultStatus) = AwsErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, faultStatus,
-                new Dictionary<string, object> { { "StateMachineArn", _stateMachineArn } });
+                new Dictionary<string, object> { { "StateMachineArn", _stateMachineArn } },
+                requiredPermission: _mode == HealthCheckMode.Active ? "states:StartExecution" : "states:DescribeStateMachine");
         }
 
         var statusCode = call.Result;

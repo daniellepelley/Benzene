@@ -64,6 +64,22 @@ public class HealthCheckErrorTest
     }
 
     [Fact]
+    public void RequiredPermission_SurfacesOnAuthDenials_OnlyWhenSupplied_AndOnlyOnAuth()
+    {
+        var auth = HealthCheckError.Classify("EventBridge", new Exception(), Deps,
+            "AccessDeniedException", 400, requiredPermission: "events:DescribeEventBus");
+        Assert.Equal("events:DescribeEventBus", auth.Data["RequiredPermission"]);
+
+        var transient = HealthCheckError.Classify("EventBridge", new Exception(), Deps,
+            "InternalFailure", 500, requiredPermission: "events:DescribeEventBus");
+        Assert.False(transient.Data.ContainsKey("RequiredPermission"));
+
+        var unsupplied = HealthCheckError.Classify("EventBridge", new Exception(), Deps,
+            "AccessDeniedException", 400);
+        Assert.False(unsupplied.Data.ContainsKey("RequiredPermission"));
+    }
+
+    [Fact]
     public void NeverLeaksTheExceptionMessage()
     {
         var result = HealthCheckError.Classify("Sqs",

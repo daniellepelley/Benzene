@@ -99,7 +99,8 @@ public class SqsHealthCheck : IHealthCheck
             var ex = (call.Exception?.InnerException ?? call.Exception)!;
             var (errorCode, faultStatus) = AwsErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, faultStatus,
-                new Dictionary<string, object> { { "QueueUrl", _queueUrl } });
+                new Dictionary<string, object> { { "QueueUrl", _queueUrl } },
+                requiredPermission: _mode == HealthCheckMode.Active ? "sqs:SendMessage" : "sqs:GetQueueAttributes");
         }
 
         var statusCode = call.Result;

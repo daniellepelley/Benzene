@@ -56,6 +56,8 @@ public class EventBridgeHealthCheckTest
         Assert.Equal(HealthCheckStatus.Failed, result.Status);
         Assert.Equal("AmazonEventBridgeException", result.Data["Error"]);
         Assert.Equal("default", Assert.Single(result.Dependencies).Name);
+        // A non-auth failure never claims a missing permission — the hint is auth-only.
+        Assert.False(result.Data.ContainsKey("RequiredPermission"));
     }
 
     [Fact]
@@ -76,5 +78,8 @@ public class EventBridgeHealthCheckTest
         Assert.True(result.IsPersistent);
         Assert.Equal("AccessDeniedException", result.Data["ErrorCode"]);
         Assert.Equal(403, result.Data["StatusCode"]);
+        // The fix travels with the check: the exact IAM action the probe needs, so an operator
+        // reading the Mesh UI's root-cause block knows what to grant without leaving the page.
+        Assert.Equal("events:DescribeEventBus", result.Data["RequiredPermission"]);
     }
 }

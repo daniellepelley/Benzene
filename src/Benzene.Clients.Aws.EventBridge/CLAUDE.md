@@ -1,5 +1,12 @@
 # Benzene.Clients.Aws.EventBridge
 
+> **2026-07-25:** on an authorization failure the check now names its missing action in
+> `Data["RequiredPermission"]` (`events:DescribeEventBus`) — grant it alongside `events:PutEvents`
+> on the bus (the AwsMesh example Terraform does; see `docs/health-checks.md` for the per-check
+> IAM table). This closed the live-fire finding where the example services showed a persistent
+> AccessDeniedException because the role granted only the data path.
+
+
 ## What this package does
 Outbound EventBridge client for a Benzene app: put events on an EventBridge bus. Pins **only**
 `AWSSDK.EventBridge`.

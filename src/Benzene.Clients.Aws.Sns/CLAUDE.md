@@ -1,5 +1,10 @@
 # Benzene.Clients.Aws.Sns
 
+> **2026-07-25:** on an authorization failure the check names its missing action in
+> `Data["RequiredPermission"]` (`sns:GetTopicAttributes`) — grant it alongside `sns:Publish` on the
+> topic (the AwsMesh example Terraform does; per-check IAM table in `docs/health-checks.md`).
+
+
 ## What this package does
 Outbound SNS client for a Benzene app: publish messages to an SNS topic. Pins **only**
 `AWSSDK.SimpleNotificationService`.

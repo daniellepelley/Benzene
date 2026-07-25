@@ -81,7 +81,8 @@ public class AwsLambdaHealthCheck : IHealthCheck
         {
             var ex = (call.Exception?.InnerException ?? call.Exception)!;
             var (errorCode, statusCode) = AwsErrorDetails(ex);
-            return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode);
+            return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,
+                requiredPermission: _mode == HealthCheckMode.Active ? "lambda:InvokeFunction" : "lambda:GetFunctionConfiguration");
         }
 
         var result = call.Result;

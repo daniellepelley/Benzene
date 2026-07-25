@@ -1,5 +1,13 @@
 # Benzene.HealthChecks.Core
 
+> **2026-07-25:** `HealthCheckError.Classify` gained an optional `requiredPermission` param: on an
+> authorization denial (and only then) it is surfaced in `Data["RequiredPermission"]` — the exact
+> IAM action the probe needs, so the fix travels with the check onto the health surface (Mesh UI
+> root-cause block) instead of living only in docs. Additive optional param. All five AWS checks
+> (EventBridge/Sns/Sqs/Lambda/StepFunctions) pass their probe action, mode-aware where relevant.
+> Required-IAM table: `docs/health-checks.md` §"AWS reachability probes need their own read-only IAM".
+
+
 ## What this package does
 Core health check abstractions: the `IHealthCheck` contract, its result/response types, and the
 builder interface used to register a set of checks. Pure abstractions/simple implementations only -

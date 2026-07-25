@@ -364,11 +364,18 @@ data "aws_iam_policy_document" "service_sqs" {
     resources = [aws_sqs_queue.payments.arn, aws_sqs_queue.shipping.arn]
   }
   statement {
-    actions   = ["sns:Publish"]
+    # sns:Publish is the data path; sns:GetTopicAttributes is the read-only reachability probe the
+    # auto-wired SnsHealthCheck makes — without it the health check reports a persistent
+    # AuthorizationError (surfaced on the Mesh UI with RequiredPermission naming this action).
+    actions   = ["sns:Publish", "sns:GetTopicAttributes"]
     resources = [aws_sns_topic.order_placed.arn]
   }
   statement {
-    actions   = ["events:PutEvents"]
+    # events:PutEvents is the data path; events:DescribeEventBus is the read-only reachability probe
+    # the auto-wired EventBridgeHealthCheck makes (EventBridge has no dry-run PutEvents, and a real
+    # PutEvents probe would fire live rules) — without it the check reports a persistent
+    # AccessDeniedException (HTTP 400) and the service shows unhealthy on the Mesh UI.
+    actions   = ["events:PutEvents", "events:DescribeEventBus"]
     resources = [aws_cloudwatch_event_bus.bus.arn]
   }
 }

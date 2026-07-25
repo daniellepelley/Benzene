@@ -54,7 +54,8 @@ public class SnsHealthCheck : IHealthCheck
             // enriched with the SDK's error code + status, never the exception message.
             var (errorCode, statusCode) = AwsErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,
-                new Dictionary<string, object> { { "TopicArn", _topicArn } });
+                new Dictionary<string, object> { { "TopicArn", _topicArn } },
+                requiredPermission: "sns:GetTopicAttributes");
         }
     }
 

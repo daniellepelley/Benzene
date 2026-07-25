@@ -62,7 +62,8 @@ public class EventBridgeHealthCheck : IHealthCheck
             // status, never the exception message.
             var (errorCode, statusCode) = AwsErrorDetails(ex);
             return HealthCheckError.Classify(Type, ex, dependencies, errorCode, statusCode,
-                new Dictionary<string, object> { { "EventBus", _eventBusName } });
+                new Dictionary<string, object> { { "EventBus", _eventBusName } },
+                requiredPermission: "events:DescribeEventBus");
         }
     }
 
