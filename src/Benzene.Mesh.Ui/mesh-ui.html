@@ -493,7 +493,14 @@
   .topo-arrow.err { fill: var(--req); }
 
   /* ---------- Fleet view (live/observed plane, folded in from the standalone fleet page) ---------- */
-  .fl-range { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 14px; font-size: 13px; }
+  /* The estate-wide filter bar: sticky under the topbar, one wrapping row, on every view. */
+  .estate-filters { position: sticky; top: 0; z-index: 40; display: flex; align-items: center;
+    flex-wrap: wrap; gap: 8px 14px; padding: 7px 22px; background: var(--bg);
+    border-bottom: 1px solid var(--line); font-size: 13px; }
+  .estate-filters .fl-sub, .estate-filters .fl-utility-toggle { margin: 0; }
+  .ef-scope { margin-left: auto; color: var(--ink-faint); font-size: 11px; letter-spacing: .04em;
+    text-transform: uppercase; cursor: help; }
+  .fl-range { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; }
   .fl-range label { color: var(--ink-faint); font-size: 12px; }
   .fl-range select, .fl-range input, .fl-range button { font: inherit; padding: 5px 8px; border: 1px solid var(--line);
     border-radius: 7px; background: var(--surface-2); color: var(--ink); }
@@ -735,6 +742,28 @@
   </button>
 </header>
 
+<!-- Estate-wide filters (maintainer + PO ruling 2026-07-25): ONE time range and ONE benzene toggle,
+     visible and in force on EVERY view — no per-section filter controls. Sticky under the topbar so
+     the scope is unmistakable; the range control mounts only with a live endpoint (static floor:
+     nothing to window), the benzene toggle always (the catalog exists on the static floor). -->
+<div class="estate-filters" id="estate-filters">
+  <span class="fl-range" id="fl-range" style="display:none">
+    <label for="fl-range-select">Time range</label>
+    <select id="fl-range-select" aria-label="Estate-wide time range"></select>
+    <span id="fl-range-custom" style="display:none">
+      <input type="datetime-local" id="fl-range-from" aria-label="From">
+      <span class="fl-range-dash">→</span>
+      <input type="datetime-local" id="fl-range-to" aria-label="To">
+      <button type="button" id="fl-range-apply">Apply</button>
+    </span>
+    <span class="fl-sub" id="fl-range-note"></span>
+  </span>
+  <label class="fl-utility-toggle" title="Benzene's own plumbing (mesh feeds, healthchecks, spec fetches) is hidden everywhere by default — it's assumed to be working, and failures still land in the issue inbox regardless. Tick to include it in every table, count and map.">
+    <input type="checkbox" id="fl-show-utility"> show benzene topics</label>
+  <span class="fl-sub" id="fl-utility-note"></span>
+  <span class="ef-scope" title="These filters drive every page — the estate tables, the drill-in pages, the tiles and the traffic map all answer for the same window and the same topic set.">filters apply estate-wide</span>
+</div>
+
 <main>
  <div id="main-view">
   <div class="lede">
@@ -758,20 +787,6 @@
     <div class="issues-head">
       <h2>Live traffic</h2>
       <span class="issues-sub" id="fl-status"></span>
-    </div>
-    <div class="fl-range" id="fl-range">
-      <label for="fl-range-select">Time range</label>
-      <select id="fl-range-select" aria-label="Live time range"></select>
-      <span id="fl-range-custom" style="display:none">
-        <input type="datetime-local" id="fl-range-from" aria-label="From">
-        <span class="fl-range-dash">→</span>
-        <input type="datetime-local" id="fl-range-to" aria-label="To">
-        <button type="button" id="fl-range-apply">Apply</button>
-      </span>
-      <span class="fl-sub" id="fl-range-note"></span>
-      <label class="fl-utility-toggle" title="Benzene's own plumbing traffic (mesh:*, benzene:*, healthchecks, spec fetches) is hidden by default so the picture is your traffic. Tick to include it.">
-        <input type="checkbox" id="fl-show-utility"> show benzene traffic</label>
-      <span class="fl-sub" id="fl-utility-note"></span>
     </div>
     <div class="feed-health" id="fl-feed-health" style="display:none"></div>
     <div class="fl-tiles" id="fl-tiles"></div>
@@ -828,7 +843,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
           <input type="search" id="topics-filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
         </div>
-        <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show benzene topics</label>
         <a id="topics-asyncapi" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
            title="Download the fleet's composite AsyncAPI document" style="display:none">Composite AsyncAPI</a>
         <a id="topics-asyncapi-studio" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
@@ -1473,6 +1487,13 @@
       live.title = "Derived from the live fleet (observed), not the declared catalog.";
       meta.appendChild(live);
     }
+    // The one filter exemption made visible: an inbox row on a benzene utility topic is labeled, so
+    // its presence beside benzene-filtered statistics never reads as a tally break.
+    if (isUtilityTraffic(i.subject)) {
+      var bz = el("span", "issue-live", "benzene");
+      bz.title = "A benzene utility topic. The issue inbox is never filtered — a failing benzene feed must be visible even when benzene topics are hidden everywhere else.";
+      meta.appendChild(bz);
+    }
     meta.appendChild(el("span", "issue-kind k-" + i.sev, i.kind));
     row.appendChild(meta);
     var arrow = el("span", "issue-arrow");
@@ -1493,6 +1514,16 @@
 
     var issues = collectIssues();
     lastIssues = issues; // the issue detail page resolves #issue: ids against the latest derivation
+    // The inbox deliberately keeps its own fixed 24h window (the overnight-failure job) and is never
+    // filtered — when the global range differs, SAY so, or its counts read as a tally break.
+    var inboxNote = document.getElementById("issues-window-note");
+    if (!inboxNote) {
+      inboxNote = el("div", "fl-sub");
+      inboxNote.id = "issues-window-note";
+      sub.parentNode.appendChild(inboxNote);
+    }
+    inboxNote.textContent = (fleetEndpoint() && fleetRange && fleetRange.from && fleetRange.from !== "now-24h")
+      ? "inbox always watches the last 24h — not affected by the time filter" : "";
     [["high", "Needs attention"], ["medium", "Warnings"], ["low", "For review"]].forEach(function (g) {
       var items = issues.filter(function (i) { return i.sev === g[0]; });
       if (!items.length) return;
@@ -3002,7 +3033,9 @@
   }
 
   function renderTopicRows() {
-    var showUtils = document.getElementById("topics-show-utils").checked;
+    // ONE global benzene state (maintainer ruling): toggled off means utility topics don't exist
+    // anywhere — catalog table included. No per-section toggle.
+    var showUtils = flShowUtility;
     var q = document.getElementById("topics-filter").value.trim().toLowerCase();
     var rows = currentTopics.filter(function (t) {
       return (showUtils || !t.reserved) && topicMatchesQuery(t, q);
@@ -3095,43 +3128,17 @@
       tr.appendChild(tdStatus);
 
       if (showTraffic) {
-        // One best-available number (drains-up 2.5): the live observed count when this row was observed,
-        // else the usage feed's count, else "—". Which plane (and both planes' figures, when both exist)
-        // lives in the tooltip — provenance one affordance deep, never a second column.
+        // The tally rule: this cell renders topicTraffic() — the SAME shared source the topic page's
+        // headline renders — so the two can never disagree. Provenance one affordance deep here
+        // (drains-up 2.5); the drill-in states it inline.
         var tdTraffic = el("td");
-        var usageTotal = currentUsage
-          ? usageEntriesForTopic(t.topic, t.version || null).reduce(function (a, e) { return a + (e.count || 0); }, 0)
-          : null;
-        var observedThis = false, obsTotal = 0;
-        if (showObserved) {
-          var obsRows = (currentFleet.topics || []).filter(function (o) {
-            return o.topic === t.topic && (o.version || null) === (t.version || null);
-          });
-          observedThis = obsRows.some(function (o) { return (o.missingFeeds || []).indexOf("stats") === -1; });
-          obsTotal = obsRows.reduce(function (a, o) {
-            return a + ((o.missingFeeds || []).indexOf("stats") === -1 ? (o.invocations || 0) : 0);
-          }, 0);
-        }
-        if (observedThis) {
-          var liveSpan = el("span", "obs-count", fmtCount(obsTotal));
-          liveSpan.title = "Observed live" +
-            (usageTotal != null && usageTotal > 0 ? " · the usage feed reports " + fmtCount(usageTotal) + " over its own window" : "");
-          tdTraffic.appendChild(liveSpan);
-        } else if (usageTotal != null && usageTotal > 0) {
-          var usageSpan = el("span", "usage-count", fmtCount(usageTotal));
-          usageSpan.title = "From the usage feed (usage.json), over the feed's own window" +
-            (showObserved ? " — not observed on the live plane in the current window" : "");
-          tdTraffic.appendChild(usageSpan);
-        } else {
-          tdTraffic.appendChild(el("span", "t-empty", "–"));
-        }
+        tdTraffic.appendChild(topicTrafficSpan(topicTraffic(t.topic, t.version || null)));
         tr.appendChild(tdTraffic);
       }
 
       tbody.appendChild(tr);
     });
   }
-  document.getElementById("topics-show-utils").addEventListener("change", renderTopicRows);
   document.getElementById("topics-filter").addEventListener("input", renderTopicRows);
 
   /* ---------- value & deprecation view ----------
@@ -3179,10 +3186,13 @@
     var body = document.getElementById("value-body");
     body.innerHTML = "";
 
-    if (currentRemovedTopics.length) {
-      body.appendChild(vdTierHeader("gone", "Removed since the previous run", currentRemovedTopics.length));
+    // The global benzene filter reaches here too ("like they don't exist"): a removed utility topic
+    // is not a retirement story the estate owner needs to read.
+    var removedShown = currentRemovedTopics.filter(function (r) { return flShowUtility || !isUtilityTraffic(r.topic); });
+    if (removedShown.length) {
+      body.appendChild(vdTierHeader("gone", "Removed since the previous run", removedShown.length));
       body.appendChild(el("div", "vd-group-sub", "Declared in the previous aggregator run, declared nowhere now — a retirement that just completed, or a disappearance to confirm."));
-      currentRemovedTopics.forEach(function (r) {
+      removedShown.forEach(function (r) {
         var row = el("div", "vd-row rag-gone");
         row.appendChild(el("span", "vd-removed", r.topic + (r.version ? " @ " + r.version : "")));
         row.appendChild(el("span", "vd-evidence", "no longer declared by any service"));
@@ -3277,6 +3287,50 @@
         syncViewFromHash(); // an open topic/service page gains its usage section
       })
       .catch(function () { currentUsage = null; });
+  }
+
+  // THE one source for "how much traffic did this topic carry" (the tally rule, 2026-07-25): every
+  // surface that shows a per-topic traffic figure renders this — the estate table's Traffic cell and
+  // the topic page's headline both — so they cannot diverge by construction. Best-available: the live
+  // windowed count when the live plane observed the topic in the picked range; else the usage feed's
+  // count over ITS OWN baked window (which can't be re-windowed client-side — the label travels with
+  // the number, never inherited from a header); else null (render "–").
+  function topicTraffic(topicId, version) {
+    var anyVersion = version === undefined;
+    var usageTotal = null;
+    if (currentUsage) {
+      usageTotal = usageEntriesForTopic(topicId, anyVersion ? undefined : version)
+        .reduce(function (a, e) { return a + (e.count || 0); }, 0);
+    }
+    if (fleetEndpoint() && currentFleet) {
+      var rows = (currentFleet.topics || []).filter(function (o) {
+        return o.topic === topicId && (anyVersion || (o.version || null) === version);
+      });
+      if (rows.some(function (o) { return (o.missingFeeds || []).indexOf("stats") === -1; })) {
+        var live = rows.reduce(function (a, o) {
+          return a + ((o.missingFeeds || []).indexOf("stats") === -1 ? (o.invocations || 0) : 0);
+        }, 0);
+        return { count: live, plane: "live", windowLabel: fleetRangeLabel(), usageTotal: usageTotal };
+      }
+    }
+    if (usageTotal != null && usageTotal > 0) {
+      return { count: usageTotal, plane: "usage", windowLabel: "the usage feed's own window", usageTotal: usageTotal };
+    }
+    return null;
+  }
+  // Render a topicTraffic() answer as the standard visual token (live vs usage-fallback), with the
+  // plane + window in the tooltip. Null → the neutral "–" (absent ≠ zero).
+  function topicTrafficSpan(tt) {
+    if (!tt) return el("span", "t-empty", "–");
+    if (tt.plane === "live") {
+      var liveSpan = el("span", "obs-count", fmtCount(tt.count));
+      liveSpan.title = "Observed live in " + tt.windowLabel +
+        (tt.usageTotal != null && tt.usageTotal > 0 ? " · the usage feed reports " + fmtCount(tt.usageTotal) + " over its own window" : "");
+      return liveSpan;
+    }
+    var usageSpan = el("span", "usage-count", fmtCount(tt.count));
+    usageSpan.title = "From the usage feed (usage.json), over the feed's own window — not observed on the live plane in the picked range.";
+    return usageSpan;
   }
 
   function usageEntriesForTopic(topicId, version) {
@@ -3692,6 +3746,8 @@
     if (nav) nav.style.display = ""; // the Fleet nav appears only when a live endpoint is present
     var traffic = document.getElementById("traffic-section");
     if (traffic) traffic.style.display = ""; // the front door's traffic section mounts with the endpoint
+    var rangeBar = document.getElementById("fl-range");
+    if (rangeBar) rangeBar.style.display = ""; // the estate-wide range control mounts with the endpoint
     fleetQuery("mesh:query:fleet", fleetQueryBody())
       .then(function (view) {
         currentFleet = view;
@@ -3854,8 +3910,12 @@
     flShowUtility = on;
     var cb = document.getElementById("fl-show-utility");
     if (cb) cb.checked = on;
-    if (isEstateView()) { if (currentFleet) renderFleetPage(); }
-    else syncViewFromHash();
+    if (isEstateView()) {
+      if (currentFleet) renderFleetPage();
+      if ((currentTopics || []).length) renderTopicRows(); // the catalog table honors the same state
+    } else {
+      syncViewFromHash();
+    }
   }
   // The honest affordance beside anything the filter hid: the count, why, and a one-click show/hide.
   function utilityHiddenNote(count, noun) {
@@ -3910,42 +3970,13 @@
       if ((t.missingFeeds || []).indexOf("stats") === -1) { invocations += t.invocations; errors += t.errors; }
     });
     // Merge this poll's flows into the rolling held set FIRST — every flow-derived surface below
-    // (tiles buckets, the flow table) reads the stable merged list, not the poll's churny subset.
+    // (tiles, the flow table) reads the stable merged list, not the poll's churny subset.
     var merged = flMergeFlows(traces);
-    // The Services tile counts mesh services, not backend artifacts (D7): a name known ONLY from
-    // infra flows (no Benzene-attributed flow, no health signal) is excluded from the headline count.
-    var attributedNames = {}, infraNames = {};
-    merged.forEach(function (f) {
-      var bucket = flIsInfraRow(f) ? infraNames : attributedNames;
-      (f.services || []).forEach(function (n) { bucket[n] = 1; });
-    });
-    var infraOnlyCount = services.filter(function (s) {
-      return infraNames[s.service] && !attributedNames[s.service] && (!s.health || s.health === "unknown");
-    }).length;
-    var tiles = document.getElementById("fl-tiles");
-    tiles.textContent = "";
-    [["Services", services.length - infraOnlyCount], ["Topics", topicCount], ["Invocations", invocations],
-     ["Errors", errors], ["Unhealthy", unhealthy]].forEach(function (kv) {
-      var t = el("div", "fl-tile");
-      t.appendChild(el("div", "k", kv[0]));
-      t.appendChild(el("div", "v", String(kv[1])));
-      if (kv[0] === "Services" && infraOnlyCount > 0) {
-        t.title = infraOnlyCount + " backend infrastructure name" + (infraOnlyCount === 1 ? "" : "s") +
-          " (from uninstrumented flows) not counted as mesh services.";
-      }
-      if (excludedTopics > 0 && (kv[0] === "Topics" || kv[0] === "Invocations" || kv[0] === "Errors")) {
-        t.title = excludedTopics + " benzene utility topic" + (excludedTopics === 1 ? "" : "s") +
-          " excluded — tick “show benzene traffic” to include them. The issue inbox is never filtered.";
-      }
-      tiles.appendChild(t);
-    });
-    var countsNote = document.getElementById("fl-counts-note");
-    if (countsNote) { countsNote.textContent = ""; flCountsNote(countsNote, fleet.window); }
-
-    // Utility-traffic filter: benzene's own plumbing flows hide by default, and so do SUCCESSFUL
-    // uninstrumented flows (no Benzene semantics, dead drill-in — PO ruling; failing ones always
-    // show, they're 1.2 evidence). An explicit pivot TO a utility topic bypasses it (following an
-    // issue's evidence link must never land on an empty-by-filter list), as does the toggle.
+    // Utility-traffic filter (computed BEFORE the tiles so every tile counts the same visible set):
+    // benzene's own plumbing flows hide by default, and so do SUCCESSFUL uninstrumented flows (no
+    // Benzene semantics, dead drill-in — PO ruling; failing ones always show, they're 1.2 evidence).
+    // An explicit pivot TO a utility topic bypasses it (following an issue's evidence link must
+    // never land on an empty-by-filter list), as does the toggle.
     var utilityExempt = flShowUtility || (flFlowFilter && flFlowFilter.topic && isUtilityTraffic(flFlowFilter.topic));
     var hiddenUtility = 0, hiddenInfra = 0;
     var visible = utilityExempt ? merged : merged.filter(function (f) {
@@ -3954,6 +3985,37 @@
       return true;
     });
     var hiddenTotal = hiddenUtility + hiddenInfra;
+    // The Services tile counts mesh services visible under the current filter state (D7 + the tally
+    // rule): a health-known service always counts; a name known only from flows counts only when a
+    // VISIBLE flow names it — backend artifacts and benzene-only names never inflate the tile.
+    var visibleNames = {};
+    visible.forEach(function (f) {
+      if (flIsInfraRow(f)) return; // backend's own names — never first-class (D7), even when shown
+      (f.services || []).forEach(function (n) { visibleNames[n] = 1; });
+    });
+    var countableServices = services.filter(function (s) {
+      return (s.health && s.health !== "unknown") || visibleNames[s.service];
+    });
+    var excludedServiceNames = services.length - countableServices.length;
+    var tiles = document.getElementById("fl-tiles");
+    tiles.textContent = "";
+    [["Services", countableServices.length], ["Topics", topicCount], ["Invocations", invocations],
+     ["Errors", errors], ["Unhealthy", unhealthy]].forEach(function (kv) {
+      var t = el("div", "fl-tile");
+      t.appendChild(el("div", "k", kv[0]));
+      t.appendChild(el("div", "v", String(kv[1])));
+      if (kv[0] === "Services" && excludedServiceNames > 0) {
+        t.title = excludedServiceNames + " name" + (excludedServiceNames === 1 ? "" : "s") +
+          " seen only in hidden benzene / uninstrumented flows not counted as mesh services.";
+      }
+      if (excludedTopics > 0 && (kv[0] === "Topics" || kv[0] === "Invocations" || kv[0] === "Errors")) {
+        t.title = excludedTopics + " benzene utility topic" + (excludedTopics === 1 ? "" : "s") +
+          " excluded — tick “show benzene topics” to include them. The issue inbox is never filtered.";
+      }
+      tiles.appendChild(t);
+    });
+    var countsNote = document.getElementById("fl-counts-note");
+    if (countsNote) { countsNote.textContent = ""; flCountsNote(countsNote, fleet.window); }
     var utilityNote = document.getElementById("fl-utility-note");
     if (utilityNote) {
       var parts = [];
@@ -3969,7 +4031,7 @@
         "Hidden: " + (hiddenUtility ? hiddenUtility + " benzene utility flows (mesh feeds, healthchecks)" : "") +
         (hiddenUtility && hiddenInfra ? " and " : "") +
         (hiddenInfra ? hiddenInfra + " successful flows with no Benzene-instrumented span" : "") +
-        ". Tick “show benzene traffic” to see them." +
+        ". Tick “show benzene topics” to see them." +
         (saturated ? " This trace backend's recent-flows window is dominated by benzene's own traffic, so user flows may be crowded out of the answer, not absent — the count tiles are authoritative." : "");
     }
 
@@ -4069,7 +4131,7 @@
       } else if (ph && hiddenTotal > 0) {
         ph.textContent = "no user flows in this backend's recent-flows answer — " + hiddenTotal + " of " +
           merged.length + " are benzene's own or uninstrumented (hidden; they may be crowding user flows out, " +
-          "not proof of quiet — the count tiles are authoritative). Tick “show benzene traffic” to see them.";
+          "not proof of quiet — the count tiles are authoritative). Tick “show benzene topics” to see them.";
       }
     }
     flRenderTopology(fleet);
@@ -4364,8 +4426,7 @@
     if (ti) ti.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); flLookupTrace(); } });
     var util = document.getElementById("fl-show-utility");
     if (util) util.addEventListener("change", function () {
-      flShowUtility = util.checked;
-      if (currentFleet && isEstateView()) renderFleetPage(); // a display toggle — re-render, no re-poll
+      setShowUtility(util.checked); // a display toggle — re-render everything filtered, no re-poll
     });
     flWireRangePicker();
   })();
@@ -4530,7 +4591,17 @@
     if (!currentFleet) { strip.appendChild(document.createTextNode(liveConnectingText())); wrap.appendChild(strip); return; }
     var rows = (currentFleet.topics || []).filter(function (t) { return t.topic === topicId; });
     if (!rows.length) {
-      strip.appendChild(el("span", "obs-marker obs-silent", "not observed in the live mesh in the current window"));
+      // TALLY RULE (maintainer): this headline must never contradict the estate table's Traffic cell —
+      // both render topicTraffic(). Live silent + usage traffic → the SAME usage figure with its own
+      // window stated INLINE (a baked-window number must never read as range-windowed), plus the live
+      // absence in the picked range.
+      var tt = topicTraffic(topicId);
+      if (tt) {
+        lsItem(strip, "observed · usage feed, its own window", topicTrafficSpan(tt));
+        strip.appendChild(el("span", "obs-marker obs-silent", "no live traffic in " + fleetRangeLabel()));
+      } else {
+        strip.appendChild(el("span", "obs-marker obs-silent", "not observed in the live mesh in " + fleetRangeLabel()));
+      }
       wrap.appendChild(strip); return;
     }
     var inv = 0, errs = 0, dur = 0, durN = 0, absentStats = false, absentDur = false, statusCounts = {}, observed = {};

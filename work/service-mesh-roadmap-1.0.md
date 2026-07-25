@@ -1578,3 +1578,15 @@ Full solution build (0 errors) and the complete `Benzene.Core.Test` (1531 tests)
 `Benzene.Mesh.Test` (134 tests) suites pass. §10.16's plan is now fully implemented - the only
 remaining, deliberately out-of-scope item is per-topic per-transport binding detail (queue names,
 Kafka topics, etc.), unchanged from §10.16's "explicitly not doing" call.
+
+## 2026-07-25 — Data requirement filed: a windowable usage feed (from the tally round)
+
+The mesh UI's tally rule (see `src/Benzene.Mesh.Ui/CLAUDE.md`, TALLY ROUND) exposed the standing
+data-layer gap: `usage.json` counts answer the feed's own baked window (~24h on the CloudWatch
+source), so they cannot honor the estate-wide time-range picker, and the UI must carry a "usage
+feed, its own window" label wherever it falls back to them. The UI-side handling is done and
+honest, but the real fix is data-layer: the aggregator's usage pipeline should be able to produce
+counts for a REQUESTED window (the composite fleet read model already threads `MeshUsageWindow`
+through `IMeshUsageSource.FetchUsageAsync` for the live plane — the artifact path needs the same,
+or the UI should query the live plane's windowed counts instead of the artifact when an endpoint
+is present). Until then the label travels with the number; never silently re-window client-side.

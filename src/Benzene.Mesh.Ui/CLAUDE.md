@@ -1,5 +1,31 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 TALLY ROUND — estate-wide filters, and every number reconciles (maintainer + PO ruling).**
+> The maintainer's confidence rule: "if the numbers don't add up, the user won't believe the system."
+> - **Estate-wide filter bar** (`#estate-filters`, sticky under the topbar, on EVERY view): the ONE
+>   time range (`#fl-range`, moved out of the Live traffic section; mounts only with a live endpoint)
+>   and the ONE benzene toggle (`#fl-show-utility`, always mounts; relabeled "show benzene topics"),
+>   plus a "filters apply estate-wide" scope note. No per-section filter controls remain — the
+>   catalog's separate `#topics-show-utils` checkbox is retired (supersedes the earlier separate-planes
+>   split); `renderTopicRows` reads the global `flShowUtility` via `setShowUtility`.
+> - **The tally rule (normative):** one number = one shared source + one plane token + one window
+>   label wherever it appears. `topicTraffic(topicId, version)` → `{count, plane: live|usage,
+>   windowLabel}` is THE per-topic traffic source; the estate table's Traffic cell and the topic
+>   page's headline both render it (`topicTrafficSpan`) so they cannot diverge by construction. The
+>   usage fallback's baked window is stated INLINE on the drill-in ("observed · usage feed, its own
+>   window 22 · no live traffic in last 1 hour") — partially supersedes drains-up 2.5's tooltip-only
+>   provenance for the drill-in; the estate cell keeps tooltip-one-affordance-deep. The range picker
+>   never applies to usage-feed numbers (they can't be re-windowed client-side — a windowable usage
+>   feed is filed in `work/service-mesh-roadmap-1.0.md` as the data-layer fix).
+> - **Deliberate window/filter exceptions are labeled at both ends:** the inbox keeps its fixed 24h
+>   watch and is never benzene-filtered — when the global range ≠ 24h it says "inbox always watches
+>   the last 24h — not affected by the time filter" (`#issues-window-note`), and an inbox row on a
+>   utility topic carries a "benzene" chip naming the exemption.
+> - **"Like they don't exist" sweep:** Services tile now counts health-known services plus names seen
+>   in VISIBLE non-infra flows only (benzene-only/backend names never inflate it); the value view's
+>   Removed tier skips utility topics; map/tiles/flows/catalog/service-page already filtered. Bypass
+>   surfaces stay: explicit topic-page navigation, by-id trace/correlation lookups, pivots.
+
 > **2026-07-25 SERVICE-PAGE FILTER — the benzene filter is ONE global state, applied to the drill-ins.**
 > Maintainer report: `#service:benzene-mesh-payments` showed mostly benzene utility traffic (a declared
 > `spec` consumed row with "717 obs" beside silent domain topics; a usage panel reading "spec 9.8k ·

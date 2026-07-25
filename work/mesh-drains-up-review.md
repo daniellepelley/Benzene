@@ -273,6 +273,20 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 > maintainer: benzene traffic is assumed to be working correctly — when it isn't, the (unfiltered)
 > issue inbox is what says so. Live-verified on the reported page; 56 mock + 13 live assertions.
 
+> **TALLY ROUND 2026-07-25 (maintainer: "all the numbers need to add up… filters across the whole
+> estate, not on individual controls — otherwise the user won't have confidence and it won't add
+> value").** Root cause of the reported mismatch: the estate Traffic cell falls back to the usage
+> feed (its own ~24h baked window) while the topic page's headline read only the live plane in the
+> picked range — "22" beside "not observed". PO rulings implemented in full (sticky estate-wide
+> filter bar under the topbar on every view; the catalog's separate toggle retired into the ONE
+> global state; the normative tally rule — one shared `topicTraffic()` source + plane token +
+> window label traveling with every number; usage-feed numbers never re-windowed, labeled inline on
+> drill-ins; the inbox's fixed 24h window and never-filtered exemption stated loudly at both ends;
+> the "like they don't exist" sweep incl. the Services tile and the value view's Removed tier).
+> Windowable usage feed filed in `work/service-mesh-roadmap-1.0.md` as the data-layer fix.
+> Live-verified on the reported case (order:placed: estate 22 = topic-page 22, both planes stated);
+> 61 mock + 13 live assertions.
+
 > **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
 > windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
 > classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"
