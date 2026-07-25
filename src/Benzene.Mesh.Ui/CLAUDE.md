@@ -1,5 +1,39 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 BUG-FIX + UX ROUND SHIPPED (live exploratory pass + mesh-PO review, 10 items + ruling).**
+> - **Utility vocabulary completed:** `isUtilityTraffic` now mirrors `ReservedTopics.DefaultIds`
+>   (`healthcheck`/`liveness`/`readiness`/`spec`/`test-payloads`/`mesh`/`invoke`/`report`) plus the
+>   transport probe topic `ping`, and is also **data-driven** (any `topics.json` row marked
+>   `reserved`) — the bare `mesh` descriptor topic and health `ping`s no longer render as user
+>   traffic. Utility topics are likewise excluded from the **undeclared-topic inbox class** (no more
+>   "Topic observed, not in catalog · healthcheck" noise; failing traffic on them still files).
+> - **Successful uninstrumented flows hide by default (PO ruling):** zero Benzene semantics, dead
+>   drill-in — hidden with the utility traffic but **counted separately** ("2 benzene + 1
+>   uninstrumented flows hidden" — different remedies: backend exclusion after the rename vs "add
+>   Benzene middleware"). Failing uninstrumented flows ALWAYS stay visible (1.2 evidence). Expanding
+>   a flow whose trace has no Benzene events now answers a **neutral honest note**, not a red error.
+> - **Hold-map prune priority:** `flKnownFlows` eviction goes hidden classes → failing-uninstrumented
+>   → attributed user flows last (`flHoldRank`), so benzene's ~12 polling flows/min can never churn
+>   the user's held flows out of the 60-slot map. Display order stays purely by time.
+> - **Crowd-out honesty:** when ≥75% of the backend's answered flows are hidden classes, the note
+>   says "N of M flows are benzene's own (hidden)" and the empty state says user flows may be
+>   **crowded out of the backend's recent-flows window, not absent** (tiles are authoritative); a
+>   pivot-filtered empty list gets its own "no flows match this filter" text.
+> - **`<missing>` sentinel never renders raw** (`topicLabel`): inbox rows/issue pages say "(no topic
+>   recorded)" with a why-line; the topic live strip folds it into the usage panel's "(no outcome
+>   recorded) N" wording. Subject copy buttons are suppressed for prose/sentinel subjects.
+> - **Shared stack prefix de-emphasized** (`commonSvcPrefix`/`svcNameSpan`, display-only): when all
+>   services share a deployment prefix (`benzene-mesh-*`), it renders muted (`.svc-prefix`) on estate
+>   cards, flow Services cells, and traffic-map nodes; full names stay in tooltips/copy/filter/ids.
+> - Also: flows **Topic cell** is now a `#topic:` link + copy button (stopPropagation); tile
+>   tooltips state the utility exclusion (inbox is never filtered — numbers can't silently disagree);
+>   service-strip flow count counts what the destination shows ("3 recent flows (+ 12 benzene)");
+>   `flAge` gained a day unit; Started tooltip carries relative age; `humanAge` floors at minutes
+>   ("moments"/"5 minutes", no more "0 hours ago"); top-bar button renamed **"Live traffic"**
+>   (hash `#fleet` kept for bookmarks); catalog toggle reworded "show benzene topics"; the topics
+>   header wraps at narrow widths (was the page's only horizontal overflow at 760px); compose's
+>   local `copyBtn` var renamed (shadowed the global factory).
+
 > **2026-07-25 LIVE-FEEDBACK ITERATION SHIPPED — stable flows, Started column, copy buttons, benzene
 > traffic hidden by default.** Four maintainer asks from using the deployed estate:
 > - **Flow-list stability:** recent flows are held in a rolling client-side map (`flKnownFlows`/

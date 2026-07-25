@@ -229,6 +229,28 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 > polling — the filter makes that visible honestly ("19 benzene flows hidden"); backend-side exclusion
 > of mesh traces from the recent-flows query is the real fix, natural after the rename.
 
+> **BUG-FIX + UX ROUND 2026-07-25 (live exploratory pass × mesh-PO review).** The PO's ranked 10 all
+> shipped (see `src/Benzene.Mesh.Ui/CLAUDE.md` for mechanics): utility vocabulary completed to the
+> full `ReservedTopics` list + `ping` + catalog-`reserved` rows (the bare `mesh` topic was rendering
+> as user traffic); hold-map prunes hidden classes first (benzene's polling could evict the user's
+> held flows in ~5min); crowd-out honesty on the saturated recent-flows window; `<missing>` never
+> raw ("(no topic recorded)" / "(no outcome recorded)"); service-strip flow counts match what the
+> destination shows; stack-prefix de-emphasis; tile-exclusion tooltips; day unit + relative-age
+> tooltips; topic-cell link+copy; "Live traffic" nav rename; topics-header wrap (the 760px overflow).
+> **PO ruling recorded — successful uninstrumented flows hide by default:** under D7 these rows carry
+> zero Benzene semantics (no topic, no status, no waterfall — a dead click), so hiding is correct
+> PROVIDED the hidden count is always stated and names "uninstrumented" distinctly from "benzene" —
+> the two populations have different remedies (backend exclusion after the rename vs "instrument this
+> service"), and the note+checkbox is itself the right cue for a genuinely-uninstrumented user
+> service. Failing uninstrumented flows always stay visible (the 1.2 class carve-out). Same interim
+> caveat as the utility filter: superseded by backend exclusion after the rename. Also fixed:
+> expanding a no-Benzene-events flow answered a red "not-found" error → now a neutral honest note.
+> Live re-verified 13/13 (incl. prefix de-emphasis) + 53 mock assertions; the live 1h window at
+> verification time genuinely contained ONLY utility topics (user demo traffic quiet + `<missing>`
+> still produced at ~380/h by the pre-fix deployed backend — will stop on next deploy), which
+> exercised the crowd-out empty state on real data: tiles 0/0 with the exclusion tooltip, "20 of 20
+> flows are benzene's own (hidden)".
+
 > **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
 > windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
 > classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"

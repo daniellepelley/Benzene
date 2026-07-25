@@ -305,7 +305,7 @@
   .topic-link:hover, .topic-link:focus-visible { text-decoration: underline; outline: none; }
 
   /* ---------- Topology table ---------- */
-  .topo-head { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; }
+  .topo-head { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; flex-wrap: wrap; }
   .topo-head h2 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
   .topo-generated { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
   .topo-table-wrap {
@@ -328,7 +328,7 @@
   .topo-table tr:hover td { background: var(--surface-2); }
   .b-source-tempo { color: var(--accent); background: var(--accent-tint); }
   .b-source-structural { color: var(--chip-ink); background: var(--chip-bg); }
-  .topo-head-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .topo-head-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
   .topics-toggle { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; gap: 5px; }
   .topics-toggle input { cursor: pointer; }
   .topics-asyncapi {
@@ -524,6 +524,9 @@
     color: var(--ink-faint); cursor: pointer; line-height: 1; vertical-align: baseline; }
   .copy-btn:hover, .copy-btn:focus-visible { color: var(--accent); outline: none; }
   h1 .copy-btn { font-size: 15px; }
+  /* A shared deployment-stack prefix on service names carries no signal — mute it (display-only). */
+  .svc-prefix { color: var(--ink-faint); font-weight: 400; }
+  .fl-topo-node .fl-topo-prefix { fill: var(--ink-faint); }
   tr.fl-flow-row { cursor: pointer; }
   tr.fl-flow-row:hover td { background: color-mix(in srgb, var(--ink) 4%, transparent); }
   .fl-flow-link { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
@@ -716,9 +719,9 @@
     <div class="v" id="doc-generated">&nbsp;</div>
   </div>
   <div class="grow"></div>
-  <button class="tb-btn" id="fleet-nav" title="Live fleet activity" style="display:none" onclick="location.hash='#fleet'">
+  <button class="tb-btn" id="fleet-nav" title="Live traffic on the estate" style="display:none" onclick="location.hash='#fleet'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
-    <span>Fleet</span>
+    <span>Live traffic</span>
   </button>
   <button class="tb-btn" id="load-btn" title="Load a different manifest">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
@@ -822,7 +825,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
           <input type="search" id="topics-filter" placeholder="Filter topics…" autocomplete="off" spellcheck="false" />
         </div>
-        <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show utilities</label>
+        <label class="topics-toggle"><input type="checkbox" id="topics-show-utils" /> show benzene topics</label>
         <a id="topics-asyncapi" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
            title="Download the fleet's composite AsyncAPI document" style="display:none">Composite AsyncAPI</a>
         <a id="topics-asyncapi-studio" class="topics-asyncapi" href="#" target="_blank" rel="noopener"
@@ -1203,6 +1206,9 @@
     return isNaN(t) ? null : Date.now() - t;
   }
   function humanAge(ms) {
+    if (ms < 90 * 1000) return "moments";
+    var m = Math.round(ms / 60000);
+    if (m < 90) return m + (m === 1 ? " minute" : " minutes");
     var h = Math.round(ms / 3600000);
     if (h < 48) return h + (h === 1 ? " hour" : " hours");
     return Math.round(h / 24) + " days";
@@ -1246,13 +1252,49 @@
     return /^(mesh:|benzene:|\$)/i.test(topicId || "");
   }
   // Benzene's own plumbing traffic — the mesh feeds, healthchecks, spec fetches — hidden from the
-  // traffic picture by default so what's shown is the USER'S traffic. The name list is interim:
-  // once every utility topic carries the planned "benzene" prefix (a deferred rename task), this
-  // collapses to the reserved-prefix test alone. NOT applied to the issue inbox: a failing
-  // mesh:aggregate must stay reportable (the phase-1 rule).
+  // traffic picture by default so what's shown is the USER'S traffic. The literal list mirrors
+  // ReservedTopics.DefaultIds plus the transport health-check probe topic ("ping") — interim: once
+  // every utility topic carries the planned "benzene" prefix (a deferred rename task), this
+  // collapses to the reserved-prefix test alone. Also data-driven: any topic the declared catalog
+  // itself marks reserved counts, so a rename or new utility topic doesn't need this list touched.
+  // NOT applied to the issue inbox's failing-traffic class: a failing mesh:aggregate must stay
+  // reportable (the phase-1 rule).
   function isUtilityTraffic(topicId) {
     if (!topicId) return false;
-    return isReservedTopicId(topicId) || /^(healthcheck|spec)$/i.test(topicId) || topicId === "<missing>";
+    if (isReservedTopicId(topicId)) return true;
+    if (/^(healthcheck|liveness|readiness|spec|test-payloads|mesh|invoke|report|ping)$/i.test(topicId)) return true;
+    if (topicId === "<missing>") return true;
+    return (currentTopics || []).some(function (t) { return t.topic === topicId && t.reserved; });
+  }
+  // The "<missing>" sentinel is a recording gap, not a topic name — never show it raw on a primary
+  // surface (the ids/pivots keep the raw value; only the label softens).
+  function topicLabel(topicId) {
+    return topicId === "<missing>" ? "(no topic recorded)" : topicId;
+  }
+  // When every service shares a deployment-stack prefix (e.g. benzene-mesh-*), the prefix carries no
+  // signal and makes user services read like utility traffic — de-emphasize it, display-only (full
+  // names stay in tooltips, copies, filters, and ids). Cut at a -/_ boundary; needs ≥2 services.
+  function commonSvcPrefix() {
+    var seen = {}, names = [];
+    (manifest.services || []).forEach(function (s) { if (s.name && !seen[s.name]) { seen[s.name] = 1; names.push(s.name); } });
+    ((currentFleet || {}).services || []).forEach(function (s) { if (s.service && !seen[s.service]) { seen[s.service] = 1; names.push(s.service); } });
+    if (names.length < 2) return "";
+    var p = names[0];
+    names.forEach(function (n) { while (p && n.indexOf(p) !== 0) p = p.slice(0, -1); });
+    var cut = Math.max(p.lastIndexOf("-"), p.lastIndexOf("_"));
+    return cut >= 3 ? p.slice(0, cut + 1) : "";
+  }
+  // Render a service name with the shared stack prefix muted. Returns a span; textContent stays the
+  // full name (filters and copy read it unchanged).
+  function svcNameSpan(name, prefix) {
+    var span = document.createElement("span");
+    if (prefix && name.indexOf(prefix) === 0 && name.length > prefix.length) {
+      span.appendChild(el("span", "svc-prefix", prefix));
+      span.appendChild(document.createTextNode(name.slice(prefix.length)));
+    } else {
+      span.textContent = name;
+    }
+    return span;
   }
   // The live heartbeat health of a service, or null when there's no live signal (no endpoint, not yet
   // polled, service not in the fleet, or health unknown) — null renders no dot: absent heartbeat ≠ unhealthy.
@@ -1325,7 +1367,8 @@
       var lastErr = lastFailingFlowAgeMs(t.topic);
       var row = liveTopicIssue("high", "failing traffic", t.topic, t.version, "Failing traffic",
         fmtCount(t.errors) + " of " + fmtCount(t.invocations) + " requests failed " + windowPhrase +
-        (mix ? " — " + mix : "") + (lastErr != null ? "; last failing flow " + flAge(lastErr) + " ago" : "") + ".");
+        (mix ? " — " + mix : "") + (lastErr != null ? "; last failing flow " + flAge(lastErr) + " ago" : "") + "." +
+        (t.topic === "<missing>" ? " These requests were recorded without a topic attribution (typically infrastructure-level, or history from before topic stamping was fixed)." : ""));
       // Evidence-first (the core loop): the row lands on this topic's failing flows, not the catalog page.
       row.nav = function () { flPivotToFailingFlows(t.topic); };
       issues.push(row);
@@ -1381,7 +1424,10 @@
             "Observed calling this topic but declared by no service descriptor: " + undeclared.join(", ") + ". Confirm, or add it to the contract."));
         }
         // observed topic entirely absent from the declared catalog (a fleet-only, non-reserved topic).
-        if (!declaredTopicIds[t.topic] && !isReservedTopicId(t.topic)) {
+        // Benzene utility topics (healthcheck, spec, the "<missing>" sentinel, …) are the mesh's own
+        // plumbing — being absent from the user's declared catalog is their normal state, not a
+        // divergence worth a worklist row. (Failing traffic on them still files — the phase-1 rule.)
+        if (!declaredTopicIds[t.topic] && !isUtilityTraffic(t.topic)) {
           issues.push(liveTopicIssue("medium", "undeclared topic", t.topic, t.version, "Topic observed, not in catalog",
             "This topic is being exercised live but appears in no service's declared contract."));
         }
@@ -1406,12 +1452,12 @@
   function buildIssueRow(i) {
     var row = el("button", "issue sev-" + i.sev);
     row.type = "button";
-    row.title = "Go to " + i.subject;
+    row.title = "Go to " + topicLabel(i.subject);
     row.appendChild(el("span", "issue-dot"));
     var b = el("div", "issue-body");
     var title = el("div", "issue-title");
     title.appendChild(document.createTextNode(i.title + " · "));
-    title.appendChild(el("span", "mono", i.subject));
+    title.appendChild(el("span", "mono", topicLabel(i.subject)));
     b.appendChild(title);
     if (i.why) b.appendChild(el("div", "issue-why", i.why));
     row.appendChild(b);
@@ -1650,8 +1696,12 @@
     }
 
     title.textContent = issue.title;
-    sub.textContent = issue.subject + (issue.team ? " · " + issue.team : "");
-    sub.appendChild(copyBtn(issue.subject, "the subject (topic / service)"));
+    sub.textContent = topicLabel(issue.subject) + (issue.team ? " · " + issue.team : "");
+    // Copy only when the subject IS an id (a topic/service name) — prose subjects like
+    // "3 failing flows" and the "<missing>" sentinel would just copy noise.
+    if (issue.subject && !/\s/.test(issue.subject) && issue.subject !== "<missing>") {
+      sub.appendChild(copyBtn(issue.subject, "the subject (topic / service)"));
+    }
     var head = el("div", "ig-meta");
     head.appendChild(el("span", "issue-kind k-" + issue.sev, issue.kind));
     if (issue.live) {
@@ -1817,7 +1867,8 @@
     }
     // The name opens the service's own page; the rest of the header still toggles the
     // quick-glance accordion. (The card keeps a .svc-name node so the filter keeps working.)
-    var nameBtn = el("button", "svc-name-btn svc-name", svc.name);
+    var nameBtn = el("button", "svc-name-btn svc-name");
+    nameBtn.appendChild(svcNameSpan(svc.name, commonSvcPrefix()));
     nameBtn.type = "button";
     nameBtn.title = "Open " + svc.name;
     nameBtn.addEventListener("click", function (e) { e.stopPropagation(); goToService(svc.name); });
@@ -2398,9 +2449,9 @@
     var outHead = el("div", "cmp-out-head");
     outHead.appendChild(el("h2", null, "Envelope"));
     var copyWrap = el("div", "cmp-copy");
-    var copyBtn = el("button", "tb-btn", "Copy");
+    var copyEnvBtn = el("button", "tb-btn", "Copy");
     var copied = el("span", "cmp-copied");
-    copyWrap.appendChild(copyBtn); copyWrap.appendChild(copied);
+    copyWrap.appendChild(copyEnvBtn); copyWrap.appendChild(copied);
     outHead.appendChild(copyWrap);
     out.appendChild(outHead);
     var pre = el("pre", "cmp-pre"); out.appendChild(pre);
@@ -2434,7 +2485,7 @@
     trSel.addEventListener("change", rebuild);
     hTa.addEventListener("input", rebuild);
     pTa.addEventListener("input", rebuild);
-    copyBtn.addEventListener("click", function () {
+    copyEnvBtn.addEventListener("click", function () {
       copyText(pre.textContent, function (good) { copied.textContent = good ? "copied" : "copy failed"; });
     });
 
@@ -3638,7 +3689,8 @@
   function flAge(ms) {
     if (ms < 90 * 1000) return Math.round(ms / 1000) + "s";
     if (ms < 90 * 60 * 1000) return Math.round(ms / 60000) + "m";
-    return Math.round(ms / 3600000) + "h";
+    if (ms < 48 * 3600 * 1000) return Math.round(ms / 3600000) + "h";
+    return Math.round(ms / 86400000) + "d";
   }
   function flCell(row, text, cls) {
     var td = document.createElement("td");
@@ -3664,6 +3716,21 @@
   function flIsInfraRow(f) {
     return !(f.events > 0) && !f.topic;
   }
+  // A SUCCESSFUL uninstrumented flow carries zero Benzene semantics (no topic, no status, no
+  // waterfall — a dead click), so it hides by default with the utility traffic (PO ruling,
+  // 2026-07-25) — counted separately as "uninstrumented" because its remedy differs (add Benzene
+  // middleware vs the deferred backend exclusion). A FAILING uninstrumented flow always stays
+  // visible: it's the 1.2 issue class's evidence.
+  function flIsHiddenInfraRow(f) {
+    return flIsInfraRow(f) && !f.failed;
+  }
+  // Prune priority for the held-flows map: attributed user flows are what the stability feature
+  // exists to hold; failing uninstrumented flows are issue evidence; the hidden classes go first.
+  function flHoldRank(f) {
+    if (isUtilityTraffic(f.topic) || flIsHiddenInfraRow(f)) return 2;
+    if (flIsInfraRow(f)) return 1; // failing uninstrumented
+    return 0;
+  }
 
   // Recent flows are held in a rolling client-side map across polls. The composite plane's trace
   // backend (X-Ray) is eventually consistent: each poll returns a varying subset, and a flow's row
@@ -3688,14 +3755,18 @@
       }
     });
     var rows = Object.keys(flKnownFlows).map(function (k) { return flKnownFlows[k]; });
-    rows.sort(function (a, b) {
+    var byTime = function (a, b) {
       var d = (Date.parse(b.startedAt) || 0) - (Date.parse(a.startedAt) || 0);
       return d !== 0 ? d : (a.traceId < b.traceId ? 1 : -1); // deterministic tie-break — no flicker
-    });
+    };
     if (rows.length > FL_KNOWN_MAX) {
+      // Selection prefers what the user came for: benzene's ~12 polling flows/minute must never
+      // churn the user's held flows out of the map (PO item 3). Display order stays purely by time.
+      rows.sort(function (a, b) { var r = flHoldRank(a) - flHoldRank(b); return r !== 0 ? r : byTime(a, b); });
       rows.slice(FL_KNOWN_MAX).forEach(function (f) { delete flKnownFlows[f.traceId]; });
       rows = rows.slice(0, FL_KNOWN_MAX);
     }
+    rows.sort(byTime);
     return rows;
   }
 
@@ -3745,10 +3816,12 @@
       if (s.health === "degraded" || (age != null && age > FL_STALE_MS)) unhealthy++;
     });
     // Tiles answer for the USER'S traffic by default — benzene utility topics (mesh feeds,
-    // healthchecks) are excluded unless the show-benzene toggle is on. Topics count follows suit.
-    var topicCount = 0;
+    // healthchecks) are excluded unless the show-benzene toggle is on. Topics count follows suit,
+    // and the exclusion is STATED on the tiles (tooltip) so the numbers never silently disagree
+    // with the unfiltered inbox (a failing mesh:aggregate in the inbox beside "Errors 0" here).
+    var topicCount = 0, excludedTopics = 0;
     topics.forEach(function (t) {
-      if (!flShowUtility && isUtilityTraffic(t.topic)) return;
+      if (!flShowUtility && isUtilityTraffic(t.topic)) { excludedTopics++; return; }
       topicCount++;
       if ((t.missingFeeds || []).indexOf("stats") === -1) { invocations += t.invocations; errors += t.errors; }
     });
@@ -3776,24 +3849,44 @@
         t.title = infraOnlyCount + " backend infrastructure name" + (infraOnlyCount === 1 ? "" : "s") +
           " (from uninstrumented flows) not counted as mesh services.";
       }
+      if (excludedTopics > 0 && (kv[0] === "Topics" || kv[0] === "Invocations" || kv[0] === "Errors")) {
+        t.title = excludedTopics + " benzene utility topic" + (excludedTopics === 1 ? "" : "s") +
+          " excluded — tick “show benzene traffic” to include them. The issue inbox is never filtered.";
+      }
       tiles.appendChild(t);
     });
     var countsNote = document.getElementById("fl-counts-note");
     if (countsNote) { countsNote.textContent = ""; flCountsNote(countsNote, fleet.window); }
 
-    // Utility-traffic filter: benzene's own plumbing flows are hidden by default. An explicit pivot
-    // TO a utility topic bypasses it (following an issue's evidence link must never land on an
-    // empty-by-filter list), as does the show-benzene toggle.
+    // Utility-traffic filter: benzene's own plumbing flows hide by default, and so do SUCCESSFUL
+    // uninstrumented flows (no Benzene semantics, dead drill-in — PO ruling; failing ones always
+    // show, they're 1.2 evidence). An explicit pivot TO a utility topic bypasses it (following an
+    // issue's evidence link must never land on an empty-by-filter list), as does the toggle.
     var utilityExempt = flShowUtility || (flFlowFilter && flFlowFilter.topic && isUtilityTraffic(flFlowFilter.topic));
-    var hiddenUtility = 0;
+    var hiddenUtility = 0, hiddenInfra = 0;
     var visible = utilityExempt ? merged : merged.filter(function (f) {
       if (isUtilityTraffic(f.topic)) { hiddenUtility++; return false; }
+      if (flIsHiddenInfraRow(f)) { hiddenInfra++; return false; }
       return true;
     });
+    var hiddenTotal = hiddenUtility + hiddenInfra;
     var utilityNote = document.getElementById("fl-utility-note");
     if (utilityNote) {
-      utilityNote.textContent = hiddenUtility > 0
-        ? "· " + hiddenUtility + " benzene flow" + (hiddenUtility === 1 ? "" : "s") + " hidden" : "";
+      var parts = [];
+      if (hiddenUtility > 0) parts.push(hiddenUtility + " benzene");
+      if (hiddenInfra > 0) parts.push(hiddenInfra + " uninstrumented");
+      // Saturation honesty: when almost everything the backend answered is benzene's own, user
+      // flows may be CROWDED OUT of its recent-flows window, not absent — say so (blind ≠ quiet).
+      var saturated = merged.length >= 8 && hiddenTotal >= merged.length * 0.75;
+      utilityNote.textContent = !parts.length ? ""
+        : (saturated ? "· " + hiddenTotal + " of " + merged.length + " flows are benzene's own (hidden)"
+                     : "· " + parts.join(" + ") + " flow" + (hiddenTotal === 1 ? "" : "s") + " hidden");
+      utilityNote.title = !parts.length ? "" :
+        "Hidden: " + (hiddenUtility ? hiddenUtility + " benzene utility flows (mesh feeds, healthchecks)" : "") +
+        (hiddenUtility && hiddenInfra ? " and " : "") +
+        (hiddenInfra ? hiddenInfra + " successful flows with no Benzene-instrumented span" : "") +
+        ". Tick “show benzene traffic” to see them." +
+        (saturated ? " This trace backend's recent-flows window is dominated by benzene's own traffic, so user flows may be crowded out of the answer, not absent — the count tiles are authoritative." : "");
     }
 
     // Apply the pivot filter (drains-up 2.4) and say so — a filtered list must never look like the whole.
@@ -3810,7 +3903,7 @@
         filterBar.style.display = "";
         filterBar.appendChild(el("span", null, "Showing " + flowRows.length + " of " + visible.length + " flows — " +
           (flFlowFilter.failedOnly ? "failed only" : "") +
-          (flFlowFilter.topic ? (flFlowFilter.failedOnly ? " · " : "") + "topic " + flFlowFilter.topic : "")));
+          (flFlowFilter.topic ? (flFlowFilter.failedOnly ? " · " : "") + "topic " + topicLabel(flFlowFilter.topic) : "")));
         var clear = el("button", "fl-flow-link", "clear filter");
         clear.type = "button";
         clear.addEventListener("click", function () { flFlowFilter = null; renderFleetPage(); });
@@ -3819,6 +3912,7 @@
     }
 
     var tbody = document.getElementById("fl-traces");
+    var svcPrefix = commonSvcPrefix();
     flFill(tbody, flowRows, function (tr, f) {
       tr.className = "fl-flow-row";
       tr.tabIndex = 0;
@@ -3833,12 +3927,42 @@
       tr.appendChild(tdId);
       var stamp = flStamp(f.startedAt);
       var tdStart = flCell(tr, stamp || "—", "fl-mono");
-      if (stamp) tdStart.title = new Date(Date.parse(f.startedAt)).toISOString();
-      flCell(tr, f.topic || "—", "fl-mono");
+      if (stamp) {
+        var startAge = flAgeMs(f.startedAt);
+        tdStart.title = new Date(Date.parse(f.startedAt)).toISOString() +
+          (startAge != null ? " · " + flAge(startAge) + " ago" : "");
+      }
+      // The topic cell is a working cell, not a label: it opens the topic page and copies the id
+      // (the stopPropagation pattern — neither action may also expand the row).
+      var tdTopic = document.createElement("td");
+      tdTopic.className = "fl-mono";
+      if (f.topic) {
+        var topicBtn = document.createElement("button");
+        topicBtn.className = "fl-flow-link fl-mono";
+        topicBtn.type = "button";
+        topicBtn.textContent = f.topic;
+        topicBtn.title = "Open the topic page for " + f.topic;
+        topicBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          location.hash = topicHashFor(f.topic);
+        });
+        tdTopic.appendChild(topicBtn);
+        tdTopic.appendChild(copyBtn(f.topic, "topic id"));
+      } else {
+        tdTopic.textContent = "—";
+      }
+      tr.appendChild(tdTopic);
       // Services: on an uninstrumented row these are the backend's own names — label them, never
       // present them as mesh services (the D7 rendering rule).
       var tdSvc = document.createElement("td");
-      tdSvc.textContent = (f.services || []).join(" → ") || "-";
+      if ((f.services || []).length) {
+        f.services.forEach(function (n, i) {
+          if (i > 0) tdSvc.appendChild(document.createTextNode(" → "));
+          tdSvc.appendChild(svcNameSpan(n, svcPrefix));
+        });
+      } else {
+        tdSvc.textContent = "-";
+      }
       if (flIsInfraRow(f) && (f.services || []).length) {
         var chip = el("span", "fl-infra-chip", "infrastructure");
         chip.title = "No Benzene-labelled span in this trace — these are the backend's own names (e.g. the Lambda handler), not mesh services.";
@@ -3852,11 +3976,17 @@
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
     }, 7);
-    // Hidden ≠ absent: when the filter hid everything, the empty state must say so, not claim quiet.
-    if (!flowRows.length && hiddenUtility > 0 && !flFlowFilter) {
+    // Hidden ≠ absent, filtered ≠ quiet: an empty list must say WHY it's empty.
+    if (!flowRows.length) {
       var ph = tbody.querySelector("td.fl-missing");
-      if (ph) ph.textContent = "no user traffic in this window — " + hiddenUtility + " benzene flow" +
-        (hiddenUtility === 1 ? "" : "s") + " hidden (tick “show benzene traffic”)";
+      if (ph && flFlowFilter) {
+        ph.textContent = "no flows match this filter in the current window — the failure may have stopped " +
+          "(check “last failing flow” on the issue), or matching flows are outside this backend's recent-flows window";
+      } else if (ph && hiddenTotal > 0) {
+        ph.textContent = "no user flows in this backend's recent-flows answer — " + hiddenTotal + " of " +
+          merged.length + " are benzene's own or uninstrumented (hidden; they may be crowding user flows out, " +
+          "not proof of quiet — the count tiles are authoritative). Tick “show benzene traffic” to see them.";
+      }
     }
     flRenderTopology(fleet);
 
@@ -3976,13 +4106,21 @@
       path.appendChild(svgTitle(e.from + " → " + e.to + " · " + e.invocations + " invocations · " + e.errors + " errors · via " + e.topics.join(", ")));
       svg.appendChild(path);
     });
+    var mapPrefix = commonSvcPrefix();
     names.forEach(function (n) {
       var p = pos[n], health = healthOf[n] || "unknown";
       var g = svgEl("g", { transform: "translate(" + p.x + "," + p.y + ")" });
       g.setAttribute("class", "fl-topo-node fl-h-" + health);
       g.appendChild(svgEl("rect", { width: p.w, height: NODE_H, rx: 7 }));
       var label = svgEl("text", { x: p.w / 2, y: NODE_H / 2 + 4, "text-anchor": "middle" });
-      label.textContent = n.length > 27 ? n.slice(0, 26) + "…" : n;
+      var shown = n.length > 27 ? n.slice(0, 26) + "…" : n;
+      if (mapPrefix && shown.indexOf(mapPrefix) === 0 && shown.length > mapPrefix.length) {
+        var t1 = svgEl("tspan", {}); t1.setAttribute("class", "fl-topo-prefix"); t1.textContent = mapPrefix;
+        var t2 = svgEl("tspan", {}); t2.textContent = shown.slice(mapPrefix.length);
+        label.appendChild(t1); label.appendChild(t2);
+      } else {
+        label.textContent = shown;
+      }
       g.appendChild(label); g.appendChild(svgTitle(n + " · " + health)); svg.appendChild(g);
     });
     container.appendChild(svg);
@@ -4072,7 +4210,16 @@
     }).catch(function (err) {
       delete flTraceCache[traceId];
       if (!detailRow.isConnected) return;
-      td.textContent = ""; td.appendChild(el("div", "fl-wf-note fl-failed", "Could not load this flow's trace: " + (err.message || err)));
+      td.textContent = "";
+      // not-found on an expansion is an ANSWER, not an error (live-fire finding): the flow carried no
+      // Benzene-instrumented span (an infrastructure-only trace), or it's outside the backend's
+      // retention/sampling window — say so neutrally, never in failure red.
+      if (String(err.message || err) === "not-found") {
+        td.appendChild(el("div", "fl-wf-note",
+          "No Benzene events recorded for this flow — it carried no Benzene-instrumented spans (an infrastructure-only trace), or it's outside the backend's retention or sampling window. The services shown on the row are the backend's own names."));
+      } else {
+        td.appendChild(el("div", "fl-wf-note fl-failed", "Could not load this flow's trace: " + (err.message || err)));
+      }
     });
   }
 
@@ -4268,11 +4415,20 @@
     lsItem(strip, "instances", s.instances != null ? String(s.instances) : "—");
     lsItem(strip, "observed", absent(s, "stats") ? "—" : (fmtCount(s.invocations) + (s.errors > 0 ? " · " + fmtCount(s.errors) + " err" : "")));
     var flows = (currentFleet.traces || []).filter(function (f) { return (f.services || []).indexOf(name) !== -1; });
-    if (flows.length) {
-      var link = el("button", "fl-flow-link", flows.length + " recent flow" + (flows.length === 1 ? "" : "s") + " ↗");
-      link.type = "button"; link.title = "Open the Fleet view's recent flows";
+    // The headline counts what the destination list SHOWS (user flows) — a "12 recent flows" link
+    // landing on "0 shown, 12 hidden" is the hidden ≠ absent trap. Benzene/uninstrumented flows are
+    // stated separately.
+    var userFlows = flows.filter(function (f) { return !isUtilityTraffic(f.topic) && !flIsHiddenInfraRow(f); });
+    var noiseFlows = flows.length - userFlows.length;
+    if (userFlows.length) {
+      var link = el("button", "fl-flow-link", userFlows.length + " recent flow" + (userFlows.length === 1 ? "" : "s") +
+        (noiseFlows > 0 ? " (+ " + noiseFlows + " benzene)" : "") + " ↗");
+      link.type = "button"; link.title = "Open the estate's recent flows" +
+        (noiseFlows > 0 ? " — the " + noiseFlows + " benzene/uninstrumented flows are hidden there by default" : "");
       link.addEventListener("click", function () { location.hash = "#fleet"; });
       lsItem(strip, "flows", link);
+    } else if (noiseFlows > 0) {
+      lsItem(strip, "flows", noiseFlows + " benzene-only flow" + (noiseFlows === 1 ? "" : "s") + " in window");
     }
   }
 
@@ -4318,7 +4474,14 @@
     var lastFail = lastFailingFlowAgeMs(topicId);
     if (lastFail != null) lsItem(strip, "last failing flow", flAge(lastFail) + " ago", "fl-failed");
     lsItem(strip, "avg ms", absentDur ? "—" : (durN ? (dur / durN).toFixed(1) : "—"));
-    var statuses = Object.keys(statusCounts).sort().map(function (k) { return (k || "(none)") + " " + statusCounts[k]; }).join(" · ");
+    // The "<missing>" sentinel is never rendered as a status (STOP-5): fold it into the usage
+    // panel's established "(no outcome recorded)" wording so the counts still sum.
+    var noOutcome = 0;
+    var statuses = Object.keys(statusCounts).filter(function (k) {
+      if (!k || k === "<missing>") { noOutcome += statusCounts[k]; return false; }
+      return true;
+    }).sort().map(function (k) { return k + " " + statusCounts[k]; }).join(" · ");
+    if (noOutcome > 0) statuses += (statuses ? " · " : "") + "(no outcome recorded) " + noOutcome;
     if (statuses) lsItem(strip, "status", statuses);
     wrap.appendChild(strip);
 
