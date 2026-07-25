@@ -2094,14 +2094,29 @@
      clicking a topic link or the in-page Back button. */
   function renderTopicPage(topicId) {
     var versions = currentTopics.filter(function (t) { return t.topic === topicId; });
-    if (!versions.length) return; // stale/unknown link - leave whatever's currently showing as-is
-    versions = versions.slice().sort(function (a, b) {
-      return (a.version || "").localeCompare(b.version || "");
-    });
-
     document.getElementById("tp-title").textContent = topicId;
     var body = document.getElementById("tp-body");
     body.innerHTML = "";
+
+    if (!versions.length) {
+      // Not in the declared catalog: a reserved/utility topic (like the mesh's own mesh:aggregate),
+      // an observed-but-undeclared topic, or a stale link. The old behavior silently returned and
+      // left the previous page showing — a dead link everywhere the live plane links here (the issue
+      // page's "Open topic page", undeclared-topic inbox rows; 2026-07-25 live-fire fix). Render an
+      // honest placeholder plus whatever the LIVE plane knows about it instead.
+      body.appendChild(el("p", "sp-empty",
+        "This topic is not in the declared catalog — no service descriptor declares it. It may be a "
+        + "reserved/utility topic (like the mesh's own), an observed-but-undeclared topic, or a stale link. "
+        + "What follows is what the live plane has observed."));
+      var liveOnly = buildTopicLiveStrip(topicId);
+      if (liveOnly) body.appendChild(liveOnly);
+      showView("topic-page");
+      return;
+    }
+
+    versions = versions.slice().sort(function (a, b) {
+      return (a.version || "").localeCompare(b.version || "");
+    });
     // Compose affordance - only when the feature is toggled on and some version has an inbound schema
     // to seed a payload from (the toggle keeps it entirely absent in a production deploy).
     if (composeEnabled() && versions.some(function (t) { return inboundSchema(t); })) {
