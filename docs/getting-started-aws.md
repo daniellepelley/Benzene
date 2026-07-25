@@ -162,24 +162,24 @@ Add the test-helper packages to your test project:
 
 ```bash
 dotnet add package Benzene.Testing --prerelease
-dotnet add package Benzene.Tools --prerelease
+dotnet add package Benzene.Aws.Lambda.Core.TestHelpers --prerelease
 dotnet add package Benzene.Aws.Lambda.ApiGateway.TestHelpers --prerelease
 ```
 
-`BenzeneTestHost.Create<TStartUp>().BuildAwsLambdaHost()` runs your real `GetConfiguration()`/
-`ConfigureServices()`/`Configure()` and returns the same `IAwsLambdaEntryPoint` that
-`AwsLambdaHost<TStartUp>` builds for a real deployment. Wrap it in `AwsLambdaBenzeneTestHost`
-(from `Benzene.Tools`) to send events into it and get typed responses back:
+`BenzeneTestHost.Create<TStartUp>().BuildAwsLambdaTestHost()` runs your real `GetConfiguration()`/
+`ConfigureServices()`/`Configure()` — the same construction `AwsLambdaHost<TStartUp>` performs for a
+real deployment — and returns a ready-to-use test host you can send events into and get typed
+responses back from, all in one fluent chain:
 
 ```csharp
+using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 using Benzene.Testing;
-using Benzene.Tools.Aws;
+using Microsoft.Extensions.DependencyInjection;
 
-var host = new AwsLambdaBenzeneTestHost(
-    BenzeneTestHost.Create<StartUp>()
-        .WithServices(services => services.AddScoped(_ => mockSomeDependency.Object))
-        .BuildAwsLambdaHost());
+var host = BenzeneTestHost.Create<StartUp>()
+    .WithServices(services => services.AddScoped(_ => mockSomeDependency.Object))
+    .BuildAwsLambdaTestHost();
 
 var request = HttpBuilder.Create("GET", "/hello/world");
 var response = await host.SendApiGatewayAsync(request);
@@ -535,7 +535,7 @@ cost is dominated by whatever your `ConfigureServices` does (e.g. opening a DB c
 eagerly). Prefer lazy/on-demand initialization inside your services over eager work in
 `ConfigureServices`.
 
-**Local test host behaves differently from the deployed function** — `BuildAwsLambdaHost()`
+**Local test host behaves differently from the deployed function** — `BuildAwsLambdaTestHost()`
 performs the exact same construction `AwsLambdaHost<TStartUp>` does for a real deployment
 (same `GetConfiguration`/`ConfigureServices`/`Configure` calls), so a divergence usually means
 a `WithServices`/`WithConfiguration` override in the test masked something — remove the

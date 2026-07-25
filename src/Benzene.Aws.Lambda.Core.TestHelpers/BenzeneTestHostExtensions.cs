@@ -34,4 +34,23 @@ public static class BenzeneTestHostExtensions
             return new AwsLambdaEntryPoint(eventPipeline.Build(), new MicrosoftServiceResolverFactory(services));
         });
     }
+
+    /// <summary>
+    /// Builds a ready-to-use <see cref="AwsLambdaBenzeneTestHost"/> from the StartUp and any
+    /// <c>WithServices</c>/<c>WithConfiguration</c> overrides — the fluent, single-call form, so you can
+    /// go straight from <c>BenzeneTestHost.Create&lt;StartUp&gt;()</c> to a host you can
+    /// <c>SendEventAsync</c> on without a separate <c>new AwsLambdaBenzeneTestHost(...)</c> wrap. This
+    /// mirrors the worker test-host builders (<c>BuildRabbitMqWorkerHost</c>/<c>BuildServiceBusWorkerHost</c>/
+    /// <c>BuildEventHubWorkerHost</c>), which already return their test host directly. Use
+    /// <see cref="BuildAwsLambdaHost{TStartUp}"/> instead when you only need the raw
+    /// <see cref="IAwsLambdaEntryPoint"/> (e.g. to hand to a base class that wraps it itself).
+    /// </summary>
+    /// <typeparam name="TStartUp">The <see cref="BenzeneStartUp"/> to run.</typeparam>
+    /// <param name="builder">The test host builder, with any <c>WithServices</c>/<c>WithConfiguration</c> overrides already applied.</param>
+    /// <returns>The built, ready-to-use test host.</returns>
+    public static AwsLambdaBenzeneTestHost BuildAwsLambdaTestHost<TStartUp>(this BenzeneTestHostBuilder<TStartUp> builder)
+        where TStartUp : BenzeneStartUp, new()
+    {
+        return new AwsLambdaBenzeneTestHost(builder.BuildAwsLambdaHost());
+    }
 }

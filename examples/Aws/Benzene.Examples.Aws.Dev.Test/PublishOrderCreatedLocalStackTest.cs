@@ -48,7 +48,7 @@ public class PublishOrderCreatedLocalStackTest : IClassFixture<LocalStackFixture
         Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", SecretKey);
         Environment.SetEnvironmentVariable("MY_QUEUE_URL", queueUrl);
 
-        using var host = new AwsLambdaBenzeneTestHost(BenzeneTestHost.Create<StartUp>().BuildAwsLambdaHost());
+        using var host = BenzeneTestHost.Create<StartUp>().BuildAwsLambdaTestHost();
 
         // 3. Drive the egress handler over the API Gateway HTTP surface, exactly as deployed.
         var orderCreated = new OrderCreatedEvent { Id = Guid.NewGuid(), Name = "acme" };

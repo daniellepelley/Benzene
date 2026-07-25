@@ -69,6 +69,22 @@ public class BenzeneTestHostTest
     }
 
     [Fact]
+    public async Task BuildAwsLambdaTestHost_FluentOneCall_SendsBenzeneMessage()
+    {
+        var mockExampleService = new Mock<IExampleService>();
+
+        // The fluent one-call form - no separate `new AwsLambdaBenzeneTestHost(...)` wrap.
+        using var host = BenzeneTestHost.Create<AwsBenzeneTestHostStartUp>()
+            .WithServices(s => s.AddSingleton(mockExampleService.Object))
+            .BuildAwsLambdaTestHost();
+
+        var message = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject);
+        await host.SendBenzeneMessageAsync(message);
+
+        mockExampleService.Verify(x => x.Register(Defaults.Name));
+    }
+
+    [Fact]
     public async Task BuildAzureFunctionApp_HandlesHttpRequest()
     {
         var mockExampleService = new Mock<IExampleService>();

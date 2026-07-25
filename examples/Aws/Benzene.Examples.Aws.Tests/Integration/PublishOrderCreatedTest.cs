@@ -29,10 +29,9 @@ public class PublishOrderCreatedTest
     {
         EnvironmentSetUp.SetUp();
         var fakeSender = new FakeBenzeneMessageSender();
-        var entryPoint = BenzeneTestHost.Create<StartUp>()
+        using var testLambdaHosting = BenzeneTestHost.Create<StartUp>()
             .WithServices(services => services.AddSingleton<IBenzeneMessageSender>(fakeSender))
-            .BuildAwsLambdaHost();
-        using var testLambdaHosting = new AwsLambdaBenzeneTestHost(entryPoint);
+            .BuildAwsLambdaTestHost();
 
         var orderCreated = new OrderCreatedEvent { Id = Guid.NewGuid(), Name = "acme" };
         var apiGatewayProxyRequest = new ApiGatewayProxyRequestBuilder("POST", "/orders/publish-created")
