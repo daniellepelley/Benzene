@@ -189,9 +189,10 @@ transport (transport-bindings.md):
 | `mesh:register` | ServiceDescriptor (§2) | `{"accepted":1}` |
 | `mesh:heartbeat` | Heartbeat (§5) | `{"accepted":1}` |
 | `mesh:traces` | `{"events":[TraceEvent…]}` | `{"accepted":<count>}` |
+| `mesh:issues` | IssueBatch (§4.1) | `{"accepted":<count>}` |
 
-- `service` is REQUIRED on register and heartbeat → `bad-request` when missing. A `mesh:traces`
-  batch of any size, including empty, MUST be accepted.
+- `service` is REQUIRED on register, heartbeat, and issues → `bad-request` when missing. A
+  `mesh:traces` or `mesh:issues` batch of any size, including empty, MUST be accepted.
 - Re-registration replaces the previous registration wholesale, including the claim to provide
   each topic — a redeploy that drops a topic drops the provider edge with it.
 - Consumer edges MUST be derived from trace parentage (an event whose parent span belongs to a
@@ -206,6 +207,86 @@ Collector behavior is pinned by `conformance/mesh-collector-cases.json`. Query r
 yet: they are one collector's read models, and join the spec if a second collector or
 third-party view needs them pinned. The collector fixtures exercise them only as the observable
 surface for asserting ingest/derivation behavior.
+
+### 4.1 Issues (`mesh:issues`)
+
+*Additive 2026-07. Optional on both sides (§6 rules apply); Go reference parity pending. A
+collector that doesn't implement it is unaffected; a service that doesn't emit degrades to
+today. This feed adds **zero** Cloud Service Profile requirements.*
+
+The pipeline-native failure feed: where traces record *what happened*, an issue records *what is
+wrong* — a deduplicated, classified failure signature emitted by the pipeline itself, which
+uniquely holds the wire status and the thrown exception at the moment of failure.
+
+```json
+{
+  "service": "orders",
+  "issues": [
+    {
+      "fingerprint": "9f2c1a7e0d4b86513a9e2f70c4d1b8a2",
+      "classification": "exception",
+      "service": "orders",
+      "topic": "order:create",
+      "version": "v2",
+      "transport": "sqs",
+      "status": "service-unavailable",
+      "exceptionType": "System.Net.Http.HttpRequestException",
+      "count": 12,
+      "firstSeen": "2026-07-25T09:14:03Z",
+      "lastSeen": "2026-07-25T09:41:12Z",
+      "exemplarTraceIds": ["4bf92f3577b34da6a3ce929d0e0e4736"],
+      "resolutionHint": "deserialization"
+    }
+  ]
+}
+```
+
+- **Batch-level `service` is REQUIRED** (→ `bad-request`), even though each issue also carries
+  `service` (an aggregating relay may batch for several services): an **empty batch is the feed's
+  liveness assertion** — "feed alive, nothing failing" — and must be attributable. Emitters
+  SHOULD flush on an interval even when empty, so a collector can distinguish a quiet wired
+  service from an unwired one; a collector MUST accept an empty batch.
+- **`count` is a DELTA**: occurrences since the emitter's previous successful flush, never a
+  cumulative total. Collectors merge by fingerprint: `count += delta`, `firstSeen = min`,
+  `lastSeen = max`, exemplars keep the newest (≤3), other fields latest-wins. Delta semantics
+  make merge restart-proof and need no instance identity on the wire; a dropped batch loses its
+  delta — lossy by design, the same trade as `mesh:traces`.
+- **`fingerprint` derivation is normative**: the lowercase hex of the first 16 bytes of SHA-256
+  over the UTF-8 bytes of `service|topic|version|classification|discriminator` (pipe-joined),
+  where `version` is the empty string when absent and `discriminator` is `exceptionType` when
+  present, else `status`. `transport` is deliberately excluded — the same failure over two
+  transports is one issue. Cross-language fingerprint equality holds only for non-exception
+  classes (`exceptionType` is language-native); same-service equality across instances and
+  restarts is the property that matters for merge.
+- **`classification` is a closed vocabulary** — `exception`, `validation`, `config-wiring`,
+  `dependency`, `contract-drift`, `unclassified` — assigned by normative precedence, evaluated
+  in order against the invocation's Benzene status (wire-contracts.md §3) and captured exception
+  type:
+  1. `bad-request`, `validation-error` → **validation** (even when an exception type is present —
+     a deserialization or argument exception is still a validation issue; the exception type
+     remains the fingerprint discriminator);
+  2. exception type present → **exception** (a thrown-and-converted failure classifies by its
+     throw, not its mapped status);
+  3. `not-found`, `unauthorized`, `forbidden`, `not-implemented`, or an **empty status** (§3: a
+     wiring gap) → **config-wiring**;
+  4. `service-unavailable`, `timeout`, `too-many-requests` → **dependency**;
+  5. `unexpected-error` → **exception**;
+  6. any other failing status → **unclassified** (an honest fallback beats a lying class).
+  `contract-drift` is never produced by this table — it is reserved for catalog/heartbeat-derived
+  issues (descriptor-hash mismatch, schema divergence) filed in this same shape by a collector or
+  reader, so emitter implementers should not hunt for its trigger.
+- `exceptionType` is the language-native type name only — never a message, stack trace, payload,
+  or header. `resolutionHint` is an optional key into a remediation catalog, never prose;
+  registered keys so far: `no-handler` (routing genuinely matched no handler — distinguishes a
+  wiring `not-found` from a handler-returned business `not-found`), `deserialization` (the request
+  could not be read into the handler's request type). Unknown keys MUST be tolerated (readers
+  fall back to classification-level guidance).
+- Sender rules are `mesh:traces`' rules (§4): asynchronous, non-blocking, lossy, dedup at source
+  (per-occurrence events MUST NOT be sent), and the feed may never fail, slow, or block the
+  invocation it observed.
+
+Pinned by `conformance/mesh-issue-cases.json` — required only for collectors claiming the issue
+feed (see `conformance/README.md`).
 
 ## 5. Heartbeat
 

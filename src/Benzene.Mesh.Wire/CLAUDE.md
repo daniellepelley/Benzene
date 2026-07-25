@@ -47,9 +47,27 @@ pull-based collector idiom and can adopt these shapes as ingest sources (roadmap
   `MeshTraceEvent.ExceptionType` (2026-07-25, spec §3 **optional/additive**, null-omitted): the thrown
   exception's type name when the failure was exception-originated — type only, never message/stack.
   The .NET *span* pipeline stamps it as `benzene.exception.type` (see `Benzene.Diagnostics`) and the
-  trace-store mappers (`Benzene.Mesh.Fleet.*`) read it back; the push-plane `UseMeshTrace` middleware
-  does **not** populate it yet (its status comes from `IMeshStatusReader`, which has no exception in
-  hand — a documented gap, acceptable because absence is spec-legal).
+  trace-store mappers (`Benzene.Mesh.Fleet.*`) read it back. The push-plane `UseMeshTrace` populates it
+  too (gap closed with the issue feed, same day): it reads the scoped
+  `Benzene.Core.MessageHandlers.MessageErrorState` — written by `MessageHandler`'s catch sites when a
+  thrown exception is converted into a result — in its post-`next()` finally.
+- **The issue feed (2026-07-25, spec §4.1 — drains-up 3.2).** `MeshIssue`/`MeshIssueBatch` (the wire
+  shapes; batch-level `service` REQUIRED — an empty batch is the feed's liveness assertion),
+  `MeshIssueClassification` (the closed vocabulary + the normative `Classify(status, exceptionType)`
+  precedence table — validation statuses first, then exception-type-present, config-wiring,
+  dependency, `unclassified` fallback; `contract-drift` is reserved, never emitter-produced),
+  `MeshIssueFingerprint.Compute` (the normative recipe: first 16 bytes of SHA-256 over
+  `service|topic|version|classification|discriminator`, lowercase hex; transport excluded),
+  `IMeshIssueExporter`/`MeshIssueOccurrence` (per-occurrence, dedup lives in the exporter),
+  `HttpMeshIssueExporter` (bounded accumulator — 256 fingerprints, drop-new; newest-3 exemplars;
+  30s interval flush **including empty liveness batches**; DELTA counts per flush; same lossy/dispose
+  rules as the trace exporter), and `UseMeshIssues(info, exporter, statusReader)` — wire it
+  immediately INSIDE `UseMeshTrace` (trace outermost) so `MeshSpan.Current` provides the exemplar
+  trace id. Null exporter = pass-through; no statusReader → only propagating exceptions report; the
+  OCE drain guard prevents phantom deploy-time issues; success path is one memoized status read + a
+  set test. Tests: `test/Benzene.Mesh.Test/Wire/MeshIssuesTest.cs` (incl. the end-to-end
+  converted-exception → both-feeds proof), `test/Benzene.Conformance.Test/MeshIssueConformanceTest.cs`
+  over `conformance/mesh-issue-cases.json`. **Go reference parity: pending** (named deferral).
 
 ## Important conventions
 - **The spec wins.** These shapes are pinned by `docs/specification/conformance/mesh-*.json`;

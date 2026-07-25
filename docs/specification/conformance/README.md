@@ -22,6 +22,7 @@ consumes these files.
 | `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers, including payload schemas and descriptorHash properties (mesh §2) — required for ports that implement mesh |
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
+| `mesh-issue-cases.json` | Issue-feed collector behavior: `mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
 
 Which fixtures a given conformance claim requires
 ([cloud-service-profile.md](../cloud-service-profile.md) §5):
@@ -31,6 +32,7 @@ Which fixtures a given conformance claim requires
 | Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json` |
 | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
+| Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
 
 At Core level the mesh fixtures apply only to ports that implement the optional mesh module
 (mesh.md §7); a port without mesh skips them and remains Core-conformant.

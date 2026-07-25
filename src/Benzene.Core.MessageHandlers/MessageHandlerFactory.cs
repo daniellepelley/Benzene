@@ -110,18 +110,21 @@ internal class MessageHandlerFactory : IMessageHandlerFactory
     {
         var messageHandler = _serviceResolver.GetService<TMessageHandler>();
         var logger = _loggerFactory.CreateLogger(typeof(TMessageHandler));
+        // Scoped, optional: records a converted exception's type/hint for readers that outlive the
+        // span (the mesh feeds). Null-tolerant so direct-construction/test shapes are unaffected.
+        var errorState = _serviceResolver.TryGetService<MessageErrorState>();
 
         switch (messageHandler)
         {
             case IMessageHandler<TRequest, TResponse> handlerWithResponse:
             {
                 var wrapped = _messageHandlerWrapper.Wrap(topic, handlerWithResponse);
-                return new MessageHandler<TRequest, TResponse>(wrapped, logger, _defaultStatuses);
+                return new MessageHandler<TRequest, TResponse>(wrapped, logger, _defaultStatuses, errorState);
             }
             case IMessageHandler<TRequest> handlerNoResponse:
             {
                 var wrapped = _messageHandlerWrapper.Wrap<TRequest, TResponse>(topic, handlerNoResponse);
-                return new MessageHandler<TRequest, TResponse>(wrapped, logger, _defaultStatuses);
+                return new MessageHandler<TRequest, TResponse>(wrapped, logger, _defaultStatuses, errorState);
             }
             default:
                 return null;

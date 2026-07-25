@@ -1,0 +1,111 @@
+{
+  "description": "Issue-feed collector behavior (mesh.md section 4.1). Required only for collectors claiming the issue feed. Same step/assertion model as mesh-collector-cases: each case runs its steps in order against one fresh collector; statusCode exact, body parsed-JSON subset, arrays exact-length with per-element subset. Timestamps are deliberately not asserted (serialization offset forms differ); identity, delta-merge arithmetic, and liveness are.",
+  "cases": [
+    {
+      "name": "service-is-required",
+      "steps": [
+        {
+          "request": { "topic": "mesh:issues", "headers": {}, "body": "{\"issues\":[]}" },
+          "expected": { "statusCode": "bad-request" }
+        }
+      ]
+    },
+    {
+      "name": "empty-batch-is-the-liveness-assertion",
+      "steps": [
+        {
+          "request": { "topic": "mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 0 } }
+        }
+      ]
+    },
+    {
+      "name": "delta-merge-by-fingerprint-observable-via-fleet",
+      "steps": [
+        {
+          "request": { "topic": "mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"aaaa1111aaaa1111aaaa1111aaaa1111\",\"classification\":\"exception\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"service-unavailable\",\"exceptionType\":\"System.TimeoutException\",\"count\":2,\"firstSeen\":\"2026-07-25T09:00:00Z\",\"lastSeen\":\"2026-07-25T09:05:00Z\",\"exemplarTraceIds\":[\"trace-1\"]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"aaaa1111aaaa1111aaaa1111aaaa1111\",\"classification\":\"exception\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"service-unavailable\",\"exceptionType\":\"System.TimeoutException\",\"count\":3,\"firstSeen\":\"2026-07-25T09:10:00Z\",\"lastSeen\":\"2026-07-25T09:15:00Z\",\"exemplarTraceIds\":[\"trace-2\"]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "issues": [
+                {
+                  "fingerprint": "aaaa1111aaaa1111aaaa1111aaaa1111",
+                  "classification": "exception",
+                  "service": "orders",
+                  "topic": "order:create",
+                  "status": "service-unavailable",
+                  "exceptionType": "System.TimeoutException",
+                  "count": 5,
+                  "exemplarTraceIds": ["trace-1", "trace-2"]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid-entries-are-skipped-never-rejected",
+      "steps": [
+        {
+          "request": { "topic": "mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"bad-request\",\"count\":1},{\"fingerprint\":\"bbbb2222bbbb2222bbbb2222bbbb2222\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"bad-request\",\"count\":1,\"firstSeen\":\"2026-07-25T09:00:00Z\",\"lastSeen\":\"2026-07-25T09:00:00Z\"}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "issues": [
+                { "fingerprint": "bbbb2222bbbb2222bbbb2222bbbb2222", "count": 1 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "issues-feed-absence-is-flagged-only-when-failure-needs-explaining",
+      "steps": [
+        {
+          "request": { "topic": "mesh:traces", "headers": {}, "body": "{\"events\":[{\"traceId\":\"4bf92f3577b34da6a3ce929d0e0e4736\",\"spanId\":\"00f067aa0ba902b7\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"service-unavailable\",\"durationMs\":5,\"startedAt\":\"2026-07-25T09:00:00Z\"}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [
+                { "service": "orders", "missingFeeds": ["descriptor", "health", "issues"] }
+              ]
+            }
+          }
+        },
+        {
+          "request": { "topic": "mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 0 } }
+        },
+        {
+          "request": { "topic": "mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [
+                { "service": "orders", "missingFeeds": ["descriptor", "health"] }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

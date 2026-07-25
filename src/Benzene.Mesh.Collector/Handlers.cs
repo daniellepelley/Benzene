@@ -19,6 +19,7 @@ public static class MeshCollectorHandlers
         typeof(RegisterMessageHandler),
         typeof(HeartbeatMessageHandler),
         typeof(TracesMessageHandler),
+        typeof(IssuesMessageHandler),
         typeof(FleetQueryMessageHandler),
         typeof(ServiceQueryMessageHandler),
         typeof(TopicQueryMessageHandler),
@@ -92,6 +93,25 @@ public class TracesMessageHandler : IMessageHandler<MeshTraceBatch, Ack>
     public Task<IBenzeneResult<Ack>> HandleAsync(MeshTraceBatch request)
     {
         return Task.FromResult(BenzeneResult.Ok(new Ack { Accepted = _store.AddEvents(request.Events) }));
+    }
+}
+
+/// <summary>Ingests an issue batch (spec §4.1): batch-level service required; a batch of any size,
+/// including empty (the feed's liveness assertion), is accepted; invalid entries are skipped.</summary>
+[Message(MeshTopics.Issues)]
+public class IssuesMessageHandler : IMessageHandler<MeshIssueBatch, Ack>
+{
+    private readonly MeshCollectorStore _store;
+
+    public IssuesMessageHandler(MeshCollectorStore store) => _store = store;
+
+    public Task<IBenzeneResult<Ack>> HandleAsync(MeshIssueBatch request)
+    {
+        if (string.IsNullOrEmpty(request.Service))
+        {
+            return Task.FromResult(BenzeneResult.BadRequest<Ack>("service is required"));
+        }
+        return Task.FromResult(BenzeneResult.Ok(new Ack { Accepted = _store.AddIssues(request) }));
     }
 }
 

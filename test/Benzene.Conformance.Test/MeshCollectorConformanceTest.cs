@@ -98,9 +98,10 @@ public class MeshCollectorConformanceTest
     /// <summary>
     /// The mesh fixtures' matching rule (conformance/README.md "Mesh fixture formats"): like
     /// <see cref="ConformanceFixtures.FindSubsetMismatch"/>, plus an expected empty array matches
-    /// an actual that is empty or absent (writers may omit empty collections).
+    /// an actual that is empty or absent (writers may omit empty collections). Internal so the
+    /// issue-feed fixture runner (<see cref="MeshIssueConformanceTest"/>) applies the same rule.
     /// </summary>
-    private static string? FindMeshSubsetMismatch(JsonElement expected, JsonElement actual, string path)
+    internal static string? FindMeshSubsetMismatch(JsonElement expected, JsonElement actual, string path)
     {
         if (expected.ValueKind == JsonValueKind.Object)
         {

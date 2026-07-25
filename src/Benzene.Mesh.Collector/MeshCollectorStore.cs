@@ -18,16 +18,19 @@ public class MeshCollectorStore : IMeshFleetReadModel
 {
     private readonly object _lock = new();
     private readonly int _capacity;
+    private readonly int _maxIssues;
     private readonly Dictionary<string, ServiceState> _services = new();
     private readonly Dictionary<(string Id, string Version), TopicState> _topics = new();
+    private readonly Dictionary<string, MeshIssue> _issues = new();
     private readonly List<MeshTraceEvent> _ring;
     private int _next;
 
     private const int MaxFleetTraces = 20;
 
-    public MeshCollectorStore(int maxTraceEvents = 4096)
+    public MeshCollectorStore(int maxTraceEvents = 4096, int maxIssues = 1024)
     {
         _capacity = maxTraceEvents;
+        _maxIssues = maxIssues;
         _ring = new List<MeshTraceEvent>(Math.Min(maxTraceEvents, 1024));
     }
 
@@ -44,6 +47,9 @@ public class MeshCollectorStore : IMeshFleetReadModel
         public DateTimeOffset LastSeen;
         public long Invocations;
         public long Errors;
+        // True once ANY mesh:issues batch (including an empty liveness batch) named this service —
+        // what lets "quiet wired feed" be distinguished from "feed not wired" (spec §4.1).
+        public bool IssueFeedSeen;
     }
 
     private class InstanceState
@@ -150,6 +156,72 @@ public class MeshCollectorStore : IMeshFleetReadModel
         }
     }
 
+    /// <summary>Ingests an issue batch (spec §4.1): fingerprint-keyed delta merge (<c>count += delta</c>,
+    /// <c>firstSeen = min</c>, <c>lastSeen = max</c>, exemplars keep the newest ≤3, other fields
+    /// latest-wins), bounded (evict oldest <c>lastSeen</c> when full). Invalid entries (no fingerprint
+    /// or topic) are skipped, never rejected; an empty batch is the feed's liveness assertion and marks
+    /// the service's issue feed as wired. Returns how many entries were accepted.</summary>
+    public int AddIssues(MeshIssueBatch batch)
+    {
+        lock (_lock)
+        {
+            EnsureService(batch.Service).IssueFeedSeen = true;
+
+            var accepted = 0;
+            foreach (var incoming in batch.Issues)
+            {
+                if (string.IsNullOrEmpty(incoming.Fingerprint) || string.IsNullOrEmpty(incoming.Topic))
+                {
+                    continue; // skipped, never rejected (§6: no feed fails ingestion)
+                }
+
+                if (!_issues.TryGetValue(incoming.Fingerprint, out var issue))
+                {
+                    if (_issues.Count >= _maxIssues)
+                    {
+                        // Evict the least recently observed issue — the least actionable one.
+                        var oldest = _issues.Values.OrderBy(x => x.LastSeen).First();
+                        _issues.Remove(oldest.Fingerprint);
+                    }
+                    issue = new MeshIssue
+                    {
+                        Fingerprint = incoming.Fingerprint,
+                        Classification = incoming.Classification,
+                        Service = incoming.Service,
+                        Topic = incoming.Topic,
+                        Version = incoming.Version,
+                        FirstSeen = incoming.FirstSeen,
+                        LastSeen = incoming.LastSeen
+                    };
+                    _issues[incoming.Fingerprint] = issue;
+                }
+
+                issue.Count += incoming.Count; // deltas merge by summation — restart-proof, no instance keying
+                if (incoming.FirstSeen < issue.FirstSeen) issue.FirstSeen = incoming.FirstSeen;
+                if (incoming.LastSeen > issue.LastSeen) issue.LastSeen = incoming.LastSeen;
+                issue.Classification = string.IsNullOrEmpty(incoming.Classification) ? issue.Classification : incoming.Classification;
+                issue.Transport = incoming.Transport ?? issue.Transport;
+                issue.Status = string.IsNullOrEmpty(incoming.Status) ? issue.Status : incoming.Status;
+                issue.ExceptionType = incoming.ExceptionType ?? issue.ExceptionType;
+                issue.ResolutionHint = incoming.ResolutionHint ?? issue.ResolutionHint;
+                foreach (var exemplar in incoming.ExemplarTraceIds)
+                {
+                    if (string.IsNullOrEmpty(exemplar) || issue.ExemplarTraceIds.Contains(exemplar))
+                    {
+                        continue;
+                    }
+                    issue.ExemplarTraceIds.Add(exemplar);
+                    if (issue.ExemplarTraceIds.Count > 3)
+                    {
+                        issue.ExemplarTraceIds.RemoveAt(0); // keep the newest
+                    }
+                }
+                accepted++;
+            }
+            return accepted;
+        }
+    }
+
     public FleetView Fleet(MeshTimeRange? range = null)
     {
         lock (_lock)
@@ -167,6 +239,28 @@ public class MeshCollectorStore : IMeshFleetReadModel
                 // Flows honor the window (ring filtered by trace start); the per-topic/service counts above
                 // are cumulative-since-start and can't be sub-windowed - CollectorWindow says so.
                 Traces = TraceSummariesLocked(MaxFleetTraces, window),
+                // The merged issue map, newest activity first. NOT window-filtered (a merged map, like the
+                // cumulative counts) - readers window on lastSeen client-side. Snapshot copies so later
+                // ingest merges can't tear a view being serialized outside this lock.
+                Issues = _issues.Values
+                    .OrderByDescending(x => x.LastSeen)
+                    .Select(x => new MeshIssue
+                    {
+                        Fingerprint = x.Fingerprint,
+                        Classification = x.Classification,
+                        Service = x.Service,
+                        Topic = x.Topic,
+                        Version = x.Version,
+                        Transport = x.Transport,
+                        Status = x.Status,
+                        ExceptionType = x.ExceptionType,
+                        Count = x.Count,
+                        FirstSeen = x.FirstSeen,
+                        LastSeen = x.LastSeen,
+                        ExemplarTraceIds = x.ExemplarTraceIds.ToList(),
+                        ResolutionHint = x.ResolutionHint
+                    })
+                    .ToList(),
                 Window = CollectorWindow(window)
             };
         }
@@ -389,6 +483,14 @@ public class MeshCollectorStore : IMeshFleetReadModel
         if (state.Invocations == 0)
         {
             summary.MissingFeeds.Add("traces");
+        }
+        // Feed-absence only matters when there's failure it should have explained: a service with
+        // failing traffic that has never sent a mesh:issues batch (not even the empty liveness one)
+        // is flagged; a healthy never-emitting service is indistinguishable from a healthy emitting
+        // one, and that's fine (spec §4.1 / drains-up 3.2 ruling).
+        if (!state.IssueFeedSeen && state.Errors > 0)
+        {
+            summary.MissingFeeds.Add("issues");
         }
         return summary;
     }

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using Benzene.Abstractions.DI;
+using Benzene.Abstractions.MessageHandlers.Info;
 using Benzene.Abstractions.MessageHandlers.Mappers;
 using Benzene.Abstractions.Middleware;
 using Benzene.Core.MessageHandlers;
@@ -106,6 +108,10 @@ public static class Extensions
                 MeshSpan.Current = previousSpan;
                 traceEvent.DurationMs = stopwatch.Elapsed.TotalMilliseconds;
                 traceEvent.Status = statusReader?.GetStatus(context) ?? string.Empty;
+                // The failure's WHY (spec §3 exceptionType, optional): the handler layer converts thrown
+                // exceptions into results, recording the type in the scoped MessageErrorState — read it
+                // back here so the push-plane TraceEvent carries it too (type only, never message/stack).
+                traceEvent.ExceptionType = resolver.TryGetService<MessageErrorState>()?.ExceptionTypeName;
                 try
                 {
                     exporter.Export(traceEvent);
@@ -116,6 +122,86 @@ public static class Extensions
                 }
             }
         }));
+    }
+
+    /// <summary>
+    /// Observes every invocation and reports FAILURES to <paramref name="exporter"/> as deduplicated
+    /// issue occurrences (spec §4.1) — the pipeline-native "what is wrong" feed. Wire it immediately
+    /// INSIDE <see cref="UseMeshTrace{TContext}"/> (trace outermost, issues next): inside the trace
+    /// middleware, <see cref="MeshSpan.Current"/> still names the current invocation's trace, which
+    /// becomes the issue's exemplar trace id; without <c>UseMeshTrace</c> the exemplars are simply
+    /// empty (degradation-legal). A null <paramref name="exporter"/> is a pass-through (the feed is
+    /// off). Without a <paramref name="statusReader"/> result-status failures cannot be observed and
+    /// only propagating exceptions are reported. The success path is deliberately near-free: one
+    /// (memoized) status read and one set-membership test, no allocation.
+    /// </summary>
+    public static IMiddlewarePipelineBuilder<TContext> UseMeshIssues<TContext>(
+        this IMiddlewarePipelineBuilder<TContext> app,
+        MeshServiceInfo info,
+        IMeshIssueExporter? exporter,
+        IMeshStatusReader<TContext>? statusReader = null)
+    {
+        if (exporter == null)
+        {
+            return app;
+        }
+
+        return app.Use(resolver => new FuncWrapperMiddleware<TContext>("MeshIssues", async (context, next) =>
+        {
+            try
+            {
+                await next();
+            }
+            catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+            {
+                // Host shutdown/drain redelivery is not an issue — without this guard every deploy
+                // would file a phantom exception issue per in-flight message (the ExceptionHandler
+                // middleware's own rule, mirrored).
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // A propagating exception IS the failure — report, then rethrow untouched.
+                Report(resolver, context, "exception", ex.GetType().FullName, null);
+                throw;
+            }
+
+            if (statusReader == null)
+            {
+                return; // no outcome to read on this transport — only propagating exceptions report
+            }
+            var status = statusReader.GetStatus(context) ?? string.Empty;
+            if (!MeshStatusClass.IsSuccess(status))
+            {
+                var errorState = resolver.TryGetService<MessageErrorState>();
+                Report(resolver, context, status, errorState?.ExceptionTypeName, errorState?.Hint);
+            }
+        }));
+
+        void Report(IServiceResolver resolver, TContext context, string status, string? exceptionType, string? hint)
+        {
+            try
+            {
+                var topic = resolver.GetService<IMessageGetter<TContext>>().GetTopic(context);
+                var transport = resolver.TryGetService<ICurrentTransport>();
+                exporter!.Export(new MeshIssueOccurrence
+                {
+                    Service = info.Service,
+                    Topic = topic?.Id ?? string.Empty,
+                    Version = string.IsNullOrEmpty(topic?.Version) ? null : topic!.Version,
+                    Transport = transport != null && transport.Name != TransportNames.Unresolved ? transport.Name : null,
+                    Status = status,
+                    ExceptionType = exceptionType,
+                    ResolutionHint = hint,
+                    TraceId = MeshSpan.Current?.TraceId,
+                    At = DateTimeOffset.UtcNow
+                });
+            }
+            catch
+            {
+                // no mesh feed may ever fail the invocation it observed (spec §6)
+            }
+        }
     }
 
     // Header keys are case-insensitive on read regardless of the envelope dictionary's comparer

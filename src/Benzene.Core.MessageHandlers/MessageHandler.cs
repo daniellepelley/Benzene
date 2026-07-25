@@ -26,6 +26,7 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
     private readonly IMessageHandler<TRequest, TResponse> _inner;
     private readonly ILogger _logger;
     private readonly IDefaultStatuses _defaultStatuses;
+    private readonly MessageErrorState? _errorState;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageHandler{TRequest,TResponse}"/> class.
@@ -33,11 +34,15 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
     /// <param name="inner">The strongly-typed handler to invoke.</param>
     /// <param name="logger">Logger used to record mapping failures and handler exceptions.</param>
     /// <param name="defaultStatuses">Supplies the status codes used for the error results produced here.</param>
-    public MessageHandler(IMessageHandler<TRequest, TResponse> inner, ILogger logger, IDefaultStatuses defaultStatuses)
+    /// <param name="errorState">Optional scoped record of a converted exception's type (for readers that
+    /// outlive the span — the mesh feeds); null in direct-construction/test shapes.</param>
+    public MessageHandler(IMessageHandler<TRequest, TResponse> inner, ILogger logger, IDefaultStatuses defaultStatuses,
+        MessageErrorState? errorState = null)
     {
         _defaultStatuses = defaultStatuses;
         _logger = logger;
         _inner = inner;
+        _errorState = errorState;
     }
 
     /// <summary>
@@ -69,6 +74,7 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         catch(Exception ex)
         {
             ActivityExceptionTag.TryStamp(ex);
+            _errorState?.TrySet(ex, hint: "deserialization"); // spec §4.1 registered remediation-hint key
             _logger.LogWarning(ex, "Message is not valid");
             return BenzeneResult.Set(_defaultStatuses.BadRequest, "Message is not valid", ex.Message);
         }
@@ -86,6 +92,7 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         catch(ArgumentException ex)
         {
             ActivityExceptionTag.TryStamp(ex);
+            _errorState?.TrySet(ex);
             _logger.LogError(ex, "Message handler threw argument exception");
             return BenzeneResult.Set(_defaultStatuses.ValidationError, ex.Message);
         }
@@ -100,6 +107,7 @@ internal class MessageHandler<TRequest, TResponse> : IMessageHandler where TRequ
         catch(Exception ex)
         {
             ActivityExceptionTag.TryStamp(ex);
+            _errorState?.TrySet(ex);
             _logger.LogError(ex, "Message handler threw an exception");
             return BenzeneResult.ServiceUnavailable("Message handler threw an exception", ex.Message);
         }

@@ -162,6 +162,15 @@ Provides complete implementation of message handler infrastructure for command/q
   (`TryAdd...` for `BenzeneMessageContext`); the HTTP transports layer the route-parameter check in
   front via `HttpMessageVersionGetterBase` subclasses that thread the same override. No override
   registered ⇒ `DefaultHeaderNames`
+- `MessageErrorState` (2026-07-25) - scoped (one per message, registered by `AddContextItems`),
+  records a handler-converted exception's TYPE name + an optional spec-§4.1 remediation-hint key
+  (`deserialization` from the request-mapping catch). Written by `MessageHandler`'s three catch
+  sites (the same ones that stamp `benzene.exception.type` via `ActivityExceptionTag` — this is the
+  Activity-free channel for readers that outlive the span); first exception wins; type only, never
+  message/stack. Read by `Benzene.Mesh.Wire`'s `UseMeshTrace` (→ `MeshTraceEvent.ExceptionType`) and
+  `UseMeshIssues` (→ issue classification). Threaded via an optional 4th `MessageHandler` ctor arg
+  resolved null-tolerantly in `MessageHandlerFactory` — direct-construction test shapes unaffected.
+  Another instance of the `PresetTopicHolder` "scoped DI state, not context" pattern.
 - `PresetTopicHolder` - scoped (one instance per message), carries the current message's preset
   `ITopic`, or `null` if none was set. **Not on the context** - a context type describes a
   transport message's shape; it shouldn't accumulate optional, cross-cutting routing overrides

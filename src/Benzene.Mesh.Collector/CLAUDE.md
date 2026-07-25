@@ -1,5 +1,21 @@
 # Benzene.Mesh.Collector
 
+> **2026-07-25 (drains-up 3.2): the issue feed's collector side.** `IssuesMessageHandler`
+> (`mesh:issues`, in `MeshCollectorHandlers.All`; batch `service` required → `bad-request`; empty batch
+> accepted — the liveness assertion) → `MeshCollectorStore.AddIssues`: fingerprint-keyed **delta merge**
+> (`count += delta`, `firstSeen = min`, `lastSeen = max`, exemplars newest-≤3, scalars latest-wins),
+> bounded (`maxIssues` ctor arg, default 1024; evict oldest `lastSeen`), invalid entries (no
+> fingerprint/topic) skipped never rejected. Issues **survive re-registration** (observations, not
+> claims — a quiet `lastSeen` after a redeploy IS the resolved signal; no lifecycle state).
+> `FleetView.Issues` (additive, always-serialized, newest-`lastSeen` first, snapshot-copied) returns the
+> whole bounded map — **not** window-filtered (a merged map, like the cumulative counts; readers window
+> on `lastSeen`). Feed-absence marker: `ServiceSummary.MissingFeeds += "issues"` only when the service
+> has failing traffic (`Errors > 0`) and has never sent any `mesh:issues` batch — absence only matters
+> when there's failure it should have explained. `CompositeMeshFleetReadModel`'s anonymous service rows
+> always carry `"issues"` (the composite plane has no ingest; its vessel is a named follow-up in
+> `work/mesh-drains-up-review.md`). Pinned by `conformance/mesh-issue-cases.json` (claims-gated — a
+> collector without the feed stays collector-conformant); Go collector parity pending.
+
 ## What this package does
 The spec collector of `docs/specification/mesh.md` §4-§6 - an ordinary Benzene service
 (dogfooded message handlers) that ingests the three mesh wire topics and answers the

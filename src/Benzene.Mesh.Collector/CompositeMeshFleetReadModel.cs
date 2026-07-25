@@ -249,7 +249,10 @@ public class CompositeMeshFleetReadModel : IMeshFleetReadModel
             {
                 Service = name,
                 Health = MeshHealth.Unknown,
-                MissingFeeds = { "descriptor", "health", "stats" }
+                // "issues" is honest, not derived (spec §4.1 / drains-up 3.2): the composite plane has
+                // no mesh:issues ingest at all (its vessel is a named follow-up), so the pipeline-native
+                // issue feed is genuinely absent here — the UI keeps its client-derived issue rows.
+                MissingFeeds = { "descriptor", "health", "stats", "issues" }
             })
             .ToList();
     }

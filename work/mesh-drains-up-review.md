@@ -193,6 +193,30 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 
 ### Phase 3 — The WHY (pipeline + wire; the mesh finally explains)
 
+> **3.2 BACKEND SHIPPED 2026-07-25 (spec + emitter + collector; UI merge is the remaining slice).**
+> Joint PO rulings (observability + mesh, recorded here as amendments to §4's contract):
+> (a) **`unclassified` joins the closed vocabulary** — an honest sixth value beats a lying fallback;
+> classification is a normative PRECEDENCE table (validation statuses → exception-type-present →
+> config-wiring incl. `unauthorized` and the empty-status wiring gap → dependency → `unexpected-error`
+> → unclassified), `contract-drift` reserved for catalog/heartbeat-derived issues.
+> (b) **Counts are DELTAS on the wire** (occurrences since the previous flush) — the only semantics a
+> lossy sender can merge restart-proof, with no instance identity needed.
+> (c) **Fingerprint recipe is normative** (first 16 bytes of SHA-256 over
+> `service|topic|version|classification|discriminator`, lowercase hex; transport excluded).
+> (d) **Empty batches are the liveness assertion** (30s interval) — quiet-wired vs unwired is
+> distinguishable; feed absence marks `ServiceSummary.missingFeeds += "issues"` only when the service
+> has failing traffic to explain.
+> (e) Spec placement: **§4.1 now** (optional topic, DRAFT-spec bake-room; claims-gated
+> `mesh-issue-cases.json` fixtures shipped with the .NET implementation; **Go reference parity is a
+> named deferral**). Issues survive redeploys; resolution-by-silence; no lifecycle state (STOP-6).
+> Bonus gap-close: push-plane `UseMeshTrace` now populates `MeshTraceEvent.ExceptionType` via the new
+> scoped `MessageErrorState`.
+> **AwsMesh vessel follow-up (named, deferred):** the composite plane has no long-running collector;
+> candidate vessels for its issue store — DynamoDB (per-fingerprint atomic adds, no CAS loop),
+> `deploy/Mesh`'s `Benzene.Mesh.Host` as a standing collector beside the Lambdas, or S3
+> conditional-put CAS (least favored). Until then the plane marks `missingFeeds: ["issues"]` and the
+> UI keeps its client-derived rows (byte-identical phase-1 degradation).
+
 > **3.3 SHIPPED 2026-07-25 (client-derived first cut, deliberately ahead of 3.2).** The issue detail
 > page works over the client-derived issue classes today — diagnosis/remediation catalog in the HTML,
 > composed evidence (inline failing waterfall with 3.1's exception type, pivot/entity deep-links),

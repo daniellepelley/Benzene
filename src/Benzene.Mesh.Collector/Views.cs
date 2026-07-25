@@ -25,6 +25,11 @@ public class FleetView
     public List<TopicSummary> Topics { get; set; } = new();
     public List<TraceSummary> Traces { get; set; } = new();
 
+    /// <summary>The collector's merged issue map (spec §4.1), newest activity first — empty when the
+    /// plane has no issue feed (2026-07-25, additive; the fixtures' subset match ignores it). Not
+    /// window-filtered (a merged map, like the cumulative counts): readers window on lastSeen.</summary>
+    public List<MeshIssue> Issues { get; set; } = new();
+
     /// <summary>The time window this view answers, when the query carried one. Absent (null) when the
     /// query carried no window - today's behavior, so old clients and fixtures see the field is not
     /// there. See <see cref="MeshWindow"/> for the flows-vs-counts honesty it carries.</summary>

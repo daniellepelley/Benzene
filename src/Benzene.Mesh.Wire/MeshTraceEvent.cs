@@ -83,4 +83,7 @@ public static class MeshTopics
 
     /// <summary>A trace exporter's batched events to a collector (spec §4).</summary>
     public const string Traces = "mesh:traces";
+
+    /// <summary>An issue emitter's deduplicated failure signatures to a collector (spec §4.1).</summary>
+    public const string Issues = "mesh:issues";
 }
