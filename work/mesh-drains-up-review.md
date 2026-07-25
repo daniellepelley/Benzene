@@ -193,6 +193,26 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 
 ### Phase 3 — The WHY (pipeline + wire; the mesh finally explains)
 
+> **LIVE-FIRE VALIDATION 2026-07-25 (against the deployed AwsMesh estate, phases 1–3.3 iteration).**
+> Driven with a real browser against the live API (via a local relay; Chromium can't cross the sandbox
+> proxy's TLS interception). **Confirmed working on real data:** the 400 Terraform fix (mesh:aggregate
+> 360/360 success in 6h; the 2,514 bad-requests are pre-fix history inside the 24h window), real
+> service names on flows/topics, `TraceSummary.topic`, windowed counts, the inbox catching the real
+> failure window + two genuine schema mismatches + three unhealthy services, the issue page naming the
+> actual cause (bad-request → "producer sending a malformed payload — e.g. a scheduled rule"), and the
+> pivot answering an honest "0 of 20 — failed only" post-fix. **Four live-fire defects found & fixed:**
+> (1) epoch-zero `lastSeen` serialized on composite rows read as "stale for two millennia" and lit the
+> Unhealthy tile → `ServiceSummary`/`TopicSummary`/`ServiceView.LastSeen` now nullable/omitted
+> (breaking-additive on the read views) + a UI pre-2001 sanity floor; (2) the inbox's 24h view flapped
+> under backend throttling (fetch isolation returning success with an empty topics slice) → hold-last-
+> good caching (an empty slice is never cached) + shared-range fallback + inbox poll 30s→60s; (3) a
+> topic getter's `"<missing>"` sentinel was stamped as a real `benzene.topic` → 2.7k phantom mesh
+> flows on a topic named `<missing>` → the decorator now treats the sentinel as unresolved; (4) the
+> mesh Lambda's own spans lacked `benzene.service` (no `UseBenzeneCloudService` there) → its flows
+> showed as `EventBridgeLambdaHandler` → the AwsMesh mesh Startup now calls `SetApplicationInfo`.
+> Remaining live observation: ~half the newest flows are summary-plane fallbacks (in-flight traces
+> enriched before X-Ray has their spans) — correctly labelled "infrastructure", noted for Phase 4.
+
 > **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
 > windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
 > classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"

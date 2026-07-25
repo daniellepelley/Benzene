@@ -1269,10 +1269,10 @@
     // Derived from the dedicated 24h inbox window (falling back to the shared-range view until the first
     // inbox poll lands). Reserved topics are deliberately INCLUDED — a failing mesh:aggregate must be
     // reportable; the mesh can't be the one service allowed to fail invisibly.
-    var errFleet = inboxFleet || fleet;
+    var errFleet = (inboxFleet && (inboxFleet.topics || []).length) ? inboxFleet : fleet;
     var countsWindowed = !errFleet.window || errFleet.window.countsWindowed !== false;
     var windowPhrase = !countsWindowed ? "(cumulative — this plane can't window counts)"
-      : (inboxFleet ? "in the last 24 hours" : "in " + fleetRangeLabel());
+      : (errFleet === inboxFleet ? "in the last 24 hours" : "in " + fleetRangeLabel());
     // Pipeline-reported issues (the mesh:issues feed, spec §4.1) — richer than the client derivation
     // (classification, exception type, first/last seen, exemplar traces, a stable fingerprint id).
     // FEED WINS AND SUPPRESSES the client-derived row for the same topic (one best-available row, the
@@ -3400,7 +3400,9 @@
   // The issue inbox reasons over a fixed 24h window regardless of the fleet picker — an overnight failure
   // must greet the morning check — via its own slow-cadence windowed poll. UI knobs, never contract values.
   var INBOX_WINDOW = { from: "now-24h" };
-  var INBOX_POLL_MS = 30000;
+  // 60s: the 24h window makes every inbox poll a wide backend scan (X-Ray GetTraceSummaries +
+  // CloudWatch GetMetricData) — live-fire showed sustained polling degrading the backend's slices.
+  var INBOX_POLL_MS = 60000;
   var inboxFleet = null, inboxTimer = null;
   // Feed health: distinguish "the system is quiet" from "I am blind" (polls failing, or nothing ever seen).
   var feedLastOkAt = null, feedLastFailAt = null, feedLastActivityAt = null;
@@ -3460,7 +3462,15 @@
     if (!fleetEndpoint()) return;
     fleetQuery("mesh:query:fleet", JSON.stringify({ window: INBOX_WINDOW }))
       .then(function (view) {
-        inboxFleet = view;
+        // Hold-last-good (2026-07-25 live-fire fix): the composite backend's fetch isolation can
+        // return a SUCCESSFUL view whose topics slice degraded to empty under throttling — caching it
+        // (even as the first response) would erase or delay the failure evidence and make the inbox's
+        // failing-traffic rows flap. Only a populated topics slice is ever cached; until one lands,
+        // collectLiveIssues falls back to the shared-range view. Genuine quiet is still reported
+        // honestly by the feed-health line (which tracks activity, not this cache).
+        if ((view.topics || []).length) {
+          inboxFleet = view;
+        }
         recordFeedActivity(view);
         renderFeedHealth();
         if (isEstateView()) renderIssues();
@@ -3562,7 +3572,11 @@
   function flAgeMs(iso) {
     if (!iso) return null;
     var t = Date.parse(iso);
-    return isNaN(t) ? null : Math.max(0, Date.now() - t);
+    // Pre-2001 = a serializer's default epoch leaking through an older backend, not a real signal
+    // (2026-07-25 live-fire fix: 0001-01-01 read as "stale for two millennia" and lit the Unhealthy
+    // tile on a plane whose health is unknown by design). Absent ≠ epoch.
+    if (isNaN(t) || t < 978307200000) return null;
+    return Math.max(0, Date.now() - t);
   }
   function flAge(ms) {
     if (ms < 90 * 1000) return Math.round(ms / 1000) + "s";

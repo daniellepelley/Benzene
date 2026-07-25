@@ -53,7 +53,13 @@ public class ServiceSummary
     public int Topics { get; set; }
     public int Instances { get; set; }
     public string Health { get; set; } = MeshHealth.Unknown;
-    public DateTimeOffset LastSeen { get; set; }
+
+    /// <summary>When this service was last observed, or null when the plane carries no live-time signal
+    /// (the composite plane's anonymous rows). Absent is OMITTED, never a default epoch — 2026-07-25
+    /// live-fire fix: a serialized 0001-01-01 read as "stale for two millennia" and lit the Unhealthy
+    /// tile on a plane whose health is unknown by design.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? LastSeen { get; set; }
     public long Invocations { get; set; }
     public long Errors { get; set; }
     public List<string> MissingFeeds { get; set; } = new();
@@ -74,7 +80,11 @@ public class TopicSummary
     public long Errors { get; set; }
     public double AvgDurationMs { get; set; }
     public Dictionary<string, long> StatusCounts { get; set; } = new();
-    public DateTimeOffset LastSeen { get; set; }
+
+    /// <summary>When this topic was last observed, or null when the plane doesn't carry it — see
+    /// <see cref="ServiceSummary.LastSeen"/> (absent ≠ epoch).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? LastSeen { get; set; }
 
     /// <summary>Which stat dimensions are genuinely absent for this topic (the counts/duration are the
     /// non-nullable default, not an observed zero) - the same "reduced is visible, never mistaken for
@@ -128,7 +138,9 @@ public class ServiceView
     public MeshPlacement Placement { get; set; } = new();
     public int Topics { get; set; }
     public string Health { get; set; } = MeshHealth.Unknown;
-    public DateTimeOffset LastSeen { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? LastSeen { get; set; }
     public long Invocations { get; set; }
     public long Errors { get; set; }
     public List<string> MissingFeeds { get; set; } = new();

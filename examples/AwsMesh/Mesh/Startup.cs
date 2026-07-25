@@ -54,6 +54,11 @@ public class Startup : BenzeneStartUp
             // must, same as every other Benzene example.
             benzene.AddBenzene();
             benzene.AddDiagnostics();
+            // The mesh Lambda's own spans need benzene.service too (the domain services get it via
+            // UseBenzeneCloudService, which this host doesn't use): without it the trace mappers fall
+            // back to backend segment names, and the fleet shows the mesh's own flows as
+            // "EventBridgeLambdaHandler" (2026-07-25 live-fire finding).
+            benzene.SetApplicationInfo("benzene-mesh", string.Empty, string.Empty);
             // OTel path only (→ ADOT collector → X-Ray), matching the domain services: it's the path that
             // stitches a cross-service transaction into one X-Ray trace (via the propagated W3C traceparent),
             // so running the X-Ray SDK path (AddXRayTracing) too would add a second, non-stitching

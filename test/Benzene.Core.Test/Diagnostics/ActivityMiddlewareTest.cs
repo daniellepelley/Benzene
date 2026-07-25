@@ -194,10 +194,38 @@ public class ActivityMiddlewareTest
     {
         public System.Collections.Generic.IDictionary<string, string> Headers { get; init; } =
             new System.Collections.Generic.Dictionary<string, string>();
+        public string TopicId { get; init; } = "orders:create";
         public Benzene.Abstractions.Messages.ITopic? GetTopic(StatusContext context) =>
-            new Benzene.Core.Messages.Topic("orders:create");
+            new Benzene.Core.Messages.Topic(TopicId);
         public string? GetBody(StatusContext context) => null;
         public System.Collections.Generic.IDictionary<string, string> GetHeaders(StatusContext context) => Headers;
+    }
+
+    [Fact]
+    public async Task AddDiagnostics_TreatsTheMissingSentinelAsNoTopic()
+    {
+        var (activities, listener) = ListenToBenzeneActivities();
+        using var _ = listener;
+
+        var services = new ServiceCollection();
+        var container = new MicrosoftBenzeneServiceContainer(services);
+        container.AddBenzeneMiddleware();
+        container.AddDiagnostics();
+        // A getter answering the "<missing>" sentinel is saying "no topic here" — stamping it would
+        // mint a phantom benzene.topic span a trace-backed mesh reader counts as a real flow.
+        services.AddScoped<Benzene.Abstractions.MessageHandlers.Mappers.IMessageGetter<StatusContext>>(
+            _ => new FakeMessageGetter { TopicId = "<missing>" });
+
+        var builder = new MiddlewarePipelineBuilder<StatusContext>(container);
+        builder.Use("handle", (_, next) => next());
+
+        var pipeline = builder.Build();
+        using var factory = new MicrosoftServiceResolverFactory(services);
+        using var resolver = factory.CreateScope();
+        await pipeline.HandleAsync(new StatusContext(), resolver);
+
+        var span = Assert.Single(activities, a => a.OperationName == "handle");
+        Assert.Null(span.GetTagItem("benzene.topic"));
     }
 
     [Fact]

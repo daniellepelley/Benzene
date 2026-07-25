@@ -114,7 +114,12 @@ public class ActivityMiddlewareDecorator<TContext> : IMiddleware<TContext>
 
         var getter = _serviceResolver.TryGetService<IMessageGetter<TContext>>();
         var topic = getter?.GetTopic(context);
-        if (topic is not null && !string.IsNullOrEmpty(topic.Id))
+        // The "<missing>" sentinel (Constants.Missing — same value as TransportNames.Unresolved) is a
+        // getter saying "no topic here", not a topic: stamping it would mint a phantom benzene.topic
+        // span that a trace-backed mesh reader counts as a real flow on a topic literally named
+        // "<missing>" (2026-07-25 live-fire finding: 2.7k phantom invocations on the mesh Lambda's
+        // asset/probe requests). Same rule as the benzene.transport Unresolved guard above.
+        if (topic is not null && !string.IsNullOrEmpty(topic.Id) && topic.Id != TransportNames.Unresolved)
         {
             if (tagState is not null)
             {
