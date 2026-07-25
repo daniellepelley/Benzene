@@ -262,6 +262,17 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 > Applies on next `terraform apply` + redeploy; the schedule stays a variable for anyone wanting
 > near-live freshness back.
 
+> **SERVICE-PAGE FILTER 2026-07-25 (maintainer: the service page "is showing mostly benzene utility
+> traffic… the same benzene utility filter should apply here").** The benzene filter is now ONE
+> global state across the whole page: the service page's functional map hides utility/reserved rows
+> (header counts what's shown) and its usage panel excludes utility-topic entries — chips sum over
+> the visible set, the excluded volume is stated ("9.9k messages on benzene utility topics
+> excluded"), and an all-utility feed renders a statement, never a false "no traffic observed".
+> Every filtered section carries "N benzene topics hidden · show", which flips the same
+> `flShowUtility` the estate checkbox drives (both stay in sync). Rationale recorded per the
+> maintainer: benzene traffic is assumed to be working correctly — when it isn't, the (unfiltered)
+> issue inbox is what says so. Live-verified on the reported page; 56 mock + 13 live assertions.
+
 > **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
 > windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
 > classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"

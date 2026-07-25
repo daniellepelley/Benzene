@@ -527,6 +527,9 @@
   /* A shared deployment-stack prefix on service names carries no signal — mute it (display-only). */
   .svc-prefix { color: var(--ink-faint); font-weight: 400; }
   .fl-topo-node .fl-topo-prefix { fill: var(--ink-faint); }
+  /* The "N benzene X hidden · show" affordance beside any filtered drill-in section. */
+  .util-note { display: block; margin: 2px 0 8px; }
+  .usage-note .util-note { display: inline; margin: 0; }
   tr.fl-flow-row { cursor: pointer; }
   tr.fl-flow-row:hover td { background: color-mix(in srgb, var(--ink) 4%, transparent); }
   .fl-flow-link { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
@@ -2629,9 +2632,17 @@
 
   function buildServiceTopicList(label, topics, name, isConsumer) {
     var side = el("div", "tp-side");
+    // The same benzene filter as the traffic picture: the functional map answers "what does this
+    // service DO" — its domain contract — not "what plumbing does it also serve". Utility rows
+    // (spec, healthchecks, mesh feeds) hide by default with the honest count + show toggle; the
+    // header count is the count of what's SHOWN.
+    var domain = topics.filter(function (t) { return !isUtilityTraffic(t.topic) && !t.reserved; });
+    var hidden = topics.length - domain.length;
+    if (!flShowUtility) topics = domain;
     side.appendChild(el("h2", null, label + " (" + topics.length + ")"));
+    if (hidden > 0) side.appendChild(utilityHiddenNote(hidden, "topic"));
     if (!topics.length) {
-      side.appendChild(el("div", "t-empty", "none"));
+      if (!hidden) side.appendChild(el("div", "t-empty", "none"));
       return side;
     }
     topics.forEach(function (t) {
@@ -3398,12 +3409,44 @@
     var section = el("div", "sp-section");
     section.appendChild(el("h2", null, "Usage"));
 
+    // The same benzene filter as everywhere else — utility-topic counts (spec fetches, healthcheck
+    // probes) would drown the domain signal (live-fire: "spec 9.8k · payments:capture 11"). Hidden
+    // by default with the count stated; every chip row then sums over what's SHOWN, so the panel
+    // stays internally consistent.
+    function splitUtility(entries) {
+      var kept = [], hiddenCount = 0, hiddenMsgs = 0;
+      entries.forEach(function (e) {
+        if (!flShowUtility && isUtilityTraffic(e.topic)) { hiddenCount++; hiddenMsgs += (e.count || 0); }
+        else kept.push(e);
+      });
+      return { kept: kept, entries: hiddenCount, messages: hiddenMsgs };
+    }
+    function appendPanel(entries) {
+      var split = splitUtility(entries);
+      if (!split.kept.length && split.entries > 0) {
+        // Everything this feed saw for the service was benzene plumbing — an empty panel would read
+        // as "no traffic observed", which it is not. State it instead.
+        var none = el("div", "usage-note", "All " + fmtCount(split.messages) +
+          " observed messages are on benzene utility topics. ");
+        none.appendChild(utilityHiddenNote(split.entries, "topic"));
+        section.appendChild(none);
+        return;
+      }
+      section.appendChild(buildUsagePanel(split.kept, { perTopic: true }));
+      if (split.entries > 0) {
+        var note = el("div", "usage-note", fmtCount(split.messages) +
+          " messages on benzene utility topics excluded from the counts above. ");
+        note.appendChild(utilityHiddenNote(split.entries, "topic"));
+        section.appendChild(note);
+      }
+    }
+
     var mine = currentUsage.entries.filter(function (e) { return e.service === name; });
     var feedAttributesServices = currentUsage.entries.some(function (e) { return e.service != null; });
     if (mine.length || feedAttributesServices) {
       // Either this service's own counts, or a per-service-capable feed that saw nothing for it
       // (the panel's explicit "wired, nothing observed" empty state - not the same as no feed).
-      section.appendChild(buildUsagePanel(mine, { perTopic: true }));
+      appendPanel(mine);
       return section;
     }
 
@@ -3416,7 +3459,7 @@
     var fleetWide = currentUsage.entries.filter(function (e) { return handled[e.topic]; });
     section.appendChild(el("div", "usage-note",
       "This usage feed doesn't attribute counts per service — showing fleet-wide counts for the topics " + name + " handles."));
-    section.appendChild(buildUsagePanel(fleetWide, { perTopic: true }));
+    appendPanel(fleetWide);
     return section;
   }
 
@@ -3801,7 +3844,32 @@
   // The recent-flows pivot filter (drains-up 2.4), set by the error-count links; null = unfiltered.
   var flFlowFilter = null; // { topic: string|null, failedOnly: bool }
   // The show-benzene-traffic toggle: off = the user's traffic only (utility flows/counts/edges hidden).
+  // ONE global state for every surface that filters benzene traffic (estate flows/tiles/map AND the
+  // drill-in pages' functional map + usage) — benzene's plumbing is assumed working; when it isn't,
+  // the issue inbox (never filtered) says so.
   var flShowUtility = false;
+  // Flip the global state from any surface: keep the estate checkbox in sync and re-render whatever
+  // view is open.
+  function setShowUtility(on) {
+    flShowUtility = on;
+    var cb = document.getElementById("fl-show-utility");
+    if (cb) cb.checked = on;
+    if (isEstateView()) { if (currentFleet) renderFleetPage(); }
+    else syncViewFromHash();
+  }
+  // The honest affordance beside anything the filter hid: the count, why, and a one-click show/hide.
+  function utilityHiddenNote(count, noun) {
+    var wrap = el("span", "util-note fl-sub");
+    wrap.title = "Benzene's own plumbing (spec, healthchecks, mesh feeds) is hidden by default — it's assumed to be working. When it isn't, the issue inbox reports it regardless of this filter.";
+    wrap.appendChild(document.createTextNode(
+      flShowUtility ? "showing benzene " + noun + (count === 1 ? "" : "s") + " · "
+        : count + " benzene " + noun + (count === 1 ? "" : "s") + " hidden · "));
+    var btn = el("button", "fl-flow-link", flShowUtility ? "hide" : "show");
+    btn.type = "button";
+    btn.addEventListener("click", function () { setShowUtility(!flShowUtility); });
+    wrap.appendChild(btn);
+    return wrap;
+  }
   function flPivotToFailingFlows(topicId) {
     flFlowFilter = { topic: topicId || null, failedOnly: true };
     if (location.hash === "#fleet") {

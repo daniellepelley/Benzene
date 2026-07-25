@@ -1,5 +1,21 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 SERVICE-PAGE FILTER — the benzene filter is ONE global state, applied to the drill-ins.**
+> Maintainer report: `#service:benzene-mesh-payments` showed mostly benzene utility traffic (a declared
+> `spec` consumed row with "717 obs" beside silent domain topics; a usage panel reading "spec 9.8k ·
+> payments:capture 11"). The default view of a service is now its DOMAIN contract:
+> - `buildServiceTopicList` hides utility rows (`isUtilityTraffic` OR `reserved`) by default; the
+>   header count counts what's shown ("Consumes (2)").
+> - `buildServiceUsageSection` excludes utility-topic entries from the panel, so every chip row sums
+>   over what's visible (internal consistency), with the excluded volume stated below ("9.9k messages
+>   on benzene utility topics excluded"). All-utility usage renders a statement, never a lying
+>   "no traffic observed" empty panel.
+> - `flShowUtility` is now one global state with `setShowUtility(on)`: each filtered section carries a
+>   `utilityHiddenNote(count, noun)` — "N benzene topics hidden · show" (tooltip: benzene's plumbing
+>   is assumed working; the issue inbox reports failures regardless) — and toggling anywhere syncs the
+>   estate checkbox and re-renders the open view. Topic pages for utility topics remain reachable by
+>   explicit navigation (the pivot-bypass rule).
+
 > **2026-07-25 COST ROUND — polling is a cost knob on the composite plane.** Every live poll fans out
 > to REAL backend queries (X-Ray `GetTraceSummaries` — billed per trace **scanned** — + CloudWatch
 > `GetMetricData` + a traced Lambda invocation), so cadence is money, not just freshness:
