@@ -536,7 +536,7 @@ the .NET Foundation application → podcast intros (§6.3) → slide 2 of the ta
 company, never hint at it, and do not re-ask later. §3.3.2 exists so that this outcome costs the
 campaign one artefact, not one quarter.
 
-### 6.1 Newsletters & aggregators — do this first, it is the cheapest reach we have
+### 6.1 Newsletters & aggregators — the cheapest reach we have, and the first *outward* action
 
 | Target | Ask | Notes |
 |---|---|---|
@@ -650,6 +650,29 @@ story that makes Lambda look good to .NET developers."
 was the problem." That is true, it is on-vision (`benzene-vision.md` §2.2), and it makes AWS look
 good. **Not** the portability story.
 
+**Rev 2: this pitch gets substantially stronger, and the reason is worth stating precisely.** The
+precursor **runs in production on AWS, in a real commercial accountancy platform, and spread across
+teams there.** That is not a framework pitch — it is an *AWS Lambda customer-outcome story*, which
+is exactly the category the `.NET on AWS` blog exists to publish. It moves the pitch from "here is
+an OSS project, would you write about it" to "here is a real production Lambda architecture at
+scale, and the .NET pattern that came out of it." Those are different conversations with different
+hit rates.
+
+Three honest consequences:
+
+- **The AWS pitch is the one artefact where the name genuinely matters** (§3.3.2). An anonymised
+  production story is publishable but far less interesting to a vendor, and AWS's own editorial
+  process will likely want the customer's sign-off in addition to ours. Plan it as **double-gated**:
+  a stretch outcome, not a milestone.
+- **Timing holds at T0 + 3 months** despite the stronger story. The pitch still needs published
+  content behind it, and pitching before the blog programme exists wastes the one good approach we
+  get. The exception: **if a cleared, named quote lands early, move the AWS pitch to the front of
+  the Phase 3 queue** — it is then the single highest-value outreach action available.
+- **This sharpens §7.4's asymmetry rather than softening it.** Our strongest trust asset is an
+  AWS-production asset. That is another reason portability stays a closing bonus line and never the
+  lead — it is not vendor appeasement, it is that the *evidence we actually have* is AWS-shaped, and
+  the campaign should lead with the claim it can best support.
+
 **Programmes, with their real entry requirements:**
 
 | Programme | Reality | Entry requirement | When |
@@ -675,6 +698,15 @@ second rather than first:
 Queue Storage and HTTP triggers"* — the transport-mixing wedge, told entirely inside Azure. Benzene's
 Azure trigger matrix is genuinely broad and is called out as a strength in `1.0-release-plan.md` §3.
 
+**Rev 2 caution on the Azure story.** The provenance does **not** transfer here, and must not be
+allowed to leak into Azure-facing copy by implication. The precursor ran on AWS; the Azure surface
+is part of the "new and unproven" half of §3.0. An Azure post that opens with "a design proven in
+production" and then shows Azure triggers is technically parseable and practically misleading — do
+not write it. The Azure story stands on the wedge and the trigger matrix alone, which is enough.
+Separately, the provenance **does** strengthen the .NET Foundation application, where "the design
+has a production history" speaks directly to the project-longevity criterion the committee cares
+about.
+
 ### 7.4 The independence trade-off — stated openly
 
 **Vendor association buys reach and institutional credibility; it costs message control, and it can
@@ -687,6 +719,12 @@ and I would rather name it than paper over it:
 - **The rule: each vendor gets the story that is true on their platform, and never a story that is
   untrue anywhere.** AWS gets consolidation-and-testability. Azure gets transport-mixing. Both are
   fully honest; neither is the complete picture; the complete picture lives on `benzene.app`.
+- **New in rev 2 — the vendor-editorial overclaim pressure.** A vendor blog wants a strong customer
+  story, and their editors will reach for stronger language than we can support ("proven at scale",
+  "powering"). **§3.0's rules apply inside a vendor post exactly as they do on our own site: the
+  limit clause travels, or the post does not happen.** Say this up front in the pitch rather than
+  discovering it in review — it is easier to set the register at the start than to walk copy back,
+  and an editor told early will usually respect it.
 - **The line I recommend holding:** if a vendor asks for the multi-cloud line to come off Benzene's
   *own* site or README as a condition, decline and lose the placement. Editing our own honest
   positioning to earn a blog post is precisely the trade that destroys the credibility the post was
@@ -705,7 +743,7 @@ Assumption: **one maintainer, ~4 hours per week sustainably available for market
 ability to clear one intensive week for launch. Everything below is designed against that ceiling.
 Numbers are honest estimates including writing, editing and outreach, not just publishing.
 
-### Phase 0 — Foundation (6 weeks, pre-tag) — **~45 hours (~7.5 h/week)**
+### Phase 0 — Foundation (6 weeks, pre-tag) — **~43 hours (~7 h/week)** *(rev 1: ~45)*
 
 The heaviest phase, because artefacts get built. This is front-loaded on purpose: it is the only
 phase where you are not also responding to people.
@@ -718,13 +756,21 @@ phase where you are not also responding to people.
 | Write and publish **E1** (the failure-semantics table) | 8 |
 | Write and publish **E2** (testing without deploying) | 7 |
 | Write and publish **E3** (the wedge post) | 7 |
-| Write and publish **E4** (hexagonal in C#) | 6 |
+| ~~Write and publish **E4** (hexagonal in C#)~~ — **moved to Phase 2 in rev 2** | ~~6~~ 0 |
+| **Rev 2: close gate 2 (IP/lineage), answer the Digiterre question, draft and send the permission + quote email, one follow-up** | 2 |
+| **Rev 2: write the §3.0 trust line into the README trust block and the site hero sub-line** (copy is written; this is placing it) | 2 |
 | Pre-write launch-week assets: L1 draft, release notes, newsletter emails, the r/dotnet and HN posts | 5 |
 
 *Zero promotion of Benzene-the-project in this phase.* The evergreen posts go out on their own merits
 and start ageing into search. **If hours are short, cut E4 and ship in 5 weeks with three posts.**
 
-### Phase 1 — Launch (2 weeks, T0) — **~22 hours, concentrated**
+**Rev 2 net effect on Phase 0: −2 hours** (45 → 43). E4 moving out pays for the permission work and
+the trust-block copy with hours to spare. **E4 is the right thing to displace**: it was already
+first on rev 1's cut list, it is the least differentiated post in the programme (hexagonal-
+architecture content is a crowded field), and it is the only Phase 0 post whose search value does
+not decay by being published two months later.
+
+### Phase 1 — Launch (2 weeks, T0) — **~24 hours, concentrated** *(rev 1: ~22)*
 
 Requires a genuinely cleared week. Everything lands inside 7 days so the surfaces compound.
 
@@ -732,18 +778,27 @@ Requires a genuinely cleared week. Everything lands inside 7 days so the surface
 |---|---|
 | Cut the release: bump `version.txt`, tag, publish, GitHub release, drop prerelease badges | 4 |
 | Publish **L1**, **L2**, **L3** across the same week | 8 |
+| **Rev 2: L2's rewrite as the lineage post** — more structure, more care, and a claims-check against the provenance doc | +2 |
 | Submit to newsletters, r/dotnet, HN, lobste.rs, dev.to syndication | 3 |
 | **Respond to everything, fast** — this is the phase that converts, and the one people underestimate | 7 |
 
-### Phase 2 — Sustain (months 2–5) — **~64 hours (~4 h/week)**
+**Rev 2 net effect on Phase 1: +2 hours** (22 → 24). Worth it: L2 is now the post that answers the
+campaign's hardest objection, and it is the one artefact where under-investing shows.
+
+### Phase 2 — Sustain (months 2–5) — **~73 hours (~4.6 h/week)** *(rev 1: ~64)*
 
 | Work | Hours |
 |---|---|
-| **S1**, **S2**, **S3** (one post per month) | 24 |
+| **S1**, **S2**, **S6** (one post per month; **rev 2: S6 replaces S3**) | 24 |
+| **Rev 2: E4**, displaced from Phase 0 | 6 |
+| **Rev 2: permission-landed contingency** — if the named form or a quote clears, upgrade README, site, L1, L2, the talk and the pitches in place | 3 |
 | Podcast outreach + one recorded appearance | 8 |
 | User-group CFS submissions + one talk (write once, deliver twice) | 16 |
 | Community presence: Discord, Stack Overflow, issue responsiveness | 12 |
 | Influencer outreach (§6.6) — 4 personal emails, spaced | 4 |
+
+**Rev 2 net effect on Phase 2: +9 hours** (64 → 73), of which 6 is E4 arriving rather than new work.
+The 3-hour contingency is only spent if permission lands — a good problem.
 
 ### Phase 3 — Second wave (months 6–8) — **~34 hours (~3 h/week)**
 
@@ -754,13 +809,20 @@ Requires a genuinely cleared week. Everything lands inside 7 days so the surface
 | Conference CFP submissions (NDC London, .NET Conf, DDD) | 6 |
 | Second podcast / OSS Power-Ups | 4 |
 
-### Total: **~165 hours over 8 months (~4.8 h/week average)**
+### Total: **~174 hours over 8 months (~5.1 h/week average)** — rev 1 was ~165
+
+**Rev 2's honest accounting: +9 hours net, of which 6 is E4 rescheduled rather than added, and 3 is
+contingent on permission being granted.** The genuinely new work — closing the IP gate, the
+permission email, the trust-line copy, L2's deeper rewrite — is **~7 hours, and it is paid for by
+moving E4 out of the critical path.** Nothing else was appended without something being moved.
 
 **This is at the edge of what one person can sustain alongside maintaining the library, and I have
 already cut to fit.** What was cut, and why, is in §9. If real availability is closer to 2 h/week,
-the honest plan is: **do Phase 0 (E1, E2, E3 only), do Phase 1 in full, then drop Phase 2 to one
-post per two months and skip user-group talks.** A campaign that stops after launch is worse than a
-smaller campaign that keeps going — the drumbeat is what turns a spike into adoption.
+the honest plan is: **do Phase 0 (E1, E2, E3 only, plus the 2-hour permission email — it is the
+highest return-per-hour item in the entire plan and must not be the thing that gets dropped), do
+Phase 1 in full, then drop Phase 2 to one post per two months and skip user-group talks.** A
+campaign that stops after launch is worse than a smaller campaign that keeps going — the drumbeat is
+what turns a spike into adoption.
 
 ---
 
@@ -778,6 +840,7 @@ smaller campaign that keeps going — the drumbeat is what turns a spike into ad
 | Docs traffic from *organic search* (not referral) | **Honest.** | The measure of whether the evergreen strategy is working. Expect nothing for 3 months. |
 | Newsletter/aggregator pickups | **Honest, binary.** | |
 | **Someone unaffiliated using Benzene in something real** | **The one that matters.** | Target: 3 by T0 + 6 months. |
+| **NEW — whether "has anyone actually run this?" still dominates launch threads** | **Honest, qualitative, and the direct test of whether pillar 2 works.** | Read the r/dotnet and HN threads for it. If the objection is still the top comment despite L2 and the trust line, the framing failed and needs rewriting — not more posting. If it appears and is *answered by another commenter* quoting our own copy, the pillar is working. |
 
 **Review points:** T0 + 2 weeks (did the launch land?), T0 + 3 months (is search working? are
 strangers showing up?), T0 + 6 months (the real-usage test).
@@ -822,6 +885,28 @@ posting more.
 7. **Comparison-post backfire (S1).** Misrepresenting MassTransit/Dapr/Wolverine would be both wrong
    and self-destructive. Mitigation: peer review before publishing (§6.6), and state plainly where
    the alternative wins.
+8. **NEW — provenance drift.** The most likely way this campaign damages itself is not a deliberate
+   overclaim; it is erosion. "The design has production history in a narrower scope" becomes "it's
+   been in production for years" becomes "battle-tested", across a podcast, a conference Q&A and
+   three months of retelling. Nobody decides to do this. Mitigation: **§3.0's verbatim rule, the
+   banned-phrasings list, and a scripted spoken form rehearsed before any live appearance.** The
+   maintainer is the only person who can breach this, and live formats are where it happens.
+9. **NEW — the IP / clean-lineage gate is a genuine legal risk, not a formality.** Publicising a
+   lineage is precisely what prompts someone to ask whether the code was theirs. If the precursor
+   was work-for-hire, the *design pattern* is not ownable but the *code* is not the maintainer's to
+   reuse. **Gate 2 blocks everything provenance-related, anonymised included** (§3.3.1) — anonymity
+   does not help here, because the party who would object already knows who they are. Close it in
+   Phase 0 week 1; if it does not close cleanly, take advice and run rev 1's plan meanwhile.
+10. **NEW — the "so nobody has actually used it" reading.** A sharp reader will correctly observe
+    that this is a claim about a *different, narrower* piece of software. That reading is fair, and
+    the answer is not to argue: it is that we said so first, in our own copy, before they did.
+    Volunteering the limit converts the strongest available objection into evidence of honesty. The
+    failure mode is being *seen to be caught* rather than being asked — which is why the limit clause
+    is non-negotiable and why L3 carries a "what is and isn't proven" section.
+11. **NEW — relationship risk with the former employer.** A badly-judged ask, or naming without
+    permission, could damage a relationship that matters to the maintainer personally and cost the
+    campaign its best asset permanently. Mitigation: one email, one follow-up, an explicit easy exit,
+    never a third chase, and never a hint of the name if the answer is no or silence (§6.0).
 
 ### 9.3 What we are deliberately NOT doing
 
@@ -835,8 +920,16 @@ posting more.
   social plan.
 - **No project Discord or Slack.** A dead community server signals a dead project. GitHub Discussions
   is enough until there is demand it can't absorb.
-- **No case studies or testimonials** — there are no users yet, and inventing them is out of the
-  question.
+- **No case studies or testimonials** — there are no Benzene users yet, and inventing them is out of
+  the question. **Rev 2 nuance:** a *precursor* case study is a legitimate stretch goal (§6.0), but
+  it is a case study about the design's history, must be labelled as such, and does not become a
+  "Benzene customer story" under any circumstances.
+- **No "trusted by" logo strip, no company logos anywhere.** A logo implies endorsement or a
+  commercial relationship; we have neither, and it is the fastest way to turn a true story into a
+  false impression. This holds even if permission to name is granted — permission to *name* in prose
+  is not permission to imply *endorsement* in a logo strip.
+- **No provenance in titles, headlines, sub-heads, tweets or NuGet summaries.** Formats too short to
+  carry the limit clause do not carry the claim (§3.0, rule 2).
 - **No management/procurement content track for 1.0.** The `why.html` site page covers audience D;
   a dedicated track needs evidence we don't have.
 - **No Medium, no Dev.to-first publishing.** Own domain publishes first, always; dev.to is
@@ -850,35 +943,49 @@ posting more.
 
 ## 10. Immediate next actions
 
-Ordered. The first three are prerequisites for everything else.
+Ordered. **Rev 2 reorders this list**: actions 1–2 are new and go first, because they have the
+longest lead time and the widest blast radius, and because both are cheap.
 
-1. **Set the 1.0 tag date** and work the calendar backwards from it. Phase 0 is six weeks; nothing in
+1. **Close the IP / clean-lineage gate (provenance §4.2) — this week, before writing any provenance
+   copy.** Confirm Benzene is an independent implementation of the design rather than derived code,
+   and answer the Digiterre question in §1.1 (who employed you to build the precursor, and does the
+   2023 published report describe the same engagement). **This gates the entire trust pillar,
+   anonymised included.** *(Maintainer only; ~1 hour, possibly a contract re-read.)*
+2. **Send the permission-and-quote email to the chief architect** (§6.0) — three tiers in one
+   message: permission to name, a two-sentence cleared quote with a strawman offered for them to
+   rewrite, and a case study mentioned as an offer. One follow-up at three weeks, then stop. **Send
+   it in Phase 0 week 2, not later** — it is the only item in this plan whose clock is controlled by
+   someone else, and everything else proceeds anonymised while it runs. *(~2 hours including the
+   follow-up.)*
+3. **Set the 1.0 tag date** and work the calendar backwards from it. Phase 0 is six weeks; nothing in
    Phase 1 happens a day before the tag. *(Maintainer decision — blocks the whole plan.)*
-2. **Stand up a blog on `benzene.app`.** The campaign spine currently has no home:
+4. **Stand up a blog on `benzene.app`.** The campaign spine currently has no home:
    `website/generator/` has no blog concept. Scope: a post list, a post page reusing the existing
    `Layout.cs` shell, markdown-sourced from a `blog/` directory, an RSS feed (newsletters consume
    RSS). *(Route to the website owner; ~6 hours.)*
-3. **Export a raster logo from `Logo.cs`** and wire `PackageIcon` centrally in
+5. **Export a raster logo from `Logo.cs`** and wire `PackageIcon` centrally in
    `src/Directory.Build.props` — `1.0-release-plan.md` Tier 0.7 already flags it as the one missing
    piece of NuGet polish. Same asset becomes the social card and the talk title slide. *(~3 hours.)*
-4. **Fix the `Benzene.Tools` doc bug** in `docs/testing-benzene.md` (line 49) and
+6. **Fix the `Benzene.Tools` doc bug** in `docs/testing-benzene.md` (line 49) and
    `docs/cookbooks/testing-lambda-functions.md` — the correct package is
    `Benzene.Aws.Lambda.Core.TestHelpers`. **Hard prerequisite for E2**, and a live overclaim in the
    docs a launch will drive traffic to. *(Route to core/DX owner; ~30 minutes.)*
-5. **Write E1 — the per-transport failure-semantics reference table.** Highest-confidence asset in
+7. **Write E1 — the per-transport failure-semantics reference table.** Highest-confidence asset in
    the plan, ~80% already written in `docs/capability-matrix.md`, and it is the post that gets picked
    up on its own merits with no reputation behind it. *(~8 hours.)*
-6. **Capture the visual assets that do not exist.** There is not a single screenshot in the repo.
+8. **Capture the visual assets that do not exist.** There is not a single screenshot in the repo.
    Needed before any post or talk: the Mesh Explorer demo, the Spec UI demo, and
    `MeshServiceWiring.Configure`/`CreateOrderTest.cs` as code images. *(~2 hours.)*
-7. **Verify the five "needs-verification" items** before relying on them: which domain is actually
+9. **Verify the five "needs-verification" items** before relying on them: which domain is actually
    serving the site, r/dotnet's current self-promotion rules (read the sidebar), The Morning Brew's
    2026 activity, dotNET Weekly's submission mechanism, and the .NET Foundation's precise Activity
    requirements. *(~1 hour total.)*
-8. **Draft the launch-week runbook** — the exact order of the tag, the three posts, the newsletter
+10. **Draft the launch-week runbook** — the exact order of the tag, the three posts, the newsletter
    emails and the community submissions, written down before launch week rather than improvised
-   during it. *(~2 hours.)*
-9. **Send one relationship email now, with no ask:** Derek Comartin (CodeOpinion), sharing E1 once
+   during it. **Rev 2: it opens with a gate check — which form of the trust line (§3.0) is cleared as
+   of launch day, named or anonymised — so that decision is made once, in writing, and not
+   re-litigated in each artefact at 11pm.** *(~2 hours.)*
+11. **Send one relationship email now, with no ask:** Derek Comartin (CodeOpinion), sharing E1 once
    published. The best time to start a relationship is months before you need it.
 
 ---
@@ -890,6 +997,9 @@ Ordered. The first three are prerequisites for everything else.
 - [`work/website-audience-plan.md`](website-audience-plan.md) — the four audiences behind §3.1
 - [`work/benzene-vision.md`](benzene-vision.md) — the philosophy every claim must stay honest to
 - [`work/1.0-release-plan.md`](1.0-release-plan.md) — the authoritative launch state behind §1.2
+- **[`work/benzene-production-provenance.md`](benzene-production-provenance.md) — SOURCE OF TRUTH for
+  §3.0's trust line, §3.3's gates and §6.0's ask. Re-read it before writing any provenance copy; if
+  this plan and that document ever disagree, that document wins**
 - [`work/enterprise-adoption-gap-analysis.md`](enterprise-adoption-gap-analysis.md) — the objections
   a tech lead will raise
 - [`docs/capability-matrix.md`](../docs/capability-matrix.md) — the honest boundaries; source for E1,
