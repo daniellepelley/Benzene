@@ -1,5 +1,19 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 COST ROUND — polling is a cost knob on the composite plane.** Every live poll fans out
+> to REAL backend queries (X-Ray `GetTraceSummaries` — billed per trace **scanned** — + CloudWatch
+> `GetMetricData` + a traced Lambda invocation), so cadence is money, not just freshness:
+> - `FLEET_POLL_MS` 5s → **15s** (still ahead of X-Ray's eventual consistency; range changes and
+>   pivots re-poll immediately regardless).
+> - `INBOX_POLL_MS` 60s → **5 min** — the inbox's 24h window makes it the widest scan on the page,
+>   and a 24h view doesn't need minute freshness (hold-last-good keeps it stable between polls).
+> - **Hidden-tab pause:** `loadFleet`/`loadInboxFleet` no-op while `document.hidden`; a
+>   `visibilitychange` handler polls both planes immediately on return, so the reader never sees
+>   stale data because of the pause. A tab left open in the background now costs zero.
+> The standing-traffic half lives in `examples/AwsMesh/deploy/variables.tf`: `aggregate_schedule`
+> default `rate(1 minute)` → `rate(15 minutes)` (each pass = mesh Lambda + spec/healthcheck fan-out
+> to every service, all traced + metered).
+
 > **2026-07-25 BUG-FIX + UX ROUND SHIPPED (live exploratory pass + mesh-PO review, 10 items + ruling).**
 > - **Utility vocabulary completed:** `isUtilityTraffic` now mirrors `ReservedTopics.DefaultIds`
 >   (`healthcheck`/`liveness`/`readiness`/`spec`/`test-payloads`/`mesh`/`invoke`/`report`) plus the

@@ -251,6 +251,17 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 > exercised the crowd-out empty state on real data: tiles 0/0 with the exclusion tooltip, "20 of 20
 > flows are benzene's own (hidden)".
 
+> **COST ROUND 2026-07-25 (maintainer: "reduce the backend traffic so the demo doesn't rack up
+> cost").** Three levers, no product-shape change: (1) AwsMesh `aggregate_schedule` default
+> `rate(1 minute)` → `rate(15 minutes)` — each pass invokes the mesh Lambda plus spec+healthcheck
+> calls to all six services, all X-Ray-traced and EMF-metered (~20k invocations + ~35k traces/day
+> idle at 1-min); (2) UI poll cadence — fleet 5s→15s, inbox 60s→5min (the inbox's 24h window makes
+> every poll a full-day `GetTraceSummaries` scan, X-Ray's per-trace-scanned billing's worst case);
+> (3) hidden-tab pause — a backgrounded tab makes ZERO backend queries, with an immediate
+> both-planes poll on return (verified: 0 queries over 33s hidden, 2 within 1.5s of return).
+> Applies on next `terraform apply` + redeploy; the schedule stays a variable for anyone wanting
+> near-live freshness back.
+
 > **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
 > windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
 > classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"

@@ -29,9 +29,9 @@ variable "lambda_architecture" {
 }
 
 variable "aggregate_schedule" {
-  description = "EventBridge schedule expression for the mesh aggregation pass. Defaults to every minute so the catalog + usage feed stay fresh (matching the AzureFunctionsMesh timer). Raise it (e.g. rate(5 minutes)) to cut invocations if you don't need near-live data. Note: the Mesh UI explorer loads artifacts once per page load, so a browser reload still shows the latest — this only bounds how stale that reload can be."
+  description = "EventBridge schedule expression for the mesh aggregation pass. Defaults to every 15 minutes to keep a standing demo cheap: each pass invokes the mesh Lambda AND fans out spec + healthcheck HTTP calls to every discovered service, all of it X-Ray-traced and EMF-metered — at rate(1 minute) that's roughly 20k Lambda invocations and 35k X-Ray traces per day sitting idle (observed ~1.5k traces/hour on the demo estate). Lower it (e.g. rate(1 minute), matching the AzureFunctionsMesh timer) when you want near-live catalog freshness. Note: the Mesh UI explorer loads artifacts once per page load, so a browser reload still shows the latest — this only bounds how stale that reload can be; the live traffic plane (X-Ray/CloudWatch) is queried directly by the UI and is unaffected by this schedule."
   type        = string
-  default     = "rate(1 minute)"
+  default     = "rate(15 minutes)"
 }
 
 variable "adot_collector_layer_arn" {
