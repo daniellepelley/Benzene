@@ -18,8 +18,11 @@ different conversation. The difference between those two sentences is the whole 
 - It went into **IRIS Elements**, a **flagship accountancy platform**, and **runs in production on
   AWS today**.
 - The **chief architect at IRIS decided that all new systems should use the precursor**, across the
-  IRIS estate. (Maintainer's phrasing was "across the Iris state"; read as *estate*, i.e. their
-  software estate. **Confirm the wording before quoting it.**)
+  **IRIS estate** (confirmed by the maintainer, 2026-07-25).
+- **The maintainer was the tech lead of the team that built the platform, and was the designer and
+  builder of the precursor itself** (confirmed 2026-07-25). Benzene's author is therefore not
+  reporting someone else's success — he is the person who designed the thing that went to
+  production and watched other teams adopt it.
 - **Adoption spread organically.** It was developed by **one team**, and **other teams adopted it
   because it was materially easier to develop with than the alternatives** — pull, not push. No
   mandate drove the initial spread; the mandate came later.
@@ -36,6 +39,7 @@ This is the distinction the campaign must hold, every time:
 | Proven **within a narrower scope** (AWS Lambda–centric) | Proven across the full multi-cloud surface Benzene now claims — the broadened scope is **new and unproven in production** |
 | A chief architect **standardised on the precursor** for new systems | "IRIS uses Benzene" / "IRIS endorses Benzene" — a different and unowned claim |
 | Teams adopted it **voluntarily because it was easier** — organic, developer-led spread | Any implication of a commercial relationship, sponsorship, or partnership with IRIS |
+| **First person:** "I designed and built the system that runs …" — the maintainer's own track record, his to tell | Speaking *for* IRIS, or implying IRIS endorses, sponsors or has reviewed Benzene |
 
 **The honest sentence** (subject to §4 permission) is close to:
 
@@ -72,10 +76,18 @@ reputational cost of getting it wrong is far higher than the benefit of shipping
    - **Anonymised fallback** if permission isn't given or isn't quick: *"a flagship accountancy
      platform at a UK software group, in production on AWS"*. Weaker, still true, still useful —
      and it costs nothing to use while permission is pending.
-2. **IP / clean-lineage check.** If the precursor was built as work-for-hire, its **code** is not
-   the maintainer's to reuse, even though the **design pattern** is not ownable. Be certain Benzene
-   is an independent implementation before advertising the lineage — publicising the connection is
-   exactly what would invite the question. Confirm, don't assume.
+2. **IP / clean-lineage check.** Now the sharper gate, precisely *because* the maintainer designed
+   and built the precursor as the team's tech lead. Two different things are in play:
+   - **Ideas, patterns and architecture are not ownable.** Nobody can stop the designer of a
+     ports-and-adapters middleware pipeline from designing another one. This is the strong ground.
+   - **Code written in employment normally belongs to the employer.** So Benzene must be an
+     **independent implementation**, not a copy carried out of a codebase — and the maintainer
+     should be confident about what his employment/IP terms actually said.
+
+   Publicising the lineage is exactly what invites the question, so settle it *before* publishing,
+   not after. **This is not legal advice** — if there is any doubt about the contract terms, take
+   proper advice before naming IRIS in promotional material. The anonymised fallback below carries
+   most of the marketing value while that is resolved.
 3. **Precision of the architect's decision.** "All new systems should use it" is a strong claim.
    Confirm the actual scope and current status before it appears in copy, and prefer a **direct
    quote with attribution** over a paraphrase.
@@ -93,9 +105,21 @@ approach, cleared for public use.
 If a full case study is possible, that is the strongest launch artefact there is. If not, one
 cleared sentence still changes the campaign.
 
-## 6. Open questions for the maintainer
+## 6. The second asset: the maintainer's own track record
 
-- Was the maintainer the author of the precursor at IRIS, and in what capacity?
-- Who is empowered to grant permission, and is the relationship warm enough to ask?
+Distinct from the IRIS permission question, and **not gated on it**: the answer to *"who is behind
+this?"* is now concrete and first-person — **the designer and tech lead of a system that runs a
+flagship accountancy platform in production on AWS**, who watched teams adopt it voluntarily and is
+now building the next generation of it in the open.
+
+That is the maintainer's own professional history to tell. Even in the fully anonymised form it
+answers the "will this be maintained / does this person know what they're doing" objection that no
+feature content can touch — and it should appear in the author bio, the launch post's opening, the
+About page and every podcast/conference pitch, regardless of how the naming gate resolves.
+
+## 7. Open questions for the maintainer
+
+- Who at IRIS is empowered to grant naming permission, and is the relationship warm enough to ask?
 - Is IRIS still actively using it, and is the architect's standardisation decision still current?
-- Any confidentiality obligations that touch on this at all?
+- What did the employment/IP terms say (gate 2), and is any of it under confidentiality?
+- What scale/duration figures can be shared (gate 4)?
