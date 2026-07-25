@@ -1,6 +1,9 @@
-# The Benzene Naming Principle — proposal for ruling
+# The Benzene Naming Principle — RULING
 
-**Status:** PROPOSAL for maintainer ruling — recommendation made, not applied. Task #27.
+**Status:** ✅ **ACCEPTED by the maintainer, 2026-07-25** — adopted exactly as proposed, including
+both carve-outs and all three consequences. **Binding on the work that applies it** (tasks #29,
+#30); the spec text is updated as part of that application, not ahead of it, so the spec never
+describes names the code doesn't use.
 **Last Updated:** 2026-07-25
 **Purpose:** Settle, once, how Benzene names the things it owns on the wire, so that the three
 open naming questions (`topic` header, `benzene-version`, reserved-topic prefixes —
