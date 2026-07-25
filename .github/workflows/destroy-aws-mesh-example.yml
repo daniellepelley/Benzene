@@ -48,6 +48,22 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      # Terraform evaluates the WHOLE configuration to build a destroy plan, and the S3 code objects
+      # call filemd5() on the Lambda zips — so a destroy dies with "no such file or directory" unless
+      # the artifacts exist locally. This job deliberately does not build them (tearing down needs no
+      # code, and building seven self-contained .NET Lambdas to delete them would be absurd), so stand
+      # in empty placeholders: only the hash expression has to evaluate, and a destroy uploads nothing.
+      # Deliberately fixed here rather than by relaxing main.tf's filemd5 to try(...) — on an APPLY a
+      # missing zip must stay a loud failure, not a silent null etag that skips a code update.
+      - name: Create placeholder Lambda artifacts (so filemd5() can evaluate)
+        run: |
+          mkdir -p examples/AwsMesh/artifacts
+          for NAME in orders payments shipping inventory notifications analytics mesh; do
+            ZIP="examples/AwsMesh/artifacts/$NAME.zip"
+            [ -f "$ZIP" ] || : > "$ZIP"
+          done
+          ls -l examples/AwsMesh/artifacts
+
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false

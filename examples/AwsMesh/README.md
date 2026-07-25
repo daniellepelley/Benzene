@@ -374,6 +374,14 @@ implicitly — neither is a Terraform resource, and both would otherwise linger 
 **Locally:**
 
 ```bash
+# Terraform evaluates the whole config to plan a destroy, and the S3 code objects call filemd5() on
+# the Lambda zips — so the artifacts have to exist even though a destroy uploads nothing. If you no
+# longer have them (a fresh clone, or you cleaned the build), stand in empty placeholders first:
+mkdir -p examples/AwsMesh/artifacts
+for n in orders payments shipping inventory notifications analytics mesh; do
+  : > "examples/AwsMesh/artifacts/$n.zip"
+done
+
 cd examples/AwsMesh/deploy && terraform destroy
 ```
 
