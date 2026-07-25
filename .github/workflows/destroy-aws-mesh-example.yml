@@ -33,6 +33,10 @@ permissions:
 jobs:
   destroy:
     runs-on: ubuntu-latest
+    # The AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY secrets live in the "test" GitHub Environment;
+    # a job must declare the environment for its secrets to be exposed (matching the deploy workflow).
+    # Without this both credential expressions render empty and every AWS step fails.
+    environment: test
     steps:
       # Fail before touching AWS if the confirmation doesn't match — this job is destructive.
       - name: Check confirmation
@@ -48,12 +52,23 @@ jobs:
         with:
           terraform_wrapper: false
 
+      # The access key ID is stored as a GitHub *variable* (vars.) and the secret access key as a
+      # *secret* (secrets.) in the "test" Environment, so read the key ID from either place (var first,
+      # falling back to a secret of the same name). Passed via env: rather than interpolated into the
+      # script body — same shape as the deploy workflow.
       - name: Verify AWS credentials are available
+        env:
+          KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          if [ -z "${{ vars.AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "::error::AWS credentials are not configured (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)."
+          missing=0
+          [ -z "$KEY_ID" ] && { echo "::error::AWS_ACCESS_KEY_ID is empty (checked both vars and secrets)."; missing=1; }
+          [ -z "$SECRET" ] && { echo "::error::AWS_SECRET_ACCESS_KEY is empty in this job."; missing=1; }
+          if [ "$missing" = "1" ]; then
+            echo "::error::In the 'test' GitHub Environment (Settings -> Environments -> test): set AWS_ACCESS_KEY_ID as a Variable (or Secret) and AWS_SECRET_ACCESS_KEY as a Secret, ensure the deployment-branch policy allows this branch, and that the names match exactly."
             exit 1
           fi
+          echo "Both AWS credentials are present."
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
