@@ -1265,7 +1265,7 @@
     if (!fleetEndpoint() || !currentFleet) return []; // static floor: the live layer never mounts
     var fleet = currentFleet, issues = [];
 
-    // ---- Failing traffic (drains-up 1.1): the inbox watches the system, not just the paperwork. ----
+    // ---- Failing traffic (drains-up 1.1 + the 3.2 feed merge). ----
     // Derived from the dedicated 24h inbox window (falling back to the shared-range view until the first
     // inbox poll lands). Reserved topics are deliberately INCLUDED — a failing mesh:aggregate must be
     // reportable; the mesh can't be the one service allowed to fail invisibly.
@@ -1273,7 +1273,34 @@
     var countsWindowed = !errFleet.window || errFleet.window.countsWindowed !== false;
     var windowPhrase = !countsWindowed ? "(cumulative — this plane can't window counts)"
       : (inboxFleet ? "in the last 24 hours" : "in " + fleetRangeLabel());
+    // Pipeline-reported issues (the mesh:issues feed, spec §4.1) — richer than the client derivation
+    // (classification, exception type, first/last seen, exemplar traces, a stable fingerprint id).
+    // FEED WINS AND SUPPRESSES the client-derived row for the same topic (one best-available row, the
+    // absorption ruling); each field takes its best source — the occurrence figure stays the WINDOWED
+    // topic error count (the feed's merged count is lifetime-since-firstSeen, not windowable).
+    var ISSUE_FEED_WINDOW_MS = 24 * 60 * 60 * 1000;
+    var feedTopics = {};
+    (errFleet.issues || []).forEach(function (fi) {
+      var age = flAgeMs(fi.lastSeen);
+      if (age == null || age > ISSUE_FEED_WINDOW_MS) return; // readers window on lastSeen client-side
+      feedTopics[fi.topic] = 1;
+      var topicRow = (errFleet.topics || []).filter(function (t) {
+        return t.topic === fi.topic && (t.missingFeeds || []).indexOf("stats") === -1;
+      })[0];
+      var counted = topicRow && topicRow.errors > 0 && countsWindowed
+        ? fmtCount(topicRow.errors) + " of " + fmtCount(topicRow.invocations) + " requests failed " + windowPhrase
+        : fmtCount(fi.count) + " occurrence" + (fi.count === 1 ? "" : "s") + " since first seen";
+      var firstAge = flAgeMs(fi.firstSeen);
+      var row = liveTopicIssue("high", fi.classification || "issue", fi.topic, fi.version, "Failing traffic",
+        counted + " — " + (fi.exceptionType ? fi.exceptionType : fi.status) +
+        (firstAge != null ? "; first seen " + flAge(firstAge) + " ago" : "") +
+        ", last " + flAge(age) + " ago.");
+      row.feed = fi; // the detail page renders the feed's full evidence (pipeline-reported provenance)
+      row.nav = function () { flPivotToFailingFlows(fi.topic); };
+      issues.push(row);
+    });
     (errFleet.topics || []).forEach(function (t) {
+      if (feedTopics[t.topic]) return; // feed wins — the pipeline-reported row replaces this one
       if ((t.missingFeeds || []).indexOf("stats") !== -1 || !(t.errors > 0)) return;
       var mix = failingStatusMix(t.statusCounts);
       var lastErr = lastFailingFlowAgeMs(t.topic);
@@ -1441,7 +1468,23 @@
      kind + "|" + subject, resolved against the latest client-side derivation — so a bookmark to a
      fixed issue honestly answers "no longer detected". */
   var lastIssues = [];
-  function issueId(i) { return i.kind + "|" + i.subject; }
+  // Feed-reported issues use their normative fingerprint as the stable id (it survives collector
+  // restarts and swaps — spec §4.1); client-derived rows keep the kind|subject fallback.
+  function issueId(i) { return i.feed ? i.feed.fingerprint : (i.kind + "|" + i.subject); }
+  // Classification-level diagnosis for pipeline-reported issues (the spec §4.1 closed vocabulary).
+  var CLASSIFICATION_GUIDE = {
+    "exception": "The pipeline threw — a code defect or an unavailable dependency at the moment of handling. The exception type below (and on the example flow's failing leg) is the primary lead; the message and stack are in the service's own logs for the exemplar trace id.",
+    "validation": "The payload was rejected before or during validation — producer and consumer disagree about the contract (a malformed body, a renamed/removed field, a tightened rule). Fix the producer or align the declared schema; the handler is doing its job.",
+    "config-wiring": "A wiring or configuration gap at this boundary — no handler matched, a permission is missing, or the pipeline produced no result at all. These are deterministic misconfigurations, not transient failures: check routing/deploy state and roles/policies.",
+    "dependency": "Something this service calls is broken or slow — the handler reported the dependency failure explicitly. Check the downstream system's health and this handler's timeout budget.",
+    "contract-drift": "The running contract differs from the recorded baseline — re-baseline if intended, redeploy the intended build if not.",
+    "unclassified": "The pipeline couldn't classify this failure — the status below is verbatim. Open the example flow and the service's logs for the exemplar trace id."
+  };
+  // Registered remediation-hint keys (spec §4.1) — a key into prose, never prose on the wire.
+  var RESOLUTION_HINTS = {
+    "no-handler": "Routing matched no handler: a topic name/version mismatch between sender and consumer, or the handling service isn't deployed — this is a wiring not-found, not a business lookup miss.",
+    "deserialization": "The message could not be read into the handler's request type — a producer is sending a malformed or differently-shaped payload. Fix the producer, not the handler."
+  };
 
   // Per-kind diagnosis + remediation. `what` explains the signal; `fixes` are the bounded likely-cause
   // list, most common first. Failing traffic additionally gets status-specific guidance (below) —
@@ -1596,16 +1639,44 @@
       live.title = "Derived from the live fleet (observed), not the declared catalog.";
       head.appendChild(live);
     }
+    // Provenance one affordance deep (the absorption ruling): a feed row says it was reported by the
+    // pipeline itself, right where the reader is deciding how much to trust the diagnosis.
+    if (issue.feed) {
+      var prov = el("span", "issue-live", "pipeline-reported");
+      prov.title = "Reported by the failing service's own pipeline (the mesh:issues feed) — classification, exception type and exemplars come from the moment of failure, not inferred from counters.";
+      head.appendChild(prov);
+    }
     body.appendChild(head);
 
-    var guide = ISSUE_GUIDE[issue.kind] || { what: "", fixes: [] };
+    var guide = issue.feed
+      ? { what: CLASSIFICATION_GUIDE[issue.feed.classification] || "", fixes: [] }
+      : (ISSUE_GUIDE[issue.kind] || { what: "", fixes: [] });
     igSection(body, "What this means");
     body.appendChild(el("p", "ig-text", guide.what || issue.why || ""));
     if (issue.why && guide.what) body.appendChild(el("p", "ig-text ig-detail", issue.why));
+    if (issue.feed) {
+      var facts = [];
+      if (issue.feed.exceptionType) facts.push("exception " + issue.feed.exceptionType);
+      if (issue.feed.status) facts.push("status " + issue.feed.status);
+      facts.push(fmtCount(issue.feed.count) + " occurrence" + (issue.feed.count === 1 ? "" : "s") + " since first seen");
+      var fAge = flAgeMs(issue.feed.firstSeen), lAge = flAgeMs(issue.feed.lastSeen);
+      if (fAge != null) facts.push("first seen " + flAge(fAge) + " ago");
+      if (lAge != null) facts.push("last seen " + flAge(lAge) + " ago");
+      body.appendChild(el("p", "ig-text ig-detail fl-mono", facts.join(" · ")));
+    }
 
     // What to do: the per-kind catalog, plus (for failing traffic) the status-specific reading of the
     // observed failure mix — the dominant failing status usually names the cause class outright.
     var fixes = (guide.fixes || []).slice();
+    if (issue.feed) {
+      // The feed's registered hint key is the sharpest lead; the status guidance backs it up.
+      if (issue.feed.resolutionHint && RESOLUTION_HINTS[issue.feed.resolutionHint]) {
+        fixes.push(RESOLUTION_HINTS[issue.feed.resolutionHint]);
+      }
+      if (FAILING_STATUS_GUIDE[issue.feed.status]) {
+        fixes.push(issue.feed.status + " — " + FAILING_STATUS_GUIDE[issue.feed.status]);
+      }
+    }
     if (issue.kind === "failing traffic" && issue.topic) {
       var statuses = failingStatusesForTopic(issue.topic);
       statuses.forEach(function (s) {
@@ -1626,7 +1697,7 @@
     // the newest failing flow's waterfall inline — the WHY without leaving the page.
     igSection(body, "Evidence");
     var actions = el("div", "ig-actions");
-    if (issue.kind === "failing traffic" && issue.topic) {
+    if ((issue.kind === "failing traffic" || issue.feed) && issue.topic) {
       igAction(actions, "Show failing flows", function () { flPivotToFailingFlows(issue.topic); }, true);
       igAction(actions, "Open topic page", function () { location.hash = topicHashFor(issue.topic); });
     } else if (issue.kind === "uninstrumented") {
@@ -1638,9 +1709,31 @@
     }
     body.appendChild(actions);
 
-    if (issue.kind === "failing traffic" && issue.topic) {
+    if (issue.feed && (issue.feed.exemplarTraceIds || []).length) {
+      // The feed's bridge to the evidence plane: the newest exemplar's waterfall inline (spec §4.1
+      // keeps the newest ≤3 — the ones still inside a trace backend's retention).
+      var exemplars = issue.feed.exemplarTraceIds;
+      appendTraceWaterfall(body, exemplars[exemplars.length - 1], "Exemplar failing flow (from the pipeline's report):");
+    } else if ((issue.kind === "failing traffic" || issue.feed) && issue.topic) {
       appendExampleFailingFlow(body, issue.topic);
     }
+  }
+  // One trace's waterfall inline, by id — shared by the feed-exemplar and observed-flow evidence paths.
+  function appendTraceWaterfall(body, traceId, label) {
+    var wrap = el("div", "ig-example");
+    wrap.appendChild(el("div", "fl-sub", label));
+    var note = el("div", "fl-wf-note", "Loading trace…");
+    wrap.appendChild(note);
+    body.appendChild(wrap);
+    var promise = flTraceCache[traceId] || fleetQuery("mesh:query:trace", JSON.stringify({ traceId: traceId }));
+    flTraceCache[traceId] = promise;
+    promise.then(function (view) {
+      if (!note.isConnected) return;
+      note.replaceWith(flBuildWaterfall(view));
+    }).catch(function () {
+      delete flTraceCache[traceId];
+      if (note.isConnected) note.textContent = "Could not load the example trace (it may be outside the backend's retention or sampling window).";
+    });
   }
   // The failing statuses observed for a topic (inbox window preferred), largest first.
   function failingStatusesForTopic(topicId) {

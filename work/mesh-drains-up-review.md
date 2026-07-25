@@ -193,6 +193,15 @@ Phases ship independently; each slice moves one job. Sizes: S < half-day, M ≈ 
 
 ### Phase 3 — The WHY (pipeline + wire; the mesh finally explains)
 
+> **3.2 COMPLETE 2026-07-25** — backend (below) plus the UI merge (feed-wins inbox rows with the
+> windowed-count/feed-detail field split, fingerprint `#issue:` ids, detail-page enrichment with
+> classification guide + registered resolution-hint prose + exemplar waterfall, "pipeline-reported"
+> provenance one affordance deep) and the push-plane example wiring (`examples/Mesh`'s `EnvelopeHost`
+> adds `UseMeshIssues` inside `UseMeshTrace`). Composite-plane degradation proven byte-identical to
+> phase 1. Remaining from the whole review: **Phase 4** (read-side probes + the live X-Ray
+> verification harness) and the named deferrals (AwsMesh issue-store vessel; Go collector parity;
+> Tempo recent-flows enrichment).
+>
 > **3.2 BACKEND SHIPPED 2026-07-25 (spec + emitter + collector; UI merge is the remaining slice).**
 > Joint PO rulings (observability + mesh, recorded here as amendments to §4's contract):
 > (a) **`unclassified` joins the closed vocabulary** — an honest sixth value beats a lying fallback;

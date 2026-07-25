@@ -1,6 +1,15 @@
 # Benzene Service Mesh Visibility — Rough Roadmap & Design (2026-07-14)
 
 **Status:** IN PROGRESS.
+> **2026-07-25 SHIPPED: the pipeline-native issue feed (`mesh:issues`, spec §4.1) — drains-up 3.2.**
+> The mesh's first first-class "what is wrong" feed: fingerprint-deduplicated, classified failure
+> signatures emitted by the pipeline itself (delta counts, empty-batch liveness, normative fingerprint
+> recipe + classification precedence — full rulings and amendments in `work/mesh-drains-up-review.md`).
+> Collector delta-merge + `FleetView.issues` + failure-gated `missingFeeds: ["issues"]`; UI feed-wins
+> inbox merge with fingerprint `#issue:` ids and exemplar-waterfall evidence; `examples/Mesh` wires it.
+> Claims-gated `mesh-issue-cases.json` conformance fixtures shipped. **Named deferrals:** Go reference
+> collector parity for `mesh:issues`; the AwsMesh/Lambda issue-store vessel (candidates: DynamoDB /
+> `Benzene.Mesh.Host` standing collector / S3-CAS) — until then that plane keeps client-derived rows.
 > **2026-07-24 SHIPPED: composite counts honor the picked window (Phase D fast-follow).** `IMeshUsageSource`'s
 > `FetchUsageAsync` gained an optional resolved-absolute `MeshUsageWindow?` (in `Benzene.Mesh.Contracts`; null =
 > the source's configured window, so `usage.json` is unchanged). CloudWatch + App-Insights query their backend

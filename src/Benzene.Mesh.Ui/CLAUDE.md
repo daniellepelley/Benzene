@@ -1,5 +1,21 @@
 # Benzene.Mesh.Ui
 
+> **2026-07-25 DRAINS-UP 3.2 UI MERGE SHIPPED — pipeline-reported issues in the inbox, feed-wins.**
+> The inbox now renders `FleetView.issues` (the `mesh:issues` feed, spec §4.1) windowed client-side on
+> `lastSeen` ≤ 24h. **Feed wins and suppresses** the client-derived "Failing traffic" row for the same
+> topic (one best-available row — the absorption ruling); each field takes its best source: the
+> occurrence figure stays the WINDOWED topic error count, while classification (rendered as the kind
+> chip), exception type, first/last seen and exemplars come from the feed. The normative
+> **fingerprint becomes the stable `#issue:` id** (`issueId()` prefers `i.feed.fingerprint`). The
+> detail page enriches accordingly: a "pipeline-reported" provenance chip (tooltip explains the
+> moment-of-failure source), `CLASSIFICATION_GUIDE` (per-vocabulary diagnosis), a facts line
+> (exception/status/count/first/last), `RESOLUTION_HINTS` (the spec's registered keys: `no-handler`,
+> `deserialization`), the status-keyed fix, and the newest **exemplar trace's waterfall inline**
+> (`appendTraceWaterfall`, shared with the observed-flow path). Topics without feed coverage keep the
+> client-derived row unchanged; no feed at all (the composite plane, `missingFeeds: ["issues"]`) is
+> **byte-identical to phase 1** — proven by the smoke harness's pre-existing scenarios passing
+> untouched (now 40 assertions incl. the 6 feed-merge cases).
+
 > **2026-07-25 DRAINS-UP 3.3 SHIPPED — the issue detail page (client-derived first cut).** The core
 > loop's destination: an inbox row now opens `#issue:<kind|subject>` (`renderIssuePage`, section
 > `#issue-page`) — **what the issue means** (`ISSUE_GUIDE`, a per-kind diagnosis catalog shipped in the

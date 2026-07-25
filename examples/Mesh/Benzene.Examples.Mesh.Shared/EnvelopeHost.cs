@@ -60,6 +60,12 @@ public sealed class EnvelopeHost
             pipelineBuilder.UseMeshTrace(meshInfo,
                 new HttpMeshTraceExporter(Http, collectorEnvelopeUrl, batchSize: 8, flushInterval: TimeSpan.FromSeconds(1)),
                 new BenzeneMessageMeshStatusReader());
+            // The issue feed (spec §4.1), immediately INSIDE UseMeshTrace so each issue's exemplar
+            // trace id is the enclosing invocation's. Short flush for the demo (spec default is 30s);
+            // empty interval batches are the feed's liveness assertion.
+            pipelineBuilder.UseMeshIssues(meshInfo,
+                new HttpMeshIssueExporter(Http, collectorEnvelopeUrl, meshInfo.Service, flushInterval: TimeSpan.FromSeconds(2)),
+                new BenzeneMessageMeshStatusReader());
             pipelineBuilder.UseMeshDescriptor(_descriptor);
         }
         pipelineBuilder.UseMessageHandlers(handlerTypes);
