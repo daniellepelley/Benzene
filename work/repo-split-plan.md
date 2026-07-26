@@ -46,7 +46,9 @@ Split Benzene into two repos so ".NET" is just *one* language port among several
 - [x] Lock decisions 1–6 (above).
 - [x] Write this plan.
 - [x] Write the file-level move/stay manifest (`repo-split-manifest.md`).
-- [ ] Maintainer reviews & signs off on the manifest before anything is created.
+- [x] Resolve the ambiguous items as best-endeavors defaults (duplication OK; a cleanup/review pass
+      follows the split — getting every call perfect up front is not a priority).
+- [ ] Maintainer's final go-ahead to start Phase 1.
 
 ### Phase 1 — Stand up `benzene-dotnet` (additive; `benzene` untouched)
 - [ ] Create the empty `benzene-dotnet` repo.

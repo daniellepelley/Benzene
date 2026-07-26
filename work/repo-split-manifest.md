@@ -4,6 +4,13 @@ Companion to **[repo-split-plan.md](repo-split-plan.md)**. This is the exact, re
 what goes to **`benzene-dotnet`** (MOVE) vs stays in **`benzene`** (STAY), as of the current tree.
 Nothing is created or deleted yet — this is the artifact to sign off before Phase 1.
 
+> **Guiding principle (maintainer, confirmed):** this is a **best-endeavors** split, not a
+> perfect one. **Duplication across the two repos is acceptable** and gets reconciled over time.
+> A **post-split cleanup/review pass is expected** — several of these files (the `.claude/` agents,
+> much of `work/`) want a review *anyway* now that the structure is changing — so getting every
+> call exactly right up front is explicitly **not** a priority. When a file is ambiguous, make the
+> reasonable call, lean toward keeping the .NET repo self-contained, and defer the polish.
+
 Legend: **MOVE** → copied to `benzene-dotnet` (then removed from `benzene` in Phase 4).
 **STAY** → remains in `benzene`. **BOTH** → exists in each repo (each gets its own copy).
 **SPLIT** → contents divided; see notes.
@@ -32,9 +39,9 @@ Legend: **MOVE** → copied to `benzene-dotnet` (then removed from `benzene` in 
 | `AGENTS.md` / `CLAUDE.md` | **BOTH** | Each repo gets its own (spec+website vs .NET port). |
 | `LICENSE` | **BOTH** | Same license copied to each repo. |
 | `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md` | **BOTH** | Standard governance; each repo needs its own (CONTRIBUTING diverges: .NET build vs website/spec). |
-| `DOCUMENTATION_WRITER_SETUP.md` | **MOVE** | Doc-writer setup is .NET-docs tooling. (Confirm at Phase 1.) |
+| `DOCUMENTATION_WRITER_SETUP.md` | **MOVE** | .NET-only today; a future cross-language version will have a crossover, adjusted then. |
 | `.gitignore` | **BOTH** | Each repo gets a tailored copy. |
-| `.claude/` | **SPLIT** | Agents/skills that are .NET-specific **MOVE**; website/spec/marketing ones **STAY**. Audit per-file at Phase 1. |
+| `.claude/` | **SPLIT** | Best-endeavors: .NET-specific agents/skills **MOVE**, website/spec/marketing ones **STAY**. Duplicate where unsure; these need a review in the new structure regardless — sorted in the cleanup pass, not up front. |
 | `.github/` | **SPLIT** | Workflows split per the table below; issue templates copied to **BOTH**. |
 
 ## `docs/` — the taxonomy split
@@ -104,17 +111,24 @@ Legend: **MOVE** → copied to `benzene-dotnet` (then removed from `benzene` in 
 ## `work/` split (detail)
 
 - **STAY:** `repo-split-plan.md`, `repo-split-manifest.md` (this migration lives in `benzene`).
-- **MOVE:** everything else in `work/` is .NET roadmap/design/review material
+- **MOVE (default):** everything else in `work/` is .NET roadmap/design/review material
   (`aws-roadmap-1.0.md`, `azure-roadmap-1.0.md`, `1.0-*`, `client-health-checks-*`,
-  `settlement-contract-1.0.md`, the `arch-review/` and `bughunt/` dirs, etc.).
-- **Reconsider case-by-case:** language-neutral strategy notes (`benzene-vision.md`,
+  `settlement-contract-1.0.md`, the `arch-review/` and `bughunt/` dirs, etc.). Bulk-move it.
+- **Duplicate where neutral:** language-neutral strategy notes (`benzene-vision.md`,
   `benzene-naming-principle.md`, `benzene-production-provenance.md`, the website/marketing plans)
-  arguably belong with `benzene`/`website`. Flag these individually at Phase 1 rather than
-  bulk-moving.
+  arguably belong with `benzene`/`website`. Best-endeavors — copy to both if unsure. `work/` is
+  largely standalone/old and is due a review of its own; that review, not this split, sorts it out.
 
-## Open items to confirm at Phase 1 sign-off
+## Resolved defaults (best-endeavors; cleanup pass follows)
 
-1. `DOCUMENTATION_WRITER_SETUP.md` — .NET-only, or cross-repo tooling? (Assumed MOVE.)
-2. `.claude/` agents/skills — per-file audit: which are .NET-port vs spec/website/marketing.
-3. `work/` language-neutral notes — individual stay/move calls (list above).
-4. Which governance files genuinely diverge vs are byte-identical copies (CONTRIBUTING will diverge).
+Per the maintainer, these are settled with reasonable defaults rather than held as blockers:
+
+1. `DOCUMENTATION_WRITER_SETUP.md` → **MOVE** (.NET-only now; cross-language crossover handled later).
+2. `.claude/` agents/skills → **best-endeavors split**, duplicate where unsure; reviewed in the
+   post-split cleanup (they need re-review under the new structure anyway).
+3. `work/` notes → **bulk-move the .NET material**, duplicate neutral notes; `work/` is due its own
+   review regardless.
+4. Governance files → **copy to both**; let them diverge naturally over time (CONTRIBUTING will).
+
+None of these block Phase 1. The cleanup/review pass after the split reconciles any duplication or
+misplacement.
