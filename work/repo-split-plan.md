@@ -61,23 +61,26 @@ Split Benzene into two repos so ".NET" is just *one* language port among several
 - [ ] Rewrite `benzene-dotnet`'s `README.md`/`AGENTS.md`/`CLAUDE.md` for a standalone .NET repo.
 - [ ] **Do not remove anything from `benzene` yet** — both repos build in parallel during migration.
 
-### Phase 2 — Evolve the website generator to multi-source
-- [ ] Replace `SiteBuilder`'s single hardcoded `docs/` root with a **manifest of doc sources**
-      (`{ language, label, urlPrefix, checkoutPath }[]`), one entry per language repo + the spec.
-- [ ] Nav: keep `docs/index.md` as the cross-language headline/spec nav; build a **per-language nav**
-      from each language checkout's own `docs/index.md`, rendered under its `/<lang>/` section.
-- [ ] Link rewriting / self-check / demo copy made source-aware (per-source output subtree; broken
-      internal link across sources still fails the build).
-- [ ] Language **dropdown** + a demo "switcher" so the same demo can be viewed per language.
-- [ ] Build entirely from local checkouts first (fixture dirs standing in for the language repos) so
-      the generator change is verifiable before wiring real cross-repo checkout.
+### Phase 2 — Evolve the website generator to multi-source ✅ (done & verified)
+- [x] Replace `SiteBuilder`'s single hardcoded `docs/` root with a **manifest of doc sources**
+      (`DocSource`: id/label/urlPrefix/docsRoot/navFile/isLanguage), one entry per language + the spec.
+- [x] Nav: cross-language docs **hub** at `/docs/index.html` (headline + spec + a card per language);
+      **per-language nav** from each source's own nav file, under its `/<lang>/docs/` section.
+- [x] Link rewriting (by absolute disk path → cross-source safe) / self-check / demo copy made
+      source-aware (broken internal link across sources still fails the build).
+- [x] Language **switcher** (no-JS `<details>`) atop the docs sidebar. (Demo per-language switcher
+      deferred to Phase 5 — needs a second language's demo variant.)
+- [x] Built + verified from local checkouts first: 92 pages / 2 sources / zero broken links, from
+      both benzene's own `docs/` and a staged benzene-dotnet tree via `--dotnet-docs`.
 
-### Phase 3 — Flip deploy to multi-checkout; verify on dev
-- [ ] `deploy-website.yml`: check out `benzene` + each language repo's `main`, run the multi-source
-      generator, sync to the **dev** bucket.
-- [ ] Verify `dev.benzene.app`: headline + spec render from `benzene`; `/dotnet/*` renders from
-      `benzene-dotnet`; language dropdown works; old `/docs/*` paths redirect.
-- [ ] Add the cross-repo trigger so a push to `benzene-dotnet`'s `main` rebuilds the site.
+### Phase 3 — Flip deploy to multi-checkout; verify on dev ✅ (deploy step not exercised here)
+- [x] `deploy-website.yml`: check out `benzene` + benzene-dotnet's `main` (best-effort; falls back to
+      benzene's own `docs/` until the repo exists), run the multi-source generator, sync to **dev**.
+- [~] Verify `dev.benzene.app`: generator output verified locally (headline + spec + `/dotnet/*` +
+      switcher + redirects). The on-dev visual check needs deploy creds — left for you / the next run.
+- [x] Cross-repo trigger: `repository_dispatch: dotnet-docs-updated` on benzene + `notify-website.yml`
+      shipped in the benzene-dotnet overlay to fire it.
+- [x] Old `/docs/*` → `/dotnet/docs/*` redirects emitted by the generator (76 stubs, self-checked).
 
 ### Phase 4 — Remove migrated content from `benzene`; cut over
 - [ ] Delete the "MOVES" set from `benzene` (keep only the "STAYS" set per the manifest).

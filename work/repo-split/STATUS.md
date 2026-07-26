@@ -40,12 +40,35 @@ git -C /home/user/benzene-dotnet-staging push -u origin main
 (The staging tree at `/home/user/benzene-dotnet-staging` is ephemeral to this container; the script
 regenerates it deterministically from benzene HEAD.)
 
-## Phase 2 — Website generator to multi-source — IN PROGRESS
-Fully unblocked (all in the benzene repo). Being built against local fixture dirs standing in for the
-language repos, so it is verifiable before any cross-repo checkout is wired.
+## Phase 2 — Website generator to multi-source — DONE & VERIFIED
+The generator now renders a **manifest of doc sources** instead of a single `docs/` tree:
+- `DocSource` model; `.NET` docs under `/dotnet/docs/`, spec under `/docs/specification/`.
+- Per-source nav (each from its own nav file); links resolved by absolute disk path so cross-source
+  links work; self-check spans all sources.
+- Cross-language docs hub at `/docs/index.html` (leads with the spec, a card per language); a no-JS
+  language switcher atop the docs sidebar.
+- The `.NET` source root is `--dotnet-docs <path>` (a benzene-dotnet checkout); with no flag it falls
+  back to benzene's own `docs/`, so the generator runs locally before the split lands.
+- **Verified:** 92 pages from 2 sources, zero broken links — both from benzene's own `docs/` and from
+  the staged benzene-dotnet tree via `--dotnet-docs` (the exact CI multi-checkout path).
 
-## Phase 3 — Flip deploy-website to multi-checkout — PENDING
+## Phase 3 — Flip deploy-website to multi-checkout — DONE (dev deploy not exercised here)
+- `deploy-website.yml` checks out benzene-dotnet's `main` and feeds its docs to the generator; the
+  checkout is **best-effort**, so until the repo exists the generator falls back to benzene's own
+  `docs/` and the site keeps building. `repository_dispatch: dotnet-docs-updated` triggers a rebuild
+  on a benzene-dotnet docs push; `notify-website.yml` (in the benzene-dotnet overlay) fires it.
+- Old-path **redirects**: the generator emits a stub at each `.NET` page's pre-split path
+  (`/docs/*.html` → `/dotnet/docs/*.html`); collisions with the hub / spec pages are skipped.
+  **Verified:** 92 pages + 76 redirects, self-check green.
+- Not done here: the actual `aws s3 sync` to the dev bucket + the on-`dev.benzene.app` visual check —
+  needs the deploy credentials/environment. The generator output is verified locally instead.
 
 ## Phase 4 — Cutover (remove migrated content from benzene) — HELD FOR CHECK-IN
 Destructive and coordinated (deletes src/test/examples/… from the live repo other sessions push to).
-Not run autonomously — needs a maintainer go-ahead and a quiet moment.
+Not run autonomously — needs a maintainer go-ahead, benzene-dotnet to exist, and a quiet moment.
+Everything upstream is staged so the cutover is mechanical when you're ready.
+
+## Phase 5 — Polish (TS placeholder, switcher UX) — PENDING
+Non-destructive but best done once benzene-dotnet exists and the dev site is confirmed. The generator
+already accepts extra languages via `--source id=Label=urlPrefix=path[=navFile]`, so a TypeScript
+placeholder is a one-source addition when wanted.
