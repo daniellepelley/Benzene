@@ -200,9 +200,13 @@ jobs:
             [ -n "${name}" ] || continue
             value="${!name-}"
             if [ -z "${value}" ]; then
+              # Deliberately does not spell out the interpolation syntax: GitHub scans every
+              # string in this file for expressions before bash sees it, so a literal example
+              # here would be parsed as one and fail the whole workflow.
               echo "::error::Secret '${name}' exists in the ${ENVIRONMENT_NAME} environment but is not"
-              echo "::error::plumbed through this workflow. Add '${name}: \${{ secrets.${name} }}' to the"
-              echo "::error::job env: block in .github/workflows/sync-test-environment.yml."
+              echo "::error::plumbed through this workflow. Add a line mapping ${name} from the"
+              echo "::error::secrets context into the job env: block in"
+              echo "::error::.github/workflows/sync-test-environment.yml, alongside the others."
               missing=1
             else
               echo "ok: ${name}"
