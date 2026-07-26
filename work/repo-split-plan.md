@@ -50,16 +50,16 @@ Split Benzene into two repos so ".NET" is just *one* language port among several
       follows the split — getting every call perfect up front is not a priority).
 - [ ] Maintainer's final go-ahead to start Phase 1.
 
-### Phase 1 — Stand up `benzene-dotnet` (additive; `benzene` untouched)
-- [ ] Create the empty `benzene-dotnet` repo.
-- [ ] Copy the "MOVES" set from the manifest as a clean snapshot (working tree, no history rewrite).
-- [ ] Vendor the conformance fixtures: `test/conformance-fixtures/*.json` + `SPEC_VERSION`; point
-      `ConformanceFixtures.cs` at the vendored copy instead of `docs/specification/conformance/`.
-- [ ] Add the drift-check workflow (fetch canonical fixtures from `benzene`, diff, fail on drift).
-- [ ] Port the .NET CI workflows; confirm `dotnet build Benzene.sln` + `dotnet test` are green in
-      the new repo with **no** dependency on `benzene`.
-- [ ] Rewrite `benzene-dotnet`'s `README.md`/`AGENTS.md`/`CLAUDE.md` for a standalone .NET repo.
-- [ ] **Do not remove anything from `benzene` yet** — both repos build in parallel during migration.
+### Phase 1 — Stand up `benzene-dotnet` (additive; `benzene` untouched) ✅ done — `main` @ c60c93f
+- [x] Create the empty `benzene-dotnet` repo. (Already existed — maintainer-created.)
+- [x] Copy the "MOVES" set from the manifest as a clean snapshot (working tree, no history rewrite).
+- [x] Vendor the conformance fixtures: `test/conformance-fixtures/*.json` + `SPEC_VERSION`; point
+      the conformance test project at the vendored copy instead of `docs/specification/conformance/`.
+- [x] Add the drift-check workflow (fetch canonical fixtures from `benzene`, diff, fail on drift).
+- [x] Port the .NET CI workflows; confirmed `dotnet build Benzene.sln` (0 errors) + conformance
+      (134/0) green in the new tree with **no** dependency on `benzene`.
+- [x] Rewrite `benzene-dotnet`'s `README.md`/`AGENTS.md`/`CLAUDE.md` for a standalone .NET repo.
+- [x] **Nothing removed from `benzene`** — both repos build in parallel during migration.
 
 ### Phase 2 — Evolve the website generator to multi-source ✅ (done & verified)
 - [x] Replace `SiteBuilder`'s single hardcoded `docs/` root with a **manifest of doc sources**

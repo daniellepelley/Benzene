@@ -2,12 +2,17 @@
 
 Live status of the autonomous execution of [`../repo-split-plan.md`](../repo-split-plan.md).
 
-## Phase 1 — Stand up benzene-dotnet — PREPARED & VERIFIED, blocked on repo creation
+## Phase 1 — Stand up benzene-dotnet — DONE ✅
 
-**Blocker (needs the maintainer):** creating the `benzene-dotnet` repo is not possible from this
-session — the GitHub integration returns `403 Resource not accessible by integration` on
-`create_repository`. **Action needed from you:** create an empty (no README) public repo
-`daniellepelley/benzene-dotnet`. Everything else is done and verified.
+**Published:** `daniellepelley/benzene-dotnet` `main` = commit `c60c93f` (3388 files). The repo
+already existed (the maintainer had created it, along with sibling `benzene-go` and
+`benzene-typescript`); the earlier `403` was the integration lacking repo-*creation* rights, not a
+wrong name. Regenerated from current benzene HEAD, re-verified (`Benzene.sln` builds standalone,
+0 errors; conformance 134/0), committed as the maintainer (clean-snapshot history, no AI trailers),
+and pushed. The `deploy-website.yml` benzene-dotnet checkout will now succeed on its next run.
+
+Original blocker (now resolved) was recorded here: repo creation returned `403 Resource not
+accessible by integration`; the maintainer had already created the repo.
 
 **What is done and verified:**
 - Full move/stay split executed into a staging tree (`git archive` clean snapshot — tracked files
@@ -68,7 +73,8 @@ Destructive and coordinated (deletes src/test/examples/… from the live repo ot
 Not run autonomously — needs a maintainer go-ahead, benzene-dotnet to exist, and a quiet moment.
 Everything upstream is staged so the cutover is mechanical when you're ready.
 
-## Phase 5 — Polish (TS placeholder, switcher UX) — PENDING
-Non-destructive but best done once benzene-dotnet exists and the dev site is confirmed. The generator
-already accepts extra languages via `--source id=Label=urlPrefix=path[=navFile]`, so a TypeScript
-placeholder is a one-source addition when wanted.
+## Phase 5 — Polish (real sibling languages, switcher UX) — PENDING (now unblocked)
+Sibling ports already exist as public repos: **`benzene-go`** and **`benzene-typescript`**. The
+generator accepts extra languages via `--source id=Label=urlPrefix=path[=navFile]`, so each becomes a
+real language section once its docs layout is checked out in `deploy-website.yml` (same pattern as
+the .NET `--dotnet-docs` step). No placeholder needed — wire the actual repos when ready.
