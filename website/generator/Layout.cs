@@ -12,8 +12,7 @@ internal static class Layout
         var whyPage = RepoPaths.RelativeHref(outputPath, "why.html");
         var architecturePage = RepoPaths.RelativeHref(outputPath, "architecture.html");
         var operationsPage = RepoPaths.RelativeHref(outputPath, "operations.html");
-        var gettingStarted = RepoPaths.RelativeHref(outputPath, "dotnet/docs/getting-started.html");
-        var gettingStartedAws = RepoPaths.RelativeHref(outputPath, "dotnet/docs/getting-started-aws.html");
+        var specHome = RepoPaths.RelativeHref(outputPath, "docs/specification/index.html");
         var meshDemo = RepoPaths.RelativeHref(outputPath, "demos/mesh/index.html");
         var specDemo = RepoPaths.RelativeHref(outputPath, "demos/spec/index.html");
 
@@ -24,12 +23,8 @@ internal static class Layout
             </div>
             """));
 
-        var quickstart = string.Join("\n", MarketingContent.QuickstartSteps.Select(s => $"""
-            <div class="quickstart-step">
-              <p class="quickstart-label">{Html(s.Label)}</p>
-              <pre><code>{s.Code}</code></pre>
-            </div>
-            """));
+        var getStarted = BuildGetStartedSelector(outputPath);
+        var multiLanguageLede = MarketingContent.MultiLanguageLede.Replace("{SPEC}", specHome);
 
         var platforms = string.Join("\n", MarketingContent.Platforms.Select(p => $"""
             <div class="platform-pill">
@@ -45,7 +40,7 @@ internal static class Layout
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>Benzene &mdash; one handler, every transport</title>
-              <meta name="description" content="A hexagonal (ports-and-adapters) framework for C#. Write a message handler once and reach it over HTTP, SQS, SNS, Kafka, Event Hub and more at the same time &mdash; mix transports on the cloud you already run, with a live service map and a test host for everything you build.">
+              <meta name="description" content="A hexagonal (ports-and-adapters) architecture for message-driven services, defined by a language-neutral spec and implemented in .NET, Go, and TypeScript. Write a handler once and reach it over HTTP, queues, streams and serverless functions at the same time &mdash; with a live service map and a test host for everything you build.">
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -56,15 +51,16 @@ internal static class Layout
                 {Logo.Inline(96)}
                 <h1>Benzene</h1>
                 <p class="hero-tagline">{MarketingContent.Tagline}</p>
+                <p class="hero-lede">{multiLanguageLede}</p>
                 <div class="hero-ctas">
-                  <a class="button" href="{gettingStarted}">Get started in 5 minutes</a>
+                  <a class="button" href="#get-started">Get started</a>
+                  <a class="button button-secondary" href="{docsHome}">Read the docs</a>
                   <a class="button button-secondary" href="https://github.com/daniellepelley/Benzene">View on GitHub</a>
                 </div>
-                <div class="hero-badges">
-                  <a href="https://github.com/daniellepelley/Benzene/actions"><img src="https://github.com/daniellepelley/Benzene/actions/workflows/build-benzene.yml/badge.svg" alt="Build Status"></a>
-                  <a href="https://codecov.io/gh/daniellepelley/Benzene"><img src="https://codecov.io/gh/daniellepelley/Benzene/graph/badge.svg" alt="codecov"></a>
-                  <a href="https://www.nuget.org/packages/Benzene.AspNet.Core/"><img src="https://img.shields.io/nuget/v/Benzene.AspNet.Core.svg" alt="NuGet"></a>
-                  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+                <div class="hero-langs">
+                  Ports: <strong>.NET</strong> &middot; <strong>Go</strong> <span class="beta">beta</span> &middot;
+                  <strong>TypeScript</strong> <span class="beta">beta</span>
+                  &middot; <a href="https://opensource.org/licenses/MIT">MIT</a>
                 </div>
               </section>
 
@@ -88,18 +84,13 @@ internal static class Layout
                   <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
                 </section>
 
-                <section class="section">
-                  <h2>Quickstart</h2>
-                  {quickstart}
-                  <p class="install-line">
-                    <code>{Html(MarketingContent.InstallCommand)}</code>
+                <section class="section" id="get-started">
+                  <h2>Get started</h2>
+                  <p class="section-lede">
+                    The same handler, in the language you build in. .NET is the reference
+                    implementation; Go and TypeScript are early ports of the same spec.
                   </p>
-                  <p>
-                    Add <code>Benzene.Aws.Lambda.Sqs</code>, <code>.Sns</code>, and
-                    <code>.EventBridge</code> the same way for the other transports &mdash;
-                    or a different host entirely.
-                    <a href="{gettingStartedAws}">See the full AWS walkthrough &rarr;</a>
-                  </p>
+                  {getStarted}
                 </section>
 
                 <section class="section">
@@ -430,6 +421,40 @@ internal static class Layout
         into.Append("</li>");
     }
 
+    /// <summary>
+    /// A no-JS "get started" selector: radio inputs + labels + CSS <c>:checked</c> reveal one
+    /// per-language panel (install + snippet + links). The radios and panels are siblings so the
+    /// CSS sibling combinator can drive it. NOTE: `assets/site.css` enumerates the language ids
+    /// (dotnet/go/typescript) for the tab highlighting — add a new id there when adding a language.
+    /// </summary>
+    private static string BuildGetStartedSelector(string outputPath)
+    {
+        var langs = MarketingContent.Languages;
+        var inputs = string.Join("\n", langs.Select((l, i) =>
+            $"<input type=\"radio\" name=\"gs\" id=\"gs-{l.Id}\" class=\"gs-radio\"{(i == 0 ? " checked" : "")}>"));
+        var labels = string.Join("\n", langs.Select(l =>
+            $"<label class=\"gs-tab\" for=\"gs-{l.Id}\">{Html(l.Label)}{(l.Beta ? " <span class=\"beta\">beta</span>" : "")}</label>"));
+        var panels = string.Join("\n", langs.Select(l =>
+        {
+            var docs = RepoPaths.RelativeHref(outputPath, l.DocsOutputPath);
+            var betaNote = l.Beta
+                ? "<p class=\"beta-note\">Early port &mdash; the API is still settling. See the repo for the current state.</p>"
+                : "";
+            var primary = l.Beta
+                ? $"<a href=\"{l.RepoUrl}\">{Html(l.Label)} on GitHub &rarr;</a>"
+                : $"<a href=\"{docs}\">Full {Html(l.Label)} walkthrough &rarr;</a>";
+            return $$"""
+                <div class="gs-panel" data-lang="{{l.Id}}">
+                  <p class="gs-install"><code>{{Html(l.Install)}}</code></p>
+                  <pre><code>{{l.Code}}</code></pre>
+                  {{betaNote}}
+                  <p class="gs-links">{{primary}} &middot; <a href="{{docs}}">Docs</a></p>
+                </div>
+                """;
+        }));
+        return $"<div class=\"gs-tabs\">{inputs}<div class=\"gs-tablist\">{labels}</div>{panels}</div>";
+    }
+
     private static string Header(string outputPath, string activeSection)
     {
         var home = RepoPaths.RelativeHref(outputPath, "index.html");
@@ -448,7 +473,6 @@ internal static class Layout
                 <a href="{operations}"{Active("operations")}>Operations</a>
                 <a href="{docs}"{Active("docs")}>Docs</a>
                 <a href="https://github.com/daniellepelley/Benzene">GitHub</a>
-                <a href="https://www.nuget.org/packages/Benzene.AspNet.Core/">NuGet</a>
               </nav>
             </header>
             """;

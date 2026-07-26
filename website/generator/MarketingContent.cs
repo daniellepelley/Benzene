@@ -2,28 +2,33 @@ namespace Benzene.Website.Generator;
 
 /// <summary>
 /// The marketing home page's copy, hand-authored for a proper landing-page layout (hero, feature
-/// cards, platform strip) rather than derived from README.md's markdown - a card grid isn't
-/// something plain markdown can express, so this is a deliberately separate, small source of
-/// truth kept loosely in sync with README.md's messaging by hand.
+/// cards, a per-language "get started" selector, platform strip) rather than derived from markdown.
+/// Benzene is a language-neutral architecture with several language ports, so this copy leads with
+/// the idea and the spec, not any one language.
 /// </summary>
 internal static class MarketingContent
 {
     public const string Tagline =
-        "Write your business logic once and reach it over HTTP, SQS, SNS, Kafka, Event Hub, or " +
-        "gRPC &mdash; all at once, on the cloud you already run. Putting a queue in front of an " +
-        "HTTP endpoint, or adding a second event source to a worker, takes a line of wiring, not " +
-        "a rewrite.";
+        "One message handler, every transport. Benzene is a hexagonal (ports-and-adapters) " +
+        "architecture for message-driven services: write your logic once, against a topic, and " +
+        "reach it over HTTP, queues, streams, and serverless functions &mdash; all at once, on the " +
+        "cloud you already run.";
+
+    // Benzene is defined by a language-neutral spec and implemented as idiomatic ports.
+    public const string MultiLanguageLede =
+        "Benzene is defined by a <a href=\"{SPEC}\">language-neutral specification</a> and implemented " +
+        "as idiomatic ports. Pick your language below &mdash; the concepts, wire contracts, and " +
+        "conformance fixtures are the same in every one.";
 
     public sealed record Feature(string Title, string Body);
 
     public static readonly Feature[] Features =
     [
         new("Mix transports without the glue",
-            "Serverless ties your logic to its trigger. An SNS function can't also take SQS, and " +
+            "Serverless ties your logic to its trigger &mdash; an SNS function can't also take SQS, and " +
             "putting a queue in front of an HTTP service is bespoke plumbing. A Benzene handler is " +
-            "plain C# against a topic, so the same logic is reachable over HTTP, SQS, SNS, Kafka, " +
-            "and more at the same time. You add or change a transport in the wiring, never in the " +
-            "handler."),
+            "written against a topic, so the same logic is reachable over HTTP, SQS, SNS, Kafka, and " +
+            "more at the same time. You add or change a transport in the wiring, never in the handler."),
         new("See what every service does",
             "Handlers, topics, payloads, and validation rules are introspectable. Benzene " +
             "generates OpenAPI and AsyncAPI specs and a live service map straight from your code, " +
@@ -31,61 +36,81 @@ internal static class MarketingContent
             "hand-drawn diagram that drifts."),
         new("Test-first, out of the box",
             "Every transport ships a test host and helpers, so you exercise a handler exactly as " +
-            "SQS, Lambda, or HTTP would invoke it: in memory, in a normal unit test, with no cloud " +
-            "and no emulator. Mock a dependency, send a message, and assert the result."),
+            "a queue, a function, or HTTP would invoke it: in memory, in a normal unit test, with no " +
+            "cloud and no emulator. Mock a dependency, send a message, and assert the result."),
         new("Cross-cutting concerns, once",
             "Correlation IDs, logging, tracing, validation, retries, and health checks are " +
             "composable middleware shared across every transport. Write them once instead of " +
             "scattering them across handlers or re-implementing them per event source."),
     ];
 
-    public sealed record CodeStep(string Label, string Code);
+    /// <summary>
+    /// One language port's "get started" content for the home-page selector. <see cref="Beta"/>
+    /// marks an early port; <see cref="DocsOutputPath"/> is the site-relative output path of that
+    /// language's docs home (the generator turns it into a relative href).
+    /// </summary>
+    public sealed record LanguageStart(
+        string Id, string Label, bool Beta, string Install, string Code, string RepoUrl, string DocsOutputPath);
 
-    public static readonly CodeStep[] QuickstartSteps =
+    public static readonly LanguageStart[] Languages =
     [
-        new("A message handler, mapped to a topic",
+        new("dotnet", ".NET", false,
+            "dotnet add package Benzene.AspNet.Core --prerelease",
             """
-            [Message("hello:world")]
-            [HttpEndpoint("GET", "/hello/{name}")]
-            public class HelloWorldMessageHandler : IMessageHandler&lt;HelloWorldRequest, HelloWorldResponse&gt;
+            [Message("greet")]
+            [HttpEndpoint("POST", "/greet")]
+            public class GreetHandler : IMessageHandler&lt;GreetRequest, GreetResponse&gt;
             {
-                public Task&lt;IBenzeneResult&lt;HelloWorldResponse&gt;&gt; HandleAsync(HelloWorldRequest message)
-                {
-                    return Task.FromResult(BenzeneResult.Ok(new HelloWorldResponse { Message = $"Hello {message.Name}" }));
+                public Task&lt;IBenzeneResult&lt;GreetResponse&gt;&gt; HandleAsync(GreetRequest message) =&gt;
+                    Task.FromResult(BenzeneResult.Ok(new GreetResponse { Greeting = $"Hello, {message.Name}!" }));
+            }
+
+            // Wire it onto any host - here ASP.NET Core, in Program.cs:
+            builder.Services.UsingBenzene(x =&gt; x.AddMessageHandlers(typeof(GreetHandler).Assembly));
+            app.UseBenzene(b =&gt; b.UseHttp(http =&gt; http.UseMessageHandlers()));
+            """,
+            "https://github.com/daniellepelley/benzene-dotnet",
+            "dotnet/docs/getting-started.html"),
+
+        new("go", "Go", true,
+            "go get github.com/daniellepelley/benzene-go",
+            """
+            func greetHandler(ctx context.Context, req GreetRequest) benzene.Result[GreetResponse] {
+                if req.Name == "" {
+                    return benzene.BadRequest[GreetResponse]("name is required")
                 }
+                return benzene.Ok(GreetResponse{Greeting: "Hello, " + req.Name + "!"})
             }
-            """),
-        new("Hosted as one AWS Lambda, reached over four transports",
+
+            // Register it against a topic, reachable over HTTP (and the wire envelope):
+            benzene.Register(registry, benzene.NewTopic("greet"),
+                benzene.Handler[GreetRequest, GreetResponse](greetHandler))
+            """,
+            "https://github.com/daniellepelley/benzene-go",
+            "go/docs/index.html"),
+
+        new("typescript", "TypeScript", true,
+            "npm install @benzene/core-middleware @benzene/dependencies",
             """
-            public class StartUp : BenzeneStartUp
-            {
-                public override void ConfigureServices(IServiceCollection services, IConfiguration config) =&gt;
-                    services.UsingBenzene(x =&gt; x.AddMessageHandlers(typeof(HelloWorldMessageHandler).Assembly));
+            import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
+            import { ServiceCollection, DefaultBenzeneServiceContainer } from '@benzene/dependencies';
 
-                public override void Configure(IBenzeneApplicationBuilder app, IConfiguration config) =&gt;
-                    app.UseAwsLambda(aws =&gt;
-                    {
-                        // One function, the same handler reached four ways:
-                        aws.UseApiGateway(http =&gt; http.UseMessageHandlers());       // HTTP
-                        aws.UseSqs(sqs =&gt; sqs.UseMessageHandlers());                // SQS queue
-                        aws.UseSns(sns =&gt; sns.UseMessageHandlers());                // SNS topic
-                        aws.UseEventBridge(events =&gt; events.UseMessageHandlers());  // EventBridge
-                    });
-            }
-
-            public class Function : AwsLambdaHost&lt;StartUp&gt;;
-            """),
+            const container = new DefaultBenzeneServiceContainer(new ServiceCollection());
+            const pipeline = new MiddlewarePipelineBuilder&lt;MyContext&gt;(container)
+              .useFn('Greet', async (ctx, next) =&gt; { /* handle, then */ await next(); })
+              .build();
+            """,
+            "https://github.com/daniellepelley/benzene-typescript",
+            "typescript/docs/index.html"),
     ];
 
     public static readonly (string Name, string Detail)[] Platforms =
     [
         ("AWS", "Lambda, API Gateway, SQS, SNS, Kafka, EventBridge"),
-        ("Azure", "Functions (isolated worker), Event Hub, Service Bus"),
+        ("Azure", "Functions, Event Hub, Service Bus"),
         ("Google Cloud", "Cloud Functions, Cloud Run"),
         ("Cloudflare", "Containers"),
         ("Kubernetes", "Any container host, with liveness/readiness health checks"),
-        ("Virtual machines / self-hosted", "ASP.NET Core or a long-running worker - consumes Kafka, HTTP, or any custom transport"),
+        ("Virtual machines / self-hosted", "An HTTP host or a long-running worker - consumes Kafka, HTTP, or any custom transport"),
     ];
-
-    public const string InstallCommand = "dotnet add package Benzene.Aws.Lambda.ApiGateway --prerelease";
 }

@@ -210,6 +210,62 @@ a { color: var(--accent); }
 
 .hero-badges img { height: 20px; }
 
+.hero-lede {
+  max-width: 640px;
+  margin: 1rem auto 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+.hero-langs {
+  margin-top: 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.hero-langs strong { color: var(--fg); }
+
+/* "beta" pill for early language ports */
+.beta {
+  display: inline-block;
+  font-size: 0.68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--muted, #888);
+  color: #fff;
+  padding: 0.08em 0.4em;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* Get-started language selector — no-JS radio tabs. The language ids are enumerated here (see
+   Layout.BuildGetStartedSelector); add a new id to these two rules when adding a language. */
+.gs-tabs .gs-radio { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.gs-tablist { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.gs-tab {
+  cursor: pointer;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 6px;
+  font-weight: 600;
+}
+.gs-panel { display: none; }
+.gs-install { margin: 0 0 0.75rem; }
+.beta-note { font-size: 0.9rem; color: var(--muted); margin: 0.5rem 0; }
+.gs-links { font-size: 0.95rem; }
+#gs-dotnet:checked ~ .gs-panel[data-lang="dotnet"],
+#gs-go:checked ~ .gs-panel[data-lang="go"],
+#gs-typescript:checked ~ .gs-panel[data-lang="typescript"] { display: block; }
+#gs-dotnet:checked ~ .gs-tablist .gs-tab[for="gs-dotnet"],
+#gs-go:checked ~ .gs-tablist .gs-tab[for="gs-go"],
+#gs-typescript:checked ~ .gs-tablist .gs-tab[for="gs-typescript"] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+#gs-dotnet:checked ~ .gs-tablist .gs-tab[for="gs-dotnet"] .beta,
+#gs-go:checked ~ .gs-tablist .gs-tab[for="gs-go"] .beta,
+#gs-typescript:checked ~ .gs-tablist .gs-tab[for="gs-typescript"] .beta { background: rgba(255,255,255,0.35); }
+
 /* Sections */
 .page-hero {
   max-width: var(--max-width);
