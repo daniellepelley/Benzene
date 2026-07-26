@@ -1,0 +1,63 @@
+name: conformance-drift-check
+
+# The language-neutral conformance fixtures are OWNED by the cross-language `benzene` repo
+# (docs/specification/conformance/*.json). This repo carries a VENDORED snapshot under
+# test/conformance-fixtures/ so `dotnet test` is self-contained with no submodule. This job keeps the
+# snapshot honest: it fetches the canonical fixtures from benzene and fails if they differ.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * 1'   # weekly, catches drift introduced on the benzene side
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch canonical fixtures from benzene
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/daniellepelley/Benzene.git /tmp/benzene
+          git -C /tmp/benzene sparse-checkout set docs/specification/conformance
+          mkdir -p /tmp/canonical
+          cp /tmp/benzene/docs/specification/conformance/*.json /tmp/canonical/
+
+      - name: Diff vendored snapshot against canonical
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in test/conformance-fixtures/*.json; do
+            name=$(basename "$f")
+            if [ ! -f "/tmp/canonical/$name" ]; then
+              echo "::error file=$f::Vendored fixture $name no longer exists in benzene canonical"
+              fail=1
+              continue
+            fi
+            if ! diff -u "/tmp/canonical/$name" "$f" > /tmp/diff.txt; then
+              echo "::error file=$f::Vendored fixture $name has drifted from benzene canonical"
+              cat /tmp/diff.txt
+              fail=1
+            fi
+          done
+          for f in /tmp/canonical/*.json; do
+            name=$(basename "$f")
+            if [ ! -f "test/conformance-fixtures/$name" ]; then
+              echo "::error::Canonical fixture $name is missing from the vendored snapshot"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "Conformance fixtures have drifted from the canonical benzene spec."
+            echo "Re-vendor: cp <benzene>/docs/specification/conformance/*.json test/conformance-fixtures/"
+            echo "and update test/conformance-fixtures/SPEC_VERSION to the new benzene commit."
+            exit 1
+          fi
+          echo "Vendored conformance fixtures match benzene canonical."
