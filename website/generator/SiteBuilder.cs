@@ -7,75 +7,72 @@ namespace Benzene.Website.Generator;
 
 internal sealed class SiteBuilder
 {
-    // docs/specification/conformance/*.json fixtures are already excluded because discovery only
-    // picks up *.md files - conformance/README.md itself is genuine prose, reachable from
-    // docs/specification/README.md, and stays included.
-    private static readonly string[] ExcludedDirPrefixes =
-    [
-        "docs/plans/",
-    ];
-
-    private static readonly HashSet<string> ExcludedFiles = new(StringComparer.Ordinal)
-    {
-        "docs/DOCUMENTATION_QUICK_REFERENCE.md",
-    };
-
     private readonly string _repoRoot;
     private readonly string _outDir;
+    private readonly IReadOnlyList<DocSource> _sources;
     private readonly MarkdownPipeline _pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-    public SiteBuilder(string repoRoot, string outDir)
+    public SiteBuilder(string repoRoot, string outDir, IReadOnlyList<DocSource> sources)
     {
         _repoRoot = repoRoot;
         _outDir = outDir;
+        _sources = sources;
     }
 
     public int Run()
     {
-        var sourcePaths = DiscoverSourcePaths();
-        var pages = new Dictionary<string, Page>(StringComparer.Ordinal);
+        // 1. Discover every page across every source. Pages are indexed by their absolute disk path so
+        //    a link is resolved to the file it points at regardless of which source owns it (a .NET doc
+        //    linking into the spec resolves cross-source automatically).
+        var pagesByDisk = new Dictionary<string, Page>(StringComparer.Ordinal);
+        var pagesBySource = new Dictionary<string, List<Page>>(StringComparer.Ordinal);
 
-        foreach (var sourcePath in sourcePaths)
+        foreach (var source in _sources)
         {
-            var text = File.ReadAllText(RepoPaths.ToDiskPath(_repoRoot, sourcePath));
-            var document = Markdown.Parse(text, _pipeline);
-            var outputPath = ComputeOutputPath(sourcePath);
-            var page = new Page { SourcePath = sourcePath, OutputPath = outputPath, Document = document };
-            page.Title = MarkdownText.FindTitle(document) ?? Path.GetFileNameWithoutExtension(sourcePath);
-            pages[sourcePath] = page;
+            var pages = DiscoverSource(source);
+            pagesBySource[source.Id] = pages;
+            foreach (var page in pages)
+            {
+                pagesByDisk[NormalizeDisk(page.SourceDiskPath)] = page;
+            }
         }
 
-        if (!pages.TryGetValue("docs/index.md", out var docsIndexPage))
+        // 2. Build each source's sidebar nav from its own nav file (index.md / README.md).
+        var navBySource = new Dictionary<string, NavNode>(StringComparer.Ordinal);
+        foreach (var source in _sources)
         {
-            throw new InvalidOperationException("docs/index.md is required as the docs nav source but was not found.");
+            navBySource[source.Id] = BuildSourceNav(source, pagesBySource[source.Id], pagesByDisk);
         }
 
-        var nav = NavTreeBuilder.BuildFromIndexPage(docsIndexPage.Document);
-        ResolveNavHrefs(nav, "docs/index.md", pages);
-        AppendOrphanedDocsPages(nav, pages);
+        var languages = _sources.Where(s => s.IsLanguage).ToList();
+
+        // 3. Rewrite links in every page against the global disk index.
+        var assetsToCopy = new Dictionary<string, string>(StringComparer.Ordinal); // outputPath -> diskPath
+        foreach (var page in pagesByDisk.Values)
+        {
+            RewriteLinks(page, pagesByDisk, assetsToCopy);
+        }
+
         CopyDemos();
-
-        var assetsToCopy = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var page in pages.Values)
-        {
-            RewriteLinks(page, pages, assetsToCopy);
-        }
-
         Directory.CreateDirectory(_outDir);
-        foreach (var page in pages.Values)
+
+        // 4. Render every docs page under its source's nav + the language switcher.
+        foreach (var source in _sources)
         {
-            var html = RenderPage(page, nav);
-            var diskPath = RepoPaths.ToDiskPath(_outDir, page.OutputPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(diskPath)!);
-            File.WriteAllText(diskPath, html);
+            var nav = navBySource[source.Id];
+            foreach (var page in pagesBySource[source.Id])
+            {
+                var html = RenderPage(page, nav, languages);
+                WriteOutput(page.OutputPath, html);
+            }
         }
 
-        // The marketing home page is hand-authored (MarketingContent/Layout), not derived from
-        // README.md's markdown - a card/hero layout isn't something plain markdown can express.
-        File.WriteAllText(Path.Combine(_outDir, "index.html"), Layout.RenderMarketingPage("index.html"));
+        // 5. The cross-language docs hub (docs/index.html): the headline landing that points at the
+        //    spec and at each language's own docs home. The marketing header's "Docs" link targets it.
+        WriteOutput("docs/index.html", Layout.RenderDocsHubPage("docs/index.html", _sources, pagesBySource));
 
-        // Hand-authored value-themed marketing sub-pages (Why Benzene / Architecture / Operations),
-        // same rationale as the home page - see MarketingPages.
+        // 6. Hand-authored marketing home + value pages (not markdown-derived) at the site root.
+        File.WriteAllText(Path.Combine(_outDir, "index.html"), Layout.RenderMarketingPage("index.html"));
         foreach (var valuePage in MarketingPages.All)
         {
             File.WriteAllText(Path.Combine(_outDir, valuePage.Slug), Layout.RenderValuePage(valuePage));
@@ -83,8 +80,9 @@ internal sealed class SiteBuilder
 
         CopyStaticAssets(assetsToCopy);
 
-        var outputPaths = pages.Values.Select(p => p.OutputPath)
+        var outputPaths = pagesByDisk.Values.Select(p => p.OutputPath)
             .Append("index.html")
+            .Append("docs/index.html")
             .Concat(MarketingPages.All.Select(p => p.Slug));
         var brokenLinks = SelfCheck(outputPaths);
         if (brokenLinks.Count > 0)
@@ -97,49 +95,95 @@ internal sealed class SiteBuilder
             return 1;
         }
 
-        Console.WriteLine($"Generated {pages.Count + 1 + MarketingPages.All.Length} pages to {_outDir}");
+        var pageCount = pagesByDisk.Count + 2 + MarketingPages.All.Length;
+        Console.WriteLine($"Generated {pageCount} pages from {_sources.Count} source(s) to {_outDir}");
         return 0;
     }
 
-    private List<string> DiscoverSourcePaths()
+    private List<Page> DiscoverSource(DocSource source)
     {
-        var docsRootDisk = Path.Combine(_repoRoot, "docs");
-        return Directory.EnumerateFiles(docsRootDisk, "*.md", SearchOption.AllDirectories)
-            .Select(p => RepoPaths.Normalize(Path.GetRelativePath(_repoRoot, p)))
-            .Where(rel => !ExcludedFiles.Contains(rel) && !ExcludedDirPrefixes.Any(rel.StartsWith))
-            .OrderBy(x => x, StringComparer.Ordinal)
-            .ToList();
+        if (!Directory.Exists(source.DocsRootDisk))
+        {
+            throw new InvalidOperationException(
+                $"Doc source '{source.Id}' docs root not found: {source.DocsRootDisk}");
+        }
+
+        var pages = new List<Page>();
+        foreach (var disk in Directory.EnumerateFiles(source.DocsRootDisk, "*.md", SearchOption.AllDirectories))
+        {
+            var docRel = RepoPaths.Normalize(Path.GetRelativePath(source.DocsRootDisk, disk));
+            if (source.ExcludedFiles.Contains(docRel, StringComparer.Ordinal)) continue;
+            if (source.ExcludedSubdirs.Any(prefix => docRel.StartsWith(prefix, StringComparison.Ordinal))) continue;
+
+            var text = File.ReadAllText(disk);
+            var document = Markdown.Parse(text, _pipeline);
+            var outputPath = $"{source.UrlPrefix}/{docRel[..^".md".Length]}.html";
+            var page = new Page
+            {
+                Source = source,
+                DocRelativePath = docRel,
+                SourceDiskPath = disk,
+                OutputPath = outputPath,
+                Document = document,
+                Title = MarkdownText.FindTitle(document) ?? Path.GetFileNameWithoutExtension(docRel),
+            };
+            pages.Add(page);
+        }
+        return pages.OrderBy(p => p.OutputPath, StringComparer.Ordinal).ToList();
     }
 
-    private static string ComputeOutputPath(string sourcePath) => sourcePath[..^".md".Length] + ".html";
+    private NavNode BuildSourceNav(DocSource source, List<Page> sourcePages, Dictionary<string, Page> pagesByDisk)
+    {
+        var navDisk = Path.Combine(source.DocsRootDisk, source.NavFile.Replace('/', Path.DirectorySeparatorChar));
+        NavNode nav;
+        if (pagesByDisk.TryGetValue(NormalizeDisk(navDisk), out var navPage))
+        {
+            nav = NavTreeBuilder.BuildFromIndexPage(navPage.Document);
+            ResolveNavHrefs(nav, navPage, pagesByDisk);
+        }
+        else
+        {
+            nav = new NavNode { Title = "" };
+        }
+        AppendOrphanedPages(nav, sourcePages);
+        return nav;
+    }
 
-    private void ResolveNavHrefs(NavNode node, string navSourcePath, Dictionary<string, Page> pages)
+    private void ResolveNavHrefs(NavNode node, Page navPage, Dictionary<string, Page> pagesByDisk)
     {
         if (node.Href != null)
         {
-            var target = ResolveLinkTarget(navSourcePath, node.Href, pages);
-            node.OutputHref = target?.OutputPath ?? ResolveDemoAsset(navSourcePath, node.Href);
+            var split = RepoPaths.SplitRelativeHref(node.Href);
+            if (split != null)
+            {
+                var target = ResolvePageLink(navPage, split.Value.PathPart, pagesByDisk);
+                node.OutputHref = target?.OutputPath ?? ResolveDemoAsset(navPage, split.Value.PathPart);
+            }
         }
         foreach (var child in node.Children)
         {
-            ResolveNavHrefs(child, navSourcePath, pages);
+            ResolveNavHrefs(child, navPage, pagesByDisk);
         }
     }
 
     /// <summary>
-    /// Every crawled docs page not already reachable from docs/index.md's nav tree still gets a
-    /// sidebar entry (under a synthesized "More" group) so nothing under docs/ is ever silently
-    /// unreachable from the site, even if index.md hasn't been updated to link it yet.
+    /// Every discovered page in a source not already reachable from that source's nav tree still gets
+    /// a sidebar entry (under a synthesized "More" group), so nothing is silently unreachable even if
+    /// the source's index.md hasn't been updated to link it yet.
     /// </summary>
-    private static void AppendOrphanedDocsPages(NavNode nav, Dictionary<string, Page> pages)
+    private static void AppendOrphanedPages(NavNode nav, List<Page> sourcePages)
     {
         var linked = new HashSet<string?>();
         CollectOutputHrefs(nav, linked);
 
-        var orphans = pages.Values
-            .Where(p => p.SourcePath.StartsWith("docs/", StringComparison.Ordinal) && p.SourcePath != "docs/index.md")
+        var navFileHome = sourcePages
+            .FirstOrDefault(p => string.Equals(
+                Path.GetFileName(p.DocRelativePath), p.Source.NavFile, StringComparison.Ordinal));
+
+        var orphans = sourcePages
+            .Where(p => p != navFileHome)
             .Where(p => !linked.Contains(p.OutputPath))
-            .OrderBy(p => p.SourcePath, StringComparer.Ordinal)
+            .OrderBy(p => p.OutputPath, StringComparer.Ordinal)
             .ToList();
 
         if (orphans.Count == 0) return;
@@ -158,7 +202,7 @@ internal sealed class SiteBuilder
         foreach (var child in node.Children) CollectOutputHrefs(child, into);
     }
 
-    private void RewriteLinks(Page page, Dictionary<string, Page> pages, HashSet<string> assetsToCopy)
+    private void RewriteLinks(Page page, Dictionary<string, Page> pagesByDisk, Dictionary<string, string> assetsToCopy)
     {
         foreach (var link in page.Document.Descendants<LinkInline>().ToList())
         {
@@ -166,73 +210,87 @@ internal sealed class SiteBuilder
             if (split == null) continue;
             var (pathPart, suffix) = split.Value;
 
-            var target = ResolveLinkTarget(page.SourcePath, pathPart, pages);
+            var target = ResolvePageLink(page, pathPart, pagesByDisk);
             if (target != null)
             {
                 link.Url = RepoPaths.RelativeHref(page.OutputPath, target.OutputPath) + suffix;
                 continue;
             }
 
-            var assetPath = ResolveAsset(page.SourcePath, pathPart);
-            if (assetPath != null)
+            var asset = ResolveAsset(page, pathPart);
+            if (asset != null)
             {
-                assetsToCopy.Add(assetPath);
-                link.Url = RepoPaths.RelativeHref(page.OutputPath, assetPath) + suffix;
+                assetsToCopy[asset.Value.OutputPath] = asset.Value.DiskPath;
+                link.Url = RepoPaths.RelativeHref(page.OutputPath, asset.Value.OutputPath) + suffix;
                 continue;
             }
 
-            var demoPath = ResolveDemoAsset(page.SourcePath, pathPart);
+            var demoPath = ResolveDemoAsset(page, pathPart);
             if (demoPath != null)
             {
-                // Copied verbatim by CopyDemos(), not into assetsToCopy - the whole website/demos/
-                // tree is vendored wholesale regardless of which docs pages happen to link to it.
                 link.Url = RepoPaths.RelativeHref(page.OutputPath, demoPath) + suffix;
                 continue;
             }
 
-            Console.WriteLine($"warning: unresolved link '{link.Url}' in {page.SourcePath}");
+            Console.WriteLine($"warning: unresolved link '{link.Url}' in {page.OutputPath}");
         }
     }
 
-    private static Page? ResolveLinkTarget(string currentSourcePath, string hrefPathPart, Dictionary<string, Page> pages)
+    /// <summary>Resolves a doc-relative href to the page it points at, by absolute disk path (cross-source safe).</summary>
+    private static Page? ResolvePageLink(Page fromPage, string hrefPathPart, Dictionary<string, Page> pagesByDisk)
     {
-        // A doc slug could contain a dot (e.g. a version number like "1.0"), so Path.HasExtension
-        // can't reliably tell whether ".md" is already present - just try both forms unconditionally.
-        var combined = RepoPaths.CombineRepoRelative(currentSourcePath, hrefPathPart);
-        if (pages.TryGetValue(combined, out var exact)) return exact;
-        if (pages.TryGetValue(combined + ".md", out var withExt)) return withExt;
+        var baseDir = Path.GetDirectoryName(fromPage.SourceDiskPath)!;
+        var candidate = NormalizeDisk(Path.GetFullPath(Path.Combine(baseDir, hrefPathPart.Replace('/', Path.DirectorySeparatorChar))));
+        // A doc slug can contain a dot (a version like "1.0"), so try both with and without .md.
+        if (pagesByDisk.TryGetValue(candidate, out var exact)) return exact;
+        if (pagesByDisk.TryGetValue(candidate + ".md", out var withExt)) return withExt;
         return null;
     }
 
-    // Only genuine web assets (images embedded in a doc page) get vendored into the site.
-    // Docs link to plenty of other real repo files too (SAM templates, docker-compose.yaml, test
-    // .cs files) - those aren't meant to be published as part of the static site, so they're left
-    // as unresolved relative links (same as the pre-existing "../examples" directory links).
+    // Only genuine web assets (images embedded in a doc page) get vendored into the site. Docs link to
+    // plenty of other real repo files too (SAM templates, docker-compose.yaml, test .cs files) - those
+    // aren't published, so they're left as unresolved relative links.
     private static readonly HashSet<string> WebAssetExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".pdf",
     };
 
-    private string? ResolveAsset(string currentSourcePath, string hrefPathPart)
+    /// <summary>An image asset that lives inside the page's own source docs root gets copied under that source's prefix.</summary>
+    private static (string OutputPath, string DiskPath)? ResolveAsset(Page fromPage, string hrefPathPart)
     {
-        var combined = RepoPaths.CombineRepoRelative(currentSourcePath, hrefPathPart);
-        if (!WebAssetExtensions.Contains(Path.GetExtension(combined))) return null;
-        var disk = RepoPaths.ToDiskPath(_repoRoot, combined);
-        return File.Exists(disk) ? combined : null;
+        if (!WebAssetExtensions.Contains(Path.GetExtension(hrefPathPart))) return null;
+        var baseDir = Path.GetDirectoryName(fromPage.SourceDiskPath)!;
+        var diskFull = Path.GetFullPath(Path.Combine(baseDir, hrefPathPart.Replace('/', Path.DirectorySeparatorChar)));
+        if (!File.Exists(diskFull)) return null;
+
+        var rootFull = Path.GetFullPath(fromPage.Source.DocsRootDisk);
+        var relFromRoot = Path.GetRelativePath(rootFull, diskFull);
+        if (relFromRoot.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relFromRoot))
+        {
+            // Asset escapes the source docs root - leave it as an unresolved relative link.
+            return null;
+        }
+        var outputPath = $"{fromPage.Source.UrlPrefix}/{RepoPaths.Normalize(relFromRoot)}";
+        return (outputPath, diskFull);
     }
 
-    // website/demos/** are pre-built, self-contained static pages (a copy of a UI package's own
-    // *.html viewer plus static JSON fixtures) - copied verbatim by CopyDemos() and published at
-    // the site root as "demos/...", not crawled/rendered as docs pages the way docs/*.md is.
-    private string? ResolveDemoAsset(string currentSourcePath, string hrefPathPart)
+    // website/demos/** are pre-built, self-contained static pages copied verbatim by CopyDemos() and
+    // published at the site root as "demos/...", not crawled/rendered as docs pages. Docs reference
+    // them by a relative path that resolves to a ".../demos/<rest>" tail (the demos live in benzene's
+    // website/demos/ regardless of which repo the referencing docs came from).
+    private string? ResolveDemoAsset(Page fromPage, string hrefPathPart)
     {
-        var combined = RepoPaths.CombineRepoRelative(currentSourcePath, hrefPathPart);
-        if (!combined.StartsWith("demos/", StringComparison.Ordinal)) return null;
-        var disk = RepoPaths.ToDiskPath(Path.Combine(_repoRoot, "website"), combined);
-        return File.Exists(disk) ? combined : null;
+        var normalized = RepoPaths.Normalize(hrefPathPart);
+        const string marker = "demos/";
+        var idx = normalized.IndexOf(marker, StringComparison.Ordinal);
+        if (idx < 0) return null;
+        var rest = normalized[(idx + marker.Length)..];
+        if (rest.Length == 0) return null;
+        var disk = Path.Combine(_repoRoot, "website", "demos", rest.Replace('/', Path.DirectorySeparatorChar));
+        return File.Exists(disk) ? $"demos/{rest}" : null;
     }
 
-    private string RenderPage(Page page, NavNode nav)
+    private string RenderPage(Page page, NavNode nav, List<DocSource> languages)
     {
         using var writer = new StringWriter();
         var renderer = new HtmlRenderer(writer);
@@ -240,10 +298,17 @@ internal sealed class SiteBuilder
         renderer.Render(page.Document);
         var bodyHtml = writer.ToString();
 
-        return Layout.RenderDocsPage(page.Title, bodyHtml, nav, page.OutputPath);
+        return Layout.RenderDocsPage(page.Title, bodyHtml, nav, page.OutputPath, page.Source, languages);
     }
 
-    private void CopyStaticAssets(HashSet<string> crawledAssets)
+    private void WriteOutput(string outputPath, string html)
+    {
+        var diskPath = RepoPaths.ToDiskPath(_outDir, outputPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(diskPath)!);
+        File.WriteAllText(diskPath, html);
+    }
+
+    private void CopyStaticAssets(Dictionary<string, string> crawledAssets)
     {
         var assetsSourceDir = Path.Combine(AppContext.BaseDirectory, "assets");
         if (!Directory.Exists(assetsSourceDir))
@@ -256,19 +321,14 @@ internal sealed class SiteBuilder
             File.Copy(file, Path.Combine(_outDir, Path.GetFileName(file)), overwrite: true);
         }
 
-        foreach (var asset in crawledAssets)
+        foreach (var (outputPath, diskPath) in crawledAssets)
         {
-            var src = RepoPaths.ToDiskPath(_repoRoot, asset);
-            var dst = RepoPaths.ToDiskPath(_outDir, asset);
+            var dst = RepoPaths.ToDiskPath(_outDir, outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
-            File.Copy(src, dst, overwrite: true);
+            File.Copy(diskPath, dst, overwrite: true);
         }
     }
 
-    // Copies website/demos/** verbatim into <out>/demos/** - unlike CopyStaticAssets (which only
-    // vendors images actually linked from a crawled docs page), the whole demos tree is published
-    // wholesale, files and all extensions, since these pages fetch their own JSON fixtures by
-    // relative path at runtime rather than being discovered via markdown links.
     private void CopyDemos()
     {
         var demosSourceDir = Path.Combine(_repoRoot, "website", "demos");
@@ -310,4 +370,6 @@ internal sealed class SiteBuilder
         }
         return broken;
     }
+
+    private static string NormalizeDisk(string path) => Path.GetFullPath(path);
 }

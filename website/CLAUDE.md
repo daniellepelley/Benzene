@@ -1,15 +1,31 @@
 # website
 
 ## What this does
-Generates Benzene's static marketing + documentation website: a hand-built landing page plus one
-page per `docs/*.md` file, for deployment to S3 as plain static files (no server runtime). Not
-part of `Benzene.sln` — same precedent as `templates/` and `benchmarks/`, it's a standalone
-project with its own build/run flow, documented in `website/README.md`.
+Generates Benzene's static marketing + documentation website: a hand-built landing page plus the
+docs, for deployment to S3 as plain static files (no server runtime). Not part of `Benzene.sln` —
+same precedent as `templates/` and `benchmarks/`, it's a standalone project with its own build/run
+flow, documented in `website/README.md`.
+
+**Multi-source (post repo-split):** the site is no longer a single `docs/` tree. It stitches
+together several **doc sources** (`DocSource`) — each language port's docs plus the cross-language
+specification — each with its own docs root on disk and its own output URL prefix. `.NET` docs
+render under `/dotnet/docs/…`, the spec under `/docs/specification/…`, and a generated
+cross-language hub at `/docs/index.html` leads with the spec and points at each language. A no-JS
+language switcher (a `<details>` disclosure) sits atop the docs sidebar. The `.NET` source's docs
+root is `--dotnet-docs <path>` (a `benzene-dotnet` checkout in CI); with no flag it falls back to
+benzene's own `docs/` so the generator is runnable locally before the split lands. See
+`work/repo-split-plan.md` for the split this supports.
 
 ## Key types (`generator/`)
-- `SiteBuilder` - the orchestrator. Discovers docs pages, builds the nav, rewrites links, renders
-  (docs pages + the separately hand-built marketing home), and runs a self-check. See its `Run()`
-  method for the full pipeline in order.
+- `SiteBuilder` - the orchestrator. For every `DocSource` it discovers that source's pages (rooted at
+  the source's docs dir, output under its URL prefix), builds that source's nav, rewrites links
+  (resolved by absolute disk path, so cross-source links work), renders each page under its source's
+  nav + a language switcher, writes the cross-language docs hub + the hand-built marketing home, and
+  runs a self-check. See its `Run()` method for the full pipeline in order.
+- `DocSource` - one documentation source: `Id`/`Label`/`UrlPrefix`/`DocsRootDisk`/`NavFile`/
+  `IsLanguage`/excludes. The spec is a source with `IsLanguage=false` (leads the hub, not in the
+  switcher); each language port is `IsLanguage=true`. Built in `Program.cs`; extra languages can be
+  added with a repeatable `--source id=Label=urlPrefix=path[=navFile]` arg.
 - **The marketing home page (`index.html`) is hand-authored**, not derived from README.md's
   markdown - `MarketingContent` holds the copy (hero tagline, feature cards, quickstart snippets,
   platform list, loosely kept in sync with README.md's messaging by hand), `ArchitectureDiagram`
@@ -29,16 +45,17 @@ project with its own build/run flow, documented in `website/README.md`.
 - `Logo` - the brand mark: a hexagon with an inscribed ring, the standard chemistry shorthand for
   an aromatic ring (benzene's own structure) - used identically as the favicon, header icon, and
   hero graphic, via `currentColor` so it themes with light/dark mode.
-- **Docs page discovery is not a hardcoded list**: every `*.md` under `docs/` is included, except
-  `docs/plans/` (internal roadmap docs) and `docs/DOCUMENTATION_QUICK_REFERENCE.md` (contributor
-  cheat-sheet). `docs/specification/conformance/*.json` is naturally excluded too, since only
-  `*.md` files are picked up.
-- **Navigation comes from `docs/index.md` itself** (`NavTreeBuilder.BuildFromIndexPage`) - it
-  parses index.md's own nested bullet list via Markdig's AST (not regex), so index.md stays the
-  single source of truth for both docs-home content and the sidebar. Any crawled docs page not
-  already reachable from that tree still gets a sidebar entry, appended under a synthesized
-  "More" group (`SiteBuilder.AppendOrphanedDocsPages`) - so nothing under `docs/` is ever silently
-  unreachable from the site, even if `index.md` hasn't been updated to link it yet.
+- **Docs page discovery is not a hardcoded list**: within each source, every `*.md` under its docs
+  root is included, minus that source's excludes (the `.NET` source excludes `specification/` — the
+  spec is its own source — and `plans/` and `DOCUMENTATION_QUICK_REFERENCE.md`). `*.json` fixtures
+  are naturally excluded since only `*.md` files are picked up.
+- **Navigation is per-source**, each built from that source's own nav file (`NavTreeBuilder.
+  BuildFromIndexPage`): `index.md` for a language port, `README.md` for the spec. It parses the
+  file's nested bullet list via Markdig's AST (not regex), so the source's index stays the single
+  source of truth for its own sidebar. Any page in a source not reachable from its nav still gets a
+  sidebar entry under a synthesized "More" group (`SiteBuilder.AppendOrphanedPages`) — nothing is
+  silently unreachable. Nav hrefs resolve against the **global** disk index, so a nav bullet that
+  points cross-source (e.g. the `.NET` index still listing a spec page) resolves correctly.
 - **Link rewriting** (`SiteBuilder.RewriteLinks`): every `LinkInline` in every page is resolved
   against the crawled page set and rewritten to a relative output `href`. Only image extensions
   (`SiteBuilder.WebAssetExtensions`) get vendored into the output as static assets - docs link to

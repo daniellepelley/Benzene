@@ -107,6 +107,38 @@ a { color: var(--accent); }
   letter-spacing: 0.04em;
 }
 
+/* Language switcher — a no-JS <details> disclosure at the top of the docs sidebar. */
+.lang-switcher {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+}
+.lang-switcher > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 6px;
+  list-style: none;
+}
+.lang-switcher > summary::-webkit-details-marker { display: none; }
+.lang-switcher > summary::after { content: " ▾"; color: var(--muted); }
+.lang-switcher[open] > summary::after { content: " ▴"; }
+.lang-switcher .lang-switcher-label {
+  color: var(--muted);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  margin-right: 0.3rem;
+}
+.lang-switcher ul { list-style: none; margin: 0.4rem 0 0; padding-left: 0; }
+.lang-switcher a { padding: 0.2rem 0.5rem; }
+
+/* Cross-language docs hub — the spec page list. */
+.hub-spec-list { columns: 2; column-gap: 2rem; margin: 1rem 0 0; }
+@media (max-width: 640px) { .hub-spec-list { columns: 1; } }
+
 .content {
   flex: 1;
   min-width: 0;

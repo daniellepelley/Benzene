@@ -40,7 +40,7 @@ internal static class MarketingPages
                 + "two. In most stacks each of those is a rewrite; in Benzene it's wiring.",
             [
                 new Card("The handler doesn't change",
-                    "Your logic is a plain C# <a href=\"docs/message-handlers.html\">message handler</a> "
+                    "Your logic is a plain C# <a href=\"dotnet/docs/message-handlers.html\">message handler</a> "
                     + "against a topic. Reaching it over a new transport, whether HTTP, a queue, a topic, "
                     + "or an event bus, is a line in the host wiring. The code you already wrote and "
                     + "tested stays untouched."),
@@ -59,7 +59,7 @@ internal static class MarketingPages
                 new Card("Transport- and vendor-agnostic",
                     "Handlers, middleware, and topics don't know whether they run behind Lambda, Azure "
                     + "Functions, a self-hosted worker, or ASP.NET Core. Moving between them is a "
-                    + "<a href=\"docs/hosting.html\">hosting change</a>, and the SDK is still there when you "
+                    + "<a href=\"dotnet/docs/hosting.html\">hosting change</a>, and the SDK is still there when you "
                     + "need it."),
                 new Card("Plain C#, no proprietary runtime",
                     "It's the .NET, dependency injection, and <code>async</code> your team already knows, "
@@ -74,7 +74,7 @@ internal static class MarketingPages
                 + "can diagnose. Benzene is built to keep both down.",
             [
                 new Card("Test-first, without the cloud",
-                    "Every transport ships a <a href=\"docs/testing-benzene.html\">test host and helpers</a>, "
+                    "Every transport ships a <a href=\"dotnet/docs/testing-benzene.html\">test host and helpers</a>, "
                     + "so a handler is exercised exactly as SQS, Lambda, or HTTP would invoke it, in memory "
                     + "and in a normal unit test with no emulator."),
                 new Card("Observable by construction",
@@ -102,7 +102,7 @@ internal static class MarketingPages
             ]),
         ],
         CtaHtml:
-            "<a class=\"button\" href=\"docs/getting-started.html\">Get started</a> "
+            "<a class=\"button\" href=\"dotnet/docs/getting-started.html\">Get started</a> "
             + "<a class=\"button button-secondary\" href=\"architecture.html\">See the architecture</a>");
 
     private static ValuePage Architecture() => new(
@@ -124,7 +124,7 @@ internal static class MarketingPages
                 + "and the <a href=\"docs/specification/core-concepts.html\">core concepts</a> are small.",
             [
                 new Card("Handlers are the core",
-                    "A <a href=\"docs/message-handlers.html\">message handler</a> is "
+                    "A <a href=\"dotnet/docs/message-handlers.html\">message handler</a> is "
                     + "<code>IMessageHandler&lt;TRequest, TResponse&gt;</code>: ordinary C# that takes a "
                     + "typed request and returns a typed result. It has no idea what transport carried it."),
                 new Card("Transports are adapters",
@@ -132,7 +132,7 @@ internal static class MarketingPages
                     + "that maps a native event onto a message and back, so adding a vendor means writing an "
                     + "adapter, never touching the core."),
                 new Card("One pipeline through all of them",
-                    "Every adapter runs the same composable <a href=\"docs/middleware.html\">middleware "
+                    "Every adapter runs the same composable <a href=\"dotnet/docs/middleware.html\">middleware "
                     + "pipeline</a>, so cross-cutting behavior is written once and applies everywhere, rather "
                     + "than being re-implemented per event source."),
             ]),
@@ -145,7 +145,7 @@ internal static class MarketingPages
                     + "with one line of wiring each. On serverless that normally means separate, "
                     + "trigger-locked functions."),
                 new Card("Host it unchanged",
-                    "The same <code>BenzeneStartUp</code> runs on <a href=\"docs/hosting.html\">AWS Lambda, "
+                    "The same <code>BenzeneStartUp</code> runs on <a href=\"dotnet/docs/hosting.html\">AWS Lambda, "
                     + "Azure Functions, a self-hosted worker, or ASP.NET Core</a>: one application definition, "
                     + "several ways to start it."),
                 new Card("Reach the native context when you must",
@@ -157,10 +157,10 @@ internal static class MarketingPages
                 + "that handles messages. There's no hand-maintained diagram to drift out of date.",
             [
                 new Card("OpenAPI + AsyncAPI from your code",
-                    "<a href=\"docs/spec.html\">Spec generation</a> derives OpenAPI (HTTP) and AsyncAPI (events) "
+                    "<a href=\"dotnet/docs/spec.html\">Spec generation</a> derives OpenAPI (HTTP) and AsyncAPI (events) "
                     + "documents from the handler registry, with example payloads and validation rules included."),
                 new Card("Browse it in the Spec UI",
-                    "A self-contained <a href=\"docs/spec-ui.html\">Spec UI</a> renders that contract: "
+                    "A self-contained <a href=\"dotnet/docs/spec-ui.html\">Spec UI</a> renders that contract: "
                     + "topics, payload tables, validation chips, transport chips. "
                     + "<a href=\"demos/spec/index.html\">Open the live demo &rarr;</a>"),
                 new Card("A map across services",
@@ -203,12 +203,12 @@ internal static class MarketingPages
         [
             new Section("See everything it's doing",
                 "Observability is opt-in middleware, shared across transports, and free until you attach an "
-                + "exporter. Full picture in <a href=\"docs/monitoring.html\">Monitoring</a>.",
+                + "exporter. Full picture in <a href=\"dotnet/docs/monitoring.html\">Monitoring</a>.",
             [
                 new Card("Traces and metrics via OpenTelemetry",
                     "Every middleware in every pipeline can emit its own <code>Activity</code> span, plus "
                     + "processed-count and duration metrics. Export to Jaeger, Tempo, Prometheus, or App "
-                    + "Insights through standard <a href=\"docs/cookbooks/distributed-tracing-opentelemetry.html\">"
+                    + "Insights through standard <a href=\"dotnet/docs/cookbooks/distributed-tracing-opentelemetry.html\">"
                     + "OpenTelemetry</a>; Benzene stays exporter-agnostic."),
                 new Card("Traces that cross service hops",
                     "<code>UseW3CTraceContext()</code> continues a W3C trace from inbound headers and stamps it "
@@ -221,10 +221,10 @@ internal static class MarketingPages
             ]),
             new Section("Know when it's healthy",
                 "Health is pipeline middleware, so it works on every transport, not just HTTP. See "
-                + "<a href=\"docs/health-checks.html\">Health Checks</a>.",
+                + "<a href=\"dotnet/docs/health-checks.html\">Health Checks</a>.",
             [
                 new Card("Liveness and readiness",
-                    "Kubernetes-shaped <a href=\"docs/kubernetes-health-checks.html\">liveness/readiness "
+                    "Kubernetes-shaped <a href=\"dotnet/docs/kubernetes-health-checks.html\">liveness/readiness "
                     + "probes</a>, on a topic for any transport or on <code>GET /livez</code> / "
                     + "<code>/readyz</code> for HTTP hosts."),
                 new Card("Dependency checks included",
@@ -237,40 +237,40 @@ internal static class MarketingPages
             new Section("Fail safely",
                 "At-least-once transports redeliver, batches partially fail, and dependencies wobble. Benzene "
                 + "has first-class handling for each, and the "
-                + "<a href=\"docs/capability-matrix.html\">capability matrix</a> is the honest what-does-what.",
+                + "<a href=\"dotnet/docs/capability-matrix.html\">capability matrix</a> is the honest what-does-what.",
             [
                 new Card("Retries, and full resilience via Polly",
                     "Retry with exponential backoff is built in (<code>UseRetry()</code>). For circuit breakers, "
                     + "timeouts, hedging, and fallback, Benzene runs <em>your</em> "
-                    + "<a href=\"docs/cookbooks/polly-resilience.html\">Polly pipeline</a> as middleware, "
+                    + "<a href=\"dotnet/docs/cookbooks/polly-resilience.html\">Polly pipeline</a> as middleware, "
                     + "exposing Polly rather than re-abstracting it."),
                 new Card("Idempotency for redelivery",
-                    "<a href=\"docs/cookbooks/idempotency.html\">Idempotency middleware</a> makes a handler run "
+                    "<a href=\"dotnet/docs/cookbooks/idempotency.html\">Idempotency middleware</a> makes a handler run "
                     + "at most once per message via a pluggable store. In-memory out of the box; back it with "
                     + "DynamoDB or Redis for multi-instance deployments."),
                 new Card("Only the failures redeliver",
                     "On SQS, only the messages that actually failed are reported back for redelivery, not the "
                     + "whole batch. Per-transport ack/nack and failure escalation are covered in "
-                    + "<a href=\"docs/cookbooks/handling-sqs-failures.html\">Handling SQS failures</a>. (Dead-letter "
+                    + "<a href=\"dotnet/docs/cookbooks/handling-sqs-failures.html\">Handling SQS failures</a>. (Dead-letter "
                     + "queues remain your infrastructure config.)"),
             ]),
             new Section("Ship it where you run",
                 "Deployment is a wiring choice rather than a rewrite; the hosting reach is in "
-                + "<a href=\"docs/hosting.html\">Hosting</a>.",
+                + "<a href=\"dotnet/docs/hosting.html\">Hosting</a>.",
             [
                 new Card("Serverless, containers, or bare process",
                     "AWS Lambda and Azure Functions for serverless; ASP.NET Core or a self-hosted worker for "
                     + "containers, Kubernetes, and VMs. The handlers are the same in every case."),
                 new Card("Infrastructure as code",
-                    "Generate <a href=\"docs/terraform.html\">Terraform</a> for the Lambda and its event-source "
+                    "Generate <a href=\"dotnet/docs/terraform.html\">Terraform</a> for the Lambda and its event-source "
                     + "permissions straight from your handlers, so the deployment surface tracks the code."),
                 new Card("Tuned for cold starts",
                     "A Roslyn source generator can discover handlers at compile time instead of by reflection, "
-                    + "one of several <a href=\"docs/cookbooks/lambda-cold-start-optimization.html\">cold-start "
+                    + "one of several <a href=\"dotnet/docs/cookbooks/lambda-cold-start-optimization.html\">cold-start "
                     + "optimizations</a> for serverless."),
             ]),
         ],
         CtaHtml:
-            "<a class=\"button\" href=\"docs/capability-matrix.html\">See the capability matrix</a> "
+            "<a class=\"button\" href=\"dotnet/docs/capability-matrix.html\">See the capability matrix</a> "
             + "<a class=\"button button-secondary\" href=\"why.html\">Why Benzene &rarr;</a>");
 }

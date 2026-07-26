@@ -12,8 +12,8 @@ internal static class Layout
         var whyPage = RepoPaths.RelativeHref(outputPath, "why.html");
         var architecturePage = RepoPaths.RelativeHref(outputPath, "architecture.html");
         var operationsPage = RepoPaths.RelativeHref(outputPath, "operations.html");
-        var gettingStarted = RepoPaths.RelativeHref(outputPath, "docs/getting-started.html");
-        var gettingStartedAws = RepoPaths.RelativeHref(outputPath, "docs/getting-started-aws.html");
+        var gettingStarted = RepoPaths.RelativeHref(outputPath, "dotnet/docs/getting-started.html");
+        var gettingStartedAws = RepoPaths.RelativeHref(outputPath, "dotnet/docs/getting-started-aws.html");
         var meshDemo = RepoPaths.RelativeHref(outputPath, "demos/mesh/index.html");
         var specDemo = RepoPaths.RelativeHref(outputPath, "demos/spec/index.html");
 
@@ -230,12 +230,15 @@ internal static class Layout
             """;
     }
 
-    public static string RenderDocsPage(string title, string bodyHtml, NavNode nav, string outputPath)
+    public static string RenderDocsPage(
+        string title, string bodyHtml, NavNode nav, string outputPath,
+        DocSource source, IReadOnlyList<DocSource> languages)
     {
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
 
         var sidebar = new StringBuilder();
+        sidebar.Append(LanguageSwitcher(outputPath, source, languages));
         sidebar.Append("<ul>");
         foreach (var child in nav.Children) RenderNavNode(child, outputPath, sidebar);
         sidebar.Append("</ul>");
@@ -259,6 +262,123 @@ internal static class Layout
               {Footer()}
             </body>
             </html>
+            """;
+    }
+
+    /// <summary>
+    /// The cross-language docs hub at docs/index.html: the headline landing that points at the
+    /// language-neutral spec and at each language port's own docs home. This is the "same idea, pick
+    /// your language" entry the marketing header's Docs link targets.
+    /// </summary>
+    public static string RenderDocsHubPage(
+        string outputPath, IReadOnlyList<DocSource> sources,
+        IReadOnlyDictionary<string, List<Page>> pagesBySource)
+    {
+        var css = RepoPaths.RelativeHref(outputPath, "site.css");
+        var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
+
+        var languages = sources.Where(s => s.IsLanguage).ToList();
+        var languageCards = string.Join("\n", languages.Select(lang =>
+        {
+            var home = RepoPaths.RelativeHref(outputPath, lang.HomeOutputPath);
+            var count = pagesBySource.TryGetValue(lang.Id, out var pages) ? pages.Count : 0;
+            return $"""
+                <div class="feature-card">
+                  <h3>{Html(lang.Label)}</h3>
+                  <p>How to build, host, test and operate a Benzene service in {Html(lang.Label)} &mdash;
+                     {count} pages.</p>
+                  <p><a href="{home}">Open the {Html(lang.Label)} docs &rarr;</a></p>
+                </div>
+                """;
+        }));
+
+        var specSource = sources.FirstOrDefault(s => !s.IsLanguage);
+        var specSection = "";
+        if (specSource != null && pagesBySource.TryGetValue(specSource.Id, out var specPages))
+        {
+            var specHome = RepoPaths.RelativeHref(outputPath, specSource.HomeOutputPath);
+            var links = string.Join("\n", specPages
+                .Where(p => !string.Equals(Path.GetFileName(p.DocRelativePath), specSource.NavFile, StringComparison.Ordinal))
+                .OrderBy(p => p.Title, StringComparer.Ordinal)
+                .Select(p => $"<li><a href=\"{RepoPaths.RelativeHref(outputPath, p.OutputPath)}\">{Html(p.Title)}</a></li>"));
+            specSection = $"""
+                <section class="section">
+                  <h2>The specification</h2>
+                  <p class="section-lede">
+                    Benzene is defined by a language-neutral specification &mdash; concepts, wire
+                    contracts, transport bindings, and conformance fixtures &mdash; that every language
+                    port implements. It is the same in every language.
+                    <a href="{specHome}">Start with the overview &rarr;</a>
+                  </p>
+                  <ul class="hub-spec-list">
+                    {links}
+                  </ul>
+                </section>
+                """;
+        }
+
+        return $"""
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>Benzene Documentation</title>
+              <meta name="description" content="Benzene documentation: the language-neutral specification, and per-language guides for building, hosting, testing and operating a Benzene service.">
+              <link rel="icon" href="{favicon}" type="image/svg+xml">
+              <link rel="stylesheet" href="{css}">
+            </head>
+            <body>
+              {Header(outputPath, activeSection: "docs")}
+              <main class="content marketing">
+                <section class="page-hero">
+                  <h1>Documentation</h1>
+                  <p class="section-lede">
+                    Start with what Benzene <em>is</em> &mdash; the language-neutral specification below
+                    &mdash; then drill into the language you build in.
+                  </p>
+                </section>
+                {specSection}
+                <section class="section">
+                  <h2>Pick your language</h2>
+                  <p class="section-lede">
+                    Each language port is a translation of the same spec. ".NET" is the first; more
+                    follow the same shape.
+                  </p>
+                  <div class="feature-grid">
+                    {languageCards}
+                  </div>
+                </section>
+              </main>
+              {Footer()}
+            </body>
+            </html>
+            """;
+    }
+
+    /// <summary>
+    /// A no-JS language switcher (a &lt;details&gt; disclosure) shown at the top of the docs sidebar.
+    /// The summary shows the current section (a language, or the spec); opening it lists links to each
+    /// language's docs home and to the spec.
+    /// </summary>
+    private static string LanguageSwitcher(string outputPath, DocSource current, IReadOnlyList<DocSource> languages)
+    {
+        if (languages.Count == 0) return "";
+
+        var items = new StringBuilder();
+        foreach (var lang in languages)
+        {
+            var href = RepoPaths.RelativeHref(outputPath, lang.HomeOutputPath);
+            var active = lang.Id == current.Id ? " class=\"active\"" : "";
+            items.Append($"<li><a href=\"{href}\"{active}>{Html(lang.Label)}</a></li>");
+        }
+
+        var currentLabel = current.IsLanguage ? current.Label : "Specification";
+        return $"""
+            <details class="lang-switcher">
+              <summary><span class="lang-switcher-label">Language:</span> {Html(currentLabel)}</summary>
+              <ul>{items}</ul>
+            </details>
             """;
     }
 
