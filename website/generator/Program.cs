@@ -21,12 +21,26 @@ for (var i = 0; i < args.Length; i++)
     }
     else if (args[i] == "--source" && i + 1 < args.Length)
     {
-        // id=Label=urlPrefix=docsRootPath[=navFile]  (a language port; appears in the switcher)
-        var parts = args[++i].Split('=');
+        // A language port, "::"-delimited (so repo URLs, which contain ":", are safe):
+        //   id::Label::urlPrefix::docsRootPath[::<extra>...]
+        // The 4 required fields come first. Any extra token is matched order-independently: "landing"
+        // → render only the README as a single landing page; an "http..." token → the repo blob base
+        // URL (unresolved links point there); anything else → the nav file name.
+        var parts = args[++i].Split("::");
         if (parts.Length < 4)
         {
-            Console.Error.WriteLine("error: --source expects id=Label=urlPrefix=docsRootPath[=navFile]");
+            Console.Error.WriteLine(
+                "error: --source expects id::Label::urlPrefix::docsRootPath[::navFile][::landing][::<repoBlobUrl>]");
             return 1;
+        }
+        var landing = false;
+        string? navFile = null;
+        string? repoBlobUrl = null;
+        foreach (var extra in parts.Skip(4))
+        {
+            if (extra == "landing") landing = true;
+            else if (extra.StartsWith("http", StringComparison.OrdinalIgnoreCase)) repoBlobUrl = extra;
+            else navFile = extra;
         }
         extraSources.Add(new DocSource
         {
@@ -34,8 +48,10 @@ for (var i = 0; i < args.Length; i++)
             Label = parts[1],
             UrlPrefix = parts[2],
             DocsRootDisk = Path.GetFullPath(parts[3]),
-            NavFile = parts.Length >= 5 ? parts[4] : "index.md",
+            NavFile = navFile ?? (landing ? "README.md" : "index.md"),
             IsLanguage = true,
+            LandingOnly = landing,
+            RepoBlobUrl = repoBlobUrl,
         });
     }
 }

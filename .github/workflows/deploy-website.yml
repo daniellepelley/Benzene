@@ -33,13 +33,32 @@ jobs:
     - name: Checkout benzene
       uses: actions/checkout@v4
 
-    - name: Checkout benzene-dotnet docs (best-effort until the repo exists)
+    - name: Checkout benzene-dotnet docs (best-effort)
       continue-on-error: true
       uses: actions/checkout@v4
       with:
         repository: daniellepelley/benzene-dotnet
         ref: main
         path: _sources/benzene-dotnet
+
+    # Sibling language ports. Each is checked out at its default branch (no ref), best-effort, and
+    # wired as a language "source". Go and TypeScript are early ports with only a README so far, so
+    # they render as a single landing page (=landing); when they grow a docs/ tree, point --source at
+    # it and drop =landing. NOTE: keep each repo's default branch == main so the blob URLs below (used
+    # for links the landing README makes to repo files) resolve.
+    - name: Checkout benzene-go (best-effort)
+      continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        repository: daniellepelley/benzene-go
+        path: _sources/benzene-go
+
+    - name: Checkout benzene-typescript (best-effort)
+      continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        repository: daniellepelley/benzene-typescript
+        path: _sources/benzene-typescript
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -48,14 +67,23 @@ jobs:
 
     - name: Generate site
       run: |
+        set -euo pipefail
+        ARGS=(--out website/dist)
         if [ -d _sources/benzene-dotnet/docs ]; then
           echo "Using .NET docs from the benzene-dotnet checkout."
-          dotnet run --project website/generator -- --out website/dist \
-            --dotnet-docs _sources/benzene-dotnet/docs
+          ARGS+=(--dotnet-docs _sources/benzene-dotnet/docs)
         else
-          echo "benzene-dotnet not available yet — falling back to benzene's own docs/ for the .NET source."
-          dotnet run --project website/generator -- --out website/dist
+          echo "benzene-dotnet not available — .NET source falls back to benzene's own docs/."
         fi
+        if [ -f _sources/benzene-go/README.md ]; then
+          echo "Wiring the Go language section."
+          ARGS+=(--source "go::Go::go/docs::_sources/benzene-go::landing::https://github.com/daniellepelley/benzene-go/blob/main")
+        fi
+        if [ -f _sources/benzene-typescript/README.md ]; then
+          echo "Wiring the TypeScript language section."
+          ARGS+=(--source "typescript::TypeScript::typescript/docs::_sources/benzene-typescript::landing::https://github.com/daniellepelley/benzene-typescript/blob/main")
+        fi
+        dotnet run --project website/generator -- "${ARGS[@]}"
 
     - name: Sync to the dev bucket
       run: aws s3 sync website/dist "s3://${{ vars.WEBSITE_DEV_BUCKET }}" --delete

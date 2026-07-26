@@ -34,6 +34,14 @@ internal sealed class DocSource
     public bool IsLanguage { get; init; }
 
     /// <summary>
+    /// For an early port that has no docs tree yet (just a README): render only the nav file as a
+    /// single landing page at <c>{UrlPrefix}/index.html</c>, so the language still appears in the
+    /// switcher and the hub. Flip to false and point <see cref="DocsRootDisk"/> at a real docs/ tree
+    /// once the port has one.
+    /// </summary>
+    public bool LandingOnly { get; init; }
+
+    /// <summary>
     /// The prefix these pages used to live under before the split, if any (e.g. the .NET docs were at
     /// "docs/…" and are now at "dotnet/docs/…"). When set and different from <see cref="UrlPrefix"/>,
     /// the generator emits a redirect stub at each legacy path so existing inbound links survive. A
@@ -51,7 +59,17 @@ internal sealed class DocSource
     /// <summary>File names (relative to the docs root) to exclude, e.g. a contributor cheat-sheet.</summary>
     public string[] ExcludedFiles { get; init; } = [];
 
+    /// <summary>
+    /// Base URL of this source's repo blob root (e.g. https://github.com/daniellepelley/benzene-go/blob/main).
+    /// When set, a relative link that resolves to no published page/asset/demo is rewritten to point at
+    /// the file in the repo, instead of being left as a dead relative link — useful for a landing README
+    /// that links to source files not published on the site.
+    /// </summary>
+    public string? RepoBlobUrl { get; init; }
+
     /// <summary>Output path of this source's docs home (its nav file rendered), e.g. "dotnet/docs/index.html".</summary>
     public string HomeOutputPath =>
-        $"{UrlPrefix}/{System.IO.Path.GetFileNameWithoutExtension(NavFile)}.html";
+        LandingOnly
+            ? $"{UrlPrefix}/index.html"
+            : $"{UrlPrefix}/{System.IO.Path.GetFileNameWithoutExtension(NavFile)}.html";
 }

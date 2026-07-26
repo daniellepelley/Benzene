@@ -131,6 +131,31 @@ internal sealed class SiteBuilder
                 $"Doc source '{source.Id}' docs root not found: {source.DocsRootDisk}");
         }
 
+        // An early port with no docs tree yet: render only its nav file (README) as a single landing
+        // page at {UrlPrefix}/index.html, so the language still appears in the switcher and the hub.
+        if (source.LandingOnly)
+        {
+            var navDisk = Path.Combine(source.DocsRootDisk, source.NavFile.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(navDisk))
+            {
+                throw new InvalidOperationException(
+                    $"Doc source '{source.Id}' is landing-only but its nav file was not found: {navDisk}");
+            }
+            var landingDoc = Markdown.Parse(File.ReadAllText(navDisk), _pipeline);
+            return
+            [
+                new Page
+                {
+                    Source = source,
+                    DocRelativePath = source.NavFile,
+                    SourceDiskPath = navDisk,
+                    OutputPath = $"{source.UrlPrefix}/index.html",
+                    Document = landingDoc,
+                    Title = MarkdownText.FindTitle(landingDoc) ?? source.Label,
+                }
+            ];
+        }
+
         var pages = new List<Page>();
         foreach (var disk in Directory.EnumerateFiles(source.DocsRootDisk, "*.md", SearchOption.AllDirectories))
         {
@@ -157,6 +182,9 @@ internal sealed class SiteBuilder
 
     private NavNode BuildSourceNav(DocSource source, List<Page> sourcePages, Dictionary<string, Page> pagesByDisk)
     {
+        // A landing-only source is a single README page; its markdown isn't a nav tree, so no sidebar.
+        if (source.LandingOnly) return new NavNode { Title = "" };
+
         var navDisk = Path.Combine(source.DocsRootDisk, source.NavFile.Replace('/', Path.DirectorySeparatorChar));
         NavNode nav;
         if (pagesByDisk.TryGetValue(NormalizeDisk(navDisk), out var navPage))
@@ -252,6 +280,16 @@ internal sealed class SiteBuilder
             if (demoPath != null)
             {
                 link.Url = RepoPaths.RelativeHref(page.OutputPath, demoPath) + suffix;
+                continue;
+            }
+
+            // Nothing published matches. If this source knows its repo blob URL, point the link at the
+            // file in the repo rather than leaving a dead relative link (e.g. a landing README linking
+            // to source files not on the site).
+            if (page.Source.RepoBlobUrl != null)
+            {
+                var repoRel = RepoPaths.CombineRepoRelative(page.DocRelativePath, pathPart);
+                link.Url = $"{page.Source.RepoBlobUrl.TrimEnd('/')}/{repoRel}" + suffix;
                 continue;
             }
 

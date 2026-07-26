@@ -282,12 +282,15 @@ internal static class Layout
         {
             var home = RepoPaths.RelativeHref(outputPath, lang.HomeOutputPath);
             var count = pagesBySource.TryGetValue(lang.Id, out var pages) ? pages.Count : 0;
+            var blurb = lang.LandingOnly
+                ? $"An early port &mdash; start with the overview, then the {Html(lang.Label)} repo."
+                : $"How to build, host, test and operate a Benzene service in {Html(lang.Label)} &mdash; {count} pages.";
+            var cta = lang.LandingOnly ? $"Open the {Html(lang.Label)} overview" : $"Open the {Html(lang.Label)} docs";
             return $"""
                 <div class="feature-card">
                   <h3>{Html(lang.Label)}</h3>
-                  <p>How to build, host, test and operate a Benzene service in {Html(lang.Label)} &mdash;
-                     {count} pages.</p>
-                  <p><a href="{home}">Open the {Html(lang.Label)} docs &rarr;</a></p>
+                  <p>{blurb}</p>
+                  <p><a href="{home}">{cta} &rarr;</a></p>
                 </div>
                 """;
         }));
