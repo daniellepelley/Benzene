@@ -94,7 +94,7 @@ var specSource = new DocSource
     Label = "Specification",
     UrlPrefix = "docs/specification",
     DocsRootDisk = specRoot,
-    NavFile = "README.md",
+    NavFile = "index.md",   // a proper nested-list nav (README.md uses tables the nav builder can't read)
     IsLanguage = false,
 };
 

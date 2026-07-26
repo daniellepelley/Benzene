@@ -51,7 +51,9 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   spec is its own source — and `plans/` and `DOCUMENTATION_QUICK_REFERENCE.md`). `*.json` fixtures
   are naturally excluded since only `*.md` files are picked up.
 - **Navigation is per-source**, each built from that source's own nav file (`NavTreeBuilder.
-  BuildFromIndexPage`): `index.md` for a language port, `README.md` for the spec. It parses the
+  BuildFromIndexPage`): `index.md` for a language port and for the spec (the spec's `README.md` is
+  a prose overview whose document index is in Markdown tables the nav builder can't read, so
+  `docs/specification/index.md` supplies the sidebar). It parses the
   file's nested bullet list via Markdig's AST (not regex), so the source's index stays the single
   source of truth for its own sidebar. Any page in a source not reachable from its nav still gets a
   sidebar entry under a synthesized "More" group (`SiteBuilder.AppendOrphanedPages`) — nothing is
