@@ -47,7 +47,7 @@ public class AwsEventBuilder
                         MessageAttributes = new Dictionary<string, SNSEvent.MessageAttribute>
                         {
                             {
-                                "topic", new SNSEvent.MessageAttribute
+                                "benzene-topic", new SNSEvent.MessageAttribute
                                 {
                                     Value = _topic,
                                     Type = "String"
@@ -100,7 +100,7 @@ public class AwsEventBuilder
                     MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>
                     {
                         {
-                            "topic", new SQSEvent.MessageAttribute
+                            "benzene-topic", new SQSEvent.MessageAttribute
                             {
                                 StringValue = _topic,
                                 DataType = "String"
@@ -171,7 +171,7 @@ public class AwsEventBuilder
                         MessageAttributes = new Dictionary<string, SNSEvent.MessageAttribute>
                         {
                             {
-                                "topic", new SNSEvent.MessageAttribute
+                                "benzene-topic", new SNSEvent.MessageAttribute
                                 {
                                     Value = topic,
                                     Type = "String"
@@ -224,7 +224,7 @@ public class AwsEventBuilder
                     MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>
                     {
                         {
-                            "topic", new SQSEvent.MessageAttribute
+                            "benzene-topic", new SQSEvent.MessageAttribute
                             {
                                 StringValue = topic,
                                 DataType = "String"
