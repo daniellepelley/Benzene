@@ -1,5 +1,14 @@
 # Documentation Writer Agent Guide
 
+> **Cross-language repo note.** This is the **benzene** repo — the language-neutral specification and
+> the website, with **no language implementation**. The documentation writer here produces
+> **language-neutral** docs (the spec and cross-language guides) and writes **no language-specific
+> code examples** — see `.claude/agents/documentation-writer.md` for the current, authoritative
+> guidance. The .NET-flavoured example requests further down this file are historical: "how to use
+> Benzene in .NET / Go / TypeScript" is written in that language's own repo, by that repo's
+> documentation writer, for that community. Treat the sections below as generic workflow notes, not
+> as a licence to put C# (or any language) in this repo's docs.
+
 ## Overview
 
 The **documentation-writer** agent is a specialized Claude agent designed to create comprehensive, engaging, and accurate documentation for Benzene. It can generate three types of documentation:
