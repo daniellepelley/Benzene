@@ -40,7 +40,7 @@ internal static class MarketingPages
                 + "two. In most stacks each of those is a rewrite; in Benzene it's wiring.",
             [
                 new Card("The handler doesn't change",
-                    "Your logic is a plain C# <a href=\"dotnet/docs/message-handlers.html\">message handler</a> "
+                    "Your logic is a <a href=\"docs/specification/core-concepts.html\">message handler</a> "
                     + "against a topic. Reaching it over a new transport, whether HTTP, a queue, a topic, "
                     + "or an event bus, is a line in the host wiring. The code you already wrote and "
                     + "tested stays untouched."),
@@ -57,14 +57,14 @@ internal static class MarketingPages
                 + "one vendor's event model. Benzene keeps that boundary thin.",
             [
                 new Card("Transport- and vendor-agnostic",
-                    "Handlers, middleware, and topics don't know whether they run behind Lambda, Azure "
-                    + "Functions, a self-hosted worker, or ASP.NET Core. Moving between them is a "
-                    + "<a href=\"dotnet/docs/hosting.html\">hosting change</a>, and the SDK is still there when you "
-                    + "need it."),
-                new Card("Plain C#, no proprietary runtime",
-                    "It's the .NET, dependency injection, and <code>async</code> your team already knows, "
-                    + "with no bespoke DSL or engine to learn. Onboarding a Benzene service is onboarding a "
-                    + "normal C# codebase."),
+                    "Handlers, middleware, and topics don't know whether they run behind a serverless "
+                    + "function, a self-hosted worker, or an HTTP host. Moving between them is a "
+                    + "<a href=\"docs/specification/transport-bindings.html\">binding change</a>, not a rewrite, "
+                    + "and the vendor's own SDK is still there when you need it."),
+                new Card("Idiomatic code, no proprietary runtime",
+                    "A Benzene service is ordinary code in your language &mdash; normal dependency injection "
+                    + "and the async model your team already knows, with no bespoke DSL or engine to learn. "
+                    + "Onboarding a Benzene service is onboarding a normal codebase."),
                 new Card("Open, and yours to fork",
                     "MIT-licensed and open source. There's no per-seat fee, no telemetry calling home, and "
                     + "no vendor roadmap you're hostage to."),
@@ -92,10 +92,11 @@ internal static class MarketingPages
                 new Card("A versioning policy, not surprises",
                     "Semantic versioning, with breaking changes documented in the changelog, so an "
                     + "upgrade is a planned task rather than archaeology."),
-                new Card("Modern .NET, broad reach",
-                    "Built on .NET 10, with core packages also targeting older runtimes for back-compat. It "
-                    + "runs on the hosts your platform team already chose (see "
-                    + "<a href=\"architecture.html\">Architecture</a>)."),
+                new Card("One design, several languages",
+                    "Benzene is defined by a <a href=\"docs/specification/index.html\">language-neutral "
+                    + "specification</a> and implemented as idiomatic ports &mdash; .NET (the reference "
+                    + "implementation), with Go and TypeScript early on the way. It runs on the hosts your "
+                    + "platform team already chose (see <a href=\"architecture.html\">Architecture</a>)."),
                 new Card("Pre-1.0, and candid about it",
                     "Benzene is approaching 1.0; packages are published as prerelease (<code>--prerelease</code>) "
                     + "today. The docs mark anything partial or planned as such rather than overselling it."),
@@ -124,9 +125,9 @@ internal static class MarketingPages
                 + "and the <a href=\"docs/specification/core-concepts.html\">core concepts</a> are small.",
             [
                 new Card("Handlers are the core",
-                    "A <a href=\"dotnet/docs/message-handlers.html\">message handler</a> is "
-                    + "<code>IMessageHandler&lt;TRequest, TResponse&gt;</code>: ordinary C# that takes a "
-                    + "typed request and returns a typed result. It has no idea what transport carried it."),
+                    "A <a href=\"docs/specification/core-concepts.html\">message handler</a> takes a "
+                    + "typed request and returns a typed result &mdash; ordinary code in your language. "
+                    + "It has no idea what transport carried it."),
                 new Card("Transports are adapters",
                     "HTTP, SQS, SNS, Kafka, EventBridge, Event Hub, Service Bus, gRPC. Each is an adapter "
                     + "that maps a native event onto a message and back, so adding a vendor means writing an "
