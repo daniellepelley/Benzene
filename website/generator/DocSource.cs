@@ -34,6 +34,14 @@ internal sealed class DocSource
     public bool IsLanguage { get; init; }
 
     /// <summary>
+    /// The prefix these pages used to live under before the split, if any (e.g. the .NET docs were at
+    /// "docs/…" and are now at "dotnet/docs/…"). When set and different from <see cref="UrlPrefix"/>,
+    /// the generator emits a redirect stub at each legacy path so existing inbound links survive. A
+    /// legacy path that collides with a real emitted page (the hub, a spec page) is skipped.
+    /// </summary>
+    public string? LegacyUrlPrefix { get; init; }
+
+    /// <summary>
     /// Subdirectory prefixes (relative to the docs root, forward-slash, trailing slash) whose *.md
     /// files this source does not own — e.g. the .NET source excludes "specification/" because the
     /// spec is its own source, and "plans/" (internal roadmap docs).

@@ -71,6 +71,27 @@ internal sealed class SiteBuilder
         //    spec and at each language's own docs home. The marketing header's "Docs" link targets it.
         WriteOutput("docs/index.html", Layout.RenderDocsHubPage("docs/index.html", _sources, pagesBySource));
 
+        // 5b. Redirect stubs so links to a source's pre-split paths still resolve (e.g. the .NET docs
+        //     moved from /docs/* to /dotnet/docs/*). A legacy path already occupied by a real page
+        //     (the hub, a spec page) is left alone.
+        var occupied = new HashSet<string>(pagesByDisk.Values.Select(p => p.OutputPath), StringComparer.Ordinal)
+        {
+            "docs/index.html",
+        };
+        var redirectPaths = new List<string>();
+        foreach (var source in _sources)
+        {
+            if (string.IsNullOrEmpty(source.LegacyUrlPrefix) || source.LegacyUrlPrefix == source.UrlPrefix) continue;
+            foreach (var page in pagesBySource[source.Id])
+            {
+                var rel = page.OutputPath[(source.UrlPrefix.Length + 1)..]; // path within the source
+                var legacyPath = $"{source.LegacyUrlPrefix}/{rel}";
+                if (occupied.Contains(legacyPath)) continue;
+                WriteOutput(legacyPath, Layout.RenderRedirectStub(legacyPath, page.OutputPath));
+                redirectPaths.Add(legacyPath);
+            }
+        }
+
         // 6. Hand-authored marketing home + value pages (not markdown-derived) at the site root.
         File.WriteAllText(Path.Combine(_outDir, "index.html"), Layout.RenderMarketingPage("index.html"));
         foreach (var valuePage in MarketingPages.All)
@@ -83,6 +104,7 @@ internal sealed class SiteBuilder
         var outputPaths = pagesByDisk.Values.Select(p => p.OutputPath)
             .Append("index.html")
             .Append("docs/index.html")
+            .Concat(redirectPaths)
             .Concat(MarketingPages.All.Select(p => p.Slug));
         var brokenLinks = SelfCheck(outputPaths);
         if (brokenLinks.Count > 0)
@@ -96,7 +118,8 @@ internal sealed class SiteBuilder
         }
 
         var pageCount = pagesByDisk.Count + 2 + MarketingPages.All.Length;
-        Console.WriteLine($"Generated {pageCount} pages from {_sources.Count} source(s) to {_outDir}");
+        Console.WriteLine(
+            $"Generated {pageCount} pages (+{redirectPaths.Count} redirects) from {_sources.Count} source(s) to {_outDir}");
         return 0;
     }
 

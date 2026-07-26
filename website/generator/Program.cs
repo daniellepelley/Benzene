@@ -65,6 +65,7 @@ var dotnetSource = new DocSource
     DocsRootDisk = dotnetDocsRoot,
     NavFile = "index.md",
     IsLanguage = true,
+    LegacyUrlPrefix = "docs",   // .NET docs were at /docs/* pre-split; redirect old links to /dotnet/docs/*
     ExcludedSubdirs = ["specification/", "plans/"],
     ExcludedFiles = ["DOCUMENTATION_QUICK_REFERENCE.md"],
 };

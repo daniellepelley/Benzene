@@ -439,5 +439,30 @@ internal static class Layout
             """;
     }
 
+    /// <summary>
+    /// A tiny static redirect page emitted at a page's pre-split path (e.g. /docs/getting-started.html)
+    /// pointing at its new home (/dotnet/docs/getting-started.html), so old inbound links survive on a
+    /// plain static host with no server-side redirect rules. Uses a meta refresh + canonical link, with
+    /// a visible fallback link.
+    /// </summary>
+    public static string RenderRedirectStub(string fromOutputPath, string toOutputPath)
+    {
+        var href = RepoPaths.RelativeHref(fromOutputPath, toOutputPath);
+        return $"""
+            <!doctype html>
+            <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url={href}">
+              <link rel="canonical" href="{href}">
+              <title>Moved</title>
+            </head>
+            <body>
+              <p>This page has moved to <a href="{href}">{Html(href)}</a>.</p>
+            </body>
+            </html>
+            """;
+    }
+
     private static string Html(string text) => System.Net.WebUtility.HtmlEncode(text);
 }

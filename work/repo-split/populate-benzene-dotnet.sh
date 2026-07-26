@@ -49,6 +49,7 @@ cp "$OVERLAY/CLAUDE.md"                                   "$STAGE/CLAUDE.md"
 cp "$OVERLAY/docs/index.md"                               "$STAGE/docs/index.md"
 mkdir -p "$STAGE/.github/workflows"
 cp "$OVERLAY/.github/workflows/conformance-drift-check.yml" "$STAGE/.github/workflows/conformance-drift-check.yml"
+cp "$OVERLAY/.github/workflows/notify-website.yml"          "$STAGE/.github/workflows/notify-website.yml"
 
 echo "==> Verify: build standalone + conformance tests"
 ( cd "$STAGE" && dotnet build Benzene.sln --nologo -v q )
