@@ -232,13 +232,13 @@ internal static class Layout
 
     public static string RenderDocsPage(
         string title, string bodyHtml, NavNode nav, string outputPath,
-        DocSource source, IReadOnlyList<DocSource> languages)
+        DocSource source, IReadOnlyList<DocSource> allSources)
     {
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
 
         var sidebar = new StringBuilder();
-        sidebar.Append(LanguageSwitcher(outputPath, source, languages));
+        sidebar.Append(SectionSwitcher(outputPath, source, allSources));
         sidebar.Append("<ul>");
         foreach (var child in nav.Children) RenderNavNode(child, outputPath, sidebar);
         sidebar.Append("</ul>");
@@ -360,29 +360,51 @@ internal static class Layout
     }
 
     /// <summary>
-    /// A no-JS language switcher (a &lt;details&gt; disclosure) shown at the top of the docs sidebar.
-    /// The summary shows the current section (a language, or the spec); opening it lists links to each
-    /// language's docs home and to the spec.
+    /// The docs-sidebar section control. The specification is a **peer** of the language docs, not a
+    /// language: it always shows as its own link (so you can get back to it from any language's docs),
+    /// and the languages sit under a separate no-JS dropdown. On a spec page the spec link is active
+    /// and the dropdown reads "Language guides"; on a language page that language is active and the
+    /// spec link is the way back.
     /// </summary>
-    private static string LanguageSwitcher(string outputPath, DocSource current, IReadOnlyList<DocSource> languages)
+    private static string SectionSwitcher(string outputPath, DocSource current, IReadOnlyList<DocSource> allSources)
     {
-        if (languages.Count == 0) return "";
+        var spec = allSources.FirstOrDefault(s => !s.IsLanguage);
+        var languages = allSources.Where(s => s.IsLanguage).ToList();
+        if (spec == null && languages.Count == 0) return "";
 
-        var items = new StringBuilder();
-        foreach (var lang in languages)
+        var sb = new StringBuilder();
+        sb.Append("<div class=\"section-switcher\">");
+
+        if (spec != null)
         {
-            var href = RepoPaths.RelativeHref(outputPath, lang.HomeOutputPath);
-            var active = lang.Id == current.Id ? " class=\"active\"" : "";
-            items.Append($"<li><a href=\"{href}\"{active}>{Html(lang.Label)}</a></li>");
+            var specHref = RepoPaths.RelativeHref(outputPath, spec.HomeOutputPath);
+            var active = current.IsLanguage ? "" : " active";
+            sb.Append($"<a class=\"section-link{active}\" href=\"{specHref}\">Specification</a>");
         }
 
-        var currentLabel = current.IsLanguage ? current.Label : "Specification";
-        return $"""
-            <details class="lang-switcher">
-              <summary><span class="lang-switcher-label">Language:</span> {Html(currentLabel)}</summary>
-              <ul>{items}</ul>
-            </details>
-            """;
+        if (languages.Count > 0)
+        {
+            var items = new StringBuilder();
+            foreach (var lang in languages)
+            {
+                var href = RepoPaths.RelativeHref(outputPath, lang.HomeOutputPath);
+                var la = lang.Id == current.Id ? " class=\"active\"" : "";
+                items.Append($"<li><a href=\"{href}\"{la}>{Html(lang.Label)}</a></li>");
+            }
+            var summary = current.IsLanguage
+                ? $"<span class=\"lang-switcher-label\">Language:</span> {Html(current.Label)}"
+                : "<span class=\"lang-switcher-label\">Language guides</span>";
+            var open = current.IsLanguage ? "" : " open";
+            sb.Append($"""
+                <details class="lang-switcher"{open}>
+                  <summary>{summary}</summary>
+                  <ul>{items}</ul>
+                </details>
+                """);
+        }
+
+        sb.Append("</div>");
+        return sb.ToString();
     }
 
     private static void RenderNavNode(NavNode node, string fromOutputPath, StringBuilder into)

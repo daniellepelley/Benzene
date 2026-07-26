@@ -45,6 +45,7 @@ internal sealed class SiteBuilder
         }
 
         var languages = _sources.Where(s => s.IsLanguage).ToList();
+        var allSources = _sources.ToList();
 
         // 3. Rewrite links in every page against the global disk index.
         var assetsToCopy = new Dictionary<string, string>(StringComparer.Ordinal); // outputPath -> diskPath
@@ -62,7 +63,7 @@ internal sealed class SiteBuilder
             var nav = navBySource[source.Id];
             foreach (var page in pagesBySource[source.Id])
             {
-                var html = RenderPage(page, nav, languages);
+                var html = RenderPage(page, nav, allSources);
                 WriteOutput(page.OutputPath, html);
             }
         }
@@ -351,7 +352,7 @@ internal sealed class SiteBuilder
         return File.Exists(disk) ? $"demos/{rest}" : null;
     }
 
-    private string RenderPage(Page page, NavNode nav, List<DocSource> languages)
+    private string RenderPage(Page page, NavNode nav, IReadOnlyList<DocSource> allSources)
     {
         using var writer = new StringWriter();
         var renderer = new HtmlRenderer(writer);
@@ -359,7 +360,7 @@ internal sealed class SiteBuilder
         renderer.Render(page.Document);
         var bodyHtml = writer.ToString();
 
-        return Layout.RenderDocsPage(page.Title, bodyHtml, nav, page.OutputPath, page.Source, languages);
+        return Layout.RenderDocsPage(page.Title, bodyHtml, nav, page.OutputPath, page.Source, allSources);
     }
 
     private void WriteOutput(string outputPath, string html)

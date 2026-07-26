@@ -107,11 +107,31 @@ a { color: var(--accent); }
   letter-spacing: 0.04em;
 }
 
-/* Language switcher — a no-JS <details> disclosure at the top of the docs sidebar. */
-.lang-switcher {
+/* Section switcher — the spec is a peer link; languages sit under a no-JS <details> dropdown. */
+.section-switcher {
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border, #e2e2e2);
+}
+.section-switcher .section-link {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  margin-bottom: 0.4rem;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--fg);
+}
+.section-switcher .section-link.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.section-switcher .section-link:not(.active):hover { border-color: var(--accent); color: var(--accent); }
+
+.lang-switcher {
+  margin: 0;
 }
 .lang-switcher > summary {
   cursor: pointer;
