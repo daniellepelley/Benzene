@@ -98,7 +98,20 @@ var specSource = new DocSource
     IsLanguage = false,
 };
 
-var sources = new List<DocSource> { specSource, dotnetSource };
+var sources = new List<DocSource> { specSource };
+
+// Include the .NET source when we actually have its docs: an explicit --dotnet-docs, or (pre-cutover,
+// for local runs) benzene's own docs/index.md. After the cutover benzene no longer carries the .NET
+// docs, so a local run with no --dotnet-docs just builds the spec + hub (+ any --source languages).
+if (dotnetDocs != null || File.Exists(Path.Combine(dotnetDocsRoot, "index.md")))
+{
+    sources.Add(dotnetSource);
+}
+else
+{
+    Console.WriteLine("note: no .NET docs found (no --dotnet-docs, no docs/index.md) — building the spec, hub, and any --source languages only.");
+}
+
 sources.AddRange(extraSources);
 
 return new SiteBuilder(repoRoot, outDir, sources).Run();
