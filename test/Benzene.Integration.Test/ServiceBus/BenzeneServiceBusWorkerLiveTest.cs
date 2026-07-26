@@ -87,7 +87,7 @@ public class BenzeneServiceBusWorkerLiveTest
             try
             {
                 var message = new ServiceBusMessage(Defaults.Message);
-                message.ApplicationProperties["topic"] = Defaults.Topic;
+                message.ApplicationProperties["benzene-topic"] = Defaults.Topic;
 
                 await sender.SendMessageAsync(message);
                 return;

@@ -22,7 +22,7 @@ public class EventHubContextConverterTest
 
         var context = await converter.CreateRequestAsync(contextIn);
 
-        Assert.Equal(Defaults.Topic, context.EventData.Properties["topic"]);
+        Assert.Equal(Defaults.Topic, context.EventData.Properties["benzene-topic"]);
     }
 
     [Fact]

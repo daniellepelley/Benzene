@@ -22,7 +22,7 @@ public class ServiceBusContextConverterTest
 
         var context = await converter.CreateRequestAsync(contextIn);
 
-        Assert.Equal(Defaults.Topic, context.Message.ApplicationProperties["topic"]);
+        Assert.Equal(Defaults.Topic, context.Message.ApplicationProperties["benzene-topic"]);
     }
 
     [Fact]

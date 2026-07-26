@@ -17,7 +17,7 @@ public static class MessageBuilderExtensions
     public static SNSEvent AsSns<T>(this IMessageBuilder<T> source, ISerializer serializer)
     {
         var headers = source.Headers.ToDictionary(x => x.Key, x => x.Value);
-        headers.Add("topic", source.Topic);
+        headers.Add("benzene-topic", source.Topic);
         return new SNSEvent
         {
             Records = new List<SNSEvent.SNSRecord>

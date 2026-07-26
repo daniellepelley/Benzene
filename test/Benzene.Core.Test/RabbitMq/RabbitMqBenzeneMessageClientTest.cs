@@ -107,7 +107,7 @@ public class RabbitMqBenzeneMessageClientTest
         Assert.NotNull(capturedProps!.Headers);
         Assert.Equal("abc-123", Encoding.UTF8.GetString((byte[])capturedProps.Headers!["correlation-id"]!));
         // The topic is forwarded as a header too, so a Benzene consumer's header-first topic getter round-trips it.
-        Assert.Equal("orderCreated", Encoding.UTF8.GetString((byte[])capturedProps.Headers!["topic"]!));
+        Assert.Equal("orderCreated", Encoding.UTF8.GetString((byte[])capturedProps.Headers!["benzene-topic"]!));
     }
 
     [Fact]

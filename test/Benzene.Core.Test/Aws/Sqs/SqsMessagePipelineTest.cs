@@ -293,7 +293,7 @@ public class SqsMessagePipelineTest
                 Body = Defaults.Message,
                 MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>
                 {
-                    {"topic", new SQSEvent.MessageAttribute { StringValue = Defaults.Topic}}
+                    {"benzene-topic", new SQSEvent.MessageAttribute { StringValue = Defaults.Topic}}
                 }
             });
 
@@ -406,7 +406,7 @@ public class SqsMessagePipelineTest
         mockAmazonSimpleNotificationService.Verify(x => 
             x.PublishAsync(It.Is<PublishRequest>(x => x
                 .Message.Contains("foo") &&
-                x.MessageAttributes["topic"].StringValue == Defaults.Topic
+                x.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
         Assert.Empty(batchItems.BatchItemFailures);
     }

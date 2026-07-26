@@ -15,7 +15,7 @@ public class SnsMessageTopicGetter : IMessageTopicGetter<SnsRecordContext>
     /// <c>DependencyInjectionExtensions.AddSns(topicAttributeKey)</c> / <c>Extensions.UseSns(...,
     /// topicAttributeKey)</c>) to consume messages a non-Benzene producer routes on another attribute.
     /// </summary>
-    public const string DefaultTopicAttribute = "topic";
+    public const string DefaultTopicAttribute = "benzene-topic";
 
     private readonly string _topicAttributeKey;
 
@@ -24,7 +24,7 @@ public class SnsMessageTopicGetter : IMessageTopicGetter<SnsRecordContext>
     /// </summary>
     /// <param name="topicAttributeKey">
     /// The message attribute the topic is carried on. Defaults to
-    /// <see cref="DefaultTopicAttribute"/> (<c>"topic"</c>).
+    /// <see cref="DefaultTopicAttribute"/> (<c>benzene-topic</c>).
     /// </param>
     public SnsMessageTopicGetter(string topicAttributeKey = DefaultTopicAttribute)
     {

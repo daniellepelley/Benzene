@@ -51,7 +51,7 @@ public class SnsContextConverterTest
         var result = await converter.CreateRequestAsync(context);
 
         Assert.True(result.Request.MessageAttributes.ContainsKey("topic"));
-        Assert.Equal("order:created", result.Request.MessageAttributes["topic"].StringValue);
+        Assert.Equal("order:created", result.Request.MessageAttributes["benzene-topic"].StringValue);
     }
 
     [Fact]
@@ -223,6 +223,6 @@ public class SnsContextConverterTest
         var result = await converter.CreateRequestAsync(context);
 
         Assert.True(result.Request.MessageAttributes.ContainsKey("topic"));
-        Assert.Equal("order:created", result.Request.MessageAttributes["topic"].StringValue);
+        Assert.Equal("order:created", result.Request.MessageAttributes["benzene-topic"].StringValue);
     }
 }

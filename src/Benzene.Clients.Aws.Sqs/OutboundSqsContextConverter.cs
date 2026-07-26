@@ -28,7 +28,7 @@ public class OutboundSqsContextConverter : IContextConverter<OutboundContext, Sq
     /// hard-coded value — pass a different key to interoperate with a consumer that routes on another
     /// attribute. Keep it in sync with the consumer's attribute key.
     /// </summary>
-    public const string DefaultTopicAttribute = "topic";
+    public const string DefaultTopicAttribute = "benzene-topic";
 
     private readonly ISerializer _serializer;
     private readonly string _queueUrl;

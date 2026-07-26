@@ -42,7 +42,7 @@ public class OutboundSqsContextConverterTest
         mockAmazonSqs.Verify(x => x.SendMessageAsync(
             It.Is<SendMessageRequest>(message =>
                 message.QueueUrl == Defaults.SqsQueueUrl &&
-                message.MessageAttributes["topic"].StringValue == Defaults.Topic &&
+                message.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic &&
                 JsonConvert.DeserializeObject<ExampleRequestPayload>(message.MessageBody).Name == "foo"
             ), It.IsAny<CancellationToken>()));
 

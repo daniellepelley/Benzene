@@ -8,7 +8,7 @@ namespace Benzene.Azure.ServiceBus.TestHelpers;
 /// <summary>
 /// Test helpers that turn a <see cref="IMessageBuilder{T}"/> into a <see cref="ServiceBusReceivedMessage"/>,
 /// so a component test can push the demo message through a <see cref="ServiceBusWorkerBenzeneTestHost"/>
-/// exactly as the broker would deliver it. The topic rides as the <c>"topic"</c> application property
+/// exactly as the broker would deliver it. The topic rides as the <c>benzene-topic</c> application property
 /// and the message body is the raw serialized payload.
 /// </summary>
 public static class MessageBuilderExtensions
@@ -34,7 +34,7 @@ public static class MessageBuilderExtensions
     /// <returns>The Service Bus message.</returns>
     public static ServiceBusReceivedMessage AsAzureServiceBusMessage<T>(this IMessageBuilder<T> source, ISerializer serializer)
     {
-        var properties = new Dictionary<string, object> { { "topic", source.Topic } };
+        var properties = new Dictionary<string, object> { { "benzene-topic", source.Topic } };
         foreach (var header in source.Headers)
         {
             properties[header.Key] = header.Value;

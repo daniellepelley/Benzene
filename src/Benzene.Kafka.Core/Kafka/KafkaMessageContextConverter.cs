@@ -18,7 +18,7 @@ public class KafkaMessageContextConverter<TContext> : IContextConverter<TContext
     // a Benzene SQS/SNS source surfaces its routing topic as a header, and forwarding it here would
     // re-route the produced message to the consumed topic - an infinite loop if this service consumes
     // it. An outbound topic is always explicit, never inherited from the handled message's headers.
-    private const string TopicHeaderKey = "topic";
+    private const string TopicHeaderKey = "benzene-topic";
 
     private readonly IMessageTopicGetter<TContext> _messageTopicGetter;
     private readonly IMessageBodyGetter<TContext> _messageBodyGetter;

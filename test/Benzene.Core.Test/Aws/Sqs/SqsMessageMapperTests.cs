@@ -17,7 +17,7 @@ namespace Benzene.Test.Aws.Sqs
                 Body = "some-message",
                 MessageAttributes = new Dictionary<string, SQSEvent.MessageAttribute>
                 {
-                    { "topic", new SQSEvent.MessageAttribute { StringValue = "some-topic" } }
+                    { "benzene-topic", new SQSEvent.MessageAttribute { StringValue = "some-topic" } }
                 }
             });
 

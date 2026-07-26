@@ -37,7 +37,7 @@ public class OutboundHeaderForwardingTest
         var context = await converter.CreateRequestAsync(CreateContext());
 
         Assert.Equal(HeaderValue, context.Request.MessageAttributes[HeaderKey].StringValue);
-        Assert.Equal("my-topic", context.Request.MessageAttributes["topic"].StringValue);
+        Assert.Equal("my-topic", context.Request.MessageAttributes["benzene-topic"].StringValue);
     }
 
     [Fact]

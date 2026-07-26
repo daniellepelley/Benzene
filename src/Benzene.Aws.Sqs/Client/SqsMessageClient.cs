@@ -17,7 +17,7 @@ public class SqsMessageClient : ISqsClient
     /// <see cref="SqsMessageClient(IAmazonSQS, string, string)"/> to interoperate with a consumer that
     /// routes on another attribute. Keep it in sync with the consumer's attribute key.
     /// </summary>
-    public const string DefaultTopicAttribute = "topic";
+    public const string DefaultTopicAttribute = "benzene-topic";
 
     /// <summary>
     /// The default message-attribute key the status is written to. It is a single default, not a
@@ -39,7 +39,7 @@ public class SqsMessageClient : ISqsClient
     /// <param name="queueUrl">The URL of the queue to publish to.</param>
     /// <param name="topicAttributeKey">
     /// The message attribute the topic is written to. Defaults to
-    /// <see cref="DefaultTopicAttribute"/> (<c>"topic"</c>).
+    /// <see cref="DefaultTopicAttribute"/> (<c>benzene-topic</c>).
     /// </param>
     /// <param name="statusAttributeKey">
     /// The message attribute the status is written to. Defaults to

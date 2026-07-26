@@ -16,5 +16,5 @@ public static class RabbitMqConstants
     /// <see cref="RabbitMqSendMessage.RabbitMqBenzeneMessageClient"/>, or the
     /// <see cref="RabbitMqSendMessage.RabbitMqContextConverter{T}"/> constructor.
     /// </summary>
-    public const string DefaultTopicHeader = "topic";
+    public const string DefaultTopicHeader = "benzene-topic";
 }

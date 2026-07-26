@@ -78,15 +78,34 @@ Headers are the portable metadata channel. Every transport binding maps its nati
 (HTTP headers, gRPC metadata, SQS/SNS message attributes, Kafka headers, the envelope's `headers`
 field) to and from this flat string→string dictionary.
 
-| Header | Direction | Meaning |
-|---|---|---|
-| `traceparent`, `tracestate` | both | W3C Trace Context, verbatim per the W3C spec. This is Benzene's cross-service correlation contract. |
-| `x-correlation-id` | outbound | Legacy correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound (the legacy inbound pickup middleware was removed pre-1.0); honoring a partner's correlation header is application middleware, not a framework contract. |
-| `topic` | inbound (queue transports) | On transports where the envelope isn't used but native attributes exist (SQS/SNS message attributes), the topic travels as an attribute named `topic`. |
-| `_benzeneHeaders` | both (EventBridge) | On transports with no native per-message attributes (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. |
-| `benzene-status` | outbound (gRPC trailer) | See §4.2. |
-| `content-type` | outbound | Response content type where the transport has no native slot for it. |
-| `benzene-version` | both | **Draft, not yet implemented** — the request/response payload's schema version, for topics using payload versioning. See [versioning.md](versioning.md). |
+Every header below is labelled with the **tier** that says who must implement it. Without this, a
+porting author cannot tell a mandatory wire contract from a convention of one optional middleware:
+
+| Tier | Meaning |
+|---|---|
+| **A — core** | Part of the wire contract. An implementation that omits it cannot interoperate. |
+| **B — profile** | Required to be a conformant Cloud Service ([cloud-service-profile.md](cloud-service-profile.md)), not to interoperate at the message level. |
+| **C — add-on** | Only meaningful if the application wired the corresponding optional middleware. Benzene neither requires nor fabricates these. |
+| **D — binding** | A detail of one transport binding, specified where that binding is ([transport-bindings.md](transport-bindings.md), or §4 here for the protocol mappings). |
+
+| Header | Tier | Direction | Meaning |
+|---|---|---|---|
+| `benzene-topic` | **A** | inbound (queue/stream transports) | On transports where the envelope isn't used but native metadata exists (SQS/SNS message attributes, Service Bus/Event Hub properties, Kafka/RabbitMQ headers, Pub/Sub attributes), the topic travels as an attribute of this name. The routing key: without it such a transport cannot dispatch. |
+| `content-type` | **A** | outbound | Response content type where the transport has no native slot for it. A borrowed name (HTTP/MIME), used verbatim. |
+| `benzene-version` | **C** | both | The payload's schema version, for topics using payload versioning. Read from an ordered, configurable fallback list — default `benzene-version`, then `version`, then `x-version` — and written as `benzene-version`. Only meaningful for a service that opted into versioning; see [versioning.md](versioning.md) for the fallback-list rules and why the list must be configurable. |
+| `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these and does not require them. **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
+| `x-correlation-id` | **C** | outbound | A business correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound; honouring a partner's correlation header is application middleware, not a framework contract. One convention among several — Benzene does not own this name. |
+| `_benzeneHeaders` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. Its form differs deliberately: it is a **JSON field**, so it follows the camelCase JSON convention rather than the kebab-case header one, with the leading underscore marking it reserved inside a payload the application owns. |
+
+`benzene-status` is **not** listed here: it is a gRPC-only trailer, specified with the gRPC mapping
+it serves in [§4.2](#42-grpc). It appeared in this table historically, which made it read as a
+universal header.
+
+**Naming.** Names Benzene invents carry the `benzene-` marker, because a header sits in a namespace
+shared with the application and the transport. Names Benzene *borrows* — `content-type`,
+`traceparent`, `tracestate`, `x-correlation-id` — are never renamed: interoperating with the
+standard is the entire reason for using them. (The full rule, including why the envelope's own
+`topic` field is unprefixed while this header is not, is in `work/benzene-naming-principle.md`.)
 
 Binary metadata (e.g. gRPC `-bin` keys) is excluded from the dictionary in both directions.
 Duplicate keys: last value wins.

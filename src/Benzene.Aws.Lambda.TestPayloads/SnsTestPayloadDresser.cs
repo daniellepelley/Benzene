@@ -23,7 +23,7 @@ public class SnsTestPayloadDresser : ITestPayloadDresser
             return null;
         }
 
-        var headers = new Dictionary<string, string>(context.Headers) { ["topic"] = context.Topic };
+        var headers = new Dictionary<string, string>(context.Headers) { ["benzene-topic"] = context.Topic };
 
         var snsEvent = new SNSEvent
         {

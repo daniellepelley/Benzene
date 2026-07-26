@@ -97,7 +97,7 @@ public class BenzeneEventHubWorkerLiveTest
             try
             {
                 var eventData = new EventData(new BinaryData(Defaults.Message));
-                eventData.Properties["topic"] = Defaults.Topic;
+                eventData.Properties["benzene-topic"] = Defaults.Topic;
 
                 await producerClient.SendAsync(new[] { eventData });
                 return;

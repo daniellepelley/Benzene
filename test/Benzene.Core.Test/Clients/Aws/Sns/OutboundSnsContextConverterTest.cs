@@ -73,7 +73,7 @@ public class OutboundSnsContextConverterTest
 
         mockAmazonSns.Verify(x => x.PublishAsync(
             It.Is<PublishRequest>(message =>
-                message.MessageAttributes["topic"].StringValue == Defaults.Topic
+                message.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
     }
 

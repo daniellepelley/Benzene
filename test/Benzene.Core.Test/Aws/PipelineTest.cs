@@ -60,7 +60,7 @@ public class PipelineTest
         mockAmazonSimpleNotificationService.Verify(x => 
             x.PublishAsync(It.Is<PublishRequest>(x => x
                 .Message.Contains("foo") &&
-                x.MessageAttributes["topic"].StringValue == Defaults.Topic
+                x.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
         Assert.Empty(batchItems.BatchItemFailures);
     }

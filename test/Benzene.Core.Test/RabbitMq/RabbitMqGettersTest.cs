@@ -27,7 +27,7 @@ public class RabbitMqGettersTest
     [Fact]
     public void TopicGetter_PrefersTopicHeader_OverRoutingKey()
     {
-        var headers = new Dictionary<string, object?> { ["topic"] = Encoding.UTF8.GetBytes("orderCreated") };
+        var headers = new Dictionary<string, object?> { ["benzene-topic"] = Encoding.UTF8.GetBytes("orderCreated") };
         var context = CreateContext(routingKey: "some.routing.key", headers: headers);
 
         var topic = new RabbitMqMessageTopicGetter().GetTopic(context);
@@ -38,7 +38,7 @@ public class RabbitMqGettersTest
     [Fact]
     public void TopicGetter_AcceptsStringHeaderValue()
     {
-        var headers = new Dictionary<string, object?> { ["topic"] = "orderShipped" };
+        var headers = new Dictionary<string, object?> { ["benzene-topic"] = "orderShipped" };
         var context = CreateContext(headers: headers);
 
         var topic = new RabbitMqMessageTopicGetter().GetTopic(context);
@@ -72,7 +72,7 @@ public class RabbitMqGettersTest
     {
         // A message carrying only the default "topic" header should fall back to the routing key when
         // the getter is configured to read a different header, proving the key is honored end-to-end.
-        var headers = new Dictionary<string, object?> { ["topic"] = Encoding.UTF8.GetBytes("orderCreated") };
+        var headers = new Dictionary<string, object?> { ["benzene-topic"] = Encoding.UTF8.GetBytes("orderCreated") };
         var context = CreateContext(routingKey: "orderPlaced", headers: headers);
 
         var topic = new RabbitMqMessageTopicGetter("x-my-topic").GetTopic(context);

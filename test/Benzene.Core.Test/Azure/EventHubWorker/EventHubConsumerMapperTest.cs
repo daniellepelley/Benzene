@@ -23,7 +23,7 @@ public class EventHubConsumerMapperTest
     [Fact]
     public void GetTopic_ReturnsTopicProperty()
     {
-        var context = CreateContext(properties: ("topic", "some-topic"));
+        var context = CreateContext(properties: ("benzene-topic", "some-topic"));
 
         var topic = new EventHubConsumerMessageTopicGetter().GetTopic(context);
 

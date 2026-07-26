@@ -21,9 +21,9 @@ public class SnsContextConverter<T> : IContextConverter<IBenzeneClientContext<T,
     /// The default message-attribute key the Benzene routing topic is written to. It is a single
     /// default, not a hard-coded value — pass a different key to interoperate with a consumer that
     /// routes on another attribute. Keep it in sync with the consumer's attribute key
-    /// (<c>SnsMessageTopicGetter</c> reads <c>"topic"</c> by default).
+    /// (<c>SnsMessageTopicGetter</c> reads <c>benzene-topic</c> by default).
     /// </summary>
-    public const string DefaultTopicAttribute = "topic";
+    public const string DefaultTopicAttribute = "benzene-topic";
 
     private readonly ISerializer _serializer;
     private readonly string _topicArn;

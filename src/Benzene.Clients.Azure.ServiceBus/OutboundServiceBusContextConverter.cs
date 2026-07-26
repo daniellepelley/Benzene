@@ -27,7 +27,7 @@ public class OutboundServiceBusContextConverter : IContextConverter<OutboundCont
     /// hard-coded value — pass a different key to interoperate with a consumer that routes on another
     /// application property. Keep it in sync with the consumer's property key.
     /// </summary>
-    public const string DefaultTopicProperty = "topic";
+    public const string DefaultTopicProperty = "benzene-topic";
 
     private readonly ISerializer _serializer;
     private readonly string _topicPropertyKey;

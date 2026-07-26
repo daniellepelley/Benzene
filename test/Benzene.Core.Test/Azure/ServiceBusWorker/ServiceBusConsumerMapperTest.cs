@@ -22,7 +22,7 @@ public class ServiceBusConsumerMapperTest
     [Fact]
     public void GetTopic_ReturnsTopicApplicationProperty()
     {
-        var context = CreateContext(new Dictionary<string, object> { { "topic", "some-topic" } });
+        var context = CreateContext(new Dictionary<string, object> { { "benzene-topic", "some-topic" } });
 
         var topic = new ServiceBusConsumerMessageTopicGetter().GetTopic(context);
 

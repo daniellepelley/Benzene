@@ -43,7 +43,7 @@ public class EventHubConsumerRealPipelineTest
         // package deliberately doesn't use the BenzeneMessage envelope that AsEventHubBenzeneMessage
         // builds), so hand-build the EventData to match how UseEventHub's mappers read it.
         var eventData = new EventData(new BinaryData(new JsonSerializer().Serialize(Defaults.MessageAsObject)));
-        eventData.Properties["topic"] = Defaults.Topic;
+        eventData.Properties["benzene-topic"] = Defaults.Topic;
 
         await application.HandleAsync(eventData, resolverFactory);
 

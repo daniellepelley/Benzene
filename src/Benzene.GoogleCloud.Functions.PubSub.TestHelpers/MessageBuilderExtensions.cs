@@ -13,7 +13,7 @@ public static class MessageBuilderExtensions
 {
     /// <summary>
     /// Converts <paramref name="source"/> into a <see cref="MessagePublishedData"/>, matching
-    /// <see cref="PubSubMessageTopicGetter"/>'s <c>"topic"</c>-attribute convention and
+    /// <see cref="PubSubMessageTopicGetter"/>'s <c>benzene-topic</c>-attribute convention and
     /// <see cref="PubSubMessageHeadersGetter"/>'s attributes-as-headers convention.
     /// </summary>
     /// <typeparam name="T">The message payload type.</typeparam>
@@ -27,7 +27,7 @@ public static class MessageBuilderExtensions
             MessageId = Guid.NewGuid().ToString()
         };
 
-        message.Attributes["topic"] = source.Topic;
+        message.Attributes["benzene-topic"] = source.Topic;
         foreach (var header in source.Headers)
         {
             message.Attributes[header.Key] = header.Value;

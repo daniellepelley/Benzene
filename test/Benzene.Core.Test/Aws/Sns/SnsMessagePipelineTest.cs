@@ -224,7 +224,7 @@ public class SnsMessagePipelineTest
                 Message = Defaults.Message,
                 MessageAttributes = new Dictionary<string, SNSEvent.MessageAttribute>
                 {
-                    { "topic", new SNSEvent.MessageAttribute { Value = Defaults.Topic } },
+                    { "benzene-topic", new SNSEvent.MessageAttribute { Value = Defaults.Topic } },
                 }
             }
         });
@@ -304,7 +304,7 @@ public class SnsMessagePipelineTest
 
         mockSqsClient.Verify(x => x.SendMessageAsync(It.Is<SendMessageRequest>(m =>
             m.MessageBody == Defaults.Message &&
-            m.MessageAttributes["topic"].StringValue == Defaults.Topic
+            m.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
     }
 
@@ -340,7 +340,7 @@ public class SnsMessagePipelineTest
 
         mockSqsClient.Verify(x => x.SendMessageAsync(It.Is<SendMessageRequest>(m =>
             m.MessageBody == Defaults.Message &&
-            m.MessageAttributes["topic"].StringValue == Defaults.Topic
+            m.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
     }
 
@@ -374,7 +374,7 @@ public class SnsMessagePipelineTest
 
         mockSqsClient.Verify(x => x.SendMessageAsync(It.Is<SendMessageRequest>(m =>
             m.MessageBody == Defaults.Message &&
-            m.MessageAttributes["topic"].StringValue == Defaults.Topic
+            m.MessageAttributes["benzene-topic"].StringValue == Defaults.Topic
             ), It.IsAny<CancellationToken>()));
 
         Assert.True(isSuccessful);

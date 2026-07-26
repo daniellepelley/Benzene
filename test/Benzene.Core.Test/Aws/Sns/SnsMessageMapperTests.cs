@@ -19,7 +19,7 @@ namespace Benzene.Test.Aws.Sns
                     Message = "some-message",
                     MessageAttributes = new Dictionary<string, SNSEvent.MessageAttribute>
                     {
-                        {"topic", new SNSEvent.MessageAttribute { Value = "some-topic"}}
+                        {"benzene-topic", new SNSEvent.MessageAttribute { Value = "some-topic"}}
                     }
                 }
             });

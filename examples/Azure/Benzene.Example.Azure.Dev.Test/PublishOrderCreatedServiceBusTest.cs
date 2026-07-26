@@ -61,7 +61,7 @@ public class PublishOrderCreatedServiceBusTest : IClassFixture<ServiceBusEmulato
         //    application property and JSON body the egress route puts there.
         var messages = await ReceiveAllAsync(client);
         var message = Assert.Single(messages);
-        Assert.Equal(MessageTopicNames.OrderCreated, message.ApplicationProperties["topic"]);
+        Assert.Equal(MessageTopicNames.OrderCreated, message.ApplicationProperties["benzene-topic"]);
         var delivered = JsonSerializer.Deserialize<OrderCreatedEvent>(message.Body.ToString(), JsonOptions);
         Assert.Equal(orderCreated.Id, delivered!.Id);
         Assert.Equal("acme", delivered.Name);

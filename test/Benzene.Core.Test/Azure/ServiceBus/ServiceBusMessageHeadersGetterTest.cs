@@ -15,14 +15,14 @@ public class ServiceBusMessageHeadersGetterTest
             body: new BinaryData("some-message"),
             properties: new Dictionary<string, object>
             {
-                { "topic", "some-topic" },
+                { "benzene-topic", "some-topic" },
                 { "count", 5 }
             });
         var context = new ServiceBusContext(message);
 
         var headers = new ServiceBusMessageHeadersGetter().GetHeaders(context);
 
-        Assert.Equal("some-topic", headers["topic"]);
+        Assert.Equal("some-topic", headers["benzene-topic"]);
         Assert.False(headers.ContainsKey("count"));
     }
 }

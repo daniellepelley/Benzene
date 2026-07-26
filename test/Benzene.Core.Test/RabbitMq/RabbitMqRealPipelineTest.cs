@@ -46,7 +46,7 @@ public class RabbitMqRealPipelineTest
         var body = Encoding.UTF8.GetBytes(new JsonSerializer().Serialize(Defaults.MessageAsObject));
         var properties = new BasicProperties
         {
-            Headers = new Dictionary<string, object?> { ["topic"] = Encoding.UTF8.GetBytes(Defaults.Topic) },
+            Headers = new Dictionary<string, object?> { ["benzene-topic"] = Encoding.UTF8.GetBytes(Defaults.Topic) },
         };
         var delivery = new BasicDeliverEventArgs("tag", 1, false, "exchange", Defaults.Topic, properties, body);
 

@@ -9,7 +9,7 @@ namespace Benzene.Azure.EventHub.TestHelpers;
 /// Test helpers that turn a <see cref="IMessageBuilder{T}"/> into an <see cref="EventData"/> for the
 /// self-hosted Event Hub consumer, so a component test can push the demo message through an
 /// <see cref="EventHubWorkerBenzeneTestHost"/> exactly as the hub would deliver it. The consumer routes
-/// by the <c>"topic"</c> event property (unlike the Azure Functions Event Hub trigger's envelope body),
+/// by the <c>benzene-topic</c> event property (unlike the Azure Functions Event Hub trigger's envelope body),
 /// so the topic rides as a property and the message body is the raw serialized payload.
 /// </summary>
 public static class MessageBuilderExtensions

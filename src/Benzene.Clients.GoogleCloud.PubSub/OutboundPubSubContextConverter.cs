@@ -13,7 +13,7 @@ namespace Benzene.Clients.GoogleCloud.PubSub;
 /// Converts an outbound <see cref="OutboundContext"/> to a <see cref="PubSubSendMessageContext"/>, so an
 /// outbound route (<c>OutboundRoutingBuilder.Route</c>) can publish via Pub/Sub. The
 /// <see cref="OutboundContext"/> counterpart of the inbound <c>PubSubMessageTopicGetter</c>: it writes
-/// the Benzene routing topic to the same <c>"topic"</c> message attribute the inbound adapter reads.
+/// the Benzene routing topic to the same <c>benzene-topic</c> message attribute the inbound adapter reads.
 /// </summary>
 /// <remarks>
 /// Pub/Sub is fire-and-acknowledge (a successful publish returns a server message id, no payload), so a
@@ -23,10 +23,10 @@ public class OutboundPubSubContextConverter : IContextConverter<OutboundContext,
 {
     /// <summary>
     /// The default message-attribute key the topic is written to — kept in sync with the inbound
-    /// consumer's attribute key (Pub/Sub routes by the <c>"topic"</c> attribute, not the Pub/Sub topic
+    /// consumer's attribute key (Pub/Sub routes by the <c>benzene-topic</c> attribute, not the Pub/Sub topic
     /// name). Pass a different key to interoperate with a consumer routing on another attribute.
     /// </summary>
-    public const string DefaultTopicAttribute = "topic";
+    public const string DefaultTopicAttribute = "benzene-topic";
 
     private readonly ISerializer _serializer;
     private readonly TopicName _topicName;

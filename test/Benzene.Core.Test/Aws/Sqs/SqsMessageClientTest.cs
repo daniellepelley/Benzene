@@ -24,7 +24,7 @@ public class SqsMessageClientTest
 
         mockSqs.Verify(x => x.SendMessageAsync(
             It.Is<SendMessageRequest>(r =>
-                r.MessageAttributes["topic"].StringValue == "some-topic" &&
+                r.MessageAttributes["benzene-topic"].StringValue == "some-topic" &&
                 r.MessageAttributes["status"].StringValue == "ok"),
             It.IsAny<CancellationToken>()));
     }

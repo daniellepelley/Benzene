@@ -14,7 +14,7 @@ public class ServiceBusMessageTopicGetterTest
     {
         var message = ServiceBusModelFactory.ServiceBusReceivedMessage(
             body: new BinaryData("some-message"),
-            properties: new Dictionary<string, object> { { "topic", "some-topic" } });
+            properties: new Dictionary<string, object> { { "benzene-topic", "some-topic" } });
         var context = new ServiceBusContext(message);
 
         var topic = new ServiceBusMessageTopicGetter().GetTopic(context);

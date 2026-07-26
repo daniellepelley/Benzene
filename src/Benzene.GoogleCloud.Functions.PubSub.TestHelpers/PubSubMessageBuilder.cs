@@ -46,10 +46,10 @@ public class PubSubMessageBuilder
         return this;
     }
 
-    /// <summary>Sets the <c>"topic"</c> attribute <see cref="PubSubMessageTopicGetter"/> reads for routing.</summary>
+    /// <summary>Sets the <c>benzene-topic</c> attribute <see cref="PubSubMessageTopicGetter"/> reads for routing.</summary>
     /// <param name="topic">The topic to route this message to.</param>
     /// <returns>This instance, for method chaining.</returns>
-    public PubSubMessageBuilder WithTopic(string topic) => WithAttribute("topic", topic);
+    public PubSubMessageBuilder WithTopic(string topic) => WithAttribute("benzene-topic", topic);
 
     /// <summary>Sets the Pub/Sub message ID.</summary>
     /// <param name="messageId">The message ID.</param>

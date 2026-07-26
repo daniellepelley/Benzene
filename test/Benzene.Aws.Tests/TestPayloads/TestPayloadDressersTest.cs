@@ -34,7 +34,7 @@ public class TestPayloadDressersTest
         var record = Assert.Single(snsEvent.Records);
         Assert.Equal("aws:sns", record.EventSource);
         Assert.Equal(Body, record.Sns.Message);
-        Assert.Equal(Topic, record.Sns.MessageAttributes["topic"].Value);
+        Assert.Equal(Topic, record.Sns.MessageAttributes["benzene-topic"].Value);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class TestPayloadDressersTest
         var record = Assert.Single(sqsEvent.Records);
         Assert.Equal("aws:sqs", record.EventSource);
         Assert.Equal(Body, record.Body);
-        Assert.Equal(Topic, record.MessageAttributes["topic"].StringValue);
+        Assert.Equal(Topic, record.MessageAttributes["benzene-topic"].StringValue);
         // Deterministic placeholder id (no random Guid) so the manifest is stable per build.
         Assert.Equal("00000000-0000-0000-0000-000000000000", record.MessageId);
     }

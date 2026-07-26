@@ -68,7 +68,7 @@ public class PublishOrderCreatedLocalStackTest : IClassFixture<LocalStackFixture
         // 4. Drain the real queue and assert the message actually arrived on the wire.
         var messages = await ReceiveAllAsync(sqs, queueUrl);
         var message = Assert.Single(messages);
-        Assert.Equal("order_created", message.MessageAttributes["topic"].StringValue);
+        Assert.Equal("order_created", message.MessageAttributes["benzene-topic"].StringValue);
         var delivered = JsonConvert.DeserializeObject<OrderCreatedEvent>(message.Body);
         Assert.Equal(orderCreated.Id, delivered!.Id);
         Assert.Equal("acme", delivered.Name);

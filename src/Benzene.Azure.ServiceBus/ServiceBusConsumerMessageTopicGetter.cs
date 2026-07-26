@@ -16,7 +16,7 @@ public class ServiceBusConsumerMessageTopicGetter : IMessageTopicGetter<ServiceB
     /// <c>DependencyInjectionExtensions.AddServiceBusConsumer(topicPropertyKey)</c>) to consume messages
     /// a non-Benzene producer routes on another application property.
     /// </summary>
-    public const string DefaultTopicProperty = "topic";
+    public const string DefaultTopicProperty = "benzene-topic";
 
     private readonly string _topicPropertyKey;
 
@@ -25,7 +25,7 @@ public class ServiceBusConsumerMessageTopicGetter : IMessageTopicGetter<ServiceB
     /// </summary>
     /// <param name="topicPropertyKey">
     /// The application property the topic is carried on. Defaults to
-    /// <see cref="DefaultTopicProperty"/> (<c>"topic"</c>).
+    /// <see cref="DefaultTopicProperty"/> (<c>benzene-topic</c>).
     /// </param>
     public ServiceBusConsumerMessageTopicGetter(string topicPropertyKey = DefaultTopicProperty)
     {

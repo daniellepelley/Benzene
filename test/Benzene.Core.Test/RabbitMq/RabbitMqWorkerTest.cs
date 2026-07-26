@@ -91,7 +91,7 @@ public class RabbitMqWorkerTest
     {
         var properties = new BasicProperties
         {
-            Headers = new Dictionary<string, object?> { ["topic"] = Encoding.UTF8.GetBytes("orderCreated") },
+            Headers = new Dictionary<string, object?> { ["benzene-topic"] = Encoding.UTF8.GetBytes("orderCreated") },
         };
         return consumer.HandleBasicDeliverAsync("consumer-tag", deliveryTag, redelivered, "exchange",
             "orderCreated", properties, Encoding.UTF8.GetBytes("{}"));

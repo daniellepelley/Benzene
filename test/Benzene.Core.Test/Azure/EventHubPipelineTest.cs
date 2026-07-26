@@ -60,7 +60,7 @@ public class EventHubPipelineTest
             .Build();
 
         var eventData = new EventData(new BinaryData(new JsonSerializer().Serialize(Defaults.MessageAsObject)));
-        eventData.Properties["topic"] = Defaults.Topic;
+        eventData.Properties["benzene-topic"] = Defaults.Topic;
 
         await app.HandleEventHub(eventData);
         mockExampleService.Verify(x => x.Register(Defaults.Name));

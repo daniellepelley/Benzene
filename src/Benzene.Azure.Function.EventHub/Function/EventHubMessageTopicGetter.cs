@@ -15,9 +15,9 @@ public class EventHubMessageTopicGetter : IMessageTopicGetter<EventHubContext>
 {
     /// <summary>
     /// The default event-property key the topic is read from. Kept in sync with the sender's
-    /// <c>OutboundEventHubContextConverter.DefaultTopicProperty</c> (<c>"topic"</c>).
+    /// <c>OutboundEventHubContextConverter.DefaultTopicProperty</c> (<c>benzene-topic</c>).
     /// </summary>
-    public const string DefaultTopicProperty = "topic";
+    public const string DefaultTopicProperty = "benzene-topic";
 
     private readonly string _topicPropertyKey;
 

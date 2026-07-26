@@ -10,7 +10,7 @@ namespace Benzene.RabbitMq.TestHelpers;
 /// <summary>
 /// Test helpers that turn a <see cref="IMessageBuilder{T}"/> into a <see cref="BasicDeliverEventArgs"/>,
 /// so a component test can push the demo message through a <see cref="RabbitMqBenzeneTestHost"/> exactly
-/// as the broker would deliver it. The topic rides as the <c>"topic"</c> header (and the AMQP routing
+/// as the broker would deliver it. The topic rides as the <c>benzene-topic</c> header (and the AMQP routing
 /// key), and the message body is the raw serialized payload.
 /// </summary>
 public static class MessageBuilderExtensions
@@ -36,7 +36,7 @@ public static class MessageBuilderExtensions
     /// <returns>The RabbitMQ delivery.</returns>
     public static BasicDeliverEventArgs AsRabbitMqBenzeneMessage<T>(this IMessageBuilder<T> source, ISerializer serializer)
     {
-        // RabbitMQ header values are byte[]-encoded on the wire; the topic getter decodes the "topic"
+        // RabbitMQ header values are byte[]-encoded on the wire; the topic getter decodes the "benzene-topic"
         // header (falling back to the routing key), and the headers getter decodes the rest.
         var headers = new Dictionary<string, object?>
         {

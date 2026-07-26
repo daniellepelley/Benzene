@@ -14,14 +14,14 @@ public class SqsConsumerMessageHeadersGetterTest
         {
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
-                { "topic", new MessageAttributeValue { DataType = "String", StringValue = "some-topic" } },
+                { "benzene-topic", new MessageAttributeValue { DataType = "String", StringValue = "some-topic" } },
                 { "count", new MessageAttributeValue { DataType = "Number", StringValue = "5" } }
             }
         });
 
         var headers = new SqsConsumerMessageHeadersGetter().GetHeaders(context);
 
-        Assert.Equal("some-topic", headers["topic"]);
+        Assert.Equal("some-topic", headers["benzene-topic"]);
         Assert.False(headers.ContainsKey("count"));
     }
 }

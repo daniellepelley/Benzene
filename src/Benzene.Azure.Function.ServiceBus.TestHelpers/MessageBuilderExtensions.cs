@@ -8,7 +8,7 @@ public static class MessageBuilderExtensions
 {
     public static ServiceBusReceivedMessage AsAzureServiceBusMessage<T>(this IMessageBuilder<T> source)
     {
-        var properties = new Dictionary<string, object> { { "topic", source.Topic } };
+        var properties = new Dictionary<string, object> { { "benzene-topic", source.Topic } };
         foreach (var header in source.Headers)
         {
             properties[header.Key] = header.Value;
