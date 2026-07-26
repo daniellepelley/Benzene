@@ -1,5 +1,0 @@
-{
-  "detail-type": "shipping:book",
-  "source": "benzene.demo",
-  "detail": { "orderId": "ord-1", "carrier": "DPD" }
-}

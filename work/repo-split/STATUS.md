@@ -68,10 +68,19 @@ The generator now renders a **manifest of doc sources** instead of a single `doc
 - Not done here: the actual `aws s3 sync` to the dev bucket + the on-`dev.benzene.app` visual check —
   needs the deploy credentials/environment. The generator output is verified locally instead.
 
-## Phase 4 — Cutover (remove migrated content from benzene) — HELD FOR CHECK-IN
-Destructive and coordinated (deletes src/test/examples/… from the live repo other sessions push to).
-Not run autonomously — needs a maintainer go-ahead, benzene-dotnet to exist, and a quiet moment.
-Everything upstream is staged so the cutover is mechanical when you're ready.
+## Phase 4 — Cutover (remove migrated content from benzene) — DONE ✅
+Removed the .NET port from benzene now that it lives (and passes CI) in benzene-dotnet:
+- Deleted `src/ test/ examples/ templates/ benchmarks/ deploy/ tools/`, the two `.sln`s,
+  `Directory.Build.props`, `version.txt`, `CHANGELOG.md`, `VERSIONING.md`,
+  `DOCUMENTATION_WRITER_SETUP.md`, all .NET `docs/*` (kept `docs/specification/**`), and every .NET
+  CI workflow (kept `deploy-website.yml` / `promote-website.yml`).
+- Rewrote `README.md` / `AGENTS.md` / `CLAUDE.md` as the cross-language home (spec + website +
+  "pick your language" table).
+- `deploy-website.yml`: the benzene-dotnet docs checkout is now **required** (no longer best-effort);
+  the generator errors clearly if the .NET docs aren't provided (the marketing pages link into them).
+- Kept (best-endeavors, cleanup later): `work/`, `.claude/`, `blog/`, governance files.
+- **Verified:** the website generator still builds from the post-cutover benzene — 94 pages from 4
+  sources, zero broken links (`.NET` via `--dotnet-docs`, Go/TS via `--source`, spec + hub).
 
 ## Phase 5 — Polish (real sibling languages, switcher UX) — PENDING (now unblocked)
 Sibling ports already exist as public repos: **`benzene-go`** and **`benzene-typescript`**. The

@@ -1,4 +1,0 @@
-{
-  "topic": "payments:capture",
-  "message": "{\"orderId\":\"ord-1\",\"amount\":549.00,\"currency\":\"GBP\"}"
-}

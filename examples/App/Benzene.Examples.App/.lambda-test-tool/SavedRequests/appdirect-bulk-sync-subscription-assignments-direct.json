@@ -1,4 +1,0 @@
-{
-    "topic": "appdirect:bulk:sync",
-    "message": "{\"type\":\"subscription-assignments\",\"max\":\"200\"}"
-}

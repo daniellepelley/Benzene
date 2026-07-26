@@ -82,13 +82,14 @@ Split Benzene into two repos so ".NET" is just *one* language port among several
       shipped in the benzene-dotnet overlay to fire it.
 - [x] Old `/docs/*` → `/dotnet/docs/*` redirects emitted by the generator (76 stubs, self-checked).
 
-### Phase 4 — Remove migrated content from `benzene`; cut over
-- [ ] Delete the "MOVES" set from `benzene` (keep only the "STAYS" set per the manifest).
-- [ ] Rewrite `benzene`'s `README.md` as the cross-language landing (what Benzene is + the spec +
-      "pick your language"), and its `AGENTS.md`/`CLAUDE.md` for a spec-and-website repo.
-- [ ] Reduce `docs/index.md` to the cross-language headline + spec + language-section links.
-- [ ] Keep the `/docs/*` → `/dotnet/docs/*` redirects in place.
-- [ ] Promote dev → live once verified.
+### Phase 4 — Remove migrated content from `benzene`; cut over ✅ (done; promote pending)
+- [x] Delete the "MOVES" set from `benzene` (kept the "STAYS" set per the manifest).
+- [x] Rewrite `benzene`'s `README.md` as the cross-language landing, and its `AGENTS.md`/`CLAUDE.md`
+      for a spec-and-website repo.
+- [x] `docs/index.md` removed (the cross-language docs hub is generated at `/docs/index.html`).
+- [x] `/docs/*` → `/dotnet/docs/*` redirects still emitted by the generator.
+- [x] Deploy workflow: benzene-dotnet docs checkout now required; generator errors if absent.
+- [ ] Promote dev → live once verified on `dev.benzene.app` (needs deploy creds / a live run).
 
 ### Phase 5 — Polish
 - [ ] TypeScript placeholder language section (proves the multi-language shape end-to-end with a

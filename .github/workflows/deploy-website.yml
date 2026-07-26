@@ -33,8 +33,10 @@ jobs:
     - name: Checkout benzene
       uses: actions/checkout@v4
 
-    - name: Checkout benzene-dotnet docs (best-effort)
-      continue-on-error: true
+    # Required: the .NET docs are the reference section and the marketing/front pages link into them,
+    # so the site cannot be built without this checkout (this is no longer best-effort now that the
+    # .NET implementation has moved out of benzene into benzene-dotnet).
+    - name: Checkout benzene-dotnet docs
       uses: actions/checkout@v4
       with:
         repository: daniellepelley/benzene-dotnet
@@ -68,13 +70,11 @@ jobs:
     - name: Generate site
       run: |
         set -euo pipefail
-        ARGS=(--out website/dist)
-        if [ -d _sources/benzene-dotnet/docs ]; then
-          echo "Using .NET docs from the benzene-dotnet checkout."
-          ARGS+=(--dotnet-docs _sources/benzene-dotnet/docs)
-        else
-          echo "benzene-dotnet not available — .NET source falls back to benzene's own docs/."
+        if [ ! -d _sources/benzene-dotnet/docs ]; then
+          echo "::error::benzene-dotnet docs checkout is missing — cannot build the site."
+          exit 1
         fi
+        ARGS=(--out website/dist --dotnet-docs _sources/benzene-dotnet/docs)
         if [ -f _sources/benzene-go/README.md ]; then
           echo "Wiring the Go language section."
           ARGS+=(--source "go::Go::go/docs::_sources/benzene-go::landing::https://github.com/daniellepelley/benzene-go/blob/main")

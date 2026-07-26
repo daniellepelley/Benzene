@@ -1,4 +1,0 @@
-{
-  "topic": "orders:create",
-  "message": "{\"item\":\"Espresso Machine\",\"quantity\":2}"
-}

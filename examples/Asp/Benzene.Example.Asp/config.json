@@ -1,3 +1,0 @@
-{
-  "DB_CONNECTION_STRING": "Server = localhost; port = 5432; user id = user; password = mysecretpassword; database = OrdersDB; pooling = true"
-}

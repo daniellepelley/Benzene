@@ -1,7 +1,0 @@
-{
-  "profiles": {
-    "platform-marketplace-core-func.Tests": {
-      "commandName": "Project"
-    }
-  }
-}

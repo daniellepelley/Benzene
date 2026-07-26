@@ -1,78 +1,56 @@
 # Benzene — Project Guide for AI Coding Agents
 
 ## What this is
-Benzene is a C# middleware-based library supporting hexagonal
-(ports-and-adapters) architecture. It provides a pipeline of
-middleware components that wrap calls to "ports" (interfaces
-representing external boundaries — DB, HTTP, queues, etc).
+This is the **cross-language home** of Benzene, a hexagonal (ports-and-adapters) architecture for
+message-driven services. It holds two things:
+
+1. **The language-neutral specification** (`docs/specification/**`) — the source of truth every
+   language port implements: concepts, wire contracts, transport bindings, mesh contracts, the Cloud
+   Service Profile, a porting guide, and language-neutral **conformance fixtures**.
+2. **The website** (`website/`) — the generator for [benzene.app](https://benzene.app), which stitches
+   the spec here together with each language port's own docs into one multi-language site.
+
+**This repo contains no language implementation.** The .NET port (and the code/tests/examples that
+used to live here) is in [benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet); Go is in
+[benzene-go](https://github.com/daniellepelley/benzene-go); TypeScript is in
+[benzene-typescript](https://github.com/daniellepelley/benzene-typescript). The split is recorded in
+`work/repo-split-plan.md`.
 
 ## Structure
-- `src/` — library source
-- `test/` — unit/integration tests
-- `benchmarks/` — BenchmarkDotNet micro-benchmarks (compile-checked via `Benzene.sln`, but not run
-  as part of CI — see `benchmarks/Benzene.Benchmarks/README.md`)
-- `templates/` — `dotnet new` starter-project templates, packaged as one NuGet template pack
-  (`Benzene.Templates`); own `templates/Benzene.Templates.sln` for local dev, verified by
-  `.github/workflows/build-templates.yml`, not part of `Benzene.sln` — see `templates/README.md`
-- `deploy/` — independently-versioned, independently-built deployable artifacts (Docker-packaged,
-  not NuGet-packaged) with their own release lifecycle — e.g. `deploy/Mesh/Benzene.Mesh.Host`, a
-  config-driven Mesh Aggregator+UI for `docker-compose`; own `.sln` per artifact, not part of
-  `Benzene.sln`/`Benzene.Examples.sln` — see `deploy/Mesh/README.md`
-- `examples/` — sample usage projects
-- `docs/` — documentation
-- `website/` — static marketing + docs site generator (deploys `docs/`/`README.md` to S3), its
-  own standalone project, not part of `Benzene.sln` — see `website/README.md`
-- `Benzene.sln` — main library solution
-- `Benzene.Examples.sln` — examples solution
-- `.github/workflows/` — CI
+- `docs/specification/` — the spec (Markdown) + `conformance/*.json` fixtures. The **canonical** copy;
+  each language repo vendors a snapshot of the fixtures and CI-checks it against this one.
+- `website/` — the static-site generator (a .NET console app using Markdig) + demos + assets. This is
+  the only .NET project in the repo; it's a build tool, not a shipped package. See `website/CLAUDE.md`.
+- `blog/` — the project blog (Markdown).
+- `work/` — planning/design notes, including the repo-split plan/manifest/status.
+- `.github/workflows/` — `deploy-website.yml` (build + publish to dev) and `promote-website.yml`
+  (dev → live). The language-implementation CI lives in each language repo, not here.
 
-## Dev environment
-- Requires .NET 10 (see `.csproj` `TargetFramework`s; a few packages also target `net6.0`/
-  `netstandard2.0` for backward compatibility, buildable fine under the .NET 10 SDK).
-- No `global.json` pins a specific SDK patch version — match whatever `.github/workflows/
-  build-benzene.yml`'s `actions/setup-dotnet` step installs (currently `10.0.x`) if you need to be precise.
-- `dotnet build Benzene.sln` / `dotnet test test/Benzene.Core.Test/Benzene.Test.csproj` are the
-  local build/test commands. A local .NET SDK is **not guaranteed** in every agent environment —
-  if `dotnet` isn't available, say so plainly and fall back to CI
-  (`.github/workflows/build-benzene.yml`) as the verification loop instead of guessing whether
-  something compiles.
+## The specification is the product here
+- A change to an **observable contract** (wire format, status vocabulary, mesh shapes, the Cloud
+  Service Profile) is a **spec change**: make it in `docs/specification/**`, update the conformance
+  fixtures, and expect every language port to re-vendor and re-verify. Don't change a fixture to match
+  one implementation's quirk — the fixture is the neutral truth.
+- Keep the spec taut: it should cover what a conforming service must do and no more.
 
-## Before making changes
-- Read existing middleware implementations in `src/` first and
-  follow their exact pattern (naming, constructor shape, async
-  conventions) rather than inventing a new style.
-- Check `test/` for the existing test conventions (framework,
-  naming, arrange/act/assert style) before writing new tests.
-- Rebase from `main` before making any changes.
+## Working on the website
+- Requires .NET 10. Run from the repo root:
+  `dotnet run --project website/generator -- --out website/dist`.
+- Multi-source: the `.NET` docs come from a benzene-dotnet checkout via `--dotnet-docs <path>`; extra
+  languages via `--source id::Label::urlPrefix::path[::navFile][::landing][::<repoBlobUrl>]`. With no
+  flags it builds the spec + hub only. See `website/CLAUDE.md` for the full model.
+- `website/dist/` is gitignored; CI regenerates it. The broken-link self-check fails the build.
 
-## Conventions (verify against actual code, then keep this updated)
-- Language: C#, target framework(s) — confirm from .csproj files
-- Testing framework — confirm from test project references
-- Async/await used throughout for I/O-bound operations
-- Middleware components follow a consistent interface for
-  wrapping port calls in the pipeline
-- Context types (`TContext`) stay pure — describe the transport message's
-  shape only. For a middleware-to-later-step handoff scoped to one specific
-  pipeline (e.g. a per-queue override), use a small scoped DI-registered
-  holder instead of adding a marker interface/property to the context — see
-  `src/Benzene.Abstractions.Middleware/CLAUDE.md`'s "Context purity" section
-  and the `PresetTopicHolder` example in `Benzene.Core.MessageHandlers`
+## Conventions
+- Markdown for spec/blog; the website generator is C#.
+- Repo-relative paths in the generator are forward-slash strings regardless of host OS.
 
 ## Do NOT
-- Do not modify `Benzene.sln` / `Benzene.Examples.sln` structure
-  without explicit approval
-- Do not add new NuGet dependencies without asking first
-- Do not change public API signatures on existing middleware
-  without flagging it as a breaking change
-- Do not skip or disable existing tests to make a build pass
+- Do not add a language implementation here — it belongs in that language's repo.
+- Do not edit a conformance fixture to make one implementation pass — fix the implementation, or
+  change the spec deliberately.
+- Do not break the website generator's build or its broken-link self-check.
 
 ## Workflow expectations
-- Use a plan-first approach for any non-trivial feature: propose a plan,
-  wait for approval, then implement
-- Run the full test suite before considering a task complete
-- Keep commits scoped to one logical change
-
-## More detail, per package
-Every `src/<Package>/` directory has its own `CLAUDE.md` with that package's specific intent, key
-types, and conventions — read the relevant one(s) before working in that package. This root file
-only covers what applies repo-wide.
+- Plan-first for non-trivial spec or website changes.
+- Keep commits scoped to one logical change.
