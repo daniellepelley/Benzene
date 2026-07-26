@@ -286,30 +286,37 @@ internal static class Layout
                 """;
         }));
 
-        var specSource = sources.FirstOrDefault(s => !s.IsLanguage);
-        var specSection = "";
-        if (specSource != null && pagesBySource.TryGetValue(specSource.Id, out var specPages))
+        // A section per cross-cutting source (Specification, Guides) — the shared, language-neutral
+        // material that leads the hub before the per-language docs.
+        var crossCutting = sources.Where(s => !s.IsLanguage).ToList();
+        var crossCuttingSections = string.Join("\n", crossCutting.Select(src =>
         {
-            var specHome = RepoPaths.RelativeHref(outputPath, specSource.HomeOutputPath);
-            var links = string.Join("\n", specPages
-                .Where(p => !string.Equals(Path.GetFileName(p.DocRelativePath), specSource.NavFile, StringComparison.Ordinal))
+            if (!pagesBySource.TryGetValue(src.Id, out var pages)) return "";
+            var home = RepoPaths.RelativeHref(outputPath, src.HomeOutputPath);
+            var links = string.Join("\n", pages
+                .Where(p => !string.Equals(Path.GetFileName(p.DocRelativePath), src.NavFile, StringComparison.Ordinal))
                 .OrderBy(p => p.Title, StringComparer.Ordinal)
                 .Select(p => $"<li><a href=\"{RepoPaths.RelativeHref(outputPath, p.OutputPath)}\">{Html(p.Title)}</a></li>"));
-            specSection = $"""
+            var (heading, lede) = src.Id switch
+            {
+                "spec" => ("The specification",
+                    "Benzene is defined by a language-neutral specification &mdash; concepts, wire "
+                    + "contracts, transport bindings, and conformance fixtures &mdash; that every language "
+                    + "port implements. It is the same in every language."),
+                "guides" => ("Guides",
+                    "Language-neutral guides to Benzene's concepts and tooling, true for every port."),
+                _ => (Html(src.Label), $"Cross-language {Html(src.Label)}."),
+            };
+            return $"""
                 <section class="section">
-                  <h2>The specification</h2>
-                  <p class="section-lede">
-                    Benzene is defined by a language-neutral specification &mdash; concepts, wire
-                    contracts, transport bindings, and conformance fixtures &mdash; that every language
-                    port implements. It is the same in every language.
-                    <a href="{specHome}">Start with the overview &rarr;</a>
-                  </p>
+                  <h2>{Html(heading)}</h2>
+                  <p class="section-lede">{lede} <a href="{home}">Start with the overview &rarr;</a></p>
                   <ul class="hub-spec-list">
                     {links}
                   </ul>
                 </section>
                 """;
-        }
+        }));
 
         return $"""
             <!doctype html>
@@ -328,11 +335,11 @@ internal static class Layout
                 <section class="page-hero">
                   <h1>Documentation</h1>
                   <p class="section-lede">
-                    Start with what Benzene <em>is</em> &mdash; the language-neutral specification below
+                    Start with what Benzene <em>is</em> &mdash; the language-neutral material below
                     &mdash; then drill into the language you build in.
                   </p>
                 </section>
-                {specSection}
+                {crossCuttingSections}
                 <section class="section">
                   <h2>Pick your language</h2>
                   <p class="section-lede">
@@ -359,18 +366,20 @@ internal static class Layout
     /// </summary>
     private static string SectionSwitcher(string outputPath, DocSource current, IReadOnlyList<DocSource> allSources)
     {
-        var spec = allSources.FirstOrDefault(s => !s.IsLanguage);
+        var crossCutting = allSources.Where(s => !s.IsLanguage).ToList();
         var languages = allSources.Where(s => s.IsLanguage).ToList();
-        if (spec == null && languages.Count == 0) return "";
+        if (crossCutting.Count == 0 && languages.Count == 0) return "";
 
         var sb = new StringBuilder();
         sb.Append("<div class=\"section-switcher\">");
 
-        if (spec != null)
+        // The cross-cutting sections (Specification, Guides) are peers, not languages: each is its own
+        // link (the way back from any language's docs), marked active when you're in it.
+        foreach (var x in crossCutting)
         {
-            var specHref = RepoPaths.RelativeHref(outputPath, spec.HomeOutputPath);
-            var active = current.IsLanguage ? "" : " active";
-            sb.Append($"<a class=\"section-link{active}\" href=\"{specHref}\">Specification</a>");
+            var href = RepoPaths.RelativeHref(outputPath, x.HomeOutputPath);
+            var active = !current.IsLanguage && current.Id == x.Id ? " active" : "";
+            sb.Append($"<a class=\"section-link{active}\" href=\"{href}\">{Html(x.Label)}</a>");
         }
 
         if (languages.Count > 0)

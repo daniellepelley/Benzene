@@ -100,6 +100,22 @@ var specSource = new DocSource
 
 var sources = new List<DocSource> { specSource };
 
+// Cross-language guides (docs/guides/) — language-neutral explanations that aren't part of the
+// normative spec. A cross-cutting source like the spec (not a language); optional.
+var guidesRoot = Path.Combine(repoRoot, "docs", "guides");
+if (File.Exists(Path.Combine(guidesRoot, "index.md")))
+{
+    sources.Add(new DocSource
+    {
+        Id = "guides",
+        Label = "Guides",
+        UrlPrefix = "docs/guides",
+        DocsRootDisk = guidesRoot,
+        NavFile = "index.md",
+        IsLanguage = false,
+    });
+}
+
 // The .NET docs are the site's reference section and the marketing/front pages link into them, so
 // they are required. They come from an explicit --dotnet-docs (a benzene-dotnet checkout), or —
 // before the split's cutover, for a local run — benzene's own docs/index.md. Post-cutover benzene no
