@@ -1,0 +1,329 @@
+# Copies the `test` environment — variables and secrets — from this repository into another one.
+#
+# Written for the repo split: `benzene-dotnet` inherited the deploy workflows but none of the
+# environment they read from, so every deployment fails at the credentials step.
+#
+# ── How it works, and why it is not just one action call ──────────────────────────────────────
+#
+# `jpoehnelt/secrets-sync-action` does the secrets half. It does **not** do variables, so those
+# are synced directly against the REST API in a separate step. Two consequences of how GitHub
+# treats the two are worth knowing before reading the steps:
+#
+#  * **Variables are readable.** The API returns names *and* values, so the variable sync is
+#    fully generic — it enumerates whatever is in `test` and copies all of it. Add a variable
+#    tomorrow and this workflow picks it up with no edit.
+#  * **Secret values are write-only.** Nothing can read them back, so the only way to get a
+#    value into this workflow is `${{ secrets.NAME }}` written out by hand. That is the
+#    `env:` block on the job below, and it is the one part of this file that has to be
+#    maintained. The `Audit` step compares that block against the secret *names* the API
+#    reports and fails the run if any are missing, so the list cannot rot silently.
+#
+# The regex list handed to the sync action is generated from the source environment rather than
+# hardcoded. That matters: an `env:` entry for a secret that does not exist resolves to an empty
+# string, and syncing that would overwrite a good value in the target with nothing. Deriving the
+# list from the API means only secrets that genuinely exist here are ever written.
+#
+# ── Setup, once ───────────────────────────────────────────────────────────────────────────────
+#
+#  1. Create a PAT that can read this repo's secret *names* and write the target's secrets:
+#     a classic PAT with full `repo` scope, or a fine-grained PAT scoped to **both**
+#     repositories with `Secrets: Read and write`, `Variables: Read and write` and
+#     `Environments: Read and write`.
+#  2. Save it in this repository as the secret `SYNC_SECRETS_PAT` (repository-level is fine).
+#  3. Run this workflow with **dry run** left on, read the summary, then run it again with
+#     dry run off.
+#
+# Nothing here ever echoes a secret value: the sync action masks them, and every step in this
+# file prints names only.
+
+name: Sync Test Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repository:
+        description: "Repository to sync into, as owner/name"
+        required: true
+        default: daniellepelley/benzene-dotnet
+      dry_run:
+        description: "Report what would change without writing anything"
+        type: boolean
+        default: true
+      include_repository_secrets:
+        description: "Also sync the repository-level secrets (NuGet, Codecov) — not just the test environment"
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: sync-test-environment-${{ inputs.target_repository }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    # Hardcoded rather than an input: a job can only see an environment's secrets if it names
+    # that environment here, so the source side of this sync cannot be parameterised.
+    environment: test
+
+    env:
+      SOURCE_REPOSITORY: ${{ github.repository }}
+      TARGET_REPOSITORY: ${{ inputs.target_repository }}
+      ENVIRONMENT_NAME: test
+      DRY_RUN: ${{ inputs.dry_run }}
+      GH_TOKEN: ${{ secrets.SYNC_SECRETS_PAT }}
+
+      # ─── The maintained list ────────────────────────────────────────────────────────────────
+      # One line per secret that should travel. Job-level so that the audit step and the sync
+      # step see the same set without it being written twice. Names must match exactly; the
+      # audit fails the run if a secret exists in the source environment but is missing here.
+      #
+      # test environment:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      # repository level, only synced when include_repository_secrets is on:
+      NUGET_USER: ${{ secrets.NUGET_USER }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    steps:
+      - name: Check the sync token is available
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::SYNC_SECRETS_PAT is not set on ${SOURCE_REPOSITORY}."
+            echo "Create a PAT with Secrets/Variables/Environments read-write on both"
+            echo "${SOURCE_REPOSITORY} and ${TARGET_REPOSITORY}, and save it as SYNC_SECRETS_PAT."
+            exit 1
+          fi
+          if [ "${SOURCE_REPOSITORY}" = "${TARGET_REPOSITORY}" ]; then
+            echo "::error::Target is the same repository as the source. Nothing to do."
+            exit 1
+          fi
+          echo "Source: ${SOURCE_REPOSITORY}"
+          echo "Target: ${TARGET_REPOSITORY}"
+          echo "Dry run: ${DRY_RUN}"
+
+      - name: Check the token can reach both repositories
+        run: |
+          for repo in "${SOURCE_REPOSITORY}" "${TARGET_REPOSITORY}"; do
+            if ! gh api "repos/${repo}" --jq '.full_name' >/dev/null; then
+              echo "::error::SYNC_SECRETS_PAT cannot read ${repo}. Check the PAT's repository access."
+              exit 1
+            fi
+          done
+          # Secret administration needs more than read. Probe it here so the failure is one
+          # clear message rather than a partial sync half way through.
+          if ! gh api "repos/${TARGET_REPOSITORY}/actions/secrets/public-key" --jq '.key_id' >/dev/null; then
+            echo "::error::SYNC_SECRETS_PAT cannot administer secrets on ${TARGET_REPOSITORY}."
+            echo "It needs classic 'repo' scope, or fine-grained 'Secrets: Read and write'."
+            exit 1
+          fi
+
+      - name: Ensure the environment exists on the target
+        run: |
+          if gh api "repos/${TARGET_REPOSITORY}/environments/${ENVIRONMENT_NAME}" --jq '.name' >/dev/null 2>&1; then
+            echo "Environment '${ENVIRONMENT_NAME}' already exists on ${TARGET_REPOSITORY}."
+            exit 0
+          fi
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "[dry run] would create environment '${ENVIRONMENT_NAME}' on ${TARGET_REPOSITORY}"
+            exit 0
+          fi
+          # Environment secrets cannot be written until the environment itself exists.
+          # Created bare: no reviewers, no branch policy — protection rules are a deployment
+          # decision for the target repository, not something to copy blindly.
+          gh api --method PUT "repos/${TARGET_REPOSITORY}/environments/${ENVIRONMENT_NAME}" --silent
+          echo "Created environment '${ENVIRONMENT_NAME}' on ${TARGET_REPOSITORY}."
+
+      - name: Read the source environment
+        id: source
+        run: |
+          set -o pipefail
+
+          if ! gh api "repos/${SOURCE_REPOSITORY}/environments/${ENVIRONMENT_NAME}" --jq '.name' >/dev/null 2>&1; then
+            echo "::error::${SOURCE_REPOSITORY} has no '${ENVIRONMENT_NAME}' environment, or the PAT cannot see it."
+            exit 1
+          fi
+
+          # Secrets that must never travel: the sync credential itself, and anything GitHub
+          # injects. Copying the PAT into the target would hand it a token over this repo.
+          skip() {
+            case "$1" in
+              SYNC_SECRETS_PAT|GH_TOKEN|GITHUB_TOKEN) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          gh api "repos/${SOURCE_REPOSITORY}/environments/${ENVIRONMENT_NAME}/secrets" \
+            --paginate --jq '.secrets[].name' | sort > /tmp/source-secrets.txt
+
+          : > /tmp/sync-secrets.txt
+          while read -r name; do
+            [ -n "${name}" ] || continue
+            if skip "${name}"; then
+              echo "Skipping ${name} (never synced)."
+              continue
+            fi
+            echo "${name}" >> /tmp/sync-secrets.txt
+          done < /tmp/source-secrets.txt
+
+          gh api "repos/${SOURCE_REPOSITORY}/environments/${ENVIRONMENT_NAME}/variables" \
+            --paginate --jq '.variables[] | {name, value} | @base64' > /tmp/source-variables.txt
+
+          secret_count=$(wc -l < /tmp/sync-secrets.txt | tr -d ' ')
+          variable_count=$(wc -l < /tmp/source-variables.txt | tr -d ' ')
+          echo "secret_count=${secret_count}" >> "$GITHUB_OUTPUT"
+          echo "variable_count=${variable_count}" >> "$GITHUB_OUTPUT"
+
+          echo "Found ${secret_count} secret(s) and ${variable_count} variable(s) in '${ENVIRONMENT_NAME}'."
+
+          # The action selects from process.env by regex, so anchor each name exactly —
+          # an unanchored AWS_ACCESS_KEY_ID would also match AWS_ACCESS_KEY_ID_OLD.
+          {
+            echo "regex<<SECRETS_EOF"
+            sed 's/^/^/; s/$/$/' /tmp/sync-secrets.txt
+            echo "SECRETS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Audit the maintained secret list
+        run: |
+          # Every secret in the source environment must be plumbed through the job's env: block,
+          # because that is the only way a value can be read. A name present in the API but
+          # absent (or empty) here would be skipped by the sync action in silence — which looks
+          # like a successful run and leaves the target's deployments broken.
+          missing=0
+          while read -r name; do
+            [ -n "${name}" ] || continue
+            value="${!name-}"
+            if [ -z "${value}" ]; then
+              echo "::error::Secret '${name}' exists in the ${ENVIRONMENT_NAME} environment but is not"
+              echo "::error::plumbed through this workflow. Add '${name}: \${{ secrets.${name} }}' to the"
+              echo "::error::job env: block in .github/workflows/sync-test-environment.yml."
+              missing=1
+            else
+              echo "ok: ${name}"
+            fi
+          done < /tmp/sync-secrets.txt
+          exit "${missing}"
+
+      - name: Sync variables
+        run: |
+          set -o pipefail
+          synced=0
+          while read -r row; do
+            [ -n "${row}" ] || continue
+            name=$(echo "${row}" | base64 -d | jq -r '.name')
+            value=$(echo "${row}" | base64 -d | jq -r '.value')
+
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "[dry run] would set variable ${name}"
+              synced=$((synced + 1))
+              continue
+            fi
+
+            # jq builds the body so that values containing quotes or newlines survive intact.
+            body=$(jq -n --arg name "${name}" --arg value "${value}" '{name: $name, value: $value}')
+
+            if gh api "repos/${TARGET_REPOSITORY}/environments/${ENVIRONMENT_NAME}/variables/${name}" \
+                 --jq '.name' >/dev/null 2>&1; then
+              echo "${body}" | gh api --method PATCH \
+                "repos/${TARGET_REPOSITORY}/environments/${ENVIRONMENT_NAME}/variables/${name}" \
+                --input - --silent
+              echo "updated variable ${name}"
+            else
+              echo "${body}" | gh api --method POST \
+                "repos/${TARGET_REPOSITORY}/environments/${ENVIRONMENT_NAME}/variables" \
+                --input - --silent
+              echo "created variable ${name}"
+            fi
+            synced=$((synced + 1))
+          done < /tmp/source-variables.txt
+          echo "${synced} variable(s) processed."
+
+      - name: Sync environment secrets
+        if: steps.source.outputs.secret_count != '0'
+        uses: jpoehnelt/secrets-sync-action@v1.10.0
+        with:
+          github_token: ${{ secrets.SYNC_SECRETS_PAT }}
+          # An explicit owner/name, not a regex over every repo the token can see.
+          repositories: ${{ inputs.target_repository }}
+          repositories_list_regex: false
+          # With this set the action writes environment secrets rather than repository secrets.
+          environment: test
+          secrets: ${{ steps.source.outputs.regex }}
+          dry_run: ${{ inputs.dry_run }}
+          concurrency: 4
+
+      - name: Sync repository-level secrets
+        id: repo-secrets
+        if: inputs.include_repository_secrets
+        run: |
+          set -o pipefail
+          # These live outside the test environment but the target's build and publish
+          # workflows read them, so they are offered here behind a switch.
+          gh api "repos/${SOURCE_REPOSITORY}/actions/secrets" \
+            --paginate --jq '.secrets[].name' | sort > /tmp/source-repo-secrets.txt
+          echo "Repository-level secrets on ${SOURCE_REPOSITORY}:"
+          sed 's/^/  /' /tmp/source-repo-secrets.txt
+
+          : > /tmp/sync-repo-secrets.txt
+          for name in NUGET_USER CODECOV_TOKEN; do
+            if ! grep -qx "${name}" /tmp/source-repo-secrets.txt; then
+              echo "::warning::${name} is not a repository secret on ${SOURCE_REPOSITORY}; skipping."
+              continue
+            fi
+            if [ -z "${!name-}" ]; then
+              echo "::error::${name} is not plumbed through the job env: block."
+              exit 1
+            fi
+            echo "${name}" >> /tmp/sync-repo-secrets.txt
+          done
+
+          {
+            echo "regex<<SECRETS_EOF"
+            sed 's/^/^/; s/$/$/' /tmp/sync-repo-secrets.txt
+            echo "SECRETS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write repository-level secrets
+        if: inputs.include_repository_secrets && steps.repo-secrets.outputs.regex != ''
+        uses: jpoehnelt/secrets-sync-action@v1.10.0
+        with:
+          github_token: ${{ secrets.SYNC_SECRETS_PAT }}
+          repositories: ${{ inputs.target_repository }}
+          repositories_list_regex: false
+          # No environment: these are repository-level on both sides.
+          secrets: ${{ steps.repo-secrets.outputs.regex }}
+          dry_run: ${{ inputs.dry_run }}
+          concurrency: 4
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Sync \`${ENVIRONMENT_NAME}\` → ${TARGET_REPOSITORY}"
+            echo
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "**Dry run — nothing was written.** Re-run with dry run off to apply."
+              echo
+            fi
+            echo "| | Count |"
+            echo "|---|---|"
+            echo "| Environment secrets | ${{ steps.source.outputs.secret_count }} |"
+            echo "| Environment variables | ${{ steps.source.outputs.variable_count }} |"
+            echo
+            echo "Secrets synced:"
+            sed 's/^/- /' /tmp/sync-secrets.txt 2>/dev/null || echo "- (none)"
+            echo
+            echo "Variables synced:"
+            # /tmp/source-variables.txt holds one base64-encoded JSON object per line, so that
+            # values containing newlines survive the round trip. Names only here.
+            while read -r row; do
+              [ -n "${row}" ] || continue
+              echo "- $(echo "${row}" | base64 -d | jq -r '.name')"
+            done < /tmp/source-variables.txt 2>/dev/null || echo "- (none)"
+          } >> "$GITHUB_STEP_SUMMARY"
