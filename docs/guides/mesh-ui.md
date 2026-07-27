@@ -223,15 +223,18 @@ The canonical UI was consolidated from the divergent per-language versions in Ju
   was therefore no separate TypeScript page to harvest from; the TS port's contribution is its
   proof that the **artifact shapes are genuinely cross-language** (`Benzene.Mesh.Contracts` is
   ported field-for-field), which is what makes one UI legitimate.
-- **Visual system**: the canonical keeps its established indigo/dark design system and the
-  functional HTTP-method colour chips. Aligning the accent to the website's green
-  (`site.css --accent`) is a deferred brand decision (see the open items below) — it is a
-  one-token-block change and is intentionally not made unilaterally, because the accent is shared
-  with the Spec UI family for cross-UI consistency.
+- **Visual system**: the canonical's `--accent` quartet was aligned to the website's green
+  (`site.css --accent`: `#2f6f4e` light / `#6fcf9a` dark) so the Mesh UI reads as part of the same
+  product family as [benzene.app](https://benzene.app). Only the four accent tokens changed
+  (`--accent`/`--accent-ink`/`--accent-tint`/`--accent-soft`, in both the light/dark media-query and
+  `data-theme` blocks); the **functional HTTP-method colour chips are deliberately untouched** — they
+  encode meaning (GET/POST/PUT/…), not brand. The companion Spec UI still carries the older indigo
+  system; re-tinting it to match is a follow-up if cross-UI accent parity is wanted.
 
 ## 7. Open items
 
-- **Brand-accent alignment** with the website's green is deferred to a maintainer call (§6).
+- **Companion Spec UI accent**: the Mesh UI now uses the website's green (§6); the companion
+  `mesh-spec-ui.html` still uses the older indigo. Re-tinting it for cross-UI parity is a follow-up.
 - **TypeScript mesh-UI package**: when `@benzene/mesh-ui` is ported, it vendors this canonical file;
   it should not re-author a page.
 - **Windowable usage feed**: `usage.json` counts carry a baked window and cannot be re-windowed
