@@ -254,17 +254,20 @@ a { color: var(--accent); }
 .gs-links { font-size: 0.95rem; }
 #gs-dotnet:checked ~ .gs-panel[data-lang="dotnet"],
 #gs-go:checked ~ .gs-panel[data-lang="go"],
-#gs-typescript:checked ~ .gs-panel[data-lang="typescript"] { display: block; }
+#gs-typescript:checked ~ .gs-panel[data-lang="typescript"],
+#gs-python:checked ~ .gs-panel[data-lang="python"] { display: block; }
 #gs-dotnet:checked ~ .gs-tablist .gs-tab[for="gs-dotnet"],
 #gs-go:checked ~ .gs-tablist .gs-tab[for="gs-go"],
-#gs-typescript:checked ~ .gs-tablist .gs-tab[for="gs-typescript"] {
+#gs-typescript:checked ~ .gs-tablist .gs-tab[for="gs-typescript"],
+#gs-python:checked ~ .gs-tablist .gs-tab[for="gs-python"] {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
 #gs-dotnet:checked ~ .gs-tablist .gs-tab[for="gs-dotnet"] .beta,
 #gs-go:checked ~ .gs-tablist .gs-tab[for="gs-go"] .beta,
-#gs-typescript:checked ~ .gs-tablist .gs-tab[for="gs-typescript"] .beta { background: rgba(255,255,255,0.35); }
+#gs-typescript:checked ~ .gs-tablist .gs-tab[for="gs-typescript"] .beta,
+#gs-python:checked ~ .gs-tablist .gs-tab[for="gs-python"] .beta { background: rgba(255,255,255,0.35); }
 
 /* Sections */
 .page-hero {

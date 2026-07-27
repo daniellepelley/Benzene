@@ -20,7 +20,7 @@ A Benzene service exposes its own contract in a language-neutral form:
   `descriptorHash` that changes only when the observable contract changes.
 
 Both are wire artifacts defined by the specification, so a generator consumes them the same way
-whether the service is written in .NET, Go, or TypeScript. The generated output tracks what the
+whether the service is written in .NET, Go, TypeScript, or Python. The generated output tracks what the
 service *actually* exposes, so it can never drift from the implementation the way a hand-maintained
 schema or diagram does.
 
@@ -54,6 +54,7 @@ The *how* is idiomatic per language and is documented in each port's repo:
 - **.NET** — [benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet)
 - **Go** — [benzene-go](https://github.com/daniellepelley/benzene-go)
 - **TypeScript** — [benzene-typescript](https://github.com/daniellepelley/benzene-typescript)
+- **Python** — [benzene-python](https://github.com/daniellepelley/benzene-python)
 
 Look there for the package that runs the generator, the command-line or API to invoke it, and the
 exact settings each generator accepts. This guide stays with the concept: the description exists, it

@@ -26,6 +26,7 @@ the mesh contracts, the Cloud Service Profile, and a porting guide, plus languag
 | **.NET** | [benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet) | The reference implementation — full docs, examples, templates, mesh tooling |
 | **Go** | [benzene-go](https://github.com/daniellepelley/benzene-go) | Early port |
 | **TypeScript** | [benzene-typescript](https://github.com/daniellepelley/benzene-typescript) | Early port |
+| **Python** | [benzene-python](https://github.com/daniellepelley/benzene-python) | Early port |
 
 Each port is a translation of the same spec into that language's idioms — same topics, same wire
 contracts, same conformance fixtures.

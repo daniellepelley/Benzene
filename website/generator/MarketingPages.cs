@@ -95,7 +95,7 @@ internal static class MarketingPages
                 new Card("One design, several languages",
                     "Benzene is defined by a <a href=\"docs/specification/index.html\">language-neutral "
                     + "specification</a> and implemented as idiomatic ports &mdash; .NET (the reference "
-                    + "implementation), with Go and TypeScript early on the way. It runs on the hosts your "
+                    + "implementation), with Go, TypeScript, and Python early on the way. It runs on the hosts your "
                     + "platform team already chose (see <a href=\"architecture.html\">Architecture</a>)."),
                 new Card("Pre-1.0, and candid about it",
                     "Benzene is approaching 1.0; packages are published as prerelease (<code>--prerelease</code>) "

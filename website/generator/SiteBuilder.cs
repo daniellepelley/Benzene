@@ -94,7 +94,11 @@ internal sealed class SiteBuilder
         }
 
         // 6. Hand-authored marketing home + value pages (not markdown-derived) at the site root.
-        File.WriteAllText(Path.Combine(_outDir, "index.html"), Layout.RenderMarketingPage("index.html"));
+        // Only the language sources this run actually built are advertised — see RenderMarketingPage.
+        var wiredLanguageIds = _sources.Where(s => s.IsLanguage).Select(s => s.Id).ToHashSet();
+        File.WriteAllText(
+            Path.Combine(_outDir, "index.html"),
+            Layout.RenderMarketingPage("index.html", wiredLanguageIds));
         foreach (var valuePage in MarketingPages.All)
         {
             File.WriteAllText(Path.Combine(_outDir, valuePage.Slug), Layout.RenderValuePage(valuePage));

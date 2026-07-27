@@ -4,7 +4,12 @@ namespace Benzene.Website.Generator;
 
 internal static class Layout
 {
-    public static string RenderMarketingPage(string outputPath)
+    /// <param name="wiredLanguageIds">
+    /// The ids of the language sources this run actually built. The marketing page advertises only
+    /// these: a port whose repo checkout is best-effort may be absent, and linking to docs that were
+    /// never generated would fail the broken-link self-check and take the whole site build down.
+    /// </param>
+    public static string RenderMarketingPage(string outputPath, IReadOnlyCollection<string> wiredLanguageIds)
     {
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
@@ -23,7 +28,12 @@ internal static class Layout
             </div>
             """));
 
-        var getStarted = BuildGetStartedSelector(outputPath);
+        var languages = MarketingContent.Languages
+            .Where(l => wiredLanguageIds.Contains(l.Id))
+            .ToList();
+        var getStarted = BuildGetStartedSelector(outputPath, languages);
+        var heroLangs = string.Join(" &middot;\n", languages.Select(l =>
+            $"<strong>{Html(l.Label)}</strong>{(l.Beta ? " <span class=\"beta\">beta</span>" : "")}"));
         var multiLanguageLede = MarketingContent.MultiLanguageLede.Replace("{SPEC}", specHome);
 
         var platforms = string.Join("\n", MarketingContent.Platforms.Select(p => $"""
@@ -40,7 +50,7 @@ internal static class Layout
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>Benzene &mdash; one handler, every transport</title>
-              <meta name="description" content="A hexagonal (ports-and-adapters) architecture for message-driven services, defined by a language-neutral spec and implemented in .NET, Go, and TypeScript. Write a handler once and reach it over HTTP, queues, streams and serverless functions at the same time &mdash; with a live service map and a test host for everything you build.">
+              <meta name="description" content="A hexagonal (ports-and-adapters) architecture for message-driven services, defined by a language-neutral spec and implemented in .NET, Go, TypeScript, and Python. Write a handler once and reach it over HTTP, queues, streams and serverless functions at the same time &mdash; with a live service map and a test host for everything you build.">
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -58,8 +68,7 @@ internal static class Layout
                   <a class="button button-secondary" href="https://github.com/daniellepelley/Benzene">View on GitHub</a>
                 </div>
                 <div class="hero-langs">
-                  Ports: <strong>.NET</strong> &middot; <strong>Go</strong> <span class="beta">beta</span> &middot;
-                  <strong>TypeScript</strong> <span class="beta">beta</span>
+                  Ports: {heroLangs}
                   &middot; <a href="https://opensource.org/licenses/MIT">MIT</a>
                 </div>
               </section>
@@ -88,7 +97,7 @@ internal static class Layout
                   <h2>Get started</h2>
                   <p class="section-lede">
                     The same handler, in the language you build in. .NET is the reference
-                    implementation; Go and TypeScript are early ports of the same spec.
+                    implementation; Go, TypeScript, and Python are early ports of the same spec.
                   </p>
                   {getStarted}
                 </section>
@@ -434,11 +443,12 @@ internal static class Layout
     /// A no-JS "get started" selector: radio inputs + labels + CSS <c>:checked</c> reveal one
     /// per-language panel (install + snippet + links). The radios and panels are siblings so the
     /// CSS sibling combinator can drive it. NOTE: `assets/site.css` enumerates the language ids
-    /// (dotnet/go/typescript) for the tab highlighting — add a new id there when adding a language.
+    /// (dotnet/go/typescript/python) for the tab highlighting — add a new id there when adding a
+    /// language. <paramref name="langs"/> is already filtered to the sources this run built.
     /// </summary>
-    private static string BuildGetStartedSelector(string outputPath)
+    private static string BuildGetStartedSelector(
+        string outputPath, IReadOnlyList<MarketingContent.LanguageStart> langs)
     {
-        var langs = MarketingContent.Languages;
         var inputs = string.Join("\n", langs.Select((l, i) =>
             $"<input type=\"radio\" name=\"gs\" id=\"gs-{l.Id}\" class=\"gs-radio\"{(i == 0 ? " checked" : "")}>"));
         var labels = string.Join("\n", langs.Select(l =>

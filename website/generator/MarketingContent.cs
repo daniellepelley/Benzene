@@ -102,6 +102,24 @@ internal static class MarketingContent
             """,
             "https://github.com/daniellepelley/benzene-typescript",
             "typescript/docs/index.html"),
+
+        // Snippet taken from benzene-python's own README rather than written for the site, so the
+        // code on this page is something that actually runs against the shipped packages.
+        new("python", "Python", true,
+            "pip install benzene-core benzene-http",
+            """
+            from benzene.core import BenzeneMessageApplication, Registry, message
+            from benzene.results import Result
+
+            @message("say:hello")
+            async def hello(request: dict) -> Result:
+                return Result.ok({"greeting": f"Hello {request['name']}"})
+
+            # Wire it into an application - reachable over HTTP via benzene-http:
+            app = BenzeneMessageApplication(Registry().add(hello))
+            """,
+            "https://github.com/daniellepelley/benzene-python",
+            "python/docs/index.html"),
     ];
 
     public static readonly (string Name, string Detail)[] Platforms =

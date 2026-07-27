@@ -27,6 +27,14 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   `IsLanguage`/excludes. The spec is a source with `IsLanguage=false` (leads the hub, not in the
   switcher); each language port is `IsLanguage=true`. Built in `Program.cs`; extra languages can be
   added with a repeatable `--source id=Label=urlPrefix=path[=navFile]` arg.
+- **The marketing page advertises only the languages this run actually built.** `MarketingContent.
+  Languages` is the full catalogue (id, label, install line, snippet, docs path); `SiteBuilder`
+  passes the ids of the wired `DocSource`s and `Layout.RenderMarketingPage` filters the catalogue to
+  those. This matters because the sibling-port checkouts in CI are best-effort: without the filter, a
+  port whose repo failed to check out still gets a "get started" tab linking to docs that were never
+  generated, and the broken-link self-check then fails the **whole** site build. Adding a language
+  means a `MarketingContent.Languages` entry, its `#gs-<id>` rules in `assets/site.css`, and a
+  `wire_lang` line in `deploy-website.yml` — the entry stays dormant until the port's docs exist.
 - **The marketing home page (`index.html`) is hand-authored**, not derived from README.md's
   markdown - `MarketingContent` holds the copy (hero tagline, feature cards, quickstart snippets,
   platform list, loosely kept in sync with README.md's messaging by hand), `ArchitectureDiagram`

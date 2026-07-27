@@ -5,9 +5,13 @@ name: Deploy Website (dev)
 # production (benzene.app) is a separate, manual step — see promote-website.yml.
 #
 # Multi-source (post repo-split): the site stitches benzene's spec + each language port's docs. The
-# .NET docs come from a benzene-dotnet checkout. Until that repo exists the checkout is best-effort
-# and the generator falls back to benzene's own docs/, so the site keeps building throughout the
-# migration. A push to benzene-dotnet's main triggers this workflow via repository_dispatch.
+# .NET docs come from a benzene-dotnet checkout and are required; the other ports are best-effort.
+#
+# Each port's docs are pulled fresh on every run, so a rebuild for any reason picks up whatever each
+# port has published. To get a rebuild *when a port's docs change*, that repo fires a
+# repository_dispatch here: benzene-dotnet sends `dotnet-docs-updated` (see its notify-website.yml),
+# and `port-docs-updated` is the generic equivalent for any other port — a port that adds a notify
+# workflow starts flowing through automatically, with nothing to change in this file.
 on:
   push:
     branches: [main]
@@ -17,7 +21,7 @@ on:
       - 'website/**'
       - '.github/workflows/deploy-website.yml'
   repository_dispatch:
-    types: [dotnet-docs-updated]
+    types: [dotnet-docs-updated, port-docs-updated]
   workflow_dispatch:
 
 jobs:
@@ -64,6 +68,14 @@ jobs:
         ref: main
         path: _sources/benzene-typescript
 
+    - name: Checkout benzene-python (best-effort)
+      continue-on-error: true
+      uses: actions/checkout@v4
+      with:
+        repository: daniellepelley/benzene-python
+        ref: main
+        path: _sources/benzene-python
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
@@ -91,6 +103,7 @@ jobs:
         }
         wire_lang go Go _sources/benzene-go https://github.com/daniellepelley/benzene-go/blob/main
         wire_lang typescript TypeScript _sources/benzene-typescript https://github.com/daniellepelley/benzene-typescript/blob/main
+        wire_lang python Python _sources/benzene-python https://github.com/daniellepelley/benzene-python/blob/main
 
         dotnet run --project website/generator -- "${ARGS[@]}"
 

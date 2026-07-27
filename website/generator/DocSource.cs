@@ -5,7 +5,7 @@ namespace Benzene.Website.Generator;
 /// single <c>docs/</c> tree: it stitches together several sources — each language port's docs (each
 /// checked out from its own repo by CI) plus the cross-language specification. Every source has its
 /// own docs root on disk and its own URL prefix, so the same site can render <c>/dotnet/docs/…</c>,
-/// a future <c>/typescript/docs/…</c>, and the spec at <c>/docs/specification/…</c> side by side.
+/// <c>/typescript/docs/…</c>, <c>/python/docs/…</c>, and the spec at <c>/docs/specification/…</c> side by side.
 /// </summary>
 internal sealed class DocSource
 {
