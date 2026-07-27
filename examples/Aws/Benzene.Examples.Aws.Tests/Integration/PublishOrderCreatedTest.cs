@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Amazon.Lambda.APIGatewayEvents;
+using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 using Benzene.Aws.Lambda.Core.TestHelpers;
 using Benzene.Clients;
 using Benzene.Examples.App.Handlers;
@@ -35,11 +35,11 @@ public class PublishOrderCreatedTest
         using var testLambdaHosting = new AwsLambdaBenzeneTestHost(entryPoint);
 
         var orderCreated = new OrderCreatedEvent { Id = Guid.NewGuid(), Name = "acme" };
-        var apiGatewayProxyRequest = new ApiGatewayProxyRequestBuilder("POST", "/orders/publish-created")
-            .WithBody(orderCreated)
-            .Build();
 
-        var response = await testLambdaHosting.SendEventAsync<APIGatewayProxyResponse>(apiGatewayProxyRequest);
+        // Ingress via the shipped Benzene.Aws.Lambda.ApiGateway.TestHelpers trio (HttpBuilder ->
+        // AsApiGatewayRequest -> native APIGatewayProxyResponse), the same one an adopter uses.
+        var response = await testLambdaHosting.SendApiGatewayAsync(
+            HttpBuilder.Create("POST", "/orders/publish-created", orderCreated));
 
         Assert.Equal(202, response.StatusCode);
         Assert.Equal(MessageTopicNames.OrderCreated, fakeSender.LastTopic);

@@ -11,6 +11,10 @@ using Benzene.Examples.App.Model;
 using Benzene.Examples.App.Model.Messages;
 using Benzene.Examples.Aws.Tests.Helpers;
 using Benzene.Aws.Lambda.Core.TestHelpers;
+using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
+using Benzene.Aws.Lambda.Sns.TestHelpers;
+using Benzene.Aws.Lambda.Sqs.TestHelpers;
+using Benzene.Core.MessageHandlers.TestHelpers;
 using Benzene.Examples.Aws.Tests.Helpers.Builders;
 using Benzene.Testing;
 using Benzene.Results;
@@ -39,20 +43,21 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     [Fact]
     public async Task CreateOrder_SNSEvent()
     {
-        var snsEvent = AwsEventBuilder.CreateSnsEvent(CreateOrder, CreateCreateOrderMessage());
+        // Dogfoods the shipped Benzene.Aws.Lambda.Sns.TestHelpers builder (AsSns) instead of a
+        // hand-rolled per-example event builder - the exact native-event trio an adopter would use.
+        await TestLambdaHosting.SendEventAsync(
+            MessageBuilder.Create(CreateOrder, CreateCreateOrderMessage()).AsSns());
 
-        await TestLambdaHosting.SendEventAsync(snsEvent);
-            
         var orders = GetPersistedOrders();
 
         Assert.Single(orders);
         Assert.Equal(Defaults.Order.Status, orders[0].Status);
         Assert.Equal(Defaults.Order.Name, orders[0].Name);
-            
+
         // var messages = await SqsSetUp.GetAllMessagesAsync();
         // Assert.Equal($"{CreateOrder}:result", messages[0].GetTopic());
         // Assert.True(messages[0].BodyIsGuid());
-        //     
+        //
         // Assert.Equal($"{CreateOrder}d", messages[1].GetTopic());
         // Assert.Null(messages[1].GetStatus());
         // var payload = messages[1].Body<OrderDto>();
@@ -90,15 +95,17 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     [Fact]
     public async Task CreateOrder_SQSEvent()
     {
-        var sqsEvent = AwsEventBuilder.CreateSqsEvent(CreateOrder, CreateCreateOrderMessage());
-
-        await TestLambdaHosting.SendEventAsync(sqsEvent);
+        // Dogfoods the shipped Benzene.Aws.Lambda.Sqs.TestHelpers trio: the AsSqs builder (via the
+        // SendSqsAsync(IMessageBuilder) overload) plus the native SQSBatchResponse the framework maps back.
+        var response = await TestLambdaHosting.SendSqsAsync(
+            MessageBuilder.Create(CreateOrder, CreateCreateOrderMessage()));
 
         var orders = GetPersistedOrders();
 
         Assert.Single(orders);
         Assert.Equal(Defaults.Order.Status, orders[0].Status);
         Assert.Equal(Defaults.Order.Name, orders[0].Name);
+        Assert.Empty(response.BatchItemFailures);
 
         // var messages = await SqsSetUp.GetAllMessagesAsync();
         // Assert.Equal($"{CreateOrder}:result", messages[0].GetTopic());
@@ -141,10 +148,11 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     [Fact]
     public async Task CreateOrder_BenzeneMessage()
     {
-        var benzeneMessageRequest = BenzeneMessageBuilder.Create(CreateOrder, CreateCreateOrderMessage());
+        // Dogfoods the shipped Benzene.Core.MessageHandlers.TestHelpers trio: MessageBuilder ->
+        // AsBenzeneMessage (via SendBenzeneMessageAsync) -> the native BenzeneMessageResponse.
+        var response = await TestLambdaHosting.SendBenzeneMessageAsync(
+            MessageBuilder.Create(CreateOrder, CreateCreateOrderMessage()));
 
-        var response = await TestLambdaHosting.SendEventAsync<BenzeneMessageResponse>(benzeneMessageRequest);
-            
         var orders = GetPersistedOrders();
 
         Assert.Single(orders);
@@ -164,12 +172,12 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     [Fact]
     public async Task CreateOrder_ApiGateway()
     {
-        var apiGatewayProxyRequest = new ApiGatewayProxyRequestBuilder("POST", "/orders")
-            .WithBody(CreateCreateOrderMessage())
-            .Build();
-            
-        var response = await TestLambdaHosting.SendEventAsync<APIGatewayProxyResponse>(apiGatewayProxyRequest);
-            
+        // Dogfoods the shipped Benzene.Aws.Lambda.ApiGateway.TestHelpers trio: HttpBuilder ->
+        // AsApiGatewayRequest (via the SendApiGatewayAsync(IHttpBuilder) overload) -> the native
+        // APIGatewayProxyResponse - reading exactly like the gold-standard shape in docs.
+        var response = await TestLambdaHosting.SendApiGatewayAsync(
+            HttpBuilder.Create("POST", "/orders", CreateCreateOrderMessage()));
+
         var orders = GetPersistedOrders();
 
         Assert.Single(orders);
@@ -256,9 +264,8 @@ public class CreateOrderTest : InMemoryOrdersTestBase
     [Fact]
     public async Task CreateOrder_ValidationFailure()
     {
-        var benzeneMessageRequest = BenzeneMessageBuilder.Create(CreateOrder, new CreateOrderMessage { Status = "1234567890123456789012345678901234567890123456789012345678901234567890" });
-
-        var response = await TestLambdaHosting.SendEventAsync<BenzeneMessageResponse>(benzeneMessageRequest);
+        var response = await TestLambdaHosting.SendBenzeneMessageAsync(
+            MessageBuilder.Create(CreateOrder, new CreateOrderMessage { Status = "1234567890123456789012345678901234567890123456789012345678901234567890" }));
 
         Assert.Equal(BenzeneResultStatus.ValidationError, response.StatusCode);
         Assert.NotNull(response.Body);
