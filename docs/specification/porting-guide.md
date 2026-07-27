@@ -8,6 +8,12 @@ implements [core-concepts.md](core-concepts.md), [wire-contracts.md](wire-contra
 Interop with .NET Benzene services comes from the wire contracts, and is the first thing a port
 should prove, not the last.
 
+Once a port is under way, every shippable increment is held to
+[port-quality-standards.md](port-quality-standards.md) — the Definition of Done that gates port work
+(DX-champion-in-the-loop workflow; conformance; layered packaging; a runnable multi-transport example
+per cloud provider tested through the port's own dogfooded test helpers; a CI gate; website-ready
+docs). This guide is *how to translate*; that document is *when the translation is done*.
+
 ## 1. What is concept vs C# idiom
 
 | .NET mechanism | The concept underneath | Idiomatic equivalent elsewhere |
