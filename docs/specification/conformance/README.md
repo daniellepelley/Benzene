@@ -19,6 +19,7 @@ consumes these files.
 | `http-status-mapping.json` | Benzene→HTTP and HTTP→Benzene status tables (wire-contracts §4.1) |
 | `grpc-status-mapping.json` | Benzene→gRPC and gRPC→Benzene status tables (wire-contracts §4.2) |
 | `envelope-cases.json` | End-to-end message envelope handling: request in, pipeline + canonical handler, response envelope out (wire-contracts §1, core-concepts §4–6) |
+| `transport-metadata-cases.json` | Topic resolution and header mapping on transports carrying Benzene metadata natively — the reserved metadata key names (wire-contracts §2, transport-bindings §1) — required for ports binding any such transport |
 | `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers, including payload schemas and descriptorHash properties (mesh §2) — required for ports that implement mesh |
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
@@ -29,7 +30,7 @@ Which fixtures a given conformance claim requires
 
 | Claim | Required fixtures |
 |---|---|
-| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json` |
+| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, and `transport-metadata-cases.json` for each metadata-carrying transport the port binds |
 | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
 | Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
@@ -74,6 +75,56 @@ verify the router's `not-found` / `validation-error` behavior.
 - `expected.headers`, when present, is compared by subset the same way (keys case-insensitive).
 - Human-readable message wording (e.g. the `detail` text of router-generated errors) is
   intentionally not asserted.
+
+## Transport metadata case format
+
+`transport-metadata-cases.json` covers the transports that carry Benzene metadata natively —
+SQS/SNS message attributes, Pub/Sub attributes, Service Bus/Event Hub application properties,
+Kafka/RabbitMQ headers. Each exposes the same shape under a different native name (a string→string
+dictionary), so the cases are written against that **neutral dictionary** and each runner adapts a
+case to its own native message before decoding it.
+
+```json
+{
+  "name": "topic-resolves-from-the-reserved-key",
+  "metadata": { "benzene-topic": "conformance:greet", "x-correlation-id": "abc-123" },
+  "expected": {
+    "topic": "conformance:greet",
+    "headers": { "x-correlation-id": "abc-123" },
+    "headersExclude": ["benzene-topic"]
+  }
+}
+```
+
+- `metadata` is the native metadata dictionary, before decoding.
+- `expected.topic` is compared exactly; `""` means the binding resolved no topic (not an error —
+  what an empty topic *means* is the router's business, pinned by `envelope-cases.json`).
+- `expected.headers` is subset-matched, keys case-insensitive, as for envelope cases.
+- `expected.headersExclude` lists keys that must **not** appear as headers — a metadata key the
+  binding consumed as routing information must not also leak into the header dictionary.
+- `expected.version`, where present, is the resolved payload version.
+- A case with `"requires": "versioning"` applies only to ports implementing payload versioning
+  (`benzene-version` is tier C).
+
+`reservedMetadataKeys` names the keys themselves, and `topicSources` records where each binding
+gets its topic. Both are directly assertable: a port can compare its own constant against
+`reservedMetadataKeys.topic` without building a message at all, which is the cheapest possible
+check and the one that catches a rename.
+
+Bindings whose `source` is not `metadata` are listed deliberately: EventBridge routes on
+`detail-type` and DynamoDB Streams derives `{tableName}:{eventName}`, so those bindings MUST NOT
+require a `benzene-topic` attribute, and the metadata cases do not apply to them.
+
+**Why this fixture exists.** The metadata key names are the one part of the wire contract that no
+other fixture touches — envelope, status and protocol-mapping cases never look at native metadata.
+A port can therefore rename or misspell the topic attribute, pass every other fixture, and still be
+unable to exchange a single queue message with another port. That is not hypothetical: it is
+exactly how the .NET and Python ports diverged after `topic` was renamed to `benzene-topic`.
+
+The EventBridge embedded-headers key (`_benzeneHeaders`, wire-contracts §2, tier D) is deliberately
+**not** pinned here: it is scheduled to be renamed to `benzene-headers`
+(`work/benzene-headers-plan.md`), and a fixture asserting the current spelling would have to change
+with it.
 
 ## Mesh fixture formats
 
