@@ -50,6 +50,7 @@ The Core Specification:
 | [mesh.md](mesh.md) | The mesh module's wire contracts (optional at Core level; service-side feeds required by the profile): service self-description (descriptor + derived payload schemas + contract hash), semantic trace events, collector topics, heartbeats, and the normative degradation rules. Reference implementation: the Go port's `benzene:mesh`/`meshd` packages |
 | [versioning.md](versioning.md) | **Implemented.** Payload schema versioning: the `benzene-version` header/route convention, handler-version dispatch vs. transparent payload casting, and what a casting implementation needs from a serializer |
 | [porting-guide.md](porting-guide.md) | Concept-vs-idiom mapping for implementers in other languages, and the conformance-testing approach |
+| [port-quality-standards.md](port-quality-standards.md) | The Definition of Done for a language port: the DX-champion-in-the-loop workflow and the quality gates (conformance, layered packaging, a runnable multi-transport example per cloud provider, example tests that dogfood the port's own test helpers, a CI gate, and website-ready docs) |
 | [conformance/](conformance/README.md) | Language-neutral test fixtures (status vocabulary, mapping tables, envelope cases) that every implementation runs; the .NET reference runner is `test/Benzene.Conformance.Test/` |
 
 The profile:
