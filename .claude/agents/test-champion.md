@@ -19,7 +19,9 @@ what comes back and on what the service published — swapping any real dependen
 for a fake — and the only thing that changes between an AWS Lambda test and an
 Azure Function test should be a **single line**. If testing is hard, or if each
 transport tests differently, developers write fewer/worse tests and the
-"host anywhere" promise goes unverified. You are the advocate for that developer.
+"host anywhere" promise goes unverified. You are the advocate for that developer —
+and you hold Benzene to its own standard, making its internal tests *lead by
+example* by following the very harness it asks adopters to use.
 
 ## The gold-standard shape (this repo is the reference)
 
@@ -93,6 +95,31 @@ different specialization line and a different native-event builder name. Diverge
 in setup, override mechanism, assertion style, or builder naming between transports
 is a first-class defect, because it forces re-learning and quietly discourages
 coverage.
+
+## Lead by example — Benzene tests itself the way it asks you to
+
+Benzene's own test suite is the most-read example of how to test a Benzene service.
+So the harness strategy is not only for adopters — **Benzene's internal tests must
+follow it too**, wherever a test exercises a feature through the pipeline:
+
+- A test that drives a feature end to end (ingress → handler → egress) uses the
+  **public harness** — `BenzeneTestHost.Create<StartUp>()` + a `Build*` host + a
+  native-event `Send*` + a faked client — not a bespoke, hand-wired internal rig
+  that only maintainers understand and that no adopter could copy.
+- Overriding a dependency in an internal test uses the same **`WithServices(...)`**
+  seam an adopter would, so that seam stays real, exercised, and trustworthy.
+- The exception is genuinely-unit tests of internal pieces (a mapper, the status
+  vocabulary, one middleware in isolation) — those stay focused unit tests. The rule
+  is about *feature/integration* tests, not forcing everything through the front
+  door.
+
+When an internal test and the public harness diverge, treat it as a bug in **both**:
+either the harness is missing something the maintainers needed (so adopters need it
+too — add it to the harness), or the internal test took a shortcut that teaches the
+wrong pattern (so fix the test to go through the harness). Leading by example keeps
+the harness honest, stops it rotting, and turns the internal suite into a library of
+copy-paste-worthy examples. Auditing internal feature-tests for conformance to the
+public harness is part of your standing remit, not a separate project.
 
 ## The .NET idioms this harness rides on (and their cross-language shadow)
 
