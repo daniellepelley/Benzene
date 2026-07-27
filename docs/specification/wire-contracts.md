@@ -90,7 +90,7 @@ porting author cannot tell a mandatory wire contract from a convention of one op
 
 | Header | Tier | Direction | Meaning |
 |---|---|---|---|
-| `benzene-topic` | **A** | inbound (queue/stream transports) | On transports where the envelope isn't used but native metadata exists (SQS/SNS message attributes, Service Bus/Event Hub properties, Kafka/RabbitMQ headers, Pub/Sub attributes), the topic travels as an attribute of this name. The routing key: without it such a transport cannot dispatch. |
+| `topic` | **A** | inbound (queue/stream transports) | On transports where the envelope isn't used but native metadata exists (SQS/SNS message attributes, Service Bus/Event Hub properties, Kafka/RabbitMQ headers, Pub/Sub attributes), the topic travels as an attribute of this name — the same spelling as the envelope field, so one concept has one name wherever it appears. The routing key: without it such a transport cannot dispatch. **Configurable** — see *Reserved names are defaults* below. |
 | `content-type` | **A** | outbound | Response content type where the transport has no native slot for it. A borrowed name (HTTP/MIME), used verbatim. |
 | `benzene-version` | **C** | both | The payload's schema version, for topics using payload versioning. Read from an ordered, configurable fallback list — default `benzene-version`, then `version`, then `x-version` — and written as `benzene-version`. Only meaningful for a service that opted into versioning; see [versioning.md](versioning.md) for the fallback-list rules and why the list must be configurable. |
 | `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these and does not require them. **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
@@ -104,8 +104,26 @@ universal header.
 **Naming.** Names Benzene invents carry the `benzene-` marker, because a header sits in a namespace
 shared with the application and the transport. Names Benzene *borrows* — `content-type`,
 `traceparent`, `tracestate`, `x-correlation-id` — are never renamed: interoperating with the
-standard is the entire reason for using them. (The full rule, including why the envelope's own
-`topic` field is unprefixed while this header is not, is in `work/benzene-naming-principle.md`.)
+standard is the entire reason for using them. (The full rule is in
+`work/benzene-naming-principle.md`.)
+
+`topic` is the deliberate exception: it keeps the envelope field's spelling so that one concept has
+one name wherever it travels. The collision the marker guards against — an application that already
+puts its own `topic` attribute on a message — is handled instead by making the name configurable.
+
+**Reserved names are defaults.** Every name in this table is a *default*, not a literal an
+implementation may hard-code. An implementation MUST expose them as a single injectable value, so a
+service can replace one in one place rather than at each binding. Two consequences follow, and both
+are normative:
+
+- **The defaults carry interop.** Two Benzene services that have not changed anything must
+  interoperate. A service that overrides a name is opting out of that, and is responsible for
+  agreeing the change with whatever it talks to.
+- **An override applies to both directions.** The same value MUST be used by the service's inbound
+  bindings and its outbound clients. A service that overrode only one side would send messages it
+  cannot itself receive, and the symptom — a message that arrives and never routes — looks
+  identical to a missing handler. Implementations SHOULD name the configured key in the
+  unresolved-topic error for exactly this reason.
 
 Binary metadata (e.g. gRPC `-bin` keys) is excluded from the dictionary in both directions.
 Duplicate keys: last value wins.

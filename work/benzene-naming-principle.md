@@ -81,13 +81,33 @@ predictable rather than a blanket prefix-everything reflex:
 
 ## What the principle decides
 
-### §3c — the `topic` header → **`benzene-topic`**
+### §3c — the `topic` header → ~~`benzene-topic`~~ → **`topic`, configurable** *(reversed 2026-07-27)*
 
-Rename. It is Benzene's name in a shared namespace (SQS/SNS attributes), and bare `topic` is among
-the most collision-prone words available on a queue an application also uses. **Reject the
-"give users a choice" option** — see the no-configurability rule above.
+**Superseded by maintainer decision.** The original ruling and its reasoning are kept below because
+the reasoning is still sound — it is the *trade* that was re-made, not the analysis.
 
-The envelope's `topic` **field** is unchanged (own namespace).
+**Current ruling:** the metadata key is **`topic`**, matching the envelope field so one concept has
+one spelling wherever it travels, and the reserved names become **configurable** through a single
+injectable value (wire-contracts §2, *Reserved names are defaults*).
+
+This deliberately re-opens the "give users a choice" option the original ruling rejected. What
+changed is not the collision risk but who absorbs it: rather than every service paying a prefix to
+protect the minority that would collide, the default is the plain name and the minority reconfigures.
+The rule that made configurability dangerous — a knob nobody sets consistently — is answered by
+making it *one* value covering all reserved names, applied to inbound bindings and outbound clients
+together, with conformance asserting both the default and that an override is honoured.
+
+The cost is real and worth stating: two services that disagree about the key silently stop routing,
+and the symptom is indistinguishable from a missing handler. That is why the spec requires the
+unresolved-topic error to name the configured key.
+
+> **Original ruling (2026-07-25), superseded:** Rename. It is Benzene's name in a shared namespace
+> (SQS/SNS attributes), and bare `topic` is among the most collision-prone words available on a
+> queue an application also uses. **Reject the "give users a choice" option** — see the
+> no-configurability rule above.
+
+The envelope's `topic` **field** is unchanged (own namespace) — and now shares its spelling with the
+metadata key, which removes the "two names for one concept" cost noted in the objections below.
 
 ### §3f — `benzene-version` → **keep the prefix**
 

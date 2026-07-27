@@ -61,13 +61,13 @@ Azure Functions worker, a background worker loop). Hosting is attached in the ap
 
 One host (the Lambda runtime), several inner bindings selected by event shape: API Gateway
 (HTTP-like: topic from route, headers from HTTP headers), SQS / SNS / Kafka batches (topic from
-the `benzene-topic` message attribute or envelope; one scope per record), S3 events, EventBridge (below),
+the `topic` message attribute or envelope; one scope per record), S3 events, EventBridge (below),
 and the raw `BenzeneMessage` envelope (wire-contracts §1) for direct invocation.
 
 ### EventBridge — `Benzene.Aws.Lambda.EventBridge`
 
 - Topic: the event's `detail-type`, verbatim — EventBridge's native routing key, so this binding
-  needs no bolted-on `benzene-topic` attribute. `source` is metadata, not part of the topic.
+  needs no bolted-on `topic` attribute. `source` is metadata, not part of the topic.
 - One event per invocation (EventBridge does not batch Lambda targets) → one pipeline invocation,
   one scope; fire-and-forget (no response channel).
 - Body: the raw JSON of `detail` (the domain payload).
@@ -105,7 +105,7 @@ result mapping is acknowledge/log only.
 
 ### RabbitMQ (self-hosted consumer) — `Benzene.RabbitMq`
 
-- Topic: the delivery's `benzene-topic` header (matching the SQS/SNS/Service Bus convention above), falling
+- Topic: the delivery's `topic` header (matching the SQS/SNS/Service Bus convention above), falling
   back to the AMQP routing key so a non-Benzene producer's message still routes.
 - Headers: `BasicProperties.Headers`, UTF-8 decoded (RabbitMQ carries header values as `byte[]` on
   the wire); the outbound client mirrors this so header-based decorators round-trip.

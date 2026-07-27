@@ -1,79 +1,174 @@
 {
-  "description": "Topic resolution and header mapping on transports that carry Benzene metadata natively (wire-contracts.md §2, transport-bindings.md §1.2-1.3). Every such transport exposes a string->string metadata channel under a different native name — SQS/SNS message attributes, Pub/Sub attributes, Service Bus/Event Hub application properties, Kafka/RabbitMQ headers — so the cases below are written against that neutral dictionary and each runner adapts them to its own native shape. This is the fixture that pins the metadata key names across ports: a port that renames or misspells one still passes every other fixture, because the envelope, status and HTTP mappings never touch native metadata.",
-
-  "reservedMetadataKeys": {
-    "topic": "benzene-topic",
+  "description": "Topic resolution and header mapping on transports that carry Benzene metadata natively (wire-contracts.md §2, transport-bindings.md §1.2-1.3). Every such transport exposes a string->string metadata channel under a different native name — SQS/SNS message attributes, Pub/Sub attributes, Service Bus/Event Hub application properties, Kafka/RabbitMQ headers — so the cases below are written against that neutral dictionary and each runner adapts them to its own native shape. This is the fixture that pins the metadata key names across ports: a port that renames or misspells one still passes every other fixture, because the envelope, status and HTTP mappings never touch native metadata. The names are configurable per service, so the cases assert both the defaults (which is what makes two Benzene services interoperate untouched) and that an override is honoured.",
+  "defaultMetadataKeys": {
+    "topic": "topic",
     "version": "benzene-version"
   },
-
+  "configurable": true,
+  "configurableNote": "An implementation MUST expose the reserved names as a single injectable value (wire-contracts §2). The defaults above are the interop baseline; overrideCases assert that a replacement is actually honoured, on inbound bindings and outbound clients alike.",
   "topicSources": [
-    { "binding": "sqs", "source": "metadata", "nativeChannel": "message attributes" },
-    { "binding": "sns", "source": "metadata", "nativeChannel": "message attributes" },
-    { "binding": "pubsub", "source": "metadata", "nativeChannel": "attributes" },
-    { "binding": "servicebus", "source": "metadata", "nativeChannel": "application properties" },
-    { "binding": "eventhub", "source": "metadata", "nativeChannel": "application properties" },
-    { "binding": "kafka", "source": "metadata", "nativeChannel": "headers" },
-    { "binding": "rabbitmq", "source": "metadata", "nativeChannel": "BasicProperties.Headers", "fallback": "the AMQP routing key, so a non-Benzene producer still routes" },
-    { "binding": "eventbridge", "source": "native", "nativeField": "detail-type", "note": "EventBridge has its own routing key, so this binding MUST NOT require a benzene-topic attribute." },
-    { "binding": "dynamodb-streams", "source": "derived", "pattern": "{tableName}:{eventName}", "note": "Derived from the change event; there is no producer to set metadata." },
-    { "binding": "http", "source": "route" },
-    { "binding": "grpc", "source": "method" }
+    {
+      "binding": "sqs",
+      "source": "metadata",
+      "nativeChannel": "message attributes"
+    },
+    {
+      "binding": "sns",
+      "source": "metadata",
+      "nativeChannel": "message attributes"
+    },
+    {
+      "binding": "pubsub",
+      "source": "metadata",
+      "nativeChannel": "attributes"
+    },
+    {
+      "binding": "servicebus",
+      "source": "metadata",
+      "nativeChannel": "application properties"
+    },
+    {
+      "binding": "eventhub",
+      "source": "metadata",
+      "nativeChannel": "application properties"
+    },
+    {
+      "binding": "kafka",
+      "source": "metadata",
+      "nativeChannel": "headers"
+    },
+    {
+      "binding": "rabbitmq",
+      "source": "metadata",
+      "nativeChannel": "BasicProperties.Headers",
+      "fallback": "the AMQP routing key, so a non-Benzene producer still routes"
+    },
+    {
+      "binding": "eventbridge",
+      "source": "native",
+      "nativeField": "detail-type",
+      "note": "EventBridge has its own routing key, so this binding MUST NOT require a topic attribute."
+    },
+    {
+      "binding": "dynamodb-streams",
+      "source": "derived",
+      "pattern": "{tableName}:{eventName}",
+      "note": "Derived from the change event; there is no producer to set metadata."
+    },
+    {
+      "binding": "http",
+      "source": "route"
+    },
+    {
+      "binding": "grpc",
+      "source": "method"
+    }
   ],
-
   "metadataCases": [
     {
       "name": "topic-resolves-from-the-reserved-key",
-      "metadata": { "benzene-topic": "conformance:greet", "x-correlation-id": "abc-123" },
+      "metadata": {
+        "topic": "conformance:greet",
+        "x-correlation-id": "abc-123"
+      },
       "expected": {
         "topic": "conformance:greet",
-        "headers": { "x-correlation-id": "abc-123" },
-        "headersExclude": ["benzene-topic"]
+        "headers": {
+          "x-correlation-id": "abc-123"
+        },
+        "headersExclude": [
+          "topic"
+        ]
       }
     },
     {
       "name": "remaining-metadata-becomes-headers",
-      "metadata": { "benzene-topic": "conformance:greet", "x-correlation-id": "abc-123", "tenant": "acme" },
+      "metadata": {
+        "topic": "conformance:greet",
+        "x-correlation-id": "abc-123",
+        "tenant": "acme"
+      },
       "expected": {
         "topic": "conformance:greet",
-        "headers": { "x-correlation-id": "abc-123", "tenant": "acme" }
+        "headers": {
+          "x-correlation-id": "abc-123",
+          "tenant": "acme"
+        }
       }
     },
     {
       "name": "topic-key-is-case-insensitive-on-read",
-      "metadata": { "Benzene-Topic": "conformance:greet" },
+      "metadata": {
+        "Topic": "conformance:greet"
+      },
       "expected": {
         "topic": "conformance:greet"
       },
       "note": "wire-contracts.md preamble: header keys are case-insensitive on read and SHOULD be written lower-case."
     },
     {
-      "name": "an-unprefixed-topic-key-does-not-route",
-      "metadata": { "topic": "conformance:greet" },
+      "name": "a-non-reserved-key-does-not-route",
+      "metadata": {
+        "benzene-topic": "conformance:greet"
+      },
       "expected": {
         "topic": "",
-        "headers": { "topic": "conformance:greet" }
+        "headers": {
+          "benzene-topic": "conformance:greet"
+        }
       },
-      "note": "The regression case. 'topic' is the envelope's field name, not a metadata key: the envelope is Benzene's own namespace, native metadata is shared with the application and the transport. A port that accepts the unprefixed key here cannot exchange messages over a queue with a port that does not."
+      "note": "Only the configured key routes. 'benzene-topic' was the default before 2026-07-27 (work/benzene-naming-principle.md §3c); a port still reading it, or reading both, would route messages a conformant peer does not, which is how two ports drift apart unnoticed."
     },
     {
       "name": "absent-topic-key-leaves-the-topic-unresolved",
-      "metadata": { "x-correlation-id": "abc-123" },
+      "metadata": {
+        "x-correlation-id": "abc-123"
+      },
       "expected": {
         "topic": "",
-        "headers": { "x-correlation-id": "abc-123" }
+        "headers": {
+          "x-correlation-id": "abc-123"
+        }
       },
       "note": "Unresolved, not an error: the router decides what an empty topic means (envelope-cases.json pins that as validation-error)."
     },
     {
       "name": "version-travels-alongside-the-topic",
       "requires": "versioning",
-      "metadata": { "benzene-topic": "conformance:greet", "benzene-version": "2" },
+      "metadata": {
+        "topic": "conformance:greet",
+        "benzene-version": "2"
+      },
       "expected": {
         "topic": "conformance:greet",
         "version": "2",
-        "headersExclude": ["benzene-topic"]
+        "headersExclude": [
+          "topic"
+        ]
       },
       "note": "benzene-version is tier C — only ports that implement payload versioning run this case."
+    }
+  ],
+  "overrideCases": [
+    {
+      "name": "an-overridden-topic-key-is-honoured",
+      "metadataKeys": {
+        "topic": "x-my-topic"
+      },
+      "metadata": {
+        "x-my-topic": "conformance:greet",
+        "topic": "not-the-topic"
+      },
+      "expected": {
+        "topic": "conformance:greet",
+        "headers": {
+          "topic": "not-the-topic"
+        },
+        "headersExclude": [
+          "x-my-topic"
+        ]
+      },
+      "note": "With the name overridden, the default key is an ordinary application header and carries no routing meaning — which is the whole point of overriding it."
     }
   ]
 }

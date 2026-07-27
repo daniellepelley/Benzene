@@ -87,11 +87,11 @@ case to its own native message before decoding it.
 ```json
 {
   "name": "topic-resolves-from-the-reserved-key",
-  "metadata": { "benzene-topic": "conformance:greet", "x-correlation-id": "abc-123" },
+  "metadata": { "topic": "conformance:greet", "x-correlation-id": "abc-123" },
   "expected": {
     "topic": "conformance:greet",
     "headers": { "x-correlation-id": "abc-123" },
-    "headersExclude": ["benzene-topic"]
+    "headersExclude": ["topic"]
   }
 }
 ```
@@ -106,20 +106,27 @@ case to its own native message before decoding it.
 - A case with `"requires": "versioning"` applies only to ports implementing payload versioning
   (`benzene-version` is tier C).
 
-`reservedMetadataKeys` names the keys themselves, and `topicSources` records where each binding
+`defaultMetadataKeys` names the keys themselves, and `topicSources` records where each binding
 gets its topic. Both are directly assertable: a port can compare its own constant against
-`reservedMetadataKeys.topic` without building a message at all, which is the cheapest possible
+`defaultMetadataKeys.topic` without building a message at all, which is the cheapest possible
 check and the one that catches a rename.
+
+**The names are configurable, so the fixture asserts two things.** `metadataCases` run against the
+defaults — the baseline that lets two untouched Benzene services interoperate. `overrideCases` each
+carry a `metadataKeys` object the runner applies before decoding, and assert that the replacement
+actually routes *and* that the default key becomes an ordinary header once overridden. A port that
+hard-codes a name passes the first group and fails the second.
 
 Bindings whose `source` is not `metadata` are listed deliberately: EventBridge routes on
 `detail-type` and DynamoDB Streams derives `{tableName}:{eventName}`, so those bindings MUST NOT
-require a `benzene-topic` attribute, and the metadata cases do not apply to them.
+require a `topic` attribute, and the metadata cases do not apply to them.
 
 **Why this fixture exists.** The metadata key names are the one part of the wire contract that no
 other fixture touches — envelope, status and protocol-mapping cases never look at native metadata.
 A port can therefore rename or misspell the topic attribute, pass every other fixture, and still be
 unable to exchange a single queue message with another port. That is not hypothetical: it is
-exactly how the .NET and Python ports diverged after `topic` was renamed to `benzene-topic`.
+exactly how the .NET and Python ports diverged when the key was briefly `benzene-topic`
+(`work/benzene-naming-principle.md` §3c, since reversed).
 
 The EventBridge embedded-headers key (`_benzeneHeaders`, wire-contracts §2, tier D) is deliberately
 **not** pinned here: it is scheduled to be renamed to `benzene-headers`
