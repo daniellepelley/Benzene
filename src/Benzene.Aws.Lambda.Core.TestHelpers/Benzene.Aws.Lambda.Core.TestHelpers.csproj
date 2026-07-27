@@ -17,6 +17,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Benzene.Aws.Lambda.Core\Benzene.Aws.Lambda.Core.csproj" />
+		<ProjectReference Include="..\Benzene.Core.MessageHandlers.TestHelpers\Benzene.Core.MessageHandlers.TestHelpers.csproj" />
 		<ProjectReference Include="..\Benzene.Core.Middleware\Benzene.Core.Middleware.csproj" />
 		<ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
 		<ProjectReference Include="..\Benzene.Testing\Benzene.Testing.csproj" />

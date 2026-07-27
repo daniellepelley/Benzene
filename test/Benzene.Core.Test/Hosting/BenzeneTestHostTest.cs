@@ -1,5 +1,8 @@
 using System.Threading.Tasks;
 using Benzene.Abstractions.Hosting;
+using Amazon.Lambda.APIGatewayEvents;
+using Benzene.Aws.Lambda.ApiGateway;
+using Benzene.Aws.Lambda.ApiGateway.TestHelpers;
 using Benzene.Aws.Lambda.Core;
 using Benzene.Aws.Lambda.Core.BenzeneMessage;
 using Benzene.Aws.Lambda.Core.TestHelpers;
@@ -50,6 +53,20 @@ public class AzureBenzeneTestHostStartUp : BenzeneStartUp
         .UseHttp(http => http.UseMessageHandlers());
 }
 
+public class AwsApiGatewayBenzeneTestHostStartUp : BenzeneStartUp
+{
+    public override IConfiguration GetConfiguration() => new ConfigurationBuilder().Build();
+
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+        => services.UsingBenzene(x => x
+            .AddBenzene()
+            .AddMessageHandlers(typeof(ExampleRequestPayload).Assembly)
+            .AddHttpMessageHandlers());
+
+    public override void Configure(IBenzeneApplicationBuilder app, IConfiguration configuration) => app
+        .UseAwsLambda(aws => aws.UseApiGateway(apiGateway => apiGateway.UseMessageHandlers()));
+}
+
 public class BenzeneTestHostTest
 {
     [Fact]
@@ -65,6 +82,39 @@ public class BenzeneTestHostTest
         var message = MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject);
         await host.SendBenzeneMessageAsync(message);
 
+        mockExampleService.Verify(x => x.Register(Defaults.Name));
+    }
+
+    [Fact]
+    public async Task BuildAwsLambdaHost_SendApiGateway_CompilesAndRunsAsAOneLiner()
+    {
+        // The gold-standard shape: Create<StartUp>() -> WithServices(fake) -> BuildAwsLambdaHost()
+        // -> SendApiGatewayAsync(...), with NO manual `new AwsLambdaBenzeneTestHost(...)` wrap. The
+        // Send* overload extending the returned IAwsLambdaEntryPoint is what makes this compile,
+        // matching GCP's BuildGooglePubSubFunctionHost().SendPubSubAsync(...).
+        var mockExampleService = new Mock<IExampleService>();
+
+        APIGatewayProxyResponse response = await BenzeneTestHost.Create<AwsApiGatewayBenzeneTestHostStartUp>()
+            .WithServices(s => s.AddSingleton(mockExampleService.Object))
+            .BuildAwsLambdaHost()
+            .SendApiGatewayAsync(HttpBuilder.Create(Defaults.Method, Defaults.Path, Defaults.MessageAsObject));
+
+        Assert.Equal(200, response.StatusCode);
+        mockExampleService.Verify(x => x.Register(Defaults.Name));
+    }
+
+    [Fact]
+    public async Task BuildAwsLambdaHost_SendBenzeneMessage_CompilesAndRunsAsAOneLiner()
+    {
+        // Same one-liner ergonomics for the transport-neutral BenzeneMessage entry point.
+        var mockExampleService = new Mock<IExampleService>();
+
+        var response = await BenzeneTestHost.Create<AwsBenzeneTestHostStartUp>()
+            .WithServices(s => s.AddSingleton(mockExampleService.Object))
+            .BuildAwsLambdaHost()
+            .SendBenzeneMessageAsync(MessageBuilder.Create(Defaults.Topic, Defaults.MessageAsObject));
+
+        Assert.NotNull(response);
         mockExampleService.Verify(x => x.Register(Defaults.Name));
     }
 

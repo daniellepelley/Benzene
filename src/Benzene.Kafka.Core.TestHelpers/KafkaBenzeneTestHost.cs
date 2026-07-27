@@ -36,6 +36,18 @@ public sealed class KafkaBenzeneTestHost<TKey, TValue> : IDisposable
         return _application.HandleAsync(record, _serviceResolverFactory);
     }
 
+    /// <summary>
+    /// Dispatches a record through the pipeline. Verb-parallel alias for
+    /// <see cref="HandleAsync(ConsumeResult{TKey, TValue})"/>, matching the <c>Send*Async</c> shape the
+    /// Lambda/GCP/Core hosts use so a test reads the same across transports.
+    /// </summary>
+    /// <param name="record">The record to handle.</param>
+    /// <returns>A task that completes when the record has been handled.</returns>
+    public Task SendKafkaAsync(ConsumeResult<TKey, TValue> record)
+    {
+        return HandleAsync(record);
+    }
+
     /// <summary>Disposes the resolver factory (and the service provider it owns).</summary>
     public void Dispose()
     {

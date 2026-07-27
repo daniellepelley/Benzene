@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
 		<ProjectReference Include="..\Benzene.Aws.Lambda.ApiGateway\Benzene.Aws.Lambda.ApiGateway.csproj" />
+		<ProjectReference Include="..\Benzene.Aws.Lambda.Core.TestHelpers\Benzene.Aws.Lambda.Core.TestHelpers.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -44,6 +44,12 @@ public static class Extensions
         configure?.Invoke(options);
 
         var sqsConsumerApplication = new SqsConsumerApplication(pipeline, options);
+        // Register the built application so it can be resolved and driven directly - e.g. a
+        // StartUp-based component test pushing a message through the real pipeline without a running
+        // queue (see Benzene.Aws.Sqs.TestHelpers.BuildSqsConsumerHost). Inert in a normal worker run;
+        // the worker already holds this same instance via the factory below. Mirrors the same seam
+        // Benzene.Kafka.Core / Benzene.RabbitMq / Benzene.Azure.ServiceBus register for their hosts.
+        app.Register(x => x.AddSingleton(sqsConsumerApplication));
         app.Add(serviceResolverFactory => new SqsConsumer(serviceResolverFactory, sqsConsumerApplication, sqsConsumerConfig, sqsClientFactory, options));
         return app;
     }

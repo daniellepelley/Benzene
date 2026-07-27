@@ -16,7 +16,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Benzene.Abstractions\Benzene.Abstractions.csproj" />
+		<ProjectReference Include="..\Benzene.Aws.Sqs\Benzene.Aws.Sqs.csproj" />
 		<ProjectReference Include="..\Benzene.Core.MessageHandlers\Benzene.Core.MessageHandlers.csproj" />
+		<ProjectReference Include="..\Benzene.Microsoft.Dependencies\Benzene.Microsoft.Dependencies.csproj" />
+		<ProjectReference Include="..\Benzene.SelfHost\Benzene.SelfHost.csproj" />
+		<ProjectReference Include="..\Benzene.Testing\Benzene.Testing.csproj" />
 	</ItemGroup>
 
 </Project>

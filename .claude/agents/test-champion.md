@@ -38,7 +38,7 @@ var host = BenzeneTestHost.Create<StartUp>()                                 // 
 
 var request = new ApiGatewayProxyRequestBuilder("POST", "/orders")           // 4. a native event from topic/route + payload (+ headers)
     .WithBody(order).Build();
-var response = await host.SendEventAsync<APIGatewayProxyResponse>(request);  // 5. push it in the front door; get the NATIVE response
+var response = await host.SendApiGatewayAsync(request);                       // 5. push it in the front door; get the NATIVE response (APIGatewayProxyResponse)
 
 Assert.Equal(201, response.StatusCode);                                      // 6a. assert on the transport response / status code
 Assert.Equal(MessageTopicNames.OrderCreated, fakeSender.LastTopic);          // 6b. assert on the client's captured output (egress)

@@ -36,6 +36,18 @@ public sealed class RabbitMqBenzeneTestHost : IDisposable
         return _application.HandleAsync(delivery, _serviceResolverFactory);
     }
 
+    /// <summary>
+    /// Dispatches a delivery through the pipeline. Verb-parallel alias for
+    /// <see cref="HandleAsync(BasicDeliverEventArgs)"/>, matching the <c>Send*Async</c> shape the
+    /// Lambda/GCP/Core hosts use so a test reads the same across transports.
+    /// </summary>
+    /// <param name="delivery">The delivery to handle.</param>
+    /// <returns>The handler's result, or <c>null</c> if nothing set one.</returns>
+    public Task<IBenzeneResult?> SendRabbitMqAsync(BasicDeliverEventArgs delivery)
+    {
+        return HandleAsync(delivery);
+    }
+
     /// <summary>Disposes the resolver factory (and the service provider it owns).</summary>
     public void Dispose()
     {

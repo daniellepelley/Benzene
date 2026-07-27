@@ -34,6 +34,18 @@ public sealed class ServiceBusWorkerBenzeneTestHost : IDisposable
         return _application.HandleAsync(message, _serviceResolverFactory);
     }
 
+    /// <summary>
+    /// Dispatches a message through the pipeline. Verb-parallel alias for
+    /// <see cref="HandleAsync(ServiceBusReceivedMessage)"/>, matching the <c>Send*Async</c> shape the
+    /// Lambda/GCP/Core hosts use so a test reads the same across transports.
+    /// </summary>
+    /// <param name="message">The message to handle.</param>
+    /// <returns>The settlement decision.</returns>
+    public Task<ServiceBusSettlementDecision> SendServiceBusAsync(ServiceBusReceivedMessage message)
+    {
+        return HandleAsync(message);
+    }
+
     /// <summary>Disposes the resolver factory (and the service provider it owns).</summary>
     public void Dispose()
     {
