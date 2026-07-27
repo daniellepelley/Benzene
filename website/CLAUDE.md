@@ -86,9 +86,11 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   linked from a crawled doc page). `ResolveDemoAsset` lets both `docs/index.md`'s nav tree and
   regular markdown links resolve an href like `../demos/mesh/index.html` to a real published path
   without that path existing as a docs page.
-  - `website/demos/mesh/` - a copy of `src/Benzene.Mesh.Ui/mesh-ui.html` (as `index.html`) plus
-    hand-authored `manifest.json`/`services/*.json`/`topology.json` fixtures, schema-matched to
-    `Benzene.Mesh.Contracts` and modeled on `examples/Mesh`'s three-service demo (healthy /
+  - `website/demos/mesh/` - a **vendored copy of the canonical cross-language Mesh UI**
+    (`mesh-ui/mesh-ui.html` in this repo, as `index.html`) plus hand-authored
+    `manifest.json`/`services/*.json`/`topics.json`/`topology.json`/`usage.json`/`annotations.json`
+    fixtures, schema-matched to `Benzene.Mesh.Contracts` and modeled on the three-service demo
+    (healthy /
     unhealthy+contract-drift / unreachable, plus the `FakePrometheus`-driven topology edges) - see
     `examples/Mesh/README.md` for what each fixture value is illustrating. The page finds these by
     its own default boot sequence (`./manifest.json`, then `services/{name}.json`/`topology.json`
