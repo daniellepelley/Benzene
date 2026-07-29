@@ -90,15 +90,18 @@ internal static class MarketingContent
             "go/docs/index.html"),
 
         new("typescript", "TypeScript", true,
-            "npm install @benzene/core-middleware @benzene/dependencies",
+            "npm install @benzene/express @benzene/core-message-handlers @benzene/http @benzene/results",
             """
-            import { MiddlewarePipelineBuilder } from '@benzene/core-middleware';
-            import { ServiceCollection, DefaultBenzeneServiceContainer } from '@benzene/dependencies';
+            @httpEndpoint("POST", "/greet")
+            @message("greet", { requestType: GreetRequest, responseType: GreetResponse })
+            export class GreetHandler implements IMessageHandler&lt;GreetRequest, GreetResponse&gt; {
+              handleAsync(request: GreetRequest): Promise&lt;IBenzeneResultOf&lt;GreetResponse&gt;&gt; {
+                return Promise.resolve(BenzeneResult.ok({ greeting: `Hello, ${request.name}!` }));
+              }
+            }
 
-            const container = new DefaultBenzeneServiceContainer(new ServiceCollection());
-            const pipeline = new MiddlewarePipelineBuilder&lt;MyContext&gt;(container)
-              .useFn('Greet', async (ctx, next) =&gt; { /* handle, then */ await next(); })
-              .build();
+            // Wire it onto any host - here Express, in index.ts:
+            app.use(benzene((pipeline) =&gt; useMessageHandlers(pipeline, GreetHandler)));
             """,
             "https://github.com/daniellepelley/benzene-typescript",
             "typescript/docs/index.html"),
