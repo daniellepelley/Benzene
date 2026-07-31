@@ -15,7 +15,7 @@ never knows or cares which port produced the data.
 Because it is a cross-language concern, there is exactly **one** Mesh UI. It lives in the
 cross-language `benzene` repo at [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) and is the
 **canonical source of truth**. Every language port and the website demo *vendor a verbatim copy*
-of it (see [Consumption](#consumption)); none maintains its own. This guide is the contract that
+of it (see [Consumption](#5-consumption)); none maintains its own. This guide is the contract that
 keeps every one of those copies rendering a consistent product.
 
 ## 1. What the Mesh UI is for
@@ -243,5 +243,3 @@ The canonical UI was consolidated from the divergent per-language versions in Ju
   UI shows staleness as explicitly deferred rather than inventing it.
 - **Companion Spec UI deep-link**: the per-service page links to a `mesh-spec-ui.html` companion;
   where a consumer does not vendor that companion, the link is a best-effort outbound link.
-</content>
-</invoke>
