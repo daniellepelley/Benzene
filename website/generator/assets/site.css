@@ -97,6 +97,13 @@ a { color: var(--accent); }
 
 .sidebar a:hover, .sidebar a.active { color: var(--accent); font-weight: 600; }
 
+/* Off-site: worth saying so before the click, since every other sidebar entry stays on the site. */
+.sidebar a.nav-external::after {
+  content: " ↗";
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
 .nav-group {
   display: block;
   margin-top: 0.75rem;

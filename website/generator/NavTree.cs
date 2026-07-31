@@ -69,17 +69,38 @@ internal static class NavTreeBuilder
     {
         if (inline == null) return null;
 
+        // A group header is conventionally "- **Title**", optionally followed by descriptive prose
+        // ("- **Title** — why this section exists"). The prose belongs on the docs home page, not in
+        // the sidebar - so when the bullet carries a bold run, that alone is the title.
+        //
+        // The bold run has to be looked for BEFORE the link, and it only counts when it sits outside
+        // one. That prose regularly contains links, and taking the first link in the bullet instead
+        // renamed the whole section after whatever it happened to mention: the .NET docs' "**Benzene
+        // Specification (Draft)** — ... lives in the [`benzene`](...) repo" came out as a section
+        // called "benzene". A bullet written "- [**Title**](page.md)" is still a page link, which is
+        // why the bold run must not be inside the link to win.
         var link = inline.Descendants<LinkInline>().FirstOrDefault(l => !l.IsImage);
-        if (link != null)
+        var strong = inline.Descendants<EmphasisInline>()
+            .FirstOrDefault(x => x.DelimiterCount == 2 && !IsInside(x, link));
+
+        if (strong == null && link != null)
         {
             return new NavNode { Title = MarkdownText.GetPlainText(link).Trim(), Href = link.Url };
         }
 
-        // A group header is conventionally "- **Title**", optionally followed by descriptive prose
-        // ("- **Title** — why this section exists"). The prose belongs on the docs home page, not
-        // in the sidebar - so when the bullet carries a bold run, that alone is the title.
-        var strong = inline.Descendants<EmphasisInline>().FirstOrDefault(x => x.DelimiterCount == 2);
         var text = (strong != null ? MarkdownText.GetPlainText(strong) : MarkdownText.GetPlainText(inline)).Trim();
         return text.Length == 0 ? null : new NavNode { Title = text };
+    }
+
+    private static bool IsInside(Inline node, LinkInline? link)
+    {
+        if (link == null) return false;
+
+        for (var parent = node.Parent; parent != null; parent = parent.Parent)
+        {
+            if (ReferenceEquals(parent, link)) return true;
+        }
+
+        return false;
     }
 }

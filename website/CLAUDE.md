@@ -65,7 +65,11 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   file's nested bullet list via Markdig's AST (not regex), so the source's index stays the single
   source of truth for its own sidebar. Any page in a source not reachable from its nav still gets a
   sidebar entry under a synthesized "More" group (`SiteBuilder.AppendOrphanedPages`) — nothing is
-  silently unreachable. Nav hrefs resolve against the **global** disk index, so a nav bullet that
+  silently unreachable. **A bullet with a bold run outside any link is a group header** — `- **Title**
+  — prose about it` gives the section the bold title and drops the prose, and any links in that prose
+  are ignored, which is what stops a section being renamed after something it merely mentions.
+  `- [**Title**](page.md)` is still a page link (the bold is inside the link). A nav bullet pointing
+  off-site renders as a real link with a `↗`, not as a dead group header. Nav hrefs resolve against the **global** disk index, so a nav bullet that
   points cross-source (e.g. the `.NET` index still listing a spec page) resolves correctly.
 - **Link rewriting** (`SiteBuilder.RewriteLinks`): every `LinkInline` in every page is resolved
   against the crawled page set and rewritten to a relative output `href`. Only image extensions

@@ -425,6 +425,13 @@ internal static class Layout
             var isActive = node.OutputHref == fromOutputPath;
             into.Append($"<a href=\"{href}\"{(isActive ? " class=\"active\"" : "")}>{Html(node.Title)}</a>");
         }
+        else if (IsExternal(node.Href))
+        {
+            // A nav bullet pointing off-site has no page in the output tree to resolve to, so it used
+            // to fall through to the group-header branch and render as a dead, uppercased <span> - a
+            // link that looked like a heading and did nothing. It is still a link; emit it as one.
+            into.Append($"<a href=\"{Html(node.Href!)}\" class=\"nav-external\" rel=\"noopener\">{Html(node.Title)}</a>");
+        }
         else
         {
             into.Append($"<span class=\"nav-group\">{Html(node.Title)}</span>");
@@ -438,6 +445,16 @@ internal static class Layout
         }
         into.Append("</li>");
     }
+
+    /// <summary>
+    /// Whether a nav href points off the generated site. Only http(s) counts: an unresolved
+    /// <em>relative</em> href is a broken link in the source, and rendering it as a link would
+    /// publish the breakage rather than leave it visible as an un-navigable entry.
+    /// </summary>
+    private static bool IsExternal(string? href) =>
+        href != null &&
+        Uri.TryCreate(href, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
     /// <summary>
     /// A no-JS "get started" selector: radio inputs + labels + CSS <c>:checked</c> reveal one
