@@ -232,7 +232,7 @@ resolves any requested `(from, to, topic)` pair by:
 
 Because it is breadth-first, a **shortcut caster is automatically preferred over a longer chain
 through intermediate versions whenever both exist** — exactly the "V1→V3 direct, so use V1→V3,
-V3→V4, V4→V5 instead of V1→V2→V3→V4→V4→V5" scenario this design needs to support: if V1→V2,
+V3→V4, V4→V5 instead of V1→V2→V3→V4→V5" scenario this design needs to support: if V1→V2,
 V2→V3, V3→V4, V4→V5, **and** V1→V3 are all registered, resolving V1→V5 composes `[V1→V3 (direct),
 V3→V4, V4→V5]` (3 casters), never revisiting V3 via the longer V1→V2→V3 route, because BFS marks a
 version visited — and therefore never reconsiders it — the first time any edge reaches it, which

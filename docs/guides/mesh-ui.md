@@ -15,7 +15,7 @@ never knows or cares which port produced the data.
 Because it is a cross-language concern, there is exactly **one** Mesh UI. It lives in the
 cross-language `benzene` repo at [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) and is the
 **canonical source of truth**. Every language port and the website demo *vendor a verbatim copy*
-of it (see [Consumption](#consumption)); none maintains its own. This guide is the contract that
+of it (see [Consumption](#5-consumption)); none maintains its own. This guide is the contract that
 keeps every one of those copies rendering a consistent product.
 
 ## 1. What the Mesh UI is for
@@ -65,7 +65,7 @@ any is absent ([mesh.md §6](../specification/mesh.md#6-degradation-normative)).
 | `asyncapi.json` | An AsyncAPI export of the catalog (optional; surfaced as a download / Studio deep-link) | AsyncAPI document |
 
 Reference fixtures for every one of these live next to the UI in the website demo
-([`website/demos/mesh/`](../../website/demos/mesh/)) and are the schema-matched examples a new
+([`website/demos/mesh/`](https://github.com/daniellepelley/Benzene/tree/main/website/demos/mesh)) and are the schema-matched examples a new
 port's aggregator output should look like.
 
 ### 2.1 Relationship to the wire contracts
@@ -184,7 +184,7 @@ that provides no live endpoint (the website demo, a plain S3-hosted catalog) mus
 
 The live plane's *wire query shape* (the envelope request/response the endpoint speaks) is a
 **collector-side idiom, not part of the mesh spec** ([mesh.md §4](../specification/mesh.md#4-collector-topics)
-defers the `mesh:query:*` read models). Any port that wants to offer the live plane implements a
+defers the `benzene:mesh:query:*` read models). Any port that wants to offer the live plane implements a
 compatible endpoint; a port that doesn't still ships the identical static UI.
 
 ## 5. Consumption
@@ -192,7 +192,7 @@ compatible endpoint; a port that doesn't still ships the identical static UI.
 There is one canonical file, [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) in this repo.
 Every consumer **vendors a verbatim copy** with a provenance marker — the same discipline the
 [conformance fixtures](../specification/conformance/README.md) use, and the reason
-[git submodules were rejected](../../work/repo-split-plan.md): a copy is diffable, offline, and
+[git submodules were rejected](https://github.com/daniellepelley/Benzene/blob/main/work/repo-split-plan.md): a copy is diffable, offline, and
 cannot break a downstream build when this repo moves.
 
 | Consumer | Vendored as | Notes |
@@ -243,5 +243,3 @@ The canonical UI was consolidated from the divergent per-language versions in Ju
   UI shows staleness as explicitly deferred rather than inventing it.
 - **Companion Spec UI deep-link**: the per-service page links to a `mesh-spec-ui.html` companion;
   where a consumer does not vendor that companion, the link is a best-effort outbound link.
-</content>
-</invoke>

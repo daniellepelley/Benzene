@@ -62,9 +62,10 @@ and "fully tool-operable".
 Recorded so they don't get accidentally specified:
 
 - `Void` as a class standing in for "no response" — a port should use its language's unit type.
-- PascalCase status strings are a wire contract (keep), but PascalCase keys inside health check
-  `data` bags are incidental (each check writes verbatim keys — specified as "verbatim", not as
-  "PascalCase").
+- Status **wire values** are a contract (keep) — they are the lowercase-kebab-case strings of
+  wire-contracts §3 (e.g. `not-found`), *not* the .NET enum's PascalCase member name, which is a
+  .NET-ism that must not leak. PascalCase keys inside health check `data` bags are incidental (each
+  check writes verbatim keys — specified as "verbatim", not as "PascalCase").
 - ~~The `message` vs `body` envelope field inconsistency~~ — resolved: both sides now use `body`
   (wire-contracts §1.1); the client also tolerates numeric HTTP status codes on read for
   compatibility with older services, which a fresh port need not replicate.

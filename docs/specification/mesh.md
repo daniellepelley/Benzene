@@ -4,7 +4,7 @@
 [benzene-go](https://github.com/daniellepelley/benzene-go)'s `docs/design/mesh.md`. The .NET
 implementation is the primary implementation of this document and covers the full contract:
 `Benzene.Mesh.Wire` (descriptor, reserved topic, trace feed) and `Benzene.Mesh.Collector` (the
-§4–§6 collector), together passing all three conformance fixture files via
+§4–§6 collector, including the §4.1 issue feed), together passing all four conformance fixture files via
 `test/Benzene.Conformance.Test`. The Go port (its `mesh`/`meshd` packages) is a fully conforming
 implementation — this contract was originally extracted from it — and the two have hosted each
 other's services in live cross-language fleets, in both directions. The pre-existing `Benzene.Mesh.*`
@@ -27,7 +27,7 @@ R6) — for such a service, §6 governs runtime degradation, not whether the fee
 ## 1. The reserved `benzene:mesh` topic
 
 A mesh-enabled service MUST intercept the reserved topic id `benzene:mesh` (plus any app-chosen aliases)
-the same way health-check interception works (core-concepts.md §5): interception is by topic id
+the same way health-check interception works (core-concepts.md §10): interception is by topic id
 alone, ignoring version; any other topic passes through unchanged. The response is status `ok`
 with the ServiceDescriptor (§2) as payload.
 
@@ -203,7 +203,7 @@ lossy under backpressure — a full buffer drops events, a failed send drops the
 mesh feed may ever fail, slow, or block the invocation it observed.
 
 Collector behavior is pinned by `conformance/mesh-collector-cases.json`. Query read models
-(`mesh:query:*`) as implemented by the Go collector are deliberately not part of this contract
+(`benzene:mesh:query:*`) as implemented by the Go collector are deliberately not part of this contract
 yet: they are one collector's read models, and join the spec if a second collector or
 third-party view needs them pinned. The collector fixtures exercise them only as the observable
 surface for asserting ingest/derivation behavior.
@@ -322,10 +322,12 @@ optional, on both sides:
 
 ## 7. Conformance
 
-Three fixture files in [conformance/](conformance/README.md) pin this document; their formats
+Four fixture files in [conformance/](conformance/README.md) pin this document; their formats
 and the canonical mesh handlers are documented there. A port that implements mesh MUST pass
 `mesh-descriptor-cases.json` and `mesh-trace-cases.json`; a port that additionally implements a
-collector MUST pass `mesh-collector-cases.json`. A port that implements neither is unaffected
+collector MUST pass `mesh-collector-cases.json`, and a collector that additionally claims the §4.1
+issue feed MUST pass `mesh-issue-cases.json` (optional — a collector without it stays
+collector-conformant). A port that implements neither is unaffected
 at Core level — mesh is an optional module there, and the Core spec creates no obligation to
 implement it, only the obligation to implement it *compatibly*. Supporting the
 [Cloud Service Profile](cloud-service-profile.md), however, requires the service-side feeds, so

@@ -168,7 +168,7 @@ exactly as specified).
 | `/benzene/mesh-ui` | Mesh artifact viewer | Optional UI |
 | `/benzene/fleet-ui` | Live fleet view (collector-hosted) | Optional UI; collectors are ordinary Benzene services, so the standard applies to them too |
 
-Reserved *topics* (`benzene:healthcheck`, `benzene:mesh`, `mesh:*`) are already namespaced by their own
+Reserved *topics* (`benzene:healthcheck`, `benzene:mesh`, `benzene:mesh:query:*`) are already namespaced by their own
 registries ([wire-contracts.md](wire-contracts.md), [mesh.md](mesh.md) §1/§4) and take no
 prefix — the prefix is an HTTP-surface concern.
 
