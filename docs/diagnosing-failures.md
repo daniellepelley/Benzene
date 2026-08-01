@@ -76,7 +76,7 @@ What each layer contributes when something fails:
 | `UseLogResult(...)` | One line per message: `Info` "BenzeneResult" on success, `Error` "BenzeneResult faulted" (with the exception) on a throw, both with `processTime` | The Error line is what stops a throw from silently skipping the "log every message" line |
 
 Add [`UseBenzeneMetrics()`](common-middleware.md#usebenzenemetrics) too if you want the failure to
-also move a counter/histogram — see [below](#how-a-failure-shows-up-in-metrics).
+also move a counter/histogram — see [below](#in-metrics).
 
 ## How a failure shows up across the three signals
 

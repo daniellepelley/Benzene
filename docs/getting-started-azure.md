@@ -7,7 +7,7 @@ Storage, Event Grid, Timer).
 
 For consuming Azure messaging in a long-running process **without** Azure Functions (console app,
 container, AKS), see the self-hosted workers in
-[Worker Service Setup, Part B](getting-started-worker.md#part-b-built-in-workers-kafka-http-service-bus-event-hub-cosmos-db)
+[Worker Service Setup, Part B](getting-started-worker.md#part-b-built-in-workers-kafka-rabbitmq-service-bus-event-hub-cosmos-db)
 (Service Bus, Event Hubs, and Cosmos DB Change Feed).
 
 Related Azure cookbooks:

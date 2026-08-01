@@ -96,7 +96,7 @@ public class MessageAttribute : Attribute
 ```
 
 Applied once per handler class. `Topic` is the routing key used to look up the handler at request
-time (see [Handler discovery](#handler-discovery) below); `Version` is optional and lets multiple
+time (see [Handler discovery](#handler-discovery-imessagehandlersfinder) below); `Version` is optional and lets multiple
 versions of a handler coexist for the same topic — `IVersionSelector` picks which version answers a
 given request.
 
