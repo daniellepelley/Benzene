@@ -65,7 +65,7 @@ any is absent ([mesh.md §6](../specification/mesh.md#6-degradation-normative)).
 | `asyncapi.json` | An AsyncAPI export of the catalog (optional; surfaced as a download / Studio deep-link) | AsyncAPI document |
 
 Reference fixtures for every one of these live next to the UI in the website demo
-([`website/demos/mesh/`](../../website/demos/mesh/)) and are the schema-matched examples a new
+([`website/demos/mesh/`](https://github.com/daniellepelley/Benzene/tree/main/website/demos/mesh)) and are the schema-matched examples a new
 port's aggregator output should look like.
 
 ### 2.1 Relationship to the wire contracts
@@ -184,7 +184,7 @@ that provides no live endpoint (the website demo, a plain S3-hosted catalog) mus
 
 The live plane's *wire query shape* (the envelope request/response the endpoint speaks) is a
 **collector-side idiom, not part of the mesh spec** ([mesh.md §4](../specification/mesh.md#4-collector-topics)
-defers the `mesh:query:*` read models). Any port that wants to offer the live plane implements a
+defers the `benzene:mesh:query:*` read models). Any port that wants to offer the live plane implements a
 compatible endpoint; a port that doesn't still ships the identical static UI.
 
 ## 5. Consumption
@@ -192,7 +192,7 @@ compatible endpoint; a port that doesn't still ships the identical static UI.
 There is one canonical file, [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) in this repo.
 Every consumer **vendors a verbatim copy** with a provenance marker — the same discipline the
 [conformance fixtures](../specification/conformance/README.md) use, and the reason
-[git submodules were rejected](../../work/repo-split-plan.md): a copy is diffable, offline, and
+[git submodules were rejected](https://github.com/daniellepelley/Benzene/blob/main/work/repo-split-plan.md): a copy is diffable, offline, and
 cannot break a downstream build when this repo moves.
 
 | Consumer | Vendored as | Notes |
