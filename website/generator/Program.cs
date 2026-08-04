@@ -3,6 +3,7 @@ using Benzene.Website.Generator;
 var repoRoot = Directory.GetCurrentDirectory();
 var outDir = "website/dist";
 string? dotnetDocs = null;               // override: the benzene-dotnet checkout's docs root (CI)
+var baseUrl = "https://benzene.app";      // site origin for canonical/OG/sitemap absolute URLs
 var extraSources = new List<DocSource>(); // future languages via --source id=label=urlPrefix=path[=navFile]
 
 for (var i = 0; i < args.Length; i++)
@@ -10,6 +11,13 @@ for (var i = 0; i < args.Length; i++)
     if (args[i] == "--out" && i + 1 < args.Length)
     {
         outDir = args[++i];
+    }
+    else if (args[i] == "--base-url" && i + 1 < args.Length)
+    {
+        // The absolute origin the site is served from (no trailing slash), used for canonical links,
+        // Open Graph/Twitter URLs, and sitemap.xml. Defaults to production; a preview/dev build can
+        // point it at dev.benzene.app so those absolute URLs match where the page actually lives.
+        baseUrl = args[++i].TrimEnd('/');
     }
     else if (args[i] == "--repo-root" && i + 1 < args.Length)
     {
@@ -134,4 +142,4 @@ else
 
 sources.AddRange(extraSources);
 
-return new SiteBuilder(repoRoot, outDir, sources).Run();
+return new SiteBuilder(repoRoot, outDir, sources, baseUrl).Run();

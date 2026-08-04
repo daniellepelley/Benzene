@@ -82,6 +82,14 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   forward-slash strings throughout, regardless of host OS.
 - `Layout` - the shared HTML shell (header/sidebar/footer, one hand-written `assets/site.css`, no
   JS framework, no Node/npm build step) for both the marketing home page and docs pages.
+- **Discoverability / SEO**: every real page (`Layout.SeoHead`) carries a self-referencing
+  `<link rel="canonical">` plus Open Graph + Twitter Card tags (so a shared link renders a title,
+  blurb and image, not a bare URL), pointing at `assets/og-image.svg` (a 1200×630 brand card). Docs
+  pages also get a `<meta name="description">` derived from the page's first paragraph
+  (`MarkdownText.FindDescription`, with a generic fallback). `SiteBuilder.WriteSitemapAndRobots`
+  emits `sitemap.xml` (every canonical page, absolute URLs; redirect stubs are excluded and marked
+  `noindex`) and `robots.txt` (points at the sitemap). Absolute URLs use `--base-url` (default
+  `https://benzene.app`, no trailing slash); a dev/preview build can override it.
 - **Self-check**: after generation, every internal `href` the tool emitted is checked against the
   actual output tree; a broken one is a non-zero exit, not a silent gap.
 - **Live UI demos (`website/demos/`)**: `SiteBuilder.CopyDemos()` copies this directory verbatim
