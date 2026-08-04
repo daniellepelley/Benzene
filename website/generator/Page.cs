@@ -19,4 +19,7 @@ internal sealed class Page
 
     public required MarkdownDocument Document { get; init; }
     public string Title { get; set; } = "";
+
+    /// <summary>Meta-description for this page (first paragraph); empty falls back to a generic one.</summary>
+    public string Description { get; set; } = "";
 }

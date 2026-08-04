@@ -9,8 +9,15 @@ internal static class Layout
     /// these: a port whose repo checkout is best-effort may be absent, and linking to docs that were
     /// never generated would fail the broken-link self-check and take the whole site build down.
     /// </param>
-    public static string RenderMarketingPage(string outputPath, IReadOnlyCollection<string> wiredLanguageIds)
+    public static string RenderMarketingPage(
+        string outputPath, IReadOnlyCollection<string> wiredLanguageIds, string baseUrl)
     {
+        const string metaTitle = "Benzene &mdash; one handler, every transport";
+        const string metaDescription =
+            "A hexagonal (ports-and-adapters) architecture for message-driven services, defined by a "
+            + "language-neutral spec and implemented in .NET, Go, TypeScript, and Python. Write a handler "
+            + "once and reach it over HTTP, queues, streams and serverless functions at the same time "
+            + "&mdash; with a live service map and a test host for everything you build.";
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
         var docsHome = RepoPaths.RelativeHref(outputPath, "docs/index.html");
@@ -49,8 +56,9 @@ internal static class Layout
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>Benzene &mdash; one handler, every transport</title>
-              <meta name="description" content="A hexagonal (ports-and-adapters) architecture for message-driven services, defined by a language-neutral spec and implemented in .NET, Go, TypeScript, and Python. Write a handler once and reach it over HTTP, queues, streams and serverless functions at the same time &mdash; with a live service map and a test host for everything you build.">
+              <title>{metaTitle}</title>
+              <meta name="description" content="{metaDescription}">
+            {SeoHead(baseUrl, outputPath, metaTitle, metaDescription, "website")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -180,7 +188,7 @@ internal static class Layout
             """;
     }
 
-    public static string RenderValuePage(MarketingPages.ValuePage page)
+    public static string RenderValuePage(MarketingPages.ValuePage page, string baseUrl)
     {
         var outputPath = page.Slug;
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
@@ -211,6 +219,7 @@ internal static class Layout
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{Html(page.Title)} &mdash; Benzene</title>
               <meta name="description" content="{Html(page.Description)}">
+            {SeoHead(baseUrl, outputPath, Html(page.Title), Html(page.Description), "article")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -231,11 +240,19 @@ internal static class Layout
     }
 
     public static string RenderDocsPage(
-        string title, string bodyHtml, NavNode nav, string outputPath,
-        DocSource source, IReadOnlyList<DocSource> allSources)
+        string title, string description, string bodyHtml, NavNode nav, string outputPath,
+        DocSource source, IReadOnlyList<DocSource> allSources, string baseUrl)
     {
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
+
+        // The <title> keeps its existing shape; the OG/description use a clean page name and a real
+        // blurb (the page's first paragraph, or a generic fallback for a page that opens without prose).
+        var pageName = title == "Benzene" ? "Benzene Docs" : title;
+        var docTitle = title == "Benzene" ? "Benzene Docs" : $"{Html(title)} - Benzene";
+        var blurb = Html(string.IsNullOrWhiteSpace(description)
+            ? $"{pageName} — {source.Label} documentation for Benzene, a hexagonal architecture for message-driven services."
+            : description);
 
         var sidebar = new StringBuilder();
         sidebar.Append(SectionSwitcher(outputPath, source, allSources));
@@ -249,7 +266,9 @@ internal static class Layout
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>{(title == "Benzene" ? "Benzene Docs" : $"{Html(title)} - Benzene")}</title>
+              <title>{docTitle}</title>
+              <meta name="description" content="{blurb}">
+            {SeoHead(baseUrl, outputPath, Html(pageName), blurb, "article")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -272,8 +291,11 @@ internal static class Layout
     /// </summary>
     public static string RenderDocsHubPage(
         string outputPath, IReadOnlyList<DocSource> sources,
-        IReadOnlyDictionary<string, List<Page>> pagesBySource)
+        IReadOnlyDictionary<string, List<Page>> pagesBySource, string baseUrl)
     {
+        const string hubDescription =
+            "Benzene documentation: the language-neutral specification, and per-language guides for "
+            + "building, hosting, testing and operating a Benzene service.";
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
 
@@ -334,7 +356,8 @@ internal static class Layout
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>Benzene Documentation</title>
-              <meta name="description" content="Benzene documentation: the language-neutral specification, and per-language guides for building, hosting, testing and operating a Benzene service.">
+              <meta name="description" content="{hubDescription}">
+            {SeoHead(baseUrl, outputPath, "Benzene Documentation", hubDescription, "website")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -539,6 +562,7 @@ internal static class Layout
             <head>
               <meta charset="utf-8">
               <meta http-equiv="refresh" content="0; url={href}">
+              <meta name="robots" content="noindex">
               <link rel="canonical" href="{href}">
               <title>Moved</title>
             </head>
@@ -547,6 +571,44 @@ internal static class Layout
             </body>
             </html>
             """;
+    }
+
+    /// <summary>
+    /// The absolute URL of an output page, for canonical/OG/sitemap use. The site root is served at
+    /// the origin itself (benzene.app/), every other page at its explicit path (kept with the trailing
+    /// <c>.html</c> so the URL resolves on a plain static host without directory-index rewriting).
+    /// </summary>
+    public static string AbsoluteUrl(string baseUrl, string outputPath) =>
+        outputPath == "index.html" ? $"{baseUrl}/" : $"{baseUrl}/{outputPath}";
+
+    /// <summary>
+    /// The per-page discoverability block: a self-referencing canonical link plus Open Graph and
+    /// Twitter Card metadata, so a page shared to Slack/X/LinkedIn/etc renders a real title, blurb and
+    /// image instead of a bare URL, and search engines see one canonical address. <paramref name="title"/>
+    /// and <paramref name="description"/> must already be attribute-safe (the callers pass the same
+    /// values they put in <c>&lt;title&gt;</c>/<c>&lt;meta name="description"&gt;</c>).
+    /// </summary>
+    private static string SeoHead(
+        string baseUrl, string outputPath, string title, string description, string ogType)
+    {
+        var url = AbsoluteUrl(baseUrl, outputPath);
+        var image = $"{baseUrl}/og-image.svg";
+        return $"""
+              <link rel="canonical" href="{url}">
+              <meta property="og:type" content="{ogType}">
+              <meta property="og:site_name" content="Benzene">
+              <meta property="og:title" content="{title}">
+              <meta property="og:description" content="{description}">
+              <meta property="og:url" content="{url}">
+              <meta property="og:image" content="{image}">
+              <meta property="og:image:type" content="image/svg+xml">
+              <meta property="og:image:width" content="1200">
+              <meta property="og:image:height" content="630">
+              <meta name="twitter:card" content="summary_large_image">
+              <meta name="twitter:title" content="{title}">
+              <meta name="twitter:description" content="{description}">
+              <meta name="twitter:image" content="{image}">
+        """;
     }
 
     private static string Html(string text) => System.Net.WebUtility.HtmlEncode(text);
