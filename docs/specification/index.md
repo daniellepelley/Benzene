@@ -13,6 +13,7 @@ documents below.
   - [Mesh Contracts](mesh.md) — service self-description, trace events, and collector topics for fleet-wide visibility
   - [Payload Schema Versioning](versioning.md) — versioning a topic's request/response shape independently of handler versioning
   - [Porting Guide](porting-guide.md) — concept-vs-idiom mapping and suggested order for implementing Benzene in another language
+  - [Port Quality Standards](port-quality-standards.md) — the Definition of Done for a language port: the DX-champion-in-the-loop workflow and the quality gates a unit of port work must clear
   - [Conformance Fixtures](conformance/README.md) — the language-neutral test fixtures every implementation runs to prove conformance
 - **The Cloud Service Profile**
   - [Cloud Service Profile](cloud-service-profile.md) — the named conformance target (requirements R1–R8) that guarantees mesh, Spec UI, and fleet tooling work on a service with no per-service negotiation
