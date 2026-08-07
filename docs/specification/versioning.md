@@ -285,10 +285,15 @@ Symmetric, and hooks into `IResponsePayloadMapper<TContext>`
   `ToSchemas` (the expander then composes every needed pair, up and down, reusing direct casters and
   chaining where none exists). A topic that only ever upcasts requests and doesn't downcast responses
   needs only the forward direction.
-- **Known limitation**: the request decorator wraps the framework-default
-  `MultiSerializerOptionsRequestMapper<TContext>`; a transport that registers a bespoke request
-  mapper (e.g. gRPC's protobuf-JSON one) is not wrapped on the request side. The response side wraps
-  the universal `DefaultResponsePayloadMapper<TContext>` and is unaffected.
+- **Bespoke request mappers (gRPC)**: `UsePayloadVersionCasting<TContext>` wraps the framework-default
+  `MultiSerializerOptionsRequestMapper<TContext>` on the request side, which is not gRPC's real mapper.
+  A transport with a bespoke request mapper re-points the request side at *its own* mapper via
+  `UsePayloadVersionRequestCasting<TContext, TInnerRequestMapper>()`; the decorator still reads the wire
+  body through that mapper (so protobuf-JSON bridging runs) before upcasting. For gRPC this is packaged
+  as `Benzene.Grpc.Versioning`'s `AddGrpcPayloadVersioning(...)` — same caster-declaration surface as
+  `AddPayloadVersioning`, request side only (gRPC writes its response straight to protobuf via its result
+  setter, so there is no response payload mapper to downcast). The response side of the serializer-based
+  transports wraps the universal `DefaultResponsePayloadMapper<TContext>` and is unaffected.
 
 ### 4.3 Degradation
 
