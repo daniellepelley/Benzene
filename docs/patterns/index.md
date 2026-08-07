@@ -44,3 +44,19 @@ Two scales of pattern:
 - [CQRS & read models](cqrs-read-models.md) — the query side share-nothing core services can't serve:
   a derived, denormalized view projected from domain events, answering cross-aggregate queries with a
   single read
+
+**At enterprise scale** — high-volume, real-time, and audit-heavy workloads, with worked examples of
+the kind of systems large enterprises ask to have designed:
+
+- [Real-time stream processing](streaming-processing.md) — the ordered streaming binding (Kinesis /
+  Event Hubs), partition-by-key, windowing, backpressure and checkpointing, worked through a
+  financial **market-data tick pipeline**
+- [Map-reduce & high-volume compute](map-reduce.md) — scatter-gather for large partitionable
+  calculations: bounded parallel fan-out and an app-owned reduce, worked through an **end-of-day
+  portfolio-risk** run over a million positions
+- [Event sourcing](event-sourcing.md) — an immutable, ordered event log as the source of truth,
+  composed from command handlers + a change-captured log + projections + event versioning, worked
+  through a **trade ledger** with full audit and replay
+- [Reference solution: a real-time risk & trading platform](reference-real-time-risk.md) — a whole
+  enterprise system that **assembles** the patterns above (stream → choreography → CQRS → map-reduce →
+  event sourcing → gRPC) into one worked design
