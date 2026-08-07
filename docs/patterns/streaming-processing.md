@@ -112,12 +112,14 @@ symbol's ticks into its current bar:
 ```csharp
 .UseStream<KinesisEventRecord>(async (records, ct) =>
 {
-    var ticks = records.SelectAwait(async r => Deserialize<Tick>(r.Kinesis.GetDataAsString()));
-
-    await foreach (var symbolGroup in ticks.PartitionBy(t => t.Symbol).WithCancellation(ct))
+    // Partition on the record's native partition key (the producer set it to the symbol), so no
+    // decode is needed to group. PartitionBy buffers this batch and preserves per-symbol order.
+    await foreach (var symbolGroup in records.PartitionBy(r => r.Kinesis.PartitionKey).WithCancellation(ct))
     {
         var symbol = symbolGroup.Key;
-        foreach (var minute in symbolGroup.Value.GroupBy(t => t.Timestamp.TruncateToMinute()))
+        var ticks = symbolGroup.Value.Select(r => Deserialize<Tick>(r.Kinesis.GetDataAsString()));
+
+        foreach (var minute in ticks.GroupBy(t => t.Timestamp.TruncateToMinute()))
         {
             var bar = Ohlc.From(minute);              // open/high/low/close/volume for that minute
             await _bars.UpsertAsync(symbol, minute.Key, bar);   // idempotent: replay-safe
