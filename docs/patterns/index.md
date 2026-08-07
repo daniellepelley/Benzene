@@ -33,3 +33,14 @@ Two scales of pattern:
   - [Service communication](service-communication.md) — topic-based addressing, the routing table,
     the AWS Lambda-to-Lambda realization, and the central-routing-lambda options with their
     latency/cost trade-offs
+
+- [Event-driven choreography](choreography.md) — the counterpart to the orchestrator tier: services
+  react to events and emit their own, with no central conductor. When to orchestrate vs choreograph,
+  how to emit and consume events on Benzene's transports, and why the mesh draws the choreography
+  graph for you
+- [The transactional outbox](transactional-outbox.md) — reliable event publishing: the dual-write
+  problem, and the near-zero-code change-data-capture form on Benzene that makes an event a
+  consequence of the committed write, so the events you choreograph on are never lost
+- [CQRS & read models](cqrs-read-models.md) — the query side share-nothing core services can't serve:
+  a derived, denormalized view projected from domain events, answering cross-aggregate queries with a
+  single read
