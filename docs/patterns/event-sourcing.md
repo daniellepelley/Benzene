@@ -116,11 +116,12 @@ keep the old events exactly as written and **upcast** them to the current shape 
 Benzene's payload-schema versioning does this at the pipeline edge:
 
 ```csharp
-services.AddPayloadVersioning(v => v.ForContext<DynamoDbRecordContext>()
+// AddPayloadVersioning is registered on the Benzene container (inside UsingBenzene).
+services.UsingBenzene(x => x.AddPayloadVersioning(v => v.ForContext<DynamoDbRecordContext>()
     .Topic("ledger:INSERT", t => t
         .Version<AccountDebitedV1>("v1")
         .Version<AccountDebitedV2>("v2")
-        .Upcast<AccountDebitedV1, AccountDebitedV2>(f => f.RegisterInitValue(e => e.Currency, "USD"))));
+        .Upcast<AccountDebitedV1, AccountDebitedV2>(f => f.RegisterInitValue(e => e.Currency, "USD")))));
 ```
 
 One projection handler on the latest schema; a decade of historical `v1` events upcast on read; the

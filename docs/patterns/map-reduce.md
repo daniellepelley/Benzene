@@ -83,7 +83,7 @@ deterministic:
 // shards: the dataset split into independent units of work
 var partials = await BoundedFanOut.WhenAllAsync(
     shards,
-    (shard, ct) => _sender.SendAsync<ValueShard, ShardResult>("valuation:shard", shard),
+    shard => _sender.SendAsync<ValueShard, ShardResult>("valuation:shard", shard),
     maxDegreeOfParallelism: 64);
 
 var total = partials
