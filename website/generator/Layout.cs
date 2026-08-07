@@ -336,6 +336,9 @@ internal static class Layout
                     + "port implements. It is the same in every language."),
                 "guides" => ("Guides",
                     "Language-neutral guides to Benzene's concepts and tooling, true for every port."),
+                "patterns" => ("Patterns",
+                    "Recurring ways of composing Benzene's core building blocks into services, the "
+                    + "same shape in every language."),
                 _ => (Html(src.Label), $"Cross-language {Html(src.Label)}."),
             };
             return $"""

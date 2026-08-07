@@ -124,6 +124,22 @@ if (File.Exists(Path.Combine(guidesRoot, "index.md")))
     });
 }
 
+// Cross-language patterns (docs/patterns/) — recurring ways of composing the core building blocks
+// into services. Like guides, a cross-cutting source (not a language); optional.
+var patternsRoot = Path.Combine(repoRoot, "docs", "patterns");
+if (File.Exists(Path.Combine(patternsRoot, "index.md")))
+{
+    sources.Add(new DocSource
+    {
+        Id = "patterns",
+        Label = "Patterns",
+        UrlPrefix = "docs/patterns",
+        DocsRootDisk = patternsRoot,
+        NavFile = "index.md",
+        IsLanguage = false,
+    });
+}
+
 // The .NET docs are the site's reference section and the marketing/front pages link into them, so
 // they are required. They come from an explicit --dotnet-docs (a benzene-dotnet checkout), or —
 // before the split's cutover, for a local run — benzene's own docs/index.md. Post-cutover benzene no
