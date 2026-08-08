@@ -9,4 +9,5 @@ This is the **cross-language home** of Benzene: the language-neutral specificati
 (`docs/specification/**`) and the website. The language implementations live in their own repos
 ([benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet),
 [benzene-go](https://github.com/daniellepelley/benzene-go),
-[benzene-typescript](https://github.com/daniellepelley/benzene-typescript)).
+[benzene-typescript](https://github.com/daniellepelley/benzene-typescript),
+[benzene-python](https://github.com/daniellepelley/benzene-python)).

@@ -8,10 +8,13 @@ ordered log. That is **event sourcing**: the aggregate's state is a fold over it
 log is the source of truth, and "what did this account look like last Tuesday?" and "prove how we got
 to this balance" are answerable by construction.
 
-Benzene has **no first-class event-sourcing library** — no event store, no aggregate-rehydration
-helper, no snapshot or replay framework. What it has is the set of primitives you **compose** one
-from, and a change-data-capture transport that makes the projection half nearly free. This document
-is explicit about that line, and works a **trade ledger** through it.
+Benzene keeps its event-sourcing surface deliberately small. The **`Benzene.EventSourcing`** package
+gives you an append-only event store with optimistic concurrency — `IEventStore`
+(`AppendAsync(streamId, expectedVersion, events)` / `ReadAsync`), an `InMemoryEventStore`, and a
+DynamoDB-backed store in `Benzene.EventSourcing.DynamoDb` — but there is **no aggregate-rehydration
+helper, no snapshot or replay framework**: those you compose. Add a change-data-capture transport
+that makes the projection half nearly free, and you have the whole pattern. This document is explicit
+about that line, and works a **trade ledger** through it.
 
 ---
 
@@ -20,16 +23,16 @@ is explicit about that line, and works a **trade ledger** through it.
 | Piece | Status |
 |---|---|
 | **Command ingest** — validate and decide | **Built-in** — a message handler (`[Message("account:debit")] IMessageHandler<Debit, …>`) is the command handler. |
-| **The event log** — append-only, ordered | **Composed** — an append-only store you own. On AWS, a DynamoDB table keyed `(aggregateId, sequence)` is the log; **writing the row *is* the append** (there is no Benzene "append" call — the write is your data-layer's). |
+| **The event log** — append-only, ordered | **Built-in** — `Benzene.EventSourcing`'s `IEventStore.AppendAsync(streamId, expectedVersion, events)` is the append, with optimistic concurrency (a version clash throws `EventStoreConcurrencyException`); use `InMemoryEventStore` or the DynamoDB store (`Benzene.EventSourcing.DynamoDb`, one item per `(streamId, version)`). You can still hand-roll the write against your own data layer if you prefer. |
 | **Projections** — turn events into read state | **Built-in transport** — point DynamoDB Streams at the log and consume it with `UseDynamoDb` (`[Message("ledger:INSERT")]`); Benzene delivers each appended event, in shard order, to a projector. This is [CQRS](cqrs-read-models.md) fed by the log. |
 | **Idempotency / exactly-once effect** | **Built-in middleware** — `UseIdempotency()` (+ a durable store) so a replayed event projects once. |
 | **Durable event evolution** — old events, new code | **Built-in** — `AddPayloadVersioning` upcasts historical event schemas to the current shape at the pipeline edge (below). |
-| **Aggregate rehydration, snapshots, replay orchestration** | **App-level — you write these.** Benzene deliberately does not impose an aggregate base class or a store interface. |
+| **Aggregate rehydration, snapshots, replay orchestration** | **App-level — you write these.** `Benzene.EventSourcing` gives you the store (`IEventStore`), but deliberately imposes no aggregate base class, snapshotting, or replay driver. |
 
-The honest summary: **Benzene gives you the ingest, the stream-projection consumer, idempotency, and
-event versioning; you own the log, the rehydration fold, snapshots, and the replay driver.** That is
-a deliberate small surface — event-sourcing conventions vary enough that a framework abstraction
-usually gets in the way.
+The honest summary: **Benzene gives you the ingest, the event store, the stream-projection consumer,
+idempotency, and event versioning; you own the rehydration fold, snapshots, and the replay driver.**
+That is a deliberate small surface — the storage and concurrency are handled, but the
+event-sourcing conventions above vary enough that a framework abstraction usually gets in the way.
 
 ---
 
@@ -46,7 +49,7 @@ decides, and **appends** the resulting event(s) to the log — an ordinary write
 [Message("account:debit")]
 public class Debit : IMessageHandler<Debit, DebitAccepted>
 {
-    private readonly IEventLog _log;   // your append-only store (e.g. DynamoDB), app-owned
+    private readonly IEventLog _log;   // Benzene.EventSourcing's IEventStore, or your own store
     public Debit(IEventLog log) => _log = log;
 
     public async Task<IBenzeneResult<DebitAccepted>> HandleAsync(Debit cmd)

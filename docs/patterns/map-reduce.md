@@ -8,9 +8,11 @@ thousands of scenarios, reprice a portfolio when the curve moves, score a batch 
 The shape that fits is **map-reduce / scatter-gather**: split the work into independent shards, run
 them in parallel across many workers (the *map*), and combine the results (the *reduce*).
 
-Benzene has no dedicated map-reduce primitive — and that is fine, because it **composes cleanly from
-parts Benzene does give you**. This document is honest about which parts are built-in and which you
-assemble, and works an **end-of-day portfolio risk** calculation through it.
+Benzene supports this two ways: **compose it** from the parts (the bounded fan-out helper + your
+fold), or reach for the packaged **`Benzene.MapReduce`** helper (`ScatterGatherAsync`), which wraps
+exactly that composition. This document is honest about which parts are built-in and which you
+assemble, works an **end-of-day portfolio risk** calculation through the explicit composition, and
+then shows the one-call helper form that does the same thing.
 
 ---
 
@@ -24,11 +26,14 @@ Be clear-eyed about this up front — it is the difference between using the fra
 | **Bounded parallelism** — a cap on how many run at once | **Built-in helper** — `BoundedFanOut.WhenAllAsync(source, body, maxDegreeOfParallelism)` (semaphore-gated `Task.WhenAll`, results in source order); `ConcurrentRequests` + `BoundedConcurrentDispatcher` on self-hosted workers. |
 | **One message → many transports** | **Built-in** — `UseParallel((..),(..))` on an outbound route, all-must-succeed. Fan-out *publish*, not scatter-gather of distinct work. |
 | **A fixed, heterogeneous parallel step set with rollback** | **Built-in** — a [saga](orchestrators.md#the-saga-pattern) *stage* runs its steps concurrently (`Task.WhenAll`) and compensates on failure. |
-| **Reduce** — aggregate the workers' results | **Composed — entirely app-level.** There is no built-in response aggregator; you write the fold. |
+| **Reduce** — aggregate the workers' results | **You own the fold** — write it directly, or pass it to `Benzene.MapReduce`'s `ScatterGatherAsync`, which runs the scatter (bounded fan-out) and your reduce together under a `PartialFailureMode` policy. |
+| **Scatter + reduce as one call** | **Packaged helper** — `Benzene.MapReduce`'s `IBenzeneMessageSender.ScatterGatherAsync(topic, shards, seed, reduce, options?)` composes the two rows above so you don't hand-roll them each time. |
 
-So: **the map is a fan-out you compose; the reduce is a fold you write.** Benzene supplies the
-transport, the topic addressing, the bounded-concurrency helper, and (for a fixed step set) the saga
-— it does not supply a scatter-gather-with-reduction API, and you should not go looking for one.
+So: **the map is a bounded fan-out; the reduce is a fold you own.** Benzene supplies the transport,
+the topic addressing, the bounded-concurrency helper, and (for a fixed step set) the saga. You can
+wire the scatter and the reduce yourself, or reach for the small `Benzene.MapReduce` helper that
+packages exactly that — the rest of this document shows the explicit composition first so you can see
+what the helper does.
 
 ---
 
@@ -95,6 +100,29 @@ On AWS the worker call resolves to a **Lambda-to-Lambda** invoke ([service commu
 cheap, fast, and burst-parallel — a thousand shards become a thousand concurrent Lambdas, each
 billed only for its own runtime. For a genuinely uniform "same calculation over a partitioned
 collection", that burst model is Benzene's sweet spot.
+
+### The same thing, packaged: `Benzene.MapReduce`
+
+*(informative, .NET)* When you don't want to hand-wire the scatter and the fold each time, the small
+`Benzene.MapReduce` package does exactly the above in one call — bounded-fan-out scatter, then your
+reduce, under an explicit failure policy:
+
+```csharp
+// scatter shards to "valuation:shard", fold each ShardResult into a RiskVector
+var result = await _sender.ScatterGatherAsync<ValueShard, ShardResult, RiskVector>(
+    "valuation:shard",
+    shards,
+    seed: RiskVector.Zero,
+    reduce: (acc, partial) => acc + partial,           // your fold
+    new ScatterGatherOptions { MaxDegreeOfParallelism = 64 });
+
+var total = result.Value;
+```
+
+The default `PartialFailureMode.ThrowOnAnyFailure` means an incomplete total is never silently
+treated as complete; switch to `BestEffort` to reduce over the successes and read the dropped shards
+off `result.FailedShards` (with `result.IsComplete` telling you whether coverage was full). It is a
+thin composition of the parts above — nothing you couldn't write, packaged so you don't rewrite it.
 
 ### The worker
 

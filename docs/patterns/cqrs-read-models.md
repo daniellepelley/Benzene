@@ -70,6 +70,7 @@ public class ProjectUserOntoTenant : IMessageHandler<UserCreated>
     public async Task<IBenzeneResult> HandleAsync(UserCreated e)
     {
         await _view.AddUserToTenantAsync(e.TenantId, e.UserId, e.Email);  // the join the write side can't do
+        return BenzeneResult.Ok();
     }
 }
 ```

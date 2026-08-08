@@ -64,9 +64,9 @@ any is absent ([mesh.md §6](../specification/mesh.md#6-degradation-normative)).
 | `annotations.json` | Human discussion threads keyed to a service or topic (read-only when static) | `{ generatedAtUtc, annotations: [{ id, entity, author, text, createdAtUtc }] }` where `entity` is `service:<name>` or `topic:<topicId>` |
 | `asyncapi.json` | An AsyncAPI export of the catalog (optional; surfaced as a download / Studio deep-link) | AsyncAPI document |
 
-Reference fixtures for every one of these live next to the UI in the website demo
+Reference fixtures for these live next to the UI in the website demo
 ([`website/demos/mesh/`](https://github.com/daniellepelley/Benzene/tree/main/website/demos/mesh)) and are the schema-matched examples a new
-port's aggregator output should look like.
+port's aggregator output should look like (the optional `asyncapi.json` export aside).
 
 ### 2.1 Relationship to the wire contracts
 

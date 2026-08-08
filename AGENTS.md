@@ -13,7 +13,8 @@ message-driven services. It holds two things:
 **This repo contains no language implementation.** The .NET port (and the code/tests/examples that
 used to live here) is in [benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet); Go is in
 [benzene-go](https://github.com/daniellepelley/benzene-go); TypeScript is in
-[benzene-typescript](https://github.com/daniellepelley/benzene-typescript). The split is recorded in
+[benzene-typescript](https://github.com/daniellepelley/benzene-typescript); Python is in
+[benzene-python](https://github.com/daniellepelley/benzene-python). The split is recorded in
 `work/repo-split-plan.md`.
 
 ## Structure

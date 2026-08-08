@@ -93,9 +93,10 @@ revaluing its slice against the day's curves and returning a partial risk vector
 folds the partials into the firm-level number and emits `risk:completed`. A job that is hours serial
 is minutes parallel.
 
-*Why Benzene:* the scatter is `Task.WhenAll`/`BoundedFanOut` over `SendAsync` resolving to
-Lambda-to-Lambda invokes (burst-cheap); the reduce is a deterministic fold (results in shard order);
-partial-failure policy is explicit so a regulatory number is never silently under-covered.
+*Why Benzene:* the scatter is a bounded fan-out over `SendAsync` resolving to Lambda-to-Lambda
+invokes (burst-cheap) and the reduce a deterministic fold (results in shard order) — packaged
+together as `Benzene.MapReduce`'s `ScatterGatherAsync`, whose explicit partial-failure policy means a
+regulatory number is never silently under-covered.
 
 ### 5. The book of record — [event sourcing](event-sourcing.md)
 
@@ -106,8 +107,9 @@ point-in-time reconstruction is a replay of the pure fold; years of schema drift
 upcasting historical events on read (`AddPayloadVersioning`).
 
 *Why Benzene:* command handlers ingest, DynamoDB-Streams CDC projects in order at-least-once, payload
-versioning evolves the events, idempotency makes replay converge — the ledger is composed from
-built-ins with the append and the fold as the only app-owned pieces.
+versioning evolves the events, idempotency makes replay converge, and `Benzene.EventSourcing`'s
+`IEventStore` is the append (optimistic concurrency built in) — the ledger is composed almost
+entirely from built-ins, with the rehydration fold the main app-owned piece.
 
 ### 6. Low-latency internal pricing — [gRPC](service-communication.md)
 
