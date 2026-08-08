@@ -435,6 +435,52 @@ a { color: var(--accent); }
   text-align: center;
 }
 
+/* Cookie consent banner. Present only when analytics is configured: the analytics snippet in the
+   page head injects the banner and the footer "Cookie preferences" toggle via JS, so a build with no
+   GA id has neither. Uses the shared theme tokens, so it matches light and dark automatically. */
+#cookie-consent {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  max-width: 46rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  z-index: 1000;
+}
+#cookie-consent .cookie-consent-text {
+  flex: 1 1 18rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+#cookie-consent .cookie-consent-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+#cookie-consent .cookie-consent-actions button { cursor: pointer; font: inherit; font-weight: 600; }
+#cookie-consent .cookie-consent-actions .button { border: 0; }
+#cookie-consent .cookie-consent-actions .button-secondary { border: 1px solid var(--border); }
+.cookie-prefs-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 @media (max-width: 800px) {
   /* Content first, nav demoted to a labelled directory at the foot of the page - so a docs page
      opens straight into what you clicked, the way the single-column marketing pages read, instead

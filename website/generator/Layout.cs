@@ -634,16 +634,93 @@ internal static class Layout
 
         if (!string.IsNullOrWhiteSpace(options.GoogleAnalyticsId))
         {
+            // Consent-gated GA4: gtag.js is not requested and no cookie is set until the visitor clicks
+            // Accept on the banner. Reject (or no prior choice + navigating away) loads nothing. The
+            // decision is remembered in localStorage; a "Cookie preferences" link added to the footer
+            // reopens the banner so it can be changed (and denial flips GA's own ga-disable flag so a
+            // withdrawal takes effect immediately, even after an earlier accept). The banner markup and
+            // the footer toggle are injected here, so a build with no GA id ships neither.
             var id = options.GoogleAnalyticsId;
             head.Append($$"""
 
-                  <!-- Google Analytics (GA4) -->
-                  <script async src="https://www.googletagmanager.com/gtag/js?id={{Html(id)}}"></script>
+                  <!-- Google Analytics (GA4), loaded only after the visitor accepts the cookie banner -->
                   <script>
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-                    gtag('config', '{{JsString(id)}}');
+                    (function () {
+                      var GA_ID = '{{JsString(id)}}';
+                      var KEY = 'benzene-analytics-consent';
+                      function loadGa() {
+                        var s = document.createElement('script');
+                        s.async = true;
+                        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+                        document.head.appendChild(s);
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag() { dataLayer.push(arguments); }
+                        window.gtag = gtag;
+                        gtag('js', new Date());
+                        gtag('config', GA_ID);
+                      }
+                      function save(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+                      function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+                      function decide(v) {
+                        save(v);
+                        var el = document.getElementById('cookie-consent');
+                        if (el && el.parentNode) { el.parentNode.removeChild(el); }
+                        if (v === 'granted') { loadGa(); }
+                        else { window['ga-disable-' + GA_ID] = true; }
+                      }
+                      function banner() {
+                        if (document.getElementById('cookie-consent')) { return; }
+                        var box = document.createElement('div');
+                        box.id = 'cookie-consent';
+                        box.setAttribute('role', 'region');
+                        box.setAttribute('aria-label', 'Cookie consent');
+                        var p = document.createElement('p');
+                        p.className = 'cookie-consent-text';
+                        p.textContent = 'We use Google Analytics to understand how the site is used. It only sets cookies if you accept.';
+                        var actions = document.createElement('div');
+                        actions.className = 'cookie-consent-actions';
+                        var no = document.createElement('button');
+                        no.type = 'button';
+                        no.className = 'button button-secondary';
+                        no.textContent = 'Reject';
+                        no.addEventListener('click', function () { decide('denied'); });
+                        var yes = document.createElement('button');
+                        yes.type = 'button';
+                        yes.className = 'button';
+                        yes.textContent = 'Accept';
+                        yes.addEventListener('click', function () { decide('granted'); });
+                        actions.appendChild(no);
+                        actions.appendChild(yes);
+                        box.appendChild(p);
+                        box.appendChild(actions);
+                        document.body.appendChild(box);
+                      }
+                      function addToggle() {
+                        var line = document.querySelector('.site-footer p');
+                        if (!line) { return; }
+                        var link = document.createElement('button');
+                        link.type = 'button';
+                        link.className = 'cookie-prefs-link';
+                        link.textContent = 'Cookie preferences';
+                        link.addEventListener('click', function () {
+                          try { localStorage.removeItem(KEY); } catch (e) {}
+                          banner();
+                        });
+                        line.appendChild(document.createTextNode(' · '));
+                        line.appendChild(link);
+                      }
+                      function init() {
+                        addToggle();
+                        var choice = read();
+                        if (choice === 'granted') { loadGa(); }
+                        else if (choice !== 'denied') { banner(); }
+                      }
+                      if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', init);
+                      } else {
+                        init();
+                      }
+                    })();
                   </script>
             """);
         }

@@ -109,19 +109,26 @@ Verify it worked: open the site, **View Source**, and search for `googletagmanag
 
 ---
 
-## One thing to decide: cookie consent
+## Cookie consent (already built in)
 
-GA4 sets cookies and processes visitor data, so depending on your audience (EU/UK visitors in
-particular) you may need a **cookie-consent banner** before analytics loads, to stay GDPR/PECR-
-compliant. The current setup loads GA on every page unconditionally. Options, roughly in order of
-effort:
+GA4 sets cookies, so to stay GDPR/PECR-friendly the site **asks first**: Google Analytics is not
+requested and no cookie is set until the visitor clicks **Accept** on a consent banner. This is
+prior (opt-in) consent — the compliant default for EU/UK visitors — and it's automatic whenever
+`GOOGLE_ANALYTICS_ID` is set; there's nothing extra to turn on. Behaviour:
 
-- **Accept the risk for now** — it's a developer docs site with no personal data collected beyond
-  GA's defaults; many small OSS sites run GA plainly. Lowest effort.
-- **Turn on Google Consent Mode / a lightweight consent banner** — a follow-up task; the generator
-  would gate the `gtag` snippet behind consent. Say the word and I'll implement it.
-- **Use a cookieless alternative** (e.g. Plausible, Fathom) — privacy-friendly, no banner needed,
-  but paid/self-hosted. A bigger change; the same `SiteOptions` hook would carry its snippet instead.
+- On a first visit a small banner appears (bottom of the page) with **Accept** and **Reject**.
+- **Accept** → GA loads and the choice is remembered (in `localStorage`) so the banner doesn't
+  reappear on later pages/visits.
+- **Reject** → nothing loads, no analytics cookie is set, and the choice is remembered. (It also
+  flips GA's `ga-disable` flag, so a withdrawal after a previous Accept takes effect immediately.)
+- A **"Cookie preferences"** link is added to the footer so a visitor can reopen the banner and
+  change their mind at any time.
+- With no consent stored, no GA is loaded — so crawlers and anyone who ignores the banner are never
+  tracked.
+
+If you'd rather avoid the banner entirely, a **cookieless analytics** provider (e.g. Plausible,
+Fathom) needs no consent prompt; it's a bigger change but would reuse the same `SiteOptions` hook to
+carry its snippet instead. Say the word if you want to go that route.
 
 ---
 

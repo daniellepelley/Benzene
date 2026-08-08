@@ -79,3 +79,9 @@ public values (they appear in page source), so they are Actions *variables*, not
 bytes to live, one measurement id reports traffic from both `dev.` and the apex domain — filter by
 hostname in GA if you want them apart. The full manual account setup is in
 [`work/website-analytics-setup.md`](../work/website-analytics-setup.md).
+
+**Analytics is consent-gated.** When `--google-analytics-id` is set, GA is *not* loaded until the
+visitor accepts a cookie banner (opt-in, so no cookie before consent); Reject blocks it and is
+remembered, and a "Cookie preferences" footer link reopens the banner. The banner and its footer
+toggle are injected by the analytics snippet itself (`Layout.GoogleHead`), so a build without a GA id
+has neither. Styling lives under `#cookie-consent` in `assets/site.css`.

@@ -97,6 +97,11 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   carries these plus `BaseUrl` as one site-wide options object (threaded where `baseUrl` used to be).
   CI passes them from the public repo *variables* `GOOGLE_ANALYTICS_ID` / `GOOGLE_SITE_VERIFICATION`
   (not secrets — they appear in page source). Manual account setup: `work/website-analytics-setup.md`.
+  - **Consent-gated**: GA is loaded (and its cookie set) only after the visitor clicks Accept on a
+    cookie banner — opt-in, so nothing tracks before consent; Reject is remembered and also sets GA's
+    `ga-disable` flag. The banner and a "Cookie preferences" footer toggle are built by the injected
+    snippet's own vanilla JS (no framework), so they exist only when a GA id is set; the banner's
+    styling is the `#cookie-consent` block in `assets/site.css` (theme-token based, light/dark aware).
 - **Self-check**: after generation, every internal `href` the tool emitted is checked against the
   actual output tree; a broken one is a non-zero exit, not a silent gap.
 - **Live UI demos (`website/demos/`)**: `SiteBuilder.CopyDemos()` copies this directory verbatim
