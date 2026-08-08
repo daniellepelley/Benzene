@@ -308,8 +308,7 @@ internal sealed class SiteBuilder
             // to source files not on the site).
             if (page.Source.RepoBlobUrl != null)
             {
-                var repoRel = RepoPaths.CombineRepoRelative(page.DocRelativePath, pathPart);
-                link.Url = $"{page.Source.RepoBlobUrl.TrimEnd('/')}/{repoRel}" + suffix;
+                link.Url = RepoPaths.RepoBlobHref(page.Source.RepoBlobUrl, page.DocRelativePath, pathPart) + suffix;
                 continue;
             }
 

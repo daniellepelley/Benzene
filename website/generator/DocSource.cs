@@ -60,10 +60,13 @@ internal sealed class DocSource
     public string[] ExcludedFiles { get; init; } = [];
 
     /// <summary>
-    /// Base URL of this source's repo blob root (e.g. https://github.com/daniellepelley/benzene-go/blob/main).
+    /// Blob URL of this source's <see cref="DocsRootDisk"/> in its repo — the docs root, not necessarily
+    /// the repo root (e.g. https://github.com/daniellepelley/benzene-dotnet/blob/main/docs for a source
+    /// whose docs live under docs/, or …/blob/main for a landing source whose root is the repo root).
     /// When set, a relative link that resolves to no published page/asset/demo is rewritten to point at
-    /// the file in the repo, instead of being left as a dead relative link — useful for a landing README
-    /// that links to source files not published on the site.
+    /// the file in the repo (resolved relative to the page, then normalized), instead of being left as a
+    /// dead relative link that 404/403s on the static host — e.g. docs linking to example projects or
+    /// SAM templates, or a landing README linking to source files not published on the site.
     /// </summary>
     public string? RepoBlobUrl { get; init; }
 

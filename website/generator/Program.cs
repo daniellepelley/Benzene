@@ -106,6 +106,11 @@ var dotnetSource = new DocSource
     LegacyUrlPrefix = "docs",   // .NET docs were at /docs/* pre-split; redirect old links to /dotnet/docs/*
     ExcludedSubdirs = ["specification/", "plans/"],
     ExcludedFiles = ["DOCUMENTATION_QUICK_REFERENCE.md"],
+    // The .NET docs link to real repo files not published on the site (example projects, SAM
+    // templates). Point those at the file on GitHub — the blob URL of this source's docs root — so
+    // they don't render as dead relative links that 403 on the static host. (docs root, because a
+    // link like ../examples/… is resolved relative to the page, then normalized against this base.)
+    RepoBlobUrl = "https://github.com/daniellepelley/benzene-dotnet/blob/main/docs",
 };
 
 // The cross-language spec source (stays in benzene). Not a language: it does not appear in the

@@ -50,6 +50,21 @@ internal static class RepoPaths
         return string.Join('/', segments);
     }
 
+    /// <summary>
+    /// Resolves a doc-relative link that points at a repo file (not a published page) to its URL in the
+    /// source repo's blob view. <paramref name="blobDocsRoot"/> is the blob URL of the source's docs
+    /// root; the href is resolved relative to the page's own location under that root, so a link that
+    /// climbs out of the docs tree (e.g. <c>../examples/…</c>) lands on the right repo path and any
+    /// <c>..</c> is normalized away instead of being left in the emitted URL.
+    /// </summary>
+    public static string RepoBlobHref(string blobDocsRoot, string currentPageDocRelativePath, string relativeHref)
+    {
+        var docsRoot = new Uri($"{blobDocsRoot.TrimEnd('/')}/");            // treat the docs root as a directory
+        var pageDir = System.IO.Path.GetDirectoryName(Normalize(currentPageDocRelativePath)) ?? "";
+        var basis = pageDir.Length == 0 ? docsRoot : new Uri(docsRoot, $"{pageDir}/");
+        return new Uri(basis, relativeHref).AbsoluteUri;
+    }
+
     /// <summary>Relative URL from one output HTML file to another, both given as repo-root-relative output paths.</summary>
     public static string RelativeHref(string fromOutputPath, string toOutputPath)
     {
