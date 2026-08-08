@@ -10,15 +10,15 @@ internal sealed class SiteBuilder
     private readonly string _repoRoot;
     private readonly string _outDir;
     private readonly IReadOnlyList<DocSource> _sources;
-    private readonly string _baseUrl;
+    private readonly SiteOptions _options;
     private readonly MarkdownPipeline _pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
-    public SiteBuilder(string repoRoot, string outDir, IReadOnlyList<DocSource> sources, string baseUrl)
+    public SiteBuilder(string repoRoot, string outDir, IReadOnlyList<DocSource> sources, SiteOptions options)
     {
         _repoRoot = repoRoot;
         _outDir = outDir;
         _sources = sources;
-        _baseUrl = baseUrl;
+        _options = options;
     }
 
     public int Run()
@@ -72,7 +72,7 @@ internal sealed class SiteBuilder
 
         // 5. The cross-language docs hub (docs/index.html): the headline landing that points at the
         //    spec and at each language's own docs home. The marketing header's "Docs" link targets it.
-        WriteOutput("docs/index.html", Layout.RenderDocsHubPage("docs/index.html", _sources, pagesBySource, _baseUrl));
+        WriteOutput("docs/index.html", Layout.RenderDocsHubPage("docs/index.html", _sources, pagesBySource, _options));
 
         // 5b. Redirect stubs so links to a source's pre-split paths still resolve (e.g. the .NET docs
         //     moved from /docs/* to /dotnet/docs/*). A legacy path already occupied by a real page
@@ -100,10 +100,10 @@ internal sealed class SiteBuilder
         var wiredLanguageIds = _sources.Where(s => s.IsLanguage).Select(s => s.Id).ToHashSet();
         File.WriteAllText(
             Path.Combine(_outDir, "index.html"),
-            Layout.RenderMarketingPage("index.html", wiredLanguageIds, _baseUrl));
+            Layout.RenderMarketingPage("index.html", wiredLanguageIds, _options));
         foreach (var valuePage in MarketingPages.All)
         {
-            File.WriteAllText(Path.Combine(_outDir, valuePage.Slug), Layout.RenderValuePage(valuePage, _baseUrl));
+            File.WriteAllText(Path.Combine(_outDir, valuePage.Slug), Layout.RenderValuePage(valuePage, _options));
         }
 
         CopyStaticAssets(assetsToCopy);
@@ -380,7 +380,7 @@ internal sealed class SiteBuilder
         var bodyHtml = writer.ToString();
 
         return Layout.RenderDocsPage(
-            page.Title, page.Description, bodyHtml, nav, page.OutputPath, page.Source, allSources, _baseUrl);
+            page.Title, page.Description, bodyHtml, nav, page.OutputPath, page.Source, allSources, _options);
     }
 
     private void WriteOutput(string outputPath, string html)
@@ -397,7 +397,7 @@ internal sealed class SiteBuilder
         sitemap.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
         foreach (var path in indexablePaths)
         {
-            var loc = System.Security.SecurityElement.Escape(Layout.AbsoluteUrl(_baseUrl, path));
+            var loc = System.Security.SecurityElement.Escape(Layout.AbsoluteUrl(_options.BaseUrl, path));
             sitemap.AppendLine($"  <url><loc>{loc}</loc></url>");
         }
         sitemap.AppendLine("</urlset>");
@@ -406,7 +406,7 @@ internal sealed class SiteBuilder
         // Allow everything and point crawlers at the sitemap.
         File.WriteAllText(
             Path.Combine(_outDir, "robots.txt"),
-            $"User-agent: *\nAllow: /\n\nSitemap: {_baseUrl}/sitemap.xml\n");
+            $"User-agent: *\nAllow: /\n\nSitemap: {_options.BaseUrl}/sitemap.xml\n");
     }
 
     private void CopyStaticAssets(Dictionary<string, string> crawledAssets)

@@ -32,6 +32,11 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ vars.WEBSITE_AWS_REGION }}
+      # Public Google identifiers baked into every page (analytics + Search Console ownership). They
+      # appear in page source, so they are CI *variables*, not secrets. Unset → the generator omits
+      # both, so a fork or a run without them configured ships no tracking.
+      GOOGLE_ANALYTICS_ID: ${{ vars.GOOGLE_ANALYTICS_ID }}
+      GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
 
     steps:
     - name: Checkout benzene
@@ -89,6 +94,17 @@ jobs:
           exit 1
         fi
         ARGS=(--out website/dist --dotnet-docs _sources/benzene-dotnet/docs)
+
+        # Optional Google integrations. Each is added only when its variable is set, so nothing is
+        # injected on a run (or fork) that hasn't configured them.
+        if [ -n "${GOOGLE_ANALYTICS_ID:-}" ]; then
+          echo "Wiring Google Analytics."
+          ARGS+=(--google-analytics-id "$GOOGLE_ANALYTICS_ID")
+        fi
+        if [ -n "${GOOGLE_SITE_VERIFICATION:-}" ]; then
+          echo "Wiring the Search Console verification tag."
+          ARGS+=(--google-site-verification "$GOOGLE_SITE_VERIFICATION")
+        fi
 
         # Wire a sibling port: a full docs/ tree (docs/index.md) → full section; else a README → landing.
         wire_lang() {

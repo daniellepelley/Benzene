@@ -90,6 +90,13 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   emits `sitemap.xml` (every canonical page, absolute URLs; redirect stubs are excluded and marked
   `noindex`) and `robots.txt` (points at the sitemap). Absolute URLs use `--base-url` (default
   `https://benzene.app`, no trailing slash); a dev/preview build can override it.
+- **Analytics / Search Console** (`SiteOptions`, `Layout.GoogleHead`): `--google-analytics-id` (GA4
+  `gtag.js`) and `--google-site-verification` (a `google-site-verification` meta tag) inject into
+  every page head via `SeoHead`. Both are **empty by default** — a build with neither set ships no
+  tracking and no stray tag, so local/preview builds and the self-check stay clean. `SiteOptions`
+  carries these plus `BaseUrl` as one site-wide options object (threaded where `baseUrl` used to be).
+  CI passes them from the public repo *variables* `GOOGLE_ANALYTICS_ID` / `GOOGLE_SITE_VERIFICATION`
+  (not secrets — they appear in page source). Manual account setup: `work/website-analytics-setup.md`.
 - **Self-check**: after generation, every internal `href` the tool emitted is checked against the
   actual output tree; a broken one is a non-zero exit, not a silent gap.
 - **Live UI demos (`website/demos/`)**: `SiteBuilder.CopyDemos()` copies this directory verbatim

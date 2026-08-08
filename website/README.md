@@ -62,3 +62,20 @@ is HSTS-preloaded, so plain S3 website endpoints won't do), an ACM certificate, 
 the `www → apex` redirect — is Terraform under **[`deploy/`](deploy/)**. See
 [`deploy/README.md`](deploy/README.md) for the one-time setup (apply, GoDaddy nameserver switch, repo
 variables, CI IAM policy).
+
+## Analytics & Search Console
+
+Two optional flags bake Google integrations into every page's `<head>`:
+
+| Flag | What it emits | Repo variable (CI) |
+|---|---|---|
+| `--google-analytics-id G-XXXXXXXXXX` | The Google Analytics 4 `gtag.js` snippet | `GOOGLE_ANALYTICS_ID` |
+| `--google-site-verification <token>` | A `google-site-verification` `<meta>` tag | `GOOGLE_SITE_VERIFICATION` |
+
+Both are **empty by default**, so a local or preview build ships no tracking and no verification
+tag. `deploy-website.yml` passes each one through only when its repo **variable** is set — these are
+public values (they appear in page source), so they are Actions *variables*, not secrets. Set them at
+**Settings → Secrets and variables → Actions → Variables**. Because promotion copies the exact dev
+bytes to live, one measurement id reports traffic from both `dev.` and the apex domain — filter by
+hostname in GA if you want them apart. The full manual account setup is in
+[`work/website-analytics-setup.md`](../work/website-analytics-setup.md).

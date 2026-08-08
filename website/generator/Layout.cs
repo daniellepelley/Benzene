@@ -10,7 +10,7 @@ internal static class Layout
     /// never generated would fail the broken-link self-check and take the whole site build down.
     /// </param>
     public static string RenderMarketingPage(
-        string outputPath, IReadOnlyCollection<string> wiredLanguageIds, string baseUrl)
+        string outputPath, IReadOnlyCollection<string> wiredLanguageIds, SiteOptions options)
     {
         const string metaTitle = "Benzene &mdash; one handler, every transport";
         const string metaDescription =
@@ -58,7 +58,7 @@ internal static class Layout
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{metaTitle}</title>
               <meta name="description" content="{metaDescription}">
-            {SeoHead(baseUrl, outputPath, metaTitle, metaDescription, "website")}
+            {SeoHead(options, outputPath, metaTitle, metaDescription, "website")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -188,7 +188,7 @@ internal static class Layout
             """;
     }
 
-    public static string RenderValuePage(MarketingPages.ValuePage page, string baseUrl)
+    public static string RenderValuePage(MarketingPages.ValuePage page, SiteOptions options)
     {
         var outputPath = page.Slug;
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
@@ -219,7 +219,7 @@ internal static class Layout
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{Html(page.Title)} &mdash; Benzene</title>
               <meta name="description" content="{Html(page.Description)}">
-            {SeoHead(baseUrl, outputPath, Html(page.Title), Html(page.Description), "article")}
+            {SeoHead(options, outputPath, Html(page.Title), Html(page.Description), "article")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -241,7 +241,7 @@ internal static class Layout
 
     public static string RenderDocsPage(
         string title, string description, string bodyHtml, NavNode nav, string outputPath,
-        DocSource source, IReadOnlyList<DocSource> allSources, string baseUrl)
+        DocSource source, IReadOnlyList<DocSource> allSources, SiteOptions options)
     {
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
@@ -268,7 +268,7 @@ internal static class Layout
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{docTitle}</title>
               <meta name="description" content="{blurb}">
-            {SeoHead(baseUrl, outputPath, Html(pageName), blurb, "article")}
+            {SeoHead(options, outputPath, Html(pageName), blurb, "article")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -291,7 +291,7 @@ internal static class Layout
     /// </summary>
     public static string RenderDocsHubPage(
         string outputPath, IReadOnlyList<DocSource> sources,
-        IReadOnlyDictionary<string, List<Page>> pagesBySource, string baseUrl)
+        IReadOnlyDictionary<string, List<Page>> pagesBySource, SiteOptions options)
     {
         const string hubDescription =
             "Benzene documentation: the language-neutral specification, and per-language guides for "
@@ -360,7 +360,7 @@ internal static class Layout
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>Benzene Documentation</title>
               <meta name="description" content="{hubDescription}">
-            {SeoHead(baseUrl, outputPath, "Benzene Documentation", hubDescription, "website")}
+            {SeoHead(options, outputPath, "Benzene Documentation", hubDescription, "website")}
               <link rel="icon" href="{favicon}" type="image/svg+xml">
               <link rel="stylesheet" href="{css}">
             </head>
@@ -592,10 +592,10 @@ internal static class Layout
     /// values they put in <c>&lt;title&gt;</c>/<c>&lt;meta name="description"&gt;</c>).
     /// </summary>
     private static string SeoHead(
-        string baseUrl, string outputPath, string title, string description, string ogType)
+        SiteOptions options, string outputPath, string title, string description, string ogType)
     {
-        var url = AbsoluteUrl(baseUrl, outputPath);
-        var image = $"{baseUrl}/og-image.svg";
+        var url = AbsoluteUrl(options.BaseUrl, outputPath);
+        var image = $"{options.BaseUrl}/og-image.svg";
         return $"""
               <link rel="canonical" href="{url}">
               <meta property="og:type" content="{ogType}">
@@ -610,9 +610,49 @@ internal static class Layout
               <meta name="twitter:card" content="summary_large_image">
               <meta name="twitter:title" content="{title}">
               <meta name="twitter:description" content="{description}">
-              <meta name="twitter:image" content="{image}">
+              <meta name="twitter:image" content="{image}">{GoogleHead(options)}
         """;
     }
+
+    /// <summary>
+    /// The optional Google integrations shared by every page head: a Search Console ownership meta tag
+    /// and the Google Analytics (GA4) gtag.js snippet. Each is emitted only when its identifier is
+    /// configured, so a build with neither set (local, preview) ships no tracking and no stray tag.
+    /// Returned pre-indented to sit inline after the SEO block; empty when nothing is configured.
+    /// </summary>
+    private static string GoogleHead(SiteOptions options)
+    {
+        var head = new StringBuilder();
+
+        if (!string.IsNullOrWhiteSpace(options.GoogleSiteVerification))
+        {
+            head.Append($"""
+
+                  <meta name="google-site-verification" content="{Html(options.GoogleSiteVerification)}">
+            """);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.GoogleAnalyticsId))
+        {
+            var id = options.GoogleAnalyticsId;
+            head.Append($$"""
+
+                  <!-- Google Analytics (GA4) -->
+                  <script async src="https://www.googletagmanager.com/gtag/js?id={{Html(id)}}"></script>
+                  <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '{{JsString(id)}}');
+                  </script>
+            """);
+        }
+
+        return head.ToString();
+    }
+
+    /// <summary>Escapes a trusted-but-defensive value for embedding in a single-quoted JS string literal.</summary>
+    private static string JsString(string text) => text.Replace("\\", "\\\\").Replace("'", "\\'");
 
     private static string Html(string text) => System.Net.WebUtility.HtmlEncode(text);
 }

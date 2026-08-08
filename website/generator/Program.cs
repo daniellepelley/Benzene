@@ -4,6 +4,8 @@ var repoRoot = Directory.GetCurrentDirectory();
 var outDir = "website/dist";
 string? dotnetDocs = null;               // override: the benzene-dotnet checkout's docs root (CI)
 var baseUrl = "https://benzene.app";      // site origin for canonical/OG/sitemap absolute URLs
+var googleAnalyticsId = "";               // GA4 measurement id (G-XXXXXXXXXX); empty → no analytics
+var googleSiteVerification = "";          // Search Console ownership token; empty → no verification tag
 var extraSources = new List<DocSource>(); // future languages via --source id=label=urlPrefix=path[=navFile]
 
 for (var i = 0; i < args.Length; i++)
@@ -18,6 +20,18 @@ for (var i = 0; i < args.Length; i++)
         // Open Graph/Twitter URLs, and sitemap.xml. Defaults to production; a preview/dev build can
         // point it at dev.benzene.app so those absolute URLs match where the page actually lives.
         baseUrl = args[++i].TrimEnd('/');
+    }
+    else if (args[i] == "--google-analytics-id" && i + 1 < args.Length)
+    {
+        // A GA4 measurement id (G-XXXXXXXXXX). When set, every page gets the gtag.js snippet; when
+        // absent or empty the site ships no analytics at all, so local and preview builds don't track.
+        googleAnalyticsId = args[++i].Trim();
+    }
+    else if (args[i] == "--google-site-verification" && i + 1 < args.Length)
+    {
+        // The token from a Google Search Console "HTML tag" verification. When set, every page carries
+        // the <meta name="google-site-verification"> tag proving ownership of the domain to Google.
+        googleSiteVerification = args[++i].Trim();
     }
     else if (args[i] == "--repo-root" && i + 1 < args.Length)
     {
@@ -158,4 +172,11 @@ else
 
 sources.AddRange(extraSources);
 
-return new SiteBuilder(repoRoot, outDir, sources, baseUrl).Run();
+var options = new SiteOptions
+{
+    BaseUrl = baseUrl,
+    GoogleAnalyticsId = googleAnalyticsId,
+    GoogleSiteVerification = googleSiteVerification,
+};
+
+return new SiteBuilder(repoRoot, outDir, sources, options).Run();
