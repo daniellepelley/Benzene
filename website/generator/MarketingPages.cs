@@ -5,8 +5,8 @@ namespace Benzene.Website.Generator;
 /// Operations), rendered by <see cref="Layout.RenderValuePage"/>. Deliberately data-driven and
 /// separate from <see cref="MarketingContent"/> (the home page) so each page is one small source of
 /// truth. Every claim links to a real docs page or live demo; anything partial or pre-1.0 is stated
-/// as such, per <c>work/website-marketing-aims.md</c>'s honesty gates and
-/// <c>work/website-audience-plan.md</c>.
+/// as such, per the honesty gates and audience analysis kept in the private benzene-admin repo
+/// (<c>work/website-marketing-aims.md</c> and <c>work/website-audience-plan.md</c>).
 /// </summary>
 internal static class MarketingPages
 {

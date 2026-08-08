@@ -23,7 +23,8 @@ returns an `OrderCreated` payload that middleware broadcasts as `order:created`)
 
 Related docs: `docs/specification/transport-bindings.md` (binding contract §1.5),
 `work/request-response-design-review.md` (response serialization machinery — different scope),
-`work/enterprise-adoption-gap-analysis.md` D.1 (transactional outbox — deferred).
+`work/enterprise-adoption-gap-analysis.md` D.1 (transactional outbox — deferred; that document is
+now in the private `benzene-admin` repo).
 
 ---
 

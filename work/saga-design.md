@@ -6,7 +6,7 @@
 original commercial implementation as the design basis.
 **Design basis:** `Legacy/Benzene.Framework/Saga/` in the `daniellepelley/BenzeneImport` repo — the
 saga code from the first (customer-tailored) version of Benzene, still in production use.
-**Backlog item:** A.1 in [`enterprise-adoption-gap-analysis.md`](enterprise-adoption-gap-analysis.md).
+**Backlog item:** A.1 in `enterprise-adoption-gap-analysis.md` (moved to the private `benzene-admin` repo).
 
 ---
 

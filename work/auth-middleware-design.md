@@ -26,7 +26,7 @@ greenfield feature, not a migration. A full-repo search turns up only:
   `- [ ] OAuth 2.0 / OpenID Connect` line in a security checklist template;
   `work/observability-roadmap-1.0.md` has an unchecked `- [ ] Add authentication support (basic,
   bearer)` for a health-endpoint package. Both `work/aws-roadmap-1.0.md` and
-  `work/website-live-assessment-2026-07-15.md` reference a `docs/cookbooks/auth-patterns.md`
+  `work/website-live-assessment-2026-07-15.md` (now in the private `benzene-admin` repo) reference a `docs/cookbooks/auth-patterns.md`
   cookbook that does not exist yet.
 - Unrelated hits: AWS API Gateway's own custom-authorizer event shape (a Lambda/IAM feature, not
   Benzene pipeline auth), the gRPC status mapper's `Unauthenticated`/`PermissionDenied` codes (pure

@@ -46,8 +46,9 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   cards), rendered by `Layout.RenderValuePage` reusing the home page's `.section`/`.feature-card`
   shell + a `.page-hero`. They broaden the site past a developer-only audience (architects,
   DevOps/SRE, decision-makers) **without** audience-labeled pages - the framing is value/theme, not
-  job title. Rationale and audience analysis: `work/website-audience-plan.md`; messaging pillars
-  and honesty gates: `work/website-marketing-aims.md`. `SiteBuilder.Run()` writes one file per
+  job title. Rationale and audience analysis, and the messaging pillars/honesty gates the copy is
+  checked against, are in the private `benzene-admin` repo (`work/website-audience-plan.md` and
+  `work/website-marketing-aims.md`) — they are marketing planning, not website mechanics. `SiteBuilder.Run()` writes one file per
   `MarketingPages.All` entry and includes each in the broken-link self-check. Every claim links to
   a real docs page/demo; anything partial or pre-1.0 is said so (retry-only resilience, in-memory
   idempotency, partial trace-propagation, no perf numbers).
