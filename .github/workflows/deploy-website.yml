@@ -33,9 +33,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ vars.WEBSITE_AWS_REGION }}
       # Public Google identifiers baked into every page (analytics + Search Console ownership). They
-      # appear in page source, so they are CI *variables*, not secrets. Unset → the generator omits
-      # both, so a fork or a run without them configured ships no tracking.
-      GOOGLE_ANALYTICS_ID: ${{ vars.GOOGLE_ANALYTICS_ID }}
+      # appear in page source, so they live here in the clear, not as secrets. The GA4 measurement id
+      # for benzene.app is the default; a repo variable of the same name overrides it (e.g. to point a
+      # fork's CI at a different property, or to blank it out). Search Console verification stays
+      # variable-only — set GOOGLE_SITE_VERIFICATION if you verify by HTML tag rather than via GA.
+      GOOGLE_ANALYTICS_ID: ${{ vars.GOOGLE_ANALYTICS_ID || 'G-WDSQNTXQSS' }}
       GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
 
     steps:
