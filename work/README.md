@@ -28,6 +28,24 @@ for. An honest assessment of how far the project is from being adoptable does no
 Note that these files were public before they moved, so they remain in this repository's git history.
 Removing them from `HEAD` is not the same as unpublishing them.
 
+## Archived: superseded status documents and roadmaps
+
+Eleven documents (9,483 lines) were archived to `benzene-admin` → `archive/` on 2026-08-08. All were
+superseded by the code-verified release assessment of 2026-07-18; `work/1.0-release-plan.md` is the
+successor and remains here.
+
+- **Readiness / API surface** — `1.0-readiness-checklist.md`, `1.0.0-release-checklist.md`,
+  `1.0.0-release-status.md`, `1.0-api-readiness-review-2026-07-14.md`, `api-surface-review.md`.
+  Each carried a banner in its own text saying not to cite it.
+- **Per-area roadmaps** — `aws-`, `azure-`, `google-cloud-`, `dx-`, `observability-`,
+  `performance-roadmap-1.0.md`. These carried *no* such banner; the staleness is declared only in the
+  release plan that replaced them, so opening one directly gave no warning at all.
+
+**`service-mesh-roadmap-1.0.md` was kept**, despite matching the release plan's blanket
+"`*-roadmap-1.0.md`" wording. It is a living document — newest internal update 2026-07-25, a week
+after the assessment — owned by the mesh product owner per `.claude/PRODUCT_OWNERS.md`, and cited by
+the public `docs/guides/mesh-ui.md`. The blanket judgement is out of date with respect to it.
+
 ## Still to sort
 
 Two groups of documents in here are not really this repository's concern either, and are pending a

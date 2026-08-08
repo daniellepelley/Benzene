@@ -192,5 +192,5 @@ exception.
 - [`docs/message-handlers.md`](../docs/message-handlers.md) — the handler pattern in
   practice
 - [`docs/middleware.md`](../docs/middleware.md) — the shared pipeline in practice
-- [`work/aws-roadmap-1.0.md`](aws-roadmap-1.0.md), [`work/azure-roadmap-1.0.md`](azure-roadmap-1.0.md) —
+- `work/aws-roadmap-1.0.md`, `work/azure-roadmap-1.0.md` (archived — see `work/README.md`) —
   transport-specific roadmaps that should stay consistent with this vision

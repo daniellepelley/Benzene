@@ -253,5 +253,5 @@ not accepted as a pragmatic compromise — this area already has enough of those
   revisiting once/if §2.5's outbound-routing redesign lands, since the generated client's method
   bodies still call the `IBenzeneMessageClientFactory` mechanism this document argues needs
   replacing (see §1 above)
-- [`work/aws-roadmap-1.0.md`](aws-roadmap-1.0.md) — records the `AddLambdaClients` DI
+- `work/aws-roadmap-1.0.md` (archived — see `work/README.md`) — records the `AddLambdaClients` DI
   bug (2026-07-12 changelog) that prompted the architecture audit behind this document
