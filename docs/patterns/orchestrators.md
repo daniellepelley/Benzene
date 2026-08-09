@@ -40,7 +40,7 @@ An orchestrator is transport-neutral in exactly the way every Benzene service is
 process logic is written once, and one or more transport adapters feed it. Two broad shapes:
 
 - **Request/response** — an API call comes in, the orchestrator runs the process synchronously and
-  returns a result (`201 Created` with the new ids, or a `validation`/`conflict`/`service-unavailable`
+  returns a result (`201 Created` with the new ids, or a `validation-error`/`conflict`/`service-unavailable`
   result). The caller waits for the whole process.
 - **Event-driven / fire-and-forget** — a message arrives (a queue item, a published event, a
   schedule firing), the orchestrator runs the process and **emits events** rather than returning to

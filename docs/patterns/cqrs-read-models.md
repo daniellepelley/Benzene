@@ -87,10 +87,10 @@ readers use — HTTP via `UseApiGateway`, or the wire envelope:
 ```csharp
 [Message("tenant:users:list")]
 [HttpEndpoint("GET", "/tenants/{tenantId}/users")]
-public class ListTenantUsers : IMessageHandler<ListTenantUsers, TenantUsersView>
+public class ListTenantUsersHandler : IMessageHandler<ListTenantUsers, TenantUsersView>
 {
     private readonly IReadStore _view;
-    public ListTenantUsers(IReadStore view) => _view = view;
+    public ListTenantUsersHandler(IReadStore view) => _view = view;
     public Task<IBenzeneResult<TenantUsersView>> HandleAsync(ListTenantUsers q)
         => _view.GetTenantWithUsersAsync(q.TenantId);   // one read, no fan-out
 }

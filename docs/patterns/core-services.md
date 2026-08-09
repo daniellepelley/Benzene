@@ -26,7 +26,7 @@ called. That discipline is what makes the whole fleet composable.
   data lives. (A stateless computation is not a core service — it is middleware, or an
   orchestrator step.)
 - **Validates its own objects.** Every write topic validates its request before it touches the
-  store, and returns a `validation` result on failure rather than throwing
+  store, and returns a `validation-error` result on failure rather than throwing
   ([wire-contracts.md](../specification/wire-contracts.md) status vocabulary). The service is
   the last line of defence for its aggregate's invariants.
 - **Holds minimal business logic and no cross-service process.** If logic spans two aggregates, it
@@ -46,9 +46,9 @@ the estate reads the same way:
 
 | Operation | Example topic | Request → Result |
 |---|---|---|
-| Create | `tenant:create` | `CreateTenant` → `TenantCreated` (or `validation`) |
+| Create | `tenant:create` | `CreateTenant` → `TenantCreated` (or `validation-error`) |
 | Read | `tenant:get` | `GetTenant` (by id) → `Tenant` (or `not-found`) |
-| Update | `tenant:update` | `UpdateTenant` → `TenantUpdated` (or `validation` / `not-found`) |
+| Update | `tenant:update` | `UpdateTenant` → `TenantUpdated` (or `validation-error` / `not-found`) |
 | Delete | `tenant:delete` | `DeleteTenant` (by id) → `Deleted` (or `not-found`) |
 | List / query | `tenant:list` | `ListTenants` (filter) → `TenantPage` |
 
@@ -77,7 +77,7 @@ public class CreateTenantHandler : IMessageHandler<CreateTenant, TenantCreated>
 ```
 
 Validation is a middleware step in front of the handler (e.g. FluentValidation), so an invalid
-`CreateTenant` short-circuits to a `validation` result and never reaches the store — see the
+`CreateTenant` short-circuits to a `validation-error` result and never reaches the store — see the
 FluentValidation/DataAnnotations integrations in the language port. The handler itself stays a
 clean function of request-to-result.
 
@@ -166,7 +166,7 @@ A service is a well-formed core service when:
 - [ ] It owns **its own database** and no other service touches that store.
 - [ ] Cross-aggregate references are **by id only**; no embedded copies, no cross-service joins.
 - [ ] Its references point **child → parent** only; the dependency graph stays acyclic.
-- [ ] Every write topic **validates** and returns a `validation` result on failure.
+- [ ] Every write topic **validates** and returns a `validation-error` result on failure.
 - [ ] It contains **no cross-service process** — any two-aggregate logic has been pushed up to an
       [orchestrator](orchestrators.md).
 - [ ] Its topics are `aggregate:operation`, served by handlers, with a **derived spec**.

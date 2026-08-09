@@ -47,10 +47,10 @@ decides, and **appends** the resulting event(s) to the log — an ordinary write
 
 ```csharp
 [Message("account:debit")]
-public class Debit : IMessageHandler<Debit, DebitAccepted>
+public class DebitHandler : IMessageHandler<Debit, DebitAccepted>
 {
     private readonly IEventLog _log;   // Benzene.EventSourcing's IEventStore, or your own store
-    public Debit(IEventLog log) => _log = log;
+    public DebitHandler(IEventLog log) => _log = log;
 
     public async Task<IBenzeneResult<DebitAccepted>> HandleAsync(Debit cmd)
     {

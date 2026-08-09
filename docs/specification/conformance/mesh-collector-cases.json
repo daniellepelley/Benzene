@@ -1,5 +1,5 @@
 {
-  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts.",
+  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts.",
   "cases": [
     {
       "name": "register-then-fleet-shows-a-reduced-catalog-entry",

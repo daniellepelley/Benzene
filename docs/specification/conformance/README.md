@@ -23,7 +23,7 @@ consumes these files.
 | `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers, including payload schemas and descriptorHash properties (mesh §2) — required for ports that implement mesh |
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
-| `mesh-issue-cases.json` | Issue-feed collector behavior: `mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
+| `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
 
 Which fixtures a given conformance claim requires
 ([cloud-service-profile.md](../cloud-service-profile.md) §5):
@@ -160,7 +160,7 @@ collections).
   descriptor or envelope cases.)
 - `mesh-collector-cases.json` — each case's `steps` run in order against one fresh collector;
   each step is an envelope request/expected pair asserted like an envelope case. The
-  `mesh:query:*` responses are asserted as the observable surface for the ingest/derivation
+  `benzene:mesh:query:*` responses are asserted as the observable surface for the ingest/derivation
   rules of mesh §4–6; those query shapes are not themselves promoted contracts.
 
 ## Mapping table format

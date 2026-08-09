@@ -130,7 +130,7 @@ A worker is a normal handler — one shard in, one partial out:
 
 ```csharp
 [Message("valuation:shard")]
-public class ValueShard : IMessageHandler<ValueShard, ShardResult>
+public class ValueShardHandler : IMessageHandler<ValueShard, ShardResult>
 {
     public Task<IBenzeneResult<ShardResult>> HandleAsync(ValueShard shard)
         => Task.FromResult(BenzeneResult.Ok(Revalue(shard.Positions, shard.MarketData)));

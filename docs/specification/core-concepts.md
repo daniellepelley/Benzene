@@ -42,7 +42,7 @@ this is a convention, not a requirement.
 A topic's version (this section) selects between **handler implementations** registered for the
 same topic id. This is a distinct concept from a request/response **payload's schema version**
 (transparently upcast/downcast without a second handler) — see
-[versioning.md](versioning.md) (draft) for both, and how they relate.
+[versioning.md](versioning.md) for both, and how they relate.
 
 ## 3. Message handler
 
