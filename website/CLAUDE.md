@@ -120,7 +120,9 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   regular markdown links resolve an href like `../demos/mesh/index.html` to a real published path
   without that path existing as a docs page.
   - `website/demos/mesh/` - a **vendored copy of the canonical cross-language Mesh UI**
-    (`mesh-ui/mesh-ui.html` in this repo, as `index.html`) plus hand-authored
+    (`mesh-ui/mesh-ui.html` in this repo, as `index.html` — itself the build output of the
+    [benzene-ui](https://github.com/daniellepelley/benzene-ui) React component library, so edits go
+    there and are re-vendored, never made here) plus hand-authored
     `manifest.json`/`services/*.json`/`topics.json`/`topology.json`/`usage.json`/`annotations.json`
     fixtures, schema-matched to `Benzene.Mesh.Contracts` and modeled on the three-service demo
     (healthy /

@@ -12,11 +12,19 @@ from the [mesh contracts](../specification/mesh.md) and the
 of .NET services, a fleet of TypeScript services, a fleet of Go services, or a mixed fleet — it
 never knows or cares which port produced the data.
 
-Because it is a cross-language concern, there is exactly **one** Mesh UI. It lives in the
-cross-language `benzene` repo at [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) and is the
-**canonical source of truth**. Every language port and the website demo *vendor a verbatim copy*
-of it (see [Consumption](#5-consumption)); none maintains its own. This guide is the contract that
-keeps every one of those copies rendering a consistent product.
+Because it is a cross-language concern, there is exactly **one** Mesh UI. Its **source** is
+[**benzene-ui**](https://github.com/daniellepelley/benzene-ui), a React + TypeScript component
+library; its **build output** is a single self-contained page, vendored as
+[`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html)
+in this repo and re-vendored from there by every language port and the website demo (see
+[Consumption](#5-consumption)). None maintains its own. This guide is the contract that keeps every
+one of those copies rendering a consistent product.
+
+Until 2026-08-09 the canonical file was hand-maintained: 5,000 lines, 595 top-level variables, no
+tests. It is now generated from a component library with a Redux store, a test suite over that
+store, a Storybook per component, and contract types generated from vendored mesh artifacts. The
+components are exported, so a team can assemble their own mesh UI from them rather than forking a
+page — which is the thing forking was always going to be used for.
 
 ## 1. What the Mesh UI is for
 
@@ -189,7 +197,17 @@ compatible endpoint; a port that doesn't still ships the identical static UI.
 
 ## 5. Consumption
 
-There is one canonical file, [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) in this repo.
+There is one canonical file, [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html) in this repo —
+**a build output of [benzene-ui](https://github.com/daniellepelley/benzene-ui), not a hand-edited
+page.** Changes are made to that library's `src/`, built, and re-vendored here and downstream; an
+edit made directly to a vendored copy is lost on the next re-vendor and is covered by no test.
+benzene-ui's CI fails if a fresh rebuild does not reproduce its committed artifact byte for byte,
+so a committed build output cannot drift from its source in silence.
+
+A committed artifact rather than a build step in each consumer, because the consumers are not
+JavaScript projects: `Benzene.Mesh.Ui` embeds the file as a .NET resource, and putting `npm ci` in
+the critical path of a NuGet package build would be a poor trade.
+
 Every consumer **vendors a verbatim copy** with a provenance marker — the same discipline the
 [conformance fixtures](../specification/conformance/README.md) use, and the reason
 [git submodules were rejected](https://github.com/daniellepelley/Benzene/blob/main/work/repo-split-plan.md): a copy is diffable, offline, and
@@ -199,7 +217,7 @@ cannot break a downstream build when this repo moves.
 |---|---|---|
 | Website demo | `website/demos/mesh/index.html` | Copied verbatim next to the fixture JSON; the site's `CopyDemos` publishes the directory as-is. The demo has no live endpoint, so it renders the static floor. |
 | `benzene-dotnet` | `src/Benzene.Mesh.Ui/mesh-ui.html` | The `.NET` host serves this file; its current default path is `/mesh-ui` (a pre-standard default that migrates to `/benzene/mesh-ui` at 1.0 — see [design-principles §5.3](../specification/design-principles.md#53-conformance-and-migration)). It may additionally wire the live plane by pointing `data-fleet-url` at its own `/benzene/invoke`. |
-| `benzene-typescript` | a `@benzene/mesh-ui` asset (not yet ported) | When the TS port adds a mesh-UI package, it vendors this file rather than authoring a new one. |
+| `benzene-typescript` | a `@benzene/mesh-ui` asset (not yet ported) | When the TS port adds a mesh-UI package, it vendors this file rather than authoring a new one. Being the one JavaScript consumer, it could alternatively depend on `benzene-ui` directly and assemble its own page from the components. |
 | `benzene-go` (future) | its mesh-UI asset | Same: vendor, do not fork. |
 
 **The rule: never fork the copy.** Fixes and features land in the canonical here (with this guide

@@ -159,19 +159,43 @@ the decision, and items 3–9 are execution that can be staged.
 
 ## 8. Decisions needed before starting
 
-1. **Committed artifact or CI-built?** `dotnet pack` needs `mesh-ui.html` present. Either the built
-   file is committed (simple, but a generated file in git and a diff on every change) or CI builds it
-   and the .NET package consumes it (clean, but couples the .NET release to a Node build). **This is
-   the one that must be settled first** — everything else follows from it.
+1. ~~Committed artifact or CI-built?~~ **Settled 2026-08-09: committed, with a freshness check.**
+   `benzene-ui` commits its build output to `build/mesh-ui.html`, and its CI fails if a fresh rebuild
+   does not reproduce those bytes exactly. The alternative — every consumer running `npm ci` — would
+   put a Node toolchain in the critical path of a NuGet package build, for the sake of obtaining an
+   HTML file. The usual objection to committing a build output is silent drift; the byte check
+   removes it, and the build is deterministic, which is what makes the check meaningful.
 2. ~~React or Preact?~~ **Settled: React.**
-3. **Where does the source live?** Recommendation: this repo, since the UI is a cross-language concern
-   and `mesh-ui/` is already here. Each port then vendors `dist/mesh-ui.html`, exactly as
-   `Benzene.Mesh.Ui` does today.
-4. **Is the duplication fixed as part of this?** There are four copies today, one byte-identical. The
-   same "one home per document" rule that was just applied to `work/` applies here — the build should
-   produce one artifact and every consumer should vendor it, not hold a hand-edited copy.
+3. ~~Where does the source live?~~ **Settled: its own repo,
+   [benzene-ui](https://github.com/daniellepelley/benzene-ui)** — see §10, which argued this against
+   the original recommendation of keeping it here.
+4. ~~Is the duplication fixed as part of this?~~ **Settled: yes.** All three vendored copies
+   (`mesh-ui/mesh-ui.html`, `website/demos/mesh/index.html`,
+   `benzene-dotnet/src/Benzene.Mesh.Ui/mesh-ui.html`) are now byte-identical build outputs of the
+   same source, and the hand-written page is retired.
 5. **Does Storybook get published?** A static Storybook on benzene.app is the strongest possible
-   demonstration of "build your own mesh UI", and is nearly free once components exist.
+   demonstration of "build your own mesh UI", and is nearly free once components exist. **Still
+   open** — it builds in CI but nothing publishes it yet.
+
+### What the port actually found *(2026-08-09)*
+
+Three things a componentisation was not expected to surface, all of which were defects in the
+shipped page rather than in the port:
+
+- **The live-plane shape was invented.** The first cut of the React store held a friendly
+  `{heartbeats, flows}` snapshot that appears nowhere in Benzene. The real contract is `FleetView`,
+  and it carries three honesty channels that shape had nowhere to put: `missingFeeds` (a dimension
+  the plane genuinely cannot supply, so render "—" not the non-nullable 0), `window.countsWindowed`
+  (the counts answer a different window than the flows), and an *absent* `lastSeen` (no live-time
+  signal, which is not staleness). Storing the wire contract rather than a projection of it is now
+  a rule in the library's own guide.
+- **A parity sweep was necessary and was not free.** Eight of the original's `render*`/`build*`
+  functions had no counterpart at the point the port looked finished — the value/retirement view,
+  version compatibility, per-service usage, the service's self-description, and the feed-health
+  line among them. Roughly 85% parity looks like 100% from the outside.
+- **The service card's `raw` and `health` links carry an XSS guard.** They come from a self-reported
+  manifest, and `target="_blank"` does not neutralise a `javascript:` href. It is one line, it is
+  easy to lose in a rewrite, and it is now a test.
 
 ## 10. Where should it live? — the repo question
 
