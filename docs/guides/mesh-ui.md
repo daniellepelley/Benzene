@@ -63,6 +63,7 @@ any is absent ([mesh.md §6](../specification/mesh.md#6-degradation-normative)).
 | `usage.json` | How often each topic is exercised, per transport and status, over a window | `{ generatedAtUtc, windowStartUtc, windowEndUtc, entries: [{ topic, version, service, transport, status, count, avgDurationMs, source }] }` |
 | `annotations.json` | Human discussion threads keyed to a service or topic (read-only when static) | `{ generatedAtUtc, annotations: [{ id, entity, author, text, createdAtUtc }] }` where `entity` is `service:<name>` or `topic:<topicId>` |
 | `asyncapi.json` | An AsyncAPI export of the catalog (optional; surfaced as a download / Studio deep-link) | AsyncAPI document |
+| `changelog.json` | The time dimension `topics.json`'s per-entry `changes[]` can't give on its own, since a fresh run overwrites the previous run's diff (optional) | `{ generatedAtUtc, entries: [{ atUtc, changes: [{ topic, version, kind, description }] }] }` |
 
 Reference fixtures for these live next to the UI in the website demo
 ([`website/demos/mesh/`](https://github.com/daniellepelley/Benzene/tree/main/website/demos/mesh)) and are the schema-matched examples a new
@@ -113,6 +114,11 @@ absent. Section numbers below are the product surface, not spec sections.
   consumers-changed, …), and `removedTopics`.
 - A per-topic drill-in page: full schemas, who produces and consumes it, its version-compatibility
   picture, its observed usage, and its annotations.
+- A **"Consume this topic"** panel on the drill-in: per version, buttons to copy or download the
+  topic's inlined schema, copy the owning service's `specUrl`, and copy a ready-made
+  `benzene build --mesh <manifest-url> --service <name> --topic <id> --output topic-client` CLI
+  line, plus the composite AsyncAPI download / Studio deep-link. Every action reads data already on
+  the page — pure clipboard/links, no additional fetch (the static-floor rule of §3.9).
 - Benzene's own plumbing topics (`reserved` / the `benzene:*` utility topics) are **hidden by
   default** behind a single "show benzene topics" toggle — a business reader sees the domain, not
   the framework.
@@ -122,6 +128,12 @@ absent. Section numbers below are the product surface, not spec sections.
   per topic, always with the "what changed" made legible.
 - Reconcile which versions the fleet **produces** against which it **consumes**, so a producer that
   has moved ahead of a consumer is visible.
+- A **Changes** view renders `changelog.json`'s dated run-over-run diffs (added / removed /
+  schema-changed / producers-changed / consumers-changed topics) with a since-picker (7 days by
+  default) — the time dimension the catalog's own per-entry `changes[]` can't give, since a fresh
+  run overwrites the previous run's diff. `changelog.json` is optional: unlike the other artifact
+  surfaces, which hide entirely when their feed is unwired, this view states its own absence
+  explicitly rather than vanishing, per §3.9's honesty rule.
 
 ### 3.4 Usage / traffic
 - Render `usage.json`: per-topic exercise counts, broken down by **transport** and status, over the

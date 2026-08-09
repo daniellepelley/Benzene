@@ -709,6 +709,21 @@
   .tp-changes { margin: 6px 0 10px; }
   .tp-change-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 3px 0; }
   .tp-change-row .d { color: var(--ink-soft); }
+  .tp-consume-lede { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 12px; max-width: 62ch; }
+  .tp-consume-rows { display: flex; flex-direction: column; margin-bottom: 12px; }
+  .tp-consume-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 9px 0; border-top: 1px solid var(--line); }
+  .tp-consume-row:first-child { border-top: none; }
+  .tp-consume-ver { min-width: 64px; }
+  .tp-consume-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .changes-since-label { font-size: 12px; color: var(--ink-faint); margin-right: 6px; }
+  .changes-entry {
+    padding: 10px 14px; margin-bottom: 10px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+  }
+  .changes-entry-when { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); margin-bottom: 6px; }
+  .changes-row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 12.5px; padding: 4px 0; border-top: 1px solid var(--line); }
+  .changes-row:first-of-type { border-top: none; }
+  .changes-row .d { color: var(--ink-soft); }
   .disc-note {
     padding: 10px 14px; margin-bottom: 8px;
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow);
@@ -894,6 +909,26 @@
   <!-- Demoted sections (drains-up 2.2): quarterly/analysis tools, collapsed by default so the front
        door stays issues → traffic → flows → catalog. The toggle only hides the body — the section
        header stays discoverable. -->
+
+  <!-- The Changes view: the time dimension topics.json's per-entry Changes[] can't give on its own,
+       since a fresh run overwrites the previous run's diff - changelog.json is the aggregator's
+       rolling, dated record of those diffs. It's an optional artifact, so - per the guide's
+       honest-degradation rule - this section states its own presence or absence in the "note" strip
+       even while collapsed, rather than silently vanishing like the other artifact surfaces do when
+       their feed is unwired. -->
+  <section id="changes-section" style="display:none">
+    <div class="topo-head">
+      <h2>Changes</h2>
+      <span class="topo-generated" id="changes-note"></span>
+      <div class="topo-head-actions">
+        <label for="changes-since" class="changes-since-label">Since</label>
+        <select id="changes-since" aria-label="Show changes since"></select>
+      </div>
+      <button type="button" class="sec-toggle" data-sec-toggle="changes-body">show</button>
+    </div>
+    <div id="changes-body" style="display:none"></div>
+  </section>
+
   <section id="value-section" style="display:none">
     <div class="topo-head">
       <h2>Value &amp; deprecation</h2>
@@ -2135,6 +2170,7 @@
     loadTopology();
     loadUsage();
     loadAnnotations();
+    loadChangelog();
     loadFleet();
   }
 
@@ -2279,6 +2315,8 @@
     var versionsWrap = el("div"); versionsWrap.id = "tp-versions";
     versions.forEach(function (t) { versionsWrap.appendChild(buildTopicPageVersionSection(t)); });
     body.appendChild(versionsWrap);
+
+    body.appendChild(buildConsumeSection(topicId, versions));
 
     var usage = buildTopicUsageSection(topicId);
     if (usage) body.appendChild(usage);
@@ -3013,6 +3051,125 @@
 
   function findManifestService(name) {
     return (manifest.services || []).filter(function (s) { return s.name === name; })[0];
+  }
+
+  /* ---------- Consume this topic ----------
+     A zero-fetch action panel for a reader who has decided to act on this topic: copy/download its
+     inlined schema, copy the owning service's specUrl, and copy a ready-made `benzene build` CLI
+     line that generates a typed client for it - everything already in memory from
+     topics.json/manifest.json, so clicking any of these never issues a request of its own (the
+     static-floor rule). The composite AsyncAPI download/Studio links are the same ones the Topics
+     section header already exposes, resurfaced here so a reader who has drilled into one topic
+     doesn't have to scroll away once they've decided to act. */
+  function absoluteManifestUrl() {
+    try { return new URL(manifestUrl, location.href).toString(); } catch (e) { return manifestUrl || ""; }
+  }
+  function downloadText(filename, text, mime) {
+    try {
+      var blob = new Blob([text], { type: mime || "text/plain" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename; a.style.display = "none";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) { /* the copy button beside it is the reliable fallback */ }
+  }
+  function flashBtn(btn, ok, okText) {
+    var original = btn.textContent;
+    btn.textContent = ok ? (okText || "Copied ✓") : "Copy failed";
+    setTimeout(function () { btn.textContent = original; }, 1200);
+  }
+  /* The version's single declared producer is "the service that owns this data" for a client-gen
+     command; a gap topic (no producer) falls back to its first consumer so the CLI line still has
+     something to point --service at rather than omitting the flag. More than one producer (a
+     fan-in topic) picks the first declared - a reasonable default the reader can edit, the same
+     "good enough, copyable" posture the compose feature's own pickers take. Returns a bare service
+     name (not a manifest lookup) so it still has something to offer even for a service that has
+     since dropped out of the fleet's manifest. */
+  function pickOwningServiceName(t) {
+    return (t.producers && t.producers[0] && t.producers[0].service)
+      || (t.consumers && t.consumers[0] && t.consumers[0].service)
+      || null;
+  }
+  function buildConsumeSection(topicId, versions) {
+    var wrap = el("div", "sp-section tp-consume");
+    wrap.appendChild(el("h2", null, "Consume this topic"));
+    wrap.appendChild(el("p", "tp-consume-lede",
+      "Copy what you need to build a client or point at the raw contract. Everything here is already " +
+      "loaded on this page — nothing is fetched when you click."));
+
+    var rows = el("div", "tp-consume-rows");
+    versions.forEach(function (t) {
+      var schema = inboundSchema(t);
+      var ownerName = pickOwningServiceName(t);
+      if (!schema && !ownerName) return; // nothing actionable for this version - skip the row
+
+      var row = el("div", "tp-consume-row");
+      row.appendChild(el("span", "mono tp-consume-ver", t.version ? t.version : "(unversioned)"));
+
+      var actions = el("div", "tp-consume-actions");
+      if (schema) {
+        var schemaJson = JSON.stringify(schema, null, 2);
+        var copySchema = el("button", "tb-btn", "Copy schema");
+        copySchema.type = "button";
+        copySchema.addEventListener("click", function () {
+          copyText(schemaJson, function (ok) { flashBtn(copySchema, ok); });
+        });
+        actions.appendChild(copySchema);
+
+        var dlSchema = el("button", "tb-btn", "Download schema");
+        dlSchema.type = "button";
+        dlSchema.addEventListener("click", function () {
+          var suffix = t.version ? "-" + t.version : "";
+          downloadText(topicId.replace(/[^a-z0-9_-]+/gi, "-") + suffix + ".schema.json", schemaJson, "application/json");
+        });
+        actions.appendChild(dlSchema);
+      }
+
+      var ownerSvc = ownerName ? findManifestService(ownerName) : null;
+      if (ownerSvc && ownerSvc.specUrl) {
+        var copySpec = el("button", "tb-btn", "Copy " + ownerName + " spec URL");
+        copySpec.type = "button";
+        copySpec.addEventListener("click", function () {
+          copyText(ownerSvc.specUrl, function (ok) { flashBtn(copySpec, ok); });
+        });
+        actions.appendChild(copySpec);
+      }
+
+      if (ownerName) {
+        var cliLine = "benzene build --mesh " + absoluteManifestUrl() + " --service " + ownerName
+          + " --topic " + topicId + " --output topic-client";
+        var copyCli = el("button", "tb-btn", "Copy CLI command");
+        copyCli.type = "button";
+        copyCli.title = cliLine;
+        copyCli.addEventListener("click", function () {
+          copyText(cliLine, function (ok) { flashBtn(copyCli, ok); });
+        });
+        actions.appendChild(copyCli);
+      }
+
+      row.appendChild(actions);
+      rows.appendChild(row);
+    });
+    if (rows.childNodes.length) wrap.appendChild(rows);
+
+    // (d) The composite AsyncAPI export: the same relative artifact + Studio deep-link the Topics
+    // section header already offers (updateAsyncApiLinks) - resurfaced here for convenience, not a
+    // topic-scoped subset (the aggregator publishes one fleet-wide AsyncAPI document, not a per-topic one).
+    var asyncApiUrl = resolveUrl("asyncapi.json");
+    var asyncActions = el("div", "tp-consume-actions");
+    var asyncLink = el("a", "tb-btn", "Composite AsyncAPI");
+    asyncLink.href = asyncApiUrl; asyncLink.target = "_blank"; asyncLink.rel = "noopener";
+    asyncActions.appendChild(asyncLink);
+    if (/^https?:\/\//i.test(asyncApiUrl)) {
+      var studioLink = el("a", "tb-btn", "Open in Studio ↗");
+      studioLink.href = "https://studio.asyncapi.com/?url=" + encodeURIComponent(asyncApiUrl);
+      studioLink.target = "_blank"; studioLink.rel = "noopener";
+      asyncActions.appendChild(studioLink);
+    }
+    wrap.appendChild(asyncActions);
+
+    return wrap;
   }
 
   /* Each producer/consumer is a compact linked row - status at a glance, name linking to the
@@ -4440,6 +4597,91 @@
       results.appendChild(el("div", "fl-wf-note" + (String(err.message || err) === "not-found" ? "" : " fl-failed"), msg));
     });
   }
+  /* ---------- Changes (changelog.json) ----------
+     changelog.json is the aggregator's rolling, dated record of topics.json's run-over-run diffs
+     (Benzene.Mesh.Contracts.MeshChangelog) - the time dimension the catalog's own per-entry
+     Changes[] can't give, since a fresh run overwrites the previous run's diff. It's an optional,
+     additive artifact (a deployment on an older aggregator, or one that simply hasn't accumulated
+     a change yet, has none), so - unlike usage.json/topology.json, which hide their surfaces
+     entirely when unwired - this view says so explicitly (the guide's honest-degradation rule,
+     applied literally per the product ruling for this view). currentChangelog is null when the
+     artifact is absent/unreadable, an array (possibly empty) when it's present. */
+  var currentChangelog = null;
+  var changesSince = "7d";
+  var CHANGES_SINCE_OPTIONS = [
+    { id: "24h", label: "Last 24 hours", ms: 24 * 60 * 60 * 1000 },
+    { id: "7d", label: "Last 7 days", ms: 7 * 24 * 60 * 60 * 1000 },
+    { id: "30d", label: "Last 30 days", ms: 30 * 24 * 60 * 60 * 1000 },
+    { id: "all", label: "All time", ms: null }
+  ];
+  function loadChangelog() {
+    fetch(resolveUrl("changelog.json"), { headers: { accept: "application/json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (log) { currentChangelog = (log && log.entries) || []; renderChangesView(); })
+      .catch(function () { currentChangelog = null; renderChangesView(); });
+  }
+  function wireChangesSincePicker() {
+    var sel = document.getElementById("changes-since");
+    if (!sel) return;
+    CHANGES_SINCE_OPTIONS.forEach(function (o) {
+      var opt = document.createElement("option"); opt.value = o.id; opt.textContent = o.label; sel.appendChild(opt);
+    });
+    sel.value = changesSince;
+    sel.addEventListener("change", function () { changesSince = sel.value; renderChangesView(); });
+  }
+  function renderChangesView() {
+    var section = document.getElementById("changes-section");
+    if (!section) return;
+    section.style.display = ""; // this view always states its own presence/absence once known - never hides
+    var note = document.getElementById("changes-note");
+    var body = document.getElementById("changes-body");
+    body.innerHTML = "";
+
+    if (currentChangelog === null) {
+      note.textContent = "changelog.json not published";
+      body.appendChild(el("div", "sp-empty",
+        "No changelog.json for this estate — either this aggregator predates the changelog feature, " +
+        "or it hasn't recorded a run-over-run catalog change yet (an unchanged catalog writes nothing)."));
+      return;
+    }
+
+    var opt = CHANGES_SINCE_OPTIONS.filter(function (o) { return o.id === changesSince; })[0] || CHANGES_SINCE_OPTIONS[1];
+    var cutoff = opt.ms == null ? null : Date.now() - opt.ms;
+    var entries = currentChangelog
+      .filter(function (e) {
+        if (cutoff == null) return true;
+        var t = new Date(e.atUtc).getTime();
+        return !isNaN(t) && t >= cutoff;
+      })
+      .slice()
+      .sort(function (a, b) { return new Date(b.atUtc) - new Date(a.atUtc); }); // newest first
+
+    note.textContent = entries.length + " run" + (entries.length === 1 ? "" : "s") + " with changes · " + opt.label.toLowerCase();
+
+    if (!entries.length) {
+      body.appendChild(el("div", "sp-empty", currentChangelog.length
+        ? "No catalog changes recorded in this window — widen the range above to see older ones."
+        : "changelog.json is wired, but no run-over-run catalog change has been recorded yet."));
+      return;
+    }
+
+    entries.forEach(function (entry) {
+      var block = el("div", "changes-entry");
+      var age = Date.now() - new Date(entry.atUtc).getTime();
+      block.appendChild(el("div", "changes-entry-when",
+        (isNaN(age) ? String(entry.atUtc || "") : new Date(entry.atUtc).toLocaleString() + " · " + humanAge(Math.max(0, age)) + " ago")));
+      (entry.changes || []).forEach(function (c) {
+        var row = el("div", "changes-row");
+        row.appendChild(topicLink(c.topic));
+        if (c.version) row.appendChild(el("span", "sp-topic-ver", c.version));
+        row.appendChild(el("span", "t-badge t-change", c.kind));
+        row.appendChild(el("span", "d", c.description));
+        block.appendChild(row);
+      });
+      body.appendChild(block);
+    });
+  }
+
   // Demoted-section disclosure toggles (drains-up 2.2): show/hide the section body in place.
   (function wireSectionToggles() {
     document.querySelectorAll("[data-sec-toggle]").forEach(function (btn) {
@@ -4452,6 +4694,7 @@
       });
     });
   })();
+  wireChangesSincePicker();
 
   (function flWireLookups() {
     var cg = document.getElementById("fl-corr-go"), ci = document.getElementById("fl-corr-input");
