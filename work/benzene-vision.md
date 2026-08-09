@@ -184,13 +184,13 @@ exception.
 
 ## 5. Related Documents
 
-- [`benzene-clients-vision.md`](benzene-clients-vision.md) — narrows in on the outbound
+- [`benzene-clients-vision.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/benzene-clients-vision.md) — narrows in on the outbound
   "pipes out" side (`Benzene.Clients` and friends), which this document's §2.3
   ("one middleware pipeline") implies but which has not, in practice, been designed
   with the same discipline as the inbound side
 - [`README.md`](../README.md) — current-state overview of the framework and quickstart
-- [`docs/message-handlers.md`](../docs/message-handlers.md) — the handler pattern in
+- [`docs/message-handlers.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/docs/message-handlers.md) — the handler pattern in
   practice
-- [`docs/middleware.md`](../docs/middleware.md) — the shared pipeline in practice
-- `work/aws-roadmap-1.0.md`, `work/azure-roadmap-1.0.md` (archived — see `work/README.md`) —
+- [`docs/middleware.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/docs/middleware.md) — the shared pipeline in practice
+- [`aws-roadmap-1.0.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/archive/aws-roadmap-1.0.md), [`azure-roadmap-1.0.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/archive/azure-roadmap-1.0.md) (archived) —
   transport-specific roadmaps that should stay consistent with this vision

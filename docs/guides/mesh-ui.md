@@ -238,7 +238,7 @@ The canonical UI was consolidated from the divergent per-language versions in Ju
 - **TypeScript mesh-UI package**: when `@benzene/mesh-ui` is ported, it vendors this canonical file;
   it should not re-author a page.
 - **Windowable usage feed**: `usage.json` counts carry a baked window and cannot be re-windowed
-  client-side; a windowable feed is tracked in `work/service-mesh-roadmap-1.0.md`.
+  client-side; a windowable feed is tracked in [`service-mesh-roadmap-1.0.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/service-mesh-roadmap-1.0.md).
 - **Staleness signal**: there is no per-service freshness/`Stale` status in the artifacts yet; the
   UI shows staleness as explicitly deferred rather than inventing it.
 - **Companion Spec UI deep-link**: the per-service page links to a `mesh-spec-ui.html` companion;

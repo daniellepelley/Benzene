@@ -67,7 +67,7 @@ and the `examples/Mesh` / cloud mesh examples as demo surfaces.
 
 ## Living design docs
 
-- `work/service-mesh-roadmap-1.0.md` — the data/packages design + roadmap.
+- [`service-mesh-roadmap-1.0.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/service-mesh-roadmap-1.0.md) (in benzene-dotnet) — the data/packages design + roadmap.
 - `work/mesh-ui-product-vision.md` — the product-vision + UI roadmap.
 
 Read the relevant one before any non-trivial change and keep both current

@@ -1,61 +1,66 @@
 # work
 
-Planning and design notes. Engineering material only — how Benzene works, and why it works that way.
+Design and planning notes for **this** repository: the language-neutral specification, the shared UI,
+the website, and the shape of the repositories themselves.
 
-## Moved out: planning and marketing
+## One home per document
 
-Documents about **getting Benzene used** rather than about how Benzene works now live in the private
-`daniellepelley/benzene-admin` repository. Campaign plans, positioning, audience analysis, adoption
-strategy and provenance claims are written for us, about the people we are trying to reach; a public
-repository is the wrong place for them.
+A document lives in the repository that owns its subject, and other repositories link to it. Two
+copies diverge silently, and this project has already proved that twice — the repo split left `work/`
+duplicated across `Benzene` and `benzene-dotnet`, and by the time anyone looked, eleven files had
+drifted apart. One of them mattered: `benzene-naming-principle.md` recorded the 2026-07-27 reversal of
+the topic-header decision here, while the copy in `benzene-dotnet` still described the abandoned
+`benzene-topic` spelling.
 
-Moved on 2026-08-08:
-
-| Was | Now |
+| Subject | Home |
 |---|---|
-| `work/marketing-campaign-1.0.md` | `benzene-admin` → `work/marketing-campaign-1.0.md` |
-| `work/website-marketing-aims.md` | `benzene-admin` → `work/website-marketing-aims.md` |
-| `work/website-audience-plan.md` | `benzene-admin` → `work/website-audience-plan.md` |
-| `work/website-live-assessment-2026-07-15.md` | `benzene-admin` → `work/website-live-assessment-2026-07-15.md` |
-| `work/enterprise-adoption-gap-analysis.md` | `benzene-admin` → `work/enterprise-adoption-gap-analysis.md` |
-| `work/benzene-production-provenance.md` | `benzene-admin` → `work/benzene-production-provenance.md` |
-| `.claude/agents/marketing-manager.md` | `benzene-admin` → `.claude/agents/marketing-manager.md` |
+| The language-neutral contract — wire format, headers, naming, error payloads | **this repo**, `work/` and `docs/specification/` |
+| The shared UI and the website | **this repo** |
+| The shape of the repositories | **this repo** |
+| A language implementation — its packages, APIs, migrations, roadmaps | that port's repo (`benzene-dotnet`, `-go`, `-typescript`, `-python`) |
+| Marketing, positioning, adoption strategy, provenance | the private `benzene-admin` repo |
 
-The dividing line: **would a reader learn how to use Benzene, or how we intend to sell it?** Honest
-engineering limitations stay public — that is what `docs/specification/` and the capability matrix are
-for. An honest assessment of how far the project is from being adoptable does not.
+## Living, dated, superseded
 
-Note that these files were public before they moved, so they remain in this repository's git history.
-Removing them from `HEAD` is not the same as unpublishing them.
+Same rules as [`benzene-dotnet/work/README.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/README.md),
+which states them in full. In short: a document is either **living** (owned, kept true, citable) or
+**dated** (a record of one moment, never updated). Dated documents carry their date and belong in an
+archive, not beside the truth — and **nothing in `work/` may tell the reader not to trust it**. That
+banner is the symptom; archiving is the fix.
 
-## Archived: superseded status documents and roadmaps
+## What moved out, 2026-08-08
 
-Eleven documents (9,483 lines) were archived to `benzene-admin` → `archive/` on 2026-08-08. All were
-superseded by the code-verified release assessment of 2026-07-18; `work/1.0-release-plan.md` is the
-successor and remains here.
+**To the private `benzene-admin` repo** — the campaign plan, messaging pillars, audience analysis,
+adoption gap analysis, the live-site assessment, the production-provenance record, and the marketing
+agent. They are about how we intend to *sell* Benzene rather than how to use it. Eleven superseded
+readiness documents and per-area roadmaps went to its `archive/` as well.
 
-- **Readiness / API surface** — `1.0-readiness-checklist.md`, `1.0.0-release-checklist.md`,
-  `1.0.0-release-status.md`, `1.0-api-readiness-review-2026-07-14.md`, `api-surface-review.md`.
-  Each carried a banner in its own text saying not to cite it.
-- **Per-area roadmaps** — `aws-`, `azure-`, `google-cloud-`, `dx-`, `observability-`,
-  `performance-roadmap-1.0.md`. These carried *no* such banner; the staleness is declared only in the
-  release plan that replaced them, so opening one directly gave no warning at all.
+**To `benzene-dotnet`** — 41 documents plus `designs/`, `spikes/`, and the dated `arch-review/`,
+`bughunt/` and `cloud-review/` passes. Every one was a duplicate of a file already live there, and in
+most cases *its* copy was the newer one: `work/` has genuinely been maintained in `benzene-dotnet`
+since the split, not here. Nothing was lost by deleting them here; they are one repository away, and
+the dated ones are now in [`benzene-dotnet/work/archive/`](https://github.com/daniellepelley/benzene-dotnet/tree/main/work/archive).
 
-**`service-mesh-roadmap-1.0.md` was kept**, despite matching the release plan's blanket
-"`*-roadmap-1.0.md`" wording. It is a living document — newest internal update 2026-07-25, a week
-after the assessment — owned by the mesh product owner per `.claude/PRODUCT_OWNERS.md`, and cited by
-the public `docs/guides/mesh-ui.md`. The blanket judgement is out of date with respect to it.
+Where a document was genuinely about the contract rather than the implementation, the reverse happened
+— it stayed here and left `benzene-dotnet`.
 
-## Still to sort
+Both sets remain in this repository's git history. Removing them from `HEAD` is not the same as
+unpublishing them.
 
-Two groups of documents in here are not really this repository's concern either, and are pending a
-decision rather than settled:
+> **A note on prose references.** Documents kept here still mention sibling files by name in prose —
+> `work/saga-design.md`, `work/service-mesh-roadmap-1.0.md` and so on. Those are not broken links;
+> they are references to documents that now live in
+> [`benzene-dotnet/work/`](https://github.com/daniellepelley/benzene-dotnet/tree/main/work) (or its
+> `archive/`). Clickable links were rewritten to absolute URLs; plain mentions were left as prose.
 
-- **.NET implementation design** — `auth-middleware-design.md`, `batch-failure-handling.md`,
-  `client-health-checks-*.md`, `saga-design.md`, `kinesis-batch-failure-handling-design.md`,
-  `cloudevents-design.md`, `benzene-clients-*.md`, `designs/`, `spikes/` and others. This repository
-  is the language-neutral specification and the shared UI; design notes for the .NET port belong in
-  `benzene-dotnet`.
-- **Superseded status documents** — several files open by declaring themselves stale
-  ("*systematically stale … **Do not cite this***"). A public repository shipping documents that tell
-  readers not to trust them is worse than not shipping them.
+## What is here
+
+- `benzene-vision.md` — the original problem and the design philosophy, cross-language
+- `benzene-naming-principle.md` — how Benzene names what it owns on the wire
+- `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism
+- `error-payload-proposal.md` — whether there is a better error payload, and a standard to adopt
+- `cloudevents-design.md` — CloudEvents as a wire format
+- `spec-review-2026-07-25.md` — the maintainer's review of the specification draft
+- `mesh-ui-product-vision.md` — the shared Mesh UI, which lives in this repo
+- `repo-split-plan.md`, `repo-split-manifest.md`, `repo-split/` — how the repositories got this shape
+- `website-analytics-setup.md` — turning on traffic monitoring for benzene.app
