@@ -198,7 +198,7 @@ cannot break a downstream build when this repo moves.
 | Consumer | Vendored as | Notes |
 |---|---|---|
 | Website demo | `website/demos/mesh/index.html` | Copied verbatim next to the fixture JSON; the site's `CopyDemos` publishes the directory as-is. The demo has no live endpoint, so it renders the static floor. |
-| `benzene-dotnet` | `src/Benzene.Mesh.Ui/mesh-ui.html` | The `.NET` host serves this file over `/benzene/mesh-ui`; it may additionally wire the live plane by pointing `data-fleet-url` at its own `/benzene/invoke`. |
+| `benzene-dotnet` | `src/Benzene.Mesh.Ui/mesh-ui.html` | The `.NET` host serves this file; its current default path is `/mesh-ui` (a pre-standard default that migrates to `/benzene/mesh-ui` at 1.0 — see [design-principles §5.3](../specification/design-principles.md#53-conformance-and-migration)). It may additionally wire the live plane by pointing `data-fleet-url` at its own `/benzene/invoke`. |
 | `benzene-typescript` | a `@benzene/mesh-ui` asset (not yet ported) | When the TS port adds a mesh-UI package, it vendors this file rather than authoring a new one. |
 | `benzene-go` (future) | its mesh-UI asset | Same: vendor, do not fork. |
 

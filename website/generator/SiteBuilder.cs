@@ -1,5 +1,6 @@
 using Markdig;
 using Markdig.Renderers;
+using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -160,6 +161,7 @@ internal sealed class SiteBuilder
                     $"Doc source '{source.Id}' is landing-only but its nav file was not found: {navDisk}");
             }
             var landingDoc = Markdown.Parse(File.ReadAllText(navDisk), _pipeline);
+            AssignHeadingIds(landingDoc);
             return
             [
                 new Page
@@ -184,6 +186,7 @@ internal sealed class SiteBuilder
 
             var text = File.ReadAllText(disk);
             var document = Markdown.Parse(text, _pipeline);
+            AssignHeadingIds(document);
             var outputPath = $"{source.UrlPrefix}/{docRel[..^".md".Length]}.html";
             var page = new Page
             {
@@ -446,29 +449,120 @@ internal sealed class SiteBuilder
 
     private List<(string File, string Href)> SelfCheck(IEnumerable<string> outputPaths)
     {
-        var broken = new List<(string, string)>();
-        foreach (var outputPath in outputPaths)
+        var paths = outputPaths.ToList();
+
+        // First pass: the set of element ids on each page — every valid #fragment target, headings and
+        // any other id'd element alike.
+        var idsByPage = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var htmlByPage = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var outputPath in paths)
         {
-            var disk = RepoPaths.ToDiskPath(_outDir, outputPath);
-            var html = File.ReadAllText(disk);
+            var html = File.ReadAllText(RepoPaths.ToDiskPath(_outDir, outputPath));
+            htmlByPage[outputPath] = html;
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (System.Text.RegularExpressions.Match m in
+                     System.Text.RegularExpressions.Regex.Matches(html, "id=\"([^\"]+)\""))
+            {
+                ids.Add(m.Groups[1].Value);
+            }
+            idsByPage[outputPath] = ids;
+        }
+
+        var broken = new List<(string, string)>();
+        foreach (var outputPath in paths)
+        {
             foreach (System.Text.RegularExpressions.Match match in
-                     System.Text.RegularExpressions.Regex.Matches(html, "href=\"([^\"#]+\\.html)(#[^\"]*)?\""))
+                     System.Text.RegularExpressions.Regex.Matches(htmlByPage[outputPath], "href=\"([^\"]*?)(#[^\"]*)?\""))
             {
                 var href = match.Groups[1].Value;
+                var fragment = match.Groups[2].Value; // "#frag", "#", or ""
+
                 if (href.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                     href.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                var targetOutputPath = RepoPaths.CombineRepoRelative(outputPath, href);
-                if (!File.Exists(RepoPaths.ToDiskPath(_outDir, targetOutputPath)))
+                // Resolve which published page the link (and any fragment) targets.
+                string targetPage;
+                if (href.Length == 0)
                 {
-                    broken.Add((outputPath, href));
+                    targetPage = outputPath; // same-page fragment (href="#frag")
+                }
+                else if (href.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+                {
+                    targetPage = RepoPaths.CombineRepoRelative(outputPath, href);
+                    if (!File.Exists(RepoPaths.ToDiskPath(_outDir, targetPage)))
+                    {
+                        broken.Add((outputPath, href + fragment));
+                        continue;
+                    }
+                }
+                else
+                {
+                    // Non-HTML internal link (a vendored asset, or a repo file deliberately left as an
+                    // unresolved relative link) — not fragment-checked, same as before.
+                    continue;
+                }
+
+                // Fragment must point at a real id on the target page. "#" alone is not a target.
+                if (fragment.Length > 1)
+                {
+                    var frag = fragment[1..];
+                    if (!idsByPage.TryGetValue(targetPage, out var ids) || !ids.Contains(frag))
+                    {
+                        broken.Add((outputPath, href + fragment));
+                    }
                 }
             }
         }
         return broken;
+    }
+
+    /// <summary>
+    /// Overwrites every heading's id with a GitHub-flavoured slug, so an authored anchor like
+    /// <c>#2-topic</c> or <c>#uselogresult--uselogcontext</c> resolves against the rendered page.
+    /// Markdig's own auto-identifier (even with the GitHub option) drops leading numbers and collapses
+    /// runs of punctuation, so it does not match anchors the docs were written against on GitHub — this
+    /// re-derives the id the way GitHub does and de-duplicates within the document.
+    /// </summary>
+    private static void AssignHeadingIds(MarkdownDocument document)
+    {
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var heading in document.Descendants<HeadingBlock>())
+        {
+            var baseSlug = GitHubSlug(MarkdownText.GetPlainText(heading.Inline).Trim());
+            if (baseSlug.Length == 0) baseSlug = "section";
+            string slug;
+            if (seen.TryGetValue(baseSlug, out var count))
+            {
+                count++;
+                seen[baseSlug] = count;
+                slug = $"{baseSlug}-{count}";
+            }
+            else
+            {
+                seen[baseSlug] = 0;
+                slug = baseSlug;
+            }
+            heading.GetAttributes().Id = slug;
+        }
+    }
+
+    /// <summary>
+    /// GitHub's heading-anchor algorithm: lower-case, drop everything that isn't a letter, digit,
+    /// hyphen, underscore or space, then turn spaces into hyphens. Runs of hyphens are NOT collapsed
+    /// and leading numbers are kept, matching how GitHub renders `## 2. Topic` → `2-topic`.
+    /// </summary>
+    private static string GitHubSlug(string text)
+    {
+        var sb = new System.Text.StringBuilder(text.Length);
+        foreach (var ch in text.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch) || ch == '-' || ch == '_') sb.Append(ch);
+            else if (ch == ' ') sb.Append('-');
+        }
+        return sb.ToString();
     }
 
     private static string NormalizeDisk(string path) => Path.GetFullPath(path);

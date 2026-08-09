@@ -103,8 +103,16 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
     `ga-disable` flag. The banner and a "Cookie preferences" footer toggle are built by the injected
     snippet's own vanilla JS (no framework), so they exist only when a GA id is set; the banner's
     styling is the `#cookie-consent` block in `assets/site.css` (theme-token based, light/dark aware).
+- **Heading ids / anchors**: `SiteBuilder.AssignHeadingIds` overwrites every heading's id with a
+  **GitHub-flavoured slug** (`GitHubSlug`) right after parse. Markdig's own auto-identifier — even with
+  the GitHub option — drops leading numbers and collapses punctuation runs, so it does *not* match the
+  `#2-topic` / `#uselogresult--uselogcontext`-style anchors the docs were authored against on GitHub;
+  re-deriving the id GitHub's way (lower-case, drop non-`[\w- ]`, spaces→hyphens, no hyphen-collapsing,
+  de-duped per document) is what makes in-page anchors resolve.
 - **Self-check**: after generation, every internal `href` the tool emitted is checked against the
-  actual output tree; a broken one is a non-zero exit, not a silent gap.
+  actual output tree — **both** that the target `.html` exists **and** that any `#fragment` matches a
+  real element id on the target (same-page and cross-page); a broken file link or a dangling anchor is
+  a non-zero exit, not a silent gap.
 - **Live UI demos (`website/demos/`)**: `SiteBuilder.CopyDemos()` copies this directory verbatim
   into `<out>/demos/**` - it is pre-built static HTML + JSON, not markdown, so it bypasses the
   docs-page renderer entirely (unlike `WebAssetExtensions`, which only vendors images actually
