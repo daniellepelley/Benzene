@@ -74,8 +74,10 @@ self-contained artifact** — HTML with JS and CSS inlined, no external requests
 - No code splitting, no lazy routes, no runtime CDN anything.
 - Bundle size becomes a budget, not an afterthought. Today's artifact is 274 KB uncompressed. React
   plus React-DOM is ~135 KB minified before any application code, so a naive rewrite lands *larger*.
-  Preact (~10 KB, React-compatible via aliasing) is the obvious lever and should be evaluated early
-  rather than retrofitted.
+  **React is settled** (maintainer ruling, 2026-08-08: nothing else is as well known or as well
+  supported, and that matters more than kilobytes for a component library other teams are meant to
+  adopt). So the budget is spent, not saved — plan for the artifact growing, keep the *application*
+  code lean, and measure at step 2 rather than at the end.
 - The build output must be committed or produced in CI and vendored, because `dotnet pack` needs the
   file present. **This is the biggest workflow change in the whole proposal** — see §7.
 
@@ -133,7 +135,7 @@ mesh-ui/                        (stays in this repo — cross-language, per work
 ```
 
 **Stack:** TypeScript, Vite, `vite-plugin-singlefile`, Vitest + Testing Library, Storybook 8.
-**Rendering:** React API, but evaluate Preact-via-alias at the first bundle measurement (§3).
+**Rendering:** React. Settled — see §3.
 
 ## 7. What this actually costs
 
@@ -161,7 +163,7 @@ the decision, and items 3–9 are execution that can be staged.
    file is committed (simple, but a generated file in git and a diff on every change) or CI builds it
    and the .NET package consumes it (clean, but couples the .NET release to a Node build). **This is
    the one that must be settled first** — everything else follows from it.
-2. **React or Preact?** Same API; ~125 KB of budget difference on a 274 KB baseline.
+2. ~~React or Preact?~~ **Settled: React.**
 3. **Where does the source live?** Recommendation: this repo, since the UI is a cross-language concern
    and `mesh-ui/` is already here. Each port then vendors `dist/mesh-ui.html`, exactly as
    `Benzene.Mesh.Ui` does today.
@@ -170,6 +172,91 @@ the decision, and items 3–9 are execution that can be staged.
    produce one artifact and every consumer should vendor it, not hold a hand-edited copy.
 5. **Does Storybook get published?** A static Storybook on benzene.app is the strongest possible
    demonstration of "build your own mesh UI", and is nearly free once components exist.
+
+## 10. Where should it live? — the repo question
+
+**Recommendation: a separate repository. Do not put it in the specification repo.**
+
+### The evidence
+
+**1. This repo has no JavaScript toolchain at all, and that is deliberate.** Its three CI workflows
+(`deploy-website.yml`, `promote-website.yml`, `sync-test-environment.yml`) check out sibling repos,
+run a **C# generator**, and sync to S3. There is no `package.json`, no `setup-node`, no npm anywhere.
+Adding React, Storybook and Vitest makes this a two-toolchain repository with two CI paths and two
+dependency ecosystems.
+
+**2. The dependency surface is the strongest argument.** React + Storybook + Vitest pulls in several
+hundred transitive npm packages, a lockfile, Dependabot traffic and a supply-chain review obligation
+— into the repository whose entire job is to hold the **normative specification**. `docs/specification/`
+should be boring, stable and trustworthy. A spec repo with a churning `node_modules` dependency graph
+is a worse spec repo, even if nothing actually breaks.
+
+**3. Release cadence is mismatched, in both directions.** The spec changes rarely and deliberately;
+every change ripples to four language ports. A component library changes constantly — dependency
+bumps, component fixes, Storybook upgrades. Coupling them means routine npm patch releases churn the
+repository that holds the contract, and spec-version tags stop meaning anything about the UI.
+
+**4. The distribution goal requires it.** "A team could build their own mesh UI out of the components"
+means publishing an npm package (`@benzene/mesh-ui` or similar). That is natural from a dedicated
+repo and awkward from the spec repo.
+
+**5. The cross-repo contract problem is already solved here.** The obvious objection — "but the
+contracts live in the spec" — has an existing answer. Every language port already vendors
+`docs/specification/conformance/*.json` with a recorded `SPEC_VERSION` and a CI drift check against
+this repo. A UI repo would use **exactly that mechanism** to generate its TypeScript types from
+`mesh-descriptor-cases.json`, `mesh-trace-cases.json`, `mesh-issue-cases.json` and
+`mesh-collector-cases.json`. This is not a new coupling to invent; it is the pattern the project
+already runs, and it makes contract drift a build failure in the UI.
+
+**6. It matches the split that already happened.** Spec / .NET / Go / TypeScript / Python / admin are
+separated by concern. A browser UI with its own toolchain is another distinct concern, not an
+exception.
+
+### The argument for keeping it here, and why it loses
+
+`mesh-ui/` is already in this repo and the website's `demos/mesh/` uses it. But that copy is
+*vendored verbatim* by `SiteBuilder.CopyDemos()` — it is already consumed as a build artifact, not as
+source. Vendoring a released `dist/mesh-ui.html` from another repo is the same operation the website
+already performs, and the same one `Benzene.Mesh.Ui.csproj` performs when it embeds the file.
+
+The genuine cost is one more repo to coordinate. That is real but small, and it is the cost the
+project has already accepted five times.
+
+### On the name — the one thing worth reconsidering
+
+**`benzene-mesh` is the wrong name for this**, because the mesh is not the UI. In .NET alone the mesh
+is **twenty packages**: `Benzene.Mesh.Collector`, `.Aggregator`, `.Contracts`, `.Discovery.Aws`,
+`.Discovery.Azure`, `.Discovery.Kubernetes`, `.Fleet.Aws.XRay`, `.Fleet.Jaeger`, `.Fleet.Tempo`,
+`.Usage.CloudWatch`, `.Usage.ApplicationInsights`, `.Wire`, `.Dispatch`, `.Reporting`, storage
+adapters, and `.Ui`. Those backends stay per-language, as you say. A repository called `benzene-mesh`
+that contains only a React component library will read, to anyone arriving at the org, as *the mesh* —
+and they will go looking for the collector in it.
+
+Two better options:
+
+- **`benzene-ui`** — my preference. There are **three** UIs, not one: `mesh-ui.html` (5,036 lines),
+  `mesh-spec-ui.html` (955) and `spec-ui.html` (1,317), and they already share 30 CSS class names by
+  copy-paste. A single component library that all three are built from is the coherent end state, and
+  `spec-ui` is not mesh — so a mesh-named repo would be wrong for a third of its contents from day one.
+- **`benzene-mesh-ui`** — precise, unambiguous, and correct if the spec UIs are deliberately left out.
+
+The decision that matters is **separate repo: yes**. The name is secondary, but `benzene-ui` buys room
+for the two spec UIs that otherwise need a home later.
+
+### What would live there
+
+```
+benzene-ui/
+  packages/components/     the publishable library: primitives, controls, sections
+  packages/mesh-ui/        the opinionated assembly → dist/mesh-ui.html
+  packages/spec-ui/        (later) the other two UIs on the same primitives
+  contracts/               vendored conformance fixtures + SPEC_VERSION + drift check
+  stories/                 Storybook, published static to benzene.app
+```
+
+Consumers are unchanged in shape: `Benzene.Mesh.Ui.csproj` embeds a released `dist/mesh-ui.html`
+exactly as it embeds the hand-written one today; the website vendors the same artifact into
+`demos/mesh/`. Neither needs to know a Node build exists.
 
 ## 9. Risks
 
