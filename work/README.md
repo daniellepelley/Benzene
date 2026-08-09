@@ -62,5 +62,6 @@ unpublishing them.
 - `cloudevents-design.md` — CloudEvents as a wire format
 - `spec-review-2026-07-25.md` — the maintainer's review of the specification draft
 - `mesh-ui-product-vision.md` — the shared Mesh UI, which lives in this repo
+- `mesh-ui-react-assessment.md` — what a React + TypeScript componentisation of the Mesh UI would cost
 - `repo-split-plan.md`, `repo-split-manifest.md`, `repo-split/` — how the repositories got this shape
 - `website-analytics-setup.md` — turning on traffic monitoring for benzene.app
