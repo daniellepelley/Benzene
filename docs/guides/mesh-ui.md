@@ -211,7 +211,7 @@ cannot break a downstream build when this repo moves.
 |---|---|---|
 | Website demo | `website/demos/mesh/index.html` | Copied verbatim next to the fixture JSON; the site's `CopyDemos` publishes the directory as-is. The demo has no live endpoint, so it renders the static floor. |
 | `benzene-dotnet` | `src/Benzene.Mesh.Ui/mesh-ui.html` | The `.NET` host serves this file over `/benzene/mesh-ui`; it may additionally wire the live plane by pointing `data-fleet-url` at its own `/benzene/invoke`. |
-| `benzene-typescript` | a `@benzene/mesh-ui` asset (not yet ported) | When the TS port adds a mesh-UI package, it vendors this file rather than authoring a new one. |
+| `benzene-typescript` | `src/Benzene.Mesh.Ui/mesh-ui.html` (`@benzene/mesh-ui`) | Vendored verbatim, same discipline as the .NET port; `MeshUiPage.ts` reads it via `readFileSync` as a static asset. |
 | `benzene-go` (future) | its mesh-UI asset | Same: vendor, do not fork. |
 
 **The rule: never fork the copy.** Fixes and features land in the canonical here (with this guide
@@ -247,8 +247,6 @@ The canonical UI was consolidated from the divergent per-language versions in Ju
 
 - **Companion Spec UI accent**: the Mesh UI now uses the website's green (§6); the companion
   `mesh-spec-ui.html` still uses the older indigo. Re-tinting it for cross-UI parity is a follow-up.
-- **TypeScript mesh-UI package**: when `@benzene/mesh-ui` is ported, it vendors this canonical file;
-  it should not re-author a page.
 - **Windowable usage feed**: `usage.json` counts carry a baked window and cannot be re-windowed
   client-side; a windowable feed is tracked in [`service-mesh-roadmap-1.0.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/service-mesh-roadmap-1.0.md).
 - **Staleness signal**: there is no per-service freshness/`Stale` status in the artifacts yet; the
