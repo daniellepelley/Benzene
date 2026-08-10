@@ -63,7 +63,44 @@ fixtures above establish **Benzene Core**. A port that also wants its services t
 if the port's services should appear in a mesh — it is the difference between "interoperates"
 and "fully tool-operable".
 
-## 4. Known .NET-isms that must NOT leak into the spec
+## 4. Recommended: an in-process transport
+
+Not required for conformance (it carries nothing over the wire, so there is nothing for the
+fixtures to check), but strongly recommended once the outbound client + decorators step (§2.4) is
+done: a `MessageSender`/outbound-client implementation that dispatches straight to a handler
+pipeline built in the *same* runtime, with no wire hop at all — not even loopback.
+
+It exists for the [modular monolith pattern](../../docs/patterns/modular-monolith.md): a service
+built as named, topic-addressed pipelines in one process, extracted into microservices later by
+swapping a routing-table entry from "in-process" to a real transport. A port without this
+transport still works for that pattern — a hand-rolled direct function call stands in — but it
+loses the point of the pattern: that a module boundary is a *message*, indistinguishable from a
+call that will one day cross a process, from the first commit.
+
+Two things vary by port, and both are architecture, not oversight:
+
+- **Whether "two named pipelines can share a topic" needs a workaround.** If handler registration
+  is a process-wide singleton (as in .NET's `MessageHandlerDefinitionIndex` or a decorator/module
+  scanner shared process-wide), two named in-process pipelines that both declare a handler for the
+  same topic collide — fan-out to several pipelines then needs a per-target topic to disambiguate
+  (see .NET's `InProcessFanOutTarget`/`DuplicateInProcessFanOutTargetException`). If the registry
+  is per-instance (constructed fresh per pipeline, as in Go and Python), there is no collision and
+  no workaround is needed — fan-out just dispatches the caller's one topic to each pipeline's own
+  registry.
+- **Whether a separate boot-time validation pass is worth adding.** A port whose wiring is
+  imperative and runs once at startup (Go, Python) already fails loudly on a typo'd pipeline name
+  at construction — nothing lazy is left to validate. A port with a declarative, possibly-deferred
+  routing table (.NET's `OutboundRoutingBuilder`) benefits from an explicit startup check
+  (.NET's `IStartUpCheck`) that cross-references every route reference against the registered
+  pipeline names before the service is considered healthy, rather than surfacing the mistake on
+  first send.
+
+Match the target language's existing idiom for outbound clients (a constructed object used
+directly, not a new routing concept invented for this one transport) rather than translating any
+one port's shape literally — see the .NET, Go, TypeScript, and Python implementations for four
+idiomatic answers to the same two questions above.
+
+## 5. Known .NET-isms that must NOT leak into the spec
 
 Recorded so they don't get accidentally specified:
 
