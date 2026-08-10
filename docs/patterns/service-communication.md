@@ -68,7 +68,9 @@ Three properties make this safe at fleet scale:
 
 > **What ships today, precisely** *(informative, .NET)*: the outbound router ships transport
 > middleware for **SQS and SNS** (`UseSqs`, `UseSns`) — i.e. queue/event delivery is routed by topic
-> today. The **request/response Lambda** path (below) is currently a *per-function client* rather
+> today — plus an **in-process route** (`UseInProcess`, from `Benzene.Clients.InProcess`) for a
+> topic whose handler lives in the caller's own runtime (see
+> [the modular monolith](modular-monolith.md)). The **request/response Lambda** path (below) is currently a *per-function client* rather
 > than a topic-routed transport; wiring Lambda request/response in behind the same
 > `AddOutboundRouting(...)` table is the natural next step, and the pattern is written to that goal.
 > Treat "everything is addressed by topic" as the target shape; today SQS/SNS reach it through the

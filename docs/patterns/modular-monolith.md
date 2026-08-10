@@ -78,27 +78,31 @@ method call) idiom to keep out of the codebase.
 
 ## Building it *(informative, .NET)*
 
-A module is a pipeline over `BenzeneMessageContext` scoped to that module's handlers (one assembly
-per module keeps discovery honest), wrapped in a `BenzeneMessageApplication` — the same
-transport-agnostic building block the AWS and Azure adapters use internally:
+The in-process transport is a shipped package, `Benzene.Clients.InProcess`, and it has the same
+explicit, per-topic, opt-in status as SQS or SNS — a fifth transport, not a magic co-location mode.
+The inbound side builds a `BenzeneMessageContext` pipeline over the modules' handlers and registers
+it as the in-process dispatch target:
 
 ```csharp
-// One pipeline per module, discovering only that module's handler assembly.
-var billingPipeline = app.Create<BenzeneMessageContext>()
-    .UseMessageHandlers(typeof(ChargeCardHandler).Assembly)
-    .Build();
-
-var billing = new BenzeneMessageApplication(billingPipeline);
-
-// Invoke it in process: no host, no transport, full pipeline semantics —
-// middleware, per-invocation scope, results, statuses.
-var response = await billing.HandleAsync(
-    new BenzeneMessageRequest { Topic = "billing:charge", Body = json },
-    serviceResolverFactory);
+// The in-process pipeline: the modules' handler assemblies, plus whatever
+// cross-cutting middleware the dispatched topics need.
+services.AddInProcessMessaging(pipeline => pipeline
+    .UseMessageHandlers(
+        typeof(ChargeCardHandler).Assembly,       // billing
+        typeof(ReserveStockHandler).Assembly));   // shipping
 ```
 
-Module-to-module calls go through the ordinary [sender and routing table](service-communication.md#the-routing-table)
-— the call site names a topic and nothing else:
+The outbound side is the ordinary [routing table](service-communication.md#the-routing-table) —
+an in-process route is declared exactly like a queue route:
+
+```csharp
+services.AddOutboundRouting(routing => routing
+    .Route("billing:charge",  p => p.UseInProcess())
+    .Route("shipping:reserve", p => p.UseInProcess())
+    .Route("audit:log",        p => p.UseSns(auditTopicArn)));  // and some topics already leave
+```
+
+And module-to-module calls go through the sender — the call site names a topic and nothing else:
 
 ```csharp
 // In an Orders handler. Nothing here says "billing is in this process".
@@ -106,22 +110,29 @@ IBenzeneResult<ChargeRaised> charge =
     await sender.SendAsync<ChargeCard, ChargeRaised>("billing:charge", request);
 ```
 
+Two deliberate semantics make the in-process route a rehearsal for distribution rather than a
+shortcut around it: each dispatch runs in its **own fresh DI scope** (the isolation a real
+cross-process call would have), and the payload is **serialized by default** (same validation,
+casting, and versioning middleware as any wire transport; no shared mutable object sneaking across
+by reference).
+
 Because every module in the process consumes messages the same way, the monolith is not confined
 to rung 1 of the adoption ladder: the same process can mount an HTTP adapter for the Orders
 module's public API and a queue consumer for inbound events, all dispatching into the same
 pipelines. "Monolith" here describes the **deployment unit** — one deliverable — not the number of
 transports it serves.
 
-> **What ships today, precisely** *(informative, .NET)*: the in-process pipeline
-> (`BenzeneMessageApplication` + `UseMessageHandlers` over chosen assemblies) ships and is the
-> documented worker-hosting shape. The outbound router ships **SQS and SNS** routes (`UseSqs`,
-> `UseSns`); an **in-process route** — `Route("billing:charge", p => p.UseInProcess(billing))`
-> dispatching straight into a local `BenzeneMessageApplication` — is not a shipped package today.
-> It is a small piece of custom outbound middleware (the outbound pipeline is ordinary Benzene
-> middleware over `OutboundContext`), and shipping it first-class is the natural next step this
-> pattern is written toward. Until then, the seam is the same — modules calling through
-> a sender interface resolved by wiring — even if the wiring is a thin custom middleware rather
-> than a one-liner.
+> **What ships today, precisely** *(informative, .NET)*: `Benzene.Clients.InProcess` ships
+> `AddInProcessMessaging` (inbound) and `.UseInProcess()` (outbound) with typed request/response
+> through the ordinary `SendAsync`, alongside the router's existing `UseSqs`/`UseSns`. Current
+> limits, scoped as follow-on work (`work/inprocess-modular-monolith-scope.md` in benzene-dotnet):
+> **one in-process pipeline per runtime** — all modules' handlers register in the one
+> `AddInProcessMessaging` call, so per-module *middleware stacks* aren't expressible yet (named
+> per-module pipelines are the scoped fix); an in-process route to a topic with no handler is
+> caught at **first send** (an honest `not-found` result), not at startup; and there is **no
+> in-process event fan-out** yet, so one-event-many-consumers choreography starts at extraction.
+> None of these limits touch the seam itself — topic-addressed calls through the routing table —
+> which is what extraction depends on.
 
 ---
 
@@ -201,8 +212,8 @@ in-process route to the transport route:
 
 ```csharp
 // Before — resolved inside the process:
-.Route("billing:charge", p => p.UseInProcess(billing))
-// After — the same topic, now a queue away (see the "what ships today" note above):
+.Route("billing:charge", p => p.UseInProcess())
+// After — the same topic, now a queue away:
 .Route("billing:charge", p => p.UseSqs(billingQueueUrl).UseRetry(3))
 ```
 
