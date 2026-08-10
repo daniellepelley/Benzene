@@ -23,6 +23,10 @@ Two scales of pattern:
 
 **Composing a system** — how to arrange many services into an estate:
 
+- [The modular monolith, and the road out of it](modular-monolith.md) — start as **one deliverable**
+  whose modules talk by topic through in-process pipelines, so the module seams are message
+  contracts from day one — and extraction to microservices, when the organization calls for it, is
+  a routing-table change instead of a rewrite
 - [The two-tier microservice architecture](two-tier-architecture.md) — a system split into a layer
   of data-owning **core services** and a layer of process-owning **orchestrators**, drawn from a
   large-scale platform built on a Benzene-family framework. Its parts:
