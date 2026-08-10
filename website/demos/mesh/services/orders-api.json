@@ -1,7 +1,7 @@
 {
   "name": "orders-api",
   "fetchedAtUtc": "2026-07-16T09:15:00Z",
-  "specJson": "{\"type\":\"benzene\",\"topics\":{\"orders:get-all\":{\"http\":{\"method\":\"GET\",\"path\":\"/orders\"},\"response\":\"OrderDto[]\"}}}",
+  "specJson": "{\n  \"openapi\": \"3.0.1\",\n  \"info\": {\n    \"title\": \"Orders API\",\n    \"description\": \"Accepts and tracks customer orders through to fulfilment.\",\n    \"version\": \"2.4.0\"\n  },\n  \"tags\": [\n    {\n      \"name\": \"orders\",\n      \"description\": \"Order lifecycle\"\n    }\n  ],\n  \"messageEndpoint\": \"/benzene/invoke\",\n  \"transports\": [\n    \"http\",\n    \"sqs\"\n  ],\n  \"requests\": [\n    {\n      \"topic\": \"orders:create\",\n      \"version\": \"v1\",\n      \"httpMappings\": [\n        {\n          \"method\": \"POST\",\n          \"path\": \"/orders\"\n        }\n      ],\n      \"request\": {\n        \"type\": \"object\",\n        \"title\": \"CreateOrder\",\n        \"required\": [\n          \"customerId\",\n          \"lines\"\n        ],\n        \"properties\": {\n          \"customerId\": {\n            \"type\": \"string\",\n            \"format\": \"uuid\"\n          },\n          \"lines\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"sku\": {\n                  \"type\": \"string\"\n                },\n                \"quantity\": {\n                  \"type\": \"integer\",\n                  \"minimum\": 1\n                }\n              }\n            }\n          }\n        }\n      },\n      \"response\": {\n        \"type\": \"object\",\n        \"title\": \"OrderCreated\",\n        \"properties\": {\n          \"orderId\": {\n            \"type\": \"string\",\n            \"format\": \"uuid\"\n          },\n          \"status\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"accepted\",\n              \"rejected\"\n            ]\n          }\n        }\n      },\n      \"example\": {\n        \"customerId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n        \"lines\": [\n          {\n            \"sku\": \"SKU-1\",\n            \"quantity\": 2\n          }\n        ]\n      }\n    },\n    {\n      \"topic\": \"orders:get-all\",\n      \"httpMappings\": [\n        {\n          \"method\": \"GET\",\n          \"path\": \"/orders\"\n        }\n      ],\n      \"request\": {\n        \"type\": \"object\",\n        \"properties\": {}\n      },\n      \"response\": {\n        \"type\": \"array\",\n        \"items\": {\n          \"type\": \"object\",\n          \"title\": \"OrderDto\"\n        }\n      }\n    },\n    {\n      \"topic\": \"benzene:spec\",\n      \"reserved\": true,\n      \"request\": {\n        \"type\": \"object\",\n        \"properties\": {}\n      },\n      \"response\": {\n        \"type\": \"object\",\n        \"title\": \"ServiceSpec\"\n      }\n    },\n    {\n      \"topic\": \"benzene:health\",\n      \"reserved\": true,\n      \"request\": {\n        \"type\": \"object\",\n        \"properties\": {}\n      },\n      \"response\": {\n        \"type\": \"object\",\n        \"title\": \"HealthReport\"\n      }\n    }\n  ],\n  \"events\": [\n    {\n      \"topic\": \"payment:capture\",\n      \"version\": \"v2\",\n      \"message\": {\n        \"type\": \"object\",\n        \"title\": \"PaymentCapture\",\n        \"required\": [\n          \"orderId\",\n          \"amount\"\n        ],\n        \"properties\": {\n          \"orderId\": {\n            \"type\": \"string\",\n            \"format\": \"uuid\"\n          },\n          \"amount\": {\n            \"type\": \"number\"\n          },\n          \"currency\": {\n            \"type\": \"string\"\n          }\n        }\n      },\n      \"example\": {\n        \"orderId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n        \"amount\": 42.5,\n        \"currency\": \"GBP\"\n      }\n    },\n    {\n      \"topic\": \"order:legacy-export\",\n      \"message\": {\n        \"type\": \"object\",\n        \"title\": \"LegacyOrderExport\",\n        \"properties\": {\n          \"orderId\": {\n            \"type\": \"string\"\n          }\n        }\n      }\n    }\n  ],\n  \"components\": {\n    \"schemas\": {\n      \"OrderDto\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"orderId\": {\n            \"type\": \"string\",\n            \"format\": \"uuid\"\n          },\n          \"placedAt\": {\n            \"type\": \"string\",\n            \"format\": \"date-time\"\n          }\n        }\n      }\n    }\n  }\n}\n",
   "specHash": "defa363561c288dc5a629895d6bff6efa300adde0709904c8a7bb941869ebad",
   "previousSpecHash": "defa363561c288dc5a629895d6bff6efa300adde0709904c8a7bb941869ebad",
   "contractDrift": false,
@@ -11,20 +11,42 @@
       "PostgresDatabase": {
         "status": "ok",
         "type": "PostgresDatabase",
-        "data": { "latencyMs": 4, "pool": "8/20" },
-        "dependencies": [{ "kind": "Database", "name": "orders-db" }]
+        "data": {
+          "latencyMs": 4,
+          "pool": "8/20"
+        },
+        "dependencies": [
+          {
+            "kind": "Database",
+            "name": "orders-db"
+          }
+        ]
       },
       "RedisCache": {
         "status": "ok",
         "type": "RedisCache",
-        "data": { "hitRate": "0.97" },
-        "dependencies": [{ "kind": "Cache", "name": "orders-cache" }]
+        "data": {
+          "hitRate": "0.97"
+        },
+        "dependencies": [
+          {
+            "kind": "Cache",
+            "name": "orders-cache"
+          }
+        ]
       },
       "SqsQueue": {
         "status": "ok",
         "type": "SqsQueue",
-        "data": { "approxDepth": 0 },
-        "dependencies": [{ "kind": "Queue", "name": "order-events" }]
+        "data": {
+          "approxDepth": 0
+        },
+        "dependencies": [
+          {
+            "kind": "Queue",
+            "name": "order-events"
+          }
+        ]
       }
     }
   },

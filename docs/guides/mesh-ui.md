@@ -12,7 +12,10 @@ from the [mesh contracts](../specification/mesh.md) and the
 of .NET services, a fleet of TypeScript services, a fleet of Go services, or a mixed fleet — it
 never knows or cares which port produced the data.
 
-Because it is a cross-language concern, there is exactly **one** Mesh UI. Its **source** is
+Because it is a cross-language concern, there is exactly **one** Mesh UI, and — since 2026-08-10 —
+exactly **one** spec viewer behind it, serving the mesh's per-service view, `Benzene.Spec.Ui`'s
+standalone viewer and the website demo from a single artifact. They render the same document for the
+same reader; two pages had already drifted apart, which is the argument against having two. Its **source** is
 [**benzene-ui**](https://github.com/daniellepelley/benzene-ui), a React + TypeScript component
 library; its **build output** is a single self-contained page, vendored as
 [`mesh-ui/mesh-ui.html`](https://github.com/daniellepelley/Benzene/blob/main/mesh-ui/mesh-ui.html)

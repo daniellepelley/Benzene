@@ -1,0 +1,190 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Orders API",
+    "description": "Accepts and tracks customer orders through to fulfilment.",
+    "version": "2.4.0"
+  },
+  "tags": [
+    {
+      "name": "orders",
+      "description": "Order lifecycle"
+    }
+  ],
+  "messageEndpoint": "/benzene/invoke",
+  "transports": [
+    "http",
+    "sqs"
+  ],
+  "requests": [
+    {
+      "topic": "orders:create",
+      "version": "v1",
+      "httpMappings": [
+        {
+          "method": "POST",
+          "path": "/orders"
+        }
+      ],
+      "request": {
+        "type": "object",
+        "title": "CreateOrder",
+        "required": [
+          "customerId",
+          "lines"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "title": "OrderCreated",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected"
+            ]
+          }
+        }
+      },
+      "example": {
+        "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "lines": [
+          {
+            "sku": "SKU-1",
+            "quantity": 2
+          }
+        ]
+      }
+    },
+    {
+      "topic": "orders:get-all",
+      "httpMappings": [
+        {
+          "method": "GET",
+          "path": "/orders"
+        }
+      ],
+      "request": {
+        "type": "object",
+        "properties": {}
+      },
+      "response": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "title": "OrderDto"
+        }
+      }
+    },
+    {
+      "topic": "benzene:spec",
+      "reserved": true,
+      "request": {
+        "type": "object",
+        "properties": {}
+      },
+      "response": {
+        "type": "object",
+        "title": "ServiceSpec"
+      }
+    },
+    {
+      "topic": "benzene:health",
+      "reserved": true,
+      "request": {
+        "type": "object",
+        "properties": {}
+      },
+      "response": {
+        "type": "object",
+        "title": "HealthReport"
+      }
+    }
+  ],
+  "events": [
+    {
+      "topic": "payment:capture",
+      "version": "v2",
+      "message": {
+        "type": "object",
+        "title": "PaymentCapture",
+        "required": [
+          "orderId",
+          "amount"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "example": {
+        "orderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "amount": 42.5,
+        "currency": "GBP"
+      }
+    },
+    {
+      "topic": "order:legacy-export",
+      "message": {
+        "type": "object",
+        "title": "LegacyOrderExport",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "components": {
+    "schemas": {
+      "OrderDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,9 +1,14 @@
-# Benzene Mesh UI — canonical vendored copy
+# Benzene Mesh UI — canonical vendored copies
 
-`mesh-ui.html` in this directory is the **one, canonical, cross-language Benzene Mesh UI**: a
-single self-contained web page for reviewing a Benzene estate (what each service does, the topics
-it consumes/produces, payload schemas, versions, contract drift, topology, usage, and health) from
-the language-neutral mesh catalog artifacts every conforming aggregator produces.
+Two self-contained pages, both canonical and both cross-language:
+
+- **`mesh-ui.html`** — the estate view, for reviewing a Benzene estate (what each service does, the topics it
+  consumes/produces, payload schemas, versions, contract drift, topology, usage, health, live flows
+  and issues) from the language-neutral mesh catalog artifacts every conforming aggregator produces.
+- **`mesh-spec-ui.html`** — one service's contract: its topics, HTTP routes, payload schemas and
+  examples. The same file serves three homes, because only the fetch differs: `?service=` reads the
+  aggregator's stored snapshot, while `?url=`, a host-injected `data-spec-url`, or a `spec.json`
+  sitting beside the page render a document directly. `Benzene.Spec.Ui` embeds it as `spec-ui.html`.
 
 - **What it is for, its data contract, its functional requirements, and how each language port and
   the website vendor a copy of it** are documented in
@@ -21,11 +26,12 @@ tests; the componentised source has ~180 tests over the store, a Storybook per c
 generated types pinned to the mesh contracts, and it builds to a smaller page than the one it
 replaced.
 
-Edits made here are lost on the next re-vendor and are not covered by any test. To change the UI:
+Edits made here are lost on the next re-vendor and are not covered by any test. To change either page:
 
 1. change `src/` in `benzene-ui`,
-2. `npm run build && cp dist/index.html build/mesh-ui.html`,
-3. copy `build/mesh-ui.html` over this file and the other vendored copies.
+2. `npm run build`, then
+   `cp dist/index.html build/mesh-ui.html && cp dist/spec/spec.html build/mesh-spec-ui.html`,
+3. copy both over the files here and the other vendored copies.
 
 The build is deterministic, and benzene-ui's CI fails if a fresh rebuild does not reproduce its
 committed artifact byte for byte — so a committed build output cannot drift from its source in
@@ -54,8 +60,10 @@ A host serving this page from inside a running service can inject three attribut
 | Attribute | Query param | What it does |
 |---|---|---|
 | `data-manifest-url` | `?url=` | Where the artifacts are published; everything else resolves relative to it |
+| `data-spec-url` | `?url=` | *(spec viewer)* The spec document to render. Defaults to `./spec.json` |
 | `data-fleet-url` | `?fleet=` | The wire-envelope endpoint the live plane polls. Absent ⇒ the static floor |
 | `data-annotations-url` | `?annotations=` | The annotation write endpoint. Absent ⇒ discussion is read-only |
 
-`MeshUiPage.GetHtml` injects these by rewriting the literal string `<html lang="en">`, so that
-opening tag must survive the build unchanged. benzene-ui's CI asserts it does.
+`MeshUiPage.GetHtml` and `SpecUiPage.GetHtml` inject these by rewriting the literal string
+`<html lang="en">`, so that opening tag must survive the build unchanged. benzene-ui's CI asserts it
+does, for both pages.

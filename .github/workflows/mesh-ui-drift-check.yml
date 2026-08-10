@@ -27,17 +27,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: The website demo must match the canonical copy in this repo
+      - name: The website demos must match the canonical copies in this repo
         run: |
           set -euo pipefail
-          if ! diff -u mesh-ui/mesh-ui.html website/demos/mesh/index.html > /tmp/demo-diff.txt; then
-            echo "::error file=website/demos/mesh/index.html::The website demo has drifted from mesh-ui/mesh-ui.html"
-            cat /tmp/demo-diff.txt
-            echo ""
-            echo "Re-vendor it: cp mesh-ui/mesh-ui.html website/demos/mesh/index.html"
-            exit 1
-          fi
-          echo "The website demo matches mesh-ui/mesh-ui.html."
+          fail=0
+          check() {
+            if ! diff -u "$1" "$2" > /tmp/diff.txt; then
+              echo "::error file=$2::$2 has drifted from $1"
+              cat /tmp/diff.txt
+              echo "Re-vendor it: cp $1 $2"
+              fail=1
+            fi
+          }
+          check mesh-ui/mesh-ui.html website/demos/mesh/index.html
+          check mesh-ui/mesh-spec-ui.html website/demos/mesh/mesh-spec-ui.html
+          check mesh-ui/mesh-spec-ui.html website/demos/spec/index.html
+          exit $fail
 
       - name: Fetch the built artifact from benzene-ui
         run: |
@@ -46,22 +51,32 @@ jobs:
             https://github.com/daniellepelley/benzene-ui.git /tmp/benzene-ui
           git -C /tmp/benzene-ui sparse-checkout set build
 
-      - name: The canonical copy must match what benzene-ui built
+      - name: The canonical copies must match what benzene-ui built
         run: |
           set -euo pipefail
-          built=/tmp/benzene-ui/build/mesh-ui.html
-          if [ ! -f "$built" ]; then
-            echo "::error::benzene-ui has no build/mesh-ui.html — has the artifact moved?"
-            exit 1
-          fi
-          if ! diff -u "$built" mesh-ui/mesh-ui.html > /tmp/canonical-diff.txt; then
-            echo "::error file=mesh-ui/mesh-ui.html::The vendored Mesh UI has drifted from the benzene-ui build"
-            cat /tmp/canonical-diff.txt
+          fail=0
+          for page in mesh-ui.html mesh-spec-ui.html; do
+            built="/tmp/benzene-ui/build/$page"
+            if [ ! -f "$built" ]; then
+              echo "::error::benzene-ui has no build/$page — has the artifact moved?"
+              fail=1; continue
+            fi
+            if ! diff -u "$built" "mesh-ui/$page" > /tmp/diff.txt; then
+              echo "::error file=mesh-ui/$page::mesh-ui/$page has drifted from the benzene-ui build"
+              cat /tmp/diff.txt
+              fail=1
+            fi
+          done
+          if [ $fail -ne 0 ]; then
             echo ""
-            echo "The Mesh UI is generated. Do not edit the copy — change benzene-ui's src/, then:"
-            echo "  npm run build && cp dist/index.html build/mesh-ui.html   # in benzene-ui"
-            echo "  cp <benzene-ui>/build/mesh-ui.html mesh-ui/mesh-ui.html"
+            echo "These pages are generated. Do not edit a copy — change benzene-ui's src/, then:"
+            echo "  npm run build                                            # in benzene-ui"
+            echo "  cp dist/index.html build/mesh-ui.html"
+            echo "  cp dist/spec/spec.html build/mesh-spec-ui.html"
+            echo "  cp <benzene-ui>/build/*.html mesh-ui/"
             echo "  cp mesh-ui/mesh-ui.html website/demos/mesh/index.html"
+            echo "  cp mesh-ui/mesh-spec-ui.html website/demos/mesh/mesh-spec-ui.html"
+            echo "  cp mesh-ui/mesh-spec-ui.html website/demos/spec/index.html"
             exit 1
           fi
-          echo "The vendored Mesh UI matches the benzene-ui build."
+          echo "The vendored pages match the benzene-ui build."
