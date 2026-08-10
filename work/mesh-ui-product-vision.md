@@ -924,3 +924,28 @@ opened an empty box; filters moved to sit with the list they filter, rather than
 where the service filter was present on every page and did something on only one; and a three-state
 theme toggle — light, dark, or follow the system — because "follow the system" is a real answer and
 a two-state switch overrides a preference the reader already gave their OS.
+
+### Postscript — the arrival flash, and the bug behind it
+
+The last item on the review list was a status-change flash on the service cards. It turned out to be
+blocked on a defect, not on taste: **nothing refreshed the declared plane.** `manifestRefreshed` had
+no dispatcher, so the manifest was fetched once at page load and never again. A dashboard left open
+showed the statuses it had when the tab opened, for as long as the tab stayed open, under a
+"generated" timestamp that never moved — and nothing on the page said so. There was no status change
+for a flash to fire on, because statuses did not change.
+
+The published artifacts now refresh together on a sixty-second timer — together, because one
+aggregator run publishes them under one `generatedAtUtc`, and refreshing the manifest alone would put
+fresh statuses under a stale map. A failed refresh keeps the last good manifest and says nothing: a
+transient fetch failure is not news about the estate, and the stale timestamp in the header is what
+tells the reader how old this is.
+
+The flash is one 1.4-second settle in the card's own RAG colour — never a pulse, never a repeat. A
+card that keeps moving is motion in the place alarms live, and readers learn to look away from that.
+The colour makes it say *which way* it moved; a service going red and a service recovering are
+different news. It is empty on first load by design: a wall of flashing cards on arrival says
+nothing, because "everything is new" and "the page just opened" are the same picture.
+
+Worth noting how the defect surfaced. It was not found by a test or a review of the store — it was
+found by asking what the animation would actually fire on. **A feature nobody could build on top of
+was the evidence that the thing underneath was not running.**
