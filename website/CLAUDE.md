@@ -89,8 +89,18 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-p
   pages also get a `<meta name="description">` derived from the page's first paragraph
   (`MarkdownText.FindDescription`, with a generic fallback). `SiteBuilder.WriteSitemapAndRobots`
   emits `sitemap.xml` (every canonical page, absolute URLs; redirect stubs are excluded and marked
-  `noindex`) and `robots.txt` (points at the sitemap). Absolute URLs use `--base-url` (default
-  `https://benzene.app`, no trailing slash); a dev/preview build can override it.
+  `noindex`) and `robots.txt` (points at the sitemap, and `Disallow: /components/`). Absolute URLs
+  use `--base-url` (default `https://benzene.app`, no trailing slash); a dev/preview build can
+  override it.
+  - **Pages published outside the page renderer don't get a canonical, so they must be kept out of
+    the index another way** — otherwise Search Console files them under "Duplicate without
+    user-selected canonical". Two such trees exist, handled differently by whether anything indexable
+    links to them. The **demos** (`demos/**`, linked from the marketing "Try it live" section) are
+    interactive app shells, not content; `CopyDemos` injects `<meta name="robots" content="noindex">`
+    into each copied `.html` (`SiteBuilder.InjectNoindex`) — they stay crawlable so the directive is
+    seen. The **component Storybook** (`/components/**`, injected by CI, not linked from any indexable
+    page) is a large third-party build we don't render, so it's kept out via `Disallow: /components/`
+    in `robots.txt` rather than a per-file noindex.
 - **Analytics / Search Console** (`SiteOptions`, `Layout.GoogleHead`): `--google-analytics-id` (GA4
   `gtag.js`) and `--google-site-verification` (a `google-site-verification` meta tag) inject into
   every page head via `SeoHead`. Both are **empty by default** — a build with neither set ships no

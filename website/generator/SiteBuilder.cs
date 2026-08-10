@@ -405,10 +405,16 @@ internal sealed class SiteBuilder
         sitemap.AppendLine("</urlset>");
         File.WriteAllText(Path.Combine(_outDir, "sitemap.xml"), sitemap.ToString());
 
-        // Allow everything and point crawlers at the sitemap.
+        // Allow everything and point crawlers at the sitemap, but keep the Storybook out of the index.
+        // The component Storybook under /components/ is a third-party build injected by CI (not rendered
+        // here), so its many near-identical iframe/app shells never get a canonical and would otherwise
+        // land in Search Console's "Duplicate without user-selected canonical" bucket. Nothing indexable
+        // links to it, so a robots Disallow is enough — no per-file noindex to inject into a build we
+        // don't own. (The demos take the other route: they're linked, so they carry a noindex meta and
+        // stay crawlable — see CopyDemos.)
         File.WriteAllText(
             Path.Combine(_outDir, "robots.txt"),
-            $"User-agent: *\nAllow: /\n\nSitemap: {_options.BaseUrl}/sitemap.xml\n");
+            $"User-agent: *\nAllow: /\nDisallow: /components/\n\nSitemap: {_options.BaseUrl}/sitemap.xml\n");
     }
 
     private void CopyStaticAssets(Dictionary<string, string> crawledAssets)
@@ -443,8 +449,41 @@ internal sealed class SiteBuilder
             var rel = Path.GetRelativePath(demosSourceDir, file);
             var dst = Path.Combine(demosOutDir, rel);
             Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
-            File.Copy(file, dst, overwrite: true);
+
+            // The demos are pre-built SPA shells copied verbatim, so they never pass through the page
+            // renderer that gives real pages a self-referencing canonical + a sitemap entry. Left as-is
+            // they are thin, near-identical app shells with no canonical, which Google files under
+            // "Duplicate without user-selected canonical". They are interactive tools, not content —
+            // the marketing pages already carry the crawlable prose — so mark them noindex on the way
+            // out. They stay linked and crawlable (no robots block) so this directive is seen and honoured.
+            if (Path.GetExtension(file).Equals(".html", StringComparison.OrdinalIgnoreCase))
+            {
+                File.WriteAllText(dst, InjectNoindex(File.ReadAllText(file)));
+            }
+            else
+            {
+                File.Copy(file, dst, overwrite: true);
+            }
         }
+    }
+
+    /// <summary>
+    /// Inserts a <c>&lt;meta name="robots" content="noindex"&gt;</c> as the first child of a page's
+    /// <c>&lt;head&gt;</c>, unless the page already declares a robots directive. Kept deliberately
+    /// literal (a single <c>&lt;head&gt;</c> match) — the vendored demo pages all open with a plain
+    /// <c>&lt;head&gt;</c> tag; a page shaped differently is passed through unchanged rather than
+    /// mangled.
+    /// </summary>
+    private static string InjectNoindex(string html)
+    {
+        if (html.Contains("name=\"robots\"", StringComparison.OrdinalIgnoreCase)) return html;
+        const string head = "<head>";
+        var idx = html.IndexOf(head, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return html;
+        var insertAt = idx + head.Length;
+        return html[..insertAt]
+            + "\n    <meta name=\"robots\" content=\"noindex\">"
+            + html[insertAt..];
     }
 
     private List<(string File, string Href)> SelfCheck(IEnumerable<string> outputPaths)
