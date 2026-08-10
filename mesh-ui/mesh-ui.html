@@ -3062,7 +3062,18 @@
      section header already exposes, resurfaced here so a reader who has drilled into one topic
      doesn't have to scroll away once they've decided to act. */
   function absoluteManifestUrl() {
-    try { return new URL(manifestUrl, location.href).toString(); } catch (e) { return manifestUrl || ""; }
+    // manifestUrl is null when the page was loaded by pasting raw JSON (no URL) rather than fetching
+    // one - guard explicitly rather than passing null into URL(), which coerces it to the *string*
+    // "null" instead of throwing, silently producing ".../null" as the resolved manifest URL.
+    if (!manifestUrl) return "";
+    try { return new URL(manifestUrl, location.href).toString(); } catch (e) { return manifestUrl; }
+  }
+  // POSIX-shell single-quote a token for safe use inside a copy-pasted CLI line: wraps it in '...'
+  // and escapes any embedded single quote as '\''. topic/service names are self-reported, untrusted
+  // mesh data (the same trust level specUrl carries) - unquoted, a crafted name could turn a
+  // "ready-made" command into a shell-injection payload for whoever pastes it into a terminal.
+  function shQuote(value) {
+    return "'" + String(value).replace(/'/g, "'\\''") + "'";
   }
   function downloadText(filename, text, mime) {
     try {
@@ -3080,16 +3091,18 @@
     setTimeout(function () { btn.textContent = original; }, 1200);
   }
   /* The version's single declared producer is "the service that owns this data" for a client-gen
-     command; a gap topic (no producer) falls back to its first consumer so the CLI line still has
-     something to point --service at rather than omitting the flag. More than one producer (a
-     fan-in topic) picks the first declared - a reasonable default the reader can edit, the same
-     "good enough, copyable" posture the compose feature's own pickers take. Returns a bare service
-     name (not a manifest lookup) so it still has something to offer even for a service that has
-     since dropped out of the fleet's manifest. */
+     command - its spec is what actually describes the topic's request shape. Deliberately does NOT
+     fall back to a consumer for a gap topic (no declared producer): a consumer's spec doesn't
+     declare producing this topic, so a generated "--service <consumer> --topic <id>" command
+     couldn't do what it claims, and "Copy <consumer> spec URL" would misrepresent that service as
+     the data's owner. Better to omit the owner-dependent actions than hand out a guaranteed-wrong
+     command - the schema copy/download actions (driven by the schema alone) still work for a gap
+     topic. More than one producer (a fan-in topic) picks the first declared - a reasonable default
+     the reader can edit, the same "good enough, copyable" posture the compose feature's own pickers
+     take. Returns a bare service name (not a manifest lookup) so it still has something to offer
+     even for a producer that has since dropped out of the fleet's manifest. */
   function pickOwningServiceName(t) {
-    return (t.producers && t.producers[0] && t.producers[0].service)
-      || (t.consumers && t.consumers[0] && t.consumers[0].service)
-      || null;
+    return (t.producers && t.producers[0] && t.producers[0].service) || null;
   }
   function buildConsumeSection(topicId, versions) {
     var wrap = el("div", "sp-section tp-consume");
@@ -3120,7 +3133,9 @@
         var dlSchema = el("button", "tb-btn", "Download schema");
         dlSchema.type = "button";
         dlSchema.addEventListener("click", function () {
-          var suffix = t.version ? "-" + t.version : "";
+          // Both the topic id and the version go through the same sanitizer - an unsanitized version
+          // suffix could otherwise smuggle path separators/traversal into the download filename.
+          var suffix = t.version ? "-" + t.version.replace(/[^a-z0-9_-]+/gi, "-") : "";
           downloadText(topicId.replace(/[^a-z0-9_-]+/gi, "-") + suffix + ".schema.json", schemaJson, "application/json");
         });
         actions.appendChild(dlSchema);
@@ -3136,9 +3151,10 @@
         actions.appendChild(copySpec);
       }
 
-      if (ownerName) {
-        var cliLine = "benzene build --mesh " + absoluteManifestUrl() + " --service " + ownerName
-          + " --topic " + topicId + " --output topic-client";
+      var meshUrl = absoluteManifestUrl();
+      if (ownerName && meshUrl) {
+        var cliLine = "benzene build --mesh " + shQuote(meshUrl) + " --service " + shQuote(ownerName)
+          + " --topic " + shQuote(topicId) + " --output topic-client";
         var copyCli = el("button", "tb-btn", "Copy CLI command");
         copyCli.type = "button";
         copyCli.title = cliLine;

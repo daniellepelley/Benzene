@@ -128,8 +128,9 @@ absent. Section numbers below are the product surface, not spec sections.
   per topic, always with the "what changed" made legible.
 - Reconcile which versions the fleet **produces** against which it **consumes**, so a producer that
   has moved ahead of a consumer is visible.
-- A **Changes** view renders `changelog.json`'s dated run-over-run diffs (added / removed /
-  schema-changed / producers-changed / consumers-changed topics) with a since-picker (7 days by
+- A **Changes** view renders `changelog.json`'s dated run-over-run diffs (`topic-added` /
+  `topic-removed` / `schema-changed` / `producers-changed` / `consumers-changed` — the same `kind`
+  vocabulary as `MeshTopicChangeKind`) with a since-picker (7 days by
   default) — the time dimension the catalog's own per-entry `changes[]` can't give, since a fresh
   run overwrites the previous run's diff. `changelog.json` is optional: unlike the other artifact
   surfaces, which hide entirely when their feed is unwired, this view states its own absence
