@@ -1,9 +1,14 @@
 # Copies the `test` environment — variables and secrets — from this repository into the sibling
 # port repositories.
 #
-# Written for the repo split: `benzene-dotnet`, `benzene-typescript` and `benzene-go` inherit the
-# deploy workflows but none of the environment they read from, so every deployment fails at the
-# credentials step. One environment lives here and is fanned out to all of them.
+# Written for the repo split: `benzene-dotnet`, `benzene-typescript`, `benzene-go` and
+# `benzene-python` inherit the deploy workflows but none of the environment they read from, so every
+# deployment fails at the credentials step. One environment lives here and is fanned out to all of them.
+#
+# It also fans out one **repository-level** secret, WEBSITE_DISPATCH_TOKEN, on every run: each port's
+# notify-website workflow reads it to fire a repository_dispatch that rebuilds dev.benzene.app when
+# that port's docs change. Store it as a repository secret on THIS repo; it is written repository-level
+# (not into the `test` environment) on every target, so no `include_repository_secrets` toggle needed.
 #
 # ── How it works, and why it is not just one action call ──────────────────────────────────────
 #
@@ -50,7 +55,7 @@ on:
       target_repositories:
         description: "Repositories to sync into, as owner/name — comma or space separated"
         required: true
-        default: daniellepelley/benzene-dotnet, daniellepelley/benzene-typescript, daniellepelley/benzene-go
+        default: daniellepelley/benzene-dotnet, daniellepelley/benzene-typescript, daniellepelley/benzene-go, daniellepelley/benzene-python
       dry_run:
         description: "Report what would change without writing anything"
         type: boolean
@@ -94,6 +99,9 @@ jobs:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      # repository level, synced by default: every port's notify-website workflow reads this to
+      # dispatch a website rebuild, so it travels on every run (not behind include_repository_secrets).
+      WEBSITE_DISPATCH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
       # repository level, only synced when include_repository_secrets is on:
       NUGET_USER: ${{ secrets.NUGET_USER }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -316,18 +324,23 @@ jobs:
 
       - name: Sync repository-level secrets
         id: repo-secrets
-        if: inputs.include_repository_secrets
         run: |
           set -o pipefail
-          # These live outside the test environment but the targets' build and publish
-          # workflows read them, so they are offered here behind a switch.
+          # WEBSITE_DISPATCH_TOKEN travels on every run: each port's notify-website workflow reads it
+          # as a repository secret to dispatch a website rebuild. The publish credentials (NuGet,
+          # Codecov) live outside the test environment too, but stay behind include_repository_secrets.
           gh api "repos/${SOURCE_REPOSITORY}/actions/secrets" \
             --paginate --jq '.secrets[].name' | sort > /tmp/source-repo-secrets.txt
           echo "Repository-level secrets on ${SOURCE_REPOSITORY}:"
           sed 's/^/  /' /tmp/source-repo-secrets.txt
 
+          names="WEBSITE_DISPATCH_TOKEN"
+          if [ "${{ inputs.include_repository_secrets }}" = "true" ]; then
+            names="${names} NUGET_USER CODECOV_TOKEN"
+          fi
+
           : > /tmp/sync-repo-secrets.txt
-          for name in NUGET_USER CODECOV_TOKEN; do
+          for name in ${names}; do
             if ! grep -qx "${name}" /tmp/source-repo-secrets.txt; then
               echo "::warning::${name} is not a repository secret on ${SOURCE_REPOSITORY}; skipping."
               continue
@@ -346,7 +359,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Write repository-level secrets
-        if: inputs.include_repository_secrets && steps.repo-secrets.outputs.regex != ''
+        if: steps.repo-secrets.outputs.regex != ''
         uses: jpoehnelt/secrets-sync-action@v1.10.0
         with:
           github_token: ${{ secrets.SYNC_SECRETS_PAT }}
