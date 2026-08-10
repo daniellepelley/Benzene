@@ -860,3 +860,67 @@ metrics dashboards or full APM.
 
 **Status:** vision established; near-term items map to existing data, mid/long-term
 items are gated on data-layer and backend decisions to be driven into the owning POs.
+
+---
+
+## 2026-08-10 — the React/Redux rebuild: what the port cost, and what it bought
+
+`mesh-ui.html` — five thousand hand-written lines — has been retired in favour of
+[benzene-ui](https://github.com/daniellepelley/benzene-ui), a React + Redux Toolkit component
+library built to one rule: **components hold no state; the UI is a function of the store**. The rule
+is enforced mechanically (`src/components/architecture.test.ts`), not described in a README. The
+build vendors two self-contained HTML pages down the chain
+`benzene-ui/build → Benzene/mesh-ui → website/demos + Benzene.{Mesh,Spec}.Ui`, checked by CI in two
+repos.
+
+Two things are worth recording, because both are the kind of thing a rebuild does silently.
+
+### The visual system was a casualty, and nothing caught it
+
+The port carried the components across and left the theme behind. The token set went from roughly
+thirty semantic colours to nine, and the stylesheet ended up with **no `html` or `body` rule at
+all** — so the product shipped as a dark box floating on a browser-default white page, in Times New
+Roman. Every one of the two hundred-odd tests passed, because every test asserted on text content
+and the text was fine.
+
+The fix was a base layer and a restored token set. The lesson is the check, not the fix:
+
+- `src/theme/theme.test.ts` parses the stylesheet and refuses to let the foundation go missing
+  again — body/html backgrounds, a page font, `color-scheme`, form-control typography, a focus ring,
+  colour-token parity between light and dark, and no hardcoded hex outside the token blocks.
+- `npm run shots` renders every page in a real browser and writes a contact sheet. Deliberately not
+  a visual-regression test — no baselines, nothing to fail. A screenshot diff on a page under active
+  design churns and gets ignored, which is worse than no check. This just makes *looking* cheap, and
+  a person spots a wrong-looking page in about a second where a test suite never will.
+
+**Automated tests cannot tell you a page looks wrong.** Any future port should assume the theme is
+the part that will be dropped, and should budget a look at it.
+
+### The functional map was missing, and had been for a while
+
+The estate page listed *flagged* topics only. So the product's first question — **what do these
+services actually do** — could only be answered by opening every service in turn and assembling the
+map by hand. That is a capability gap, not a styling one, and it predates the rebuild.
+
+Now closed: a **topic catalog** on the front door, one row per topic — producers, consumers, HTTP
+routes, status, traffic — sortable, filterable by topic *or* service name, with Benzene's own
+utility topics held back until asked for like every other traffic surface. It subsumes the old
+"topics needing attention" list, since every flagged topic is a row in it with its status; keeping a
+second surface for the same rows was the sort of duplication that grew the page this replaced to
+five thousand lines.
+
+Two honesty rules carried into it, both load-bearing:
+
+- Traffic with no usage feed renders `—`, never `0`, and sorts *below* zero. A column of invented
+  zeroes would tell a reader the whole estate is unused.
+- A filtered table states `n of N`, so a narrow view is never mistaken for the estate.
+
+### Also in this pass
+
+A real `DataTable` primitive (the library had none — every list was flex rows with wrapping chips,
+so nothing lined up and a reader scanning a column was reading, not scanning); collapsible sections
+that remember what a reader put away; the service-card disclosure filled in, having previously
+opened an empty box; filters moved to sit with the list they filter, rather than in a global header
+where the service filter was present on every page and did something on only one; and a three-state
+theme toggle — light, dark, or follow the system — because "follow the system" is a real answer and
+a two-state switch overrides a preference the reader already gave their OS.
