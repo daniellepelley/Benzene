@@ -125,6 +125,36 @@ jobs:
 
         dotnet run --project website/generator -- "${ARGS[@]}"
 
+    # The Mesh UI's component library, as a browsable Storybook. This is the strongest available
+    # demonstration of the claim the library actually makes — that a team can assemble their own mesh
+    # UI from these parts rather than forking a page — because it lets them see and drive each part
+    # before installing anything. Best-effort: a Storybook that fails to build must not take the
+    # documentation site down with it.
+    - name: Checkout benzene-ui
+      uses: actions/checkout@v4
+      continue-on-error: true
+      with:
+        repository: daniellepelley/benzene-ui
+        ref: main
+        path: _sources/benzene-ui
+
+    - uses: actions/setup-node@v4
+      continue-on-error: true
+      with: { node-version: '22' }
+
+    - name: Build the component Storybook
+      continue-on-error: true
+      run: |
+        set -euo pipefail
+        if [ ! -f _sources/benzene-ui/package.json ]; then
+          echo "benzene-ui not checked out — skipping Storybook."; exit 0
+        fi
+        npm --prefix _sources/benzene-ui ci
+        npm --prefix _sources/benzene-ui run build:storybook
+        mkdir -p website/dist/components
+        cp -r _sources/benzene-ui/dist/storybook/. website/dist/components/
+        echo "Storybook published to /components."
+
     - name: Sync to the dev bucket
       run: aws s3 sync website/dist "s3://${{ vars.WEBSITE_DEV_BUCKET }}" --delete
 
