@@ -263,6 +263,14 @@ Two narrow items to pursue:
 
 ## 6. Roadmap — five independently shippable slices
 
+> **Build instructions exist.** Each slice below has a self-contained implementation brief in the
+> .NET repo at
+> [`benzene-dotnet/work/enterprise/`](https://github.com/daniellepelley/benzene-dotnet/tree/main/work/enterprise),
+> written to be picked up cold — exact file paths, current code quoted verbatim, a verification
+> command per task, and a do-not list. A **slice 0** was added there, extracting the engineering
+> pre-work below into a standalone first pickup. Slice 4 is marked design-first and deliberately not
+> buildable from its brief alone.
+
 1. **Host source catalog + config schema v1** *(first slice; pure promotion of existing code to
    config, no new packages).* Extend `MeshHostConfig`/`mesh.json` with `artifactStore`, `usage`,
    `fleet`, `topology`; fail-fast unknown names; `--validate-config`; publish the container image;
