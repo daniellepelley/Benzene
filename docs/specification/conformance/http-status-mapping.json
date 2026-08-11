@@ -1,5 +1,5 @@
 {
-  "description": "Benzene<->HTTP status mapping (wire-contracts.md section 4.1). Forward: server mapping a result status to an HTTP response code. Reverse: client mapping an HTTP response code back to a result status.",
+  "description": "Benzene<->HTTP status mapping (wire-contracts.md section 4.1). Forward: server mapping a result status to an HTTP response code. Reverse: client mapping an HTTP response code back to a result status. A forward row's isSuccessful, when present, only applies to the '<unknown>' rows - it selects which of the two unknown-status outcomes (isSuccessful true vs false) the row covers; it has no effect on a known status, which always maps by its own row regardless of isSuccessful.",
   "forward": [
     { "from": "ok", "to": "200" },
     { "from": "ignored", "to": "200" },
@@ -18,7 +18,8 @@
     { "from": "not-implemented", "to": "501" },
     { "from": "service-unavailable", "to": "503" },
     { "from": "timeout", "to": "504" },
-    { "from": "<unknown>", "to": "500" }
+    { "from": "<unknown>", "to": "500", "isSuccessful": false },
+    { "from": "<unknown>", "to": "200", "isSuccessful": true }
   ],
   "reverse": [
     { "from": "200", "to": "ok" },

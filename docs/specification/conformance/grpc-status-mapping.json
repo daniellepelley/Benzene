@@ -1,5 +1,5 @@
 {
-  "description": "Benzene<->gRPC status mapping (wire-contracts.md section 4.2). Forward: server mapping a result status to a gRPC StatusCode. Reverse: client mapping a gRPC StatusCode back to a result status when no benzene-status trailer is present (a trailer, when present, wins verbatim - covered by implementation tests, not these tables).",
+  "description": "Benzene<->gRPC status mapping (wire-contracts.md section 4.2). Forward: server mapping a result status to a gRPC StatusCode. Reverse: client mapping a gRPC StatusCode back to a result status when no benzene-status trailer is present (a trailer, when present, wins verbatim - covered by implementation tests, not these tables). A forward row's isSuccessful, when present, only applies to the '<unknown>' rows - it selects which of the two unknown-status outcomes (isSuccessful true vs false) the row covers; it has no effect on a known status, which always maps by its own row regardless of isSuccessful.",
   "forward": [
     { "from": "ok", "to": "OK" },
     { "from": "ignored", "to": "OK" },
@@ -18,7 +18,8 @@
     { "from": "too-many-requests", "to": "ResourceExhausted" },
     { "from": "timeout", "to": "DeadlineExceeded" },
     { "from": "unexpected-error", "to": "Internal" },
-    { "from": "<unknown>", "to": "Internal" }
+    { "from": "<unknown>", "to": "Internal", "isSuccessful": false },
+    { "from": "<unknown>", "to": "OK", "isSuccessful": true }
   ],
   "reverse": [
     { "from": "OK", "to": "ok" },

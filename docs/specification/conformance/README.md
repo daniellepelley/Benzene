@@ -51,6 +51,17 @@ with exactly these topics and behaviors:
 No handler is registered for any other topic — cases targeting unregistered or empty topics
 verify the router's `not-found` / `validation-error` behavior.
 
+## Status mapping case format
+
+`http-status-mapping.json` and `grpc-status-mapping.json` each list `forward`/`reverse`
+`{ "from": ..., "to": ... }` rows. A `forward` row's `from` may be the sentinel `"<unknown>"`
+(a status outside wire-contracts §3's vocabulary) rather than a real status string; such a row also
+carries `isSuccessful` (boolean), since wire-contracts §4's per-protocol tables route an unknown
+status to the generic-success or generic-error row depending on it (§1.2's authoritative signal —
+see §3's note on unknown-status routing). Each fixture accordingly lists **two** `"<unknown>"` rows,
+one per `isSuccessful` value. `isSuccessful` is meaningless on any other row (a known status maps by
+its own row regardless) and MUST be omitted there.
+
 ## Envelope case format
 
 ```json
@@ -67,6 +78,8 @@ verify the router's `not-found` / `validation-error` behavior.
 
 - `request` is the inbound envelope (wire-contracts §1.1), verbatim.
 - `expected.statusCode` is compared exactly.
+- `expected.isSuccessful`, when present, is compared exactly against the response envelope's
+  `isSuccessful` field (wire-contracts §1.2) — the wire's authoritative success/failure signal.
 - `expected.body`, when present, is parsed JSON compared by **subset**: every field in the
   expected object must be present in the actual (parsed) response body with a deeply-equal value;
   extra fields in the actual body (including null-valued ones) are ignored. This is deliberate —

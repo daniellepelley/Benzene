@@ -40,6 +40,7 @@ is normative.)*
 ```json
 {
   "statusCode": "ok",
+  "isSuccessful": true,
   "headers": { },
   "body": "{ …serialized response… }"
 }
@@ -48,6 +49,7 @@ is normative.)*
 | Field | Type | Rules |
 |---|---|---|
 | `statusCode` | string | A status vocabulary value (§3) — the *Benzene* status, not an HTTP code. Clients MAY additionally tolerate numeric HTTP codes here for interop with older or HTTP-shaped services, but MUST NOT write them. |
+| `isSuccessful` | boolean | Required. The authoritative success/failure signal. For a status in §3's vocabulary this MUST match that status's Success? column. **A receiver MUST prefer this field over any classification it derives from `statusCode` text** — necessary for an application-defined status (§3), which is outside the sender's and receiver's shared vocabulary and therefore means nothing to a receiver classifying by string alone. A receiver reading an envelope from a sender that predates this field (absent `isSuccessful`) MAY fall back to classifying `statusCode` against §3, accepting that an application-defined status from such a sender classifies as failure (there is no other signal to trust it with). |
 | `headers` | object (string→string) | Response headers, including `content-type` when set. |
 | `body` | string | Pre-serialized response payload: on success, the handler's response payload; on failure, the error payload (§1.3). |
 
@@ -154,7 +156,11 @@ The closed set of framework-defined statuses. The strings below are the wire val
 | `unexpected-error` | no | Unclassified failure |
 
 Applications MAY use additional status strings; every mapping table below routes unknown statuses
-to its generic-error row.
+to its generic-error row **unless the result's `isSuccessful` (§1.2) is true**, in which case an
+application-defined status maps to the protocol's generic-success row instead — a custom status
+does not have to look like a framework failure just because the protocol's status-code space can't
+express it distinctly. Note this only applies to *unknown* statuses: a status that collides with a
+known failure string's spelling is still classified as that failure regardless of `isSuccessful`.
 
 ## 4. Per-protocol status mappings
 
@@ -173,7 +179,9 @@ to its generic-error row.
 | `conflict` | 409 |
 | `validation-error` | 422 |
 | `too-many-requests` | 429 |
-| `unexpected-error`, unknown, missing | 500 |
+| `unexpected-error`, missing | 500 |
+| unknown, `isSuccessful: true` | 200 |
+| unknown, `isSuccessful: false` (or missing `isSuccessful`) | 500 |
 | `not-implemented` | 501 |
 | `service-unavailable` | 503 |
 | `timeout` | 504 |
@@ -200,7 +208,9 @@ Forward (server):
 | `service-unavailable` | `Unavailable` |
 | `too-many-requests` | `ResourceExhausted` |
 | `timeout` | `DeadlineExceeded` |
-| `unexpected-error`, unknown, missing | `Internal` |
+| `unexpected-error`, missing | `Internal` |
+| unknown, `isSuccessful: true` | `OK` |
+| unknown, `isSuccessful: false` (or missing `isSuccessful`) | `Internal` |
 
 **The `benzene-status` trailer**: because several Benzene statuses collapse to one gRPC code, a
 Benzene gRPC server MUST attach a response trailer `benzene-status` carrying the raw status string
