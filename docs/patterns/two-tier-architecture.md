@@ -17,25 +17,7 @@ links to it rather than restating it. Where it names a concrete API it is marked
 *(informative, .NET)* — the shape is language-neutral; the .NET names are illustrative, exactly as
 in [design-principles.md](../specification/design-principles.md).
 
-```
-                          ┌───────────────────────────────────────┐
-   API / event in  ─────► │              ORCHESTRATORS             │  ─────► events out
-   (HTTP, queue,          │  business processes · distributed      │  (SNS/EventBridge/…)
-    schedule)             │  transactions · sagas (all-or-nothing) │
-                          └───────────────────────────────────────┘
-                              │        │            │        │
-                     request/response over the mesh (e.g. Lambda-to-Lambda),
-                        one call per aggregate operation, per the routing table
-                              ▼        ▼            ▼        ▼
-                          ┌───────┐ ┌───────┐  ┌───────┐ ┌───────┐
-                          │Tenant │ │ User  │  │Order  │ │Billing│   CORE SERVICES
-                          │ CRUD  │ │ CRUD  │  │ CRUD  │ │ CRUD  │   one/two aggregate roots each
-                          └───┬───┘ └───┬───┘  └───┬───┘ └───┬───┘   light on process, heavy on data
-                              │         │          │         │
-                            ┌─▼─┐     ┌─▼─┐      ┌─▼─┐     ┌─▼─┐
-                            │DB │     │DB │      │DB │     │DB │      share-nothing: one DB per service
-                            └───┘     └───┘      └───┘     └───┘
-```
+![Two-tier architecture: an Orchestrators tier receives an API call or event and calls four core services — Tenant, User, Order, Billing — over the mesh, one call per aggregate operation per the routing table; each core service owns its own database, share-nothing.](diagrams/two-tier-architecture.svg)
 
 Two service types, one rule each:
 

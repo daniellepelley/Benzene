@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 420" role="img" aria-label="Two-tier architecture: an Orchestrators tier receives an API or event, calls four core services (Tenant, User, Order, Billing) over the mesh, each with its own database.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+  }
+</style>
+<rect x="260" y="20" width="400" height="90" rx="10" class="dp-accent"/>
+<text x="460.0" y="54" text-anchor="middle" class="dp-accent-label">ORCHESTRATORS</text>
+<text x="460.0" y="76" text-anchor="middle" class="dp-accent-sublabel">business processes &#183; distributed transactions</text>
+<text x="460.0" y="92" text-anchor="middle" class="dp-accent-sublabel">sagas (all-or-nothing)</text>
+<line x1="40" y1="65.0" x2="256" y2="65.0" class="dp-line"/>
+<polygon points="252,59.0 252,71.0 260,65.0" class="dp-arrow"/>
+<text x="40" y="51.0" text-anchor="start" class="dp-caption-strong">API / event in</text>
+<text x="40" y="85.0" text-anchor="start" class="dp-caption">(HTTP, queue, schedule)</text>
+<line x1="664" y1="65.0" x2="880" y2="65.0" class="dp-line"/>
+<polygon points="872,59.0 872,71.0 880,65.0" class="dp-arrow"/>
+<text x="880" y="51.0" text-anchor="end" class="dp-caption-strong">events out</text>
+<text x="880" y="85.0" text-anchor="end" class="dp-caption">(SNS/EventBridge/&#8230;)</text>
+<rect x="268.0" y="210" width="84" height="60" rx="8" class="dp-box"/>
+<text x="310" y="236" text-anchor="middle" class="dp-box-label">Tenant</text>
+<text x="310" y="254" text-anchor="middle" class="dp-box-sublabel">CRUD</text>
+<line x1="310" y1="114" x2="310" y2="206" class="dp-line"/>
+<polygon points="304,202 316,202 310,210" class="dp-arrow"/>
+<rect x="368.0" y="210" width="84" height="60" rx="8" class="dp-box"/>
+<text x="410" y="236" text-anchor="middle" class="dp-box-label">User</text>
+<text x="410" y="254" text-anchor="middle" class="dp-box-sublabel">CRUD</text>
+<line x1="410" y1="114" x2="410" y2="206" class="dp-line"/>
+<polygon points="404,202 416,202 410,210" class="dp-arrow"/>
+<rect x="468.0" y="210" width="84" height="60" rx="8" class="dp-box"/>
+<text x="510" y="236" text-anchor="middle" class="dp-box-label">Order</text>
+<text x="510" y="254" text-anchor="middle" class="dp-box-sublabel">CRUD</text>
+<line x1="510" y1="114" x2="510" y2="206" class="dp-line"/>
+<polygon points="504,202 516,202 510,210" class="dp-arrow"/>
+<rect x="568.0" y="210" width="84" height="60" rx="8" class="dp-box"/>
+<text x="610" y="236" text-anchor="middle" class="dp-box-label">Billing</text>
+<text x="610" y="254" text-anchor="middle" class="dp-box-sublabel">CRUD</text>
+<line x1="610" y1="114" x2="610" y2="206" class="dp-line"/>
+<polygon points="604,202 616,202 610,210" class="dp-arrow"/>
+<text x="460" y="154.0" text-anchor="middle" class="dp-caption">request/response over the mesh (e.g. Lambda-to-Lambda),</text>
+<text x="460" y="172.0" text-anchor="middle" class="dp-caption">one call per aggregate operation, per the routing table</text>
+<text x="700" y="232" text-anchor="start" class="dp-caption-strong">CORE SERVICES</text>
+<text x="700" y="250" text-anchor="start" class="dp-caption">one/two aggregate roots each,</text>
+<text x="700" y="266" text-anchor="start" class="dp-caption">light on process, heavy on data</text>
+<rect x="282.0" y="320" width="56" height="36" rx="6" class="dp-db"/>
+<text x="310" y="343" text-anchor="middle" class="dp-db-label">DB</text>
+<line x1="310" y1="274" x2="310" y2="316" class="dp-line"/>
+<polygon points="304,312 316,312 310,320" class="dp-arrow"/>
+<rect x="382.0" y="320" width="56" height="36" rx="6" class="dp-db"/>
+<text x="410" y="343" text-anchor="middle" class="dp-db-label">DB</text>
+<line x1="410" y1="274" x2="410" y2="316" class="dp-line"/>
+<polygon points="404,312 416,312 410,320" class="dp-arrow"/>
+<rect x="482.0" y="320" width="56" height="36" rx="6" class="dp-db"/>
+<text x="510" y="343" text-anchor="middle" class="dp-db-label">DB</text>
+<line x1="510" y1="274" x2="510" y2="316" class="dp-line"/>
+<polygon points="504,312 516,312 510,320" class="dp-arrow"/>
+<rect x="582.0" y="320" width="56" height="36" rx="6" class="dp-db"/>
+<text x="610" y="343" text-anchor="middle" class="dp-db-label">DB</text>
+<line x1="610" y1="274" x2="610" y2="316" class="dp-line"/>
+<polygon points="604,312 616,312 610,320" class="dp-arrow"/>
+<text x="460" y="384" text-anchor="middle" class="dp-caption">share-nothing: one database per service</text>
+</svg>

@@ -512,6 +512,16 @@ a { color: var(--accent); }
 .content h1 { font-size: 2rem; }
 .content h1:first-child { margin-top: 0; }
 
+/* A doc-page diagram (e.g. docs/patterns/diagrams/*.svg) is authored at a fixed intrinsic size but
+   the content column isn't - constrain it so it never overflows a narrow viewport or the sidebar
+   layout, and center it since it's illustrating a standalone concept, not flowing with the prose. */
+.content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5rem auto;
+}
+
 .content pre {
   background: var(--code-bg);
   border: 1px solid var(--border);
