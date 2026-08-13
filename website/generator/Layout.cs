@@ -41,7 +41,9 @@ internal static class Layout
         var getStarted = BuildGetStartedSelector(outputPath, languages);
         var heroLangs = string.Join(" &middot;\n", languages.Select(l =>
             $"<strong>{Html(l.Label)}</strong>{(l.Beta ? " <span class=\"beta\">beta</span>" : "")}"));
-        var multiLanguageLede = MarketingContent.MultiLanguageLede.Replace("{SPEC}", specHome);
+        var multiLanguageLede = (languages.Count > 1
+            ? MarketingContent.MultiLanguageLede
+            : MarketingContent.SingleLanguageLede).Replace("{SPEC}", specHome);
 
         var platforms = string.Join("\n", MarketingContent.Platforms.Select(p => $"""
             <div class="platform-pill">
@@ -76,7 +78,7 @@ internal static class Layout
                   <a class="button button-secondary" href="https://github.com/daniellepelley/Benzene">View on GitHub</a>
                 </div>
                 <div class="hero-langs">
-                  Ports: {heroLangs}
+                  Languages: {heroLangs}
                   &middot; <a href="https://opensource.org/licenses/MIT">MIT</a>
                 </div>
               </section>
@@ -104,8 +106,10 @@ internal static class Layout
                 <section class="section" id="get-started">
                   <h2>Get started</h2>
                   <p class="section-lede">
-                    The same handler, in the language you build in. .NET is the reference
-                    implementation; Go, TypeScript, and Python are early ports of the same spec.
+                    {(languages.Count > 1
+                        ? "The same handler, in the language you build in."
+                        : "The same handler runs on every host Benzene supports &mdash; here it is in "
+                          + ".NET, the reference implementation.")}
                   </p>
                   {getStarted}
                 </section>

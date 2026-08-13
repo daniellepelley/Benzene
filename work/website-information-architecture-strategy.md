@@ -777,6 +777,23 @@ plain-language definition now outperforms the hero it was modelled to support. T
 stayed PARTIAL, exactly as predicted — it is Phase 3 that moves it, because the remaining gap is that
 no path on the site produces a running service without an AWS account.
 
+**Second measured movement.** After the settled definition line shipped to both doors (§11), the
+front-door persona was re-run and both tests now pass from both entries:
+
+| Entry | 2-minute | 5-minute | Verdict |
+|---|---|---|---|
+| Front door (baseline → now) | PARTIAL → **PASS** | PARTIAL → **PASS** | MAYBE, leaning yes |
+| Deep link (baseline → now) | FAIL → **PASS** | PARTIAL | YES / MAYBE leaning yes |
+
+The front-door 5-minute PASS came the honest way: the walkthrough took the ASP.NET guide (its own
+baseline) rather than the recommended AWS path, and found it genuinely five minutes of copy-paste.
+Its strongest praise went to the guide's *"Why not just a minimal API?"* section — *"it steel-mans my
+exact alternative… and tells me when **not** to use Benzene. This single section moved me from
+sceptical to interested."* That section is the model for how the eventual quickstart should treat
+the do-nothing alternative. Both verdicts still sit at MAYBE-leaning-yes on **maturity** grounds
+(alpha packages, one shipped language) — which is the honest ceiling for a pre-1.0 project, and not
+a website problem.
+
 Secondary measures:
 
 - **Path length to first code.** Today: one click from the landing page (good, protect it); **five
@@ -865,6 +882,34 @@ one.
 
 "A modern web framework" rather than "ASP.NET" keeps the line true on the cross-language pages while
 still naming the experience every backend developer recognises.
+
+### 2026-08-13 (later still) — front-door fixes from the fourth walkthrough
+
+The front-door re-run (both tests now PASS — §10) ranked what still cost it, all on the home page.
+Shipped in response:
+
+- **The hero's second sentence no longer talks governance.** "…implemented as idiomatic ports…
+  conformance fixtures" was the only part of the first screen the visitor bounced off — spec
+  vocabulary where a first-time visitor stands, plus the "ports" collision (§2.2). Rewritten, and
+  split into two variants picked by how many language ports the run built, so "Pick yours below"
+  never renders above a single tab. The Get started section's lede degrades the same way, and the
+  hero strip now reads **"Languages:"**, closing §4.3's remaining item.
+- **The homepage snippet now proves the pitch.** It showed one handler wired to HTTP only — which is
+  *"precisely the case the ASP.NET guide later admits you don't need Benzene for"*, so *"the site's
+  own best argument — same handler, second transport, zero handler changes — is nowhere in the
+  homepage code."* The .NET snippet now ends with the same handler wired to API Gateway **and** SQS
+  in one Lambda (`app.UseAwsLambda(aws => aws.UseApiGateway(…).UseSqs(…))` — the shape
+  `getting-started.md`'s own router documents). This was the walkthrough's "one change most likely
+  to move me to YES on the spot".
+
+**New defects for `benzene-dotnet`** (nav/index issues, same family as §2.8): "Mesh UI" appears twice
+in the .NET sidebar under Live Demos, and "CLI Reference" renders as a group heading with nothing
+under it — the visible stub of the `index.md:74` changelog bullet. Both feed the fourth walkthrough's
+"the sidebar is the one place the site looks unmaintained".
+
+**Still open on the home page, deliberately:** a Mesh UI screenshot beside "Try it live" (§6.5 D4),
+and the before/after picture the walkthrough wanted inside "Why not just a minimal API?" (D2's
+smallest form) — both are Phase 2 diagram work, not copy.
 
 **Not done — blocked on repository access:**
 

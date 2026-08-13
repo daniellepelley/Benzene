@@ -21,11 +21,19 @@ internal static class MarketingContent
         "handlers you can test &mdash; so you build one service and reach it over every transport " +
         "at once, on the cloud you already run.";
 
-    // Benzene is defined by a language-neutral spec and implemented as idiomatic ports.
+    // The hero's second sentence. Two variants, picked by how many language ports the run actually
+    // built: "pick your language below" over a single tab reads as a broken page, and the cold
+    // walkthroughs bounced off spec-governance vocabulary ("idiomatic ports", "conformance
+    // fixtures") in sentence two of the site — that detail belongs on the spec's own pages, not
+    // where a first-time visitor stands. {SPEC} is replaced with the spec home's relative href.
     public const string MultiLanguageLede =
-        "Benzene is defined by a <a href=\"{SPEC}\">language-neutral specification</a> and implemented " +
-        "as idiomatic ports. Pick your language below &mdash; the concepts, wire contracts, and " +
-        "conformance fixtures are the same in every one.";
+        "One design, <a href=\"{SPEC}\">specified language-neutrally</a> and implemented idiomatically " +
+        "per language. Pick yours below &mdash; the concepts are the same in every one.";
+
+    public const string SingleLanguageLede =
+        "One design, <a href=\"{SPEC}\">specified language-neutrally</a> and implemented idiomatically " +
+        "per language. .NET is the reference implementation; Go, TypeScript, and Python ports are in " +
+        "progress and will appear here as they land.";
 
     public sealed record Feature(string Title, string Body);
 
@@ -75,6 +83,10 @@ internal static class MarketingContent
             // Wire it onto any host - here ASP.NET Core, in Program.cs:
             builder.Services.UsingBenzene(x =&gt; x.AddMessageHandlers(typeof(GreetHandler).Assembly));
             app.UseBenzene(b =&gt; b.UseHttp(http =&gt; http.UseMessageHandlers()));
+
+            // The same handler from HTTP *and* SQS in one AWS Lambda - change the wiring, never the handler:
+            app.UseAwsLambda(aws =&gt; aws.UseApiGateway(api =&gt; api.UseMessageHandlers())
+                                       .UseSqs(sqs =&gt; sqs.UseMessageHandlers()));
             """,
             "https://github.com/daniellepelley/benzene-dotnet",
             "dotnet/docs/getting-started.html"),
