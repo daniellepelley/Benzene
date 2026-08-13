@@ -257,7 +257,10 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   present, else `status`. `transport` is deliberately excluded — the same failure over two
   transports is one issue. Cross-language fingerprint equality holds only for non-exception
   classes (`exceptionType` is language-native); same-service equality across instances and
-  restarts is the property that matters for merge.
+  restarts is the property that matters for merge. **Neither the problem-document `code` nor
+  `type` (wire-contracts.md §1.3, §3.1) participates in the fingerprint** — both are open,
+  per-error or per-response identifiers, and admitting either would explode issue cardinality and
+  defeat the merge above.
 - **`classification` is a closed vocabulary** — `exception`, `validation`, `config-wiring`,
   `dependency`, `contract-drift`, `unclassified` — assigned by normative precedence, evaluated
   in order against the invocation's Benzene status (wire-contracts.md §3) and captured exception

@@ -31,6 +31,15 @@ Every binding MUST define:
 A binding SHOULD also state its cancellation/deadline source (or that the transport has none) and
 whether it supports response headers/trailers.
 
+**One-way / fire-and-forget bindings.** A problem document (wire-contracts.md §1.3) is a
+response-path artifact. A binding with no reply channel (SQS/SNS/EventBridge/Kafka/RabbitMQ
+consumption, one-way sends) MUST NOT invent one just to carry a failure — that would fabricate a
+response the caller never asked for and no receiver is listening on. Such failures surface where
+they already do: the mesh issue feed (classification + exception type, mesh.md §4.1), traces and
+logs, and the transport's own retry/dead-letter machinery. Where an application has wired an
+explicit response-event channel on top of a one-way binding, a failure sent over that channel
+carries the problem document like any other response body.
+
 Bindings are **hosted** by a platform entry point (an ASP.NET Core server, a Lambda runtime, an
 Azure Functions worker, a background worker loop). Hosting is attached in the application's
 `configure` phase via a `use<Transport>(...)` extension that no-ops on other platforms

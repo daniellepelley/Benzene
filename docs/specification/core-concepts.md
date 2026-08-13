@@ -98,13 +98,18 @@ Every handler invocation produces a result:
 | `status` | string | One of the status vocabulary values (see [wire-contracts.md §3](wire-contracts.md#3-status-vocabulary)), or an application-defined extension |
 | `isSuccessful` | boolean | Derived from status class |
 | `payload` | `TResponse?` | Present on success (and optionally on failure) |
-| `errors` | string[] | Zero or more human-readable error messages; populated on failure |
+| `errors` | structured, ordered list | Zero or more errors, populated on failure; each carries a human-readable message plus optional producer-owned `field`/`code`. A message-only projection remains available for readers that just want text. |
 
 - The status vocabulary is **strings, not enums**, so applications can extend it; unknown statuses
   map to the transport's generic-error code (each binding defines its default).
 - Results are values, not exceptions. Transport adapters translate a non-success status into the
   transport's native failure signal (HTTP status code, gRPC `RpcException`, ...) per the mapping
   tables in [wire-contracts.md](wire-contracts.md).
+- `errors` is structured, not `string[]`, precisely so a caller can act on a failure rather than
+  merely display it (render against the field that caused it, branch on a machine-readable code).
+  The wire shape this serializes to — including which member is authoritative, `code` vs. the mesh
+  issue plane's `classification` — is [wire-contracts.md §1.3](wire-contracts.md#13-problem-details-payload)
+  and [§3.1](wire-contracts.md#31-problem-type-registry); this section does not repeat it.
 
 ## 6. Context and request mapping
 

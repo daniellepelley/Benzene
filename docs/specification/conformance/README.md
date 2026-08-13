@@ -19,6 +19,7 @@ consumes these files.
 | `http-status-mapping.json` | Benzene→HTTP and HTTP→Benzene status tables (wire-contracts §4.1) |
 | `grpc-status-mapping.json` | Benzene→gRPC and gRPC→Benzene status tables (wire-contracts §4.2) |
 | `envelope-cases.json` | End-to-end message envelope handling: request in, pipeline + canonical handler, response envelope out (wire-contracts §1, core-concepts §4–6) |
+| `problem-details-cases.json` | The problem-type registry, the canonical `conformance:problem` handler's envelope behavior, and the HTTP-binding-only signalling rules (wire-contracts §1.3, §3.1, §4.1) |
 | `transport-metadata-cases.json` | Topic resolution and header mapping on transports carrying Benzene metadata natively — the reserved metadata key names (wire-contracts §2, transport-bindings §1) — required for ports binding any such transport |
 | `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers, including payload schemas and descriptorHash properties (mesh §2) — required for ports that implement mesh |
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
@@ -32,7 +33,8 @@ Which fixtures a given conformance claim requires
 
 | Claim | Required fixtures |
 |---|---|
-| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, and `transport-metadata-cases.json` for each metadata-carrying transport the port binds |
+| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, `transport-metadata-cases.json` for each metadata-carrying transport the port binds, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
+| HTTP binding conformance | additionally `problem-details-cases.json`'s `httpRules` group — required only for each HTTP binding a port ships (the same conditional shape as `transport-metadata-cases.json` above); a port with no HTTP binding is unaffected |
 | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
 | Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
@@ -49,7 +51,8 @@ with exactly these topics and behaviors:
 | Topic | Request body | Behavior |
 |---|---|---|
 | `conformance:greet` | `{ "name": string }` | Returns `ok` with payload `{ "greeting": "Hello <name>" }` |
-| `conformance:status` | `{ "status": string, "errors": string[]? }` | Returns the given status verbatim. For a success-class status, the payload is `{ "applied": "<status>" }`; for a failure-class status, the result carries the given `errors` (and no payload). |
+| `conformance:status` | `{ "status": string, "errors": string[]? }` | Returns the given status verbatim. For a success-class status, the payload is `{ "applied": "<status>" }`; for a failure-class status, the result carries the given `errors` (each string projected to a message-only structured error) and no payload. |
+| `conformance:problem` | `{ "message": string, "field"?: string, "code"?: string, "appType"?: string }` | Returns a `validation-error` result carrying exactly one structured error (`message`/`field`/`code` from the request). When `appType` is given, the emitted problem document's `type` member is `appType` verbatim instead of the registry URI — the application-authored-problem case (wire-contracts §1.3); `benzeneStatus` is still `validation-error` and `errors` still carries the one structured error. |
 
 No handler is registered for any other topic — cases targeting unregistered or empty topics
 verify the router's `not-found` / `validation-error` behavior.
@@ -89,8 +92,36 @@ its own row regardless) and MUST be omitted there.
   implementations may enrich responses, and writers may emit or omit null properties
   (wire-contracts §6).
 - `expected.headers`, when present, is compared by subset the same way (keys case-insensitive).
-- Human-readable message wording (e.g. the `detail` text of router-generated errors) is
-  intentionally not asserted.
+- `expected.bodyExclude`, when present, lists members that must **not** appear in the parsed
+  response body at all — a negative assertion, mirroring `transport-metadata-cases.json`'s
+  `headersExclude`. A failure case listing `"status"` pins that no numeric `status` member
+  (wire-contracts §1.3) leaks onto a transport with no HTTP response, e.g. the raw envelope; a
+  member absent from `expected.body` is otherwise unconstrained (subset matching alone would
+  permit it either way), so `bodyExclude` is the only way to pin genuine absence.
+- Human-readable message wording (e.g. the `detail`/`title` text of router-generated or registry
+  problem documents) is intentionally not asserted.
+
+## Problem details case format
+
+`problem-details-cases.json` (wire-contracts §1.3, §3.1, §4.1) has three independent groups:
+
+- **`registry`** — `rows` lists every problem-type registry entry
+  (`benzeneStatus`/`type`/`httpStatus`) directly, with no message to build — the cheapest check,
+  the same rationale as `defaultMetadataKeys`. `unknownStatus` pins the fallback for an
+  application-defined status: no registry row, HTTP status 500.
+- **`envelopeCases`** — cases in exactly the [envelope case format](#envelope-case-format) above,
+  run against the canonical `conformance:problem` handler (see Canonical handlers). They pin
+  structured `errors` round-tripping through the problem document, application-defined `type`
+  passthrough via `appType`, and (via `bodyExclude`) that framework-produced problem documents
+  carry no `instance` and no numeric `status` off an HTTP transport.
+- **`httpRules`** — required only for ports that ship an HTTP binding (see the fixture-claims
+  table above; the same conditional shape as `transport-metadata-cases.json`). `failureCases`
+  lists, per Benzene status, the `httpStatus` an HTTP-bound failure response for that status MUST
+  carry both as its response line and as the problem document's `status` member — the two MUST
+  come from the same mapping (wire-contracts §4.1) so they can never disagree. The response's
+  `content-type` MUST be `application/problem+json` for a JSON-negotiated failure response.
+  `successCase` pins that success responses are unaffected: no problem document, ordinary content
+  type. Title/detail wording is never asserted, per the envelope case format rule above.
 
 ## Transport metadata case format
 

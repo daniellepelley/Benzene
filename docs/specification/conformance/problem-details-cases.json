@@ -1,0 +1,105 @@
+{
+  "description": "Problem details payload cases (wire-contracts.md sections 1.3, 3.1, 4.1). 'registry' pins the problem-type registry directly. 'envelopeCases' run against the canonical conformance:problem handler (README.md) the same way envelope-cases.json cases do, including bodyExclude negatives. 'httpRules' pins the HTTP-binding-only rules of wire-contracts.md section 4.1 for ports that bind HTTP; it is conditional (README.md). Title/detail wording is never asserted.",
+
+  "registry": {
+    "description": "wire-contracts.md section 3.1 — directly assertable without building a message: a port compares its own table against these rows.",
+    "rows": [
+      { "benzeneStatus": "bad-request",         "type": "https://benzene.app/problems/bad-request",         "httpStatus": 400 },
+      { "benzeneStatus": "unauthorized",         "type": "https://benzene.app/problems/unauthorized",         "httpStatus": 401 },
+      { "benzeneStatus": "forbidden",            "type": "https://benzene.app/problems/forbidden",            "httpStatus": 403 },
+      { "benzeneStatus": "not-found",            "type": "https://benzene.app/problems/not-found",            "httpStatus": 404 },
+      { "benzeneStatus": "conflict",             "type": "https://benzene.app/problems/conflict",             "httpStatus": 409 },
+      { "benzeneStatus": "validation-error",     "type": "https://benzene.app/problems/validation-error",     "httpStatus": 422 },
+      { "benzeneStatus": "too-many-requests",    "type": "https://benzene.app/problems/too-many-requests",    "httpStatus": 429 },
+      { "benzeneStatus": "unexpected-error",     "type": "https://benzene.app/problems/unexpected-error",     "httpStatus": 500 },
+      { "benzeneStatus": "not-implemented",      "type": "https://benzene.app/problems/not-implemented",      "httpStatus": 501 },
+      { "benzeneStatus": "service-unavailable",  "type": "https://benzene.app/problems/service-unavailable",  "httpStatus": 503 },
+      { "benzeneStatus": "timeout",              "type": "https://benzene.app/problems/timeout",              "httpStatus": 504 }
+    ],
+    "unknownStatus": {
+      "description": "An application-defined failure status (wire-contracts.md section 3) has no registry row: type is the application's own URI or omitted, benzeneStatus carries the status string verbatim, and the HTTP status falls to the section 4.1 unknown-status row (500).",
+      "httpStatus": 500
+    }
+  },
+
+  "envelopeCases": [
+    {
+      "name": "problem-structured-error-round-trip",
+      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Name must not be empty\",\"field\":\"Name\",\"code\":\"NotEmptyValidator\"}" },
+      "expected": {
+        "statusCode": "validation-error",
+        "isSuccessful": false,
+        "body": {
+          "type": "https://benzene.app/problems/validation-error",
+          "benzeneStatus": "validation-error",
+          "errors": [ { "message": "Name must not be empty", "field": "Name", "code": "NotEmptyValidator" } ]
+        },
+        "bodyExclude": ["status", "instance"]
+      }
+    },
+    {
+      "name": "problem-message-only-error",
+      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Name must not be empty\"}" },
+      "expected": {
+        "statusCode": "validation-error",
+        "isSuccessful": false,
+        "body": {
+          "type": "https://benzene.app/problems/validation-error",
+          "benzeneStatus": "validation-error",
+          "errors": [ { "message": "Name must not be empty" } ]
+        },
+        "bodyExclude": ["status", "instance"]
+      }
+    },
+    {
+      "name": "problem-app-defined-type-passthrough",
+      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Custom rule failed\",\"appType\":\"https://example.com/problems/custom-rule\"}" },
+      "expected": {
+        "statusCode": "validation-error",
+        "isSuccessful": false,
+        "body": {
+          "type": "https://example.com/problems/custom-rule",
+          "benzeneStatus": "validation-error",
+          "errors": [ { "message": "Custom rule failed" } ]
+        },
+        "bodyExclude": ["status"]
+      }
+    },
+    {
+      "name": "problem-app-defined-type-with-field-and-code",
+      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Custom rule failed\",\"field\":\"Sku\",\"code\":\"CustomRule\",\"appType\":\"https://example.com/problems/custom-rule\"}" },
+      "expected": {
+        "statusCode": "validation-error",
+        "isSuccessful": false,
+        "body": {
+          "type": "https://example.com/problems/custom-rule",
+          "benzeneStatus": "validation-error",
+          "errors": [ { "message": "Custom rule failed", "field": "Sku", "code": "CustomRule" } ]
+        },
+        "bodyExclude": ["status"]
+      }
+    }
+  ],
+
+  "httpRules": {
+    "description": "Required only for ports that ship an HTTP binding (README.md conditionality note). For each failure row, the port's HTTP-bound response for that Benzene status MUST have content-type application/problem+json (JSON negotiated) and the body's status member (wire-contracts.md section 1.3) MUST equal httpStatus. successCase pins that success responses are unaffected: no problem document, ordinary content type.",
+    "failureCases": [
+      { "benzeneStatus": "bad-request",        "httpStatus": 400 },
+      { "benzeneStatus": "unauthorized",        "httpStatus": 401 },
+      { "benzeneStatus": "forbidden",           "httpStatus": 403 },
+      { "benzeneStatus": "not-found",           "httpStatus": 404 },
+      { "benzeneStatus": "conflict",            "httpStatus": 409 },
+      { "benzeneStatus": "validation-error",    "httpStatus": 422 },
+      { "benzeneStatus": "too-many-requests",   "httpStatus": 429 },
+      { "benzeneStatus": "unexpected-error",    "httpStatus": 500 },
+      { "benzeneStatus": "not-implemented",     "httpStatus": 501 },
+      { "benzeneStatus": "service-unavailable", "httpStatus": 503 },
+      { "benzeneStatus": "timeout",             "httpStatus": 504 }
+    ],
+    "successCase": {
+      "benzeneStatus": "ok",
+      "httpStatus": 200,
+      "contentType": "application/json"
+    }
+  }
+}

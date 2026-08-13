@@ -50,6 +50,14 @@ naming and file layout stay idiom, same rule of thumb as above.
 5. Health checks (reserved topic + response format).
 6. Further bindings by demand — each is additive.
 
+**Problem details.** Implement the failure payload from
+[wire-contracts.md §1.3](wire-contracts.md#13-problem-details-payload) exactly as specified: the
+member table, the replace-not-wrap rule, and the `problem-details-cases.json` /
+`envelope-cases.json` fixtures that pin it (see [conformance/](conformance/README.md)). The
+problem-type registry ([wire-contracts.md §3.1](wire-contracts.md#31-problem-type-registry)) is
+**data to copy**, not a taxonomy to invent — eleven rows keyed by the existing status vocabulary,
+nothing to design.
+
 ## 3. Conformance testing
 
 A language-neutral test suite that every implementation runs:

@@ -1,5 +1,5 @@
 {
-  "description": "End-to-end message envelope cases (wire-contracts.md section 1) run against the canonical conformance handlers (see README.md). expected.body and expected.headers use subset matching. expected.isSuccessful, when present, is checked exactly against the response envelope's isSuccessful field (wire-contracts.md section 1.2).",
+  "description": "End-to-end message envelope cases (wire-contracts.md section 1) run against the canonical conformance handlers (see README.md). expected.body and expected.headers use subset matching. expected.isSuccessful, when present, is checked exactly against the response envelope's isSuccessful field (wire-contracts.md section 1.2). Failure cases' expected.body is the problem document (wire-contracts.md section 1.3); expected.bodyExclude lists members that must NOT appear in the parsed body (README.md).",
   "cases": [
     {
       "name": "greet-ok",
@@ -17,7 +17,8 @@
       "expected": {
         "statusCode": "not-found",
         "isSuccessful": false,
-        "body": { "status": "not-found" }
+        "body": { "type": "https://benzene.app/problems/not-found", "benzeneStatus": "not-found" },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -26,7 +27,8 @@
       "expected": {
         "statusCode": "validation-error",
         "isSuccessful": false,
-        "body": { "status": "validation-error" }
+        "body": { "type": "https://benzene.app/problems/validation-error", "benzeneStatus": "validation-error" },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -60,7 +62,13 @@
       "expected": {
         "statusCode": "bad-request",
         "isSuccessful": false,
-        "body": { "status": "bad-request", "detail": "first error, second error" }
+        "body": {
+          "type": "https://benzene.app/problems/bad-request",
+          "benzeneStatus": "bad-request",
+          "detail": "first error, second error",
+          "errors": [ { "message": "first error" }, { "message": "second error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -69,7 +77,13 @@
       "expected": {
         "statusCode": "validation-error",
         "isSuccessful": false,
-        "body": { "status": "validation-error", "detail": "first error, second error" }
+        "body": {
+          "type": "https://benzene.app/problems/validation-error",
+          "benzeneStatus": "validation-error",
+          "detail": "first error, second error",
+          "errors": [ { "message": "first error" }, { "message": "second error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -78,7 +92,13 @@
       "expected": {
         "statusCode": "unauthorized",
         "isSuccessful": false,
-        "body": { "status": "unauthorized", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/unauthorized",
+          "benzeneStatus": "unauthorized",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -87,7 +107,13 @@
       "expected": {
         "statusCode": "forbidden",
         "isSuccessful": false,
-        "body": { "status": "forbidden", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/forbidden",
+          "benzeneStatus": "forbidden",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -96,7 +122,13 @@
       "expected": {
         "statusCode": "not-found",
         "isSuccessful": false,
-        "body": { "status": "not-found", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/not-found",
+          "benzeneStatus": "not-found",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -105,7 +137,13 @@
       "expected": {
         "statusCode": "conflict",
         "isSuccessful": false,
-        "body": { "status": "conflict", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/conflict",
+          "benzeneStatus": "conflict",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -114,7 +152,13 @@
       "expected": {
         "statusCode": "not-implemented",
         "isSuccessful": false,
-        "body": { "status": "not-implemented", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/not-implemented",
+          "benzeneStatus": "not-implemented",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -123,7 +167,13 @@
       "expected": {
         "statusCode": "service-unavailable",
         "isSuccessful": false,
-        "body": { "status": "service-unavailable", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/service-unavailable",
+          "benzeneStatus": "service-unavailable",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     },
     {
@@ -132,7 +182,13 @@
       "expected": {
         "statusCode": "unexpected-error",
         "isSuccessful": false,
-        "body": { "status": "unexpected-error", "detail": "first error" }
+        "body": {
+          "type": "https://benzene.app/problems/unexpected-error",
+          "benzeneStatus": "unexpected-error",
+          "detail": "first error",
+          "errors": [ { "message": "first error" } ]
+        },
+        "bodyExclude": ["status"]
       }
     }
   ]

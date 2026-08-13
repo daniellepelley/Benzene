@@ -53,26 +53,68 @@ is normative.)*
 | `headers` | object (string→string) | Response headers, including `content-type` when set. |
 | `body` | string | Pre-serialized response payload: on success, the handler's response payload; on failure, the error payload (§1.3). |
 
-### 1.3 Error payload
+### 1.3 Problem details payload
 
-When a result is unsuccessful, the response `body` is the serialized error payload — a
-problem-details-shaped object:
+When a result is unsuccessful, the response `body` **is** the serialized problem document —
+**replace, not wrap**: the failure payload takes the place a success payload would otherwise
+occupy, exactly as today (a `DefaultResponsePayloadMapper` never emits both). The one existing
+carve-out is unchanged: a result marked `isSuccessful: true` (the `Set<T>(status, payload,
+isSuccessful)` escape hatch some health-check-shaped results use) still renders its payload, never
+a problem document — the branch is on `isSuccessful` (§1.2), not on status class.
+
+The payload is a **valid [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem document** on
+every transport — not "problem-details-shaped", the genuine standard, adopted as a
+transport-neutral profile:
 
 ```json
 {
-  "status": "not-found",
-  "detail": "No handler found for topic order:create"
+  "type": "https://benzene.app/problems/validation-error",
+  "title": "Validation failed",
+  "status": 422,
+  "detail": "Name must not be empty, Age must be greater than 0",
+  "benzeneStatus": "validation-error",
+  "errors": [
+    { "message": "Name must not be empty",     "field": "Name", "code": "NotEmptyValidator" },
+    { "message": "Age must be greater than 0", "field": "Age",  "code": "GreaterThanValidator" }
+  ]
 }
 ```
 
 | Field | Type | Rules |
 |---|---|---|
-| `status` | string | The Benzene status, repeated from the envelope. |
-| `detail` | string | The result's error messages, joined with `", "`. |
-| `type`, `title`, `instance` | string? | Reserved (RFC 7807 alignment); writers MAY emit them as `null` or omit them. |
+| `type` | string (URI ref) | Framework-produced failures MUST use the registry URI for the status (§3.1). Application-authored problems SHOULD use their own absolute URI; absent or `about:blank` is tolerated on read. Readers treat it as an **opaque identifier** — comparison is string equality, never dereference (the registry URIs are not live pages). |
+| `title` | string | Short human summary of the *type*, fixed per type (the registry's value for framework types). Never asserted by conformance fixtures — wording is free. |
+| `status` | integer | **HTTP bindings only.** MUST equal the actual HTTP response status code (§4.1). MUST be **omitted** — not emitted as `null` — where no HTTP response exists (the envelope over a non-HTTP transport, a queue reply). Benzene clients MUST NOT classify a result from this member; classification is envelope-first (§1.2). |
+| `detail` | string | Human-readable occurrence detail — the result's error messages joined with `", "`, unchanged from every prior version of this document. The compatibility member: every existing reader can keep using only this one. |
+| `instance` | string (URI ref) | Optional, application-owned. The framework never fabricates it. |
+| `benzeneStatus` | string | **Required.** The §3 status string, mirroring the envelope's `statusCode` (§1.2). The transport-neutral discriminator — present on every transport regardless of whether `status` is. It carries the `benzene` marker because this member namespace is shared with RFC 9457 itself and with applications (the naming rule of §2's "Naming" paragraph); `errors`, below, is Benzene's own extension and stays unmarked. |
+| `errors` | array | Optional. When present, **authoritative and ordered** — supersedes the "recover `errors` from `detail`" rule this document carried previously (withdrawn, see below). Each item: `message` (string, required), `field` (string, optional — the producer's property path; JSON Pointer for schema-based validators, the host language's property path for others — document which per integration), `code` (string, optional — a machine-readable, producer-owned rule identifier, emitted verbatim, never normalized or reworded by the framework). |
+| *(extensions)* | any | Applications MAY add further members (RFC 9457 §3.2). Readers MUST ignore unknown members. **Neither `code` nor `type` participates in the mesh issue fingerprint** — see §3.1. |
 
-Clients recover `errors` from `detail`; a missing/empty `detail` yields an error-free failed
-result.
+**Unknown-member tolerance.** A reader MUST ignore any problem-document member it does not
+recognize, framework-defined or application-added alike — this is what lets applications extend
+the document (RFC 9457 §3.2) without breaking older readers, and what lets a future framework
+member arrive without a version bump.
+
+**Signalling.** The envelope (§1.2) is the failure signal, not the body's content type: a
+non-`ok`-class `statusCode` / `isSuccessful: false` is what tells a receiver this body is a
+problem document. The envelope's inner `headers.content-type` SHOULD be `application/problem+json`
+when the response has one; readers MUST NOT require it — the outer transport content-type (e.g.
+the HTTP body carrying the envelope itself) is a separate concern and stays whatever it already is
+(§4.1 covers the case where the transport response itself *is* the problem document, i.e. HTTP).
+
+**This document previously described two rules this profile withdraws, not softens:**
+
+1. The body member was named `status` and typed as a string carrying the Benzene status — a name
+   collision with RFC 9457's own `status`, which is defined as the integer HTTP response code. That
+   collision is resolved by rename, not by removing the RFC alignment: the Benzene status now
+   travels as `benzeneStatus`, and `status`, when present at all, is genuinely the integer HTTP
+   code RFC 9457 defines.
+2. "Clients recover `errors` from `detail`" was never implementable (splitting human prose on `,
+   ` is unsafe — messages contain commas) and no reader ever attempted it. It is replaced by the
+   rule above: `errors`, when present, is authoritative and ordered; a reader without an `errors`
+   member treats `detail` as a single opaque message, and a missing/empty `detail` yields an
+   error-free failed result.
 
 ## 2. Header conventions
 
@@ -190,6 +232,47 @@ does not have to look like a framework failure just because the protocol's statu
 express it distinctly. Note this only applies to *unknown* statuses: a status that collides with a
 known failure string's spelling is still classified as that failure regardless of `isSuccessful`.
 
+### 3.1 Problem-type registry
+
+One row per **failure** status in §3 — the registry is *keyed by the status vocabulary above*, so
+this introduces no second taxonomy. Success statuses have no row: problem documents (§1.3) exist
+only on failure. Every URI lives under `https://benzene.app/problems/`; these are **opaque
+identifiers**, not live pages — see §1.3's rule that readers compare by string equality, never
+dereference.
+
+| `benzeneStatus` | `type` (`https://benzene.app/problems/` +) | `title` | HTTP `status` |
+|---|---|---|---|
+| `bad-request` | `bad-request` | Bad request | 400 |
+| `unauthorized` | `unauthorized` | Unauthorized | 401 |
+| `forbidden` | `forbidden` | Forbidden | 403 |
+| `not-found` | `not-found` | Not found | 404 |
+| `conflict` | `conflict` | Conflict | 409 |
+| `validation-error` | `validation-error` | Validation failed | 422 |
+| `too-many-requests` | `too-many-requests` | Too many requests | 429 |
+| `unexpected-error` | `unexpected-error` | Unexpected error | 500 |
+| `not-implemented` | `not-implemented` | Not implemented | 501 |
+| `service-unavailable` | `service-unavailable` | Service unavailable | 503 |
+| `timeout` | `timeout` | Timeout | 504 |
+
+**Application-defined failure statuses** (§3): `type` is the application's own URI, or omitted;
+`benzeneStatus` carries the application's status string verbatim; the HTTP `status` value falls to
+the §4.1 unknown-status row (500) exactly as an application-defined status does everywhere else in
+this document.
+
+**Relationship to mesh issue `classification` (informative; no new mechanism).** The operator-side
+roll-up of the same failure is the mesh issue `classification`
+(`exception`/`validation`/`config-wiring`/`dependency`/`contract-drift`/`unclassified`,
+[mesh.md §4.1](mesh.md#41-issues-benzenemeshissues)), derived from the Benzene status and the
+captured exception type by that section's precedence rules — a different, already-implemented
+mechanism, not this registry. Problem `type` is the **caller-facing** identity of a failure (open
+vocabulary, one per response); `classification` is the **operator-facing** identity of the same
+failure (closed vocabulary, one per invocation, fingerprint-stable). Both are derived from the one
+status vocabulary above; the registry deliberately introduces no third vocabulary between them.
+**Neither `code` (§1.3) nor problem `type` may enter the mesh issue fingerprint** — the fingerprint
+is `service|topic|version|classification|discriminator` (mesh.md §4.1), and both `code` and `type`
+are open, per-error or per-response identifiers that would explode issue cardinality and defeat
+fingerprint-based merge.
+
 ## 4. Per-protocol status mappings
 
 ### 4.1 HTTP
@@ -220,6 +303,14 @@ Reverse (HTTP → Benzene, used by HTTP clients): 200→`ok`, 201→`created`, 2
 501→`not-implemented`, 502→`service-unavailable`, 503→`service-unavailable`, 504→`timeout`,
 anything else→`unexpected-error`.
 
+**Problem details on failure.** When the negotiated response format is JSON, an HTTP failure
+response's `content-type` MUST be `application/problem+json` (charset as for any other JSON
+response), and the body's `status` member (§1.3) MUST be present and equal the HTTP response code
+in this table. When another format was negotiated, the problem document is serialized in that
+format (e.g. `application/problem+xml` for XML, per RFC 9457 §11.2; other negotiated formats keep
+their own content type — informative, not enumerated here). Clients MUST accept both
+`application/json` and `application/problem+json` as failure-body content types.
+
 ### 4.2 gRPC
 
 Forward (server):
@@ -244,7 +335,10 @@ Forward (server):
 Benzene gRPC server MUST attach a response trailer `benzene-status` carrying the raw status string
 verbatim, on success and failure alike. A missing result maps the trailer value to `Unknown`.
 Non-`OK` outcomes are surfaced as a gRPC error with the mapped code and a detail string of the
-joined `errors` (or the raw status if `errors` is empty).
+joined `errors` (or the raw status if `errors` is empty). There is no JSON problem document over
+gRPC; the problem's information (§1.3) maps onto gRPC's own error model instead — the
+`benzene-status` trailer already carries `benzeneStatus`, and structured `errors` map onto
+`google.rpc.BadRequest` in the `grpc-status-details-bin` trailer, one `FieldViolation` per error.
 
 Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`ok`,
 `InvalidArgument`→`bad-request`, `Unauthenticated`→`unauthorized`, `PermissionDenied`→`forbidden`,
