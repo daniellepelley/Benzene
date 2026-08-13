@@ -223,32 +223,72 @@ ReSharper doesn't execute Roslyn analyzers, VS and Rider both do.
 
 ---
 
-## WP3 — GitHub Action wrapping `benzene profile-check`
+## WP3 — GitHub Action wrapping `benzene profile-check` ◐ MOSTLY DONE (2026-08-13)
 
-**Goal:** a marketplace-publishable Action that runs the existing live-probe conformance
-checker against a deployed service URL — a post-deploy Cloud Service Profile gate in one YAML
-step.
-**Home:** new repo (`benzene-profile-check-action`); the probe CLI lives in benzene-dotnet
-(`Benzene.CloudService.Probe`, `benzene profile-check --url <url>` — cloud-service-profile.md §5).
-**Reviewer:** dx-champion; infrastructure-product-owner.
+**Delivered:** two pushes directly to `main` on `daniellepelley/benzene-dotnet`:
 
-Tasks:
-1. Verify in benzene-dotnet how the `benzene` CLI is distributed (dotnet tool on NuGet? which
-   package id/version?) and what `profile-check`'s exit codes and output look like, including
-   the tri-state (Satisfied / NotSatisfied / Inconclusive) rendering.
-2. Build a composite Action: inputs `url` (required), `fail-on` (`not-satisfied` default —
-   Inconclusive must NOT fail the gate, per the probe's design), optional `paths-prefix`;
-   installs the .NET SDK + tool, runs the probe, writes a per-requirement (R1–R8) markdown
-   table to `$GITHUB_STEP_SUMMARY`, sets outputs (`verdict`, per-requirement JSON).
-3. README with a copy-paste post-deploy job example; note R6/R8's structurally-Inconclusive
-   halves so users aren't surprised (research §2 / profile §5).
-4. Version tag `v1`; marketplace listing after at least one real workflow has exercised it.
+- **`c6a53df`** — `profile-check --fail-on/--format`. Task 1's verification found the CLI
+  couldn't do task 2's job at all: `CloudServiceProfileCheckCommand` never threw regardless of
+  the probe's verdicts, so `benzene profile-check` **always exited 0**, even against a service
+  failing every requirement — unusable as a CI gate despite the CLI-wide doc comment's claim
+  ("Real exit codes so `benzene` is usable as a CI gate"). Fixed by mirroring `benzene diff`'s
+  existing `--fail-on`/`--format` pattern exactly: `--fail-on not-satisfied|inconclusive|none`,
+  `--format text|json` (json = the full `CloudServiceProbeReport` + probed url), a
+  `CloudServiceProfileCheckFailedException` thrown when the threshold trips, missing `--url` now
+  throws instead of silently returning. 6 new tests (`CloudServiceProfileCheckCommandTest.cs`),
+  reusing the existing real-Kestrel-service integration-test pattern. This was necessary
+  prework, not scope creep — the plan's acceptance criterion (job fails on a non-conformant
+  target) was structurally impossible before this fix.
+- **`03b330e`** — the Action itself, at `tools/profile-check-action/` **in benzene-dotnet**, not
+  a new repo. Task 1's other assumption ("new repo") hit a real blocker:
+  `mcp__github__create_repository` returned `403 Resource not accessible by integration` — this
+  session's GitHub App lacks `repository:create`, an org/account-level grant only a human can
+  make. Asked the user; they chose housing it in benzene-dotnet over granting the permission.
+  GitHub Actions support referencing a subdirectory action from another repo
+  (`owner/repo/path@ref`), so `daniellepelley/benzene-dotnet/tools/profile-check-action@main` is
+  fully usable by any consumer exactly as a dedicated repo would be — **if a dedicated repo is
+  still wanted later, `git subtree split` or a fresh push of just this directory's history moves
+  it with no design changes.**
+  - Installs `Benzene.CodeGen.Cli` from NuGet (`--prerelease` or a pinned `cli-version`), adds
+    `~/.dotnet/tools` to `$GITHUB_PATH` explicitly (composite actions don't reliably inherit it).
+  - Runs `profile-check --format json --fail-on <input>` **once**: the CLI writes its report to
+    stdout unconditionally before throwing on a tripped threshold, so capturing stdout +
+    `$?` from one invocation yields both the structured report and the correct exit code — no
+    need to probe the target twice.
+  - Writes a markdown table (pipe-escaped, so a Reason/Description containing `|` can't corrupt
+    it) to `$GITHUB_STEP_SUMMARY`; sets `verdict`/`not-satisfied`/`inconclusive`/`report-json`
+    outputs (the last via the `<<DELIMITER` multiline syntax with a `uuidgen`-random delimiter).
+  - README documents inputs/outputs, a post-deploy usage example, and — prominently, as its own
+    section — the R7-degrades-on-custom-paths behavior and why `--fail-on inconclusive` will
+    fail on essentially every real service (R8 and half of R6 are structurally unobservable by a
+    single-service probe, so a fully-conformant service still reports at least one
+    `Inconclusive` — documented in the probe's own design, not a defect this action introduces).
 
-Acceptance: a workflow in the Action's own repo runs the Action against a known-conformant
-public/demo service (or a service spun up in the job) and the summary table renders; a
-deliberately non-conformant target fails the job.
-Do NOT: reimplement any probe logic in the Action (it is packaging only); default `fail-on` to
-include Inconclusive.
+**Known gap, deliberately not closed by this session:** the CLI flags this Action depends on
+are not yet in a **published** NuGet release — the latest on nuget.org at push time was
+`0.0.2.18-alpha`, built before `c6a53df`. Publishing is a manual `workflow_dispatch` on
+benzene-dotnet's release workflow; **triggering it was judged out of scope for this session
+without being asked** (a real, semi-irreversible action — an immutable package version — on the
+user's account, distinct from pushing to a repo they already own and had directed work into).
+The Action's `cli-version` input defaults to "latest prerelease" and will fail loudly
+(unrecognized-argument error at the install/run step, not a silent false pass) until either:
+- someone runs the release workflow and a version containing the flags becomes "latest
+  prerelease", or
+- a caller pins `cli-version` to such a version once one exists.
+
+No self-test workflow was added for the same reason — it would be red on every run through no
+fault of the Action's own code, which is worse than no workflow.
+
+**Task 4 (version tag / marketplace listing) not started** — pointless before the CLI-version
+gap above closes; an Action nobody can successfully run yet shouldn't be tagged or listed.
+
+Acceptance from the original plan (job fails on a non-conformant target; summary table renders)
+was **verified manually against the CLI directly** (`benzene profile-check --url
+http://127.0.0.1:1 --format json` → exit 1 with the full JSON report; `--fail-on none` → exit 0)
+but **not yet through the Action itself**, which needs the NuGet gap closed first to run at all.
+Do NOT: reimplement any probe logic in the Action (it is packaging only) — done, confirmed: zero
+probe/report logic lives in `action.yml`, only argument passing and jq formatting; default
+`fail-on` to include Inconclusive — done, confirmed, and the README explains why not.
 
 ---
 
