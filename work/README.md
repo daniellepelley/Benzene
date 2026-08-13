@@ -65,3 +65,5 @@ unpublishing them.
 - `mesh-ui-react-assessment.md` — what a React + TypeScript componentisation of the Mesh UI would cost
 - `repo-split-plan.md`, `repo-split-manifest.md`, `repo-split/` — how the repositories got this shape
 - `website-analytics-setup.md` — turning on traffic monitoring for benzene.app
+- `website-information-architecture-strategy.md` — layering the site so a newcomer meets the
+  quickstart before the specification, without thinning any of the reference material
