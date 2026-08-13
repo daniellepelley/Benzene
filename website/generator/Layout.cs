@@ -69,6 +69,7 @@ internal static class Layout
             <html lang="en">
             <head>
               <meta charset="utf-8">
+              {ThemeScript}
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{metaTitle}</title>
               <meta name="description" content="{metaDescription}">
@@ -236,6 +237,7 @@ internal static class Layout
             <html lang="en">
             <head>
               <meta charset="utf-8">
+              {ThemeScript}
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{Html(page.Title)} &mdash; Benzene</title>
               <meta name="description" content="{Html(page.Description)}">
@@ -286,6 +288,7 @@ internal static class Layout
             <html lang="en">
             <head>
               <meta charset="utf-8">
+              {ThemeScript}
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>{docTitle}</title>
               <meta name="description" content="{blurb}">
@@ -445,6 +448,7 @@ internal static class Layout
             <html lang="en">
             <head>
               <meta charset="utf-8">
+              {ThemeScript}
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>Benzene Documentation</title>
               <meta name="description" content="{hubDescription}">
@@ -628,6 +632,19 @@ internal static class Layout
         return $"<div class=\"gs-tabs\">{inputs}<div class=\"gs-tablist\">{labels}</div>{panels}</div>";
     }
 
+    /// <summary>
+    /// Sets <c>data-theme</c> on <c>&lt;html&gt;</c> from a saved choice before first paint, so a
+    /// visitor who picked light or dark doesn't see a flash of the system-preference theme first.
+    /// Belongs as early as possible in &lt;head&gt; (before the stylesheet link) in every real page
+    /// template - <see cref="RenderRedirectStub"/> doesn't need it, it navigates away immediately.
+    /// No stored choice leaves <c>data-theme</c> unset, so <c>prefers-color-scheme</c> keeps driving
+    /// the default exactly as it did before the toggle existed.
+    /// </summary>
+    private const string ThemeScript =
+        "<script>(function(){try{var t=localStorage.getItem('theme');" +
+        "if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}" +
+        "}catch(e){}})();</script>";
+
     private static string Header(string outputPath, string activeSection)
     {
         var home = RepoPaths.RelativeHref(outputPath, "index.html");
@@ -636,18 +653,50 @@ internal static class Layout
         var operations = RepoPaths.RelativeHref(outputPath, "operations.html");
         var docs = RepoPaths.RelativeHref(outputPath, "docs/index.html");
         string Active(string section) => activeSection == section ? " class=\"active\"" : "";
-        return $"""
+        return $$"""
             <header class="site-header">
-              <a class="brand" href="{home}">{Logo.Inline(28)}<span>Benzene</span></a>
+              <a class="brand" href="{{home}}">{{Logo.Inline(28)}}<span>Benzene</span></a>
               <nav class="top-nav">
-                <a href="{home}"{Active("home")}>Home</a>
-                <a href="{why}"{Active("why")}>Why Benzene</a>
-                <a href="{architecture}"{Active("architecture")}>Architecture</a>
-                <a href="{operations}"{Active("operations")}>Operations</a>
-                <a href="{docs}"{Active("docs")}>Docs</a>
+                <a href="{{home}}"{{Active("home")}}>Home</a>
+                <a href="{{why}}"{{Active("why")}}>Why Benzene</a>
+                <a href="{{architecture}}"{{Active("architecture")}}>Architecture</a>
+                <a href="{{operations}}"{{Active("operations")}}>Operations</a>
+                <a href="{{docs}}"{{Active("docs")}}>Docs</a>
                 <a href="https://github.com/daniellepelley/Benzene">GitHub</a>
+                <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch between light and dark">
+                  <svg class="theme-toggle-icon to-dark" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+                  </svg>
+                  <svg class="theme-toggle-icon to-light" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.5" fill="currentColor"/>
+                    <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                      <line x1="12" y1="1.5" x2="12" y2="4.5"/>
+                      <line x1="12" y1="19.5" x2="12" y2="22.5"/>
+                      <line x1="1.5" y1="12" x2="4.5" y2="12"/>
+                      <line x1="19.5" y1="12" x2="22.5" y2="12"/>
+                      <line x1="4.4" y1="4.4" x2="6.5" y2="6.5"/>
+                      <line x1="17.5" y1="17.5" x2="19.6" y2="19.6"/>
+                      <line x1="4.4" y1="19.6" x2="6.5" y2="17.5"/>
+                      <line x1="17.5" y1="6.5" x2="19.6" y2="4.4"/>
+                    </g>
+                  </svg>
+                </button>
               </nav>
             </header>
+            <script>(function(){
+              var b = document.getElementById('theme-toggle');
+              if (!b) return;
+              b.addEventListener('click', function () {
+                var root = document.documentElement;
+                var current = root.getAttribute('data-theme');
+                var isDark = current
+                  ? current === 'dark'
+                  : window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var next = isDark ? 'light' : 'dark';
+                root.setAttribute('data-theme', next);
+                try { localStorage.setItem('theme', next); } catch (e) {}
+              });
+            })();</script>
             """;
     }
 

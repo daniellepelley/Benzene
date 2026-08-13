@@ -1,3 +1,10 @@
+/* Theme tokens, three layers (light default -> system preference -> explicit user choice), so an
+   explicit choice always wins over the system setting in either direction:
+   1. Bare :root is the light palette - the unconditional default.
+   2. The media query redefines it for a system dark preference, with no explicit choice yet.
+   3. :root[data-theme="dark"|"light"] (set by the header toggle, see .theme-toggle below and the
+      inline script in Layout.ThemeScript) redefines it again, so it beats the media query by
+      selector specificity regardless of source order. */
 :root {
   --accent: #2f6f4e;
   --bg: #ffffff;
@@ -17,6 +24,24 @@
     --border: #2c2f33;
     --code-bg: #1c1f23;
   }
+}
+
+:root[data-theme="dark"] {
+  --accent: #6fcf9a;
+  --bg: #14161a;
+  --fg: #e8e8e8;
+  --muted: #a3a3a3;
+  --border: #2c2f33;
+  --code-bg: #1c1f23;
+}
+
+:root[data-theme="light"] {
+  --accent: #2f6f4e;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #5a5a5a;
+  --border: #e2e2e2;
+  --code-bg: #f6f8f7;
 }
 
 * { box-sizing: border-box; }
@@ -66,6 +91,37 @@ a { color: var(--accent); }
 }
 
 .top-nav a:hover, .top-nav a.active { color: var(--accent); }
+
+/* Theme toggle: a no-JS-framework button, header-only. Two glyphs stacked in the same cell and
+   shown/hidden by data-theme, rather than swapped by script, so the click handler only ever has to
+   flip the attribute - no icon-swap logic to keep in sync. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.theme-toggle .theme-toggle-icon { display: none; }
+/* Show the moon (switch-to-dark) when the page is currently light, and vice versa - the icon is
+   the action, not the state. Resolved theme comes from data-theme when set, else system preference. */
+:root:not([data-theme="dark"]) .theme-toggle .theme-toggle-icon.to-dark { display: block; }
+:root[data-theme="dark"] .theme-toggle .theme-toggle-icon.to-light { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme-toggle .theme-toggle-icon.to-dark { display: none; }
+  :root:not([data-theme]) .theme-toggle .theme-toggle-icon.to-light { display: block; }
+}
+:root[data-theme="light"] .theme-toggle .theme-toggle-icon.to-dark { display: block; }
+:root[data-theme="light"] .theme-toggle .theme-toggle-icon.to-light { display: none; }
 
 .layout {
   display: flex;

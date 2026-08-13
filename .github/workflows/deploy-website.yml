@@ -155,8 +155,18 @@ jobs:
         cp -r _sources/benzene-ui/dist/storybook/. website/dist/components/
         echo "Storybook published to /components."
 
+    # No Cache-Control means no explicit freshness signal at all, so a browser falls back to
+    # heuristic caching (commonly ~10% of a file's age since Last-Modified) and can keep serving a
+    # stale file for a long time with no revalidation request - none of our static assets carry a
+    # cache-busting hash in their filename (site.css, favicon.svg, the diagram SVGs are all inline
+    # in HTML, so this mainly bites site.css), so that staleness window was previously unbounded.
+    # A short max-age bounds it to five minutes without giving up caching between page loads within
+    # a visit; CloudFront's own edge cache is separately invalidated below on every deploy, so this
+    # is purely about the visitor's own browser.
     - name: Sync to the dev bucket
-      run: aws s3 sync website/dist "s3://${{ vars.WEBSITE_DEV_BUCKET }}" --delete
+      run: |
+        aws s3 sync website/dist "s3://${{ vars.WEBSITE_DEV_BUCKET }}" --delete \
+          --cache-control "public, max-age=300, must-revalidate"
 
     - name: Invalidate the dev CloudFront distribution
       run: |

@@ -1059,6 +1059,48 @@ further to get the concept"* (2-minute PASS); *"one click... a genuine 5-command
 curl-able service"* (5-minute PASS). Build re-verified locally after the fix: 117 pages, self-check
 clean.
 
+### 2026-08-13 (later still) — a manual light/dark toggle, and a caching bug behind "black boxes"
+
+The maintainer reported two things live on `dev.benzene.app`: no way to force light mode while their
+OS is set to dark, and the two new diagrams rendering as unreadable black boxes in dark mode.
+
+**The toggle never existed.** A full history search (`git log --all -p -- …/site.css`) turned up no
+prior `theme-toggle`/`data-theme` of any kind — the site has only ever followed
+`prefers-color-scheme`, with no manual override. Rather than report that back and stop, added a real
+one: three-layer token cascade in `site.css` (bare `:root` light default → `@media
+(prefers-color-scheme: dark)` for an unset system preference → `:root[data-theme="dark"|"light"]`
+for an explicit choice, which wins over the media query by selector specificity regardless of source
+order), a header button (`Layout.Header`) with sun/moon SVG icons swapped by CSS rather than script,
+and a `ThemeScript` constant — a small inline snippet applying any saved `localStorage` choice before
+first paint — added to the `<head>` of all four real page templates (`RenderMarketingPage`,
+`RenderValuePage`, `RenderDocsPage`, `RenderDocsHubPage`; the redirect stubs don't need it, they
+navigate away immediately). Verified interactively with Playwright (available globally in this
+environment, invoked directly with `NODE_PATH`/`PLAYWRIGHT_BROWSERS_PATH` rather than installed into
+the repo) driving the real click path — toggle, reload with no flash, and persistence across
+navigation on a real HTTP origin (`http-server` serving the dist folder, since `file://` URLs are
+isolated per-path and don't share `localStorage`, which the first pass of this test wrongly
+suggested was a bug before the same check was re-run over real HTTP).
+
+**The diagrams were never actually broken.** Rendering the exact dark-token values through several
+independent paths — a standalone SVG preview, the generated pages with `:root` unconditionally
+forced to the dark block, and finally a real click on the shipped toggle button — produced identical,
+fully legible output every time. The likely explanation is the one structural gap that *would*
+produce exactly this symptom: `deploy-website.yml`'s S3 sync set **no `Cache-Control` header at
+all**. With nothing explicit, a browser falls back to heuristic caching and can hold a file
+indefinitely with no revalidation request; `site.css` carries no cache-busting hash in its filename,
+so a visitor's browser could easily be serving a stylesheet from before the diagram CSS classes
+existed against the new HTML that references them — unstyled SVG shapes default to a black fill,
+which on a dark page background is indistinguishable from the background. Fixed by adding
+`--cache-control "public, max-age=300, must-revalidate"` to the dev sync, bounding any future
+staleness window to five minutes; CloudFront's own edge cache was already invalidated on every
+deploy, so this was purely a client-side gap. `promote-website.yml`'s S3-to-S3 copy inherits the fix
+automatically (`aws s3 sync` between two S3 locations defaults to `--metadata-directive COPY`,
+preserving the header) — documented in a comment there rather than duplicated, since that workflow's
+whole design is "ships the exact bytes you reviewed on dev."
+
+Build verified locally: 117 pages carry the toggle (confirmed by direct count), the 82 redirect stubs
+correctly don't, self-check clean.
+
 **Not done — blocked on repository access:**
 
 - **The two dangling anchors that currently fail the site build** (§2.8, item 1) are in

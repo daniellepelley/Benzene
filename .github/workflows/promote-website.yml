@@ -22,6 +22,11 @@ jobs:
       AWS_DEFAULT_REGION: ${{ vars.WEBSITE_AWS_REGION }}
 
     steps:
+    # Relies on aws s3 sync's default --metadata-directive COPY between two S3 locations: the
+    # dev bucket's Cache-Control (set at deploy time in deploy-website.yml) rides along
+    # unchanged, matching this workflow's own "ships the exact bytes you reviewed on dev"
+    # promise. Don't add --metadata-directive REPLACE here without also repeating that header -
+    # it would silently drop Cache-Control on every promoted object.
     - name: Copy dev bucket -> live bucket
       run: |
         aws s3 sync "s3://${{ vars.WEBSITE_DEV_BUCKET }}" "s3://${{ vars.WEBSITE_LIVE_BUCKET }}" --delete
