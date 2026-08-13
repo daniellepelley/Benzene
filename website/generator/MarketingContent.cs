@@ -62,10 +62,15 @@ internal static class MarketingContent
     /// <summary>
     /// One language port's "get started" content for the home-page selector. <see cref="Beta"/>
     /// marks an early port; <see cref="DocsOutputPath"/> is the site-relative output path of that
-    /// language's docs home (the generator turns it into a relative href).
+    /// language's docs home (the generator turns it into a relative href). <see cref="TestCode"/> is
+    /// optional second panel content proving the in-memory test host &mdash; both cold-developer
+    /// walkthroughs independently named it the strongest reason to adopt Benzene over hand-rolling a
+    /// transport, and both found it three pages deep; null for a beta port with no docs tree to draw
+    /// a real (non-invented) snippet from yet.
     /// </summary>
     public sealed record LanguageStart(
-        string Id, string Label, bool Beta, string Install, string Code, string RepoUrl, string DocsOutputPath);
+        string Id, string Label, bool Beta, string Install, string Code, string RepoUrl,
+        string DocsOutputPath, string? TestCode = null);
 
     public static readonly LanguageStart[] Languages =
     [
@@ -89,7 +94,16 @@ internal static class MarketingContent
                                        .UseSqs(sqs =&gt; sqs.UseMessageHandlers()));
             """,
             "https://github.com/daniellepelley/benzene-dotnet",
-            "dotnet/docs/getting-started.html"),
+            "dotnet/docs/getting-started.html",
+            """
+            // Boot the real StartUp in memory - no cloud account, no emulator:
+            var host = new AwsLambdaBenzeneTestHost(
+                BenzeneTestHost.Create&lt;StartUp&gt;()
+                    .WithServices(s =&gt; s.AddScoped(_ =&gt; mockGreeter.Object))
+                    .BuildAwsLambdaHost());
+
+            var response = await host.SendApiGatewayAsync(request);
+            """),
 
         new("go", "Go", true,
             "go get github.com/daniellepelley/benzene-go",

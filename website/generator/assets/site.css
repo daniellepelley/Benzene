@@ -275,6 +275,7 @@ a { color: var(--accent); }
 .gs-panel { display: none; }
 .gs-install { margin: 0 0 0.75rem; }
 .beta-note { font-size: 0.9rem; color: var(--muted); margin: 0.5rem 0; }
+.gs-test-label { font-weight: 600; margin: 1rem 0 0.5rem; font-size: 0.95rem; }
 .gs-links { font-size: 0.95rem; }
 #gs-dotnet:checked ~ .gs-panel[data-lang="dotnet"],
 #gs-go:checked ~ .gs-panel[data-lang="go"],

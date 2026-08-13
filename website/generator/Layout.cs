@@ -52,6 +52,15 @@ internal static class Layout
             </div>
             """));
 
+        // "Start building" needs a real destination today, not the /start/ section the site's
+        // information-architecture strategy calls for (work/website-information-architecture-
+        // strategy.md §4.5) — that doesn't exist yet. Interim target: the reference language's own
+        // getting-started guide, same lookup the docs hub uses for its own "Start here" links.
+        var primaryLanguage = languages.FirstOrDefault(l => !l.Beta) ?? languages.FirstOrDefault();
+        var startHref = primaryLanguage is null
+            ? docsHome
+            : RepoPaths.RelativeHref(outputPath, primaryLanguage.DocsOutputPath);
+
         return $"""
             <!doctype html>
             <html lang="en">
@@ -73,9 +82,8 @@ internal static class Layout
                 <p class="hero-tagline">{MarketingContent.Tagline}</p>
                 <p class="hero-lede">{multiLanguageLede}</p>
                 <div class="hero-ctas">
-                  <a class="button" href="#get-started">Get started</a>
-                  <a class="button button-secondary" href="{docsHome}">Read the docs</a>
-                  <a class="button button-secondary" href="https://github.com/daniellepelley/Benzene">View on GitHub</a>
+                  <a class="button" href="{startHref}">Start building</a>
+                  <a class="button button-secondary" href="#get-started">See the code</a>
                 </div>
                 <div class="hero-langs">
                   Languages: {heroLangs}
@@ -84,11 +92,15 @@ internal static class Layout
               </section>
 
               <main class="content marketing">
-                <section class="section">
-                  <h2>Why Benzene?</h2>
-                  <div class="feature-grid">
-                    {features}
-                  </div>
+                <section class="section" id="get-started">
+                  <h2>Get started</h2>
+                  <p class="section-lede">
+                    {(languages.Count > 1
+                        ? "The same handler, in the language you build in."
+                        : "The same handler runs on every host Benzene supports &mdash; here it is in "
+                          + ".NET, the reference implementation.")}
+                  </p>
+                  {getStarted}
                 </section>
 
                 <section class="section">
@@ -103,15 +115,11 @@ internal static class Layout
                   <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
                 </section>
 
-                <section class="section" id="get-started">
-                  <h2>Get started</h2>
-                  <p class="section-lede">
-                    {(languages.Count > 1
-                        ? "The same handler, in the language you build in."
-                        : "The same handler runs on every host Benzene supports &mdash; here it is in "
-                          + ".NET, the reference implementation.")}
-                  </p>
-                  {getStarted}
+                <section class="section">
+                  <h2>Why Benzene?</h2>
+                  <div class="feature-grid">
+                    {features}
+                  </div>
                 </section>
 
                 <section class="section">
@@ -585,11 +593,22 @@ internal static class Layout
                   + $"<a href=\"{docs}\">Docs</a>"
                 : $"<a href=\"{docs}\">Full {Html(l.Label)} walkthrough &rarr;</a> &middot; "
                   + $"<a href=\"{l.RepoUrl}\">{Html(l.Label)} on GitHub</a>";
+            // Both cold-developer walkthroughs independently named the in-memory test host the
+            // strongest reason to prefer Benzene over hand-rolling a transport, and both found it
+            // three pages deep. When this port has a real (non-invented) snippet for it, show it
+            // right next to the handler rather than making the reader go looking.
+            var testBlock = l.TestCode is null
+                ? ""
+                : $"""
+                   <p class="gs-test-label">Test it without the cloud:</p>
+                   <pre><code>{l.TestCode}</code></pre>
+                   """;
             return $$"""
                 <div class="gs-panel" data-lang="{{l.Id}}">
                   <p class="gs-install"><code>{{Html(l.Install)}}</code></p>
                   <pre><code>{{l.Code}}</code></pre>
                   {{betaNote}}
+                  {{testBlock}}
                   <p class="gs-links">{{links}}</p>
                 </div>
                 """;

@@ -911,6 +911,41 @@ under it — the visible stub of the `index.md:74` changelog bullet. Both feed t
 and the before/after picture the walkthrough wanted inside "Why not just a minimal API?" (D2's
 smallest form) — both are Phase 2 diagram work, not copy.
 
+### 2026-08-13 (later still) — landing-page restructure: order, CTAs, the test host
+
+With the docs hub settled, work moved to the landing page itself, split deliberately into a
+copy/structure pass now and diagrams (D1/D2) as a separate follow-up — smaller diffs, faster
+feedback per pass, per maintainer direction.
+
+**Shipped:**
+
+- **Section order.** "Get started" (the code) and "The core idea" (the diagram) now come
+  immediately after the hero, ahead of "Why Benzene?"'s cards — both cold runs credited the code and
+  diagram, not the prose, with getting them to understanding; the cards now reinforce what the
+  visitor has already seen rather than standing between them and it.
+- **Two hero CTAs, not three or four.** "Get started" / "Read the docs" / "View on GitHub" is now
+  **Start building** / **See the code**. "Read the docs" and "View on GitHub" are dropped as hero
+  buttons without losing reachability — both destinations are already permanent header-nav items
+  (`Docs`, `GitHub`), so removing the duplicates is pure simplification. "See the code" replaces the
+  old "Get started" label on the same in-page anchor — the anchor itself was praised twice as
+  exactly right (§2.3); only the label was overpromising what it does.
+- **"Start building" needed a real destination**, and the `/start/` section this button is written
+  for (§4.5) doesn't exist yet. Interim target: the reference language's own getting-started guide,
+  via the same non-beta-first lookup the docs hub already uses for its "Start here" links. Revisit
+  once `/start/` ships.
+- **The test host, finally on the landing page.** Both prior walkthroughs named `BenzeneTestHost`
+  the strongest reason to prefer Benzene over hand-rolling a transport and both found it three pages
+  deep (§2.9). `MarketingContent.LanguageStart` gained an optional `TestCode` field, rendered as a
+  second block ("Test it without the cloud:") right under the handler snippet — where the reader is
+  already looking — rather than a new card competing for attention elsewhere on the page. Null for
+  the beta ports, which have no real docs tree yet to draw a truthful (non-invented) snippet from;
+  populated for .NET from `testing-benzene.md`'s actual API
+  (`AwsLambdaBenzeneTestHost`/`BuildAwsLambdaHost`/`SendApiGatewayAsync`), matching the AWS wiring
+  the handler snippet above it now also shows.
+
+Build verified locally: 117 pages, self-check clean. A verification walkthrough against the
+restructured page is running; its result will be appended here.
+
 **Not done — blocked on repository access:**
 
 - **The two dangling anchors that currently fail the site build** (§2.8, item 1) are in
