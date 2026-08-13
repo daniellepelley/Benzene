@@ -43,6 +43,8 @@ There are two shapes; on Benzene the first is almost free.
 
 ### Shape 1 — Change data capture (the near-zero-code form)
 
+![Transactional outbox, shape 1: a core service writes its row in one transaction, DynamoDB Streams captures the change, and a relay publishes the event.](diagrams/transactional-outbox-cdc.svg)
+
 If the domain store *is* the log of changes, you need no separate outbox table at all: capture the
 change stream off the domain table and publish from it. On AWS that is **DynamoDB Streams**, and
 Benzene has a first-class inbound transport for it.

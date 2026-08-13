@@ -11,6 +11,8 @@ process emerges from the chain of reactions.
 Both are first-class on Benzene, and a real system uses both. This document is about when to
 choreograph, and exactly how you build it with Benzene's events, transports, and mesh.
 
+![Event-driven choreography: a signup service emits tenant:created, and three independent reactions - welcome email, cache warm, and trial clock - each subscribe and react on their own, with no central conductor.](diagrams/choreography-fanout.svg)
+
 ---
 
 ## Orchestration vs. choreography

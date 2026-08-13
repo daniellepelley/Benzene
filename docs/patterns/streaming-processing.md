@@ -100,6 +100,8 @@ or replayable** (upsert the bar, don't blindly `+=`). This is the same disciplin
 them into **one-minute OHLC bars** (open/high/low/close/volume) per symbol, and publish each closed
 bar for downstream valuation and charting.
 
+![Real-time stream processing: ticks land on Kinesis partitioned by symbol, a stream handler partitions by symbol and windows by minute into a rolling bar store, and publishes bar:closed once a bar closes.](diagrams/streaming-processing-shape.svg)
+
 **Ingress.** Ticks land on a Kinesis stream, **partitioned by symbol** (the producer sets the
 partition key to the symbol), so all of one symbol's ticks share a shard and stay ordered. A Benzene
 stream Lambda consumes it.

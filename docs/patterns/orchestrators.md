@@ -71,6 +71,8 @@ user behind.
 
 ### Shape *(informative, .NET — `Benzene.Saga`)*
 
+![Saga pattern: stage 1 runs Create Tenant and Create Okta Company concurrently, then stage 2 runs Create User; on any failure, every completed step is compensated in reverse order - Delete User, then Delete Okta Company and Delete Tenant.](diagrams/orchestrators-saga.svg)
+
 A saga is an ordered list of **stages**; each stage is a group of **steps that run concurrently**;
 stages run in order, threading their results through a shared context. Each step is a **forward
 action** paired with the **compensation** that undoes it:

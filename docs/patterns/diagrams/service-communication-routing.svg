@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 420" role="img" aria-label="Three routing options: Option 0 binds the destination in the caller for one direct invoke; Option A puts a routing lambda in the path for two round trips in series; Option B resolves the destination once from a routing lambda, caches it, then calls direct.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-line-dashed { stroke: #c7c7c7; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 11px sans-serif; }
+  .dp-box-tag { fill: #2f6f4e; font: 700 10px sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-outer { fill: none; stroke: #d8d8d8; stroke-width: 2; stroke-dasharray: 6 4; }
+  .dp-outer-label { fill: #5a5a5a; font: 700 12px sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-edge-label { fill: #4a4a4a; font: 11px sans-serif; }
+  .dp-label-bg { fill: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-line-dashed { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-box-tag { fill: #6fcf9a; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-outer { stroke: #3a3d42; }
+    .dp-outer-label { fill: #a3a3a3; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+    .dp-edge-label { fill: #c2c2c2; }
+    .dp-label-bg { fill: #14161a; }
+  }
+</style>
+<text x="150" y="26" text-anchor="middle" class="dp-accent-label">Option 0</text>
+<text x="150" y="44" text-anchor="middle" class="dp-caption">bind in the caller</text>
+<rect x="61.4" y="373" width="177.2" height="26" rx="4" class="dp-label-bg"/>
+<text x="150" y="390" text-anchor="middle" class="dp-caption-strong">1 invoke &#8212; the floor</text>
+<text x="490" y="26" text-anchor="middle" class="dp-accent-label">Option A</text>
+<text x="490" y="44" text-anchor="middle" class="dp-caption">routing lambda in the path</text>
+<rect x="354.9" y="373" width="270.2" height="26" rx="4" class="dp-label-bg"/>
+<text x="490" y="390" text-anchor="middle" class="dp-caption-strong">2 invokes, in series &#8212; doubled cost</text>
+<text x="830" y="26" text-anchor="middle" class="dp-accent-label">Option B</text>
+<text x="830" y="44" text-anchor="middle" class="dp-caption">resolve once, then call direct</text>
+<rect x="732.1" y="373" width="195.8" height="26" rx="4" class="dp-label-bg"/>
+<text x="830" y="390" text-anchor="middle" class="dp-caption-strong">1 resolve (cached) + 1 invoke</text>
+<rect x="24" y="150" width="92" height="56" rx="8" class="dp-box"/>
+<text x="70" y="183" text-anchor="middle" class="dp-box-label">caller</text>
+<rect x="184" y="150" width="92" height="56" rx="8" class="dp-box"/>
+<text x="230" y="183" text-anchor="middle" class="dp-box-label">target</text>
+<line x1="120" y1="178" x2="180" y2="178" class="dp-line"/>
+<polygon points="176,172 176,184 184,178" class="dp-arrow"/>
+<rect x="304" y="150" width="92" height="56" rx="8" class="dp-box"/>
+<text x="350" y="183" text-anchor="middle" class="dp-box-label">caller</text>
+<rect x="444" y="150" width="92" height="56" rx="8" class="dp-box"/>
+<text x="490" y="183" text-anchor="middle" class="dp-box-label">router</text>
+<rect x="584" y="150" width="92" height="56" rx="8" class="dp-box"/>
+<text x="630" y="183" text-anchor="middle" class="dp-box-label">target</text>
+<line x1="400" y1="164" x2="440" y2="164" class="dp-line"/>
+<polygon points="436,158 436,170 444,164" class="dp-arrow"/>
+<line x1="540" y1="164" x2="580" y2="164" class="dp-line"/>
+<polygon points="576,158 576,170 584,164" class="dp-arrow"/>
+<line x1="580" y1="192" x2="540" y2="192" class="dp-line-dashed"/>
+<polygon points="544,186 544,198 536,192" class="dp-arrow"/>
+<line x1="440" y1="192" x2="400" y2="192" class="dp-line-dashed"/>
+<polygon points="404,186 404,198 396,192" class="dp-arrow"/>
+<text x="490" y="150" text-anchor="middle" class="dp-edge-label">request, forwarded</text>
+<text x="490" y="218" text-anchor="middle" class="dp-edge-label">response, relayed back</text>
+<rect x="714" y="110" width="92" height="56" rx="8" class="dp-box"/>
+<text x="760" y="143" text-anchor="middle" class="dp-box-label">caller</text>
+<rect x="874" y="110" width="92" height="56" rx="8" class="dp-box"/>
+<text x="920" y="143" text-anchor="middle" class="dp-box-label">router</text>
+<rect x="714" y="260" width="92" height="56" rx="8" class="dp-box"/>
+<text x="760" y="293" text-anchor="middle" class="dp-box-label">target</text>
+<line x1="810" y1="131" x2="870" y2="131" class="dp-line-dashed"/>
+<polygon points="866,125 866,137 874,131" class="dp-arrow"/>
+<line x1="870" y1="145" x2="810" y2="145" class="dp-line-dashed"/>
+<polygon points="814,139 814,151 806,145" class="dp-arrow"/>
+<rect x="790" y="97" width="100" height="26" rx="4" class="dp-label-bg"/>
+<text x="840" y="114" text-anchor="middle" class="dp-edge-label">resolve, cached</text>
+<line x1="760" y1="170" x2="760" y2="256" class="dp-line"/>
+<polygon points="754,252 766,252 760,260" class="dp-arrow"/>
+<text x="822" y="213" text-anchor="middle" class="dp-edge-label">direct call</text>
+</svg>

@@ -38,6 +38,8 @@ event-sourcing conventions above vary enough that a framework abstraction usuall
 
 ## How you build it with Benzene
 
+![Event sourcing: a command handler appends events to an ordered log; a projector consumes the log via change-data-capture into a read model; the command handler rehydrates its state by folding the log before deciding.](diagrams/event-sourcing-shape.svg)
+
 ### 1. The command handler appends an event
 
 A command handler validates, loads the aggregate's current state (a fold of its events, below),

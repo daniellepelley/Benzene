@@ -118,6 +118,8 @@ Direct Lambda-to-Lambda has one cost: **the caller must know the callee's functi
 There are three broad answers, and the difference between them is where and when the topic→function
 binding is resolved.
 
+![Three routing options: Option 0 binds the destination in the caller for one direct invoke; Option A puts a routing lambda in the path for two round trips in series; Option B resolves the destination once from a routing lambda, caches it, then calls direct.](diagrams/service-communication-routing.svg)
+
 ### Option 0 — Bind it in the caller (no routing lambda)
 
 The caller holds the topic→function map itself and invokes the target directly. This is what the

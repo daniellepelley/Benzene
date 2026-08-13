@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" role="img" aria-label="Event sourcing: a command handler appends events to an ordered log; a projector consumes the log via change-data-capture into a read model; the command handler rehydrates its state by folding the log before deciding.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-line-dashed { stroke: #c7c7c7; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 11px sans-serif; }
+  .dp-box-tag { fill: #2f6f4e; font: 700 10px sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-outer { fill: none; stroke: #d8d8d8; stroke-width: 2; stroke-dasharray: 6 4; }
+  .dp-outer-label { fill: #5a5a5a; font: 700 12px sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-edge-label { fill: #4a4a4a; font: 11px sans-serif; }
+  .dp-label-bg { fill: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-line-dashed { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-box-tag { fill: #6fcf9a; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-outer { stroke: #3a3d42; }
+    .dp-outer-label { fill: #a3a3a3; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+    .dp-edge-label { fill: #c2c2c2; }
+    .dp-label-bg { fill: #14161a; }
+  }
+</style>
+<rect x="40" y="70" width="210" height="78" rx="8" class="dp-box"/>
+<text x="145" y="102" text-anchor="middle" class="dp-box-label">Command handler</text>
+<text x="145" y="122" text-anchor="middle" class="dp-box-sublabel">validate, decide</text>
+<line x1="254" y1="109" x2="306" y2="109" class="dp-line"/>
+<polygon points="298,103 298,115 306,109" class="dp-arrow"/>
+<text x="280" y="97" text-anchor="middle" class="dp-edge-label">append</text>
+<rect x="310" y="70" width="210" height="78" rx="8" class="dp-accent"/>
+<text x="415" y="102" text-anchor="middle" class="dp-accent-label">Event log</text>
+<text x="415" y="122" text-anchor="middle" class="dp-accent-sublabel">append-only, ordered</text>
+<line x1="524" y1="109" x2="576" y2="109" class="dp-line"/>
+<polygon points="568,103 568,115 576,109" class="dp-arrow"/>
+<text x="550" y="97" text-anchor="middle" class="dp-edge-label">CDC stream</text>
+<rect x="580" y="70" width="210" height="78" rx="8" class="dp-box"/>
+<text x="685" y="102" text-anchor="middle" class="dp-box-label">Projector</text>
+<text x="685" y="122" text-anchor="middle" class="dp-box-sublabel">DynamoDB Streams &#8594; read model</text>
+<polyline points="340,152 340,193 220,193 220,152" class="dp-line"/>
+<polygon points="214,156 226,156 220,148" class="dp-arrow"/>
+<rect x="67.65" y="194" width="424.7" height="26" rx="4" class="dp-label-bg"/>
+<text x="280" y="211" text-anchor="middle" class="dp-caption">rehydrate: fold events into current state, before the next decision</text>
+</svg>

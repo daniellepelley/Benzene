@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" role="img" aria-label="Real-time stream processing: ticks land on Kinesis partitioned by symbol, a stream handler partitions by symbol and windows by minute into a rolling bar store, and publishes bar:closed once a bar closes.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-line-dashed { stroke: #c7c7c7; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 11px sans-serif; }
+  .dp-box-tag { fill: #2f6f4e; font: 700 10px sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-outer { fill: none; stroke: #d8d8d8; stroke-width: 2; stroke-dasharray: 6 4; }
+  .dp-outer-label { fill: #5a5a5a; font: 700 12px sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-edge-label { fill: #4a4a4a; font: 11px sans-serif; }
+  .dp-label-bg { fill: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-line-dashed { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-box-tag { fill: #6fcf9a; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-outer { stroke: #3a3d42; }
+    .dp-outer-label { fill: #a3a3a3; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+    .dp-edge-label { fill: #c2c2c2; }
+    .dp-label-bg { fill: #14161a; }
+  }
+</style>
+<rect x="40" y="30" width="210" height="78" rx="8" class="dp-box"/>
+<text x="145" y="62" text-anchor="middle" class="dp-box-label">Kinesis</text>
+<text x="145" y="82" text-anchor="middle" class="dp-box-sublabel">ticks, partitioned by symbol</text>
+<line x1="254" y1="69" x2="306" y2="69" class="dp-line"/>
+<polygon points="298,63 298,75 306,69" class="dp-arrow"/>
+<rect x="310" y="30" width="210" height="78" rx="8" class="dp-accent"/>
+<text x="415" y="62" text-anchor="middle" class="dp-accent-label">Stream handler</text>
+<text x="415" y="82" text-anchor="middle" class="dp-accent-sublabel">partition by symbol, window by minute</text>
+<line x1="524" y1="69" x2="576" y2="69" class="dp-line"/>
+<polygon points="568,63 568,75 576,69" class="dp-arrow"/>
+<rect x="580" y="30" width="210" height="78" rx="8" class="dp-box"/>
+<text x="685" y="62" text-anchor="middle" class="dp-box-label">bar:closed</text>
+<text x="685" y="82" text-anchor="middle" class="dp-box-sublabel">published when a bar closes</text>
+<rect x="330" y="178" width="170" height="56" rx="8" class="dp-db"/>
+<text x="415" y="202" text-anchor="middle" class="dp-db-label">Bar store</text>
+<text x="415" y="220" text-anchor="middle" class="dp-box-sublabel">rolling OHLC, per (symbol, minute)</text>
+<line x1="415" y1="112" x2="415" y2="174" class="dp-line"/>
+<polygon points="409,170 421,170 415,178" class="dp-arrow"/>
+<rect x="473.8" y="126" width="182.4" height="42" rx="4" class="dp-label-bg"/>
+<text x="565" y="143" text-anchor="middle" class="dp-edge-label">upsert &#8212; idempotent,</text>
+<text x="565" y="159" text-anchor="middle" class="dp-edge-label">replay-safe</text>
+<text x="450" y="268" text-anchor="middle" class="dp-caption">One Lambda invocation sees one batch; the rolling bar across invocations lives in the store, not in memory.</text>
+</svg>
