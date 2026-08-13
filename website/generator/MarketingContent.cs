@@ -66,11 +66,19 @@ internal static class MarketingContent
     /// optional second panel content proving the in-memory test host &mdash; both cold-developer
     /// walkthroughs independently named it the strongest reason to adopt Benzene over hand-rolling a
     /// transport, and both found it three pages deep; null for a beta port with no docs tree to draw
-    /// a real (non-invented) snippet from yet.
+    /// a real (non-invented) snippet from yet. <see cref="QuickstartOutputPath"/> is where the hero's
+    /// "Start building" button sends an undecided visitor &mdash; a cold walkthrough hit
+    /// <see cref="DocsOutputPath"/>'s platform-choice router instead of code and called that the
+    /// site's biggest promise-vs-delivery gap; null falls back to <see cref="DocsOutputPath"/> for a
+    /// port with no fast, cloud-free path documented yet. For .NET this is the local ASP.NET Core
+    /// guide, not the platform router's own AWS Lambda recommendation &mdash; per
+    /// work/website-information-architecture-strategy.md §4.5, only the no-cloud-account path can
+    /// honestly promise five minutes to an undecided reader; AWS remains the best *demonstration* of
+    /// the value proposition and stays one click away from there.
     /// </summary>
     public sealed record LanguageStart(
         string Id, string Label, bool Beta, string Install, string Code, string RepoUrl,
-        string DocsOutputPath, string? TestCode = null);
+        string DocsOutputPath, string? TestCode = null, string? QuickstartOutputPath = null);
 
     public static readonly LanguageStart[] Languages =
     [
@@ -96,14 +104,16 @@ internal static class MarketingContent
             "https://github.com/daniellepelley/benzene-dotnet",
             "dotnet/docs/getting-started.html",
             """
-            // Boot the real StartUp in memory - no cloud account, no emulator:
+            // StartUp is the class where UseAwsLambda(...) (shown above) is called - boot it
+            // in memory, no cloud account and no emulator:
             var host = new AwsLambdaBenzeneTestHost(
                 BenzeneTestHost.Create&lt;StartUp&gt;()
                     .WithServices(s =&gt; s.AddScoped(_ =&gt; mockGreeter.Object))
                     .BuildAwsLambdaHost());
 
             var response = await host.SendApiGatewayAsync(request);
-            """),
+            """,
+            "dotnet/docs/getting-started-aspnet.html"),
 
         new("go", "Go", true,
             "go get github.com/daniellepelley/benzene-go",

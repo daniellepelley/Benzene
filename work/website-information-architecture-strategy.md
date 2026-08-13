@@ -943,8 +943,37 @@ feedback per pass, per maintainer direction.
   (`AwsLambdaBenzeneTestHost`/`BuildAwsLambdaHost`/`SendApiGatewayAsync`), matching the AWS wiring
   the handler snippet above it now also shows.
 
-Build verified locally: 117 pages, self-check clean. A verification walkthrough against the
-restructured page is running; its result will be appended here.
+Build verified locally: 117 pages, self-check clean.
+
+**Verified, and it found a real gap.** The re-run passed both tests (2-minute PASS, 5-minute
+PARTIAL) and confirmed the reorder and test-host block worked as intended — *"the code itself is
+genuinely zero clicks away... that's a real strength."* But it ranked, as the single biggest gap on
+the site: **"Start building" doesn't start building.** `DocsOutputPath` (what both this button and
+the docs hub's equivalent pointed at) is `getting-started.md` — the platform-choice router, not
+code:
+
+> "I clicked a button literally labeled 'Start building' and was handed a decision instead of
+> code. This is the single biggest gap between promise and delivery on the site."
+
+It also flagged the test-host snippet using `StartUp` before anything on the page defines it —
+minor, but a real cold-term hit.
+
+**Shipped in response:**
+
+- **`LanguageStart` gained `QuickstartOutputPath`** — where "Start building" actually sends an
+  undecided visitor, separate from `DocsOutputPath` (the router). For .NET this is
+  `getting-started-aspnet.html`, not the platform router's own AWS Lambda recommendation — per
+  §4.5's existing reasoning, only the no-cloud-account path can honestly promise five minutes to
+  someone who hasn't chosen a platform yet. AWS remains one click away as the best *demonstration*
+  of the value proposition, exactly as `getting-started.md` itself already frames it. Both the home
+  hero and the docs hub's "Start building in X" button now use this field, falling back to
+  `DocsOutputPath` for a port with no fast path documented yet — so nothing breaks for a beta port.
+- **The `StartUp` gloss.** The test-host snippet's comment now reads "StartUp is the class where
+  `UseAwsLambda(...)` (shown above) is called" — true of the code immediately above it, not an
+  invented cross-reference.
+
+A second verification run (against this fix, not assumed) is in progress; its result will be
+appended here.
 
 **Not done — blocked on repository access:**
 

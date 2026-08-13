@@ -54,12 +54,15 @@ internal static class Layout
 
         // "Start building" needs a real destination today, not the /start/ section the site's
         // information-architecture strategy calls for (work/website-information-architecture-
-        // strategy.md §4.5) — that doesn't exist yet. Interim target: the reference language's own
-        // getting-started guide, same lookup the docs hub uses for its own "Start here" links.
+        // strategy.md §4.5) — that doesn't exist yet. A cold walkthrough sent to DocsOutputPath
+        // hit that page's own platform-choice router instead of code and called it the site's
+        // biggest promise-vs-delivery gap, so this prefers QuickstartOutputPath (a fast, cloud-free
+        // path) where one is documented, falling back to DocsOutputPath for a port without one yet.
         var primaryLanguage = languages.FirstOrDefault(l => !l.Beta) ?? languages.FirstOrDefault();
         var startHref = primaryLanguage is null
             ? docsHome
-            : RepoPaths.RelativeHref(outputPath, primaryLanguage.DocsOutputPath);
+            : RepoPaths.RelativeHref(
+                outputPath, primaryLanguage.QuickstartOutputPath ?? primaryLanguage.DocsOutputPath);
 
         return $"""
             <!doctype html>
@@ -332,7 +335,10 @@ internal static class Layout
         string StartHref(DocSource lang)
         {
             var entry = MarketingContent.Languages.FirstOrDefault(l => l.Id == lang.Id);
-            return RepoPaths.RelativeHref(outputPath, entry?.DocsOutputPath ?? lang.HomeOutputPath);
+            // Prefer a fast, cloud-free quickstart over the platform-choice router (same rationale
+            // as the home hero's "Start building" button, right above).
+            return RepoPaths.RelativeHref(
+                outputPath, entry?.QuickstartOutputPath ?? entry?.DocsOutputPath ?? lang.HomeOutputPath);
         }
 
         var primary = languages.FirstOrDefault(l => !l.LandingOnly) ?? languages.FirstOrDefault();
