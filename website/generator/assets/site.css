@@ -13,12 +13,6 @@
   --border: #e2e2e2;
   --code-bg: #f6f8f7;
   --max-width: 1100px;
-  /* A quiet corner watermark for the hero sections: four connected benzene rings (hexagon + the
-     inscribed circle standing for the aromatic ring, same motif as the Logo mark), drawn once and
-     masked to a soft fade in .hero/.page-hero below — not tiled, not glowing, just a hint of "this
-     is about chemistry" tucked away from the copy. Colour is the theme's own muted tone (not
-     --accent) so it never competes with body text or links. */
-  --hero-molecule: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2240%2076%20240%20228%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%235a5a5a%22%20stroke-width%3D%222%22%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22173.0%22%20x2%3D%22125.5%22%20y2%3D%22147.0%22%2F%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22207.0%22%20x2%3D%22125.5%22%20y2%3D%22233.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22147.0%22%20x2%3D%22190.4%22%20y2%3D%22173.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22233.0%22%20x2%3D%22190.4%22%20y2%3D%22207.0%22%2F%3E%3Cpolygon%20points%3D%2290.0%2C156.0%20119.4%2C173.0%20119.4%2C207.0%2090.0%2C224.0%2060.6%2C207.0%2060.6%2C173.0%22%2F%3E%3Ccircle%20cx%3D%2290%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C96.0%20184.3%2C113.0%20184.3%2C147.0%20154.9%2C164.0%20125.5%2C147.0%20125.5%2C113.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22130%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C216.0%20184.3%2C233.0%20184.3%2C267.0%20154.9%2C284.0%20125.5%2C267.0%20125.5%2C233.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22250%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22219.8%2C156.0%20249.2%2C173.0%20249.2%2C207.0%20219.8%2C224.0%20190.4%2C207.0%20190.4%2C173.0%22%2F%3E%3Ccircle%20cx%3D%22219.8%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,7 +23,6 @@
     --muted: #a3a3a3;
     --border: #2c2f33;
     --code-bg: #1c1f23;
-    --hero-molecule: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2240%2076%20240%20228%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20stroke-width%3D%222%22%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22173.0%22%20x2%3D%22125.5%22%20y2%3D%22147.0%22%2F%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22207.0%22%20x2%3D%22125.5%22%20y2%3D%22233.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22147.0%22%20x2%3D%22190.4%22%20y2%3D%22173.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22233.0%22%20x2%3D%22190.4%22%20y2%3D%22207.0%22%2F%3E%3Cpolygon%20points%3D%2290.0%2C156.0%20119.4%2C173.0%20119.4%2C207.0%2090.0%2C224.0%2060.6%2C207.0%2060.6%2C173.0%22%2F%3E%3Ccircle%20cx%3D%2290%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C96.0%20184.3%2C113.0%20184.3%2C147.0%20154.9%2C164.0%20125.5%2C147.0%20125.5%2C113.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22130%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C216.0%20184.3%2C233.0%20184.3%2C267.0%20154.9%2C284.0%20125.5%2C267.0%20125.5%2C233.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22250%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22219.8%2C156.0%20249.2%2C173.0%20249.2%2C207.0%20219.8%2C224.0%20190.4%2C207.0%20190.4%2C173.0%22%2F%3E%3Ccircle%20cx%3D%22219.8%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
   }
 }
 
@@ -40,7 +33,6 @@
   --muted: #a3a3a3;
   --border: #2c2f33;
   --code-bg: #1c1f23;
-  --hero-molecule: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2240%2076%20240%20228%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23a3a3a3%22%20stroke-width%3D%222%22%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22173.0%22%20x2%3D%22125.5%22%20y2%3D%22147.0%22%2F%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22207.0%22%20x2%3D%22125.5%22%20y2%3D%22233.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22147.0%22%20x2%3D%22190.4%22%20y2%3D%22173.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22233.0%22%20x2%3D%22190.4%22%20y2%3D%22207.0%22%2F%3E%3Cpolygon%20points%3D%2290.0%2C156.0%20119.4%2C173.0%20119.4%2C207.0%2090.0%2C224.0%2060.6%2C207.0%2060.6%2C173.0%22%2F%3E%3Ccircle%20cx%3D%2290%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C96.0%20184.3%2C113.0%20184.3%2C147.0%20154.9%2C164.0%20125.5%2C147.0%20125.5%2C113.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22130%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C216.0%20184.3%2C233.0%20184.3%2C267.0%20154.9%2C284.0%20125.5%2C267.0%20125.5%2C233.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22250%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22219.8%2C156.0%20249.2%2C173.0%20249.2%2C207.0%20219.8%2C224.0%20190.4%2C207.0%20190.4%2C173.0%22%2F%3E%3Ccircle%20cx%3D%22219.8%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
 :root[data-theme="light"] {
@@ -50,7 +42,6 @@
   --muted: #5a5a5a;
   --border: #e2e2e2;
   --code-bg: #f6f8f7;
-  --hero-molecule: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2240%2076%20240%20228%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%235a5a5a%22%20stroke-width%3D%222%22%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22173.0%22%20x2%3D%22125.5%22%20y2%3D%22147.0%22%2F%3E%3Cline%20x1%3D%22119.4%22%20y1%3D%22207.0%22%20x2%3D%22125.5%22%20y2%3D%22233.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22147.0%22%20x2%3D%22190.4%22%20y2%3D%22173.0%22%2F%3E%3Cline%20x1%3D%22184.3%22%20y1%3D%22233.0%22%20x2%3D%22190.4%22%20y2%3D%22207.0%22%2F%3E%3Cpolygon%20points%3D%2290.0%2C156.0%20119.4%2C173.0%20119.4%2C207.0%2090.0%2C224.0%2060.6%2C207.0%2060.6%2C173.0%22%2F%3E%3Ccircle%20cx%3D%2290%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C96.0%20184.3%2C113.0%20184.3%2C147.0%20154.9%2C164.0%20125.5%2C147.0%20125.5%2C113.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22130%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22154.9%2C216.0%20184.3%2C233.0%20184.3%2C267.0%20154.9%2C284.0%20125.5%2C267.0%20125.5%2C233.0%22%2F%3E%3Ccircle%20cx%3D%22154.9%22%20cy%3D%22250%22%20r%3D%2218.7%22%2F%3E%3Cpolygon%20points%3D%22219.8%2C156.0%20249.2%2C173.0%20249.2%2C207.0%20219.8%2C224.0%20190.4%2C207.0%20190.4%2C173.0%22%2F%3E%3Ccircle%20cx%3D%22219.8%22%20cy%3D%22190%22%20r%3D%2218.7%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -260,42 +251,10 @@ a { color: var(--accent); }
   padding: 1rem 1.5rem 3rem;
 }
 
-/* Hero. Full-bleed background: negative margins pull the box out to the viewport edge (a no-op for
-   .hero, already a direct, unconstrained child of body; the trick that actually matters is on
-   .page-hero, nested inside .content.marketing's 900px centered column). Deliberately no explicit
-   width — the browser computes it from the margins, so there's no 100vw-vs-scrollbar overflow bug.
-   Every child keeps centering itself via its own text-align/max-width, unaffected either way. */
-.hero, .page-hero {
-  position: relative;
-  overflow: hidden;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-}
-
-/* The molecule watermark itself: one copy, corner-anchored, masked to a soft fade so it never
-   reaches the centered copy below. Deliberately not tiled and no glow layer - those read as
-   texture/noise competing with the text; this is meant to be almost subliminal. Off entirely below
-   800px, where the hero is narrower and the corner sits too close to the text to stay quiet. */
-.hero::before, .page-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: var(--hero-molecule);
-  background-repeat: no-repeat;
-  background-position: top right;
-  background-size: 360px auto;
-  -webkit-mask-image: radial-gradient(circle at top right, #000 0%, transparent 58%);
-  mask-image: radial-gradient(circle at top right, #000 0%, transparent 58%);
-  opacity: 0.22;
-}
-
-@media (max-width: 800px) {
-  .hero::before, .page-hero::before { display: none; }
-}
-
+/* Hero */
 .hero {
+  max-width: var(--max-width);
+  margin: 0 auto;
   padding: 3.5rem 1.5rem 2.5rem;
   text-align: center;
 }
@@ -393,6 +352,8 @@ a { color: var(--accent); }
 
 /* Sections */
 .page-hero {
+  max-width: var(--max-width);
+  margin: 0 auto;
   padding: 3rem 1.5rem 0.5rem;
   text-align: center;
 }
