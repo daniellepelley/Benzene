@@ -1032,8 +1032,32 @@ Both diagrams asked for, unprompted, by every prior cold-developer run (§2.9, �
   hand-authored marketing pages, but the next diagram (D3, the request lifecycle, slated for the
   quickstart) will need it.
 
-Build verified locally: 117 pages, self-check clean. A cold-developer verification of both diagrams
-in situ is running; its result will be appended here.
+Build verified locally: 117 pages, self-check clean.
+
+**Verified — both tests PASS, and it caught one real accuracy bug.** D1's caption said *"That's the
+two wiring lines above, drawn out"* while the diagram used a different worked example
+(`PlaceOrderHandler`/`order:placed`) than the code panel above it (`GreetHandler`/`greet`):
+
+> "The diagram switches examples without saying so, right when it claims to be 'the code above,
+> drawn out.' ... It's legible on its own terms... but it doesn't do what its own caption claims."
+> ... "The one change most likely to move me further toward committing: fix the landing-page
+> diagram to use the same `GreetHandler` example as the code directly above it."
+
+Fixed directly: `TransportDiagram` now uses `greet`/`GreetHandler`/`GreetResponse` throughout,
+matching `MarketingContent.Languages`'s .NET snippet exactly, so the caption's claim is literally
+true. (`BeforeAfterDiagram` on `why.html` keeps its own `order:placed` example — no adjacent code
+claims correspondence there, and the same run called that diagram "genuinely good.")
+
+The same run also flagged the caption under D2 as redundant: hero sentence, diagram, and caption
+paragraph all made the identical "three services become one" argument in a row — *"the diagram
+alone would have been enough... the caption after it added nothing I hadn't already gotten from the
+picture."* Trimmed to one forward-pointing line ("Every card below makes this case a different
+way.") rather than re-arguing what the diagram already showed.
+
+Both acceptance tests pass: *"clicked on the landing page's first paragraph — no need to read
+further to get the concept"* (2-minute PASS); *"one click... a genuine 5-command path to a running
+curl-able service"* (5-minute PASS). Build re-verified locally after the fix: 117 pages, self-check
+clean.
 
 **Not done — blocked on repository access:**
 

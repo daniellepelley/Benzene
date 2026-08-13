@@ -41,13 +41,15 @@ internal static class MarketingPages
         // walkthrough asked for exactly this picture unprompted and called it "the comparison I
         // arrived making" — no Benzene vocabulary required to read it, which is why it leads this
         // page rather than illustrating any one card below.
+        // Caption deliberately doesn't re-argue the diagram - a cold-developer walkthrough found
+        // the diagram alone "answers the page's own thesis sentence faster than the sentence
+        // does," and called a fuller restatement here "padding, not new information." It only
+        // points at what comes next.
         HeroDiagramHtml:
             $"""
             <div class="before-after-wrap">{BeforeAfterDiagram.Render()}</div>
             <p class="section-lede diagram-caption">
-              Three transports usually mean three services, each with its own copy of validation,
-              logging, and auth. In Benzene they're one service with one shared pipeline &mdash;
-              the case each card below makes in its own way.
+              Every card below makes this case a different way.
             </p>
             """,
         Sections:

@@ -5,9 +5,18 @@ namespace Benzene.Website.Generator;
 /// converging on one handler. <see cref="ArchitectureDiagram"/> answers "where does it run" (hosts,
 /// arranged around a hexagon); this answers the actual pitch both cold-developer walkthroughs asked
 /// for by name - "how many things can call the same handler" - with a concrete worked example
-/// (<c>order:placed</c>) rather than placeholder labels, per the visual grammar in §6.4: shape
-/// carries role (pill = transport, accent rect = the Benzene-owned handler, muted rounded rect =
-/// your own result type), flow is strictly left-to-right with arrowheads, colour never decorates.
+/// rather than placeholder labels, per the visual grammar in §6.4: shape carries role (pill =
+/// transport, accent rect = the Benzene-owned handler, muted rounded rect = your own result type),
+/// flow is strictly left-to-right with arrowheads, colour never decorates.
+/// <para>
+/// Placed directly under the landing page's "Get started" code panel, captioned as that code
+/// "drawn out" - so this uses the <em>same</em> example the panel does (<c>greet</c> /
+/// <c>GreetHandler</c>, <see cref="MarketingContent.Languages"/>'s .NET snippet), not an
+/// independent one. A first pass used <c>order:placed</c> here instead; a cold-developer
+/// walkthrough caught the mismatch immediately ("the diagram switches examples without saying so,
+/// right when it claims to be 'the code above, drawn out'") and it cost real trust. Keep these in
+/// sync if that snippet's topic name ever changes.
+/// </para>
 /// </summary>
 internal static class TransportDiagram
 {
@@ -15,9 +24,9 @@ internal static class TransportDiagram
 
     private static readonly Chip[] Inbound =
     [
-        new(58, "HTTP", "POST /orders"),
-        new(160, "SQS", "queue: orders"),
-        new(262, "Kafka", "topic: order.placed"),
+        new(58, "HTTP", "POST /greet"),
+        new(160, "SQS", "queue: greet"),
+        new(262, "Kafka", "topic: greet"),
     ];
 
     private const double ChipX = 20, ChipW = 190, ChipH = 56;
@@ -38,7 +47,7 @@ internal static class TransportDiagram
             """));
 
         return $"""
-            <svg class="transport-diagram" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An HTTP POST to /orders, an SQS queue named orders, and a Kafka topic named order.placed all arrive at one PlaceOrderHandler for the order:placed topic, which returns an OrderAccepted result. Adding a transport is a line of host wiring, never a change to the handler.">
+            <svg class="transport-diagram" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An HTTP POST to /greet, an SQS queue named greet, and a Kafka topic named greet all arrive at one GreetHandler for the greet topic, which returns a GreetResponse result. Adding a transport is a line of host wiring, never a change to the handler.">
               <defs>
                 <marker id="td-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                   <path class="td-arrow-head" d="M0,0 L10,5 L0,10 z"/>
@@ -48,11 +57,11 @@ internal static class TransportDiagram
               <line class="td-line" x1="{HandlerX + HandlerW}" y1="{CenterY}" x2="{ResultX}" y2="{CenterY}" marker-end="url(#td-arrow)"/>
               {chips}
               <rect class="td-handler" x="{HandlerX}" y="{HandlerY}" width="{HandlerW}" height="{HandlerH}" rx="14"/>
-              <text class="td-handler-label" x="{HandlerX + HandlerW / 2}" y="{CenterY - 14}" text-anchor="middle">PlaceOrderHandler</text>
-              <text class="td-handler-sublabel" x="{HandlerX + HandlerW / 2}" y="{CenterY + 8}" text-anchor="middle">topic: order:placed</text>
+              <text class="td-handler-label" x="{HandlerX + HandlerW / 2}" y="{CenterY - 14}" text-anchor="middle">GreetHandler</text>
+              <text class="td-handler-sublabel" x="{HandlerX + HandlerW / 2}" y="{CenterY + 8}" text-anchor="middle">topic: greet</text>
               <text class="td-handler-sublabel" x="{HandlerX + HandlerW / 2}" y="{CenterY + 30}" text-anchor="middle">one handler, any transport</text>
               <rect class="td-result" x="{ResultX}" y="{CenterY - ResultH / 2:F1}" width="{ResultW}" height="{ResultH}" rx="10"/>
-              <text class="td-result-label" x="{ResultX + ResultW / 2}" y="{CenterY - 4}" text-anchor="middle">OrderAccepted</text>
+              <text class="td-result-label" x="{ResultX + ResultW / 2}" y="{CenterY - 4}" text-anchor="middle">GreetResponse</text>
               <text class="td-result-sublabel" x="{ResultX + ResultW / 2}" y="{CenterY + 15}" text-anchor="middle">your result type</text>
             </svg>
             """;
