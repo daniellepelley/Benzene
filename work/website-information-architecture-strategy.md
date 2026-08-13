@@ -45,6 +45,9 @@ checkout.
 | **A** — front door | `index.html` | **PARTIAL** — understood at ~90s, *but not from the hero* | **PARTIAL** — 1 click to code, but no belief in 5 minutes to *running* | MAYBE, leaning yes |
 | **B** — deep link from search | `docs/index.html` | **FAIL** — at 2 minutes still could not say what category of thing Benzene is | **PARTIAL** | YES, but "I nearly didn't get there" |
 
+> Run B was re-run after the docs-hub rebuild and now **passes the 2-minute test at ~40 seconds**
+> (§10, §11). The findings below are the baseline that drove the work, kept as written.
+
 The headline result: **the site orients you well if you come through the front door and barely at all
 if you don't** — and search engines don't use the front door.
 
@@ -179,6 +182,18 @@ No search, no breadcrumbs, no in-page "on this page" table of contents, no "next
 a corpus with several 500–1,000-line pages, each absence is felt. Run B, arriving mid-corpus from a
 search engine, had no way to tell where they were or what the site even was.
 
+**The sidebar is also part of this.** `RenderNavNode` emits every node of a source's nav tree
+expanded, always — for the .NET source that is roughly 110 links down the left of every page. The
+third walkthrough (§11) stopped using it as navigation entirely:
+
+> "On `getting-started.html` the page is telling me to make one simple choice while the left third of
+> the screen shows me Kinesis, Cosmos Change Feed, Multi-Tenancy, Sagas, and 'Deprecations &
+> removals'. I stopped using the sidebar — which is why I nearly missed the one cookbook that was
+> written for me."
+
+Collapsing nav groups to the active branch is a no-JS `<details>` change in the generator (the same
+technique the language switcher already uses), and belongs with the Phase 4 furniture.
+
 ### 2.8 Defects the walkthroughs surfaced
 
 These are ordinary bugs, not IA. Worth fixing regardless of what happens to the layering.
@@ -209,7 +224,13 @@ These are ordinary bugs, not IA. Worth fixing regardless of what happens to the 
    offered mid-way through a nine-line paragraph about something else. Run A: *"the default is the one
    that'll show up in someone's cold-start bug report."*
 
-Items 1, 3, 4 and 5 are `benzene-dotnet` issues; item 2 is in this repo.
+6. **The Lambda runtime is documented two contradictory ways.** `getting-started-aws.md` says
+   *"dotnet8 is the current managed runtime and works fine for a net10.0 project"*; the
+   `aspnet-with-sqs-and-sns` cookbook says *".NET has no managed Lambda runtime, so the function
+   ships as a self-contained executable on `provided.al2023`"*. Found on the third walkthrough:
+   *"I no longer trust the deployment sections, and I'd have to go read the repo to settle it."*
+
+Items 1 and 3–6 are `benzene-dotnet` issues; item 2 is in this repo.
 
 ### 2.9 What both runs said works — protect these
 
@@ -733,6 +754,20 @@ non-.NET developer, and someone arriving on a deep reference page.
 The baseline is recorded in §2: **PARTIAL / PARTIAL / MAYBE** through the front door, **FAIL /
 PARTIAL / YES-but-barely** from a deep link. The target is PASS / PASS from both.
 
+**First measured movement.** Re-running the deep-link persona against the rebuilt docs hub (§11)
+moved the 2-minute test from **FAIL to PASS**, and the visitor now understands Benzene *before*
+leaving the hub:
+
+> "It clicked on the landing page itself, at the bolded lede plus the hexagon diagram, inside about
+> 40 seconds. That is a real achievement for a page that isn't the front door. Critically, the docs
+> hub avoids 'hexagonal' and 'ports-and-adapters' entirely — **landing there was better than landing
+> on the home page would have been.**"
+
+That last clause is the strongest available argument for the Phase 1 home-page work: the hub's
+plain-language definition now outperforms the hero it was modelled to support. The 5-minute test
+stayed PARTIAL, exactly as predicted — it is Phase 3 that moves it, because the remaining gap is that
+no path on the site produces a running service without an AWS account.
+
 Secondary measures:
 
 - **Path length to first code.** Today: one click from the landing page (good, protect it); **five
@@ -781,6 +816,22 @@ Dated entries. Everything not listed here is still a proposal.
   muted warning).
 
 Build verified locally: 117 pages, four sources, broken-link self-check clean.
+
+**Verified by re-running the persona that failed.** The deep-link run went **2-minute test: FAIL →
+PASS**, clicking at ~40 seconds on the hub itself (§10). Two things it then flagged were fixed in the
+same pass:
+
+- **"Pick your language" over a single card read as a broken page** — *"being asked to 'pick' from a
+  set of one made me wonder whether the page was broken"*. The heading and lede now degrade with the
+  same filter the cards do: with one port wired it reads "Build it in .NET" and states plainly that
+  the other ports are early and will appear as their docs land. This was already §4.3 item 5; the
+  hub needed it first.
+- **Nothing on the hub said the project is pre-1.0**, which cost it a 2-minute-test deduction even
+  though the candour exists elsewhere on the site and both earlier runs called it a *reason to
+  trust* Benzene. A one-line note now sits under the CTA.
+
+Left for later, as scoped: the home page's tagline is now demonstrably worse than the hub's
+(Phase 1), and the ~110-link always-expanded sidebar (§2.7) is Phase 4.
 
 **Not done — blocked on repository access:**
 

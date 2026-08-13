@@ -168,6 +168,7 @@ a { color: var(--accent); }
 
 /* The hub's primary "start building" call to action, under the definition sentence. */
 .hub-cta { margin: 1.4rem 0 0; }
+.hub-note { margin: 0.8rem 0 0; color: var(--muted); font-size: 0.9rem; max-width: 720px; }
 
 /* A positive marker on a card heading (e.g. ".NET reference"), as opposed to .beta's warning. */
 .card-tag {

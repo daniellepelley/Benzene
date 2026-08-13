@@ -329,7 +329,25 @@ internal static class Layout
                <p class="hub-cta">
                  <a class="button" href="{StartHref(primary)}">Start building in {Html(primary.Label)}</a>
                </p>
+               <p class="hub-note">
+                 Benzene is pre-1.0 &mdash; packages are published as prerelease, and the docs mark
+                 anything partial or planned as such.
+               </p>
                """;
+
+        // "Pick your language" over a single card reads as a broken page, and the surrounding copy
+        // then promises a choice the build can't offer. CI's sibling-port checkouts are best-effort
+        // (see MarketingContent.Languages), so how many languages a run wires is not fixed — the
+        // copy has to degrade with the same filter the cards do.
+        var (languageHeading, languageLede) = languages.Count > 1
+            ? ("Pick your language",
+               "Benzene is one design with an idiomatic implementation per language, so the "
+               + "concepts below are the same whichever you choose.")
+            : ("Build it in " + Html(primary?.Label ?? "your language"),
+               "Benzene is defined by a language-neutral specification and implemented as idiomatic "
+               + "ports. " + Html(primary?.Label ?? "This port") + " is the reference implementation; "
+               + "Go, TypeScript and Python are early ports of the same spec and will appear here as "
+               + "their docs land.");
 
         var languageCards = string.Join("\n", languages.Select(lang =>
         {
@@ -426,11 +444,8 @@ internal static class Layout
                   <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
                 </section>
                 <section class="section">
-                  <h2>Pick your language</h2>
-                  <p class="section-lede">
-                    Benzene is one design with an idiomatic implementation per language, so the
-                    concepts below are the same whichever you choose.
-                  </p>
+                  <h2>{languageHeading}</h2>
+                  <p class="section-lede">{languageLede}</p>
                   <div class="feature-grid">
                     {languageCards}
                   </div>
