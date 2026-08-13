@@ -146,9 +146,9 @@ internal static class MarketingPages
                     + "with one line of wiring each. On serverless that normally means separate, "
                     + "trigger-locked functions."),
                 new Card("Host it unchanged",
-                    "The same <code>BenzeneStartUp</code> runs on <a href=\"dotnet/docs/hosting.html\">AWS Lambda, "
-                    + "Azure Functions, a self-hosted worker, or ASP.NET Core</a>: one application definition, "
-                    + "several ways to start it."),
+                    "Your own <code>StartUp</code> class, derived from <code>BenzeneStartUp</code>, runs on "
+                    + "<a href=\"dotnet/docs/hosting.html\">AWS Lambda, Azure Functions, a self-hosted worker, "
+                    + "or ASP.NET Core</a>: one application definition, several ways to start it."),
                 new Card("Reach the native context when you must",
                     "Abstractions don't trap you. <code>IBenzeneInvocation</code> and typed features are the "
                     + "escape hatch to the underlying platform object when a handler genuinely needs it."),

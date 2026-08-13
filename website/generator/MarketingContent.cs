@@ -104,8 +104,8 @@ internal static class MarketingContent
             "https://github.com/daniellepelley/benzene-dotnet",
             "dotnet/docs/getting-started.html",
             """
-            // StartUp is the class where UseAwsLambda(...) (shown above) is called - boot it
-            // in memory, no cloud account and no emulator:
+            // StartUp is your own class (derived from BenzeneStartUp) where host wiring like
+            // UseAwsLambda(...) above lives - boot it in memory, no cloud account or emulator:
             var host = new AwsLambdaBenzeneTestHost(
                 BenzeneTestHost.Create&lt;StartUp&gt;()
                     .WithServices(s =&gt; s.AddScoped(_ =&gt; mockGreeter.Object))

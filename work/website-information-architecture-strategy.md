@@ -972,8 +972,21 @@ minor, but a real cold-term hit.
   `UseAwsLambda(...)` (shown above) is called" — true of the code immediately above it, not an
   invented cross-reference.
 
-A second verification run (against this fix, not assumed) is in progress; its result will be
-appended here.
+**Verified — both tests now PASS.** The 5-minute test upgraded from PARTIAL to PASS: *"the single
+biggest gap between promise and delivery... it's fixed... one click to a self-contained, five-step,
+`mkdir`-to-`curl` tutorial with no platform-choice detour."*
+
+One residual nit survived: the landing page's test-host snippet says `StartUp`, while
+`architecture.html` (`MarketingPages.cs`) says `BenzeneStartUp` — technically base-class vs.
+your-own-derived-class, but two names reading as possibly-different things to someone bouncing
+between pages. Fixed directly (no further verification round spun up — the walkthrough was explicit
+that *"that's genuinely the whole list from this pass"*, so this was the only open item):
+`architecture.html`'s card now reads "Your own `StartUp` class, derived from `BenzeneStartUp`,
+runs on…", and the test-host comment stopped implying the class is visible verbatim in the snippet
+above it. Build verified locally: 117 pages, self-check clean.
+
+**Landing-page restructure is done for this pass.** Next up, per the agreed sequencing: the diagram
+work (D1, D2 — §6.5), deferred from this pass to keep it small and fast-verifying.
 
 **Not done — blocked on repository access:**
 
