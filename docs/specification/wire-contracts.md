@@ -98,6 +98,7 @@ porting author cannot tell a mandatory wire contract from a convention of one op
 | `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these and does not require them. **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
 | `x-correlation-id` | **C** | outbound | A business correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound; honouring a partner's correlation header is application middleware, not a framework contract. One convention among several — Benzene does not own this name. |
 | `_benzeneHeaders` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. Its form differs deliberately: it is a **JSON field**, so it follows the camelCase JSON convention rather than the kebab-case header one, with the leading underscore marking it reserved inside a payload the application owns. |
+| `benzene-claim-check` | **C** | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [§2.1](#21-claim-check-add-on). |
 
 `benzene-status` is **not** listed here: it is a gRPC-only trailer, specified with the gRPC mapping
 it serves in [§4.2](#42-grpc). It appeared in this table historically, which made it read as a
@@ -129,6 +130,33 @@ are normative:
 
 Binary metadata (e.g. gRPC `-bin` keys) is excluded from the dictionary in both directions.
 Duplicate keys: last value wins.
+
+### 2.1 Claim check (add-on)
+
+`benzene-claim-check` is written by an **optional** outbound middleware when a payload exceeds a
+configured size threshold, letting a large payload bypass a transport's message-size limit.
+
+- The header's value is an **opaque, URI-form reference** of the shape `scheme://location/key`,
+  issued by the sender's payload store (e.g. `s3://bucket/key`, `azblob://container/key`).
+- The message **body** of an offloaded message is **unspecified** — a consumer MUST NOT interpret
+  it directly, and MUST treat the header as authoritative.
+- A consumer with the claim-check add-on wired MUST replace the body with the stored content
+  verbatim **before** deserialization; every other header (including `content-type`) applies to
+  the **hydrated** body, not the placeholder.
+- A consumer MUST resolve a claim-check reference only through its own configured store, and MUST
+  fail the message loud — never silently skip it — when the reference cannot be resolved or lies
+  outside that store's own configuration. This is a security boundary: a consumer MUST NOT fetch
+  an attacker-supplied arbitrary location.
+- Deleting the stored payload at read time is **forbidden**. A fan-out transport (e.g. pub/sub) may
+  have multiple consumers reading the same offloaded message, and at-least-once redelivery would
+  find the blob already gone if the first reader deleted it. Retention is store-side expiry (e.g. a
+  lifecycle rule) agreed between the communicating services — not specified further here; that is
+  deployment-specific.
+
+Porting implication: Tier C means each language port adopts this add-on on its own schedule; a
+service that offloads is only interoperable with consumers that have wired the add-on and share
+access to the same store — an explicit deployment agreement, exactly like any other Tier C
+middleware.
 
 ## 3. Status vocabulary
 
