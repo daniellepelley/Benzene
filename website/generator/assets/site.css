@@ -166,6 +166,22 @@ a { color: var(--accent); }
 .hub-spec-list { columns: 2; column-gap: 2rem; margin: 1rem 0 0; }
 @media (max-width: 640px) { .hub-spec-list { columns: 1; } }
 
+/* The hub's primary "start building" call to action, under the definition sentence. */
+.hub-cta { margin: 1.4rem 0 0; }
+
+/* A positive marker on a card heading (e.g. ".NET reference"), as opposed to .beta's warning. */
+.card-tag {
+  font-size: 0.68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.08em 0.4em;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
 .content {
   flex: 1;
   min-width: 0;

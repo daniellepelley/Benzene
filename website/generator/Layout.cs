@@ -285,42 +285,76 @@ internal static class Layout
     }
 
     /// <summary>
-    /// The cross-language docs hub at docs/index.html: the headline landing that points at the
-    /// language-neutral spec and at each language port's own docs home. This is the "same idea, pick
-    /// your language" entry the marketing header's Docs link targets.
+    /// The cross-language docs hub at docs/index.html — the page the header's "Docs" link targets,
+    /// and (because search engines don't use the front door) the page a large share of visitors meet
+    /// Benzene on for the very first time.
+    /// <para>
+    /// It is therefore ordered for someone who has never heard of Benzene, not for the spec's own
+    /// audience: it must <b>say what Benzene is in its first sentence</b>, show the architecture
+    /// diagram, and put "pick your language" first. The specification comes last, under a heading
+    /// that says plainly who needs it &mdash; it is normative material for people implementing or
+    /// verifying a port, and leading with "Porting Guide" / "Conformance Fixtures" reads as an
+    /// academic standards project to a developer who just wants to write a handler. Rationale and
+    /// the cold-visitor evidence behind this ordering:
+    /// <c>work/website-information-architecture-strategy.md</c>.
+    /// </para>
     /// </summary>
     public static string RenderDocsHubPage(
         string outputPath, IReadOnlyList<DocSource> sources,
         IReadOnlyDictionary<string, List<Page>> pagesBySource, SiteOptions options)
     {
         const string hubDescription =
-            "Benzene documentation: the language-neutral specification, and per-language guides for "
-            + "building, hosting, testing and operating a Benzene service.";
+            "Benzene is a framework for message-driven services: write one message handler and reach "
+            + "it over HTTP, queues, streams and serverless functions at the same time. Guides for "
+            + "each language, and the language-neutral specification they all implement.";
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
 
         var languages = sources.Where(s => s.IsLanguage).ToList();
+
+        // The per-language "where do I actually start" page is already catalogued in
+        // MarketingContent (it is what the home page's get-started selector links to), so reuse it
+        // rather than guessing at a page title. Falling back to the source's docs home keeps a
+        // language wired only via --source from emitting a link to a page that was never generated.
+        string StartHref(DocSource lang)
+        {
+            var entry = MarketingContent.Languages.FirstOrDefault(l => l.Id == lang.Id);
+            return RepoPaths.RelativeHref(outputPath, entry?.DocsOutputPath ?? lang.HomeOutputPath);
+        }
+
+        var primary = languages.FirstOrDefault(l => !l.LandingOnly) ?? languages.FirstOrDefault();
+        var startCta = primary is null
+            ? ""
+            : $"""
+               <p class="hub-cta">
+                 <a class="button" href="{StartHref(primary)}">Start building in {Html(primary.Label)}</a>
+               </p>
+               """;
+
         var languageCards = string.Join("\n", languages.Select(lang =>
         {
             var home = RepoPaths.RelativeHref(outputPath, lang.HomeOutputPath);
-            var count = pagesBySource.TryGetValue(lang.Id, out var pages) ? pages.Count : 0;
+            // Deliberately not "N pages": a page count reads as a warning about how much there is to
+            // get through, not as a promise of what you get.
             var blurb = lang.LandingOnly
                 ? $"An early port &mdash; start with the overview, then the {Html(lang.Label)} repo."
-                : $"How to build, host, test and operate a Benzene service in {Html(lang.Label)} &mdash; {count} pages.";
-            var cta = lang.LandingOnly ? $"Open the {Html(lang.Label)} overview" : $"Open the {Html(lang.Label)} docs";
+                : $"Build your first service, host it, test it without the cloud, and run it in "
+                  + $"production &mdash; in {Html(lang.Label)}.";
+            var badge = lang.Id == "dotnet" ? " <span class=\"card-tag\">reference</span>" : "";
+            var links = lang.LandingOnly
+                ? $"<a href=\"{home}\">Open the {Html(lang.Label)} overview &rarr;</a>"
+                : $"<a href=\"{StartHref(lang)}\">Start here &rarr;</a> &middot; "
+                  + $"<a href=\"{home}\">Browse the {Html(lang.Label)} docs</a>";
             return $"""
                 <div class="feature-card">
-                  <h3>{Html(lang.Label)}</h3>
+                  <h3>{Html(lang.Label)}{badge}</h3>
                   <p>{blurb}</p>
-                  <p><a href="{home}">{cta} &rarr;</a></p>
+                  <p>{links}</p>
                 </div>
                 """;
         }));
 
-        // A section per cross-cutting source (Specification, Guides) — the shared, language-neutral
-        // material that leads the hub before the per-language docs.
-        var crossCutting = sources.Where(s => !s.IsLanguage).ToList();
-        var crossCuttingSections = string.Join("\n", crossCutting.Select(src =>
+        string CrossCuttingSection(DocSource src, string heading, string lede)
         {
             if (!pagesBySource.TryGetValue(src.Id, out var pages)) return "";
             var home = RepoPaths.RelativeHref(outputPath, src.HomeOutputPath);
@@ -328,19 +362,6 @@ internal static class Layout
                 .Where(p => !string.Equals(Path.GetFileName(p.DocRelativePath), src.NavFile, StringComparison.Ordinal))
                 .OrderBy(p => p.Title, StringComparer.Ordinal)
                 .Select(p => $"<li><a href=\"{RepoPaths.RelativeHref(outputPath, p.OutputPath)}\">{Html(p.Title)}</a></li>"));
-            var (heading, lede) = src.Id switch
-            {
-                "spec" => ("The specification",
-                    "Benzene is defined by a language-neutral specification &mdash; concepts, wire "
-                    + "contracts, transport bindings, and conformance fixtures &mdash; that every language "
-                    + "port implements. It is the same in every language."),
-                "guides" => ("Guides",
-                    "Language-neutral guides to Benzene's concepts and tooling, true for every port."),
-                "patterns" => ("Patterns",
-                    "Recurring ways of composing Benzene's core building blocks into services, the "
-                    + "same shape in every language."),
-                _ => (Html(src.Label), $"Cross-language {Html(src.Label)}."),
-            };
             return $"""
                 <section class="section">
                   <h2>{Html(heading)}</h2>
@@ -350,7 +371,31 @@ internal static class Layout
                   </ul>
                 </section>
                 """;
-        }));
+        }
+
+        // Cross-language material, split by who it is for. Guides and patterns are for people
+        // *using* Benzene, so they sit with the language docs; the spec is normative material for
+        // people *implementing* it, so it goes last.
+        var learnSections = string.Join("\n", sources
+            .Where(s => !s.IsLanguage && s.Id != "spec")
+            .Select(src => src.Id switch
+            {
+                "guides" => CrossCuttingSection(src, "Guides",
+                    "Language-neutral guides to Benzene's concepts and tooling, true for every port."),
+                "patterns" => CrossCuttingSection(src, "Patterns",
+                    "Recurring ways of composing Benzene's core building blocks into services, the "
+                    + "same shape in every language."),
+                _ => CrossCuttingSection(src, src.Label, $"Cross-language {Html(src.Label)}."),
+            }));
+
+        var specSection = string.Join("\n", sources
+            .Where(s => s.Id == "spec")
+            .Select(src => CrossCuttingSection(src, "The specification",
+                "<strong>You don't need this to build a service.</strong> Benzene is defined by a "
+                + "language-neutral specification &mdash; concepts, wire contracts, transport "
+                + "bindings, and conformance fixtures &mdash; that every language port implements. "
+                + "Read it if you're porting Benzene to a new language, verifying conformance, or "
+                + "you want the normative detail behind something in the guides.")));
 
         return $"""
             <!doctype html>
@@ -368,23 +413,30 @@ internal static class Layout
               {Header(outputPath, activeSection: "docs")}
               <main class="content marketing">
                 <section class="page-hero">
-                  <h1>Documentation</h1>
+                  <h1>Benzene documentation</h1>
                   <p class="section-lede">
-                    Start with what Benzene <em>is</em> &mdash; the language-neutral material below
-                    &mdash; then drill into the language you build in.
+                    <strong>Benzene is a framework for message-driven services.</strong> You write one
+                    message handler, and the same code is reachable over HTTP, queues, streams, and
+                    serverless functions at the same time &mdash; you add a transport in the host
+                    wiring, never in your logic.
                   </p>
+                  {startCta}
                 </section>
-                {crossCuttingSections}
+                <section class="section">
+                  <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
+                </section>
                 <section class="section">
                   <h2>Pick your language</h2>
                   <p class="section-lede">
-                    Each language port is a translation of the same spec. ".NET" is the first; more
-                    follow the same shape.
+                    Benzene is one design with an idiomatic implementation per language, so the
+                    concepts below are the same whichever you choose.
                   </p>
                   <div class="feature-grid">
                     {languageCards}
                   </div>
                 </section>
+                {learnSections}
+                {specSection}
               </main>
               {Footer()}
             </body>
@@ -502,15 +554,21 @@ internal static class Layout
             var betaNote = l.Beta
                 ? "<p class=\"beta-note\">Early port &mdash; the API is still settling. See the repo for the current state.</p>"
                 : "";
-            var primary = l.Beta
-                ? $"<a href=\"{l.RepoUrl}\">{Html(l.Label)} on GitHub &rarr;</a>"
-                : $"<a href=\"{docs}\">Full {Html(l.Label)} walkthrough &rarr;</a>";
+            // Always offer *this language's* repo. The header's GitHub link points at the
+            // cross-language home (daniellepelley/Benzene), which is not where the code in this
+            // panel lives — a reader who clicks out expecting the snippet they just read lands in
+            // the wrong repository. (The non-beta branch also used to link the same docs page twice.)
+            var links = l.Beta
+                ? $"<a href=\"{l.RepoUrl}\">{Html(l.Label)} on GitHub &rarr;</a> &middot; "
+                  + $"<a href=\"{docs}\">Docs</a>"
+                : $"<a href=\"{docs}\">Full {Html(l.Label)} walkthrough &rarr;</a> &middot; "
+                  + $"<a href=\"{l.RepoUrl}\">{Html(l.Label)} on GitHub</a>";
             return $$"""
                 <div class="gs-panel" data-lang="{{l.Id}}">
                   <p class="gs-install"><code>{{Html(l.Install)}}</code></p>
                   <pre><code>{{l.Code}}</code></pre>
                   {{betaNote}}
-                  <p class="gs-links">{{primary}} &middot; <a href="{{docs}}">Docs</a></p>
+                  <p class="gs-links">{{links}}</p>
                 </div>
                 """;
         }));

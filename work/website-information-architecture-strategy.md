@@ -1,6 +1,7 @@
 # Website information architecture — reducing cognitive load
 
-**Status:** proposal, not yet actioned. Nothing in this document has been implemented.
+**Status:** living. Phase 0 is partly done and Phase 1's docs-hub rebuild has shipped — see the
+implementation log (§12). Everything else remains a proposal.
 **Scope:** the public site ([benzene.app](https://benzene.app)) — its layering, navigation, visual
 language, page templates, and the generator changes needed to support them. Some of the work lands in
 `benzene-dotnet`, not this repo; that is called out where it applies.
@@ -668,13 +669,13 @@ content edits, not code.
 Ordered by value per unit of effort. Each phase is independently shippable.
 
 **Phase 0 — Unblock and de-bug.** Fix the two dangling anchors so the site builds at all (§2.8, item
-1); fix the hero GitHub target; raise the wiring-model contradiction (item 3) with the .NET port
-owners. Hours, not days.
+1); fix the GitHub link so it points at the repo the code beside it lives in; raise the wiring-model
+contradiction (item 3) with the .NET port owners. Hours, not days.
 
 **Phase 1 — Signposting (this repo only, no new content).** Docs hub rebuild first — it is the page
 both cold runs said would lose them. Then header nav, home-page reorder, tagline and "Ports" fixes.
 Delivers most of the 2-minute-test improvement. *Caveat: **Start** points at the existing
-`getting-started.html` until Phase 2.*
+`getting-started.html` until Phase 3.*
 
 **Phase 2 — Diagrams D1–D3, and the demo screenshots (D4).** Deliberately early, ahead of the Start
 section: the cold runs show pictures carrying more of the explaining load than any copy change, and D4
@@ -749,7 +750,52 @@ Secondary measures:
 
 ---
 
-## 11. Sources
+## 11. Implementation log
+
+Dated entries. Everything not listed here is still a proposal.
+
+### 2026-08-13 — Phase 0 (partial) and the Phase 1 docs-hub rebuild
+
+**Shipped in this repo:**
+
+- **Docs hub rebuilt** (`Layout.RenderDocsHubPage`) per §4.4 — the highest-priority item on the list,
+  and the page both cold runs said would have ended their visit:
+  - opens with a **definition sentence** naming the noun ("Benzene is a framework for message-driven
+    services") and the payoff, with no *hexagonal*, *ports-and-adapters* or *topic* in it;
+  - carries the **architecture diagram**, which previously appeared only on the landing page a
+    deep-linked visitor never sees;
+  - a **"Start building in .NET"** button directly under the definition;
+  - **"Pick your language" moved from last to first**, with each card offering "Start here →" and
+    "Browse the docs" separately, and the .NET card tagged *reference*. Cards no longer advertise a
+    page count — "83 pages" read as a deterrent;
+  - **Guides and patterns** next (material for people *using* Benzene);
+  - **the specification last**, under a lede that opens *"You don't need this to build a service"*
+    and says who does.
+  - The per-language start link reuses `MarketingContent.Languages[].DocsOutputPath` — already the
+    source of truth for the home page's selector — with a fallback to the source's docs home, so a
+    language wired only via `--source` can't emit a link to a page that was never generated.
+- **The get-started panel now links the language's own repo** (§2.8, item 2). The header's GitHub
+  link points at the cross-language home, which is not where the snippet beside it lives. This also
+  fixes a pre-existing duplicate: the non-beta branch linked the same docs page twice.
+- **CSS:** `.hub-cta`, and `.card-tag` (an accent-coloured positive marker, as opposed to `.beta`'s
+  muted warning).
+
+Build verified locally: 117 pages, four sources, broken-link self-check clean.
+
+**Not done — blocked on repository access:**
+
+- **The two dangling anchors that currently fail the site build** (§2.8, item 1) are in
+  `benzene-dotnet/docs/index.md`, which this session can read but not push to. **The website deploy
+  is red until someone fixes them:** the links should be
+  `client-sdks.md#controlling-the-generated-namespace-with---namespace` and
+  `client-sdks.md#scoping-generation-with---topics` (triple hyphen — the headings end in
+  `` `--namespace` `` / `` `--topics` ``). Everything above was verified against a locally patched
+  checkout.
+- **The wiring-model contradiction** (§2.8, item 3), the topic-separator inconsistency (item 4) and
+  the `UseMessageHandlers()` default (item 5) are all `benzene-dotnet` issues. The first is a product
+  question for the .NET port owners, not a docs edit.
+
+## 12. Sources
 
 **Microsoft Learn / Azure**
 - [Azure developer documentation](https://learn.microsoft.com/en-us/azure/developer/)
