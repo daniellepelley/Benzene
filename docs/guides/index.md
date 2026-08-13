@@ -9,3 +9,7 @@ the normative [specification](../specification/index.md). Each guide explains an
 - [Mesh UI](mesh-ui.md) — the one cross-language web page for reviewing a Benzene estate (what each
   service does, topics, payloads, versions, drift, topology, usage, health), its data contract, and
   how every language port and the website vendor the single canonical copy
+- [Observability Conventions](observability-conventions.md) — the shared metric and span vocabulary
+  every port emits, so usage feeds, mesh read models, and dashboards work across a polyglot estate
+- [Exporting Telemetry](exporting-telemetry.md) — getting Benzene's traces and metrics into Datadog,
+  Grafana, or any other backend, and why OTLP is the integration rather than per-vendor plugins

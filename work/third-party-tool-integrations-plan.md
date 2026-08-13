@@ -20,78 +20,94 @@ Suggested reviewer per WP names the matching product-owner agent persona from
 ### Sequencing
 
 ```
-WP0 (metric-name convention) ──► WP4 (Grafana pack) ──► (later) WP6 (Datadog mesh source)
-WP1 (Datadog cookbook)        — no dependencies; do first
-WP2 (Roslyn analyzers)        — no dependencies
-WP3 (profile-check Action)    — no dependencies
-WP5 (Datadog Agent check)     — no dependencies (benefits from WP1 landing first for docs links)
-WP7 (VS Code extension)       — no dependencies; after WP1–WP3 on value ranking
+WP0 (metric-name convention) ✅ done here │ follow-through in benzene-go / -dotnet / -ts / -python
+WP1 (Datadog cookbook)       ◐ guide done here │ .NET cookbook outstanding in benzene-dotnet
+WP2 (Roslyn analyzers)        — no dependencies; benzene-dotnet
+WP3 (profile-check Action)    — no dependencies; new repo
+WP4 (Grafana pack)            — WP0 ratified first
+WP5 (Datadog Agent check)     — no dependencies; new repo
+WP6 (Datadog mesh source)     — after WP0 + benzene-dotnet enterprise slice-0/1 pre-work
+WP7 (VS Code extension)       — no dependencies; after WP2/WP3 on value ranking
 WP8 (Backstage provider)      — BLOCKED: wait for the enterprise-readiness collector/host slices
 ```
 
-Recommended pickup order: **WP1 → WP2 → WP3 → WP0 → WP4 → WP5**, then WP6/WP7 as appetite
-allows. WP8 stays parked until its trigger fires.
+Remaining pickup order: **WP2 → WP3 → WP0-follow-through (benzene-go especially — it carries
+three live defects) → WP1's .NET cookbook → WP4 → WP5**, then WP6/WP7 as appetite allows. WP8
+stays parked until its trigger fires.
+
+**Getting the other repos.** All four port repos clone cleanly from this environment, so the
+"verify the assumption first" task in each WP is doable rather than aspirational:
+`git clone --depth 1 https://github.com/daniellepelley/benzene-dotnet.git` (likewise
+`-go`, `-typescript`, `-python`). The website generator also needs one:
+`--dotnet-docs <benzene-dotnet>/docs` is **required**, not optional.
 
 ---
 
-## WP0 — Settle the cross-port usage-metric convention
+## WP0 — Settle the cross-port usage-metric convention ✅ DONE (2026-08-13, this repo's half)
 
-**Goal:** one documented, language-neutral name/shape for the Benzene OTel metrics (at minimum
-the processed-messages counter currently emitted by .NET as `benzene.messages.processed`), so
-dashboards and metrics-store readers don't fracture per port.
-**Home:** this repo (the documented home is the deliverable — likely a short
-`docs/specification/` or `docs/guides/` observability-conventions page; deliberately **not**
-normative mesh-spec material, per [mesh-enterprise-readiness.md](mesh-enterprise-readiness.md) §5).
-**Reviewer:** observability-product-owner (decision owner), mesh-product-owner (consumer).
+**Delivered:** [`docs/guides/observability-conventions.md`](../docs/guides/observability-conventions.md),
+linked from the guides nav. Status on the page is PROPOSED v0.1 pending
+observability-product-owner ratification.
 
-Tasks:
-1. Inventory what each port emits today: grep benzene-dotnet for `benzene.messages.processed`
-   and any other `benzene.*` meter/counter names, and check go/typescript/python ports for any
-   metric emission at all.
-2. Decide the convention: metric names, units, and the attribute set (candidate attributes:
-   `topic`, `version`, `status`, `transport`, `service`). Follow OTel semantic-convention
-   naming rules (dot-separated, lowercase). Include the duration histogram if one exists.
-3. Write the conventions page: name, instrument type, unit, required/optional attributes, and
-   an explicit "additive changes only" stability note. State that it is a cross-port
-   *convention*, not a wire contract, and why (spec tautness).
-4. File follow-up issues (or notes) in each port repo to align emission with the page.
+**What the inventory found** (verified against all four ports' `main`, 2026-08-13 — the audit is
+§5 of the page): the fracture this WP was created to prevent has **already happened**, and is not
+cosmetic.
 
-Acceptance: the page exists, is linked from the mesh enterprise-readiness note's §5 gap, and
-names every metric the CloudWatch/App Insights usage sources currently read back.
-Do NOT: put this in `mesh.md` as normative text; rename existing .NET metrics in the same
-change (alignment is per-port follow-up work).
+- .NET and TypeScript agree exactly: `benzene.messages.processed` / `benzene.message.duration`,
+  attributed `topic`/`transport`/`result`, spans stamped `benzene.topic`/`benzene.version`/
+  `benzene.status`/`benzene.transport`.
+- Go diverges on every axis: `benzene.invocations` / `benzene.invocation.duration`, attributed
+  `benzene.topic`/`benzene.topic.version`/`benzene.status`, no transport attribute anywhere.
+- Python emits nothing (no diagnostics module).
+- .NET already had a written standard for this in its own `docs/mesh-usage-feed.md` §1 — so the
+  convention page is a **promotion of an existing .NET-local standard to a cross-port home**,
+  not an invention. That framing is what makes the .NET/TS vocabulary the natural winner.
+
+**Three live defects surfaced** (all Go-side, all silent):
+1. A Go service's topic version never reaches a .NET-hosted mesh — the Tempo/Jaeger/X-Ray trace
+   sources read `benzene.version`; Go stamps `benzene.topic.version`. Cross-language fleets are a
+   shipped scenario, so this is reachable today and shows as a blank column, not an error.
+2. Go services cannot answer "over which transports" — no transport attribute on metrics or
+   spans — making Mesh UI requirement 3 structurally unanswerable for them.
+3. Go's counter is attributed by raw status rather than the collapsed `result` vocabulary, so Go
+   and .NET services can't be summed into one usage series even after instrument names align.
+
+**Remaining WP0 follow-through (not done here, deliberately — different repos):**
+- **benzene-go**: the §6 alignment actions. The span-attribute rename (`benzene.topic.version` →
+  `benzene.version`) plus adding `benzene.transport` fixes silent data loss and should not wait
+  for the instrument rename; the instrument/attribute realignment can carry both names for one
+  release.
+- **benzene-dotnet / benzene-typescript**: no behaviour change; point `Benzene.Diagnostics` at
+  the shared page and retire the .NET-local copy of the standard in `docs/mesh-usage-feed.md` §1
+  so the two cannot drift.
+- **benzene-python**: implement to the page when a diagnostics module is added.
+- Ratify the page (observability-product-owner) and drop its PROPOSED status.
+
+Do NOT: put this in `mesh.md` as normative text (it isn't a wire contract and no fixture can
+pin it); rename the .NET/TS instruments (they hold the install base — that is the whole
+rationale for the direction of alignment).
 
 ---
 
-## WP1 — Datadog (and friends) OTLP cookbook
+## WP1 — Datadog (and friends) OTLP cookbook ◐ PARTLY DONE (2026-08-13, this repo's half)
 
-**Goal:** a "Benzene → Datadog" guide proving Benzene services light up Datadog APM/service
-maps with zero Benzene-side code, establishing the "OTLP is the integration" position.
-**Home:** language-neutral concept page in this repo (`docs/guides/` — sits beside
-`code-generation.md`); the runnable per-port cookbook belongs in benzene-dotnet's docs
-(mirroring its existing `distributed-tracing-opentelemetry` cookbook), which the website
-already stitches in.
-**Reviewer:** observability-product-owner; dx-champion for the walkthrough quality.
+**Delivered:** [`docs/guides/exporting-telemetry.md`](../docs/guides/exporting-telemetry.md),
+linked from the guides nav. States the position ("OTLP is the integration; Benzene ships no
+vendor exporters and intends to ship none"), tables the four supported Datadog routes with
+links, says what to facet on once data lands (`benzene.topic`, `benzene.status`,
+`benzene.transport`, `result`), and generalizes to every other backend. Website build green
+(119 pages, broken-link self-check passed) — build it with
+`dotnet run --project website/generator -- --out website/dist --dotnet-docs <benzene-dotnet>/docs`;
+the generator **requires** a .NET docs path and errors without one.
 
-Tasks:
-1. Read benzene-dotnet's `docs/cookbooks/distributed-tracing-opentelemetry.md` to match its
-   structure and OTel wiring idiom.
-2. Write the .NET cookbook: `Benzene.OpenTelemetry` setup → OTLP exporter → the three supported
-   Datadog paths (OTLP ingest in the Datadog Agent; OTel Collector + Datadog exporter; direct
-   OTLP intake), with one worked path end-to-end and the other two summarized with links.
-   Show which Benzene span attributes (topic, version, status) to facet on in Datadog, with a
-   screenshot or described expected result.
-3. Write the short language-neutral guide page here: the position (OTel-native, exporter-
-   agnostic, no per-vendor exporters), linking to each port's cookbook and noting the same
-   recipe covers New Relic / Honeycomb / Dynatrace / Grafana Cloud by swapping the endpoint.
-4. Add the guide to `docs/guides/index.md` nav; run the website generator
-   (`dotnet run --project website/generator -- --out website/dist`) — the broken-link
-   self-check must pass.
+**Remaining (benzene-dotnet, not done here):** the runnable .NET cookbook —
+`docs/cookbooks/datadog-otlp.md` beside the existing `distributed-tracing-opentelemetry.md` and
+`custom-metrics-opentelemetry.md` (both already present, and the structural model to copy).
+One Datadog route worked end-to-end with real `Benzene.OpenTelemetry` wiring, the other three
+summarized. If egress blocks live verification against a Datadog endpoint, mark it untested in
+the doc's status line — house precedent is the standing Tempo caveat in
+`.claude/PRODUCT_OWNERS.md`. Then link it from the guide page's per-port list.
 
-Acceptance: website builds green with the new guide reachable from the guides nav; the .NET
-cookbook has been verified against a real or clearly-marked-untested Datadog endpoint (if
-network egress blocks live verification, say so in the doc's status line — house precedent:
-the Tempo caveat in `.claude/PRODUCT_OWNERS.md`).
 Do NOT: add any Datadog-specific exporter code; promise vendor features not reachable via OTLP.
 
 ---
