@@ -72,11 +72,42 @@ cosmetic.
 3. Go's counter is attributed by raw status rather than the collapsed `result` vocabulary, so Go
    and .NET services can't be summed into one usage series even after instrument names align.
 
-**Remaining WP0 follow-through (not done here, deliberately — different repos):**
-- **benzene-go**: the §6 alignment actions. The span-attribute rename (`benzene.topic.version` →
-  `benzene.version`) plus adding `benzene.transport` fixes silent data loss and should not wait
-  for the instrument rename; the instrument/attribute realignment can carry both names for one
-  release.
+**benzene-go: DONE (2026-08-13).** Branch `claude/observability-conventions-alignment` pushed to
+`daniellepelley/benzene-go` (not merged — no PR opened per this session's no-unrequested-PR
+policy; open one when ready). `diagnostics/diagnostics.go` now:
+- renames the span attribute `benzene.topic.version` → `benzene.version` (the silent-data-loss
+  fix — this is the key the shipped Tempo/Jaeger/X-Ray trace sources actually read);
+- renames the metric instruments to `benzene.messages.processed`/`benzene.message.duration` and
+  their attributes to `topic`/`transport`/`result`, implementing the `result` collapse rule
+  (`success`/raw-status/`exception`/`<missing>`) via the same `resultSuccessful`-optional-
+  interface idiom used elsewhere in this Go module;
+- sets the span's `benzene.status` to `exception` when a pipeline error escapes past the
+  middleware's position (previously left at whatever `ic.Result` happened to hold, or empty) —
+  matching .NET's `ActivityMiddlewareDecorator` and closing a fourth divergence found while
+  implementing, not in the original audit;
+- done as a **clean rename, not a dual-emission migration** — pre-1.0, and the project's stated
+  position is to avoid compat shims when the code can just change;
+- `transport` is honestly emitted as `<missing>` rather than invented: **investigated and found
+  that benzene-go has no `ICurrentTransport`-equivalent anywhere** — no transport binding
+  records its identity anywhere `InvocationContext`-reachable code can read it back, not even on
+  the mesh's own `TraceEvent`. Adding a real value needs new cross-cutting plumbing (every
+  binding's `Use<Transport>` constructor would need to stamp identity somewhere resolvable),
+  which is a separate, larger piece of work — flagged in the package doc comment rather than
+  attempted here or faked with a placeholder that looks like real data.
+- 100% test coverage maintained (new tests for the exception path, the `<missing>`-result path,
+  and the narrow `SetResult(status:"", successful:false)` → `"failure"` edge case); `gofmt`/`go
+  vet`/`go build`/`go test -race -cover` all clean on the `diagnostics` module and the root
+  module.
+- Four docs updated to match (`README.md`, `docs/middleware.md`, `docs/getting-started-aws.md`,
+  `examples/opentelemetry-helloworld/README.md`).
+
+**New follow-up surfaced, not in original scope**: a real `benzene.transport`/metric-`transport`
+value needs a transport-identity concept added to benzene-go's core (`InvocationContext` or a
+context-carried accessor, set by each `Use<Transport>` binding constructor) before any port can
+close that gap. Worth its own WP if the mesh usage-by-transport view over Go services matters
+before a wider core change is otherwise planned.
+
+**Remaining WP0 follow-through (different repos):**
 - **benzene-dotnet / benzene-typescript**: no behaviour change; point `Benzene.Diagnostics` at
   the shared page and retire the .NET-local copy of the standard in `docs/mesh-usage-feed.md` §1
   so the two cannot drift.
