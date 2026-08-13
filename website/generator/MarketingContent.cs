@@ -76,11 +76,17 @@ internal static class MarketingContent
     /// "Start building" button sends an undecided visitor &mdash; a cold walkthrough hit
     /// <see cref="DocsOutputPath"/>'s platform-choice router instead of code and called that the
     /// site's biggest promise-vs-delivery gap; null falls back to <see cref="DocsOutputPath"/> for a
-    /// port with no fast, cloud-free path documented yet. For .NET this is the local ASP.NET Core
-    /// guide, not the platform router's own AWS Lambda recommendation &mdash; per
-    /// work/website-information-architecture-strategy.md §4.5, only the no-cloud-account path can
-    /// honestly promise five minutes to an undecided reader; AWS remains the best *demonstration* of
-    /// the value proposition and stays one click away from there.
+    /// port with no fast, cloud-free path documented yet.
+    /// <para>
+    /// For .NET this is the AWS Lambda guide, per explicit maintainer direction (2026-08-13,
+    /// work/website-information-architecture-strategy.md §4.5 implementation log): the earlier
+    /// choice was the local ASP.NET Core guide, the only path that can honestly promise five minutes
+    /// to an undecided reader, but that guide's own quickstart wires HTTP alone and doesn't show off
+    /// the reason to choose Benzene at all. The AWS guide now wires the same handler to both API
+    /// Gateway (HTTP) and SQS in its main walkthrough, not just as a later reference section, so
+    /// defaulting to it leads with the multi-transport pitch at the cost of the five-minute,
+    /// no-cloud-account claim.
+    /// </para>
     /// </summary>
     public sealed record LanguageStart(
         string Id, string Label, bool Beta, string Install, string Code, string RepoUrl,
@@ -119,7 +125,7 @@ internal static class MarketingContent
 
             var response = await host.SendApiGatewayAsync(request);
             """,
-            "dotnet/docs/getting-started-aspnet.html"),
+            "dotnet/docs/getting-started-aws.html"),
 
         new("go", "Go", true,
             "go get github.com/daniellepelley/benzene-go",

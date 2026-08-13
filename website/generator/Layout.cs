@@ -56,8 +56,10 @@ internal static class Layout
         // information-architecture strategy calls for (work/website-information-architecture-
         // strategy.md §4.5) — that doesn't exist yet. A cold walkthrough sent to DocsOutputPath
         // hit that page's own platform-choice router instead of code and called it the site's
-        // biggest promise-vs-delivery gap, so this prefers QuickstartOutputPath (a fast, cloud-free
-        // path) where one is documented, falling back to DocsOutputPath for a port without one yet.
+        // biggest promise-vs-delivery gap, so this prefers QuickstartOutputPath — the guide that
+        // best demonstrates Benzene's actual pitch (per maintainer direction, see
+        // MarketingContent.LanguageStart's doc comment) — where one is documented, falling back to
+        // DocsOutputPath for a port without one yet.
         var primaryLanguage = languages.FirstOrDefault(l => !l.Beta) ?? languages.FirstOrDefault();
         var startHref = primaryLanguage is null
             ? docsHome
@@ -173,7 +175,7 @@ internal static class Layout
                 <section class="section">
                   <h2>Built for production, not just prototypes</h2>
                   <p class="section-lede">
-                    The quickstart is five minutes; the reason to adopt Benzene is what happens
+                    The quickstart above is the pitch; the reason to adopt Benzene is what happens
                     after. Three deeper looks, for whoever is asking the question:
                   </p>
                   <div class="feature-grid">
@@ -344,8 +346,8 @@ internal static class Layout
         string StartHref(DocSource lang)
         {
             var entry = MarketingContent.Languages.FirstOrDefault(l => l.Id == lang.Id);
-            // Prefer a fast, cloud-free quickstart over the platform-choice router (same rationale
-            // as the home hero's "Start building" button, right above).
+            // Prefer the guide that best demonstrates Benzene's pitch over the platform-choice
+            // router (same QuickstartOutputPath the home hero's "Start building" button uses).
             return RepoPaths.RelativeHref(
                 outputPath, entry?.QuickstartOutputPath ?? entry?.DocsOutputPath ?? lang.HomeOutputPath);
         }

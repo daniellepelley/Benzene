@@ -1101,6 +1101,57 @@ whole design is "ships the exact bytes you reviewed on dev."
 Build verified locally: 117 pages carry the toggle (confirmed by direct count), the 82 redirect stubs
 correctly don't, self-check clean.
 
+### 2026-08-13 (later still) — "Start building" reverts to AWS Lambda, per explicit maintainer override
+
+The maintainer directly overrode §4.5's earlier reasoning: *"When you click on 'Start building', it
+should default to AWS Lambda. And when you are on the AWS Lambda quick guide, it only shows API
+Gateway, HTTP, but it should show a service consuming from HTTP via API Gateway and SQS in one
+solution because then it demonstrates two transports one message handler. If it just does the one,
+it just doesn't show off its capability."*
+
+This is a deliberate trade: §4.5's original case for defaulting to the local ASP.NET Core guide was
+that only a no-cloud-account path can honestly promise five minutes to an undecided visitor. The
+maintainer's judgement is that showing the actual differentiator matters more than that claim, for a
+button whose whole job is to convince someone to care. Implemented as instructed, not re-litigated —
+this is the maintainer's call to make, and the historical reasoning stays in the code comments
+(`MarketingContent.LanguageStart`'s doc comment) as a record of what changed and why, not deleted.
+
+**Two changes, verified rather than assumed:**
+
+1. **`QuickstartOutputPath`** for .NET changed from `getting-started-aspnet.html` to
+   `getting-started-aws.html` — both the home hero's "Start building" and the docs hub's "Start
+   building in .NET" use this field, so both moved together. The now-inaccurate landing-page line
+   *"The quickstart is five minutes"* was also caught and corrected (*"The quickstart above is the
+   pitch"*) — leaving a maturity claim it can no longer honestly make would have undercut exactly the
+   candour every cold-developer run has credited as a trust-builder.
+2. **`benzene-dotnet/docs/getting-started-aws.md`** — the guide itself only wired HTTP in its main
+   walkthrough despite its own intro promising SQS and SNS too; the multi-transport story existed
+   only in a reference section past where a first-time reader stops. Rewrote step 4 (wires `UseSqs`
+   alongside `UseApiGateway` on the same handler), step 6 (the in-memory test now exercises both
+   transports on the same host), and step 7 (the SAM template gains the SQS queue/event/policy,
+   mirroring the pattern already used in `examples/Aws/Benzene.Examples.Aws/template.yaml`, plus a
+   real post-deploy verification of both paths). While in the template, also fixed the stale
+   `dotnet8` runtime to `dotnet10`, matching that same reference example and closing the
+   `dotnet8`/`dotnet10` contradiction flagged earlier in this doc (§2.8 item 6).
+
+**This is where actually running the toolchain earned its keep, not just reading markdown.** The
+guide's own CI has a real check (`DocSnippetCompiler` + `AwsQuickstartRunsTest` in
+`benzene-dotnet/test`) that extracts every `<!-- compile: quickstart -->`-tagged code block from the
+page, compiles them together, and *runs* the result through the real Benzene pipeline — built
+specifically because a prior guide had compiled cleanly while throwing at runtime on a missing
+`.AddBenzene()`. Running `dotnet test` locally against the edit caught two real mistakes before they
+shipped: a missing `using Benzene.Aws.Lambda.Sqs;` in step 4 (compile error), and — after fixing
+that — a `CS1973` on the extended test itself (`dynamic` arguments can't be dispatched through
+extension-method call syntax; fixed by calling `SendSqsAsync` in its static form, per the compiler's
+own suggested fix). `AwsQuickstartRunsTest` was extended to assert the SQS path too, not just HTTP,
+reusing the identical compiled-from-markdown `StartUp`/`HelloWorldRequest` types the existing HTTP
+assertion already uses. Full local run: this test and the rest of `Benzene.Test.Docs` pass, 9/9.
+
+Shipped as `benzene-dotnet#21` (merged to main) and this repo's own commit. Website build re-verified
+locally: 117 pages, self-check clean, both CTAs confirmed pointing at `getting-started-aws.html`. A
+cold-developer verification of the full change (click-through, not just confirming the link target)
+is running; its result will be appended here.
+
 **Not done — blocked on repository access:**
 
 - **The two dangling anchors that currently fail the site build** (§2.8, item 1) are in
