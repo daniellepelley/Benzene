@@ -17,29 +17,7 @@ of one system.
 
 ## The system
 
-```
-  MARKET DATA ─►┌───────────────────┐  bar:closed  ┌───────────────────┐
-  (Kinesis)     │  Market-Data      │─────────────►│  Valuation        │  position:revalued
-   ticks, by    │  Aggregator       │   (event)    │  Service          │─────────────┐
-   symbol/shard │  [stream]         │              │  [choreography]   │             │
-               └───────────────────┘              └───────────────────┘             ▼
-                                                            ▲              ┌───────────────────┐
-  desks ──gRPC──►┌───────────────────┐                      │              │  Risk Read Models │
-  (low-latency)  │  Pricing Service  │                      │              │  [CQRS]           │
-                 │  [gRPC streaming] │                      │              │  positions, P&L,  │
-                 └───────────────────┘                      │              │  exposure, VaR    │
-                                                            │              └───────────────────┘
-  schedule ─────►┌───────────────────┐  risk:shard × N      │                       ▲
-  (end of day)   │  Risk Coordinator │──────────────────────┘                       │ risk:completed
-                 │  [map-reduce]     │◄── partial risk vectors                       │
-                 └───────────────────┘                                              │
-                          │  every trade/cash/fee command                            │
-                          ▼                                                          │
-                 ┌───────────────────┐   ledger:INSERT (CDC)                         │
-                 │  Trade Ledger     │─────────────────────────────────────────────►┘
-                 │  [event sourcing] │   immutable, ordered, audited event log
-                 └───────────────────┘
-```
+![Reference real-time risk platform: Market-Data Aggregator streams to Valuation Service, which choreographs an event to Risk Read Models; Pricing Service serves desks over gRPC; a scheduled Risk Coordinator map-reduces across trades, writes to the Trade Ledger, and reports completion to Risk Read Models; the Trade Ledger also feeds Risk Read Models via change-data-capture.](diagrams/reference-real-time-risk-shape.svg)
 
 Six services, each a plain Benzene service targeting the
 [Cloud Service Profile](../specification/cloud-service-profile.md), each owning its own data

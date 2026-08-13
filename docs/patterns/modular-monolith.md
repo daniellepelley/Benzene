@@ -35,22 +35,7 @@ its own [middleware pipeline](../specification/core-concepts.md), its own data. 
 each other's code — a module reaches another module the only way any Benzene caller reaches any
 Benzene service: **by topic**, through the sender, resolved by the routing table.
 
-```
-             ┌────────────────────────────────────────────────────────────┐
-   HTTP ───► │                       ONE PROCESS                          │
-   queue ──► │                                                            │
-             │  ┌────────────┐    ┌────────────┐    ┌────────────┐        │
-             │  │  ORDERS    │    │  BILLING   │    │  SHIPPING  │        │
-             │  │  handlers  │    │  handlers  │    │  handlers  │        │
-             │  │  pipeline  │    │  pipeline  │    │  pipeline  │        │
-             │  │  own data  │    │  own data  │    │  own data  │        │
-             │  └─────┬──────┘    └─────▲──────┘    └─────▲──────┘        │
-             │        │ send("billing:charge", …)         │               │
-             │        └─────────────────┴─────────────────┘               │
-             │        topic-addressed, via the routing table              │
-             │        (routes resolve in process — for now)               │
-             └────────────────────────────────────────────────────────────┘
-```
+![Modular monolith: one process containing Orders, Billing, and Shipping modules, each with its own handlers, pipeline, and data, addressing each other only by topic through the in-process routing table.](diagrams/modular-monolith-shape.svg)
 
 Three properties make this a *modular* monolith rather than a monolith with folders:
 

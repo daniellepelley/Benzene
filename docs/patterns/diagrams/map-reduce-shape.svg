@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 380" role="img" aria-label="Map-reduce: a coordinator splits a dataset into shards, scatters a job per shard to bounded worker services, then gathers and reduces the partial results.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-line-dashed { stroke: #c7c7c7; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 11px sans-serif; }
+  .dp-box-tag { fill: #2f6f4e; font: 700 10px sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-outer { fill: none; stroke: #d8d8d8; stroke-width: 2; stroke-dasharray: 6 4; }
+  .dp-outer-label { fill: #5a5a5a; font: 700 12px sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-edge-label { fill: #4a4a4a; font: 11px sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-line-dashed { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-box-tag { fill: #6fcf9a; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-outer { stroke: #3a3d42; }
+    .dp-outer-label { fill: #a3a3a3; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+    .dp-edge-label { fill: #c2c2c2; }
+  }
+  .dp-label-bg { fill: #ffffff; }
+  @media (prefers-color-scheme: dark) { .dp-label-bg { fill: #14161a; } }
+</style>
+<rect x="260" y="20" width="400" height="96" rx="10" class="dp-accent"/>
+<text x="460" y="50" text-anchor="middle" class="dp-accent-label">COORDINATOR</text>
+<text x="460" y="70" text-anchor="middle" class="dp-accent-sublabel">1. split dataset into shards</text>
+<text x="460" y="86" text-anchor="middle" class="dp-accent-sublabel">2. scatter a job per shard  3. gather + reduce</text>
+<line x1="40" y1="68" x2="256" y2="68" class="dp-line"/>
+<polygon points="252,62 252,74 260,68" class="dp-arrow"/>
+<text x="40" y="52" text-anchor="start" class="dp-caption-strong">trigger</text>
+<text x="40" y="90" text-anchor="start" class="dp-caption">(schedule / API)</text>
+<rect x="80" y="220" width="120" height="62" rx="8" class="dp-box"/>
+<text x="140" y="247" text-anchor="middle" class="dp-box-label">worker</text>
+<text x="140" y="267" text-anchor="middle" class="dp-box-sublabel">compute 1 shard</text>
+<line x1="130" y1="120" x2="130" y2="216" class="dp-line"/>
+<polygon points="124,212 136,212 130,220" class="dp-arrow"/>
+<line x1="150" y1="216" x2="150" y2="120" class="dp-line-dashed"/>
+<polygon points="144,128 156,128 150,120" class="dp-arrow"/>
+<rect x="240" y="220" width="120" height="62" rx="8" class="dp-box"/>
+<text x="300" y="247" text-anchor="middle" class="dp-box-label">worker</text>
+<text x="300" y="267" text-anchor="middle" class="dp-box-sublabel">compute 1 shard</text>
+<line x1="290" y1="120" x2="290" y2="216" class="dp-line"/>
+<polygon points="284,212 296,212 290,220" class="dp-arrow"/>
+<line x1="310" y1="216" x2="310" y2="120" class="dp-line-dashed"/>
+<polygon points="304,128 316,128 310,120" class="dp-arrow"/>
+<rect x="400" y="220" width="120" height="62" rx="8" class="dp-box"/>
+<text x="460" y="247" text-anchor="middle" class="dp-box-label">worker</text>
+<text x="460" y="267" text-anchor="middle" class="dp-box-sublabel">compute 1 shard</text>
+<line x1="450" y1="120" x2="450" y2="216" class="dp-line"/>
+<polygon points="444,212 456,212 450,220" class="dp-arrow"/>
+<line x1="470" y1="216" x2="470" y2="120" class="dp-line-dashed"/>
+<polygon points="464,128 476,128 470,120" class="dp-arrow"/>
+<rect x="560" y="220" width="120" height="62" rx="8" class="dp-box"/>
+<text x="620" y="247" text-anchor="middle" class="dp-box-label">worker</text>
+<text x="620" y="267" text-anchor="middle" class="dp-box-sublabel">compute 1 shard</text>
+<line x1="610" y1="120" x2="610" y2="216" class="dp-line"/>
+<polygon points="604,212 616,212 610,220" class="dp-arrow"/>
+<line x1="630" y1="216" x2="630" y2="120" class="dp-line-dashed"/>
+<polygon points="624,128 636,128 630,120" class="dp-arrow"/>
+<rect x="720" y="220" width="120" height="62" rx="8" class="dp-box"/>
+<text x="780" y="247" text-anchor="middle" class="dp-box-label">worker</text>
+<text x="780" y="267" text-anchor="middle" class="dp-box-sublabel">compute 1 shard</text>
+<line x1="770" y1="120" x2="770" y2="216" class="dp-line"/>
+<polygon points="764,212 776,212 770,220" class="dp-arrow"/>
+<line x1="790" y1="216" x2="790" y2="120" class="dp-line-dashed"/>
+<polygon points="784,128 796,128 790,120" class="dp-arrow"/>
+<rect x="276" y="137" width="368" height="42" rx="4" class="dp-label-bg"/>
+<text x="460" y="154" text-anchor="middle" class="dp-edge-label">scatter: SendAsync("valuation:shard", &#8230;) &#215; N</text>
+<text x="460" y="170" text-anchor="middle" class="dp-edge-label">(bounded fan-out)</text>
+<rect x="378.4" y="189" width="163.2" height="42" rx="4" class="dp-label-bg"/>
+<text x="460" y="206" text-anchor="middle" class="dp-edge-label">gather: partial results</text>
+<text x="460" y="222" text-anchor="middle" class="dp-edge-label">returned and reduced</text>
+<text x="460" y="322" text-anchor="middle" class="dp-caption">Each worker: compute one shard, return a partial result &#8212; the coordinator folds them into the answer.</text>
+</svg>

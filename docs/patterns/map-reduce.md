@@ -42,20 +42,7 @@ what the helper does.
 A **coordinator** service owns the map-reduce; the **workers** are ordinary Benzene services (or
 Lambdas) that each compute one shard:
 
-```
-                         ┌──────────────────────────────────────────┐
-        trigger  ──────► │                COORDINATOR                │
-    (schedule / API)     │  1. split dataset into shards             │
-                         │  2. scatter: fan out a job per shard      │
-                         │  3. gather + reduce the partial results   │
-                         └──────────────────────────────────────────┘
-                            │        │        │        │        │
-                    SendAsync("valuation:shard", …) × N  (bounded fan-out)
-                            ▼        ▼        ▼        ▼        ▼
-                        ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐
-                        │worker│ │worker│ │worker│ │worker│ │worker│  each: compute one shard,
-                        └──────┘ └──────┘ └──────┘ └──────┘ └──────┘  return a partial result
-```
+![Map-reduce: a coordinator splits a dataset into shards, scatters a job per shard to bounded worker services, then gathers and reduces the partial results.](diagrams/map-reduce-shape.svg)
 
 - **Map (scatter):** the coordinator issues one request per shard, concurrently, with a
   concurrency cap so it doesn't open ten-thousand simultaneous invocations.

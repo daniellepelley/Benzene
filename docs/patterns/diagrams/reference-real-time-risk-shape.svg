@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" role="img" aria-label="Reference real-time risk platform: Market-Data Aggregator streams to Valuation Service, which choreographs an event to Risk Read Models; Pricing Service serves desks over gRPC; a scheduled Risk Coordinator map-reduces across trades, writes to the Trade Ledger, and reports completion to Risk Read Models; the Trade Ledger also feeds Risk Read Models via change-data-capture.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-line-dashed { stroke: #c7c7c7; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 11px sans-serif; }
+  .dp-box-tag { fill: #2f6f4e; font: 700 10px sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-outer { fill: none; stroke: #d8d8d8; stroke-width: 2; stroke-dasharray: 6 4; }
+  .dp-outer-label { fill: #5a5a5a; font: 700 12px sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-edge-label { fill: #4a4a4a; font: 11px sans-serif; }
+  .dp-label-bg { fill: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-line-dashed { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-box-tag { fill: #6fcf9a; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-outer { stroke: #3a3d42; }
+    .dp-outer-label { fill: #a3a3a3; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+    .dp-edge-label { fill: #c2c2c2; }
+    .dp-label-bg { fill: #14161a; }
+  }
+</style>
+<rect x="70" y="30" width="200" height="78" rx="8" class="dp-box"/>
+<text x="170" y="56" text-anchor="middle" class="dp-box-label">Market-Data Aggregator</text>
+<text x="170" y="74" text-anchor="middle" class="dp-box-tag">[stream]</text>
+<rect x="360" y="30" width="200" height="78" rx="8" class="dp-box"/>
+<text x="460" y="56" text-anchor="middle" class="dp-box-label">Valuation Service</text>
+<text x="460" y="74" text-anchor="middle" class="dp-box-tag">[choreography]</text>
+<rect x="700" y="30" width="240" height="118" rx="8" class="dp-box"/>
+<text x="820" y="56" text-anchor="middle" class="dp-box-label">Risk Read Models</text>
+<text x="820" y="74" text-anchor="middle" class="dp-box-tag">[CQRS]</text>
+<text x="820" y="92" text-anchor="middle" class="dp-box-sublabel">positions, P&amp;L,</text>
+<text x="820" y="107" text-anchor="middle" class="dp-box-sublabel">exposure, VaR</text>
+<rect x="70" y="170" width="200" height="78" rx="8" class="dp-box"/>
+<text x="170" y="196" text-anchor="middle" class="dp-box-label">Pricing Service</text>
+<text x="170" y="214" text-anchor="middle" class="dp-box-tag">[gRPC streaming]</text>
+<rect x="360" y="310" width="200" height="78" rx="8" class="dp-box"/>
+<text x="460" y="336" text-anchor="middle" class="dp-box-label">Risk Coordinator</text>
+<text x="460" y="354" text-anchor="middle" class="dp-box-tag">[map-reduce]</text>
+<rect x="360" y="450" width="200" height="78" rx="8" class="dp-box"/>
+<text x="460" y="476" text-anchor="middle" class="dp-box-label">Trade Ledger</text>
+<text x="460" y="494" text-anchor="middle" class="dp-box-tag">[event sourcing]</text>
+<line x1="0" y1="69" x2="66" y2="69" class="dp-line"/>
+<polygon points="62,63 62,75 70,69" class="dp-arrow"/>
+<text x="4" y="59" text-anchor="start" class="dp-caption-strong">ticks</text>
+<text x="4" y="91" text-anchor="start" class="dp-caption">(Kinesis, by symbol)</text>
+<line x1="274" y1="69" x2="356" y2="69" class="dp-line"/>
+<polygon points="348,63 348,75 356,69" class="dp-arrow"/>
+<rect x="249.4" y="38" width="131.2" height="26" rx="4" class="dp-label-bg"/>
+<text x="315" y="55" text-anchor="middle" class="dp-edge-label">bar:closed (event)</text>
+<line x1="564" y1="69" x2="696" y2="69" class="dp-line"/>
+<polygon points="688,63 688,75 696,69" class="dp-arrow"/>
+<rect x="567.6" y="38" width="124.8" height="26" rx="4" class="dp-label-bg"/>
+<text x="630" y="55" text-anchor="middle" class="dp-edge-label">position:revalued</text>
+<line x1="0" y1="209" x2="66" y2="209" class="dp-line"/>
+<polygon points="62,203 62,215 70,209" class="dp-arrow"/>
+<text x="4" y="199" text-anchor="start" class="dp-caption-strong">desks</text>
+<text x="4" y="231" text-anchor="start" class="dp-caption">(low-latency gRPC)</text>
+<line x1="0" y1="349" x2="356" y2="349" class="dp-line"/>
+<polygon points="352,343 352,355 360,349" class="dp-arrow"/>
+<text x="4" y="339" text-anchor="start" class="dp-caption-strong">schedule</text>
+<text x="4" y="371" text-anchor="start" class="dp-caption">(end of day)</text>
+<line x1="460" y1="392" x2="460" y2="446" class="dp-line"/>
+<polygon points="454,442 466,442 460,450" class="dp-arrow"/>
+<rect x="527.6" y="402" width="124.8" height="42" rx="4" class="dp-label-bg"/>
+<text x="590" y="419" text-anchor="middle" class="dp-edge-label">every trade/cash/</text>
+<text x="590" y="435" text-anchor="middle" class="dp-edge-label">fee command</text>
+<polyline points="530,310 530,180 740,180 740,152" class="dp-line"/>
+<polygon points="734,156 746,156 740,148" class="dp-arrow"/>
+<rect x="477.2" y="153" width="105.6" height="26" rx="4" class="dp-label-bg"/>
+<text x="530" y="170" text-anchor="middle" class="dp-edge-label">risk:completed</text>
+<polyline points="560,489 940,489 940,210 910,210 910,152" class="dp-line"/>
+<polygon points="904,156 916,156 910,148" class="dp-arrow"/>
+<rect x="890.4" y="458" width="99.2" height="42" rx="4" class="dp-label-bg"/>
+<text x="940" y="475" text-anchor="middle" class="dp-edge-label">ledger:INSERT</text>
+<text x="940" y="491" text-anchor="middle" class="dp-edge-label">(CDC)</text>
+<text x="490" y="540" text-anchor="middle" class="dp-caption">Six services, each targeting the Cloud Service Profile, each owning its own data &#8212; not a monolith, six plain Benzene services.</text>
+</svg>

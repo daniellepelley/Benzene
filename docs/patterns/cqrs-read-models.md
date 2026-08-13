@@ -133,10 +133,7 @@ through the read model reflexively.
 
 The three "composing a system" patterns are one pipeline:
 
-```
-  core service writes  ──►  transactional outbox  ──►  event (choreography)  ──►  read model projects
-   (authoritative)          (reliable emission)        (SNS/EventBridge)          (denormalized view)
-```
+![CQRS pipeline: a core service write goes through the transactional outbox, out as a choreographed event, into a read model projection.](diagrams/cqrs-pipeline.svg)
 
 - The [outbox](transactional-outbox.md) guarantees the read model **never misses** an event.
 - [Choreography](choreography.md) delivers events without the emitter knowing the read model exists —

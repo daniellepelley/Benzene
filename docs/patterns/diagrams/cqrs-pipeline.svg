@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 190" role="img" aria-label="CQRS pipeline: a core service write goes through the transactional outbox, out as a choreographed event, into a read model projection.">
+<style>
+  .dp-line { stroke: #c7c7c7; stroke-width: 2; fill: none; }
+  .dp-line-dashed { stroke: #c7c7c7; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+  .dp-arrow { fill: #8a8a8a; }
+  .dp-box { fill: #ffffff; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-box-label { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-box-sublabel { fill: #5a5a5a; font: 11px sans-serif; }
+  .dp-box-tag { fill: #2f6f4e; font: 700 10px sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dp-db { fill: #f6f8f7; stroke: #d8d8d8; stroke-width: 2; }
+  .dp-db-label { fill: #5a5a5a; font: 700 11px sans-serif; }
+  .dp-accent { fill: rgba(47,111,78,0.09); stroke: #2f6f4e; stroke-width: 2.5; }
+  .dp-accent-label { fill: #1a1a1a; font: 700 15px sans-serif; }
+  .dp-accent-sublabel { fill: #4a4a4a; font: 12px sans-serif; }
+  .dp-outer { fill: none; stroke: #d8d8d8; stroke-width: 2; stroke-dasharray: 6 4; }
+  .dp-outer-label { fill: #5a5a5a; font: 700 12px sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-caption { fill: #5a5a5a; font: 12px sans-serif; }
+  .dp-caption-strong { fill: #1a1a1a; font: 700 13px sans-serif; }
+  .dp-edge-label { fill: #4a4a4a; font: 11px sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    .dp-line { stroke: #4a4e55; }
+    .dp-line-dashed { stroke: #4a4e55; }
+    .dp-arrow { fill: #8f959d; }
+    .dp-box { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-box-label { fill: #e8e8e8; }
+    .dp-box-sublabel { fill: #a3a3a3; }
+    .dp-box-tag { fill: #6fcf9a; }
+    .dp-db { fill: #1c1f23; stroke: #3a3d42; }
+    .dp-db-label { fill: #a3a3a3; }
+    .dp-accent { fill: rgba(111,207,154,0.12); stroke: #6fcf9a; }
+    .dp-accent-label { fill: #e8e8e8; }
+    .dp-accent-sublabel { fill: #c2c2c2; }
+    .dp-outer { stroke: #3a3d42; }
+    .dp-outer-label { fill: #a3a3a3; }
+    .dp-caption { fill: #a3a3a3; }
+    .dp-caption-strong { fill: #e8e8e8; }
+    .dp-edge-label { fill: #c2c2c2; }
+  }
+</style>
+<rect x="20" y="60" width="190" height="78" rx="8" class="dp-box"/>
+<text x="115" y="92" text-anchor="middle" class="dp-box-label">Core service</text>
+<text x="115" y="112" text-anchor="middle" class="dp-box-sublabel">writes (authoritative)</text>
+<line x1="214" y1="99" x2="246" y2="99" class="dp-line"/>
+<polygon points="238,93 238,105 246,99" class="dp-arrow"/>
+<rect x="250" y="60" width="190" height="78" rx="8" class="dp-box"/>
+<text x="345" y="92" text-anchor="middle" class="dp-box-label">Transactional</text>
+<text x="345" y="112" text-anchor="middle" class="dp-box-sublabel">outbox (reliable emission)</text>
+<line x1="444" y1="99" x2="476" y2="99" class="dp-line"/>
+<polygon points="468,93 468,105 476,99" class="dp-arrow"/>
+<rect x="480" y="60" width="190" height="78" rx="8" class="dp-box"/>
+<text x="575" y="92" text-anchor="middle" class="dp-box-label">Choreography</text>
+<text x="575" y="112" text-anchor="middle" class="dp-box-sublabel">event: SNS / EventBridge</text>
+<line x1="674" y1="99" x2="706" y2="99" class="dp-line"/>
+<polygon points="698,93 698,105 706,99" class="dp-arrow"/>
+<rect x="710" y="60" width="190" height="78" rx="8" class="dp-accent"/>
+<text x="805" y="92" text-anchor="middle" class="dp-accent-label">Read model</text>
+<text x="805" y="112" text-anchor="middle" class="dp-accent-sublabel">projects (denormalized view)</text>
+<text x="460" y="172" text-anchor="middle" class="dp-caption">One pipeline, three steps: the outbox guarantees the event is never missed;</text>
+<text x="460" y="188" text-anchor="middle" class="dp-caption">choreography delivers it without the emitter knowing the read model exists.</text>
+</svg>
