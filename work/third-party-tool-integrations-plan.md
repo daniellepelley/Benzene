@@ -143,45 +143,83 @@ Do NOT: add any Datadog-specific exporter code; promise vendor features not reac
 
 ---
 
-## WP2 — Roslyn analyzers in the Benzene NuGet packages
+## WP2 — Roslyn analyzers in the Benzene NuGet packages ✅ DONE (2026-08-13, partially)
 
-**Goal:** compile-time spec-conformance diagnostics that travel with the package reference and
-run in Visual Studio, Rider, and CI — the correct answer to "tools inside Visual Studio /
-ReSharper".
-**Home:** benzene-dotnet (new `Benzene.Analyzers` project, packed into the core package as an
-`analyzers/dotnet/cs` asset — verify against the repo's packing setup).
-**Reviewer:** validation-product-owner (owns developer tooling), core-product-owner (registry
-semantics).
+**Delivered:** pushed directly to `main` on `daniellepelley/benzene-dotnet`
+(`dc458ec..d9565c9`, branch `claude/reserved-topic-and-schema-analyzers` — no PR, per this
+session's direct-push instruction).
 
-Tasks:
-1. Verify assumptions in benzene-dotnet: how handlers are registered (attribute scanning vs
-   explicit calls — both are legal idioms per core-concepts §9), how topic ids are expressed
-   (string literals? constants?), and whether the marketing-page's "Roslyn source generator for
-   handler discovery" exists yet or is aspirational. Adjust diagnostics below to what the API
-   actually looks like.
-2. Scaffold the analyzer project (netstandard2.0, `Microsoft.CodeAnalysis.CSharp` — pin to the
-   lowest Roslyn version the supported VS/SDK matrix requires) + a test project using
-   `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing`.
-3. Implement diagnostics, one PR-sized slice each, in this order:
-   - **BZ0001** (error): application handler registered on a reserved `benzene:`-prefixed
-     topic id.
-   - **BZ0002** (warning): routable topic served outside the handler registry — breaks Cloud
-     Service Profile R2. Only fire where detection is sound; prefer silence to false positives.
-   - **BZ0003** (info): registered request/response type whose derived schema degrades to `{}`
-     per mesh.md §2.1 (recursion, custom serializer, dynamic) — message explains the mesh
-     consequence, not just the rule.
-   - **BZ0004** (warning + code-fix): duplicate topic id/version registration.
-4. Wire packing so the analyzer ships inside the existing package(s) — no separate install
-   step — and document each diagnostic id (docs page per id, linked from the diagnostic's
-   `helpLinkUri`).
-5. Verify in all three hosts: `dotnet build` (diagnostics appear in build output), Visual
-   Studio, and Rider with Roslyn analyzers enabled.
+**What was verified first (task 1), which reshaped the plan:**
+- The analyzer infrastructure **already existed**: `Benzene.CodeGen.SourceGenerators`
+  (`src/Benzene.CodeGen.SourceGenerators/MessageHandlerSourceGenerator.cs`) is a working
+  `IIncrementalGenerator`, already packed as `analyzers/dotnet/cs` (`IsRoslynComponent=true`),
+  already referenced by `Benzene.Core.MessageHandlers` — so it already reaches every
+  handler-carrying project with no separate install. The plan's task 2 ("scaffold the analyzer
+  project") and most of task 4 ("wire packing") were **already done** before this session
+  started.
+- It already shipped two diagnostics with the ids **`BENZ0xx`**, not `BZ0xxx` as the plan
+  guessed: `BENZ001` (duplicate topic — this **is** the plan's BZ0004, already implemented) and
+  `BENZ002` (`[HttpEndpoint]` handler with no `[Message]` topic — not one of the plan's four,
+  a real gap the plan didn't anticipate).
+- Handler registration idiom: `[Message("topic", "version")]` attribute + `IMessageHandler<TReq,
+  TRes>`/`IMessageHandler<TReq>` interface, discovered by the generator via Roslyn symbols
+  (fully-qualified type names hardcoded as strings — an analyzer project deliberately doesn't
+  take a runtime dependency on the library it inspects, confirmed as the established pattern
+  throughout the file).
 
-Acceptance: analyzer tests green; a sample project violating each rule produces the diagnostic
-in `dotnet build`; packing verified by inspecting the produced `.nupkg`.
-Do NOT: build a ReSharper (JetBrains SDK) plugin or a VSIX — explicitly declined in the
-research (classic ReSharper won't run these analyzers; VS and Rider do, and that's the
-audience); fire BZ0002 heuristically where the registration idiom makes it unsound.
+**Added `BENZ003` and `BENZ004`** (the plan's BZ0001 and BZ0003 — renumbered/reworded to fit
+the existing scheme):
+- **BENZ003** (error): a `[Message]` handler on one of Benzene's own reserved topic ids.
+  **Deliberately narrower than "any `benzene:`-prefixed topic"**, unlike the plan's original
+  BZ0001 spec: verification found a real, shipped exception —
+  `examples/AwsMesh/Mesh/MeshAggregateHandler.cs` legitimately registers
+  `[Message("benzene:mesh:aggregate")]`, because mesh.md §4 makes a collector an *ordinary*
+  Benzene service serving the `benzene:mesh:*` ingest topics as handlers. A blanket prefix ban
+  would have been a false positive on real code. BENZ003 fires only on the seven specific ids
+  hand-copied from `Benzene.Abstractions.BenzeneTopic.All` (`benzene:spec`,
+  `benzene:test-payloads`, `benzene:healthcheck`, `benzene:liveness`, `benzene:readiness`,
+  `benzene:mesh`, `benzene:ping`) — confirmed none of those seven are ever legitimately declared
+  via `[Message]` anywhere in the codebase, and confirmed `examples/AwsMesh` still builds clean
+  with the new rule active.
+- **BENZ004** (info): a handler's request/response type is one that
+  `Benzene.Mesh.Wire.MeshSchemaGenerator` derives an unconstrained `{}` schema for — mirrored
+  its exact top-level special-cases (`object`, `dynamic`, enum, `JsonElement`/`JsonDocument`/
+  `JsonNode`) via Roslyn symbols instead of the runtime deriver's reflection. Deliberately
+  shallow (top-level type only, no property-walking, no cycle detection) — the sound subset the
+  plan itself called for ("fire only where detection is sound").
+- **Plan's BZ0002 (registry-bypass) was not attempted** — investigated and confirmed it's
+  inherently unsound for a source generator: it would need to detect handlers *not* using the
+  `[Message]`/interface idiom at all, which by definition isn't visible to a generator built
+  around that idiom. No safe detection strategy found; left undone rather than shipping
+  something heuristic and noisy.
+- **Plan's BZ0004 (duplicate topic) was already `BENZ001`** — nothing to add.
+
+**Testing**: the plan's own testing framework choice (`Microsoft.CodeAnalysis.CSharp.Analyzer.
+Testing`) turned out to already be in use for BENZ001/BENZ002 and confirmed broken in this
+environment (`MessageHandlerSourceGeneratorTest.cs`'s two golden-file tests are `[Fact(Skip=
+...)]`). A working alternative already existed too:
+`test/Benzene.Core.Test/Autogen/CodeGen/SourceGenerator/MessageHandlerDiagnosticsTest.cs` drives
+`CSharpGeneratorDriver` directly and asserts on `Diagnostic[]` — no golden-file comparison. Added
+7 new tests to that file in the same idiom, including the negative case that pins the
+mesh-collector exception (`Benz003_IsSilentOnAMeshCollectorExtendingTheReservedNamespace`). All
+14 tests in the file pass; `Benzene.Core.MessageHandlers` and the real `examples/AwsMesh` both
+build clean with zero false positives from the new rules.
+
+CHANGELOG.md updated under `[Unreleased] → Added`.
+
+**Remaining for a future pickup:**
+- **BZ0002/registry-bypass**: no sound design found; revisit only if a concrete detectable
+  pattern emerges (e.g. a specific anti-pattern worth naming rather than "anything not using
+  `[Message]`").
+- **IDE verification**: confirmed via `dotnet build` + the direct-driver tests only. Visual
+  Studio and Rider verification (the plan's task 5) not done in this session (no GUI IDE
+  available) — should still work automatically (`IsRoslynComponent=true` + `analyzers/dotnet/cs`
+  packing is exactly what makes both pick it up), but worth a manual confirmation pass.
+- **Per-diagnostic docs page + `helpLinkUri`**: not added. BENZ001/BENZ002 don't have one either
+  (no existing convention to extend) — worth doing for all four together if/when this becomes a
+  priority, rather than starting a new pattern for just the two new ids.
+Do NOT: build a ReSharper (JetBrains SDK) plugin or a VSIX — confirmed still correct; classic
+ReSharper doesn't execute Roslyn analyzers, VS and Rider both do.
 
 ---
 
