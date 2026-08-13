@@ -104,6 +104,11 @@ internal static class Layout
                           + ".NET, the reference implementation.")}
                   </p>
                   {getStarted}
+                  <div class="transport-diagram-wrap">{TransportDiagram.Render()}</div>
+                  <p class="section-lede diagram-caption">
+                    That's the two wiring lines above, drawn out: three different transports, one
+                    handler. Add a fourth transport and the handler still doesn't change.
+                  </p>
                 </section>
 
                 <section class="section">
@@ -244,6 +249,7 @@ internal static class Layout
                 <section class="page-hero">
                   <h1>{Html(page.Title)}</h1>
                   <p class="section-lede">{page.HeroLedeHtml}</p>
+                  {page.HeroDiagramHtml ?? ""}
                 </section>
                 {sections}
                 <p class="cta">{page.CtaHtml}</p>

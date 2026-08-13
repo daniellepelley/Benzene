@@ -351,6 +351,59 @@ a { color: var(--accent); }
 .arch-diagram .node { fill: var(--bg); stroke: var(--accent); stroke-width: 2.5; }
 .arch-diagram .node-label { fill: var(--fg); font-size: 13px; }
 
+/* Transport diagram (D1) - three transports into one handler, one result out. Shape carries role
+   throughout the site's diagrams: a chip/pill is a transport, an accent rect is the Benzene-owned
+   handler, a muted rounded rect is your own code/data - never colour alone. */
+.transport-diagram-wrap, .before-after-wrap {
+  overflow-x: auto;
+  padding: 0 0.5rem;
+}
+
+.transport-diagram {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.td-line { stroke: var(--border); stroke-width: 2; fill: none; }
+.td-arrow-head { fill: var(--muted); }
+.td-chip { fill: var(--bg); stroke: var(--border); stroke-width: 2; }
+.td-chip-label { fill: var(--fg); font-weight: 700; font-size: 13px; }
+.td-chip-sublabel { fill: var(--muted); font-size: 11px; }
+.td-handler { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-width: 3; }
+.td-handler-label { fill: var(--fg); font-weight: 700; font-size: 16px; }
+.td-handler-sublabel { fill: var(--muted); font-size: 12px; }
+.td-result { fill: var(--bg); stroke: var(--border); stroke-width: 2; stroke-dasharray: 4 3; }
+.td-result-label { fill: var(--fg); font-weight: 600; font-size: 13px; }
+.td-result-sublabel { fill: var(--muted); font-size: 11px; }
+
+/* Before/after diagram (D2) - three duplicated services vs. one shared pipeline. Both panels'
+   boxes are "muted" (your own code); only the shared pipeline on the right is accent-highlighted,
+   since the contrast being drawn is duplication vs. not, not Benzene-owned vs. not. */
+.before-after-diagram {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.ba-heading { fill: var(--fg); font-weight: 700; font-size: 15px; }
+.ba-caption { fill: var(--muted); font-size: 12px; }
+.ba-box { fill: var(--bg); stroke: var(--border); stroke-width: 2; }
+.ba-box-label { fill: var(--fg); font-weight: 600; font-size: 14px; }
+.ba-box-sublabel { fill: var(--muted); font-size: 11px; }
+.ba-line { stroke: var(--border); stroke-width: 2; fill: none; }
+.ba-arrow-head { fill: var(--muted); }
+.ba-entry-label { fill: var(--muted); font-size: 11px; }
+.ba-accent { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-width: 3; }
+.ba-accent-label { fill: var(--fg); font-weight: 700; font-size: 16px; }
+.ba-accent-sublabel { fill: var(--muted); font-size: 12px; }
+
+.diagram-caption { text-align: center; max-width: 640px; margin: 1rem auto 0; }
+
 /* Quickstart */
 .quickstart-label {
   font-weight: 600;

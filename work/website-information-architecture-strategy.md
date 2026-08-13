@@ -985,8 +985,55 @@ that *"that's genuinely the whole list from this pass"*, so this was the only op
 runs on…", and the test-host comment stopped implying the class is visible verbatim in the snippet
 above it. Build verified locally: 117 pages, self-check clean.
 
-**Landing-page restructure is done for this pass.** Next up, per the agreed sequencing: the diagram
-work (D1, D2 — §6.5), deferred from this pass to keep it small and fast-verifying.
+**Landing-page restructure is done for this pass.**
+
+### 2026-08-13 (later still) — the diagram pass: D1 and D2
+
+Both diagrams asked for, unprompted, by every prior cold-developer run (§2.9, §6.5).
+
+**Shipped:**
+
+- **`TransportDiagram.cs` (D1)** — three transport chips (HTTP `POST /orders`, SQS `queue: orders`,
+  Kafka `topic: order.placed`) converging on an accent-coloured `PlaceOrderHandler` box
+  (`topic: order:placed`), one arrow out to a muted, dashed `OrderAccepted` result box. Placed
+  directly under the landing page's "Get started" code panel — not in "The core idea" section
+  alongside the existing hexagon — because the most recent walkthrough asked for exactly this
+  placement by name: *"A small 'one handler → HTTP / Lambda+SQS / Kafka' arrow diagram next to the
+  code... would make the 'same handler, different wiring' point visually."* Captioned immediately
+  after, per §6.4's narration rule: *"That's the two wiring lines above, drawn out."*
+- **`BeforeAfterDiagram.cs` (D2)** — left panel, three separately duplicated service boxes each
+  re-implementing validation/logging/auth ("Without Benzene"); right panel, the same three
+  transports entering one accent-coloured "One service" box with the pipeline written once ("With
+  Benzene"). Placed in `why.html`'s hero, before any card — per §6.2/§3.12, this is the most
+  persuasive image available to someone who hasn't decided whether to care yet, and per the earlier
+  cold-run quote it answers *"the comparison I arrived making, and the site never draws it."*
+  `MarketingPages.ValuePage` gained an optional `HeroDiagramHtml` slot for this (null for
+  Architecture/Operations — the split is deliberate, not a hole to fill later).
+- **The hexagon (`ArchitectureDiagram`) is untouched and stays where it is** — §6.2's explicit
+  conclusion ("keep it, add to it") after both prior walkthroughs named it one of the most effective
+  things on the site. D1 answers a different question (how many things call the handler) from the
+  hexagon (where does it run); both now exist.
+- **Grammar applied consistently** (§6.4): pill = transport, accent rect = the Benzene-owned
+  handler/pipeline, muted rounded rect = your own code or data, arrows always left-to-right with
+  visible arrowheads, concrete example (`order:placed`, an `orders` queue) throughout rather than
+  placeholder labels, `role="img"` + a content-describing `aria-label` on both, wrapped in a
+  scrolling container matching `.arch-diagram-wrap`'s existing pattern so neither forces the page to
+  scroll sideways on a phone.
+- **Verified by direct visual inspection**, not just markup: rendered both diagrams standalone
+  against the real light and dark token sets via headless Chromium (no Playwright package in this
+  environment; invoked the pre-installed browser binary directly), then re-verified in full page
+  context on the actual generated `index.html` and `why.html`. Caught and fixed one contrast issue
+  this way that markup inspection alone would have missed — the arrowhead marker fill was
+  `var(--border)`, nearly invisible against the page background; changed to `var(--muted)` in both
+  diagrams' CSS.
+- **Cross-repo consequence for later**: shared diagrams on docs pages (Markdown, other repos) still
+  need the export mechanism §6.6 scoped (`/assets/diagrams/*.svg` + a `RewriteLinks` case for a
+  root-absolute generator-emitted asset) — not needed for this pass since both diagrams landed on
+  hand-authored marketing pages, but the next diagram (D3, the request lifecycle, slated for the
+  quickstart) will need it.
+
+Build verified locally: 117 pages, self-check clean. A cold-developer verification of both diagrams
+in situ is running; its result will be appended here.
 
 **Not done — blocked on repository access:**
 

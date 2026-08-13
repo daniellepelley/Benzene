@@ -16,10 +16,14 @@ internal static class MarketingPages
     /// <summary>A page section: a heading, a lede paragraph (raw HTML), and a grid of cards.</summary>
     internal sealed record Section(string Heading, string LedeHtml, Card[] Cards);
 
-    /// <summary>A whole value page. <paramref name="Slug"/> is the root-level output file (e.g. "why.html").</summary>
+    /// <summary>
+    /// A whole value page. <paramref name="Slug"/> is the root-level output file (e.g. "why.html").
+    /// <paramref name="HeroDiagramHtml"/> is optional raw HTML (an SVG diagram, wrapped) rendered
+    /// right after the hero lede, before the sections — null for a page with no diagram of its own.
+    /// </summary>
     internal sealed record ValuePage(
         string Slug, string NavTitle, string Title, string Description, string HeroLedeHtml,
-        Section[] Sections, string CtaHtml);
+        Section[] Sections, string CtaHtml, string? HeroDiagramHtml = null);
 
     public static readonly ValuePage[] All = [Why(), Architecture(), Operations()];
 
@@ -33,6 +37,19 @@ internal static class MarketingPages
             "Choosing a framework is a bet on cost, risk, and longevity, not just ergonomics. "
             + "Benzene's is straightforward: your business logic is the asset, and the cloud, the "
             + "transport, and the host are details that should be cheap to change.",
+        // D2 from work/website-information-architecture-strategy.md §6.5: a cold-developer
+        // walkthrough asked for exactly this picture unprompted and called it "the comparison I
+        // arrived making" — no Benzene vocabulary required to read it, which is why it leads this
+        // page rather than illustrating any one card below.
+        HeroDiagramHtml:
+            $"""
+            <div class="before-after-wrap">{BeforeAfterDiagram.Render()}</div>
+            <p class="section-lede diagram-caption">
+              Three transports usually mean three services, each with its own copy of validation,
+              logging, and auth. In Benzene they're one service with one shared pipeline &mdash;
+              the case each card below makes in its own way.
+            </p>
+            """,
         Sections:
         [
             new Section("Lower the cost of change",
