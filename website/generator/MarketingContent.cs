@@ -14,12 +14,18 @@ internal static class MarketingContent
     // transport) and the problem it removes (HTTP, SQS, and Kafka normally mean a different service
     // each). Keep this and the docs hub's lede telling the same story — a visitor who meets a
     // different first sentence at each door concludes the site doesn't know what it's selling.
+    //
+    // The closing clause deliberately says "any platform" and names four, rather than "the cloud
+    // you already run" (the previous wording) — that phrase presumes the reader is already running
+    // something in the cloud, which isn't true of everyone landing here, and it's vaguer than just
+    // naming the platforms. Keep this list a subset of MarketingContent.Platforms, in the same order
+    // that list already uses for its own strongest four.
     public const string Tagline =
         "One message handler, every transport. HTTP, SQS, and Kafka are fundamentally different " +
         "things &mdash; normally a different service for each. Benzene gives them all what a " +
         "modern web framework gives HTTP &mdash; one middleware pipeline, per-request scoping, " +
         "handlers you can test &mdash; so you build one service and reach it over every transport " +
-        "at once, on the cloud you already run.";
+        "at once, on any platform: AWS, Azure, Kubernetes, or self-hosted.";
 
     // The hero's second sentence. Two variants, picked by how many language ports the run actually
     // built: "pick your language below" over a single tab reads as a broken page, and the cold
