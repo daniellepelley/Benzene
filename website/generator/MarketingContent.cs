@@ -8,11 +8,18 @@ namespace Benzene.Website.Generator;
 /// </summary>
 internal static class MarketingContent
 {
+    // The definition line. The claim is deliberately concrete, not categorical: "a framework for
+    // message-driven services" names a category and gives no reason to care, so instead it says
+    // what you get (the middleware/scoping/testability a modern web framework gives HTTP, on every
+    // transport) and the problem it removes (HTTP, SQS, and Kafka normally mean a different service
+    // each). Keep this and the docs hub's lede telling the same story — a visitor who meets a
+    // different first sentence at each door concludes the site doesn't know what it's selling.
     public const string Tagline =
-        "One message handler, every transport. Benzene is a hexagonal (ports-and-adapters) " +
-        "architecture for message-driven services: write your logic once, against a topic, and " +
-        "reach it over HTTP, queues, streams, and serverless functions &mdash; all at once, on the " +
-        "cloud you already run.";
+        "One message handler, every transport. HTTP, SQS, and Kafka are fundamentally different " +
+        "things &mdash; normally a different service for each. Benzene gives them all what a " +
+        "modern web framework gives HTTP &mdash; one middleware pipeline, per-request scoping, " +
+        "handlers you can test &mdash; so you build one service and reach it over every transport " +
+        "at once, on the cloud you already run.";
 
     // Benzene is defined by a language-neutral spec and implemented as idiomatic ports.
     public const string MultiLanguageLede =

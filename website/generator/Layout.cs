@@ -14,10 +14,10 @@ internal static class Layout
     {
         const string metaTitle = "Benzene &mdash; one handler, every transport";
         const string metaDescription =
-            "A hexagonal (ports-and-adapters) architecture for message-driven services, defined by a "
-            + "language-neutral spec and implemented in .NET, Go, TypeScript, and Python. Write a handler "
-            + "once and reach it over HTTP, queues, streams and serverless functions at the same time "
-            + "&mdash; with a live service map and a test host for everything you build.";
+            "Benzene gives every transport what a modern web framework gives HTTP: a middleware "
+            + "pipeline, per-request scoping, and handlers you can test. Write a handler once and "
+            + "reach it over HTTP, queues, streams and serverless functions at the same time &mdash; "
+            + "with a live service map and a test host for everything you build.";
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
         var docsHome = RepoPaths.RelativeHref(outputPath, "docs/index.html");
@@ -304,9 +304,10 @@ internal static class Layout
         IReadOnlyDictionary<string, List<Page>> pagesBySource, SiteOptions options)
     {
         const string hubDescription =
-            "Benzene is a framework for message-driven services: write one message handler and reach "
-            + "it over HTTP, queues, streams and serverless functions at the same time. Guides for "
-            + "each language, and the language-neutral specification they all implement.";
+            "Benzene gives every transport what a modern web framework gives HTTP: a middleware "
+            + "pipeline, per-request scoping, and handlers you can test. HTTP, SQS, and Kafka "
+            + "normally mean a different service each; with Benzene you build one. Guides for each "
+            + "language, and the language-neutral specification they all implement.";
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
 
@@ -433,10 +434,12 @@ internal static class Layout
                 <section class="page-hero">
                   <h1>Benzene documentation</h1>
                   <p class="section-lede">
-                    <strong>Benzene is a framework for message-driven services.</strong> You write one
-                    message handler, and the same code is reachable over HTTP, queues, streams, and
-                    serverless functions at the same time &mdash; you add a transport in the host
-                    wiring, never in your logic.
+                    <strong>Benzene gives every transport what a modern web framework gives
+                    HTTP &mdash; a middleware pipeline, per-request scoping, and handlers you can
+                    test.</strong> An HTTP request, an SQS message, and a Kafka event are
+                    fundamentally different things, and normally that means building a different
+                    service for each. With Benzene you write one handler and reach it over all of
+                    them at once &mdash; you add a transport in the host wiring, never in your logic.
                   </p>
                   {startCta}
                 </section>

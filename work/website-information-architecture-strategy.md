@@ -430,10 +430,19 @@ Same content, re-ordered, with three copy fixes:
 
 1. **Hero.** Lead with "One message handler, every transport." Move *hexagonal / ports-and-adapters /
    message-driven* out of the tagline into "The core idea" below, where the diagram gives them
-   something to attach to. Promote the line both cold runs picked out — *"an SNS function can't also
-   take SQS"* — into or immediately under the tagline. Resolve the **"ports" collision** (§2.2): the
-   hero strip should say "Languages:", not "Ports:". Two CTAs: **Start building** (→ `/start/`) and
-   **See the code** (the existing anchor, per §2.3).
+   something to attach to. Resolve the **"ports" collision** (§2.2): the hero strip should say
+   "Languages:", not "Ports:". Two CTAs: **Start building** (→ `/start/`) and **See the code** (the
+   existing anchor, per §2.3).
+
+   **The definition line itself is settled** (maintainer direction, 2026-08-13, now shipped — §11).
+   "A framework for message-driven services" names a category and gives no reason to care. The
+   definition must carry Benzene's two actual selling points in one breath: **what you get** — the
+   best-in-class middleware pipeline and per-request scoping a modern web framework gives HTTP, on
+   *every* transport — and **the problem it removes** — HTTP, SQS, and Kafka are fundamentally
+   different things that normally force a different service each; Benzene lets you build one. The
+   canonical phrasing lives in `MarketingContent.Tagline`, and the docs hub's lede tells the same
+   story: a visitor who meets a different first sentence at each door concludes the site doesn't
+   know what it's selling (a defect the third walkthrough reported verbatim).
 2. **Show the code immediately** — promote the language-tab snippet to directly under the hero.
 3. **Add the test host to the landing page.** Both runs independently named `BenzeneTestHost` the
    strongest reason to adopt Benzene, and both found it three pages deep. Four lines of it in a
@@ -832,6 +841,30 @@ same pass:
 
 Left for later, as scoped: the home page's tagline is now demonstrably worse than the hub's
 (Phase 1), and the ~110-link always-expanded sidebar (§2.7) is Phase 4.
+
+### 2026-08-13 (later) — the definition line, per maintainer direction
+
+The maintainer rejected "Benzene is a framework for message-driven services" as generic — a category,
+not a reason: *"It's like saying benzene is a framework — who is gonna care."* The direction: the
+definition must carry, in a single line, (a) best-in-class middleware and per-request scoping **on
+all transport types** — "like ASP.NET, but not just for HTTP", and (b) that HTTP, SQS, and Kafka are
+fundamentally different things which normally force different services, and Benzene builds them into
+one.
+
+**Shipped:** one definition, told identically at both doors —
+
+> *Benzene gives every transport what a modern web framework gives HTTP — a middleware pipeline,
+> per-request scoping, and handlers you can test. An HTTP request, an SQS message, and a Kafka event
+> are fundamentally different things, and normally that means building a different service for each.
+> With Benzene you write one handler and reach it over all of them at once.*
+
+- `MarketingContent.Tagline` (home hero) — replaces the *hexagonal (ports-and-adapters)* sentence,
+  which also closes §4.3's "move the jargon out of the tagline" item.
+- The docs hub's lede and meta description — same story, same order.
+- The home page's meta description — drops both the jargon and the four-language claim (§2.6).
+
+"A modern web framework" rather than "ASP.NET" keeps the line true on the cross-language pages while
+still naming the experience every backend developer recognises.
 
 **Not done — blocked on repository access:**
 
