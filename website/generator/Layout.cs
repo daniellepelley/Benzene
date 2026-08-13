@@ -98,6 +98,18 @@ internal static class Layout
               </section>
 
               <main class="content marketing">
+                <section class="section">
+                  <h2>The core idea</h2>
+                  <p class="section-lede">
+                    Benzene separates <em>what your service does</em> from <em>how it's invoked</em>.
+                    A message handler contains your logic. A transport turns an incoming request
+                    into a message and routes it to the matching handler through the middleware
+                    pipeline &mdash; the same pipeline, whichever transport is on the other end, and
+                    however many of them at once.
+                  </p>
+                  <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
+                </section>
+
                 <section class="section" id="get-started">
                   <h2>Get started</h2>
                   <p class="section-lede">
@@ -112,18 +124,6 @@ internal static class Layout
                     That's the two wiring lines above, drawn out: three different transports, one
                     handler. Add a fourth transport and the handler still doesn't change.
                   </p>
-                </section>
-
-                <section class="section">
-                  <h2>The core idea</h2>
-                  <p class="section-lede">
-                    Benzene separates <em>what your service does</em> from <em>how it's invoked</em>.
-                    A message handler contains your logic. A transport turns an incoming request
-                    into a message and routes it to the matching handler through the middleware
-                    pipeline &mdash; the same pipeline, whichever transport is on the other end, and
-                    however many of them at once.
-                  </p>
-                  <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
                 </section>
 
                 <section class="section">

@@ -13,6 +13,9 @@
   --border: #e2e2e2;
   --code-bg: #f6f8f7;
   --max-width: 1100px;
+  --hero-glow-1: rgba(47, 111, 78, 0.16);
+  --hero-glow-2: rgba(47, 111, 78, 0.09);
+  --hero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='74' viewBox='0 0 64 74'%3E%3Cpath d='M32 0 L64 18 L64 55 L32 74 L0 55 L0 18 Z' fill='none' stroke='%232f6f4e' stroke-width='1' opacity='0.4'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +26,9 @@
     --muted: #a3a3a3;
     --border: #2c2f33;
     --code-bg: #1c1f23;
+    --hero-glow-1: rgba(111, 207, 154, 0.14);
+    --hero-glow-2: rgba(111, 207, 154, 0.07);
+    --hero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='74' viewBox='0 0 64 74'%3E%3Cpath d='M32 0 L64 18 L64 55 L32 74 L0 55 L0 18 Z' fill='none' stroke='%236fcf9a' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E");
   }
 }
 
@@ -33,6 +39,9 @@
   --muted: #a3a3a3;
   --border: #2c2f33;
   --code-bg: #1c1f23;
+  --hero-glow-1: rgba(111, 207, 154, 0.14);
+  --hero-glow-2: rgba(111, 207, 154, 0.07);
+  --hero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='74' viewBox='0 0 64 74'%3E%3Cpath d='M32 0 L64 18 L64 55 L32 74 L0 55 L0 18 Z' fill='none' stroke='%236fcf9a' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E");
 }
 
 :root[data-theme="light"] {
@@ -42,6 +51,9 @@
   --muted: #5a5a5a;
   --border: #e2e2e2;
   --code-bg: #f6f8f7;
+  --hero-glow-1: rgba(47, 111, 78, 0.16);
+  --hero-glow-2: rgba(47, 111, 78, 0.09);
+  --hero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='74' viewBox='0 0 64 74'%3E%3Cpath d='M32 0 L64 18 L64 55 L32 74 L0 55 L0 18 Z' fill='none' stroke='%232f6f4e' stroke-width='1' opacity='0.4'/%3E%3C/svg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -251,10 +263,39 @@ a { color: var(--accent); }
   padding: 1rem 1.5rem 3rem;
 }
 
-/* Hero */
+/* Hero. Full-bleed background: negative margins pull the box out to the viewport edge (a no-op for
+   .hero, already a direct, unconstrained child of body; the trick that actually matters is on
+   .page-hero, nested inside .content.marketing's 900px centered column). Deliberately no explicit
+   width — the browser computes it from the margins, so there's no 100vw-vs-scrollbar overflow bug.
+   Every child keeps centering itself via its own text-align/max-width, unaffected either way. */
+.hero, .page-hero {
+  position: relative;
+  overflow: hidden;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+.hero::before, .page-hero::before,
+.hero::after, .page-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero::before, .page-hero::before {
+  background-image: var(--hero-pattern);
+  background-position: center;
+}
+
+.hero::after, .page-hero::after {
+  background:
+    radial-gradient(ellipse 900px 480px at 18% -15%, var(--hero-glow-1), transparent 60%),
+    radial-gradient(ellipse 700px 460px at 100% 0%, var(--hero-glow-2), transparent 65%);
+}
+
 .hero {
-  max-width: var(--max-width);
-  margin: 0 auto;
   padding: 3.5rem 1.5rem 2.5rem;
   text-align: center;
 }
@@ -352,8 +393,6 @@ a { color: var(--accent); }
 
 /* Sections */
 .page-hero {
-  max-width: var(--max-width);
-  margin: 0 auto;
   padding: 3rem 1.5rem 0.5rem;
   text-align: center;
 }
@@ -382,6 +421,14 @@ a { color: var(--accent); }
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 1.25rem 1.4rem;
+  background: var(--bg);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 .feature-card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
