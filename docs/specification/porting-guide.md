@@ -31,6 +31,13 @@ Rule of thumb: if removing a mechanism would change what's on the wire or what a
 it's a concept and it's in the spec. Otherwise it's an idiom — do what's natural in the target
 language.
 
+Client generation (the `codegen` row above) has its own pinned contract: the `.spec.json` a
+service derives and serves ([contract-document.md](contract-document.md)), the topic-scoping and
+schema-closure rules a generator must implement identically, and the language-neutral
+`contractHash` algorithm — all conformance-pinned by `contract-document-cases.json` and
+`contract-hash-cases.json`. A port that ships a client generator implements that document; method
+naming and file layout stay idiom, same rule of thumb as above.
+
 ## 2. Suggested porting order
 
 1. **Wire contracts first**: envelope + status vocabulary + header conventions, verified against a

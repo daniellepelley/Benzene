@@ -1,0 +1,297 @@
+{
+  "description": "Contract Document parsing/validation, topic-scope projection, and schema-closure conformance (contract-document.md sections 1-5). `documents` holds the shared fixture documents, referenced by id from `documentRef` in each case group below. `expected`/`expectedTopics`/`expectedComponents` are compared as sets unless noted (order-independent, no duplicates); `expected.requests`/`expected.events` entries are subset-matched by `topic` the way envelope-cases.json subset-matches bodies. `expectedError` cases assert failure, not a successful result.",
+  "documents": {
+    "minimal": {
+      "openapi": "3.0.1",
+      "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+      "requests": [
+        {
+          "topic": "orders:create",
+          "httpMappings": [{ "method": "POST", "path": "/orders" }],
+          "request": { "$ref": "#/components/schemas/CreateOrder" },
+          "response": { "$ref": "#/components/schemas/OrderDto" }
+        }
+      ],
+      "events": [
+        {
+          "topic": "order:created",
+          "message": { "$ref": "#/components/schemas/OrderCreated" }
+        }
+      ],
+      "components": {
+        "schemas": {
+          "CreateOrder": {
+            "type": "object",
+            "properties": { "customerId": { "type": "string" } },
+            "required": ["customerId"]
+          },
+          "OrderDto": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+          },
+          "OrderCreated": {
+            "type": "object",
+            "properties": { "id": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "versioned": {
+      "openapi": "3.0.1",
+      "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+      "requests": [
+        {
+          "topic": "orders:create",
+          "version": "v2",
+          "request": { "$ref": "#/components/schemas/CreateOrder" },
+          "response": { "$ref": "#/components/schemas/OrderDto" }
+        },
+        {
+          "topic": "orders:cancel",
+          "request": { "$ref": "#/components/schemas/CreateOrder" },
+          "response": { "$ref": "#/components/schemas/OrderDto" }
+        }
+      ],
+      "events": [
+        {
+          "topic": "order:created",
+          "version": "v1",
+          "message": { "$ref": "#/components/schemas/OrderCreated" }
+        },
+        {
+          "topic": "order:cancelled",
+          "message": { "$ref": "#/components/schemas/OrderCreated" }
+        }
+      ],
+      "components": {
+        "schemas": {
+          "CreateOrder": {
+            "type": "object",
+            "properties": { "customerId": { "type": "string" } },
+            "required": ["customerId"]
+          },
+          "OrderDto": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+          },
+          "OrderCreated": {
+            "type": "object",
+            "properties": { "id": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "reserved": {
+      "openapi": "3.0.1",
+      "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+      "requests": [
+        {
+          "topic": "orders:create",
+          "request": { "$ref": "#/components/schemas/CreateOrder" },
+          "response": { "$ref": "#/components/schemas/OrderDto" }
+        },
+        {
+          "topic": "benzene:spec",
+          "reserved": true,
+          "request": { "$ref": "#/components/schemas/CreateOrder" },
+          "response": { "$ref": "#/components/schemas/OrderDto" }
+        },
+        {
+          "topic": "benzene:healthcheck",
+          "request": { "$ref": "#/components/schemas/CreateOrder" },
+          "response": { "$ref": "#/components/schemas/OrderDto" }
+        }
+      ],
+      "events": [
+        {
+          "topic": "order:created",
+          "message": { "$ref": "#/components/schemas/OrderCreated" }
+        }
+      ],
+      "components": {
+        "schemas": {
+          "CreateOrder": {
+            "type": "object",
+            "properties": { "customerId": { "type": "string" } },
+            "required": ["customerId"]
+          },
+          "OrderDto": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+          },
+          "OrderCreated": {
+            "type": "object",
+            "properties": { "id": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "closure": {
+      "openapi": "3.0.1",
+      "info": { "title": "closure-fixture", "description": "", "version": "" },
+      "requests": [
+        {
+          "topic": "closure:cycle",
+          "request": { "$ref": "#/components/schemas/A" },
+          "response": { "$ref": "#/components/schemas/Void" }
+        },
+        {
+          "topic": "closure:compose",
+          "request": { "$ref": "#/components/schemas/D" },
+          "response": { "$ref": "#/components/schemas/Void" }
+        },
+        {
+          "topic": "closure:collections",
+          "request": { "$ref": "#/components/schemas/MapWrapper" },
+          "response": { "$ref": "#/components/schemas/ListWrapper" }
+        }
+      ],
+      "events": [],
+      "components": {
+        "schemas": {
+          "Void": { "type": "object", "additionalProperties": false },
+          "A": {
+            "type": "object",
+            "properties": { "b": { "$ref": "#/components/schemas/B" } }
+          },
+          "B": {
+            "type": "object",
+            "properties": { "a": { "$ref": "#/components/schemas/A" } }
+          },
+          "C": { "type": "object" },
+          "D": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/E" },
+              { "$ref": "#/components/schemas/F" }
+            ]
+          },
+          "E": {
+            "allOf": [
+              { "$ref": "#/components/schemas/G" },
+              { "type": "object", "properties": { "x": { "type": "string" } } }
+            ]
+          },
+          "F": { "type": "object" },
+          "G": {
+            "type": "object",
+            "properties": { "y": { "type": "string" } }
+          },
+          "MapWrapper": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/components/schemas/Item" }
+          },
+          "Item": {
+            "type": "object",
+            "properties": { "tag": { "type": "string" } }
+          },
+          "ListWrapper": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ListItem" }
+          },
+          "ListItem": { "type": "object" }
+        }
+      }
+    }
+  },
+  "parseCases": [
+    {
+      "name": "minimal-document-parses",
+      "documentRef": "minimal",
+      "expected": {
+        "openapi": "3.0.1",
+        "requests": [
+          { "topic": "orders:create", "versionPresent": false, "reserved": false }
+        ],
+        "events": [
+          { "topic": "order:created", "versionPresent": false }
+        ]
+      }
+    },
+    {
+      "name": "versioned-entries-round-trip",
+      "documentRef": "versioned",
+      "expected": {
+        "requests": [
+          { "topic": "orders:create", "versionPresent": true, "version": "v2" },
+          { "topic": "orders:cancel", "versionPresent": false }
+        ],
+        "events": [
+          { "topic": "order:created", "versionPresent": true, "version": "v1" },
+          { "topic": "order:cancelled", "versionPresent": false }
+        ]
+      }
+    },
+    {
+      "name": "reserved-detected-by-flag-and-by-benzene-prefix",
+      "documentRef": "reserved",
+      "expected": {
+        "requests": [
+          { "topic": "orders:create", "reserved": false },
+          { "topic": "benzene:spec", "reserved": true },
+          { "topic": "benzene:healthcheck", "reserved": true }
+        ]
+      }
+    },
+    {
+      "name": "include-list-names-unknown-topic-fails-loud",
+      "documentRef": "minimal",
+      "options": { "topics": ["not-a-real-topic"] },
+      "expectedError": {
+        "unknownTopics": ["not-a-real-topic"],
+        "validTopics": ["orders:create"]
+      }
+    }
+  ],
+  "topicScopeCases": [
+    {
+      "name": "domain-only-default-excludes-both-flagged-and-prefix-only-reserved-topics",
+      "documentRef": "reserved",
+      "options": {},
+      "expectedTopics": ["orders:create"]
+    },
+    {
+      "name": "includeReserved-true-admits-every-topic",
+      "documentRef": "reserved",
+      "options": { "includeReserved": true },
+      "expectedTopics": ["orders:create", "benzene:spec", "benzene:healthcheck"]
+    },
+    {
+      "name": "explicit-topic-list-admits-a-reserved-topic-even-without-includeReserved",
+      "documentRef": "reserved",
+      "options": { "topics": ["benzene:spec"] },
+      "expectedTopics": ["benzene:spec"]
+    },
+    {
+      "name": "explicit-topic-list-mixes-domain-and-reserved-topics",
+      "documentRef": "reserved",
+      "options": { "topics": ["orders:create", "benzene:healthcheck"] },
+      "expectedTopics": ["orders:create", "benzene:healthcheck"]
+    },
+    {
+      "name": "explicit-topic-list-does-not-implicitly-admit-topics-includeReserved-would-have",
+      "documentRef": "reserved",
+      "options": { "topics": ["orders:create"], "includeReserved": true },
+      "expectedTopics": ["orders:create"]
+    }
+  ],
+  "schemaClosureCases": [
+    {
+      "name": "ref-cycle-terminates-and-both-members-are-reached",
+      "documentRef": "closure",
+      "topic": "closure:cycle",
+      "expectedComponents": ["A", "B", "Void"]
+    },
+    {
+      "name": "oneOf-and-allOf-members-are-reached",
+      "documentRef": "closure",
+      "topic": "closure:compose",
+      "expectedComponents": ["D", "E", "F", "G", "Void"]
+    },
+    {
+      "name": "items-and-additionalProperties-are-reached",
+      "documentRef": "closure",
+      "topic": "closure:collections",
+      "expectedComponents": ["Item", "ListItem", "ListWrapper", "MapWrapper"]
+    }
+  ]
+}

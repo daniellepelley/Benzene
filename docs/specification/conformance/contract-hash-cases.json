@@ -1,0 +1,170 @@
+{
+  "description": "contractHash conformance (contract-document.md section 6): contractHash = \"sha256:\" + lowercase-hex(sha256(canonicalJSON(normalize(document)))), canonicalJSON per RFC 8785 (JCS). Each case gives an input `document` (already reflecting whatever projection the case is about) and the exact `expectedHash` a conformant implementation MUST produce after applying normalize() to it. Values were computed independently with two separate RFC 8785 implementations (the `canonicalize` npm package, v4.0.0; the `rfc8785` PyPI package, v0.1.4) piped through SHA-256 — both agreed exactly on all four values below. `minimal` and `topicScoped` documents already have no example/messageEndpoint/transports/reserved entries to strip, so normalize() is a no-op on them and expectedHash is their direct canonical hash; `decorated` and `withReserved` are NOT already normalized (that is the point of those two cases) and MUST be normalized by the implementation under test before hashing, which is why their expectedHash equals `minimal`'s.",
+  "cases": [
+    {
+      "name": "minimal-document",
+      "document": {
+        "openapi": "3.0.1",
+        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+        "requests": [
+          {
+            "topic": "orders:create",
+            "httpMappings": [{ "method": "POST", "path": "/orders" }],
+            "request": { "$ref": "#/components/schemas/CreateOrder" },
+            "response": { "$ref": "#/components/schemas/OrderDto" }
+          }
+        ],
+        "events": [
+          {
+            "topic": "order:created",
+            "message": { "$ref": "#/components/schemas/OrderCreated" }
+          }
+        ],
+        "components": {
+          "schemas": {
+            "CreateOrder": {
+              "type": "object",
+              "properties": { "customerId": { "type": "string" } },
+              "required": ["customerId"]
+            },
+            "OrderDto": {
+              "type": "object",
+              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+            },
+            "OrderCreated": {
+              "type": "object",
+              "properties": { "id": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "expectedHash": "sha256:942f3e7cd2c62080e4cbcf5c87d7ecd9dfa1ed4499b75caad414938e1e7e9e7b"
+    },
+    {
+      "name": "example-messageEndpoint-transports-are-stripped-by-normalization",
+      "description": "Same requests/events/components content as minimal-document, decorated with example payloads, messageEndpoint, and transports. normalize() strips all of that, so this MUST hash identically to minimal-document — proving those three fields do not participate in the contract hash.",
+      "document": {
+        "openapi": "3.0.1",
+        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+        "messageEndpoint": "/benzene/invoke",
+        "transports": ["http", "sqs"],
+        "requests": [
+          {
+            "topic": "orders:create",
+            "httpMappings": [{ "method": "POST", "path": "/orders" }],
+            "request": { "$ref": "#/components/schemas/CreateOrder" },
+            "response": { "$ref": "#/components/schemas/OrderDto" },
+            "example": { "customerId": "value" }
+          }
+        ],
+        "events": [
+          {
+            "topic": "order:created",
+            "message": { "$ref": "#/components/schemas/OrderCreated" },
+            "example": { "id": "value" }
+          }
+        ],
+        "components": {
+          "schemas": {
+            "CreateOrder": {
+              "type": "object",
+              "properties": { "customerId": { "type": "string" } },
+              "required": ["customerId"]
+            },
+            "OrderDto": {
+              "type": "object",
+              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+            },
+            "OrderCreated": {
+              "type": "object",
+              "properties": { "id": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "expectedHash": "sha256:942f3e7cd2c62080e4cbcf5c87d7ecd9dfa1ed4499b75caad414938e1e7e9e7b"
+    },
+    {
+      "name": "reserved-entries-are-excluded-by-the-domain-projection",
+      "description": "Same domain content as minimal-document, plus two reserved requests: one flagged reserved:true (benzene:spec), one detected only by the benzene: prefix rule with no flag at all (benzene:healthcheck, the older-producer case). The whole-service contractHash normalize step removes both entries entirely (contract-document.md section 6.2), so this MUST hash identically to minimal-document.",
+      "document": {
+        "openapi": "3.0.1",
+        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+        "requests": [
+          {
+            "topic": "orders:create",
+            "httpMappings": [{ "method": "POST", "path": "/orders" }],
+            "request": { "$ref": "#/components/schemas/CreateOrder" },
+            "response": { "$ref": "#/components/schemas/OrderDto" }
+          },
+          {
+            "topic": "benzene:spec",
+            "reserved": true,
+            "request": { "$ref": "#/components/schemas/CreateOrder" },
+            "response": { "$ref": "#/components/schemas/OrderDto" }
+          },
+          {
+            "topic": "benzene:healthcheck",
+            "request": { "$ref": "#/components/schemas/CreateOrder" },
+            "response": { "$ref": "#/components/schemas/OrderDto" }
+          }
+        ],
+        "events": [
+          {
+            "topic": "order:created",
+            "message": { "$ref": "#/components/schemas/OrderCreated" }
+          }
+        ],
+        "components": {
+          "schemas": {
+            "CreateOrder": {
+              "type": "object",
+              "properties": { "customerId": { "type": "string" } },
+              "required": ["customerId"]
+            },
+            "OrderDto": {
+              "type": "object",
+              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+            },
+            "OrderCreated": {
+              "type": "object",
+              "properties": { "id": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "expectedHash": "sha256:942f3e7cd2c62080e4cbcf5c87d7ecd9dfa1ed4499b75caad414938e1e7e9e7b"
+    },
+    {
+      "name": "topic-scoped-projection",
+      "description": "The schema-closure (contract-document.md section 5.3) projection of minimal-document for topic orders:create: requests holds only that one entry, events is empty, and components is narrowed to just what orders:create's request/response reach (CreateOrder, OrderDto) — OrderCreated is excluded because it is reachable only from the order:created EVENT, not from orders:create's request/response. This document is already the topic-scoped projection (an implementation computing it from minimal-document via section 5.3 must arrive at exactly this shape); normalize() is then a no-op on it since it already has no example/messageEndpoint/transports/reserved entries.",
+      "document": {
+        "openapi": "3.0.1",
+        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+        "requests": [
+          {
+            "topic": "orders:create",
+            "httpMappings": [{ "method": "POST", "path": "/orders" }],
+            "request": { "$ref": "#/components/schemas/CreateOrder" },
+            "response": { "$ref": "#/components/schemas/OrderDto" }
+          }
+        ],
+        "events": [],
+        "components": {
+          "schemas": {
+            "CreateOrder": {
+              "type": "object",
+              "properties": { "customerId": { "type": "string" } },
+              "required": ["customerId"]
+            },
+            "OrderDto": {
+              "type": "object",
+              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "expectedHash": "sha256:ec8d9ab5b2325cc167305468ba677f0fd5e6165b8a0f7bda06f8406bd1db6c8f"
+    }
+  ]
+}

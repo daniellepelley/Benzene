@@ -96,7 +96,9 @@ tooling use to reach any service without knowing its native transport shapes.
 The service MUST derive its spec document from the handler registry and expose it — over HTTP at
 the `/benzene/spec` default ([design-principles.md](design-principles.md) §5.2). Hand-maintained
 spec documents do not satisfy this requirement: the point of the profile is that the spec is
-true because it is derived ([design-principles.md](design-principles.md) §3).
+true because it is derived ([design-principles.md](design-principles.md) §3). The served document's
+shape is [contract-document.md](contract-document.md) — the same format language-neutral client
+generators parse.
 
 ### R6 — Mesh service-side feeds
 

@@ -11,6 +11,7 @@ documents below.
   - [Wire Contracts](wire-contracts.md) — the message envelope, header conventions, the status vocabulary, and its per-protocol (HTTP/gRPC) mappings
   - [Transport Bindings](transport-bindings.md) — what a transport adapter must satisfy, with every existing binding as a worked example
   - [Mesh Contracts](mesh.md) — service self-description, trace events, and collector topics for fleet-wide visibility
+  - [Contract Document](contract-document.md) — the derived `.spec.json` a service exposes at `/benzene/spec`: its shape, the topic-scoping and schema-closure rules a client generator must implement, and the cross-language `contractHash` algorithm
   - [Payload Schema Versioning](versioning.md) — versioning a topic's request/response shape independently of handler versioning
   - [Porting Guide](porting-guide.md) — concept-vs-idiom mapping and suggested order for implementing Benzene in another language
   - [Port Quality Standards](port-quality-standards.md) — the Definition of Done for a language port: the DX-champion-in-the-loop workflow and the quality gates a unit of port work must clear

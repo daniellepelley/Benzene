@@ -24,6 +24,8 @@ consumes these files.
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
+| `contract-document-cases.json` | Contract Document parse/validate, topic-scope projection, and schema-closure behavior (contract-document.md §§1-5) — required for ports that ship a client generator |
+| `contract-hash-cases.json` | Exact `contractHash` values for the normalization + canonicalization + hash pipeline (contract-document.md §6) — required for ports that ship a client generator |
 
 Which fixtures a given conformance claim requires
 ([cloud-service-profile.md](../cloud-service-profile.md) §5):
@@ -34,6 +36,7 @@ Which fixtures a given conformance claim requires
 | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
 | Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
+| Client-generation conformance | `contract-document-cases.json` and `contract-hash-cases.json` — required only for a port that ships a client generator (contract-document.md); a port that never generates clients from the Contract Document is unaffected by these two fixtures, the same conditional shape as the collector fixtures above |
 
 At Core level the mesh fixtures apply only to ports that implement the optional mesh module
 (mesh.md §7); a port without mesh skips them and remains Core-conformant.
@@ -175,6 +178,37 @@ collections).
   each step is an envelope request/expected pair asserted like an envelope case. The
   `benzene:mesh:query:*` responses are asserted as the observable surface for the ingest/derivation
   rules of mesh §4–6; those query shapes are not themselves promoted contracts.
+
+## Contract Document and contract hash case formats
+
+Both files pin [contract-document.md](../contract-document.md). Every case group in
+`contract-document-cases.json` shares a `documents` map at the top of the file, keyed by id;
+each case references one document by `documentRef` rather than repeating it. `expectedTopics` and
+`expectedComponents` are compared as **sets** — order-independent, no duplicates expected either
+side — unlike the positional array comparisons used elsewhere in this directory, since a topic
+scope or a schema closure is a membership question, not a sequence.
+
+- **`parseCases`** — each gives a `documentRef` (and, for the fail-loud case, `options`) and an
+  `expected` (subset-matched: `openapi`, and per-entry `requests[]`/`events[]` rows keyed by
+  `topic`, asserting `versionPresent`/`version`/`reserved` as applicable) or an `expectedError`
+  (asserting the failure's `unknownTopics` and `validTopics` sets, contract-document.md §5.2).
+  `versionPresent: false` asserts the field is genuinely **absent**, not an empty string
+  (contract-document.md §2's absent-means-unversioned rule).
+- **`topicScopeCases`** — each gives a `documentRef`, `options` (`topics`/`includeReserved`, both
+  optional, contract-document.md §5.2), and the resulting `expectedTopics` set of surviving
+  `requests[]` topic ids.
+- **`schemaClosureCases`** — each gives a `documentRef`, a `topic`, and the `expectedComponents`
+  set: every `components.schemas` key reachable from that topic's request and response by the walk
+  of contract-document.md §5.3. Includes a `$ref` cycle case and an `allOf`/`oneOf` reach case, per
+  that section's normative walk.
+
+`contract-hash-cases.json` lists `cases`, each an input `document` (already in whatever projection
+the case is about — a whole-service document, or one already topic-scoped per §5.3) and the exact
+`expectedHash` a conformant `normalize` → `canonicalJSON` (RFC 8785/JCS) → SHA-256 pipeline
+(contract-document.md §6.2) MUST produce. Two cases are deliberately **not already normalized**
+(one carries `example`/`messageEndpoint`/`transports`, one carries reserved entries) specifically so
+their `expectedHash` — identical to the minimal case's — proves an implementation performs the
+strip, not merely hashes its input verbatim.
 
 ## Mapping table format
 
