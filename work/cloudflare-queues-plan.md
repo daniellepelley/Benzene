@@ -28,16 +28,46 @@ WP-CF0 (verify the REST contract)  ──► WP-CF1 (outbound client) ──► 
 Producer before consumer is deliberate: the client is the smaller piece, it proves the auth/config
 plumbing both halves share, and you need a way to *put* messages on a queue to test the consumer.
 
-### The product question to settle before any of this merges
+### The support commitment — SETTLED (2026-08-13)
 
-`docs/getting-started-cloudflare.md` currently opens with "**Experimental / community-supported —
-not part of the Benzene 1.0 support commitment. Cloudflare is out of scope for the 1.0 release.**"
-Shipping *packages* (not just a guide) makes that banner load-bearing: are
-`Benzene.Cloudflare.Queues` / `Benzene.Clients.Cloudflare.Queues` in or out of the 1.0 support
-commitment, and do they publish to NuGet on the same channel as everything else? **This is a
-product call, not an engineering one** — route to the relevant product owner (infrastructure- or
-core-product-owner per `.claude/PRODUCT_OWNERS.md`) before WP-CF1 merges, and record the answer in
-both packages' `CLAUDE.md`. Do not let it be decided implicitly by whoever runs `dotnet pack`.
+**Decision: Cloudflare is a committed platform. Ship Queues.** Recorded here so it isn't
+re-litigated per-WP.
+
+The reasoning, because the framing matters for how the packages get documented:
+
+- **Cloudflare-as-a-host was already committed, and it costs nothing.** The website's platform
+  list advertises `("Cloudflare", "Containers")` — a *host*, listed alongside Kubernetes and
+  self-hosted VMs, not a transport list like AWS's or Azure's. That claim is accurate and free:
+  the HTTP path contains **no Cloudflare-specific Benzene code**, it is `Benzene.AspNet.Core` in a
+  container. Cloudflare is supported the way Kubernetes is — by virtue of ASP.NET Core being
+  supported.
+- **The old "experimental / out of scope for 1.0 / no API-stability guarantee" banner was
+  mis-scoped in both directions** and has been fixed (benzene-dotnet `21c94c4`): it disclaimed the
+  API stability of a surface whose entire API is `Benzene.AspNet.Core`'s, while under-stating the
+  actual risk — that the Cloudflare-side deployment recipe has never been run against a live
+  account. The three banners now carry that honest split instead.
+- **Queues is the first genuine Cloudflare commitment**: real Cloudflare-specific code, real
+  versioning, real support surface. It is worth making anyway, for one reason that outweighs the
+  small size of the platform: Benzene is a framework for **message-driven services**, and on
+  Cloudflare today you can only do HTTP. That is not a gap at the edge of the platform's coverage —
+  it is the absence of the thing the framework is for. It is also the cheapest binding in the whole
+  catalog to build (zero-dependency, two small packages, both near-verbatim copies of existing
+  siblings).
+
+**What the decision does NOT waive — the one real gate.** Every other transport binding in the
+repo is at least fake-tested against *captured real payloads*. Without a single run against a live
+Cloudflare account, these packages would ship against payload shapes believed correct from
+documentation alone. **WP-CF2 must not be marked complete on a doc-only verification**: either run
+it against a real queue, or ship it with the same explicit "never verified against a live account"
+statement the Cloudflare example README carries, in both packages' `CLAUDE.md` *and* their NuGet
+package descriptions. That is a support-burden decision, not a code-quality one, and it is the
+thing to weigh — not whether to commit.
+
+**Consequent action when WP-CF2 ships:** update the website's platform list
+(`website/generator/MarketingContent.cs`) from `("Cloudflare", "Containers")` to
+`("Cloudflare", "Containers, Queues")` — **not before**, so the front page stays accurate in both
+directions. Also drop the "Cloudflare's own message transports have no Benzene binding yet" scope
+note from `docs/getting-started-cloudflare.md`'s banner at the same time.
 
 ---
 
@@ -263,8 +293,12 @@ Tasks:
 3. Update the example's README with what was and wasn't verified against a live account (the
    existing README already carries this caveat for the Worker/container config — extend it rather
    than dropping it).
-4. Revisit the guide's experimental banner in light of the product decision at the top of this
-   document.
+4. Land the two consequent edits the settled decision defers to this point (see "The support
+   commitment" above): drop the "Cloudflare's own message transports … have no Benzene binding yet"
+   scope note from the guide's banner, and update the website's platform list
+   (`website/generator/MarketingContent.cs`, in the **Benzene** repo, not this one) from
+   `("Cloudflare", "Containers")` to `("Cloudflare", "Containers, Queues")`. Both are deliberately
+   held until the binding actually ships.
 
 Acceptance: the example builds and runs locally against a real queue (or is explicitly marked
 doc-verified-only); the website generator's broken-link self-check still passes if any cross-repo
