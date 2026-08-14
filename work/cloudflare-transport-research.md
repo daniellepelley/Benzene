@@ -116,11 +116,12 @@ notification rule.
 - The topic-resolution design is not a new problem: it's a direct reapplication of the
   envelope-in-body convention Benzene already uses for EventBridge and Azure Queue Storage, both
   of which share Queues' lack of a native header channel.
-- This was not scoped or estimated as a work package (the user asked for research, not a build) —
-  if it's wanted, the natural next step is a WP-shaped brief mirroring
-  [`third-party-tool-integrations-plan.md`](third-party-tool-integrations-plan.md)'s format, with
-  benzene-dotnet as the home (new `Benzene.Cloudflare.Queues` package, self-hosted-module shape)
-  and the `examples/Cloudflare` project as the place to prove it end-to-end.
+- **Now planned**: [`cloudflare-queues-plan.md`](cloudflare-queues-plan.md) turns §4 into work
+  packages (WP-CF0–CF5). Two refinements it makes to this note, found by reading the actual code
+  the binding would extend: (a) topic resolution needs **two** paths, not one — the envelope-in-body
+  convention *and* Queue Storage's preset-topic path, since a Cloudflare queue is as likely to carry
+  foreign events (R2 notifications) as Benzene ones; and (b) because no Cloudflare .NET SDK exists,
+  both packages can be **zero-dependency**, unlike every other queue binding Benzene has.
 
 ## 6. Sources
 
