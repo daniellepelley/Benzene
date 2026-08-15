@@ -1,24 +1,23 @@
 name: mesh-ui-drift-check
 
-# The Mesh UI is a BUILD OUTPUT of daniellepelley/benzene-ui, vendored here as
-# mesh-ui/mesh-ui.html and again as website/demos/mesh/index.html. Neither copy is hand-edited:
-# changes land in benzene-ui's src/, are built, and are re-vendored.
+# The mesh UI pages (mesh-ui.html — the estate view — and mesh-spec-ui.html — the service-spec viewer)
+# are a BUILD OUTPUT of the cross-language `benzene-ui` repo, vendored here VERBATIM. Consumers are not
+# JavaScript projects, so they commit the built artifact rather than run a Node toolchain to produce it —
+# the same trade the conformance fixtures make. A committed copy can drift from its source in silence,
+# which is exactly how a service page once shipped a white screen. This job keeps every vendored copy
+# honest: it fetches the canonical build outputs from benzene-ui and fails if any committed copy differs.
 #
-# benzene-ui's own CI already proves its committed build/mesh-ui.html reproduces from source. This
-# job closes the two remaining hops in the chain, which nothing else checks:
-#
-#   benzene-ui/build/mesh-ui.html -> mesh-ui/mesh-ui.html -> website/demos/mesh/index.html
-#
-# Without it, an edit made directly to a vendored copy here survives until someone notices by eye —
-# and the whole point of generating the page is that nobody has to.
+# It is DISCOVERY-BASED on purpose: it finds every large vendored HTML page in the repo and asserts each
+# one byte-matches one of the two canonical files. A new example or package that vendors another copy is
+# covered automatically — no path list here to fall out of date.
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   schedule:
-    - cron: '0 6 * * 1' # weekly, catches drift introduced on the benzene-ui side
+    - cron: '0 6 * * 1'   # weekly, catches drift introduced on the benzene-ui side
   workflow_dispatch:
 
 jobs:
@@ -27,56 +26,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: The website demos must match the canonical copies in this repo
-        run: |
-          set -euo pipefail
-          fail=0
-          check() {
-            if ! diff -u "$1" "$2" > /tmp/diff.txt; then
-              echo "::error file=$2::$2 has drifted from $1"
-              cat /tmp/diff.txt
-              echo "Re-vendor it: cp $1 $2"
-              fail=1
-            fi
-          }
-          check mesh-ui/mesh-ui.html website/demos/mesh/index.html
-          check mesh-ui/mesh-spec-ui.html website/demos/mesh/mesh-spec-ui.html
-          check mesh-ui/mesh-spec-ui.html website/demos/spec/index.html
-          exit $fail
-
-      - name: Fetch the built artifact from benzene-ui
+      - name: Fetch canonical mesh UI from benzene-ui
         run: |
           set -euo pipefail
           git clone --depth 1 --filter=blob:none --sparse \
             https://github.com/daniellepelley/benzene-ui.git /tmp/benzene-ui
           git -C /tmp/benzene-ui sparse-checkout set build
+          test -f /tmp/benzene-ui/build/mesh-ui.html
+          test -f /tmp/benzene-ui/build/mesh-spec-ui.html
+          echo "canonical mesh-ui.html      $(wc -c < /tmp/benzene-ui/build/mesh-ui.html) bytes"
+          echo "canonical mesh-spec-ui.html $(wc -c < /tmp/benzene-ui/build/mesh-spec-ui.html) bytes"
 
-      - name: The canonical copies must match what benzene-ui built
+      - name: Assert every vendored copy matches canonical
         run: |
           set -euo pipefail
+          canon_ui=/tmp/benzene-ui/build/mesh-ui.html
+          canon_spec=/tmp/benzene-ui/build/mesh-spec-ui.html
           fail=0
-          for page in mesh-ui.html mesh-spec-ui.html; do
-            built="/tmp/benzene-ui/build/$page"
-            if [ ! -f "$built" ]; then
-              echo "::error::benzene-ui has no build/$page — has the artifact moved?"
-              fail=1; continue
-            fi
-            if ! diff -u "$built" "mesh-ui/$page" > /tmp/diff.txt; then
-              echo "::error file=mesh-ui/$page::mesh-ui/$page has drifted from the benzene-ui build"
-              cat /tmp/diff.txt
+          found=0
+          # A vendored copy is a large HTML page carrying the page's opening tag (the exact string the
+          # host rewrites to inject its endpoints — it always survives the build verbatim). Small,
+          # hand-written HTML (e.g. a language-native lightweight view) stays well under this size.
+          while IFS= read -r f; do
+            sz=$(wc -c < "$f")
+            [ "$sz" -gt 100000 ] || continue
+            found=$((found+1))
+            if cmp -s "$canon_ui" "$f" || cmp -s "$canon_spec" "$f"; then
+              echo "ok:      $f"
+            else
+              echo "::error file=$f::mesh UI copy has drifted from benzene-ui canonical"
+              echo "drifted: $f ($sz bytes)"
               fail=1
             fi
-          done
-          if [ $fail -ne 0 ]; then
+          done < <(grep -rlF '<html lang="en">' --include='*.html' . \
+                     | grep -vE '/(node_modules|\.git|bin|obj|dist|target|__pycache__|\.mesh-[a-z-]+)/' \
+                     | sort)
+
+          if [ "$found" -eq 0 ]; then
+            echo "::warning::no vendored mesh UI copies found — did a path move out from under this check?"
+          fi
+          if [ "$fail" -ne 0 ]; then
             echo ""
-            echo "These pages are generated. Do not edit a copy — change benzene-ui's src/, then:"
-            echo "  npm run build                                            # in benzene-ui"
-            echo "  cp dist/index.html build/mesh-ui.html"
-            echo "  cp dist/spec/spec.html build/mesh-spec-ui.html"
-            echo "  cp <benzene-ui>/build/*.html mesh-ui/"
-            echo "  cp mesh-ui/mesh-ui.html website/demos/mesh/index.html"
-            echo "  cp mesh-ui/mesh-spec-ui.html website/demos/mesh/mesh-spec-ui.html"
-            echo "  cp mesh-ui/mesh-spec-ui.html website/demos/spec/index.html"
+            echo "A vendored mesh UI page has drifted from benzene-ui's build output."
+            echo "Re-vendor from a fresh benzene-ui build (npm run build in benzene-ui):"
+            echo "  cp <benzene-ui>/build/mesh-ui.html      <each vendored mesh-ui.html / estate-view index.html>"
+            echo "  cp <benzene-ui>/build/mesh-spec-ui.html <each vendored mesh-spec-ui.html / spec-ui.html>"
+            echo "The mesh UI is a build output of benzene-ui; never hand-edit a vendored copy."
             exit 1
           fi
-          echo "The vendored pages match the benzene-ui build."
+          echo ""
+          echo "All $found vendored mesh UI copies match benzene-ui canonical."
