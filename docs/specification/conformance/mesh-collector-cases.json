@@ -1,5 +1,5 @@
 {
-  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. Per the 2026-08 revision: the producer/consumer graph (providers/consumers on query:topic) comes from the latest registered ServiceDescriptor's topics/consumes alone -- traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
+  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. Per the 2026-08 revision: the producer/consumer graph (providers/consumers on query:topic) comes from the latest registered ServiceDescriptor's topics/produces alone -- topics for consumers, produces for providers; traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
   "cases": [
     {
       "name": "register-then-fleet-shows-a-reduced-catalog-entry",
@@ -17,7 +17,7 @@
                 { "service": "orders", "topics": 1, "health": "unknown", "missingFeeds": ["health", "traces"] }
               ],
               "topics": [
-                { "topic": "order:create", "providers": ["orders"], "invocations": 0 }
+                { "topic": "order:create", "consumers": ["orders"], "invocations": 0 }
               ]
             }
           }
@@ -106,14 +106,14 @@
       ]
     },
     {
-      "name": "consumer-graph-is-declared-not-trace-derived",
+      "name": "provider-consumer-graph-is-declared-not-trace-derived",
       "steps": [
         {
           "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"topics\":[{\"id\":\"payments:capture\"}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"consumes\":[{\"id\":\"payments:capture\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"produces\":[{\"id\":\"payments:capture\"}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -122,8 +122,8 @@
             "statusCode": "ok",
             "body": {
               "topic": "payments:capture",
-              "providers": ["payments"],
-              "consumers": ["orders"],
+              "providers": ["orders"],
+              "consumers": ["payments"],
               "invocations": 0
             }
           }
@@ -147,8 +147,8 @@
             "statusCode": "ok",
             "body": {
               "topic": "greet",
-              "providers": ["greeter"],
-              "consumers": [],
+              "providers": [],
+              "consumers": ["greeter"],
               "invocations": 2,
               "errors": 1,
               "statusCounts": { "ok": 1, "service-unavailable": 1 }
@@ -185,7 +185,7 @@
           "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"consumes\":[{\"id\":\"payments:capture\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"produces\":[{\"id\":\"payments:capture\"}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -194,11 +194,11 @@
         },
         {
           "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"order:create\"}" },
-          "expected": { "statusCode": "ok", "body": { "topic": "order:create", "providers": [] } }
+          "expected": { "statusCode": "ok", "body": { "topic": "order:create", "consumers": [] } }
         },
         {
           "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"payments:capture\"}" },
-          "expected": { "statusCode": "ok", "body": { "topic": "payments:capture", "providers": ["payments"], "consumers": [] } }
+          "expected": { "statusCode": "ok", "body": { "topic": "payments:capture", "providers": [], "consumers": ["payments"] } }
         }
       ]
     }

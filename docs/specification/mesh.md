@@ -13,7 +13,7 @@ collector-side idiom this contract doesn't constrain; §9 maps them, and bridgin
 artifact pipeline to `Benzene.Mesh.Collector` is the natural integration follow-up.**
 
 Benzene Mesh is the *application-level* mesh: every service **declares its full contract** — the
-topics it provides (§2, derived from its handler registry) and the topics it consumes (§2,
+topics it consumes (§2, derived from its handler registry) and the topics it produces (§2,
 derived from its outbound registration) — so the fleet graph (catalog, who-calls-whom) is knowable
 statically, from descriptors alone, before a single instance is deployed or a single message has
 flowed. Running code supplies a second, independent signal — health (§5) and, from the trace feed
@@ -49,8 +49,8 @@ keeps working (§6).
 
 ## 2. ServiceDescriptor
 
-The service's self-description, derived at startup from its handler registry (what it **provides**)
-and its outbound registration (§2.3, what it **consumes**) — never hand-maintained. Also the body of
+The service's self-description, derived at startup from its handler registry (what it **consumes**)
+and its outbound registration (§2.3, what it **produces**) — never hand-maintained. Also the body of
 a `benzene:mesh:register` message (§4).
 
 ```json
@@ -69,7 +69,7 @@ a `benzene:mesh:register` message (§4).
       "responseSchema": { "type": "object", "properties": { "id":   { "type": "string" } }, "required": ["id"] }
     }
   ],
-  "consumes": [
+  "produces": [
     {
       "id": "payments:capture",
       "version": "v1",
@@ -91,19 +91,19 @@ a `benzene:mesh:register` message (§4).
   explicitly: `"aws"`, `"azure"`, `"gcp"`, `"self-hosted"`, or any explicit override.
   `placement.region` MUST be emitted only when the platform documents a way to know it — a port
   MUST NOT guess.
-- `topics` — every registered topic, sorted by id then version: what this service **provides**.
+- `topics` — every registered topic, sorted by id then version: what this service **consumes**.
   Explicit registration (core-concepts.md §9) is what makes the registry the complete truth of what
   the service serves; this field is its projection.
-- `consumes` — every registered outbound topic, sorted by id then version: what this service
-  **consumes** (§2.3). Same shape as a `topics` entry (`TopicDescriptor`), same schema-derivation
+- `produces` — every registered outbound topic, sorted by id then version: what this service
+  **produces** (§2.3). Same shape as a `topics` entry (`TopicDescriptor`), same schema-derivation
   rules (§2.1) applied to the sender's declared request/response types; `responseSchema` is `{}`
   (unconstrained) when the sender doesn't declare an expected response type. This is the field §4
-  reads to build consumer edges — a topic absent here is not consumed by this service, regardless of
+  reads to build producer edges — a topic absent here is not produced by this service, regardless of
   what traffic has or hasn't flowed.
 - `degraded` — names the feeds that were unavailable when the descriptor was built (`"registry"` for
-  `topics`, `"outbound-registry"` for `consumes`), so a reduced descriptor is distinguishable from a
-  service that provides/consumes nothing. A port that has not yet implemented outbound registration
-  (§2.3) MUST mark `consumes` degraded rather than emit an empty array — an empty array asserts "this
+  `topics`, `"outbound-registry"` for `produces`), so a reduced descriptor is distinguishable from a
+  service that consumes/produces nothing. A port that has not yet implemented outbound registration
+  (§2.3) MUST mark `produces` degraded rather than emit an empty array — an empty array asserts "this
   service calls nothing," which a port that cannot yet know that has no right to assert.
 - `profile` — OPTIONAL: a named conformance-profile self-assessment, when the service claims one
   (e.g. the [Cloud Service Profile](cloud-service-profile.md)'s `"cloud-service"`).
@@ -147,19 +147,19 @@ Object rules:
 - Recursive types MUST be cut at the cycle with `{}` — schemas stay self-contained; no `$ref`.
 - Constructs the marshaler cannot serialize map to `{}`.
 
-Two ports registering equivalent canonical types MUST produce identical `topics`/`consumes`
+Two ports registering equivalent canonical types MUST produce identical `topics`/`produces`
 entries — this is pinned by `conformance/mesh-descriptor-cases.json`.
 
 ### 2.2 descriptorHash
 
 `"sha256:" + lowercase-hex(sha256(canonicalJSON(descriptor)))`, where the hashed descriptor has
 `instanceId`, `degraded`, `profile`, and `descriptorHash` itself blanked. The hash covers the *contract*
-(identity, placement, topics, consumes, schemas):
+(identity, placement, topics, produces, schemas):
 
 - Two instances of the same build MUST hash identically (`instanceId` excluded).
-- The hash MUST change when the contract changes (topics, consumes, schemas, `serviceVersion`,
-  placement) — adding, removing, or re-typing a consumed topic is a contract change exactly as
-  adding, removing, or re-typing a provided one is.
+- The hash MUST change when the contract changes (topics, produces, schemas, `serviceVersion`,
+  placement) — adding, removing, or re-typing a produced topic is a contract change exactly as
+  adding, removing, or re-typing a consumed one is.
 
 Canonical JSON: object members in a fixed documented order — declaration order for the fixed
 descriptor shape, lexicographic for schema maps — with no insignificant whitespace. Because
@@ -170,7 +170,7 @@ and is never compared across ports.
 
 The **concept**, mirroring core-concepts.md §9's inbound handler discovery exactly: an application
 hands the framework a list of (topic, version, request type, response type) records it *may send* —
-no handler, since nothing here receives. This is what makes `consumes` (§2) a *hard-coded contract*
+no handler, since nothing here receives. This is what makes `produces` (§2) a *hard-coded contract*
 rather than an inference: the list is exactly as reliable as the registry that already makes
 `topics` reliable, and for the identical reason — a port MUST NOT attempt to infer it by scanning
 call sites, string literals, or any other form of static analysis over handler bodies, because that
@@ -181,14 +181,14 @@ degrades silently and unpredictably per language, and defeats the "identical acr
   requirement, applied to outbound). Attribute/annotation sugar over it is an idiom, same as inbound.
 - A registered outbound record needs no destination address, queue name, or topic ARN — those are
   transport/deployment configuration (transport-bindings.md), orthogonal to the *contract* this
-  registers. A service can declare it consumes `payments:capture` while its actual SQS queue URL is
+  registers. A service can declare it produces `payments:capture` while its actual SQS queue URL is
   injected at deploy time; the descriptor doesn't change between environments, only the wiring does.
 - A send through an outbound client (`MessageSender`, core-concepts.md) to a topic **not** present in
-  `consumes` is not a spec violation — Core does not require pre-declaration to send — but it MUST
+  `produces` is not a spec violation — Core does not require pre-declaration to send — but it MUST
   surface as `contract-drift` the first time a collector observes it (§4.2): the declared contract
   and the running system have diverged, and that divergence is exactly the signal this feed exists
   to raise, not to silently tolerate.
-- A port that has not yet implemented outbound registration omits `consumes` and marks
+- A port that has not yet implemented outbound registration omits `produces` and marks
   `degraded: ["outbound-registry"]` (§2) — this is a real, visible gap in that port's conformance,
   not a silent zero.
 
@@ -223,7 +223,7 @@ transport-shaped.
 - Outbound propagation: a handler making a downstream Benzene call SHOULD forward
   `traceparent: 00-<traceId>-<spanId>-01` built from its own invocation's span. This is what lets a
   collector correlate an *observed* call with the declared edge it exercises (§4.2) — propagation
-  feeds observation, not the graph itself (§4), which comes from `consumes` (§2) regardless of
+  feeds observation, not the graph itself (§4), which comes from `produces` (§2) regardless of
   whether any call has ever propagated a trace at all.
 - `status` is the Benzene status verbatim (wire-contracts.md §3); empty only when no downstream
   middleware produced a result (a wiring gap, reported as-is).
@@ -253,12 +253,12 @@ transport (transport-bindings.md):
 
 - `service` is REQUIRED on register, heartbeat, and issues → `bad-request` when missing. A
   `benzene:mesh:traces` or `benzene:mesh:issues` batch of any size, including empty, MUST be accepted.
-- Re-registration replaces the previous registration wholesale, including the claim to provide
-  *and* the claim to consume each topic — a redeploy that drops a topic from `topics` drops the
-  provider edge with it, and a redeploy that drops a topic from `consumes` drops the consumer edge
+- Re-registration replaces the previous registration wholesale, including the claim to consume
+  *and* the claim to produce each topic — a redeploy that drops a topic from `topics` drops the
+  consumer edge with it, and a redeploy that drops a topic from `produces` drops the provider edge
   with it, the same rule applied symmetrically to both declared lists (§2).
 - **The producer/consumer graph MUST be built from the latest registered `ServiceDescriptor` alone**
-  — `topics` for providers, `consumes` for consumers (§2, §2.3). A collector MUST report this graph
+  — `produces` for providers, `topics` for consumers (§2, §2.3). A collector MUST report this graph
   in full for a service that has registered but never sent or received a single message: the graph
   is the declared contract, not a summary of traffic. Trace parentage (§3) MUST NOT be used to admit
   an edge into this graph, add a consumer/provider the descriptor didn't declare, or remove one it
@@ -343,7 +343,7 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   6. any other failing status → **unclassified** (an honest fallback beats a lying class).
   `contract-drift` is never produced by this table — it is reserved for catalog/heartbeat-derived
   issues (descriptor-hash mismatch, schema divergence) and the undeclared-edge case §4.2 defines
-  (a trace names a topic absent from the caller's `consumes` or the handler's `topics`), filed in
+  (a trace names a topic absent from the caller's `produces` or the handler's `topics`), filed in
   this same shape by a collector or reader, so emitter implementers should not hunt for its trigger.
 - `exceptionType` is the language-native type name only — never a message, stack trace, payload,
   or header. `resolutionHint` is an optional key into a remediation catalog, never prose;
@@ -363,15 +363,15 @@ feed (see `conformance/README.md`).
 The graph (§4) is declared and does not need traffic to exist. Traces still matter — they are the
 *only* way to know whether a declared edge is actually being exercised, and the only way to notice
 an edge nobody declared. Both are collector-derived read models over the same two inputs
-(`ServiceDescriptor.consumes` and `TraceEvent` parentage), never a change to either input:
+(`ServiceDescriptor.produces` and `TraceEvent` parentage), never a change to either input:
 
-- **Unobserved** — a declared edge (in `topics` or `consumes`) with no corresponding trace parentage
+- **Unobserved** — a declared edge (in `topics` or `produces`) with no corresponding trace parentage
   within the collector's retention window. This is a **decommission candidate**, not a fact: trace
   export is lossy by design (§4), so absence of evidence is not evidence of absence, only a prompt
   to go check. A collector MUST report *last observed at* (or its absence) per edge rather than
   collapsing it to a boolean, so a reader can judge staleness for itself.
 - **Undeclared** — trace parentage between two services on a topic that is not present in the
-  caller's registered `consumes` (or, symmetrically, a trace naming a topic absent from the
+  caller's registered `produces` (or, symmetrically, a trace naming a topic absent from the
   handler's registered `topics`). This is **`contract-drift`** (§4.1's classification vocabulary,
   which already reserves this class for exactly this collector-derived case): the declared contract
   and the running system disagree, and a reader needs to know which one is stale — the descriptor
@@ -417,7 +417,7 @@ optional, on both sides:
 
 Four fixture files in [conformance/](conformance/README.md) pin this document; their formats
 and the canonical mesh handlers are documented there. A port that implements mesh MUST pass
-`mesh-descriptor-cases.json` (now including `consumes`/outbound-registration cases, §2.3) and
+`mesh-descriptor-cases.json` (now including `produces`/outbound-registration cases, §2.3) and
 `mesh-trace-cases.json`; a port that additionally implements a collector MUST pass
 `mesh-collector-cases.json` (now including graph-from-descriptor cases — a registered service with
 zero traffic reporting its full provider/consumer graph — and the declared-vs-observed cases of
@@ -432,7 +432,7 @@ and passes the two service-side fixture files.
 
 A port already conformant under the pre-2026-08 revision (trace-derived consumer edges) is not
 conformant under this one until it adds outbound registration (§2.3) and re-points its collector's
-consumer-edge derivation at `consumes` (§4) — this is a breaking change to an existing MUST rule,
+provider-edge derivation at `produces` (§4) — this is a breaking change to an existing MUST rule,
 not an additive one; see the revision note at the top of this document.
 
 ## 8. Conformance language note

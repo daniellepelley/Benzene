@@ -21,7 +21,7 @@ consumes these files.
 | `envelope-cases.json` | End-to-end message envelope handling: request in, pipeline + canonical handler, response envelope out (wire-contracts §1, core-concepts §4–6) |
 | `problem-details-cases.json` | The problem-type registry, the canonical `conformance:problem` handler's envelope behavior, and the HTTP-binding-only signalling rules (wire-contracts §1.3, §3.1, §4.1) |
 | `transport-metadata-cases.json` | Topic resolution and header mapping on transports carrying Benzene metadata natively — the reserved metadata key names (wire-contracts §2, transport-bindings §1) — required for ports binding any such transport |
-| `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers and the canonical outbound registration, including payload schemas, `consumes`, and descriptorHash properties (mesh §2) — required for ports that implement mesh |
+| `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers and the canonical outbound registration, including payload schemas, `produces`, and descriptorHash properties (mesh §2) — required for ports that implement mesh |
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
@@ -66,9 +66,9 @@ handler, since nothing here receives:
 |---|---|---|
 | `conformance:log` | `{ "message": string }` | none declared |
 
-This is what populates `ServiceDescriptor.consumes` for the fixture; it is never sent, and no
+This is what populates `ServiceDescriptor.produces` for the fixture; it is never sent, and no
 handler answers it in any other fixture file — it exists purely to give every runner one shared,
-concrete outbound registration to derive a `consumes` entry from.
+concrete outbound registration to derive a `produces` entry from.
 
 ## Status mapping case format
 
@@ -203,10 +203,10 @@ collections).
 - `mesh-descriptor-cases.json` — the runner registers the two canonical envelope handlers and the
   one canonical outbound registration (both above) natively, builds the service descriptor with
   the fixture's `serviceInfo`, and subset-compares `expectedDescriptor` (`topics` from the
-  handlers, `consumes` from the outbound registration). `runtime` and the hash value are per-port
+  handlers, `produces` from the outbound registration). `runtime` and the hash value are per-port
   and not pinned; instead `hash` asserts the hash's *properties*: its `sha256:` + 64-hex format,
   invariance to `instanceId`, and sensitivity to `serviceVersion`, to the topic set, and to the
-  consumed-topic set.
+  produced-topic set.
 - `mesh-trace-cases.json` — `traceparent` rows assert the join/reject rules of mesh §3
   observationally (a valid header's ids are adopted; an invalid one yields a fresh 32-hex
   trace id and no parent). `invocations` rows run one envelope each through a pipeline with

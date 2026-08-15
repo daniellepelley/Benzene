@@ -40,7 +40,7 @@
         }
       }
     ],
-    "consumes": [
+    "produces": [
       {
         "id": "conformance:log",
         "requestSchema": {
@@ -58,6 +58,6 @@
     "invariantToInstanceId": true,
     "sensitiveToServiceVersion": true,
     "sensitiveToTopics": true,
-    "sensitiveToConsumes": true
+    "sensitiveToProduces": true
   }
 }
