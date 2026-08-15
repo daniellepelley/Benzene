@@ -1,5 +1,5 @@
 {
-  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts.",
+  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. Per the 2026-08 revision: the producer/consumer graph (providers/consumers on query:topic) comes from the latest registered ServiceDescriptor's topics/consumes alone -- traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
   "cases": [
     {
       "name": "register-then-fleet-shows-a-reduced-catalog-entry",
@@ -106,7 +106,32 @@
       ]
     },
     {
-      "name": "traces-derive-stats-consumers-and-anonymous-services",
+      "name": "consumer-graph-is-declared-not-trace-derived",
+      "steps": [
+        {
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"topics\":[{\"id\":\"payments:capture\"}]}" },
+          "expected": { "statusCode": "ok" }
+        },
+        {
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"consumes\":[{\"id\":\"payments:capture\"}]}" },
+          "expected": { "statusCode": "ok" }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"payments:capture\"}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "topic": "payments:capture",
+              "providers": ["payments"],
+              "consumers": ["orders"],
+              "invocations": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "trace-parentage-feeds-stats-and-liveness-not-graph-membership",
       "steps": [
         {
           "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"greeter\",\"topics\":[{\"id\":\"greet\"}]}" },
@@ -123,7 +148,7 @@
             "body": {
               "topic": "greet",
               "providers": ["greeter"],
-              "consumers": ["frontdoor"],
+              "consumers": [],
               "invocations": 2,
               "errors": 1,
               "statusCounts": { "ok": 1, "service-unavailable": 1 }
@@ -153,10 +178,14 @@
       ]
     },
     {
-      "name": "reregistration-replaces-provider-edges",
+      "name": "reregistration-replaces-provider-and-consumer-edges",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"topics\":[{\"id\":\"payments:capture\"}]}" },
+          "expected": { "statusCode": "ok" }
+        },
+        {
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"consumes\":[{\"id\":\"payments:capture\"}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -166,6 +195,10 @@
         {
           "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"order:create\"}" },
           "expected": { "statusCode": "ok", "body": { "topic": "order:create", "providers": [] } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"payments:capture\"}" },
+          "expected": { "statusCode": "ok", "body": { "topic": "payments:capture", "providers": ["payments"], "consumers": [] } }
         }
       ]
     }

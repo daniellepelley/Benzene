@@ -1,5 +1,5 @@
 {
-  "description": "ServiceDescriptor derivation (mesh.md section 2): given the canonical conformance handlers and the serviceInfo below, every port must derive the expectedDescriptor (subset matching; arrays compare by exact length and per-element subset) and a descriptorHash with the stated properties. runtime and descriptorHash values are per-port and deliberately not pinned.",
+  "description": "ServiceDescriptor derivation (mesh.md section 2): given the canonical conformance handlers, the canonical outbound registration, and the serviceInfo below, every port must derive the expectedDescriptor (subset matching; arrays compare by exact length and per-element subset) and a descriptorHash with the stated properties. runtime and descriptorHash values are per-port and deliberately not pinned.",
   "serviceInfo": {
     "service": "conformance",
     "serviceVersion": "1.0.0",
@@ -39,6 +39,17 @@
           "required": ["applied"]
         }
       }
+    ],
+    "consumes": [
+      {
+        "id": "conformance:log",
+        "requestSchema": {
+          "type": "object",
+          "properties": { "message": { "type": "string" } },
+          "required": ["message"]
+        },
+        "responseSchema": {}
+      }
     ]
   },
   "hash": {
@@ -46,6 +57,7 @@
     "hexLength": 64,
     "invariantToInstanceId": true,
     "sensitiveToServiceVersion": true,
-    "sensitiveToTopics": true
+    "sensitiveToTopics": true,
+    "sensitiveToConsumes": true
   }
 }
