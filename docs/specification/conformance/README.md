@@ -25,6 +25,7 @@ consumes these files.
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
+| `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (mesh §2.4, §4) — required only for collectors claiming service-version identity |
 | `contract-document-cases.json` | Contract Document parse/validate, topic-scope projection, and schema-closure behavior (contract-document.md §§1-5) — required for ports that ship a client generator |
 | `contract-hash-cases.json` | Exact `contractHash` values for the normalization + canonicalization + hash pipeline (contract-document.md §6) — required for ports that ship a client generator |
 
@@ -38,6 +39,7 @@ Which fixtures a given conformance claim requires
 | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
 | Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
+| Service-version-aware collectors | additionally `mesh-service-version-cases.json` (mesh §2.4; a collector without it stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did) |
 | Client-generation conformance | `contract-document-cases.json` and `contract-hash-cases.json` — required only for a port that ships a client generator (contract-document.md); a port that never generates clients from the Contract Document is unaffected by these two fixtures, the same conditional shape as the collector fixtures above |
 
 At Core level the mesh fixtures apply only to ports that implement the optional mesh module
@@ -224,6 +226,15 @@ collections).
   each step is an envelope request/expected pair asserted like an envelope case. The
   `benzene:mesh:query:*` responses are asserted as the observable surface for the ingest/derivation
   rules of mesh §4–6; those query shapes are not themselves promoted contracts.
+- `mesh-service-version-cases.json` — same runner and assertion rules as
+  `mesh-collector-cases.json`, applied to the keying rule alone. The cases pin that two declared
+  versions of one service are two catalog entries rather than one overwriting the other, that this
+  still holds when the two versions carry **identical** contracts (a version is an entity, not a
+  shape — mesh §2.4, so a collector keying on `descriptorHash` instead of on `serviceVersion`
+  fails here), that re-registering one version leaves the other's topics intact, and that a
+  descriptor omitting `serviceVersion` keys exactly as it did before the rule existed. That last
+  case is why this fixture is separate: it is the compatibility guarantee that lets an existing
+  collector keep passing `mesh-collector-cases.json` untouched.
 
 ## Contract Document and contract hash case formats
 

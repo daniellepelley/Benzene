@@ -1,0 +1,144 @@
+{
+  "description": "Service-version identity (mesh.md section 2.4): the catalog is keyed by (service, serviceVersion), so two releases of one service deployed side by side are two entries rather than one overwriting the other. Required only for collectors claiming service-version identity — a collector without it stays collector-conformant, because a descriptor omitting serviceVersion keys exactly as it always did (mesh.md 2.4, 'Backward compatibility'), which is why these cases live in their own fixture rather than mutating mesh-collector-cases.json. Same runner and assertion rules as mesh-collector-cases.json: each case runs its steps in order against one fresh collector; every step is a wire envelope in and out; statusCode exact, body parsed-JSON subset, arrays by exact length and per-element subset. benzene:mesh:query:* shapes follow the reference collector and are asserted only as the observable surface for the keying rule, not as promoted contracts.",
+  "cases": [
+    {
+      "name": "two-declared-versions-are-two-entries-not-one-overwriting-the-other",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"topics\":[{\"id\":\"payment:take\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:take\"},{\"id\":\"payment:refund\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [
+                { "service": "payments", "serviceVersion": "1", "topics": 1 },
+                { "service": "payments", "serviceVersion": "2", "topics": 2 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "two-versions-with-identical-contracts-are-still-two-entries",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"topics\":[{\"id\":\"payment:take\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:take\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [
+                { "service": "payments", "serviceVersion": "1", "topics": 1 },
+                { "service": "payments", "serviceVersion": "2", "topics": 1 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "re-registering-one-version-does-not-disturb-the-other",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"topics\":[{\"id\":\"payment:take\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:take\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:settle\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"payment:take\"}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": { "topic": "payment:take", "consumers": ["payments"] }
+          }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"payment:settle\"}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": { "topic": "payment:settle", "consumers": ["payments"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "an-omitted-serviceVersion-keys-exactly-as-before",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:cancel\"}]}"
+          },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [{ "service": "orders", "topics": 1 }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

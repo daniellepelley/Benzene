@@ -85,6 +85,10 @@ a `benzene:mesh:register` message (§4).
 
 - `service` — REQUIRED: the logical service name. Every other field is optional; a port MUST emit
   what it knows and omit (not null) what it doesn't.
+- `serviceVersion` — which immutable **release** of that service this is (§2.4). Together with
+  `service` it forms the catalog key, so two releases deployed side by side are two entries rather
+  than one overwriting the other. Omitted means the service has exactly one release — the
+  single-deployment case, and the behavior every service had before this field carried meaning.
 - `runtime` — the implementing port identifier (`"go"`, `"dotnet"`, …).
 - `binding` — the transport binding in use, when the service knows it.
 - `placement.cloud` — detected from the platform's documented environment or configured
@@ -192,6 +196,50 @@ degrades silently and unpredictably per language, and defeats the "identical acr
   `degraded: ["outbound-registry"]` (§2) — this is a real, visible gap in that port's conformance,
   not a silent zero.
 
+### 2.4 Service version — the identity layer
+
+`service` identifies *which* service; `serviceVersion` identifies **which immutable release of it is
+running**. A collector's catalog key is the pair `(service, serviceVersion)`, so two releases
+deployed side by side are two catalog entries rather than one silently overwriting the other — the
+deployment mechanism this exists to serve is versioning.md §5.
+
+A service version is an **entity, not a shape**. It *has* a contract — the `topics`, `produces` and
+schemas frozen for that release — but is not *defined by* one: two releases MAY declare
+byte-identical contracts and still be different versions, because a rewrite, a corrected calculation
+or a swapped downstream dependency changes what a service *does* without changing what it
+*declares*. Any scheme that derives version identity from contract content collapses exactly the
+case this layer exists to distinguish.
+
+**Identity is extrinsic**, and resolves in this order:
+
+| | Source | Status |
+|---|---|---|
+| 1 | A non-empty `serviceVersion` on the descriptor | The identity. Operators SHOULD declare one per release; it is the only source that is both stable and human-meaningful. |
+| 2 | An immutable per-release identifier the substrate assigns — a published AWS Lambda version, a Kubernetes ReplicaSet, a Cloud Run revision, an Azure deployment slot | A port MAY read one as a fallback. Which (if any) exists is per-platform, so this is **informative**, read the same way `placement` is. |
+| 3 | Neither | The service has **exactly one** service version. This is not an error and MUST NOT be reported as one. |
+
+A port MUST NOT synthesize the identity from a value that varies independently of releases — a
+process start time, a per-boot random id, an `instanceId`. Those mint a fresh version per replica or
+per restart, shattering one release into phantom siblings. `descriptorHash` (§2.2) is likewise not an
+identity: it fingerprints the contract, which is precisely what case 2 exists because the contract
+cannot supply.
+
+Case 3 cannot be improved on. Two replicas of one deployment, and two side-by-side releases with
+identical contracts, are the same observation to a collector: several instances reporting one service
+name and one contract. Without an extrinsic identifier there is nothing to tell them apart, and a
+collector that claimed otherwise would be inventing a distinction the data does not contain.
+
+**Immutability.** Once `(service, serviceVersion)` has registered a contract, that pair's contract
+does not change. A re-registration of the same pair with a different `descriptorHash` is contract
+drift (§5) — the declared version is an assertion two builds disagree about. Two *different* versions
+reporting different hashes is **not** drift; it is the expected state of a side-by-side deployment.
+
+**Backward compatibility.** A descriptor that omits `serviceVersion` keys exactly as it always has:
+case 3 gives it one service version, so a collector implementing this section and one predating it
+agree on every single-deployment estate. Only a descriptor that declares a version exercises the new
+behavior — which is why this section is additive rather than a breaking change to §4's existing
+keying.
+
 ## 3. TraceEvent
 
 One pipeline invocation as the mesh sees it — semantic (topic + Benzene status), not
@@ -253,10 +301,15 @@ transport (transport-bindings.md):
 
 - `service` is REQUIRED on register, heartbeat, and issues → `bad-request` when missing. A
   `benzene:mesh:traces` or `benzene:mesh:issues` batch of any size, including empty, MUST be accepted.
-- Re-registration replaces the previous registration wholesale, including the claim to consume
-  *and* the claim to produce each topic — a redeploy that drops a topic from `topics` drops the
-  consumer edge with it, and a redeploy that drops a topic from `produces` drops the provider edge
-  with it, the same rule applied symmetrically to both declared lists (§2).
+- **The catalog is keyed by `(service, serviceVersion)`** (§2.4), not by `service` alone. A
+  descriptor that omits `serviceVersion` has one service version, so an estate whose services never
+  declare one keys exactly as it did before this rule existed.
+- Re-registration replaces the previous registration for **that key** wholesale, including the claim
+  to consume *and* the claim to produce each topic — a redeploy that drops a topic from `topics`
+  drops the consumer edge with it, and a redeploy that drops a topic from `produces` drops the
+  provider edge with it, the same rule applied symmetrically to both declared lists (§2). It MUST NOT
+  disturb a *different* service version of the same service: two releases deployed side by side are
+  two entries, and registering one never deletes the other.
 - **The producer/consumer graph MUST be built from the latest registered `ServiceDescriptor` alone**
   — `produces` for providers, `topics` for consumers (§2, §2.3). A collector MUST report this graph
   in full for a service that has registered but never sent or received a single message: the graph
@@ -399,6 +452,13 @@ identity:
 A heartbeat whose `descriptorHash` differs from the registered descriptor's hash means the
 instance runs a contract the collector hasn't learned. The collector MUST surface the mismatch
 (the Go collector reports per-instance `hashMatches`) rather than silently keeping stale topics.
+
+This comparison is scoped to **one service version** (§2.4): the heartbeat's hash is compared against
+the descriptor registered for the *same* `(service, serviceVersion)` key, never against a different
+release of the same service. Two releases deployed side by side legitimately report different hashes,
+and a collector that compared across them would report drift for every side-by-side deployment — the
+opposite of what this rule is for. A heartbeat carrying a `serviceVersion` no descriptor has
+registered is an unregistered instance, not a hash mismatch.
 
 ## 6. Degradation (normative)
 
