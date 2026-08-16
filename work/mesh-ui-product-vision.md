@@ -1388,3 +1388,551 @@ Cross-reference: the data-layer half of items 1, 9, 13 and 17 belongs in
 `work/service-mesh-roadmap-1.0.md`; the one approved spec change (§5.6, `placement.environment`) is a
 `docs/specification/mesh.md` §2 edit and moves with its conformance fixtures and the Go reference
 implementation, per the standing rule.
+
+---
+
+## 2026-08-16 (later) — PRODUCT REFINEMENT 2, and the removal of discussion/annotations
+
+Input: `work/mesh-feedback-round2-2026-08-16.md` (all eight personas rerun against a **composed rich
+estate** — `owningTeam` on every service, the `payment:capture` / `shipping:book` v1/v2 split with
+`versionCompatibility`), read against `work/mesh-feedback-round-2026-08-16.md` and its correction
+block. This block **re-ranks the R1 backlog above** and records a maintainer decision to remove
+discussion/annotations. It does not rewrite the R1 block; read that as history and this as what
+moved.
+
+Everything asserted here about current behaviour was checked in source at `benzene-ui` `3a61f05`,
+`benzene-dotnet`, `benzene-typescript` and `docs/specification/**` before it entered a ranking.
+Round 2's file:line citations were confirmed individually; where I found the finding to be *stronger*
+than the pack stated, §A0 says so.
+
+### §A0 — Verification of round 2's cited findings (all confirmed; three are worse than reported)
+
+| Round-2 claim | Verdict |
+|---|---|
+| `TopologyGraph.tsx:71` — `const failing = e.errorRate != null && e.errorRate > errorThreshold;` | **Confirmed verbatim.** And the pack is right that the same file already has a third rendering: line 77 computes `unobserved` from `lastObservedAt` and draws the edge dashed, citing `mesh.md` §4.2 in its own comment. The vocabulary exists; the error encoding is still a two-arm ternary, so a null error rate paints `bz-edge-ok`. |
+| `TopicCatalog.tsx:100` — a null status prints `ok` | **Confirmed.** `{!r.status && !r.schemaMismatch && <span className="bz-cat-none">ok</span>}` — the file is `src/components/containers/TopicCatalog.tsx`, not `sections/`. |
+| `selectors.ts:921` — `errors: statsAbsent ? 0 : …` | **Confirmed, and worse than reported.** It sits in the *same object literal* as line 920, `observed: rows.length === 0 \|\| statsAbsent ? null : …`. One selector returns the correct honest null for one field and a manufactured zero for the next. A reviewer read past that; a type would not have. This single pair is the argument for §A3. |
+| `selectors.ts:242` — per-version traffic fabricated | **Confirmed, and it violates a written contract rule.** `selectTrafficForTopic` filters `e.topic === topic` with no version predicate. `MeshUsageEntry`'s own remarks in `Benzene.Mesh.Contracts` state: *"A `null` dimension means the source's backend genuinely doesn't have it … not 'all' - consumers should surface the gap, not guess."* The UI guesses "all". This is not a data-layer gap; the data layer already wrote down the rule the UI breaks. |
+| `#topic/<id>` carries no version; v2 unreachable | **Confirmed.** `routing.ts:19` is `topic: '#topic/'`; `selectTopic` (`selectors.ts:296-299`) is `topics.find(t => t.topic === topic)`; `TopicPage.tsx:30` uses it. `selectTopicEntries` (line 307) already returns *every* version and is used only by `selectHttpMappingsForTopic`. The fix is a route parameter and a selector swap — the data is already in the store. |
+| Declared and observed producers merged into one unlabelled figure | **Confirmed, and worse than reported.** `TopicPage.tsx:84-86` renders `entry.producers.length === 0 ? 'none'` — declared only. The observed side is on the wire and *typed*: `FleetViewTopicsItem.providers` at `contracts/generated.ts:192`. It is referenced by exactly one file in the repo — `src/test/fleetView.ts:26`, a test fixture. **No production selector or component reads it.** The architect's line, "the UI has both halves and never joins them," is literally true at the type level. |
+| Service-level `missingFeeds` parsed and dropped | **Confirmed.** The only `.tsx` references are `TopicLiveStrip.tsx:98,101`. |
+| Capabilities duck-typed | **Confirmed.** `capabilitiesSlice.ts:32-34`, `typeof api.getFleet === 'function'` / `postAnnotation` / `sendMessage`. |
+| `ServiceAbout` version row silently absent | **Confirmed.** `ServiceAbout.tsx:30`, `{about.version && <ValueRow …>}`. |
+| `MessageComposer.tsx:53` renders `vv1` | **Confirmed.** `` {v.version ? `v${v.version}` : 'default'} `` over values already carrying the `v`. |
+
+One correction to the pack's framing, not its facts: **finding 5 (two views of one contract
+disagreeing) is not only fixture-origin.** Even with a correctly derived artifact, the product renders
+`topics.json` and `services/<name>.json` side by side and never states which is authoritative. That
+is a §1.2 provenance defect in its own right and it is cheap: label the source, once.
+
+### §A1 — The R1 backlog, re-ranked (deviations flagged)
+
+**Nothing in the R1 backlog is void.** This is worth stating plainly, because it is the opposite of
+what the framing of the task anticipated. The R1 §0 correction block had *already* re-scoped the two
+fixture artifacts (ownership, version skew) before they reached the backlog — ownership survived as
+R3.13 "contact block, because one free-text string is too thin", version survived as R2.11
+"reconciliation". Round 2 confirms both of those re-scopes were right. **The item that round 2
+retires is a claim in the round-1 evidence pack, not a line in this backlog.** R1 §0's method —
+verify before ranking — is what prevented the artifact from becoming work, and that is now
+twice-validated practice, not caution.
+
+What *does* move:
+
+**Promoted into R1 (the absence release):**
+
+- **NEW R1.0 — a Sources / wiring panel.** *"Is the collector unwired, or wired and broken?"* —
+  platform engineer, production support, security. Today those two states are pixel-identical because
+  capability detection is `typeof api.getFleet === 'function'` (`capabilitiesSlice.ts:32`), and there
+  is **no wiring or diagnostics view anywhere**. `capabilitiesSlice` already computes what an operator
+  needs. Outcome 0 ("know what this view cannot see") has been a principle with no home for two
+  rounds; this gives it a page. Ranked first among the new work because it is the only item that makes
+  the provenance guarantee *verifiable by a reader* rather than an internal discipline — the §1.5
+  requirement ("the product must evidence its own controls") applied to data instead of security.
+- **R2.11 → R1: version reconciliation, rescoped and split.** R1 wrote this as "a blank declared
+  version defers to the live plane with provenance." Round 2 shows the real defect is larger and
+  sits in the absence class: **per-version traffic is fabricated** (§A0), so a v2 shipped last night
+  reads as 10.7k when the live plane says `invocations: 0`. Platform engineer: *"worse than showing
+  nothing"* (architect). It violates a rule `MeshUsageEntry` already documents. **Deviation from R1
+  sequencing, flagged:** this moves from R2 to R1 because it manufactures a measurement, which is the
+  one thing R1 exists to stop.
+- **NEW R1 — a topic version must be reachable.** `#topic/<id>` + first-match `selectTopic` means the
+  page *raises a version-compatibility alarm about v2 and then refuses to show v2's payload*, though
+  `topics.json` carries v2's `messageSchema`. An advertised non-affordance, which R1 §2 already ruled
+  is an outcome-0 violation rather than a feature request. Joins R1.5.
+- **R2.12 → R1: fixture uplift.** Round 2 *is* the controlled experiment for R1 §5.9. Same code, richer
+  estate: the developer moved MAYBE→YES, production support moved from "second tab" to *"unreservedly,
+  for the first sixty seconds"*, and round 1's single worst complaint became **the most-praised feature
+  of either round**. A product surface that can flip two verdicts by changing a fixture is not a test
+  input. **Deviation flagged:** R2 → R1.
+- **NEW R1 (cheap) — label the ownership chip as ownership.** Round 2 retired "ownership is absent" but
+  exposed something smaller and real: with `owningTeam` served, production support picked a rota from
+  it and the delivery owner said *"the coordination list fell out of the tool rather than out of three
+  Slack threads"* — while the BA looked at the same chip and concluded *"there is no owner, team,
+  squad, or contact anywhere on any service page."* **Rendering is not communicating.** Two of three
+  business-side readers got it; one didn't see it as ownership at all. This does not change R3.13's
+  priority — the four-field contact block is still R3 — but the label is a one-line R1 fix.
+- **NEW R1 (cheap) — say which of two contract views is authoritative** (§A0, finding 5).
+
+**Confirmed and unchanged in position:**
+
+- **R1.1 usage coverage + Value-page evidence** stays **#1 in the product**. Now hit by three personas
+  across two rounds. The delivery owner's round-2 line is the sharpest evidence either round produced:
+  *"the single decision I most wanted to take away from this tool is the one it talks itself out of."*
+- **R1.2 render `missingFeeds` / `degraded` everywhere** — unchanged in rank, **transformed in
+  quality**: round 2 converted a theme into a patch list of six named source lines (§A0). It is no
+  longer a principle to apply, it is a set of edits to make.
+- **R1.3 snapshot age / two clocks** — confirmed by 5 personas again, and **widened**: round 2's
+  three-way health disagreement (manifest `unhealthy`, live plane `degraded`, page renders `Heartbeat
+  healthy`, estate tile shows `0 DEGRADED` from the manifest alone) is the two-clocks defect wearing a
+  health costume. Folded in rather than filed separately.
+- **R1.4 window control**, **R1.5 empty states / advertised non-affordances** (now also carrying the
+  flow dead end, `#flow/<id>` → `#fleet`, and `Producers: none`), **R1.6 scope-of-claim** — unchanged.
+- **R2.8 schema constraints**, **R2.10 search over descriptions and fields** — unchanged.
+- **R3.13 contact block**, **R3.14 environment badge**, **R3.15 dispatch audit**, **R4.16 descriptions**
+  (still gated), **R4.17 correlation hand-off**, **R4.18 vocabulary** — unchanged. R4.17's *cheap* half
+  (stop advertising drill-downs that don't exist; expose `x-correlation-id`) is already inside R1.5 and
+  R1.7 and does not wait for R4.
+
+**Raised within its release:**
+
+- **R2.9 mismatch substance** rises to the top of R2. Round 2 supplied the reason: a human note filled
+  the vacuum the tool left and filled it **wrongly** — it asserts *"the schema mismatch on
+  `shipping:book` is the real issue to chase"* while `schemaMismatch` is `false` on every topic and
+  that topic reports *"No schema published."* When the product names a problem and refuses to describe
+  it, a human will describe it, and there is no mechanism to check them. That is a direct cost of the
+  refusal, not a nice-to-have.
+- **R1.7 defect batch** grows from 7 to ~12 and gains one item that is not a defect but a
+  **credibility failure**: the Test Console's **transport selector is decorative** — `sendComposed`
+  sends `{service, topic, headers, body}` and never transmits `transport`, so `http` and `raw` produce
+  byte-identical dispatches. This product's usage promise is *"how often topics are exercised **and
+  over which transports**."* A control that pretends to select a transport, in the product whose
+  differentiator is transport-awareness, is worse than the other eight console bugs combined. It is
+  fixed or it is removed from the screen; there is no third option. Also joining R1.7: the response
+  panel rendering only `result.body` and hiding response headers (QA caught the stub by sniffing
+  `x-correlation-id` on the wire — *"it manufactures false passes and conceals the evidence that
+  they're false"*), and the `vv1` version label.
+
+**Security conditions — deliberately not re-ranked.** Round 2 records *"YES with conditions —
+conditions changed"* without itemising the new conditions. I will not re-rank R3.15 on a summary. The
+three R1 conditions (audit trail, egress framing, environment identification) stand as approved;
+the changed set is an open request back to the round's author.
+
+### §A2 — RULING: declared-vs-observed divergence becomes a first-class product surface
+
+**Decision: first-class. And it costs the Cloud Service spec nothing, because the spec already carries
+it — the product ships one half and drops the mirror.**
+
+The evidence for making it first-class arrived from two directions at once, which is the strongest
+signal either round produced. The developer reached it from below: *"For a blast-radius tool,
+'Producers: none' on a topic that two services are actively producing is the most dangerous single
+string on the screen."* The architect reached it from above, on the undeclared `payments-api →
+shipping-api` edge at 6.2/min that no contract explains: *"That is the single most interesting fact in
+this estate and the UI has both halves and never joins them."* Same seam, opposite approaches, and
+both named it as the thing mesh should own.
+
+**The spec-tautness call, made explicitly and in mesh's favour:**
+
+- `docs/specification/mesh.md` **§4.2 "Declared vs. observed — liveness and drift"** already defines
+  both directions normatively: **Unobserved** (a declared edge with no trace parentage — *"a
+  decommission candidate, not a fact"*, with a MUST that collectors report *last observed at* per edge
+  rather than a boolean) and **Undeclared** (trace parentage on a topic absent from the caller's
+  `produces` or the handler's `topics`). It closes: *"A view MAY render 'declared, unobserved' and
+  'observed, undeclared' states distinctly from a confirmed … edge."*
+- `mesh.md` **§4.1** reserves the `contract-drift` classification for *exactly* this case — *"the
+  undeclared-edge case §4.2 defines … filed in this same shape by a collector **or reader**."* The
+  spec has already granted the aggregator/UI permission to derive it.
+- **The product ships the first half and not the second.** `TopologyGraph.tsx:77` computes `unobserved`
+  and draws it dashed with a `mesh.md §4.2` citation in the comment. Nothing anywhere computes
+  undeclared: `selectEdges` is `topology.json` only, and the live plane's observed producers
+  (`FleetViewTopicsItem.providers`, `generated.ts:192`) are read by one test fixture and no
+  production code.
+
+So this is **zero spec change, zero conformance change, zero new obligation on any service, and no new
+signal from anywhere.** It is a join over two artifacts already in the store. Measured against the
+tautness bar, it is the single best-value item in either round: maximum insight from signal already
+being emitted. **APPROVE.**
+
+**Where it lives — settled by design history, not re-litigated.** The 2026-07-25 drains-up ruling
+(top of this doc) already decided this: *divergence's home is the inbox; primary surfaces show one
+best-available number with provenance one affordance deep, and the reconciliation classes stay.* That
+gives the shape without a new argument:
+
+1. **The inbox** gains the undeclared edge as a `contract-drift` row — *"`payments-api` produces
+   `shipping:book` in traffic but does not declare it"* — with both sides of the evidence named. This
+   is the surface the architect said is the only one that survives forty services (*"because it's a
+   queue, not a canvas"*), so it is where the estate's most interesting fact belongs.
+2. **In place, one affordance deep**: the topic page's Producers row stops being a bare declared list.
+   Three states, never merged and never one unlabelled figure — *declared and observed*, *declared,
+   not observed*, *observed, not declared*. `Producers: none` may only be rendered when the observed
+   side has been checked and is also empty; otherwise it reads *"none declared — 2 observed"*.
+3. **`CONSUMES` provenance.** Round 2's finding 4 — the mesh asserts `payments-api CONSUMES
+   payment:capture v1` while that service's own `specJson` declares only `payments:get` and
+   `payments:get-refunds` — is the same defect from the consumer side: an **inferred** relationship
+   presented as a **declared** one. Developer: *"I'd have believed the wrong thing."* Same three-state
+   labelling, same rule.
+
+**One thing must be checked before building, and it changes the cost:** this doc's own 2026-07-25
+block records the four reconciliation classes — *silent-but-declared*, *observed-but-undeclared*,
+*unhealthy*, *stale* — as **SHIPPED** in `collectLiveIssues()` on the then-canonical
+`mesh-ui.html`. **None of those five names appears anywhere in `benzene-ui` today** (grep-verified
+across `src/`). `work/mesh-ui-react-assessment.md` §9 already records that the React port needed a
+parity sweep because *"eight of the original's `render*`/`build*` functions had no counterpart at the
+point the port looked finished … roughly 85% parity looks like 100% from the outside."* This is
+consistent with a ninth. **Action: a parity audit of the React port against the pre-rewrite
+capability list, before this is scoped as new work.** If it is a regression, the honest status is
+*shipped, then lost in a rewrite, and reported by users as missing* — which is a worse defect class
+than "not built", and one nobody has checked for elsewhere in the product.
+
+**Placement:** R1 for the labelling half (three-state Producers, `CONSUMES` provenance — these are
+absence-honesty and belong in the absence release); R2 for the derived undeclared-edge inbox class.
+
+### §A3 — RULING: the provenance guarantee keeps its priority and changes its shape
+
+The R1 standing rule — *no surface may present an absence as a measurement, and no claim may be
+rendered at a wider scope than its evidence* — now has six source-cited violations.
+
+**Priority: unchanged, and deliberately so.** It was already ranked above all four jobs and above every
+outcome; there is nothing to promote it past. Restating that it matters would be the least useful
+thing this refinement could do.
+
+**Shape: changed, and this is the actual finding.** Six violations in one release is not a discipline
+problem, and the proof is that the *correct* behaviour sits in the same files: `EdgeList` renders the
+identical edge as `errors unknown`; `TopicLiveStrip.tsx:98` says *"not supplied by this plane"*;
+`selectors.ts:920` returns a correct `null` for `observed` — on the line **directly above** the
+manufactured `errors: 0`. The team knows how to do this and does it about half the time. The platform
+engineer diagnosed it exactly: *"The product is honest in the places a human wrote a sentence and
+dishonest in the places the code took a default, and I can't tell from the outside which kind of
+screen I'm looking at."*
+
+**A rule that must be remembered at every render site is not a guarantee. It becomes a mechanism, in
+four parts:**
+
+1. **A typed absence at the store boundary.** Any count derived from a feed is `number | null` in the
+   selector's return type, never `number`, and a null is rendered by one shared component that owns
+   what "unknown" looks like. This converts six independent judgement calls into one decision made
+   once. Highest-leverage single change in either round, and it kills `selectors.ts:921` by
+   construction.
+2. **No two-arm encoding over a nullable.** `failing ? err : ok` (`TopologyGraph.tsx:71`) is correct
+   that null isn't failing and wrong that null is therefore fine. Any good/bad visual encoding gets an
+   unknown arm before it ships — the vocabulary already exists in the same file (`unobserved` →
+   dashed). This is a shape a lint rule or a review checklist can catch; "be honest" is not.
+3. **A surface that states what this view cannot see** — R1.0's Sources/wiring panel (§A1). The
+   guarantee has been unverifiable from outside the product for two rounds. A reader who cannot check
+   it has to take it on trust, which is precisely what the security reviewer said no reviewer does.
+4. **A test, not a reviewer.** A store-level assertion that no selector returns a non-null count for a
+   dimension its own `missingFeeds` declares absent. Six violations survived code review; they will not
+   survive an assertion.
+
+**And a lifecycle field must not wear a health word.** `TopicCatalog.tsx:100` printing `ok` for a null
+status on a topic carrying 310 `service-unavailable` is a distinct sub-case worth naming: absence is
+being rendered not as zero but as *reassurance*. Blank, or the word "none", never "ok".
+
+**One more thing the round handed us, and it should be adopted deliberately: the standard already
+exists inside the product.** The VERSION COMPATIBILITY panel's own caveat — *"upcasters aren't visible
+to the mesh"* — was singled out by **four personas** as the honesty standard the rest of the product
+should meet. That sentence is the reference implementation of this guarantee. Every surface that makes
+a claim gets one sentence of the same kind, written by a human, in the same voice.
+
+### §A4 — What VERSION COMPATIBILITY tells us about where to invest
+
+It became the most-praised feature of either round the moment the fixture carried versions:
+production support put it in a 3am escalation unprompted; the developer called it *"the killer feature
+and it's already there"*; the architect and platform engineer both named it the reason they'd return.
+Four conclusions, ranked.
+
+**1. The differentiator is reconciliation, not display — invest in the class, not the panel.** Every
+product in the comparison set (Datadog service maps, Backstage catalogs, Grafana, AsyncAPI Studio) can
+show a service, a topic, a schema, a graph. **None can tell you the producers are on v2 while the
+consumers are on v1**, because none of them knows what a topic version is. That is the whole "why
+Benzene", and version compatibility is one *instance* of a class: *declared vs. declared*. §A2's
+undeclared edge is the second instance — *declared vs. observed*. They are the same product idea and
+they should be invested in as one. This retires any ambiguity about where the next increment goes.
+
+**2. Insight-per-byte-of-spec is the metric, and this is the exemplar.** Version compatibility costs
+the Cloud Service spec **nothing**: versions are already in the contract document, and the aggregator
+derives the reconciliation centrally. That is the tautness thesis proven in the field — a small,
+disciplined emission surface, a lot of insight, derived once. Every future proposal is now measured
+against it: **does it derive, like version compatibility, or does it demand, like
+ownership-in-the-descriptor (rejected, §5.2)?** Proposals of the first kind get a fast yes.
+
+**3. Shipped-and-invisible is worth less than not-built, because it also costs credibility.** Both
+rounds' headline complaints were about capabilities that ship. Round 2 is the controlled experiment
+(§A1) — and note what the fixture was hiding: not polish, but the *two differentiators*. The default
+`contracts/artifacts/*` estate is the demo of the product's reason to exist, not a test input.
+Promoted to R1.
+
+**4. Honesty is a feature users name out loud.** Four personas praised the caveat, not the number. That
+is direct evidence that §A3 is not a hygiene tax paid against feature velocity — it is what made them
+trust the figure beside it. Shipping more surfaces at the cost of provenance trades the asset for the
+inventory.
+
+**Concretely, the investment:** finish the version dimension end to end before adding any estate
+surface. The most-praised feature in the product currently has **three holes** — v2 is unreachable
+(§A0), per-version traffic is fabricated (§A0), and two of three services show no version at all
+(`ServiceAbout.tsx:30`). A most-praised feature with three holes is the cheapest available win in the
+entire backlog. Then build the second instance of the class (§A2). The 2026-07-25 STOP list — *no new
+estate surfaces until the front door and issue detail exist* — still holds.
+
+---
+
+## §B — Removing discussion / annotations
+
+**Maintainer decision, 2026-08-16: discussion/annotations is removed.** *"I don't think it can compete
+with Teams and Slack."* That decision is not re-opened here. What follows is the product ruling on the
+job it was doing, and the sequenced plan.
+
+I record my own agreement only because it changes what the replacement must look like: the maintainer's
+reason (it cannot compete) and round 2's evidence (it became **confident misinformation**) converge on
+the same removal from opposite premises, and the second reason is the one that rules out ever hosting
+the text somewhere cheaper.
+
+### §B1 — RULING: the decision-record job survives; the hosted text does not
+
+**What was praised in both rounds was never conversation.** It was a **durable, dated, attributed
+decision attached to the artefact** — finance confirming a retirement; a drift classified as expected
+and tied to `PAY-118`. R1 §2 promoted outcome 6 on exactly that evidence, and the promotion was for the
+*record*, not the *thread*. The removal inventory reached the same conclusion independently: *"Nobody
+asked for chat; they asked for provenance."*
+
+**What round 2 showed is the price of hosting the text.** The same note the architect praised in round 1
+asserts *"the schema mismatch on `shipping:book` is the real issue to chase"* — while `schemaMismatch`
+is `false` on every topic and that topic reports *"No schema published."* It was listed among three
+self-contradictions that *"would cost me the room."* A free-text human note drifted away from the
+system it annotates and became confident misinformation **with no mechanism to detect it**.
+
+That is decisive, and it is §1.2 wearing a human costume: the product presented an unverifiable
+assertion at the same visual weight as a derived one. Mesh's entire pitch is *"documentation rots, the
+running system doesn't lie."* Hosting prose inside the product re-imports the rot it sells against.
+
+**Ruling: the decision-record job survives, in a cheaper form. Mesh points at provenance instead of
+hosting it.**
+
+- **Shape:** an optional, per-entity list of `{ label, url, dateUtc }` — a link to the Slack/Teams
+  thread, the Jira ticket, the ADR, or the PR that already holds the decision. Mesh renders label, date
+  and a link out, and **asserts nothing about the content.**
+- **Why this is the right trade, not a consolation prize:** a link cannot drift into misinformation
+  because it makes no claim — a stale link is visibly a pointer elsewhere, whereas stale prose reads as
+  fact. It costs zero write path, zero auth, zero identity, zero moderation, and it keeps the static
+  floor intact (a field in an artifact, not an endpoint). And it puts the decision where the
+  organisation already keeps decisions, which turns the maintainer's reason for removal into the design
+  of the replacement rather than a gap left behind it.
+- **Where the data comes from — and the tautness call:** the mesh **registry**, operator-supplied,
+  already outside the Cloud Service spec. This is the fifth field of the contact block **already
+  approved in R1 §5.2** (team, contact URI, repo URL, runbook URL, + decision URL). **No Cloud Service
+  spec change, no conformance change, no new obligation on any port.** It is therefore *not a new
+  backlog item*: it rides **R3.13** as a one-field extension.
+- **Not built now, and not a gate.** The removal does not wait for it.
+
+**Explicitly rejected as replacements**, so they are not re-proposed: a lighter comment box (same
+drift, less function); read-only threads kept as an archive (the round-2 failure was a *read-only*
+thread — read-only is exactly the mode that produced the misinformation); and importing Slack/Teams
+content into mesh (that is hosting the text again, with an integration attached).
+
+### §B2 — What mesh must keep so the Value page does not lose its evidence trail
+
+**The honest answer: the Value page's evidence trail was never the annotations.** R1 §0.5 established
+that its evidence string is manufactured from an absent row. The thread was the only thing on that page
+a human had checked, but it sat *beside* the evidence, not inside it. Removing it does not remove
+evidence — it removes the appearance that the evidence had been reviewed.
+
+So what must be kept is not a feature. It is **one sequencing obligation and two demo obligations**:
+
+1. **R1.1 (usage coverage three-state + Value-page evidence correction) must land in, or before, the
+   release that removes annotations.** This is the only genuine broken-intermediate-state risk in the
+   whole removal, and it is a product risk, not a code risk. Today the demo's retirement arc is
+   *deprecation badge + zero observed usage + a thread in which two named people agree to delete*. Strip
+   the thread and what remains is a manufactured zero with **no human check at all** — a Value page that
+   is *more* confidently wrong than the one round 1 called the product's most dangerous surface. Gate on
+   this.
+2. **Keep the four-tier ranking and its per-row evidence strings** (RAG per F2), corrected to §3.1's
+   three coverage states. That is the evidence trail, it is derived, and it cannot rot.
+3. **Re-stage the `order:legacy-export` arc in the fixture** (R1 fixture uplift, §A1): a topic genuinely
+   *covered* by the usage feed with a measured zero, tiered red, next to one *not covered*, tiered amber.
+   That is a strictly better demo than the thread was, because it demonstrates the differentiator instead
+   of demonstrating a comment box.
+
+### §B3 — Verified: it is NOT spec-pinned
+
+I verified the inventory's decisive claim myself, because it materially changes the cost:
+
+- `docs/specification/**` contains **no annotation contract**. The only `annotation` hits — `mesh.md:181`,
+  `core-concepts.md:173` — are `[Message("topic")]` **attribute/annotation sugar**, a different sense.
+- **No conformance fixture mentions it.** `grep -l` for `annotation` across `docs/specification/conformance/*.json`
+  returns nothing.
+- The spec's **reserved topic set** is `benzene:mesh`, `benzene:mesh:register`, `benzene:mesh:heartbeat`,
+  `benzene:mesh:traces`, `benzene:mesh:issues`, `benzene:mesh:query:*`. **`benzene:mesh:annotations:add`
+  is not among them** — it is an aggregator-host-local topic in the same family as
+  `benzene:mesh:aggregate` and `benzene:mesh:report`, and `mesh.md:272` sets the precedent that
+  host-local topics in that namespace are deliberately outside the contract.
+
+**Confirmed: no spec change, no conformance-fixture change, no cross-language contract negotiation, and
+no conforming service can break, because none was ever required to implement it.** Removal is per-repo
+and can proceed at different times without drifting the spec.
+
+**But the inventory understated two things, and both change the ordering and the cost:**
+
+**(a) There is a fifth surface — this repo.** `docs/guides/mesh-ui.md` is the **language-neutral Mesh UI
+guide**, and its own line 23 calls it *"the contract that keeps every one of those copies rendering a
+consistent product."* It carries the `annotations.json` artifact row (line 75), §3.8 *"Annotations (read
+on the static floor)"* (lines 160-162), the backend-gated write toggle (line 189) and two further
+mentions (126, 158). `mesh-ui/README.md` documents `data-annotations-url` / `?annotations=`. And
+`mesh-ui/mesh-ui.html` is the **canonical vendored build** that every port and the website demo
+re-vendors from (guide §5). Leaving the guide describing a section the UI no longer has is precisely the
+drift that guide exists to prevent — and it is what would let a future Go or Python port implement it.
+
+**(b) `@benzene/ui` is a published component library and annotations are in its public API.**
+`src/index.ts` re-exports `./components`, which exports **`Thread`** and **`Composer`**
+(`components/index.ts:26-27`); `./store` exports `annotationsSlice`; and `scripts/verify-package.mjs:58`
+**asserts the published store carries an `annotations` slice**, with lines 61-64 asserting
+`capabilities.annotate === false`. This is a **breaking change to `@benzene/ui` 0.1.0** — a version bump
+and a CHANGELOG entry, not a silent deletion. The inventory's "19 files" is 25 tracked files once the two
+build scripts are counted.
+
+**One directional constraint governs the whole plan:** the vendoring chain is one-way —
+`benzene-ui` (source) → `Benzene/mesh-ui/mesh-ui.html` (canonical vendored copy) → `benzene-dotnet`,
+`benzene-typescript`, `website/demos/mesh/`. Verified: `benzene-dotnet/src/Benzene.Mesh.Ui/mesh-ui.html`
+is **byte-identical** to `benzene-ui/build/mesh-ui.html` (md5 `89fdbb58f33609b2b7dd820baad6230c`). The UI
+must go first and the vendored copies must be refreshed in the same wave, or every port ships a page
+that fetches an artifact its own aggregator no longer publishes.
+
+### §B4 — The sequenced removal plan
+
+**Step 0 — announce before removing. This is an obligation, not an optional courtesy.**
+A deployment using this has its data in exactly one place: `annotations.json` in its
+`IMeshArtifactStore`. That is **the one artifact in the product that cannot be regenerated from the
+fleet** — the .NET publisher parks a corrupt log to a timestamped sibling rather than discarding it,
+precisely for that reason. So:
+
+- Deprecation notice one release ahead of the code removal, in `docs/guides/mesh-ui.md`,
+  `mesh-ui/README.md`, `deploy/Mesh/README.md`, `examples/AwsMesh/README.md`, and the
+  `Benzene.Mesh.Aggregator` / `Benzene.Mesh.Contracts` `CLAUDE.md` in both ports.
+- **State plainly: export `annotations.json` before upgrading.** Mesh will stop publishing it and stop
+  serving it. **No migration is provided and none is possible** — a paragraph of prose does not convert
+  into a URL, and pretending otherwise would be a lossy import dressed as a migration.
+- Name the replacement position in the same notice (§B1), so it reads as a decision rather than an
+  amputation.
+- **Do not delete anyone's `annotations.json` on upgrade.** The publisher stops writing; the file stays
+  where it is. Silently deleting the only non-regenerable artifact would be the worst available removal
+  behaviour.
+
+**Step 1 — `benzene-ui`. One atomic change; nothing downstream starts until it merges.** Any subset
+leaves the build red or the store half-wired, so these move together:
+
+- `store/slices/annotationsSlice.ts`; the reducer in `store/store.ts:6,20`; the exports at
+  `store/index.ts:11,13`.
+- `selectThread` / `selectCanPost` / `selectCanAnnotate` in `store/selectors.ts` **and** their call
+  sites (`TopicPage.tsx:3`, `ServicePage.tsx`) **in the same commit** — a dangling selector import is a
+  build break.
+- `components/sections/Thread.tsx`, `Composer.tsx`, both `.stories.tsx`, and the barrel exports at
+  `components/index.ts:26-27`. Check `components/architecture.test.ts` for a barrel assertion.
+- `data/meshApi.ts:158-159` (`getAnnotations`, currently **not** feature-gated — it fires a boot fetch
+  that 404s on every static deployment without the artifact) and `163-168`
+  (`postAnnotation` / `annotationsEndpoint`); the two optional members on `MeshApi`
+  (`store/slices/estateSlice.ts:94-99`).
+- `capabilitiesSlice.ts:33` (`annotate`) **together with** `scripts/verify-package.mjs:58,61-64` — that
+  script asserts both the slice's presence and `annotate === false`, so leaving it fails package
+  verification on a correct build.
+- `App.tsx:5,46` (`loadAnnotations` on boot).
+- `contracts/artifacts/annotations.json` **and** `scripts/generate-contracts.mjs:156` in one commit
+  (the artifact→type map), then regenerate `src/contracts/generated.ts`. Split them and codegen fails.
+- Tests/fixtures: `pages.test.tsx`, `catalog.test.ts`, `meshApi.test.ts`, `test/fakeMeshApi.ts`.
+- **Version bump `@benzene/ui` 0.1.0 → 0.2.0 + CHANGELOG**, naming `Thread`, `Composer`, the
+  `annotations` slice, the three selectors and the two `MeshApi` members as removed public API.
+- **Do not grep-and-delete on `/annotation/i`.** Unrelated senses exist across the family — X-Ray
+  annotations, Joi/Yup/Zod validation annotations in `benzene-typescript`, `Benzene.DataAnnotations` in
+  .NET. Scope by file list, never by regex.
+
+*Side benefit worth recording:* this removes the store's **only read-write data** (the slice's own doc
+comment says so), which simplifies the security posture, the auth story and the static-hosting floor in
+one move. Dispatch becomes the sole write path.
+
+**Step 2 — re-vendor the build, same wave as step 1. This is the step that prevents the broken
+intermediate.** Rebuild `benzene-ui` → refresh `Benzene/mesh-ui/mesh-ui.html` → refresh
+`website/demos/mesh/`. Until this lands, every downstream copy still requests a dead artifact.
+
+**Step 3 — the docs contract, in this repo, in the same PR as step 2.**
+
+- `docs/guides/mesh-ui.md`: drop the artifact row (75), §3.8 (160-162), the write-toggle sentence (189)
+  and the mentions at 126 and 158. **Add one line recording the position** — *decisions live in the
+  organisation's own tools; mesh links to them, it does not host them* — so a future port does not
+  re-add it.
+- `mesh-ui/README.md`: remove the `data-annotations-url` / `?annotations=` option row and the artifact
+  bullet.
+- **No `docs/specification/**` change and no conformance change** (§B3). State this in the PR body so a
+  reviewer does not go looking.
+
+**Step 4 — `benzene-dotnet`. After steps 1-3; parallel with step 5. One PR, because the handler, the
+topic constant and the DI registration reference each other.**
+
+- `Benzene.Mesh.Aggregator`: `MeshAnnotationPublisher.cs`, `MeshAnnotationsMessageHandler.cs`,
+  `MeshAggregatorTopics.AnnotationsAdd`, and the registration at `Extensions.cs:48-51`.
+- `Benzene.Mesh.Contracts`: `MeshAnnotation.cs`, `MeshAnnotationLog.cs`, `MeshAnnotationRequest.cs`,
+  `MeshAnnotationThread.cs`. Four types leave a package whose standing rule is *stay dependency-light*,
+  and nothing else references them.
+- `Benzene.Mesh.Artifacts/MeshArtifactMiddleware.cs`: drop `"annotations.json"` from the served
+  allow-list (~line 114) and the doc comment (line 11). **Order note: do this after step 2 ships.** While
+  old UI copies are in the wild, serving the file is harmless and 404ing it is a console error on
+  someone's dashboard.
+- `test/Benzene.Mesh.Test/MeshAnnotationsTest.cs` deleted in the same PR (10 tests; the suite moves
+  ~211 → ~201). `test/Benzene.Mesh.Test` remains the reference suite — the count drops, the bar does not.
+- Re-vendor `src/Benzene.Mesh.Ui/mesh-ui.html` from `Benzene/mesh-ui/`.
+- Docs: `deploy/Mesh/README.md`, `examples/AwsMesh/README.md`, `docs/mesh-ui.md`, and the
+  `Benzene.Mesh.Aggregator` / `Benzene.Mesh.Contracts` / `Benzene.Mesh.Ui` `CLAUDE.md` files —
+  **including retiring the "P6 SHIPPED — discussion" narrative in `Benzene.Mesh.Ui/CLAUDE.md`**, so the
+  package doc stops describing a section that no longer renders.
+
+**Step 5 — `benzene-typescript`. Mirror of step 4; may run in parallel.** The same four
+`Benzene.Mesh.Contracts` types, the same two `Benzene.Mesh.Aggregator` files, `Extensions.ts` and both
+`index.ts` barrels, `dist/` regenerated, `src/Benzene.Mesh.Ui/mesh-ui.html` re-vendored. Same caution
+about unrelated `annotation` senses (`Benzene.Joi`, `Benzene.Yup`, `Benzene.Zod`,
+`Benzene.Aws.Lambda.XRay`, `Benzene.Mesh.Fleet.*`).
+
+**Step 6 — Go and Python: nothing to do.** Verified zero mesh-annotation code in either; their only
+`annotation` hits are Go validation tags and Python type hints. One line in the announcement: **two of
+four ports never implemented it, and nobody filed for it** — the clearest available evidence that the
+job was never the conversation.
+
+**What must NOT be removed along the way:**
+
+- The `IMeshArtifactStore` corrupt-artifact parking behaviour — a general durability property, not
+  annotation-specific.
+- The **feature-detection / degradation-ladder pattern** itself. `?annotations=` was one instance; the
+  same pattern gates the fleet plane and dispatch and is load-bearing for the static floor.
+- Any deployment's existing `annotations.json`.
+
+**Risks, ranked:**
+
+1. **Value-page regression** if the removal lands before R1.1 — the demo keeps a manufactured zero and
+   loses its only human check. **Gate on R1.1** (§B2).
+2. **Broken intermediate** if steps 1 and 2 separate — downstream pages fetch a dead artifact. Treat 1+2
+   as one wave.
+3. **Console errors on live dashboards** if step 4's allow-list change precedes step 2. Order 4 after 2.
+4. **Silent public-API break** if `@benzene/ui` ships as a patch. Bump to 0.2.0 with a CHANGELOG entry.
+5. **Collateral damage** from a regex sweep across four repos. Removal is by explicit file list.
+
+### §B5 — Status honesty, updated
+
+- **Shipped and verified:** VERSION COMPATIBILITY (now the most-praised surface in the product, once
+  the estate carried versions); the issue inbox; `MeshTopicChange` drift substance; the dispatch gate's
+  controls; edge liveness (`unobserved` → dashed, `mesh.md` §4.2).
+- **Shipped but wrong:** per-version traffic (`selectors.ts:242` joins on topic only, against
+  `MeshUsageEntry`'s own documented rule); `errors` manufactured as 0 when the stats feed is absent
+  (`selectors.ts:921`); `ok` printed for a null lifecycle status (`TopicCatalog.tsx:100`); the Test
+  Console's transport selector, which transmits no transport at all.
+- **On the wire, typed, and read by nothing:** `FleetViewTopicsItem.providers` (`generated.ts:192`) —
+  the observed half of §A2, referenced only by a test fixture.
+- **Recorded as shipped, absent today, unaudited:** the four live reconciliation classes
+  (`collectLiveIssues`, 2026-07-25 block). Parity audit owed (§A2).
+- **Shipped but unverified against a real backend:** the Tempo adapter's metric and label names remain
+  **documented convention, never checked against a live Tempo instance** — restated again because it
+  keeps needing restating; the composite AWS/Azure usage-window behaviour is API-shape-correct only.
+- **Being removed:** discussion/annotations (§B). Not spec-pinned (§B3, verified).
+- **Not built:** the Sources/wiring panel; usage coverage declaration; mismatch detail; the registry
+  contact block (now +1 field, §B1); the environment badge; the dispatch audit trail; topic
+  descriptions; the trace hand-off.
+
+Cross-reference: the data-layer halves — the usage coverage declaration, mismatch detail, the
+undeclared-edge derivation (§A2) and the contact block's decision URL (§B1) — belong in
+`work/service-mesh-roadmap-1.0.md`. **No Cloud Service spec change is required by anything in this
+block**; §A2 is served entirely by `mesh.md` §4.1/§4.2 as they already stand, and §B removes a surface
+the spec never carried. The one approved spec change remains R1 §5.6's `placement.environment`.
