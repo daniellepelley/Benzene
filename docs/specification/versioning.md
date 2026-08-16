@@ -33,12 +33,17 @@ the third is *across* deployments:
 |---|---|---|---|
 | **Handler version** | "Which implementation of this topic's behavior runs?" | Within a service | Shipped: `(topic, version)` → handler, `[Message(topic, version)]`, `IVersionSelector` (core-concepts.md §2, §9) — §3 |
 | **Payload schema version** | "What shape is this request/response wire payload?" | Within a service | Shipped: schema casting — §4 |
-| **Service version** | "Which immutable set of topics and payload schemas is this deployment serving?" | Across deployments of one service | **Proposed** — §5 |
+| **Service version** | "Which immutable release of this service is serving this?" | Across deployments of one service | **Proposed** — §5 |
 
 The third is the layer beneath a service's *name*: a name identifies which service, a service
-version identifies which contract that service is currently serving. It is what makes two
-deliberately co-deployed builds of one service distinguishable rather than looking like one service
-that keeps changing its mind (§5.1).
+version identifies **which release of it is running**. It is what makes two deliberately co-deployed
+builds of one service distinguishable rather than looking like one service that keeps changing its
+mind (§5.1).
+
+Note the third axis is an **entity**, not a shape. A service version *has* a contract; it is not
+*defined by* one. Two service versions may serve byte-identical topics and payload schemas and still
+be different versions — a rewrite, a bug fix, a swapped downstream dependency — which is why its
+identity cannot be derived from the contract (§5.2).
 
 A service MAY use any axis alone, or combine them — a handler-version bump for a genuine behavior
 change, payload-schema casting absorbing compatible data-shape drift, and a service-version
@@ -355,52 +360,66 @@ deployment-shaped answer to the same problem §3 and §4 answer in code.
 ### 5.1 The missing identity layer
 
 Today a service's identity in the mesh is its **name**. That is one layer short. A name identifies
-*which* service; it does not identify *which contract that service is currently serving*, and two
-deliberately co-deployed versions of `payments` are indistinguishable from one `payments` that
-keeps changing its mind. Three layers are needed, not two:
+*which* service; it does not identify *which release of it is running*, and two deliberately
+co-deployed versions of `payments` are indistinguishable from one `payments` that keeps changing its
+mind. Three layers are needed, not two:
 
 | Layer | Identifies | Lifetime | Wire field (mesh.md §2) |
 |---|---|---|---|
 | **Service** | the logical service — `payments` | permanent | `service` (REQUIRED) |
-| **Service version** | one **immutable** set of topics, produced topics and payload schemas | added over time, never mutated | `serviceVersion`, else generated (§5.2) |
+| **Service version** | one **immutable release** of that service — its behavior *and* its contract | added over time, never mutated | `serviceVersion`, else §5.2 |
 | **Instance** | one running process | ephemeral, replaced constantly | `instanceId` |
 
-The middle layer is the new concept. It is where a contract actually lives: a service version is a
-frozen snapshot of what the service consumes, produces, and in what shapes. Over time a service
-**accumulates** service versions rather than overwriting one.
+The middle layer is the new concept, and it is an **entity**, not a shape. A service version *has* a
+contract — a set of topics, produced topics and payload schemas, frozen for that version's lifetime —
+but it is not *defined by* that contract. Over time a service **accumulates** service versions rather
+than overwriting one.
 
-Note what this is *not*: the `serviceVersion` field already exists on the wire and already
-participates in `descriptorHash` (mesh.md §2, §2.2). What does not exist is any **identity meaning**
-attached to it — today it is descriptive metadata a collector may display and nothing keys on. This
-mechanism promotes it to part of the key. That makes the change considerably smaller than the
-concept suggests: no new wire field is required for the declared case.
+That distinction is load-bearing, because **two service versions may serve identical contracts**. A
+rewrite, a corrected calculation, a swapped downstream dependency — all change what the service
+*does* while changing nothing about the topics or payload shapes it declares. Such a change is a
+genuine new service version, and it is one of the most common reasons to run side by side at all: a
+behavior change is exactly the kind of risk an operator wants to cut over gradually. Any scheme that
+identifies a service version by its contract collapses precisely this case.
 
-### 5.2 Version identity: declared, else generated
+Note what this is *not*: the `serviceVersion` field already exists on the wire (mesh.md §2). What
+does not exist is any **identity meaning** attached to it — today it is descriptive metadata a
+collector may display and nothing keys on. This mechanism promotes it to part of the key, so no new
+wire field is required for the declared case.
 
-An operator **SHOULD** bump `serviceVersion` on every contract change, but a spec cannot assume
-they will — an un-bumped version is a mislabel waiting to happen, and refusing to function without
-one would make the whole mechanism opt-in-by-discipline. So the version identity resolves in two
-steps:
+### 5.2 Version identity is extrinsic
 
-1. **Declared.** If the descriptor carries a non-empty `serviceVersion`, the version identity is
-   that string. It is human-meaningful, stable across rebuilds that do not change the contract, and
-   is what an operator names in routing rules and rollback commands.
-2. **Generated.** If `serviceVersion` is absent, the version identity **MUST** be derived from the
-   descriptor's contract — for which `descriptorHash` (mesh.md §2.2) is already exactly the right
-   value, already normative, already computed by every port, and already defined to change when and
-   only when the contract changes. A service that never declares a version therefore still gets
-   correct side-by-side behavior automatically; it simply gets machine-shaped version names.
+**A service version's identity cannot be derived from its contract.** §5.1's point is the whole
+reason: two versions may declare byte-identical topics and schemas and still be different releases,
+so any content-derived value — including `descriptorHash` — is a *structural* fingerprint, never an
+*entity* identity. Using one as identity silently merges a behavior-only change into its
+predecessor, which is the exact scenario side-by-side deployment exists to serve.
 
-A port **MUST NOT** invent a third scheme (build number, timestamp, deploy id): those change on
-rebuilds that did not change the contract, which would fragment one service version into many
-identical siblings and defeat the immutability in §5.3.
+Identity must therefore come from outside the contract. It resolves in this order:
 
-> **Why the hash is a sound generated version, despite including `serviceVersion`.** `descriptorHash`
-> covers `serviceVersion` along with the rest of the contract (mesh.md §2.2). That is not a
-> circularity here, because the hash is only *used* as the identity in the branch where
-> `serviceVersion` is absent — and an absent field hashes identically across deployments, so the
-> hash reduces to a fingerprint of the contract proper. In the declared branch the hash is not the
-> identity at all; it is the drift detector *within* that identity (§5.3).
+1. **Declared.** A non-empty `serviceVersion` on the descriptor is the identity, and is the only
+   source that is both stable and human-meaningful — it is what an operator writes in a routing rule
+   and names in a rollback. Operators **SHOULD** declare one for every release, and a port **SHOULD**
+   make it easy to (a build-time constant, a substituted environment variable).
+2. **Substrate revision.** Where the platform itself assigns an immutable per-release identifier, a
+   port **MAY** read it as the fallback: a published AWS Lambda version, a Kubernetes ReplicaSet, a
+   Cloud Run revision, an Azure deployment slot. This is legitimate precisely because it is
+   *extrinsic* — the substrate mints a new one per deployment, not per contract change. Which
+   identifier (if any) is available is per-platform, so this is **informative, not normative**, and
+   is read the same way `placement` already is (mesh.md §2).
+3. **Neither.** The service has exactly **one** service version, and side-by-side is unavailable to
+   it. This is not an error and **MUST NOT** be reported as one — it is the status quo, and every
+   existing single-deployment service lands here unchanged.
+
+A port **MUST NOT** synthesize an identity from a value that changes independently of releases — a
+process start time, a random id per boot, an instance id. Those mint a fresh "version" per replica
+or per restart, shattering one release into many phantom siblings.
+
+> **Why case 3 cannot be improved on.** Two replicas of one deployment and two side-by-side versions
+> with identical contracts are, to a collector, the same observation: several instances reporting one
+> service name and one contract. Without an extrinsic identifier there is genuinely nothing to tell
+> them apart, and a spec that claimed otherwise would be inventing a distinction the data does not
+> contain. Declaring `serviceVersion` is what supplies the missing information.
 
 ### 5.3 Immutability, and what drift still means
 
@@ -408,16 +427,24 @@ A service version is **immutable**: once `(service, version)` has been registere
 that pair's contract does not change. Everything a collector needs to police that already exists —
 it is `descriptorHash`, re-scoped from the service to the `(service, version)` pair:
 
-| `serviceVersion` | `descriptorHash` | Meaning |
+| Version identity | Contract | Meaning |
 |---|---|---|
 | same | same | Same version, same contract — ordinary multi-instance. Not drift. |
-| **different** | different | **Deliberate side-by-side versions.** Siblings, both valid. Today this reads as drift; under this mechanism it MUST NOT. |
 | **same** | **different** | **Contract drift** — the declared version is lying. Two builds claim one version and disagree about its contract. This is the case the existing rule (mesh.md §5) already catches, and it MUST keep being caught. |
-| different | same | Unreachable when `serviceVersion` is declared (it participates in the hash); benign if reached. |
+| **different** | different | **Side-by-side versions, contract changed.** Siblings, both valid. Consumers of the changed topics may need to migrate. Today this reads as drift; under this mechanism it MUST NOT. |
+| **different** | **same** | **Side-by-side versions, behavior-only change.** Siblings, both valid, and — usefully — *no consumer needs to migrate*, because nothing about the wire contract moved. |
 
-The second row is the entire fix to the identity problem. The third row is the reason the hash must
-survive as a check rather than being replaced by the label: a declared version is an *assertion*,
-and the hash is what verifies it.
+The last two rows are the fix to the identity problem; the second is why a contract fingerprint must
+survive as a check rather than being replaced by the label, since a declared version is an
+*assertion* and the fingerprint is what verifies it.
+
+The fourth row is worth more than it first appears: "these two versions differ, and their contracts
+are identical" is precisely the signal that tells a consumer team it has nothing to do. Reporting it
+requires comparing a **contract-only** fingerprint across versions — which `descriptorHash` as
+currently defined cannot do, because `serviceVersion` participates in it (mesh.md §2.2), so two
+declared versions always hash differently even when their contracts are identical. Resolving that
+(narrow the hash, or publish a second contract-only digest beside it) is a normative change to a
+conformance-pinned definition and is recorded in §7 rather than decided here.
 
 ### 5.4 Routing a message to the right service version
 
@@ -460,10 +487,12 @@ implements them today:
    Re-registration replaces wholesale *within a version*, not across the service. Without this, v2
    registering deletes v1's entry, which is precisely the current failure.
 2. **§5 — a descriptor-hash mismatch is drift only within one version.** Two versions of one
-   service reporting different hashes is the expected, correct state (§5.3, row 2), not a mismatch
+   service reporting different hashes is the expected, correct state (§5.3, row 3), not a mismatch
    to surface.
 3. **§2 — `serviceVersion`'s meaning is promoted** from descriptive metadata to part of the
-   identity, with the declared-else-generated resolution in §5.2 stated normatively.
+   identity, with §5.2's resolution order stated normatively — including that a service with no
+   version identity available has exactly one, which is what keeps every existing single-deployment
+   service conformant without change.
 
 A collector that has not adopted these degrades predictably rather than dangerously: it sees
 repeated re-registration of one service whose contract keeps changing, which is exactly today's
@@ -479,6 +508,7 @@ even though the cutover itself is a routing change the mesh does not perform.
 
 | Requires | Why | Degradation when declined |
 |---|---|---|
+| A version identity for the service (§5.2) | Two releases are otherwise the same entity | The service has one service version; side-by-side is unavailable to it. Not an error — the status quo for every service today |
 | A version signal on the message (§2) | Routing has nothing to discriminate on without one | Everything routes to the topic's default version (§2.2) — i.e. exactly single-deployment behavior |
 | A routing layer that can read it (§5.4) | Something has to act on the signal | Only one version can be live per topic; the mechanism is unavailable, but nothing breaks |
 | Version-aware mesh identity (§5.5) | Siblings are otherwise read as one service overwriting itself | Deployment and routing still work; the **catalog** misreports, showing drift where there is none |
@@ -542,11 +572,23 @@ is where an estate accumulates versions fastest and §5.7's retirement problem b
 
 Specific to Mechanism C (§5):
 
-- **Two `serviceVersion` naming schemes in one estate.** §5.2 resolves declared-else-generated
-  per service, so one service may key on `1.4.2` while another keys on a hash. That is intended
-  (a port cannot force declaration), but a catalog rendering both needs a presentation rule — most
-  likely: show a shortened hash with an explicit "generated" affordance, never a bare hash that
-  reads like a name someone chose.
+- **A contract-only fingerprint (§5.3, row 4).** Reporting "these two versions differ but their
+  contracts are identical" — the signal that tells a consumer team it has nothing to do — needs a
+  digest over the contract *alone*. `descriptorHash` cannot serve: `serviceVersion` participates in
+  it (mesh.md §2.2), so two declared versions always hash differently even when their contracts
+  match. Two candidates, both normative changes to a conformance-pinned definition and so needing
+  their own cross-port pass: **narrow** `descriptorHash` by adding `serviceVersion` to its exclusion
+  list (cleaner, but changes an existing hash's value in every port), or **add** a second
+  contract-only digest alongside it (purely additive, at the cost of two hashes to explain). The
+  first also has a subtlety worth checking: with `serviceVersion` excluded, the hash no longer
+  changes on a version bump, so anything today relying on "hash changed ⇒ redeploy" would need to
+  key on the version identity instead.
+- **Mixed identity sources in one estate.** §5.2 resolves per service, so one service may key on a
+  declared `1.4.2` while another keys on a substrate revision, and a third has no version identity at
+  all. That is intended (a port cannot force declaration), but a catalog rendering all three needs a
+  presentation rule — most likely: mark a substrate-derived identity as such rather than letting it
+  read like a name someone chose, and render a service with no version identity exactly as services
+  are rendered today, with no empty "version" affordance implying something is missing.
 - **What counts as the "default version" for absent-version routing.** §2.2 says the topic's
   default is by convention the oldest still accepted, and §5.4 requires routing rules to encode
   it. Nothing currently *declares* which version that is — it is a convention held in an operator's
@@ -564,6 +606,9 @@ Specific to Mechanism C (§5):
   exercised. Confirm that signal is sufficient to answer "is anything still calling v1?" — it is the
   question the whole mechanism eventually turns on, and the one an operator will not retire without.
 - **Conformance fixtures for sibling versions.** The collector cases currently register one
-  descriptor per service. Add cases pinning that two descriptors differing only in `serviceVersion`
-  produce two catalog entries rather than one overwriting the other (§5.3, row 2), and that two
-  differing only in `descriptorHash` under one declared version still report drift (row 3).
+  descriptor per service. Add cases pinning each row of §5.3's table: two descriptors differing only
+  in `serviceVersion` produce two catalog entries rather than one overwriting the other (rows 3–4);
+  two differing in contract under one declared version still report drift (row 2); and — the case
+  that motivated this mechanism's redesign — **two differing only in `serviceVersion`, with
+  byte-identical topics and schemas, still produce two entries** (row 4). That last one is the
+  regression guard against re-deriving identity from contract content.
