@@ -2363,10 +2363,13 @@ therefore mirrored by the TypeScript port; **[spec]** `docs/specification/**` �
 
 - **`PreviousSpecJson` / service-spec field-level temporal drift** (§C2.3) — worst insight-per-byte in
   the set; superseded by C2.4's rollup for the case that matters. Revisit trigger recorded.
-- **Go and Python parity — nothing to do, and this is verified, not assumed.** Neither port builds a
+- ~~**Go and Python parity — nothing to do, and this is verified, not assumed.** Neither port builds a
   topic catalogue: `benzene-go` has `mesh` + `meshd` (a collector with `FleetView` / `TopicSummary`
   read models, no `topics.json`), and `benzene-python`'s `benzene-mesh` is descriptor/collector-side
-  only. The mirror obligation is **.NET and TypeScript, two ports, not four.**
+  only. The mirror obligation is **.NET and TypeScript, two ports, not four.**~~
+  **[WRONG — CORRECTED IN §C10. Go is right; Python is not. Python builds `topics.json` with change
+  detection. Left visible rather than deleted, because the sizing it produced was wrong and the way I
+  got it wrong is the point.]**
 
 **Rejected, so it is not re-asked**
 
@@ -2420,3 +2423,167 @@ halves sit against R1/R2 in this document: **C1.5 and C1.6 are R1 items** (a rea
 unearned verdict are both absence-honesty), **C1.7 and C1.8 are the substance R2.9 was always
 reaching for**, and §C6's grouping is new. **The R1 STOP list still holds** — none of this is a new
 estate surface; `#changes` is a ranked view over data the estate already publishes.
+
+### §C10 — CORRECTION to §C7: three ports carry a topic catalogue, not two
+
+**I was wrong, and the way I was wrong matters more than the fact.** §C7 stated that
+`benzene-python` builds no topic catalogue. I reached that from a **filename listing** — `trace.py`,
+`feeds.py`, `collector.py`, `descriptor.py` read as collector-side — and never opened
+`artifacts.py`. That is precisely the failure the "verify before ranking" house rule exists to
+prevent, applied everywhere in this block except the one place I felt confident. Recorded plainly
+because two rounds of this document are built on catching *other people's* unverified claims, and the
+practice is worthless if it exempts the author. The pack's two errors I corrected (§C1.3, §C2.2) both
+made work look *cheaper*; so did mine.
+
+**Verified port accounting** (read this round, in source):
+
+| Port | Topic catalogue | Change detection | Versioned catalogue | `versionCompatibility` | UI drift-check in CI |
+|---|---|---|---|---|---|
+| **.NET** | `topics.json`, keyed `(topic, version)` | `DiffTopicEntry`, canonicalised string equality | yes | `BuildVersionCompatibility` | yes |
+| **TypeScript** | full mirror, `MeshAggregator.ts` | `diffTopicEntry`, `canonical()` — line-for-line mirror | yes | `buildVersionCompatibility:518` | yes |
+| **Python** | `artifacts.py` `_topics():190`, written at `:394` | `_topic_changes():167`, `current != previous` | **no — one row per topic, `version` collapsed to `representative.get("version","")`** | **none — zero hits repo-wide** | **no** |
+| **Go** | none (`meshd` is a collector: `FleetView`, `TopicSummary`) | n/a | n/a | n/a | n/a |
+
+Three implementations, three languages, and **all three reached the same contentless ceiling
+independently** — `Canonical(a) != Canonical(b)`, `canonical(a) !== canonical(b)`,
+`current != previous`. Python's description is `f"{provider} changed the contract for {topic}"`;
+.NET's is `"Payload schema changed (request)"`. Neither can say what moved. That convergence is the
+strongest available evidence for §C1's central claim: **the hard part was never detection, it is the
+taxonomy, and every port reinvents the absence of one.**
+
+**§C10.1 — The bigger finding the correction exposed, which is not about this wave.** Python's
+catalogue emits **one entry per topic** with a single collapsed version string, and **no
+`versionCompatibility` anywhere in the repository**. Two consequences:
+
+- **VERSION COMPATIBILITY — the most-praised surface in either round (§A4), the panel the developer
+  called "the killer feature", the one thing §A4 says no competitor can compute — is absent from
+  every Python-served estate**, and has been silently.
+- Cross-version compatibility (§C2.1) is therefore not merely *unimplemented* in Python, it is
+  **structurally inexpressible**: there is no second version to compare against, because the
+  catalogue has nowhere to put one.
+
+That is a pre-existing parity gap, materially larger than this wave, and it is **filed separately,
+not absorbed**. Absorbing it would turn a two-to-three-week wave into a Python catalogue rewrite. It
+also belongs in `work/service-mesh-roadmap-1.0.md` as a port-parity item, and it deserves the same
+status label §A4.3 coined: *shipped in two ports, absent in a third, reported by nobody.*
+
+**§C10.2 — TypeScript: full parity in-wave. This is the real sizing miss.** §C7 booked "+0.5 d TS
+mirror" against the *types*. TypeScript is not a type mirror, it is a **line-for-line aggregator
+mirror including `buildVersionCompatibility`**. If .NET gains the classifier and TypeScript does not,
+a TS-served estate loses the wave's headline feature entirely while rendering the same UI.
+
+**Revised: C1.1 + C1.2 + C1.3 gain a TypeScript arm of 3–4 d** (taxonomy, rules table, `JsonObject`
+walker equivalent, aggregator wiring), not 0.5 d. Wave C1 moves from roughly 12–14 d to **15–18 d**.
+C2.2's TS arm rises similarly, from 0.5 d to ~1 d. The §C1.3 invariant — *one rules table, one
+taxonomy, one verdict* — now has to hold **across languages**, which §C10.4 is about.
+
+**§C10.3 — Python: degrade deliberately; do NOT bring to parity in this wave.** Ruling, with the
+reason so it is not re-asked: Python cannot express the cross-version diff without a versioned
+catalogue first (§C10.1), so "Python parity" is not a line item in this wave, it is a different
+wave. Python keeps emitting `schema-changed`, and the UI degrades **on purpose and visibly**.
+
+**And the coordinator is right that this only works if it is stated — so here it is, and it is a
+real improvement to §C5 that Python forced.** My third-state copy had a latent defect:
+
+> *"Only one version of this topic is published, so there is nothing to compare."*
+
+Against a Python-served estate that sentence is **a false claim about the reader's architecture** —
+the estate may well run four versions; it is the *aggregator* that collapsed them. That is
+round-2's "absence rendered as good news" (§A3) reappearing inside the very feature written to stop
+it, which is worth noticing about how easily this defect regenerates.
+
+**New rule, and it generalises beyond this wave: a capability check about the tool outranks a
+content check about the estate.** If **no** entry in `topics.json` carries a `compatibility` field,
+the UI enters *"comparisons not published by this aggregator"* mode **globally**, and every
+per-topic surface uses that copy. It may never fall through to a sentence that describes the estate.
+Concretely:
+
+- Estate tile: `—` with `CONTRACT CHANGES · not computed`. Never `0`.
+- `#changes` page: the "not computed" empty state only — never "no contract changes".
+- Topic page: no `Changed from v1` section, and the version switcher states *"this estate's
+  aggregator publishes one entry per topic, so versions are not distinguished here"* rather than
+  implying the topic has one version.
+- **R1.0's Sources / wiring panel (§A1) gains a row:** `Contract comparisons — not published by this
+  aggregator`. That panel exists to make the provenance guarantee *verifiable from outside the
+  product*; this is exactly its content.
+
+**Changes that arrive with a description and no verdict** — every Python change, and any change from
+an older .NET/TS aggregator — render in the `#changes` ledger as a **separate, labelled group at the
+bottom**: *"Changes without a verdict (N) — this aggregator reported that something changed but not
+what."* Description verbatim, `not classified` badge. They are never sorted into the breaking /
+warning / compatible buckets and never ranked as if compatible. If the estate has unclassified
+changes and no classified ones, the tile is **amber** — something moved and we cannot say what —
+never green. Cost: ~0.5 d, inside C1.6.
+
+**§C10.4 — `PreviousSpecJson` stays rejected, and Python's design *strengthens* the rejection.** The
+coordinator suggests Python's retention weakens any framing of temporal drift as inherently
+expensive. Agreed on the premise, opposite conclusion on the item, and the distinction is exact:
+
+- §C2.3 rejected retaining the **previous whole OpenAPI spec document** per service, and its revisit
+  trigger said in terms: *"prefer storing a canonical topic-projection of the previous spec over the
+  whole document."*
+- **What Python retains is that topic projection** — `previousTopicSpecs`, per provider, per topic
+  (`collector.py:234-235`). It is not `PreviousSpecJson`. The one port that solved this solved it in
+  the shape I named as preferable, which is confirmation, not counter-evidence.
+- And .NET does not need even that for §C2.2, because the read-back gives it the same before-state
+  for free.
+
+**But there is one capability Python has that .NET genuinely lacks, and it is worth naming
+precisely: per-provider attribution.** Python knows *which provider's declaration moved*
+(`"{provider} changed the contract for {topic}"`); .NET's catalogue read-back knows only that the
+topic's schema moved, and §C2.3's rollup attributes by *participation* (who produces/consumes it),
+not by *authorship*. Participation-based attribution is honest but coarse, and it is the residue of
+round 3's drift-misattribution mechanism — the instance was the pack's fixture (correctly discarded),
+the coarseness is real. **If attribution proves insufficient after C2.4 ships, the shape to copy is
+Python's per-provider topic projection — not a whole-document `PreviousSpecJson`.** Written down as
+the amended revisit trigger.
+
+**§C10.5 — The shared taxonomy: agreed in direction, deferred by one step, and honest about what it
+would cost.** Three ports converging on "something changed" is good evidence that each will also
+diverge on *what kind of change this is* the moment they classify — which would break the §C1.3
+invariant across languages instead of within a repo, and produce **different verdicts for the same
+estate depending on which language aggregated it**. That is the worst available outcome.
+
+- **REJECTED: a normative spec addition.** `mesh.md` §9 puts aggregator artifacts outside the
+  contract deliberately; making a classification taxonomy normative would widen the specification for
+  a collector-side idiom and oblige ports that build no catalogue at all (Go).
+- **APPROVED in principle: a non-normative, spec-adjacent convention** — the kind vocabulary, the
+  direction axis, and the default kind × direction → compatibility table — plus an **optional
+  conformance fixture** ports may opt into. Precedent exists for capability-scoped conformance:
+  `mesh.md` §4.1's issue fixture is *"required only for collectors claiming the issue feed."*
+- **Be honest that this IS a `docs/specification/**` change**, even though it widens no service's
+  obligations and touches no wire contract. §C8's "no spec change" was about the Cloud Service
+  Profile and the mesh wire shapes, and it stands there. Letting it quietly cover a documentation
+  addition would be the same sleight §C5 forbids the product.
+- **Sequenced, not written now, and the trigger is specific: write it after C1.1/C1.2 land in .NET
+  and *before* the TypeScript arm starts.** Writing a convention with zero implementations pins the
+  spec to a guess; writing it after all three implement means retrofitting three quirks. One working
+  implementation, then the convention, then the mirrors — which is also this repo's own stated rule
+  read forwards (*"don't change a fixture to match one implementation's quirk"* is only avoidable if
+  the fixture is written while there is still a second implementation to write against).
+
+**§C10.6 — One unguarded seam, found while checking the coordinator's vendoring premise.** All three
+catalogue-building ports vendor `mesh-ui.html`. **`benzene-dotnet` and `benzene-typescript` each have
+a `mesh-ui-drift-check.yml`; `benzene-python` has none** — its copy
+(`deploy/mesh/collector/ui/mesh-ui.html`) is a distinct build with nothing keeping it current. So
+"one shared frontend over three aggregators" is enforced for two of three. That matters for this wave
+specifically: the degradation rules in §C10.3 only reach a Python operator if Python's copy is the
+one that has them. **Add the drift check to `benzene-python`** — small, mechanical, and a
+prerequisite for §C10.3 landing anywhere real. (I have deliberately *not* ranked the hash differences
+between the other vendored copies: those are consistent with local checkout state, and promoting a
+checkout artifact to a finding is the round-1 mistake.)
+
+**§C10.7 — What survives unchanged, and why.** Re-argued rather than silently amended, as asked:
+
+- **The sequencing holds** (§C2.1 → §C2.2 → not §C2.3). Python changes none of it: its temporal diff
+  is at the same contentless ceiling, its cross-version diff is inexpressible, and its retention is
+  the projection shape §C2.3 already preferred.
+- **The third state holds and got stronger** — Python exposed a false-claim path in my own copy and
+  produced the capability-outranks-content rule (§C10.3), which is a better rule than the one it
+  replaces and applies to every future feature-detected surface.
+- **§C8's "no wire-contract or Cloud Service spec change" holds**, with §C10.5's documentation
+  caveat now stated explicitly rather than assumed.
+- **What changed: the sizing and the port count.** Wave C1 is **15–18 d, not 12–14**; the mirror
+  obligation is **three ports carrying a catalogue, of which two get parity in-wave and one gets
+  deliberate degradation**; and Python's missing versioned catalogue is a new, separately-filed
+  parity gap that removes the product's best surface from an entire port.
