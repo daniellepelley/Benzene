@@ -218,6 +218,43 @@ focused QA re-run against the corrected harness is in flight; its result is appe
 lands, because a verdict formed against a lying harness cannot be left standing as the round's
 conclusion either way.
 
+### The re-run, and a fourth process failure
+
+The corrected stub discriminates exactly as the real handler does — verified end to end before the
+re-run: an unregistered service returns `not-found`, a version nothing declares returns `no-handler`,
+a handled version returns `ok`. QA re-tested and **five of their nine identical passes now
+discriminate**:
+
+> *"The last round's headline finding — 'I sent to a service that does not exist and got ACCEPTED' —
+> is fixed and verified on screen. … The v1/v2 split is the single most valuable thing here: the
+> estate's issue card says nobody handles v2, and the console now proves it at runtime. That is a
+> claim I could not previously verify at all."*
+
+Their verdict moved from an effective no to **"YES, I'd open this again"**, while still declining to
+sign off — now for narrower and better reasons (they cannot demonstrate the acceptance criterion,
+because nothing correlates a send with its downstream effect, and payload-level validation does not
+discriminate).
+
+**But they reported three of my claimed fixes as not landed, and they were right that what they
+tested was broken — because I served them a stale bundle.** The rebuild in the harness-fix step was
+killed partway and I copied the previous `dist` over it, so the deep-link seeding, the version
+carried through "compose a message", and the discarded stale response were all absent from what they
+drove. Re-verified against the correct build in a browser: all three work. That is the fourth
+process failure of this block, after the unfrozen dist and the two fixture defects, and it is the
+same root cause every time — **I verified the code and not the artifact the persona was actually
+given.**
+
+One finding from the re-run was real, and is the sharpest of the round because of its direction:
+
+> *"It dispatched to **orders-api** — the producer — not `payments-api`, the registered consumer that
+> the same topic page lists under 'Consumers'. A tester following the obvious in-product path gets a
+> red failure for a working v1 path and would raise a bug that doesn't exist. Last round the product
+> manufactured false passes; on this path it now manufactures **false failures**. Same disease,
+> opposite sign."*
+
+`ComposePage` resolved its dispatch target from the topic's producers. A dispatch invokes a topic ON
+a service, so the target has to be the one with the handler. Fixed in `437c860`.
+
 What was **genuinely** the product in QA's report, and is fixed in `98cbd1d`: a Test Console deep
 link — the URL the page's own header invites you to bookmark for a runbook — loaded with no version
 and no payload and would happily send an empty unversioned message; "compose a message" from a v1
